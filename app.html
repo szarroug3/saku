@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kana quiz</title>
+<style>
+/*__THEME_CSS__*/
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 15px; }
+.layout { display: flex; gap: 14px; max-width: 1080px; margin: 0 auto; padding: 24px 12px 60px; }
+.side { width: 148px; flex: none; position: sticky; top: 24px; align-self: flex-start; display: flex; flex-direction: column; gap: 2px; }
+.side button { text-align: left; border: none; background: none; padding: 9px 12px; border-radius: 8px; color: var(--text-muted); font-size: 14px; }
+.side button.sel { background: var(--accent-bg); color: var(--accent); }
+.main { flex: 1; min-width: 0; }
+h1 { font-size: 22px; font-weight: 600; margin: 0 0 2px; }
+.sub { color: var(--text-muted); font-size: 13px; margin: 0 0 18px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+.lbl { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 8px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 0; }
+.row + .row { border-top: 1px solid var(--border); }
+.hint { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
+button { font-family: inherit; font-size: 14px; cursor: pointer; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); padding: 7px 14px; }
+button:hover { background: var(--panel); }
+button.sel { border: 2px solid var(--accent); background: var(--accent-bg); color: var(--accent); padding: 6px 13px; }
+button.primary { background: var(--text); color: var(--bg); border-color: var(--text); font-size: 16px; padding: 12px; width: 100%; }
+button.primary:disabled { opacity: 0.4; cursor: default; }
+button.ghost { border: none; background: none; color: var(--text-muted); }
+button.small { font-size: 12px; padding: 4px 10px; }
+input[type=text], input[type=number] { font-family: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); }
+input[type=range] { accent-color: var(--accent); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer; user-select: none; color: var(--text-muted); background: var(--card); }
+.chip.on { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+.chip.part { background: var(--warning-bg); color: var(--warning); border-color: var(--warning); }
+.scard { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; background: var(--card); }
+.shead { display: flex; align-items: center; gap: 12px; padding: 13px 14px; cursor: pointer; user-select: none; }
+.chev { width: 28px; height: 28px; border-radius: 8px; background: var(--panel); color: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; font-size: 13px; transition: transform 0.15s; }
+.chev.open { transform: rotate(90deg); }
+.shead .t { font-weight: 600; font-size: 16px; margin: 0; }
+.shead .s { font-size: 12px; color: var(--text-muted); margin: 0; }
+.headRight { margin-left: auto; text-align: right; font-size: 12px; color: var(--text-muted); line-height: 1.6; flex: none; }
+.headRight .lnk { color: var(--accent); cursor: pointer; }
+.gwrap { padding: 0 14px 14px; }
+.gblock { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--bg); }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 10px; }
+.rowcard { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; background: var(--card); cursor: pointer; user-select: none; }
+.rowcard.on { border-color: var(--accent); background: var(--accent-bg); }
+.rowcard.part { border-color: var(--accent); border-style: dashed; }
+.rc-romaji { font-size: 13px; font-weight: 600; margin: 0; }
+.rc-kana { margin: 2px 0 0; }
+.rc-kana span { cursor: pointer; font-size: 16px; margin-right: 5px; color: var(--text-muted); opacity: 0.45; }
+.rc-kana span.on { color: var(--text); opacity: 1; }
+.acc { margin-left: auto; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-muted); flex: none; }
+.gGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.gcard { background: var(--gcard, #2e7cc4); border-radius: 12px; padding: 12px 8px 10px; text-align: center; transition: background 0.25s; }
+.gcard form { margin: 0; }
+.gcard .gk { font-size: 30px; color: #fff; display: block; margin-bottom: 8px; line-height: 1.2; }
+.gcard input { width: 100%; text-align: center; font-size: 14px; padding: 6px 4px; background: rgba(0,0,0,0.5); border: none; border-radius: 6px; color: #fff; }
+.gcard input:disabled { color: #fff; opacity: 0.9; }
+.gcard.right { background: var(--gcard-right, #3f9d4e); }
+.gcard.wrong { background: var(--gcard-wrong, #8aa7bf); }
+.gcard.shakeit { animation: gshake 0.45s; background: var(--gcard-shake, #d64545); }
+@keyframes gshake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+.histRow.selRow { background: var(--accent-bg); }
+.histRow { cursor: pointer; border-radius: 8px; padding: 8px 14px; margin: 0 0 2px; }
+.dotWrap { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex: none; cursor: pointer; }
+.selDot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--text-muted); transition: background 0.15s, border-color 0.15s; }
+.selDot.on { background: var(--accent); border-color: var(--accent); }
+.tofuguLink { color: var(--accent); text-decoration: none; font-size: 12px; white-space: nowrap; margin-left: 10px; }
+.kGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 8px; }
+.kCell { border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px 8px; text-align: center; cursor: pointer; user-select: none; }
+.kCell:hover { background: var(--panel); }
+.kCell .kc { font-size: 26px; display: block; line-height: 1.25; }
+.kCell .kr { font-size: 12px; color: var(--text-muted); display: block; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.progressTrack { height: 4px; background: var(--panel); border-radius: 99px; margin-bottom: 18px; }
+.progressFill { height: 4px; background: var(--accent); border-radius: 99px; transition: width 0.2s; }
+.bigchar { text-align: center; margin: 8px 0 2px; line-height: 1.15; }
+.scriptTag { text-align: center; font-size: 12px; color: var(--text-muted); min-height: 16px; margin: 0 0 14px; }
+.answerZone { text-align: center; }
+.preview { font-size: 22px; min-height: 30px; margin: 8px 0 0; }
+.feedback { font-size: 14px; min-height: 22px; margin: 6px 0 0; }
+.feedback.bad { color: var(--danger); }
+.feedback.good { color: var(--success); }
+.retryLine { font-size: 12px; color: var(--text-muted); min-height: 16px; margin: 6px 0 0; }
+.mcGrid { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.mcGrid button { min-width: 74px; font-size: 20px; padding: 10px 14px; }
+.mcGrid button .key { display: block; font-size: 10px; color: var(--text-muted); }
+.drawer { background: var(--panel); border-radius: 10px; padding: 10px 14px; margin-top: 16px; }
+.drawer .row { padding: 7px 0; font-size: 13px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.metric { background: var(--panel); border-radius: 10px; padding: 12px 14px; }
+.metric .k { font-size: 12px; color: var(--text-muted); margin: 0 0 2px; }
+.metric .v { font-size: 24px; font-weight: 600; margin: 0; }
+.missRow { display: flex; justify-content: space-between; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--border); font-size: 14px; align-items: baseline; flex-wrap: wrap; }
+.missRow:last-child { border-bottom: none; }
+.missRow .jc { font-size: 20px; }
+.missRow .detail { color: var(--danger); font-size: 13px; text-align: right; }
+.missRow .detail .ctx { color: var(--text-muted); }
+.pairsGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+.pairsGrid button { font-size: 20px; padding: 14px 4px; }
+.pairsGrid button.pick { border: 2px solid var(--accent); background: var(--accent-bg); }
+.pairsGrid button.gone { opacity: 0.18; pointer-events: none; }
+.pairsGrid button.bad { border-color: var(--danger); background: var(--danger-bg); }
+.histRow { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); padding: 4px 0; }
+.screen { display: none; }
+.screen.active { display: block; }
+.setHead { display: flex; justify-content: space-between; align-items: center; margin: 0 0 8px; }
+.setHead b { font-size: 15px; font-weight: 600; }
+.dim { opacity: 0.45; pointer-events: none; }
+.confRow { font-size: 13px; color: var(--text-muted); padding: 3px 0; }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="side">
+  <button id="nav-home" class="sel">Home</button>
+  <button id="nav-sessions">Recent sessions</button>
+  <button id="nav-stats">Statistics</button>
+  <button id="nav-chart">Kana chart</button>
+  <button id="nav-settings">Settings</button>
+</nav>
+<div class="main">
+
+<div id="scr-setup" class="screen active">
+  <h1>Kana quiz</h1>
+  <p class="sub" id="setupSub"></p>
+
+  <div class="card">
+    <p class="lbl">Quiz</p>
+    <div class="row"><span>Mode</span>
+      <span class="chips"><button id="mode-drill">Drill</button><button id="mode-pairs">Match pairs</button><button id="mode-grid">Grid</button></span></div>
+    <div class="row" id="row-dir"><span>Direction <span class="hint">at least one</span></span>
+      <span class="chips"><button id="dir-jp2en">Japanese → English</button><button id="dir-en2jp">English → Japanese</button></span></div>
+    <div class="row" id="row-style-jp2en"><span>JP → EN answers</span>
+      <span class="chips"><button id="st-jp-typed">Type romaji</button><button id="st-jp-mc">Multiple choice</button></span></div>
+    <div class="row" id="row-style-en2jp"><span>EN → JP answers</span>
+      <span class="chips"><button id="st-en-mc">Multiple choice</button><button id="st-en-typed">Type kana (needs IME)</button></span></div>
+    <div class="row" id="row-length"><span>Length</span>
+      <span class="chips" style="align-items:center;">
+        <button id="len-endless">Endless</button><button id="len-limited">Limited</button>
+        <span id="len-sub" style="display:none;">
+          <button id="lim-cov" class="small">Full coverage</button>
+          <button id="lim-count" class="small">Count</button>
+          <input type="number" id="lim-n" value="50" min="5" step="5" style="width:70px; display:none;">
+        </span>
+      </span></div>
+  </div>
+
+  <div class="card" id="setsBox"></div>
+
+  <button class="primary" id="startBtn">Start Quiz</button>
+</div>
+
+<div id="scr-settings" class="screen">
+  <h1>Settings</h1>
+  <p class="sub">Applies to every quiz · saved automatically</p>
+  <div class="card">
+    <div class="row" id="row-retries"><span>Retries</span>
+      <span class="chips" style="align-items:center;">
+        <button id="r-none">None</button><button id="r-lim">Limited</button><button id="r-unl">Unlimited</button>
+        <span id="r-sub"><button class="small" id="r-minus">−</button> <span id="r-n">2</span> <button class="small" id="r-plus">+</button></span>
+      </span></div>
+    <div class="row" id="row-timer"><span>Timer <span class="hint">timeout costs a retry</span></span>
+      <span class="chips" style="align-items:center;">
+        <button id="t-tog">Off</button>
+        <span id="t-sub" style="display:none;"><input type="range" id="t-sec" min="3" max="30" step="1" value="10" style="width:110px;"> <input type="number" id="t-num" min="1" max="600" value="10" style="width:64px;">s</span>
+      </span></div>
+    <div class="row" id="row-sa"><span>Show correct answer <span class="hint">when out of retries</span></span><button id="sa-tog">On</button></div>
+    <div class="row" id="row-sl"><span>Script label on the card <span class="hint">off = identify hiragana vs katakana yourself</span></span><button id="sl-tog">On</button></div>
+    <div class="row" id="row-kp"><span>Live kana preview while typing</span><button id="kp-tog">On</button></div>
+    <div class="row"><span>Random font per card <span class="hint">so one typeface doesn't get memorized</span></span><button id="rf-tog">On</button></div>
+    <div class="row"><span>Submit on focus loss <span class="hint">grid mode: Tab out of a card checks it and moves on</span></span><button id="bl-tog">Off</button></div>
+    <div class="row"><span>Speech voice <span class="hint">Japanese voices installed on this Mac — add better ones in System Settings → Accessibility → Spoken Content → Manage Voices</span></span><span class="chips" id="voiceChips"></span></div>
+  </div>
+</div>
+
+<div id="scr-sessions" class="screen">
+  <h1>Recent sessions</h1>
+  <p class="sub">Click a row to reopen its results · select with the dot to delete</p>
+  <div class="card" id="histBox" hidden>
+    <div id="histRows"></div>
+  </div>
+  <p class="hint" id="noSess" hidden>No sessions yet — finish a quiz and it lands here.</p>
+</div>
+
+<div id="scr-stats" class="screen">
+  <h1>Statistics</h1>
+  <p class="sub">Aggregated from every saved session</p>
+  <div class="metrics">
+    <div class="metric"><p class="k">Sessions</p><p class="v" id="st-sessions"></p></div>
+    <div class="metric"><p class="k">Characters practiced</p><p class="v" id="st-chars"></p></div>
+    <div class="metric"><p class="k">Overall accuracy</p><p class="v" id="st-acc"></p></div>
+  </div>
+  <div class="card"><p class="lbl">Weakest characters</p><div id="statsWorst"></div></div>
+</div>
+
+<div id="scr-chart" class="screen">
+  <h1>Kana chart</h1>
+  <p class="sub">Japanese · romaji · mnemonic</p>
+  <div class="card" style="padding:12px 18px;">
+    <p style="margin:0 0 6px; font-size:13px;">
+      <span style="color:var(--text-muted);">Tofugu guides:</span>
+      <a class="tofuguLink" href="https://www.tofugu.com/japanese/learn-hiragana/" target="_blank" rel="noopener">Hiragana ↗</a> ·
+      <a class="tofuguLink" href="https://www.tofugu.com/japanese/learn-katakana/" target="_blank" rel="noopener">Katakana ↗</a>
+    </p>
+    <p style="margin:0; font-size:13px;">
+      <span style="color:var(--text-muted);">Charts:</span>
+      <a class="tofuguLink" href="https://files.tofugu.com/articles/japanese/2014-06-30-learn-hiragana/hiragana-chart-by-tofugu.jpg" target="_blank" rel="noopener">Hiragana chart ↗</a> ·
+      <a class="tofuguLink" href="https://files.tofugu.com/articles/japanese/2016-03-07-hiragana-mnemonics-chart/hiragana-mnemonic-chart-by-tofugu.jpg" target="_blank" rel="noopener">Hiragana mnemonics ↗</a> ·
+      <a class="tofuguLink" href="https://files.tofugu.com/articles/japanese/2014-09-03-learn-katakana/tofugu-katakana-chart.jpg" target="_blank" rel="noopener">Katakana chart ↗</a> ·
+      <a class="tofuguLink" href="https://files.tofugu.com/articles/japanese/2014-09-03-learn-katakana/tofugu-katakana-mnemonic-chart.jpg" target="_blank" rel="noopener">Katakana mnemonics ↗</a>
+    </p>
+  </div>
+  <input type="text" id="chartSearch" placeholder="Search kana or romaji — し, shi, kyo…" style="width:100%; margin-bottom:12px;">
+  <div id="chartBox"></div>
+</div>
+
+<div id="scr-drill" class="screen">
+  <div class="topbar">
+    <button class="ghost" id="backBtn">← Setup</button>
+    <span style="font-size:12px; color:var(--text-muted);" id="progText"></span>
+    <span style="display:flex; gap:8px; align-items:center;">
+      <span style="font-size:13px; color:var(--text-muted);" id="timerChip" hidden>⏱ <span id="timerLeft"></span>s</span>
+      <button class="small" id="endBtn">End quiz → results</button>
+      <button class="small" id="gearBtn">⚙</button>
+    </span>
+  </div>
+  <div class="progressTrack"><div class="progressFill" id="progFill" style="width:0%"></div></div>
+
+  <div class="card">
+    <p class="bigchar" id="qChar"></p>
+    <p class="scriptTag" id="qScript"></p>
+    <div class="answerZone">
+      <span id="typedZone">
+        <input type="text" id="ans" autocomplete="off" spellcheck="false" placeholder="type answer, Enter to submit" style="width:230px; text-align:center; font-size:18px;">
+        <p class="preview" id="preview"></p>
+      </span>
+      <div class="mcGrid" id="mcZone" hidden></div>
+      <p class="feedback" id="feedback"></p>
+      <p class="retryLine" id="retryLine"></p>
+    </div>
+  </div>
+
+  <div class="drawer" id="drawer" hidden>
+    <p class="lbl" style="margin-bottom:2px;">Mid-drill settings <span style="font-weight:400; text-transform:none; letter-spacing:0;">— apply instantly</span></p>
+    <div class="row"><span>Timer</span><span class="chips" style="align-items:center;"><button id="d-t-tog"></button><span id="d-t-sub"><input type="range" id="d-t-sec" min="3" max="30" step="1" style="width:90px;"> <input type="number" id="d-t-num" min="1" max="600" style="width:60px;">s</span></span></div>
+    <div class="row"><span>Retries</span><span class="chips" style="align-items:center;"><button class="small" id="d-r-minus">−</button> <span id="d-r-n"></span> <button class="small" id="d-r-plus">+</button></span></div>
+    <div class="row"><span>Show correct answer</span><button id="d-sa-tog"></button></div>
+    <div class="row"><span>Script label</span><button id="d-sl-tog"></button></div>
+    <div class="row"><span>Kana preview</span><button id="d-kp-tog"></button></div>
+    <div class="row"><span>Random font</span><button id="d-rf-tog"></button></div>
+  </div>
+</div>
+
+<div id="scr-pairs" class="screen">
+  <div class="topbar">
+    <button class="ghost" id="p-backBtn">← Setup</button>
+    <span style="font-size:12px; color:var(--text-muted);" id="p-progText"></span>
+    <button class="small" id="p-endBtn">End quiz → results</button>
+  </div>
+  <div class="progressTrack"><div class="progressFill" id="p-progFill" style="width:0%"></div></div>
+  <div class="card">
+    <p class="hint" style="text-align:center; margin:0 0 4px;">Match each character with its reading</p>
+    <div class="pairsGrid" id="pairsGrid"></div>
+  </div>
+</div>
+
+<div id="scr-grid" class="screen">
+  <div class="topbar">
+    <button class="ghost" id="g-backBtn">← Setup</button>
+    <span style="font-size:12px; color:var(--text-muted);" id="g-progText"></span>
+    <button class="small" id="g-endBtn">Finish quiz → results</button>
+  </div>
+  <div class="progressTrack"><div class="progressFill" id="g-progFill" style="width:0%"></div></div>
+  <p class="hint" style="text-align:center; margin:0 0 12px;">Type the romaji in any card · Enter to check · retry wrong ones as many times as you like</p>
+  <div class="gGrid" id="gGrid"></div>
+</div>
+
+<div id="scr-results" class="screen">
+  <h1>Results</h1>
+  <p class="sub" id="resSub"></p>
+  <div class="chips" style="margin-bottom:14px;">
+    <button id="v-forg">Forgiving <span style="font-size:11px;">correct-after-retries counts</span></button>
+    <button id="v-strict">Strict <span style="font-size:11px;">first try only</span></button>
+  </div>
+  <div class="metrics">
+    <div class="metric"><p class="k">Score</p><p class="v" id="m-pct"></p></div>
+    <div class="metric"><p class="k">Correct</p><p class="v" id="m-count"></p></div>
+    <div class="metric"><p class="k">Slow but right</p><p class="v" id="m-slow"></p></div>
+  </div>
+  <div class="card"><p class="lbl">Missed characters</p><div id="missList"></div></div>
+  <div class="card" id="slowBox" hidden><p class="lbl">Slow but correct <span style="text-transform:none; letter-spacing:0; font-weight:400;" id="slowThresh"></span></p><div id="slowList"></div></div>
+  <div class="card" id="confBox" hidden><p class="lbl">Mix-up patterns</p><div id="confList"></div></div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button style="flex:1;" id="redrillBtn">Redrill the misses</button>
+    <button style="flex:1;" id="againBtn">Same settings, go again</button>
+    <button style="flex:1;" class="ghost" id="setupBtn">Back to setup</button>
+  </div>
+</div>
+
+</div>
+</div>
+<script>
+"use strict";
+const DATA = "__DATA_JSON__";
+const B = DATA.behavior;
+const $ = id => document.getElementById(id);
+
+// ---------- character index ----------
+const charIndex = {};
+DATA.sets.forEach(set => set.sections.forEach(sec => sec.chars.forEach(ch => {
+  charIndex[ch.c] = { c: ch.c, r: ch.r, set: set.id, setLabel: set.label, sec: sec.id, secLabel: sec.label, meaning: ch.meaning || null };
+})));
+const lookGroup = {};
+DATA.lookalikes.forEach(g => g.forEach(c => { (lookGroup[c] = lookGroup[c] || []).push(...g.filter(x => x !== c)); }));
+
+// romaji -> kana map (hiragana priority) for the live preview
+const r2k = {};
+DATA.sets.slice().reverse().forEach(set => set.sections.forEach(sec => sec.chars.forEach(ch => ch.r.forEach(r => { r2k[r] = ch.c; }))));
+function romajiToKana(s) {
+  let out = "", i = 0;
+  s = s.toLowerCase().replace(/[^a-z]/g, "");
+  while (i < s.length) {
+    let hit = null;
+    for (const L of [3, 2, 1]) { const sub = s.slice(i, i + L); if (r2k[sub]) { hit = sub; break; } }
+    if (hit) { out += r2k[hit]; i += hit.length; }
+    else if (s[i] === s[i + 1] && "kstpgzdbc".includes(s[i])) { out += "っ"; i++; }
+    else { out += "·"; i++; }
+  }
+  return out;
+}
+
+// ---------- config ----------
+const DEFAULT_CFG = {
+  mode: "drill", dirs: { jp2en: true, en2jp: false },
+  styleJp2en: "typed", styleEn2jp: "mc",
+  length: "endless", limType: "cov", limCount: 50,
+  retries: "lim", retryN: 2, timer: false, timerSec: 10,
+  showAnswer: true, scriptLabel: true, kanaPreview: true, randomFont: B.random_font, blurSubmit: false, voiceName: "",
+  enabled: null,
+};
+let cfg = loadCfg();
+function loadCfg() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("kanaquiz-cfg"));
+    if (saved && saved.enabled) return Object.assign({}, DEFAULT_CFG, saved);
+  } catch (e) {}
+  const c = JSON.parse(JSON.stringify(DEFAULT_CFG));
+  c.enabled = {}; Object.keys(charIndex).forEach(k => { c.enabled[k] = true; });
+  return c;
+}
+function saveCfg() { localStorage.setItem("kanaquiz-cfg", JSON.stringify(cfg)); }
+
+// ---------- setup screen ----------
+const ui = { setOpen: {}, groupOpen: {} };
+function accFor(chars) {
+  let seen = 0, missed = 0;
+  const agg = DATA.history.chars || {};
+  chars.forEach(c => { const a = agg[c]; if (a) { seen += a.seen; missed += a.missed; } });
+  return seen ? Math.max(0, Math.round(100 * (seen - missed) / seen)) : null;
+}
+function isExtended(sec) { return /^(Dakuten|Handakuten|Combo)/.test(sec.label); }
+function allNone(chars, on) { chars.forEach(c => { cfg.enabled[c] = on; }); saveCfg(); buildSets(); }
+function headRight(count, chars) {
+  const span = document.createElement("span"); span.className = "headRight";
+  const all = `<span class="lnk" data-an="all">All</span> · <span class="lnk" data-an="none">None</span>`;
+  span.innerHTML = `${count} selected<br>${all}`;
+  span.querySelectorAll(".lnk").forEach(l => {
+    l.onclick = e => { e.stopPropagation(); allNone(chars, l.dataset.an === "all"); };
+  });
+  return span;
+}
+function buildSets() {
+  const box = $("setsBox");
+  box.innerHTML = "<p class='lbl'>Characters</p>";
+  DATA.sets.forEach(set => {
+    const chars = set.sections.flatMap(s => s.chars.map(c => c.c));
+    const onCount = chars.filter(c => cfg.enabled[c]).length;
+    const acc = accFor(chars);
+    const card = document.createElement("div"); card.className = "scard";
+    const head = document.createElement("div"); head.className = "shead";
+    const chev = document.createElement("span"); chev.className = "chev" + (ui.setOpen[set.id] ? " open" : ""); chev.textContent = "›";
+    const title = document.createElement("span");
+    title.innerHTML = `<p class="t">${set.label}</p><p class="s">${set.label_ja}${acc === null ? "" : " · <b>" + acc + "%</b> accuracy"}</p>`;
+    head.append(chev, title, headRight(onCount, chars));
+    head.onclick = e => { if (e.target.classList.contains("lnk")) return; ui.setOpen[set.id] = !ui.setOpen[set.id]; buildSets(); };
+    card.append(head);
+    if (ui.setOpen[set.id]) {
+      const wrap = document.createElement("div"); wrap.className = "gwrap";
+      const groups = [
+        { id: set.id + "-basic", label: "Basic set", desc: "The core characters.", secs: set.sections.filter(s => !isExtended(s)) },
+        { id: set.id + "-ext", label: "Extended set", desc: "Voiced sounds (dakuten) and combo sounds.", secs: set.sections.filter(isExtended) },
+      ];
+      groups.forEach(g => {
+        if (ui.groupOpen[g.id] === undefined) ui.groupOpen[g.id] = true;
+        const gchars = g.secs.flatMap(s => s.chars.map(c => c.c));
+        const gon = gchars.filter(c => cfg.enabled[c]).length;
+        const block = document.createElement("div"); block.className = "gblock";
+        const ghead = document.createElement("div"); ghead.className = "shead"; ghead.style.padding = "2px 0";
+        const gchev = document.createElement("span"); gchev.className = "chev" + (ui.groupOpen[g.id] ? " open" : ""); gchev.textContent = "›";
+        const gtitle = document.createElement("span");
+        gtitle.innerHTML = `<p class="t" style="font-size:14px;">${g.label}</p><p class="s">${g.desc}</p>`;
+        ghead.append(gchev, gtitle, headRight(gon, gchars));
+        ghead.onclick = e => { if (e.target.classList.contains("lnk")) return; ui.groupOpen[g.id] = !ui.groupOpen[g.id]; buildSets(); };
+        block.append(ghead);
+        if (ui.groupOpen[g.id]) {
+          const grid = document.createElement("div"); grid.className = "grid3";
+          g.secs.forEach(sec => {
+            const on = sec.chars.filter(c => cfg.enabled[c.c]).length;
+            const rc = document.createElement("div");
+            rc.className = "rowcard" + (on === sec.chars.length ? " on" : on > 0 ? " part" : "");
+            rc.onclick = () => allNone(sec.chars.map(c => c.c), on < sec.chars.length);
+            const mid = document.createElement("span");
+            const rom = document.createElement("p"); rom.className = "rc-romaji";
+            rom.textContent = sec.chars.map(c => c.r[0]).join(" ");
+            const kanaLine = document.createElement("p"); kanaLine.className = "rc-kana";
+            sec.chars.forEach(c => {
+              const k = document.createElement("span");
+              k.textContent = c.c; k.title = c.r.join(" / ") + " — click to toggle just this one";
+              k.className = cfg.enabled[c.c] ? "on" : "";
+              k.onclick = e => { e.stopPropagation(); cfg.enabled[c.c] = !cfg.enabled[c.c]; saveCfg(); buildSets(); };
+              kanaLine.append(k);
+            });
+            mid.append(rom, kanaLine);
+            rc.append(mid);
+            const secAcc = accFor(sec.chars.map(c => c.c));
+            if (secAcc !== null) {
+              const circ = document.createElement("span"); circ.className = "acc";
+              circ.textContent = secAcc + "%";
+              circ.title = "accuracy from your session history";
+              rc.append(circ);
+            }
+            grid.append(rc);
+          });
+          block.append(grid);
+        }
+        wrap.append(block);
+      });
+      card.append(wrap);
+    }
+    box.append(card);
+  });
+  renderSetup();
+}
+
+function selectedChars() { return Object.keys(charIndex).filter(c => cfg.enabled[c]); }
+
+function setSel(id, on) { $(id).classList.toggle("sel", on); }
+function renderSetup() {
+  setSel("mode-drill", cfg.mode === "drill"); setSel("mode-pairs", cfg.mode === "pairs"); setSel("mode-grid", cfg.mode === "grid");
+  setSel("dir-jp2en", cfg.dirs.jp2en); setSel("dir-en2jp", cfg.dirs.en2jp);
+  const gridMode = cfg.mode === "grid";
+  ["row-dir", "row-length", "row-timer", "row-sl", "row-kp"].forEach(id => $(id).classList.toggle("dim", gridMode));
+  $("row-style-jp2en").classList.toggle("dim", gridMode || !cfg.dirs.jp2en || cfg.mode === "pairs");
+  $("row-style-en2jp").classList.toggle("dim", gridMode || !cfg.dirs.en2jp || cfg.mode === "pairs");
+  setSel("st-jp-typed", cfg.styleJp2en === "typed"); setSel("st-jp-mc", cfg.styleJp2en === "mc");
+  setSel("st-en-mc", cfg.styleEn2jp === "mc"); setSel("st-en-typed", cfg.styleEn2jp === "typed");
+  setSel("len-endless", cfg.length === "endless"); setSel("len-limited", cfg.length === "limited");
+  $("len-sub").style.display = cfg.length === "limited" ? "inline" : "none";
+  setSel("lim-cov", cfg.limType === "cov"); setSel("lim-count", cfg.limType === "count");
+  $("lim-n").style.display = cfg.limType === "count" ? "inline-block" : "none";
+  $("lim-n").value = cfg.limCount;
+  setSel("r-none", cfg.retries === "none"); setSel("r-lim", cfg.retries === "lim"); setSel("r-unl", cfg.retries === "unl");
+  $("r-sub").style.display = cfg.retries === "lim" ? "inline" : "none";
+  $("r-n").textContent = cfg.retryN;
+  $("t-tog").textContent = cfg.timer ? "On" : "Off"; setSel("t-tog", cfg.timer);
+  $("t-sub").style.display = cfg.timer ? "inline" : "none";
+  $("t-sec").value = Math.min(30, cfg.timerSec);
+  if (document.activeElement !== $("t-num")) $("t-num").value = cfg.timerSec;
+  $("sa-tog").textContent = cfg.showAnswer ? "On" : "Off"; setSel("sa-tog", cfg.showAnswer);
+  $("sl-tog").textContent = cfg.scriptLabel ? "On" : "Off"; setSel("sl-tog", cfg.scriptLabel);
+  $("kp-tog").textContent = cfg.kanaPreview ? "On" : "Off"; setSel("kp-tog", cfg.kanaPreview);
+  $("rf-tog").textContent = cfg.randomFont ? "On" : "Off"; setSel("rf-tog", cfg.randomFont);
+  $("bl-tog").textContent = cfg.blurSubmit ? "On" : "Off"; setSel("bl-tog", cfg.blurSubmit);
+  const n = selectedChars().length;
+  const modeLabel = cfg.mode === "pairs" ? "Match pairs" : cfg.mode === "grid" ? "Grid" : "Drill";
+  const setParts = DATA.sets.filter(set => set.sections.some(sec => sec.chars.some(c => cfg.enabled[c.c]))).map(s => s.label.toLowerCase());
+  $("setupSub").textContent = modeLabel + " · " +
+    (setParts.length ? setParts.join(" + ") : "no characters") + " · " + n + " characters selected";
+  $("startBtn").textContent = "Start Quiz";
+  $("startBtn").disabled = n === 0 || (cfg.mode !== "grid" && !cfg.dirs.jp2en && !cfg.dirs.en2jp);
+  saveCfg();
+}
+
+function bindSetup() {
+  $("mode-drill").onclick = () => { cfg.mode = "drill"; renderSetup(); };
+  $("mode-pairs").onclick = () => { cfg.mode = "pairs"; renderSetup(); };
+  $("mode-grid").onclick = () => { cfg.mode = "grid"; renderSetup(); };
+  $("dir-jp2en").onclick = () => { if (cfg.dirs.jp2en && !cfg.dirs.en2jp) return; cfg.dirs.jp2en = !cfg.dirs.jp2en; renderSetup(); };
+  $("dir-en2jp").onclick = () => { if (cfg.dirs.en2jp && !cfg.dirs.jp2en) return; cfg.dirs.en2jp = !cfg.dirs.en2jp; renderSetup(); };
+  $("st-jp-typed").onclick = () => { cfg.styleJp2en = "typed"; renderSetup(); };
+  $("st-jp-mc").onclick = () => { cfg.styleJp2en = "mc"; renderSetup(); };
+  $("st-en-mc").onclick = () => { cfg.styleEn2jp = "mc"; renderSetup(); };
+  $("st-en-typed").onclick = () => { cfg.styleEn2jp = "typed"; renderSetup(); };
+  $("len-endless").onclick = () => { cfg.length = "endless"; renderSetup(); };
+  $("len-limited").onclick = () => { cfg.length = "limited"; renderSetup(); };
+  $("lim-cov").onclick = () => { cfg.limType = "cov"; renderSetup(); };
+  $("lim-count").onclick = () => { cfg.limType = "count"; renderSetup(); };
+  $("lim-n").oninput = e => { cfg.limCount = Math.max(1, parseInt(e.target.value || "1", 10)); saveCfg(); };
+  $("r-none").onclick = () => { cfg.retries = "none"; renderSetup(); };
+  $("r-lim").onclick = () => { cfg.retries = "lim"; renderSetup(); };
+  $("r-unl").onclick = () => { cfg.retries = "unl"; renderSetup(); };
+  $("r-minus").onclick = () => { if (cfg.retryN > 1) { cfg.retryN--; renderSetup(); } };
+  $("r-plus").onclick = () => { if (cfg.retryN < 9) { cfg.retryN++; renderSetup(); } };
+  $("t-tog").onclick = () => { cfg.timer = !cfg.timer; renderSetup(); };
+  $("t-sec").oninput = e => { cfg.timerSec = parseInt(e.target.value, 10); renderSetup(); };
+  $("t-num").oninput = e => { const v = parseInt(e.target.value, 10); if (v >= 1) { cfg.timerSec = v; renderSetup(); } };
+  $("sa-tog").onclick = () => { cfg.showAnswer = !cfg.showAnswer; renderSetup(); };
+  $("sl-tog").onclick = () => { cfg.scriptLabel = !cfg.scriptLabel; renderSetup(); };
+  $("kp-tog").onclick = () => { cfg.kanaPreview = !cfg.kanaPreview; renderSetup(); };
+  $("rf-tog").onclick = () => { cfg.randomFont = !cfg.randomFont; renderSetup(); };
+  $("bl-tog").onclick = () => { cfg.blurSubmit = !cfg.blurSubmit; renderSetup(); };
+  $("startBtn").onclick = () => startQuiz(selectedChars());
+}
+
+function renderHistory() {
+  const sess = (DATA.history.sessions || []).slice().reverse();
+  $("histBox").hidden = !sess.length;
+  $("noSess").hidden = !!sess.length;
+  const rows = $("histRows"); rows.innerHTML = "";
+  if (!sess.length) return;
+  const picked = new Set();
+  const foot = document.createElement("div");
+  foot.style.cssText = "display:flex; gap:8px; margin-top:10px; align-items:center;";
+  const delSel = document.createElement("button"); delSel.className = "small";
+  const delAll = document.createElement("button"); delAll.className = "small"; delAll.textContent = "Delete all";
+  const hint = document.createElement("span"); hint.className = "hint"; hint.textContent = "click a row to open its results · use the dot to select for deletion";
+  function refreshFoot() {
+    delSel.textContent = picked.size ? `Delete selected (${picked.size})` : "Delete selected";
+    delSel.disabled = !picked.size;
+    delSel.style.opacity = picked.size ? "1" : "0.45";
+  }
+  sess.forEach(s => {
+    const div = document.createElement("div"); div.className = "histRow";
+    const left = document.createElement("span");
+    left.style.cssText = "display:flex; gap:10px; align-items:center;";
+    const dotWrap = document.createElement("span"); dotWrap.className = "dotWrap"; dotWrap.title = "Select for deletion";
+    const dot = document.createElement("span"); dot.className = "selDot";
+    dotWrap.append(dot);
+    dotWrap.onclick = e => {
+      e.stopPropagation();
+      if (picked.has(s.ts)) picked.delete(s.ts); else picked.add(s.ts);
+      dot.classList.toggle("on", picked.has(s.ts));
+      div.classList.toggle("selRow", picked.has(s.ts));
+      refreshFoot();
+    };
+    const label = document.createElement("span");
+    label.textContent = `${new Date(s.ts).toLocaleDateString()} ${new Date(s.ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · ${s.mode}${s.redrill ? " (redrill)" : ""} · ${s.total} chars`;
+    left.append(dotWrap, label);
+    const right = document.createElement("span");
+    right.style.cssText = "display:flex; gap:8px; align-items:center;";
+    const score = document.createElement("span");
+    score.textContent = `forgiving ${s.forgivingPct}% · strict ${s.strictPct}%`;
+    const del = document.createElement("button"); del.className = "small ghost"; del.textContent = "×"; del.title = "Delete this session";
+    del.onclick = e => { e.stopPropagation(); deleteSessions([s.ts], false); };
+    right.append(score, del);
+    div.append(left, right);
+    div.title = "Open this session's results";
+    div.onclick = () => viewSession(s);
+    rows.append(div);
+  });
+  delSel.onclick = () => {
+    if (picked.size && confirm(`Delete ${picked.size} session${picked.size === 1 ? "" : "s"}?`)) deleteSessions([...picked], false);
+  };
+  delAll.onclick = () => { if (confirm("Delete all session history? This also resets per-character stats.")) deleteSessions([], true); };
+  refreshFoot();
+  foot.append(delSel, delAll, hint);
+  rows.append(foot);
+}
+async function deleteSessions(ids, all) {
+  try {
+    const res = await fetch("/api/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids, all }) });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    await renderHistoryFresh();
+  } catch (e) {
+    alert("Couldn't delete — if the quiz server has been running a while, restart it (Ctrl+C, then python3 kana_quiz.py) and try again.");
+  }
+}
+
+// ---------- quiz engine ----------
+let deck = [], pos = 0, asked = 0, stats = {}, curr = null, waiting = false, timerId = null, timeLeft = 0, qStart = 0, isRedrill = false, requeued = 0;
+
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function statFor(c) { return stats[c] = stats[c] || { seen: 0, misses: 0, everCorrect: false, firstTryCorrect: null, slow: 0, confused: {} }; }
+function pickDir() { const d = []; if (cfg.dirs.jp2en) d.push("jp2en"); if (cfg.dirs.en2jp) d.push("en2jp"); return d[Math.floor(Math.random() * d.length)]; }
+
+function startQuiz(chars, redrill) {
+  isRedrill = !!redrill;
+  stats = {}; asked = 0; pos = 0; requeued = 0;
+  if (cfg.mode === "grid") return startGrid(chars);
+  deck = shuffle(chars.slice());
+  if (cfg.length === "limited" && cfg.limType === "count" && cfg.mode === "drill") {
+    while (deck.length < cfg.limCount) deck = deck.concat(shuffle(chars.slice()));
+    deck = deck.slice(0, cfg.limCount);
+  }
+  if (cfg.mode === "pairs") { show("scr-pairs"); nextBoard(); }
+  else { show("scr-drill"); $("drawer").hidden = true; nextQuestion(); }
+}
+
+function deckTotal() {
+  if (cfg.length === "endless") return null;
+  return deck.length;
+}
+
+function nextQuestion() {
+  clearTimer(); waiting = false;
+  if (pos >= deck.length) {
+    if (cfg.length === "endless") { deck = deck.concat(shuffle(selectedChars())); }
+    else return finish();
+  }
+  const c = deck[pos]; pos++; asked++;
+  curr = { c, dir: pickDir(), tries: 0 };
+  statFor(c).seen++;
+  const info = charIndex[c];
+  const font = cfg.randomFont ? DATA.jpFonts[Math.floor(Math.random() * DATA.jpFonts.length)] : DATA.jpFonts[0];
+  $("qChar").style.fontFamily = font + ", sans-serif";
+  $("feedback").textContent = ""; $("feedback").className = "feedback";
+  $("preview").textContent = "";
+  const typedMode = curr.dir === "jp2en" ? cfg.styleJp2en === "typed" : cfg.styleEn2jp === "typed";
+  if (curr.dir === "jp2en") {
+    $("qChar").style.fontSize = B.card_size_px + "px";
+    $("qChar").textContent = c;
+    $("qScript").textContent = cfg.scriptLabel ? info.setLabel.toLowerCase() : "";
+  } else {
+    $("qChar").style.fontSize = Math.round(B.card_size_px * 0.6) + "px";
+    $("qChar").textContent = info.r[0];
+    $("qScript").textContent = cfg.scriptLabel ? "give the " + info.setLabel.toLowerCase() : "";
+  }
+  $("typedZone").style.display = typedMode ? "" : "none";
+  $("mcZone").hidden = !!typedMode;
+  if (typedMode) { $("ans").value = ""; $("ans").focus(); }
+  else buildMC();
+  renderRetryLine(); renderProgress(); startTimer();
+  qStart = Date.now();
+}
+
+function buildMC() {
+  const info = charIndex[curr.c];
+  const wantChars = curr.dir === "en2jp";
+  const pool = Object.keys(charIndex).filter(x => x !== curr.c && (wantChars ? true : true));
+  const looks = (lookGroup[curr.c] || []).filter(x => charIndex[x]);
+  const opts = [curr.c];
+  shuffle(looks).forEach(x => { if (opts.length < B.mc_options && !opts.includes(x)) opts.push(x); });
+  const sameSet = shuffle(pool.filter(x => charIndex[x].set === info.set));
+  sameSet.forEach(x => { if (opts.length < B.mc_options && !opts.includes(x)) opts.push(x); });
+  shuffle(opts);
+  $("mcZone").innerHTML = "";
+  opts.forEach((x, i) => {
+    const b = document.createElement("button");
+    const label = wantChars ? x : charIndex[x].r[0];
+    b.innerHTML = `${label}<span class="key">${i + 1}</span>`;
+    if (wantChars && cfg.randomFont) b.style.fontFamily = DATA.jpFonts[Math.floor(Math.random() * DATA.jpFonts.length)] + ", sans-serif";
+    b.onclick = () => submit(wantChars ? x : charIndex[x].r[0], x);
+    $("mcZone").append(b);
+  });
+}
+
+function retriesAllowed() { return cfg.retries === "unl" ? Infinity : cfg.retries === "none" ? 0 : cfg.retryN; }
+function renderRetryLine() {
+  if (waiting) { $("retryLine").textContent = "press Enter for the next card"; return; }
+  const left = retriesAllowed() - curr.tries;
+  $("retryLine").textContent = cfg.retries === "unl" ? "unlimited retries" : left > 0 ? `${left} ${left === 1 ? "retry" : "retries"} left` : "no retries left";
+}
+function renderProgress() {
+  const total = deckTotal();
+  $("progText").textContent = total ? `${asked} / ${total}${requeued ? " · " + requeued + " re-queued" : ""}` : `${asked} answered · endless${requeued ? " · " + requeued + " re-queued" : ""}`;
+  $("progFill").style.width = total ? Math.min(100, Math.round(100 * asked / total)) + "%" : "100%";
+}
+
+function submit(given, pickedChar) {
+  if (waiting || !curr) return;
+  const info = charIndex[curr.c];
+  const ms = Date.now() - qStart;
+  const ok = curr.dir === "en2jp" && pickedChar !== undefined
+    ? pickedChar === curr.c
+    : curr.dir === "en2jp"
+      ? given.trim() === curr.c
+      : info.r.includes(given.trim().toLowerCase());
+  const st = statFor(curr.c);
+  if (st.firstTryCorrect === null) st.firstTryCorrect = ok && curr.tries === 0;
+  if (ok) {
+    st.everCorrect = true;
+    if (ms > B.slow_answer_ms) { st.slow++; }
+    $("feedback").className = "feedback good";
+    $("feedback").textContent = `Correct — ${curr.c} is "${info.r[0]}"`;
+    waiting = true; renderRetryLine(); clearTimer();
+    setTimeout(nextQuestion, 650);
+  } else {
+    st.misses++;
+    if (pickedChar && pickedChar !== curr.c) st.confused[pickedChar] = (st.confused[pickedChar] || 0) + 1;
+    else if (given && given !== "(time)") {
+      const g = given.trim().toLowerCase();
+      const match = Object.keys(charIndex).find(x => charIndex[x].r.includes(g) && charIndex[x].set === info.set);
+      if (match && match !== curr.c) st.confused[match] = (st.confused[match] || 0) + 1;
+    }
+    curr.tries++;
+    const left = retriesAllowed() - curr.tries;
+    $("feedback").className = "feedback bad";
+    if (left > 0 || cfg.retries === "unl") {
+      $("feedback").textContent = given === "(time)" ? "Time's up — try again" : "Not quite — try again";
+      $("ans").select && $("ans").select(); resetTimer();
+    } else {
+      $("feedback").textContent = (given === "(time)" ? "Time's up" : "Not quite") +
+        (cfg.showAnswer ? ` — the answer is "${info.r[0]}" ${curr.dir === "en2jp" ? "" : curr.c}` : "") + " · re-queued";
+      const gap = B.requeue_min + Math.floor(Math.random() * (B.requeue_max - B.requeue_min + 1));
+      deck.splice(Math.min(deck.length, pos + gap), 0, curr.c);
+      requeued++;
+      waiting = true; clearTimer();
+    }
+    renderRetryLine();
+  }
+}
+
+// timer
+function startTimer() {
+  clearTimer();
+  if (!cfg.timer) { $("timerChip").hidden = true; return; }
+  timeLeft = cfg.timerSec; $("timerChip").hidden = false; $("timerLeft").textContent = timeLeft;
+  timerId = setInterval(() => {
+    timeLeft--;
+    $("timerLeft").textContent = Math.max(0, timeLeft);
+    if (timeLeft <= 0) { submit("(time)"); }
+  }, 1000);
+}
+function resetTimer() { if (cfg.timer) startTimer(); }
+function clearTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+
+// drill bindings
+function bindDrill() {
+  $("ans").addEventListener("input", e => {
+    const v = e.target.value.trim();
+    $("preview").textContent = (cfg.kanaPreview && v && curr && curr.dir === "jp2en") ? romajiToKana(v) : "";
+  });
+  document.addEventListener("keydown", e => {
+    const drillActive = $("scr-drill").classList.contains("active");
+    if (!drillActive) return;
+    if (waiting && e.key === "Enter") { nextQuestion(); return; }
+    if (!waiting && e.key === "Enter" && document.activeElement === $("ans")) { if ($("ans").value.trim()) submit($("ans").value); return; }
+    if (!waiting && !$("mcZone").hidden && /^[1-9]$/.test(e.key)) {
+      const b = $("mcZone").children[parseInt(e.key, 10) - 1];
+      if (b) b.click();
+    }
+  });
+  $("gearBtn").onclick = () => { $("drawer").hidden = !$("drawer").hidden; renderDrawer(); };
+  $("endBtn").onclick = finish;
+  $("backBtn").onclick = () => { if (confirm("Back to setup? This quiz won't be scored or saved.")) toSetup(); };
+  $("d-t-tog").onclick = () => { cfg.timer = !cfg.timer; cfg.timer ? startTimer() : (clearTimer(), $("timerChip").hidden = true); renderDrawer(); saveCfg(); };
+  $("d-t-sec").oninput = e => { cfg.timerSec = parseInt(e.target.value, 10); renderDrawer(); saveCfg(); if (cfg.timer) startTimer(); };
+  $("d-t-num").oninput = e => { const v = parseInt(e.target.value, 10); if (v >= 1) { cfg.timerSec = v; renderDrawer(); saveCfg(); if (cfg.timer) startTimer(); } };
+  $("d-r-minus").onclick = () => { if (cfg.retries === "lim" && cfg.retryN > 1) cfg.retryN--; renderDrawer(); renderRetryLine(); saveCfg(); };
+  $("d-r-plus").onclick = () => { if (cfg.retries === "lim" && cfg.retryN < 9) cfg.retryN++; renderDrawer(); renderRetryLine(); saveCfg(); };
+  $("d-sa-tog").onclick = () => { cfg.showAnswer = !cfg.showAnswer; renderDrawer(); saveCfg(); };
+  $("d-sl-tog").onclick = () => { cfg.scriptLabel = !cfg.scriptLabel; if (curr) $("qScript").textContent = cfg.scriptLabel ? (curr.dir === "jp2en" ? charIndex[curr.c].setLabel.toLowerCase() : "give the " + charIndex[curr.c].setLabel.toLowerCase()) : ""; renderDrawer(); saveCfg(); };
+  $("d-kp-tog").onclick = () => { cfg.kanaPreview = !cfg.kanaPreview; if (!cfg.kanaPreview) $("preview").textContent = ""; renderDrawer(); saveCfg(); };
+  $("d-rf-tog").onclick = () => { cfg.randomFont = !cfg.randomFont; renderDrawer(); saveCfg(); };
+}
+function renderDrawer() {
+  $("d-t-tog").textContent = cfg.timer ? "On" : "Off"; setSel("d-t-tog", cfg.timer);
+  $("d-t-sub").style.display = cfg.timer ? "inline" : "none";
+  $("d-t-sec").value = Math.min(30, cfg.timerSec);
+  if (document.activeElement !== $("d-t-num")) $("d-t-num").value = cfg.timerSec;
+  $("d-r-n").textContent = cfg.retries === "unl" ? "∞" : cfg.retries === "none" ? "0" : cfg.retryN;
+  $("d-sa-tog").textContent = cfg.showAnswer ? "On" : "Off"; setSel("d-sa-tog", cfg.showAnswer);
+  $("d-sl-tog").textContent = cfg.scriptLabel ? "On" : "Off"; setSel("d-sl-tog", cfg.scriptLabel);
+  $("d-kp-tog").textContent = cfg.kanaPreview ? "On" : "Off"; setSel("d-kp-tog", cfg.kanaPreview);
+  $("d-rf-tog").textContent = cfg.randomFont ? "On" : "Off"; setSel("d-rf-tog", cfg.randomFont);
+}
+
+// ---------- match pairs ----------
+let board = [], firstPick = null, boardsDone = 0;
+function nextBoard() {
+  firstPick = null;
+  const remaining = deck.slice(pos);
+  if (!remaining.length) {
+    if (cfg.length === "endless") { deck = deck.concat(shuffle(selectedChars())); }
+    else return finish();
+  }
+  const take = deck.slice(pos, pos + B.pairs_per_board);
+  pos += take.length; asked += take.length;
+  take.forEach(c => statFor(c).seen++);
+  board = shuffle(take.map(c => ({ id: c, label: c, kind: "kana" }))
+    .concat(take.map(c => ({ id: c, label: charIndex[c].r[0], kind: "romaji" }))));
+  const grid = $("pairsGrid"); grid.innerHTML = "";
+  board.forEach(cell => {
+    const b = document.createElement("button");
+    b.textContent = cell.label;
+    if (cell.kind === "kana" && cfg.randomFont) b.style.fontFamily = DATA.jpFonts[Math.floor(Math.random() * DATA.jpFonts.length)] + ", sans-serif";
+    b.onclick = () => pickCell(b, cell);
+    grid.append(b);
+  });
+  const total = deckTotal();
+  $("p-progText").textContent = total ? `${asked} / ${total} characters` : `${asked} characters · endless`;
+  $("p-progFill").style.width = total ? Math.min(100, Math.round(100 * asked / total)) + "%" : "100%";
+}
+function pickCell(btn, cell) {
+  if (btn.classList.contains("gone")) return;
+  if (!firstPick) { firstPick = { btn, cell }; btn.classList.add("pick"); return; }
+  if (firstPick.btn === btn) { btn.classList.remove("pick"); firstPick = null; return; }
+  if (firstPick.cell.kind === cell.kind) { firstPick.btn.classList.remove("pick"); firstPick = { btn, cell }; btn.classList.add("pick"); return; }
+  const a = firstPick; firstPick = null;
+  a.btn.classList.remove("pick");
+  if (a.cell.id === cell.id) {
+    const st = statFor(cell.id); st.everCorrect = true;
+    if (st.firstTryCorrect === null) st.firstTryCorrect = st.misses === 0;
+    a.btn.classList.add("gone"); btn.classList.add("gone");
+    if ([...$("pairsGrid").children].every(x => x.classList.contains("gone"))) setTimeout(nextBoard, 500);
+  } else {
+    const kanaCell = a.cell.kind === "kana" ? a.cell : cell;
+    const otherId = (a.cell.kind === "kana" ? cell : a.cell).id;
+    const st = statFor(kanaCell.id); st.misses++;
+    st.confused[otherId] = (st.confused[otherId] || 0) + 1;
+    [a.btn, btn].forEach(x => { x.classList.add("bad"); setTimeout(() => x.classList.remove("bad"), 450); });
+  }
+}
+function bindPairs() {
+  $("p-endBtn").onclick = finish;
+  $("p-backBtn").onclick = () => { if (confirm("Back to setup? This quiz won't be scored or saved.")) toSetup(); };
+}
+function toSetup() {
+  clearTimer(); stats = {}; curr = null;
+  setNav("nav-home");
+  buildSets(); renderHistoryFresh(); show("scr-setup");
+}
+
+// ---------- sidebar navigation ----------
+const NAV = { "nav-home": "scr-setup", "nav-sessions": "scr-sessions", "nav-stats": "scr-stats", "nav-chart": "scr-chart", "nav-settings": "scr-settings" };
+function setNav(navId) { Object.keys(NAV).forEach(n => $(n).classList.toggle("sel", n === navId)); }
+function bindNav() {
+  Object.keys(NAV).forEach(id => {
+    $(id).onclick = () => {
+      const inQuiz = ["scr-drill", "scr-pairs", "scr-grid"].some(s => $(s).classList.contains("active"));
+      if (inQuiz && !confirm("Leave the current quiz? It won't be scored or saved.")) return;
+      clearTimer();
+      setNav(id);
+      if (id === "nav-home") buildSets();
+      if (id === "nav-sessions") renderHistoryFresh();
+      if (id === "nav-stats") renderStats();
+      if (id === "nav-chart") renderChart();
+      show(NAV[id]);
+    };
+  });
+}
+
+// ---------- statistics ----------
+async function renderStats() {
+  try { DATA.history = await (await fetch("/api/history")).json(); } catch (e) {}
+  const agg = DATA.history.chars || {};
+  const entries = Object.keys(agg).map(c => Object.assign({ c }, agg[c]));
+  const seen = entries.reduce((n, e) => n + e.seen, 0);
+  const missed = entries.reduce((n, e) => n + e.missed, 0);
+  $("st-sessions").textContent = (DATA.history.sessions || []).length;
+  $("st-chars").textContent = entries.length;
+  $("st-acc").textContent = seen ? Math.max(0, Math.round(100 * (seen - missed) / seen)) + "%" : "—";
+  const worst = entries.filter(e => e.missed > 0)
+    .sort((a, b) => (b.missed / b.seen) - (a.missed / a.seen)).slice(0, 30);
+  $("statsWorst").innerHTML = worst.length ? "" : "<p class='hint'>No misses recorded yet.</p>";
+  worst.forEach(e => {
+    const info = charIndex[e.c];
+    const acc = Math.max(0, Math.round(100 * (e.seen - e.missed) / e.seen));
+    const row = document.createElement("div"); row.className = "missRow";
+    row.innerHTML = `<span><span class="jc">${e.c}</span> <span class="hint">${info ? info.r[0] + " · " + info.setLabel.toLowerCase() : ""}</span></span>
+      <span class="detail">${e.missed} ${e.missed === 1 ? "miss" : "misses"} in ${e.seen} seen <span class="ctx">· ${acc}% accuracy${e.slow ? " · slow ×" + e.slow : ""}</span></span>`;
+    $("statsWorst").append(row);
+  });
+}
+
+// ---------- kana chart ----------
+let jaVoice = null;
+function jaVoices() {
+  const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  return vs.filter(v => v.lang && v.lang.replace("_", "-").toLowerCase().startsWith("ja"));
+}
+function pickVoice() {
+  jaVoice = jaVoices()[0] || null;
+  fillVoices();
+}
+function fillVoices() {
+  const box = $("voiceChips");
+  if (!box) return;
+  const vs = jaVoices();
+  box.innerHTML = "";
+  const current = (cfg.voiceName && vs.some(v => v.name === cfg.voiceName)) ? cfg.voiceName : "";
+  const mk = (value, label) => {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.classList.toggle("sel", value === current);
+    b.onclick = () => { cfg.voiceName = value; saveCfg(); fillVoices(); speak("こんにちは"); };
+    box.append(b);
+  };
+  if (!vs.length) {
+    const none = document.createElement("span"); none.className = "hint"; none.textContent = "No Japanese voices found";
+    box.append(none);
+    return;
+  }
+  mk("", "Auto");
+  vs.forEach(v => mk(v.name, v.name.replace(/\s*\(.*?\)\s*$/, m => m.replace("(", "· ").replace(")", "")).trim()));
+}
+if ("speechSynthesis" in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "ja-JP";
+  const chosen = cfg.voiceName && jaVoices().find(v => v.name === cfg.voiceName);
+  if (chosen || jaVoice) u.voice = chosen || jaVoice;
+  u.rate = 0.8;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+function mnemonicFor(ch, secLabel) {
+  if (ch.m) return ch.m;
+  if (ch.c.length > 1) return `${ch.c[0]} + small ${ch.c[1]}`;
+  if (/^Dakuten/.test(secLabel)) return "base kana + ゛ voicing mark";
+  if (/^Handakuten/.test(secLabel)) return "base kana + ゜ p-mark";
+  return "";
+}
+let chartQuery = "";
+function renderChart() {
+  const box = $("chartBox"); box.innerHTML = "";
+  const qRaw = chartQuery.trim();
+  const q = qRaw.toLowerCase();
+  let any = false;
+  DATA.sets.forEach(set => {
+    const card = document.createElement("div"); card.className = "card";
+    card.innerHTML = `<p class="lbl">${set.label} ${set.label_ja}</p>`;
+    let setHas = false;
+    set.sections.forEach(sec => {
+      const matches = sec.chars.filter(ch => !q || ch.c.includes(qRaw) || ch.r.some(r => r.includes(q)));
+      if (!matches.length) return;
+      setHas = true;
+      const h = document.createElement("p"); h.className = "hint";
+      h.style.cssText = "margin:12px 0 2px; font-weight:600;"; h.textContent = sec.label;
+      card.append(h);
+      const g = document.createElement("div"); g.className = "kGrid";
+      matches.forEach(ch => {
+        const cell = document.createElement("div"); cell.className = "kCell";
+        const mn = mnemonicFor(ch, sec.label);
+        cell.title = (mn ? mn + " · " : "") + "click to hear";
+        cell.innerHTML = `<span class="kc">${ch.c}</span><span class="kr">${ch.r.join(" / ")} 🔊</span>`;
+        cell.onclick = () => speak(ch.c);
+        g.append(cell);
+      });
+      card.append(g);
+    });
+    if (setHas) { box.append(card); any = true; }
+  });
+  if (!any) box.innerHTML = `<p class="hint">Nothing matches "${qRaw}".</p>`;
+}
+
+// ---------- grid mode (Tofugu-style sheet) ----------
+function startGrid(chars) {
+  asked = chars.length;
+  const list = shuffle(chars.slice());
+  const grid = $("gGrid"); grid.innerHTML = "";
+  list.forEach(c => {
+    statFor(c).seen++;
+    const card = document.createElement("div"); card.className = "gcard";
+    const k = document.createElement("span"); k.className = "gk"; k.textContent = c;
+    if (cfg.randomFont) k.style.fontFamily = DATA.jpFonts[Math.floor(Math.random() * DATA.jpFonts.length)] + ", sans-serif";
+    const inp = document.createElement("input");
+    inp.type = "text"; inp.autocomplete = "off"; inp.spellcheck = false;
+    let tries = 0;
+    const advance = fromBlur => {
+      const remaining = [...grid.querySelectorAll("input")].filter(x => !x.disabled);
+      if (!remaining.length) setTimeout(finish, 500);
+      else if (!fromBlur) remaining[0].focus();
+    };
+    const shake = () => {
+      card.classList.remove("wrong");
+      void card.offsetWidth;
+      card.classList.add("shakeit");
+      setTimeout(() => { card.classList.remove("shakeit"); if (!card.classList.contains("right")) card.classList.add("wrong"); }, 460);
+    };
+    const check = (fromBlur) => {
+      const v = inp.value.trim().toLowerCase();
+      if (!v || inp.disabled) return;
+      const st = statFor(c);
+      const ok = charIndex[c].r.includes(v);
+      if (st.firstTryCorrect === null) st.firstTryCorrect = ok;
+      if (ok) {
+        st.everCorrect = true;
+        card.classList.remove("wrong"); card.classList.add("right");
+        inp.disabled = true;
+        gridProgress();
+        advance(fromBlur);
+      } else {
+        st.misses++; tries++;
+        const match = Object.keys(charIndex).find(x => x !== c && charIndex[x].r.includes(v) && charIndex[x].set === charIndex[c].set);
+        if (match) st.confused[match] = (st.confused[match] || 0) + 1;
+        if (tries > retriesAllowed()) {
+          if (cfg.showAnswer) inp.value = charIndex[c].r[0];
+          inp.disabled = true;
+          shake();
+          advance(fromBlur);
+        } else {
+          shake();
+        }
+      }
+    };
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); check(); } });
+    inp.addEventListener("blur", () => { if (cfg.blurSubmit) check(true); });
+    const form = document.createElement("form");
+    form.addEventListener("submit", e => { e.preventDefault(); check(); });
+    form.append(inp);
+    card.append(k, form); grid.append(card);
+  });
+  show("scr-grid"); gridProgress();
+  const first = grid.querySelector("input"); if (first) first.focus();
+}
+function gridProgress() {
+  const done = Object.keys(stats).filter(c => stats[c].everCorrect).length;
+  $("g-progText").textContent = `${done} / ${asked} correct`;
+  $("g-progFill").style.width = asked ? Math.round(100 * done / asked) + "%" : "0%";
+}
+function bindGrid() {
+  $("g-endBtn").onclick = finish;
+  $("g-backBtn").onclick = () => { if (confirm("Back to setup? This quiz won't be scored or saved.")) toSetup(); };
+}
+
+// ---------- results ----------
+let view = "forg";
+function computeStats() {
+  const chars = Object.keys(stats);
+  const total = chars.length;
+  const forg = chars.filter(c => stats[c].everCorrect).length;
+  const strict = chars.filter(c => stats[c].firstTryCorrect === true).length;
+  const slow = chars.reduce((n, c) => n + stats[c].slow, 0);
+  return { chars, total, forg, strict, slow };
+}
+function finish() {
+  clearTimer();
+  const s = computeStats();
+  if (!s.total) { show("scr-setup"); return; }
+  show("scr-results");
+  $("resSub").textContent = `${cfg.mode === "pairs" ? "Match pairs" : cfg.mode === "grid" ? "Grid" : "Drill"} · ${s.total} characters · ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+  renderResults(s);
+  postSession(s);
+}
+function renderResults(s) {
+  setSel("v-forg", view === "forg"); setSel("v-strict", view === "strict");
+  const correct = view === "forg" ? s.forg : s.strict;
+  $("m-pct").textContent = s.total ? Math.round(100 * correct / s.total) + "%" : "—";
+  $("m-count").textContent = `${correct} / ${s.total}`;
+  $("m-slow").textContent = s.slow;
+  $("slowThresh").textContent = `— over ${(B.slow_answer_ms / 1000)}s`;
+  const missed = s.chars.filter(c => view === "forg" ? (stats[c].misses > 0 || !stats[c].everCorrect) : stats[c].firstTryCorrect !== true);
+  $("missList").innerHTML = missed.length ? "" : "<p class='hint'>Nothing missed. Clean run.</p>";
+  missed.sort((a, b) => stats[b].misses - stats[a].misses).forEach(c => {
+    const st = stats[c]; const info = charIndex[c];
+    const conf = Object.entries(st.confused).sort((a, b) => b[1] - a[1]).map(([x, n]) => `${x}${n > 1 ? " ×" + n : ""}`).join(", ");
+    const row = document.createElement("div"); row.className = "missRow";
+    row.innerHTML = `<span><span class="jc">${c}</span> <span class="hint">${info.r[0]} · ${info.setLabel.toLowerCase()}</span></span>
+      <span class="detail">${st.everCorrect ? (st.misses ? st.misses + (st.misses === 1 ? " miss" : " misses") + " before correct" : "missed first try") : "never got it" + (cfg.showAnswer ? " · answer shown" : "")}${conf ? ` <span class="ctx">· confused with ${conf}</span>` : ""}</span>`;
+    $("missList").append(row);
+  });
+  const slowChars = s.chars.filter(c => stats[c].slow > 0);
+  $("slowBox").hidden = !slowChars.length;
+  $("slowList").innerHTML = slowChars.map(c => `<div class="confRow"><span style="font-size:17px;">${c}</span> ${charIndex[c].r[0]} — right but slow${stats[c].slow > 1 ? " ×" + stats[c].slow : ""}</div>`).join("");
+  const confPairs = {};
+  s.chars.forEach(c => Object.entries(stats[c].confused).forEach(([x, n]) => {
+    const key = [c, x].sort().join("·"); confPairs[key] = (confPairs[key] || 0) + n;
+  }));
+  const cp = Object.entries(confPairs).sort((a, b) => b[1] - a[1]);
+  $("confBox").hidden = !cp.length;
+  $("confList").innerHTML = cp.map(([k, n]) => {
+    const [a, b] = k.split("·");
+    return `<div class="confRow"><span style="font-size:17px;">${a} ↔ ${b}</span> mixed up ${n}×</div>`;
+  }).join("");
+}
+function bindResults() {
+  $("v-forg").onclick = () => { view = "forg"; renderResults(computeStats()); };
+  $("v-strict").onclick = () => { view = "strict"; renderResults(computeStats()); };
+  $("redrillBtn").onclick = () => {
+    const missed = Object.keys(stats).filter(c => stats[c].misses > 0 || !stats[c].everCorrect);
+    if (!missed.length) return;
+    const keepLen = cfg.length; cfg.length = "limited"; const keepType = cfg.limType; cfg.limType = "cov";
+    startQuiz(missed, true);
+    cfg.length = keepLen; cfg.limType = keepType;
+  };
+  $("againBtn").onclick = () => startQuiz(selectedChars());
+  $("setupBtn").onclick = toSetup;
+}
+async function renderHistoryFresh() {
+  try { DATA.history = await (await fetch("/api/history")).json(); renderHistory(); buildSets(); } catch (e) {}
+}
+function postSession(s) {
+  const charStats = {}, detail = {};
+  s.chars.forEach(c => {
+    charStats[c] = { seen: stats[c].seen, missed: stats[c].misses, slow: stats[c].slow };
+    detail[c] = stats[c];
+  });
+  fetch("/api/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+    ts: Date.now(), mode: cfg.mode, redrill: isRedrill, total: s.total,
+    forgivingPct: s.total ? Math.round(100 * s.forg / s.total) : 0,
+    strictPct: s.total ? Math.round(100 * s.strict / s.total) : 0,
+    chars: charStats, detail,
+  }) }).catch(() => {});
+}
+function modeName(m) { return m === "pairs" ? "Match pairs" : m === "grid" ? "Grid" : "Drill"; }
+function viewSession(s) {
+  stats = {};
+  if (s.detail) {
+    Object.keys(s.detail).forEach(c => {
+      stats[c] = Object.assign({ seen: 0, misses: 0, everCorrect: false, firstTryCorrect: null, slow: 0, confused: {} }, s.detail[c]);
+    });
+  } else {
+    Object.keys(s.chars || {}).forEach(c => {
+      const a = s.chars[c];
+      stats[c] = { seen: a.seen, misses: a.missed, everCorrect: a.missed === 0 && s.forgivingPct === 100, firstTryCorrect: null, slow: a.slow, confused: {} };
+    });
+  }
+  show("scr-results");
+  $("resSub").textContent = `${modeName(s.mode)}${s.redrill ? " (redrill)" : ""} · ${s.total} characters · ${new Date(s.ts).toLocaleString()}` +
+    (s.detail ? "" : " · older session — summary only");
+  renderResults(computeStats());
+  if (!s.detail) {
+    $("m-pct").textContent = (view === "forg" ? s.forgivingPct : s.strictPct) + "%";
+  }
+}
+
+// ---------- shell ----------
+function show(id) { document.querySelectorAll(".screen").forEach(x => x.classList.remove("active")); $(id).classList.add("active"); }
+$("chartSearch").addEventListener("input", e => { chartQuery = e.target.value; renderChart(); });
+buildSets(); bindSetup(); bindDrill(); bindPairs(); bindGrid(); bindResults(); bindNav(); renderHistory();
+</script>
+</body>
+</html>
