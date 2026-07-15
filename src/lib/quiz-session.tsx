@@ -3,6 +3,19 @@
 // Active-quiz + results state shared across routes. A quiz flows
 // setup (/) → startQuiz → /quiz (mode screen) → finishQuiz → /results.
 // Stored sessions reopen through viewStoredSession → /results.
+//
+// Tab-switching is allowed while a quiz runs: navigating away unmounts the
+// mode screen but does NOT discard the quiz. Screens keep everything they
+// need to continue (deck, position, per-card states, remaining timer) in
+// `active.runtime`, a plain mutable object that lives here across mounts.
+// The timer contract is pause-while-away: screens stop their countdown (and
+// the slow-answer stopwatch) on unmount and resume from the stored remainder.
+//
+// Config snapshot rule: the Home-builder settings (mode, directions, answer
+// styles, length) are FROZEN into the quiz at startQuiz — editing them
+// mid-quiz only affects the next quiz. Settings-page settings (retries,
+// timer, show-answer, script label, preview, fonts, blur-submit, voice) are
+// read live from useQuizConfig and apply instantly, drawer-style.
 
 import { useRouter } from "next/navigation";
 import {
@@ -10,21 +23,45 @@ import {
   useCallback,
   useContext,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
 
 import { computeResults } from "@/lib/engine";
 import { useQuizConfig } from "@/lib/quiz-config";
-import type { QuizMode, QuizSessionRecord, SessionStats } from "@/types";
+import type {
+  QuizConfig,
+  QuizMode,
+  QuizSessionRecord,
+  SessionStats,
+} from "@/types";
+
+/** The Home-builder settings frozen at Start Quiz. */
+export type QuizSnapshot = Pick<
+  QuizConfig,
+  "mode" | "dirs" | "styleJp2en" | "styleEn2jp" | "length" | "limType" | "limCount"
+>;
 
 export interface ActiveQuiz {
-  /** The chars this run draws from (selection, or the misses on a redrill). */
+  /** The chars this run draws from (selection, or the misses on a redrill).
+   * Endless mode replenishes from THIS list, never the live picker. */
   chars: string[];
   redrill: boolean;
-  /** Forces limited/full-coverage regardless of cfg (used by redrill). */
+  /** Forces limited/full-coverage regardless of the snapshot (redrill). */
   forceCoverage: boolean;
+  /** Builder settings frozen at start — render the quiz from these. */
+  snapshot: QuizSnapshot;
+  /** Mode-screen scratch space that survives unmount/remount (deck, pos,
+   * stats, grid card states, pairs board, remaining timer…). Owned by the
+   * mode screens; opaque to this provider. */
+  runtime: Record<string, unknown>;
+}
+
+/** Sidebar progress chip: e.g. done=12 total=50 → "12/50"; total=null while
+ * endless → shows just the count. */
+export interface QuizProgress {
+  done: number;
+  total: number | null;
 }
 
 export interface ResultsPayload {
@@ -37,15 +74,18 @@ export interface ResultsPayload {
 }
 
 interface QuizSessionContextValue {
-  /** Non-null while a quiz screen should be live. */
+  /** Non-null while a quiz is in progress (even when on another tab). */
   active: ActiveQuiz | null;
   /** Non-null when /results has something to show. */
   results: ResultsPayload | null;
+  /** Live progress for the sidebar chip; screens keep it updated. */
+  progress: QuizProgress | null;
+  setProgress(p: QuizProgress | null): void;
   /** Begin a quiz over `chars` with the current cfg; navigates to /quiz. */
   startQuiz(chars: string[], opts?: { redrill?: boolean }): void;
   /** End the active quiz: compute results, POST /api/session, go to /results. */
   finishQuiz(stats: SessionStats): void;
-  /** Drop the active quiz without scoring (back-to-setup / nav away). */
+  /** Drop the active quiz without scoring (explicit "← Setup" / new start). */
   abandonQuiz(): void;
   /** Reopen a stored session's results (detail or summary-only fallback). */
   viewStoredSession(record: QuizSessionRecord): void;
@@ -58,38 +98,46 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const { cfg } = useQuizConfig();
   const [active, setActive] = useState<ActiveQuiz | null>(null);
   const [results, setResults] = useState<ResultsPayload | null>(null);
-  // cfg at the moment the quiz started (mode may change on the setup screen
-  // while a finished quiz's results are still around).
-  const modeRef = useRef<QuizMode>(cfg.mode);
-  const redrillRef = useRef(false);
+  const [progress, setProgress] = useState<QuizProgress | null>(null);
 
   const startQuiz = useCallback(
     (chars: string[], opts?: { redrill?: boolean }) => {
       if (!chars.length) return;
-      modeRef.current = cfg.mode;
-      redrillRef.current = !!opts?.redrill;
       setActive({
         chars,
         redrill: !!opts?.redrill,
         forceCoverage: !!opts?.redrill,
+        snapshot: {
+          mode: cfg.mode,
+          dirs: { ...cfg.dirs },
+          styleJp2en: cfg.styleJp2en,
+          styleEn2jp: cfg.styleEn2jp,
+          length: cfg.length,
+          limType: cfg.limType,
+          limCount: cfg.limCount,
+        },
+        runtime: {},
       });
+      setProgress(null);
       router.push("/quiz");
     },
-    [cfg.mode, router],
+    [cfg, router],
   );
 
   const finishQuiz = useCallback(
     (stats: SessionStats) => {
-      const s = computeResults(stats);
+      const quiz = active;
       setActive(null);
-      if (!s.total) {
+      setProgress(null);
+      const s = computeResults(stats);
+      if (!quiz || !s.total) {
         router.push("/");
         return;
       }
       const ts = Date.now();
       setResults({
-        mode: modeRef.current,
-        redrill: redrillRef.current,
+        mode: quiz.snapshot.mode,
+        redrill: quiz.redrill,
         ts,
         stats,
       });
@@ -104,8 +152,8 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       }
       const record: QuizSessionRecord = {
         ts,
-        mode: modeRef.current,
-        redrill: redrillRef.current,
+        mode: quiz.snapshot.mode,
+        redrill: quiz.redrill,
         total: s.total,
         forgivingPct: s.total ? Math.round((100 * s.forg) / s.total) : 0,
         strictPct: s.total ? Math.round((100 * s.strict) / s.total) : 0,
@@ -119,11 +167,12 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       }).catch(() => {});
       router.push("/results");
     },
-    [router],
+    [active, router],
   );
 
   const abandonQuiz = useCallback(() => {
     setActive(null);
+    setProgress(null);
   }, []);
 
   const viewStoredSession = useCallback(
@@ -176,12 +225,14 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     () => ({
       active,
       results,
+      progress,
+      setProgress,
       startQuiz,
       finishQuiz,
       abandonQuiz,
       viewStoredSession,
     }),
-    [active, results, startQuiz, finishQuiz, abandonQuiz, viewStoredSession],
+    [active, results, progress, startQuiz, finishQuiz, abandonQuiz, viewStoredSession],
   );
   return (
     <QuizSessionContext.Provider value={value}>

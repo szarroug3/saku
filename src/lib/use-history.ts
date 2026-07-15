@@ -25,6 +25,8 @@ export function useHistory() {
   }, []);
 
   useEffect(() => {
+    // Fetch-on-mount; state updates land after the awaited response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
 

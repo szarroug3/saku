@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { useQuizSession } from "@/lib/quiz-session";
 
@@ -15,29 +15,38 @@ const NAV: Array<{ href: string; label: string }> = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { active, abandonQuiz } = useQuizSession();
+  const { active, progress } = useQuizSession();
+
+  // Tab-switching never discards a running quiz; while one is active a
+  // "Current quiz" entry (with live progress) leads back to it.
+  const items = active
+    ? [
+        {
+          href: "/quiz",
+          label: (
+            <>
+              Current quiz
+              {progress ? (
+                <span className="ml-1.5 text-xs opacity-70">
+                  {progress.done}
+                  {progress.total !== null ? `/${progress.total}` : ""}
+                </span>
+              ) : null}
+            </>
+          ),
+        },
+        ...NAV,
+      ]
+    : NAV;
 
   return (
     <nav className="sticky top-6 flex w-[148px] flex-none flex-col gap-0.5 self-start">
-      {NAV.map(({ href, label }) => {
+      {items.map(({ href, label }) => {
         const sel = pathname === href;
         return (
           <Link
             key={href}
             href={href}
-            onClick={(e) => {
-              // Leaving a live quiz discards it — confirm first (legacy parity).
-              if (active) {
-                e.preventDefault();
-                if (
-                  confirm("Leave the current quiz? It won't be scored or saved.")
-                ) {
-                  abandonQuiz();
-                  router.push(href);
-                }
-              }
-            }}
             className={`rounded-lg px-3 py-[9px] text-left text-sm ${
               sel ? "bg-accent-bg text-accent" : "text-text-muted hover:bg-panel"
             }`}

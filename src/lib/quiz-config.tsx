@@ -74,6 +74,9 @@ export function QuizConfigProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // One-time localStorage hydration must run post-mount (SSR can't read it)
+    // and set state synchronously so the real cfg paints in the same pass.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCfg(loadConfig());
     setReady(true);
   }, []);

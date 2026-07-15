@@ -4,26 +4,72 @@
 
 import "server-only";
 
-import type { HistoryFile, QuizSessionRecord } from "@/types";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import path from "node:path";
 
-// TODO(agent:server): implement against history.json at process.cwd() root.
-// Same semantics as the Python: tolerate missing/corrupt file, cap 200
-// sessions, fold per-char aggregates on save, rebuild them on delete.
-// Write with JSON.stringify(hist, null, 1) to match the Python indent=1.
+import type { CharAggregate, HistoryFile, QuizSessionRecord } from "@/types";
 
-const TODO = () => new Error("TODO(agent:server): not implemented yet");
+const HISTORY_PATH = path.join(process.cwd(), "history.json");
+
+/** Mirrors Python `json.dump(hist, f, ensure_ascii=False, indent=1)` —
+ *  JSON.stringify never ascii-escapes, and neither writes a trailing newline. */
+function writeHistory(hist: HistoryFile): void {
+  writeFileSync(HISTORY_PATH, JSON.stringify(hist, null, 1), "utf-8");
+}
+
+function foldChar(
+  chars: Record<string, CharAggregate>,
+  c: string,
+  s: Partial<CharAggregate>,
+): void {
+  const agg = (chars[c] ??= { seen: 0, missed: 0, slow: 0 });
+  agg.seen += s.seen ?? 0;
+  agg.missed += s.missed ?? 0;
+  agg.slow += s.slow ?? 0;
+}
 
 export function loadHistory(): HistoryFile {
-  throw TODO();
+  if (existsSync(HISTORY_PATH)) {
+    try {
+      return JSON.parse(readFileSync(HISTORY_PATH, "utf-8")) as HistoryFile;
+    } catch {
+      // fall through — missing/corrupt file yields an empty history
+    }
+  }
+  return { sessions: [], chars: {} };
 }
 
+/** Append a session and fold its per-character stats into the aggregate. */
 export function saveSession(session: QuizSessionRecord): HistoryFile {
-  throw TODO();
+  const hist = loadHistory();
+  hist.sessions.push(session);
+  hist.sessions = hist.sessions.slice(-200);
+  for (const [c, s] of Object.entries(session.chars ?? {})) {
+    foldChar(hist.chars, c, s);
+  }
+  writeHistory(hist);
+  return hist;
 }
 
+/** Remove sessions (by ts) or everything, then rebuild the per-char aggregate. */
 export function deleteSessions(
   ids: number[] | null,
   deleteAll: boolean,
 ): HistoryFile {
-  throw TODO();
+  const hist = loadHistory();
+  if (deleteAll) {
+    hist.sessions = [];
+  } else {
+    const drop = new Set(ids ?? []);
+    hist.sessions = hist.sessions.filter((s) => !drop.has(s.ts));
+  }
+  const chars: Record<string, CharAggregate> = {};
+  for (const s of hist.sessions) {
+    for (const [c, st] of Object.entries(s.chars ?? {})) {
+      foldChar(chars, c, st);
+    }
+  }
+  hist.chars = chars;
+  writeHistory(hist);
+  return hist;
 }
