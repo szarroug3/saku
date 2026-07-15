@@ -15,7 +15,7 @@ import {
 } from "react";
 
 import { CHAR_INDEX } from "@/data/characters";
-import { BEHAVIOR } from "@/lib/config";
+import { JP_FONTS } from "@/lib/config";
 import type { QuizConfig } from "@/types";
 
 const STORAGE_KEY = "kanaquiz-cfg";
@@ -38,7 +38,7 @@ export function defaultConfig(): QuizConfig {
     showAnswer: true,
     scriptLabel: true,
     kanaPreview: true,
-    randomFont: BEHAVIOR.randomFont,
+    fonts: [...JP_FONTS],
     blurSubmit: false,
     voiceName: "",
     enabled,
@@ -48,7 +48,15 @@ export function defaultConfig(): QuizConfig {
 function loadConfig(): QuizConfig {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-    if (saved?.enabled) return { ...defaultConfig(), ...saved };
+    if (saved?.enabled) {
+      const cfg: QuizConfig = { ...defaultConfig(), ...saved };
+      // Migrate the pre-fonts shape: randomFont true → all fonts, false →
+      // just the first (the legacy app always rendered JP_FONTS[0] then).
+      if (!Array.isArray(cfg.fonts) || !cfg.fonts.length) {
+        cfg.fonts = saved.randomFont === false ? [JP_FONTS[0]] : [...JP_FONTS];
+      }
+      return cfg;
+    }
   } catch {
     // corrupt storage — fall through to defaults
   }

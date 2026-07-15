@@ -11,11 +11,11 @@ import { useQuizSession } from "@/lib/quiz-session";
 // useQuizSession().results (live or stored). See CONVERSION_PROMPT.md "Results".
 export default function ResultsPage() {
   const router = useRouter();
-  const { results } = useQuizSession();
+  const { results, restored } = useQuizSession();
 
   useEffect(() => {
-    if (!results) router.replace("/");
-  }, [results, router]);
+    if (restored && !results) router.replace("/");
+  }, [restored, results, router]);
   if (!results) return null;
 
   return <PageTitle title="Results" sub="Results screen coming up." />;

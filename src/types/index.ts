@@ -63,7 +63,8 @@ export interface QuizConfig {
   showAnswer: boolean;
   scriptLabel: boolean;
   kanaPreview: boolean;
-  randomFont: boolean;
+  /** JP fonts to draw from per card — more than one selected = randomized. */
+  fonts: string[];
   blurSubmit: boolean;
   voiceName: string;
   /** Per-character selection map: char → enabled. */

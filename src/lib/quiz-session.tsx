@@ -22,6 +22,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -74,6 +75,9 @@ export interface ResultsPayload {
 }
 
 interface QuizSessionContextValue {
+  /** False until the sessionStorage snapshot has been restored — screens
+   * must not redirect away from /quiz or /results before this is true. */
+  restored: boolean;
   /** Non-null while a quiz is in progress (even when on another tab). */
   active: ActiveQuiz | null;
   /** Non-null when /results has something to show. */
@@ -93,12 +97,61 @@ interface QuizSessionContextValue {
 
 const QuizSessionContext = createContext<QuizSessionContextValue | null>(null);
 
+/** Refresh survival: the whole session state (including the runtime scratch)
+ * is JSON-serializable and snapshotted to sessionStorage — restored on mount,
+ * saved on every state change and again at beforeunload so in-place runtime
+ * mutations (deck position, per-card states, remaining timer) are captured. */
+const STORAGE_KEY = "kanaquiz-session";
+
+interface StoredSession {
+  active: ActiveQuiz | null;
+  results: ResultsPayload | null;
+  progress: QuizProgress | null;
+}
+
 export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { cfg } = useQuizConfig();
   const [active, setActive] = useState<ActiveQuiz | null>(null);
   const [results, setResults] = useState<ResultsPayload | null>(null);
   const [progress, setProgress] = useState<QuizProgress | null>(null);
+  const [restored, setRestored] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved: StoredSession | null = JSON.parse(
+        sessionStorage.getItem(STORAGE_KEY) ?? "null",
+      );
+      if (saved) {
+        // Post-mount hydration, same pattern as quiz-config.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (saved.active) setActive(saved.active);
+        if (saved.results) setResults(saved.results);
+        if (saved.progress) setProgress(saved.progress);
+      }
+    } catch {
+      // corrupt snapshot — start clean
+    }
+    setRestored(true);
+  }, []);
+
+  useEffect(() => {
+    if (!restored) return;
+    const save = () => {
+      try {
+        sessionStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ active, results, progress } satisfies StoredSession),
+        );
+      } catch {
+        // storage full/unavailable — refresh survival degrades gracefully
+      }
+    };
+    save();
+    // beforeunload catches runtime mutations made since the last state change.
+    window.addEventListener("beforeunload", save);
+    return () => window.removeEventListener("beforeunload", save);
+  }, [active, results, progress, restored]);
 
   const startQuiz = useCallback(
     (chars: string[], opts?: { redrill?: boolean }) => {
@@ -223,6 +276,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
+      restored,
       active,
       results,
       progress,
@@ -232,7 +286,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       abandonQuiz,
       viewStoredSession,
     }),
-    [active, results, progress, startQuiz, finishQuiz, abandonQuiz, viewStoredSession],
+    [restored, active, results, progress, startQuiz, finishQuiz, abandonQuiz, viewStoredSession],
   );
   return (
     <QuizSessionContext.Provider value={value}>

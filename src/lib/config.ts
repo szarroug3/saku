@@ -12,12 +12,11 @@ export const BEHAVIOR = {
   mcOptions: 6,
   /** Pairs per match-the-pairs board. */
   pairsPerBoard: 8,
-  /** Random Japanese font per card (default for the setting). */
-  randomFont: true,
 } as const;
 
-/** Fonts installed on the machine — each card draws a random one so a single
- * typeface doesn't get memorized. */
+/** Fonts installed on the machine — the Settings page offers these as a
+ * multi-select; each card draws randomly from the SELECTED ones so a single
+ * typeface doesn't get memorized. Names must be installed fonts. */
 export const JP_FONTS = [
   "'Hiragino Sans'",
   "'Hiragino Mincho ProN'",
@@ -29,9 +28,14 @@ export const JP_FONTS = [
   "'Toppan Bunkyu Gothic'",
 ] as const;
 
-export function randomJpFont(enabled: boolean): string {
-  const font = enabled
-    ? JP_FONTS[Math.floor(Math.random() * JP_FONTS.length)]
-    : JP_FONTS[0];
-  return `${font}, sans-serif`;
+/** Random font from the user's selection (one selected = always that one;
+ * empty/unknown selection falls back to the first pool font). */
+export function pickFont(fonts: string[]): string {
+  const pool = fonts.length ? fonts : [JP_FONTS[0]];
+  return `${pool[Math.floor(Math.random() * pool.length)]}, sans-serif`;
+}
+
+/** Display name for a font pool entry ("'Hiragino Sans'" → "Hiragino Sans"). */
+export function fontLabel(font: string): string {
+  return font.replace(/^'|'$/g, "");
 }

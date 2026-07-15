@@ -14,12 +14,13 @@ import { useQuizSession } from "@/lib/quiz-session";
 // TODO(agent:pairs-grid): <PairsScreen /> and <GridScreen />
 export default function QuizPage() {
   const router = useRouter();
-  const { active } = useQuizSession();
+  const { active, restored } = useQuizSession();
 
-  // Landing here without a started quiz (refresh, deep link) → setup.
+  // Landing here with no quiz (deep link, or refresh with nothing stored) →
+  // setup. Wait for the sessionStorage restore so refreshes resume instead.
   useEffect(() => {
-    if (!active) router.replace("/");
-  }, [active, router]);
+    if (restored && !active) router.replace("/");
+  }, [restored, active, router]);
   if (!active) return null;
 
   switch (active.snapshot.mode) {
