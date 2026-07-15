@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* Palettes ported from legacy/theme.py — light/dark follow the system. */
+:root {
+  --bg: #faf9f5;
+  --card: #ffffff;
+  --panel: #f1efe8;
+  --text: #1a1a18;
+  --text-muted: #8a887f;
+  --border: #e3e1d9;
+  --accent: #2f6fad;
+  --accent-bg: #e6f1fb;
+  --danger: #b3382e;
+  --danger-bg: #fcebeb;
+  --success: #2f7d54;
+  --success-bg: #e9f4ec;
+  --warning: #8a5a0b;
+  --warning-bg: #faeeda;
+  --gcard: #2e7cc4;
+  --gcard-right: #3f9d4e;
+  --gcard-wrong: #9fb8cd;
+  --gcard-shake: #d64545;
+  --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1c;
+    --card: #2a2a27;
+    --panel: #33332f;
+    --text: #eceae4;
+    --text-muted: #95938a;
+    --border: #44443f;
+    --accent: #7fb2e3;
+    --accent-bg: #173754;
+    --danger: #e88a82;
+    --danger-bg: #4a1f1b;
+    --success: #8cc9a6;
+    --success-bg: #1d3d2b;
+    --warning: #e3b567;
+    --warning-bg: #453212;
+    --gcard: #2e6ea8;
+    --gcard-right: #3f8f4c;
+    --gcard-wrong: #46586b;
+    --gcard-shake: #b23c34;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-panel: var(--panel);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-bg: var(--accent-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-gcard: var(--gcard);
+  --color-gcard-right: var(--gcard-right);
+  --color-gcard-wrong: var(--gcard-wrong);
+  --color-gcard-shake: var(--gcard-shake);
+  --font-sans: var(--font-ui);
+  --animate-gshake: gshake 0.45s;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+}
+
+@keyframes gshake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}

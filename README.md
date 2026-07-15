@@ -1,42 +1,36 @@
-# Kana quiz
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Local quiz app for drilling hiragana + katakana mixed together. No internet,
-no dependencies — Python stdlib only.
+## Getting Started
 
-## Run it
+First, run the development server:
 
 ```bash
-cd ~/git/personal/obsidian/Daily/Tools/kana-quiz
-python3 kana_quiz.py
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Opens `http://127.0.0.1:8766` in the browser. Ctrl+C to stop.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Files
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-| File | What it is | Edit it to… |
-|------|-----------|-------------|
-| `kana_quiz.py` | The server | change the port |
-| `characters.py` | All character data | add kanji sets, vocab, new sections |
-| `theme.py` | Colors, fonts, behavior tuning | restyle everything, add fonts, change slow-answer threshold |
-| `app.html` | The app UI + logic | change screens/features |
-| `history.json` | Session results + per-character stats | (auto-written; delete to reset history) |
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Features (v1)
+## Learn More
 
-- Drill mode (type romaji or multiple choice) and match-pairs mode
-- Directions: JP→EN, EN→JP (multiple choice now; "type kana" ready for an IME), both at once
-- Endless, question count, or full coverage; misses re-queue within the round
-- Per-section and per-character selection with add all / remove all
-- Retries (none/limited/unlimited), timer (timeout costs a retry), show-answer toggle
-- Script label toggle, live romaji→kana preview, random Japanese font per card
-- Mid-drill settings drawer — changes apply instantly
-- Results: forgiving vs strict scoring (flip after the fact), miss counts per
-  character, slow-but-correct list, mix-up pattern detection, redrill button
-- Settings persist in the browser; sessions append to `history.json`
+To learn more about Next.js, take a look at the following resources:
 
-## Roadmap
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-- **v2:** write a word / write text (word sets in `characters.py` — Minna
-  lesson vocab), listen mode (browser Japanese TTS)
-- **v3:** stroke order + draw (KanjiVG stroke data; Japanese only)
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

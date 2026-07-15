@@ -1,0 +1,114 @@
+"use client";
+
+// Quiz configuration context — persisted to localStorage under
+// "kanaquiz-cfg", same key and shape as the legacy app so existing
+// selections survive the conversion.
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
+import { CHAR_INDEX } from "@/data/characters";
+import { BEHAVIOR } from "@/lib/config";
+import type { QuizConfig } from "@/types";
+
+const STORAGE_KEY = "kanaquiz-cfg";
+
+export function defaultConfig(): QuizConfig {
+  const enabled: Record<string, boolean> = {};
+  for (const c of Object.keys(CHAR_INDEX)) enabled[c] = true;
+  return {
+    mode: "drill",
+    dirs: { jp2en: true, en2jp: false },
+    styleJp2en: "typed",
+    styleEn2jp: "mc",
+    length: "endless",
+    limType: "cov",
+    limCount: 50,
+    retries: "lim",
+    retryN: 2,
+    timer: false,
+    timerSec: 10,
+    showAnswer: true,
+    scriptLabel: true,
+    kanaPreview: true,
+    randomFont: BEHAVIOR.randomFont,
+    blurSubmit: false,
+    voiceName: "",
+    enabled,
+  };
+}
+
+function loadConfig(): QuizConfig {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
+    if (saved?.enabled) return { ...defaultConfig(), ...saved };
+  } catch {
+    // corrupt storage — fall through to defaults
+  }
+  return defaultConfig();
+}
+
+interface QuizConfigContextValue {
+  cfg: QuizConfig;
+  /** Merge a partial update into the config and persist it. */
+  update(patch: Partial<QuizConfig>): void;
+  /** Functional update for enabled-map edits and other derived changes. */
+  set(fn: (prev: QuizConfig) => QuizConfig): void;
+  /** False during SSR/first paint, true once localStorage has been read. */
+  ready: boolean;
+}
+
+const QuizConfigContext = createContext<QuizConfigContextValue | null>(null);
+
+export function QuizConfigProvider({ children }: { children: ReactNode }) {
+  // Start from defaults on both server and client, then hydrate from
+  // localStorage after mount to avoid SSR/client markup mismatches.
+  const [cfg, setCfg] = useState<QuizConfig>(defaultConfig);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setCfg(loadConfig());
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (ready) localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+  }, [cfg, ready]);
+
+  const set = useCallback(
+    (fn: (prev: QuizConfig) => QuizConfig) => setCfg(fn),
+    [],
+  );
+  const update = useCallback(
+    (patch: Partial<QuizConfig>) => setCfg((prev) => ({ ...prev, ...patch })),
+    [],
+  );
+
+  const value = useMemo(
+    () => ({ cfg, update, set, ready }),
+    [cfg, update, set, ready],
+  );
+  return (
+    <QuizConfigContext.Provider value={value}>
+      {children}
+    </QuizConfigContext.Provider>
+  );
+}
+
+export function useQuizConfig(): QuizConfigContextValue {
+  const ctx = useContext(QuizConfigContext);
+  if (!ctx) throw new Error("useQuizConfig outside QuizConfigProvider");
+  return ctx;
+}
+
+/** Chars currently enabled in the picker. */
+export function selectedChars(cfg: QuizConfig): string[] {
+  return Object.keys(CHAR_INDEX).filter((c) => cfg.enabled[c]);
+}
