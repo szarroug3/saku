@@ -3,15 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { DrillScreen } from "@/components/quiz/drill-screen";
+import { GridScreen } from "@/components/quiz/grid-screen";
+import { PairsScreen } from "@/components/quiz/pairs-screen";
 import { useQuizSession } from "@/lib/quiz-session";
 
 // The active-quiz route: renders the screen for the quiz's SNAPSHOT mode
 // (never cfg.mode — changing Mode on Home mid-quiz must not flip a running
-// quiz). Mode screens are client components owned by the drill / pairs+grid
-// agents; they persist their state in active.runtime so leaving this route
-// and coming back resumes mid-question.
-// TODO(agent:drill): <DrillScreen />
-// TODO(agent:pairs-grid): <PairsScreen /> and <GridScreen />
+// quiz). Screens persist their state in active.runtime, so leaving this
+// route and coming back resumes mid-question.
 export default function QuizPage() {
   const router = useRouter();
   const { active, restored } = useQuizSession();
@@ -25,10 +25,10 @@ export default function QuizPage() {
 
   switch (active.snapshot.mode) {
     case "drill":
-      return <p className="text-text-muted">Drill screen coming up.</p>;
+      return <DrillScreen />;
     case "pairs":
-      return <p className="text-text-muted">Match pairs screen coming up.</p>;
+      return <PairsScreen />;
     case "grid":
-      return <p className="text-text-muted">Grid screen coming up.</p>;
+      return <GridScreen />;
   }
 }

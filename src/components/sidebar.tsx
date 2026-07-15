@@ -18,9 +18,10 @@ export function Sidebar() {
   const { active, progress } = useQuizSession();
 
   // Tab-switching never discards a running quiz; while one is active a
-  // "Current quiz" entry (with live progress) leads back to it.
+  // "Current quiz" entry (with live progress) sits right under Home.
   const items = active
     ? [
+        NAV[0],
         {
           href: "/quiz",
           label: (
@@ -35,7 +36,7 @@ export function Sidebar() {
             </>
           ),
         },
-        ...NAV,
+        ...NAV.slice(1),
       ]
     : NAV;
 

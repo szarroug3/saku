@@ -3,12 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { PageTitle } from "@/components/ui";
+import { ResultsView } from "@/components/results/results-view";
 import { useQuizSession } from "@/lib/quiz-session";
 
-// TODO(agent:results): forgiving/strict toggle, metric cards, missed / slow /
-// mix-up lists, redrill / again / setup buttons. Data comes from
-// useQuizSession().results (live or stored). See CONVERSION_PROMPT.md "Results".
 export default function ResultsPage() {
   const router = useRouter();
   const { results, restored } = useQuizSession();
@@ -18,5 +15,7 @@ export default function ResultsPage() {
   }, [restored, results, router]);
   if (!results) return null;
 
-  return <PageTitle title="Results" sub="Results screen coming up." />;
+  // Keyed by ts so reopening a different stored session resets the
+  // forgiving/strict toggle and the mount-time "recent" timestamp check.
+  return <ResultsView key={results.ts} results={results} />;
 }
