@@ -2,14 +2,21 @@
 // deck rings, the character picker circles — reads through here, so the number
 // always means the same thing.
 //
-// Two denominators exist and must not be mixed (the legacy app mixed them and
-// produced negative accuracies):
-//   seen    = times a character was SHOWN as a question
-//   missed  = wrong ATTEMPTS; one showing can produce several
+// Both metrics count SHOWINGS and divide by the same denominator — only the
+// numerator differs, so the two numbers are directly comparable:
+//   seen     = times a character was SHOWN as a question
 //   firstTry = showings answered right on the first attempt
+//   correct  = showings answered right at all (first try or after retries)
+//   missed   = wrong ATTEMPTS; one showing can produce several. Never a
+//              denominator — mixing units is what made the legacy app print
+//              negative accuracies.
 //
-//   strict    = firstTry / seen          — "nailed it immediately"
-//   forgiving = seen / (seen + missed)   — "share of attempts correct"
+//   strict    = firstTry / seen   — "how often did you nail it immediately"
+//   forgiving = correct  / seen   — "how often did you get it at all"
+//
+// A showing that ended without a correct answer (quiz ended early, grid card
+// left blank) scores 0 under both. The old forgiving formula,
+// seen / (seen + missed), reported that same never-answered showing as 100%.
 
 import type { AccuracyMetric, CharAggregate, HistoryFile } from "@/types";
 
@@ -18,6 +25,7 @@ export const EMPTY_AGGREGATE: CharAggregate = {
   missed: 0,
   slow: 0,
   firstTry: 0,
+  correct: 0,
 };
 
 /** Sum aggregates over a set of characters. */
@@ -33,6 +41,7 @@ export function totalFor(
     total.missed += a.missed;
     total.slow += a.slow;
     total.firstTry += a.firstTry ?? 0;
+    total.correct += a.correct ?? 0;
   }
   return total;
 }
@@ -45,8 +54,8 @@ export function accuracyOf(
   if (!agg.seen) return null;
   const ratio =
     metric === "firstTry"
-      ? agg.firstTry / agg.seen
-      : agg.seen / (agg.seen + agg.missed);
+      ? (agg.firstTry ?? 0) / agg.seen
+      : (agg.correct ?? 0) / agg.seen;
   return Math.max(0, Math.min(100, Math.round(100 * ratio)));
 }
 

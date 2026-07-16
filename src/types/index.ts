@@ -108,8 +108,16 @@ export interface QuizConfig {
 export interface CharSessionDetail {
   seen: number;
   misses: number;
+  /** Did you land it at ALL this session — a yes/no over the whole run, which
+   * the results boards ask ("never got it"). Not the same question as
+   * `correct`, which counts how many of the showings you landed. */
   everCorrect: boolean;
   firstTryCorrect: boolean | null;
+  /**
+   * SHOWINGS answered correctly this session — folds into CharAggregate.correct
+   * and so into forgiving accuracy. Not the same question as `everCorrect`.
+   */
+  correct: number;
   slow: number;
   /** other char → times confused with it */
   confused: Record<string, number>;
@@ -119,15 +127,35 @@ export type SessionStats = Record<string, CharSessionDetail>;
 
 // ---------- history.json shapes (must match legacy exactly) ----------
 
+/**
+ * Per-character totals. Two units live here and must not be confused:
+ * `seen`, `firstTry` and `correct` count SHOWINGS (a character put on screen
+ * as a question), while `missed` counts ATTEMPTS (one showing can produce
+ * several, so `missed` may exceed `seen`).
+ *
+ * Both accuracies divide by `seen`, so they answer the same question about the
+ * same population and only differ in what counts as a pass:
+ *   strict    = firstTry / seen
+ *   forgiving = correct  / seen
+ */
 export interface CharAggregate {
-  /** Times the character was shown as a question. */
+  /** Times the character was shown as a question. SHOWINGS. */
   seen: number;
   /** Wrong ATTEMPTS — can exceed `seen`, since one showing allows retries. */
   missed: number;
   slow: number;
-  /** Times answered correctly on the first attempt. `firstTry / seen` is the
-   * strict accuracy; `seen / (seen + missed)` is the forgiving one. */
+  /** SHOWINGS answered correctly on the first attempt — the strict numerator. */
   firstTry: number;
+  /**
+   * SHOWINGS that ended in a correct answer, first try or after retries — the
+   * forgiving numerator. A showing that ended with no correct answer (you ran
+   * out of retries, ended the quiz early, or left a grid card blank) counts 0,
+   * so it reads as never right rather than as a pass. The forgiving metric used
+   * to be `seen / (seen + missed)`, which scored an unanswered showing 100%.
+   * Absent on aggregates written before this field existed — read as
+   * `correct ?? 0`, the way `firstTry` is guarded.
+   */
+  correct: number;
 }
 
 export interface QuizSessionRecord {

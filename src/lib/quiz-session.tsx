@@ -260,6 +260,20 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
           // Folded into the aggregate so strict accuracy survives without
           // having to re-read every session's detail.
           firstTry: stats[c].firstTryCorrect === true ? 1 : 0,
+          // Showings that ended right — the forgiving numerator. A showing
+          // nobody answered contributes 0, which is the point: it is not a pass.
+          //
+          // TEMPORARY BRIDGE: grid and pairs don't increment detail.correct
+          // yet, so a landed character arrives here as correct: 0. Fall back to
+          // everCorrect, which collapses a session to at most one correct
+          // showing — coarse, but it never calls an unanswered character right.
+          //
+          // `||`, NOT `??`: newCharStat initialises correct to 0, so the
+          // nullish operator would never fire and every grid/pairs character
+          // would score 0% forgiving. The only case `||` gets wrong is a real
+          // 0 with everCorrect true, which can't happen — landing a card
+          // increments both. Delete this once both screens keep the counter.
+          correct: stats[c].correct || (stats[c].everCorrect ? 1 : 0),
         };
       }
       const record: QuizSessionRecord = {
@@ -298,6 +312,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
           misses: 0,
           everCorrect: false,
           firstTryCorrect: null,
+          correct: 0,
           slow: 0,
           confused: {},
         };
@@ -305,13 +320,16 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
           stats[c] = { ...empty, ...d };
         }
       } else {
-        // Older sessions only stored aggregates — approximate a view.
+        // Older sessions only stored aggregates — approximate a view. The
+        // aggregate DOES know how many showings were landed, so `correct` is
+        // real here rather than synthesized like everCorrect below.
         for (const [c, a] of Object.entries(record.chars ?? {})) {
           stats[c] = {
             seen: a.seen,
             misses: a.missed,
             everCorrect: a.missed === 0 && record.forgivingPct === 100,
             firstTryCorrect: null,
+            correct: a.correct ?? 0,
             slow: a.slow,
             confused: {},
           };

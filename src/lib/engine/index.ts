@@ -136,6 +136,10 @@ export function newCharStat(): CharSessionDetail {
     misses: 0,
     everCorrect: false,
     firstTryCorrect: null,
+    // Showings answered right. everCorrect asks "did you EVER get it" (a
+    // yes/no over the run); this counts how many of the showings you landed,
+    // and is the forgiving numerator — see src/lib/accuracy.ts.
+    correct: 0,
     slow: 0,
     confused: {},
   };

@@ -22,11 +22,18 @@ function foldChar(
   c: string,
   s: Partial<CharAggregate>,
 ): void {
-  const agg = (chars[c] ??= { seen: 0, missed: 0, slow: 0, firstTry: 0 });
+  const agg = (chars[c] ??= {
+    seen: 0,
+    missed: 0,
+    slow: 0,
+    firstTry: 0,
+    correct: 0,
+  });
   agg.seen += s.seen ?? 0;
   agg.missed += s.missed ?? 0;
   agg.slow += s.slow ?? 0;
   agg.firstTry += s.firstTry ?? 0;
+  agg.correct += s.correct ?? 0;
 }
 
 export function loadHistory(): HistoryFile {

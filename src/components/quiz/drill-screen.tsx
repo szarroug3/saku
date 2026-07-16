@@ -192,10 +192,10 @@ function Pill({
 }
 
 /** Live session accuracy, on exactly the terms src/lib/accuracy.ts defines:
- * strict = first-try-correct showings / showings, forgiving = showings /
- * (showings + wrong attempts). Characters that have never been answered are
- * left out, so the card currently on screen can't drag the number down
- * before it's been attempted. */
+ * strict = first-try-correct showings / showings, forgiving = correct showings
+ * / showings. Characters that have never been answered are left out, so the
+ * card currently on screen can't drag the number down before it's been
+ * attempted. */
 function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | null {
   const agg = { ...EMPTY_AGGREGATE };
   for (const st of Object.values(stats)) {
@@ -203,6 +203,7 @@ function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | nul
     agg.seen += st.seen;
     agg.missed += st.misses;
     agg.firstTry += st.firstTryCorrect === true ? 1 : 0;
+    agg.correct += st.correct ?? 0;
   }
   return accuracyOf(agg, metric);
 }
@@ -368,6 +369,10 @@ export function DrillScreen() {
       // zeroed it, so getting there on the retry doesn't restore it.
       if (q.tries === 0) rt.streak = (rt.streak ?? 0) + 1;
       st.everCorrect = true;
+      // This showing ended right — the forgiving numerator. `?? 0` because
+      // engine.newCharStat() doesn't initialise the field yet, and because a
+      // runtime resumed from before it existed won't have it either.
+      st.correct = (st.correct ?? 0) + 1;
       // "Slow" is a hesitation relative to YOUR OWN recent latencies, judged
       // only on a clean first try: fumbling a retry says you didn't know it,
       // which the miss already records — it isn't a speed fact. A timeout is
