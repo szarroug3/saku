@@ -9,16 +9,52 @@
 // unmount/remount and refresh both resume exactly. The 450ms mismatch
 // flash is transient component state; the 500ms board-advance timeout is
 // re-armed on remount when the all-matched condition still holds.
+//
+// The view (see pairs-hud.tsx): the drill's language on a board. Quiet pills
+// that only speak when they have something true to say, a 2px hairline, and
+// End quiz at 22% until you reach for it. There is no prose — the mismatch
+// flash below is this screen's halo pulse, and it says the same thing the
+// halo's red does, in the same 450ms, without a sentence.
 
 import { useEffect, useRef, useState } from "react";
 
-import { Card, Hint, ProgressBar, SmallBtn } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { buildDeck, newCharStat, shuffle } from "@/lib/engine";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import type { CharSessionDetail, QuizConfig, SessionStats } from "@/types";
+
+import { PairsHud } from "./pairs-hud";
+
+// ---------- the mismatch flash ----------
+
+// Pairs' equivalent of the halo's wrong pulse: the two cells shake (the same
+// `gshake` the halo and the grid cards use, from globals.css) while a danger
+// ring blooms out of them and decays. Deliberate, one beat long, and gone —
+// the board is never left wearing it.
+//
+// Every colour is a token, so all four themes work, and reduced motion drops
+// both animations: the danger border and fill the cells already carry stand
+// on their own for the flash's 450ms.
+const PAIRS_CSS = `
+@keyframes kq-pairs-miss {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent),
+      0 0 16px color-mix(in srgb, var(--danger) 40%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 7px transparent, 0 0 16px transparent;
+  }
+}
+.kq-pairs-miss {
+  animation: gshake 450ms, kq-pairs-miss 450ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kq-pairs-miss { animation: none !important; }
+}
+`;
 
 // ---------- runtime (lives in active.runtime.pairs) ----------
 
@@ -44,6 +80,14 @@ interface PairsRuntime {
   board: PairsCell[];
   /** Index into board of the currently picked cell, if any. */
   pick: number | null;
+  /** Pairs matched FIRST TRY, in a row; a mismatch puts it back to 0, exactly
+   * as the drill's does. */
+  streak: number;
+  /** Kana ids that have been mismatched on THIS board — the pair can still be
+   * matched, but not first try, so it no longer extends the streak. Cleared
+   * with every new board (the chars get a clean run at it again in endless),
+   * and it is the kana side because that is the side the miss lands on. */
+  dirty: string[];
 }
 
 function statFor(stats: SessionStats, c: string): CharSessionDetail {
@@ -57,6 +101,7 @@ function statFor(stats: SessionStats, c: string): CharSessionDetail {
  */
 function fillBoard(p: PairsRuntime, chars: string[], fonts: string[]): boolean {
   p.pick = null;
+  p.dirty = [];
   if (p.pos >= p.deck.length) {
     if (p.endless) p.deck = p.deck.concat(shuffle(chars.slice()));
     else return false;
@@ -108,6 +153,8 @@ function initPairs(active: ActiveQuiz, cfg: QuizConfig): PairsRuntime {
     stats: {},
     board: [],
     pick: null,
+    streak: 0,
+    dirty: [],
   };
   fillBoard(p, active.chars, cfg.fonts); // deck is non-empty — always fills
   return p;
@@ -116,7 +163,11 @@ function initPairs(active: ActiveQuiz, cfg: QuizConfig): PairsRuntime {
 /** Get (or lazily create) the pairs runtime inside active.runtime. */
 function ensureRuntime(active: ActiveQuiz, cfg: QuizConfig): PairsRuntime {
   const rt = active.runtime as { pairs?: PairsRuntime };
-  return (rt.pairs ??= initPairs(active, cfg));
+  const p = (rt.pairs ??= initPairs(active, cfg));
+  // Resuming a runtime written before the streak existed.
+  if (typeof p.streak !== "number") p.streak = 0;
+  if (!Array.isArray(p.dirty)) p.dirty = [];
+  return p;
 }
 
 type PickResult =
@@ -151,6 +202,10 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
     const st = statFor(p.stats, cell.id);
     st.everCorrect = true;
     if (st.firstTryCorrect === null) st.firstTryCorrect = st.misses === 0;
+    // Only a pair that was never mismatched on this board extends the streak
+    // — a mismatch below has already zeroed it, so finding it afterwards
+    // doesn't restore it.
+    if (!p.dirty.includes(cell.id)) p.streak++;
     first.gone = true;
     cell.gone = true;
     return { kind: "matched", boardDone: p.board.every((x) => x.gone) };
@@ -161,6 +216,8 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
   const st = statFor(p.stats, kana.id);
   st.misses++;
   st.confused[other.id] = (st.confused[other.id] ?? 0) + 1;
+  p.streak = 0;
+  if (!p.dirty.includes(kana.id)) p.dirty.push(kana.id);
   return { kind: "mismatch", flash: [firstIdx, i] };
 }
 
@@ -233,26 +290,23 @@ export function PairsScreen() {
 
   if (!active || !p) return null;
 
-
-  const pct =
-    total === null ? null : Math.min(100, Math.round((100 * asked) / total));
-
   return (
     <div>
-      <div className="sticky top-0 z-10 mb-2.5 flex flex-wrap items-center justify-between gap-2 bg-bg py-2">
-        <span className="text-xs text-text-muted">
-          {total !== null
-            ? `${asked} / ${total} characters`
-            : `${asked} characters · endless`}
-        </span>
-        <SmallBtn onClick={() => finishQuiz(p.stats)}>End quiz</SmallBtn>
-      </div>
-      <ProgressBar pct={pct} />
-      <Card>
-        <p className="mb-1 text-center">
-          <Hint>Match each character with its reading</Hint>
-        </p>
-        <div className="mt-2.5 grid grid-cols-4 gap-2">
+      <style>{PAIRS_CSS}</style>
+      <PairsHud
+        asked={asked}
+        total={total}
+        stats={p.stats}
+        streak={p.streak}
+        onEnd={() => finishQuiz(p.stats)}
+      />
+
+      {/* The board is the stage, the way the halo is drill's: it stands on the
+          page rather than inside a card. The cells keep `rounded-lg`+`bg-card`
+          — the theme hook that earns them kiri's glass and momentum's shelf —
+          and there are sixteen of them, not a hundred, so the blur is cheap. */}
+      <div className="flex flex-col items-center pt-8 pb-4">
+        <div className="grid w-full max-w-[430px] grid-cols-4 gap-2.5">
           {p.board.map((cell, i) => {
             const bad = flash.includes(i);
             const picked = p.pick === i;
@@ -262,14 +316,17 @@ export function PairsScreen() {
                 onClick={() => pick(i)}
                 style={cell.kind === "kana" ? { fontFamily: cell.font } : undefined}
                 className={[
-                  "cursor-pointer rounded-lg px-1 py-3.5 text-[20px] text-text",
+                  "cursor-pointer rounded-lg px-1 py-4 text-xl",
+                  "transition-[opacity,background-color,border-color] duration-300",
                   cell.gone
-                    ? "pointer-events-none border border-border bg-card opacity-[0.18]"
+                    ? // Matched: it fades out rather than vanishing, and stops
+                      // being a target the instant it's spent.
+                      "pointer-events-none border border-border bg-card text-text opacity-[0.18]"
                     : bad
-                      ? "border border-danger bg-danger-bg"
+                      ? "kq-pairs-miss border border-danger bg-danger-bg text-danger"
                       : picked
-                        ? "border-2 border-accent bg-accent-bg"
-                        : "border border-border bg-card hover:bg-panel",
+                        ? "border-2 border-accent bg-accent-bg text-accent"
+                        : "border border-border bg-card text-text hover:bg-panel",
                 ].join(" ")}
               >
                 {cell.label}
@@ -277,7 +334,7 @@ export function PairsScreen() {
             );
           })}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

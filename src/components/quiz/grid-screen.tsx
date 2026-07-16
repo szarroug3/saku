@@ -9,14 +9,19 @@
 //
 // All resumable state lives in active.runtime.grid (a plain mutable,
 // JSON-serializable object) and is written AS IT CHANGES — card order,
-// input text, per-card {value, state, tries} — so tab-switch and refresh
-// resume exactly. The shake is transient component state; the pending
+// input text, per-card {value, state, tries}, the streak — so tab-switch and
+// refresh resume exactly. The shake is transient component state; the pending
 // finish timeout is re-armed on remount when all cards are resolved.
 // Retries, show-answer, fonts, and blur-submit read live from config.
+//
+// The view (see grid-hud.tsx): the drill's language on a sheet. Quiet pills
+// that only speak when they have something true to say, a 2px hairline, and
+// Finish quiet at 22% until you reach for it. There is no prose: a card is
+// green or it shook, which is the whole message, and the retry counter that
+// couldn't fit per-card is already spoken by the colour a card settles into.
 
 import { useEffect, useRef, useState } from "react";
 
-import { Hint, ProgressBar, SmallBtn } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
 import { pickFont } from "@/lib/config";
 import {
@@ -29,6 +34,8 @@ import {
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import type { QuizConfig, SessionStats } from "@/types";
+
+import { GridHud } from "./grid-hud";
 
 // ---------- runtime (lives in active.runtime.grid) ----------
 
@@ -47,6 +54,10 @@ interface GridRuntime {
   /** Card order — shuffled ONCE at init. */
   order: string[];
   cards: Record<string, GridCard>;
+  /** Cards answered right on the FIRST try, in a row; any miss puts it back
+   * to 0, exactly as the drill's does. In the runtime rather than React
+   * state, so it survives a tab switch and a refresh like everything else. */
+  streak: number;
   stats: SessionStats;
 }
 
@@ -59,13 +70,16 @@ function initGrid(chars: string[], fonts: string[]): GridRuntime {
     stats[c].seen++;
     cards[c] = { value: "", state: "open", tries: 0, font: pickFont(fonts) };
   }
-  return { order, cards, stats };
+  return { order, cards, streak: 0, stats };
 }
 
 /** Get (or lazily create) the grid runtime inside active.runtime. */
 function ensureRuntime(active: ActiveQuiz, fonts: string[]): GridRuntime {
   const rt = active.runtime as { grid?: GridRuntime };
-  return (rt.grid ??= initGrid(active.chars, fonts));
+  const g = (rt.grid ??= initGrid(active.chars, fonts));
+  // Resuming a runtime written before the streak existed.
+  if (typeof g.streak !== "number") g.streak = 0;
+  return g;
 }
 
 function setCardValue(g: GridRuntime, c: string, value: string): void {
@@ -87,10 +101,14 @@ function checkCard(g: GridRuntime, c: string, cfg: QuizConfig): CheckOutcome {
   const ok = checkTyped(c, card.value);
   if (st.firstTryCorrect === null) st.firstTryCorrect = ok;
   if (ok) {
+    // Only a clean first try extends the streak — a miss below has already
+    // zeroed it, so getting there on the retry doesn't restore it.
+    if (card.tries === 0) g.streak++;
     st.everCorrect = true;
     card.state = "right";
     return "right";
   }
+  g.streak = 0;
   st.misses++;
   card.tries++;
   const match = confusedWith(c, v);
@@ -205,23 +223,19 @@ export function GridScreen() {
 
   if (!active || !g) return null;
 
-
   return (
     <div>
-      <div className="sticky top-0 z-10 mb-2.5 flex flex-wrap items-center justify-between gap-2 bg-bg py-2">
-        <span className="text-xs text-text-muted">
-          {done} / {total} correct
-        </span>
-        <SmallBtn onClick={() => finishQuiz(g.stats)}>Finish quiz</SmallBtn>
-      </div>
-      <ProgressBar pct={total ? Math.round((100 * done) / total) : 0} />
-      <p className="mb-3 text-center">
-        <Hint>
-          Type the romaji in any card · Enter to check · retry wrong ones as
-          many times as you like
-        </Hint>
-      </p>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2.5">
+      <GridHud
+        done={done}
+        total={total}
+        stats={g.stats}
+        streak={g.streak}
+        onFinish={() => finishQuiz(g.stats)}
+      />
+      {/* The cards. `rounded-xl` + `bg-gcard*` are theme hooks (globals.css):
+          they carry kiri's cheap inset highlight and, crucially, keep these
+          hundred-odd cards OUT of its backdrop-filter rule. No blur here. */}
+      <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2.5">
         {g.order.map((c) => {
           const card = g.cards[c];
           const bg = shaking[c]
@@ -236,8 +250,11 @@ export function GridScreen() {
               key={c}
               className={`rounded-xl px-2 pb-2.5 pt-3 text-center transition-colors duration-[250ms] ${bg}`}
             >
+              {/* --primary-foreground is the token for type on a filled
+                  accent surface, which is exactly what a gcard is: every
+                  theme paints --gcard* saturated and mid-dark for this. */}
               <span
-                className="mb-2 block text-[30px] leading-[1.2] text-white"
+                className="mb-2 block text-[30px] leading-[1.2] text-primary-foreground"
                 style={{ fontFamily: card.font }}
               >
                 {c}
@@ -268,7 +285,11 @@ export function GridScreen() {
                     // blurSubmit is read at blur time, live from config.
                     if (cfg.blurSubmit) check(c, true);
                   }}
-                  className="w-full rounded-md border-none bg-black/50 px-1 py-1.5 text-center text-sm text-white disabled:opacity-90"
+                  // bg-black/50 is a scrim, not a colour: it deepens whatever
+                  // --gcard* the card is currently wearing so the field reads
+                  // as a well in it. Neutral by design — a palette token here
+                  // would fight the fill it sits on.
+                  className="w-full rounded-md border-none bg-black/50 px-1 py-1.5 text-center text-sm text-primary-foreground disabled:opacity-90"
                 />
               </form>
             </div>
