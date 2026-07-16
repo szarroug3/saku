@@ -33,19 +33,9 @@ export function useHistory() {
   return { history, loaded, refresh };
 }
 
-/** Accuracy % over a group of chars from the aggregates, or null if unseen. */
-export function accuracyFor(
-  history: HistoryFile,
-  chars: string[],
-): number | null {
-  let seen = 0;
-  let missed = 0;
-  for (const c of chars) {
-    const a = history.chars[c];
-    if (a) {
-      seen += a.seen;
-      missed += a.missed;
-    }
-  }
-  return seen ? Math.max(0, Math.round((100 * (seen - missed)) / seen)) : null;
-}
+/** Accuracy % over a group of chars under `metric`, or null if unseen.
+ *
+ * Re-exported, not reimplemented: src/lib/accuracy.ts is the one definition of
+ * what these numbers mean, and the old local copy here mixed the two
+ * denominators. Screens already holding a history can keep the single import. */
+export { accuracyFor } from "@/lib/accuracy";

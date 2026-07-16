@@ -12,6 +12,9 @@ export const BEHAVIOR = {
   mcOptions: 6,
   /** Pairs per match-the-pairs board. */
   pairsPerBoard: 8,
+  /** First-try-correct in a row before the streak pill appears at all — below
+   * this it isn't a streak yet, and "🔥 0" reports a failure as a stat. */
+  streakMin: 3,
 } as const;
 
 /** Fonts installed on the machine — the Settings page offers these as a

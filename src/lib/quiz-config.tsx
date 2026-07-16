@@ -37,10 +37,17 @@ export function defaultConfig(): QuizConfig {
     timerSec: 10,
     showAnswer: true,
     scriptLabel: true,
-    kanaPreview: true,
     fonts: [...JP_FONTS],
     blurSubmit: false,
     voiceName: "",
+    accuracyMetric: "firstTry",
+    showVolume: true,
+    graduateRuns: 10,
+    slowFloorMs: 1500,
+    showStreak: true,
+    showAccuracy: true,
+    showRetryPips: true,
+    fadeControls: true,
     enabled,
   };
 }
