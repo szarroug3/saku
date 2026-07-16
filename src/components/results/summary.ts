@@ -87,6 +87,9 @@ export interface RunFacts {
   totalMisses: number;
   /** The ring, through accuracy.ts. */
   pct: number | null;
+  /** Set for a stored session that kept percentages and no detail. Everything
+   * per-character below it is inference; these two numbers are fact. */
+  stored?: { forgivingPct: number; strictPct: number };
   /** Characters that count as missed under `metric`, worst first. */
   missed: string[];
   /** Right, but at least once over BEHAVIOR.slowAnswerMs. */
@@ -105,18 +108,30 @@ export interface RunFacts {
  * pick the same characters and the toggle would be decoration. The forgiving
  * reading here is the one computeResults() itself uses for its forgiving count
  * (`everCorrect`) and the one the chip promises: you got there in the end.
- *
- * A summary-only session has no first-try data at all (firstTryCorrect is null
- * for every character), so it reads misses instead under both chips rather than
- * declaring a whole stored session missed.
  */
-function isMissed(
-  st: CharSessionDetail,
-  metric: AccuracyMetric,
-  summaryOnly: boolean,
-): boolean {
-  if (summaryOnly) return st.misses > 0 || !st.everCorrect;
+function isMissed(st: CharSessionDetail, metric: AccuracyMetric): boolean {
   return metric === "firstTry" ? st.firstTryCorrect !== true : !st.everCorrect;
+}
+
+/**
+ * The per-character detail this screen is allowed to believe.
+ *
+ * A summary-only session never stored any: quiz-session's viewStoredSession
+ * SYNTHESIZES `everCorrect` from the session's overall percentage (so every
+ * character of an 88% session claims it was never landed) and leaves
+ * `firstTryCorrect` null (so every character claims it wasn't first try).
+ * Both are artefacts. Wrong ATTEMPTS are real — they come from the stored
+ * aggregate — so misses are all we let the screen read, and the rest is
+ * normalised to "we don't know of a problem" rather than shown as a board of
+ * red "never" cells for a session that went fine.
+ */
+export function readableStats(results: ResultsPayload): SessionStats {
+  if (!results.summaryOnly) return results.stats;
+  const out: SessionStats = {};
+  for (const [c, st] of Object.entries(results.stats)) {
+    out[c] = { ...st, everCorrect: true, firstTryCorrect: !st.misses };
+  }
+  return out;
 }
 
 /** This run as a CharAggregate, built exactly as quiz-session writes it to
@@ -137,12 +152,12 @@ export function deriveRun(
   results: ResultsPayload,
   metric: AccuracyMetric,
 ): RunFacts {
-  const { stats, summaryOnly } = results;
+  const { summaryOnly } = results;
+  const stats = readableStats(results);
   const r = computeResults(stats);
-  const summary = !!summaryOnly;
 
   const missed = r.chars
-    .filter((c) => isMissed(stats[c], metric, summary))
+    .filter((c) => isMissed(stats[c], metric))
     // Worst first, the order engine.missedChars() uses; a character you never
     // landed leads its miss-count group, since not knowing beats fumbling.
     .sort(
@@ -171,6 +186,7 @@ export function deriveRun(
         ? summaryOnly.strictPct
         : summaryOnly.forgivingPct
       : accuracyOf(runAggregate(stats), metric),
+    stored: summaryOnly,
     missed,
     slowOnly,
     needsWork,
@@ -328,7 +344,11 @@ function countBits(facts: RunFacts, progress: PairRow[]): Bit[] {
   const got = facts.metric === "firstTry" ? facts.firstTry : facts.eventually;
   const beaten = progress.length;
   return [
-    { t: `${got} / ${facts.total} ${metricWords(facts.metric)}` },
+    // A stored session counted nothing per character, so "0 / 12 first try"
+    // would be an invention. Report the two percentages it did keep.
+    facts.stored
+      ? { t: `${facts.stored.strictPct}% first try · ${facts.stored.forgivingPct}% eventually right` }
+      : { t: `${got} / ${facts.total} ${metricWords(facts.metric)}` },
     ...(facts.slowEvents
       ? [{ t: ` · ${facts.slowEvents} slow but right` }]
       : []),

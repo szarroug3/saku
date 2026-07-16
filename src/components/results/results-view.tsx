@@ -20,6 +20,7 @@ import { PatternSection } from "@/components/results/pattern-rows";
 import {
   deriveRun,
   historyBefore,
+  readableStats,
   summarize,
   type Bit,
 } from "@/components/results/summary";
@@ -97,8 +98,11 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   // finish screen; anything older (reopened sessions) shows the full date.
   const [recent] = useState(() => Date.now() - results.ts < 60_000);
 
-  const { stats, summaryOnly } = results;
+  const { summaryOnly } = results;
   const graduateRuns = cfg.graduateRuns;
+  // One normalisation, so nothing downstream has to remember that a stored
+  // session's per-character detail is largely synthesized.
+  const stats = useMemo(() => readableStats(results), [results]);
 
   // History as it was BEFORE this run — the session is POSTed the moment it
   // finishes, and a run must not be part of the history that judges it.
