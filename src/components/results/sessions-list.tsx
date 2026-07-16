@@ -1,16 +1,45 @@
 "use client";
 
-// Recent-sessions list: newest first, a selection dot per row for bulk
-// deletion, a per-row × for single deletion, and click-to-reopen through
-// viewStoredSession. Deletion posts to /api/delete and refetches history
-// (the server rebuilds the per-character aggregates).
+// Recent sessions — newest first, one row per finished quiz.
+//
+// The row IS the record: click it to reopen those results (viewStoredSession
+// rebuilds the screen from the stored detail, or from the aggregates for
+// sessions saved before detail existed). The two controls that must NOT do
+// that — the selection dot and the × — stop the click before it reaches the
+// row, which is the whole interaction model of this screen.
+//
+// Deletion posts to /api/delete and refetches rather than patching state
+// locally: the server rebuilds the per-character aggregates from the surviving
+// sessions, so the history it returns is the only trustworthy copy.
+//
+// Styled as deck-card rows (the same border/bg-card/12px tiles Home's shelves
+// are built from) so this reads as a screen of the same app, not a table.
 
 import { useState } from "react";
 
-import { Card, Hint, SmallBtn } from "@/components/ui";
+import { plural } from "@/components/home/deck-card";
+import { Hint, SmallBtn } from "@/components/ui";
+import { formatAccuracy } from "@/lib/accuracy";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
 import type { QuizSessionRecord } from "@/types";
+
+function cx(...parts: Array<string | false | null | undefined>): string {
+  return parts.filter(Boolean).join(" ");
+}
+
+/** Enter/Space on a div that behaves as a control — the row and the dot are
+ * both clickable-but-not-buttons (a row contains buttons; a button can't). */
+function activates(
+  e: React.KeyboardEvent,
+  run: () => void,
+  stop = false,
+): void {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  e.preventDefault();
+  if (stop) e.stopPropagation();
+  run();
+}
 
 function SessionRow({
   record,
@@ -26,51 +55,102 @@ function SessionRow({
   onDelete: () => void;
 }) {
   const d = new Date(record.ts);
+  const when = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  })}`;
+
   return (
     <div
+      role="button"
+      tabIndex={0}
       title="Open this session's results"
       onClick={onOpen}
-      className={`mb-0.5 flex cursor-pointer flex-wrap items-center justify-between gap-2 rounded-lg px-3.5 py-2 text-[13px] text-text-muted ${
-        selected ? "bg-accent-bg" : "hover:bg-panel"
-      }`}
+      onKeyDown={(e) => activates(e, onOpen)}
+      className={cx(
+        "flex cursor-pointer flex-wrap items-center justify-between gap-x-3 gap-y-1",
+        "rounded-[12px] border p-3 text-[13px]",
+        selected
+          ? "border-accent/40 bg-accent-bg"
+          : "border-border bg-card hover:border-accent/40",
+      )}
     >
-      <span className="flex items-center gap-2.5">
+      <span className="flex min-w-0 items-center gap-2.5">
+        {/* 10px dot, 20px hit target — small enough to stay a detail, big
+         * enough to hit without landing on the row underneath it. */}
         <span
+          role="checkbox"
+          aria-checked={selected}
+          aria-label="Select this session for deletion"
+          tabIndex={0}
           title="Select for deletion"
           onClick={(e) => {
             e.stopPropagation();
             onToggle();
           }}
+          onKeyDown={(e) => activates(e, onToggle, true)}
           className="flex h-5 w-5 flex-none cursor-pointer items-center justify-center"
         >
           <span
-            className={`h-2.5 w-2.5 rounded-full border-[1.5px] transition-colors ${
-              selected ? "border-accent bg-accent" : "border-text-muted"
-            }`}
+            className={cx(
+              "h-2.5 w-2.5 rounded-full border-[1.5px] transition-colors",
+              selected ? "border-accent bg-accent" : "border-text-muted",
+            )}
           />
         </span>
-        <span>
-          {d.toLocaleDateString()}{" "}
-          {d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} ·{" "}
-          {record.mode}
-          {record.redrill ? " (redrill)" : ""} · {record.total} chars
+        <span className="truncate tabular-nums">
+          <span className="font-semibold">{when}</span>
+          <span className="text-text-muted">
+            {" · "}
+            {record.mode}
+            {record.redrill ? " (redrill)" : ""}
+            {" · "}
+            {plural(record.total, "char")}
+          </span>
         </span>
       </span>
+
       <span className="flex items-center gap-2">
-        <span>
-          forgiving {record.forgivingPct}% · strict {record.strictPct}%
+        <span className="tabular-nums text-text-muted">
+          forgiving{" "}
+          <span className="text-text">
+            {formatAccuracy(record.forgivingPct)}
+          </span>{" "}
+          · strict{" "}
+          <span className="text-text">{formatAccuracy(record.strictPct)}</span>
         </span>
         <button
+          type="button"
           title="Delete this session"
+          aria-label={`Delete the session from ${when}`}
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
-          className="cursor-pointer rounded-lg border-none bg-transparent px-2 py-0.5 text-xs text-text-muted hover:bg-panel"
+          className="cursor-pointer rounded-lg border-none bg-transparent px-2 py-0.5 text-xs text-text-muted hover:bg-panel hover:text-danger"
         >
           ×
         </button>
       </span>
+    </div>
+  );
+}
+
+/** Day one. Designed, so an empty history reads as "nothing yet" rather than
+ * as a screen that failed to load. */
+function NoSessions() {
+  return (
+    <div className="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-[12px] border border-dashed border-border bg-card p-6 text-center">
+      <span
+        aria-hidden="true"
+        className="mb-0.5 font-kana text-[26px] font-extralight opacity-70"
+      >
+        ↺
+      </span>
+      <p className="text-[13px] font-semibold">No sessions yet</p>
+      <Hint>
+        Finish a quiz and it lands here — every run is kept until you delete it.
+      </Hint>
     </div>
   );
 }
@@ -80,7 +160,8 @@ export function SessionsList() {
   const { viewStoredSession } = useQuizSession();
   const [picked, setPicked] = useState<Set<number>>(new Set());
 
-  const sessions = history.sessions.slice().reverse();
+  // Newest first: the run you just did is the one you want to reopen.
+  const sessions = history.sessions.slice().sort((a, b) => b.ts - a.ts);
 
   const togglePicked = (ts: number) => {
     setPicked((prev) => {
@@ -107,30 +188,31 @@ export function SessionsList() {
   };
 
   if (!loaded) return null;
-  if (!sessions.length) {
-    return <Hint>No sessions yet — finish a quiz and it lands here.</Hint>;
-  }
+  if (!sessions.length) return <NoSessions />;
 
   return (
-    <Card>
-      {sessions.map((s) => (
-        <SessionRow
-          key={s.ts}
-          record={s}
-          selected={picked.has(s.ts)}
-          onToggle={() => togglePicked(s.ts)}
-          onOpen={() => viewStoredSession(s)}
-          onDelete={() => void deleteSessions([s.ts], false)}
-        />
-      ))}
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+    <>
+      <div className="mb-3.5 flex flex-col gap-2">
+        {sessions.map((s) => (
+          <SessionRow
+            key={s.ts}
+            record={s}
+            selected={picked.has(s.ts)}
+            onToggle={() => togglePicked(s.ts)}
+            onOpen={() => viewStoredSession(s)}
+            onDelete={() => void deleteSessions([s.ts], false)}
+          />
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
         <SmallBtn
           disabled={!picked.size}
           onClick={() => {
             if (
               picked.size &&
               window.confirm(
-                `Delete ${picked.size} session${picked.size === 1 ? "" : "s"}?`,
+                `Delete ${plural(picked.size, "session")}?`,
               )
             ) {
               void deleteSessions([...picked], false);
@@ -153,9 +235,10 @@ export function SessionsList() {
           Delete all
         </SmallBtn>
         <Hint>
-          click a row to open its results · use the dot to select for deletion
+          {plural(sessions.length, "session")} kept · deleting also rebuilds
+          your per-character stats
         </Hint>
       </div>
-    </Card>
+    </>
   );
 }
