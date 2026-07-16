@@ -5,6 +5,11 @@
 // (the drill screen reads cfg on every render / submit / timer restart).
 // Ported from the legacy renderDrawer/bindDrill drawer rows; the legacy
 // random-font row is dropped (fonts are a Settings-page multi-select now).
+//
+// The four HUD rows at the bottom are what make the drill screen one view
+// instead of three: all off is zen, all on is instrumented, and because they
+// are live like everything else here you can feel the difference mid-card
+// rather than having to end the session to try it.
 
 import { useState } from "react";
 
@@ -28,9 +33,9 @@ export function DrillDrawer() {
   return (
     <div className="mt-4 rounded-[10px] bg-panel px-3.5 py-2.5 text-[13px]">
       <p className="mb-0.5 text-[13px] font-semibold uppercase tracking-[0.04em] text-text-muted">
-        Mid-drill settings{" "}
+        Drill view{" "}
         <span className="font-normal normal-case tracking-normal">
-          — apply instantly
+          — applies instantly
         </span>
       </p>
       <Row label="Timer">
@@ -99,10 +104,28 @@ export function DrillDrawer() {
           toggle={() => update({ scriptLabel: !cfg.scriptLabel })}
         />
       </Row>
-      <Row label="Kana preview">
+      <Row label="Streak" hint="first-try correct in a row">
         <OnOff
-          on={cfg.kanaPreview}
-          toggle={() => update({ kanaPreview: !cfg.kanaPreview })}
+          on={cfg.showStreak}
+          toggle={() => update({ showStreak: !cfg.showStreak })}
+        />
+      </Row>
+      <Row label="Live accuracy" hint="follows your accuracy setting">
+        <OnOff
+          on={cfg.showAccuracy}
+          toggle={() => update({ showAccuracy: !cfg.showAccuracy })}
+        />
+      </Row>
+      <Row label="Retry pips">
+        <OnOff
+          on={cfg.showRetryPips}
+          toggle={() => update({ showRetryPips: !cfg.showRetryPips })}
+        />
+      </Row>
+      <Row label="Fade controls" hint="they wake on mouse move">
+        <OnOff
+          on={cfg.fadeControls}
+          toggle={() => update({ fadeControls: !cfg.fadeControls })}
         />
       </Row>
     </div>

@@ -7,6 +7,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import {
+  AppearancePicker,
+  ThemePicker,
+} from "@/components/settings/theme-picker";
 import { Btn, Card, Chip, Hint, Row, SmallBtn } from "@/components/ui";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -80,6 +84,17 @@ export function SettingsCard() {
 
   return (
     <Card>
+      <Row
+        label="Theme"
+        hint="changes the whole look — pick what you'll enjoy staring at"
+      >
+        <ThemePicker />
+      </Row>
+
+      <Row label="Appearance">
+        <AppearancePicker />
+      </Row>
+
       <Row label="Retries">
         <Chip on={cfg.retries === "none"} onClick={() => update({ retries: "none" })}>
           None
@@ -161,17 +176,7 @@ export function SettingsCard() {
         />
       </Row>
 
-      <Row label="Live kana preview while typing" dim={gridDim}>
-        <Toggle
-          on={cfg.kanaPreview}
-          onClick={() => update({ kanaPreview: !cfg.kanaPreview })}
-        />
-      </Row>
-
-      <Row
-        label="Fonts"
-        hint="cards draw a random font from your selection — keep several so one typeface doesn't get memorized"
-      >
+      <Row label="Fonts" hint="cards draw a random font from your selection">
         {JP_FONTS.map((font) => (
           <Chip
             key={font}

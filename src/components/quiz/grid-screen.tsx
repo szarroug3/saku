@@ -14,10 +14,9 @@
 // finish timeout is re-armed on remount when all cards are resolved.
 // Retries, show-answer, fonts, and blur-submit read live from config.
 
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { GhostBtn, Hint, ProgressBar, SmallBtn } from "@/components/ui";
+import { Hint, ProgressBar, SmallBtn } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
 import { pickFont } from "@/lib/config";
 import {
@@ -107,9 +106,8 @@ function checkCard(g: GridRuntime, c: string, cfg: QuizConfig): CheckOutcome {
 // ---------- screen ----------
 
 export function GridScreen() {
-  const router = useRouter();
   const { cfg } = useQuizConfig();
-  const { active, finishQuiz, abandonQuiz, setProgress } = useQuizSession();
+  const { active, finishQuiz, setProgress } = useQuizSession();
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
 
@@ -207,23 +205,14 @@ export function GridScreen() {
 
   if (!active || !g) return null;
 
-  const back = () => {
-    if (window.confirm("Back to setup? This quiz won't be scored or saved.")) {
-      abandonQuiz();
-      router.push("/");
-    }
-  };
 
   return (
     <div>
       <div className="sticky top-0 z-10 mb-2.5 flex flex-wrap items-center justify-between gap-2 bg-bg py-2">
-        <GhostBtn onClick={back}>← Setup</GhostBtn>
         <span className="text-xs text-text-muted">
           {done} / {total} correct
         </span>
-        <SmallBtn onClick={() => finishQuiz(g.stats)}>
-          Finish quiz → results
-        </SmallBtn>
+        <SmallBtn onClick={() => finishQuiz(g.stats)}>Finish quiz</SmallBtn>
       </div>
       <ProgressBar pct={total ? Math.round((100 * done) / total) : 0} />
       <p className="mb-3 text-center">

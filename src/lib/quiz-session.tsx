@@ -14,8 +14,8 @@
 // Config snapshot rule: the Home-builder settings (mode, directions, answer
 // styles, length) are FROZEN into the quiz at startQuiz — editing them
 // mid-quiz only affects the next quiz. Settings-page settings (retries,
-// timer, show-answer, script label, preview, fonts, blur-submit, voice) are
-// read live from useQuizConfig and apply instantly, drawer-style.
+// timer, show-answer, script label, fonts, blur-submit, voice) are read
+// live from useQuizConfig and apply instantly, drawer-style.
 
 import { useRouter } from "next/navigation";
 import {
@@ -194,13 +194,16 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         ts,
         stats,
       });
-      // Same payload the legacy app posted; fire-and-forget.
+      // Per-character aggregates for history.json; fire-and-forget.
       const chars: QuizSessionRecord["chars"] = {};
       for (const c of s.chars) {
         chars[c] = {
           seen: stats[c].seen,
           missed: stats[c].misses,
           slow: stats[c].slow,
+          // Folded into the aggregate so strict accuracy survives without
+          // having to re-read every session's detail.
+          firstTry: stats[c].firstTryCorrect === true ? 1 : 0,
         };
       }
       const record: QuizSessionRecord = {

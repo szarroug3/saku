@@ -3,7 +3,7 @@
 // (write-a-word, listen) and v3 (stroke order, draw) implement QuestionType
 // as pure data + logic additions.
 
-import { CHAR_INDEX, LOOK_GROUP, ROMAJI_TO_KANA } from "@/data/characters";
+import { CHAR_INDEX, LOOK_GROUP } from "@/data/characters";
 import { BEHAVIOR } from "@/lib/config";
 import type {
   CharSessionDetail,
@@ -81,37 +81,6 @@ export function pickDir(cfg: QuizConfig): Direction {
 }
 
 // ---------- answers ----------
-
-/**
- * Greedy romaji→kana for the live preview: longest match (3,2,1) via
- * ROMAJI_TO_KANA, っ for doubled consonants (kstpgzdbc), "·" for no match.
- */
-export function romajiToKana(input: string): string {
-  let out = "";
-  let i = 0;
-  const s = input.toLowerCase().replace(/[^a-z]/g, "");
-  while (i < s.length) {
-    let hit: string | null = null;
-    for (const L of [3, 2, 1]) {
-      const sub = s.slice(i, i + L);
-      if (ROMAJI_TO_KANA[sub]) {
-        hit = sub;
-        break;
-      }
-    }
-    if (hit) {
-      out += ROMAJI_TO_KANA[hit];
-      i += hit.length;
-    } else if (s[i] === s[i + 1] && "kstpgzdbc".includes(s[i])) {
-      out += "っ";
-      i++;
-    } else {
-      out += "·";
-      i++;
-    }
-  }
-  return out;
-}
 
 /** Case/whitespace-forgiving check of a typed romaji answer for `char`. */
 export function checkTyped(char: string, given: string): boolean {

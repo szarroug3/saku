@@ -223,9 +223,6 @@ export const CHAR_INDEX: Record<string, CharInfo> = buildCharIndex();
 /** char → its lookalikes (all other members of its LOOKALIKES groups). */
 export const LOOK_GROUP: Record<string, string[]> = buildLookGroup();
 
-/** romaji → kana (hiragana wins collisions), for the live typing preview. */
-export const ROMAJI_TO_KANA: Record<string, string> = buildRomajiMap();
-
 function buildCharIndex(): Record<string, CharInfo> {
   const index: Record<string, CharInfo> = {};
   for (const set of SETS) {
@@ -254,19 +251,6 @@ function buildLookGroup(): Record<string, string[]> {
     }
   }
   return groups;
-}
-
-function buildRomajiMap(): Record<string, string> {
-  const map: Record<string, string> = {};
-  // Reverse order so earlier sets (hiragana) win collisions.
-  for (const set of [...SETS].reverse()) {
-    for (const sec of set.sections) {
-      for (const ch of sec.chars) {
-        for (const r of ch.r) map[r] = ch.c;
-      }
-    }
-  }
-  return map;
 }
 
 /** Mnemonic for the Kana chart: explicit, combo-derived, or mark-derived. */

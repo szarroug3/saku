@@ -10,10 +10,9 @@
 // flash is transient component state; the 500ms board-advance timeout is
 // re-armed on remount when the all-matched condition still holds.
 
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { GhostBtn, Card, Hint, ProgressBar, SmallBtn } from "@/components/ui";
+import { Card, Hint, ProgressBar, SmallBtn } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { buildDeck, newCharStat, shuffle } from "@/lib/engine";
@@ -168,9 +167,8 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
 // ---------- screen ----------
 
 export function PairsScreen() {
-  const router = useRouter();
   const { cfg } = useQuizConfig();
-  const { active, finishQuiz, abandonQuiz, setProgress } = useQuizSession();
+  const { active, finishQuiz, setProgress } = useQuizSession();
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
 
@@ -235,12 +233,6 @@ export function PairsScreen() {
 
   if (!active || !p) return null;
 
-  const back = () => {
-    if (window.confirm("Back to setup? This quiz won't be scored or saved.")) {
-      abandonQuiz();
-      router.push("/");
-    }
-  };
 
   const pct =
     total === null ? null : Math.min(100, Math.round((100 * asked) / total));
@@ -248,15 +240,12 @@ export function PairsScreen() {
   return (
     <div>
       <div className="sticky top-0 z-10 mb-2.5 flex flex-wrap items-center justify-between gap-2 bg-bg py-2">
-        <GhostBtn onClick={back}>← Setup</GhostBtn>
         <span className="text-xs text-text-muted">
           {total !== null
             ? `${asked} / ${total} characters`
             : `${asked} characters · endless`}
         </span>
-        <SmallBtn onClick={() => finishQuiz(p.stats)}>
-          End quiz → results
-        </SmallBtn>
+        <SmallBtn onClick={() => finishQuiz(p.stats)}>End quiz</SmallBtn>
       </div>
       <ProgressBar pct={pct} />
       <Card>
