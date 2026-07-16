@@ -57,7 +57,7 @@ export function DrillDrawer() {
               type="number"
               min={1}
               max={600}
-              className="w-[60px] rounded-md border border-border bg-card px-1.5 py-0.5 text-[13px] text-text"
+              className="kq-num w-[60px] rounded-md border border-border bg-card px-1.5 py-0.5 text-[13px] text-text"
               value={numDraft ?? String(cfg.timerSec)}
               onFocus={() => setNumDraft(String(cfg.timerSec))}
               onChange={(e) => {

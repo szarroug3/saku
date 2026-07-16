@@ -149,7 +149,13 @@ export function GridHud({ done, total, stats, streak, onFinish }: GridHudProps) 
   const pct = total ? Math.min(100, Math.round((100 * done) / total)) : 0;
 
   return (
-    <div className="sticky top-0 z-10 py-1.5">
+    // px-3 insets the HUD's CONTENTS (pills, Finish quiz, hairline) off both
+    // edges. It cannot inset the scrim: an absolutely positioned child's
+    // containing block is this element's PADDING box, so `inset-x-0` below
+    // still resolves to the full width and the band keeps occluding the cards
+    // edge to edge. Padding the scrim's own element instead would leave an
+    // unpainted strip at each side with rows showing through.
+    <div className="sticky top-0 z-10 px-3 py-1.5">
       {/* Sits behind the pills (the sticky wrapper is the stacking context)
           and above the cards, which are outside it. What it's MADE of is
           per-theme and lives in globals.css (.kq-grid-scrim): a --bg fade

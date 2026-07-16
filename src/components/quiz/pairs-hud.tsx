@@ -145,7 +145,9 @@ export function PairsHud({ asked, total, stats, streak, onEnd }: PairsHudProps) 
     total === null ? 100 : Math.min(100, Math.round((100 * asked) / total));
 
   return (
-    <div className="sticky top-0 z-10 py-1.5">
+    // px-3 to inset the HUD's contents off both edges — the same value drill
+    // and grid use, so the three screens agree.
+    <div className="sticky top-0 z-10 px-3 py-1.5">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         {/* Information — always quiet, and only ever present when it has
             something true to say. An empty pill is worse than no pill: "—
