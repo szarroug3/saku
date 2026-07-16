@@ -14,13 +14,19 @@ import { useQuizSession } from "@/lib/quiz-session";
 // route and coming back resumes mid-question.
 export default function QuizPage() {
   const router = useRouter();
-  const { active, restored } = useQuizSession();
+  const { active, results, restored } = useQuizSession();
 
   // Landing here with no quiz (deep link, or refresh with nothing stored) →
-  // setup. Wait for the sessionStorage restore so refreshes resume instead.
+  // setup. Wait for the restore so a refresh resumes instead.
+  //
+  // `results` is why this isn't just `!active`: finishing a quiz clears active
+  // AND pushes /results, but clearing active re-renders this page first — so
+  // this effect fired and replace("/") beat the push, landing you on Home
+  // instead of your results. If there are results to show, the finish is
+  // already navigating; this guard has no business redirecting anywhere.
   useEffect(() => {
-    if (restored && !active) router.replace("/");
-  }, [restored, active, router]);
+    if (restored && !active && !results) router.replace("/");
+  }, [restored, active, results, router]);
   if (!active) return null;
 
   switch (active.snapshot.mode) {
