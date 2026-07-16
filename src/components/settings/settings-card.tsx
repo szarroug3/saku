@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import {
+  AccentPicker,
   AppearancePicker,
   ThemePicker,
 } from "@/components/settings/theme-picker";
@@ -141,6 +142,13 @@ export function SettingsCard() {
       </Row>
 
       <Row
+        label="Accent"
+        info="Each theme keeps its own accent, so this only changes the theme you're in right now. Theme default is the colour the theme was designed with — Aizome means indigo dyeing, and Momentum's green is the same green it marks correct answers with."
+      >
+        <AccentPicker />
+      </Row>
+
+      <Row
         label="Accuracy shown as"
         info="First try only counts cards you got without a retry. Eventually right counts them however many goes it took. Applies everywhere the app shows a percentage."
       >
@@ -245,7 +253,7 @@ export function SettingsCard() {
                 const v = parseInt(e.target.value, 10);
                 if (v >= 1) update({ timerSec: v });
               }}
-              className="w-16 rounded-lg border border-border bg-card px-2 py-1 text-sm"
+              className="kq-num w-16 rounded-lg border border-border bg-card px-2 py-1 text-sm"
               aria-label="Timer seconds (typed)"
             />
             s

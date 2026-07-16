@@ -262,6 +262,151 @@
     radial-gradient(40% 60% at 60% 20%, rgba(236, 72, 153, 0.12), transparent 70%);
 }
 
+/* ==========================================================================
+ * 5 · ACCENT OVERRIDES  (<html data-accent="cyan | azure | …">)
+ *
+ * Opt-in only. The attribute is ABSENT until you pick something, so every
+ * theme starts on the accent it was designed with and this whole section is
+ * dead CSS for a user who never opens the row.
+ *
+ * These sit AFTER the four theme blocks deliberately: both are one attribute
+ * selector, i.e. (0,1,0), so the accent wins on SOURCE ORDER, not specificity.
+ * Do not move them above the themes and do not "fix" that by adding :root —
+ * the resolve-to-dark blocks below rely on out-specificing everything here.
+ *
+ * Each block writes the same six tokens the theme blocks do, and nothing else:
+ *
+ *   --accent / --dark-accent .......... the colour AS TEXT (nav, chip labels,
+ *                                       links). This is the one with a 4.5:1
+ *                                       floor, and the reason there are two
+ *                                       values per accent rather than one.
+ *   --arc / --dark-arc ................ the same colour AS A FILLED BAND, on
+ *                                       the accuracy ring. Deepened — see below.
+ *   --accent-bg / --dark-accent-bg .... the soft fill behind selected chips and
+ *                                       active nav. Derived, never authored:
+ *                                       color-mix off the accent above, so it
+ *                                       cannot drift out of sync with it.
+ *
+ * WHY EACH ACCENT NEEDS A LIGHT SIBLING AT ALL
+ * A colour tuned to sing on near-black is invisible on paper. #67d4f5 on
+ * kiri's white glass is 1.6:1 — not "a bit weak", unreadable. So every accent
+ * is authored twice, exactly as all four themes already author theirs twice.
+ * The light siblings keep the dark value's OKLCH hue (that is what makes it
+ * recognisably the same accent) and drop lightness until the WORST of eight
+ * measurements — four themes x {on --card, on its own --accent-bg} — clears
+ * 4.5:1. Independently derived, cyan landed on #00607d; the theme's own
+ * hand-authored light cyan is #096b87. Two methods, one colour, which is the
+ * best evidence available that the floor is being read the same way here as
+ * it was there.
+ *
+ * WHY THE ARC IS A SEPARATE VALUE
+ * Same reason --arc exists for the built-ins: text and a 12px-wide filled band
+ * want different weights, and the accent tuned for text washes out as a band.
+ * The dark arcs are deepened from the dark accent (ΔL up to 0.10 in OKLCH,
+ * chroma x1.15 to stop the deepening reading as mud) and land at L 0.63-0.72,
+ * against the shipping arcs' 0.57-0.68 — the same register. The cap is not
+ * taste: deepening COSTS contrast against the track, and 1.4.11 wants 3:1 for
+ * a graphical object. Every arc below clears 3.05:1 against all four
+ * --arc-tracks and all four --cards; graphite's own dark arc ships at 3.02,
+ * so this is the floor the file already holds.
+ * In LIGHT the arc simply IS the accent, which is not a shortcut — all four
+ * themes do exactly that, because a light accent is already deep enough to
+ * read as a band.
+ * ======================================================================= */
+
+[data-accent="cyan"] {
+  --accent: #00607d;
+  --arc: #00607d;
+  --accent-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  --dark-accent: #67d4f5;
+  --dark-arc: #1eb5db;
+  --dark-accent-bg: color-mix(in srgb, var(--dark-accent) 12%, transparent);
+}
+
+[data-accent="azure"] {
+  --accent: #0d58a7;
+  --arc: #0d58a7;
+  --accent-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  --dark-accent: #60a5fa;
+  --dark-arc: #3588e8;
+  --dark-accent-bg: color-mix(in srgb, var(--dark-accent) 12%, transparent);
+}
+
+[data-accent="violet"] {
+  --accent: #6444ad;
+  --arc: #6444ad;
+  --accent-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  --dark-accent: #a78bfa;
+  --dark-arc: #9470ee;
+  --dark-accent-bg: color-mix(in srgb, var(--dark-accent) 12%, transparent);
+}
+
+[data-accent="orchid"] {
+  --accent: #7739ac;
+  --arc: #7739ac;
+  --accent-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  --dark-accent: #c084fc;
+  --dark-arc: #ac64ed;
+  --dark-accent-bg: color-mix(in srgb, var(--dark-accent) 12%, transparent);
+}
+
+[data-accent="magenta"] {
+  --accent: #a0216c;
+  --arc: #a0216c;
+  --accent-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  --dark-accent: #f472b6;
+  --dark-arc: #e34da0;
+  --dark-accent-bg: color-mix(in srgb, var(--dark-accent) 12%, transparent);
+}
+
+/* No hue, so there is nothing to preserve between the modes and the pair is
+ * just "bright grey" / "deep grey". Still needs both: #dbe2f0 is 1.15:1 on
+ * white. */
+[data-accent="pearl"] {
+  --accent: #535965;
+  --arc: #535965;
+  --accent-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  --dark-accent: #dbe2f0;
+  --dark-arc: #bac2d1;
+  --dark-accent-bg: color-mix(in srgb, var(--dark-accent) 12%, transparent);
+}
+
+/* ---------- kiri, in dark, is the one ground that moves ------------------
+ * Everything above clears 4.5:1 in aizome, graphite and momentum — those
+ * three have ONE opaque --dark-card each, and the numbers are comfortable
+ * (5.5-6.9:1 as text). kiri does not have one card. Its card is a 5.5% white
+ * veil over a three-blob mesh, so the surface under a chip is wherever that
+ * chip happens to sit in the VIEWPORT (body::before is position:fixed). Swept
+ * across the whole viewport, kiri's --dark-card runs from #0e111b out at the
+ * corners to #1d4144 over the teal blob at 88%/82% — and #1d4144 is bright
+ * enough to take azure to 4.35:1, violet to 4.07, orchid 4.19, magenta 4.18.
+ * All four fail, and they fail on a real pixel: at a viewport near the 1080px
+ * content column the blob's centre is inside the card.
+ *
+ * The four could have been lifted globally to clear kiri. They are not, and
+ * that is the point of the feature: it would repaint magenta in graphite —
+ * where it measures 6.89:1 and is exactly the approved colour — to fix a
+ * theme graphite has nothing to do with. The accent belongs to the theme, so
+ * the correction does too. Only --dark-accent is restated; --dark-accent-bg
+ * above is a color-mix OFF it, so it re-derives here for free.
+ *
+ * cyan and pearl are absent because they need nothing: cyan is already kiri's
+ * own signature (6.49:1) and pearl is near-white (8.51:1).
+ *
+ * (0,2,0), so these beat the (0,1,0) blocks above wherever they land. */
+[data-theme="kiri"][data-accent="azure"] {
+  --dark-accent: #7cc2ff;
+}
+[data-theme="kiri"][data-accent="violet"] {
+  --dark-accent: #c8acff;
+}
+[data-theme="kiri"][data-accent="orchid"] {
+  --dark-accent: #dea2ff;
+}
+[data-theme="kiri"][data-accent="magenta"] {
+  --dark-accent: #ff95d9;
+}
+
 /* ---------- resolve to dark ---------------------------------------------
  * Two blocks, and the ONLY writers of the dark values. Both must exist:
  *

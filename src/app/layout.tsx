@@ -27,8 +27,10 @@ export const metadata: Metadata = {
  * flash. (`import type * as` never emits a require.) */
 const THEME_KEY: typeof Theme.THEME_KEY = "kanaquiz-theme";
 const APPEARANCE_KEY: typeof Theme.APPEARANCE_KEY = "kanaquiz-appearance";
+const ACCENTS_KEY: typeof Theme.ACCENTS_KEY = "kanaquiz-accents";
 const DEFAULT_THEME: typeof Theme.DEFAULT_THEME = "kiri";
 const DEFAULT_APPEARANCE: typeof Theme.DEFAULT_APPEARANCE = "system";
+const DEFAULT_ACCENT: typeof Theme.DEFAULT_ACCENT = "default";
 const THEMES: typeof Theme.THEMES = [
   "aizome",
   "graphite",
@@ -36,6 +38,15 @@ const THEMES: typeof Theme.THEMES = [
   "kiri",
 ] as const;
 const APPEARANCES: typeof Theme.APPEARANCES = ["system", "light", "dark"] as const;
+const ACCENTS: typeof Theme.ACCENTS = [
+  "default",
+  "cyan",
+  "azure",
+  "violet",
+  "orchid",
+  "magenta",
+  "pearl",
+] as const;
 
 // Runs in <head>, blocking, before the browser paints anything — otherwise
 // every hard reload flashes the default theme before React hydrates. Kept
@@ -43,11 +54,31 @@ const APPEARANCES: typeof Theme.APPEARANCES = ["system", "light", "dark"] as con
 // other code. It only ever writes a value it recognizes, so an unknown or
 // corrupt entry just leaves the server-rendered defaults in place, same as
 // no-JS or blocked storage.
+//
+// The accent costs one more getItem and a JSON.parse, and it has to happen
+// HERE for the same reason the other two do: it is a paint-blocking fact. It
+// also has to happen AFTER the theme is resolved, because the accent is stored
+// per theme — the map is keyed by theme id, so reading it means knowing which
+// theme you are about to be in. Note `t` is reassigned to DEFAULT_THEME when
+// storage holds junk: the provider will mount as DEFAULT_THEME, so the accent
+// looked up here must be DEFAULT_THEME's too or the pre-paint stamp and the
+// post-mount state disagree and you get the flash this script exists to stop.
+//
+// "default" is deliberately not stampable — it means "no data-accent", i.e.
+// the theme's own — so the guard rejects it along with anything unknown.
 const NO_FLASH = `(function(){try{var d=document.documentElement,t=localStorage.getItem(${JSON.stringify(
   THEME_KEY,
 )}),a=localStorage.getItem(${JSON.stringify(APPEARANCE_KEY)});
-if(${JSON.stringify(THEMES)}.indexOf(t)>=0)d.setAttribute("data-theme",t);
+if(${JSON.stringify(THEMES)}.indexOf(t)>=0)d.setAttribute("data-theme",t);else t=${JSON.stringify(
+  DEFAULT_THEME,
+)};
 if(${JSON.stringify(APPEARANCES)}.indexOf(a)>=0)d.setAttribute("data-appearance",a);
+var m=JSON.parse(localStorage.getItem(${JSON.stringify(
+  ACCENTS_KEY,
+)})||"{}"),c=m&&m[t];
+if(c!==${JSON.stringify(DEFAULT_ACCENT)}&&${JSON.stringify(
+  ACCENTS,
+)}.indexOf(c)>=0)d.setAttribute("data-accent",c);
 }catch(e){}})()`;
 
 export default function RootLayout({

@@ -1,10 +1,18 @@
 "use client";
 
-// The two theme controls on the Settings page: a row of swatch cards that
-// preview each palette, and the system/light/dark appearance chips.
+// The theme controls on the Settings page: a row of swatch cards that preview
+// each palette, the system/light/dark appearance chips, and the accent dots.
 
 import { Chip } from "@/components/ui";
-import { APPEARANCES, THEMES, useTheme, type ThemeName } from "@/lib/theme";
+import {
+  ACCENTS,
+  APPEARANCES,
+  DEFAULT_ACCENT,
+  THEMES,
+  useTheme,
+  type AccentName,
+  type ThemeName,
+} from "@/lib/theme";
 
 interface Palette {
   bg: string;
@@ -224,6 +232,141 @@ export function AppearancePicker() {
           {APPEARANCE_LABEL[a]}
         </Chip>
       ))}
+    </>
+  );
+}
+
+const ACCENT_LABEL: Record<Exclude<AccentName, "default">, string> = {
+  cyan: "Cyan",
+  azure: "Azure",
+  violet: "Violet",
+  orchid: "Orchid",
+  magenta: "Magenta",
+  pearl: "Pearl",
+};
+
+/** The accent swatches' literal colours — the same exception PREVIEWS above
+ * is, and for the same reason: a swatch's whole job is to show you a colour
+ * you are NOT currently wearing, so there is no CSS var to read back. Keep in
+ * sync with the [data-accent] blocks in globals.css.
+ *
+ * `kiriDark` mirrors the four kiri-only overrides there. It's here rather than
+ * ignored because the colour IS the label on these — a dot that previews
+ * #f472b6 and then paints #ff95d9 is the one lie this control can tell. */
+const ACCENT_SWATCH: Record<
+  Exclude<AccentName, "default">,
+  { light: string; dark: string; kiriDark?: string }
+> = {
+  cyan: { light: "#00607d", dark: "#67d4f5" },
+  azure: { light: "#0d58a7", dark: "#60a5fa", kiriDark: "#7cc2ff" },
+  violet: { light: "#6444ad", dark: "#a78bfa", kiriDark: "#c8acff" },
+  orchid: { light: "#7739ac", dark: "#c084fc", kiriDark: "#dea2ff" },
+  magenta: { light: "#a0216c", dark: "#f472b6", kiriDark: "#ff95d9" },
+  pearl: { light: "#535965", dark: "#dbe2f0" },
+};
+
+/** The one theme whose own accent IS one of the six: kiri's #67d4f5 is cyan,
+ * exactly — OKLab distance 0.000 in dark, 0.035 in light. Drawn as both, kiri
+ * would show two identical dots that do the same thing on click.
+ *
+ * Nothing else collides. The nearest miss is graphite's own #7b7fff against
+ * violet's #a78bfa at 0.074, which is two neighbours apart rather than a
+ * duplicate (0.05 is roughly where two dots stop being tellable apart), so
+ * graphite keeps both and momentum's green is nowhere near anything — mint,
+ * which would have collided with it, is deliberately not in the six. */
+const OWN_IS: Partial<Record<ThemeName, Exclude<AccentName, "default">>> = {
+  kiri: "cyan",
+};
+
+/** The accessible name for the theme's own accent, since its dot is the same
+ * kind of thing as the other six — a colour — and needs the same kind of name. */
+const OWN_LABEL: Record<ThemeName, string> = {
+  aizome: "Aizome's indigo",
+  graphite: "Graphite's violet",
+  momentum: "Momentum's green",
+  kiri: "Kiri's cyan",
+};
+
+/** The accent dots. Colour rather than names, same reasoning as the font
+ * chips: the colour IS the label, and "Orchid" tells you nothing about the
+ * hue. The names stay reachable through title/aria-label, since a coloured
+ * circle gives a screen reader nothing to read out.
+ *
+ * THE THEME'S OWN ACCENT IS JUST THE FIRST DOT, and that is the whole design.
+ * It is not labelled, badged, or marked "default", because it was never a
+ * choice you make — it is the colour this theme already has, and it happens to
+ * be the one selected until you pick another. Being selected is what says so.
+ *
+ * Two earlier passes got this wrong in the same way, and the mistake is worth
+ * naming: both rendered "Theme default" as a distinct CONCEPT — first a
+ * two-tone dot (which drew "what is the half/half circle?", because in a row
+ * of solid circles a gradient circle just reads as one more colour), then a
+ * "Default" text chip. Both invented an idea the user has to learn in order to
+ * use a colour picker. There is no idea. There are seven colours and one of
+ * them is already on. Where the per-theme rule genuinely needs explaining, it
+ * is explained in the row's info tooltip, which is what that is for.
+ *
+ * Selection is the outline the theme swatches above use, NOT the comp's tick:
+ * the comp ticks in a fixed near-black (#05101a), fine on its dark dots and
+ * failing on all six LIGHT siblings (1.9:1 on magenta's #a0216c). An outline
+ * carries "this one" at every swatch colour in both modes. */
+export function AccentPicker() {
+  const { theme, accent, setAccent, resolved } = useTheme();
+  const mode = resolved === "dark" ? "dark" : "light";
+  const dupe = OWN_IS[theme];
+
+  const dot = (
+    value: AccentName,
+    color: string,
+    label: string,
+    selected: boolean,
+  ) => (
+    <button
+      key={value}
+      type="button"
+      onClick={() => setAccent(value)}
+      aria-pressed={selected}
+      aria-label={label}
+      title={label}
+      className={
+        "size-[26px] cursor-pointer rounded-full border border-border " +
+        "transition-transform " +
+        (selected
+          ? "outline outline-2 outline-offset-2 outline-accent"
+          : "hover:-translate-y-px")
+      }
+      style={{ background: color }}
+    />
+  );
+
+  return (
+    <>
+      {dot(
+        DEFAULT_ACCENT,
+        // The theme's own accent, from PREVIEWS rather than from --accent:
+        // --accent is whatever is CURRENTLY picked, and this dot has to keep
+        // showing what the THEME wants however far you've wandered from it.
+        PREVIEWS[theme][mode].accent,
+        OWN_LABEL[theme],
+        // `|| accent === dupe`: a stored "cyan" on kiri is the same colour as
+        // kiri's own, and its dot is no longer drawn — without this the row
+        // would show nothing selected at all.
+        accent === DEFAULT_ACCENT || accent === dupe,
+      )}
+      {ACCENTS.filter((a) => a !== DEFAULT_ACCENT && a !== dupe).map((a) => {
+        const key = a as Exclude<AccentName, "default">;
+        const sw = ACCENT_SWATCH[key];
+        return dot(
+          a,
+          mode === "dark"
+            ? theme === "kiri"
+              ? (sw.kiriDark ?? sw.dark)
+              : sw.dark
+            : sw.light,
+          ACCENT_LABEL[key],
+          accent === a,
+        );
+      })}
     </>
   );
 }
