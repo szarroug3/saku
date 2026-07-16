@@ -91,8 +91,14 @@ interface DrillRuntime {
   deck: string[];
   /** Next deck index to draw from. */
   pos: number;
-  /** Questions asked so far (progress numerator). */
+  /** Questions SHOWN so far. Used to key the per-question remount, not to
+   * display progress — a card is shown before it's answered. */
   asked: number;
+  /** Questions RESOLVED — answered correctly, or re-queued after running out
+   * of retries. This is what "N answered" and the progress bar count: a card
+   * you're still mid-retry on isn't done, and the count shouldn't tick to 1
+   * the instant a card appears. */
+  resolved: number;
   /** Cards spliced back into the deck after exhausting retries. */
   requeued: number;
   /** Consecutive cards answered right on the FIRST try; any miss (or a
@@ -259,7 +265,7 @@ export function DrillScreen() {
 
   function syncProgress() {
     if (!rt) return;
-    setProgress({ done: rt.asked, total: limited ? rt.deck.length : null });
+    setProgress({ done: rt.resolved, total: limited ? rt.deck.length : null });
   }
 
   /** Legacy startTimer: countdown from `from`, ticking once a second. Each
@@ -371,6 +377,7 @@ export function DrillScreen() {
         if (isSlow(latency, latencyRef.current, style, cfg.slowFloorMs)) st.slow++;
         latencyRef.current = pushLatency(latencyRef.current, style, latency);
       }
+      rt.resolved++; // answered correctly — this card is done
       rt.feedback = { kind: "good" };
       rt.waiting = true;
       stopCountdown();
@@ -397,6 +404,9 @@ export function DrillScreen() {
         inputRef.current?.select();
         if (cfg.timer) startCountdown(cfg.timerSec);
       } else {
+        // Out of retries: the card is done with (re-queued for later), so it
+        // counts as resolved even though you didn't get it.
+        rt.resolved++;
         rt.feedback = { kind: "bad" };
         rt.deck.splice(Math.min(rt.deck.length, rt.pos + requeueGap()), 0, q.c);
         rt.requeued++;
@@ -448,6 +458,7 @@ export function DrillScreen() {
         : buildDeck(active.chars, { ...cfg, ...active.snapshot });
       rt.pos = 0;
       rt.asked = 0;
+      rt.resolved = 0;
       rt.requeued = 0;
       rt.streak = 0;
       rt.stats = {};
@@ -463,6 +474,11 @@ export function DrillScreen() {
     // Resuming a runtime written before these fields existed.
     if (typeof rt.streak !== "number") rt.streak = 0;
     if (rt.firstKeyMs === undefined) rt.firstKeyMs = null;
+    // A quiz mid-flight before this field existed: best-effort backfill so the
+    // count doesn't jump. asked minus the card currently on screen (unresolved).
+    if (typeof rt.resolved !== "number") {
+      rt.resolved = Math.max(0, rt.asked - (rt.q && !rt.waiting ? 1 : 0));
+    }
     if (!rt.q) {
       nextQuestion();
       return;
@@ -599,7 +615,7 @@ export function DrillScreen() {
   const q = rt.q;
   const info = CHAR_INDEX[q.c];
   const total = limited ? rt.deck.length : null;
-  const pct = total ? Math.min(100, Math.round((100 * rt.asked) / total)) : null;
+  const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   const typedMode =
     q.dir === "jp2en"
       ? snap.styleJp2en === "typed"
@@ -650,7 +666,9 @@ export function DrillScreen() {
               something true to say. An empty pill is worse than no pill: "—
               first try" and "🔥 0" both report an absence as if it were data. */}
           <span className="flex flex-wrap items-center gap-1.5">
-            <Pill>{total ? `${rt.asked} / ${total}` : `${rt.asked} answered`}</Pill>
+            <Pill>
+              {total ? `${rt.resolved} / ${total}` : `${rt.resolved} answered`}
+            </Pill>
             {rt.requeued ? <Pill>{rt.requeued} re-queued</Pill> : null}
             {cfg.showAccuracy && accuracy !== null ? (
               <Pill tone="accent">
