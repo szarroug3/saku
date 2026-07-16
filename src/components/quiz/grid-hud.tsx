@@ -8,11 +8,17 @@
 // moves. Every colour comes from a theme token.
 //
 // The one deliberate departure from drill: drill's stage doesn't scroll, so
-// its sticky HUD carries no background at all (a `bg-bg` band punches an
-// opaque rectangle straight through kiri's mesh). The grid is a hundred cards
-// long and every one of them scrolls under these pills, so a soft
-// var(--bg) → transparent scrim sits behind the HUD — enough that the pills
-// stay readable over a passing card, short of the hard band drill dropped.
+// its sticky HUD carries no background at all. The grid is 214 cards long and
+// every one of them scrolls under these pills, so a scrim sits behind the HUD
+// — enough that the pills stay readable over a passing card, short of the hard
+// band drill dropped.
+//
+// That scrim CANNOT be an opaque paint of --bg, which is what it was: in kiri
+// --bg is an opaque #070a14 and the page ground is a gradient mesh, so the
+// scrim stamped a black rectangle across it — the "weird black box at the top"
+// in the bug report, and the third time this exact mistake has been made here
+// (the sticky header used bg-bg, the tooltip used bg-bg). It's a themed
+// treatment now, in globals.css: see .kq-grid-scrim.
 //
 // Pill / the fade / liveAccuracy are deliberate copies of drill-screen's, one
 // per screen, matching how drill keeps its own. ui.tsx is where they'd belong
@@ -30,11 +36,6 @@ import type { AccuracyMetric, SessionStats } from "@/types";
 const CONTROLS_IDLE_MS = 2000;
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
-/** The scrim: opaque under the pills, gone by the time it clears the
- * hairline, so a card sliding under the HUD dissolves instead of colliding. */
-const SCRIM =
-  "linear-gradient(to bottom, var(--bg) 0%, var(--bg) 58%, transparent 100%)";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -150,11 +151,14 @@ export function GridHud({ done, total, stats, streak, onFinish }: GridHudProps) 
   return (
     <div className="sticky top-0 z-10 py-1.5">
       {/* Sits behind the pills (the sticky wrapper is the stacking context)
-          and above the cards, which are outside it. */}
+          and above the cards, which are outside it. What it's MADE of is
+          per-theme and lives in globals.css (.kq-grid-scrim): a --bg fade
+          where the page ground really is a flat --bg, and a masked blur in
+          kiri, where the ground is a mesh and painting --bg over it is the
+          black box this used to be. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 -top-3 -bottom-6 -z-10"
-        style={{ background: SCRIM }}
+        className="kq-grid-scrim pointer-events-none absolute inset-x-0 -top-3 -bottom-6 -z-10"
       />
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         {/* Information — always quiet, and only ever present when it has

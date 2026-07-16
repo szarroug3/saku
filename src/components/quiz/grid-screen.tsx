@@ -3,8 +3,8 @@
 // Grid quiz screen (Tofugu-style sheet). Every selected character is a
 // card with its own input; Enter / form submit (or blur, when the
 // blur-submit setting is on) checks it. Correct → green + locked, focus
-// jumps to the next open card; wrong → red shake settling to the muted
-// wrong color; out of retries → locked (answer revealed if show-answer).
+// jumps to the next open card; wrong → red shake settling to the warning
+// tint; out of retries → locked (answer revealed if show-answer).
 // Auto-finishes 500ms after every card is resolved.
 //
 // All resumable state lives in active.runtime.grid (a plain mutable,
@@ -19,6 +19,11 @@
 // Finish quiet at 22% until you reach for it. There is no prose: a card is
 // green or it shook, which is the whole message, and the retry counter that
 // couldn't fit per-card is already spoken by the colour a card settles into.
+//
+// A card is a surface in the theme's own material, tinted by state, the same
+// way every other small tile in this app is (ui.tsx's Chip, pairs' cells,
+// deck-card's `smart`). The colours are all in globals.css under GRID QUIZ
+// SHEET — that section is where the design lives; this file just names states.
 
 import { useEffect, useRef, useState } from "react";
 
@@ -232,29 +237,31 @@ export function GridScreen() {
         streak={g.streak}
         onFinish={() => finishQuiz(g.stats)}
       />
-      {/* The cards. `rounded-xl` + `bg-gcard*` are theme hooks (globals.css):
-          they carry kiri's cheap inset highlight and, crucially, keep these
-          hundred-odd cards OUT of its backdrop-filter rule. No blur here. */}
-      <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2.5">
+      {/* The sheet and its cards are `kq-grid*` hook classes rather than
+          Tailwind colour utilities — see the GRID QUIZ SHEET section in
+          globals.css. Two things need naming here that a utility can't say:
+          these 214 cards must stay OUT of kiri's per-element frosting (the
+          sheet carries one blur for all of them instead), and each state is a
+          surface + edge + ink together, which is one class, not three. */}
+      <div className="kq-grid-sheet mt-4">
         {g.order.map((c) => {
           const card = g.cards[c];
-          const bg = shaking[c]
-            ? "animate-gshake bg-gcard-shake"
+          const state = shaking[c]
+            ? "animate-gshake kq-gcard-shake"
             : card.state === "right"
-              ? "bg-gcard-right"
+              ? "kq-gcard-right"
               : card.state === "wrong" || card.tries > 0
-                ? "bg-gcard-wrong"
-                : "bg-gcard";
+                ? "kq-gcard-wrong"
+                : "";
           return (
             <div
               key={c}
-              className={`rounded-xl px-2 pb-2.5 pt-3 text-center transition-colors duration-[250ms] ${bg}`}
+              className={`kq-gcard px-2 pb-2.5 pt-3 text-center ${state}`}
             >
-              {/* --primary-foreground is the token for type on a filled
-                  accent surface, which is exactly what a gcard is: every
-                  theme paints --gcard* saturated and mid-dark for this. */}
+              {/* No colour class: the glyph inherits the card's state ink, so
+                  the surface and the thing written on it can never disagree. */}
               <span
-                className="mb-2 block text-[30px] leading-[1.2] text-primary-foreground"
+                className="mb-2 block text-[30px] leading-[1.2]"
                 style={{ fontFamily: card.font }}
               >
                 {c}
@@ -285,11 +292,7 @@ export function GridScreen() {
                     // blurSubmit is read at blur time, live from config.
                     if (cfg.blurSubmit) check(c, true);
                   }}
-                  // bg-black/50 is a scrim, not a colour: it deepens whatever
-                  // --gcard* the card is currently wearing so the field reads
-                  // as a well in it. Neutral by design — a palette token here
-                  // would fight the fill it sits on.
-                  className="w-full rounded-md border-none bg-black/50 px-1 py-1.5 text-center text-sm text-primary-foreground disabled:opacity-90"
+                  className="kq-gcard-well w-full px-1 py-1.5 text-center text-sm"
                 />
               </form>
             </div>

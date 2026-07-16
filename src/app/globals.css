@@ -106,12 +106,6 @@
   --success-bg: #e6f6ec;
   --warning: #9a6205;
   --warning-bg: #fcf0d9;
-  /* The one cool violet does all the work here too — it IS the default card.
-   * Wrong is the theme's cool grey, dimmed; right/shake are success/danger. */
-  --gcard: #4b4ade;
-  --gcard-right: #17864b;
-  --gcard-wrong: #5c6072;
-  --gcard-shake: #d02f42;
   --arc: #4b4ade;
   --arc-track: #dcdfe8;
   --shadow-card: none;
@@ -131,12 +125,6 @@
   --dark-success-bg: #0d2818;
   --dark-warning: #fbbf4c;
   --dark-warning-bg: #2b2010;
-  /* Precision dark: saturated violet on near-black, and `wrong` recedes almost
-   * into the ground the way a disabled surface should. */
-  --dark-gcard: #3f42c9;
-  --dark-gcard-right: #1a8049;
-  --dark-gcard-wrong: #32353f;
-  --dark-gcard-shake: #c22c3e;
   --dark-arc: #5d61f0;
   --dark-arc-track: #272a34;
   --dark-shadow-card: none;
@@ -176,16 +164,6 @@
   --success-bg: #dcfce7;
   --warning: #a16207;
   --warning-bg: #fef3c7;
-  /* The one theme where the default card CANNOT be the accent: momentum's
-   * --accent IS --success, so an accent card would be indistinguishable from
-   * the correct card — the sheet's most important distinction. The default
-   * takes the theme's other half instead: the deep blue-slate its ground and
-   * type are already built from, which leaves green to mean exactly one thing
-   * here (right), the same claim the theme makes everywhere else. */
-  --gcard: #1f4a6b;
-  --gcard-right: #15803d;
-  --gcard-wrong: #5a7186;
-  --gcard-shake: #dc2626;
   --arc: #15803d;
   --arc-track: #d3e0ec;
   --shadow-card: 0 3px 0 var(--border);
@@ -205,13 +183,6 @@
   --dark-success-bg: #123726;
   --dark-warning: #eab35a;
   --dark-warning-bg: #3a2a10;
-  /* Same split on the dark ground: slate default, green reserved for right.
-   * --dark-success (#34d76d) is far too light to carry white type, so the
-   * correct card takes a deepened green of the same family. */
-  --dark-gcard: #275a80;
-  --dark-gcard-right: #17854a;
-  --dark-gcard-wrong: #3a5062;
-  --dark-gcard-shake: #c0392c;
   --dark-arc: #22a95a;
   --dark-arc-track: #22384a;
   --dark-shadow-card: 0 3px 0 var(--border);
@@ -251,15 +222,6 @@
   --success-bg: rgba(15, 122, 69, 0.1);
   --warning: #8a5a08;
   --warning-bg: rgba(138, 90, 8, 0.12);
-  /* Opaque on purpose, unlike the rest of kiri: 100+ cards are the one place
-   * the mesh must NOT read through — a translucent sheet over a gradient makes
-   * every card a different colour and the states stop meaning anything. The
-   * atmosphere is carried by the deep cyan and by the inset top highlight
-   * further down (the glass read, no blur). */
-  --gcard: #096b87;
-  --gcard-right: #0f7a45;
-  --gcard-wrong: #556b80;
-  --gcard-shake: #b4232f;
   /* Opaque track for the same reason the cards are: a translucent band over
    * the mesh reads as a different colour at every point of the circle. */
   --arc: #096b87;
@@ -286,11 +248,6 @@
   --dark-success-bg: rgba(74, 222, 128, 0.13);
   --dark-warning: #fbbf5e;
   --dark-warning-bg: rgba(251, 191, 94, 0.14);
-  /* Deep cyan on the near-black mesh; `wrong` sinks to a cold slate. */
-  --dark-gcard: #17708f;
-  --dark-gcard-right: #16855a;
-  --dark-gcard-wrong: #354558;
-  --dark-gcard-shake: #bf3546;
   /* --dark-accent (#67d4f5) is the luminous cyan the theme signs with, but as
    * a filled band it's the "too light" read — it dissolves into the mesh.
    * Deepened until the arc is a solid object again. */
@@ -342,10 +299,6 @@
     --success-bg: var(--dark-success-bg);
     --warning: var(--dark-warning);
     --warning-bg: var(--dark-warning-bg);
-    --gcard: var(--dark-gcard);
-    --gcard-right: var(--dark-gcard-right);
-    --gcard-wrong: var(--dark-gcard-wrong);
-    --gcard-shake: var(--dark-gcard-shake);
     --arc: var(--dark-arc);
     --arc-track: var(--dark-arc-track);
     --shadow-card: var(--dark-shadow-card);
@@ -369,10 +322,6 @@
   --success-bg: var(--dark-success-bg);
   --warning: var(--dark-warning);
   --warning-bg: var(--dark-warning-bg);
-  --gcard: var(--dark-gcard);
-  --gcard-right: var(--dark-gcard-right);
-  --gcard-wrong: var(--dark-gcard-wrong);
-  --gcard-shake: var(--dark-gcard-shake);
   --arc: var(--dark-arc);
   --arc-track: var(--dark-arc-track);
   --shadow-card: var(--dark-shadow-card);
@@ -442,10 +391,6 @@
   --color-success-bg: var(--success-bg);
   --color-warning: var(--warning);
   --color-warning-bg: var(--warning-bg);
-  --color-gcard: var(--gcard);
-  --color-gcard-right: var(--gcard-right);
-  --color-gcard-wrong: var(--gcard-wrong);
-  --color-gcard-shake: var(--gcard-shake);
   --font-sans: var(--font-ui);
   --animate-gshake: gshake 0.45s;
 }
@@ -529,7 +474,11 @@ body {
  *   drill kana (96px) ...... [class~="leading-[1.15]"]
  *   drill script label ..... [class~="min-h-4"][class~="text-center"]
  *   ui.tsx Lbl ............. [class~="uppercase"][class~="tracking-[0.04em]"]
- *   grid quiz cards ........ [class~="rounded-xl"][class~="bg-gcard*"]
+ *
+ * The grid sheet is the one exception: it carries real `kq-grid*` hook classes
+ * (see the GRID QUIZ SHEET section at the bottom) because 214 cards need to be
+ * scoped OUT of kiri's per-element frosting by name, which a shared Tailwind
+ * class can't express. `.kq-pairs-miss` above is the same idea.
  * ======================================================================= */
 
 /* Elevation for every theme, expressed purely through tokens. */
@@ -654,9 +603,10 @@ body {
 }
 
 /* Frosted glass. Deliberately scoped to the handful of chrome surfaces —
- * cards, buttons, inputs, chips. It is NOT on the grid quiz cards (100+ of
- * them, bg-gcard*) or the character picker's per-row tiles (rounded-[10px]);
- * those get the flat translucent --card fill and no GPU work. */
+ * cards, buttons, inputs, chips. It is NOT on the grid quiz cards (214 of
+ * them) or the character picker's per-row tiles (rounded-[10px]). The grid
+ * gets the same frosted read from ONE blurred element instead — see the
+ * GRID QUIZ SHEET section at the bottom of this file. */
 [data-theme="kiri"] [class~="rounded-xl"][class~="bg-card"],
 [data-theme="kiri"] [class~="rounded-lg"][class~="bg-card"],
 [data-theme="kiri"] [class~="rounded-full"][class~="border"] {
@@ -674,18 +624,276 @@ body {
   backdrop-filter: blur(18px) saturate(150%);
 }
 
-/* Cheap inner top highlight for the grid cards — the glass read, no blur. */
-[data-theme="kiri"] [class~="rounded-xl"][class~="bg-gcard"],
-[data-theme="kiri"] [class~="rounded-xl"][class~="bg-gcard-right"],
-[data-theme="kiri"] [class~="rounded-xl"][class~="bg-gcard-wrong"],
-[data-theme="kiri"] [class~="rounded-xl"][class~="bg-gcard-shake"] {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13);
-}
-
 /* The accent emits light. */
 
 /* Ultralight, luminous kana — suits a single glyph at 96px. */
 [data-theme="kiri"] [class~="leading-[1.15]"] {
   font-weight: 200;
   text-shadow: 0 0 32px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* ==========================================================================
+ * GRID QUIZ SHEET  (src/components/quiz/grid-screen.tsx, grid-hud.tsx)
+ *
+ * The sheet used to be 214 saturated --gcard bricks with black wells — its own
+ * private palette, sitting inside an app built from tinted surfaces. It read as
+ * a different program, which is exactly what the user said twice.
+ *
+ * So the card is now what a card is EVERYWHERE else here: a surface in the
+ * theme's own material, tinted by state, with a matching edge and matching ink.
+ * That is already this app's vocabulary for "one small tile in four states" —
+ * ui.tsx's Chip is border+bg+text of accent / warning / border, pairs' cells
+ * are the same in accent / danger / border, deck-card's `smart` tile likewise.
+ * The grid now simply speaks it, which is why --gcard* below are DERIVED from
+ * the semantic tokens rather than being another hand-picked palette:
+ *
+ *                                  fill        edge       glyph
+ *     default (open, untouched) .. --card      --border   --text
+ *     right   (correct, locked) .. --success   --success  --success
+ *     wrong   (missed / spent) ... --warning   --warning  --warning
+ *     shake   (wrong, 450ms) ..... --danger    --danger   --danger
+ *
+ * — each at the strength the three constants below set.
+ *
+ * `wrong` is the theme's WARNING, not a grey. It has to cover both "locked, out
+ * of retries" and "still open but you've missed it once" (grid-screen.tsx picks
+ * it for `state === "wrong" || tries > 0`), and "attempted, not yet right" is
+ * precisely what warning means on a Chip's `part` state. A grey would also have
+ * had to separate itself from --card and --panel, which in kiri dark are 5.5%
+ * and 7% white — i.e. from nothing. Hue does that work for free.
+ *
+ * `shake` and `wrong` are deliberately close (amber decaying out of red): shake
+ * lasts 450ms, is identified by MOTION, and settles into wrong, so they are the
+ * same story one beat apart rather than two states to tell apart.
+ *
+ * Because these derive, every theme and both modes come free and correct — no
+ * --dark-gcard mirror, and a theme that retunes its --success retunes the sheet
+ * with it. Per-theme deviations live at the bottom of this section.
+ * ======================================================================= */
+
+[data-theme] {
+  --gcard: var(--card);
+  --gcard-edge: var(--border);
+  --gcard-ink: var(--text);
+
+  /* Tint / edge / ink per state. The three states are the same shape, so the
+   * three numbers below are the whole design:
+   *
+   * 22% — the tint. A hair stronger than the matching --*-bg token (10–14%),
+   *   which is tuned for ONE chip read up close; this is 214 tiles read at a
+   *   glance, across a mesh in kiri. Measured: it lifts default→right from
+   *   11.9 to 31.3 ΔE in kiri dark, the worst ground in the app.
+   * 55% — the edge. Enough to be a coloured hairline rather than a smudge
+   *   (~75 ΔE against its own fill), which is half of what makes the state
+   *   legible when the fill alone is subtle.
+   * 65% — the ink, mixed toward --text rather than left as the raw --success
+   *   / --warning / --danger. This is the one that has to self-correct: --text
+   *   is near-black in a light theme and near-white in a dark one, so the SAME
+   *   expression deepens the glyph on pale tints and lifts it on dark ones.
+   *   Raw state colours fail 4.5:1 as a glyph on their own tint in four of the
+   *   eight theme×mode combos (kiri light 3.62, momentum light 3.95, graphite
+   *   light 4.12, kiri dark 4.63). 65% is the first step with real margin
+   *   rather than a number sitting on the line: worst combo 5.20 (momentum
+   *   light), against 4.50 at 75%. The glyph is still two-thirds state colour.
+   */
+  --gcard-right: color-mix(in srgb, var(--success) 22%, transparent);
+  --gcard-right-edge: color-mix(in srgb, var(--success) 55%, transparent);
+  --gcard-right-ink: color-mix(in srgb, var(--success) 65%, var(--text));
+
+  --gcard-wrong: color-mix(in srgb, var(--warning) 22%, transparent);
+  --gcard-wrong-edge: color-mix(in srgb, var(--warning) 55%, transparent);
+  --gcard-wrong-ink: color-mix(in srgb, var(--warning) 65%, var(--text));
+
+  --gcard-shake: color-mix(in srgb, var(--danger) 22%, transparent);
+  --gcard-shake-edge: color-mix(in srgb, var(--danger) 55%, transparent);
+  --gcard-shake-ink: color-mix(in srgb, var(--danger) 65%, var(--text));
+
+  /* The sheet's own ground. `none` for the three themes whose page really is a
+   * flat --bg — there is nothing to damp, and a panel there would be a box for
+   * the sake of one. kiri overrides it. */
+  --gcard-panel: transparent;
+
+  /* The well the answer is typed into. Ink-on-transparent rather than a flat
+   * colour, so it deepens whatever surface the card is currently wearing
+   * instead of fighting it — the one thing the old bg-black/50 got right. */
+  --gcard-well: color-mix(in srgb, var(--text) 7%, transparent);
+  --gcard-well-edge: color-mix(in srgb, var(--text) 12%, transparent);
+
+  /* The HUD scrim (BUG 1). On the three themes whose page ground IS a flat
+   * --bg, a --bg → transparent gradient is honest and free: it paints the
+   * ground back over the cards. kiri overrides it below, because there --bg
+   * is an opaque #070a14 and the ground is a MESH — painting --bg over the
+   * mesh stamps the black rectangle the user reported. */
+  --gcard-scrim: linear-gradient(
+    to bottom,
+    var(--bg) 0%,
+    var(--bg) 58%,
+    transparent 100%
+  );
+  --gcard-scrim-filter: none;
+  /* The mask is what lets a FILTER fade out; see .kq-grid-scrim. */
+  --gcard-scrim-mask: none;
+}
+
+/* ---------- the sheet ---------------------------------------------------- */
+
+.kq-grid-sheet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+  background-color: var(--gcard-panel);
+}
+
+.kq-gcard {
+  border: 1px solid var(--gcard-edge);
+  border-radius: var(--radius-md);
+  background-color: var(--gcard);
+  color: var(--gcard-ink);
+  /* Every theme's own tile treatment in one line: momentum's hard 2px shelf,
+   * kiri's inset top highlight, nothing at all for aizome and graphite. The
+   * same token ui.tsx's buttons and chips elevate with. */
+  box-shadow: var(--shadow-btn);
+  transition:
+    background-color 250ms,
+    border-color 250ms,
+    color 250ms;
+}
+
+.kq-gcard-right {
+  border-color: var(--gcard-right-edge);
+  background-color: var(--gcard-right);
+  color: var(--gcard-right-ink);
+}
+
+.kq-gcard-wrong {
+  border-color: var(--gcard-wrong-edge);
+  background-color: var(--gcard-wrong);
+  color: var(--gcard-wrong-ink);
+}
+
+.kq-gcard-shake {
+  border-color: var(--gcard-shake-edge);
+  background-color: var(--gcard-shake);
+  color: var(--gcard-shake-ink);
+}
+
+/* The glyph takes the card's state ink by inheritance; the well deliberately
+ * does NOT — it stays neutral, so a revealed answer is --text on a --text-tinted
+ * well, the app's best-contrast pair, identically in all four states. */
+.kq-gcard-well {
+  border: 1px solid var(--gcard-well-edge);
+  border-radius: var(--radius-sm);
+  background-color: var(--gcard-well);
+  color: var(--text);
+}
+.kq-gcard-well:focus-visible {
+  border-color: currentColor;
+  outline: none;
+}
+/* A locked card's answer (show-answer reveals the romaji here) is information,
+ * not a greyed-out control. Chromium leaves an explicit `color` alone on a
+ * disabled input — verified, this pair is a no-op there — but Safari overrides
+ * it with its own -webkit-text-fill-color, and this app is aimed at a Mac
+ * (every --font-kana is Hiragino). Pin both rather than ship a reveal that is
+ * legible on one engine. Replaces the old `disabled:opacity-90`, which dimmed
+ * the answer on every engine to fix one. */
+.kq-gcard-well:disabled {
+  opacity: 1;
+  -webkit-text-fill-color: var(--text);
+}
+
+/* ---------- the HUD scrim (BUG 1) --------------------------------------- */
+
+.kq-grid-scrim {
+  background: var(--gcard-scrim);
+  -webkit-backdrop-filter: var(--gcard-scrim-filter);
+  backdrop-filter: var(--gcard-scrim-filter);
+  /* Not a colour — a mask reads only the alpha channel, and black is simply
+   * "keep". This is the piece that lets kiri's blur FADE: you cannot put a
+   * gradient on backdrop-filter, but you can mask the element carrying it, and
+   * the filter fades out with it. */
+  -webkit-mask-image: var(--gcard-scrim-mask);
+  mask-image: var(--gcard-scrim-mask);
+}
+
+/* ---------- per-theme deviations ---------------------------------------- */
+
+/* aizome has no glass and no boxes, and frosting here would be as wrong as the
+ * black box is in kiri. It gets flat washi and a hairline — which is already
+ * the default above — so the only thing it needs is its OWN squared-off edge,
+ * the same 2px its chips take. */
+[data-theme="aizome"] .kq-gcard {
+  border-radius: 2px;
+}
+
+/* kiri: ONE frosted element for the whole sheet, and the answer to the tint
+ * drift the previous pass went opaque to avoid.
+ *
+ * The cards are the same translucent --card fill Home's tiles wear, so they
+ * want the same frosted ground under them — but at 214 of them, per-card
+ * backdrop-filter is 214 backdrop snapshots per frame. Blurring the SHEET
+ * instead puts one filter behind all of them: every card's backdrop is then
+ * the same blurred, saturated plane and the gutters show that same plane, so
+ * the sheet reads as one material rather than 214 samples of a gradient.
+ *
+ * That is not a guess. Scrolling a 214-card Full Coverage run, frame times:
+ *
+ *   one panel blur (this) ... p95 17.6ms, 0/149 frames over 20ms
+ *   per-card blur x214 ...... p95 33.4ms, 31/119 frames over 20ms
+ *   no blur at all .......... p95 17.6ms, 0/149 frames over 20ms
+ *
+ * Medians are all 16.7ms because vsync caps them; the tail is where it shows.
+ * Per-card drops a quarter of frames to ~30fps. One panel is free — it costs
+ * exactly what painting no blur at all costs.
+ *
+ * --gcard-panel and the 120% are what make the states mean anything here, and
+ * they are the honest answer to the objection the previous pass went opaque
+ * over. That objection was RIGHT, and it is bigger than it looks: a bare --card
+ * tile over this mesh swings 69.5 ΔE between the violet blob and the teal one,
+ * while the whole default→right signal is 11.9 ΔE — noise 6x signal. Nothing
+ * you can do to the tint fixes that ratio, because the drift rides on the
+ * fill's TRANSPARENCY, not its colour: strengthening the tint moves signal and
+ * noise together, and the green of `right` is fighting a teal blob besides.
+ * Damping the ground is the only lever that separates them, and one translucent
+ * panel does it for the whole sheet at once.
+ *
+ * saturate() is 120% for the same reason, where every other kiri surface uses
+ * 150%. On a 260px card the boost is what makes the mesh sing; under a 214-tile
+ * sheet it amplifies precisely the chroma the states must beat — and it showed:
+ * an amber `wrong` under the pink blob came out ROSE, a hair from `shake`.
+ * Frosted glass scatters and mutes anyway; it does not boost saturation. Muting
+ * is the honest read as well as the legible one.
+ *
+ * Together, measured: default drift 69.5 → 20.2 ΔE, the amber card's
+ * violet↔pink drift 26.5 → 17.5, default→right 11.9 → 31.3. Signal finally
+ * beats noise, every card sits on the same ground, and at 65% the mesh still
+ * reads THROUGH the panel — this is not a paint of --bg over the mesh, which
+ * is what BUG 1 was.
+ *
+ * The frost is one token because the scrim is stacked ON the sheet: the scrim's
+ * backdrop is the sheet's already-saturated output, so a second, different
+ * saturate() there multiplies (1.2 x 1.5 = 1.8) and the HUD band comes out more
+ * chromatic than the sheet an inch below it — a seam across the top of the
+ * page. Same frost, one value, no seam. */
+[data-theme="kiri"] {
+  --gcard-panel: color-mix(in srgb, var(--bg) 65%, transparent);
+  --gcard-frost: blur(18px) saturate(120%);
+}
+[data-theme="kiri"] .kq-grid-sheet {
+  -webkit-backdrop-filter: var(--gcard-frost);
+  backdrop-filter: var(--gcard-frost);
+}
+
+/* And the scrim stops being a paint. No --bg anywhere: the mesh reads straight
+ * through, and a card passing under genuinely dissolves into the blur instead
+ * of being hidden behind a rectangle. */
+[data-theme="kiri"] {
+  --gcard-scrim: none;
+  --gcard-scrim-filter: var(--gcard-frost);
+  --gcard-scrim-mask: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 58%,
+    transparent 100%
+  );
 }
