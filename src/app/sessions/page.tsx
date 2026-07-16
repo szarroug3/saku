@@ -6,7 +6,7 @@ export default function SessionsPage() {
     <>
       <PageTitle
         title="Recent sessions"
-        sub="Click a row to reopen its results · select with the dot to delete"
+        sub="Every quiz you've finished, newest first."
       />
       <SessionsList />
     </>

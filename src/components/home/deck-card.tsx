@@ -14,6 +14,8 @@ import { type ReactNode } from "react";
 import { formatAccuracy } from "@/lib/accuracy";
 import type { AccuracyMetric } from "@/types";
 
+import { AccuracyRing } from "./accuracy-ring";
+
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
@@ -26,40 +28,6 @@ export function metricWord(metric: AccuracyMetric): string {
 /** "1 character" / "12 characters". */
 export function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
-}
-
-/**
- * Accuracy as a filled arc. `pct === null` means never practised: a dashed
- * empty ring and no number, the same read the picker already uses.
- *
- * The label always carries its unit (formatAccuracy), so a ring can never be
- * misread as a count of anything.
- */
-function AccuracyRing({ pct }: { pct: number | null }) {
-  if (pct === null) {
-    return (
-      <span
-        title="not practised yet"
-        // `block`: these spans sit inside a <button>, and an inline span
-        // ignores width/height outright.
-        className="block h-[34px] w-[34px] flex-none rounded-full border border-dashed border-border bg-panel"
-      />
-    );
-  }
-  return (
-    <span
-      title="accuracy from your session history"
-      className="grid h-[34px] w-[34px] flex-none place-items-center rounded-full"
-      // Conic arc from the accent, remainder on a muted track.
-      style={{
-        background: `conic-gradient(var(--accent) ${pct}%, var(--panel) 0)`,
-      }}
-    >
-      <span className="grid h-[27px] w-[27px] place-items-center rounded-full bg-bg text-[9px] tabular-nums text-text">
-        {formatAccuracy(pct)}
-      </span>
-    </span>
-  );
 }
 
 /**
@@ -137,7 +105,9 @@ export function DeckCard({
     >
       {pct === undefined ? null : (
         <span className="absolute right-2.5 top-2.5">
-          <AccuracyRing pct={pct} />
+          {/* A never-practised deck is one dashed ring on a shelf of six, and
+              that reads as information. */}
+          <AccuracyRing pct={pct} unpractised="dashed" />
         </span>
       )}
       <span

@@ -17,40 +17,12 @@
 // dissolve every tile's border into a hairline and take the three states with
 // it. A radius no theme selector matches is how the tiles opt out.
 
-import { formatAccuracy } from "@/lib/accuracy";
 import type { KanaChar } from "@/types";
+
+import { AccuracyRing } from "./accuracy-ring";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
-}
-
-/**
- * The same object as the deck cards' accuracy ring — same conic arc, same
- * accent-on-panel track, same bg-bg plug, same 34px — so a percentage means
- * and looks like the same thing on both sides of the Custom… card.
- *
- * Rebuilt rather than imported only because deck-card.tsx keeps its AccuracyRing
- * private; if that one changes, this must follow.
- *
- * No null case, unlike the deck cards: an unpractised deck is one dashed ring
- * on a shelf of six and reads as information, whereas 54 dashed rings on a
- * day-one picker is just noise. Here an unpractised row simply has no ring —
- * the number is hidden, never zeroed, because a 0% you never earned is a lie.
- */
-function RowRing({ pct }: { pct: number }) {
-  return (
-    <span
-      title="accuracy from your session history"
-      className="grid h-[34px] w-[34px] flex-none place-items-center rounded-full"
-      style={{
-        background: `conic-gradient(var(--accent) ${pct}%, var(--panel) 0)`,
-      }}
-    >
-      <span className="grid h-[27px] w-[27px] place-items-center rounded-full bg-bg text-[9px] tabular-nums text-text">
-        {formatAccuracy(pct)}
-      </span>
-    </span>
-  );
 }
 
 export function PickerRow({
@@ -113,7 +85,9 @@ export function PickerRow({
           {chars.map((ch) => ch.r[0]).join(" ")}
         </span>
       </span>
-      {pct === null ? null : <RowRing pct={pct} />}
+      {/* No dashed placeholder here, unlike the deck cards: 54 dashed rings on
+          a day-one picker is noise, so an unpractised row simply has no ring. */}
+      <AccuracyRing pct={pct} unpractised="hidden" />
     </div>
   );
 }

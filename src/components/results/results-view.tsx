@@ -16,6 +16,7 @@
 
 import { useMemo, useState } from "react";
 
+import { AccuracyRing } from "@/components/home/accuracy-ring";
 import { PatternSection } from "@/components/results/pattern-rows";
 import {
   deriveRun,
@@ -26,7 +27,6 @@ import {
 } from "@/components/results/summary";
 import { TriageSection } from "@/components/results/triage-board";
 import { Card, Chip, PageTitle } from "@/components/ui";
-import { formatAccuracy } from "@/lib/accuracy";
 import { analyzeRun } from "@/lib/confusions";
 import { weakestChars } from "@/lib/decks";
 import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
@@ -43,26 +43,27 @@ function modeName(m: QuizMode): string {
 /**
  * Accuracy as a filled arc — the same read as Home's deck rings, at hero size.
  * A finished run always has a number, so there is no dashed empty state here;
- * `null` only happens if a session somehow stored nothing.
+ * `null` only happens if a session somehow stored nothing, and then the ring
+ * simply doesn't draw rather than claiming a 0% nobody earned.
+ *
+ * Home's AccuracyRing at 78px rather than a second copy of the arc: this used
+ * to be its own conic, which meant its seam had to be fixed twice and its
+ * `rounded-full border` silently collected globals.css's per-theme chrome —
+ * squaring the "circle" to a 2px-radius box in aizome.
  *
  * Green at 100%: the one moment the ring is reporting an achievement rather
  * than a measurement.
  */
 function BigRing({ pct }: { pct: number | null }) {
-  const arc = pct === 100 ? "var(--success)" : "var(--accent)";
   return (
-    <span
-      className="grid h-[78px] w-[78px] flex-none place-items-center rounded-full border border-border"
-      style={
-        pct === null
-          ? undefined
-          : { background: `conic-gradient(${arc} ${pct}%, var(--panel) 0)` }
-      }
-    >
-      <span className="grid h-[63px] w-[63px] place-items-center rounded-full bg-card text-[17px] font-semibold tabular-nums">
-        {formatAccuracy(pct)}
-      </span>
-    </span>
+    <AccuracyRing
+      pct={pct}
+      unpractised="hidden"
+      size={78}
+      stroke={7.5}
+      arc={pct === 100 ? "var(--success)" : "var(--arc)"}
+      labelClassName="text-[17px] font-semibold tabular-nums"
+    />
   );
 }
 

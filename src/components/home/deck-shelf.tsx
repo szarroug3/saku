@@ -55,9 +55,7 @@ export function DeckShelf({
         dashed
         glyph="⚙"
         label="Custom…"
-        subtitle={
-          pickerOpen ? "picking exact rows below" : "pick exact rows in the picker"
-        }
+        subtitle={pickerOpen ? "open below" : "choose exactly what you want"}
         onClick={onCustom}
       />
     </Shelf>

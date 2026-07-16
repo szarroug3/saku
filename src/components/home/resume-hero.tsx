@@ -84,7 +84,7 @@ export function ResumeHero({
 
   const scripts = SETS.filter((set) =>
     set.sections.some((sec) => sec.chars.some((c) => cfg.enabled[c.c])),
-  ).map((s) => s.label.toLowerCase());
+  ).map((s) => s.label);
 
   const what = [
     scripts.length ? scripts.join(" + ") : "no characters",

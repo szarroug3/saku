@@ -34,10 +34,7 @@ export default function StatsPage() {
 
   return (
     <>
-      <PageTitle
-        title="Statistics"
-        sub="Everything you have practised, remembered — across every saved session"
-      />
+      <PageTitle title="Statistics" />
 
       <AccuracyTrend history={history} metric={cfg.accuracyMetric} />
 

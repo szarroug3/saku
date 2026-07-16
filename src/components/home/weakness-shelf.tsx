@@ -41,8 +41,8 @@ export function WeaknessShelf({
         label="Weakest 20"
         subtitle={
           weakestAcc === null
-            ? "practise first to find these"
-            : `${formatAccuracy(weakestAcc)} ${metricWord(metric)} · biggest gain`
+            ? "nothing to go on yet"
+            : `${formatAccuracy(weakestAcc)} ${metricWord(metric)}`
         }
         disabled={disabled || !weakest.length}
         onClick={() => onPick(weakest)}
@@ -64,7 +64,7 @@ export function WeaknessShelf({
       <DeckCard
         smart
         glyph="↺"
-        label="Last misses"
+        label="Last Misses"
         subtitle={
           misses.length ? plural(misses.length, "character") : "nothing missed yet"
         }

@@ -45,7 +45,7 @@ export default function ChartPage() {
 
   return (
     <>
-      <PageTitle title="Kana chart" sub="Japanese · romaji · mnemonic" />
+      <PageTitle title="Kana chart" sub="Click a character to hear it." />
       <Card>
         <p className="mb-1.5 text-[13px]">
           <span className="text-text-muted">Tofugu guides:</span>

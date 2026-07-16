@@ -298,7 +298,15 @@ export function PairsScreen() {
                 style={cell.kind === "kana" ? { fontFamily: cell.font } : undefined}
                 className={[
                   "cursor-pointer rounded-lg px-1 py-4 text-xl",
-                  "transition-[opacity,background-color,border-color] duration-300",
+                  "transition-[opacity,background-color,border-color,outline-color] duration-300",
+                  // EVERY state carries `border` at the same 1px and changes
+                  // only its colour. The picked cell used to thicken to
+                  // `border-2`, which grew its box by 1px on each side and
+                  // shoved all sixteen cells in the grid — the board twitched
+                  // every time you touched it. The extra weight is an OUTLINE
+                  // now: drawn outside the box, no layout to move, and pulled
+                  // back over the border with a negative offset so it still
+                  // reads as one 2px edge rather than a halo.
                   cell.gone
                     ? // Matched: it fades out rather than vanishing, and stops
                       // being a target the instant it's spent.
@@ -306,7 +314,7 @@ export function PairsScreen() {
                     : bad
                       ? "kq-pairs-miss border border-danger bg-danger-bg text-danger"
                       : picked
-                        ? "border-2 border-accent bg-accent-bg text-accent"
+                        ? "border border-accent bg-accent-bg text-accent outline-2 -outline-offset-2 outline-accent"
                         : "border border-border bg-card text-text hover:bg-panel",
                 ].join(" ")}
               >

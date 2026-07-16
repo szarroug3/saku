@@ -49,7 +49,7 @@ export function PickerBar({
   const reason = !count
     ? "Pick at least one character."
     : howBroken
-      ? "The setup above has no direction — nothing can start."
+      ? "Choose a direction in the setup above."
       : null;
 
   return (
