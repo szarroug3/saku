@@ -3,7 +3,7 @@
 // Grid quiz screen (Tofugu-style sheet). Every selected character is a
 // card with its own input; Enter / form submit (or blur, when the
 // blur-submit setting is on) checks it. Correct → green + locked, focus
-// jumps to the next open card; wrong → red shake settling to the warning
+// jumps to the next open card; wrong → red shake settling to a red still-open
 // tint; out of retries → locked (answer revealed if show-answer).
 // Auto-finishes 500ms after every card is resolved.
 //
@@ -19,6 +19,10 @@
 // Finish quiet at 22% until you reach for it. There is no prose: a card is
 // green or it shook, which is the whole message, and the retry counter that
 // couldn't fit per-card is already spoken by the colour a card settles into.
+//
+// The sheet's rule, in one line, because it explains every class below: a
+// RESOLVED card recedes and an OPEN card is the work. Attention follows what's
+// left, and progress reads as the sheet going quiet.
 //
 // A card is a surface in the theme's own material, tinted by state, the same
 // way every other small tile in this app is (ui.tsx's Chip, pairs' cells,
@@ -246,13 +250,22 @@ export function GridScreen() {
       <div className="kq-grid-sheet mt-4">
         {g.order.map((c) => {
           const card = g.cards[c];
+          // Presentation only — this reads the state machine, it doesn't touch
+          // it. The one thing worth naming: `wrong` and `missed` are two
+          // classes where there used to be one (`state === "wrong" ||
+          // tries > 0`). They have to be, now that a resolved card recedes: a
+          // card you've missed once but can still answer is the card you most
+          // owe, and it was wearing the resolved look. `missed` keeps it at
+          // full presence; only the out-of-retries card steps back.
           const state = shaking[c]
             ? "animate-gshake kq-gcard-shake"
             : card.state === "right"
               ? "kq-gcard-right"
-              : card.state === "wrong" || card.tries > 0
+              : card.state === "wrong"
                 ? "kq-gcard-wrong"
-                : "";
+                : card.tries > 0
+                  ? "kq-gcard-missed"
+                  : "";
           return (
             <div
               key={c}

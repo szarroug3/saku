@@ -161,19 +161,36 @@ export function AccuracyTrend({
                * zero re-renders. The end columns anchor to their own edge
                * instead of centring, or they'd hang off the card.
                *
-               * THE TOOLTIP IS A CARD — the same surface ui/tooltip.tsx now
-               * wears: the four tokens Card uses (bg-card, border-border,
-               * --radius, --shadow-card), so each theme draws it the way it
-               * draws every other surface, and in kiri a blur behind the
-               * translucent --card does the occluding rather than an opaque
-               * fill. rounded-(--radius), NOT rounded-lg/xl: those class PAIRS
-               * with bg-card are globals.css's Btn and Card selectors and would
-               * swap in --shadow-btn or dissolve the fill into aizome's two
-               * hairlines. The kiri frost is scoped to the theme — the other
-               * three have an opaque --card and would pay for a blur that does
-               * nothing. No arrow, for the reason ui/tooltip.tsx spells out. */}
+               * THE TOOLTIP IS A CARD — the same surface ui/tooltip.tsx wears:
+               * the four tokens Card uses. --border, --radius and --shadow-card
+               * are the classes below; --card arrives via kq-surface, which is
+               * where this one has to differ from its portalled twin.
+               *
+               * WHY NOT `bg-card` + the kiri `backdrop-blur` this used to copy
+               * off ui/tooltip.tsx: BECAUSE THAT BLUR DOES NOTHING HERE, and it
+               * is worth knowing why before copying it back. This span is a
+               * child of the trend Card, and in kiri that Card carries its own
+               * backdrop-filter — which makes it a BACKDROP ROOT, and a nested
+               * backdrop-filter inside one is a no-op in Chromium. So the frost
+               * never fired, --card is 5.5% white in kiri dark, and the result
+               * was a pane you could read "ACCURACY TREND" straight through.
+               * ui/tooltip.tsx runs the identical declaration and works — but it
+               * works because Radix PORTALS it to <body>, where its backdrop is
+               * the page. The portal is the load-bearing part, not the class.
+               *
+               * kq-surface gets the same look without a portal (and so without
+               * the state this chart deliberately doesn't keep): it rebuilds the
+               * card's surface opaquely — --bg, kiri's mesh, then --card over
+               * both — so it composites to exactly what the settings tooltip
+               * composites to, while actually occluding the bars. See the
+               * OPAQUE GLASS section in globals.css.
+               *
+               * rounded-(--radius), NOT rounded-lg/xl: those class PAIRS with
+               * bg-card are globals.css's Btn and Card selectors and would swap
+               * in --shadow-btn or dissolve the fill into aizome's hairlines.
+               * No arrow, for the reason ui/tooltip.tsx spells out. */}
               <span
-                className={`shadow-card pointer-events-none absolute bottom-full z-10 mb-2 hidden whitespace-nowrap rounded-(--radius) border border-border bg-card px-2 py-1 text-[11px] tabular-nums text-text group-hover:block [[data-theme=kiri]_&]:backdrop-blur-[18px] [[data-theme=kiri]_&]:backdrop-saturate-150 ${
+                className={`kq-surface shadow-card pointer-events-none absolute bottom-full z-10 mb-2 hidden whitespace-nowrap rounded-(--radius) border border-border px-2 py-1 text-[11px] tabular-nums text-text group-hover:block ${
                   i === 0
                     ? "left-0"
                     : last

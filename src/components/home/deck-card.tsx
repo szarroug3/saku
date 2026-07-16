@@ -59,31 +59,12 @@ export function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
-/**
- * Practice volume, drawn RELATIVE to the busiest deck on the shelf rather than
- * to any absolute target — the honest claim is "you drill this one less than
- * that one", not "you are 20% done".
- *
- * NO LONGER USED BY THE DECK CARDS — see the note at the top of this file. It
- * lives on only for src/components/stats/deck-accuracy.tsx, which imports it
- * from here; on the Stats table the bars form a column you can read down, which
- * is a different (and legible) claim from one lone bar on a small tile. If that
- * import goes, delete this.
- */
-export function VolumeBar({ seen, max }: { seen: number; max: number }) {
-  // No deck practised yet — a row of empty bars says nothing, and 0/0 is NaN.
-  if (max <= 0) return null;
-  return (
-    // Spans, not divs: these render inside a <button>, where block-level
-    // children are invalid HTML and trip React's hydration checks.
-    <span className="mt-1.5 block h-[3px] w-full overflow-hidden rounded-full bg-panel">
-      <span
-        className="block h-full rounded-full bg-accent opacity-80"
-        style={{ width: `${Math.round((100 * seen) / max)}%` }}
-      />
-    </span>
-  );
-}
+/* VolumeBar was here, and its own doc comment said "if that import goes, delete
+ * this" — Statistics was the last importer, and it has stopped. The bar drew
+ * practice volume relative to the busiest deck: an invisible denominator, and a
+ * second percentage-shaped mark beside an accuracy ring that actually is a
+ * percentage. cfg.showVolume now gates the `seen 68×` clause on both screens,
+ * which is the same fact stated absolutely. */
 
 /** One shelf tile. A toggle over the selection — or, with `state` omitted, a
  * plain button for the one card that isn't a deck (Custom…, which opens the

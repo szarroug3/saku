@@ -4,6 +4,25 @@
 // read at different points in its life: a confusion, and what history makes of
 // it. Patterns is what this run broke; Progress is what this run had a chance
 // to break and didn't.
+//
+// THE UNIT IS THE RUN, SO THE WORDS ARE "THIS RUN"
+// ================================================
+// These rows used to say "today" — "Mixed up again today", "Right first try
+// today", "No mix-up today". Every one of them was false, and in both
+// directions. The lifecycle in confusions.ts counts RUNS: cleanStreak,
+// runsMixedUp and runsToLastMixUp are all tallies of sessions, and nothing
+// anywhere reads a clock. So three sessions in one afternoon are three separate
+// "today"s that each overwrite the last, and a run left open overnight reports
+// yesterday's mix-up as today's. The word claimed a granularity the data does
+// not have and never did.
+//
+// "This run" is what the sentence actually means, and it is the noun the rest
+// of the row is already counting in — "3 of your last 6 runs", "2 clean runs, 1
+// to clear it". Saying "run" in the headline too makes the second line the same
+// unit as the first, which is what lets "Mixed up again this run · 3 of your
+// last 6 runs" read as one thought rather than two scales stitched together.
+// (Not "this session": the counters are named runs, `graduateRuns` is the
+// promise being tracked, and the screen should use one word for one thing.)
 
 import { Lbl } from "@/components/ui";
 import { reading } from "@/components/results/summary";
@@ -43,7 +62,7 @@ function lines(
   switch (row.state) {
     case "weakness":
       return [
-        `Mixed up again today${row.run.total > 1 ? ` · ${row.run.total}×` : ""}`,
+        `Mixed up again this run${row.run.total > 1 ? ` · ${row.run.total}×` : ""}`,
         join([
           dir,
           `${record.runsMixedUp} of your last ${row.runsToLastMixUp} runs`,
@@ -60,14 +79,15 @@ function lines(
         ]),
       ];
     case "improving": {
-      // "Right first try today" is only sayable when it's true of both halves;
-      // the pair not being confused doesn't mean the characters were easy.
+      // "Right first try this run" is only sayable when it's true of both
+      // halves; the pair not being confused doesn't mean the characters were
+      // easy.
       const clean = [row.a, row.b].every(
         (c) => !(c in stats) || stats[c].firstTryCorrect === true,
       );
       const left = graduateRuns - record.cleanStreak;
       return [
-        clean ? "Right first try today" : "No mix-up today",
+        clean ? "Right first try this run" : "No mix-up this run",
         join([
           wasWorst ? "was your worst pair" : null,
           `${record.cleanStreak} clean run${s(record.cleanStreak)}, ${left} to clear it`,

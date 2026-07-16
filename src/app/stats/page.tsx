@@ -103,9 +103,12 @@ export default function StatsPage() {
         >
           Eventually right
         </Chip>
-        <span className="ml-1 text-[11px] text-text-muted">
-          every figure on this page
-        </span>
+        {/* No "every figure on this page" caption. The chips sit under this
+         * page's title with the whole page beneath them and nothing else
+         * competing for them — that IS the claim, made by position, and a
+         * caption restating it was the control apologising for itself. The
+         * scope is a fact about the code, so it lives in the header comment
+         * above, where it stays true and stays out of the way. */}
       </div>
 
       <AccuracyTrend history={history} metric={metric} />

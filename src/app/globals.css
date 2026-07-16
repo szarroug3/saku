@@ -673,28 +673,92 @@ body {
  *   the resolution has to answer "what is the ground HERE?" — not "what colour
  *   is a card?".
  *
- * The ask was "like the headers are frozen in place" — the row must vanish
- * under the title, and the title must sit on the card's own surface so nothing
- * reads as a bar bolted over the table. So --table-head is per theme the fill
- * that IS the card's ground at that point:
+ * The first fix for that reached for a heavy --bg tint, and it worked — in the
+ * sense that the rows stopped showing through. It also painted a near-black
+ * slab across the top of a pale glass card, which is what the user reported
+ * next: "it should look normal but things should just not appear under it".
+ * Both halves of that sentence are requirements, and the tint only met one.
  *
- *   graphite / momentum ... --card. Their --card is an opaque #ffffff; the
- *                           header is simply the card, and the row disappears.
- *   aizome ................ --bg. Its cards are hairline rules, not boxes —
- *                           `background: none` (see the aizome section above),
- *                           so the ground under this table is the PAGE, and
- *                           --card here would be a paper-coloured band floating
- *                           in a themeless card. --bg is the honest answer.
- *   kiri .................. blur + a heavy --bg tint. The one theme where no
- *                           flat colour is correct: the card is glass over a
- *                           gradient mesh, so an opaque fill is exactly the
- *                           black rectangle of BUG 1, one card further in.
+ * SO: WHAT IS THE HEADER SITTING ON?
  *
- * kiri's value is the --gcard-panel argument from the grid sheet, reused: the
- * blur destroys the glyphs (an 18px gaussian on 13–20px type leaves a wash, not
- * letters) and the 88% --bg tint kills the residual wash, while the remaining
- * 12% keeps the mesh reading through so the band still belongs to the glass.
- * Occlusion comes from the blur; the tint only cleans up after it.
+ * Not the page. THE CARD. That is the whole answer, and it is the step both
+ * previous passes skipped — `bg-card` failed and the reflex was to invent a new
+ * darker colour, when the failure was never that --card was the wrong COLOUR.
+ * It is the right colour. It is just not, in kiri, an opaque one, and a sticky
+ * surface must occlude. Those are two separate problems and the tint conflated
+ * them into one wrong answer.
+ *
+ * So the header does exactly what the card itself does: it wears --card's own
+ * fill, over the ground that card is floating on. Two variables, because that
+ * is genuinely two facts, and per theme they say:
+ *
+ *   graphite / momentum ... fill --card, no ground. Their --card is an opaque
+ *                           #ffffff, so the fill alone finishes the job: the
+ *                           header IS the card, and the row disappears into it.
+ *   aizome ................ fill nothing, ground --bg. Its cards are hairline
+ *                           rules, not boxes — `background: none` (see the
+ *                           aizome section above) — so the surface under this
+ *                           table really is the PAGE, and --card here would be a
+ *                           washi band floating inside a card that has no fill.
+ *                           --bg is not a substitute for the card's colour; in
+ *                           this theme it IS the card's colour.
+ *   kiri .................. both. --card's fill over a damped --bg, with the
+ *                           blur under them — the same three layers the card
+ *                           itself is made of, restacked at the header.
+ *
+ * kiri is the only interesting one, and it hides a trap worth stating plainly,
+ * because it invalidates the obvious fix:
+ *
+ *   BACKDROP-FILTER DOES NOT WORK HERE. The Card ITSELF has
+ *   `backdrop-filter: blur(18px)` in kiri (see the frosted-glass rule above),
+ *   which makes it a BACKDROP ROOT — and a backdrop-filter nested inside one
+ *   is a no-op in Chromium. So the `blur(18px)` this rule used to carry never
+ *   blurred anything, not once. That is the real story of the black bar: the
+ *   blur was believed to be doing the occluding, it was doing nothing, the tint
+ *   was silently the only thing holding rows back, and so the tint had to climb
+ *   to 88% --bg to work at all. At 88% --bg over a pale glass card you have
+ *   drawn a black slab, which is exactly what shipped and exactly what the user
+ *   saw. Do not put a backdrop-filter back on this element; verify one occludes
+ *   before trusting it.
+ *
+ * With blur off the table, occlusion has to come from an OPAQUE fill — and the
+ * good news is that in this one spot the card's surface can be reproduced
+ * exactly rather than approximated:
+ *
+ *   THERE IS NOTHING BEHIND THIS CARD BUT THE MESH. And blurring a mesh does
+ *   nothing to it. --page-mesh is three broad radial gradients across the whole
+ *   viewport; an 18px gaussian on a gradient that soft is invisible. The card's
+ *   blur is there to smear PAGE CONTENT passing behind it, and behind the
+ *   Characters card there is no content — just the gradient. So the card's
+ *   surface here is, exactly: the mesh, plus --card's fill over it.
+ *
+ * Which is what the three layers below are, bottom to top:
+ *
+ *   --bg ........... the page ground, opaque. This is what makes rows vanish —
+ *                    the whole stack is opaque from here up.
+ *   --page-mesh .... the same mesh, at the same place. `background-attachment:
+ *                    fixed` is the load-bearing word: it resolves the gradients
+ *                    against the VIEWPORT, which is precisely how body::before
+ *                    (position: fixed; inset: 0) resolves them. Same gradients,
+ *                    same box, same pixels — so the band drifts through the
+ *                    violet and the teal exactly as the card around it does,
+ *                    instead of being a flat rectangle sitting on a gradient.
+ *                    It is applied to every layer (one value, not a list)
+ *                    because --page-mesh is THREE gradients, and a two-value
+ *                    list would cycle and land on the wrong layers. Harmless on
+ *                    the fill: a solid colour is the same colour wherever it is
+ *                    anchored.
+ *   --card ......... the card's own fill, on top, exactly as the card paints it
+ *                    over the mesh. The layer the old rule was missing, and the
+ *                    reason it came out darker than the card by precisely the
+ *                    fill it had left out.
+ *
+ * The fill is a background-IMAGE over a background-COLOR rather than two
+ * elements or a color-mix: color-mix cannot composite a translucent colour onto
+ * an opaque one (mixing rgba(255,255,255,.055) with #070a14 gives a
+ * half-transparent grey, not the card), while a gradient from one colour to
+ * itself is exactly "paint this fill over whatever is beneath". That is the same
+ * operation the card performs against the page, expressed in one element.
  *
  * Painted on `th`, not `thead`: the table is `border-collapse: collapse`, where
  * a section-level background is unreliable and — the reason that matters here —
@@ -703,27 +767,83 @@ body {
  * that rule, drawn on the cell so it sticks with it.
  * ======================================================================= */
 
+/* Two facts about what a surface is made of, which is all either rule needs.
+ *
+ * --ground-mesh  what the PAGE's ground carries on top of its flat --bg. Only
+ *                kiri has anything; `none` is a valid background-image, so the
+ *                other three simply drop the layer.
+ * --card-fill    what a CARD paints over that ground. --card everywhere except
+ *                aizome, whose cards are hairline rules with `background: none`
+ *                (see the aizome section above) — so an aizome card's fill is,
+ *                truthfully, nothing.
+ */
 [data-theme] {
-  --table-head: var(--card);
-  --table-head-filter: none;
+  --ground-mesh: none;
+  --card-fill: var(--card);
 }
 
 [data-theme="aizome"] {
-  --table-head: var(--bg);
+  --card-fill: transparent;
 }
 
 [data-theme="kiri"] {
-  --table-head: color-mix(in srgb, var(--bg) 88%, transparent);
-  --table-head-filter: blur(18px) saturate(120%);
+  --ground-mesh: var(--page-mesh);
 }
 
+/* THE CARD'S SURFACE, REBUILT OPAQUELY — the shared recipe, and the answer to
+ * "what is this sitting on?" whenever the answer is "a card, and I cannot use
+ * backdrop-filter to see it".
+ *
+ * Bottom to top: --bg, the mesh it carries, then the fill painted over both.
+ * The only difference between the two users below is that ONE word: the sticky
+ * header wears the fill of the card it is IN (--card-fill), while the tooltip
+ * is a card in its own right and always wears --card. */
+
 .kq-table-head th {
-  background-color: var(--table-head);
-  -webkit-backdrop-filter: var(--table-head-filter);
-  backdrop-filter: var(--table-head-filter);
+  background-color: var(--bg);
+  /* Top layer first: the card's own fill, then the mesh under it. */
+  background-image:
+    linear-gradient(var(--card-fill), var(--card-fill)),
+    var(--ground-mesh);
+  /* Viewport-anchored, exactly like body::before. One value, not a list: it has
+   * to apply to every layer, and --page-mesh is three of them — a two-value
+   * list would cycle and land on the wrong ones. Harmless on the fill, since a
+   * solid colour is the same colour wherever it is anchored. */
+  background-attachment: fixed;
   /* The header's own bottom rule. border-collapse would hand this to the grid
    * and scroll it away; an inset shadow belongs to the cell and stays. */
   box-shadow: inset 0 -1px 0 var(--border);
+}
+
+/* The accuracy-trend tooltip (src/components/stats/accuracy-trend.tsx).
+ *
+ * SAME BUG, SAME CAUSE, one card over. That tooltip is a plain hover span
+ * INSIDE the trend Card, so in kiri its `backdrop-blur-[18px]` sat inside the
+ * Card's backdrop root and did nothing at all — leaving a 5.5%-white pane you
+ * could read "ACCURACY TREND" straight through. ui/tooltip.tsx gets away with
+ * the identical declaration ONLY because Radix portals it out to <body>, where
+ * its backdrop is the page and the frost is real. The class is not what makes
+ * that tooltip work; the portal is.
+ *
+ * So this one earns the same read the honest way, and the recipe collapses to
+ * one rule for all four themes because "a card" IS "--card over the page's
+ * ground":
+ *
+ *   aizome ..... --bg + no mesh + opaque #fbfaf6 --card = --card. Unchanged.
+ *   graphite ... --bg + no mesh + opaque #ffffff --card = --card. Unchanged.
+ *   momentum ... ditto.
+ *   kiri ....... --bg + the mesh + translucent --card = precisely what the
+ *                settings tooltip composites to over the page, and now opaque,
+ *                so the bars behind it are gone instead of showing through.
+ *
+ * It replaces `bg-card` on that span rather than joining it — two rules setting
+ * background-color is a fight over source order, and the top layer here IS
+ * --card, so the token is still the one doing the work. --border, --radius and
+ * --shadow-card stay on the element as Tailwind classes. */
+.kq-surface {
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--card), var(--card)), var(--ground-mesh);
+  background-attachment: fixed;
 }
 
 /* ==========================================================================
@@ -739,26 +859,62 @@ body {
  * ui.tsx's Chip is border+bg+text of accent / warning / border, pairs' cells
  * are the same in accent / danger / border, deck-card's `smart` tile likewise.
  * The grid now simply speaks it, which is why --gcard* below are DERIVED from
- * the semantic tokens rather than being another hand-picked palette:
+ * the semantic tokens rather than being another hand-picked palette.
  *
- *                                  fill        edge       glyph
- *     default (open, untouched) .. --card      --border   --text
- *     right   (correct, locked) .. --success   --success  --success
- *     wrong   (missed / spent) ... --warning   --warning  --warning
- *     shake   (wrong, 450ms) ..... --danger    --danger   --danger
+ * WHAT THE SHEET SAYS  (this is the design; the numbers below only serve it)
  *
- * — each at the strength the three constants below set.
+ * A resolved card — green OR red — steps back, and only the cards you still
+ * owe stay at full presence. Attention follows what's LEFT, and progress reads
+ * as the sheet going quiet. This inverts the legacy grid, which lit up what you
+ * had finished (bright green locks) and left the work plain — i.e. it pointed
+ * at the one part of the sheet you were done with.
  *
- * `wrong` is the theme's WARNING, not a grey. It has to cover both "locked, out
- * of retries" and "still open but you've missed it once" (grid-screen.tsx picks
- * it for `state === "wrong" || tries > 0`), and "attempted, not yet right" is
- * precisely what warning means on a Chip's `part` state. A grey would also have
- * had to separate itself from --card and --panel, which in kiri dark are 5.5%
- * and 7% white — i.e. from nothing. Hue does that work for free.
+ * That rule cuts BOTH ways, and the second half is the one that's easy to miss:
+ * receding the resolved cards is not enough on its own. A resolved card carries
+ * a HUE; bare --card does not, and colour out-pulls a faint neutral every time.
+ * Recede the greens without raising the opens and the sheet still points at the
+ * finished cards, just more politely. So the open card is raised too — it is
+ * the sheet's firmest edge, its brightest glyph, and (in dark, where --card is
+ * 5.5–7% white and reads as nothing at 96px) its strongest fill.
  *
- * `shake` and `wrong` are deliberately close (amber decaying out of red): shake
- * lasts 450ms, is identified by MOTION, and settles into wrong, so they are the
- * same story one beat apart rather than two states to tell apart.
+ *                              fill           edge         glyph          at
+ *   open   (yours, untouched)  --card lifted  --text 26%   --text        100%
+ *   missed (yours, tries > 0)  --danger 14%   --danger 60% danger 50%    100%
+ *   shake  (wrong, 450ms)      --danger 22%   --danger     danger 50%    100% + glow
+ *   right  (correct, locked)   --success 12%  --success 52% success 35%   75%
+ *   wrong  (spent, no retries) --danger 20%   --danger 52% danger 35%     75%
+ *
+ * (The glyph percentages are "x% state colour, remainder --text". The 75% is
+ * the recede, and it is 75 and not the comp's 62 because 62 cannot hold the
+ * 4.5:1 glyph floor in ANY theme — see --gcard-resolved.)
+ *
+ * Four things that are deliberate:
+ *
+ * 1. `wrong` is the theme's DANGER, not its warning. It used to fade to amber,
+ *    which read as a THIRD state rather than as red spent — the user's word for
+ *    what they wanted is "stay red but fade darker a little". So it keeps the
+ *    danger hue at a deeper fill (20% vs right's 12%) and steps back on opacity.
+ *    Deeper is expressed as more pigment, not as a mix toward black: the comp's
+ *    rgba(0,0,0,.25) only deepens on a dark ground and would lighten nothing in
+ *    aizome light. More danger is deeper in all eight combos.
+ *
+ * 2. `missed` and `wrong` are split, and this is the whole reason the split
+ *    exists: grid-screen.tsx's old mapping painted `state === "wrong" ||
+ *    tries > 0` with one class, so a card you had missed ONCE but could still
+ *    answer wore the resolved look. Receding that card would fade the single
+ *    card you most owe. `missed` is therefore full-presence red — still yours —
+ *    and only the out-of-retries card recedes. Same hue, one beat apart.
+ *
+ * 3. Every state is a 1px border. Full stop. State is carried by colour and
+ *    opacity, never width: a width change also shifts layout, which is the same
+ *    class of bug already fixed in pairs. There is no ring, no border-2, no
+ *    outline anywhere in this section.
+ *
+ * 4. `shake` is the ONE loud thing, and the exception is principled: it is the
+ *    only TRANSIENT state — feedback happening right now, gone in 450ms — so it
+ *    is the only state allowed to shout. It shouts with a GLOW, per (3), which
+ *    is emphasis that costs no layout and cannot read as a thicker edge.
+ *    Everything persistent is quiet; the only loud thing is the moment.
  *
  * Because these derive, every theme and both modes come free and correct — no
  * --dark-gcard mirror, and a theme that retunes its --success retunes the sheet
@@ -766,41 +922,103 @@ body {
  * ======================================================================= */
 
 [data-theme] {
+  /* OPEN — the work, and the thing your eye must land on. Full presence.
+   * The edge is --text 26%, not --border: --border is the app's quietest
+   * hairline (13% ink in kiri light, 11% white in kiri dark) and a quiet
+   * hairline is exactly wrong on the one card that wants you. --text is the
+   * max-contrast ink in EVERY palette and mode, so a percentage of it is
+   * "a firmer version of this theme's own line" in one expression, and it
+   * self-corrects: near-black on the light sheets, near-white on the dark. */
   --gcard: var(--card);
-  --gcard-edge: var(--border);
+  --gcard-edge: color-mix(in srgb, var(--text) 26%, transparent);
   --gcard-ink: var(--text);
 
-  /* Tint / edge / ink per state. The three states are the same shape, so the
-   * three numbers below are the whole design:
+  /* How far a RESOLVED card steps back — and the one number in this file that
+   * the design asked for and the contrast floor refused.
    *
-   * 22% — the tint. A hair stronger than the matching --*-bg token (10–14%),
-   *   which is tuned for ONE chip read up close; this is 214 tiles read at a
-   *   glance, across a mesh in kiri. Measured: it lifts default→right from
-   *   11.9 to 31.3 ΔE in kiri dark, the worst ground in the app.
-   * 55% — the edge. Enough to be a coloured hairline rather than a smudge
-   *   (~75 ΔE against its own fill), which is half of what makes the state
-   *   legible when the fill alone is subtle.
-   * 65% — the ink, mixed toward --text rather than left as the raw --success
-   *   / --warning / --danger. This is the one that has to self-correct: --text
-   *   is near-black in a light theme and near-white in a dark one, so the SAME
-   *   expression deepens the glyph on pale tints and lifts it on dark ones.
-   *   Raw state colours fail 4.5:1 as a glyph on their own tint in four of the
-   *   eight theme×mode combos (kiri light 3.62, momentum light 3.95, graphite
-   *   light 4.12, kiri dark 4.63). 65% is the first step with real margin
-   *   rather than a number sitting on the line: worst combo 5.20 (momentum
-   *   light), against 4.50 at 75%. The glyph is still two-thirds state colour.
-   */
-  --gcard-right: color-mix(in srgb, var(--success) 22%, transparent);
-  --gcard-right-edge: color-mix(in srgb, var(--success) 55%, transparent);
-  --gcard-right-ink: color-mix(in srgb, var(--success) 65%, var(--text));
+   * The comp says 0.62. It is not reachable, in any theme, in either mode. The
+   * reason is arithmetic, not tuning: `opacity` composites the glyph AND its
+   * card toward the same ground, so it pulls the two together and the glyph's
+   * contrast against its own card falls with it. Measured at 0.62 with the
+   * glyph mixed all the way to a pure --text — no state colour left at all,
+   * i.e. the most contrast this card can possibly have — the worst combo is
+   * 4.36:1 (right) and 3.96:1 (wrong), both under the floor. There is nothing
+   * left to spend; 0.62 and 4.5:1 cannot both be true.
+   *
+   * The measured ceiling, per combo, for a glyph that is still 35% state colour
+   * (min opacity holding BOTH right and wrong at 4.5:1):
+   *
+   *     aizome light 0.72   aizome dark 0.73
+   *     graphite light 0.72   graphite dark 0.64
+   *     momentum light 0.73   momentum dark 0.69
+   *     kiri light 0.72   kiri dark 0.68
+   *
+   * So 0.75: the tightest combo (momentum light) plus real margin, one number
+   * for all eight rather than eight numbers drifting apart, and the floor held
+   * with the glyph still carrying its hue. Trading the hue out to buy depth was
+   * the alternative and it is a bad trade — a colourless glyph only reaches
+   * ~0.67, and the glyph's hue is what says "right" or "spent" at a glance.
+   *
+   * 0.75 still steps the card back hard, because the glyph is where the eye
+   * actually lands: an open card's glyph is 10–18:1 on its own card, a resolved
+   * one's is ~4.6–5.3:1. That is the recede, and it is most of a stop. */
+  --gcard-resolved: 0.75;
 
-  --gcard-wrong: color-mix(in srgb, var(--warning) 22%, transparent);
-  --gcard-wrong-edge: color-mix(in srgb, var(--warning) 55%, transparent);
-  --gcard-wrong-ink: color-mix(in srgb, var(--warning) 65%, var(--text));
+  /* Tint / edge / ink per state.
+   *
+   * The fills mix over a BASE rather than over `transparent`, and which base is
+   * itself the design: the two still-open states (missed, shake) mix over
+   * var(--gcard) — the lifted material — because they are still your work; the
+   * two resolved states mix over var(--card) — the unlifted material — because
+   * they are not. The open lift and the recede therefore pull in opposite
+   * directions on purpose, and the gap reads in both.
+   *
+   * The ink is mixed toward --text rather than left as the raw --success /
+   * --danger, and this is the one that has to self-correct: --text is near-black
+   * in a light theme and near-white in a dark one, so the SAME expression
+   * deepens the glyph on pale tints and lifts it on dark ones. Raw state colours
+   * fail 4.5:1 as a glyph on their own tint in half the combos before you even
+   * apply the recede; the recede then costs another ~0.6:1, because opacity
+   * composites glyph and fill toward the same ground and pulls them together.
+   * The mixes below are measured AT the receded opacity, not above it. */
+  --gcard-right: color-mix(in srgb, var(--success) 12%, var(--card));
+  --gcard-right-edge: color-mix(in srgb, var(--success) 52%, transparent);
+  --gcard-right-ink: color-mix(in srgb, var(--success) 35%, var(--text));
 
-  --gcard-shake: color-mix(in srgb, var(--danger) 22%, transparent);
-  --gcard-shake-edge: color-mix(in srgb, var(--danger) 55%, transparent);
-  --gcard-shake-ink: color-mix(in srgb, var(--danger) 65%, var(--text));
+  /* Missed but still answerable: full presence, and the deliberate near-twin of
+   * `shake` — shake is identified by MOTION and settles into this, so they are
+   * the same story one beat apart rather than two states to tell apart. */
+  --gcard-missed: color-mix(in srgb, var(--danger) 14%, var(--gcard));
+  --gcard-missed-edge: color-mix(in srgb, var(--danger) 60%, transparent);
+  --gcard-missed-ink: color-mix(in srgb, var(--danger) 50%, var(--text));
+
+  /* Spent: same red, deeper fill than `right` (16% pigment against 12%),
+   * stepped back. The 35% ink is the receded states' shared number — see
+   * --gcard-resolved for why it can't be higher.
+   *
+   * 16% and not the 20% this started at, because "deeper" was quietly fighting
+   * "recede". The comp deepens with rgba(0,0,0,.25), which is a hardcode that
+   * only darkens on a dark ground — in aizome light it would do nothing useful
+   * — so deeper is expressed here as more pigment, which works in all eight
+   * combos. But pigment is also CHROMA, and chroma is exactly what pulls the
+   * eye: at 20% the spent card sat FURTHER from the sheet ground than an open
+   * card did (kiri dark ΔE 16.3 vs open's 15.1), i.e. the finished card was
+   * out-shouting the work again, one hue over. 16% is the most pigment that
+   * still lands inside open: ΔE 13.9 vs 15.1 in kiri dark, 5.9 vs 5.8 in
+   * aizome light — deeper than `right` (11.1), quieter than `open`. */
+  --gcard-wrong: color-mix(in srgb, var(--danger) 16%, var(--card));
+  --gcard-wrong-edge: color-mix(in srgb, var(--danger) 52%, transparent);
+  --gcard-wrong-ink: color-mix(in srgb, var(--danger) 35%, var(--text));
+
+  /* 50% and not 60%: at 60% the glyph is 4.30:1 on its own tint in aizome dark,
+   * whose --dark-danger (#e0857c) is a pastel and whose --dark-text (#ece7db)
+   * is barely brighter than it. Measured, not eyeballed. */
+  --gcard-shake: color-mix(in srgb, var(--danger) 22%, var(--gcard));
+  --gcard-shake-edge: var(--danger);
+  --gcard-shake-ink: color-mix(in srgb, var(--danger) 50%, var(--text));
+  /* The exception, and the only glow in the section. */
+  --gcard-shake-glow: 0 0 14px
+    color-mix(in srgb, var(--danger) 38%, transparent);
 
   /* The sheet's own ground. `none` for the three themes whose page really is a
    * flat --bg — there is nothing to damp, and a panel there would be a box for
@@ -829,6 +1047,33 @@ body {
   --gcard-scrim-mask: none;
 }
 
+/* ---------- the open card's fill, in dark -------------------------------
+ * The other half of "open cards are the work". In the LIGHT palettes --card is
+ * already the brightest surface on the page (#fbfaf6 / #ffffff / 62% white)
+ * sitting on a tinted --bg, so an open card is the most present thing on the
+ * sheet by construction and there is nothing to lift it toward. In the DARK
+ * palettes it is the opposite: --card is a lift off the ground, and in kiri
+ * that lift is 5.5% white — at 96px, on a mesh, under a panel, it is nothing.
+ * The greens and reds have a hue to carry them; the open card has to be lifted
+ * or it loses to them, which is precisely the "my eye is not going to the
+ * unanswered ones bc they're so faint" report.
+ *
+ * --text is the near-white in every dark palette (#ece7db, #edeef2, #eef1fb),
+ * so lifting the fill toward it is "make the glass thicker" said in tokens —
+ * it works identically for kiri's translucent card and for the three opaque
+ * ones, and a theme that retunes its --dark-card is still correct.
+ *
+ * Two blocks for the same reason lines 286–330 need two: media for "OS is dark
+ * and the user hasn't forced light", attr for "the user forced dark". */
+@media (prefers-color-scheme: dark) {
+  [data-theme]:not([data-appearance="light"]) {
+    --gcard: color-mix(in srgb, var(--text) 9%, var(--card));
+  }
+}
+:root[data-theme][data-appearance="dark"] {
+  --gcard: color-mix(in srgb, var(--text) 9%, var(--card));
+}
+
 /* ---------- the sheet ---------------------------------------------------- */
 
 .kq-grid-sheet {
@@ -850,25 +1095,61 @@ body {
   transition:
     background-color 250ms,
     border-color 250ms,
-    color 250ms;
+    color 250ms,
+    opacity 250ms;
 }
 
+/* The two RESOLVED states. Identical shape, and the only two that recede:
+ * fill, edge, ink, and the answer in the well all step back together, because
+ * the card as a whole is done — this is one `opacity`, not four dimmed tokens
+ * that could drift apart. The border is still 1px; opacity cannot change that,
+ * which is exactly why the recede is carried this way and not by a heavier or
+ * lighter edge. */
 .kq-gcard-right {
   border-color: var(--gcard-right-edge);
   background-color: var(--gcard-right);
   color: var(--gcard-right-ink);
+  opacity: var(--gcard-resolved);
 }
 
 .kq-gcard-wrong {
   border-color: var(--gcard-wrong-edge);
   background-color: var(--gcard-wrong);
   color: var(--gcard-wrong-ink);
+  opacity: var(--gcard-resolved);
 }
 
+/* Missed once, still answerable — still yours, so it does NOT recede. */
+.kq-gcard-missed {
+  border-color: var(--gcard-missed-edge);
+  background-color: var(--gcard-missed);
+  color: var(--gcard-missed-ink);
+}
+
+/* The 450ms exception: the only state allowed to shout, and it shouts with a
+ * glow — outside the box, no layout cost, cannot read as a thicker border.
+ *
+ * The glow rides on a pseudo-element rather than on the card's own box-shadow
+ * for a dull but real reason: `box-shadow: var(--shadow-btn), <glow>` is
+ * INVALID CSS in aizome and graphite, whose --shadow-btn is `none` — and `none`
+ * in a shadow list drops the whole declaration, i.e. exactly two of the four
+ * themes would have silently lost the glow. A separate layer composes with any
+ * --shadow-btn, so momentum keeps its 2px shelf and kiri its inset highlight
+ * while shaking. inset:-1px puts the layer on the border box, so the glow
+ * starts at the card's edge and not 1px inside it. */
 .kq-gcard-shake {
   border-color: var(--gcard-shake-edge);
   background-color: var(--gcard-shake);
   color: var(--gcard-shake-ink);
+  position: relative;
+}
+.kq-gcard-shake::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: var(--gcard-shake-glow);
+  pointer-events: none;
 }
 
 /* The glyph takes the card's state ink by inheritance; the well deliberately
@@ -990,4 +1271,34 @@ body {
     #000 58%,
     transparent 100%
   );
+}
+
+/* ==========================================================================
+ * NUMBER INPUTS  (.kq-num — Home's setup panel, Length → Count)
+ *
+ * `<input type="number">` ships two OS-drawn spinner arrows. They are the one
+ * thing on the page no token reaches: they are UA chrome, they take their
+ * colour from the platform and not from --text, and they sit inside a field
+ * that four palettes are otherwise painting completely. On any of the dark
+ * themes they are near-invisible grey-on-grey; on aizome's warm washi they are
+ * cold blue-grey. There is no property that themes them, so the honest choices
+ * are "remove" or "replace with real buttons".
+ *
+ * Removed, and typing is the interaction — because this field's range is 1–600.
+ * The ± steppers this app does use (Retries 1–9, graduate runs 1–20) earn their
+ * place on ranges you can actually WALK; at 600 a stepper is a decoration you
+ * can't use, and the arrows here were worse than a decoration because they were
+ * the only unthemed pixels in the panel. min/max stay on the element: they are
+ * what the field means, and they still validate and still reach assistive tech
+ * — this hides the arrows, not the constraint.
+ * ======================================================================= */
+.kq-num {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.kq-num::-webkit-outer-spin-button,
+.kq-num::-webkit-inner-spin-button {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
 }

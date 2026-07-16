@@ -109,19 +109,34 @@ export function QuizOptionsFields() {
             >
               Count
             </SmallBtn>
-            {cfg.limType === "count" ? (
-              <input
-                type="number"
-                min={1}
-                value={cfg.limCount}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  update({ limCount: Math.max(1, Number.isNaN(v) ? 1 : v) });
-                }}
-                aria-label="Question count"
-                className="w-[70px] rounded-lg border border-border bg-card px-2.5 py-2 text-[15px] text-text"
-              />
-            ) : null}
+            {/* The count field never MOUNTS or unmounts — it only enables.
+                Row lays its controls out right-aligned, so a field appended at
+                the end pushed all four chips left the instant you picked
+                "Count": the controls moved out from under the cursor that had
+                just clicked one of them.
+                The obvious fix is to reserve the width with an empty box, but
+                that leaves the row's right edge 76px short of every other row's
+                for as long as "Full coverage" is selected — trading a shift for
+                a permanent hole. Keeping the real field there and disabling it
+                reserves exactly the same space with something true in it: this
+                is the number Count would use, and `disabled` is already how
+                this app says "not applicable" (Row's `dim`, SmallBtn's
+                `disabled:opacity-45`). Now Full coverage ⇄ Count changes only
+                whether the field is live. Verified the way the pairs shift was:
+                the Count chip's offsetLeft is identical either way. */}
+            <input
+              type="number"
+              min={1}
+              max={600}
+              disabled={cfg.limType !== "count"}
+              value={cfg.limCount}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                update({ limCount: Math.max(1, Number.isNaN(v) ? 1 : v) });
+              }}
+              aria-label="Question count"
+              className="kq-num w-[62px] rounded-lg border border-border bg-card px-2.5 py-2 text-[15px] text-text disabled:cursor-default disabled:opacity-45"
+            />
           </>
         ) : null}
       </Row>

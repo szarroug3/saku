@@ -37,8 +37,9 @@
 // lie. "Characters" names what the rows ARE rather than making a claim about
 // their order or their extent, so it survives every sort, every filter, and
 // whatever column gets added next. Weakest-first is still what you see first —
-// it just lives in the DEFAULT SORT and in the note under the table, which is
-// where a claim about ordering can stay true.
+// it just lives in the DEFAULT SORT (see COMPARE.acc) and is announced by the
+// arrow in the Accuracy heading, which is where a claim about ordering can stay
+// true without anyone having to write it down on the screen.
 
 import { useMemo, useState } from "react";
 
@@ -92,8 +93,22 @@ const COMPARE: Record<SortKey, (a: Row, b: Row) => number> = {
   script: (a, b) =>
     (SET_ORDER[a.set] ?? 0) - (SET_ORDER[b.set] ?? 0) ||
     (CHAR_ORDER[a.c] ?? 0) - (CHAR_ORDER[b.c] ?? 0),
-  // The weakestChars() rule: accuracy, then MORE seen first. 0% from twenty
-  // showings is a better-evidenced weakness than 0% from one.
+  // THE DEFAULT VIEW, and the table's one real opinion — so this is where the
+  // reasoning lives now. It used to be printed under the table as a paragraph
+  // explaining itself to the user; the user's answer was that the table already
+  // shows its sort arrows and does not need a note about how headings work. The
+  // argument is still worth keeping, it just belongs to whoever changes this
+  // line, not to whoever reads the screen:
+  //
+  //   ACCURACY, NOT MISSES. "missed 9 times" says nothing without knowing it was
+  //   shown 200; ranking by raw misses just sorts by how much you drill.
+  //   THEN MORE SEEN FIRST. 0% from twenty showings is a better-evidenced
+  //   weakness than 0% from one, so the tie breaks toward the character you have
+  //   more evidence about rather than toward whichever one Object.entries
+  //   happened to yield first.
+  //
+  // Same rule as weakestChars() in src/lib/decks.ts, deliberately — this table
+  // and Home's "Weakest 20" must not disagree about which character is worst.
   acc: (a, b) => a.pct - b.pct || b.seen - a.seen,
   seen: (a, b) => a.seen - b.seen || a.pct - b.pct,
 };
@@ -203,13 +218,16 @@ export function CharactersTable({
             // same as the page's (globals.css).
             <div className="kq-scroll max-h-[60vh] overflow-y-auto pr-2">
               <table className="w-full border-collapse text-[13px]">
-                {/* kq-table-head, NOT bg-card. --card is translucent in kiri,
-                 * so a `bg-card` sticky header let the rows scroll straight
-                 * through the column titles — the fourth time this app has
-                 * shipped "sticky element with a see-through fill". The class
-                 * resolves an occluding fill per theme; see the STICKY TABLE
-                 * HEADER section in globals.css for why each theme gets what
-                 * it gets. It also carries the header's bottom rule, which
+                {/* kq-table-head, NOT bg-card — though what it paints IS the
+                 * card. --card is translucent in kiri, so a plain `bg-card`
+                 * sticky header let rows scroll straight through the column
+                 * titles; the fix after that went opaque and turned the header
+                 * into a black bar bolted onto a pale card. The class does the
+                 * thing neither did: it restacks the card's OWN layers (its
+                 * fill, its ground, its blur) at the header, per theme, so the
+                 * header reads as the table's surface and the rows still vanish
+                 * under it. See the STICKY TABLE HEADER section in globals.css.
+                 * It also carries the header's bottom rule, which
                  * border-collapse would otherwise scroll away with the body —
                  * hence no border-b on the row below. */}
                 <thead className="kq-table-head sticky top-0 z-10">
@@ -268,19 +286,12 @@ export function CharactersTable({
               </table>
             </div>
           )}
-
-          {/* The ordering claim the heading used to make, moved to where it can
-           * stay true: this describes the DEFAULT view and says so, and it
-           * still reads correctly once you have sorted by something else. */}
-          <p className="mt-2.5">
-            <Hint>
-              Every character you have practised. Weakest first by default — by
-              accuracy, not by misses, with ties breaking toward the character
-              you have seen more, since 0% from twenty showings is a
-              better-evidenced weakness than 0% from one. Click any heading to
-              sort by it; click it again to reverse.
-            </Hint>
-          </p>
+          {/* No explainer under the table. It described the default sort, the
+           * tie-break and its justification, and then explained that headings
+           * sort when clicked — four sentences to say what the arrow in the
+           * Accuracy heading says by pointing. The sort rule and the reasoning
+           * behind it now live in COMPARE.acc above, which is the only place
+           * either can go stale. */}
         </>
       )}
     </Card>
