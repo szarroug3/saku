@@ -1,5 +1,7 @@
 // Behavior knobs and font pool ported from legacy/theme.py.
 
+import { availableFonts } from "@/lib/font-detect";
+
 export const BEHAVIOR = {
   /** Size of the big character on the drill card, px. */
   cardSizePx: 96,
@@ -46,11 +48,19 @@ export const JP_FONTS = [
   "'Toppan Bunkyu Gothic'",
 ] as const;
 
-/** Random font from the user's selection (one selected = always that one;
- * empty/unknown selection falls back to the first pool font). */
+/** Random font from the user's selection (one selected = always that one).
+ *
+ * Filtered to fonts this machine actually HAS. Half the pool isn't installed on
+ * a stock Mac, and an uninstalled family doesn't error — it silently renders as
+ * the fallback, so the pool quietly shrinks and every "different" font is the
+ * same one. Filtering here means a saved selection from another machine, or a
+ * font uninstalled since, degrades to the fonts that exist instead of to a
+ * fallback pretending to be five typefaces. */
 export function pickFont(fonts: string[]): string {
-  const pool = fonts.length ? fonts : [JP_FONTS[0]];
-  return `${pool[Math.floor(Math.random() * pool.length)]}, sans-serif`;
+  const usable = availableFonts(fonts);
+  const pool = usable.length ? usable : availableFonts(JP_FONTS);
+  const family = pool.length ? pool[Math.floor(Math.random() * pool.length)] : JP_FONTS[0];
+  return `${family}, sans-serif`;
 }
 
 /** Display name for a font pool entry ("'Hiragino Sans'" → "Hiragino Sans"). */

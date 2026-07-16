@@ -13,8 +13,15 @@ import {
 } from "@/components/settings/theme-picker";
 import { Btn, Card, Chip, Hint, Row, SmallBtn } from "@/components/ui";
 import { fontLabel, JP_FONTS } from "@/lib/config";
+import { availableFonts } from "@/lib/font-detect";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { jaVoices, onVoicesChanged, speak } from "@/lib/speech";
+
+/** Kana shown on every font chip in place of the font's name. あ and き are
+ * the two faces diverge on hardest: Mincho gives あ a wedge-tipped brush
+ * stroke and breaks き's third stroke off, Maru Gothic rounds every terminal
+ * and joins it, Klee keeps the handwritten slant. */
+const FONT_SAMPLE = "あき";
 
 /** Legacy voice-name reformat: "Kyoko (Enhanced)" → "Kyoko · Enhanced". */
 function voiceLabel(name: string): string {
@@ -54,11 +61,24 @@ export function SettingsCard() {
     if (el && document.activeElement !== el) el.value = String(cfg.timerSec);
   }, [cfg.timerSec, cfg.timer]);
 
+  // Only the fonts this machine actually has. A stock Mac has three of the
+  // eight, and an uninstalled font doesn't fail — it renders as the fallback,
+  // so listing all eight would show five identical chips claiming to be five
+  // typefaces. Post-mount because detection needs a canvas (see font-detect).
+  const [installedFonts, setInstalledFonts] = useState<string[]>([]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setInstalledFonts(availableFonts(JP_FONTS));
+  }, []);
+
   const toggleFont = (font: string) => {
     set((prev) => {
       const has = prev.fonts.includes(font);
-      // At least one font stays selected, like the direction toggles.
-      if (has && prev.fonts.length === 1) return prev;
+      // At least one font stays selected, like the direction toggles — counted
+      // over installed fonts only, since a saved config can carry names this
+      // machine can't render and those aren't really "on".
+      const onCount = prev.fonts.filter((f) => installedFonts.includes(f)).length;
+      if (has && onCount <= 1) return prev;
       return {
         ...prev,
         fonts: has
@@ -94,7 +114,7 @@ export function SettingsCard() {
 
       <Row
         label="Accuracy shown as"
-        info="Used everywhere the app shows a percentage — the drill HUD, the deck rings on Home, the circles in the character picker — so the number always means one thing. First try asks whether you knew it on sight, which is what the app is training. Eventually right counts a card you got after a retry."
+        info="First try only counts cards you got without a retry. Eventually right counts them however many goes it took. Applies everywhere the app shows a percentage."
       >
         <Chip
           on={cfg.accuracyMetric === "firstTry"}
@@ -112,8 +132,7 @@ export function SettingsCard() {
 
       <Row
         label="Show practice volume"
-        hint="how much a deck has been drilled, next to its accuracy"
-        info="88% from four attempts is not 88%. The bar under each deck shows how much you have actually practised it, so a barely-touched deck can't look mastered."
+        info="A 90% from three cards isn't really 90%. This shows how much you've actually drilled each deck."
       >
         <Toggle
           on={cfg.showVolume}
@@ -123,7 +142,7 @@ export function SettingsCard() {
 
       <Row
         label="Clean runs to clear a confusion"
-        info="Get a mix-up right this many times in a row and it is considered fixed: it stops appearing in Patterns, in Home's Confusions card, and in Weakest 20 — only Statistics keeps remembering it. Counts only runs that actually contained those characters. Lower it if you learn fast."
+        info="Get a mix-up right this many times in a row and it stops being flagged. Only runs with those characters in them count. Lower it if you learn fast."
       >
         <SmallBtn
           disabled={cfg.graduateRuns <= 3}
@@ -171,8 +190,7 @@ export function SettingsCard() {
 
       <Row
         label="Timer"
-        hint="timeout costs a retry"
-        info="Each question gets a countdown. Running out spends a retry, exactly as if you had answered wrong — so a timeout is a miss, not a free pass."
+        info="Every question gets a countdown. Timing out counts as a wrong answer."
         dim={gridDim}
       >
         <Toggle on={cfg.timer} onClick={() => update({ timer: !cfg.timer })} />
@@ -210,8 +228,7 @@ export function SettingsCard() {
 
       <Row
         label="Show correct answer"
-        hint="when out of retries"
-        info="Once a card is out of retries it reveals the answer and waits for Enter, so you read it before moving on. With this off, the card just re-queues and you meet it again later."
+        info="When a card runs out of retries it shows you the answer and waits for Enter. Off means it just comes back later."
       >
         <Toggle
           on={cfg.showAnswer}
@@ -221,8 +238,7 @@ export function SettingsCard() {
 
       <Row
         label="Script label on the card"
-        hint="off = identify hiragana vs katakana yourself"
-        info="Telling you a card is katakana narrows it to 107 characters before you have read anything. Turning this off makes you place the script yourself, which is closer to reading in the wild."
+        info="Off means you have to work out whether it's hiragana or katakana yourself."
         dim={gridDim}
       >
         <Toggle
@@ -233,26 +249,34 @@ export function SettingsCard() {
 
       <Row
         label="Fonts"
-        hint="cards draw a random font from your selection"
-        info="Keep several selected: one typeface is easy to memorise as a shape rather than a character, and Japanese print varies more than English does. Pick one font to always use it."
+        info="Cards use a random font from the ones you pick. Keep a few on so you don't just memorise one shape."
       >
-        {JP_FONTS.map((font) => (
-          <Chip
-            key={font}
-            on={cfg.fonts.includes(font)}
-            onClick={() => toggleFont(font)}
-            style={{ fontFamily: font }}
-            className="text-base"
-          >
-            {fontLabel(font)}
-          </Chip>
-        ))}
+        {installedFonts.map((font) => {
+          const name = fontLabel(font);
+          const on = cfg.fonts.includes(font);
+          return (
+            <Chip
+              key={font}
+              on={on}
+              onClick={() => toggleFont(font)}
+              // The sample IS the label: a font name tells you nothing about
+              // the face. The name stays reachable via title/aria-label, since
+              // the glyphs give a screen reader nothing to read out.
+              title={name}
+              aria-label={name}
+              aria-pressed={on}
+              style={{ fontFamily: font }}
+              className="px-3.5 py-0.5 text-[21px] leading-[1.5]"
+            >
+              {FONT_SAMPLE}
+            </Chip>
+          );
+        })}
       </Row>
 
       <Row
         label="Submit on focus loss"
-        hint="grid mode: Tab out of a card checks it and moves on"
-        info="Only affects the grid sheet, where every character has its own box. With this on, tabbing away checks a card instead of leaving it half-answered."
+        info="Grid mode only. Tabbing out of a box checks that answer instead of leaving it."
       >
         <Toggle
           on={cfg.blurSubmit}
@@ -262,15 +286,7 @@ export function SettingsCard() {
 
       <Row
         label="Speech voice"
-        info={
-          <>
-            The Japanese voices installed on this Mac. Better ones are a free
-            download in System Settings → Accessibility → Spoken Content →
-            Manage Voices. Two quirks worth knowing: the browser only picks up
-            newly installed voices after a full restart, and Siri voices are
-            never offered to web pages at all.
-          </>
-        }
+        info="The Japanese voices installed on this Mac. You can download better ones under System Settings → Accessibility → Spoken Content → Manage Voices, but the browser won't see them until you restart it. Siri voices never show up here."
       >
         {voices.length ? (
           <>
