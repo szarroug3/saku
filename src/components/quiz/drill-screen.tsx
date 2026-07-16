@@ -40,6 +40,8 @@ import { SmallBtn } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
 import { EMPTY_AGGREGATE, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
+import { loadLatencies, pushLatency } from "@/lib/latency-store";
+import { isSlow, type LatencyStyle, type LatencyWindow } from "@/lib/slow";
 import {
   buildDeck,
   buildMcOptions,
@@ -106,6 +108,16 @@ interface DrillRuntime {
   timerLeft: number | null;
   /** Active (on-screen) ms spent on the current question so far. */
   elapsedMs: number;
+  /**
+   * Recall latency for the current card: active ms from the character
+   * appearing to the FIRST keystroke. This — not time-to-submit — is what
+   * "slow" is judged on, because everything after the first keystroke is
+   * typing, and typing is motor skill rather than recognition. Charging ぎゃ
+   * for three keystrokes that あ never pays would read long romaji as
+   * hesitation. Null until the first key lands; for MC, set at click, where
+   * time-to-choose IS the recall.
+   */
+  firstKeyMs: number | null;
 }
 
 interface DrillHandlers {
@@ -206,6 +218,10 @@ export function DrillScreen() {
   const qStartRef = useRef(0);
   /** Active ms accumulated before the current stopwatch span. */
   const elapsedBaseRef = useRef(0);
+  /** Your recent recall latencies, per answer style — the baseline every
+   * slow verdict is measured against. Loaded once; a ref rather than state
+   * because nothing renders from it. */
+  const latencyRef = useRef<LatencyWindow>({});
   const startedRef = useRef(false);
   const finishedRef = useRef(false);
   /** Async entry points (interval, timeout, document keydown) call through
@@ -218,6 +234,14 @@ export function DrillScreen() {
     !!active && (active.forceCoverage || active.snapshot.length === "limited");
 
   // ---------- engine (fresh closures each render; legacy port) ----------
+
+  /** Stamp the recall latency the moment the first key lands — active time
+   * only, so pausing for a tab switch doesn't read as hesitation. Once per
+   * card: `??=` means later keystrokes (and retries) don't overwrite it. */
+  function markFirstKey() {
+    if (!rt || rt.waiting) return;
+    rt.firstKeyMs ??= elapsedBaseRef.current + (Date.now() - qStartRef.current);
+  }
 
   function stopCountdown() {
     if (intervalRef.current) {
@@ -303,6 +327,7 @@ export function DrillScreen() {
     const st = rt.stats[c] ?? (rt.stats[c] = newCharStat());
     st.seen++;
     rt.elapsedMs = 0;
+    rt.firstKeyMs = null;
     elapsedBaseRef.current = 0;
     qStartRef.current = Date.now();
     if (cfg.timer) startCountdown(cfg.timerSec);
@@ -320,6 +345,10 @@ export function DrillScreen() {
     const q = rt.q;
     const ms = elapsedBaseRef.current + (Date.now() - qStartRef.current);
     rt.elapsedMs = ms;
+    // MC has no keystroke to wait for — the click IS the decision, so the
+    // whole elapsed time is recall.
+    const style: LatencyStyle = q.mc ? "mc" : "typed";
+    if (q.mc) rt.firstKeyMs ??= ms;
     const ok =
       q.dir === "en2jp" && pickedChar !== undefined
         ? pickedChar === q.c
@@ -333,7 +362,15 @@ export function DrillScreen() {
       // zeroed it, so getting there on the retry doesn't restore it.
       if (q.tries === 0) rt.streak = (rt.streak ?? 0) + 1;
       st.everCorrect = true;
-      if (ms > BEHAVIOR.slowAnswerMs) st.slow++;
+      // "Slow" is a hesitation relative to YOUR OWN recent latencies, judged
+      // only on a clean first try: fumbling a retry says you didn't know it,
+      // which the miss already records — it isn't a speed fact. A timeout is
+      // never a latency sample either (it's an absence of one).
+      const latency = rt.firstKeyMs;
+      if (q.tries === 0 && latency !== null && given !== "(time)") {
+        if (isSlow(latency, latencyRef.current, style, cfg.slowFloorMs)) st.slow++;
+        latencyRef.current = pushLatency(latencyRef.current, style, latency);
+      }
       rt.feedback = { kind: "good" };
       rt.waiting = true;
       stopCountdown();
@@ -401,6 +438,8 @@ export function DrillScreen() {
     if (!active || !rt) return;
     startedRef.current = true;
     finishedRef.current = false;
+    // Your latency baseline outlives any one quiz — load it once per mount.
+    latencyRef.current = loadLatencies();
     if (!Array.isArray(rt.deck)) {
       // Fresh quiz — build the deck. Redrill forces one full-coverage pass
       // over exactly the given chars; otherwise honor the builder snapshot.
@@ -417,11 +456,13 @@ export function DrillScreen() {
       rt.feedback = null;
       rt.timerLeft = null;
       rt.elapsedMs = 0;
+      rt.firstKeyMs = null;
       nextQuestion();
       return;
     }
-    // Resuming a runtime written before the streak existed.
+    // Resuming a runtime written before these fields existed.
     if (typeof rt.streak !== "number") rt.streak = 0;
+    if (rt.firstKeyMs === undefined) rt.firstKeyMs = null;
     if (!rt.q) {
       nextQuestion();
       return;
@@ -681,6 +722,16 @@ export function DrillScreen() {
             placeholder="type answer, Enter to submit"
             value={typed}
             readOnly={revealing}
+            // Latency is stamped on a real keypress, NOT in onChange: React
+            // fires change when it syncs a controlled input on mount, which
+            // stamped every card at ~1ms and made every answer look instant.
+            // A printable keydown is unambiguously "they started answering" —
+            // and it ignores Enter, Tab and modifiers, which aren't answers.
+            onKeyDown={(e) => {
+              if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                markFirstKey();
+              }
+            }}
             onChange={(e) => setTyped(e.target.value)}
             // Wide enough for the placeholder to read in full — the old card
             // clipped it at 230px.
