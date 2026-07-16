@@ -144,7 +144,7 @@ function chars(n: number): string {
  * is.
  */
 export function whatSentence(labels: string[], count: number): string {
-  if (!count) return "nothing selected";
+  if (!count) return "Nothing selected";
   const head =
     labels.length <= 2
       ? labels.join(" + ")

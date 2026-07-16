@@ -143,7 +143,7 @@ export function SettingsCard() {
 
       <Row
         label="Accent"
-        info="Each theme keeps its own accent, so this only changes the theme you're in right now. Theme default is the colour the theme was designed with — Aizome means indigo dyeing, and Momentum's green is the same green it marks correct answers with."
+        info="Each theme keeps its own accent, so this only changes the theme you're in right now. Theme default is the colour the theme was designed with: Aizome means indigo dyeing, and Momentum's green is the same green it marks correct answers with."
       >
         <AccentPicker />
       </Row>
@@ -253,7 +253,7 @@ export function SettingsCard() {
                 const v = parseInt(e.target.value, 10);
                 if (v >= 1) update({ timerSec: v });
               }}
-              className="kq-num w-16 rounded-lg border border-border bg-card px-2 py-1 text-sm"
+              className="kq-material kq-num w-16 rounded-lg border border-border bg-card px-2 py-1 text-sm"
               aria-label="Timer seconds (typed)"
             />
             s

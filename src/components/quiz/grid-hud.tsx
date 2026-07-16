@@ -68,7 +68,7 @@ function Pill({
   return (
     <span
       className={cx(
-        "rounded-full border px-2.5 py-0.5 text-[11px] tabular-nums",
+        "kq-material rounded-full border px-2.5 py-0.5 text-[11px] tabular-nums",
         tone === "accent"
           ? "border-accent/40 bg-accent-bg text-accent"
           : tone === "warm"

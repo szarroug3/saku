@@ -17,11 +17,19 @@
 // `sticky bottom-0` rather than pinned to the page: the bar belongs to Home,
 // rides its bottom edge, and follows you down the picker's 54 rows so that the
 // selection you are fine-tuning is always one click from running. It matches
-// the language the picker's own footer set — and the class tokens are
-// load-bearing, not taste. kiri frosts `[class~="sticky"][class~="bg-bg"]`
-// because a sticky opaque band would otherwise punch a rectangle through that
-// theme's mesh, and momentum shelves `[class~="rounded-lg"][class~="bg-text"]`
-// for the primary button. Keep both.
+// the language the picker's own footer set.
+//
+// `kq-band` is what makes this bar OCCLUDE, and it replaces the `bg-bg` that
+// used to be here. A sticky band has to hide what scrolls under it, and the
+// honest answer to "with what?" is per-theme: the three opaque themes lay down
+// the page's own ground, while kiri occludes with a blur instead, because a
+// flat --bg there would punch an opaque rectangle through its mesh. That used
+// to be spelled `[class~="sticky"][class~="bg-bg"]` in globals.css — an
+// accidental class pair that armed by coincidence and disarmed by omission.
+// The bar now says what it is; see CARD MATERIAL in globals.css.
+//
+// Still load-bearing and NOT taste: momentum shelves the primary button off
+// `[class~="rounded-lg"][class~="bg-text"]`. Keep that one.
 
 import type { QuizConfig } from "@/types";
 
@@ -31,7 +39,7 @@ function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
-/** "Drill · endless · type romaji" — the HOW half, read off the live setup. */
+/** "Drill · Endless · Type romaji" — the HOW half, read off the live setup. */
 export function howSentence(cfg: QuizConfig): string {
   const parts: string[] = [
     cfg.mode === "pairs" ? "Match pairs" : cfg.mode === "grid" ? "Grid" : "Drill",
@@ -41,9 +49,9 @@ export function howSentence(cfg: QuizConfig): string {
 
   parts.push(
     cfg.length === "endless"
-      ? "endless"
+      ? "Endless"
       : cfg.limType === "cov"
-        ? "full coverage"
+        ? "Full coverage"
         : `${cfg.limCount} questions`,
   );
 
@@ -51,10 +59,10 @@ export function howSentence(cfg: QuizConfig): string {
   if (cfg.mode !== "pairs") {
     const styles: string[] = [];
     if (cfg.dirs.jp2en) {
-      styles.push(cfg.styleJp2en === "typed" ? "type romaji" : "multiple choice");
+      styles.push(cfg.styleJp2en === "typed" ? "Type romaji" : "Multiple choice");
     }
     if (cfg.dirs.en2jp) {
-      styles.push(cfg.styleEn2jp === "typed" ? "type kana" : "multiple choice");
+      styles.push(cfg.styleEn2jp === "typed" ? "Type kana" : "Multiple choice");
     }
     // Both directions answered the same way is one phrase, not two.
     const unique = [...new Set(styles)];
@@ -96,8 +104,8 @@ export function StartBar({
   return (
     <div
       className={cx(
-        "sticky bottom-0 -mx-3 mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5",
-        "border-t bg-bg",
+        "kq-band sticky bottom-0 -mx-3 mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5",
+        "border-t",
         disabled ? "border-border" : "border-accent",
       )}
     >

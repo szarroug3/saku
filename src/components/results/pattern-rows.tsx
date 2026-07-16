@@ -46,8 +46,16 @@ function directionText(row: PairRow): string | null {
   return `nearly always ${d.shown} read as "${reading(d.readAs)}"`;
 }
 
+/** The row's second line. Sentence case, capitalized HERE rather than in each
+ * fragment: which clause leads varies by branch and by how much evidence there
+ * is — `directionText` drops out below DIRECTION_MIN, `wasWorst` only shows on
+ * the heaviest row — so "first time in 2 runs" leads one row and trails the
+ * next. Capitalizing the composed line is the only place that catches every
+ * combination. Fragments that already lead with a kana or a digit are
+ * unaffected. */
 function join(parts: Array<string | null>): string {
-  return parts.filter(Boolean).join(" · ");
+  const line = parts.filter(Boolean).join(" · ");
+  return line ? line[0].toUpperCase() + line.slice(1) : line;
 }
 
 /** The row's two lines: what happened, and how seriously to take it. */
@@ -74,8 +82,8 @@ function lines(
         join([
           dir,
           row.cleanRunsBefore
-            ? `first time in ${row.cleanRunsBefore} run${s(row.cleanRunsBefore)} — probably a slip`
-            : "first time you've mixed these up — probably a slip",
+            ? `first time in ${row.cleanRunsBefore} run${s(row.cleanRunsBefore)}, probably a slip`
+            : "first time you've mixed these up, probably a slip",
         ]),
       ];
     case "improving": {
@@ -96,7 +104,7 @@ function lines(
     }
     case "cleared":
       return [
-        "Fixed — you won't see this again",
+        "Fixed, and you won't see this again",
         join([
           `${graduateRuns} clean runs in a row`,
           `used to miss it ${record.runsMixedUp} time${s(record.runsMixedUp)} in ${row.runsToLastMixUp}`,

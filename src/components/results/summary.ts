@@ -308,25 +308,25 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
   const many = worst.chars.length > 1;
   const each = many ? " each" : "";
   if (worst.kind === "never") {
-    // "ヂャ never landed — 4 tries, no luck"
+    // "ヂャ never landed: 4 tries, no luck"
     const tail = worst.misses
       ? `${worst.misses} tr${worst.misses === 1 ? "y" : "ies"}${each}, no luck`
       : `${many ? "they" : "it"} never got an answer`;
-    return [...names, { t: ` never landed — ${tail}` }];
+    return [...names, { t: ` never landed: ${tail}` }];
   }
   if (many) {
-    // "ツ and ソ tied for worst — 4 misses each"
-    return [...names, { t: ` tied for worst — ${misses(worst.misses)} each` }];
+    // "ツ and ソ tied for worst: 4 misses each"
+    return [...names, { t: ` tied for worst: ${misses(worst.misses)} each` }];
   }
-  // "ツ cost you the most — 4 misses, every time you answered "shi""
+  // "ツ cost you the most: 4 misses, every time you answered "shi""
   const tail = confusionTail(stats[worst.chars[0]], worst.misses);
   return [
     ...names,
-    { t: ` cost you the most — ${misses(worst.misses)}${tail}` },
+    { t: ` cost you the most: ${misses(worst.misses)}${tail}` },
   ];
 }
 
-/** "ゑ took over 5s though — speed is what's left". No latency is stored, so
+/** "ゑ took over 5s though, and speed is what's left". No latency is stored, so
  * the threshold is the number that can honestly be quoted. */
 function slowBits(facts: RunFacts, stats: SessionStats): Bit[] {
   const most = Math.max(...facts.slowOnly.map((c) => stats[c].slow));
@@ -334,7 +334,7 @@ function slowBits(facts: RunFacts, stats: SessionStats): Bit[] {
   const secs = BEHAVIOR.slowAnswerMs / 1000;
   return [
     ...nameList(chars),
-    { t: ` took over ${secs}s though — speed is what's left` },
+    { t: ` took over ${secs}s though, and speed is what's left` },
   ];
 }
 
@@ -385,14 +385,14 @@ function perfectBits(facts: RunFacts, prior: HistoryFile): Bit[] {
     return [
       {
         t: before
-          ? `your ${ordinal(before + 1)} clean pass over ${label}`
-          : `your first clean pass over ${label}`,
+          ? `Your ${ordinal(before + 1)} clean pass over ${label}`
+          : `Your first clean pass over ${label}`,
       },
     ];
   }
   const before = prior.sessions.filter((x) => clean(pctOf(x))).length;
   return [
-    { t: before ? `your ${ordinal(before + 1)} perfect run` : "your first perfect run" },
+    { t: before ? `Your ${ordinal(before + 1)} perfect run` : "Your first perfect run" },
   ];
 }
 
@@ -432,7 +432,7 @@ export function summarize(
       state: "slow",
       headline: facts.totalMisses
         ? "Everything landed in the end"
-        : "Clean run — nothing missed",
+        : "Clean run, nothing missed",
       detail: slowBits(facts, stats),
       counts,
     };
@@ -453,7 +453,7 @@ export function summarize(
         ? [
             ...nameList(worst.chars),
             {
-              t: ` took the most retries — ${misses(worst.misses)}${
+              t: ` took the most retries: ${misses(worst.misses)}${
                 worst.chars.length > 1 ? " each" : ""
               }, but you got there`,
             },
@@ -473,7 +473,7 @@ export function summarize(
       },
       ...(beat
         ? ([
-            { t: " — and you beat " },
+            { t: ", and you beat " },
             { t: `${beat.a} ↔ ${beat.b}`, em: true },
           ] as Bit[])
         : []),

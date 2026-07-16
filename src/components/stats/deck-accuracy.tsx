@@ -59,7 +59,7 @@ export function DeckAccuracy({
               // hangs per-theme card treatments off rounded-xl + bg-card, and
               // those suit a full-width card, not a 3-up grid of tiles. Same
               // opt-out Home's tiles and the picker's rows take.
-              className="relative flex min-h-[92px] flex-col items-start gap-0.5 rounded-[12px] border border-border bg-card p-3"
+              className="kq-material relative flex min-h-[92px] flex-col items-start gap-0.5 rounded-[12px] border border-border bg-card p-3"
             >
               <span className="absolute top-2.5 right-2.5">
                 <AccuracyRing pct={pct} unpractised="dashed" />

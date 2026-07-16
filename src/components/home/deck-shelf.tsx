@@ -71,14 +71,14 @@ export function DeckShelf({
           />
         );
       })}
-      {/* No ring, and no state: Custom… is not a deck with an accuracy, it is
+      {/* No ring, and no state: Custom is not a deck with an accuracy, it is
           a door. A percentage on it would have to be an accuracy OF something,
           and there is nothing here to be the something. */}
       <DeckCard
         dashed
         glyph="⚙"
-        label="Custom…"
-        subtitle={pickerOpen ? "open below" : "pick exact rows"}
+        label="Custom"
+        subtitle={pickerOpen ? "Open below" : "Pick exact rows"}
         onClick={onCustom}
       />
     </Shelf>

@@ -94,10 +94,11 @@ function EmptyTrend() {
     <Card>
       {/* No metric word here — the page toggle beside the title names the
        * metric once for the whole page now. */}
-      <Head note={`last ${MAX_BARS} sessions`} />
+      <Head note={`Last ${MAX_BARS} sessions`} />
       <div className="flex h-[104px] items-center justify-center rounded-[10px] border border-dashed border-border">
         <p className="px-4 text-center text-xs text-text-muted">
-          Your first finished quiz draws the first bar.
+          Nothing to chart yet. Accuracy appears here once you have finished a
+          quiz.
         </p>
       </div>
       <p className="mt-2 text-xs text-text-muted">
@@ -135,7 +136,7 @@ export function AccuracyTrend({
   return (
     <Card>
       <Head
-        note={alone ? "1 session" : `last ${plural(points.length, "session")}`}
+        note={alone ? "1 session" : `Last ${plural(points.length, "session")}`}
       />
 
       {/* items-end + a bottom rule: the baseline is where 0% sits, drawn as a
@@ -209,12 +210,12 @@ export function AccuracyTrend({
       <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2 text-[11px] tabular-nums text-text-muted">
         <span>{shortDate(points[0].ts)}</span>
         {alone ? (
-          <span>one session so far — the trend grows as you drill</span>
+          <span>One session so far · the trend grows as you drill</span>
         ) : (
-          <span>full column = 100% · hover a bar for its session</span>
+          <span>Full column = 100% · hover a bar for its session</span>
         )}
         <span>
-          latest · <span className="text-text">{formatAccuracy(latest.pct)}</span>
+          Latest · <span className="text-text">{formatAccuracy(latest.pct)}</span>
         </span>
       </div>
     </Card>

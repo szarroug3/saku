@@ -64,7 +64,7 @@ export function PickerRow({
           {chars.map((ch) => (
             <span
               key={ch.c}
-              title={`${ch.r.join(" / ")} — click to toggle just this one`}
+              title={`${ch.r.join(" / ")} (click to toggle just this one)`}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleChar(ch.c);

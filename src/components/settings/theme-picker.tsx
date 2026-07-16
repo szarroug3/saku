@@ -329,7 +329,7 @@ export function AccentPicker() {
       aria-label={label}
       title={label}
       className={
-        "size-[26px] cursor-pointer rounded-full border border-border " +
+        "kq-material size-[26px] cursor-pointer rounded-full border border-border " +
         "transition-transform " +
         (selected
           ? "outline outline-2 outline-offset-2 outline-accent"

@@ -91,28 +91,28 @@ const R: Record<string, Romaji[]> = {
 
 // Mnemonics — short shape hooks shown in the Kana chart tab. Edit freely.
 const MH: Record<string, string[]> = {
-  vowels: ["an antenna poking out of a TV", "two eels swimming side by side (ii!)", "a sideways U wearing a hat", "an exotic bird strutting", "an ostrich craning its neck"],
-  k: ["a kite with a little tail", "a key with two teeth", "a bird's open beak — ku-ku!", "a keg beside its tap", "two cozy lines cuddling"],
-  s: ["a fishing hook catching sardines", "a shiny fishing hook", "a spring suspended and coiled", "a set of crooked teeth", "a zigzag bolt soaring down"],
-  t: ["'t' and 'a' squished together — ta!", "the number 5 cheering — chi!", "a tsunami wave rolling in", "a telephone pole crossbar", "a toe with a splinter in it"],
-  n: ["a nail resting by a cross", "a knee pressed against a wall", "noodles twirled on chopsticks", "a neko (cat) with a curled tail", "a no-entry sign"],
-  h: ["an 'H' holding a balloon — ha!", "a big grin — hee!", "Mount Fuji puffing steam", "hey, a little hill", "a house with chimney and antenna"],
-  m: ["a mailbox with a looped flag", "looks like 21 — 'mi? I'm 21!'", "a cow's face going moo", "a big eye — me means eye", "a hook with more bait on it"],
-  y: ["a yak's head with horns", "a unique fish swimming past", "a yo-yo hanging off a finger"],
-  r: ["a rabbit's ear flopping over", "a river between two banks", "a loop-de-loop route with a curl", "a runner kneeling, ready", "the same road, no curl (vs る)"],
-  w: ["a water slide off a pole", "someone tripping — woah!", "a cursive lowercase 'n'"],
+  vowels: ["An antenna poking out of a TV", "Two eels swimming side by side (ii!)", "A sideways U wearing a hat", "An exotic bird strutting", "An ostrich craning its neck"],
+  k: ["A kite with a little tail", "A key with two teeth", "A bird's open beak, ku-ku!", "A keg beside its tap", "Two cozy lines cuddling"],
+  s: ["A fishing hook catching sardines", "A shiny fishing hook", "A spring suspended and coiled", "A set of crooked teeth", "A zigzag bolt soaring down"],
+  t: ["'t' and 'a' squished together, ta!", "The number 5 cheering, chi!", "A tsunami wave rolling in", "A telephone pole crossbar", "A toe with a splinter in it"],
+  n: ["A nail resting by a cross", "A knee pressed against a wall", "Noodles twirled on chopsticks", "A neko (cat) with a curled tail", "A no-entry sign"],
+  h: ["An 'H' holding a balloon, ha!", "A big grin, hee!", "Mount Fuji puffing steam", "Hey, a little hill", "A house with chimney and antenna"],
+  m: ["A mailbox with a looped flag", "Looks like 21: 'mi? I'm 21!'", "A cow's face going moo", "A big eye: me means eye", "A hook with more bait on it"],
+  y: ["A yak's head with horns", "A unique fish swimming past", "A yo-yo hanging off a finger"],
+  r: ["A rabbit's ear flopping over", "A river between two banks", "A loop-de-loop route with a curl", "A runner kneeling, ready", "The same road, no curl (vs る)"],
+  w: ["A water slide off a pole", "Someone tripping, woah!", "A cursive lowercase 'n'"],
 };
 const MK: Record<string, string[]> = {
-  vowels: ["an axe blade swinging", "an easel standing on one leg", "う's hat on a box — u again", "an elevator between floors", "an opera singer mid-kick"],
-  k: ["か's kite, tail snipped off", "the top half of き's key", "a cook's hat", "a K that lost a leg", "a corner bracket"],
-  s: ["two saplings under a branch", "a smiling face — she smiles (strokes lie flat)", "a suit on a hanger", "せ's teeth, katakana style", "one needle sewing straight down (stroke stands up)"],
-  t: ["a cook's hat with a tag inside", "a 7 cheating with an extra bar", "a standing tsunami — vs シ, these drops fall", "a telephone pole with two wires", "a totem pole with a peg"],
-  n: ["a plus sign missing an arm — nah", "two lines — ni means two!", "chopsticks crossing over noodles", "a necktie on a pole", "a nose sliding down — one stroke, no more"],
-  h: ["two strokes laughing apart — ha ha", "a heel kicking sideways", "one clean cliff edge — full drop", "the exact same hill as へ — they match", "a pole with branches — home for birds"],
-  m: ["a map pin tilted over", "three lines — mi = three!", "a pyramid with a mummy inside", "a message crossed out with an X", "も's hook, straightened out"],
-  y: ["や's yak horns again", "a U-boat hatch", "a backwards E — yo!"],
-  r: ["a radar dish on a roof", "り's river, straighter banks", "a running shoe kicking up", "a reclining letter L", "a room seen from above"],
-  w: ["a water glass flipped upside down", "a wobbly two-shelf bracket — woah", "one stroke lying down — vs ソ it points up"],
+  vowels: ["An axe blade swinging", "An easel standing on one leg", "う's hat on a box, u again", "An elevator between floors", "An opera singer mid-kick"],
+  k: ["か's kite, tail snipped off", "The top half of き's key", "A cook's hat", "A K that lost a leg", "A corner bracket"],
+  s: ["Two saplings under a branch", "A smiling face: she smiles (strokes lie flat)", "A suit on a hanger", "せ's teeth, katakana style", "One needle sewing straight down (stroke stands up)"],
+  t: ["A cook's hat with a tag inside", "A 7 cheating with an extra bar", "A standing tsunami (vs シ, these drops fall)", "A telephone pole with two wires", "A totem pole with a peg"],
+  n: ["A plus sign missing an arm, nah", "Two lines, ni means two!", "Chopsticks crossing over noodles", "A necktie on a pole", "A nose sliding down (one stroke, no more)"],
+  h: ["Two strokes laughing apart, ha ha", "A heel kicking sideways", "One clean cliff edge, full drop", "The exact same hill as へ, they match", "A pole with branches, home for birds"],
+  m: ["A map pin tilted over", "Three lines, mi = three!", "A pyramid with a mummy inside", "A message crossed out with an X", "も's hook, straightened out"],
+  y: ["や's yak horns again", "A U-boat hatch", "A backwards E, yo!"],
+  r: ["A radar dish on a roof", "り's river, straighter banks", "A running shoe kicking up", "A reclining letter L", "A room seen from above"],
+  w: ["A water glass flipped upside down", "A wobbly two-shelf bracket, woah", "One stroke lying down (vs ソ it points up)"],
 };
 
 const HIRAGANA_ROWS: Row[] = [
@@ -257,8 +257,8 @@ function buildLookGroup(): Record<string, string[]> {
 export function mnemonicFor(ch: KanaChar, secLabel: string): string {
   if (ch.m) return ch.m;
   if (ch.c.length > 1) return `${ch.c[0]} + small ${ch.c[1]}`;
-  if (/^Dakuten/.test(secLabel)) return "base kana + ゛ voicing mark";
-  if (/^Handakuten/.test(secLabel)) return "base kana + ゜ p-mark";
+  if (/^Dakuten/.test(secLabel)) return "Base kana + ゛ voicing mark";
+  if (/^Handakuten/.test(secLabel)) return "Base kana + ゜ p-mark";
   return "";
 }
 

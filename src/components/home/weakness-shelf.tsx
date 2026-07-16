@@ -48,7 +48,7 @@ export function weaknessDecks(
       chars: weakest,
       subtitle:
         weakestAcc === null
-          ? "nothing to go on yet"
+          ? "Nothing to go on yet"
           : `${formatAccuracy(weakestAcc)} ${metricWord(metric)}`,
     },
     {
@@ -57,10 +57,10 @@ export function weaknessDecks(
       glyph: topPair ? `${topPair.a}↔${topPair.b}` : "↔",
       chars: confusions.chars,
       subtitle: !confusions.pairs.length
-        ? "no pairs to drill"
+        ? "No pairs to drill"
         : confusions.fromHistory
           ? `${plural(confusions.pairs.length, "pair")} you mix up`
-          : "common lookalikes",
+          : "Common lookalikes",
     },
     {
       id: "last-misses",
@@ -69,7 +69,7 @@ export function weaknessDecks(
       chars: misses,
       subtitle: misses.length
         ? plural(misses.length, "character")
-        : "nothing missed yet",
+        : "Nothing missed yet",
     },
   ];
 }
@@ -101,7 +101,7 @@ export function WeaknessShelf({
             }
             state={state}
             // A card with no characters has nothing to select. It stays on the
-            // shelf greyed rather than vanishing: "nothing missed yet" is an
+            // shelf greyed rather than vanishing: "Nothing missed yet" is an
             // answer, and a shelf that changes length as history arrives is
             // harder to learn than one that fills in.
             disabled={!deck.chars.length}

@@ -65,7 +65,7 @@ export function AccuracyRing({
         title="not practised yet"
         // `block`: these spans sit inside a <button>, and an inline span
         // ignores width/height outright.
-        className="block flex-none rounded-full border border-dashed border-border bg-panel"
+        className="kq-material block flex-none rounded-full border border-dashed border-border bg-panel"
         style={{ height: size, width: size }}
       />
     );
@@ -80,7 +80,7 @@ export function AccuracyRing({
 
   return (
     <span
-      title="accuracy from your session history"
+      title="Accuracy from your session history"
       className="relative grid flex-none place-items-center rounded-full"
       style={{ height: size, width: size }}
     >

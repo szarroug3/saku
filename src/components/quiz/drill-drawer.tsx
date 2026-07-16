@@ -35,7 +35,7 @@ export function DrillDrawer() {
       <p className="mb-0.5 text-[13px] font-semibold uppercase tracking-[0.04em] text-text-muted">
         Drill view{" "}
         <span className="font-normal normal-case tracking-normal">
-          — applies instantly
+          (applies instantly)
         </span>
       </p>
       <Row label="Timer">

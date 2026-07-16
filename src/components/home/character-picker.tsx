@@ -189,9 +189,9 @@ export function CharacterPicker() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search kana or romaji — ぬ, nu, kyo…"
+          placeholder="Search kana or romaji: ぬ, nu, kyo…"
           aria-label="Search kana or romaji"
-          className="min-w-[180px] flex-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[13px] text-text"
+          className="kq-material min-w-[180px] flex-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[13px] text-text"
         />
         <span className="flex flex-none items-center gap-1.5">
           <SmallBtn onClick={() => allNone(scope, true)}>All</SmallBtn>
@@ -209,7 +209,7 @@ export function CharacterPicker() {
               <span className="tabular-nums">
                 {scope.length} of {ALL_CHARS.length}
               </span>{" "}
-              characters match &ldquo;{qRaw}&rdquo; — the rows below, and every
+              characters match &ldquo;{qRaw}&rdquo;. The rows below, and every
               All · None · Invert, apply to those only.
             </>
           )}

@@ -19,9 +19,9 @@ function cx(...parts: Array<string | false | null | undefined>): string {
 
 /** The cell's tiny note: how it went, in the fewest characters that are true. */
 function noteOf(st: CharSessionDetail): string {
-  if (!st.everCorrect) return "never";
+  if (!st.everCorrect) return "Never";
   if (st.misses > 0) return `×${st.misses}`;
-  if (st.slow > 0) return "slow";
+  if (st.slow > 0) return "Slow";
   return "";
 }
 

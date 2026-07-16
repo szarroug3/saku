@@ -178,7 +178,7 @@ function Pill({
   return (
     <span
       className={cx(
-        "rounded-full border px-2.5 py-0.5 text-[11px] tabular-nums",
+        "kq-material rounded-full border px-2.5 py-0.5 text-[11px] tabular-nums",
         tone === "accent"
           ? "border-accent/40 bg-accent-bg text-accent"
           : tone === "warm"
@@ -744,7 +744,7 @@ export function DrillScreen() {
             autoFocus
             autoComplete="off"
             spellCheck={false}
-            placeholder="type answer, Enter to submit"
+            placeholder="Type answer, Enter to submit"
             value={typed}
             readOnly={revealing}
             // Latency is stamped on a real keypress, NOT in onChange: React
@@ -760,7 +760,7 @@ export function DrillScreen() {
             onChange={(e) => setTyped(e.target.value)}
             // Wide enough for the placeholder to read in full — the old card
             // clipped it at 230px.
-            className="w-[270px] rounded-lg border border-border bg-card px-3 py-2 text-center text-lg text-text outline-none focus:border-accent"
+            className="kq-material w-[270px] rounded-lg border border-border bg-card px-3 py-2 text-center text-lg text-text outline-none focus:border-accent"
           />
         ) : (
           // Capped so the six options sit as two rows of three under the
@@ -805,7 +805,7 @@ export function DrillScreen() {
                 <span className="font-semibold text-danger">{info.r[0]}</span>
               </span>
               <span className="text-[10px] text-text-muted">
-                press Enter to continue
+                Press Enter to continue
               </span>
             </>
           ) : null}

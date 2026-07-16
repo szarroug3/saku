@@ -69,7 +69,7 @@ function SessionRow({
       onKeyDown={(e) => activates(e, onOpen)}
       className={cx(
         "flex cursor-pointer flex-wrap items-center justify-between gap-x-3 gap-y-1",
-        "rounded-[12px] border p-3 text-[13px]",
+        "kq-material rounded-[12px] border p-3 text-[13px]",
         selected
           ? "border-accent/40 bg-accent-bg"
           : "border-border bg-card hover:border-accent/40",
@@ -112,11 +112,11 @@ function SessionRow({
 
       <span className="flex items-center gap-2">
         <span className="tabular-nums text-text-muted">
-          forgiving{" "}
+          Forgiving{" "}
           <span className="text-text">
             {formatAccuracy(record.forgivingPct)}
           </span>{" "}
-          · strict{" "}
+          · Strict{" "}
           <span className="text-text">{formatAccuracy(record.strictPct)}</span>
         </span>
         <button
@@ -140,7 +140,7 @@ function SessionRow({
  * as a screen that failed to load. */
 function NoSessions() {
   return (
-    <div className="flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-[12px] border border-dashed border-border bg-card p-6 text-center">
+    <div className="kq-material flex min-h-[140px] flex-col items-center justify-center gap-1 rounded-[12px] border border-dashed border-border bg-card p-6 text-center">
       <span
         aria-hidden="true"
         className="mb-0.5 font-kana text-[26px] font-extralight opacity-70"
@@ -149,7 +149,7 @@ function NoSessions() {
       </span>
       <p className="text-[13px] font-semibold">No sessions yet</p>
       <Hint>
-        Finish a quiz and it lands here — every run is kept until you delete it.
+        Finish a quiz and it lands here. Every run is kept until you delete it.
       </Hint>
     </div>
   );
@@ -183,7 +183,7 @@ export function SessionsList() {
       await refresh();
       setPicked(new Set());
     } catch {
-      alert("Couldn't delete — try again.");
+      alert("Couldn't delete. Try again.");
     }
   };
 
