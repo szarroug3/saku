@@ -6,6 +6,12 @@
 
 import { type ButtonHTMLAttributes, type ReactNode } from "react";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
@@ -42,16 +48,45 @@ export function Hint({ children }: { children: ReactNode }) {
   return <span className="text-xs text-text-muted">{children}</span>;
 }
 
+/** Background on a setting, behind a focusable (i).
+ *
+ * A real button, not a bare hover target: hover-only info is unreachable by
+ * keyboard and on touch, and this is the only place some of it is written
+ * down. Radix handles focus, Escape, and the aria wiring. */
+export function Info({ children }: { children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        type="button"
+        aria-label="More about this setting"
+        className="ml-1 inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-border align-[1px] text-[9px] leading-none text-text-muted hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        i
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6} className="max-w-[280px]">
+        {children}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 /** A settings row: label left, controls right, top border between rows.
- * `dim` grays it out (setting doesn't apply to the chosen mode). */
+ * `dim` grays it out (setting doesn't apply to the chosen mode).
+ *
+ * Two kinds of explanation, deliberately separated:
+ *   `hint` — changes what you'd PICK, so it stays inline and always visible
+ *   `info` — background or a why, so it hides behind an (i)
+ * That line is what keeps the page from being a wall of grey text. */
 export function Row({
   label,
   hint,
+  info,
   dim,
   children,
 }: {
   label: ReactNode;
   hint?: ReactNode;
+  info?: ReactNode;
   dim?: boolean;
   children: ReactNode;
 }) {
@@ -65,6 +100,7 @@ export function Row({
     >
       <span>
         {label} {hint ? <Hint>{hint}</Hint> : null}
+        {info ? <Info>{info}</Info> : null}
       </span>
       <span className="flex flex-wrap items-center gap-1.5">{children}</span>
     </div>

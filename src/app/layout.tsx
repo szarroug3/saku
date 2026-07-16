@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Sidebar } from "@/components/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { QuizSessionProvider } from "@/lib/quiz-session";
 import { ThemeProvider } from "@/lib/theme";
@@ -69,10 +70,12 @@ export default function RootLayout({
         <ThemeProvider>
           <QuizConfigProvider>
             <QuizSessionProvider>
-              <div className="mx-auto flex max-w-[1080px] gap-3.5 px-3 pb-15 pt-6">
-                <Sidebar />
-                <main className="min-w-0 flex-1">{children}</main>
-              </div>
+              <TooltipProvider delayDuration={200}>
+                <div className="mx-auto flex max-w-[1080px] gap-3.5 px-3 pb-15 pt-6">
+                  <Sidebar />
+                  <main className="min-w-0 flex-1">{children}</main>
+                </div>
+              </TooltipProvider>
             </QuizSessionProvider>
           </QuizConfigProvider>
         </ThemeProvider>

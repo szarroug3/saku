@@ -84,15 +84,60 @@ export function SettingsCard() {
 
   return (
     <Card>
-      <Row
-        label="Theme"
-        hint="changes the whole look — pick what you'll enjoy staring at"
-      >
+      <Row label="Theme">
         <ThemePicker />
       </Row>
 
       <Row label="Appearance">
         <AppearancePicker />
+      </Row>
+
+      <Row
+        label="Accuracy shown as"
+        info="Used everywhere the app shows a percentage — the drill HUD, the deck rings on Home, the circles in the character picker — so the number always means one thing. First try asks whether you knew it on sight, which is what the app is training. Eventually right counts a card you got after a retry."
+      >
+        <Chip
+          on={cfg.accuracyMetric === "firstTry"}
+          onClick={() => update({ accuracyMetric: "firstTry" })}
+        >
+          First try
+        </Chip>
+        <Chip
+          on={cfg.accuracyMetric === "attempt"}
+          onClick={() => update({ accuracyMetric: "attempt" })}
+        >
+          Eventually right
+        </Chip>
+      </Row>
+
+      <Row
+        label="Show practice volume"
+        hint="how much a deck has been drilled, next to its accuracy"
+        info="88% from four attempts is not 88%. The bar under each deck shows how much you have actually practised it, so a barely-touched deck can't look mastered."
+      >
+        <Toggle
+          on={cfg.showVolume}
+          onClick={() => update({ showVolume: !cfg.showVolume })}
+        />
+      </Row>
+
+      <Row
+        label="Clean runs to clear a confusion"
+        info="Get a mix-up right this many times in a row and it is considered fixed: it stops appearing in Patterns, in Home's Confusions card, and in Weakest 20 — only Statistics keeps remembering it. Counts only runs that actually contained those characters. Lower it if you learn fast."
+      >
+        <SmallBtn
+          disabled={cfg.graduateRuns <= 3}
+          onClick={() => update({ graduateRuns: cfg.graduateRuns - 1 })}
+        >
+          −
+        </SmallBtn>
+        <span className="tabular-nums">{cfg.graduateRuns}</span>
+        <SmallBtn
+          disabled={cfg.graduateRuns >= 20}
+          onClick={() => update({ graduateRuns: cfg.graduateRuns + 1 })}
+        >
+          +
+        </SmallBtn>
       </Row>
 
       <Row label="Retries">
@@ -124,7 +169,12 @@ export function SettingsCard() {
         ) : null}
       </Row>
 
-      <Row label="Timer" hint="timeout costs a retry" dim={gridDim}>
+      <Row
+        label="Timer"
+        hint="timeout costs a retry"
+        info="Each question gets a countdown. Running out spends a retry, exactly as if you had answered wrong — so a timeout is a miss, not a free pass."
+        dim={gridDim}
+      >
         <Toggle on={cfg.timer} onClick={() => update({ timer: !cfg.timer })} />
         {cfg.timer ? (
           <>
@@ -158,7 +208,11 @@ export function SettingsCard() {
         ) : null}
       </Row>
 
-      <Row label="Show correct answer" hint="when out of retries">
+      <Row
+        label="Show correct answer"
+        hint="when out of retries"
+        info="Once a card is out of retries it reveals the answer and waits for Enter, so you read it before moving on. With this off, the card just re-queues and you meet it again later."
+      >
         <Toggle
           on={cfg.showAnswer}
           onClick={() => update({ showAnswer: !cfg.showAnswer })}
@@ -168,6 +222,7 @@ export function SettingsCard() {
       <Row
         label="Script label on the card"
         hint="off = identify hiragana vs katakana yourself"
+        info="Telling you a card is katakana narrows it to 107 characters before you have read anything. Turning this off makes you place the script yourself, which is closer to reading in the wild."
         dim={gridDim}
       >
         <Toggle
@@ -176,7 +231,11 @@ export function SettingsCard() {
         />
       </Row>
 
-      <Row label="Fonts" hint="cards draw a random font from your selection">
+      <Row
+        label="Fonts"
+        hint="cards draw a random font from your selection"
+        info="Keep several selected: one typeface is easy to memorise as a shape rather than a character, and Japanese print varies more than English does. Pick one font to always use it."
+      >
         {JP_FONTS.map((font) => (
           <Chip
             key={font}
@@ -193,6 +252,7 @@ export function SettingsCard() {
       <Row
         label="Submit on focus loss"
         hint="grid mode: Tab out of a card checks it and moves on"
+        info="Only affects the grid sheet, where every character has its own box. With this on, tabbing away checks a card instead of leaving it half-answered."
       >
         <Toggle
           on={cfg.blurSubmit}
@@ -202,7 +262,15 @@ export function SettingsCard() {
 
       <Row
         label="Speech voice"
-        hint="Japanese voices installed on this Mac — add better ones in System Settings → Accessibility → Spoken Content → Manage Voices"
+        info={
+          <>
+            The Japanese voices installed on this Mac. Better ones are a free
+            download in System Settings → Accessibility → Spoken Content →
+            Manage Voices. Two quirks worth knowing: the browser only picks up
+            newly installed voices after a full restart, and Siri voices are
+            never offered to web pages at all.
+          </>
+        }
       >
         {voices.length ? (
           <>
