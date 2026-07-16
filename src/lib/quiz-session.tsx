@@ -24,6 +24,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -130,6 +131,8 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const [results, setResults] = useState<ResultsPayload | null>(null);
   const [progress, setProgress] = useState<QuizProgress | null>(null);
   const [restored, setRestored] = useState(false);
+  /** True for exactly one state update: the one applying another tab's write. */
+  const adoptedRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -166,7 +169,16 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         // storage full/unavailable — resume degrades gracefully to not-offered
       }
     };
-    save();
+    // Saving state we just ADOPTED from another tab is what turns two tabs
+    // into a write storm: adopting sets state → this effect fires → we write
+    // → the other tab adopts OUR write → it writes → we adopt… Measured at
+    // ~87k writes in 15s before this guard existed. Adopting is not news, so
+    // it isn't published; only a change that started HERE is.
+    if (adoptedRef.current) {
+      adoptedRef.current = false;
+    } else {
+      save();
+    }
     // beforeunload catches runtime mutations made since the last state change.
     window.addEventListener("beforeunload", save);
     return () => window.removeEventListener("beforeunload", save);
@@ -184,6 +196,8 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       try {
         const next: StoredSession = JSON.parse(e.newValue);
         if (!next.owner || next.owner === TAB_ID) return;
+        // Tell the save effect this state is theirs, not ours — see the guard.
+        adoptedRef.current = true;
         setActive(next.active);
         setResults(next.results);
         setProgress(next.progress);
