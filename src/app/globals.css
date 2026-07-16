@@ -419,6 +419,28 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Scrollbars, themed from tokens. A separate rule from the gutter above on
+ * purpose — that one is load-bearing layout, this one is chrome.
+ *
+ * `thin` + a --border thumb on a transparent track is the quietest thing that
+ * still belongs to the palette: the thumb is the same hairline the cards draw
+ * their edges with, so it reads as part of the frame rather than as a control.
+ * The track stays transparent so the page's own ground (and, in kiri, the mesh)
+ * runs under it instead of being interrupted by a grey channel.
+ *
+ * Standard properties only — no ::-webkit-scrollbar. Both engines this app is
+ * aimed at support scrollbar-color/-width natively (Chrome 121+, Safari 18.2+),
+ * and the webkit pseudo-elements OVERRIDE the standard property where they're
+ * honoured, which would mean maintaining two scrollbars that must agree and
+ * losing the OS's overlay/auto-hide behaviour to get nothing back.
+ *
+ * Applies to the page and, via .kq-scroll, to any in-card scroller. */
+html,
+.kq-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -630,6 +652,78 @@ body {
 [data-theme="kiri"] [class~="leading-[1.15]"] {
   font-weight: 200;
   text-shadow: 0 0 32px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* ==========================================================================
+ * STICKY TABLE HEADER  (src/components/stats/characters-table.tsx)
+ *
+ * The fourth time this app has shipped the same bug: a sticky element with a
+ * translucent or theme-agnostic fill over a themed ground. The sticky quiz
+ * header used a flat --bg that punched through kiri's mesh; the tooltip used
+ * --card and the label underneath read straight through it; the grid HUD scrim
+ * painted a black rectangle. This header used `bg-card` — and --card is
+ * DELIBERATELY translucent in kiri (rgba(255,255,255,.055) dark, .62 light), so
+ * rows scrolled straight through the column titles and the two collided into
+ * the garbage the user screenshotted.
+ *
+ * The rule, stated once so the fifth one doesn't happen:
+ *
+ *   A STICKY SURFACE MUST OCCLUDE. It therefore cannot inherit a token that is
+ *   allowed to be transparent. It needs its own token, resolved per theme, and
+ *   the resolution has to answer "what is the ground HERE?" — not "what colour
+ *   is a card?".
+ *
+ * The ask was "like the headers are frozen in place" — the row must vanish
+ * under the title, and the title must sit on the card's own surface so nothing
+ * reads as a bar bolted over the table. So --table-head is per theme the fill
+ * that IS the card's ground at that point:
+ *
+ *   graphite / momentum ... --card. Their --card is an opaque #ffffff; the
+ *                           header is simply the card, and the row disappears.
+ *   aizome ................ --bg. Its cards are hairline rules, not boxes —
+ *                           `background: none` (see the aizome section above),
+ *                           so the ground under this table is the PAGE, and
+ *                           --card here would be a paper-coloured band floating
+ *                           in a themeless card. --bg is the honest answer.
+ *   kiri .................. blur + a heavy --bg tint. The one theme where no
+ *                           flat colour is correct: the card is glass over a
+ *                           gradient mesh, so an opaque fill is exactly the
+ *                           black rectangle of BUG 1, one card further in.
+ *
+ * kiri's value is the --gcard-panel argument from the grid sheet, reused: the
+ * blur destroys the glyphs (an 18px gaussian on 13–20px type leaves a wash, not
+ * letters) and the 88% --bg tint kills the residual wash, while the remaining
+ * 12% keeps the mesh reading through so the band still belongs to the glass.
+ * Occlusion comes from the blur; the tint only cleans up after it.
+ *
+ * Painted on `th`, not `thead`: the table is `border-collapse: collapse`, where
+ * a section-level background is unreliable and — the reason that matters here —
+ * the <tr>'s bottom border belongs to the collapsed grid and scrolls away with
+ * the body, leaving the header rule-less mid-scroll. The inset shadow below is
+ * that rule, drawn on the cell so it sticks with it.
+ * ======================================================================= */
+
+[data-theme] {
+  --table-head: var(--card);
+  --table-head-filter: none;
+}
+
+[data-theme="aizome"] {
+  --table-head: var(--bg);
+}
+
+[data-theme="kiri"] {
+  --table-head: color-mix(in srgb, var(--bg) 88%, transparent);
+  --table-head-filter: blur(18px) saturate(120%);
+}
+
+.kq-table-head th {
+  background-color: var(--table-head);
+  -webkit-backdrop-filter: var(--table-head-filter);
+  backdrop-filter: var(--table-head-filter);
+  /* The header's own bottom rule. border-collapse would hand this to the grid
+   * and scroll it away; an inset shadow belongs to the cell and stays. */
+  box-shadow: inset 0 -1px 0 var(--border);
 }
 
 /* ==========================================================================

@@ -42,8 +42,17 @@ function Cell({
   onToggle: () => void;
 }) {
   const note = noteOf(stat);
+  // Unselected is "not chosen for redrill", NOT "nearly invisible". The old
+  // `opacity-40` faded the WHOLE cell — border, glyph and note together — and
+  // on kiri's mesh, where --text-muted is already a 50%-alpha ink, that landed
+  // the kana near 1.5:1: the に and テ ghosts the user reported. The distinction
+  // is carried by border and fill instead, exactly as the selected states carry
+  // theirs: a neutral --border and a --panel ground read plainly as "off"
+  // against the coloured, tinted "on" cells, and the glyph drops only to
+  // --text-muted — the app's standard muted-text contrast (≥3:1 on --card in
+  // every theme), legible rather than a smudge.
   const tone = !on
-    ? "border-border/60 opacity-40"
+    ? "border-border bg-panel"
     : severe(stat)
       ? "border-danger/50 bg-danger-bg"
       : note

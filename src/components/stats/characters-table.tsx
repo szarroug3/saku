@@ -23,10 +23,25 @@
 // ties broken toward the character you have seen MORE, matching weakestChars()
 // in src/lib/decks.ts. It ranks by ACCURACY under the chosen metric, not by raw
 // misses: "missed 9 times" says nothing without knowing it was shown 200.
+//
+// AND SO THE SECTION IS CALLED "CHARACTERS", not "Weakest characters".
+//
+// The cap is what made the old name true; removing it made the name a claim the
+// table no longer honours. Every row is here, and one click on "Seen" sorts the
+// STRONGEST character you own to the top — a "Weakest characters" heading over
+// が 100% · seen 214× is simply false. The rename is not a softening; it's the
+// heading catching up with what the component already does.
+//
+// "Characters" was chosen over "All characters" because the script filter can
+// narrow the table to one set, and "All characters" would then be its own small
+// lie. "Characters" names what the rows ARE rather than making a claim about
+// their order or their extent, so it survives every sort, every filter, and
+// whatever column gets added next. Weakest-first is still what you see first —
+// it just lives in the DEFAULT SORT and in the note under the table, which is
+// where a claim about ordering can stay true.
 
 import { useMemo, useState } from "react";
 
-import { metricWord } from "@/components/home/deck-card";
 import { Card, Chip, Hint, Lbl } from "@/components/ui";
 import { CHAR_INDEX, SETS } from "@/data/characters";
 import { accuracyOf, formatAccuracy } from "@/lib/accuracy";
@@ -83,7 +98,7 @@ const COMPARE: Record<SortKey, (a: Row, b: Row) => number> = {
   seen: (a, b) => a.seen - b.seen || a.pct - b.pct,
 };
 
-export function WeakestChars({
+export function CharactersTable({
   history,
   metric,
 }: {
@@ -140,12 +155,11 @@ export function WeakestChars({
 
   return (
     <Card>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <Lbl>Weakest characters</Lbl>
-        <span className="mb-2 text-[11px] text-text-muted">
-          {metricWord(metric)}
-        </span>
-      </div>
+      {/* No metric caption here any more: the page-level toggle beside the
+       * title states it once for the trend, the tile, the rings and this
+       * table, all of which now read the same metric. Reprinting "first try"
+       * per card was the old way of admitting there was no control. */}
+      <Lbl>Characters</Lbl>
 
       {all.length === 0 ? (
         <div className="flex min-h-[76px] items-center justify-center rounded-[10px] border border-dashed border-border">
@@ -184,10 +198,22 @@ export function WeakestChars({
             // Every character with history, however many that is — the filter
             // and the sort are the answer to "that's a lot of rows", not a
             // silent cut. Capped height so the page below stays reachable.
-            <div className="max-h-[60vh] overflow-y-auto pr-2">
+            //
+            // kq-scroll themes this scroller's scrollbar from --border, the
+            // same as the page's (globals.css).
+            <div className="kq-scroll max-h-[60vh] overflow-y-auto pr-2">
               <table className="w-full border-collapse text-[13px]">
-                <thead className="sticky top-0 z-10 bg-card">
-                  <tr className="border-b border-border">
+                {/* kq-table-head, NOT bg-card. --card is translucent in kiri,
+                 * so a `bg-card` sticky header let the rows scroll straight
+                 * through the column titles — the fourth time this app has
+                 * shipped "sticky element with a see-through fill". The class
+                 * resolves an occluding fill per theme; see the STICKY TABLE
+                 * HEADER section in globals.css for why each theme gets what
+                 * it gets. It also carries the header's bottom rule, which
+                 * border-collapse would otherwise scroll away with the body —
+                 * hence no border-b on the row below. */}
+                <thead className="kq-table-head sticky top-0 z-10">
+                  <tr>
                     <Th {...head} col="char" className="w-[88px]">
                       Character
                     </Th>
@@ -243,10 +269,14 @@ export function WeakestChars({
             </div>
           )}
 
+          {/* The ordering claim the heading used to make, moved to where it can
+           * stay true: this describes the DEFAULT view and says so, and it
+           * still reads correctly once you have sorted by something else. */}
           <p className="mt-2.5">
             <Hint>
-              Sorted by accuracy, not by misses, and ties break toward the
-              character you have seen more — 0% from twenty showings is a
+              Every character you have practised. Weakest first by default — by
+              accuracy, not by misses, with ties breaking toward the character
+              you have seen more, since 0% from twenty showings is a
               better-evidenced weakness than 0% from one. Click any heading to
               sort by it; click it again to reverse.
             </Hint>

@@ -24,7 +24,7 @@
 // Every colour is a token, so this survives all four themes; the bars carry
 // their own opacity rather than a mixed-down colour for the same reason.
 
-import { metricWord, plural } from "@/components/home/deck-card";
+import { plural } from "@/components/home/deck-card";
 import { Card, Lbl } from "@/components/ui";
 import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
 import type { AccuracyMetric, HistoryFile, QuizSessionRecord } from "@/types";
@@ -87,11 +87,14 @@ function Head({ note }: { note: string }) {
   );
 }
 
-/** Day one. A designed state: the chart's own frame, and what will fill it. */
-function EmptyTrend({ metric }: { metric: AccuracyMetric }) {
+/** Day one. A designed state: the chart's own frame, and what will fill it.
+ * No metric argument any more — the frame reads the same under either. */
+function EmptyTrend() {
   return (
     <Card>
-      <Head note={`${metricWord(metric)} · last ${MAX_BARS} sessions`} />
+      {/* No metric word here — the page toggle beside the title names the
+       * metric once for the whole page now. */}
+      <Head note={`last ${MAX_BARS} sessions`} />
       <div className="flex h-[104px] items-center justify-center rounded-[10px] border border-dashed border-border">
         <p className="px-4 text-center text-xs text-text-muted">
           Your first finished quiz draws the first bar.
@@ -124,7 +127,7 @@ export function AccuracyTrend({
     chars: s.total || Object.keys(s.chars ?? {}).length,
   }));
 
-  if (!points.length) return <EmptyTrend metric={metric} />;
+  if (!points.length) return <EmptyTrend />;
 
   const latest = points[points.length - 1];
   const alone = points.length === 1;
@@ -132,9 +135,7 @@ export function AccuracyTrend({
   return (
     <Card>
       <Head
-        note={`${metricWord(metric)} · ${
-          alone ? "1 session" : `last ${plural(points.length, "session")}`
-        }`}
+        note={alone ? "1 session" : `last ${plural(points.length, "session")}`}
       />
 
       {/* items-end + a bottom rule: the baseline is where 0% sits, drawn as a
@@ -160,11 +161,19 @@ export function AccuracyTrend({
                * zero re-renders. The end columns anchor to their own edge
                * instead of centring, or they'd hang off the card.
                *
-               * bg-bg, not bg-card: a tooltip has to occlude whatever it
-               * covers, and kiri's --card is deliberately translucent — on
-               * glass the label underneath reads straight through it. */}
+               * THE TOOLTIP IS A CARD — the same surface ui/tooltip.tsx now
+               * wears: the four tokens Card uses (bg-card, border-border,
+               * --radius, --shadow-card), so each theme draws it the way it
+               * draws every other surface, and in kiri a blur behind the
+               * translucent --card does the occluding rather than an opaque
+               * fill. rounded-(--radius), NOT rounded-lg/xl: those class PAIRS
+               * with bg-card are globals.css's Btn and Card selectors and would
+               * swap in --shadow-btn or dissolve the fill into aizome's two
+               * hairlines. The kiri frost is scoped to the theme — the other
+               * three have an opaque --card and would pay for a blur that does
+               * nothing. No arrow, for the reason ui/tooltip.tsx spells out. */}
               <span
-                className={`shadow-card pointer-events-none absolute bottom-full z-10 mb-2 hidden whitespace-nowrap rounded-lg border border-border bg-bg px-2 py-1 text-[11px] tabular-nums text-text group-hover:block ${
+                className={`shadow-card pointer-events-none absolute bottom-full z-10 mb-2 hidden whitespace-nowrap rounded-(--radius) border border-border bg-card px-2 py-1 text-[11px] tabular-nums text-text group-hover:block [[data-theme=kiri]_&]:backdrop-blur-[18px] [[data-theme=kiri]_&]:backdrop-saturate-150 ${
                   i === 0
                     ? "left-0"
                     : last
