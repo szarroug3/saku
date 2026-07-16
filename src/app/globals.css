@@ -1,54 +1,329 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Palettes ported from legacy/theme.py — light/dark follow the system. */
-:root {
-  --bg: #faf9f5;
-  --card: #ffffff;
-  --panel: #f1efe8;
-  --text: #1a1a18;
-  --text-muted: #8a887f;
-  --border: #e3e1d9;
-  --accent: #2f6fad;
-  --accent-bg: #e6f1fb;
-  --danger: #b3382e;
-  --danger-bg: #fcebeb;
-  --success: #2f7d54;
-  --success-bg: #e9f4ec;
-  --warning: #8a5a0b;
-  --warning-bg: #faeeda;
-  --gcard: #2e7cc4;
-  --gcard-right: #3f9d4e;
-  --gcard-wrong: #9fb8cd;
-  --gcard-shake: #d64545;
+/* ==========================================================================
+ * THEMING
+ *
+ * <html> carries two attributes (stamped pre-paint by the inline script in
+ * layout.tsx, then kept in sync by src/lib/theme.tsx):
+ *
+ *   data-theme="aizome | graphite | momentum | kiri"   — which palette
+ *   data-appearance="system | light | dark"            — which mode
+ *
+ * Each theme block below declares its LIGHT palette on the real token names
+ * (--bg, --card, …) and its DARK palette on --dark-* mirrors. The two
+ * "resolve to dark" blocks further down are the ONLY place the dark values
+ * get promoted onto the real names, so the mode logic lives in exactly one
+ * spot and each colour is written exactly once.
+ * ======================================================================= */
+
+/* ---------- 1 · AIZOME — washi, sumi ink, indigo -------------------------
+ * Light-first. Paper ground, ink-black type, one indigo. Nearly no radius,
+ * zero shadow: cards are hairline rules, not boxes. Dark keeps the warm
+ * bias — charcoal with a brown cast, never neutral grey. */
+[data-theme="aizome"] {
   --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
+  --font-kana: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --radius: 3px;
+
+  --bg: #efece2;
+  --card: #fbfaf6;
+  --panel: #e4e0d1;
+  --text: #1b1a17;
+  --text-muted: #7d7869;
+  --border: #ddd8c9;
+  --accent: #1f3a68;
+  --accent-bg: #dfe4ee;
+  --danger: #9b2f26;
+  --danger-bg: #f6e6e2;
+  --success: #2f6a45;
+  --success-bg: #e6efe6;
+  --warning: #7a5410;
+  --warning-bg: #f4ead4;
+  --gcard: #33517f;
+  --gcard-right: #3f7a4e;
+  --gcard-wrong: #7d7663;
+  --gcard-shake: #b3382e;
+  --shadow-card: none;
+  --shadow-btn: none;
+
+  /* Warm CHARCOAL, not near-black: at #191713 the warm bias is invisible and
+   * it reads as the same void as graphite's #0a0b0d. Lifting the ground keeps
+   * the brown cast legible and keeps the two dark themes distinct. */
+  --dark-bg: #201d18;
+  --dark-card: #2a2620;
+  --dark-panel: #34302a;
+  --dark-text: #ece7db;
+  --dark-text-muted: #a09884;
+  --dark-border: #453f36;
+  --dark-accent: #8fa8d8;
+  --dark-accent-bg: #2b3550;
+  --dark-danger: #e0857c;
+  --dark-danger-bg: #46231e;
+  --dark-success: #86bf9c;
+  --dark-success-bg: #22392c;
+  --dark-warning: #d9ab63;
+  --dark-warning-bg: #423115;
+  --dark-gcard: #2f4a7d;
+  --dark-gcard-right: #3d7a4c;
+  --dark-gcard-wrong: #514a3d;
+  --dark-gcard-shake: #a8362c;
+  --dark-shadow-card: none;
+  --dark-shadow-btn: none;
 }
 
+/* ---------- 2 · GRAPHITE — precision dark -------------------------------
+ * Dark-first. Near-black ground, surfaces lifted by hairline borders rather
+ * than shadows, one cool violet doing all the work. Light is a cool
+ * near-white with the same hairline discipline and a deeper violet. */
+[data-theme="graphite"] {
+  --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
+  --font-kana: "Hiragino Sans", system-ui, sans-serif;
+  --radius: 5px;
+
+  --bg: #f4f5f8;
+  --card: #ffffff;
+  --panel: #eaecf1;
+  --text: #14161c;
+  --text-muted: #61657a;
+  --border: #e0e2ea;
+  --accent: #4b4ade;
+  --accent-bg: #ecebff;
+  --danger: #d02f42;
+  --danger-bg: #fdeaec;
+  --success: #17864b;
+  --success-bg: #e6f6ec;
+  --warning: #9a6205;
+  --warning-bg: #fcf0d9;
+  --gcard: #5b5ee0;
+  --gcard-right: #2f9153;
+  --gcard-wrong: #6b7086;
+  --gcard-shake: #d9394c;
+  --shadow-card: none;
+  --shadow-btn: none;
+
+  --dark-bg: #0a0b0d;
+  --dark-card: #141519;
+  --dark-panel: #1c1e24;
+  --dark-text: #edeef2;
+  --dark-text-muted: #7c8090;
+  --dark-border: #24262d;
+  --dark-accent: #7b7fff;
+  --dark-accent-bg: #191a2e;
+  --dark-danger: #ff7a85;
+  --dark-danger-bg: #2b1419;
+  --dark-success: #4ade80;
+  --dark-success-bg: #0d2818;
+  --dark-warning: #fbbf4c;
+  --dark-warning-bg: #2b2010;
+  --dark-gcard: #3d40a8;
+  --dark-gcard-right: #2f9e5a;
+  --dark-gcard-wrong: #3a3d4a;
+  --dark-gcard-shake: #d0364a;
+  --dark-shadow-card: none;
+  --dark-shadow-btn: none;
+}
+
+/* ---------- 3 · MOMENTUM — tactile, high-energy -------------------------
+ * Light-first. Chunky radii, rounded Maru Gothic kana, hard bottom edges
+ * that read as pressable. Green carries progress AND correctness, so
+ * --success deliberately equals --accent. Dark is a deep blue-slate ground
+ * with a brighter green.
+ *
+ * Deviation from the comp: the comp's accent #16a34a only reaches 3.3:1 on
+ * white and 3.0:1 on its own accent-bg, and the app paints the accent as
+ * TEXT (selected chips, active nav). Deepened to green-700 #15803d — 5.0:1
+ * on --card, 4.6:1 on --accent-bg — which keeps the register and passes AA. */
+[data-theme="momentum"] {
+  --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
+  --font-kana: "Hiragino Maru Gothic ProN", "Klee", system-ui, sans-serif;
+  --radius: 12px;
+
+  --bg: #eef3f8;
+  --card: #ffffff;
+  --panel: #e3ecf5;
+  --text: #10212e;
+  --text-muted: #6f8496;
+  --border: #d7e2ec;
+  --accent: #15803d;
+  --accent-bg: #dcfce7;
+  --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --success: #15803d;
+  --success-bg: #dcfce7;
+  --warning: #a16207;
+  --warning-bg: #fef3c7;
+  --gcard: #2563eb;
+  --gcard-right: #15803d;
+  --gcard-wrong: #64798a;
+  --gcard-shake: #dc2626;
+  --shadow-card: 0 3px 0 var(--border);
+  --shadow-btn: 0 2px 0 var(--border);
+
+  --dark-bg: #0d1a26;
+  --dark-card: #142534;
+  --dark-panel: #1c3143;
+  --dark-text: #e6eef5;
+  --dark-text-muted: #8aa3b8;
+  --dark-border: #263c50;
+  --dark-accent: #34d76d;
+  --dark-accent-bg: #123726;
+  --dark-danger: #ff7b6b;
+  --dark-danger-bg: #3d1a16;
+  --dark-success: #34d76d;
+  --dark-success-bg: #123726;
+  --dark-warning: #eab35a;
+  --dark-warning-bg: #3a2a10;
+  --dark-gcard: #2f6fd0;
+  --dark-gcard-right: #1f9d55;
+  --dark-gcard-wrong: #3f5568;
+  --dark-gcard-shake: #d94a3d;
+  --dark-shadow-card: 0 3px 0 var(--border);
+  --dark-shadow-btn: 0 2px 0 var(--border);
+}
+
+/* ---------- 4 · KIRI — atmospheric glass --------------------------------
+ * Dark-first. A gradient mesh sits behind everything (body::before, below)
+ * and the UI floats on it as frosted glass. --card/--border/--text-muted are
+ * deliberately translucent so the mesh reads through them. Light is the same
+ * idea inverted with care: a pale luminous mesh, white glass, and a deeper
+ * cyan (#096b87, 4.6:1 on its accent-bg) since #67d4f5 is invisible on white.
+ *
+ * Mesh alphas are well below the comp's — the comp rendered a 300px panel,
+ * this covers a whole viewport, and .42 violet at that scale eats the muted
+ * text contrast. */
+[data-theme="kiri"] {
+  --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
+  --font-kana: "Hiragino Sans", system-ui, sans-serif;
+  --radius: 14px;
+
+  --bg: #eef2fa;
+  --card: rgba(255, 255, 255, 0.62);
+  --panel: rgba(13, 27, 42, 0.06);
+  --text: #0d1b2a;
+  --text-muted: rgba(13, 27, 42, 0.55);
+  --border: rgba(13, 27, 42, 0.13);
+  --accent: #096b87;
+  --accent-bg: rgba(9, 107, 135, 0.12);
+  --danger: #b4232f;
+  --danger-bg: rgba(180, 35, 47, 0.1);
+  --success: #0f7a45;
+  --success-bg: rgba(15, 122, 69, 0.1);
+  --warning: #8a5a08;
+  --warning-bg: rgba(138, 90, 8, 0.12);
+  --gcard: #1a7fa4;
+  --gcard-right: #12855a;
+  --gcard-wrong: #5f7386;
+  --gcard-shake: #c33646;
+  --shadow-card:
+    0 10px 34px rgba(20, 40, 80, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --shadow-btn: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --page-mesh:
+    radial-gradient(60% 80% at 12% 8%, rgba(124, 92, 255, 0.13), transparent 60%),
+    radial-gradient(55% 75% at 88% 82%, rgba(45, 212, 191, 0.11), transparent 62%),
+    radial-gradient(40% 60% at 60% 20%, rgba(236, 72, 153, 0.06), transparent 70%);
+
+  --dark-bg: #070a14;
+  --dark-card: rgba(255, 255, 255, 0.055);
+  --dark-panel: rgba(255, 255, 255, 0.07);
+  --dark-text: #eef1fb;
+  --dark-text-muted: rgba(238, 241, 251, 0.5);
+  --dark-border: rgba(255, 255, 255, 0.11);
+  --dark-accent: #67d4f5;
+  --dark-accent-bg: rgba(103, 212, 245, 0.13);
+  --dark-danger: #ff8a94;
+  --dark-danger-bg: rgba(255, 138, 148, 0.13);
+  --dark-success: #4ade80;
+  --dark-success-bg: rgba(74, 222, 128, 0.13);
+  --dark-warning: #fbbf5e;
+  --dark-warning-bg: rgba(251, 191, 94, 0.14);
+  --dark-gcard: #2b7fa8;
+  --dark-gcard-right: #2f9e6a;
+  --dark-gcard-wrong: #3b4a5f;
+  --dark-gcard-shake: #d94a5c;
+  --dark-shadow-card:
+    0 8px 40px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.13);
+  --dark-shadow-btn: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --dark-page-mesh:
+    radial-gradient(60% 80% at 12% 8%, rgba(120, 86, 255, 0.3), transparent 60%),
+    radial-gradient(55% 75% at 88% 82%, rgba(45, 212, 191, 0.22), transparent 62%),
+    radial-gradient(40% 60% at 60% 20%, rgba(236, 72, 153, 0.12), transparent 70%);
+}
+
+/* ---------- resolve to dark ---------------------------------------------
+ * Two blocks, and the ONLY writers of the dark values. Both must exist:
+ *
+ *   media  — OS is dark and the user hasn't forced light
+ *   attr   — the user forced dark, whatever the OS says
+ *
+ * The `:not([data-appearance="light"])` on the media block is what lets an
+ * explicit LIGHT choice beat a dark OS: the block simply stops matching, so
+ * the light palette on [data-theme="X"] stands. Without it, forcing light on
+ * a dark Mac silently does nothing — the classic bug.
+ *
+ * The other direction (forcing dark on a light Mac) needs no help: the media
+ * block isn't active at all, and the attr block's :root prefix gives it
+ * (0,3,0) — ahead of both the media block's (0,2,0) and the theme blocks'
+ * (0,1,0) — so it wins on specificity alone, not on source order.
+ *
+ * Truth table (theme × OS × choice):
+ *   OS light + system → light    OS dark + system → dark
+ *   OS light + light  → light    OS dark + light  → light   (via :not)
+ *   OS light + dark   → dark     OS dark + dark   → dark
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1e1e1c;
-    --card: #2a2a27;
-    --panel: #33332f;
-    --text: #eceae4;
-    --text-muted: #95938a;
-    --border: #44443f;
-    --accent: #7fb2e3;
-    --accent-bg: #173754;
-    --danger: #e88a82;
-    --danger-bg: #4a1f1b;
-    --success: #8cc9a6;
-    --success-bg: #1d3d2b;
-    --warning: #e3b567;
-    --warning-bg: #453212;
-    --gcard: #2e6ea8;
-    --gcard-right: #3f8f4c;
-    --gcard-wrong: #46586b;
-    --gcard-shake: #b23c34;
+  [data-theme]:not([data-appearance="light"]) {
+    --bg: var(--dark-bg);
+    --card: var(--dark-card);
+    --panel: var(--dark-panel);
+    --text: var(--dark-text);
+    --text-muted: var(--dark-text-muted);
+    --border: var(--dark-border);
+    --accent: var(--dark-accent);
+    --accent-bg: var(--dark-accent-bg);
+    --danger: var(--dark-danger);
+    --danger-bg: var(--dark-danger-bg);
+    --success: var(--dark-success);
+    --success-bg: var(--dark-success-bg);
+    --warning: var(--dark-warning);
+    --warning-bg: var(--dark-warning-bg);
+    --gcard: var(--dark-gcard);
+    --gcard-right: var(--dark-gcard-right);
+    --gcard-wrong: var(--dark-gcard-wrong);
+    --gcard-shake: var(--dark-gcard-shake);
+    --shadow-card: var(--dark-shadow-card);
+    --shadow-btn: var(--dark-shadow-btn);
+    --page-mesh: var(--dark-page-mesh, none);
   }
 }
 
-/* shadcn token names, mapped onto the theme.py palette above. Both palettes
- * flip via the media query on the source vars, so dark mode comes free. */
+:root[data-theme][data-appearance="dark"] {
+  --bg: var(--dark-bg);
+  --card: var(--dark-card);
+  --panel: var(--dark-panel);
+  --text: var(--dark-text);
+  --text-muted: var(--dark-text-muted);
+  --border: var(--dark-border);
+  --accent: var(--dark-accent);
+  --accent-bg: var(--dark-accent-bg);
+  --danger: var(--dark-danger);
+  --danger-bg: var(--dark-danger-bg);
+  --success: var(--dark-success);
+  --success-bg: var(--dark-success-bg);
+  --warning: var(--dark-warning);
+  --warning-bg: var(--dark-warning-bg);
+  --gcard: var(--dark-gcard);
+  --gcard-right: var(--dark-gcard-right);
+  --gcard-wrong: var(--dark-gcard-wrong);
+  --gcard-shake: var(--dark-gcard-shake);
+  --shadow-card: var(--dark-shadow-card);
+  --shadow-btn: var(--dark-shadow-btn);
+  --page-mesh: var(--dark-page-mesh, none);
+}
+
+/* shadcn token names, mapped onto the palette above. Purely derived, so
+ * every theme and both modes come free. (--radius is NOT set here — it's a
+ * per-theme token now, declared in each theme block.) */
 :root {
   --background: var(--bg);
   --foreground: var(--text);
@@ -68,7 +343,6 @@
   --destructive-foreground: #ffffff;
   --input: var(--border);
   --ring: var(--accent);
-  --radius: 0.625rem;
 }
 
 @theme inline {
@@ -86,8 +360,10 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  /* max() guards aizome's 3px --radius: calc(3px - 4px) is a negative
+   * radius, which is invalid CSS and would drop the declaration. */
+  --radius-sm: max(0px, calc(var(--radius) - 4px));
+  --radius-md: max(0px, calc(var(--radius) - 2px));
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
@@ -115,6 +391,20 @@
   --animate-gshake: gshake 0.45s;
 }
 
+/* Utilities for the new per-theme tokens: font-kana, shadow-card, shadow-btn.
+ * Written as @utility rather than @theme inline because Tailwind's theme
+ * namespaces for these ARE `--font-*` and `--shadow-*`, so declaring them in
+ * @theme would collide with the source token of the same name. */
+@utility font-kana {
+  font-family: var(--font-kana);
+}
+@utility shadow-card {
+  box-shadow: var(--shadow-card);
+}
+@utility shadow-btn {
+  box-shadow: var(--shadow-btn);
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -128,4 +418,189 @@ body {
   40% { transform: translateX(7px); }
   60% { transform: translateX(-5px); }
   80% { transform: translateX(5px); }
+}
+
+/* ==========================================================================
+ * PER-THEME SIGNATURE EFFECTS
+ *
+ * The screens are owned elsewhere and carry no hook classes, so these reach
+ * them through the Tailwind classes they already render. [class~="x"] matches
+ * one whole class token and needs no CSS escaping, which keeps selectors like
+ * `leading-[1.15]` and `tracking-[0.04em]` readable.
+ *
+ * Element map (all in src/components):
+ *   ui.tsx Card ............ [class~="rounded-xl"][class~="bg-card"]
+ *   drill/pairs board card . [class~="sticky"] + (the Card selector above)
+ *   Btn/SmallBtn/inputs .... [class~="rounded-lg"][class~="bg-card"]
+ *   Chip ................... [class~="rounded-full"][class~="border"]
+ *   ProgressBar track+fill . [class~="h-1"][class~="rounded-full"]
+ *   sidebar active link .... nav a[class~="bg-accent-bg"]
+ *   drill kana (96px) ...... [class~="leading-[1.15]"]
+ *   drill script label ..... [class~="min-h-4"][class~="text-center"]
+ *   ui.tsx Lbl ............. [class~="uppercase"][class~="tracking-[0.04em]"]
+ *   grid quiz cards ........ [class~="rounded-xl"][class~="bg-gcard*"]
+ * ======================================================================= */
+
+/* Elevation for every theme, expressed purely through tokens. */
+[class~="rounded-xl"][class~="bg-card"] {
+  box-shadow: var(--shadow-card);
+}
+[class~="rounded-lg"][class~="bg-card"],
+[class~="rounded-lg"][class~="bg-accent-bg"],
+[class~="rounded-full"][class~="border"] {
+  box-shadow: var(--shadow-btn);
+}
+
+/* ---------- aizome: rules, not boxes ------------------------------------ */
+
+/* The direction's whole thesis: a card is two hairlines, not a container. */
+[data-theme="aizome"] [class~="rounded-xl"][class~="bg-card"] {
+  background: none;
+  border-width: 1px 0;
+  border-radius: 0;
+}
+
+/* Active nav is an inset ink bar, not a filled pill. */
+[data-theme="aizome"] nav a[class~="bg-accent-bg"] {
+  background: none;
+  border-radius: 0;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Chips square off to 2px. */
+[data-theme="aizome"] [class~="rounded-full"][class~="border"] {
+  border-radius: 2px;
+}
+
+/* Letterspaced micro-caps: the drill script label and every section label. */
+[data-theme="aizome"] [class~="min-h-4"][class~="text-center"] {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 9px;
+}
+[data-theme="aizome"] [class~="uppercase"][class~="tracking-[0.04em]"] {
+  letter-spacing: 0.16em;
+  font-size: 11px;
+}
+
+/* ---------- graphite: lit edges and glow -------------------------------- */
+
+/* Faint violet top-fade on every card surface. */
+[data-theme="graphite"] [class~="rounded-xl"][class~="bg-card"] {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 6%, transparent),
+    transparent 42%
+  );
+}
+
+/* Signature detail: a lit hairline along the top of the active quiz card. */
+[data-theme="graphite"]
+  [class~="sticky"]
+  + [class~="rounded-xl"][class~="bg-card"] {
+  position: relative;
+}
+[data-theme="graphite"]
+  [class~="sticky"]
+  + [class~="rounded-xl"][class~="bg-card"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 14% auto;
+  top: -1px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 75%, transparent),
+    transparent
+  );
+}
+
+/* Focus glows instead of shifting layout. */
+[data-theme="graphite"] input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: none;
+}
+
+/* ---------- momentum: tactile ------------------------------------------ */
+
+/* Progress reads as visible momentum, not a hairline. */
+[data-theme="momentum"] [class~="h-1"][class~="rounded-full"] {
+  height: 7px;
+}
+
+/* Selected chips/buttons press against an accent shelf. */
+[data-theme="momentum"] [class~="rounded-full"][class~="bg-accent-bg"],
+[data-theme="momentum"] [class~="rounded-lg"][class~="bg-accent-bg"] {
+  box-shadow: 0 2px 0 var(--accent);
+}
+[data-theme="momentum"] [class~="rounded-lg"][class~="bg-text"] {
+  box-shadow: 0 3px 0 var(--accent);
+  font-weight: 700;
+}
+
+/* Bolder weights throughout. */
+[data-theme="momentum"] nav a[class~="bg-accent-bg"] {
+  font-weight: 700;
+}
+[data-theme="momentum"] [class~="leading-[1.15]"] {
+  font-weight: 500;
+}
+[data-theme="momentum"] [class~="min-h-4"][class~="text-center"] {
+  font-weight: 600;
+}
+
+/* ---------- kiri: atmosphere and glass ---------------------------------- */
+
+/* The mesh. Fixed + z-index:-1 so it neither scrolls nor repaints: body's
+ * own background propagates to the canvas and paints behind this layer,
+ * which in turn sits behind all content. */
+[data-theme="kiri"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--page-mesh);
+  pointer-events: none;
+}
+
+/* Frosted glass. Deliberately scoped to the handful of chrome surfaces —
+ * cards, buttons, inputs, chips. It is NOT on the grid quiz cards (100+ of
+ * them, bg-gcard*) or the character picker's per-row tiles (rounded-[10px]);
+ * those get the flat translucent --card fill and no GPU work. */
+[data-theme="kiri"] [class~="rounded-xl"][class~="bg-card"],
+[data-theme="kiri"] [class~="rounded-lg"][class~="bg-card"],
+[data-theme="kiri"] [class~="rounded-full"][class~="border"] {
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+/* The quiz screens' sticky header is a flat `bg-bg` band, which punches an
+ * opaque rectangle straight through the mesh. Frost it instead: the mesh
+ * reads through, and content scrolling under it still gets occluded by the
+ * blur rather than by a colour. */
+[data-theme="kiri"] [class~="sticky"][class~="bg-bg"] {
+  background-color: transparent;
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+/* Cheap inner top highlight for the grid cards — the glass read, no blur. */
+[data-theme="kiri"] [class~="rounded-xl"][class~="bg-gcard"],
+[data-theme="kiri"] [class~="rounded-xl"][class~="bg-gcard-right"],
+[data-theme="kiri"] [class~="rounded-xl"][class~="bg-gcard-wrong"],
+[data-theme="kiri"] [class~="rounded-xl"][class~="bg-gcard-shake"] {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13);
+}
+
+/* The accent emits light. */
+[data-theme="kiri"] [class~="h-1"][class~="rounded-full"][class~="bg-accent"] {
+  box-shadow: 0 0 12px var(--accent);
+}
+
+/* Ultralight, luminous kana — suits a single glyph at 96px. */
+[data-theme="kiri"] [class~="leading-[1.15]"] {
+  font-weight: 200;
+  text-shadow: 0 0 32px color-mix(in srgb, var(--accent) 35%, transparent);
 }
