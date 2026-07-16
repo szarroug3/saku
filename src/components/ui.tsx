@@ -208,9 +208,9 @@ export function MetricsGrid({ children }: { children: ReactNode }) {
 /** Thin progress bar; pct=null renders full (endless mode). */
 export function ProgressBar({ pct }: { pct: number | null }) {
   return (
-    <div className="mb-[18px] h-1 rounded-full bg-panel">
+    <div className="mb-[18px] h-(--bar-h) rounded-full bg-panel">
       <div
-        className="h-1 rounded-full bg-accent transition-[width] duration-200"
+        className="h-(--bar-h) rounded-full bg-accent transition-[width] duration-200"
         style={{ width: `${pct === null ? 100 : Math.min(100, pct)}%` }}
       />
     </div>

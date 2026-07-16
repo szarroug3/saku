@@ -25,6 +25,10 @@
   --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
   --font-kana: "Hiragino Mincho ProN", "Yu Mincho", serif;
   --radius: 3px;
+  /* Progress bar height. The drill design says hairline; momentum's
+   * whole point is that progress reads as visible momentum. A token
+   * lets both be true instead of one screen losing its signature. */
+  --bar-h: 2px;
 
   --bg: #efece2;
   --card: #fbfaf6;
@@ -80,6 +84,10 @@
   --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
   --font-kana: "Hiragino Sans", system-ui, sans-serif;
   --radius: 5px;
+  /* Progress bar height. The drill design says hairline; momentum's
+   * whole point is that progress reads as visible momentum. A token
+   * lets both be true instead of one screen losing its signature. */
+  --bar-h: 2px;
 
   --bg: #f4f5f8;
   --card: #ffffff;
@@ -138,6 +146,10 @@
   --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
   --font-kana: "Hiragino Maru Gothic ProN", "Klee", system-ui, sans-serif;
   --radius: 12px;
+  /* Progress bar height. The drill design says hairline; momentum's
+   * whole point is that progress reads as visible momentum. A token
+   * lets both be true instead of one screen losing its signature. */
+  --bar-h: 7px;
 
   --bg: #eef3f8;
   --card: #ffffff;
@@ -196,6 +208,10 @@
   --font-ui: -apple-system, "Helvetica Neue", system-ui, sans-serif;
   --font-kana: "Hiragino Sans", system-ui, sans-serif;
   --radius: 14px;
+  /* Progress bar height. The drill design says hairline; momentum's
+   * whole point is that progress reads as visible momentum. A token
+   * lets both be true instead of one screen losing its signature. */
+  --bar-h: 2px;
 
   --bg: #eef2fa;
   --card: rgba(255, 255, 255, 0.62);
@@ -433,7 +449,6 @@ body {
  *   drill/pairs board card . [class~="sticky"] + (the Card selector above)
  *   Btn/SmallBtn/inputs .... [class~="rounded-lg"][class~="bg-card"]
  *   Chip ................... [class~="rounded-full"][class~="border"]
- *   ProgressBar track+fill . [class~="h-1"][class~="rounded-full"]
  *   sidebar active link .... nav a[class~="bg-accent-bg"]
  *   drill kana (96px) ...... [class~="leading-[1.15]"]
  *   drill script label ..... [class~="min-h-4"][class~="text-center"]
@@ -526,9 +541,6 @@ body {
 /* ---------- momentum: tactile ------------------------------------------ */
 
 /* Progress reads as visible momentum, not a hairline. */
-[data-theme="momentum"] [class~="h-1"][class~="rounded-full"] {
-  height: 7px;
-}
 
 /* Selected chips/buttons press against an accent shelf. */
 [data-theme="momentum"] [class~="rounded-full"][class~="bg-accent-bg"],
@@ -595,9 +607,6 @@ body {
 }
 
 /* The accent emits light. */
-[data-theme="kiri"] [class~="h-1"][class~="rounded-full"][class~="bg-accent"] {
-  box-shadow: 0 0 12px var(--accent);
-}
 
 /* Ultralight, luminous kana — suits a single glyph at 96px. */
 [data-theme="kiri"] [class~="leading-[1.15]"] {

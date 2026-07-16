@@ -188,7 +188,7 @@ export function GridHud({ done, total, stats, streak, onFinish }: GridHudProps) 
         </span>
       </div>
       {/* 2px hairline: the progress bar reduced to the one thing it says. */}
-      <div className="h-0.5 overflow-hidden rounded-full bg-panel">
+      <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">
         <div
           className="h-full rounded-full bg-accent transition-[width] duration-200"
           style={{
