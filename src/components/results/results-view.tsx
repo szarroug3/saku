@@ -1,97 +1,136 @@
 "use client";
 
-// Results screen body: forgiving/strict toggle, metric cards, missed /
-// slow / mix-up lists, and the redrill / again / back-to-setup actions.
-// Renders a ResultsPayload from useQuizSession — either a live finish or a
-// stored session reopened from Recent sessions (summary-only sessions show
-// their stored percentages instead of recomputed ones).
+// The results screen, top to bottom: how it went, what's still wrong, what's
+// getting better, and then the board — where everything lit is what Redrill
+// will run.
+//
+// Renders a ResultsPayload from useQuizSession: either a live finish or a
+// stored session reopened from Recent sessions. Sessions saved before
+// per-character detail existed (summaryOnly) keep their stored percentages and
+// simply have less to say — no confusions were recorded, so Patterns and
+// Progress stay silent rather than guess.
+//
+// NOTHING HERE WRITES SETTINGS. The First try / Eventually right chips are a
+// local lens on this run; the global preference only decides which one they
+// start on.
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import { PatternSection } from "@/components/results/pattern-rows";
 import {
-  Btn,
-  Card,
-  GhostBtn,
-  Hint,
-  Lbl,
-  Metric,
-  MetricsGrid,
-  PageTitle,
-} from "@/components/ui";
-import { CHAR_INDEX } from "@/data/characters";
-import { BEHAVIOR } from "@/lib/config";
-import { computeResults, confusionPairs, missedChars } from "@/lib/engine";
+  deriveRun,
+  historyBefore,
+  summarize,
+  type Bit,
+} from "@/components/results/summary";
+import { TriageSection } from "@/components/results/triage-board";
+import { Card, Chip, PageTitle } from "@/components/ui";
+import { formatAccuracy } from "@/lib/accuracy";
+import { analyzeRun } from "@/lib/confusions";
+import { weakestChars } from "@/lib/decks";
 import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ResultsPayload } from "@/lib/quiz-session";
-import type { CharInfo, CharSessionDetail, QuizMode } from "@/types";
+import { useHistory } from "@/lib/use-history";
+import type { AccuracyMetric, QuizMode } from "@/types";
+
+const EMPTY_ANALYSIS = { patterns: [], progress: [] };
 
 function modeName(m: QuizMode): string {
   return m === "pairs" ? "Match pairs" : m === "grid" ? "Grid" : "Drill";
 }
 
-/** One "missed characters" row: char + reading left, verdict right. */
-function MissRow({
-  char,
-  stat,
-  showAnswer,
-}: {
-  char: string;
-  stat: CharSessionDetail;
-  showAnswer: boolean;
-}) {
-  // Guard: a stored session may reference chars a future data change removed.
-  const info = CHAR_INDEX[char] as CharInfo | undefined;
-  const confused = Object.entries(stat.confused)
-    .sort((a, b) => b[1] - a[1])
-    .map(([x, n]) => `${x}${n > 1 ? ` ×${n}` : ""}`)
-    .join(", ");
-  const verdict = stat.everCorrect
-    ? stat.misses
-      ? `${stat.misses} ${stat.misses === 1 ? "miss" : "misses"} before correct`
-      : "missed first try"
-    : `never got it${showAnswer ? " · answer shown" : ""}`;
+/**
+ * Accuracy as a filled arc — the same read as Home's deck rings, at hero size.
+ * A finished run always has a number, so there is no dashed empty state here;
+ * `null` only happens if a session somehow stored nothing.
+ *
+ * Green at 100%: the one moment the ring is reporting an achievement rather
+ * than a measurement.
+ */
+function BigRing({ pct }: { pct: number | null }) {
+  const arc = pct === 100 ? "var(--success)" : "var(--accent)";
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-1 py-2 text-sm last:border-b-0">
-      <span>
-        <span className="text-[20px]">{char}</span>{" "}
-        {info ? (
-          <Hint>
-            {info.r[0]} · {info.setLabel.toLowerCase()}
-          </Hint>
-        ) : null}
+    <span
+      className="grid h-[78px] w-[78px] flex-none place-items-center rounded-full border border-border"
+      style={
+        pct === null
+          ? undefined
+          : { background: `conic-gradient(${arc} ${pct}%, var(--panel) 0)` }
+      }
+    >
+      <span className="grid h-[63px] w-[63px] place-items-center rounded-full bg-card text-[17px] font-semibold tabular-nums">
+        {formatAccuracy(pct)}
       </span>
-      <span className="text-right text-[13px] text-danger">
-        {verdict}
-        {confused ? (
-          <span className="text-text-muted"> · confused with {confused}</span>
-        ) : null}
-      </span>
-    </div>
+    </span>
+  );
+}
+
+/** A generated sentence, with the characters your eye should land on. */
+function Line({ bits, className }: { bits: Bit[]; className?: string }) {
+  return (
+    <span className={className}>
+      {bits.map((b, i) =>
+        b.em ? (
+          <b key={i} className="font-kana font-medium text-text">
+            {b.t}
+          </b>
+        ) : (
+          <span key={i}>{b.t}</span>
+        ),
+      )}
+    </span>
   );
 }
 
 export function ResultsView({ results }: { results: ResultsPayload }) {
-  const router = useRouter();
   const { cfg } = useQuizConfig();
+  const { history } = useHistory();
   const { active, abandonQuiz, startQuiz } = useQuizSession();
-  const [view, setView] = useState<"forg" | "strict">("forg");
+
+  // Local lens, never a setting. Null means "still following the preference",
+  // which also survives cfg hydrating from localStorage a beat after mount —
+  // no effect, no stale initial state.
+  const [chosen, setChosen] = useState<AccuracyMetric | null>(null);
+  const metric = chosen ?? cfg.accuracyMetric;
+
   // Fixed at mount: a just-finished quiz shows time-of-day like the legacy
   // finish screen; anything older (reopened sessions) shows the full date.
   const [recent] = useState(() => Date.now() - results.ts < 60_000);
 
   const { stats, summaryOnly } = results;
-  const s = computeResults(stats);
-  const correct = view === "forg" ? s.forg : s.strict;
-  // Summary-only sessions have no reliable per-char detail — show the
-  // percentages the session stored instead of recomputing.
-  const scorePct = summaryOnly
-    ? view === "forg"
-      ? summaryOnly.forgivingPct
-      : summaryOnly.strictPct
-    : s.total
-      ? Math.round((100 * correct) / s.total)
-      : null;
+  const graduateRuns = cfg.graduateRuns;
+
+  // History as it was BEFORE this run — the session is POSTed the moment it
+  // finishes, and a run must not be part of the history that judges it.
+  const prior = useMemo(
+    () => historyBefore(history, results.ts),
+    [history, results.ts],
+  );
+  const analysis = useMemo(
+    () =>
+      summaryOnly
+        ? EMPTY_ANALYSIS
+        : analyzeRun(stats, history, { graduateRuns, excludeTs: results.ts }),
+    [stats, history, graduateRuns, results.ts, summaryOnly],
+  );
+  const facts = useMemo(() => deriveRun(results, metric), [results, metric]);
+  const summary = useMemo(
+    () => summarize(facts, stats, prior, analysis.progress),
+    [facts, stats, prior, analysis.progress],
+  );
+  const weakest = useMemo(
+    () => weakestChars(prior, metric, 20),
+    [prior, metric],
+  );
+
+  // The heaviest record on screen, so an improving row can say what the pair
+  // was before it started getting better.
+  const worstKey = useMemo(() => {
+    const rows = [...analysis.patterns, ...analysis.progress];
+    let worst: (typeof rows)[number] | null = null;
+    for (const r of rows) if (!worst || r.record.total > worst.record.total) worst = r;
+    return worst?.key;
+  }, [analysis]);
 
   const when = recent
     ? new Date(results.ts).toLocaleTimeString([], {
@@ -99,10 +138,6 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         minute: "2-digit",
       })
     : new Date(results.ts).toLocaleString();
-
-  const missed = missedChars(stats, view);
-  const slowChars = s.chars.filter((c) => stats[c].slow > 0);
-  const pairs = confusionPairs(stats);
 
   /** Stored results can be viewed mid-quiz — starting a new run from here
    * must explicitly discard the one in progress. True = clear to start. */
@@ -113,17 +148,10 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     return true;
   };
 
-  const redrill = () => {
-    // Always redrill the forgiving misses regardless of the toggle.
-    const chars = missedChars(stats, "forg");
+  const start = (chars: string[], redrill?: boolean) => {
     if (!chars.length) return;
     if (!discardActive()) return;
-    startQuiz(chars, { redrill: true });
-  };
-
-  const again = () => {
-    if (!discardActive()) return;
-    startQuiz(selectedChars(cfg));
+    startQuiz(chars, { redrill });
   };
 
   return (
@@ -131,81 +159,56 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
       <PageTitle
         title="Results"
         sub={`${modeName(results.mode)}${results.redrill ? " (redrill)" : ""} · ${
-          s.total
+          facts.total
         } characters · ${when}${summaryOnly ? " · older session — summary only" : ""}`}
       />
-      <div className="mb-3.5 flex flex-wrap gap-1.5">
-        <Btn sel={view === "forg"} onClick={() => setView("forg")}>
-          Forgiving <span className="text-[11px]">correct-after-retries counts</span>
-        </Btn>
-        <Btn sel={view === "strict"} onClick={() => setView("strict")}>
-          Strict <span className="text-[11px]">first try only</span>
-        </Btn>
-      </div>
-      <MetricsGrid>
-        <Metric k="Score" v={scorePct === null ? "—" : `${scorePct}%`} />
-        <Metric k="Correct" v={`${correct} / ${s.total}`} />
-        <Metric k="Slow but right" v={s.slow} />
-      </MetricsGrid>
-      <Card>
-        <Lbl>Missed characters</Lbl>
-        {missed.length ? (
-          missed.map((c) => (
-            <MissRow key={c} char={c} stat={stats[c]} showAnswer={cfg.showAnswer} />
-          ))
-        ) : (
-          <p>
-            <Hint>Nothing missed. Clean run.</Hint>
-          </p>
-        )}
+
+      <Card className="flex items-center gap-3.5">
+        <BigRing pct={facts.pct} />
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-[15px] font-semibold">{summary.headline}</span>
+          {summary.detail ? (
+            <Line bits={summary.detail} className="text-[13px] text-text-muted" />
+          ) : null}
+          <Line bits={summary.counts} className="text-[13px] text-text-muted" />
+        </span>
       </Card>
-      {slowChars.length > 0 && (
-        <Card>
-          <Lbl>
-            Slow but correct{" "}
-            <span className="font-normal normal-case tracking-normal">
-              — over {BEHAVIOR.slowAnswerMs / 1000}s
-            </span>
-          </Lbl>
-          {slowChars.map((c) => (
-            <div key={c} className="py-[3px] text-[13px] text-text-muted">
-              <span className="text-[17px]">{c}</span>{" "}
-              {(CHAR_INDEX[c] as CharInfo | undefined)?.r[0]} — right but slow
-              {stats[c].slow > 1 ? ` ×${stats[c].slow}` : ""}
-            </div>
-          ))}
-        </Card>
-      )}
-      {pairs.length > 0 && (
-        <Card>
-          <Lbl>Mix-up patterns</Lbl>
-          {pairs.map(([key, n]) => {
-            const [a, b] = key.split("·");
-            return (
-              <div key={key} className="py-[3px] text-[13px] text-text-muted">
-                <span className="text-[17px]">
-                  {a} ↔ {b}
-                </span>{" "}
-                mixed up {n}×
-              </div>
-            );
-          })}
-        </Card>
-      )}
-      <div className="flex flex-wrap gap-2">
-        <Btn className="flex-1" onClick={redrill}>
-          Redrill the misses
-        </Btn>
-        <Btn className="flex-1" onClick={again}>
-          Same settings, go again
-        </Btn>
-        <GhostBtn
-          className="flex-1 px-3.5 py-[7px]"
-          onClick={() => router.push("/")}
-        >
-          Back to setup
-        </GhostBtn>
+
+      <div className="mb-3.5 flex flex-wrap gap-1.5">
+        <Chip on={metric === "firstTry"} onClick={() => setChosen("firstTry")}>
+          First try
+        </Chip>
+        <Chip on={metric === "attempt"} onClick={() => setChosen("attempt")}>
+          Eventually right
+        </Chip>
       </div>
+
+      <PatternSection
+        label="Patterns"
+        rows={analysis.patterns}
+        stats={stats}
+        graduateRuns={graduateRuns}
+        worstKey={worstKey}
+      />
+      <PatternSection
+        label="Progress"
+        rows={analysis.progress}
+        stats={stats}
+        graduateRuns={graduateRuns}
+        worstKey={worstKey}
+      />
+
+      <TriageSection
+        // Remount on a flip: the chip re-derives which characters need work, so
+        // the selection it seeded has to be re-seeded with them.
+        key={metric}
+        facts={facts}
+        stats={stats}
+        weakest={weakest}
+        onRedrill={(chars) => start(chars, true)}
+        onRerun={() => start(selectedChars(cfg))}
+        onDrillWeakest={() => start(weakest)}
+      />
     </>
   );
 }
