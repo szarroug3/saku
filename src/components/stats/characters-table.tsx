@@ -179,7 +179,7 @@ export function CharactersTable({
       {all.length === 0 ? (
         <div className="flex min-h-[76px] items-center justify-center rounded-[10px] border border-dashed border-border">
           <p className="px-4 text-center text-xs text-text-muted">
-            Nothing to rank yet — characters appear here once you have drilled
+            Nothing to rank yet. Characters appear here once you have drilled
             them.
           </p>
         </div>
@@ -223,13 +223,16 @@ export function CharactersTable({
                  * sticky header let rows scroll straight through the column
                  * titles; the fix after that went opaque and turned the header
                  * into a black bar bolted onto a pale card. The class does the
-                 * thing neither did: it restacks the card's OWN layers (its
-                 * fill, its ground, its blur) at the header, per theme, so the
-                 * header reads as the table's surface and the rows still vanish
-                 * under it. See the STICKY TABLE HEADER section in globals.css.
-                 * It also carries the header's bottom rule, which
-                 * border-collapse would otherwise scroll away with the body —
-                 * hence no border-b on the row below. */}
+                 * thing neither did: it restacks the card's OWN layers at the
+                 * header, per theme — its ground, its fill, and the saturation
+                 * its frost applies to both — so the header reads as the table's
+                 * surface and the rows still vanish under it. See the STICKY
+                 * TABLE HEADER section in globals.css; the saturation is the
+                 * part the pass before this one left out, and leaving it out is
+                 * what the user was still seeing as a box. It also carries the
+                 * header's bottom rule, which border-collapse would otherwise
+                 * scroll away with the body — hence no border-b on the row
+                 * below. */}
                 <thead className="kq-table-head sticky top-0 z-10">
                   <tr>
                     <Th {...head} col="char" className="w-[88px]">

@@ -769,27 +769,25 @@ body {
   pointer-events: none;
 }
 
-/* Frosted glass. Deliberately scoped to the handful of chrome surfaces —
- * cards, buttons, inputs, chips. It is NOT on the grid quiz cards (214 of
- * them) or the character picker's per-row tiles (rounded-[10px]). The grid
- * gets the same frosted read from ONE blurred element instead — see the
- * GRID QUIZ SHEET section at the bottom of this file. */
-[data-theme="kiri"] [class~="rounded-xl"][class~="bg-card"],
-[data-theme="kiri"] [class~="rounded-lg"][class~="bg-card"],
-[data-theme="kiri"] [class~="rounded-full"][class~="border"] {
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
-}
-
-/* The quiz screens' sticky header is a flat `bg-bg` band, which punches an
- * opaque rectangle straight through the mesh. Frost it instead: the mesh
- * reads through, and content scrolling under it still gets occluded by the
- * blur rather than by a colour. */
-[data-theme="kiri"] [class~="sticky"][class~="bg-bg"] {
-  background-color: transparent;
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
-}
+/* THE FROST IS NOT HERE ANY MORE, and this note is the signpost.
+ *
+ * It used to be a list of RADIUS + FILL attribute pairs living right here —
+ * `[class~="rounded-xl"][class~="bg-card"]` and four more — which meant a
+ * surface got this theme's material by ACCIDENTALLY MATCHING A CLASS PAIR, and
+ * lost it by not typing one. That failure is invisible: nothing is written
+ * wrong, the surface just quietly stops being glass. Home's deck tiles opted
+ * out of `rounded-xl` for a real reason (aizome dissolves that class into
+ * hairline rules, which suits a full-width card and not a 3-up grid) and paid
+ * 8.0 dE of "different material" for it. The list then grew a radius per
+ * casualty, which fixes the ones you have found and not the ones you haven't.
+ *
+ * A surface now ASKS, by name: `.kq-material`. See CARD MATERIAL, below the
+ * per-theme sections. Geometry (--radius) and material are separate concerns
+ * again, which is why nothing about the frost is keyed on shape any more.
+ *
+ * Still true, and still the reason the grid opts out BY NAME: the sheet's 214
+ * cards must never carry a backdrop-filter (p95 33.4ms vs 17.6ms, 31 dropped
+ * frames vs 0). See the GRID QUIZ SHEET section at the bottom. */
 
 /* The accent emits light. */
 
@@ -877,7 +875,32 @@ body {
  *   Characters card there is no content — just the gradient. So the card's
  *   surface here is, exactly: the mesh, plus --card's fill over it.
  *
- * Which is what the three layers below are, bottom to top:
+ * THAT PARAGRAPH SHIPPED THE FIFTH BOX, and it is worth being precise about how,
+ * because it is 90% right and the missing 10% is the whole bug. The card's frost
+ * is `blur(18px) saturate(150%)`. "Blurring a soft gradient changes nothing" is
+ * TRUE — measured: adding the blur back to the rebuild moves it by dE 0.07, i.e.
+ * nothing. But the recipe reproduced the blur's non-effect and silently dropped
+ * the SATURATE, and saturation is emphatically not a no-op on a coloured mesh.
+ * So the real card showed a MORE saturated mesh than its own header did, and the
+ * header read as a duller rectangle sitting on a richer card. Measured, kiri
+ * dark, header band vs the card's pixels at the same (x,y):
+ *
+ *   signed residual, no saturate ... R -0.90  G +0.78  B -5.95   dE2000 3.52
+ *   signed residual, saturate(150%)  R -0.41  G +0.07  B +0.05   dE2000 0.82
+ *
+ * That blue column IS the box: a systematic chroma deficit, dead flat across the
+ * band (low-passing it barely moves it: 3.52 -> 3.50, i.e. structure, not noise).
+ * With the saturate the offset collapses to ~0 and what remains is the two
+ * gradients' independent dithering — noise, no edge, invisible. The step across
+ * the header's top boundary, which is what actually makes a rectangle visible,
+ * goes 3.77 -> 0.72 (max 5.44 -> 1.95).
+ *
+ * THE RULE, restated so the sixth one doesn't happen: REBUILDING A SURFACE MEANS
+ * REBUILDING ALL OF IT. Every component of the frost, not the ones that are easy
+ * to see. --card-frost-sat exists so the number lives in ONE place and the real
+ * frost and the rebuild cannot drift apart again.
+ *
+ * Which is what the layers below are, bottom to top:
  *
  *   --bg ........... the page ground, opaque. This is what makes rows vanish —
  *                    the whole stack is opaque from here up.
@@ -898,6 +921,52 @@ body {
  *                    reason it came out darker than the card by precisely the
  *                    fill it had left out.
  *
+ * — and then the whole stack is saturated by --card-frost-sat, which is the
+ * layer the rule after THAT one was missing. It goes on a pseudo-element because
+ * `filter` on the `th` itself would saturate the column titles too; the surface
+ * is what needs it, not the text.
+ *
+ * Applying it to the composite (fill included) rather than to the mesh alone is
+ * not a shortcut, it is the same arithmetic: saturate() is a LINEAR matrix and
+ * --card is pure white in both kiri modes (.62 light, .055 dark), so white is a
+ * fixed point and the matrix distributes across the alpha composite —
+ * saturate(a*W + (1-a)*mesh) == a*W + (1-a)*saturate(mesh), which is the card,
+ * exactly. Confirmed against real compositor pixels: predicting the card from
+ * the header by applying saturate(s) lands at dE2000 0.206 for s=150%, against
+ * 3.566 for s=100% (no saturate), 1.751 at 125% and 1.496 at 175% — the fit
+ * bottoms out at precisely the value the card's own frost declares.
+ *
+ * `filter` does NOT break the `background-attachment: fixed` anchoring below,
+ * despite creating a containing block — verified at three page-scroll positions
+ * (header at viewport y 439 / 492 / 582; edge step 0.65 / 0.72 / 0.67). If it
+ * had, the mesh would drift under the band and the box would come straight back,
+ * so re-measure that if this filter ever changes.
+ *
+ * WHERE THIS APPROACH ENDS, measured, so the next person does not rediscover it
+ * by guessing. Edge step across the header's top boundary, all eight combos:
+ *
+ *   aizome   light 0.00   dark 0.00      kiri     light 0.48   dark 0.72
+ *   momentum light 0.00   dark 0.00      graphite light 3.83   dark 4.26
+ *
+ * GRAPHITE STILL HAS A BOX, and it is NOT this rule's omission — it predates it
+ * and is unchanged by it (measured identical, 4.26, before and after). Its cause
+ * is the violet top-fade graphite paints on every card (see the graphite section
+ * above): `linear-gradient(180deg, accent 6%, transparent 42%)`, anchored to THE
+ * CARD'S OWN BOX. At the header's position (~10% down the Characters card) that
+ * is still ~4.6% accent, so the card reads violet-tinted and the header, which
+ * paints a flat --card, reads as a rectangle of un-tinted white. Predicted from
+ * the fade: rgb(24.7, 25.9, 35.6). Measured card: rgb(24.83, 25.92, 35.79).
+ *
+ * And it is not reachable from here: a card-relative gradient cannot be
+ * reproduced by a cell inside that card, because the cell cannot know the card's
+ * height or its own offset within it, and both are content-dependent. The two
+ * ways out are (a) give graphite a fade that is not card-relative, which changes
+ * a theme's signature on every card to fix one header, or (b) lift the header
+ * out of the scroller so it needs no fill at all — which means splitting the
+ * <table> in two and ORPHANING every <th scope="col"> from its column, trading a
+ * visual bug in 2 of 8 combos for a screen-reader bug in 8 of 8. Neither is
+ * worth it on a header nobody has reported; both are worse than the box.
+ *
  * The fill is a background-IMAGE over a background-COLOR rather than two
  * elements or a color-mix: color-mix cannot composite a translucent colour onto
  * an opaque one (mixing rgba(255,255,255,.055) with #070a14 gives a
@@ -912,19 +981,82 @@ body {
  * that rule, drawn on the cell so it sticks with it.
  * ======================================================================= */
 
-/* Two facts about what a surface is made of, which is all either rule needs.
+/* ==========================================================================
+ * CARD MATERIAL
  *
- * --ground-mesh  what the PAGE's ground carries on top of its flat --bg. Only
- *                kiri has anything; `none` is a valid background-image, so the
- *                other three simply drop the layer.
- * --card-fill    what a CARD paints over that ground. --card everywhere except
- *                aizome, whose cards are hairline rules with `background: none`
- *                (see the aizome section above) — so an aizome card's fill is,
- *                truthfully, nothing.
- */
+ * What this theme's card surface is MADE OF, in one place, for every reader.
+ *
+ * WHY THIS SECTION EXISTS. The frost used to be granted by unlayered attribute
+ * pairs keyed on radius + fill — `[class~="rounded-xl"][class~="bg-card"]` and
+ * four more. A surface received the theme's material by matching a class pair
+ * it happened to type, and lost it by not typing one. Nobody ever wrote
+ * anything wrong; the bug fired BY OMISSION, and omission is invisible without
+ * pixel measurement. It also fused two unrelated ideas — a surface's SHAPE and
+ * a surface's SUBSTANCE — so opting out of a radius silently opted out of the
+ * material, and adding an unrelated class (`sticky`) could arm a recipe by
+ * accident.
+ *
+ * So a surface now ASKS, by name, and geometry is nobody's business but
+ * --radius'. The three readers below are the only things that know what glass
+ * is:
+ *
+ *   .kq-material ... "I am this theme's card material." The real frost, on a
+ *                    surface whose backdrop is the page.
+ *   .kq-band ....... "I am a sticky band over the PAGE's ground, and I must
+ *                    occlude." Same frost, different fill.
+ *   .kq-surface .... "I am the card's material REBUILT OPAQUELY, because I
+ *                    cannot use a backdrop-filter here." (See its own comment.)
+ *
+ * ---- the facts ----
+ *
+ * --ground-mesh    what the PAGE's ground carries on top of its flat --bg. Only
+ *                  kiri has anything; `none` is a valid background-image, so the
+ *                  other three simply drop the layer.
+ * --card-fill      what a CARD paints over that ground. --card everywhere except
+ *                  aizome, whose cards are hairline rules with `background: none`
+ *                  (see the aizome section above) — so an aizome card's fill is,
+ *                  truthfully, nothing.
+ * --card-frost-sat what the card's frost does to the ground BESIDES blurring it.
+ *                  Only kiri frosts; `none` is a valid filter, so the other three
+ *                  drop it — and aizome in particular must never gain one, since
+ *                  saturating its warm washi --bg would tint a theme whose whole
+ *                  premise is that it has no glass.
+ *
+ *                  It is a token and not a literal because it has THREE readers
+ *                  — --card-frost below, and the two opaque rebuilds — and the
+ *                  entire STICKY TABLE HEADER bug was two of them disagreeing.
+ * --card-frost     the whole backdrop-filter, and THE one place the material is
+ *                  defined. Everything that is glass reads this and nothing else.
+ *
+ * AIZOME EXPRESSES "MY MATERIAL IS NOTHING" HERE, and it costs nothing to say:
+ * the default is `none`, `none` is a valid backdrop-filter, and a theme with no
+ * glass simply never overrides it. `.kq-material` on an aizome surface is not a
+ * special case to be excluded — it resolves, correctly, to no filter at all.
+ *
+ * --card-frost COMPOSES --card-frost-sat rather than restating it. That is what
+ * makes the blur a ONE-WORD change: delete `blur(18px)` from the line below and
+ * every glass surface in the app loses it at once, while both opaque rebuilds
+ * keep the saturate they still need. The two cannot drift apart, because there
+ * is only one saturate in the file.
+ *
+ * A NESTED backdrop-filter IS A NO-OP. An element with one becomes a BACKDROP
+ * ROOT, so a `.kq-material` INSIDE a `.kq-material` (e.g. anything inside a
+ * Card) filters nothing at all — silently. That is not a bug in the hook, it is
+ * how Chromium composites, and it is why `.kq-surface` exists: when the thing
+ * behind you is a card rather than the page, the material has to be rebuilt, not
+ * filtered. If you put this class on something and see no frost, check whether
+ * an ancestor already has it before changing anything here.
+ * ======================================================================= */
+
 [data-theme] {
   --ground-mesh: none;
   --card-fill: var(--card);
+  --card-frost-sat: none;
+  --card-frost: none;
+  /* What a .kq-band lays down under itself. The three opaque themes occlude
+   * with the page's own ground; kiri occludes with the blur instead, so a flat
+   * --bg here would punch an opaque rectangle through its mesh. */
+  --band-fill: var(--bg);
 }
 
 [data-theme="aizome"] {
@@ -933,6 +1065,38 @@ body {
 
 [data-theme="kiri"] {
   --ground-mesh: var(--page-mesh);
+  --card-frost-sat: saturate(150%);
+  /* THE MATERIAL. Drop `blur(18px)` here and every glass surface in the app
+   * un-blurs together — it is a measured 0.20 dE no-op on this mesh, so that is
+   * a free change if the scroll profiler asks for it. */
+  --card-frost: blur(18px) var(--card-frost-sat);
+  --band-fill: transparent;
+}
+
+/* "I am this theme's card material." The whole hook — no radius, no fill, no
+ * class pair, and nothing to forget except the class itself, which greps.
+ *
+ * Requires a backdrop that is the PAGE. Inside a Card, see --card-frost's note
+ * on backdrop roots and reach for .kq-surface instead. */
+.kq-material {
+  -webkit-backdrop-filter: var(--card-frost);
+  backdrop-filter: var(--card-frost);
+}
+
+/* "I am a sticky band over the page's ground, and I must occlude."
+ *
+ * The quiz screens' HUDs. Same material as a card, different fill: in the three
+ * opaque themes the band occludes with --bg, and in kiri it occludes with the
+ * blur so the mesh reads through instead of being stamped over by a rectangle.
+ *
+ * This was `[class~="sticky"][class~="bg-bg"]` — the same accidental-pair bug,
+ * one section over, and it also restated `blur(18px) saturate(150%)` as a
+ * literal, which is exactly what made the blur a three-selector change instead
+ * of a one-word one. */
+.kq-band {
+  background-color: var(--band-fill);
+  -webkit-backdrop-filter: var(--card-frost);
+  backdrop-filter: var(--card-frost);
 }
 
 /* THE CARD'S SURFACE, REBUILT OPAQUELY — the shared recipe, and the answer to
@@ -944,7 +1108,16 @@ body {
  * header wears the fill of the card it is IN (--card-fill), while the tooltip
  * is a card in its own right and always wears --card. */
 
+/* The surface rides a pseudo-element, not the `th`, for one reason: it has to be
+ * filtered, and `filter` on the cell would saturate the column titles with it. */
 .kq-table-head th {
+  position: relative;
+}
+
+.kq-table-head th::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background-color: var(--bg);
   /* Top layer first: the card's own fill, then the mesh under it. */
   background-image:
@@ -955,9 +1128,26 @@ body {
    * list would cycle and land on the wrong ones. Harmless on the fill, since a
    * solid colour is the same colour wherever it is anchored. */
   background-attachment: fixed;
+  /* The rest of the card's frost. The blur is deliberately absent: it is
+   * measurably identity on a mesh this soft (dE 0.07), and reproducing it would
+   * mean oversizing this box and clipping it back to keep the blur from eating
+   * its own edges — cost, for nothing. */
+  filter: var(--card-frost-sat);
   /* The header's own bottom rule. border-collapse would hand this to the grid
-   * and scroll it away; an inset shadow belongs to the cell and stays. */
+   * and scroll it away; an inset shadow belongs to the cell and stays. It rides
+   * the pseudo because the pseudo is painted over the cell's own background
+   * layer, and a rule under the surface is a rule you cannot see. */
   box-shadow: inset 0 -1px 0 var(--border);
+}
+
+/* The titles sit ON the surface, not under it. ::before is a positioned box, so
+ * the button has to be one too — then DOM order decides, and the button is
+ * second. This is why the surface does not need a negative z-index, which would
+ * have made the header depend on `thead` keeping its `z-10` to stay a stacking
+ * context: lose that and the surface escapes behind the card, the header goes
+ * transparent, and the rows are back through the titles. */
+.kq-table-head th > button {
+  position: relative;
 }
 
 /* The accuracy-trend tooltip (src/components/stats/accuracy-trend.tsx).
@@ -984,11 +1174,57 @@ body {
  * It replaces `bg-card` on that span rather than joining it — two rules setting
  * background-color is a fight over source order, and the top layer here IS
  * --card, so the token is still the one doing the work. --border, --radius and
- * --shadow-card stay on the element as Tailwind classes. */
+ * --shadow-card stay on the element as Tailwind classes.
+ *
+ * IT RIDES A PSEUDO-ELEMENT, AND THAT IS THE SATURATE FIX
+ * The rebuild was missing `filter: var(--card-frost-sat)` — the third
+ * ingredient. .kq-table-head above has it and measures 0.82 dE; this rule did
+ * not and measured 3.98 dE in kiri dark, because a real card's frost SATURATES
+ * the mesh 150% and a flat --card over an unsaturated mesh cannot. That is the
+ * same "two readers of one recipe disagreeing" bug --card-frost-sat was made a
+ * token to prevent; the token existed and this reader simply never read it.
+ *
+ * It cannot go on the element: `filter` on .kq-surface would saturate the
+ * element's TEXT along with its background. So the surface moves to ::before,
+ * exactly as the sticky table header's does and for exactly that reason.
+ *
+ * `isolation: isolate` is what makes `z-index: -1` safe. Without a stacking
+ * context here, a negative-z pseudo escapes behind the nearest one it finds —
+ * i.e. behind the CARD this tooltip sits in — and the tooltip goes
+ * transparent. Isolating pins the pseudo between this element's own
+ * background and its text, which is precisely where a surface belongs.
+ *
+ * IT DELIBERATELY DOES NOT SET `position`, and that is not an oversight.
+ * `position: relative` here silently un-stuck the chart's search bar: this
+ * rule is UNLAYERED and Tailwind's `.sticky` lives in `@layer utilities`, so
+ * an unlayered `position: relative` beats a layered `position: sticky` no
+ * matter how the class list reads. The bar simply scrolled away, and nothing
+ * anywhere said why. So the requirement is stated instead of imposed:
+ *
+ *   .kq-surface must go on an element that is ALREADY positioned.
+ *
+ * Both users are: the trend tooltip is `absolute`, the search bar's wrapper is
+ * `sticky`. On a `static` element the pseudo would anchor to some ancestor's
+ * box instead of this one's, and the surface would land in the wrong place.
+ *
+ * NOTE this rule is now unusable on an <input>: replaced elements do not
+ * render ::before. The chart's search field used to wear .kq-surface directly
+ * and now wears it on a wrapper (src/app/chart/page.tsx) — which it needed
+ * anyway to become a band. Do not put .kq-surface back on an input. */
 .kq-surface {
+  isolation: isolate;
+}
+
+.kq-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
   background-color: var(--bg);
   background-image: linear-gradient(var(--card), var(--card)), var(--ground-mesh);
   background-attachment: fixed;
+  filter: var(--card-frost-sat);
 }
 
 /* ==========================================================================
@@ -1165,10 +1401,15 @@ body {
   --gcard-shake-glow: 0 0 14px
     color-mix(in srgb, var(--danger) 38%, transparent);
 
-  /* The sheet's own ground. `none` for the three themes whose page really is a
-   * flat --bg — there is nothing to damp, and a panel there would be a box for
-   * the sake of one. kiri overrides it. */
-  --gcard-panel: transparent;
+  /* What each card lays down UNDER its own fill, to damp the ground it is
+   * floating on. `transparent` for the three themes whose page really is a flat
+   * --bg — there is nothing to damp. kiri overrides it.
+   *
+   * This used to be --gcard-panel, one fill on the SHEET. See the GRID QUIZ
+   * SHEET section for why it moved onto the cards: the sheet's fill damped the
+   * gutters too, and the gutters are the one place damping is not wanted — they
+   * are what turned the sheet into the black box the user reported. */
+  --gcard-damp: transparent;
 
   /* The well the answer is typed into. Ink-on-transparent rather than a flat
    * colour, so it deepens whatever surface the card is currently wearing
@@ -1221,24 +1462,48 @@ body {
 
 /* ---------- the sheet ---------------------------------------------------- */
 
+/* No fill and no filter: the sheet is a layout, not a surface. The gutters show
+ * the page's own ground, which is what stops the grid from being a rectangle. */
 .kq-grid-sheet {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 10px;
-  background-color: var(--gcard-panel);
+}
+
+/* The state fill is a REGISTERED property, and that is not decoration.
+ *
+ * Each card now paints two layers — its damp underneath, its state fill on top —
+ * and the damp has to be the one on the bottom. A pseudo-element cannot do it: a
+ * descendant paints ABOVE its parent's background, never below it, so the damp
+ * cannot be a child. That leaves the element's own two layers, and their order
+ * is fixed by CSS: background-color is always beneath background-image. So the
+ * damp takes the colour, and the state fill becomes an image.
+ *
+ * Which costs the 250ms state fade, because a gradient is not interpolable —
+ * `right` would snap on instead of settling in. Registering the fill as a
+ * <color> buys it back: a registered custom property animates, so the fade rides
+ * --gcard-fill and the gradient just follows it. */
+@property --gcard-fill {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
 }
 
 .kq-gcard {
+  --gcard-fill: var(--gcard);
   border: 1px solid var(--gcard-edge);
   border-radius: var(--radius-md);
-  background-color: var(--gcard);
+  /* Bottom: the damp (transparent in three of the four themes, so they paint
+   * exactly what they painted before). Top: the state's fill. */
+  background-color: var(--gcard-damp);
+  background-image: linear-gradient(var(--gcard-fill), var(--gcard-fill));
   color: var(--gcard-ink);
   /* Every theme's own tile treatment in one line: momentum's hard 2px shelf,
    * kiri's inset top highlight, nothing at all for aizome and graphite. The
    * same token ui.tsx's buttons and chips elevate with. */
   box-shadow: var(--shadow-btn);
   transition:
-    background-color 250ms,
+    --gcard-fill 250ms,
     border-color 250ms,
     color 250ms,
     opacity 250ms;
@@ -1252,14 +1517,14 @@ body {
  * lighter edge. */
 .kq-gcard-right {
   border-color: var(--gcard-right-edge);
-  background-color: var(--gcard-right);
+  --gcard-fill: var(--gcard-right);
   color: var(--gcard-right-ink);
   opacity: var(--gcard-resolved);
 }
 
 .kq-gcard-wrong {
   border-color: var(--gcard-wrong-edge);
-  background-color: var(--gcard-wrong);
+  --gcard-fill: var(--gcard-wrong);
   color: var(--gcard-wrong-ink);
   opacity: var(--gcard-resolved);
 }
@@ -1267,7 +1532,7 @@ body {
 /* Missed once, still answerable — still yours, so it does NOT recede. */
 .kq-gcard-missed {
   border-color: var(--gcard-missed-edge);
-  background-color: var(--gcard-missed);
+  --gcard-fill: var(--gcard-missed);
   color: var(--gcard-missed-ink);
 }
 
@@ -1284,7 +1549,7 @@ body {
  * starts at the card's edge and not 1px inside it. */
 .kq-gcard-shake {
   border-color: var(--gcard-shake-edge);
-  background-color: var(--gcard-shake);
+  --gcard-fill: var(--gcard-shake);
   color: var(--gcard-shake-ink);
   position: relative;
 }
@@ -1366,42 +1631,71 @@ body {
  * Per-card drops a quarter of frames to ~30fps. One panel is free — it costs
  * exactly what painting no blur at all costs.
  *
- * --gcard-panel and the 120% are what make the states mean anything here, and
- * they are the honest answer to the objection the previous pass went opaque
- * over. That objection was RIGHT, and it is bigger than it looks: a bare --card
- * tile over this mesh swings 69.5 ΔE between the violet blob and the teal one,
- * while the whole default→right signal is 11.9 ΔE — noise 6x signal. Nothing
- * you can do to the tint fixes that ratio, because the drift rides on the
- * fill's TRANSPARENCY, not its colour: strengthening the tint moves signal and
- * noise together, and the green of `right` is fighting a teal blob besides.
- * Damping the ground is the only lever that separates them, and one translucent
- * panel does it for the whole sheet at once.
+ * THE SHEET HAS NO PANEL. It used to carry one — 65% --bg plus a blur, behind
+ * all 214 cards — and the user's word for it was "a black box behind the grid
+ * that it doesn't need". They were right, and the fix is not a smaller number.
  *
- * saturate() is 120% for the same reason, where every other kiri surface uses
- * 150%. On a 260px card the boost is what makes the mesh sing; under a 214-tile
- * sheet it amplifies precisely the chroma the states must beat — and it showed:
- * an amber `wrong` under the pink blob came out ROSE, a hair from `shake`.
- * Frosted glass scatters and mutes anyway; it does not boost saturation. Muting
- * is the honest read as well as the legible one.
+ * WHY NOT A SMALLER NUMBER, because that is the obvious move and it is a silent
+ * ACCESSIBILITY REGRESSION. Two measurements, both against real compositor
+ * pixels (CDP screenshots, CIEDE2000), 88 cards in one viewport, kiri dark:
  *
- * Together, measured: default drift 69.5 → 20.2 ΔE, the amber card's
- * violet↔pink drift 26.5 → 17.5, default→right 11.9 → 31.3. Signal finally
- * beats noise, every card sits on the same ground, and at 65% the mesh still
- * reads THROUGH the panel — this is not a paint of --bg over the mesh, which
- * is what BUG 1 was.
+ *   panel fill      0%    10%   15%   20%   25%   30%   40%   65%
+ *   drift, local   5.37  4.94  4.57  4.36  3.86  3.74  3.34  3.08  (max ΔE)
+ *   BOX mean       0.20  0.53  0.83  1.07  1.32  1.62  2.12  3.53
+ *   BOX max        0.82  2.05  2.95  3.43  3.68  4.91  6.81 11.32
+ *   kiri-dark AA   4.10              4.10        4.22  4.32  4.62  (worst glyph)
  *
- * The frost is one token because the scrim is stacked ON the sheet: the scrim's
- * backdrop is the sheet's already-saturated output, so a second, different
- * saturate() there multiplies (1.2 x 1.5 = 1.8) and the HUD band comes out more
- * chromatic than the sheet an inch below it — a seam across the top of the
- * page. Same frost, one value, no seam. */
+ * BOX = how far the panel drags the sheet's ground away from the PAGE's ground,
+ * at identical pixels (the gutters, against a capture with the panel off).
+ *
+ * Read the last two rows together and the trap is obvious: turning the panel
+ * down does kill the box (3.53 → 0.20) and it takes AA with it. `shake` — the
+ * worst combo, a --danger 22% fill under a --danger 50% ink — sits at 4.62 with
+ * the panel and 4.10 without. Even 50% fails (4.46). In kiri dark --card is 5.5%
+ * white, so a card IS its ground: the panel's --bg was the only thing keeping
+ * that ground dark enough for the light state inks to clear 4.5:1. The whole
+ * 0–50% range is unreachable, and that is why the panel could not simply be
+ * dimmed.
+ *
+ * (The drift row also retires the argument the panel was BUILT on. That was "a
+ * bare --card tile swings 69.5 ΔE between the violet blob and the teal one,
+ * against an 11.9 ΔE signal — noise 6x signal". 69.5 ΔE is the drift between the
+ * sheet's OPPOSITE CORNERS, two cards a thousand pixels apart, which never share
+ * a glance. Nothing reads a tint that way. Neighbour-to-neighbour — the only
+ * comparison a reader actually makes — the drift is 3–5 ΔE against a ~10 ΔE
+ * open→right signal, panel or no panel. The panel was defending a ratio nobody
+ * ever sees.)
+ *
+ * SO THE DAMPING MOVED ONTO THE CARDS. The gutters were what read as a
+ * rectangle, and the gutters are the one place the damping was never wanted. A
+ * card's fill over its own damp composites to precisely what it composited to
+ * over a damped ground — the same pixels, so the same contrast, so AA is
+ * untouched — while the gutters keep the page's own ground and there is no
+ * rectangle left to see. Measured, kiri dark, before → after:
+ *
+ *   BOX (gutter vs page ground) .. 3.53 mean / 11.32 max  →  0.00 / 0.00
+ *   worst glyph contrast ......... 4.62                   →  4.62
+ *
+ * The 65% did not change. It was never really a panel value; it is how much
+ * ground a kiri card has to hide to keep its glyph legible, and it belongs to
+ * the card. See --gcard-damp above, and .kq-gcard for the layer order it forces.
+ *
+ * AND THE SHEET'S BLUR IS GONE, which costs nothing: it was a measured no-op.
+ * A backdrop-filter behind the sheet has nothing to blur but the mesh, and an
+ * 18px gaussian on gradients that broad is invisible — fill 0% + blur measured
+ * ΔE 0.20 against the raw page, i.e. the blur was doing nothing detectable at
+ * all. Removing it is also the safe direction on the one perf number that
+ * matters: scrolling 214 cards, "one panel blur" and "no blur at all" both
+ * measured p95 17.6ms with 0 dropped frames, while per-card blur x214 measured
+ * p95 33.4ms with 31 dropped. This change adds NO filter to any card — a damp is
+ * a background layer, which is free. Do not "restore the frost" by putting
+ * backdrop-filter back on .kq-gcard; that is the 33.4ms path.
+ *
+ * --gcard-frost survives for the HUD scrim alone, where the blur is real work:
+ * the scrim blurs CARDS passing under it, not the mesh. */
 [data-theme="kiri"] {
-  --gcard-panel: color-mix(in srgb, var(--bg) 65%, transparent);
+  --gcard-damp: color-mix(in srgb, var(--bg) 65%, transparent);
   --gcard-frost: blur(18px) saturate(120%);
-}
-[data-theme="kiri"] .kq-grid-sheet {
-  -webkit-backdrop-filter: var(--gcard-frost);
-  backdrop-filter: var(--gcard-frost);
 }
 
 /* And the scrim stops being a paint. No --bg anywhere: the mesh reads straight

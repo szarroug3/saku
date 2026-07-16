@@ -123,7 +123,32 @@ export function QuizOptionsFields() {
                 this app says "not applicable" (Row's `dim`, SmallBtn's
                 `disabled:opacity-45`). Now Full coverage ⇄ Count changes only
                 whether the field is live. Verified the way the pairs shift was:
-                the Count chip's offsetLeft is identical either way. */}
+                the Count chip's offsetLeft is identical either way.
+
+                That fixed ONE axis and shipped the other. Keeping the field
+                mounted stops the chips sliding sideways, but the field was
+                still 11px TALLER than a chip, so the row grew the instant you
+                left Endless — 47px → 58px — and every row below it moved. The
+                horizontal proof (offsetLeft) could not see this, which is why
+                it read as fixed.
+
+                Both numbers that made up those 11px were the field quietly
+                declining the chip's box:
+
+                  py-2 vs the chip's py-1 ......... 8px
+                  text-[15px] vs text-[13px] ...... 3px, because line-height
+                    inherits as a RATIO (1.5), so the font size silently sets
+                    the line box too: 22.5px against the chip's 19.5px.
+
+                So the field is now built from the chip's own ingredients
+                rather than from padding arithmetic that happens to total the
+                same: same border, same py-1, same 13px — therefore the same
+                19.5px line box, and 29.5px on the nose. Equal BY
+                CONSTRUCTION, so a future change to the body's line-height or
+                font size moves the chip and this field together instead of
+                reopening the gap. 13px also puts the digits in family with
+                the 12px SmallBtns beside them; 15px was the outlier. The row
+                is 46.5px in every Length state, Endless included. */}
             <input
               type="number"
               min={1}
@@ -135,7 +160,7 @@ export function QuizOptionsFields() {
                 update({ limCount: Math.max(1, Number.isNaN(v) ? 1 : v) });
               }}
               aria-label="Question count"
-              className="kq-num w-[62px] rounded-lg border border-border bg-card px-2.5 py-2 text-[15px] text-text disabled:cursor-default disabled:opacity-45"
+              className="kq-material kq-num w-[62px] rounded-lg border border-border bg-card px-2.5 py-1 text-[13px] text-text disabled:cursor-default disabled:opacity-45"
             />
           </>
         ) : null}

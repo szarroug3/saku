@@ -33,9 +33,18 @@
 //
 // Deliberately rounded-[12px] rather than the kit's rounded-xl Card: globals.css
 // hangs per-theme card treatments off [class~="rounded-xl"][class~="bg-card"]
-// (aizome dissolves those into hairline rules, kiri frosts them), which suits a
-// full-width card and not a 3-up grid of small tiles. The character picker's row
-// tiles opt out the same way.
+// (aizome dissolves those into hairline rules), which suits a full-width card
+// and not a 3-up grid of small tiles. The character picker's row tiles opt out
+// the same way.
+//
+// THIS TILE IS THE REASON `kq-material` EXISTS. Opting out of rounded-xl above
+// used to opt out of kiri's frost as well, because the frost was granted by
+// matching `rounded-xl` + `bg-card` — so choosing a geometry silently chose a
+// material, and this tile paid 8.0 dE of "different material" for a decision
+// that was only ever about corner radius. It asks for the material by name now,
+// and the ask is on the SHARED class string rather than the `bg-card` branch,
+// so a selected tile (`bg-accent-bg`) stays the same substance as an
+// unselected one. Under the old fill-keyed recipe it did not.
 
 import { type ReactNode } from "react";
 
@@ -67,7 +76,7 @@ export function plural(n: number, word: string): string {
  * which is the same fact stated absolutely. */
 
 /** One shelf tile. A toggle over the selection — or, with `state` omitted, a
- * plain button for the one card that isn't a deck (Custom…, which opens the
+ * plain button for the one card that isn't a deck (Custom, which opens the
  * picker). */
 export function DeckCard({
   glyph,
@@ -87,7 +96,7 @@ export function DeckCard({
    * or omitted for no ring at all. */
   pct?: number | null;
   /** Where this card's characters stand in the selection. Omitted for cards
-   * that select nothing (Custom…), which get no toggle affordance either. */
+   * that select nothing (Custom), which get no toggle affordance either. */
   state?: CardState;
   /** Accent treatment for the history-derived "target a weakness" tiles. */
   smart?: boolean;
@@ -121,7 +130,7 @@ export function DeckCard({
       aria-pressed={state === undefined ? undefined : on}
       aria-label={[label, subtitle, ringLabel].filter(Boolean).join(". ")}
       className={cx(
-        "relative flex min-h-[92px] cursor-pointer flex-col items-start gap-0.5",
+        "kq-material relative flex min-h-[92px] cursor-pointer flex-col items-start gap-0.5",
         "rounded-[12px] border p-3 text-left",
         "disabled:cursor-default disabled:opacity-45",
         // Accent tint and accent edge mean SELECTED here and nothing else.
