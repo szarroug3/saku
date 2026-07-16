@@ -99,8 +99,12 @@ export function SettingsCard() {
       ? cfg.voiceName
       : "";
 
-  // Grid mode ignores the timer, script label, and typed-answer preview.
-  const gridDim = cfg.mode === "grid";
+  // Nothing here dims. These are YOUR settings, not the current quiz's: the
+  // timer and script label do nothing in grid mode, but greying them out
+  // whenever grid happens to be selected made a preferences page change shape
+  // based on a choice made on another screen — and left you unable to set up
+  // the drill you were about to switch to. A setting that doesn't apply to a
+  // mode simply has no effect in that mode; it doesn't need to vanish.
 
   return (
     <Card>
@@ -191,7 +195,6 @@ export function SettingsCard() {
       <Row
         label="Timer"
         info="Every question gets a countdown. Timing out counts as a wrong answer."
-        dim={gridDim}
       >
         <Toggle on={cfg.timer} onClick={() => update({ timer: !cfg.timer })} />
         {cfg.timer ? (
@@ -239,7 +242,6 @@ export function SettingsCard() {
       <Row
         label="Script label on the card"
         info="Off means you have to work out whether it's hiragana or katakana yourself."
-        dim={gridDim}
       >
         <Toggle
           on={cfg.scriptLabel}

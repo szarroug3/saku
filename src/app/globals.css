@@ -44,10 +44,12 @@
   --success-bg: #e6efe6;
   --warning: #7a5410;
   --warning-bg: #f4ead4;
-  --gcard: #33517f;
-  --gcard-right: #3f7a4e;
-  --gcard-wrong: #7d7663;
-  --gcard-shake: #b3382e;
+  /* The accuracy ring. A dedicated pair rather than --accent/--panel: the arc
+   * is a filled band on a surface, which wants more weight than the accent
+   * carries as text, and the track has to sit UNDER the arc without competing
+   * with the card it's on. */
+  --arc: #1f3a68;
+  --arc-track: #d9d3bf;
   --shadow-card: none;
   --shadow-btn: none;
 
@@ -68,10 +70,11 @@
   --dark-success-bg: #22392c;
   --dark-warning: #d9ab63;
   --dark-warning-bg: #423115;
-  --dark-gcard: #2f4a7d;
-  --dark-gcard-right: #3d7a4c;
-  --dark-gcard-wrong: #514a3d;
-  --dark-gcard-shake: #a8362c;
+  /* --dark-accent is a pastel (#8fa8d8) because it's mostly TEXT; as a filled
+   * arc it washes out. Saturated indigo instead — still bright enough on the
+   * charcoal ground, but it reads as ink rather than haze. */
+  --dark-arc: #6f8ecb;
+  --dark-arc-track: #3b352d;
   --dark-shadow-card: none;
   --dark-shadow-btn: none;
 }
@@ -103,10 +106,14 @@
   --success-bg: #e6f6ec;
   --warning: #9a6205;
   --warning-bg: #fcf0d9;
-  --gcard: #5b5ee0;
-  --gcard-right: #2f9153;
-  --gcard-wrong: #6b7086;
-  --gcard-shake: #d9394c;
+  /* The one cool violet does all the work here too — it IS the default card.
+   * Wrong is the theme's cool grey, dimmed; right/shake are success/danger. */
+  --gcard: #4b4ade;
+  --gcard-right: #17864b;
+  --gcard-wrong: #5c6072;
+  --gcard-shake: #d02f42;
+  --arc: #4b4ade;
+  --arc-track: #dcdfe8;
   --shadow-card: none;
   --shadow-btn: none;
 
@@ -124,10 +131,14 @@
   --dark-success-bg: #0d2818;
   --dark-warning: #fbbf4c;
   --dark-warning-bg: #2b2010;
-  --dark-gcard: #3d40a8;
-  --dark-gcard-right: #2f9e5a;
-  --dark-gcard-wrong: #3a3d4a;
-  --dark-gcard-shake: #d0364a;
+  /* Precision dark: saturated violet on near-black, and `wrong` recedes almost
+   * into the ground the way a disabled surface should. */
+  --dark-gcard: #3f42c9;
+  --dark-gcard-right: #1a8049;
+  --dark-gcard-wrong: #32353f;
+  --dark-gcard-shake: #c22c3e;
+  --dark-arc: #5d61f0;
+  --dark-arc-track: #272a34;
   --dark-shadow-card: none;
   --dark-shadow-btn: none;
 }
@@ -165,10 +176,18 @@
   --success-bg: #dcfce7;
   --warning: #a16207;
   --warning-bg: #fef3c7;
-  --gcard: #2563eb;
+  /* The one theme where the default card CANNOT be the accent: momentum's
+   * --accent IS --success, so an accent card would be indistinguishable from
+   * the correct card — the sheet's most important distinction. The default
+   * takes the theme's other half instead: the deep blue-slate its ground and
+   * type are already built from, which leaves green to mean exactly one thing
+   * here (right), the same claim the theme makes everywhere else. */
+  --gcard: #1f4a6b;
   --gcard-right: #15803d;
-  --gcard-wrong: #64798a;
+  --gcard-wrong: #5a7186;
   --gcard-shake: #dc2626;
+  --arc: #15803d;
+  --arc-track: #d3e0ec;
   --shadow-card: 0 3px 0 var(--border);
   --shadow-btn: 0 2px 0 var(--border);
 
@@ -186,10 +205,15 @@
   --dark-success-bg: #123726;
   --dark-warning: #eab35a;
   --dark-warning-bg: #3a2a10;
-  --dark-gcard: #2f6fd0;
-  --dark-gcard-right: #1f9d55;
-  --dark-gcard-wrong: #3f5568;
-  --dark-gcard-shake: #d94a3d;
+  /* Same split on the dark ground: slate default, green reserved for right.
+   * --dark-success (#34d76d) is far too light to carry white type, so the
+   * correct card takes a deepened green of the same family. */
+  --dark-gcard: #275a80;
+  --dark-gcard-right: #17854a;
+  --dark-gcard-wrong: #3a5062;
+  --dark-gcard-shake: #c0392c;
+  --dark-arc: #22a95a;
+  --dark-arc-track: #22384a;
   --dark-shadow-card: 0 3px 0 var(--border);
   --dark-shadow-btn: 0 2px 0 var(--border);
 }
@@ -227,10 +251,19 @@
   --success-bg: rgba(15, 122, 69, 0.1);
   --warning: #8a5a08;
   --warning-bg: rgba(138, 90, 8, 0.12);
-  --gcard: #1a7fa4;
-  --gcard-right: #12855a;
-  --gcard-wrong: #5f7386;
-  --gcard-shake: #c33646;
+  /* Opaque on purpose, unlike the rest of kiri: 100+ cards are the one place
+   * the mesh must NOT read through — a translucent sheet over a gradient makes
+   * every card a different colour and the states stop meaning anything. The
+   * atmosphere is carried by the deep cyan and by the inset top highlight
+   * further down (the glass read, no blur). */
+  --gcard: #096b87;
+  --gcard-right: #0f7a45;
+  --gcard-wrong: #556b80;
+  --gcard-shake: #b4232f;
+  /* Opaque track for the same reason the cards are: a translucent band over
+   * the mesh reads as a different colour at every point of the circle. */
+  --arc: #096b87;
+  --arc-track: #dfe3ec;
   --shadow-card:
     0 10px 34px rgba(20, 40, 80, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --shadow-btn: inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -253,10 +286,16 @@
   --dark-success-bg: rgba(74, 222, 128, 0.13);
   --dark-warning: #fbbf5e;
   --dark-warning-bg: rgba(251, 191, 94, 0.14);
-  --dark-gcard: #2b7fa8;
-  --dark-gcard-right: #2f9e6a;
-  --dark-gcard-wrong: #3b4a5f;
-  --dark-gcard-shake: #d94a5c;
+  /* Deep cyan on the near-black mesh; `wrong` sinks to a cold slate. */
+  --dark-gcard: #17708f;
+  --dark-gcard-right: #16855a;
+  --dark-gcard-wrong: #354558;
+  --dark-gcard-shake: #bf3546;
+  /* --dark-accent (#67d4f5) is the luminous cyan the theme signs with, but as
+   * a filled band it's the "too light" read — it dissolves into the mesh.
+   * Deepened until the arc is a solid object again. */
+  --dark-arc: #2aa8cf;
+  --dark-arc-track: #212429;
   --dark-shadow-card:
     0 8px 40px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.13);
   --dark-shadow-btn: inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -307,6 +346,8 @@
     --gcard-right: var(--dark-gcard-right);
     --gcard-wrong: var(--dark-gcard-wrong);
     --gcard-shake: var(--dark-gcard-shake);
+    --arc: var(--dark-arc);
+    --arc-track: var(--dark-arc-track);
     --shadow-card: var(--dark-shadow-card);
     --shadow-btn: var(--dark-shadow-btn);
     --page-mesh: var(--dark-page-mesh, none);
@@ -332,6 +373,8 @@
   --gcard-right: var(--dark-gcard-right);
   --gcard-wrong: var(--dark-gcard-wrong);
   --gcard-shake: var(--dark-gcard-shake);
+  --arc: var(--dark-arc);
+  --arc-track: var(--dark-arc-track);
   --shadow-card: var(--dark-shadow-card);
   --shadow-btn: var(--dark-shadow-btn);
   --page-mesh: var(--dark-page-mesh, none);
@@ -419,6 +462,16 @@
 }
 @utility shadow-btn {
   box-shadow: var(--shadow-btn);
+}
+
+/* Always reserve the scrollbar's width, whether or not the page needs one.
+ * The shell is centred with mx-auto inside the viewport, so a page tall enough
+ * to scroll loses ~15px to the scrollbar and re-centres 7px to the left — and
+ * the sidebar visibly jumps as you move between a short page (Home) and a tall
+ * one (the chart). It reads as "the chart is wider"; it's the gutter appearing.
+ * Reserving it means every page lays out identically. */
+html {
+  scrollbar-gutter: stable;
 }
 
 body {
