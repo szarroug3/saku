@@ -42,22 +42,51 @@ function TooltipContent({
         data-slot="tooltip-content"
         sideOffset={sideOffset}
         className={cn(
-          // Themed as a panel of the app, not shadcn's inverted chip: an
-          // OPAQUE ground (--bg, never --card, which kiri makes translucent —
-          // the mesh would read straight through the copy), normal text, and
-          // the same hairline border every other surface uses.
-          "z-50 w-fit origin-(--radix-tooltip-content-transform-origin) animate-in rounded-md border border-border bg-bg px-3 py-1.5 text-xs text-balance text-text shadow-card fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+          // THE TOOLTIP IS A CARD.
+          //
+          // Not shadcn's inverted chip, and not the opaque `bg-bg` panel that
+          // replaced it — both gave this one surface a look of its own, which
+          // is precisely what four themes cannot afford. It is built from the
+          // same four tokens ui.tsx's `Card` uses — --card, --border,
+          // --radius, --shadow-card — so each theme draws it the way that
+          // theme already draws a surface, and all four come out for free:
+          //
+          //   aizome ... washi fill, 3px, hairline, --shadow-card: none
+          //   graphite . white/near-black, 5px, hairline, no shadow
+          //   momentum . 12px and the hard 0 3px 0 --border bottom edge
+          //   kiri ..... 14px translucent glass + the frost below, and
+          //              --shadow-card's `inset 0 1px 0 rgba(255,255,255,…)`
+          //              lights its top edge, same as every other kiri card
+          //
+          // The radius is `rounded-(--radius)` and NOT `rounded-lg` (which
+          // resolves to the identical value) on purpose: globals.css's
+          // signature effects hook the class PAIRS this file would otherwise
+          // spell — `rounded-lg`+`bg-card` is the Btn selector and would
+          // override --shadow-card with --shadow-btn, and `rounded-xl`
+          // +`bg-card` is the Card selector, whose aizome rule dissolves the
+          // fill into two hairline rules. That is right for a card in the
+          // page flow and wrong for a panel floating over text. Taking the
+          // tokens directly says "a surface" without claiming to be either.
+          "z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-(--radius) border border-border bg-card px-3 py-1.5 text-xs text-balance text-text shadow-card",
+          // kiri alone has a translucent --card, and its glass surfaces earn
+          // their read from a blur behind the fill rather than from the fill.
+          // Same values globals.css frosts kiri's cards, buttons and chips
+          // with, scoped the same way — <html> carries data-theme, and the
+          // portal still lands inside it.
+          "[[data-theme=kiri]_&]:backdrop-blur-[18px] [[data-theme=kiri]_&]:backdrop-saturate-150",
+          "animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
           className
         )}
         {...props}
       >
         {children}
-        {/* Matching arrow: the same opaque ground, with the border carried on
-         * the two outward edges so the outline continues into the point. Its
-         * fill covers the content's own border where they overlap, so the two
-         * read as one shape. Radix rotates the wrapper per side, which keeps
-         * the bordered edges facing out on every side. */}
-        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] border-r border-b border-border bg-bg fill-bg" />
+        {/* No arrow, deliberately — do not add one back. A Radix arrow is a
+         * rotated square that has to carry the panel's own fill, border and
+         * (in kiri) backdrop-filter: the blur composites a second time where
+         * it overlaps the body, and its two faked borders never quite line up
+         * with the panel's. Invisible while the tooltip was opaque; impossible
+         * to hide once it is glass. The panel opens 6px off the (i) that
+         * triggered it, so nothing is ambiguous without a pointer. */}
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )
