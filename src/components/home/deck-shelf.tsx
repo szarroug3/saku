@@ -11,7 +11,7 @@
 // Everything comes from src/lib/decks.ts, so a future kanji or vocab set lands
 // here without touching this file.
 
-import { DeckCard, Shelf, VolumeBar } from "@/components/home/deck-card";
+import { DeckCard, Shelf } from "@/components/home/deck-card";
 import { stateOf } from "@/components/home/selection";
 import { accuracyFor, volumeFor } from "@/lib/accuracy";
 import { DECKS, type Deck } from "@/lib/decks";
@@ -32,8 +32,6 @@ export function DeckShelf({
   onCustom: () => void;
 }) {
   const seen = DECKS.map((d) => volumeFor(history, d.chars));
-  // Volume is relative to the busiest deck on this shelf, never an absolute.
-  const busiest = Math.max(0, ...seen);
 
   return (
     <Shelf>
@@ -41,26 +39,34 @@ export function DeckShelf({
         const acc = accuracyFor(history, deck.chars, cfg.accuracyMetric);
         const state = stateOf(deck.chars, cfg.enabled);
         const on = deck.chars.filter((c) => cfg.enabled[c]).length;
-        const tail = seen[i] ? `seen ${seen[i]}×` : "not practised yet";
+        // A partial card spends its head saying HOW partial, because that is
+        // the only thing about it you can't see from the border, and "46
+        // characters" would be actively misleading on a deck only 12 of which
+        // will be drilled.
+        const head =
+          state === "partial"
+            ? `${on} of ${deck.chars.length} on`
+            : `${deck.chars.length} characters`;
+        // THIS is cfg.showVolume now. It used to gate a bar drawn relative to
+        // the busiest deck, which was reported as unreadable and rightly so:
+        // the denominator was invisible, and a second percentage-shaped mark
+        // next to the accuracy ring read as another accuracy. "seen 68×" was
+        // already sitting one line above it saying the same thing absolutely
+        // and unambiguously, so the setting now toggles the clause that always
+        // did the job — which is what its label claimed all along.
+        const tail = cfg.showVolume
+          ? seen[i]
+            ? `seen ${seen[i]}×`
+            : "not practised yet"
+          : null;
         return (
           <DeckCard
             key={deck.id}
             glyph={deck.glyph}
             label={deck.label}
-            // A partial card spends its subtitle saying HOW partial, because
-            // that is the only thing about it you can't see from the border,
-            // and "46 characters" would be actively misleading on a deck only
-            // 12 of which will be drilled.
-            subtitle={
-              state === "partial"
-                ? `${on} of ${deck.chars.length} on · ${tail}`
-                : `${deck.chars.length} characters · ${tail}`
-            }
+            subtitle={[head, tail].filter(Boolean).join(" · ")}
             pct={acc}
             state={state}
-            volume={
-              cfg.showVolume ? <VolumeBar seen={seen[i]} max={busiest} /> : null
-            }
             onClick={() => onToggle(deck, state !== "on")}
           />
         );

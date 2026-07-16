@@ -1,7 +1,18 @@
 "use client";
 
-// The tile every Home shelf is built from, plus its two readouts: the accuracy
-// ring and the volume bar.
+// The tile every Home shelf is built from, plus its one readout: the accuracy
+// ring.
+//
+// ONE PERCENTAGE PER CARD. A volume bar used to sit under the subtitle,
+// filled relative to the busiest deck on the shelf. It was reported as
+// illegible and removed: its denominator was invisible (nothing on the card
+// said what it was a proportion OF), and a second bar-shaped mark beside the
+// accuracy ring read as a second accuracy — "46 characters, seen 68, a bar at
+// ~30% and a circle saying 88%" was the report, and the honest answer to "what
+// is the 30%?" was "nothing you can get from this card". The goal it served —
+// telling a well-evidenced 88% from a fluke — belongs to the "seen 68×" clause
+// in the subtitle, which states the same fact absolutely instead of relatively.
+// Don't reintroduce a second graphical percentage here.
 //
 // A CARD SELECTS. IT DOES NOT START. Every card here used to fire a quiz on
 // click, and the report that killed that design was "it's not clear that
@@ -52,6 +63,12 @@ export function plural(n: number, word: string): string {
  * Practice volume, drawn RELATIVE to the busiest deck on the shelf rather than
  * to any absolute target — the honest claim is "you drill this one less than
  * that one", not "you are 20% done".
+ *
+ * NO LONGER USED BY THE DECK CARDS — see the note at the top of this file. It
+ * lives on only for src/components/stats/deck-accuracy.tsx, which imports it
+ * from here; on the Stats table the bars form a column you can read down, which
+ * is a different (and legible) claim from one lone bar on a small tile. If that
+ * import goes, delete this.
  */
 export function VolumeBar({ seen, max }: { seen: number; max: number }) {
   // No deck practised yet — a row of empty bars says nothing, and 0/0 is NaN.
@@ -76,7 +93,6 @@ export function DeckCard({
   label,
   subtitle,
   pct,
-  volume,
   state,
   smart,
   dashed,
@@ -89,7 +105,6 @@ export function DeckCard({
   /** Accuracy for the ring: a number, null for never-practised (dashed ring),
    * or omitted for no ring at all. */
   pct?: number | null;
-  volume?: ReactNode;
   /** Where this card's characters stand in the selection. Omitted for cards
    * that select nothing (Custom…), which get no toggle affordance either. */
   state?: CardState;
@@ -175,7 +190,6 @@ export function DeckCard({
       <span className="text-[11px] leading-snug tabular-nums text-text-muted">
         {subtitle}
       </span>
-      {volume}
     </button>
   );
 }
