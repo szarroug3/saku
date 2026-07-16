@@ -1,179 +1,144 @@
 "use client";
 
-// Kana-Pro-style character picker: collapsible script cards (Hiragana /
-// Katakana) → Basic/Extended groups → row cards. Clicking a row card toggles
-// the whole row; each glyph inside toggles individually; partial rows get a
-// dashed accent border; per-row accuracy circles appear once history exists.
-// Port of the legacy buildSets()/headRight()/allNone()/accFor() rendering.
+// The Custom… card's disclosure: the escape hatch for a selection the six
+// decks can't say — "hiragana basic plus just the katakana vowels",
+// "everything except the combos", "these five I keep failing".
+//
+// It used to be the home screen, and it still looked like it: 54 rows of
+// toggles, three levels of nested cards, no way to act on what you'd just
+// built. It isn't the home screen any more. So it is now an OUTLINE (a rule
+// and a heading per script, boxes only for rows), it opens closed, it has a
+// search box, and it has a footer that starts the thing.
+//
+// The precision is untouched — that is the feature. What changed is what it
+// costs to operate.
+//
+// SEARCH IS A SCOPE, NOT JUST A FIND. With a query live, every row shows only
+// its matching characters, and All · None · Invert — at the toolbar and at
+// both heading levels — act on the matches. So "find ぬ" no longer means
+// scrolling, and "just these five" is None then five clicks. A row click
+// likewise toggles what the row is SHOWING; toggling five hidden characters
+// because they happen to share a row with a match would be a lie about the
+// tile you clicked.
+//
+// The search matches characters, not section labels — "everything except the
+// combos" is still Extended set → None, which is two clicks and wants no help.
+// Invert earns its place elsewhere: "everything EXCEPT what I just picked" is
+// the one shape no All/None pair can reach at any level.
 
-import { useState, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useMemo, useState } from "react";
 
-import { Card, Lbl } from "@/components/ui";
+import { PickerBar } from "@/components/home/picker-bar";
+import { PickerHead } from "@/components/home/picker-head";
+import { PickerRow } from "@/components/home/picker-row";
+import { Card, Lbl, SmallBtn } from "@/components/ui";
 import { isExtendedSection, SETS } from "@/data/characters";
-import { formatAccuracy } from "@/lib/accuracy";
-import { useQuizConfig } from "@/lib/quiz-config";
-import { accuracyFor, useHistory } from "@/lib/use-history";
-import type { CharSection, CharSet } from "@/types";
+import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
+import { ALL_CHARS } from "@/lib/decks";
+import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
+import { useQuizSession } from "@/lib/quiz-session";
+import { useHistory } from "@/lib/use-history";
+import type { CharSection, KanaChar } from "@/types";
 
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
-
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <span
-      className={cx(
-        "flex h-7 w-7 flex-none items-center justify-center rounded-lg",
-        "bg-panel text-[13px] text-accent transition-transform duration-150",
-        open && "rotate-90",
-      )}
-    >
-      ›
-    </span>
-  );
-}
-
-/** "N selected" + All/None links on the right of a script/group header.
- * The links act without toggling the collapsible they sit inside. */
-function HeadRight({
-  count,
-  onAllNone,
-}: {
-  count: number;
-  onAllNone: (on: boolean) => void;
-}) {
-  const link = (label: string, on: boolean) => (
-    <button
-      type="button"
-      className="cursor-pointer text-accent"
-      onClick={(e: MouseEvent) => {
-        e.stopPropagation();
-        onAllNone(on);
-      }}
-    >
-      {label}
-    </button>
-  );
-  return (
-    <span className="ml-auto flex-none text-right text-xs leading-[1.6] text-text-muted">
-      {count} selected
-      <br />
-      {link("All", true)} · {link("None", false)}
-    </span>
-  );
-}
-
-/** Collapsible header shared by script cards and Basic/Extended groups. */
-function CollapseHead({
-  open,
-  onToggle,
-  title,
-  sub,
-  titleClassName,
-  count,
-  onAllNone,
-  className,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  title: ReactNode;
-  sub: ReactNode;
-  titleClassName: string;
-  count: number;
-  onAllNone: (on: boolean) => void;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cx(
-        "flex cursor-pointer select-none items-center gap-3",
-        className,
-      )}
-      onClick={onToggle}
-    >
-      <Chevron open={open} />
-      <span>
-        <p className={cx("m-0 font-semibold", titleClassName)}>{title}</p>
-        <p className="m-0 text-xs text-text-muted">{sub}</p>
-      </span>
-      <HeadRight count={count} onAllNone={onAllNone} />
-    </div>
-  );
+/** A section narrowed to the characters currently matching the search. */
+interface Match {
+  section: CharSection;
+  chars: KanaChar[];
 }
 
 export function CharacterPicker() {
   const { cfg, set } = useQuizConfig();
   const { history } = useHistory();
+  const { active, startQuiz } = useQuizSession();
 
-  // Picker open state is view-only (never persisted): scripts default
-  // closed, groups default open.
+  const [query, setQuery] = useState("");
+  // View-only, never persisted: scripts open closed (the picker is an index,
+  // not a wall of 54 rows), groups open open (you asked for the script).
   const [openSets, setOpenSets] = useState<Record<string, boolean>>({});
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  const allNone = (chars: string[], on: boolean) =>
-    set((prev) => {
-      const enabled = { ...prev.enabled };
-      for (const c of chars) enabled[c] = on;
-      return { ...prev, enabled };
-    });
+  const qRaw = query.trim();
+  const q = qRaw.toLowerCase();
 
-  const toggleChar = (c: string) =>
-    set((prev) => ({
-      ...prev,
-      enabled: { ...prev.enabled, [c]: !prev.enabled[c] },
-    }));
+  // Same match rule as the Kana chart's search: raw for kana (no case to
+  // fold), lowercased for romaji, and every accepted spelling counts so "si"
+  // finds し the same as "shi" does.
+  const scripts = useMemo(
+    () =>
+      SETS.map((charSet) => ({
+        charSet,
+        sections: charSet.sections
+          .map((section) => ({
+            section,
+            chars: q
+              ? section.chars.filter(
+                  (ch) =>
+                    ch.c.includes(qRaw) || ch.r.some((r) => r.includes(q)),
+                )
+              : section.chars,
+          }))
+          .filter((m) => m.chars.length > 0),
+      })).filter((s) => s.sections.length > 0),
+    [q, qRaw],
+  );
 
-  const rowCard = (section: CharSection) => {
-    const chars = section.chars.map((c) => c.c);
+  /** Everything the toolbar's bulk actions apply to: the matches, or all. */
+  const scope = useMemo(
+    () =>
+      scripts.flatMap((s) =>
+        s.sections.flatMap((m) => m.chars.map((c) => c.c)),
+      ),
+    [scripts],
+  );
+
+  const allNone = useCallback(
+    (chars: string[], on: boolean) =>
+      set((prev) => {
+        const enabled = { ...prev.enabled };
+        for (const c of chars) enabled[c] = on;
+        return { ...prev, enabled };
+      }),
+    [set],
+  );
+
+  // The one thing no deck can express and no All/None pair can shortcut:
+  // "everything except THAT". Cheap here, tedious by hand.
+  const invert = useCallback(
+    (chars: string[]) =>
+      set((prev) => {
+        const enabled = { ...prev.enabled };
+        for (const c of chars) enabled[c] = !enabled[c];
+        return { ...prev, enabled };
+      }),
+    [set],
+  );
+
+  const toggleChar = useCallback(
+    (c: string) =>
+      set((prev) => ({
+        ...prev,
+        enabled: { ...prev.enabled, [c]: !prev.enabled[c] },
+      })),
+    [set],
+  );
+
+  const selected = selectedChars(cfg);
+  // Same gate Home puts on its cards: a setup with no direction can't run any
+  // quiz, so this button can't either.
+  const howBroken = cfg.mode !== "grid" && !cfg.dirs.jp2en && !cfg.dirs.en2jp;
+
+  const row = (m: Match) => {
+    const chars = m.chars.map((c) => c.c);
     const on = chars.filter((c) => cfg.enabled[c]).length;
-    const acc = accuracyFor(history, chars, cfg.accuracyMetric);
     return (
-      <div
-        key={section.id}
-        className={cx(
-          "flex cursor-pointer select-none items-center gap-2.5 rounded-[10px] border px-3.5 py-2.5",
-          on === chars.length
-            ? "border-accent bg-accent-bg"
-            : on > 0
-              ? "border-dashed border-accent bg-card"
-              : "border-border bg-card",
-        )}
-        onClick={() => allNone(chars, on < chars.length)}
-      >
-        <span>
-          <p className="m-0 text-[13px] font-semibold">
-            {section.chars.map((c) => c.r[0]).join(" ")}
-          </p>
-          <p className="mt-0.5 mb-0">
-            {section.chars.map((c) => (
-              <span
-                key={c.c}
-                title={`${c.r.join(" / ")} — click to toggle just this one`}
-                className={cx(
-                  "mr-[5px] cursor-pointer text-base",
-                  cfg.enabled[c.c]
-                    ? "text-text opacity-100"
-                    : "text-text-muted opacity-45",
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleChar(c.c);
-                }}
-              >
-                {c.c}
-              </span>
-            ))}
-          </p>
-        </span>
-        {acc !== null ? (
-          <span
-            title="accuracy from your session history"
-            className="ml-auto flex h-10 w-10 flex-none items-center justify-center rounded-full border-2 border-border text-[11px] text-text-muted"
-          >
-            {formatAccuracy(acc)}
-          </span>
-        ) : null}
-      </div>
+      <PickerRow
+        key={m.section.id}
+        chars={m.chars}
+        enabled={cfg.enabled}
+        pct={accuracyFor(history, chars, cfg.accuracyMetric)}
+        onToggleRow={() => allNone(chars, on < chars.length)}
+        onToggleChar={toggleChar}
+      />
     );
   };
 
@@ -181,81 +146,29 @@ export function CharacterPicker() {
     id: string,
     label: string,
     desc: string,
-    sections: CharSection[],
+    sections: Match[],
   ) => {
-    const open = openGroups[id] ?? true;
-    const chars = sections.flatMap((s) => s.chars.map((c) => c.c));
+    if (!sections.length) return null;
+    const chars = sections.flatMap((m) => m.chars.map((c) => c.c));
     const on = chars.filter((c) => cfg.enabled[c]).length;
+    // A search forces every level open — a match you can't see isn't a find.
+    // Derived, not an effect: nothing to sync, nothing to get stale.
+    const open = q ? true : (openGroups[id] ?? true);
     return (
-      <div
-        key={id}
-        className="mb-2 rounded-[10px] border border-border bg-bg px-3 py-2.5 last:mb-0"
-      >
-        <CollapseHead
+      <div key={id} className="mt-1 pl-[38px]">
+        <PickerHead
+          level="group"
           open={open}
           onToggle={() => setOpenGroups((prev) => ({ ...prev, [id]: !open }))}
           title={label}
           sub={desc}
-          titleClassName="text-sm"
-          count={on}
+          on={on}
+          total={chars.length}
           onAllNone={(v) => allNone(chars, v)}
-          className="py-0.5"
         />
         {open ? (
-          <div className="mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
-            {sections.map(rowCard)}
-          </div>
-        ) : null}
-      </div>
-    );
-  };
-
-  const scriptCard = (charSet: CharSet) => {
-    const open = !!openSets[charSet.id];
-    const chars = charSet.sections.flatMap((s) => s.chars.map((c) => c.c));
-    const on = chars.filter((c) => cfg.enabled[c]).length;
-    const acc = accuracyFor(history, chars, cfg.accuracyMetric);
-    return (
-      <div
-        key={charSet.id}
-        className="mb-2.5 rounded-xl border border-border bg-card last:mb-0"
-      >
-        <CollapseHead
-          open={open}
-          onToggle={() =>
-            setOpenSets((prev) => ({ ...prev, [charSet.id]: !open }))
-          }
-          title={charSet.label}
-          sub={
-            <>
-              {charSet.labelJa}
-              {acc !== null ? (
-                <>
-                  {" · "}
-                  <b>{formatAccuracy(acc)}</b> accuracy
-                </>
-              ) : null}
-            </>
-          }
-          titleClassName="text-base"
-          count={on}
-          onAllNone={(v) => allNone(chars, v)}
-          className="px-3.5 py-[13px]"
-        />
-        {open ? (
-          <div className="px-3.5 pb-3.5">
-            {group(
-              `${charSet.id}-basic`,
-              "Basic set",
-              "The core characters.",
-              charSet.sections.filter((s) => !isExtendedSection(s.label)),
-            )}
-            {group(
-              `${charSet.id}-ext`,
-              "Extended set",
-              "Voiced sounds (dakuten) and combo sounds.",
-              charSet.sections.filter((s) => isExtendedSection(s.label)),
-            )}
+          <div className="mt-1.5 mb-2 grid grid-cols-[repeat(auto-fill,minmax(212px,1fr))] gap-1.5">
+            {sections.map(row)}
           </div>
         ) : null}
       </div>
@@ -264,8 +177,111 @@ export function CharacterPicker() {
 
   return (
     <Card>
-      <Lbl>Characters</Lbl>
-      {SETS.map(scriptCard)}
+      <Lbl>Custom selection</Lbl>
+      <p className="-mt-1 mb-3 text-xs text-text-muted">
+        For the selections the decks above can&rsquo;t say. A row toggles
+        together; every character also toggles on its own.
+      </p>
+
+      <div className="mb-2.5 flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search kana or romaji — ぬ, nu, kyo…"
+          aria-label="Search kana or romaji"
+          className="min-w-[180px] flex-1 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[13px] text-text"
+        />
+        <span className="flex flex-none items-center gap-1.5">
+          <SmallBtn onClick={() => allNone(scope, true)}>All</SmallBtn>
+          <SmallBtn onClick={() => allNone(scope, false)}>None</SmallBtn>
+          <SmallBtn onClick={() => invert(scope)}>Invert</SmallBtn>
+        </span>
+      </div>
+
+      {q ? (
+        <p className="mb-2.5 text-[11px] text-text-muted">
+          {scope.length === 0 ? (
+            <>Nothing matches &ldquo;{qRaw}&rdquo;.</>
+          ) : (
+            <>
+              <span className="tabular-nums">
+                {scope.length} of {ALL_CHARS.length}
+              </span>{" "}
+              characters match &ldquo;{qRaw}&rdquo; — the rows below, and every
+              All · None · Invert, apply to those only.
+            </>
+          )}
+        </p>
+      ) : null}
+
+      {/* The sticky footer's containing block, and deliberately not the whole
+          Card: a bar pins to the viewport for as long as its container is on
+          screen, so hanging it off the Card meant it hovered over the picker's
+          own title and search box on the way past. It rides the rows, which
+          are the only thing it acts on. */}
+      <div>
+        {scripts.map(({ charSet, sections }) => {
+          const chars = sections.flatMap((m) => m.chars.map((c) => c.c));
+          const on = chars.filter((c) => cfg.enabled[c]).length;
+          const acc = accuracyFor(history, chars, cfg.accuracyMetric);
+          const open = q ? true : !!openSets[charSet.id];
+          return (
+            <div
+              key={charSet.id}
+              className="border-t border-border py-1 first:border-t-0"
+            >
+              <PickerHead
+                level="script"
+                open={open}
+                onToggle={() =>
+                  setOpenSets((prev) => ({ ...prev, [charSet.id]: !open }))
+                }
+                title={charSet.label}
+                sub={
+                  <>
+                    {charSet.labelJa}
+                    {acc === null ? null : (
+                      <>
+                        {" · "}
+                        <b className="text-text">{formatAccuracy(acc)}</b>{" "}
+                        accuracy
+                      </>
+                    )}
+                  </>
+                }
+                on={on}
+                total={chars.length}
+                onAllNone={(v) => allNone(chars, v)}
+              />
+              {open ? (
+                <>
+                  {group(
+                    `${charSet.id}-basic`,
+                    "Basic set",
+                    "The core characters.",
+                    sections.filter((m) => !isExtendedSection(m.section.label)),
+                  )}
+                  {group(
+                    `${charSet.id}-ext`,
+                    "Extended set",
+                    "Voiced sounds (dakuten) and combo sounds.",
+                    sections.filter((m) => isExtendedSection(m.section.label)),
+                  )}
+                </>
+              ) : null}
+            </div>
+          );
+        })}
+
+        <PickerBar
+          count={selected.length}
+          total={ALL_CHARS.length}
+          active={!!active}
+          howBroken={howBroken}
+          onStart={() => startQuiz(selected)}
+        />
+      </div>
     </Card>
   );
 }
