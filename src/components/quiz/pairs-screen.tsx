@@ -34,27 +34,9 @@ import { PairsHud } from "./pairs-hud";
 // ring blooms out of them and decays. Deliberate, one beat long, and gone —
 // the board is never left wearing it.
 //
-// Every colour is a token, so all four themes work, and reduced motion drops
-// both animations: the danger border and fill the cells already carry stand
-// on their own for the flash's 450ms.
-const PAIRS_CSS = `
-@keyframes kq-pairs-miss {
-  0% {
-    box-shadow:
-      0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent),
-      0 0 16px color-mix(in srgb, var(--danger) 40%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 7px transparent, 0 0 16px transparent;
-  }
-}
-.kq-pairs-miss {
-  animation: gshake 450ms, kq-pairs-miss 450ms ease-out forwards;
-}
-@media (prefers-reduced-motion: reduce) {
-  .kq-pairs-miss { animation: none !important; }
-}
-`;
+// The mismatch flash (.kq-pairs-miss) is defined in globals.css beside gshake
+// — every colour a token, dropped under reduced motion, the cells' danger
+// border and fill carrying the 450ms on their own.
 
 // ---------- runtime (lives in active.runtime.pairs) ----------
 
@@ -292,7 +274,6 @@ export function PairsScreen() {
 
   return (
     <div>
-      <style>{PAIRS_CSS}</style>
       <PairsHud
         asked={asked}
         total={total}

@@ -436,6 +436,29 @@ body {
   80% { transform: translateX(5px); }
 }
 
+/* Match-pairs mismatch flash — pairs' equivalent of the drill halo's red
+ * pulse: a danger bloom that fades over the same 450ms as the shake, every
+ * colour a token so it reads in all four themes. Lives here beside gshake
+ * rather than in the component so the whole app's motion is in one place. */
+@keyframes kq-pairs-miss {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent),
+      0 0 16px color-mix(in srgb, var(--danger) 40%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 7px transparent, 0 0 16px transparent;
+  }
+}
+.kq-pairs-miss {
+  animation: gshake 450ms, kq-pairs-miss 450ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kq-pairs-miss {
+    animation: none !important;
+  }
+}
+
 /* ==========================================================================
  * PER-THEME SIGNATURE EFFECTS
  *
