@@ -50,8 +50,8 @@ export const JP_FONTS = [
 
 /** Random font from the user's selection (one selected = always that one).
  *
- * Filtered to fonts this machine actually HAS. Half the pool isn't installed on
- * a stock Mac, and an uninstalled family doesn't error — it silently renders as
+ * Filtered to fonts this machine actually HAS. Often half the pool isn't
+ * installed on a given machine, and an uninstalled family doesn't error — it silently renders as
  * the fallback, so the pool quietly shrinks and every "different" font is the
  * same one. Filtering here means a saved selection from another machine, or a
  * font uninstalled since, degrades to the fonts that exist instead of to a

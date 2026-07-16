@@ -14,6 +14,7 @@ import {
 import { Btn, Card, Chip, Hint, Row, SmallBtn } from "@/components/ui";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
+import { detectPlatform, type Platform } from "@/lib/platform";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { jaVoices, onVoicesChanged, speak } from "@/lib/speech";
 
@@ -28,6 +29,20 @@ function voiceLabel(name: string): string {
   return name
     .replace(/\s*\(.*?\)\s*$/, (m) => m.replace("(", "· ").replace(")", ""))
     .trim();
+}
+
+/** The Speech voice tooltip. First and last sentences hold on any OS; the
+ * middle one names a path, so it's only added once we know which OS we're on.
+ * The Mac path in particular is not something you'd ever find on your own. */
+function voiceInfo(platform: Platform): string {
+  const where =
+    platform === "mac"
+      ? "under System Settings → Accessibility → Spoken Content → Manage Voices"
+      : platform === "windows"
+        ? "under Settings → Time & Language → Speech"
+        : "in your system's speech settings";
+  const siri = platform === "mac" ? " Siri voices never show up here." : "";
+  return `The Japanese voices installed on this computer. You can add more ${where}, but the browser won't see them until you restart it.${siri}`;
 }
 
 /** On/Off button with the accent selected state when on. */
@@ -61,14 +76,23 @@ export function SettingsCard() {
     if (el && document.activeElement !== el) el.value = String(cfg.timerSec);
   }, [cfg.timerSec, cfg.timer]);
 
-  // Only the fonts this machine actually has. A stock Mac has three of the
-  // eight, and an uninstalled font doesn't fail — it renders as the fallback,
+  // Only the fonts this machine actually has. A given machine tends to have
+  // only some of the eight, and an uninstalled font doesn't fail — it renders as the fallback,
   // so listing all eight would show five identical chips claiming to be five
   // typefaces. Post-mount because detection needs a canvas (see font-detect).
   const [installedFonts, setInstalledFonts] = useState<string[]>([]);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setInstalledFonts(availableFonts(JP_FONTS));
+  }, []);
+
+  // Platform is only knowable in the browser, so start "unknown" (the copy the
+  // server renders too) and fill it in post-mount. Same shape as the font
+  // detection above; keeps the server and first client paint identical.
+  const [platform, setPlatform] = useState<Platform>("unknown");
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPlatform(detectPlatform());
   }, []);
 
   const toggleFont = (font: string) => {
@@ -288,7 +312,7 @@ export function SettingsCard() {
 
       <Row
         label="Speech voice"
-        info="The Japanese voices installed on this Mac. You can download better ones under System Settings → Accessibility → Spoken Content → Manage Voices, but the browser won't see them until you restart it. Siri voices never show up here."
+        info={voiceInfo(platform)}
       >
         {voices.length ? (
           <>

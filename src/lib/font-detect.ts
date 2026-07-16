@@ -2,7 +2,7 @@
 //
 // `document.fonts.check()` cannot answer this — for locally-installed families
 // it returns true for anything that merely parses, so it claims all eight are
-// present on a Mac that has three. (Verified: it says true for "Klee" on a
+// present on a machine that has three. (Verified: it says true for "Klee" on a
 // machine where Klee renders as the fallback.)
 //
 // So measure instead. Render a kana sample in the candidate family with a known
