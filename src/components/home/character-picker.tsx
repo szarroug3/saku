@@ -10,6 +10,7 @@ import { useState, type MouseEvent, type ReactNode } from "react";
 
 import { Card, Lbl } from "@/components/ui";
 import { isExtendedSection, SETS } from "@/data/characters";
+import { formatAccuracy } from "@/lib/accuracy";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { accuracyFor, useHistory } from "@/lib/use-history";
 import type { CharSection, CharSet } from "@/types";
@@ -125,7 +126,7 @@ export function CharacterPicker() {
   const rowCard = (section: CharSection) => {
     const chars = section.chars.map((c) => c.c);
     const on = chars.filter((c) => cfg.enabled[c]).length;
-    const acc = accuracyFor(history, chars);
+    const acc = accuracyFor(history, chars, cfg.accuracyMetric);
     return (
       <div
         key={section.id}
@@ -169,7 +170,7 @@ export function CharacterPicker() {
             title="accuracy from your session history"
             className="ml-auto flex h-10 w-10 flex-none items-center justify-center rounded-full border-2 border-border text-[11px] text-text-muted"
           >
-            {acc}%
+            {formatAccuracy(acc)}
           </span>
         ) : null}
       </div>
@@ -213,7 +214,7 @@ export function CharacterPicker() {
     const open = !!openSets[charSet.id];
     const chars = charSet.sections.flatMap((s) => s.chars.map((c) => c.c));
     const on = chars.filter((c) => cfg.enabled[c]).length;
-    const acc = accuracyFor(history, chars);
+    const acc = accuracyFor(history, chars, cfg.accuracyMetric);
     return (
       <div
         key={charSet.id}
@@ -231,7 +232,7 @@ export function CharacterPicker() {
               {acc !== null ? (
                 <>
                   {" · "}
-                  <b>{acc}%</b> accuracy
+                  <b>{formatAccuracy(acc)}</b> accuracy
                 </>
               ) : null}
             </>

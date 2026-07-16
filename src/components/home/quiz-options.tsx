@@ -1,14 +1,16 @@
 "use client";
 
-// The "Quiz" card on the Home builder: mode, direction, per-direction answer
-// styles, and length. Rows that don't apply to the chosen mode gray out via
-// Row's `dim`, mirroring the legacy renderSetup() logic exactly.
+// HOW you drill: mode, direction, per-direction answer styles, and length.
+// These are the whole of the Home hero's "Edit setup" disclosure — the hero
+// states them as a sentence and opens this to change them. Rows that don't
+// apply to the chosen mode gray out via Row's `dim`, mirroring the legacy
+// renderSetup() logic exactly.
 
-import { Card, Chip, Lbl, Row, SmallBtn } from "@/components/ui";
+import { Chip, Row, SmallBtn } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { Direction } from "@/types";
 
-export function QuizOptionsCard() {
+export function QuizOptionsFields() {
   const { cfg, update } = useQuizConfig();
   const grid = cfg.mode === "grid";
 
@@ -20,8 +22,7 @@ export function QuizOptionsCard() {
   };
 
   return (
-    <Card>
-      <Lbl>Quiz</Lbl>
+    <>
       <Row label="Mode">
         <Chip on={cfg.mode === "drill"} onClick={() => update({ mode: "drill" })}>
           Drill
@@ -118,6 +119,6 @@ export function QuizOptionsCard() {
           </>
         ) : null}
       </Row>
-    </Card>
+    </>
   );
 }
