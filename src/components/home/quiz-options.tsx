@@ -1,10 +1,16 @@
 "use client";
 
 // HOW you drill: mode, direction, per-direction answer styles, and length.
-// These are the whole of the Home hero's "Edit setup" disclosure — the hero
-// states them as a sentence and opens this to change them. Rows that don't
-// apply to the chosen mode gray out via Row's `dim`, mirroring the legacy
-// renderSetup() logic exactly.
+// Home's setup panel, and it is ALWAYS OPEN. It used to live behind the hero's
+// "Edit setup" disclosure, which is how you could press Start without being
+// able to see the settings Start would use — half the reported confusion about
+// that screen. Four rows is not a wall; hiding them cost more than it saved.
+//
+// The Length row is where "Full coverage" lives, and where it always belonged.
+// A deck card used to set it as an invisible side-effect of picking 214
+// characters; that card is now plain "Everything" and this chip is the only
+// thing that touches your length. Rows that don't apply to the chosen mode
+// gray out via Row's `dim`, mirroring the legacy renderSetup() logic exactly.
 
 import { Chip, Row, SmallBtn } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";

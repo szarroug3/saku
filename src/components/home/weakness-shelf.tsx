@@ -1,76 +1,114 @@
 "use client";
 
 // "Target a weakness" — three decks the app computes from your history rather
-// than reads from the character data. One click each: the card picks WHICH
-// characters, the hero already said HOW, so there is nothing left to confirm.
+// than reads from the character data.
+//
+// Same toggles as the Decks shelf below, over the same cfg.enabled map, so
+// "Weakest 20 plus all of hiragana basic" is one selection across two shelves
+// and the overlap is counted once. They differ only in where their characters
+// come from, which is why they look like decks and behave like decks.
+//
+// Each card exposes its chars upward, because the start bar has to name the
+// selection and these three are half of what it might be naming.
+//
+// NO RINGS HERE, and that is not an oversight. The deck shelf's rings answer
+// "how good am I at hiragana basic"; "how good am I at the twenty characters
+// I am worst at" answers itself, and "how good am I at the pairs I mix up" is
+// the same tautology. These three spend their subtitle on WHY they exist —
+// the thing you cannot work out by looking — and Weakest 20 does print its
+// accuracy there, through accuracyFor like everything else.
 
 import { DeckCard, metricWord, plural, Shelf } from "@/components/home/deck-card";
+import { stateOf, type Selectable } from "@/components/home/selection";
 import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
 import { confusionDecks, lastMisses, weakestChars } from "@/lib/decks";
 import type { HistoryFile, QuizConfig } from "@/types";
 
-export function WeaknessShelf({
-  history,
-  cfg,
-  enabled,
-  disabled,
-  onPick,
-}: {
-  history: HistoryFile;
-  cfg: QuizConfig;
-  /** Currently-selected characters — the day-one lookalike fallback's scope. */
-  enabled: string[];
-  /** The hero's setup can't run a quiz (no directions) — nothing can start. */
-  disabled?: boolean;
-  onPick: (chars: string[]) => void;
-}) {
+/** The three weakness decks for this history, in shelf order. Exported so the
+ * start bar can name them and Home can toggle them without recomputing — one
+ * history read, one answer, no drift between the cards and the sentence. */
+export function weaknessDecks(
+  history: HistoryFile,
+  cfg: QuizConfig,
+  enabled: string[],
+): Array<Selectable & { glyph: string; subtitle: string }> {
   const metric = cfg.accuracyMetric;
 
   const weakest = weakestChars(history, metric, 20);
   const weakestAcc = accuracyFor(history, weakest, metric);
   const confusions = confusionDecks(history, enabled);
   const misses = lastMisses(history);
-
   const topPair = confusions.pairs[0];
 
+  return [
+    {
+      id: "weakest-20",
+      label: "Weakest 20",
+      glyph: "弱",
+      chars: weakest,
+      subtitle:
+        weakestAcc === null
+          ? "nothing to go on yet"
+          : `${formatAccuracy(weakestAcc)} ${metricWord(metric)}`,
+    },
+    {
+      id: "confusions",
+      label: "Confusions",
+      glyph: topPair ? `${topPair.a}↔${topPair.b}` : "↔",
+      chars: confusions.chars,
+      subtitle: !confusions.pairs.length
+        ? "no pairs to drill"
+        : confusions.fromHistory
+          ? `${plural(confusions.pairs.length, "pair")} you mix up`
+          : "common lookalikes",
+    },
+    {
+      id: "last-misses",
+      label: "Last Misses",
+      glyph: "↺",
+      chars: misses,
+      subtitle: misses.length
+        ? plural(misses.length, "character")
+        : "nothing missed yet",
+    },
+  ];
+}
+
+export function WeaknessShelf({
+  decks,
+  cfg,
+  onToggle,
+}: {
+  decks: ReturnType<typeof weaknessDecks>;
+  cfg: QuizConfig;
+  onToggle: (chars: string[], on: boolean) => void;
+}) {
   return (
     <Shelf>
-      <DeckCard
-        smart
-        glyph="弱"
-        label="Weakest 20"
-        subtitle={
-          weakestAcc === null
-            ? "nothing to go on yet"
-            : `${formatAccuracy(weakestAcc)} ${metricWord(metric)}`
-        }
-        disabled={disabled || !weakest.length}
-        onClick={() => onPick(weakest)}
-      />
-      <DeckCard
-        smart
-        glyph={topPair ? `${topPair.a}↔${topPair.b}` : "↔"}
-        label="Confusions"
-        subtitle={
-          !confusions.pairs.length
-            ? "no pairs to drill"
-            : confusions.fromHistory
-              ? `${plural(confusions.pairs.length, "pair")} you mix up`
-              : "common lookalikes"
-        }
-        disabled={disabled || !confusions.chars.length}
-        onClick={() => onPick(confusions.chars)}
-      />
-      <DeckCard
-        smart
-        glyph="↺"
-        label="Last Misses"
-        subtitle={
-          misses.length ? plural(misses.length, "character") : "nothing missed yet"
-        }
-        disabled={disabled || !misses.length}
-        onClick={() => onPick(misses)}
-      />
+      {decks.map((deck) => {
+        const state = stateOf(deck.chars, cfg.enabled);
+        const on = deck.chars.filter((c) => cfg.enabled[c]).length;
+        return (
+          <DeckCard
+            key={deck.id}
+            smart
+            glyph={deck.glyph}
+            label={deck.label}
+            subtitle={
+              state === "partial"
+                ? `${on} of ${deck.chars.length} on`
+                : deck.subtitle
+            }
+            state={state}
+            // A card with no characters has nothing to select. It stays on the
+            // shelf greyed rather than vanishing: "nothing missed yet" is an
+            // answer, and a shelf that changes length as history arrives is
+            // harder to learn than one that fills in.
+            disabled={!deck.chars.length}
+            onClick={() => onToggle(deck.chars, state !== "on")}
+          />
+        );
+      })}
     </Shelf>
   );
 }

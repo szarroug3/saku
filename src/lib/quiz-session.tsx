@@ -53,6 +53,11 @@ export interface ActiveQuiz {
   forceCoverage: boolean;
   /** Builder settings frozen at start — render the quiz from these. */
   snapshot: QuizSnapshot;
+  /** When Start was pressed, so Home's resume card can say "started 4 minutes
+   * ago". Optional because a quiz snapshotted to localStorage before this
+   * field existed restores without it — readers omit the clause rather than
+   * invent a time. */
+  startedAt?: number;
   /** Mode-screen scratch space that survives unmount/remount (deck, pos,
    * stats, grid card states, pairs board, remaining timer…). Owned by the
    * mode screens; opaque to this provider. */
@@ -216,6 +221,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         chars,
         redrill: !!opts?.redrill,
         forceCoverage: !!opts?.redrill,
+        startedAt: Date.now(),
         snapshot: {
           mode: cfg.mode,
           dirs: { ...cfg.dirs },

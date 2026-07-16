@@ -2,8 +2,15 @@
 //
 // Home's shelves are all decks. The "Decks" shelf holds STATIC ones, derived
 // from the character data; the "Target a weakness" shelf holds the same shape
-// computed from history instead. The hero owns HOW you drill (mode, direction,
-// answer style, length); a deck only ever answers WHICH characters.
+// computed from history instead. The setup panel owns HOW you drill (mode,
+// direction, answer style, length); a deck only ever answers WHICH characters.
+//
+// A deck answers WHICH, and NOTHING ELSE. There used to be a "Full coverage"
+// deck that also reached over and set your length to one-pass-each — a card
+// silently editing the setup panel, which is exactly what made Home confusing.
+// It is now "Everything" (just the 214 characters); one-pass-each lives on as
+// the Full coverage LENGTH chip, where a length belongs. If you are tempted to
+// give a deck a side-effect again: don't. Decks are a set of characters.
 //
 // HOW TO EXTEND
 // =============
@@ -38,10 +45,6 @@ export interface Deck {
   /** The card's face: one representative character. */
   glyph: string;
   chars: string[];
-  /** Replaces the default "seen <M>×" tail of the card subtitle. */
-  note?: string;
-  /** Run exactly one pass over every character, whatever the hero's length. */
-  coverage?: boolean;
 }
 
 /** Every character in the app, in data order. */
@@ -56,8 +59,8 @@ const GLYPHS: Record<string, string> = {
   "katakana-extended": "ギャ",
 };
 
-/** The id of the one deck that forces a full-coverage pass. */
-export const FULL_COVERAGE_ID = "full-coverage";
+/** The id of the deck that is simply every character there is. */
+export const EVERYTHING_ID = "everything";
 
 function groupChars(set: CharSet, extended: boolean): string[] {
   return set.sections
@@ -81,12 +84,10 @@ function buildDecks(): Deck[] {
     }
   }
   decks.push({
-    id: FULL_COVERAGE_ID,
-    label: "Full coverage",
+    id: EVERYTHING_ID,
+    label: "Everything",
     glyph: "全",
     chars: ALL_CHARS,
-    note: "one pass each",
-    coverage: true,
   });
   return decks;
 }

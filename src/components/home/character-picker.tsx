@@ -7,11 +7,20 @@
 // It used to be the home screen, and it still looked like it: 54 rows of
 // toggles, three levels of nested cards, no way to act on what you'd just
 // built. It isn't the home screen any more. So it is now an OUTLINE (a rule
-// and a heading per script, boxes only for rows), it opens closed, it has a
-// search box, and it has a footer that starts the thing.
+// and a heading per script, boxes only for rows), it opens closed, and it has
+// a search box.
 //
 // The precision is untouched — that is the feature. What changed is what it
 // costs to operate.
+//
+// IT HAS NO START BUTTON OF ITS OWN, and it used to. It had one because every
+// card on Home fired a quiz and the custom selection was the only WHAT on the
+// page you couldn't run without scrolling back up. Cards select now, so Home's
+// start bar is the only Start there is — and being sticky, it is already
+// hovering over these rows while you edit them. A second Start here would be
+// the same button, twice, six inches apart, both acting on this same
+// selection. This picker is a view of cfg.enabled; Home's bar runs cfg.enabled;
+// there is nothing left for a local button to do.
 //
 // SEARCH IS A SCOPE, NOT JUST A FIND. With a query live, every row shows only
 // its matching characters, and All · None · Invert — at the toolbar and at
@@ -28,15 +37,13 @@
 
 import { useCallback, useMemo, useState } from "react";
 
-import { PickerBar } from "@/components/home/picker-bar";
 import { PickerHead } from "@/components/home/picker-head";
 import { PickerRow } from "@/components/home/picker-row";
 import { Card, Lbl, SmallBtn } from "@/components/ui";
 import { isExtendedSection, SETS } from "@/data/characters";
 import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
 import { ALL_CHARS } from "@/lib/decks";
-import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
-import { useQuizSession } from "@/lib/quiz-session";
+import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
 import type { CharSection, KanaChar } from "@/types";
 
@@ -49,7 +56,6 @@ interface Match {
 export function CharacterPicker() {
   const { cfg, set } = useQuizConfig();
   const { history } = useHistory();
-  const { active, startQuiz } = useQuizSession();
 
   const [query, setQuery] = useState("");
   // View-only, never persisted: scripts open closed (the picker is an index,
@@ -121,11 +127,6 @@ export function CharacterPicker() {
       })),
     [set],
   );
-
-  const selected = selectedChars(cfg);
-  // Same gate Home puts on its cards: a setup with no direction can't run any
-  // quiz, so this button can't either.
-  const howBroken = cfg.mode !== "grid" && !cfg.dirs.jp2en && !cfg.dirs.en2jp;
 
   const row = (m: Match) => {
     const chars = m.chars.map((c) => c.c);
@@ -215,11 +216,6 @@ export function CharacterPicker() {
         </p>
       ) : null}
 
-      {/* The sticky footer's containing block, and deliberately not the whole
-          Card: a bar pins to the viewport for as long as its container is on
-          screen, so hanging it off the Card meant it hovered over the picker's
-          own title and search box on the way past. It rides the rows, which
-          are the only thing it acts on. */}
       <div>
         {scripts.map(({ charSet, sections }) => {
           const chars = sections.flatMap((m) => m.chars.map((c) => c.c));
@@ -273,14 +269,6 @@ export function CharacterPicker() {
             </div>
           );
         })}
-
-        <PickerBar
-          count={selected.length}
-          total={ALL_CHARS.length}
-          active={!!active}
-          howBroken={howBroken}
-          onStart={() => startQuiz(selected)}
-        />
       </div>
     </Card>
   );
