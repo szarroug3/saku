@@ -97,16 +97,30 @@ interface QuizSessionContextValue {
 
 const QuizSessionContext = createContext<QuizSessionContextValue | null>(null);
 
-/** Refresh survival: the whole session state (including the runtime scratch)
- * is JSON-serializable and snapshotted to sessionStorage — restored on mount,
- * saved on every state change and again at beforeunload so in-place runtime
- * mutations (deck position, per-card states, remaining timer) are captured. */
+/** A quiz outlives the tab it started in. The whole session state (runtime
+ * scratch included) is JSON-serializable and snapshotted to localStorage —
+ * restored on mount, saved on every state change and again at beforeunload,
+ * which is what catches in-place runtime mutations (deck position, per-card
+ * states, remaining timer) since those never go through setState.
+ *
+ * localStorage rather than sessionStorage so closing the browser and coming
+ * back tomorrow still offers Resume. The cost is that localStorage is shared
+ * across tabs, so two open tabs would otherwise write over each other; the
+ * `owner` stamp below settles that. There is no expiry: a quiz ends when you
+ * finish it or discard it, not when it gets old. */
 const STORAGE_KEY = "kanaquiz-session";
+
+/** Identifies the tab that currently owns the quiz. Regenerated per mount, so
+ * every tab gets its own. */
+const TAB_ID = Math.random().toString(36).slice(2);
 
 interface StoredSession {
   active: ActiveQuiz | null;
   results: ResultsPayload | null;
   progress: QuizProgress | null;
+  /** Last tab to write. A tab that no longer owns the quiz stops saving, so
+   * a stale background tab can't resurrect a quiz you finished elsewhere. */
+  owner?: string;
 }
 
 export function QuizSessionProvider({ children }: { children: ReactNode }) {
@@ -120,7 +134,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const saved: StoredSession | null = JSON.parse(
-        sessionStorage.getItem(STORAGE_KEY) ?? "null",
+        localStorage.getItem(STORAGE_KEY) ?? "null",
       );
       if (saved) {
         // Post-mount hydration, same pattern as quiz-config.
@@ -139,12 +153,17 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     if (!restored) return;
     const save = () => {
       try {
-        sessionStorage.setItem(
+        localStorage.setItem(
           STORAGE_KEY,
-          JSON.stringify({ active, results, progress } satisfies StoredSession),
+          JSON.stringify({
+            active,
+            results,
+            progress,
+            owner: TAB_ID,
+          } satisfies StoredSession),
         );
       } catch {
-        // storage full/unavailable — refresh survival degrades gracefully
+        // storage full/unavailable — resume degrades gracefully to not-offered
       }
     };
     save();
@@ -152,6 +171,29 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     window.addEventListener("beforeunload", save);
     return () => window.removeEventListener("beforeunload", save);
   }, [active, results, progress, restored]);
+
+  // Newest tab wins. Opening the app in a second tab takes the quiz over, and
+  // this tab steps back rather than fighting it — otherwise both would keep
+  // writing their own runtime to the same key and each would see the other's
+  // deck position stutter. `storage` only fires in OTHER tabs, so this is the
+  // loser's side of the handshake.
+  useEffect(() => {
+    if (!restored) return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY || !e.newValue) return;
+      try {
+        const next: StoredSession = JSON.parse(e.newValue);
+        if (!next.owner || next.owner === TAB_ID) return;
+        setActive(next.active);
+        setResults(next.results);
+        setProgress(next.progress);
+      } catch {
+        // another tab wrote something unreadable — ignore it
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [restored]);
 
   const startQuiz = useCallback(
     (chars: string[], opts?: { redrill?: boolean }) => {
