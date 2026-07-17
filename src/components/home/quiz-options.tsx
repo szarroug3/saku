@@ -79,7 +79,7 @@ export function QuizOptionsFields() {
           on={cfg.styleEn2jp === "typed"}
           onClick={() => update({ styleEn2jp: "typed" })}
         >
-          Type kana (needs IME)
+          Type romaji
         </Chip>
       </Row>
       <Row label="Length" dim={grid}>

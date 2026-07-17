@@ -54,6 +54,7 @@ import {
   shuffle,
 } from "@/lib/engine";
 import { entryOf, factInfo } from "@/lib/facts";
+import { isKanaOnly, toKana } from "@/lib/romaji";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import type { AccuracyMetric, Direction, FactId, SessionStats } from "@/types";
@@ -333,10 +334,21 @@ export function DrillScreen() {
     rt.pos++;
     rt.asked++;
     const dir = pickDir({ ...cfg, dirs: active.snapshot.dirs });
-    const typedMode =
+    const styleTyped =
       dir === "jp2en"
         ? active.snapshot.styleJp2en === "typed"
         : active.snapshot.styleEn2jp === "typed";
+    // Romaji only ever produces KANA. An en2jp typed card whose answer contains
+    // a kanji (a kanji glyph, a kanji word like 先生) can't be answered by
+    // typing romaji, so it is asked as multiple choice instead — never left as
+    // an un-typeable box that grades every answer wrong. jp2en typed always
+    // stays typed: there the answer is the READING, which romaji spells for any
+    // glyph. When a non-kana en2jp card also has no distractors (words do not),
+    // buildMcOptions returns short and the fall-through below reverts it to a
+    // typed box — the residual IME-only case, called out in the report.
+    const romajiUnanswerable =
+      styleTyped && dir === "en2jp" && !isKanaOnly(factInfo(f)?.glyph ?? "");
+    const typedMode = styleTyped && !romajiUnanswerable;
     // Font and MC options are rolled when the question is asked and stored in
     // the runtime so a remount doesn't reroll them.
     //
@@ -658,7 +670,6 @@ export function DrillScreen() {
 
   if (!active || !rt || !rt.q) return null;
 
-  const snap = active.snapshot;
   const q = rt.q;
   // What to put on screen is the fact's subject's answer, not this screen's.
   // The drill knows there is a glyph, maybe a line under it, and some options;
@@ -666,10 +677,16 @@ export function DrillScreen() {
   const prompt = questionsFor(q.f).prompt(q.f, q.dir);
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
-  const typedMode =
-    q.dir === "jp2en"
-      ? snap.styleJp2en === "typed"
-      : snap.styleEn2jp === "typed";
+  // The card already decided its shape at ask time: MC options were built (or
+  // not) in nextQuestion, which is also where an un-romaji-able en2jp card was
+  // routed to MC. So the presence of options is the single source of truth for
+  // which control to show — deriving it from the style again could disagree
+  // with what was built (e.g. an MC-style card that fell back for want of
+  // distractors).
+  const typedMode = !q.mc;
+  // Live romaji→kana only for typing the JAPANESE side. jp2en typed answers are
+  // romaji themselves (the reading) and must stay latin.
+  const romajiInput = typedMode && q.dir === "en2jp";
   // Two different lines, and only one of them is a preference. `context` is
   // part of the question — "in 人生" is what makes 生 gradeable — so the
   // setting cannot touch it. `hint` is kana's script tag, which is decoration.
@@ -794,7 +811,11 @@ export function DrillScreen() {
             autoFocus
             autoComplete="off"
             spellCheck={false}
-            placeholder="Type answer, Enter to submit"
+            placeholder={
+              romajiInput
+                ? "Type romaji, Enter to submit"
+                : "Type answer, Enter to submit"
+            }
             value={typed}
             readOnly={revealing}
             // Latency is stamped on a real keypress, NOT in onChange: React
@@ -807,7 +828,19 @@ export function DrillScreen() {
                 markFirstKey();
               }
             }}
-            onChange={(e) => setTyped(e.target.value)}
+            // Convert-as-you-type for the Japanese side: the user sees これ /
+            // せんせい form in the box (live mode leaves an incomplete trailing
+            // run — "sens" → せんs — as latin). The value stays kana, so the
+            // grader receives kana and an IME user who typed it directly is
+            // unaffected. Idempotent on kana, so re-running on the field's own
+            // value only reconverts the latin tail.
+            onChange={(e) =>
+              setTyped(
+                romajiInput
+                  ? toKana(e.target.value, { live: true })
+                  : e.target.value,
+              )
+            }
             // Wide enough for the placeholder to read in full — the old card
             // clipped it at 230px.
             className="kq-material w-[270px] rounded-lg border border-border bg-card px-3 py-2 text-center text-lg text-text outline-none focus:border-accent"
