@@ -36,7 +36,7 @@ import kanjiJson from "./generated/kanji.json" with { type: "json" };
 import orderJson from "./generated/order.json" with { type: "json" };
 import readingsJson from "./generated/readings.json" with { type: "json" };
 import { entryId, factId, readingAspect } from "../lib/fact-id.ts";
-import type { EntryId, FactId, FactInfo } from "../types/index.ts";
+import type { EntryId, FactId, FactInfo, NewKanjiOrder } from "../types/index.ts";
 
 export const KANJI_SUBJECT = "kanji";
 
@@ -169,6 +169,60 @@ export function orderRow(c: string): OrderRow | undefined {
 export const PREREQUISITE_ONLY: readonly string[] = KANJI_ORDER.filter(
   (o) => o.enteredVia === "prereq" && o.everydayWords === 0,
 ).map((o) => o.c);
+
+/**
+ * The queue of kanji, in the order the user asked for — all 2,136, every mode.
+ *
+ * A TOTAL ORDER IN ALL THREE CASES, and the tie-breaks are why this is a
+ * function and not three `.sort()` calls at three call sites. `grade` puts 1,006
+ * kanji in grades 1–6 and 1,130 in grade 8; `newspaperFreq` is null for every
+ * kanji outside KANJIDIC2's 2,501-strong survey. Sorting on either alone leaves
+ * hundreds of items in whatever order the JSON happened to be written in, which
+ * is a stable-looking sequence that is nobody's curriculum. Every mode below
+ * falls through to the character itself, so the queue is reproducible.
+ *
+ * NOTHING HERE IS "MOST COMMON", AND `newspaper` LEAST OF ALL. KanjiRow's own
+ * comment holds the receipts; the short version is that its top band carries 安保
+ * (the security treaty) and 食べる is not the kind of word it counts. The label
+ * on screen says newspaper, because that is what was measured.
+ */
+export function kanjiTeachOrder(mode: NewKanjiOrder): readonly string[] {
+  switch (mode) {
+    // Already sequenced, and expensively — parts-first closure plus a decaying
+    // stroke ceiling, asserted against a published prefix by the ingest. Read
+    // it; never re-derive it.
+    case "everyday":
+      return EVERYDAY_ORDER;
+    case "grade":
+      return GRADE_ORDER;
+    case "newspaper":
+      return NEWSPAPER_ORDER;
+  }
+}
+
+/** Unranked in the newspaper survey — ~10,600 kanji, 1,130 of them jōyō. Sorts
+ * last rather than first, which sorting on `null` numerically would do. */
+const UNRANKED = Number.MAX_SAFE_INTEGER;
+
+const EVERYDAY_ORDER: readonly string[] = KANJI_ORDER.map((o) => o.c);
+
+const GRADE_ORDER: readonly string[] = [...KANJI]
+  .sort(
+    (a, b) =>
+      a.grade - b.grade ||
+      (a.newspaperFreq ?? UNRANKED) - (b.newspaperFreq ?? UNRANKED) ||
+      (a.c < b.c ? -1 : a.c > b.c ? 1 : 0),
+  )
+  .map((k) => k.c);
+
+const NEWSPAPER_ORDER: readonly string[] = [...KANJI]
+  .sort(
+    (a, b) =>
+      (a.newspaperFreq ?? UNRANKED) - (b.newspaperFreq ?? UNRANKED) ||
+      a.grade - b.grade ||
+      (a.c < b.c ? -1 : a.c > b.c ? 1 : 0),
+  )
+  .map((k) => k.c);
 
 /** Reading facts of one kanji, richest evidence first. Subject-local: FactInfo
  * is deliberately thin, so the anchor word lives here and is read by the kanji
