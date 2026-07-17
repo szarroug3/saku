@@ -182,8 +182,9 @@ export const CLUSTERS: readonly Cluster[] = [
     members: ["kara-reason", "node"],
     feel:
       "ので is softer and more deferential; から states a reason more baldly " +
-      "and is the one you can end a sentence on. Note から's OTHER job " +
-      "(東京から, 'from Tokyo') is a different recipe entirely — kara-source.",
+      "and is the one you can end a sentence on. Note から has a second, " +
+      "unrelated job — 東京から, 'from Tokyo' — which has nothing to do with " +
+      "reasons.",
     link: {
       url: "https://www.tofugu.com/japanese-grammar/conjunctive-particle-node/",
       label: "Tofugu — ので",
@@ -243,9 +244,8 @@ export const CLUSTERS: readonly Cluster[] = [
     gloss: "は〜より and 〜のほうが〜より",
     members: ["wa-yori", "hou-ga-yori"],
     feel:
-      "Same comparison, different emphasis: のほうが foregrounds the winner. " +
-      "Both are VACUOUS as production questions — you are attaching a particle " +
-      "to a noun, not conjugating anything.",
+      "Same comparison, different emphasis: は〜より states it plainly, while " +
+      "のほうが foregrounds the one that comes out ahead.",
     link: null,
     noLinkReason: "No verified link compares the two.",
   },
@@ -262,10 +262,9 @@ export const CLUSTERS: readonly Cluster[] = [
     gloss: "the topic/subject pair — read about it, never drilled",
     members: [],
     feel:
-      "SHOWN, NEVER ASKED — and here that is not a style choice but a hard " +
-      "finding. The corpus contains identical frames taking either particle, " +
-      "and 66% of minimal pairs have identical English translations. There is " +
-      "frequently no fact of the matter, so there is no question to ask.",
+      "は marks what the sentence is about; が marks who or what is doing the " +
+      "verb. Plenty of sentences take either one, and the difference between " +
+      "them often doesn't survive into English.",
     link: {
       url: "https://www.tofugu.com/japanese/wa-and-ga/",
       label: "Tofugu — は vs が",
