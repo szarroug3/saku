@@ -34,19 +34,22 @@ import { SessionCard } from "@/components/home/session-card";
 import { selectionLabels, toggled } from "@/components/home/selection";
 import { StartBar } from "@/components/home/start-bar";
 import { weaknessDecks, WeaknessShelf } from "@/components/home/weakness-shelf";
+import { NextLesson } from "@/components/lesson/next-lesson";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { planFacts, planSession } from "@/lib/budget";
+import { KANA_GROUP_FACTS, nextLesson } from "@/lib/lesson";
 import { kanaFact } from "@/data/characters";
 import { DECKS, deckChars, deckSelectable } from "@/lib/decks";
 import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
+import type { FactId } from "@/types";
 
 export default function HomePage() {
   const { cfg, set } = useQuizConfig();
   const { session, startSession, discardSession, continueSession } =
     useQuizSession();
-  const { history } = useHistory();
+  const { history, refresh } = useHistory();
 
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -129,6 +132,10 @@ export default function HomePage() {
     const plan = planSession({
       candidates: chars.map(kanaFact),
       history,
+      // New material arrives one group at a time — see budget.ts. Without this
+      // the pool IS the lesson, which on day one means 214 characters on one
+      // teach screen.
+      groups: KANA_GROUP_FACTS,
       // "Unlimited" means no cap, not no budget — see budget.ts. Full-coverage
       // asks for the whole pool, so it has no cap either.
       length:
@@ -166,6 +173,29 @@ export default function HomePage() {
     startSession(planned.chars, planned.teach);
   };
 
+  // The next lesson is a view of history, not a cursor — see next-lesson.tsx.
+  // Null when there is no new material left, and the card is then not rendered
+  // at all, on the same rule as the session card above it: a card offering to
+  // teach you nothing is the lie that rule exists to prevent.
+  const lesson = useMemo(() => nextLesson(history), [history]);
+
+  // The lesson IS the session: its group, all of it new, all of it taught. It
+  // does not go through the budget, because the budget's job is deciding how
+  // much new material to hand out and the answer is already in your hand.
+  const startLesson = (lessonChars: string[]) =>
+    startSession(lessonChars, lessonChars);
+
+  const claim = async (facts: FactId[]) => {
+    await fetch("/api/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ facts, known: true }),
+    }).catch(() => {});
+    // The card is a function of history, so re-reading history IS how the next
+    // lesson advances. Nothing tells it which group to show next.
+    await refresh();
+  };
+
   return (
     <>
       <PageTitle title="Kana quiz" />
@@ -180,6 +210,10 @@ export default function HomePage() {
           onRestart={() => startSession(session.chars)}
           onDiscard={discardSession}
         />
+      ) : null}
+
+      {lesson ? (
+        <NextLesson lesson={lesson} onStart={startLesson} onClaim={claim} />
       ) : null}
 
       <Lbl>Setup</Lbl>

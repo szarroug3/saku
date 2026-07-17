@@ -119,6 +119,24 @@ type BtnProps = ComponentProps<"button"> & {
    * would be decided by their order in the generated stylesheet rather than
    * by the caller. A branch cannot collide with itself. */
   danger?: boolean;
+  /**
+   * The button that does the thing: filled, inverted, one per screen.
+   *
+   * Here for the same reason `danger` is, and with a receipt. Callers were
+   * writing this tone as a className —
+   * `border-transparent bg-text font-medium text-bg hover:bg-text` — which is
+   * precisely the collision the note below describes: `text-bg` lands next to
+   * the unselected branch's `text-text`, `cx` is a plain join, and `text-text`
+   * wins on stylesheet order. The result is --text on --bg-text. THE SAME
+   * COLOUR, twice: a filled pill with invisible text.
+   *
+   * That is not a hypothetical. It is what `Start round 1` on the teach screen
+   * has been rendering (measured: color rgb(238,241,251) on background
+   * rgb(238,241,251)) — the only button on the screen, unreadable, and shipped,
+   * because it is still shaped like a button and still in the place your eye
+   * expects one.
+   */
+  go?: boolean;
 };
 
 /** Standard button; `sel` gives it the accent selected state.
@@ -140,7 +158,7 @@ type BtnProps = ComponentProps<"button"> & {
 //
 // I found it because `danger` lost the same fight. Naming the colour once per
 // branch is the fix for both: nothing to override, nothing to order.
-export function Btn({ sel, danger, className, ...props }: BtnProps) {
+export function Btn({ sel, danger, go, className, ...props }: BtnProps) {
   return (
     <button
       {...props}
@@ -150,7 +168,9 @@ export function Btn({ sel, danger, className, ...props }: BtnProps) {
           ? "border-2 border-accent bg-accent-bg px-[13px] py-1.5 text-accent hover:bg-accent-bg"
           : danger
             ? "border border-danger bg-card px-3.5 py-[7px] text-danger hover:bg-danger-bg"
-            : "border border-border bg-card px-3.5 py-[7px] text-text",
+            : go
+              ? "border border-transparent bg-text px-3.5 py-[7px] font-medium text-bg hover:bg-text"
+              : "border border-border bg-card px-3.5 py-[7px] text-text",
         className,
       )}
     />

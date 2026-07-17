@@ -68,11 +68,7 @@ export function RestScreen({
             <p className="text-[26px] font-light">Ready when you are.</p>
             <div className="mt-6 flex justify-center gap-2">
               <SmallBtn onClick={onDone}>Done for now</SmallBtn>
-              <Btn
-                autoFocus
-                className="border-transparent bg-text font-medium text-bg hover:bg-text"
-                onClick={onStart}
-              >
+              <Btn autoFocus go onClick={onStart}>
                 Start round {nextRound}
               </Btn>
             </div>
