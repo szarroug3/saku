@@ -204,6 +204,16 @@ export interface QuizConfig {
    */
   lessonMinCost: number;
   lessonMaxCost: number;
+  /**
+   * How many NEW words a word lesson teaches — the words track's lesson size.
+   *
+   * A COUNT, not a cost range like kanji's: a word adds no new kanji, so there
+   * is no draw+assembly work to size it, and a word is uniform and indivisible,
+   * so there is no "bundle over the ceiling" case a max exists to flag. The
+   * lesson is simply the next N teachable words. See WORDS_PER_LESSON_DEFAULT
+   * and `nextWordLesson` in src/lib/word-lesson.ts.
+   */
+  wordsPerLesson: number;
 
   // ---------- the session loop (src/lib/session.ts) ----------
   /**

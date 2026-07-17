@@ -81,6 +81,19 @@ export interface Prompt {
 }
 
 /**
+ * A presentation hint the caller may pass to `prompt`. Today its one member is
+ * `anchor`: the word to frame a kanji reading question on, when the caller knows
+ * a word the user has actually learned and the fact's own (ingest-chosen) anchor
+ * is not it. See word-unlock.ts — the answer is identical in every attesting
+ * word, so this moves only the CONTEXT, never the grading. Every subject but
+ * kanji ignores it, and a caller with nothing to say omits it and gets the
+ * fact's default framing.
+ */
+export interface PromptContext {
+  anchor?: string;
+}
+
+/**
  * Everything the drill screen needs in order to ask about a fact without
  * knowing what kind of thing it is.
  *
@@ -90,8 +103,9 @@ export interface Prompt {
  */
 export interface QuestionType {
   id: string;
-  /** What to show, asking `fact` in `dir`. */
-  prompt(fact: FactId, dir: Direction): Prompt;
+  /** What to show, asking `fact` in `dir`. `ctx` is an optional presentation
+   * hint — see PromptContext; only the kanji reading question reads it. */
+  prompt(fact: FactId, dir: Direction, ctx?: PromptContext): Prompt;
   /** Whether `given` answers `fact` in `dir`. */
   check(fact: FactId, dir: Direction, given: string): boolean;
   /**
@@ -226,9 +240,15 @@ function frameFor(glyph: string, anchor: string, lead: string): string {
 
 const kanjiQuestions: QuestionType = {
   id: "kanji",
-  prompt(fact, dir) {
+  prompt(fact, dir, ctx) {
     const glyph = glyphOfFact(fact);
-    const anchor = anchorOf(fact);
+    // The fact's own anchor decides whether this is a reading question at all
+    // (null → a meaning fact). When it IS a reading and the caller named a word
+    // the user knows, frame on THAT instead — the ingest's anchor is the
+    // evidence-richest word, not the one the learner was taught. Same reading,
+    // fairer question. See word-unlock.ts / PromptContext.
+    const baseAnchor = anchorOf(fact);
+    const anchor = baseAnchor ? (ctx?.anchor ?? baseAnchor) : null;
     if (dir === "jp2en") {
       return {
         glyph,

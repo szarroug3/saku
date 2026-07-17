@@ -31,6 +31,8 @@
 import { Btn, Card, Hint } from "@/components/ui";
 import { questionsFor } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
+import { useHistory } from "@/lib/use-history";
+import { anchorForFact } from "@/lib/word-unlock";
 import type { FactId } from "@/types";
 
 export function TeachScreen({
@@ -44,6 +46,11 @@ export function TeachScreen({
   familiar: (f: FactId) => boolean;
   onStart: () => void;
 }) {
+  // History, only to frame an unlocked kanji reading on the word the user
+  // learned — the same re-anchor the drill screen applies, so what you're shown
+  // here ("生 · in 先生") matches what you're asked in a moment. See
+  // word-unlock.ts.
+  const { history } = useHistory();
   return (
     <>
       <Card>
@@ -65,7 +72,9 @@ export function TeachScreen({
             // shown here and what you are asked in a moment cannot drift. A
             // teach card that rendered its own glyph would be a second opinion
             // about what the question is.
-            const p = questionsFor(f).prompt(f, "jp2en");
+            const p = questionsFor(f).prompt(f, "jp2en", {
+              anchor: anchorForFact(f, history),
+            });
             return (
               <div
                 key={f}

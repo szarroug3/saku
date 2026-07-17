@@ -55,6 +55,8 @@ import {
 } from "@/lib/engine";
 import { entryOf, factInfo } from "@/lib/facts";
 import { isKanaOnly, toKana } from "@/lib/romaji";
+import { useHistory } from "@/lib/use-history";
+import { anchorForFact } from "@/lib/word-unlock";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import type { AccuracyMetric, Direction, FactId, SessionStats } from "@/types";
@@ -229,6 +231,11 @@ function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | nul
 export function DrillScreen() {
   const { cfg, ready } = useQuizConfig();
   const { active, finishQuiz, setProgress, saveNow } = useQuizSession();
+  // History, for one thing only: framing an unlocked kanji reading on a word the
+  // user actually learned (see word-unlock.ts). A reading question's answer is
+  // the same in every attesting word, so this touches the CONTEXT line and
+  // nothing the drill grades.
+  const { history } = useHistory();
 
   // Runtime mutations don't go through setState — bump this to re-render.
   const [, force] = useReducer((x: number) => x + 1, 0);
@@ -674,7 +681,9 @@ export function DrillScreen() {
   // What to put on screen is the fact's subject's answer, not this screen's.
   // The drill knows there is a glyph, maybe a line under it, and some options;
   // it does not know whether it is asking a kana, a kanji reading or a word.
-  const prompt = questionsFor(q.f).prompt(q.f, q.dir);
+  const prompt = questionsFor(q.f).prompt(q.f, q.dir, {
+    anchor: anchorForFact(q.f, history),
+  });
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   // The card already decided its shape at ask time: MC options were built (or

@@ -15,7 +15,12 @@ import type {
   SessionStats,
 } from "@/types";
 
-export { questionsFor, type Prompt, type QuestionType } from "@/lib/engine/question";
+export {
+  questionsFor,
+  type Prompt,
+  type PromptContext,
+  type QuestionType,
+} from "@/lib/engine/question";
 
 // ---------- deck ----------
 

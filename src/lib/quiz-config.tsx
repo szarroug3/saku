@@ -16,6 +16,7 @@ import {
 
 import { JP_FONTS } from "@/lib/config";
 import { LESSON_RANGE_DEFAULT, clampLessonRange } from "@/lib/kanji-lesson";
+import { WORDS_PER_LESSON_DEFAULT, clampWordsPerLesson } from "@/lib/word-lesson";
 import { emptySelection } from "@/lib/selection";
 import type { QuizConfig } from "@/types";
 
@@ -48,6 +49,8 @@ export function defaultConfig(): QuizConfig {
     // How long a kanji lesson runs, in draw+assembly cost — see LessonRange.
     lessonMinCost: LESSON_RANGE_DEFAULT.min,
     lessonMaxCost: LESSON_RANGE_DEFAULT.max,
+    // How many new words a word lesson teaches — a count, not a cost.
+    wordsPerLesson: WORDS_PER_LESSON_DEFAULT,
     // The user's own numbers. Two settings, not a rule — see QuizConfig.
     restFirstMin: 5,
     restThenMin: 10,
@@ -92,6 +95,9 @@ function loadConfig(): QuizConfig {
       const range = clampLessonRange(cfg.lessonMinCost, cfg.lessonMaxCost);
       cfg.lessonMinCost = range.min;
       cfg.lessonMaxCost = range.max;
+      // Same guard for the word lesson size: a stored/hand-edited value is
+      // pinned to a sane whole count before it reaches nextWordLesson.
+      cfg.wordsPerLesson = clampWordsPerLesson(cfg.wordsPerLesson);
       return cfg;
     }
   } catch {

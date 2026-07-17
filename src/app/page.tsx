@@ -38,10 +38,13 @@ import { SessionCard } from "@/components/home/session-card";
 import { StartBar } from "@/components/home/start-bar";
 import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
+import { NextWordLesson } from "@/components/lesson/next-word-lesson";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { planFacts, planSession } from "@/lib/budget";
 import { kanjiTeachOrder } from "@/data/kanji";
 import { nextKanjiLesson } from "@/lib/kanji-lesson";
+import { nextWordLesson } from "@/lib/word-lesson";
+import { readingsProvedBy } from "@/lib/word-unlock";
 import { KANA_GROUP_FACTS, nextLesson } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
@@ -189,6 +192,18 @@ export default function HomePage() {
     [lesson, history, cfg.newKanjiOrder, cfg.lessonMinCost, cfg.lessonMaxCost],
   );
 
+  // The words track — active after kana, alongside kanji, because the two
+  // reinforce each other: learning a word opens up its kanji's readings (see
+  // word-unlock.ts). Gated the same way kanji is on kana — `lesson === null` —
+  // so a beginner is never handed a third front before finishing the first. A
+  // pure function of history and one setting (how many words a lesson teaches),
+  // like every other card here; null when nothing is teachable yet, and then it
+  // renders nothing.
+  const wordLesson = useMemo(
+    () => (lesson ? null : nextWordLesson(history, cfg.wordsPerLesson)),
+    [lesson, history, cfg.wordsPerLesson],
+  );
+
   // The lesson IS the session: its group, all of it new, all of it taught. It
   // does not go through the budget, because the budget's job is deciding how
   // much new material to hand out and the answer is already in your hand.
@@ -228,6 +243,44 @@ export default function HomePage() {
     await refresh();
   };
 
+  // Teaching a word is also what UNLOCKS its kanji's readings — the payoff (see
+  // word-unlock.ts). So the words track's Start marks seen not only the word's
+  // own facts (like kana's "Quiz me": pressing Start is the statement that
+  // you've met them) but every kanji reading those words prove. The readings
+  // then enter the drill anchored on the word you just learned, via the same
+  // seen record everything else uses. Then straight into the drill of the words.
+  const startWordLesson = async (facts: FactId[]) => {
+    const kebs = wordLesson?.cards.map((c) => c.keb) ?? [];
+    const seen = [...facts, ...readingsProvedBy(kebs)];
+    await fetch("/api/seen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ facts: seen }),
+    }).catch(() => {});
+    startSession(facts, facts);
+  };
+
+  // "I already know these words" — claim the words (skip the drill), but still
+  // unlock the kanji readings they prove: knowing the word is what makes the
+  // reading fair, however you came to know it.
+  const claimWordLesson = async (facts: FactId[]) => {
+    const kebs = wordLesson?.cards.map((c) => c.keb) ?? [];
+    const readings = readingsProvedBy(kebs);
+    await fetch("/api/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ facts, known: true }),
+    }).catch(() => {});
+    if (readings.length) {
+      await fetch("/api/seen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ facts: readings }),
+      }).catch(() => {});
+    }
+    await refresh();
+  };
+
   return (
     <>
       <PageTitle title="Kana quiz" />
@@ -258,6 +311,18 @@ export default function HomePage() {
           lesson={kanjiLesson}
           onStart={startLesson}
           onClaim={claim}
+        />
+      ) : null}
+
+      {/* The words track's next lesson, below kanji's — two tracks running in
+          parallel once kana is done. The word lesson IS its facts (meaning, and
+          reading for a kanji word), all new, all taught: the same onStart the
+          kanji card takes. Learning them is what unlocks the kanji readings. */}
+      {wordLesson ? (
+        <NextWordLesson
+          lesson={wordLesson}
+          onStart={startWordLesson}
+          onClaim={claimWordLesson}
         />
       ) : null}
 

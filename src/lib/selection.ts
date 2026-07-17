@@ -255,6 +255,12 @@ function knownFacts(history: HistoryFile): FactId[] {
   // group you asked to be quizzed on is drillable on your word, before the drill
   // that would give it a count has recorded anything.
   const seen = history.seen ?? {};
+  // A kanji reading fact enters here through `seen` like anything else: teaching
+  // the word that proves it writes the reading into the seen record (see the
+  // words-track lesson handlers in page.tsx and readingsProvedBy in
+  // word-unlock.ts), exactly as "quiz me" marks a kana group seen. So there is
+  // no reading-specific branch here — a proved reading is seen material, and
+  // that is the whole of it.
   return ALL_FACTS.filter(
     (f) => (history.facts[f]?.seen ?? 0) > 0 || f in claims || f in seen,
   );
