@@ -24,7 +24,16 @@
 //   `m` (mnemonic, shown in the Kana chart), `meaning`, and the reserved
 //   `strokes` / `audio` fields for the stroke-order, draw, and listen modes.
 
-import type { CharInfo, CharSection, CharSet, KanaChar } from "@/types";
+import { entryId, factId } from "@/lib/fact-id";
+import type {
+  CharInfo,
+  CharSection,
+  CharSet,
+  EntryId,
+  FactId,
+  FactInfo,
+  KanaChar,
+} from "@/types";
 
 /** One character's accepted answers: a single romaji or a variant list. */
 type Romaji = string | string[];
@@ -241,6 +250,58 @@ function buildCharIndex(): Record<string, CharInfo> {
     }
   }
   return index;
+}
+
+// ---------- the fact view ----------
+//
+// Kana is one SUBJECT among the several that are coming. This is the whole of
+// what it has to publish for the rest of the app to drill it: a flat list of
+// facts. Everything above stays kana's private business.
+//
+// Kana is the degenerate case of the entry/fact split — one entry, one reading,
+// so exactly one fact each and the two ids are 1:1. That is precisely why the
+// split has to be built now: with only kana in the app, nothing would ever
+// notice it was missing until 生 arrived with eleven readings and one slot.
+
+/** This subject's id. Facts carry it so nobody infers a subject from an id. */
+export const KANA_SUBJECT = "kana";
+
+/** The entry for a kana character — `kana:し`. */
+export function kanaEntry(c: string): EntryId {
+  return entryId(KANA_SUBJECT, c);
+}
+
+/**
+ * The one fact a kana has: its reading.
+ *
+ * A bare "reading" aspect is honest HERE and nowhere else — し has exactly one
+ * reading, so "what does し say" has exactly one gradeable answer. A kanji must
+ * use fact-id's `readingAspect(word)` instead.
+ */
+export function kanaFact(c: string): FactId {
+  return factId(kanaEntry(c), "reading");
+}
+
+/** Kana's facts, in data order. */
+export const KANA_FACTS: FactInfo[] = buildKanaFacts();
+
+function buildKanaFacts(): FactInfo[] {
+  const facts: FactInfo[] = [];
+  for (const set of SETS) {
+    for (const section of set.sections) {
+      for (const ch of section.chars) {
+        facts.push({
+          id: kanaFact(ch.c),
+          entry: kanaEntry(ch.c),
+          glyph: ch.c,
+          answers: ch.r,
+          subject: KANA_SUBJECT,
+          meaning: ch.meaning ?? null,
+        });
+      }
+    }
+  }
+  return facts;
 }
 
 function buildLookGroup(): Record<string, string[]> {

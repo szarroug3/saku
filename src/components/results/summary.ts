@@ -5,17 +5,25 @@
 // order of the branches in `summarize` is the design, not an implementation
 // detail. Keeping it out of the view is what lets it be read as a cascade.
 
-import { CHAR_INDEX } from "@/data/characters";
 import { accuracyFor, accuracyOf, EMPTY_AGGREGATE } from "@/lib/accuracy";
 import { BEHAVIOR } from "@/lib/config";
 import { DECKS } from "@/lib/decks";
 import { computeResults } from "@/lib/engine";
+import {
+  entryOf,
+  factInfo,
+  factKeys,
+  glyphOf,
+  readingOfEntry,
+} from "@/lib/facts";
 import type { PairRow } from "@/lib/confusions";
 import type { ResultsPayload } from "@/lib/quiz-session";
 import type {
   AccuracyMetric,
-  CharAggregate,
-  CharSessionDetail,
+  EntryId,
+  FactAggregate,
+  FactId,
+  FactSessionDetail,
   HistoryFile,
   SessionStats,
 } from "@/types";
@@ -41,9 +49,14 @@ function ordinal(n: number): string {
   return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 }
 
-/** The character's canonical romaji, for "you answered "shi"". */
-export function reading(char: string): string {
-  return CHAR_INDEX[char]?.r[0] ?? char;
+/** An entry's canonical romaji, for "you answered "shi"". */
+export function reading(entry: EntryId): string {
+  return readingOfEntry(entry);
+}
+
+/** What a fact looks like on screen. */
+export function glyphOfFact(fact: FactId): string {
+  return factInfo(fact)?.glyph ?? glyphOf(entryOf(fact));
 }
 
 /**
@@ -52,52 +65,58 @@ export function reading(char: string): string {
  * A run must not appear in its own history: the session is POSTed the instant
  * it finishes, so by the time this screen fetches, it may already be in there —
  * and then "historically weakest" and "your first clean pass" would be reading
- * the very run they are meant to judge. Rebuilds the per-character aggregates
- * from the surviving sessions, the same fold history.deleteSessions() does
+ * the very run they are meant to judge. Rebuilds the per-fact aggregates from
+ * the surviving sessions, the same fold history.deleteSessions() does
  * server-side.
  */
 export function historyBefore(history: HistoryFile, ts: number): HistoryFile {
   const sessions = history.sessions.filter((x) => x.ts !== ts);
-  const chars: Record<string, CharAggregate> = {};
+  const facts: Record<FactId, FactAggregate> = {};
   for (const session of sessions) {
-    for (const [c, a] of Object.entries(session.chars ?? {})) {
-      const agg = (chars[c] ??= { ...EMPTY_AGGREGATE });
+    for (const [key, a] of Object.entries(session.facts ?? {})) {
+      const f = key as FactId;
+      const agg = (facts[f] ??= { ...EMPTY_AGGREGATE });
       agg.seen += a.seen ?? 0;
       agg.missed += a.missed ?? 0;
       agg.slow += a.slow ?? 0;
       agg.firstTry += a.firstTry ?? 0;
+      agg.correct += a.correct ?? 0;
     }
   }
-  return { sessions, chars };
+  return { sessions, facts };
 }
 
 // ---------- the run ----------
 
+/** What this run did. (The name predates "Fact" being domain vocabulary — these
+ * are facts ABOUT the run, and `facts` below is the other sense. Renaming it is
+ * churn for a later pass; the field is the one that matters.) */
 export interface RunFacts {
   metric: AccuracyMetric;
-  chars: string[];
+  /** The facts this run asked. */
+  facts: FactId[];
   total: number;
-  /** Characters answered right on the first attempt. */
+  /** Facts answered right on the first attempt. */
   firstTry: number;
-  /** Characters answered right at some point. */
+  /** Facts answered right at some point. */
   eventually: number;
-  /** Slow-but-right answers, summed over characters. */
+  /** Slow-but-right answers, summed over facts. */
   slowEvents: number;
   /** Wrong attempts across the run — the truth the metric can't soften. */
   totalMisses: number;
   /** The ring, through accuracy.ts. */
   pct: number | null;
   /** Set for a stored session that kept percentages and no detail. Everything
-   * per-character below it is inference; these two numbers are fact. */
+   * per-fact below it is inference; these two numbers are measured. */
   stored?: { forgivingPct: number; strictPct: number };
-  /** Characters that count as missed under `metric`, worst first. */
-  missed: string[];
+  /** Facts that count as missed under `metric`, worst first. */
+  missed: FactId[];
   /** Right, but at least once over BEHAVIOR.slowAnswerMs. */
-  slowOnly: string[];
+  slowOnly: FactId[];
   /** missed ∪ slowOnly — the Needs work board, and what Redrill offers. */
-  needsWork: string[];
+  needsWork: FactId[];
   /** Everything else. */
-  solid: string[];
+  solid: FactId[];
 }
 
 /**
@@ -109,7 +128,7 @@ export interface RunFacts {
  * reading here is the one computeResults() itself uses for its forgiving count
  * (`everCorrect`) and the one the chip promises: you got there in the end.
  */
-function isMissed(st: CharSessionDetail, metric: AccuracyMetric): boolean {
+function isMissed(st: FactSessionDetail, metric: AccuracyMetric): boolean {
   return metric === "firstTry" ? st.firstTryCorrect !== true : !st.everCorrect;
 }
 
@@ -118,8 +137,8 @@ function isMissed(st: CharSessionDetail, metric: AccuracyMetric): boolean {
  *
  * A summary-only session never stored any: quiz-session's viewStoredSession
  * SYNTHESIZES `everCorrect` from the session's overall percentage (so every
- * character of an 88% session claims it was never landed) and leaves
- * `firstTryCorrect` null (so every character claims it wasn't first try).
+ * fact of an 88% session claims it was never landed) and leaves
+ * `firstTryCorrect` null (so every fact claims it wasn't first try).
  * Both are artefacts. Wrong ATTEMPTS are real — they come from the stored
  * aggregate — so misses are all we let the screen read, and the rest is
  * normalised to "we don't know of a problem" rather than shown as a board of
@@ -128,16 +147,17 @@ function isMissed(st: CharSessionDetail, metric: AccuracyMetric): boolean {
 export function readableStats(results: ResultsPayload): SessionStats {
   if (!results.summaryOnly) return results.stats;
   const out: SessionStats = {};
-  for (const [c, st] of Object.entries(results.stats)) {
-    out[c] = { ...st, everCorrect: true, firstTryCorrect: !st.misses };
+  for (const f of factKeys(results.stats)) {
+    const st = results.stats[f];
+    out[f] = { ...st, everCorrect: true, firstTryCorrect: !st.misses };
   }
   return out;
 }
 
-/** This run as a CharAggregate, built exactly as quiz-session writes it to
+/** This run as a FactAggregate, built exactly as quiz-session writes it to
  * history — so the ring, the drill HUD pill you just watched, and the numbers
  * Home shows tomorrow are the same measurement. */
-function runAggregate(stats: SessionStats): CharAggregate {
+function runAggregate(stats: SessionStats): FactAggregate {
   const agg = { ...EMPTY_AGGREGATE };
   for (const st of Object.values(stats)) {
     agg.seen += st.seen;
@@ -156,9 +176,9 @@ export function deriveRun(
   const stats = readableStats(results);
   const r = computeResults(stats);
 
-  const missed = r.chars
-    .filter((c) => isMissed(stats[c], metric))
-    // Worst first, the order engine.missedChars() uses; a character you never
+  const missed = r.facts
+    .filter((f) => isMissed(stats[f], metric))
+    // Worst first, the order engine.missedFacts() uses; a fact you never
     // landed leads its miss-count group, since not knowing beats fumbling.
     .sort(
       (a, b) =>
@@ -166,20 +186,20 @@ export function deriveRun(
         Number(stats[a].everCorrect) - Number(stats[b].everCorrect),
     );
   const missedSet = new Set(missed);
-  const slowOnly = r.chars
-    .filter((c) => stats[c].slow > 0 && !missedSet.has(c))
+  const slowOnly = r.facts
+    .filter((f) => stats[f].slow > 0 && !missedSet.has(f))
     .sort((a, b) => stats[b].slow - stats[a].slow);
   const needsWork = [...missed, ...slowOnly];
   const workSet = new Set(needsWork);
 
   return {
     metric,
-    chars: r.chars,
+    facts: r.facts,
     total: r.total,
     firstTry: r.strict,
     eventually: r.forg,
     slowEvents: r.slow,
-    totalMisses: r.chars.reduce((n, c) => n + stats[c].misses, 0),
+    totalMisses: r.facts.reduce((n, f) => n + stats[f].misses, 0),
     // Summary-only sessions kept percentages and nothing to recompute from.
     pct: summaryOnly
       ? metric === "firstTry"
@@ -190,15 +210,15 @@ export function deriveRun(
     missed,
     slowOnly,
     needsWork,
-    solid: r.chars.filter((c) => !workSet.has(c)),
+    solid: r.facts.filter((f) => !workSet.has(f)),
   };
 }
 
 // ---------- picking the worst ----------
 
 export interface Worst {
-  /** One character, or the tie. */
-  chars: string[];
+  /** One fact, or the tie. */
+  facts: FactId[];
   /** "never" outranks any miss count — you don't know it at all. */
   kind: "never" | "misses";
   /** Wrong attempts each of them cost. */
@@ -216,43 +236,44 @@ export interface Worst {
  *   5. still tied          — then say so, and name them
  *
  * So history BREAKS ties and never WRITES the line: `prior` only ever narrows a
- * pool of characters that all really cost you today. Naming a character you
- * nailed this run would import a problem you didn't have.
+ * pool of facts that all really cost you today. Naming a fact you nailed this
+ * run would import a problem you didn't have.
  */
 export function worstOf(
-  facts: RunFacts,
+  run: RunFacts,
   stats: SessionStats,
   prior: HistoryFile,
 ): Worst | null {
-  if (!facts.missed.length) return null;
+  if (!run.missed.length) return null;
 
   // 1 · never got it
-  const never = facts.missed.filter((c) => !stats[c].everCorrect);
-  let pool = never.length ? never : facts.missed;
+  const never = run.missed.filter((f) => !stats[f].everCorrect);
+  let pool = never.length ? never : run.missed;
   const kind: Worst["kind"] = never.length ? "never" : "misses";
 
   // 2 · most misses
-  const most = Math.max(...pool.map((c) => stats[c].misses));
-  pool = pool.filter((c) => stats[c].misses === most);
+  const most = Math.max(...pool.map((f) => stats[f].misses));
+  pool = pool.filter((f) => stats[f].misses === most);
 
-  // 3 · historically weakest. No history is not weakness — an unpractised
-  // character can't win this rung, so it sorts as unbeatable.
+  // 3 · historically weakest. A single-fact list, so this is that fact's own
+  // ratio — a real accuracy, not an entry summary. No history is not weakness:
+  // an unpractised fact can't win this rung, so it sorts as unbeatable.
   if (pool.length > 1) {
-    const acc = (c: string) => accuracyFor(prior, [c], facts.metric) ?? Infinity;
+    const acc = (f: FactId) => accuracyFor(prior, [f], run.metric) ?? Infinity;
     const worstAcc = Math.min(...pool.map(acc));
-    pool = pool.filter((c) => acc(c) === worstAcc);
+    pool = pool.filter((f) => acc(f) === worstAcc);
   }
 
   // 4 · slowest. No latency is stored, only how often an answer ran over
   // BEHAVIOR.slowAnswerMs — that is the whole "took longest to recall" signal
   // this app has.
   if (pool.length > 1) {
-    const slowest = Math.max(...pool.map((c) => stats[c].slow));
-    pool = pool.filter((c) => stats[c].slow === slowest);
+    const slowest = Math.max(...pool.map((f) => stats[f].slow));
+    pool = pool.filter((f) => stats[f].slow === slowest);
   }
 
   // 5 · genuinely identical — the caller names them all.
-  return { chars: pool, kind, misses: most };
+  return { facts: pool, kind, misses: most };
 }
 
 // ---------- the sentence ----------
@@ -275,26 +296,29 @@ export interface Summary {
 }
 
 /** "ツ" · "ツ and ソ" · "ツ, ソ and 2 others" — a list stops being a headline
- * past two names. */
-function nameList(chars: string[]): Bit[] {
-  const [a, b] = chars;
-  if (chars.length === 1) return [{ t: a, em: true }];
-  if (chars.length === 2) {
+ * past two names. Takes facts and renders GLYPHS: an id is an identity, never
+ * something a sentence says out loud. */
+function nameList(facts: FactId[]): Bit[] {
+  const [a, b] = facts.map(glyphOfFact);
+  if (facts.length === 1) return [{ t: a, em: true }];
+  if (facts.length === 2) {
     return [{ t: a, em: true }, { t: " and " }, { t: b, em: true }];
   }
   return [
     { t: a, em: true },
     { t: ", " },
     { t: b, em: true },
-    { t: ` and ${chars.length - 2} other${s(chars.length - 2)}` },
+    { t: ` and ${facts.length - 2} other${s(facts.length - 2)}` },
   ];
 }
 
-/** How a single worst character was actually got wrong: "every time you
- * answered "shi"". Only claimed when one wrong reading really does account for
- * the misses. */
-function confusionTail(st: CharSessionDetail, count: number): string {
-  const entries = Object.entries(st.confused ?? {}).sort((a, b) => b[1] - a[1]);
+/** How a single worst fact was actually got wrong: "every time you answered
+ * "shi"". Only claimed when one wrong reading really does account for the
+ * misses. `confused` is keyed by ENTRY — what you said instead. */
+function confusionTail(st: FactSessionDetail, count: number): string {
+  const entries = (Object.entries(st.confused ?? {}) as Array<
+    [EntryId, number]
+  >).sort((a, b) => b[1] - a[1]);
   const [top] = entries;
   if (!top || !count) return "";
   const [other, n] = top;
@@ -304,8 +328,8 @@ function confusionTail(st: CharSessionDetail, count: number): string {
 }
 
 function worstBits(worst: Worst, stats: SessionStats): Bit[] {
-  const names = nameList(worst.chars);
-  const many = worst.chars.length > 1;
+  const names = nameList(worst.facts);
+  const many = worst.facts.length > 1;
   const each = many ? " each" : "";
   if (worst.kind === "never") {
     // "ヂャ never landed: 4 tries, no luck"
@@ -319,7 +343,7 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
     return [...names, { t: ` tied for worst: ${misses(worst.misses)} each` }];
   }
   // "ツ cost you the most: 4 misses, every time you answered "shi""
-  const tail = confusionTail(stats[worst.chars[0]], worst.misses);
+  const tail = confusionTail(stats[worst.facts[0]], worst.misses);
   return [
     ...names,
     { t: ` cost you the most: ${misses(worst.misses)}${tail}` },
@@ -328,29 +352,29 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
 
 /** "ゑ took over 5s though, and speed is what's left". No latency is stored, so
  * the threshold is the number that can honestly be quoted. */
-function slowBits(facts: RunFacts, stats: SessionStats): Bit[] {
-  const most = Math.max(...facts.slowOnly.map((c) => stats[c].slow));
-  const chars = facts.slowOnly.filter((c) => stats[c].slow === most);
+function slowBits(run: RunFacts, stats: SessionStats): Bit[] {
+  const most = Math.max(...run.slowOnly.map((f) => stats[f].slow));
+  const slowest = run.slowOnly.filter((f) => stats[f].slow === most);
   const secs = BEHAVIOR.slowAnswerMs / 1000;
   return [
-    ...nameList(chars),
+    ...nameList(slowest),
     { t: ` took over ${secs}s though, and speed is what's left` },
   ];
 }
 
 /** The counts line: how the run reads under the chosen chip, plus anything the
  * Progress section earned. */
-function countBits(facts: RunFacts, progress: PairRow[]): Bit[] {
-  const got = facts.metric === "firstTry" ? facts.firstTry : facts.eventually;
+function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
+  const got = run.metric === "firstTry" ? run.firstTry : run.eventually;
   const beaten = progress.length;
   return [
-    // A stored session counted nothing per character, so "0 / 12 first try"
+    // A stored session counted nothing per fact, so "0 / 12 first try"
     // would be an invention. Report the two percentages it did keep.
-    facts.stored
-      ? { t: `${facts.stored.strictPct}% first try · ${facts.stored.forgivingPct}% eventually right` }
-      : { t: `${got} / ${facts.total} ${metricWords(facts.metric)}` },
-    ...(facts.slowEvents
-      ? [{ t: ` · ${facts.slowEvents} slow but right` }]
+    run.stored
+      ? { t: `${run.stored.strictPct}% first try · ${run.stored.forgivingPct}% eventually right` }
+      : { t: `${got} / ${run.total} ${metricWords(run.metric)}` },
+    ...(run.slowEvents
+      ? [{ t: ` · ${run.slowEvents} slow but right` }]
       : []),
     ...(beaten
       ? [
@@ -368,18 +392,18 @@ function countBits(facts: RunFacts, progress: PairRow[]): Bit[] {
  * biggest deck this run covered end to end, and whether it has ever been
  * covered cleanly before.
  */
-function perfectBits(facts: RunFacts, prior: HistoryFile): Bit[] {
-  const ran = new Set(facts.chars);
+function perfectBits(run: RunFacts, prior: HistoryFile): Bit[] {
+  const ran = new Set(run.facts);
   const deck = [...DECKS]
-    .sort((a, b) => b.chars.length - a.chars.length)
-    .find((d) => d.chars.every((c) => ran.has(c)));
+    .sort((a, b) => b.facts.length - a.facts.length)
+    .find((d) => d.facts.every((f) => ran.has(f)));
   const clean = (pct: number) => pct === 100;
   const pctOf = (x: { forgivingPct: number; strictPct: number }) =>
-    facts.metric === "firstTry" ? x.strictPct : x.forgivingPct;
+    run.metric === "firstTry" ? x.strictPct : x.forgivingPct;
 
   if (deck) {
     const before = prior.sessions.filter(
-      (x) => clean(pctOf(x)) && deck.chars.every((c) => c in (x.chars ?? {})),
+      (x) => clean(pctOf(x)) && deck.facts.every((f) => f in (x.facts ?? {})),
     ).length;
     const label = deck.label.toLowerCase();
     return [
@@ -409,16 +433,16 @@ function perfectBits(facts: RunFacts, prior: HistoryFile): Bit[] {
  * is not 100%, and a "Perfect run" headline over a 92% ring is a lie.
  */
 export function summarize(
-  facts: RunFacts,
+  run: RunFacts,
   stats: SessionStats,
   prior: HistoryFile,
   progress: PairRow[],
 ): Summary {
-  const counts = countBits(facts, progress);
+  const counts = countBits(run, progress);
 
-  if (facts.missed.length) {
-    const worst = worstOf(facts, stats, prior);
-    const n = facts.needsWork.length;
+  if (run.missed.length) {
+    const worst = worstOf(run, stats, prior);
+    const n = run.needsWork.length;
     return {
       state: "misses",
       headline: `${n} character${s(n)} need${n === 1 ? "s" : ""} another pass`,
@@ -427,22 +451,22 @@ export function summarize(
     };
   }
 
-  if (facts.slowOnly.length) {
+  if (run.slowOnly.length) {
     return {
       state: "slow",
-      headline: facts.totalMisses
+      headline: run.totalMisses
         ? "Everything landed in the end"
         : "Clean run, nothing missed",
-      detail: slowBits(facts, stats),
+      detail: slowBits(run, stats),
       counts,
     };
   }
 
-  if (facts.totalMisses) {
+  if (run.totalMisses) {
     // Nothing unlanded and nothing slow, but retries happened: name what they
     // cost rather than calling it perfect.
     const worst = worstOf(
-      { ...facts, missed: facts.chars.filter((c) => stats[c].misses > 0) },
+      { ...run, missed: run.facts.filter((f) => stats[f].misses > 0) },
       stats,
       prior,
     );
@@ -451,10 +475,10 @@ export function summarize(
       headline: "Everything landed in the end",
       detail: worst
         ? [
-            ...nameList(worst.chars),
+            ...nameList(worst.facts),
             {
               t: ` took the most retries: ${misses(worst.misses)}${
-                worst.chars.length > 1 ? " each" : ""
+                worst.facts.length > 1 ? " each" : ""
               }, but you got there`,
             },
           ]
@@ -469,15 +493,15 @@ export function summarize(
     headline: "Perfect run",
     detail: [
       {
-        t: `${facts.total} / ${facts.total} ${metricWords(facts.metric)}, none slow`,
+        t: `${run.total} / ${run.total} ${metricWords(run.metric)}, none slow`,
       },
       ...(beat
         ? ([
             { t: ", and you beat " },
-            { t: `${beat.a} ↔ ${beat.b}`, em: true },
+            { t: `${glyphOf(beat.a)} ↔ ${glyphOf(beat.b)}`, em: true },
           ] as Bit[])
         : []),
     ],
-    counts: perfectBits(facts, prior),
+    counts: perfectBits(run, prior),
   };
 }

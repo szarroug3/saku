@@ -31,12 +31,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { CHAR_INDEX } from "@/data/characters";
+import { CHAR_INDEX, kanaEntry, kanaFact } from "@/data/characters";
 import { pickFont } from "@/lib/config";
 import {
   checkTyped,
   confusedWith,
-  newCharStat,
+  newFactStat,
   retriesAllowed,
   shuffle,
 } from "@/lib/engine";
@@ -73,10 +73,14 @@ interface GridRuntime {
 function initGrid(chars: string[], fonts: string[]): GridRuntime {
   const order = shuffle(chars.slice());
   const cards: Record<string, GridCard> = {};
+  // The board is keyed by CHARACTER (that is what a cell shows); the stats it
+  // produces are keyed by FACT (that is what can be graded). kanaFact is the
+  // seam between the two, and it is the only place this screen crosses it.
   const stats: SessionStats = {};
   for (const c of order) {
-    stats[c] = newCharStat();
-    stats[c].seen++;
+    const f = kanaFact(c);
+    stats[f] = newFactStat();
+    stats[f].seen++;
     cards[c] = { value: "", state: "open", tries: 0, font: pickFont(fonts) };
   }
   return { order, cards, streak: 0, stats };
@@ -106,7 +110,7 @@ function checkCard(g: GridRuntime, c: string, cfg: QuizConfig): CheckOutcome {
   const card = g.cards[c];
   const v = card.value.trim().toLowerCase();
   if (!v || card.state !== "open") return "noop";
-  const st = g.stats[c];
+  const st = g.stats[kanaFact(c)];
   const ok = checkTyped(c, card.value);
   if (st.firstTryCorrect === null) st.firstTryCorrect = ok;
   if (ok) {
@@ -120,8 +124,13 @@ function checkCard(g: GridRuntime, c: string, cfg: QuizConfig): CheckOutcome {
   g.streak = 0;
   st.misses++;
   card.tries++;
+  // `confused` is keyed by ENTRY — the thing you said instead, not one of its
+  // facts. See FactSessionDetail.
   const match = confusedWith(c, v);
-  if (match) st.confused[match] = (st.confused[match] ?? 0) + 1;
+  if (match) {
+    const said = kanaEntry(match);
+    st.confused[said] = (st.confused[said] ?? 0) + 1;
+  }
   if (card.tries > retriesAllowed(cfg)) {
     if (cfg.showAnswer) card.value = CHAR_INDEX[c].r[0];
     card.state = "wrong";
@@ -225,7 +234,9 @@ export function GridScreen() {
   );
 
   const total = g?.order.length ?? 0;
-  const done = g ? g.order.filter((c) => g.stats[c].everCorrect).length : 0;
+  const done = g
+    ? g.order.filter((c) => g.stats[kanaFact(c)].everCorrect).length
+    : 0;
   useEffect(() => {
     if (g) setProgress({ done, total });
   }, [g, done, total, setProgress]);

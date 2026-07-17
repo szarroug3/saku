@@ -58,6 +58,7 @@ import { CharactersTable } from "@/components/stats/characters-table";
 import { DeckAccuracy } from "@/components/stats/deck-accuracy";
 import { Chip, Metric, MetricsGrid, PageTitle } from "@/components/ui";
 import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
+import { factKeys } from "@/lib/facts";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
 import type { AccuracyMetric } from "@/types";
@@ -69,7 +70,9 @@ export default function StatsPage() {
   const [override, setOverride] = useState<AccuracyMetric | null>(null);
   const metric = override ?? cfg.accuracyMetric;
 
-  const practised = Object.keys(history.chars);
+  // Pooled over every fact with history — a real ratio over a real population
+  // of showings, which is what "overall" should mean.
+  const practised = factKeys(history.facts);
   const overall = accuracyFor(history, practised, metric);
 
   return (

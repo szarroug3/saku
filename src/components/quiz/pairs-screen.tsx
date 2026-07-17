@@ -18,12 +18,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { CHAR_INDEX } from "@/data/characters";
+import { CHAR_INDEX, kanaEntry, kanaFact } from "@/data/characters";
 import { BEHAVIOR, pickFont } from "@/lib/config";
-import { buildDeck, newCharStat, shuffle } from "@/lib/engine";
+import { buildDeck, newFactStat, shuffle } from "@/lib/engine";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
-import type { CharSessionDetail, QuizConfig, SessionStats } from "@/types";
+import type { FactSessionDetail, QuizConfig, SessionStats } from "@/types";
 
 import { PairsHud } from "./pairs-hud";
 
@@ -72,8 +72,11 @@ interface PairsRuntime {
   dirty: string[];
 }
 
-function statFor(stats: SessionStats, c: string): CharSessionDetail {
-  return (stats[c] ??= newCharStat());
+/** The stats for the character `c`'s fact. The board is keyed by character —
+ * that is what a cell shows — and the stats by fact, which is what can be
+ * graded; this is the only place the screen crosses between them. */
+function statFor(stats: SessionStats, c: string): FactSessionDetail {
+  return (stats[kanaFact(c)] ??= newFactStat());
 }
 
 /**
@@ -197,7 +200,10 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
   const other = first.kind === "kana" ? cell : first;
   const st = statFor(p.stats, kana.id);
   st.misses++;
-  st.confused[other.id] = (st.confused[other.id] ?? 0) + 1;
+  // `confused` is keyed by ENTRY — the thing you said instead. Both cells carry
+  // their character in `id`, so the romaji cell names its own entry too.
+  const said = kanaEntry(other.id);
+  st.confused[said] = (st.confused[said] ?? 0) + 1;
   p.streak = 0;
   if (!p.dirty.includes(kana.id)) p.dirty.push(kana.id);
   return { kind: "mismatch", flash: [firstIdx, i] };

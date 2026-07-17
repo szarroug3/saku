@@ -21,8 +21,16 @@
 import { DeckCard, metricWord, plural, Shelf } from "@/components/home/deck-card";
 import { stateOf, type Selectable } from "@/components/home/selection";
 import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
-import { confusionDecks, lastMisses, weakestChars } from "@/lib/decks";
-import type { HistoryFile, QuizConfig } from "@/types";
+import { confusionDecks, lastMisses, weakestFacts } from "@/lib/decks";
+import { entryOf, glyphOf } from "@/lib/facts";
+import type { FactId, HistoryFile, QuizConfig } from "@/types";
+
+/** The characters behind a list of facts — these cards' bridge to cfg.enabled,
+ * the same one decks.deckChars() is for the static shelf, and it goes the same
+ * way. Deduped: two facts of one entry are one character to select. */
+function charsOf(facts: FactId[]): string[] {
+  return [...new Set(facts.map((f) => glyphOf(entryOf(f))))];
+}
 
 /** The three weakness decks for this history, in shelf order. Exported so the
  * start bar can name them and Home can toggle them without recomputing — one
@@ -34,7 +42,7 @@ export function weaknessDecks(
 ): Array<Selectable & { glyph: string; subtitle: string }> {
   const metric = cfg.accuracyMetric;
 
-  const weakest = weakestChars(history, metric, 20);
+  const weakest = weakestFacts(history, metric, 20);
   const weakestAcc = accuracyFor(history, weakest, metric);
   const confusions = confusionDecks(history, enabled);
   const misses = lastMisses(history);
@@ -45,7 +53,7 @@ export function weaknessDecks(
       id: "weakest-20",
       label: "Weakest 20",
       glyph: "弱",
-      chars: weakest,
+      chars: charsOf(weakest),
       subtitle:
         weakestAcc === null
           ? "Nothing to go on yet"
@@ -54,8 +62,8 @@ export function weaknessDecks(
     {
       id: "confusions",
       label: "Confusions",
-      glyph: topPair ? `${topPair.a}↔${topPair.b}` : "↔",
-      chars: confusions.chars,
+      glyph: topPair ? `${glyphOf(topPair.a)}↔${glyphOf(topPair.b)}` : "↔",
+      chars: charsOf(confusions.facts),
       subtitle: !confusions.pairs.length
         ? "No pairs to drill"
         : confusions.fromHistory
@@ -66,7 +74,7 @@ export function weaknessDecks(
       id: "last-misses",
       label: "Last Misses",
       glyph: "↺",
-      chars: misses,
+      chars: charsOf(misses),
       subtitle: misses.length
         ? plural(misses.length, "character")
         : "Nothing missed yet",

@@ -17,7 +17,7 @@
 // point of the snapshot.
 
 import { Btn, SmallBtn } from "@/components/ui";
-import { DECKS } from "@/lib/decks";
+import { DECKS, deckSelectable } from "@/lib/decks";
 import type { ActiveQuiz, QuizProgress } from "@/lib/quiz-session";
 
 import { namedSelection } from "./selection";
@@ -47,7 +47,7 @@ const MODE_WORD = { drill: "Drill", pairs: "Match pairs", grid: "Grid" };
 function deckName(chars: string[]): string {
   const enabled: Record<string, boolean> = {};
   for (const c of chars) enabled[c] = true;
-  const labels = namedSelection(DECKS, enabled);
+  const labels = namedSelection(DECKS.map(deckSelectable), enabled);
   if (!labels.length) {
     return `${chars.length} character${chars.length === 1 ? "" : "s"}`;
   }

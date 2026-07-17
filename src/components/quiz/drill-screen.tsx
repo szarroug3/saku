@@ -37,7 +37,7 @@ import {
 } from "react";
 
 import { SmallBtn } from "@/components/ui";
-import { CHAR_INDEX } from "@/data/characters";
+import { CHAR_INDEX, kanaEntry, kanaFact } from "@/data/characters";
 import { EMPTY_AGGREGATE, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { loadLatencies, pushLatency } from "@/lib/latency-store";
@@ -47,7 +47,7 @@ import {
   buildMcOptions,
   checkTyped,
   confusedWith,
-  newCharStat,
+  newFactStat,
   pickDir,
   requeueGap,
   retriesAllowed,
@@ -331,7 +331,9 @@ export function DrillScreen() {
       mc,
       mcFonts: mc && dir === "en2jp" ? mc.map(() => pickFont(cfg.fonts)) : null,
     };
-    const st = rt.stats[c] ?? (rt.stats[c] = newCharStat());
+    // The deck is characters; the stats are keyed by the fact being asked.
+    const f = kanaFact(c);
+    const st = rt.stats[f] ?? (rt.stats[f] = newFactStat());
     st.seen++;
     rt.elapsedMs = 0;
     rt.firstKeyMs = null;
@@ -362,7 +364,8 @@ export function DrillScreen() {
         : q.dir === "en2jp"
           ? given.trim() === q.c
           : checkTyped(q.c, given);
-    const st = rt.stats[q.c] ?? (rt.stats[q.c] = newCharStat());
+    const qf = kanaFact(q.c);
+    const st = rt.stats[qf] ?? (rt.stats[qf] = newFactStat());
     if (st.firstTryCorrect === null) st.firstTryCorrect = ok && q.tries === 0;
     if (ok) {
       // Only a clean first try extends the streak — a miss below has already
@@ -370,7 +373,7 @@ export function DrillScreen() {
       if (q.tries === 0) rt.streak = (rt.streak ?? 0) + 1;
       st.everCorrect = true;
       // This showing ended right — the forgiving numerator. `?? 0` because
-      // engine.newCharStat() doesn't initialise the field yet, and because a
+      // engine.newFactStat() doesn't initialise the field yet, and because a
       // runtime resumed from before it existed won't have it either.
       st.correct = (st.correct ?? 0) + 1;
       // "Slow" is a hesitation relative to YOUR OWN recent latencies, judged
@@ -394,11 +397,18 @@ export function DrillScreen() {
     } else {
       rt.streak = 0; // any miss, including a timeout
       st.misses++;
+      // `confused` is keyed by ENTRY — the thing you said instead of this fact's
+      // answer. See FactSessionDetail: a confusion is a failure to tell two
+      // entries apart, so it cannot be keyed by one of their facts.
       if (pickedChar && pickedChar !== q.c) {
-        st.confused[pickedChar] = (st.confused[pickedChar] ?? 0) + 1;
+        const said = kanaEntry(pickedChar);
+        st.confused[said] = (st.confused[said] ?? 0) + 1;
       } else if (given && given !== "(time)") {
         const match = confusedWith(q.c, given);
-        if (match) st.confused[match] = (st.confused[match] ?? 0) + 1;
+        if (match) {
+          const said = kanaEntry(match);
+          st.confused[said] = (st.confused[said] ?? 0) + 1;
+        }
       }
       q.tries++;
       const left = retriesAllowed(cfg) - q.tries;

@@ -12,13 +12,23 @@
 // the Full coverage LENGTH chip, where a length belongs. If you are tempted to
 // give a deck a side-effect again: don't. Decks are a set of characters.
 //
+// A deck is a set of FACTS — the things you can be asked — not of characters.
+// For kana the two are 1:1 and the distinction looks like pedantry; for 生 it
+// is the difference between drilling a reading and drilling a glyph that has
+// eleven of them.
+//
 // HOW TO EXTEND
 // =============
-// Adding a kanji or vocab set is a data addition, not a change here: append a
-// CharSet to SETS in src/data/characters.ts and it grows a basic/extended deck
-// pair automatically (`isExtendedSection` decides the split). Give it a face by
-// adding a GLYPHS entry keyed "<setId>-basic" / "<setId>-extended" — without
-// one it falls back to the set's first character, which still renders fine.
+// Adding another kana-shaped set is a data addition, not a change here: append
+// a CharSet to SETS in src/data/characters.ts and it grows a basic/extended
+// deck pair automatically (`isExtendedSection` decides the split). Give it a
+// face by adding a GLYPHS entry keyed "<setId>-basic" / "<setId>-extended" —
+// without one it falls back to the set's first glyph, which still renders fine.
+//
+// The basic/extended split is PURE KANA — `isExtendedSection` regex-matches
+// section labels for Dakuten/Handakuten/Combo. It is left working for kana and
+// deliberately not generalised: what "extended" means for kanji or vocabulary
+// is unknown, and inventing an answer now would just have to be undone.
 //
 // Pure by contract: no React, no DOM, no fetch. Home renders these; it does
 // not define them.
@@ -26,29 +36,61 @@
 import {
   CHAR_INDEX,
   isExtendedSection,
+  kanaEntry,
+  kanaFact,
   LOOKALIKES,
   SETS,
 } from "@/data/characters";
-import { accuracyOf } from "@/lib/accuracy";
+import { accuracyOf, summaryOfEntry } from "@/lib/accuracy";
+import { ALL_FACTS, entryOf, factsOf, glyphOf } from "@/lib/facts";
 import type {
   AccuracyMetric,
   CharSet,
+  EntryId,
+  FactId,
   HistoryFile,
   QuizSessionRecord,
 } from "@/types";
 
-/** A named set of characters a quiz can draw from. */
+/** A named set of facts a quiz can draw from. */
 export interface Deck {
   /** Stable id — React key, and what a click target reports. */
   id: string;
   label: string;
-  /** The card's face: one representative character. */
+  /** The card's face: one representative glyph. */
   glyph: string;
-  chars: string[];
+  facts: FactId[];
 }
 
-/** Every character in the app, in data order. */
+/** Every character in the app, in data order. The CHARACTER list, for the
+ * char-keyed selection layer (cfg.enabled) — not the deck content. */
 export const ALL_CHARS: string[] = Object.keys(CHAR_INDEX);
+
+/**
+ * The characters behind a deck — the bridge to `cfg.enabled`.
+ *
+ * TEMPORARY, and narrow on purpose. `cfg.enabled` is still a char→bool map and
+ * becomes a query in its own task; until then the shelves have to ask a
+ * fact-keyed deck a character-keyed question, and this is the one place that
+ * translation happens rather than fifteen inline `glyphOf(entryOf(f))`s.
+ *
+ * Correct only while every entry is a single kana whose glyph IS its selection
+ * key. It gives the wrong answer the moment an entry has more than one fact
+ * (生 would appear eleven times) or a glyph that isn't its key. Both land with
+ * kanji, and this function should die in the same change.
+ */
+export function deckChars(deck: Deck): string[] {
+  return [...new Set(deck.facts.map((f) => glyphOf(entryOf(f))))];
+}
+
+/** A deck as the char-keyed selection layer sees it. Same caveat as deckChars. */
+export function deckSelectable(deck: Deck): {
+  id: string;
+  label: string;
+  chars: string[];
+} {
+  return { id: deck.id, label: deck.label, chars: deckChars(deck) };
+}
 
 /** Card faces, keyed "<setId>-basic" / "<setId>-extended". A set with no entry
  * falls back to its own first character (see buildDecks). */
@@ -62,24 +104,24 @@ const GLYPHS: Record<string, string> = {
 /** The id of the deck that is simply every character there is. */
 export const EVERYTHING_ID = "everything";
 
-function groupChars(set: CharSet, extended: boolean): string[] {
+function groupFacts(set: CharSet, extended: boolean): FactId[] {
   return set.sections
     .filter((s) => isExtendedSection(s.label) === extended)
-    .flatMap((s) => s.chars.map((c) => c.c));
+    .flatMap((s) => s.chars.map((c) => kanaFact(c.c)));
 }
 
 function buildDecks(): Deck[] {
   const decks: Deck[] = [];
   for (const set of SETS) {
     for (const extended of [false, true]) {
-      const chars = groupChars(set, extended);
-      if (!chars.length) continue;
+      const facts = groupFacts(set, extended);
+      if (!facts.length) continue;
       const id = `${set.id}-${extended ? "extended" : "basic"}`;
       decks.push({
         id,
         label: `${set.label} ${extended ? "extended" : "basic"}`,
-        glyph: GLYPHS[id] ?? chars[0],
-        chars,
+        glyph: GLYPHS[id] ?? glyphOf(entryOf(facts[0])),
+        facts,
       });
     }
   }
@@ -87,7 +129,7 @@ function buildDecks(): Deck[] {
     id: EVERYTHING_ID,
     label: "Everything",
     glyph: "全",
-    chars: ALL_CHARS,
+    facts: ALL_FACTS,
   });
   return decks;
 }
@@ -98,33 +140,71 @@ export const DECKS: Deck[] = buildDecks();
 // ---------- history-derived decks ----------
 
 /**
- * The `n` characters you are worst at under `metric`, weakest first.
+ * The `n` FACTS you are worst at under `metric`, weakest first.
  *
- * Only characters with history count — an untouched character is unknown, not
- * weak. Ties break by `seen` descending, so a 0%-from-one-showing never
- * outranks a 0%-from-twenty: the latter is the better-evidenced weakness.
+ * Facts, not entries, because this is a drill list and a fact is what can be
+ * drilled: "you are worst at 生" is not actionable when 生 has eleven readings
+ * and you only fumble two of them. The entry-level summary exists for reading
+ * (accuracy.summaryOfEntry) and is deliberately not what ranks this.
+ *
+ * Only facts with history count — an untouched fact is unknown, not weak. Ties
+ * break by `seen` descending, so a 0%-from-one-showing never outranks a
+ * 0%-from-twenty: the latter is the better-evidenced weakness.
+ *
+ * The ordering is accuracy today and becomes a proper scheduling rank next —
+ * a pure function of (stability, lastTested, now) dropped in place of the sort
+ * below. Nothing outside this function knows how the list is ordered.
  */
-export function weakestChars(
+export function weakestFacts(
   history: HistoryFile,
   metric: AccuracyMetric,
   n = 20,
-): string[] {
-  const scored: Array<{ c: string; acc: number; seen: number }> = [];
-  for (const [c, agg] of Object.entries(history.chars)) {
-    // Guard against history for characters the data no longer has.
-    if (!agg.seen || !CHAR_INDEX[c]) continue;
+): FactId[] {
+  const scored: Array<{ f: FactId; acc: number; seen: number }> = [];
+  for (const [key, agg] of Object.entries(history.facts)) {
+    const f = key as FactId;
+    // Guard against history for facts the data no longer has.
+    if (!agg.seen || !factsOf(entryOf(f)).length) continue;
     const acc = accuracyOf(agg, metric);
     if (acc === null) continue;
-    scored.push({ c, acc, seen: agg.seen });
+    scored.push({ f, acc, seen: agg.seen });
   }
   scored.sort((a, b) => a.acc - b.acc || b.seen - a.seen);
-  return scored.slice(0, n).map((s) => s.c);
+  return scored.slice(0, n).map((s) => s.f);
 }
 
-/** Two characters you mix up, and how often. `count` is 0 for lookalikes. */
+/**
+ * The `n` ENTRIES you are worst at, weakest first — a READING order, for the
+ * Statistics table.
+ *
+ * Ranked by each entry's summary accuracy, which is an average over its facts
+ * and so is not comparable with the ratios `weakestFacts` sorts on. The two
+ * lists answer different questions and are allowed to disagree.
+ */
+export function weakestEntries(
+  history: HistoryFile,
+  metric: AccuracyMetric,
+  n = 20,
+): EntryId[] {
+  const scored: Array<{ e: EntryId; acc: number; seen: number }> = [];
+  for (const e of new Set(factKeysOf(history).map(entryOf))) {
+    const summary = summaryOfEntry(history, e, metric);
+    if (!summary) continue;
+    scored.push({ e, acc: summary.meanPct, seen: summary.seen });
+  }
+  scored.sort((a, b) => a.acc - b.acc || b.seen - a.seen);
+  return scored.slice(0, n).map((s) => s.e);
+}
+
+function factKeysOf(history: HistoryFile): FactId[] {
+  return Object.keys(history.facts) as FactId[];
+}
+
+/** Two ENTRIES you mix up, and how often. `count` is 0 for lookalikes.
+ * Entries, not facts: you mix up 生 with 先, not one reading with another. */
 export interface ConfusionPair {
-  a: string;
-  b: string;
+  a: EntryId;
+  b: EntryId;
   /** Times the two were swapped across all sessions; 0 when unmeasured. */
   count: number;
 }
@@ -132,8 +212,8 @@ export interface ConfusionPair {
 export interface Confusions {
   /** Most-confused first. */
   pairs: ConfusionPair[];
-  /** The unique characters across `pairs` — the deck to drill. */
-  chars: string[];
+  /** The facts to drill — every fact of every entry across `pairs`. */
+  facts: FactId[];
   /** True when these are MEASURED mix-ups; false when they're the day-one
    * LOOKALIKES fallback, which must be labelled "common lookalikes" rather
    * than claiming a count the user never produced. */
@@ -143,10 +223,10 @@ export interface Confusions {
 /**
  * The mix-up pairs across every stored session.
  *
- * Mirrors engine.confusionPairs() (which reads a single SessionStats) over all
- * of history: each session's `detail[char].confused` counts one direction, so
- * summing on a sorted key folds "a said for b" and "b said for a" into one
- * symmetric pair.
+ * Mirrors confusions.indexPairs() (which reads a single SessionStats) over all
+ * of history: each session's `detail[fact].confused[entry]` counts one
+ * direction, so summing on a sorted key folds "a said for b" and "b said for a"
+ * into one symmetric pair.
  *
  * With no measured confusions — day one, or history from a version that never
  * stored `detail` — falls back to the LOOKALIKES groups restricted to
@@ -159,10 +239,14 @@ export function confusionDecks(
 ): Confusions {
   const counts = new Map<string, number>();
   for (const session of history.sessions) {
-    for (const [c, d] of Object.entries(session.detail ?? {})) {
+    for (const [fact, d] of Object.entries(session.detail ?? {})) {
+      // `detail` is keyed by FACT and `confused` by ENTRY — the shown side has
+      // to be lifted into entry space before the two can be paired. Same
+      // conversion confusions.indexPairs() makes, for the same reason.
+      const shown = entryOf(fact as FactId);
       for (const [x, n] of Object.entries(d.confused ?? {})) {
-        if (c === x || !n) continue;
-        const key = [c, x].sort().join("·");
+        if (shown === x || !n) continue;
+        const key = [shown, x].sort().join("·");
         counts.set(key, (counts.get(key) ?? 0) + n);
       }
     }
@@ -171,11 +255,11 @@ export function confusionDecks(
   if (counts.size) {
     const pairs = [...counts.entries()]
       .map(([key, count]) => {
-        const [a, b] = key.split("·");
+        const [a, b] = key.split("·") as [EntryId, EntryId];
         return { a, b, count };
       })
       .sort((p, q) => q.count - p.count);
-    return { pairs, chars: charsOf(pairs), fromHistory: true };
+    return { pairs, facts: factsFor(pairs), fromHistory: true };
   }
 
   const on = new Set(enabled);
@@ -184,15 +268,21 @@ export function confusionDecks(
     const members = group.filter((c) => on.has(c));
     for (let i = 0; i < members.length; i++) {
       for (let j = i + 1; j < members.length; j++) {
-        pairs.push({ a: members[i], b: members[j], count: 0 });
+        pairs.push({
+          a: kanaEntry(members[i]),
+          b: kanaEntry(members[j]),
+          count: 0,
+        });
       }
     }
   }
-  return { pairs, chars: charsOf(pairs), fromHistory: false };
+  return { pairs, facts: factsFor(pairs), fromHistory: false };
 }
 
-function charsOf(pairs: ConfusionPair[]): string[] {
-  return [...new Set(pairs.flatMap((p) => [p.a, p.b]))];
+/** Every fact of every entry named in `pairs` — the deck a confusion implies.
+ * You mix up the ENTRIES, so what you drill is everything they can be asked. */
+function factsFor(pairs: ConfusionPair[]): FactId[] {
+  return [...new Set(pairs.flatMap((p) => [...factsOf(p.a), ...factsOf(p.b)]))];
 }
 
 /** The most recent session, or null when there is no history. */
@@ -203,18 +293,18 @@ export function lastSession(history: HistoryFile): QuizSessionRecord | null {
 }
 
 /**
- * Characters missed in the most recent session, most misses first.
+ * Facts missed in the most recent session, most misses first.
  *
  * "Missed" is the forgiving reading — wrong at least once, or never gotten
- * right — matching engine.missedChars(stats, "forg") and the Results screen's
+ * right — matching engine.missedFacts(stats, "forg") and the Results screen's
  * "Redrill the misses". Empty when there are no sessions, or when the latest
- * one predates per-character detail.
+ * one has no detail.
  */
-export function lastMisses(history: HistoryFile): string[] {
+export function lastMisses(history: HistoryFile): FactId[] {
   const detail = lastSession(history)?.detail;
   if (!detail) return [];
   return Object.entries(detail)
     .filter(([, d]) => d.misses > 0 || !d.everCorrect)
     .sort((a, b) => b[1].misses - a[1].misses)
-    .map(([c]) => c);
+    .map(([f]) => f as FactId);
 }

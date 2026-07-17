@@ -10,15 +10,15 @@
 import { useState } from "react";
 
 import { Btn, PrimaryBtn } from "@/components/ui";
-import type { RunFacts } from "@/components/results/summary";
-import type { CharSessionDetail, SessionStats } from "@/types";
+import { glyphOfFact, type RunFacts } from "@/components/results/summary";
+import type { FactId, FactSessionDetail, SessionStats } from "@/types";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
 /** The cell's tiny note: how it went, in the fewest characters that are true. */
-function noteOf(st: CharSessionDetail): string {
+function noteOf(st: FactSessionDetail): string {
   if (!st.everCorrect) return "Never";
   if (st.misses > 0) return `×${st.misses}`;
   if (st.slow > 0) return "Slow";
@@ -26,18 +26,20 @@ function noteOf(st: CharSessionDetail): string {
 }
 
 /** Never landed, or fought you more than once. The rest is amber. */
-function severe(st: CharSessionDetail): boolean {
+function severe(st: FactSessionDetail): boolean {
   return !st.everCorrect || st.misses >= 2;
 }
 
 function Cell({
-  char,
+  glyph,
   stat,
   on,
   onToggle,
 }: {
-  char: string;
-  stat: CharSessionDetail;
+  /** What the cell SHOWS. The fact it stands for is the caller's business —
+   * a cell is a face, not an identity. */
+  glyph: string;
+  stat: FactSessionDetail;
   on: boolean;
   onToggle: () => void;
 }) {
@@ -64,7 +66,7 @@ function Cell({
       type="button"
       onClick={onToggle}
       aria-pressed={on}
-      aria-label={note ? `${char}, ${note}` : char}
+      aria-label={note ? `${glyph}, ${note}` : glyph}
       className={cx(
         "relative cursor-pointer rounded-[10px] border px-1 pb-1.5 pt-2 text-center",
         tone,
@@ -85,7 +87,7 @@ function Cell({
           !on && "text-text-muted",
         )}
       >
-        {char}
+        {glyph}
       </span>
       {note ? (
         <span aria-hidden="true" className="block text-[9px] leading-tight text-text-muted">
@@ -98,21 +100,21 @@ function Cell({
 
 function Board({
   label,
-  chars,
+  facts,
   stats,
   selected,
   onToggle,
   onSetAll,
 }: {
   label: string;
-  chars: string[];
+  facts: FactId[];
   stats: SessionStats;
-  selected: Set<string>;
-  onToggle: (char: string) => void;
-  onSetAll: (chars: string[], on: boolean) => void;
+  selected: Set<FactId>;
+  onToggle: (fact: FactId) => void;
+  onSetAll: (facts: FactId[], on: boolean) => void;
 }) {
-  if (!chars.length) return null;
-  const n = chars.filter((c) => selected.has(c)).length;
+  if (!facts.length) return null;
+  const n = facts.filter((f) => selected.has(f)).length;
   return (
     <>
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -123,7 +125,7 @@ function Board({
           <button
             type="button"
             className="cursor-pointer text-accent hover:underline"
-            onClick={() => onSetAll(chars, true)}
+            onClick={() => onSetAll(facts, true)}
           >
             All
           </button>
@@ -131,20 +133,20 @@ function Board({
           <button
             type="button"
             className="cursor-pointer text-accent hover:underline"
-            onClick={() => onSetAll(chars, false)}
+            onClick={() => onSetAll(facts, false)}
           >
             None
           </button>
         </span>
       </div>
       <div className="mb-3.5 grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-1.5">
-        {chars.map((c) => (
+        {facts.map((f) => (
           <Cell
-            key={c}
-            char={c}
-            stat={stats[c]}
-            on={selected.has(c)}
-            onToggle={() => onToggle(c)}
+            key={f}
+            glyph={glyphOfFact(f)}
+            stat={stats[f]}
+            on={selected.has(f)}
+            onToggle={() => onToggle(f)}
           />
         ))}
       </div>
@@ -170,26 +172,26 @@ export function TriageSection({
   stats: SessionStats;
   /** Weakest 20 from history — the honest next step when this run left nothing
    * to fix. Empty on day one. */
-  weakest: string[];
-  onRedrill: (chars: string[]) => void;
+  weakest: FactId[];
+  onRedrill: (facts: FactId[]) => void;
   onRerun: () => void;
   onDrillWeakest: () => void;
 }) {
-  const [selected, setSelected] = useState<Set<string>>(
+  const [selected, setSelected] = useState<Set<FactId>>(
     () => new Set(facts.needsWork),
   );
 
-  const toggle = (char: string) =>
+  const toggle = (fact: FactId) =>
     setSelected((prev) => {
       const next = new Set(prev);
-      if (!next.delete(char)) next.add(char);
+      if (!next.delete(fact)) next.add(fact);
       return next;
     });
-  const setAll = (chars: string[], on: boolean) =>
+  const setAll = (list: FactId[], on: boolean) =>
     setSelected((prev) => {
       const next = new Set(prev);
-      for (const c of chars) if (on) next.add(c);
-        else next.delete(c);
+      for (const f of list) if (on) next.add(f);
+        else next.delete(f);
       return next;
     });
 
@@ -203,7 +205,7 @@ export function TriageSection({
     <>
       <Board
         label="Needs work"
-        chars={facts.needsWork}
+        facts={facts.needsWork}
         stats={stats}
         selected={selected}
         onToggle={toggle}
@@ -211,7 +213,7 @@ export function TriageSection({
       />
       <Board
         label="Solid"
-        chars={facts.solid}
+        facts={facts.solid}
         stats={stats}
         selected={selected}
         onToggle={toggle}

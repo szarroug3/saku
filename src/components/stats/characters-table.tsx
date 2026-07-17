@@ -20,9 +20,10 @@
 //      past row 30 is lying about what it shows. So: all of it, in a scroller.
 //
 // The default sort still reproduces the old list exactly — accuracy ascending,
-// ties broken toward the character you have seen MORE, matching weakestChars()
-// in src/lib/decks.ts. It ranks by ACCURACY under the chosen metric, not by raw
-// misses: "missed 9 times" says nothing without knowing it was shown 200.
+// ties broken toward the character you have seen MORE, matching
+// weakestEntries() in src/lib/decks.ts. It ranks by ACCURACY under the chosen
+// metric, not by raw misses: "missed 9 times" says nothing without knowing it
+// was shown 200.
 //
 // AND SO THE SECTION IS CALLED "CHARACTERS", not "Weakest characters".
 //
@@ -45,7 +46,8 @@ import { useMemo, useState } from "react";
 
 import { Card, Chip, Hint, Lbl } from "@/components/ui";
 import { CHAR_INDEX, SETS } from "@/data/characters";
-import { accuracyOf, formatAccuracy } from "@/lib/accuracy";
+import { summaryOfEntry, formatAccuracy } from "@/lib/accuracy";
+import { entryOf, factKeys, glyphOf } from "@/lib/facts";
 import type { AccuracyMetric, HistoryFile } from "@/types";
 
 /** char → position in SETS. あいうえお order — the order a learner thinks in,
@@ -107,8 +109,10 @@ const COMPARE: Record<SortKey, (a: Row, b: Row) => number> = {
   //   more evidence about rather than toward whichever one Object.entries
   //   happened to yield first.
   //
-  // Same rule as weakestChars() in src/lib/decks.ts, deliberately — this table
-  // and Home's "Weakest 20" must not disagree about which character is worst.
+  // Same rule as weakestEntries() in src/lib/decks.ts, deliberately — this
+  // table and that list must not disagree about which character is worst.
+  // (Home's "Weakest 20" ranks FACTS and is allowed to differ: it is a drill
+  // list, and a fact is what you drill. This table is a reading of entries.)
   acc: (a, b) => a.pct - b.pct || b.seen - a.seen,
   seen: (a, b) => a.seen - b.seen || a.pct - b.pct,
 };
@@ -124,28 +128,35 @@ export function CharactersTable({
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [script, setScript] = useState<ScriptFilter>("all");
 
-  const all = useMemo<Row[]>(
-    () =>
-      Object.entries(history.chars).flatMap(([c, agg]) => {
-        // Characters the data no longer has, and characters with no history:
-        // accuracy is null for the unpractised and the app's rule is to hide
-        // accuracy, never to zero it.
-        const info = CHAR_INDEX[c];
-        const pct = accuracyOf(agg, metric);
-        if (!info || pct === null) return [];
-        return [
-          {
-            c,
-            romaji: info.r[0],
-            set: info.set,
-            setLabel: info.setLabel,
-            seen: agg.seen,
-            pct,
-          },
-        ];
-      }),
-    [history, metric],
-  );
+  // A row is an ENTRY — this table lists characters, and a character is
+  // something you look up, not something you are asked. So its number is
+  // summaryOfEntry: the mean of that entry's facts' accuracies, NOT a pooled
+  // ratio over them. For kana the two are identical (one fact each); for 生
+  // they are not, and pooling would print the "61% true of nothing" this whole
+  // model exists to prevent. Reading `.meanPct` off the summary is the
+  // deliberate act that turns it into a renderable number.
+  const all = useMemo<Row[]>(() => {
+    const entries = new Set(factKeys(history.facts).map(entryOf));
+    return [...entries].flatMap((e) => {
+      // Entries the data no longer has, and entries with no history: accuracy
+      // is null for the unpractised and the app's rule is to hide accuracy,
+      // never to zero it.
+      const glyph = glyphOf(e);
+      const info = CHAR_INDEX[glyph];
+      const summary = summaryOfEntry(history, e, metric);
+      if (!info || !summary) return [];
+      return [
+        {
+          c: glyph,
+          romaji: info.r[0],
+          set: info.set,
+          setLabel: info.setLabel,
+          seen: summary.seen,
+          pct: summary.meanPct,
+        },
+      ];
+    });
+  }, [history, metric]);
 
   const rows = useMemo(() => {
     const cmp = COMPARE[sortKey];

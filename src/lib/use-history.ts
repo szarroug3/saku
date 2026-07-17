@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { HistoryFile } from "@/types";
 
-const EMPTY: HistoryFile = { sessions: [], chars: {} };
+const EMPTY: HistoryFile = { sessions: [], facts: {} };
 
 export function useHistory() {
   const [history, setHistory] = useState<HistoryFile>(EMPTY);
@@ -33,7 +33,7 @@ export function useHistory() {
   return { history, loaded, refresh };
 }
 
-/** Accuracy % over a group of chars under `metric`, or null if unseen.
+/** Accuracy % over a group of FACTS under `metric`, or null if unseen.
  *
  * Re-exported, not reimplemented: src/lib/accuracy.ts is the one definition of
  * what these numbers mean, and the old local copy here mixed the two

@@ -36,7 +36,7 @@ import { selectionLabels, toggled } from "@/components/home/selection";
 import { StartBar } from "@/components/home/start-bar";
 import { weaknessDecks, WeaknessShelf } from "@/components/home/weakness-shelf";
 import { Card, Lbl, PageTitle } from "@/components/ui";
-import { DECKS } from "@/lib/decks";
+import { DECKS, deckChars, deckSelectable } from "@/lib/decks";
 import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
@@ -70,7 +70,15 @@ export default function HomePage() {
   // Both shelves, in the order they appear, so the sentence names them in the
   // order you read them.
   const labels = useMemo(
-    () => selectionLabels([...weakness, ...DECKS], cfg.enabled, chars.length),
+    () =>
+      selectionLabels(
+        // The weakness cards already speak characters; the static decks speak
+        // facts and are translated at this one edge. cfg.enabled is a char→bool
+        // map — that is a separate task, and until it lands this is the seam.
+        [...weakness, ...DECKS.map(deckSelectable)],
+        cfg.enabled,
+        chars.length,
+      ),
     [weakness, cfg.enabled, chars.length],
   );
 
@@ -117,7 +125,7 @@ export default function HomePage() {
         history={history}
         cfg={cfg}
         pickerOpen={pickerOpen}
-        onToggle={(deck, on) => toggle(deck.chars, on)}
+        onToggle={(deck, on) => toggle(deckChars(deck), on)}
         onCustom={() => setPickerOpen((v) => !v)}
       />
 
