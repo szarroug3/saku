@@ -6,19 +6,20 @@
 // qualifier is the whole design of this file: the kana shelf's sections are the
 // gojūon rows because kana genuinely comes in rows, and the kanji shelf's are
 // jōyō grades because that is what KANJIDIC2 records. The words shelf has no
-// sections, because JMdict does not give it any and inventing some ("common
-// words"?) would be the newspaper band pretending to be a curriculum. So the
-// words shelf says what it is — 8,045 of them, find one by searching — instead
-// of pretending to be browsable. A shelf you cannot honestly cut is a search
-// box, and saying so is cheaper than a fake hierarchy.
+// sections, because the data gives it none; it shows the first screenful of
+// everyday words and sends you to search for the rest, instead of pretending to
+// be browsable. A shelf you cannot honestly cut is a search box, and saying so
+// is cheaper than a fake hierarchy.
 //
-// SECTIONS ARE SELECTABLE, and that is what makes "mark as known" hierarchical
-// without a hierarchy feature. The user's own words: "i know all hiragana, i
-// know all hiragana vowels, i know all hiragana k-rows, etc." Those are three
-// slices of the same shelf at three depths. Clicking a section header points the
-// bar at that section; clicking it again points it back at the shelf. There is
-// no third concept — the bar was always going to take a Slice, and a section
-// header is just another way of naming one.
+// SECTIONS AND TILES ARE MULTI-SELECT TOGGLES. You BUILD a drill by turning
+// things on: a section header toggles its whole row (hiragana vowels, the k-row,
+// a jōyō grade), and a single tile toggles just that glyph. Several can be on at
+// once, across kinds — the set lives on the page (see lib/library/selection.ts),
+// not here, so this file only draws the on/some/off state and reports toggles
+// up. The bar downstream unions everything on into one Slice, so "mark as known"
+// and "drill this" stay hierarchical without a hierarchy feature: the user's own
+// "i know all hiragana, i know all hiragana vowels, i know all k-rows" is three
+// depths of the same set.
 
 import { KANJI, KANJI_SUBJECT } from "@/data/kanji";
 import { KANA_SUBJECT, mnemonicFor, SETS } from "@/data/characters";
@@ -27,6 +28,7 @@ import { EntryTile } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
 import type { Claims } from "@/lib/claims";
 import { entryForGlyph, libEntry, type Kind, type LibEntry } from "@/lib/library/entries";
+import { sectionState, type Selection } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
 import { factsOf } from "@/lib/facts";
 import type { AccuracyMetric, EntryId, FactAggregate } from "@/types";
@@ -40,10 +42,10 @@ export interface ShelfSection {
 
 /** How many word tiles the words shelf shows before it tells you to search.
  *
- * 120 is a display cap, not a filter: `Shelf` still puts all 8,045 in the slice,
- * so "I know these" and Drill act on the shelf and not on the first screenful.
- * The number the bar shows and the number of tiles on the page are ALLOWED to
- * differ, and this is the one place they do — which is why the shelf says so. */
+ * A display cap: the words shelf shows this many everyday-word tiles and points
+ * the rest at search. The drill is now built from what you SELECT, so there is
+ * no longer a hidden "all 8,045" the bar acts on behind a screenful of 120 —
+ * what you can see and toggle is what you drill. */
 const WORD_TILES = 120;
 
 /** The sections of a shelf, cut the way the data is already cut. */
@@ -88,7 +90,8 @@ export function Shelf({
   sections,
   allEntries,
   selected,
-  onSelect,
+  onToggleEntry,
+  onToggleSection,
   facts,
   claims,
   metric,
@@ -99,8 +102,10 @@ export function Shelf({
   sections: readonly ShelfSection[];
   /** Every entry on the shelf, for the words case where sections are empty. */
   allEntries: readonly LibEntry[];
-  selected: string | null;
-  onSelect(id: string | null): void;
+  /** The global, cross-kind selection this shelf draws its on-state from. */
+  selected: Selection;
+  onToggleEntry(id: EntryId): void;
+  onToggleSection(ids: readonly EntryId[]): void;
   facts: Record<EntryId | string, FactAggregate>;
   claims: Claims;
   metric: AccuracyMetric;
@@ -114,6 +119,8 @@ export function Shelf({
       voice={voice}
       mnemonic={mnemonicOf(kind, entry)}
       standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
+      selected={selected.has(entry.id)}
+      onToggleSelect={() => onToggleEntry(entry.id)}
     />
   );
 
@@ -123,12 +130,8 @@ export function Shelf({
         <Lbl>Everyday words</Lbl>
         <p className="mb-3">
           <Hint>
-            {allEntries.length.toLocaleString()} of them, and no honest way to
-            shelve them — JMdict doesn&rsquo;t sort words into sections, and the
-            one number that looks like it could (the newspaper band) puts 安保
-            above 食べる. So: the first {WORD_TILES} are below, and the rest are
-            a search away. The bar still points at all{" "}
-            {allEntries.length.toLocaleString()}.
+            Common everyday words — the first {WORD_TILES} are here. Search to
+            find any of the others.
           </Hint>
         </p>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
@@ -142,17 +145,28 @@ export function Shelf({
     <>
       {kind === KANA_SUBJECT ? <TofuguCard /> : null}
       {sections.map((section) => {
-        const on = selected === section.id;
+        const ids = section.entries.map((e) => e.id);
+        const state = sectionState(selected, ids);
+        const onCount = ids.filter((id) => selected.has(id)).length;
         return (
           <Card key={section.id}>
             <div className="mb-2 flex items-center gap-2">
+              {/* Tri-state header, and each state NAMES ITS OWN text colour in
+                  the same string as its border/fill — no shared `text-*` for a
+                  branch's colour to lose to on stylesheet order (the cx hazard
+                  ui.tsx documents). Not the Chip component: Chip's `part` prop
+                  collides with the DOM `part` attribute and types as `undefined`,
+                  so the partial state is built here instead. */}
               <button
                 type="button"
-                onClick={() => onSelect(on ? null : section.id)}
+                onClick={() => onToggleSection(ids)}
+                aria-pressed={state === "all"}
                 className={`cursor-pointer rounded-(--radius) border px-2 py-0.5 text-[13px] font-semibold uppercase tracking-[0.04em] ${
-                  on
+                  state === "all"
                     ? "border-accent bg-accent-bg text-accent"
-                    : "border-transparent text-text-muted hover:border-border"
+                    : state === "some"
+                      ? "border-warning bg-warning-bg text-warning"
+                      : "border-transparent text-text-muted hover:border-border"
                 }`}
               >
                 {section.label}
@@ -160,8 +174,10 @@ export function Shelf({
               <span className="text-xs text-text-muted">
                 {section.entries.length}
               </span>
-              {on ? (
-                <Hint>— the bar is pointing at this row</Hint>
+              {state !== "none" ? (
+                <Hint>
+                  — {onCount} selected{state === "all" ? " (all)" : ""}
+                </Hint>
               ) : null}
             </div>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
@@ -249,5 +265,5 @@ const KANA_MNEMONIC: ReadonlyMap<string, string> = new Map(
 function mnemonicOf(kind: Kind, entry: LibEntry): string | undefined {
   if (kind !== KANA_SUBJECT) return undefined;
   const mn = KANA_MNEMONIC.get(entry.glyph);
-  return mn ? `${mn} · click the reading to hear it` : undefined;
+  return mn ? `${mn} · tap 🔊 to hear it` : undefined;
 }
