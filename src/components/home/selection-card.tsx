@@ -23,6 +23,8 @@
 // Kana / Kanji / Words, New / Shaky / Slipping / Solid / Mix-ups, and "things".
 // Those are the only words this app has for any of it.
 
+import Link from "next/link";
+
 import { Btn, Chip, Hint, Lbl, Row } from "@/components/ui";
 import { allSubjects, stateWord, subjectWord } from "@/lib/selection";
 import type { FactBand, SavedList, Selection } from "@/types";
@@ -58,19 +60,6 @@ export function SelectionCard({
     <>
       <Lbl>What to drill</Lbl>
       <div className="kq-material rounded-xl border border-border bg-card p-3.5">
-        {/* Search first: it is the one control that can name a single thing,
-            and typing 生 is faster than any number of chips. */}
-        <Row label="Search">
-          <input
-            value={sel.text}
-            onChange={(e) => patch({ text: e.target.value })}
-            placeholder="し · shi · 生 · teacher · 先生"
-            spellCheck={false}
-            autoComplete="off"
-            className="kq-material w-[260px] rounded-lg border border-border bg-card px-3 py-1.5 text-[13px] text-text outline-none focus:border-accent"
-          />
-        </Row>
-
         <Row label="Kind" hint="everything, unless you say otherwise">
           {allSubjects().map((s) => (
             <Chip
@@ -98,25 +87,43 @@ export function SelectionCard({
           ))}
         </Row>
 
-        {/* Lists only appear once you have one. A row offering a choice between
-            nothing and nothing is a row that teaches you the feature is broken;
-            the import screen is where you learn lists exist. */}
-        {lists.length ? (
-          <Row label="List">
-            <Chip on={!sel.list} onClick={() => patch({ list: null })}>
-              Any
-            </Chip>
-            {lists.map((l) => (
-              <Chip
-                key={l.id}
-                on={sel.list === l.id}
-                onClick={() => patch({ list: l.id })}
-              >
-                {l.name}
+        {/* The List row is always here, even with nothing to pick — the point
+            is that you should KNOW you can go curate a selection before you've
+            ever made one. When you have lists they're pickable and the Library
+            link offers more; when you have none the link is the whole row, a
+            signpost to where a selection gets built (search 生, add it to a
+            list) rather than a dead choice between nothing and nothing. */}
+        <Row label="List">
+          {lists.length ? (
+            <>
+              <Chip on={!sel.list} onClick={() => patch({ list: null })}>
+                Any
               </Chip>
-            ))}
-          </Row>
-        ) : null}
+              {lists.map((l) => (
+                <Chip
+                  key={l.id}
+                  on={sel.list === l.id}
+                  onClick={() => patch({ list: l.id })}
+                >
+                  {l.name}
+                </Chip>
+              ))}
+              <Link
+                href="/library"
+                className="text-xs text-accent no-underline hover:underline"
+              >
+                Curate more in the Library
+              </Link>
+            </>
+          ) : (
+            <Link
+              href="/library"
+              className="text-[13px] text-accent no-underline hover:underline"
+            >
+              Curate a selection in the Library
+            </Link>
+          )}
+        </Row>
 
         <Row label="How many">
           {LIMITS.map((n) => (
