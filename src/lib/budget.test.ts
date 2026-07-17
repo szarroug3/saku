@@ -27,6 +27,7 @@ import { KANA_FACTS, kanaFact } from "../data/characters.ts";
 import { freshFacts, nextGroup, planSession } from "./budget.ts";
 import { CLAIMED_DAYS } from "./claims.ts";
 import { KANA_GROUPS, KANA_GROUP_FACTS, nextLesson, setFacts } from "./lesson.ts";
+import { rank } from "./scoring.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 const DAY = 86_400_000;
@@ -374,6 +375,70 @@ describe("the links are checked, not guessed", () => {
         new RegExp(`^https://www\\.tofugu\\.com/japanese/${link}/$`),
       );
     }
+  });
+});
+
+// WHO CHOSE THE MATERIAL DECIDES HOW THE COUNT CUTS
+// =================================================
+// When the app picks the material for you (the suggested/study loop), a Count of
+// N is the WEAKEST N — that is the product. When YOU picked the items (the
+// What-to-drill card, `random: true`), a Count of N is a UNIFORM RANDOM N — the
+// owner's rule, "randomize everything, nothing by rote". Same planSession, one
+// flag; the weakness path is byte-for-byte the default.
+describe("a user-built cap is random; the suggested cap stays weakness-first", () => {
+  // 40 facts all in `probe` — stability 50d, last tested 40..79 days ago, so
+  // recall sits in (0.2, 0.45): all rankable, none quiet, none teach. Recall
+  // rises with i, and weakness rises with recall on this side of 0.5, so the
+  // weakest-N is the DEFINITE, monotonic head i0, i1, … — a set a random draw
+  // can be measured against.
+  const cands: FactId[] = ALL.slice(0, 40);
+  const probeState = (i: number) => ({ stability: 50, lastTested: NOW - (40 + i) * DAY });
+  const facts = Object.fromEntries(cands.map((id, i) => [id, probeState(i)]));
+  const h = history({ facts: facts as HistoryFile["facts"] });
+  const rankCands = cands.map((id, i) => ({ id, state: probeState(i) }));
+  const query = {
+    candidates: cands,
+    history: h,
+    groups: KANA_GROUP_FACTS,
+    length: 10,
+    now: NOW,
+  };
+
+  test("suggested/study path (no flag) STILL returns the weakness-ranked top N", () => {
+    const plan = planSession(query);
+    const weakest = rank({ facts: rankCands, limit: 10 }, NOW);
+    // The exact weakness order, not merely the same set — this is the ranking
+    // the SRS loop lives on, and it must be untouched.
+    assert.deepEqual(plan.probe, weakest);
+    assert.equal(plan.teach.length, 0, "no teach top-up — every fact is probe");
+    // Deterministic: the app's choice never re-rolls between renders.
+    assert.deepEqual(planSession(query).probe, plan.probe);
+  });
+
+  test("user-built path (random) draws a uniform N, NOT the weakest N", () => {
+    const inSet = new Set(cands);
+    const weakest10 = new Set(rank({ facts: rankCands, limit: 10 }, NOW));
+    const seenSets = new Set<string>();
+    let sawNonWeakest = false;
+
+    for (let t = 0; t < 40; t++) {
+      const plan = planSession({ ...query, random: true });
+      const picked = [...plan.teach, ...plan.probe];
+      // Count honored — a random cap is still a cap.
+      assert.equal(picked.length, 10, "count honored");
+      assert.equal(new Set(picked).size, 10, "no duplicates");
+      // Drawn only from the user's selection — nothing invented.
+      for (const f of picked) assert.ok(inSet.has(f), "drawn from the selection");
+      seenSets.add([...picked].sort().join(","));
+      if (picked.some((f) => !weakest10.has(f))) sawNonWeakest = true;
+    }
+
+    // The whole point: a uniform draw is NOT pinned to the weakness-ranked head.
+    // With 40 facts choosing 10, landing on exactly the weakest 10 every one of
+    // 40 draws is astronomically unlikely — one such draw would fail this.
+    assert.ok(sawNonWeakest, "must include items outside the weakest N");
+    // And it is genuinely re-rolled, not one fixed sample.
+    assert.ok(seenSets.size > 1, "repeated draws must not be identical");
   });
 });
 

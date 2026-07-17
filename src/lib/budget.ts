@@ -5,6 +5,11 @@
 // here re-derives a `p`, a weakness or an order — `status()` and `rank()` are
 // imported and believed.
 //
+// ONE deliberate non-determinism: the `random` branch (a user-built selection)
+// shuffles, same as selection.resolve does, because the owner's rule for that
+// screen is a uniform random draw, not a repeatable one. The default (app-chosen)
+// plan is fully deterministic given (candidates, history, now).
+//
 // THE HOLE THIS FILLS, AND WHY IT IS NOT OPTIONAL
 // ==============================================
 // The ranking model routes BOTH tails out of the ranking, on purpose:
@@ -88,6 +93,17 @@ import { effectiveState } from "@/lib/claims";
 import { rank, status } from "@/lib/scoring";
 import type { FactId, FactState, HistoryFile } from "@/types";
 
+/** Fisher–Yates in place. Local rather than imported from engine/index: that
+ * module pulls the whole question/answer runtime, and the budget is a leaf the
+ * page's plan depends on — a dependency the other way would be a cycle. */
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export interface SessionPlan {
   /**
    * Facts to ASK, best question first — straight from `rank`. The order is the
@@ -141,6 +157,21 @@ export interface PlanQuery {
    * are shaky on. Same rule, no branch.
    */
   length: number | null;
+  /**
+   * The pool is a USER-BUILT selection — the What-to-drill card, where a person
+   * explicitly chose the items — so cap it as a UNIFORM RANDOM subset, not the
+   * weakest N.
+   *
+   * The owner's rule for that screen, said twice: "randomize everything, nothing
+   * by rote." When the app is choosing material FOR you (the suggested/study
+   * loop, decks.weakestFacts) "your weakest first" is the whole product and
+   * stays. When YOU chose the items, re-sorting them hardest-first every time is
+   * the rote-drill this avoids: you'd grind your ten worst in the same order and
+   * never see the rest of what you picked. So this drops the weakness SELECTION
+   * only — quiet is still excluded and the teach/probe roles still stand, they
+   * are just sampled uniformly. Default false: an app-chosen plan weakness-ranks.
+   */
+  random?: boolean;
   now: number;
 }
 
@@ -160,7 +191,7 @@ export interface PlanQuery {
  * instead.
  */
 export function planSession(query: PlanQuery): SessionPlan {
-  const { candidates, history, groups, length, now } = query;
+  const { candidates, history, groups, length, now, random = false } = query;
 
   const probeCandidates: Array<{ id: FactId; state: FactState }> = [];
   // The two tails of `teach`, kept apart for ONE reason: how much of each to
@@ -188,6 +219,26 @@ export function planSession(query: PlanQuery): SessionPlan {
 
   // ONE group of new material, or all of it if the caller has no curriculum.
   const teachable = [...lost, ...lessonFrom(groups, fresh)];
+
+  // USER-BUILT SELECTION: a uniform random N, never the weakest N (see `random`
+  // on PlanQuery). The weakness ranking below is skipped entirely — `rank` is
+  // not called — so the SELECTION of which items make the cap is a fair shuffle.
+  // Quiet is already gone (it never entered probe/teach), and each item keeps
+  // its teach-vs-probe role for how the session presents it; only the ORDERING
+  // by weakness is dropped, and buildDeck re-shuffles the deck after this anyway.
+  if (random) {
+    const drillable: Array<{ id: FactId; teach: boolean }> = [
+      ...probeCandidates.map((c) => ({ id: c.id, teach: false })),
+      ...teachable.map((id) => ({ id, teach: true })),
+    ];
+    shuffle(drillable);
+    const picked = length === null ? drillable : drillable.slice(0, length);
+    return {
+      probe: picked.filter((x) => !x.teach).map((x) => x.id),
+      teach: picked.filter((x) => x.teach).map((x) => x.id),
+      short: length !== null && picked.length < length,
+    };
+  }
 
   // Unlimited: everything that isn't quiet — except that "unlimited" was never
   // a licence to hand over the whole curriculum at once. It caps the ASKING,

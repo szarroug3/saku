@@ -136,6 +136,12 @@ export default function HomePage() {
       // asks for the whole pool, so it has no cap either.
       length:
         cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null,
+      // This is a USER-BUILT selection: the person chose these items on the
+      // What-to-drill card, so a Count of N takes a UNIFORM RANDOM N of them
+      // rather than the weakest N (the owner's rule — "randomize everything,
+      // nothing by rote"; see PlanQuery.random). The suggested/study loop, where
+      // the app picks the material, weakness-ranks instead and is untouched.
+      random: true,
       now,
     });
     return { facts: planFacts(plan), teach: plan.teach };
