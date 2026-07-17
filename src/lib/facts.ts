@@ -18,10 +18,12 @@
 // place. src/lib/fact-id.ts mints them; nothing reads them.
 
 import { KANA_FACTS } from "@/data/characters";
+import { KANJI_FACTS } from "@/data/kanji";
+import { VOCAB_FACTS } from "@/data/vocab";
 import type { EntryId, FactId, FactInfo } from "@/types";
 
 /** Every subject's facts, in the order they should appear. */
-const SUBJECTS: FactInfo[][] = [KANA_FACTS];
+const SUBJECTS: FactInfo[][] = [KANA_FACTS, KANJI_FACTS, VOCAB_FACTS];
 
 /** Every fact in the app, in data order. */
 export const ALL_FACTS: FactId[] = SUBJECTS.flat().map((f) => f.id);

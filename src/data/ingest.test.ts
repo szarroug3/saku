@@ -1,0 +1,126 @@
+// Run: node --test src/data/ingest.test.ts
+//
+// Uses node:test + native TypeScript stripping (Node 24). No test framework, no
+// new dependencies.
+//
+// WHY THIS FILE EXISTS
+// ====================
+// The generated data is 2.7MB of JSON nobody will read, wired into a registry
+// that resolves ids by lookup and therefore cannot tell you when a lookup was
+// never going to succeed. Two classes of failure are silent here:
+//
+//  - A DUPLICATE FACT ID. `BY_FACT` is a Map, so a collision does not throw —
+//    the second row wins and the first fact quietly stops existing. With 21,449
+//    facts minted from data, a collision is a data question, not a code
+//    question, so it has to be asked of the data.
+//  - A HAND-AUTHORED TYPO. src/data/confusable.ts is the one table a human
+//    edits. A character that is not in the kanji data produces a distractor
+//    that renders as a box, and nothing else complains.
+//
+// The ordering assertions live in scripts/ingest/build.py instead, because they
+// are properties of the GENERATOR — they must fail when the ingest is re-cut,
+// which is the moment they can regress, not when the app boots.
+
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { LOOKALIKE_KANJI, DERIVED_CONFUSABLE, distractorsFor } from "./confusable.ts";
+import { KANJI, KANJI_FACTS, KANJI_ORDER, PREREQUISITE_ONLY, READINGS, kanjiRow } from "./kanji.ts";
+import { VOCAB, VOCAB_FACTS } from "./vocab.ts";
+
+test("jōyō is 2,136 kanji and has no grade 7", () => {
+  assert.equal(KANJI.length, 2136);
+  const grades = new Set(KANJI.map((k) => k.grade));
+  assert.deepEqual([...grades].sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 8]);
+});
+
+test("every fact id is unique across every subject", () => {
+  // The registry is a Map. A collision does not throw; it deletes a fact.
+  const ids = [...KANJI_FACTS, ...VOCAB_FACTS].map((f) => f.id);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("no fact is ungradable: every fact has at least one answer", () => {
+  for (const f of [...KANJI_FACTS, ...VOCAB_FACTS]) {
+    assert.ok(f.answers.length > 0, `${f.id} has no answer and cannot be graded`);
+  }
+});
+
+test("a kanji reading fact is keyed on (kanji, word), never on the kanji alone", () => {
+  // 生 has nine readings. If any of them minted a bare `kanji:生/reading` the
+  // ids would collide and eight would vanish — which is precisely the bug the
+  // entry/fact split exists to make impossible.
+  const sei = READINGS.filter((r) => r.k === "生");
+  assert.equal(sei.length, 9);
+  const ids = new Set(sei.map((r) => `${r.k}@${r.anchor}`));
+  assert.equal(ids.size, 9);
+});
+
+test("rendaku folds into the base reading rather than splitting the score", () => {
+  // 口 is くち and こう — two readings, not three. 出口's ぐち is くち voiced,
+  // and scoring it as a separate reading would split one piece of knowledge.
+  const kuchi = READINGS.filter((r) => r.k === "口");
+  assert.deepEqual(kuchi.map((r) => r.base).sort(), ["くち", "こう"]);
+});
+
+test("jukujikun contribute no per-kanji reading rather than a made-up one", () => {
+  // 大人 is おとな. There is no reading of 大 in it. The word keeps its own
+  // facts; it must not have produced kanji evidence.
+  const otona = VOCAB.find((w) => w.keb === "大人");
+  if (otona) assert.equal(otona.align, null);
+  for (const r of READINGS) {
+    assert.ok(!r.words.includes("大人"), `大人 fabricated evidence for ${r.k}`);
+  }
+});
+
+test("hand-authored lookalikes are all real jōyō kanji", () => {
+  // The one table a human edits, and a typo here renders as a box.
+  for (const group of LOOKALIKE_KANJI) {
+    assert.ok(group.length >= 2, `group ${group.join("")} needs two members`);
+    for (const c of group) {
+      assert.ok(kanjiRow(c), `${c} in LOOKALIKE_KANJI is not a jōyō kanji`);
+    }
+  }
+});
+
+test("KRADFILE cannot derive the classic pairs, which is why the table exists", () => {
+  // Guards the claim src/data/confusable.ts is built on. If a future KRADFILE
+  // re-cut ever DOES derive these, the hand-authored rows become duplicates and
+  // this should fail so someone re-reads that file's reasoning.
+  const derived = DERIVED_CONFUSABLE.map((g) => [...g].sort().join(""));
+  for (const pair of [["人", "入"], ["土", "士"], ["未", "末"]]) {
+    assert.ok(
+      !derived.includes([...pair].sort().join("")),
+      `KRADFILE now derives ${pair.join("/")}; confusable.ts is out of date`,
+    );
+  }
+  // ...and it must still be predicted, by the hand-authored half.
+  assert.ok(distractorsFor("人", 4).includes("入"));
+  assert.ok(distractorsFor("未", 4).includes("末"));
+});
+
+test("'pulled in as a prerequisite' does not mean 'not a lesson'", () => {
+  // 100 items enter via closure and 91 are ordinary lessons. Only the ones with
+  // no everyday word at all are parts. Collapsing these two ideas would tell a
+  // user that 口 — 31 everyday words — is not a lesson.
+  const prereq = KANJI_ORDER.filter((o) => o.enteredVia === "prereq");
+  assert.equal(prereq.length, 100);
+  assert.equal(PREREQUISITE_ONLY.length, 9);
+  assert.ok(PREREQUISITE_ONLY.includes("乙"));
+  for (const c of ["口", "目", "子", "白"]) {
+    assert.ok(!PREREQUISITE_ONLY.includes(c), `${c} is a real lesson`);
+  }
+});
+
+test("every component is charged, jōyō or not", () => {
+  // 無 = ｜ノ一杰乞. 杰 is an 8-stroke NON-jōyō primitive, so it is never an
+  // item — but something must have paid for it before 無 is taught, or the
+  // "novel strokes" number is the old lie in new clothes.
+  const mu = KANJI_ORDER.find((o) => o.c === "無");
+  assert.ok(mu);
+  const payer = KANJI_ORDER.find(
+    (o) => (kanjiRow(o.c)?.comps ?? []).includes("杰") && o.i < mu.i,
+  );
+  assert.ok(payer, "無 is taught before anything charged for 杰");
+  assert.ok(payer.novelStrokes >= 8, `${payer.c} got 杰 for free`);
+});
