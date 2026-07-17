@@ -26,8 +26,10 @@
 // 27" is COUNTED — hiragana has twenty-seven sections, and a card that promised
 // ten would be caught out at the eleventh by the user who kept going.
 
+import { WhyDisclosure } from "@/components/lesson/why";
 import { Btn, Card, Hint, Lbl } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
+import { WHY_SCRIPT } from "@/data/why";
 import type { Lesson } from "@/lib/lesson";
 import { setFacts } from "@/lib/lesson";
 import type { FactId } from "@/types";
@@ -51,6 +53,14 @@ export function NextLesson({
     .map((c) => CHAR_INDEX[c]?.r[0])
     .filter(Boolean)
     .join(" · ");
+
+  // Why THIS script, and only where the question is live: the first group of a
+  // script is the juncture a beginner actually asks "why am I starting here?" —
+  // day one for hiragana, the hand-off for katakana. On group two onward the
+  // answer hasn't changed and repeating it would be the wall of text the pattern
+  // exists to avoid. Absent for any script with no entry, so this is silent
+  // rather than empty.
+  const why = group.index === 1 ? WHY_SCRIPT[group.setId] : undefined;
 
   return (
     <>
@@ -80,6 +90,12 @@ export function NextLesson({
             {chars.join("")}
           </p>
         </div>
+
+        {/* Why hiragana first (or katakana next), before the where-to-learn and
+            the Start below it. Compact and closed by default — it explains the
+            language, not the app, so it belongs on screen; but it is a pull, so
+            only the one line shows until the reader opens it. */}
+        {why ? <WhyDisclosure why={why} /> : null}
 
         {/* Learn it, THEN be asked. The app has never taught anything and is
             not about to start pretending: the guide is someone else's and the
