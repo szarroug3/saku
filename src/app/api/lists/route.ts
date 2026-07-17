@@ -1,7 +1,14 @@
 // GET/POST/DELETE /api/lists — the saved lists file. Same shape of handler as
 // /api/history and /api/session, over lists.json instead of history.json.
 
-import { addToList, deleteList, loadLists, saveList } from "@/lib/lists";
+import {
+  addToList,
+  deleteList,
+  loadLists,
+  removeFromList,
+  renameList,
+  saveList,
+} from "@/lib/lists";
 import type { EntryId, SavedList } from "@/types";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -10,10 +17,20 @@ export async function GET() {
   return Response.json(loadLists(), { headers: NO_STORE });
 }
 
-/** Body is either a whole list (create/replace) or `{ addTo, entries }`. */
+/**
+ * Body is one of four writes, discriminated by which key is present:
+ *   - `{ addTo, entries }`     add entries to a fixed list
+ *   - `{ removeFrom, entries }` drop entries from a fixed list
+ *   - `{ rename, name }`        relabel a list
+ *   - a whole SavedList         create or replace
+ * The three verbs mirror addTo deliberately — one shape per operation, each
+ * refused at its one server helper rather than re-checked here.
+ */
 type Body =
   | { addTo: string; entries: EntryId[] }
-  | (SavedList & { addTo?: undefined });
+  | { removeFrom: string; entries: EntryId[] }
+  | { rename: string; name: string }
+  | (SavedList & { addTo?: undefined; removeFrom?: undefined; rename?: undefined });
 
 export async function POST(request: Request) {
   let body: Body;
@@ -25,12 +42,17 @@ export async function POST(request: Request) {
       { status: 400, headers: NO_STORE },
     );
   }
-  // addToList refuses derived lists itself — see the doc there. This route does
-  // not re-check, because two places deciding the same rule is how they drift.
+  // Each helper refuses what it must itself (a derived list rejects addTo /
+  // removeFrom — see the docs there). This route does not re-check, because two
+  // places deciding the same rule is how they drift.
   const file =
-    body.addTo !== undefined
+    "addTo" in body && body.addTo !== undefined
       ? addToList(body.addTo, body.entries)
-      : saveList(body);
+      : "removeFrom" in body && body.removeFrom !== undefined
+        ? removeFromList(body.removeFrom, body.entries)
+        : "rename" in body && body.rename !== undefined
+          ? renameList(body.rename, body.name)
+          : saveList(body);
   return Response.json(file, { headers: NO_STORE });
 }
 

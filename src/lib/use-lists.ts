@@ -72,6 +72,38 @@ export function useLists() {
     [refresh],
   );
 
+  /** Drop entries from a FIXED list — the toggle's "off" half, and the per-entry
+   * remove on the manage screen. The server refuses derived lists (see
+   * removeFromList); the UI only ever calls this for writable ones. */
+  const removeFrom = useCallback(
+    async (id: string, entries: EntryId[]) => {
+      await fetch("/api/lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ removeFrom: id, entries }),
+      }).catch(() => {});
+      await refresh();
+    },
+    [refresh],
+  );
+
+  /** Relabel a list. Allowed on either kind — a name is not a member — but the
+   * manage screen only OFFERS it for writable lists, matching where a person
+   * expects to be able to rename. */
+  const rename = useCallback(
+    async (id: string, name: string) => {
+      await fetch("/api/lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rename: id, name }),
+      }).catch(() => {});
+      await refresh();
+    },
+    [refresh],
+  );
+
+  /** Delete a whole list. NOT the same as removeFrom — this drops the list
+   * itself, entries and all. */
   const remove = useCallback(
     async (id: string) => {
       await fetch(`/api/lists?id=${encodeURIComponent(id)}`, {
@@ -99,7 +131,38 @@ export function useLists() {
     [save],
   );
 
-  return { lists, loaded, refresh, save, addTo, remove, create };
+  return { lists, loaded, refresh, save, addTo, removeFrom, rename, remove, create };
+}
+
+/**
+ * The add-to-list ROW as a toggle, decided from the indicator it already shows.
+ *
+ * A row's mark is truthful about how many of `entries` are in `list`: ✓ all, –
+ * some, blank none. This turns that same fact into the one action a click
+ * should take, so the indicator and the behaviour cannot disagree:
+ *
+ *   all present (✓)  → REMOVE them all (→ blank). The one place a click undoes.
+ *   otherwise        → ADD the slice (→ ✓). Empty fills; partial completes.
+ *
+ * Both underlying writes are idempotent (addToList skips members it has,
+ * removeFromList skips ones it hasn't), so handing the WHOLE slice either way is
+ * safe — the partial case adds the missing ones without disturbing the present.
+ *
+ * Pure and free-standing, like countIn: it reads only its arguments, so the
+ * popover and its test ask the same function what a click means.
+ */
+export interface ListToggle {
+  kind: "add" | "remove";
+  entries: EntryId[];
+}
+
+export function listToggle(
+  list: SavedList,
+  entries: readonly EntryId[],
+): ListToggle {
+  const have = countIn(list, entries);
+  const allPresent = entries.length > 0 && have === entries.length;
+  return { kind: allPresent ? "remove" : "add", entries: [...entries] };
 }
 
 /** How many of `entries` are already in `list` — the popover's tick/dash/blank.
