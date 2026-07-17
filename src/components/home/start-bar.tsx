@@ -119,10 +119,12 @@ export function StartBar({
             </span>
             <span className="mt-0.5 block text-xs tabular-nums text-text-muted">
               {whatSentence(labels, count)}
-              {/* Said here, not only in the confirm dialog: a consequence you
-                  only learn about after clicking is an ambush, and the confirm
-                  is a backstop, not the notice. */}
-              {active ? " · replaces the running quiz" : null}
+              {/* The notice, and now the ONLY notice: there is no confirm
+                  dialog behind it. A consequence you only learn about after
+                  clicking is an ambush, so it is written on the button that
+                  causes it — which is where it always should have been, and is
+                  why the dialog it used to back up isn't missed. */}
+              {active ? " · replaces the session in progress" : null}
             </span>
           </>
         )}

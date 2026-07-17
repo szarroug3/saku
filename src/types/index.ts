@@ -167,6 +167,19 @@ export interface QuizConfig {
    */
   slowFloorMs: number;
 
+  // ---------- the session loop (src/lib/session.ts) ----------
+  /**
+   * Minutes of rest before round 2, and before every round after that.
+   *
+   * TWO NUMBERS, ON PURPOSE. Not a first-rest plus a doubling factor, not a
+   * curve, not a "spacing strategy" — the user asked to type 5 and 10, and
+   * anything cleverer would be an algorithm they have to configure instead of
+   * two facts they have to state. If they want 5 and 5, or 10 and 3, they type
+   * that; nothing here has an opinion.
+   */
+  restFirstMin: number;
+  restThenMin: number;
+
   // ---------- drill HUD (all off = zen, all on = instrumented) ----------
   showStreak: boolean;
   showAccuracy: boolean;
@@ -322,6 +335,19 @@ export interface QuizSessionRecord {
   facts: Record<FactId, FactCounts>;
   /** Full per-fact detail; absent on summary-only sessions. */
   detail?: SessionStats;
+  /**
+   * The exact set this ran over, so Recent can run it again AS IT WAS.
+   *
+   * Stored rather than derived from `facts`: the facts are what you were
+   * ASKED, and a session you left a quarter of the way through was asked a
+   * quarter of its set. Rebuilding the set from the answers would silently
+   * rerun a different, smaller session and call it the same one. Optional —
+   * records written before this field existed don't get a Rerun button rather
+   * than getting a wrong one.
+   */
+  chars?: string[];
+  /** How many rounds of the loop this session ran. Absent on one-off quizzes. */
+  rounds?: number;
 }
 
 export interface HistoryFile {

@@ -25,29 +25,27 @@
 // same thing the cards set coarsely, and it is what makes the union of two
 // overlapping cards dedupe itself. See src/components/home/selection.ts.
 
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CharacterPicker } from "@/components/home/character-picker";
 import { DeckShelf } from "@/components/home/deck-shelf";
 import { QuizOptionsFields } from "@/components/home/quiz-options";
-import { ResumeCard } from "@/components/home/resume-card";
+import { SessionCard } from "@/components/home/session-card";
 import { selectionLabels, toggled } from "@/components/home/selection";
 import { StartBar } from "@/components/home/start-bar";
 import { weaknessDecks, WeaknessShelf } from "@/components/home/weakness-shelf";
 import { Card, Lbl, PageTitle } from "@/components/ui";
+import { planFacts, planSession } from "@/lib/budget";
+import { kanaFact } from "@/data/characters";
 import { DECKS, deckChars, deckSelectable } from "@/lib/decks";
 import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
 
-const REPLACE_PROMPT =
-  "Starting this quiz discards the one in progress. Continue?";
-
 export default function HomePage() {
-  const router = useRouter();
   const { cfg, set } = useQuizConfig();
-  const { active, progress, startQuiz, abandonQuiz } = useQuizSession();
+  const { session, startSession, discardSession, continueSession } =
+    useQuizSession();
   const { history } = useHistory();
 
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -78,6 +76,20 @@ export default function HomePage() {
   // answer — remounts this page anyway.
   const [now] = useState(() => Date.now());
 
+  // A SECOND clock, and the difference from `now` above is not pedantry.
+  //
+  // `now` is seeded in a useState initialiser, which also runs on the server —
+  // fine for the weakness cards, because nothing they render says what time it
+  // is. The session card DOES ("last answer 2 hours ago"), and a timestamp
+  // seeded on the server renders text that the client then disagrees with on
+  // hydration. So the card's clock is read strictly after mount, and the card
+  // sits out the first paint rather than printing a time from another machine.
+  const [mountedNow, setMountedNow] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMountedNow(Date.now());
+  }, []);
+
   const weakness = useMemo(
     () => weaknessDecks(history, cfg, chars, now),
     [history, cfg, chars, now],
@@ -101,27 +113,57 @@ export default function HomePage() {
   const toggle = (of: string[], on: boolean) =>
     set((prev) => toggled(prev, of, on));
 
+  // Start IS start-a-session. The loop is the app's spine, not a mode you opt
+  // into: you do the set, you fork on the misses, you rest, you do the same set
+  // again. A one-off quiz is just a session you complete after one round.
+  //
+  // What you selected is the POOL, not the session. src/lib/budget.ts decides
+  // what the session actually is: the ranked material first, topped up from
+  // `teach` to the length you asked for. That top-up is what stops the drill
+  // from going dark — without it, everything at p → 0 leaves the ranking and
+  // nothing catches it, so the things you are worst at end up in no list at
+  // all.
+  //
+  // No confirm dialog, even though this replaces a session in progress. The
+  // session card above is on screen saying there's one, with a Continue button
+  // on it — the information a dialog would interrupt you to give you is already
+  // in front of you, and everything in that session is already saved.
   const start = () => {
     if (!chars.length) return;
-    if (active && !window.confirm(REPLACE_PROMPT)) return;
-    // Replacing rather than abandoning-then-starting: startQuiz overwrites the
-    // active quiz outright, and abandonQuiz first would only add a render with
-    // no quiz in it.
-    startQuiz(chars);
+    const plan = planSession({
+      candidates: chars.map(kanaFact),
+      history,
+      // "Unlimited" means no cap, not no budget — see budget.ts. Coverage
+      // sessions ask for the whole pool, so they too have no cap.
+      length:
+        cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null,
+      now,
+    });
+    // The plan speaks facts; a leg drills characters. One kana is one fact, so
+    // this is a filter today and a real lookup the day kanji lands.
+    const inPlan = new Set<string>(planFacts(plan));
+    const teach = new Set<string>(plan.teach);
+    const planned = chars.filter((c) => inPlan.has(kanaFact(c)));
+    if (!planned.length) return;
+    startSession(
+      planned,
+      planned.filter((c) => teach.has(kanaFact(c))),
+    );
   };
 
   return (
     <>
       <PageTitle title="Kana quiz" />
 
-      {/* Not rendered at all with no quiz — see resume-card.tsx. A card that
-          offers to resume nothing is the lie this replaced. */}
-      {active ? (
-        <ResumeCard
-          active={active}
-          progress={progress}
-          onResume={() => router.push("/quiz")}
-          onDiscard={abandonQuiz}
+      {/* Not rendered at all with no session — see session-card.tsx. A card
+          that offers to continue nothing is the lie this replaced. */}
+      {session && mountedNow !== null ? (
+        <SessionCard
+          session={session}
+          now={mountedNow}
+          onContinue={continueSession}
+          onRestart={() => startSession(session.chars)}
+          onDiscard={discardSession}
         />
       ) : null}
 
@@ -151,7 +193,7 @@ export default function HomePage() {
         cfg={cfg}
         labels={labels}
         count={chars.length}
-        active={!!active}
+        active={!!session}
         onStart={start}
       />
     </>

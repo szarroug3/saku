@@ -1,8 +1,12 @@
 "use client";
 
-// Active-quiz + results state shared across routes. A quiz flows
-// setup (/) → startQuiz → /quiz (mode screen) → finishQuiz → /results.
-// Stored sessions reopen through viewStoredSession → /results.
+// Active-quiz + session + results state shared across routes.
+//
+// A one-off quiz flows setup (/) → startQuiz → /quiz → finishQuiz → /results.
+// A SESSION flows setup (/) → startSession → /quiz → finishQuiz → /session
+// (the fork) → retry legs back to /quiz, or Complete round → the rest → the
+// next round over the SAME whole set. See src/lib/session.ts for the loop
+// itself; this file only owns the state and the navigation.
 //
 // Tab-switching is allowed while a quiz runs: navigating away unmounts the
 // mode screen but does NOT discard the quiz. Screens keep everything they
@@ -13,9 +17,18 @@
 //
 // Config snapshot rule: the Home-builder settings (mode, directions, answer
 // styles, length) are FROZEN into the quiz at startQuiz — editing them
-// mid-quiz only affects the next quiz. Settings-page settings (retries,
-// timer, show-answer, script label, fonts, blur-submit, voice) are read
-// live from useQuizConfig and apply instantly, drawer-style.
+// mid-quiz only affects the next quiz. A session freezes them ONCE, at
+// startSession, and every round of it re-runs that same snapshot: "rerunning a
+// previous session reruns the session as it was". Settings-page settings
+// (retries, timer, show-answer, script label, fonts, blur-submit, voice) are
+// read live from useQuizConfig and apply instantly, drawer-style.
+//
+// SAVE AS YOU ANSWER
+// ==================
+// There is no "are you sure?" on leaving, anywhere, ever. That is affordable
+// because every answer is already on disk before you could leave: the mode
+// screens call `saveNow()` the moment they mutate the runtime. See the note on
+// `saveNow` for the bug this closed.
 
 import { useRouter } from "next/navigation";
 import {
@@ -32,6 +45,13 @@ import {
 import { computeResults } from "@/lib/engine";
 import { factKeys } from "@/lib/facts";
 import { useQuizConfig } from "@/lib/quiz-config";
+import type { QuizSnapshot } from "@/lib/quiz-session-types";
+import {
+  mergeStats,
+  restMinutes,
+  summariseRound,
+  type StudySession,
+} from "@/lib/session";
 import type {
   FactId,
   QuizConfig,
@@ -40,15 +60,11 @@ import type {
   SessionStats,
 } from "@/types";
 
-/** The Home-builder settings frozen at Start Quiz. */
-export type QuizSnapshot = Pick<
-  QuizConfig,
-  "mode" | "dirs" | "styleJp2en" | "styleEn2jp" | "length" | "limType" | "limCount"
->;
+export type { QuizSnapshot };
 
 export interface ActiveQuiz {
-  /** The chars this run draws from (selection, or the misses on a redrill).
-   * Endless mode replenishes from THIS list, never the live picker.
+  /** The chars this LEG draws from (the selection, the misses on a redrill, or
+   * a session round's whole set).
    *
    * Still CHARACTERS, not facts: the mode screens ask "what does し say" by
    * putting a character on screen, and they build their decks, their MC
@@ -90,39 +106,76 @@ export interface ResultsPayload {
 }
 
 interface QuizSessionContextValue {
-  /** False until the sessionStorage snapshot has been restored — screens
-   * must not redirect away from /quiz or /results before this is true. */
+  /** False until the localStorage snapshot has been restored — screens
+   * must not redirect away from /quiz, /session or /results before this is
+   * true. */
   restored: boolean;
-  /** Non-null while a quiz is in progress (even when on another tab). */
+  /** Non-null while a quiz leg is in progress (even when on another tab). */
   active: ActiveQuiz | null;
+  /** Non-null while a session loop is running — including during a rest, when
+   * `active` is null because nothing is being drilled. */
+  session: StudySession | null;
   /** Non-null when /results has something to show. */
   results: ResultsPayload | null;
   /** Live progress for the sidebar chip; screens keep it updated. */
   progress: QuizProgress | null;
   setProgress(p: QuizProgress | null): void;
-  /** Begin a quiz over `chars` with the current cfg; navigates to /quiz. */
+  /**
+   * Write the snapshot to disk NOW, without waiting for a state change.
+   *
+   * Mode screens call this after every answer. See the comment on the save
+   * effect for why a state-change-driven save is not enough.
+   */
+  saveNow(): void;
+  /** Begin a one-off quiz over `chars` with the current cfg; navigates to /quiz. */
   startQuiz(chars: string[], opts?: { redrill?: boolean }): void;
-  /** End the active quiz: compute results, POST /api/session, go to /results. */
+  /** The rest is over (or you skipped the lesson): begin round 1. */
+  startFirstRound(): void;
+  /** End the active leg. In a session this opens the fork; otherwise it
+   * computes results, POSTs /api/session and goes to /results. */
   finishQuiz(stats: SessionStats): void;
   /** Drop the active quiz without scoring (explicit "← Setup" / new start). */
   abandonQuiz(): void;
   /** Reopen a stored session's results (detail or summary-only fallback). */
   viewStoredSession(record: QuizSessionRecord): void;
+
+  // ---------- the session loop ----------
+  /**
+   * Start a session over the PLANNED set.
+   *
+   * `chars` is what src/lib/budget.ts decided the session is — ranked material
+   * topped up from `teach` — not the raw selection. `teach` is the subset that
+   * gets shown before it gets asked.
+   */
+  startSession(chars: string[], teach?: string[]): void;
+  /** Re-ask a subset from the fork. Comes back to the same fork. */
+  retryLeg(chars: string[]): void;
+  /** Complete the round: bank it, write the floor, start the rest. */
+  completeRound(): void;
+  /** The rest is over (or you skipped it): run the SAME whole set again. */
+  startNextRound(): void;
+  /** Stop for good — banks the current round and shows Session complete. */
+  endSession(): void;
+  /** Session complete → Done: write history and clear. */
+  finishSession(): void;
+  /** Throw the session away unscored. */
+  discardSession(): void;
+  /** Continue a session you left: back to whatever it was doing. */
+  continueSession(): void;
 }
 
 const QuizSessionContext = createContext<QuizSessionContextValue | null>(null);
 
 /** A quiz outlives the tab it started in. The whole session state (runtime
  * scratch included) is JSON-serializable and snapshotted to localStorage —
- * restored on mount, saved on every state change and again at beforeunload,
- * which is what catches in-place runtime mutations (deck position, per-card
- * states, remaining timer) since those never go through setState.
+ * restored on mount, saved on every state change, again on every answer via
+ * saveNow(), and once more at beforeunload.
  *
  * localStorage rather than sessionStorage so closing the browser and coming
- * back tomorrow still offers Resume. The cost is that localStorage is shared
+ * back tomorrow still offers Continue. The cost is that localStorage is shared
  * across tabs, so two open tabs would otherwise write over each other; the
- * `owner` stamp below settles that. There is no expiry: a quiz ends when you
- * finish it or discard it, not when it gets old. */
+ * `owner` stamp below settles that. There is no expiry: a session ends when
+ * you finish it or discard it, not when it gets old. */
 const STORAGE_KEY = "kanaquiz-session";
 
 /** Identifies the tab that currently owns the quiz. Regenerated per mount, so
@@ -131,6 +184,7 @@ const TAB_ID = Math.random().toString(36).slice(2);
 
 interface StoredSession {
   active: ActiveQuiz | null;
+  session: StudySession | null;
   results: ResultsPayload | null;
   progress: QuizProgress | null;
   /** Last tab to write. A tab that no longer owns the quiz stops saving, so
@@ -138,10 +192,23 @@ interface StoredSession {
   owner?: string;
 }
 
+function snapshotOf(cfg: QuizConfig): QuizSnapshot {
+  return {
+    mode: cfg.mode,
+    dirs: { ...cfg.dirs },
+    styleJp2en: cfg.styleJp2en,
+    styleEn2jp: cfg.styleEn2jp,
+    length: cfg.length,
+    limType: cfg.limType,
+    limCount: cfg.limCount,
+  };
+}
+
 export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { cfg } = useQuizConfig();
   const [active, setActive] = useState<ActiveQuiz | null>(null);
+  const [session, setSession] = useState<StudySession | null>(null);
   const [results, setResults] = useState<ResultsPayload | null>(null);
   const [progress, setProgress] = useState<QuizProgress | null>(null);
   const [restored, setRestored] = useState(false);
@@ -157,6 +224,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         // Post-mount hydration, same pattern as quiz-config.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         if (saved.active) setActive(saved.active);
+        if (saved.session) setSession(saved.session);
         if (saved.results) setResults(saved.results);
         if (saved.progress) setProgress(saved.progress);
       }
@@ -166,23 +234,68 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     setRestored(true);
   }, []);
 
+  // The latest values, readable from a stable callback. saveNow() must not
+  // change identity every render: the mode screens call it from inside their
+  // own effects and handlers, and a fresh function each render would make it a
+  // dep that re-fires all of them.
+  //
+  // Mirrored in an effect rather than assigned during render — a ref write in
+  // the render body is a real hazard (it can be torn by a re-render React
+  // discards), and this one has no need to be early. It is declared FIRST so
+  // it runs before the save effect below, which means every save reads values
+  // from the render that triggered it.
+  const latest = useRef<StoredSession>({
+    active: null,
+    session: null,
+    results: null,
+    progress: null,
+  });
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    latest.current = { active, session, results, progress };
+    restoredRef.current = restored;
+  });
+
+  /**
+   * Write the snapshot. Stable identity — see `latest` above.
+   *
+   * THE BUG THIS CLOSES
+   * ===================
+   * Saving used to happen only when provider STATE changed. But a quiz's real
+   * state lives in `active.runtime`, which the mode screens mutate IN PLACE —
+   * so `active` never changes identity, and the only save dep that moved
+   * during a quiz was `progress`. In grid mode `progress.done` counts cards
+   * with `everCorrect`, and `everCorrect` is only ever set in the correct
+   * branch. So: a right answer saved the session, and a WRONG one saved
+   * nothing at all.
+   *
+   * `beforeunload` hid this for the common case — a normal reload or tab close
+   * fires it and the misses get flushed. What it does not cover is a crash, a
+   * force-quit, or the browser evicting the tab under memory pressure, and in
+   * any of those you lost every miss since your last correct answer. The file
+   * used to claim in its own header that the runtime was "written AS IT
+   * CHANGES" while the line above the listener admitted beforeunload was
+   * catching what state-change saves miss. Both cannot be true.
+   *
+   * Now the screens call this on every resolved answer, right or wrong, so the
+   * disk is current before the next question is drawn. beforeunload stays as a
+   * belt-and-braces for in-flight edits (half-typed text), not as the
+   * mechanism.
+   */
+  const saveNow = useCallback(() => {
+    if (!restoredRef.current) return;
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ ...latest.current, owner: TAB_ID } satisfies StoredSession),
+      );
+    } catch {
+      // storage full/unavailable — resume degrades gracefully to not-offered
+    }
+  }, []);
+
   useEffect(() => {
     if (!restored) return;
-    const save = () => {
-      try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            active,
-            results,
-            progress,
-            owner: TAB_ID,
-          } satisfies StoredSession),
-        );
-      } catch {
-        // storage full/unavailable — resume degrades gracefully to not-offered
-      }
-    };
     // Saving state we just ADOPTED from another tab is what turns two tabs
     // into a write storm: adopting sets state → this effect fires → we write
     // → the other tab adopts OUR write → it writes → we adopt… Measured at
@@ -191,12 +304,14 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     if (adoptedRef.current) {
       adoptedRef.current = false;
     } else {
-      save();
+      saveNow();
     }
-    // beforeunload catches runtime mutations made since the last state change.
-    window.addEventListener("beforeunload", save);
-    return () => window.removeEventListener("beforeunload", save);
-  }, [active, results, progress, restored]);
+    // Belt-and-braces for state that hasn't resolved into an answer yet — the
+    // half-typed contents of a grid well, say. Everything that has been
+    // ANSWERED is already on disk by the time this could fire.
+    window.addEventListener("beforeunload", saveNow);
+    return () => window.removeEventListener("beforeunload", saveNow);
+  }, [active, session, results, progress, restored, saveNow]);
 
   // Newest tab wins. Opening the app in a second tab takes the quiz over, and
   // this tab steps back rather than fighting it — otherwise both would keep
@@ -213,6 +328,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         // Tell the save effect this state is theirs, not ours — see the guard.
         adoptedRef.current = true;
         setActive(next.active);
+        setSession(next.session);
         setResults(next.results);
         setProgress(next.progress);
       } catch {
@@ -223,48 +339,42 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, [restored]);
 
-  const startQuiz = useCallback(
-    (chars: string[], opts?: { redrill?: boolean }) => {
-      if (!chars.length) return;
+  /** Start one leg of drilling. A leg is a quiz; a session is many legs. */
+  const beginLeg = useCallback(
+    (chars: string[], snapshot: QuizSnapshot, redrill: boolean) => {
       setActive({
         chars,
-        redrill: !!opts?.redrill,
-        forceCoverage: !!opts?.redrill,
+        redrill,
+        forceCoverage: redrill,
         startedAt: Date.now(),
-        snapshot: {
-          mode: cfg.mode,
-          dirs: { ...cfg.dirs },
-          styleJp2en: cfg.styleJp2en,
-          styleEn2jp: cfg.styleEn2jp,
-          length: cfg.length,
-          limType: cfg.limType,
-          limCount: cfg.limCount,
-        },
+        snapshot,
         runtime: {},
       });
       setProgress(null);
       router.push("/quiz");
     },
-    [cfg, router],
+    [router],
   );
 
-  const finishQuiz = useCallback(
-    (stats: SessionStats) => {
-      const quiz = active;
-      setActive(null);
-      setProgress(null);
+  const startQuiz = useCallback(
+    (chars: string[], opts?: { redrill?: boolean }) => {
+      if (!chars.length) return;
+      setSession(null);
+      beginLeg(chars, snapshotOf(cfg), !!opts?.redrill);
+    },
+    [cfg, beginLeg],
+  );
+
+  // ---------- history ----------
+
+  const writeRecord = useCallback(
+    (stats: SessionStats, mode: QuizMode, redrill: boolean, extra: {
+      chars?: string[];
+      rounds?: number;
+    }) => {
       const s = computeResults(stats);
-      if (!quiz || !s.total) {
-        router.push("/");
-        return;
-      }
+      if (!s.total) return null;
       const ts = Date.now();
-      setResults({
-        mode: quiz.snapshot.mode,
-        redrill: quiz.redrill,
-        ts,
-        stats,
-      });
       // Per-fact aggregates for history.json; fire-and-forget.
       const facts: QuizSessionRecord["facts"] = {};
       for (const c of s.facts) {
@@ -293,26 +403,233 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       }
       const record: QuizSessionRecord = {
         ts,
-        mode: quiz.snapshot.mode,
-        redrill: quiz.redrill,
+        mode,
+        redrill,
         total: s.total,
         forgivingPct: s.total ? Math.round((100 * s.forg) / s.total) : 0,
         strictPct: s.total ? Math.round((100 * s.strict) / s.total) : 0,
         facts,
         detail: stats,
+        ...extra,
       };
       fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(record),
       }).catch(() => {});
+      return { ts, record };
+    },
+    [],
+  );
+
+  // ---------- the loop ----------
+
+  const startSession = useCallback(
+    (chars: string[], teach: string[] = []) => {
+      if (!chars.length) return;
+      const now = Date.now();
+      const snapshot = snapshotOf(cfg);
+      const teaching = teach.length > 0;
+      setSession({
+        chars,
+        teach,
+        snapshot,
+        startedAt: now,
+        round: 1,
+        // New material is read before it's asked. With nothing new in the
+        // session there is nothing to read, so the lesson doesn't appear at
+        // all rather than appearing empty.
+        phase: teaching ? "teaching" : "drilling",
+        restUntil: null,
+        roundStats: {},
+        rounds: [],
+        totalStats: {},
+        lastActiveAt: now,
+      });
+      setResults(null);
+      if (teaching) router.push("/session");
+      else beginLeg(chars, snapshot, false);
+    },
+    [cfg, beginLeg, router],
+  );
+
+  const startFirstRound = useCallback(() => {
+    if (!session) return;
+    setSession({ ...session, phase: "drilling", lastActiveAt: Date.now() });
+    beginLeg(session.chars, session.snapshot, false);
+  }, [session, beginLeg]);
+
+  const retryLeg = useCallback(
+    (chars: string[]) => {
+      if (!session || !chars.length) return;
+      setSession({ ...session, phase: "drilling", lastActiveAt: Date.now() });
+      // forceCoverage: a retry is one full pass over exactly these, whatever
+      // the session's length setting says. You asked for these; you get these.
+      beginLeg(chars, session.snapshot, true);
+    },
+    [session, beginLeg],
+  );
+
+  /**
+   * Bank the round that just ended: summarise it and fold it into the totals.
+   *
+   * Shared by "Complete round" (which then rests) and "Done for now" (which
+   * then stops) — both of those finished the round, so both bank it. The only
+   * difference is what happens next.
+   *
+   * THE ROUND-COMPLETE FLOOR IS NOT HERE, AND THAT IS THE FINDING.
+   * =============================================================
+   * The design called for completing a round to write `stability =
+   * max(stability, floorDays)` for every fact you walked away holding — a
+   * floor, never a multiplier, because cramming proves "I had it when I left"
+   * and nothing about intervals. That reasoning is right and the model agrees
+   * with it. The code is still not here, because against the model that landed
+   * it is PROVABLY A NO-OP:
+   *
+   *   scoring.review() ends with
+   *       stability: Math.max(SCORING.floorDays, state.stability * factor)
+   *   — every review floors at floorDays, unconditionally, hit or miss.
+   *
+   *   aggregate.foldSession() runs exactly one review() per fact per session,
+   *   at the session's own ts, for every fact with seen > 0.
+   *
+   * So by the time a session reaches history, every fact in it already has
+   * stability >= floorDays and lastTested = the session ts — which is
+   * precisely and entirely what the floor was specified to guarantee. Writing
+   * it would add a second place that says `Math.max(x, 1)` about a number that
+   * is already >= 1, and a reader would reasonably assume it did something.
+   *
+   * The floor was specified before the model landed. The model absorbed it:
+   * `SCORING.floorDays` IS the floor, applied at the one write, which is a
+   * better place for it than a session-loop callback — and it means the loop
+   * needs no scoring privileges at all. The loop writes no scoring state, and
+   * that is the honest end state rather than a gap.
+   */
+  const closeRound = useCallback((s: StudySession, now: number): StudySession => {
+    return {
+      ...s,
+      rounds: [...s.rounds, summariseRound(s.round, s.roundStats)],
+      totalStats: mergeStats(s.totalStats, s.roundStats),
+      roundStats: {},
+      lastActiveAt: now,
+    };
+  }, []);
+
+  const completeRound = useCallback(() => {
+    if (!session) return;
+    const now = Date.now();
+    const nextRound = session.round + 1;
+    const mins = restMinutes(nextRound, cfg.restFirstMin, cfg.restThenMin);
+    setSession({
+      ...closeRound(session, now),
+      phase: "resting",
+      // A timestamp, not a process. Nothing runs; closing the tab costs
+      // nothing, because there is nothing to close.
+      restUntil: now + mins * 60_000,
+    });
+    setActive(null);
+    setProgress(null);
+    router.push("/session");
+  }, [session, cfg.restFirstMin, cfg.restThenMin, closeRound, router]);
+
+  const startNextRound = useCallback(() => {
+    if (!session) return;
+    setSession({
+      ...session,
+      round: session.round + 1,
+      phase: "drilling",
+      restUntil: null,
+      roundStats: {},
+      lastActiveAt: Date.now(),
+    });
+    // THE SAME WHOLE SESSION — not the retried bits. This is the line the
+    // whole design turns on.
+    beginLeg(session.chars, session.snapshot, false);
+  }, [session, beginLeg]);
+
+  const endSession = useCallback(() => {
+    if (!session) return;
+    const now = Date.now();
+    // Stopping during a rest: the round was already banked when the rest
+    // started, so there is nothing left to close and closing again would
+    // record an empty round.
+    const banked =
+      session.phase === "resting" || session.phase === "complete"
+        ? session
+        : closeRound(session, now);
+    setSession({ ...banked, phase: "complete", restUntil: null });
+    setActive(null);
+    setProgress(null);
+    router.push("/session");
+  }, [session, closeRound, router]);
+
+  const finishSession = useCallback(() => {
+    if (!session) return;
+    writeRecord(session.totalStats, session.snapshot.mode, false, {
+      chars: session.chars,
+      rounds: session.rounds.length,
+    });
+    setSession(null);
+    setActive(null);
+    setProgress(null);
+    router.push("/");
+  }, [session, writeRecord, router]);
+
+  const discardSession = useCallback(() => {
+    setSession(null);
+    setActive(null);
+    setProgress(null);
+  }, []);
+
+  const continueSession = useCallback(() => {
+    if (!session) return;
+    router.push(session.phase === "drilling" && active ? "/quiz" : "/session");
+  }, [session, active, router]);
+
+  // ---------- finishing a leg ----------
+
+  const finishQuiz = useCallback(
+    (stats: SessionStats) => {
+      const quiz = active;
+      // In a session, finishing a leg opens the fork — it does not score
+      // anything and it does not leave the loop. Scoring happens once, when
+      // the session ends.
+      if (session && quiz) {
+        setSession({
+          ...session,
+          roundStats: mergeStats(session.roundStats, stats),
+          phase: "round-complete",
+          lastActiveAt: Date.now(),
+        });
+        setActive(null);
+        setProgress(null);
+        router.push("/session");
+        return;
+      }
+      setActive(null);
+      setProgress(null);
+      const s = computeResults(stats);
+      if (!quiz || !s.total) {
+        router.push("/");
+        return;
+      }
+      const out = writeRecord(stats, quiz.snapshot.mode, quiz.redrill, {
+        chars: quiz.chars,
+      });
+      setResults({
+        mode: quiz.snapshot.mode,
+        redrill: quiz.redrill,
+        ts: out?.ts ?? Date.now(),
+        stats,
+      });
       router.push("/results");
     },
-    [active, router],
+    [active, session, writeRecord, router],
   );
 
   const abandonQuiz = useCallback(() => {
     setActive(null);
+    setSession(null);
     setProgress(null);
   }, []);
 
@@ -371,15 +688,46 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     () => ({
       restored,
       active,
+      session,
       results,
       progress,
       setProgress,
+      saveNow,
       startQuiz,
+      startFirstRound,
       finishQuiz,
       abandonQuiz,
       viewStoredSession,
+      startSession,
+      retryLeg,
+      completeRound,
+      startNextRound,
+      endSession,
+      finishSession,
+      discardSession,
+      continueSession,
     }),
-    [restored, active, results, progress, startQuiz, finishQuiz, abandonQuiz, viewStoredSession],
+    [
+      restored,
+      active,
+      session,
+      results,
+      progress,
+      saveNow,
+      startQuiz,
+      startFirstRound,
+      finishQuiz,
+      abandonQuiz,
+      viewStoredSession,
+      startSession,
+      retryLeg,
+      completeRound,
+      startNextRound,
+      endSession,
+      finishSession,
+      discardSession,
+      continueSession,
+    ],
   );
   return (
     <QuizSessionContext.Provider value={value}>

@@ -210,7 +210,7 @@ function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | nul
 
 export function DrillScreen() {
   const { cfg, ready } = useQuizConfig();
-  const { active, finishQuiz, setProgress } = useQuizSession();
+  const { active, finishQuiz, setProgress, saveNow } = useQuizSession();
 
   // Runtime mutations don't go through setState — bump this to re-render.
   const [, force] = useReducer((x: number) => x + 1, 0);
@@ -430,6 +430,13 @@ export function DrillScreen() {
         syncProgress(); // requeue grew the limited total
       }
     }
+    // The answer is on disk before the next card is drawn — right or wrong,
+    // and whether or not anything React can see moved. The drill was less
+    // exposed than the grid (`resolved` ticks on a requeue, so a run of misses
+    // did get saved eventually) but a miss WITH retries left moves nothing
+    // either, and there is no reason for two screens to have two different
+    // answers to "is my answer saved yet".
+    saveNow();
     force();
   }
 
