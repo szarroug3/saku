@@ -102,6 +102,23 @@ export interface VocabRow {
    * model exists to prevent.
    */
   readonly align: readonly (readonly [string, string, string])[] | null;
+  /**
+   * Most-useful-first ordering for a beginner. 1 is the first word a beginner
+   * should meet; the field is TOTAL and unique — every word has one, so the
+   * Words Track can sort by it with no missing keys.
+   *
+   * NOT `newspaperBand`. That signal ranks 委員会 (committee) and 与党 (ruling
+   * party) at the very front and buries 食べる — it teaches you to read a paper
+   * you cannot order lunch in. `beginnerRank` blends a two-list JLPT consensus
+   * (which BAND a word sits in) with OpenSubtitles conversational frequency
+   * (the ORDER within a band); see scripts/ingest/beginnerrank.py.
+   *
+   * The ~50% of words that join neither JLPT list are the advanced/rare tail:
+   * they are given ranks that sort AFTER the whole beginner curriculum, ordered
+   * among themselves by subtitle frequency. So a large `beginnerRank` means
+   * "not part of the beginner core", never "unknown".
+   */
+  readonly beginnerRank: number;
 }
 
 export const VOCAB: readonly VocabRow[] = vocabJson as readonly VocabRow[];

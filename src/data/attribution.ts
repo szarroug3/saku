@@ -95,6 +95,32 @@ export const SOURCES: readonly Source[] = [
     licence: "CC BY 2.0 FR",
     href: "https://tatoeba.org/eng/downloads",
   },
+  // The three sources of `beginnerRank` (see scripts/ingest/beginnerrank.py).
+  // They order the words most-useful-first; the derived `beginnerRank` field in
+  // vocab.json is share-alike (CC BY-SA 4.0) like the rest of generated/, which
+  // OpenSubtitles' CC BY-SA 4.0 also requires. All three are compatible with
+  // that licence: CC BY and MIT can both be incorporated into a BY-SA work.
+  {
+    name: "JLPT vocabulary lists (tanos.co.uk)",
+    what: "One of two JLPT level lists whose consensus gates the beginner word ordering.",
+    holder: "Jonathan Waller (tanos.co.uk)",
+    licence: "CC BY",
+    href: "http://www.tanos.co.uk/jlpt/",
+  },
+  {
+    name: "open-anki-jlpt-decks",
+    what: "The second, independent JLPT level list; averaging the two smooths each vendor's disagreements.",
+    holder: "jamsinclair and contributors",
+    licence: "MIT",
+    href: "https://github.com/jamsinclair/open-anki-jlpt-decks",
+  },
+  {
+    name: "FrequencyWords (OpenSubtitles 2018, Japanese)",
+    what: "Conversational word-frequency ranks that order the words within each JLPT band, so everyday words come first.",
+    holder: "Hermit Dave (hermitdave/FrequencyWords)",
+    licence: "CC BY-SA 4.0",
+    href: "https://github.com/hermitdave/FrequencyWords",
+  },
 ];
 
 /**
@@ -109,7 +135,11 @@ export const LICENCE_NOTE =
   "the data shown here is derived from them. Example sentences come from the " +
   "Tatoeba Project (tatoeba.org) and are used under the Creative Commons " +
   "Attribution 2.0 France licence; they were written by Tatoeba's contributors, " +
-  "not by this application.";
+  "not by this application. The order in which words are introduced is derived " +
+  "from the JLPT vocabulary lists at tanos.co.uk (Jonathan Waller, CC BY) and " +
+  "open-anki-jlpt-decks (MIT), together with the OpenSubtitles 2018 frequency " +
+  "list from hermitdave/FrequencyWords (Creative Commons Attribution-ShareAlike " +
+  "4.0 International licence).";
 
 /** The EDRDG licence in full — the authority for everything above. */
 export const LICENCE_HREF = "https://www.edrdg.org/edrdg/licence.html";

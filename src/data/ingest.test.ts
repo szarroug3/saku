@@ -186,6 +186,58 @@ test("'pulled in as a prerequisite' does not mean 'not a lesson'", () => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// beginnerRank — the words-track ordering (scripts/ingest/beginnerrank.py). It
+// is a build-time join like the frequency bands, and the properties that make
+// it usable — total, unique, everyday-first — are properties of the GENERATOR,
+// but a re-cut writes them into vocab.json, so they are also assertable here
+// against the shipped data.
+// ---------------------------------------------------------------------------
+
+test("beginnerRank is total: every word has one, and they are 1..N with no gaps", () => {
+  // The Words Track sorts by this field; a missing or duplicated rank is a hole
+  // or a tie it cannot resolve. Must be a dense permutation of 1..12,553.
+  const ranks = VOCAB.map((w) => w.beginnerRank);
+  for (const w of VOCAB) {
+    assert.equal(typeof w.beginnerRank, "number", `${w.keb} has no beginnerRank`);
+  }
+  assert.equal(new Set(ranks).size, ranks.length, "beginnerRank has a duplicate");
+  assert.equal(Math.min(...ranks), 1);
+  assert.equal(Math.max(...ranks), VOCAB.length);
+});
+
+test("beginnerRank puts everyday words ahead of newspaper words", () => {
+  // The whole point of the field over newspaperBand: 食べる (to eat) is a first-
+  // week word; 委員会 (committee) is a newspaper word a beginner never needs
+  // early. The ordering must reflect that, not the reverse.
+  const taberu = vocabRow("食べる");
+  const iinkai = vocabRow("委員会");
+  assert.ok(taberu && iinkai);
+  assert.ok(
+    taberu.beginnerRank < iinkai.beginnerRank,
+    `食べる (${taberu.beginnerRank}) should precede 委員会 (${iinkai.beginnerRank})`,
+  );
+  // And a money-shot word lands in the everyday core, not adrift.
+  const anata = vocabRow("あなた");
+  assert.ok(anata && anata.beginnerRank <= 50, "あなた fell out of the first 50");
+});
+
+test("the JLPT-unjoined tail sorts after the whole beginner curriculum", () => {
+  // ~50% of words join neither JLPT list; they are advanced/rare and are given
+  // ranks AFTER every gated word. 委員会 is one such word — it must sit deep in
+  // the tail, far below the ~6,200-word beginner core, not merely somewhere.
+  const iinkai = vocabRow("委員会");
+  assert.ok(iinkai && iinkai.beginnerRank > 6000, "委員会 leaked into the beginner core");
+});
+
+test("subtitle drama-skew is capped: 死ぬ is demoted out of the first 50", () => {
+  // 死ぬ (to die) reaches OpenSubtitles rank ~20 and would otherwise gate-crash
+  // the opening words. The MORBID demotion in beginnerrank.py drops it to the
+  // end of its JLPT band; it stays in the vocabulary, just not up front.
+  const shinu = vocabRow("死ぬ");
+  assert.ok(shinu && shinu.beginnerRank > 50, `死ぬ (${shinu?.beginnerRank}) was not demoted`);
+});
+
 test("every component is charged, jōyō or not", () => {
   // 無 = ｜ノ一杰乞. 杰 is an 8-stroke NON-jōyō primitive, so it is never an
   // item — but something must have paid for it before 無 is taught, or the

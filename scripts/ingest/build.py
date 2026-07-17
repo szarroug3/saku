@@ -28,6 +28,7 @@ from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aligner import align, is_kanji  # noqa: E402
+from beginnerrank import compute_beginner_ranks  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "data", "generated")
 
@@ -372,6 +373,14 @@ def main():
     vocab_rows = [dict(keb=w["keb"], reb=w["reb"], glosses=w["glosses"], pos=w["pos"],
                        newspaperBand=w["nf"], align=word_align.get(w["keb"]))
                   for w in VOCAB]
+    # `beginnerRank`: order the words most-useful-first for a beginner, from the
+    # JLPT-consensus + OpenSubtitles blend in beginnerrank.py (sources committed
+    # under scripts/ingest/sources/). Appended here so a full re-cut regenerates
+    # the field rather than leaving it to a separate post-hoc pass.
+    br = compute_beginner_ranks(vocab_rows)
+    print(f"beginnerRank: gated(JLPT) {br['gated']}/{br['total']} "
+          f"({100*br['gated']/br['total']:.1f}%), OpenSubtitles stem-join "
+          f"{br['sub_stem']}/{br['total']} ({100*br['sub_stem']/br['total']:.1f}%)")
     dump("vocab.json", vocab_rows)
 
     # anchor pick: prefer a word where the reading is UNVOICED (surface==base),

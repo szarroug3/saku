@@ -13,6 +13,13 @@ it, so the two are distributed as a collection rather than combined into an
 adaptation, and CC BY-SA 4.0 does not require a collection apart from the work
 itself to be licensed under its terms.
 
+vocab.json's `beginnerRank` field also incorporates two JLPT lists (tanos.co.uk,
+CC BY; open-anki-jlpt-decks, MIT) and OpenSubtitles frequency (hermitdave/
+FrequencyWords, CC BY-SA 4.0). CC BY and MIT are both compatible with being
+folded into a CC BY-SA 4.0 work; OpenSubtitles is itself CC BY-SA 4.0. Full
+attribution is in src/data/generated/LICENSE; the source snapshots live under
+scripts/ingest/sources/.
+
 If you fork this: the boundary is the directory. Take the code under MIT. Take
 the data under CC BY-SA 4.0, keeping the attribution in
 src/data/generated/LICENSE, and note the Tatoeba carve-out recorded there.

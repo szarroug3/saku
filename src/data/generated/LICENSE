@@ -27,7 +27,11 @@ WHAT CAME FROM WHERE
   kanji.json               KANJIDIC2 (meanings, grade, stroke counts,
                            newspaper frequency) + KRADFILE (components)
   vocab.json               JMdict (written forms, readings, English glosses,
-                           part-of-speech tags, frequency bands)
+                           part-of-speech tags, frequency bands). The
+                           `beginnerRank` field additionally derives from the
+                           two JLPT lists (tanos.co.uk, open-anki-jlpt-decks)
+                           and OpenSubtitles frequency (hermitdave/
+                           FrequencyWords) — see their attribution below.
   readings.json            KANJIDIC2 + JMdict (kanji readings aligned to the
                            words that anchor them)
   order.json               KANJIDIC2 + KRADFILE + JMdict (teaching order and
@@ -65,6 +69,30 @@ KRADFILE
 
   The EDRDG licence, which covers all three files above and is the authority
   for their CC BY-SA 4.0 terms: https://www.edrdg.org/edrdg/licence.html
+
+JLPT vocabulary lists (tanos.co.uk)
+  One of two JLPT level lists whose consensus gates vocab.json's `beginnerRank`.
+  Copyright (c) Jonathan Waller
+  Licence:  CC BY
+  Source:   http://www.tanos.co.uk/jlpt/
+  A snapshot is committed at scripts/ingest/sources/jlpt-tanos.json.
+
+open-anki-jlpt-decks
+  The second, independent JLPT level list averaged into `beginnerRank`.
+  Copyright (c) jamsinclair and contributors
+  Licence:  MIT
+  Source:   https://github.com/jamsinclair/open-anki-jlpt-decks
+  Snapshots committed at scripts/ingest/sources/jlpt-anki-n[1-5].csv.
+
+FrequencyWords — OpenSubtitles 2018 (Japanese)
+  Conversational word-frequency ranks that order words within each JLPT band in
+  `beginnerRank`.
+  Copyright (c) Hermit Dave
+  Licence:  CC BY-SA 4.0
+  Source:   https://github.com/hermitdave/FrequencyWords
+  A snapshot is committed at scripts/ingest/sources/opensubtitles-ja-2018.txt.
+  Being CC BY-SA 4.0, ShareAlike carries through to vocab.json, which is already
+  under that licence.
 
 Tatoeba
   Example sentences and their human English translations.
