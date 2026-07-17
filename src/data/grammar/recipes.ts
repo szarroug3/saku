@@ -102,8 +102,16 @@ export interface Recipe {
    */
   readonly gloss: string;
   readonly level: Level;
-  /** Every host this attaches to, and how. */
+  /** Every host the OPENING half attaches to, and how. */
   readonly attach: readonly Attachment[];
+  /**
+   * The CLOSING half, for a pattern that wraps around a slot. See `Wrap`.
+   *
+   * Absent on 77 of the 81 rows, and that is the shape of the subject rather
+   * than an oversight: almost all beginner grammar hangs off the end of one
+   * word. The four that don't are the reason this field exists.
+   */
+  readonly wrap?: Wrap;
   /** The cluster this belongs to, if any. See clusters.ts. */
   readonly cluster?: string;
   /**
@@ -130,6 +138,42 @@ export interface RecipeException {
 }
 
 /**
+ * The closing half of a pattern that WRAPS AROUND A SLOT.
+ *
+ * 〜は〜より is not "a noun plus は". It is two particles with the compared
+ * thing between them, and storing only the first half stored half a fact. The
+ * `〜` in a pattern string is the placeholder for a slot: a leading one is the
+ * normal case ("hangs off a word"), and a SECOND one means there is a word in
+ * the middle that the recipe has to reach past.
+ *
+ * The closing half is just another `Attachment`, deliberately — it has its own
+ * host, its own form, its own trim, its own add, and it needs all four. 〜しか
+ * 〜ない OPENS on a noun and CLOSES on a verb's ない form (本しか読まない), so a
+ * closing half that inherited the opening's host could not express it.
+ *
+ * WHAT THIS DOES NOT BUY
+ * ======================
+ * Expressible is not askable. A wrap has two slots, so a production question
+ * would have to supply two words, and whether the pair yields ONE right answer
+ * is a separate question answered per pattern — see `isOrderFree` and
+ * `notProduced`. All four wraps in the table are reference-only today, each
+ * for its own reason, and the reasons are carried here rather than in prose.
+ */
+export interface Wrap {
+  /** Every host the closing half attaches to, and how. */
+  readonly close: readonly Attachment[];
+  /**
+   * Why this wrap is not produced, when the computed gates do NOT already rule
+   * it out — i.e. it conjugates something and its slots cannot swap, and it is
+   * still not a question. A sentence, because a boolean would not say why.
+   *
+   * Present on exactly one row (shika-nai), and the fact it records is about
+   * DATA, not about this model: see that row's note.
+   */
+  readonly notProduced?: string;
+}
+
+/**
  * Is this recipe vacuous — i.e. is asking it to be PRODUCED not a question?
  *
  * "Give me the ことができる form of 食べる" is 食べる + ことができる. The user
@@ -141,9 +185,39 @@ export interface RecipeException {
  * is a claim about the PRODUCTION question only — a vacuous recipe can still
  * carry a perfectly good meaning fact, and can still appear as a distractor in
  * a SELECTION question. It just must not be asked "now you build it".
+ *
+ * BOTH HALVES COUNT. 〜しか〜ない attaches しか to a bare noun and would read as
+ * vacuous on its opening half alone — but its closing half conjugates 読む to
+ * 読まない, and that is a real transformation. A wrap is vacuous only when
+ * NEITHER end does any work, which is exactly the two comparison rows.
  */
 export function isVacuous(r: Recipe): boolean {
-  return r.attach.every((a) => (a.form === null || a.form === "dictionary") && !a.trim);
+  const trivial = (a: Attachment) => (a.form === null || a.form === "dictionary") && !a.trim;
+  return r.attach.every(trivial) && (r.wrap?.close ?? []).every(trivial);
+}
+
+/**
+ * Can the wrap's two slots be swapped and still be right?
+ *
+ * If they can, the pattern has no single correct answer and therefore is not a
+ * production question — 食べたり読んだりする and 読んだり食べたりする are BOTH
+ * correct, so an item prompting (食べる, 読む) and grading one string would mark
+ * correct Japanese wrong. That is the failure は/が cloze was killed for, and
+ * it does not become acceptable for arriving through a different door.
+ *
+ * The structural test: the two slots are interchangeable exactly when they take
+ * the same host in the same form, because then either word could fill either
+ * slot. 〜たり〜たり is verb-た / verb-た and so is a LIST — order-free by
+ * construction. 〜しか〜ない is noun / verb-ない, so its slots cannot swap: 本 has
+ * nowhere else to go.
+ *
+ * Computed, like `isVacuous` and for the same reason — a hand-marked flag here
+ * would be a claim about the table that the table could quietly outgrow.
+ */
+export function isOrderFree(r: Recipe): boolean {
+  const close = r.wrap?.close ?? [];
+  if (close.length === 0) return false;
+  return close.some((c) => r.attach.some((a) => a.host === c.host && a.form === c.form));
 }
 
 // ---------------------------------------------------------------------------
@@ -436,9 +510,17 @@ export const RECIPES: readonly Recipe[] = [
     gloss: "do things like X and Y",
     level: "N5",
     attach: [{ host: "verb", form: "ta", add: "り" }],
+    wrap: { close: [{ host: "verb", form: "ta", add: "りする" }] },
     note:
       "CORPUS-SCARCE, structurally. Needs TWO verbs in the frame, so the " +
-      "<=14-token filter bites hardest exactly here. Hand-authored examples.",
+      "<=14-token filter bites hardest exactly here. Hand-authored examples. " +
+      "The scarcity and the unaskability have the SAME cause, which is why " +
+      "the thin corpus was the tell: two verbs in one frame is what the " +
+      "filter drops, and two verbs in one frame is what makes this a LIST — " +
+      "and a list has no order, so it has no single right answer. Before the " +
+      "wrap existed this row was drillable and produced 行ったり as the whole " +
+      "answer to 〜たり〜たり, which would have marked 行ったり読んだりする " +
+      "wrong. isOrderFree now says no, and says it from the table.",
   },
 
   // --- stem (連用形) -------------------------------------------------------
@@ -838,6 +920,10 @@ export const RECIPES: readonly Recipe[] = [
     level: "N5",
     cluster: "comparison",
     attach: [{ host: "noun", form: null, add: "のほうが" }],
+    wrap: { close: [{ host: "noun", form: null, add: "より" }] },
+    note:
+      "A wrap, and it was stored as its opening half alone until the model " +
+      "could hold the rest. Reference-only for the same reason as wa-yori.",
   },
   {
     id: "wa-yori",
@@ -846,9 +932,12 @@ export const RECIPES: readonly Recipe[] = [
     level: "N5",
     cluster: "comparison",
     attach: [{ host: "noun", form: null, add: "は" }],
+    wrap: { close: [{ host: "noun", form: null, add: "より" }] },
     note:
       "VACUOUS as production, and the clearest example of why isVacuous " +
-      "exists: 'give me the は form of 私' is not a question, it is typing.",
+      "exists: 'give me the は form of 私' is not a question, it is typing. " +
+      "The wrap does not change that — two bare nouns and two particles is " +
+      "still typing, now at twice the length.",
   },
 
   // --- particles: the ALLOWLIST ------------------------------------------
@@ -897,6 +986,22 @@ export const RECIPES: readonly Recipe[] = [
     gloss: "only X (nothing but)",
     level: "N4",
     attach: [{ host: "noun", form: null, add: "しか" }],
+    wrap: {
+      close: [{ host: "verb", form: "nai", add: "" }],
+      notProduced:
+        "The noun slot's particle depends on the VERB, and nothing in this " +
+        "app knows which verb takes which.",
+    },
+    note:
+      "The only wrap the computed gates DON'T rule out, and the one worth " +
+      "reading closely. Its slots cannot swap (noun, then verb) and its " +
+      "closing half really conjugates — 読む → 読まない — so it is a real " +
+      "drill in shape. It is still not asked, for a reason about DATA: しか " +
+      "REPLACES を but sits on TOP of に. 本しか読まない is right; a generator " +
+      "reaching for a に-verb would emit 学校しか行かない, where 学校にしか行かない " +
+      "is the sentence. Picking the pair needs to know what the verb takes, " +
+      "which is a fact this app does not hold. Give it that fact and this row " +
+      "becomes askable by deleting `notProduced` — nothing else.",
   },
 ];
 
@@ -914,5 +1019,26 @@ export function recipesInCluster(cluster: string): Recipe[] {
   return RECIPES.filter((r) => r.cluster === cluster);
 }
 
+/**
+ * Can a production question be built from this recipe at all?
+ *
+ * Three ways to fail, and each is a different kind of "no":
+ *
+ *   VACUOUS      nothing conjugates, so the answer is the prompt retyped.
+ *   ORDER-FREE   the wrap's slots can swap, so there is no single answer.
+ *   notProduced  it would be a fine question, and we lack the data to pose it.
+ *
+ * The first two are computed off the table and cannot drift from it. The third
+ * is written down because it is not a fact about this table at all — it is a
+ * fact about what the app knows, and the day that changes, the row changes.
+ *
+ * The rule underneath all three is the one that makes production safe: naming
+ * the target destroys the ambiguity. A prompt whose answer isn't uniquely
+ * determined isn't a question, and silence beats invention.
+ */
+export function isProducible(r: Recipe): boolean {
+  return !isVacuous(r) && !isOrderFree(r) && !r.wrap?.notProduced;
+}
+
 /** The recipes worth asking a PRODUCTION question about. */
-export const DRILLABLE: readonly Recipe[] = RECIPES.filter((r) => !isVacuous(r));
+export const DRILLABLE: readonly Recipe[] = RECIPES.filter(isProducible);

@@ -19,22 +19,57 @@
 // down: it is v5k-s, the one verb whose て-form is irregular (行って, not 行いて).
 // A column built on 行く is a column that proves the engine did the hard case.
 
-import { apply } from "./apply.ts";
-import type { Host, Recipe } from "../../data/grammar/recipes.ts";
+import { apply, applyWrap } from "./apply.ts";
+import type { Attachment, Host, Recipe } from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
 
+interface Example {
+  readonly word: string;
+  readonly cls: WordClass | null;
+}
+
 /** The word each host is demonstrated on, and its class. Noun class is null. */
-const EXAMPLE: Record<Host, { word: string; cls: WordClass | null }> = {
+const EXAMPLE: Record<Host, Example> = {
   verb: { word: "行く", cls: "v5k-s" },
   "adj-i": { word: "高い", cls: "adj-i" },
   "adj-na": { word: "静か", cls: "adj-na" },
   noun: { word: "本", cls: null },
 };
 
+/**
+ * The word the CLOSING slot of a wrap is demonstrated on.
+ *
+ * A second word per host, and it has to exist: 〜は〜より needs two nouns, and
+ * building it on 本 twice would print 本は本より — a sentence about how a book
+ * exceeds itself, offered as the worked example of "X is more … than Y".
+ *
+ * This does not undercut the same-word-down-the-column argument above. That
+ * argument is about the difference between ROWS, and it still holds: every
+ * opening slot on a page is still 行く or still 本, so the column still differs
+ * only in its pattern. A second slot needs a second word by construction.
+ *
+ * 読む is the verb, chosen the way 行く was: it is v5m, so its た-form is 読んだ
+ * (not 読みた) and its ない is 読まない. A 〜たり〜たり row built on 行く and 読む
+ * is 行ったり読んだりする — two different 音便 in one cell, both from the engine.
+ */
+const CLOSING_EXAMPLE: Record<Host, Example> = {
+  verb: { word: "読む", cls: "v5m" },
+  "adj-i": { word: "安い", cls: "adj-i" },
+  "adj-na": { word: "便利", cls: "adj-na" },
+  noun: { word: "車", cls: null },
+};
+
 export interface BuiltRow {
   readonly recipe: Recipe;
-  /** The word this row is demonstrated on. 行く */
-  readonly on: string;
+  /**
+   * The words this row is demonstrated on, in slot order. [行く], or [本, 車]
+   * for a wrap.
+   *
+   * A list rather than a word because the page prints "built on …" underneath,
+   * and a wrap row built on 本 and 車 that claimed to be built on 本 would be a
+   * small lie on the one page whose whole promise is that it cannot be wrong.
+   */
+  readonly on: readonly string[];
   /** The pattern built out on `on`. 行かなければならない */
   readonly built: string;
   /**
@@ -42,56 +77,41 @@ export interface BuiltRow {
    * 行かない − い + ければならない
    */
   readonly how: string;
-  /**
-   * Can a worked example show the whole pattern? False for the DISCONTINUOUS
-   * ones — see `discontinuous`.
-   */
-  readonly complete: boolean;
 }
 
 /**
- * Does this pattern have a slot in the MIDDLE of it?
+ * THERE IS NO `complete` FLAG ANY MORE, AND ITS ABSENCE IS THE FIX.
  *
- * 〜 is the placeholder for the thing a pattern attaches to. A leading one is
- * the normal case and means "hangs off a word". A SECOND one means the pattern
- * wraps around something: 〜は〜より is two particles with the compared thing
- * between them. A Recipe is one host and one suffix, so `apply()` can only ever
- * produce 本は — the first half. Printing that under a column headed "Form",
- * beside a gloss reading "X is more … than Y", teaches that 本は means that. It
- * does not.
+ * This file used to carry one, set by sniffing the `pattern` string for a
+ * second 〜 and meaning "a worked example cannot show the whole of this". The
+ * cluster page read it and printed the bare pattern instead of a half-built
+ * 本は, which was the honest thing to do with a model that could only reach
+ * halfway.
  *
- * WHY THE TEST IS THIS AND NOT "DOES THE OUTPUT CONTAIN THE PATTERN"
- * =================================================================
- * That was the first version and it was wrong twice over, because a `pattern`
- * is DISPLAY TEXT, not a string the output is obliged to contain:
- *
- *   〜そう (様態) carries a parenthetical that disambiguates it from 〜そうだ
- *   (伝聞). It is an annotation for a human. No conjugation ever emits "(様態)".
- *
- *   〜られる (可能) is a CITATION form. The potential of 行く is 行ける — no
- *   られる anywhere in it, and correctly so.
- *
- * Both are perfectly good rows, and both got flagged as broken. The structural
- * fact worth testing is the one the model genuinely cannot express, and that is
- * the middle slot — nothing else.
+ * That flag was a workaround for a gap in recipes.ts, kept in the display
+ * layer, and reading DISPLAY TEXT to recover a STRUCTURAL fact was the tell —
+ * the same sniff nearly flagged 〜そう (様態) and 〜られる (可能), whose extra
+ * characters are annotations for a human rather than slots. Now that a Recipe
+ * has `wrap`, the structure is in the data where it belongs, every row builds
+ * whole, and there is nothing left for a flag to say.
  */
-function discontinuous(pattern: string): boolean {
-  return pattern.indexOf("〜", 1) > 0;
-}
 
-/**
- * A cluster member's row, or null if it cannot be shown.
- *
- * Null is a refusal from the engine or a host this file has no example for, and
- * it propagates as a VALUE for the same reason apply() does: a recipe that will
- * not build on a given word is a normal outcome, not an exception. The caller
- * drops the row rather than crashing the page.
- */
-export function buildRow(r: Recipe): BuiltRow | null {
-  const at = r.attach[0];
+/** One half of a pattern, built on one word, with its build spelled out. */
+function buildHalf(
+  r: Recipe,
+  half: readonly Attachment[],
+  ex: Example,
+): { built: string; how: string } | null {
+  const at = half[0];
   if (!at) return null;
-  const ex = EXAMPLE[at.host];
-  const out = apply(r, ex.word, ex.cls);
+
+  // A probe carrying ONE half and no wrap, so apply() sees an ordinary recipe.
+  // Same idiom as the base probe below, and load-bearing for the same reason:
+  // apply() refuses a wrap outright, which is exactly what protects every other
+  // caller and exactly what this caller has to step around on purpose.
+  const asHalf = (a: readonly Attachment[]): Recipe => ({ ...r, wrap: undefined, attach: a });
+
+  const out = apply(asHalf(half), ex.word, ex.cls);
   if (!out.ok) return null;
 
   // The base the suffix hangs off — the bare word when form is null (the noun
@@ -107,7 +127,7 @@ export function buildRow(r: Recipe): BuiltRow | null {
   let base = ex.word;
   if (at.form !== null) {
     const b = apply(
-      { ...r, except: undefined, attach: [{ ...at, add: "", trim: undefined }] },
+      { ...asHalf([{ ...at, add: "", trim: undefined }]), except: undefined },
       ex.word,
       ex.cls,
     );
@@ -134,12 +154,53 @@ export function buildRow(r: Recipe): BuiltRow | null {
         ? `${base} − ${at.trim} + ${add}`
         : `${base} + ${add}`;
 
+  return { built: out.value, how };
+}
+
+/**
+ * A cluster member's row, or null if it cannot be shown.
+ *
+ * Null is a refusal from the engine or a host this file has no example for, and
+ * it propagates as a VALUE for the same reason apply() does: a recipe that will
+ * not build on a given word is a normal outcome, not an exception. The caller
+ * drops the row rather than crashing the page.
+ *
+ * A WRAP BUILDS WHOLE OR NOT AT ALL. Both halves go through the same code on
+ * two different words, and the row is the two halves joined — 本は車より, not
+ * 本は with the rest left to the reader's imagination.
+ */
+export function buildRow(r: Recipe): BuiltRow | null {
+  const at = r.attach[0];
+  if (!at) return null;
+  const ex = EXAMPLE[at.host];
+  const open = buildHalf(r, r.attach, ex);
+  if (!open) return null;
+
+  if (!r.wrap) {
+    return { recipe: r, on: [ex.word], built: open.built, how: open.how };
+  }
+
+  const ct = r.wrap.close[0];
+  if (!ct) return null;
+  const cex = CLOSING_EXAMPLE[ct.host];
+  const close = buildHalf(r, r.wrap.close, cex);
+  if (!close) return null;
+
+  // Cross-check against the real two-word path rather than trusting that
+  // joining two halves reproduces it. If these ever disagree the page is
+  // showing something applyWrap would not build, and the page's one promise is
+  // that this column cannot be wrong.
+  const whole = applyWrap(r, ex.word, ex.cls, cex.word, cex.cls);
+  if (!whole.ok || whole.value !== open.built + close.built) return null;
+
   return {
     recipe: r,
-    on: ex.word,
-    built: out.value,
-    how,
-    complete: !discontinuous(r.pattern),
+    on: [ex.word, cex.word],
+    built: whole.value,
+    // Two builds, one per slot, in the order they appear in the string. The
+    // separator is not a "+": these are not being concatenated into each other,
+    // they are two independent attachments with a word between them.
+    how: `${open.how} · ${close.how}`,
   };
 }
 
@@ -153,7 +214,7 @@ export function buildRows(members: readonly Recipe[]): BuiltRow[] {
 
 /** The distinct words a set of rows is built on, in first-seen order. */
 export function wordsUsed(rows: readonly BuiltRow[]): string[] {
-  return [...new Set(rows.map((r) => r.on))];
+  return [...new Set(rows.flatMap((r) => r.on))];
 }
 
 const COUNT_WORD = [

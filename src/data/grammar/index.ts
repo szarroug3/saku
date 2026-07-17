@@ -37,7 +37,7 @@
 
 import { entryId, factId } from "../../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo } from "../../types/index.ts";
-import { RECIPES, isVacuous } from "./recipes.ts";
+import { RECIPES, isProducible } from "./recipes.ts";
 
 export const GRAMMAR_SUBJECT = "grammar";
 
@@ -54,11 +54,16 @@ export function patternProductionFactId(recipeId: string): FactId {
 }
 
 /**
- * Every grammar fact: 81 meanings + 54 productions.
+ * Every grammar fact: 81 meanings + 53 productions.
  *
  * The asymmetry is the model working, not an inconsistency — exactly as a word
  * having one reading fact while a kanji never does. Every pattern means
- * something; only 54 of them are something you can be asked to BUILD.
+ * something; only 53 of them are something you can be asked to BUILD.
+ *
+ * It was 54 until 〜たり〜たり lost its production fact. That fact was reachable:
+ * the scheduler could serve it, and the generator answered it with 行ったり —
+ * half the pattern, graded as the whole of it. A pattern that WRAPS a slot has
+ * no production fact, because there is no one string that answers it.
  */
 export const GRAMMAR_FACTS: FactInfo[] = buildGrammarFacts();
 
@@ -73,7 +78,9 @@ function buildGrammarFacts(): FactInfo[] {
       subject: GRAMMAR_SUBJECT,
       meaning: r.gloss,
     });
-    if (isVacuous(r)) continue;
+    // isProducible, not isVacuous: a fact the generator will always refuse is
+    // a fact the scheduler would schedule forever and never be able to ask.
+    if (!isProducible(r)) continue;
     facts.push({
       id: patternProductionFactId(r.id),
       entry: patternEntry(r.id),

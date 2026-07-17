@@ -13,8 +13,15 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { apply, accepts, hostOfClass } from "./apply";
-import { DRILLABLE, RECIPES, isVacuous, recipe } from "../../data/grammar/recipes";
+import { apply, accepts, applyWrap, hostOfClass } from "./apply";
+import {
+  DRILLABLE,
+  RECIPES,
+  isOrderFree,
+  isProducible,
+  isVacuous,
+  recipe,
+} from "../../data/grammar/recipes";
 import type { WordClass } from "../conjugate/types";
 
 /** Assert a recipe builds exactly this string on this word. */
@@ -24,6 +31,22 @@ function eq(id: string, word: string, cls: WordClass | null, want: string) {
   const got = apply(r, word, cls);
   assert.ok(got.ok, `${id} + ${word} was refused: ${got.ok ? "" : got.detail}`);
   assert.equal(got.value, want, `${id} + ${word}`);
+}
+
+/** Assert a wrap builds exactly this string on its two words, in order. */
+function eqWrap(
+  id: string,
+  open: string,
+  openCls: WordClass | null,
+  close: string,
+  closeCls: WordClass | null,
+  want: string,
+) {
+  const r = recipe(id);
+  assert.ok(r, `no recipe '${id}'`);
+  const got = applyWrap(r, open, openCls, close, closeCls);
+  assert.ok(got.ok, `${id} + (${open}, ${close}) was refused: ${got.ok ? "" : got.detail}`);
+  assert.equal(got.value, want, `${id} + (${open}, ${close})`);
 }
 
 /** Assert a recipe refuses this word, for the stated reason. */
@@ -161,14 +184,14 @@ describe("the recipe table is well-formed", () => {
       ["静か", "adj-na"],
       ["本", null],
     ];
-    for (const r of RECIPES) {
+    for (const r of RECIPES.filter((x) => !x.wrap)) {
       const any = probes.some(([w, c]) => apply(r, w, c).ok);
       assert.ok(any, `${r.id} (${r.pattern}) builds nothing on any probe word`);
     }
   });
 
   test("no recipe emits an empty string or leaks a trim", () => {
-    for (const r of RECIPES) {
+    for (const r of RECIPES.filter((x) => !x.wrap)) {
       const res = apply(r, "読む", "v5m");
       if (res.ok) {
         assert.ok(res.value.length > 0, `${r.id} emitted empty`);
@@ -186,9 +209,60 @@ describe("the recipe table is well-formed", () => {
     assert.ok(!isVacuous(recipe("nakereba-naranai")!));
   });
 
-  test("DRILLABLE excludes exactly the vacuous rows", () => {
-    assert.equal(DRILLABLE.length, RECIPES.filter((r) => !isVacuous(r)).length);
+  test("isVacuous reads BOTH halves of a wrap", () => {
+    // 〜しか〜ない opens on a bare noun and would read vacuous on its opening
+    // half alone. Its closing half conjugates 読む to 読まない, which is work.
+    assert.ok(!isVacuous(recipe("shika-nai")!));
+    // 〜は〜より is two bare nouns at both ends, so it stays vacuous — twice
+    // as much typing is still typing.
+    assert.ok(isVacuous(recipe("wa-yori")!));
+    assert.ok(isVacuous(recipe("hou-ga-yori")!));
+  });
+
+  test("isOrderFree catches the wrap whose slots can swap", () => {
+    // verb-た / verb-た: a LIST. 行ったり読んだりする and 読んだり行ったりする are
+    // both correct, so there is no single answer to grade against.
+    assert.ok(isOrderFree(recipe("tari-tari")!));
+    // noun / verb-ない: 本 cannot go in the second slot.
+    assert.ok(!isOrderFree(recipe("shika-nai")!));
+    // Not a wrap at all — nothing to swap.
+    assert.ok(!isOrderFree(recipe("te-kara")!));
+  });
+
+  test("DRILLABLE excludes exactly the unaskable rows", () => {
+    assert.equal(DRILLABLE.length, RECIPES.filter(isProducible).length);
     assert.ok(DRILLABLE.every((r) => !isVacuous(r)));
+    // No wrap is drillable, and each is out for its OWN reason: two are
+    // vacuous, one is order-free, one is blocked on data the app lacks.
+    assert.ok(DRILLABLE.every((r) => !r.wrap));
+    assert.ok(!isProducible(recipe("tari-tari")!));
+    assert.ok(!isProducible(recipe("shika-nai")!));
+  });
+
+  test("apply() REFUSES a wrap rather than returning half of it", () => {
+    // The live bug this refusal closes: 行ったり was a true prefix of the
+    // answer and a false answer, and nothing in the old signature could tell.
+    const res = apply(recipe("tari-tari")!, "行く", "v5k-s");
+    assert.equal(res.ok, false);
+    assert.equal(res.ok === false && res.reason, "wrap-needs-two");
+    assert.equal(apply(recipe("wa-yori")!, "本", null).ok, false);
+  });
+
+  test("applyWrap fills both slots, in order", () => {
+    eqWrap("wa-yori", "本", null, "車", null, "本は車より");
+    eqWrap("hou-ga-yori", "本", null, "車", null, "本のほうが車より");
+    // Different host per slot — the reason a closing half is a full Attachment.
+    eqWrap("shika-nai", "本", null, "読む", "v5m", "本しか読まない");
+    // Order is honoured, not normalised. Where the order does not matter, that
+    // is a reason not to ASK — see isOrderFree — not to reorder the string.
+    eqWrap("tari-tari", "読む", "v5m", "行く", "v5k-s", "読んだり行ったりする");
+    eqWrap("tari-tari", "行く", "v5k-s", "読む", "v5m", "行ったり読んだりする");
+  });
+
+  test("applyWrap refuses a non-wrap, and a slot that will not take the word", () => {
+    assert.equal(applyWrap(recipe("te-kara")!, "行く", "v5k-s", "読む", "v5m").ok, false);
+    // 〜しか〜ない closes on a VERB; a noun in that slot has no ない form.
+    assert.equal(applyWrap(recipe("shika-nai")!, "本", null, "車", null).ok, false);
   });
 
   test("hostOfClass maps every engine class", () => {

@@ -52,7 +52,7 @@
 // that has never heard of it.
 // ===========================================================================
 
-import { DRILLABLE, RECIPES, isVacuous, recipe, type Recipe } from "../../data/grammar/recipes.ts";
+import { RECIPES, isProducible, recipe, type Recipe } from "../../data/grammar/recipes.ts";
 import { examplesFor, type Example } from "../../data/grammar/corpus.ts";
 import { apply } from "./apply.ts";
 import type { WordClass } from "../conjugate/index.ts";
@@ -78,8 +78,22 @@ export interface ProductionQuestion {
  * Build a production question, or refuse.
  *
  * Refuses when the recipe is VACUOUS — "give me the は form of 私" is not a
- * question, it is typing, and 27 of the 81 recipes are like that. Also refuses
- * when the recipe simply doesn't apply to the word, which is normal.
+ * question, it is typing. Also refuses when the recipe simply doesn't apply to
+ * the word, which is normal.
+ *
+ * AND REFUSES EVERY WRAP, on three separate grounds, because this signature has
+ * ONE word and a wrap has two slots. That was a live wrong item rather than a
+ * hypothetical: 〜たり〜たり is not vacuous — it conjugates 行く to 行った — so it
+ * passed the only gate there was, and this function shipped "give me the
+ * 〜たり〜たり form of 行く" expecting exactly 行ったり. A user who knew the
+ * pattern and wrote 行ったり読んだりする was marked WRONG. That is the は/が
+ * failure — correct Japanese marked wrong, at a user with nothing to push back
+ * with — arriving through a door nobody was watching.
+ *
+ * The gates now: isProducible covers vacuity, order-freedom and the one
+ * data-blocked row, and apply() itself refuses a wrap outright. Belt, braces,
+ * and a third thing — a half-built pattern must not be able to reach a prompt
+ * again, so more than one layer has to fail before it can.
  *
  * NOTE — the confound, stated once here rather than discovered later. A
  * production question tests the RECIPE and the word's CONJUGATION at the same
@@ -95,13 +109,13 @@ export function production(
 ): ProductionQuestion | null {
   const r = recipe(recipeId);
   if (!r) return null;
-  // The vacuity gate. This is the one caller that must respect it.
-  if (isVacuous(r)) return null;
+  // The askability gate. This is the one caller that must respect it.
+  if (!isProducible(r)) return null;
   const built = apply(r, lemma, cls);
   if (!built.ok) return null;
   // A recipe that leaves the word untouched isn't a question either, whatever
-  // isVacuous thinks — belt and braces, since isVacuous reasons about the
-  // TABLE and this reasons about the actual output.
+  // isProducible thinks — belt and braces, since isProducible reasons about
+  // the TABLE and this reasons about the actual output.
   if (built.value === lemma) return null;
   return {
     kind: "production",
@@ -247,8 +261,14 @@ export function selection(
   // clever, and there are 8,689 sentences.
   if (ex.p.length > 1) return null;
 
-  const distractors = DRILLABLE.concat(RECIPES.filter((r) => isVacuous(r)))
-    .filter((d) => isValidDistractor(answer, d))
+  // EVERY recipe is a candidate distractor, said plainly. This used to read
+  // DRILLABLE.concat(the vacuous ones), which was a long way of writing RECIPES
+  // and only worked while "drillable" and "vacuous" were exact complements.
+  // They aren't any more — a wrap can be non-vacuous and still unaskable — so
+  // that phrasing would now silently drop 〜たり〜たり and 〜しか〜ない from the
+  // pool. Being unaskable AS AN ANSWER says nothing about being offerable as a
+  // CHOICE: a distractor is a pattern name and a gloss, and it is never built.
+  const distractors = RECIPES.filter((d) => isValidDistractor(answer, d))
     // A distractor whose own text is already in the sentence gives the game
     // away, or makes two answers true.
     .filter((d) => !ex.p.includes(d.id));
