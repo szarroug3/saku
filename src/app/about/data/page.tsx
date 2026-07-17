@@ -52,9 +52,11 @@ export default function AboutDataPage() {
       <Card>
         <Lbl>Share-alike</Lbl>
         <p className="text-[13px] leading-relaxed text-text-muted">
-          CC BY-SA is share-alike. The generated files this app reads are
-          adaptations of EDRDG&rsquo;s, so they carry the same licence — and so
-          does anything distributed that embeds them.
+          CC BY-SA is share-alike. The dictionary files this app reads are
+          adaptations of EDRDG&rsquo;s, so they carry the same licence. The
+          app&rsquo;s own code reads that data rather than deriving from it, and
+          is MIT. Tatoeba&rsquo;s sentences are attribution-only — no
+          share-alike.
         </p>
       </Card>
     </>

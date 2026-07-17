@@ -28,9 +28,18 @@
 // SHARE-ALIKE
 // ===========
 // CC BY-SA is share-alike: the generated files in src/data/generated/ are
-// adaptations of EDRDG's, so they carry the same licence, and so does anything
-// distributed that embeds them. That constrains this repo's own licensing. It
-// is not a problem — it is just not optional, and it is easier to know now.
+// adaptations of EDRDG's, so they carry the same licence. That is settled and
+// not optional — src/data/generated/LICENSE is where it is written down.
+//
+// It stops at that directory. This code reads those files; it is not derived
+// from them, so the two are distributed as a collection rather than combined
+// into an adaptation, and share-alike does not reach the code. The app code is
+// MIT. /NOTICE is the boundary statement; do not blur it.
+//
+// Tatoeba is the exception in the other direction: CC BY 2.0 FR, attribution
+// only, NO share-alike. grammar-corpus.json is Tatoeba-derived and nothing
+// here adds a share-alike condition to it. See the carve-out in
+// src/data/generated/LICENSE.
 
 /** One upstream data source and what it gave us. */
 export interface Source {
