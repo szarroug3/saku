@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Sidebar } from "@/components/sidebar";
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { QuizSessionProvider } from "@/lib/quiz-session";
@@ -102,10 +103,14 @@ export default function RootLayout({
           <QuizConfigProvider>
             <QuizSessionProvider>
               <TooltipProvider delayDuration={200}>
-                <div className="mx-auto flex max-w-[1080px] gap-3.5 px-3 pb-15 pt-6">
-                  <Sidebar />
-                  <main className="min-w-0 flex-1">{children}</main>
-                </div>
+                {/* Inside the quiz providers, because what it asks about
+                    ("discard the quiz in progress?") is their state. */}
+                <ConfirmProvider>
+                  <div className="mx-auto flex max-w-[1080px] gap-3.5 px-3 pb-15 pt-6">
+                    <Sidebar />
+                    <main className="min-w-0 flex-1">{children}</main>
+                  </div>
+                </ConfirmProvider>
               </TooltipProvider>
             </QuizSessionProvider>
           </QuizConfigProvider>

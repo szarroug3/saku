@@ -4,7 +4,7 @@
 // app's look: cards, uppercase section labels, chip toggles, settings rows.
 // Every screen builds from these so the pages stay visually consistent.
 
-import { type ButtonHTMLAttributes, type ReactNode } from "react";
+import { type ComponentProps, type ReactNode } from "react";
 
 import {
   Tooltip,
@@ -107,7 +107,19 @@ export function Row({
   );
 }
 
-type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { sel?: boolean };
+// ComponentProps rather than ButtonHTMLAttributes so `ref` types through —
+// React 19 passes ref to a function component as an ordinary prop, and these
+// are the app's buttons, so something will eventually want to point at one.
+type BtnProps = ComponentProps<"button"> & {
+  sel?: boolean;
+  /** Destructive tone: the action discards or deletes something. Lives here
+   * rather than being passed in as a className because ui.tsx joins classes
+   * with `cx` (no tailwind-merge), so `border-danger` arriving from outside
+   * would not displace `border-border` — both would land, and which one won
+   * would be decided by their order in the generated stylesheet rather than
+   * by the caller. A branch cannot collide with itself. */
+  danger?: boolean;
+};
 
 /** Standard button; `sel` gives it the accent selected state.
  *
@@ -116,30 +128,47 @@ type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & { sel?: boolean };
  * fill it happens to be wearing. The old radius+fill recipe reached this only
  * through `rounded-lg` + `bg-card`, so selecting a button — which swaps the fill
  * to `bg-accent-bg` — silently dropped it out of the theme's material. */
-export function Btn({ sel, className, ...props }: BtnProps) {
+// THE TEXT COLOUR BELONGS TO THE BRANCH, not to the shared string.
+//
+// `text-text` used to live in the shared string alongside each branch's own
+// `text-accent` / `text-danger`. `cx` is a plain join, not tailwind-merge, so
+// both classes reached the element and the winner was decided by their order
+// in the generated stylesheet rather than by this ternary — and `text-text`
+// won. Every `sel` button in the app has been rendering --text instead of
+// --accent (measured: Resume renders #eef1fb, not #67d4f5). It reads as
+// selected anyway, via its accent border and fill, which is why this survived.
+//
+// I found it because `danger` lost the same fight. Naming the colour once per
+// branch is the fix for both: nothing to override, nothing to order.
+export function Btn({ sel, danger, className, ...props }: BtnProps) {
   return (
     <button
       {...props}
       className={cx(
-        "kq-material cursor-pointer rounded-lg text-sm text-text hover:bg-panel",
+        "kq-material cursor-pointer rounded-lg text-sm hover:bg-panel",
         sel
           ? "border-2 border-accent bg-accent-bg px-[13px] py-1.5 text-accent hover:bg-accent-bg"
-          : "border border-border bg-card px-3.5 py-[7px]",
+          : danger
+            ? "border border-danger bg-card px-3.5 py-[7px] text-danger hover:bg-danger-bg"
+            : "border border-border bg-card px-3.5 py-[7px] text-text",
         className,
       )}
     />
   );
 }
 
-export function SmallBtn({ sel, className, ...props }: BtnProps) {
+/** Btn's smaller twin. Same branch-owns-its-colour rule — see Btn. */
+export function SmallBtn({ sel, danger, className, ...props }: BtnProps) {
   return (
     <button
       {...props}
       className={cx(
-        "kq-material cursor-pointer rounded-lg text-xs text-text hover:bg-panel disabled:cursor-default disabled:opacity-45",
+        "kq-material cursor-pointer rounded-lg text-xs hover:bg-panel disabled:cursor-default disabled:opacity-45",
         sel
           ? "border-2 border-accent bg-accent-bg px-[9px] py-[3px] text-accent hover:bg-accent-bg"
-          : "border border-border bg-card px-2.5 py-1",
+          : danger
+            ? "border border-danger bg-card px-2.5 py-1 text-danger hover:bg-danger-bg"
+            : "border border-border bg-card px-2.5 py-1 text-text",
         className,
       )}
     />

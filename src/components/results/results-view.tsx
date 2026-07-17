@@ -27,6 +27,7 @@ import {
 } from "@/components/results/summary";
 import { TriageSection } from "@/components/results/triage-board";
 import { Card, Chip, PageTitle } from "@/components/ui";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { analyzeRun } from "@/lib/confusions";
 import { weakestFacts } from "@/lib/decks";
 import { entryOf, glyphOf } from "@/lib/facts";
@@ -88,6 +89,7 @@ function Line({ bits, className }: { bits: Bit[]; className?: string }) {
 export function ResultsView({ results }: { results: ResultsPayload }) {
   const { cfg } = useQuizConfig();
   const { history } = useHistory();
+  const confirm = useConfirm();
   const { active, abandonQuiz, startQuiz } = useQuizSession();
 
   // Local lens, never a setting. Null means "still following the preference",
@@ -150,17 +152,26 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     : new Date(results.ts).toLocaleString();
 
   /** Stored results can be viewed mid-quiz — starting a new run from here
-   * must explicitly discard the one in progress. True = clear to start. */
-  const discardActive = (): boolean => {
+   * must explicitly discard the one in progress. True = clear to start.
+   *
+   * Async now, and so is everything downstream of it: the confirm is a dialog
+   * in the page rather than the browser's blocking one, so the answer arrives
+   * on a later tick and cannot be returned to this frame. */
+  const discardActive = async (): Promise<boolean> => {
     if (!active) return true;
-    if (!window.confirm("Discard the quiz in progress?")) return false;
+    const ok = await confirm({
+      title: "Discard the quiz in progress?",
+      body: "Your answers so far will not be scored.",
+      confirmLabel: "Discard quiz",
+    });
+    if (!ok) return false;
     abandonQuiz();
     return true;
   };
 
-  const start = (chars: string[], redrill?: boolean) => {
+  const start = async (chars: string[], redrill?: boolean) => {
     if (!chars.length) return;
-    if (!discardActive()) return;
+    if (!(await discardActive())) return;
     startQuiz(chars, { redrill });
   };
 
@@ -170,7 +181,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
    * (see ActiveQuiz.chars). Deduped: two facts of one entry would otherwise
    * queue that character twice. */
   const startFacts = (facts: FactId[], redrill?: boolean) =>
-    start([...new Set(facts.map((f) => glyphOf(entryOf(f))))], redrill);
+    void start([...new Set(facts.map((f) => glyphOf(entryOf(f))))], redrill);
 
   return (
     <>
@@ -224,7 +235,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         stats={stats}
         weakest={weakest}
         onRedrill={(picked) => startFacts(picked, true)}
-        onRerun={() => start(selectedChars(cfg))}
+        onRerun={() => void start(selectedChars(cfg))}
         onDrillWeakest={() => startFacts(weakest)}
       />
     </>

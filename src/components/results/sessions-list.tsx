@@ -19,6 +19,7 @@ import { useState } from "react";
 
 import { plural } from "@/components/home/deck-card";
 import { Hint, SmallBtn } from "@/components/ui";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatAccuracy } from "@/lib/accuracy";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
@@ -156,6 +157,7 @@ function NoSessions() {
 }
 
 export function SessionsList() {
+  const confirm = useConfirm();
   const { history, loaded, refresh } = useHistory();
   const { viewStoredSession } = useQuizSession();
   const [picked, setPicked] = useState<Set<number>>(new Set());
@@ -209,27 +211,29 @@ export function SessionsList() {
         <SmallBtn
           disabled={!picked.size}
           onClick={() => {
-            if (
-              picked.size &&
-              window.confirm(
-                `Delete ${plural(picked.size, "session")}?`,
-              )
-            ) {
-              void deleteSessions([...picked], false);
-            }
+            void (async () => {
+              if (!picked.size) return;
+              const ok = await confirm({
+                title: `Delete ${plural(picked.size, "session")}?`,
+                body: "This also rebuilds your per-character stats.",
+                confirmLabel: "Delete",
+              });
+              if (ok) await deleteSessions([...picked], false);
+            })();
           }}
         >
           {picked.size ? `Delete selected (${picked.size})` : "Delete selected"}
         </SmallBtn>
         <SmallBtn
           onClick={() => {
-            if (
-              window.confirm(
-                "Delete all session history? This also resets per-character stats.",
-              )
-            ) {
-              void deleteSessions([], true);
-            }
+            void (async () => {
+              const ok = await confirm({
+                title: "Delete all session history?",
+                body: "This also resets your per-character stats. It cannot be undone.",
+                confirmLabel: "Delete all",
+              });
+              if (ok) await deleteSessions([], true);
+            })();
           }}
         >
           Delete all
