@@ -36,6 +36,7 @@ import { QuizOptionsFields } from "@/components/home/quiz-options";
 import { SelectionCard } from "@/components/home/selection-card";
 import { SessionCard } from "@/components/home/session-card";
 import { StartBar } from "@/components/home/start-bar";
+import { NextGrammarLesson } from "@/components/lesson/next-grammar-lesson";
 import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
 import { NextWordLesson } from "@/components/lesson/next-word-lesson";
@@ -43,6 +44,10 @@ import { Card, Lbl, PageTitle } from "@/components/ui";
 import { planFacts, planSession } from "@/lib/budget";
 import { kanjiTeachOrder } from "@/data/kanji";
 import { nextKanjiLesson } from "@/lib/kanji-lesson";
+import {
+  GRAMMAR_PER_LESSON_DEFAULT,
+  nextGrammarLesson,
+} from "@/lib/grammar-lesson";
 import { nextWordLesson } from "@/lib/word-lesson";
 import { readingsProvedBy } from "@/lib/word-unlock";
 import { KANA_GROUP_FACTS, nextLesson } from "@/lib/lesson";
@@ -204,6 +209,18 @@ export default function HomePage() {
     [lesson, history, cfg.wordsPerLesson],
   );
 
+  // The grammar track — opened on the SAME gate as kanji (`lesson === null`, i.e.
+  // kana is done), because the owner wanted the two to appear together: "kanji
+  // and grammar should open up at the same time." Once kana is complete, home
+  // shows the kanji card AND the grammar card, side by side down the page. A pure
+  // function of history and one COUNT (how many patterns a lesson teaches — a
+  // constant, not a Settings knob; see grammar-lesson.ts). Null when the grammar
+  // curriculum is done, and then it renders nothing, like every card here.
+  const grammarLesson = useMemo(
+    () => (lesson ? null : nextGrammarLesson(history, GRAMMAR_PER_LESSON_DEFAULT)),
+    [lesson, history],
+  );
+
   // The lesson IS the session: its group, all of it new, all of it taught. It
   // does not go through the budget, because the budget's job is deciding how
   // much new material to hand out and the answer is already in your hand.
@@ -323,6 +340,19 @@ export default function HomePage() {
           lesson={wordLesson}
           onStart={startWordLesson}
           onClaim={claimWordLesson}
+        />
+      ) : null}
+
+      {/* The grammar track's next lesson — the fourth card, opened on the same
+          kana-done gate as kanji so the two appear together. A pattern is taught
+          teach-then-drill (its facts ARE the session, like kanji's), and its
+          drilling is already wired through grammarQuestions in question.ts.
+          Claiming skips the drill, on the same claim record as every other card. */}
+      {grammarLesson ? (
+        <NextGrammarLesson
+          lesson={grammarLesson}
+          onStart={startLesson}
+          onClaim={claim}
         />
       ) : null}
 

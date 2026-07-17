@@ -28,7 +28,8 @@
 
 import Link from "next/link";
 
-import { Btn, Card, Hint, Lbl } from "@/components/ui";
+import { Btn, Card, Lbl } from "@/components/ui";
+import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { kanjiEntry } from "@/data/kanji";
 import type { KanjiLesson } from "@/lib/kanji-lesson";
 import { entryHref } from "@/lib/library/href";
@@ -117,13 +118,11 @@ export function NextKanjiLesson({
         </div>
       </Card>
 
-      <Card className="px-[15px] py-[13px]">
-        <Hint>
-          Saying you know these adds them to your knowledge base and takes them
-          out of your way. The app takes your word for it now, and comes back to
-          check in a few months.
-        </Hint>
-      </Card>
+      <ClaimExplainer>
+        Saying you know these adds them to your knowledge base and takes them
+        out of your way. The app takes your word for it now, and comes back to
+        check in a few months.
+      </ClaimExplainer>
     </>
   );
 }
