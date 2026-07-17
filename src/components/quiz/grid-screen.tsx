@@ -134,7 +134,7 @@ function checkCard(g: GridRuntime, f: FactId, cfg: QuizConfig): CheckOutcome {
   card.tries++;
   // `confused` is keyed by ENTRY — the thing you said instead, not one of its
   // facts. See FactSessionDetail.
-  const said = confusedWith(f, v);
+  const said = confusedWith(f, v, g.order);
   if (said && said !== entryOf(f)) {
     st.confused[said] = (st.confused[said] ?? 0) + 1;
   }

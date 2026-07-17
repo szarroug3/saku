@@ -27,6 +27,7 @@
 
 import { CHAR_INDEX, KANA_SUBJECT, LOOK_GROUP, kanaFact } from "@/data/characters";
 import { distractorsFor } from "@/data/confusable";
+import { crossScriptLookalikes } from "@/data/cross-script";
 import {
   KANJI_SUBJECT,
   READING_INDEX,
@@ -113,6 +114,23 @@ function glyphOfFact(fact: FactId): string {
   return factInfo(fact)?.glyph ?? "";
 }
 
+/**
+ * Cross-script lookalike distractors for `glyph`, as facts — カ's 力, 力's カ.
+ *
+ * The one place a kana question reaches into the kanji subject and vice versa,
+ * and it earns the crossing: no kana looks more like カ than 力 does, and the
+ * same-script fill can never offer it. A kana lookalike resolves to its reading
+ * fact, a kanji to its meaning fact; anything the data no longer has is dropped.
+ * These are DISTRACTORS ONLY — confusedWith resolves scores within the deck and
+ * never consults this, so a predicted pair cannot become a confusion the user
+ * did not demonstrate.
+ */
+function crossScriptDistractors(glyph: string): FactId[] {
+  return crossScriptLookalikes(glyph)
+    .map((other) => (CHAR_INDEX[other] ? kanaFact(other) : meaningFactId(other)))
+    .filter((f) => factInfo(f));
+}
+
 // ---------- kana: the floor case ----------
 //
 // One entry, one fact, one reading, and the glyph really is the whole question.
@@ -149,7 +167,12 @@ const kanaQuestions: QuestionType = {
     const rest = Object.keys(CHAR_INDEX).filter(
       (x) => x !== c && CHAR_INDEX[x].set === info.set && !looks.includes(x),
     );
-    return [...looks, ...shuffled(rest)].slice(0, n).map(kanaFact);
+    // Cross-script lookalikes lead: 力 is the sharpest wrong option カ has, and
+    // no kana in the same-script fill comes close.
+    return [
+      ...crossScriptDistractors(c),
+      ...[...looks, ...shuffled(rest)].map(kanaFact),
+    ].slice(0, n);
   },
 };
 
@@ -236,10 +259,14 @@ const kanjiQuestions: QuestionType = {
 
     // A MEANING question's wrong answers are the meanings of kanji you would
     // mistake this one for — the confusable pairs, which is what that data is
-    // for and its only sanctioned use.
-    return distractorsFor(c, n)
-      .map(meaningFactId)
-      .filter((f) => factInfo(f));
+    // for and its only sanctioned use — plus any katakana that looks like this
+    // kanji (力 → カ), the same crossing the kana side makes in reverse.
+    return [
+      ...crossScriptDistractors(c),
+      ...distractorsFor(c, n).map(meaningFactId),
+    ]
+      .filter((f) => factInfo(f))
+      .slice(0, n);
   },
 };
 

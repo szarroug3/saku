@@ -58,11 +58,17 @@ function readAliasBase() {
   return pathToFileURL(dir.endsWith("/") ? dir : `${dir}/`);
 }
 
-/** Add `.ts` when the bare path doesn't exist but the TypeScript file does. */
+/** Add `.ts` when the bare path doesn't exist but the TypeScript file does,
+ * or `/index.ts` when it names a directory. The second case is what lets a
+ * test reach a module that imports a barrel — `@/data/grammar` resolves to
+ * `@/data/grammar/index.ts`, exactly as the bundler resolves it at runtime. */
 function withExtension(url) {
   if (/\.[a-z]+$/i.test(url.pathname)) return url;
-  const candidate = new URL(`${url.href}.ts`);
-  return existsSync(fileURLToPath(candidate)) ? candidate : url;
+  const asFile = new URL(`${url.href}.ts`);
+  if (existsSync(fileURLToPath(asFile))) return asFile;
+  const asIndex = new URL(`${url.href}/index.ts`);
+  if (existsSync(fileURLToPath(asIndex))) return asIndex;
+  return url;
 }
 
 registerHooks({

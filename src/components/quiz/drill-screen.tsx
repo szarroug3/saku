@@ -430,7 +430,7 @@ export function DrillScreen() {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
         }
       } else if (given && given !== "(time)") {
-        const said = confusedWith(q.f, given);
+        const said = confusedWith(q.f, given, rt.deck);
         if (said && said !== entryOf(q.f)) {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
         }
