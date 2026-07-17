@@ -77,6 +77,18 @@ export function SettingsCard() {
     if (el && document.activeElement !== el) el.value = String(cfg.timerSec);
   }, [cfg.timerSec, cfg.timer]);
 
+  // The two break lengths, same uncontrolled rule as the timer above: you are
+  // typing a number and the app has no business rewriting the box under you
+  // mid-keystroke.
+  const restFirstRef = useRef<HTMLInputElement>(null);
+  const restThenRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const a = restFirstRef.current;
+    if (a && document.activeElement !== a) a.value = String(cfg.restFirstMin);
+    const b = restThenRef.current;
+    if (b && document.activeElement !== b) b.value = String(cfg.restThenMin);
+  }, [cfg.restFirstMin, cfg.restThenMin]);
+
   // Only the fonts this machine actually has. A given machine tends to have
   // only some of the eight, and an uninstalled font doesn't fail — it renders as the fallback,
   // so listing all eight would show five identical chips claiming to be five
@@ -259,6 +271,51 @@ export function SettingsCard() {
             s
           </>
         ) : null}
+      </Row>
+
+      {/* TWO NUMBERS, NOT A RULE. Not "first break × 2", not a curve, not a
+          spacing strategy with a slider on it — two boxes you type into. The
+          user does not want to configure an algorithm; they want to type 5 and
+          10. If they'd rather have 5 and 5, they type that, and no part of the
+          app has an opinion about it. */}
+      <Row
+        label="First break"
+        info="The rest after your first round. Nothing runs during it — close the tab if you like, the clock is just a time it ends at."
+      >
+        <input
+          ref={restFirstRef}
+          type="number"
+          min={0}
+          max={600}
+          defaultValue={cfg.restFirstMin}
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            if (v >= 0) update({ restFirstMin: v });
+          }}
+          className="kq-material kq-num w-16 rounded-lg border border-border bg-card px-2 py-1 text-sm"
+          aria-label="First break, minutes"
+        />
+        <Hint>minutes</Hint>
+      </Row>
+
+      <Row
+        label="Every break after that"
+        info="The rest after round two and every round beyond it."
+      >
+        <input
+          ref={restThenRef}
+          type="number"
+          min={0}
+          max={600}
+          defaultValue={cfg.restThenMin}
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            if (v >= 0) update({ restThenMin: v });
+          }}
+          className="kq-material kq-num w-16 rounded-lg border border-border bg-card px-2 py-1 text-sm"
+          aria-label="Every break after the first, minutes"
+        />
+        <Hint>minutes</Hint>
       </Row>
 
       <Row

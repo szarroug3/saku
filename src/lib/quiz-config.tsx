@@ -44,6 +44,9 @@ export function defaultConfig(): QuizConfig {
     showVolume: true,
     graduateRuns: 10,
     slowFloorMs: 1500,
+    // The user's own numbers. Two settings, not a rule — see QuizConfig.
+    restFirstMin: 5,
+    restThenMin: 10,
     showStreak: true,
     showAccuracy: true,
     showRetryPips: true,

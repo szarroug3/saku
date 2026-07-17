@@ -8,11 +8,17 @@
 // Auto-finishes 500ms after every card is resolved.
 //
 // All resumable state lives in active.runtime.grid (a plain mutable,
-// JSON-serializable object) and is written AS IT CHANGES — card order,
-// input text, per-card {value, state, tries}, the streak — so tab-switch and
-// refresh resume exactly. The shake is transient component state; the pending
-// finish timeout is re-armed on remount when all cards are resolved.
+// JSON-serializable object) — card order, input text, per-card {value, state,
+// tries}, the streak — so tab-switch and refresh resume exactly. The shake is
+// transient component state; the pending finish timeout is re-armed on remount
+// when all cards are resolved.
 // Retries, show-answer, fonts, and blur-submit read live from config.
+//
+// The runtime is mutated IN PLACE, so nothing about it reaches disk on its
+// own: `active` never changes identity and React never hears about it. Every
+// resolved answer therefore calls `saveNow()` explicitly — see `check()`, and
+// the long note on saveNow in quiz-session.tsx for the miss-losing bug that
+// closes.
 //
 // The view (see grid-hud.tsx): the drill's language on a sheet. Quiet pills
 // that only speak when they have something true to say, a 2px hairline, and
@@ -143,7 +149,7 @@ function checkCard(g: GridRuntime, c: string, cfg: QuizConfig): CheckOutcome {
 
 export function GridScreen() {
   const { cfg } = useQuizConfig();
-  const { active, finishQuiz, setProgress } = useQuizSession();
+  const { active, finishQuiz, setProgress, saveNow } = useQuizSession();
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
 
@@ -195,6 +201,14 @@ export function GridScreen() {
     // Retries and show-answer are read live from cfg at check time.
     const out = checkCard(g, c, cfg);
     if (out === "noop") return;
+    // Every outcome that changed the runtime hits the disk before the next
+    // question is drawn — INCLUDING "retry", which is the one that used to be
+    // lost. A miss moves nothing React can see (the stats are mutated in place
+    // and `progress` only counts cards that went RIGHT), so a miss used to
+    // reach localStorage only if beforeunload happened to fire. Crash,
+    // force-quit or a tab eviction and every miss since your last correct
+    // answer was gone.
+    saveNow();
     if (out === "retry") {
       shake(c);
       rerender();
@@ -262,21 +276,41 @@ export function GridScreen() {
         {g.order.map((c) => {
           const card = g.cards[c];
           // Presentation only — this reads the state machine, it doesn't touch
-          // it. The one thing worth naming: `wrong` and `missed` are two
-          // classes where there used to be one (`state === "wrong" ||
-          // tries > 0`). They have to be, now that a resolved card recedes: a
-          // card you've missed once but can still answer is the card you most
-          // owe, and it was wearing the resolved look. `missed` keeps it at
-          // full presence; only the out-of-retries card steps back.
+          // it.
+          //
+          // RED MEANS FINISHED, NOT FAILED.
+          // A card with goes left is NOT red — it looks exactly like a card
+          // you haven't tried, and the spent dot below is the only thing that
+          // says otherwise. Red is reserved for out-of-retries: done with,
+          // here's the answer.
+          //
+          // This is the user's rule, and it also kills a real problem rather
+          // than just obeying one. The sheet used to paint three states in
+          // three reds — `missed` at 60% danger, `wrong` at 52%, and the shake
+          // at 100%. Two of those are eight points apart, which is to say they
+          // were the same colour, and the only thing telling `missed` from
+          // `shake` was motion that had already finished. Now the shake is the
+          // only thing ever briefly red-and-still-open, and the two states that
+          // were indistinguishable are maximally different.
+          //
+          // The cost, stated: you can no longer see at a glance which cards
+          // you've already missed. You read the dots. `kq-gcard-missed` is
+          // consequently unused by this screen — it stays in globals.css
+          // because the stylesheet is not mine to prune.
           const state = shaking[c]
             ? "animate-gshake kq-gcard-shake"
             : card.state === "right"
               ? "kq-gcard-right"
               : card.state === "wrong"
                 ? "kq-gcard-wrong"
-                : card.tries > 0
-                  ? "kq-gcard-missed"
-                  : "";
+                : "";
+          // Pips: one per allowed retry, spent left to right. A card that is
+          // out of goes shows them all as gone, which is the same information
+          // the red is already giving — deliberately, because that state is
+          // the one worth saying twice.
+          const allowed = retriesAllowed(cfg);
+          const showPips =
+            cfg.showRetryPips && Number.isFinite(allowed) && allowed > 0;
           return (
             <div
               key={c}
@@ -319,6 +353,28 @@ export function GridScreen() {
                   className="kq-gcard-well w-full px-1 py-1.5 text-center text-sm"
                 />
               </form>
+              {/* The dots are the whole retry counter now that colour isn't
+                  carrying it. Reserved height whether or not they're on, so
+                  toggling the setting mid-quiz doesn't reflow 214 cards. */}
+              <span className="mt-1.5 flex min-h-[5px] items-center justify-center gap-[3px]">
+                {showPips
+                  ? Array.from({ length: allowed }, (_, i) => {
+                      const spent = i < card.tries;
+                      return (
+                        <span
+                          key={i}
+                          className={`block size-[5px] rounded-full ${
+                            card.state === "wrong"
+                              ? "bg-danger opacity-90"
+                              : spent
+                                ? "bg-text-muted opacity-[0.16]"
+                                : "bg-text-muted opacity-[0.55]"
+                          }`}
+                        />
+                      );
+                    })
+                  : null}
+              </span>
             </div>
           );
         })}
