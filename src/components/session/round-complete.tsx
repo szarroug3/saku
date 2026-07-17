@@ -121,10 +121,7 @@ export function RoundComplete({
           ) : (
             <Btn onClick={() => setPicking(true)}>Pick what to retry…</Btn>
           )}
-          <Btn
-            className="ml-auto border-transparent bg-text font-medium text-bg hover:bg-text"
-            onClick={onComplete}
-          >
+          <Btn go className="ml-auto" onClick={onComplete}>
             Complete round
           </Btn>
         </div>

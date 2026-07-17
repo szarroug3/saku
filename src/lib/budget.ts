@@ -51,8 +51,41 @@
 // item is, is a PRESENTATION question (see `TaughtItem.familiar`), never a
 // scheduling one. There is no cold-start branch here, because there is no cold
 // start: day one is just the day when every fact happens to be in `teach`.
+//
+// WHERE THAT STOPS BEING TRUE: HOW MUCH NEW MATERIAL, AND IN WHAT UNIT
+// ====================================================================
+// The paragraph above is about SCHEDULING and it still holds: nothing here asks
+// whether a `teach` fact is new or lost in order to decide what to DO with it.
+// Both get taught. But the two differ in one respect the arithmetic genuinely
+// cannot see, because it is not a fact about your memory at all:
+//
+//   Lost material is a BACKLOG. It is bounded by what you have already done,
+//   it arrived one item at a time, and there is no unit to hand it out in.
+//   New material is a CURRICULUM. It is bounded by nothing — the pool is every
+//   character the app ships — and it already comes in units, because the
+//   material has an order and that order has joints in it.
+//
+// Ignore the difference and an unlimited day-one session is the entire pool:
+// 214 characters on one teach screen, which is not a lesson, it is a table of
+// contents. So new material is drawn ONE GROUP AT A TIME and then it STOPS.
+// The group is あいうえお, then かきくけこ — the sections `src/data/characters.ts`
+// has always had, in the order it has always had them.
+//
+// LOST MATERIAL IS NOT GROUPED, and that is the part to get right. A group is a
+// property of the curriculum, not of you: さ, し and す were introduced together
+// and that says nothing whatever about whether you lost them together. Handing
+// back "the S row" because you dropped し would re-teach two things you still
+// know, and grouping the backlog would put a fact you lost in March behind
+// however many groups happen to sort before it. So the lost bucket keeps
+// exactly the behaviour it had — every lost fact, in candidate order, taught on
+// its own account. Only the new tail is grouped.
+//
+// The split is `lastTested`, and it is not a new question the model has to
+// answer: a fact with no evidence has never been tested, so `lastTested` is 0,
+// and that is already how UNMET is spelled. Nothing here re-derives "new".
 
-import { rank, status, stateOf } from "@/lib/scoring";
+import { effectiveState } from "@/lib/claims";
+import { rank, status } from "@/lib/scoring";
 import type { FactId, FactState, HistoryFile } from "@/types";
 
 export interface SessionPlan {
@@ -84,9 +117,23 @@ export function planFacts(plan: SessionPlan): FactId[] {
 export interface PlanQuery {
   /** The pool — the user's selection, or their whole knowledge base. */
   candidates: readonly FactId[];
-  /** What the app knows about each fact. Facts absent from history read as
-   * UNMET via `stateOf`, which is the truthful answer and not a special case. */
+  /** What the app knows about each fact — and what the user has SAID about it.
+   * Facts absent from both read as UNMET via `effectiveState`, which is the
+   * truthful answer and not a special case. */
   history: HistoryFile;
+  /**
+   * The curriculum: new material, pre-cut into lessons, in teaching order.
+   *
+   * Data, not a rule — a group is a property of the material, and this file has
+   * no opinion about what belongs in one. `src/lib/lesson.ts` supplies kana's
+   * (the sections of `src/data/characters.ts`, which have been in the right
+   * order since before there was a budget to read them).
+   *
+   * Absent = ungrouped, and every fact with no evidence is fair game. That is
+   * the old behaviour, kept for a caller with no curriculum to offer rather
+   * than for compatibility.
+   */
+  groups?: readonly (readonly FactId[])[];
   /**
    * How many facts the user asked for. `null` = unlimited, which means "no cap"
    * and NOT "no budget": an unlimited session is everything that isn't quiet,
@@ -113,19 +160,25 @@ export interface PlanQuery {
  * instead.
  */
 export function planSession(query: PlanQuery): SessionPlan {
-  const { candidates, history, length, now } = query;
+  const { candidates, history, groups, length, now } = query;
 
   const probeCandidates: Array<{ id: FactId; state: FactState }> = [];
-  const teachable: FactId[] = [];
+  // The two tails of `teach`, kept apart for ONE reason: how much of each to
+  // draw. See the header — the backlog is bounded and the curriculum isn't.
+  const lost: FactId[] = [];
+  const fresh = new Set<FactId>();
 
   for (const id of candidates) {
-    const state = stateOf(history.facts[id]);
+    const state = effectiveState(history.facts[id], history.claims?.[id]);
     switch (status(state, now)) {
       case "probe":
         probeCandidates.push({ id, state });
         break;
       case "teach":
-        teachable.push(id);
+        // `lastTested: 0` is how UNMET is spelled and the only way to hold it:
+        // nothing has ever tested this and nothing has ever claimed it.
+        if (state.lastTested > 0) lost.push(id);
+        else fresh.add(id);
         break;
       case "quiet":
         // Silence. Not a fallback, not a last resort — see the doc comment.
@@ -133,8 +186,12 @@ export function planSession(query: PlanQuery): SessionPlan {
     }
   }
 
-  // Unlimited: everything that isn't quiet. Ranked material first, then the
-  // rest to be taught.
+  // ONE group of new material, or all of it if the caller has no curriculum.
+  const teachable = [...lost, ...lessonFrom(groups, fresh)];
+
+  // Unlimited: everything that isn't quiet — except that "unlimited" was never
+  // a licence to hand over the whole curriculum at once. It caps the ASKING,
+  // and the lesson was already one group before it got here.
   if (length === null) {
     return {
       probe: rank({ facts: probeCandidates }, now),
@@ -144,11 +201,15 @@ export function planSession(query: PlanQuery): SessionPlan {
   }
 
   const probe = rank({ facts: probeCandidates, limit: length }, now);
-  // `teachable` is in candidate order, which is the curriculum's order — the
-  // sequence the data file already puts kana in (vowels, then K, then S…).
-  // Deliberately not shuffled and not ranked: `rank` REFUSES these (they have
-  // no strength to rank), and the order new material should arrive in is a
-  // property of the material, not of your memory of it.
+  // Both halves of `teachable` are in candidate order, which is the
+  // curriculum's order — the sequence the data file already puts kana in
+  // (vowels, then K, then S…). Deliberately not shuffled and not ranked: `rank`
+  // REFUSES these (they have no strength to rank), and the order new material
+  // should arrive in is a property of the material, not of your memory of it.
+  //
+  // Lost material comes first, so a short session spends itself on the backlog
+  // before it starts a lesson. Being handed あいうえお while さしす sits at 0% is
+  // the app changing the subject.
   const teach = teachable.slice(0, Math.max(0, length - probe.length));
 
   return {
@@ -156,4 +217,63 @@ export function planSession(query: PlanQuery): SessionPlan {
     teach,
     short: probe.length + teach.length < length,
   };
+}
+
+/**
+ * The next lesson: the first group with anything new left in it.
+ *
+ * "First" is the curriculum's order and "anything new" is `fresh` — so a group
+ * you have half-claimed yields its remaining half and is not re-taught whole,
+ * and a group you have claimed entirely is not a lesson at all. There is no
+ * cursor, no "current group" stored anywhere, and nothing to keep in sync: the
+ * next lesson is a function of what you know, computed the same way every time
+ * anyone asks. Claim all of hiragana and the next lesson is ア, because ア is
+ * the first group with anything left in it — not because a pointer moved.
+ *
+ * Returns the group's fresh facts only, in group order. Empty when the
+ * curriculum is done, which is a real state and not an error.
+ */
+export function nextGroup(
+  groups: readonly (readonly FactId[])[],
+  fresh: ReadonlySet<FactId>,
+): FactId[] {
+  for (const group of groups) {
+    const left = group.filter((id) => fresh.has(id));
+    if (left.length) return left;
+  }
+  return [];
+}
+
+/** New material for one session: one group, or — with no curriculum to cut it
+ * with — the lot. */
+function lessonFrom(
+  groups: readonly (readonly FactId[])[] | undefined,
+  fresh: ReadonlySet<FactId>,
+): FactId[] {
+  return groups ? nextGroup(groups, fresh) : [...fresh];
+}
+
+/**
+ * Facts the app has no record of whatsoever — never answered, never claimed.
+ *
+ * The one definition of "new", exported so the screen that ANNOUNCES the next
+ * lesson and the budget that RUNS it cannot disagree about what is left. It is
+ * `effectiveState(...).lastTested === 0` — the same expression `planSession`
+ * splits its teach bucket on, over the same value, so the two are one rule
+ * written once and read twice.
+ *
+ * Note what it does not consult: `now`. Whether you have seen something is not
+ * a question about the present, and a fact you lost years ago is not new — it
+ * is the thing this file's header is about.
+ */
+export function freshFacts(
+  candidates: readonly FactId[],
+  history: HistoryFile,
+): Set<FactId> {
+  const fresh = new Set<FactId>();
+  for (const id of candidates) {
+    const state = effectiveState(history.facts[id], history.claims?.[id]);
+    if (state.lastTested === 0) fresh.add(id);
+  }
+  return fresh;
 }

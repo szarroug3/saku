@@ -36,19 +36,22 @@ import { QuizOptionsFields } from "@/components/home/quiz-options";
 import { SelectionCard } from "@/components/home/selection-card";
 import { SessionCard } from "@/components/home/session-card";
 import { StartBar } from "@/components/home/start-bar";
+import { NextLesson } from "@/components/lesson/next-lesson";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { planFacts, planSession } from "@/lib/budget";
+import { KANA_GROUP_FACTS, nextLesson } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
+import type { FactId } from "@/types";
 
 export default function HomePage() {
   const { cfg, set } = useQuizConfig();
   const { session, startSession, discardSession, continueSession } =
     useQuizSession();
-  const { history } = useHistory();
+  const { history, refresh } = useHistory();
   const { lists } = useLists();
 
   // The facts the query names, right now. This IS what Start hands to the quiz
@@ -122,6 +125,10 @@ export default function HomePage() {
     const plan = planSession({
       candidates: facts,
       history,
+      // New material arrives one group at a time — see budget.ts. Without this
+      // the pool IS the lesson, which on day one means 214 characters on one
+      // teach screen.
+      groups: KANA_GROUP_FACTS,
       // "Unlimited" means no cap, not no budget — see budget.ts. Full-coverage
       // asks for the whole pool, so it has no cap either.
       length:
@@ -144,6 +151,34 @@ export default function HomePage() {
     startSession(planned.facts, planned.teach, what);
   };
 
+  // The next lesson is a view of history, not a cursor — see next-lesson.tsx.
+  // Null when there is no new material left, and the card is then not rendered
+  // at all, on the same rule as the session card above it: a card offering to
+  // teach you nothing is the lie that rule exists to prevent.
+  const lesson = useMemo(() => nextLesson(history), [history]);
+
+  // The lesson IS the session: its group, all of it new, all of it taught. It
+  // does not go through the budget, because the budget's job is deciding how
+  // much new material to hand out and the answer is already in your hand.
+  //
+  // FACTS, not the lesson's characters. This took `chars: string[]` and handed
+  // them straight to startSession, which was silent both ways: FactId is a
+  // branded string, so a fact array satisfies string[] with no cast, and a
+  // character array satisfies nothing the fact-native runtime can drill. The
+  // lesson already carries both halves — take the one the session speaks.
+  const startLesson = (facts: FactId[]) => startSession(facts, facts);
+
+  const claim = async (facts: FactId[]) => {
+    await fetch("/api/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ facts, known: true }),
+    }).catch(() => {});
+    // The card is a function of history, so re-reading history IS how the next
+    // lesson advances. Nothing tells it which group to show next.
+    await refresh();
+  };
+
   return (
     <>
       <PageTitle title="Kana quiz" />
@@ -158,6 +193,10 @@ export default function HomePage() {
           onRestart={() => startSession(session.facts, session.teach, session.what)}
           onDiscard={discardSession}
         />
+      ) : null}
+
+      {lesson ? (
+        <NextLesson lesson={lesson} onStart={startLesson} onClaim={claim} />
       ) : null}
 
       <Lbl>Setup</Lbl>

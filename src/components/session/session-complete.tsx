@@ -68,11 +68,7 @@ export function SessionComplete({
           {/* Rerun is the same operation Recent's Rerun is: replay the session
               as it was, same set, fresh rounds. */}
           <SmallBtn onClick={onRerun}>Rerun it now</SmallBtn>
-          <Btn
-            autoFocus
-            className="border-transparent bg-text font-medium text-bg hover:bg-text"
-            onClick={onDone}
-          >
+          <Btn autoFocus go onClick={onDone}>
             Done
           </Btn>
         </div>

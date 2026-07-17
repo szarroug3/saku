@@ -111,11 +111,10 @@ export function TeachScreen({
         </div>
 
         <div className="mt-5 flex justify-end">
-          <Btn
-            autoFocus
-            className="border-transparent bg-text font-medium text-bg hover:bg-text"
-            onClick={onStart}
-          >
+          {/* `go`, not a className. This button spent its life rendering --text
+              on --text — see Btn: the tone arrived as `text-bg` alongside the
+              branch's own `text-text`, and lost. */}
+          <Btn autoFocus go onClick={onStart}>
             Start round 1
           </Btn>
         </div>
