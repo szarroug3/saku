@@ -34,6 +34,10 @@ import { QuizOptionsFields } from "@/components/home/quiz-options";
 import { ResumeCard } from "@/components/home/resume-card";
 import { selectionLabels, toggled } from "@/components/home/selection";
 import { StartBar } from "@/components/home/start-bar";
+import {
+  type ConfirmOptions,
+  useConfirm,
+} from "@/components/ui/confirm-dialog";
 import { weaknessDecks, WeaknessShelf } from "@/components/home/weakness-shelf";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { DECKS, deckChars, deckSelectable } from "@/lib/decks";
@@ -41,11 +45,15 @@ import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
 
-const REPLACE_PROMPT =
-  "Starting this quiz discards the one in progress. Continue?";
+const REPLACE_PROMPT: ConfirmOptions = {
+  title: "Start a new quiz?",
+  body: "This discards the quiz in progress. Your answers so far will not be scored.",
+  confirmLabel: "Discard and start",
+};
 
 export default function HomePage() {
   const router = useRouter();
+  const confirm = useConfirm();
   const { cfg, set } = useQuizConfig();
   const { active, progress, startQuiz, abandonQuiz } = useQuizSession();
   const { history } = useHistory();
@@ -101,9 +109,9 @@ export default function HomePage() {
   const toggle = (of: string[], on: boolean) =>
     set((prev) => toggled(prev, of, on));
 
-  const start = () => {
+  const start = async () => {
     if (!chars.length) return;
-    if (active && !window.confirm(REPLACE_PROMPT)) return;
+    if (active && !(await confirm(REPLACE_PROMPT))) return;
     // Replacing rather than abandoning-then-starting: startQuiz overwrites the
     // active quiz outright, and abandonQuiz first would only add a render with
     // no quiz in it.

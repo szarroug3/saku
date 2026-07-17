@@ -17,6 +17,10 @@
 // point of the snapshot.
 
 import { Btn, SmallBtn } from "@/components/ui";
+import {
+  type ConfirmOptions,
+  useConfirm,
+} from "@/components/ui/confirm-dialog";
 import { DECKS, deckSelectable } from "@/lib/decks";
 import type { ActiveQuiz, QuizProgress } from "@/lib/quiz-session";
 
@@ -56,8 +60,11 @@ function deckName(chars: string[]): string {
     : `${labels[0]} + ${labels.length - 1} more`;
 }
 
-const DISCARD_PROMPT =
-  "Discard the quiz in progress? Your answers so far will not be scored.";
+const DISCARD_PROMPT: ConfirmOptions = {
+  title: "Discard the quiz in progress?",
+  body: "Your answers so far will not be scored.",
+  confirmLabel: "Discard quiz",
+};
 
 export function ResumeCard({
   active,
@@ -71,6 +78,7 @@ export function ResumeCard({
   onResume: () => void;
   onDiscard: () => void;
 }) {
+  const confirm = useConfirm();
   const where =
     progress === null
       ? null
@@ -108,7 +116,9 @@ export function ResumeCard({
       <span className="ml-auto flex flex-none items-center gap-2">
         <SmallBtn
           onClick={() => {
-            if (window.confirm(DISCARD_PROMPT)) onDiscard();
+            void (async () => {
+              if (await confirm(DISCARD_PROMPT)) onDiscard();
+            })();
           }}
         >
           Discard

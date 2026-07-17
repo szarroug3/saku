@@ -1057,6 +1057,16 @@ body {
    * with the page's own ground; kiri occludes with the blur instead, so a flat
    * --bg here would punch an opaque rectangle through its mesh. */
   --band-fill: var(--bg);
+  /* The wash a modal lays over the page it has taken control of.
+   *
+   * Deliberately NOT derived from a palette token. The obvious spelling —
+   * color-mix() toward --text — inverts with the appearance: --text is the
+   * near-black in every light palette and the near-white in every dark one, so
+   * that scrim would DIM in light and BLOOM in dark. A scrim only ever darkens,
+   * so it is ink in both, and one value serves all four themes × both
+   * appearances. It is still a token, so a theme that wants a different weight
+   * can say so. */
+  --scrim: rgba(10, 12, 18, 0.45);
 }
 
 [data-theme="aizome"] {
