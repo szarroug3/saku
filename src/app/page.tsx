@@ -113,6 +113,39 @@ export default function HomePage() {
   const toggle = (of: string[], on: boolean) =>
     set((prev) => toggled(prev, of, on));
 
+  // WHAT YOU SELECTED IS THE POOL. THIS IS THE SESSION.
+  //
+  // src/lib/budget.ts decides what actually gets run: rank the met facts, then
+  // top up from `teach` to the length you asked for. The top-up is what stops
+  // the drill going dark — everything at p → 0 leaves the ranking on purpose,
+  // and without a budget to catch it the material you are worst at ends up in
+  // no list at all.
+  //
+  // Computed HERE and not inside `start()`, because the start bar has to be
+  // able to say what the button will do before you press it — including the
+  // case where the honest answer is "nothing, you're solid on all of these".
+  // One plan, read by the sentence and by the button, so they cannot disagree.
+  const planned = useMemo(() => {
+    const plan = planSession({
+      candidates: chars.map(kanaFact),
+      history,
+      // "Unlimited" means no cap, not no budget — see budget.ts. Full-coverage
+      // asks for the whole pool, so it has no cap either.
+      length:
+        cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null,
+      now,
+    });
+    // The plan speaks facts; a leg drills characters. One kana is one fact, so
+    // this is a filter today and a real lookup the day kanji lands.
+    const inPlan = new Set<string>(planFacts(plan));
+    const teachSet = new Set<string>(plan.teach);
+    const picked = chars.filter((c) => inPlan.has(kanaFact(c)));
+    return {
+      chars: picked,
+      teach: picked.filter((c) => teachSet.has(kanaFact(c))),
+    };
+  }, [chars, history, cfg.length, cfg.limType, cfg.limCount, now]);
+
   // Start IS start-a-session. The loop is the app's spine, not a mode you opt
   // into: you do the set, you fork on the misses, you rest, you do the same set
   // again. A one-off quiz is just a session you complete after one round.
@@ -129,26 +162,8 @@ export default function HomePage() {
   // on it — the information a dialog would interrupt you to give you is already
   // in front of you, and everything in that session is already saved.
   const start = () => {
-    if (!chars.length) return;
-    const plan = planSession({
-      candidates: chars.map(kanaFact),
-      history,
-      // "Unlimited" means no cap, not no budget — see budget.ts. Coverage
-      // sessions ask for the whole pool, so they too have no cap.
-      length:
-        cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null,
-      now,
-    });
-    // The plan speaks facts; a leg drills characters. One kana is one fact, so
-    // this is a filter today and a real lookup the day kanji lands.
-    const inPlan = new Set<string>(planFacts(plan));
-    const teach = new Set<string>(plan.teach);
-    const planned = chars.filter((c) => inPlan.has(kanaFact(c)));
-    if (!planned.length) return;
-    startSession(
-      planned,
-      planned.filter((c) => teach.has(kanaFact(c))),
-    );
+    if (!planned.chars.length) return;
+    startSession(planned.chars, planned.teach);
   };
 
   return (
@@ -193,6 +208,7 @@ export default function HomePage() {
         cfg={cfg}
         labels={labels}
         count={chars.length}
+        plannedCount={planned.chars.length}
         active={!!session}
         onStart={start}
       />

@@ -75,6 +75,7 @@ export function StartBar({
   cfg,
   labels,
   count,
+  plannedCount,
   active,
   onStart,
 }: {
@@ -83,6 +84,13 @@ export function StartBar({
   labels: string[];
   /** Exact, deduped character count. The one number that never blurs. */
   count: number;
+  /**
+   * How many of `count` the BUDGET would actually put in the session — the
+   * ranked material plus the teach top-up. Can be 0 while `count` is 5: that
+   * means the app is confident about every one of them right now, which is not
+   * an error and not an empty selection.
+   */
+  plannedCount: number;
   /** A quiz is in progress — starting this one replaces it. */
   active: boolean;
   onStart: () => void;
@@ -90,7 +98,12 @@ export function StartBar({
   // Grid ignores directions, so only the char count gates it there.
   const howBroken =
     cfg.mode !== "grid" && !cfg.dirs.jp2en && !cfg.dirs.en2jp;
-  const disabled = !count || howBroken;
+  // Nothing to ask is a real, reachable state — everything selected is `quiet`
+  // — and it used to leave Start looking live and doing nothing: you clicked,
+  // the page didn't move, and the app never said why. A button that is enabled
+  // and inert is worse than one that is disabled and explains itself.
+  const nothingToAsk = count > 0 && !howBroken && plannedCount === 0;
+  const disabled = !count || howBroken || nothingToAsk;
 
   // Never a bare greyed-out button. A disabled control that won't say why is
   // the reason people click a thing five times and then file a bug, and both
@@ -99,7 +112,13 @@ export function StartBar({
     ? "Pick at least one deck to start."
     : howBroken
       ? "Choose a direction in the setup above."
-      : null;
+      : nothingToAsk
+        ? // Deliberately not "nothing to do" and not a congratulation. It is a
+          // statement about right now, with the way out in the same sentence:
+          // the app has nothing to learn by asking these today, and the fix is
+          // to select more — which is the screen you are already on.
+          "You're solid on all of these for now — pick another deck to drill something else."
+        : null;
 
   return (
     <div
