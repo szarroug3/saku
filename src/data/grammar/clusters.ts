@@ -134,10 +134,15 @@ export const CLUSTERS: readonly Cluster[] = [
       "なくちゃ / なきゃ are spoken contractions of なくては / なければ. " +
       "〜ならない and 〜いけない are interchangeable in nearly every frame.",
     link: null,
+    // `noLinkReason` is RENDERED — it is the text beside the empty slot, not a
+    // comment. So it may not name a source file: "see clusters.ts" was in here
+    // and would have shipped to the screen, telling a user learning Japanese to
+    // go read our TypeScript. The reason a reader needs is the one about the
+    // links, and it is above this line, where readers of the code will find it.
     noLinkReason:
       "No verified link covers all seven. The pages that exist cover three or " +
       "four and stop, and pointing at one would imply a completeness it does " +
-      "not have. The slot is empty on purpose — see clusters.ts.",
+      "not have. The slot is empty on purpose.",
   },
   {
     id: "seems",
