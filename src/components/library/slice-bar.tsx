@@ -27,6 +27,7 @@ import { Btn, Hint } from "@/components/ui";
 import {
   drillPlan,
   sliceCount,
+  sliceIsDrillable,
   sliceSentence,
   type Slice,
 } from "@/lib/library/slice";
@@ -60,6 +61,11 @@ export function SliceBar({
   // budget.planFacts's rule and not this bar's to invent.
   const order = [...plan.teach, ...plan.probe];
   const count = sliceCount(slice, facts, claims, now);
+  // ONE thing to learn is not a drill. A single kana IS its one reading, and a
+  // "drill" of it is a one-question session that teaches nothing the screen above
+  // this bar hasn't already shown — so hide Drill (only Drill) on single-fact
+  // slices. Add-to-list and I-know-this stay: you may still file か or claim it.
+  const canDrill = sliceIsDrillable(slice);
 
   return (
     <>
@@ -126,13 +132,15 @@ export function SliceBar({
               runtime is fact-native now, so the filter, the note and the whole
               of src/lib/library/drill.ts are gone: what the model would drill
               and what the quiz can ask are the same list again. */}
-          <Btn
-            sel
-            disabled={order.length === 0}
-            onClick={() => startSession(order, [...plan.teach], slice.label)}
-          >
-            Drill {order.length}
-          </Btn>
+          {canDrill ? (
+            <Btn
+              sel
+              disabled={order.length === 0}
+              onClick={() => startSession(order, [...plan.teach], slice.label)}
+            >
+              Drill {order.length}
+            </Btn>
+          ) : null}
         </div>
       </div>
     </>
