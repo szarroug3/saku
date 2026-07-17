@@ -10,8 +10,10 @@
 
 import { useState } from "react";
 
+import Link from "next/link";
+
 import { Btn, Hint, Lbl, SmallBtn } from "@/components/ui";
-import { countIn, isWritable, useLists } from "@/lib/use-lists";
+import { countIn, isWritable, listToggle, useLists } from "@/lib/use-lists";
 import type { EntryId } from "@/types";
 
 export function AddToList({
@@ -24,7 +26,7 @@ export function AddToList({
   label: string;
   onDone(): void;
 }) {
-  const { lists, loaded, addTo, create } = useLists();
+  const { lists, loaded, addTo, removeFrom, create } = useLists();
   const [name, setName] = useState("");
   const fixed = lists.filter(isWritable);
   const derived = lists.filter((l) => !isWritable(l));
@@ -77,11 +79,21 @@ export function AddToList({
           {fixed.map((list) => {
             const have = countIn(list, entries);
             const all = have === entries.length;
+            // The row is a TOGGLE, not just an add: the same tick that says
+            // "these are all in here" is the thing that clicking takes them back
+            // out. listToggle reads the indicator and returns the one write a
+            // click should make, so the two can never drift apart.
+            const onClick = () => {
+              const t = listToggle(list, entries);
+              if (t.kind === "remove") void removeFrom(list.id, t.entries);
+              else void addTo(list.id, t.entries);
+            };
             return (
               <button
                 key={list.id}
                 type="button"
-                onClick={() => void addTo(list.id, [...entries])}
+                onClick={onClick}
+                aria-label={`${all ? "Remove" : "Add"} ${label} ${all ? "from" : "to"} ${list.name}`}
                 className="flex w-full cursor-pointer items-center gap-2.5 rounded-(--radius) px-1.5 py-1.5 text-left hover:bg-panel"
               >
                 <span
@@ -129,6 +141,20 @@ export function AddToList({
             {derived.length === 1 ? "isn't" : "aren't"} here — they build
             themselves from a rule, so there&rsquo;s nothing to add to.
           </Hint>
+        </p>
+      ) : null}
+
+      {/* The way out to the full management view — rename, delete, drill, and
+          see what is in each. Only meaningful once loaded, and always offered
+          then: even with no writable lists there may be derived ones to manage. */}
+      {loaded ? (
+        <p className="mt-3 border-t border-border pt-2.5 text-right">
+          <Link
+            href="/lists"
+            className="text-xs text-accent no-underline hover:underline"
+          >
+            Manage lists →
+          </Link>
         </p>
       ) : null}
     </div>

@@ -24,6 +24,7 @@ import "server-only";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 
+import { withEntriesRemoved, withName } from "@/lib/list-ops";
 import type { EntryId, ListsFile, SavedList } from "@/types";
 
 const LISTS_PATH = path.join(process.cwd(), "lists.json");
@@ -80,6 +81,37 @@ export function addToList(id: string, entries: EntryId[]): ListsFile {
       have.add(e);
     }
   }
+  write(file);
+  return file;
+}
+
+/**
+ * Drop entries from a FIXED list — the other half of addToList, and refused on
+ * derived lists for the same reason: a derived list is a rule, not a set, so
+ * there is no member to take out. The one place a removal can happen, so the UI
+ * can toggle a row off without every caller re-checking the kind.
+ *
+ * Idempotent: entries not in the list are simply absent from the result, so a
+ * second removal of the same slice is a no-op rather than an error.
+ */
+export function removeFromList(id: string, entries: EntryId[]): ListsFile {
+  const file = loadLists();
+  const i = file.lists.findIndex((l) => l.id === id);
+  if (i !== -1) file.lists[i] = withEntriesRemoved(file.lists[i], entries);
+  write(file);
+  return file;
+}
+
+/**
+ * Rename a list. Unlike addTo/removeFrom this is allowed on EITHER kind: a name
+ * is a label, not a member, so renaming a derived list changes nothing the rule
+ * depends on. An empty/whitespace name is refused (kept as-is) rather than
+ * stored, so a list can never lose the only thing that identifies it on screen.
+ */
+export function renameList(id: string, name: string): ListsFile {
+  const file = loadLists();
+  const i = file.lists.findIndex((l) => l.id === id);
+  if (i !== -1) file.lists[i] = withName(file.lists[i], name);
   write(file);
   return file;
 }
