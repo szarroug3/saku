@@ -16,7 +16,7 @@ import { useState } from "react";
 
 import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
 import { factInfo } from "@/lib/facts";
-import { missedInRound, type StudySession } from "@/lib/session";
+import { roundCompleteView, type StudySession } from "@/lib/session";
 import type { FactId } from "@/types";
 
 /** A missed fact as a chip — the glyph, and nothing else. Not the answer:
@@ -35,16 +35,22 @@ export function RoundComplete({
   onRetry: (facts: FactId[]) => void;
   onComplete: () => void;
 }) {
-  const stats = session.roundStats;
-  const missed = missedInRound(stats);
-  const facts = Object.keys(stats) as FactId[];
-  const total = facts.length;
-  const firstTry = facts.filter((f) => stats[f].firstTryCorrect === true).length;
+  // TWO lists, and the difference is the bug this screen was fixed for. The
+  // header counts describe the round you PLAYED (`answered` / `missed`); the
+  // picker offers the WHOLE drill (`selection`), so ending a round early still
+  // lets you retry anything that was in it, not just the ones you reached.
+  const { selection, answered, missed, total, firstTry } =
+    roundCompleteView(session);
+
+  // Which of the full selection you actually got to this round — used only to
+  // dim the ones you skipped, never to change what's pickable. Glyph only,
+  // still: no glyph here is paired with its answer.
+  const wasAnswered = new Set(answered);
 
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<Record<string, boolean>>({});
 
-  const pickedList = facts.filter((f) => picked[f]);
+  const pickedList = selection.filter((f) => picked[f]);
 
   return (
     <>
@@ -91,10 +97,11 @@ export function RoundComplete({
               Pick what to retry
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {facts.map((f) => (
+              {selection.map((f) => (
                 <SmallBtn
                   key={f}
                   sel={!!picked[f]}
+                  className={!picked[f] && !wasAnswered.has(f) ? "opacity-55" : ""}
                   onClick={() => setPicked((p) => ({ ...p, [f]: !p[f] }))}
                 >
                   {factGlyph(f)}

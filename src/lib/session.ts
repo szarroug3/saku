@@ -212,6 +212,43 @@ export function missedInRound(stats: SessionStats): FactId[] {
 // `closeRound` in quiz-session.tsx. The loop writes no scoring state, so it
 // needs no population to write it for.
 
+/**
+ * What the round-complete screen shows — deliberately fed from TWO sources,
+ * and the whole point of this function is to keep them from being confused.
+ *
+ * - `selection` is the FULL drill: `session.facts`, frozen at session start and
+ *   never shrunk to what you reached. It is what "Pick what to retry" offers,
+ *   so ending a round early (answered 1 of 9) still lets you pick any of the 9.
+ *   See the field doc on `StudySession.facts`: retry legs narrow the leg, never
+ *   the session, so this is the full selection in every leg.
+ *
+ * - `answered`, `total`, and `firstTry` describe the round you actually PLAYED:
+ *   the facts in `roundStats`. The header counts these because they are honest
+ *   about what happened — the items you never reached were not "missed," and
+ *   inflating the header to the full selection would claim a round you didn't
+ *   run.
+ *
+ * `missed` is the misses of the answered round (`missedInRound`), unchanged —
+ * that is what "Retry the misses" re-asks.
+ */
+export function roundCompleteView(session: StudySession): {
+  selection: FactId[];
+  answered: FactId[];
+  missed: FactId[];
+  total: number;
+  firstTry: number;
+} {
+  const stats = session.roundStats;
+  const answered = factKeys(stats);
+  return {
+    selection: session.facts,
+    answered,
+    missed: missedInRound(stats),
+    total: answered.length,
+    firstTry: answered.filter((f) => stats[f].firstTryCorrect === true).length,
+  };
+}
+
 /** Summarise the round that just ended. */
 export function summariseRound(round: number, stats: SessionStats): RoundSummary {
   const facts = factKeys(stats);
