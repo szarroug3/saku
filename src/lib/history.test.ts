@@ -16,6 +16,9 @@
 
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync } from "node:fs";
+// registerHooks is a Node 22+ runtime API (present at test time) not yet in
+// this @types/node — the runtime has it, tsc's types don't.
+// @ts-expect-error -- see above
 import { registerHooks } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
