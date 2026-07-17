@@ -151,3 +151,23 @@ export function deleteSessions(
   writeHistory(hist);
   return hist;
 }
+
+/**
+ * Full reset — restart from zero. Discards EVERYTHING that makes a fact known:
+ * `sessions` (what you did), `claims` ("I already know this"), `seen` ("quiz
+ * me"), and `facts` (the derived aggregate). The result is the day-one shell a
+ * fresh install starts with, `{ sessions: [], facts: {} }`, byte-for-byte.
+ *
+ * DELIBERATELY NOT deleteSessions. That one drops sessions and by design PRESERVES
+ * claims and seen (see its note, and the HistoryFile field docs) — they are
+ * things you SAID, not things you did, and deleting a run must not silently
+ * revoke an assertion. A reset is the opposite intent: the user is asking to
+ * un-know everything, so the assertions go too. Writing a fresh object (rather
+ * than clearing keys on the loaded one) also drops `claims`/`seen` from the file
+ * entirely, so the on-disk shape matches a never-touched install exactly.
+ */
+export function resetAll(): HistoryFile {
+  const empty: HistoryFile = { sessions: [], facts: {} };
+  writeHistory(empty);
+  return empty;
+}
