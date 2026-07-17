@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "node --import ./src/lib/conjugate/test-hooks.mjs --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

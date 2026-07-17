@@ -32,6 +32,15 @@ const NAV: Array<{ href: string; label: string }> = [
   // would break every link anyone has, to buy a tidier URL nobody reads.
   { href: "/stats", label: "Progress" },
   { href: "/settings", label: "Settings" },
+  // A LICENCE OBLIGATION, not a courtesy link — see attribution-link.tsx.
+  // facts.ts is imported by the quiz, session, results and stats screens, so
+  // KANJIDIC2 readings, JMdict glosses and Tatoeba sentences render on all of
+  // them. EDRDG requires the acknowledgement on each screen that shows the data
+  // OR reachable from it, and names a menu item as its own example. The Library
+  // pages carry an in-chrome link; every other screen was relying on nothing.
+  // This entry is what makes them compliant, and it is the whole fix: it is a
+  // menu item, NOT per-screen attribution.
+  { href: "/about/data", label: "About the data" },
 ];
 
 export function Sidebar() {
