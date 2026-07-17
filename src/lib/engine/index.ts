@@ -82,26 +82,53 @@ export function checkTyped(
 }
 
 /**
- * The ENTRY a wrong answer names, for confusion tracking — or null.
+ * The ENTRY a typed wrong answer names, for confusion tracking — or null.
  *
  * Entry, not fact, and not a character: a confusion is a failure to tell two
  * things apart, and the things you mix up are 生 and 先, never one of 生's
- * readings with one of 先's. Searching the DISTRACTORS rather than the whole
- * dictionary is what keeps this honest and cheap — the pool of things you
- * could plausibly have meant is exactly the pool the question offered.
+ * readings with one of 先's.
+ *
+ * RESOLVED WITHIN THE DECK, AND ONLY WHEN UNAMBIGUOUS
+ * ===================================================
+ * `deck` is required, and it is the defence. A confusion is something the user
+ * DEMONSTRATED, so the only things they could have meant are the things they
+ * are actually being shown — the deck drawn for this session. Searching a
+ * prediction table (the confusable pairs) or the whole dictionary instead lets
+ * a reading that a hundred kanji share, or a meaning that sits in a lookalike
+ * table, manufacture a pair the user never showed you.
+ *
+ * And only EXACTLY ONE match counts. Over kana a romaji is near-unique, but
+ * over kanji "shou" is a reading of ~200 entries; if the typed answer names
+ * more than one entry in the deck, which one the user meant is unknowable, so
+ * we claim none. Zero matches: a plain miss, no pair. Silence beats invention —
+ * a wrong confusion pair poisons the mix-ups card, Patterns, and the weakness
+ * ranking, and it looks identical to the app working.
+ *
+ * A different reading of the SAME entry is not a confusion between two entries
+ * (answering 生's ショウ when its セイ was asked is a wrong answer about 生), so
+ * the asked entry is excluded.
  */
-export function confusedWith(fact: FactId, given: string): EntryId | null {
-  const q = questionsFor(fact);
+export function confusedWith(
+  fact: FactId,
+  given: string,
+  deck: FactId[],
+): EntryId | null {
   const g = given.trim().toLowerCase();
   if (!g) return null;
-  for (const other of q.distractors(fact, BEHAVIOR.mcOptions * 4)) {
+  const self = entryOf(fact);
+  const matches = new Set<EntryId>();
+  for (const other of deck) {
+    const otherEntry = entryOf(other);
+    if (otherEntry === self) continue;
     const info = factInfo(other);
     if (!info) continue;
     if (info.answers.some((a) => a.trim().toLowerCase() === g)) {
-      return entryOf(other);
+      matches.add(otherEntry);
+      // Two distinct entries already answers it: ambiguous, so no claim.
+      if (matches.size > 1) return null;
     }
   }
-  return null;
+  return matches.size === 1 ? [...matches][0] : null;
 }
 
 /**
@@ -111,9 +138,27 @@ export function confusedWith(fact: FactId, given: string): EntryId | null {
  * May return fewer — a word has no confusable data, so it gets no distractors
  * and MC degrades to a single option rather than three absurd ones. The drill
  * screen checks the length and falls back to typed.
+ *
+ * NO TWO OPTIONS MAY BE CO-CORRECT. A distractor that shares an answer with the
+ * asked fact is unanswerable: en2jp asks "ka" and puts both か and カ on the
+ * board — two right glyphs, one credited — and jp2en shows two options reading
+ * "ka". So any distractor sharing an answer (case- and space-forgiving) is
+ * dropped, in either direction. Over-request and slice AFTER filtering, so the
+ * subject's lookalikes-first ordering survives and the board still fills.
  */
 export function buildMcOptions(fact: FactId): FactId[] {
-  const distractors = questionsFor(fact).distractors(fact, BEHAVIOR.mcOptions - 1);
+  const answers = new Set(
+    (factInfo(fact)?.answers ?? []).map((a) => a.trim().toLowerCase()),
+  );
+  const distractors = questionsFor(fact)
+    .distractors(fact, BEHAVIOR.mcOptions * 4)
+    .filter((d) => {
+      const info = factInfo(d);
+      return (
+        !!info && !info.answers.some((a) => answers.has(a.trim().toLowerCase()))
+      );
+    })
+    .slice(0, BEHAVIOR.mcOptions - 1);
   return shuffle([fact, ...distractors].slice(0, BEHAVIOR.mcOptions));
 }
 
