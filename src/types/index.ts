@@ -353,6 +353,29 @@ export interface QuizSessionRecord {
 export interface HistoryFile {
   sessions: QuizSessionRecord[];
   /**
+   * What you SAID you know, per fact: ms epoch of the claim. See
+   * src/lib/claims.ts for what a claim is worth to the model.
+   *
+   * A THIRD RECORD, beside `sessions` and `facts`, and it has to be — not
+   * because a claim is important, but because of what the other two are:
+   *
+   *   - `sessions` is what you DID. A claim isn't. Recording it as a session
+   *     would put a 100% score on a fact you have never answered.
+   *   - `facts` is DERIVED from `sessions` and gets REBUILT (see
+   *     aggregate.foldSessions, called by history.deleteSessions). A claim
+   *     written there survives until the first time you delete a session, and
+   *     then silently doesn't.
+   *
+   * So it is stored raw and folded at read time by claims.effectiveState.
+   * Deleting your history means discarding what you did; it must not discard
+   * what you told the app about yourself.
+   *
+   * Spelled out here rather than imported as claims.ts's `Claims` alias, to
+   * keep this module importing nothing — the alias is defined THERE, over this
+   * shape, so the two cannot disagree without a type error at that end.
+   */
+  claims?: Record<FactId, number>;
+  /**
    * Per FACT: lifetime counts, and what the model believes. Was `chars`, keyed
    * by the character itself — which gave 生 one accuracy slot for eleven
    * readings.

@@ -16,7 +16,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 
 import { emptyAggregate, foldSession, foldSessions } from "@/lib/aggregate";
-import type { HistoryFile, QuizSessionRecord } from "@/types";
+import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
 
 const HISTORY_PATH = path.join(process.cwd(), "history.json");
 
@@ -35,12 +35,46 @@ export function loadHistory(): HistoryFile {
       return {
         sessions: raw?.sessions ?? [],
         facts: raw?.facts ?? {},
+        claims: raw?.claims ?? {},
       };
     } catch {
       // fall through — missing/corrupt file yields an empty history
     }
   }
-  return { sessions: [], facts: {} };
+  return { sessions: [], facts: {}, claims: {} };
+}
+
+/**
+ * Record "I know these" for a set of facts, at `ts`.
+ *
+ * Writes `claims` and NOTHING ELSE — not a session, not a count, not a fold.
+ * See src/lib/claims.ts for why all three of those would be wrong; the short
+ * version is that a claim is not something you did, and `facts` is rebuilt from
+ * the things you did.
+ *
+ * Re-claiming an already-claimed fact MOVES its timestamp forward, which is the
+ * intended reading: you are saying it again, today, and the model's confidence
+ * should date from when you said it. Claiming is idempotent in effect and not in
+ * time, and that asymmetry is the point — the belief decays, so re-asserting it
+ * has to be able to refresh it.
+ */
+export function saveClaims(facts: FactId[], ts: number): HistoryFile {
+  const hist = loadHistory();
+  hist.claims ??= {};
+  for (const f of facts) hist.claims[f] = ts;
+  writeHistory(hist);
+  return hist;
+}
+
+/** Withdraw claims — "actually, I don't". Deletes the record rather than
+ * writing a zero: a fact with no claim is the state the app starts in and the
+ * one every reader already handles, and an absent key says "never claimed"
+ * where `0` would have to be special-cased into meaning it. */
+export function dropClaims(facts: FactId[]): HistoryFile {
+  const hist = loadHistory();
+  if (hist.claims) for (const f of facts) delete hist.claims[f];
+  writeHistory(hist);
+  return hist;
 }
 
 /**
@@ -75,7 +109,12 @@ export function saveSession(session: QuizSessionRecord): HistoryFile {
 
 /** Remove sessions (by ts) or everything, then rebuild the per-fact aggregate
  * — counts AND scoring state — from what survives. See aggregate.foldSessions:
- * the replay is time-ordered, because stability depends on the order. */
+ * the replay is time-ordered, because stability depends on the order.
+ *
+ * `claims` SURVIVES, and does so by construction rather than by a filter: it is
+ * not derived from sessions, so a rebuild of what is has nothing to say about
+ * it. Deleting your history discards what you DID. What you told the app you
+ * know is a separate assertion and is still true. */
 export function deleteSessions(
   ids: number[] | null,
   deleteAll: boolean,
