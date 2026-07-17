@@ -1,13 +1,19 @@
 // POST /api/delete — drop sessions by ts (or all) and rebuild the per-char
 // aggregate. Port of the legacy Python /api/delete branch.
+//
+// `reset: true` is a different, heavier request: a FULL wipe back to the day-one
+// shell — sessions AND claims AND seen AND the derived aggregate. deleteSessions
+// deliberately keeps claims/seen (see history.ts); resetAll deliberately does
+// not. The reset takes precedence over ids/all if both are somehow sent.
 
-import { deleteSessions } from "@/lib/history";
+import { deleteSessions, resetAll } from "@/lib/history";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
 interface DeleteBody {
   ids?: number[];
   all?: boolean;
+  reset?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -22,7 +28,9 @@ export async function POST(request: Request) {
       { status: 400, headers: NO_STORE },
     );
   }
-  const hist = deleteSessions(body.ids ?? null, body.all ?? false);
+  const hist = body.reset
+    ? resetAll()
+    : deleteSessions(body.ids ?? null, body.all ?? false);
   return Response.json(
     { ok: true, sessions: hist.sessions.length },
     { headers: NO_STORE },

@@ -48,6 +48,7 @@ import {
   ThemePicker,
 } from "@/components/settings/theme-picker";
 import { Btn, Card, Chip, Hint, Lbl, Row, SmallBtn } from "@/components/ui";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
 import { detectPlatform, type Platform } from "@/lib/platform";
@@ -142,6 +143,91 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
     <Btn sel={on} onClick={onClick}>
       {on ? "On" : "Off"}
     </Btn>
+  );
+}
+
+/**
+ * The one demolition on a page of preferences, and set apart as one.
+ *
+ * NOT a <Card>: Card hard-codes `border border-border`, and `cx` is a plain
+ * join with no tailwind-merge (see ui.tsx), so a `border-danger` passed in
+ * would land NEXT TO `border-border` and the winner would be decided by
+ * stylesheet order, not by intent. This is the same collision the Btn note
+ * documents. So the container is written out here with the danger border baked
+ * in from the start — one hairline of --danger, not a filled red panel: it must
+ * read as dangerous, not garish.
+ *
+ * The button is <Btn danger>, whose colour lives on its own branch and renders
+ * --danger on --card (readable — the Chip `part` bug and the go/sel colour
+ * collisions do not touch this path). The confirmation is the app's useConfirm,
+ * never window.confirm: its dialog is real DOM a driver can click, and it lands
+ * focus on Cancel so the irreversible answer is never the one a stray Enter
+ * gives — confirming is a deliberate Tab-then-Enter or an explicit click.
+ */
+function ResetProgress() {
+  const confirm = useConfirm();
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleReset = async () => {
+    const ok = await confirm({
+      title: "Clear your entire knowledge base?",
+      body: (
+        <>
+          Every quiz you have done, everything you have marked as already known,
+          and everything you have asked to be quizzed on will be erased, and the
+          app returns to its very first lesson.{" "}
+          <strong className="font-semibold text-danger">
+            This cannot be undone.
+          </strong>
+        </>
+      ),
+      confirmLabel: "Clear everything",
+      cancelLabel: "Keep my progress",
+    });
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reset: true }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setDone(true);
+    } catch {
+      // Same failure surface the sessions list uses for /api/delete.
+      alert("Couldn't clear your knowledge base. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="kq-material mb-3.5 rounded-xl border border-danger bg-card p-[18px]">
+      <p className="mb-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-danger">
+        Clear knowledge base
+      </p>
+      <p className="mb-2.5 text-[13px] leading-snug text-text-muted">
+        Wipes everything the app has learned about you: every quiz you have done,
+        everything you have marked as already known, and everything you have
+        asked to be quizzed on. The app starts over from its first lesson, as if
+        you had just installed it.
+      </p>
+      <p className="mb-3.5 text-[13px] font-semibold leading-snug text-danger">
+        This cannot be undone.
+      </p>
+      {done ? (
+        <Hint>
+          Knowledge base cleared. The app is back to its first lesson — open the
+          home page to start over.
+        </Hint>
+      ) : (
+        <Btn danger onClick={handleReset} disabled={busy}>
+          {busy ? "Clearing…" : "Clear knowledge base"}
+        </Btn>
+      )}
+    </div>
   );
 }
 
@@ -546,6 +632,8 @@ export function SettingsCard() {
           <Hint>seconds</Hint>
         </Row>
       </Card>
+
+      <ResetProgress />
     </>
   );
 }
