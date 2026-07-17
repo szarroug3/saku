@@ -23,7 +23,8 @@
 // promise a 40 that moves. The card counts up ("lesson 3") and does not lie
 // about the end.
 
-import { Btn, Card, Hint, Lbl } from "@/components/ui";
+import { Btn, Card, Lbl } from "@/components/ui";
+import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import type { WordLesson } from "@/lib/word-lesson";
 import type { FactId } from "@/types";
 
@@ -90,13 +91,11 @@ export function NextWordLesson({
         </div>
       </Card>
 
-      <Card className="px-[15px] py-[13px]">
-        <Hint>
-          Learning a word also opens up its kanji: once you know a word 生 is in,
-          the app starts asking how 生 is read there. Saying you already know
-          these adds them to your knowledge base and skips the drill.
-        </Hint>
-      </Card>
+      <ClaimExplainer>
+        Learning a word also opens up its kanji: once you know a word 生 is in,
+        the app starts asking how 生 is read there. Saying you already know
+        these adds them to your knowledge base and skips the drill.
+      </ClaimExplainer>
     </>
   );
 }

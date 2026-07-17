@@ -30,7 +30,8 @@ import { useState } from "react";
 
 import { WhyDisclosure } from "@/components/lesson/why";
 import { TeachMe } from "@/components/lesson/teach-me";
-import { Btn, Card, Hint, Lbl } from "@/components/ui";
+import { ClaimExplainer } from "@/components/lesson/claim-explainer";
+import { Btn, Card, Lbl } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
 import { WHY_SCRIPT } from "@/data/why";
 import type { Lesson } from "@/lib/lesson";
@@ -167,16 +168,15 @@ export function NextLesson({
         </div>
       </Card>
 
-      <Card className="px-[15px] py-[13px]">
-        {/* What each intent actually does, in its own terms — neither is a score
-            and neither is a promise. See src/lib/claims.ts. */}
-        <Hint>
-          Quiz me adds the group to your knowledge base and starts a drill — the
-          drill keeps the score, not the button. Saying you already know a group
-          adds it too, but skips the drill and takes it out of your way; the app
-          takes your word now and checks back in a few months.
-        </Hint>
-      </Card>
+      {/* What each intent actually does, in its own terms — neither is a score
+          and neither is a promise. See src/lib/claims.ts. Dismissible and shared
+          across every lesson card — seen once, then out of the way. */}
+      <ClaimExplainer>
+        Quiz me adds the group to your knowledge base and starts a drill — the
+        drill keeps the score, not the button. Saying you already know a group
+        adds it too, but skips the drill and takes it out of your way; the app
+        takes your word now and checks back in a few months.
+      </ClaimExplainer>
     </>
   );
 }
