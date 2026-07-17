@@ -15,7 +15,8 @@ import "server-only";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 
-import type { FactAggregate, FactId, HistoryFile, QuizSessionRecord } from "@/types";
+import { emptyAggregate, foldSession, foldSessions } from "@/lib/aggregate";
+import type { HistoryFile, QuizSessionRecord } from "@/types";
 
 const HISTORY_PATH = path.join(process.cwd(), "history.json");
 
@@ -23,25 +24,6 @@ const HISTORY_PATH = path.join(process.cwd(), "history.json");
  * which is the only reason the formatting is specified at all. */
 function writeHistory(hist: HistoryFile): void {
   writeFileSync(HISTORY_PATH, JSON.stringify(hist, null, 1), "utf-8");
-}
-
-function foldFact(
-  facts: Record<FactId, FactAggregate>,
-  f: FactId,
-  s: Partial<FactAggregate>,
-): void {
-  const agg = (facts[f] ??= {
-    seen: 0,
-    missed: 0,
-    slow: 0,
-    firstTry: 0,
-    correct: 0,
-  });
-  agg.seen += s.seen ?? 0;
-  agg.missed += s.missed ?? 0;
-  agg.slow += s.slow ?? 0;
-  agg.firstTry += s.firstTry ?? 0;
-  agg.correct += s.correct ?? 0;
 }
 
 export function loadHistory(): HistoryFile {
@@ -61,19 +43,39 @@ export function loadHistory(): HistoryFile {
   return { sessions: [], facts: {} };
 }
 
-/** Append a session and fold its per-fact stats into the aggregate. */
+/**
+ * Append a session and fold its per-fact stats into the aggregate.
+ *
+ * Folds INCREMENTALLY onto the stored aggregate rather than replaying — which
+ * is only sound because a new session is the newest one there is, so replaying
+ * would visit it last anyway and land in the same place. That is a real
+ * precondition now that the fold carries scoring state (order matters; see
+ * aggregate.ts), and it is the reason this is still an append and not a rebuild.
+ *
+ * `hist.sessions.slice(-200)` drops the oldest sessions past the cap, and the
+ * aggregate deliberately KEEPS what they taught it: the counts stay counted and
+ * the stability stays where the evidence put it. A rebuild — deleteSessions —
+ * cannot know that, and will quietly compute both from the surviving 200 only.
+ * That predates this change for the counts; it now also costs stability, which
+ * matters more per session. Noted rather than fixed: the cap and the rebuild
+ * have disagreed since the file was written, and reconciling them is its own
+ * change.
+ */
 export function saveSession(session: QuizSessionRecord): HistoryFile {
   const hist = loadHistory();
   hist.sessions.push(session);
   hist.sessions = hist.sessions.slice(-200);
   for (const [f, s] of Object.entries(session.facts ?? {})) {
-    foldFact(hist.facts, f as FactId, s);
+    const key = f as keyof typeof hist.facts;
+    foldSession((hist.facts[key] ??= emptyAggregate()), s, session.ts);
   }
   writeHistory(hist);
   return hist;
 }
 
-/** Remove sessions (by ts) or everything, then rebuild the per-fact aggregate. */
+/** Remove sessions (by ts) or everything, then rebuild the per-fact aggregate
+ * — counts AND scoring state — from what survives. See aggregate.foldSessions:
+ * the replay is time-ordered, because stability depends on the order. */
 export function deleteSessions(
   ids: number[] | null,
   deleteAll: boolean,
@@ -85,13 +87,7 @@ export function deleteSessions(
     const drop = new Set(ids ?? []);
     hist.sessions = hist.sessions.filter((s) => !drop.has(s.ts));
   }
-  const facts: Record<FactId, FactAggregate> = {};
-  for (const s of hist.sessions) {
-    for (const [f, st] of Object.entries(s.facts ?? {})) {
-      foldFact(facts, f as FactId, st);
-    }
-  }
-  hist.facts = facts;
+  hist.facts = foldSessions(hist.sessions);
   writeHistory(hist);
   return hist;
 }

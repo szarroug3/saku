@@ -39,10 +39,19 @@ export function weaknessDecks(
   history: HistoryFile,
   cfg: QuizConfig,
   enabled: string[],
+  now: number,
 ): Array<Selectable & { glyph: string; subtitle: string }> {
   const metric = cfg.accuracyMetric;
 
-  const weakest = weakestFacts(history, metric, 20);
+  /** Has the user ever drilled anything — the thing that tells an empty Weakest
+   * 20 apart from a day-one one. */
+  const practised = Object.keys(history.facts).length > 0;
+
+  const weakest = weakestFacts(history, now, 20);
+  // Accuracy, and only for the SUBTITLE — it is not what ordered the list (see
+  // decks.weakestFacts, and src/lib/scoring.ts for why not). "68% first try" is
+  // a true and useful thing to say about these twenty characters as a set;
+  // nothing here reveals, or could reveal, why these twenty.
   const weakestAcc = accuracyFor(history, weakest, metric);
   const confusions = confusionDecks(history, enabled);
   const misses = lastMisses(history);
@@ -54,8 +63,25 @@ export function weaknessDecks(
       label: "Weakest 20",
       glyph: "弱",
       chars: charsOf(weakest),
-      subtitle:
-        weakestAcc === null
+      // THREE cases, not two, and the new one is the model's doing.
+      //
+      // This card can now come back EMPTY from a history full of practice. The
+      // old accuracy sort always had a worst twenty — every practised fact had
+      // a number and twenty of them were lowest — so "empty" could only mean
+      // "no history". Under the ranking model both tails leave the list, so
+      // finish a session and everything you just drilled is, correctly, not
+      // worth asking again yet. The card empties and refills as time passes,
+      // which is the model working, not a fault.
+      //
+      // "Nothing to go on yet" is true of an empty history and a lie about a
+      // full one, so the full one gets its own words. They say what happened —
+      // there is nothing worth drilling — and not why, because why is p, and p
+      // never reaches a screen.
+      subtitle: !weakest.length
+        ? practised
+          ? "Nothing worth drilling right now"
+          : "Nothing to go on yet"
+        : weakestAcc === null
           ? "Nothing to go on yet"
           : `${formatAccuracy(weakestAcc)} ${metricWord(metric)}`,
     },

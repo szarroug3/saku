@@ -41,10 +41,9 @@ import {
   LOOKALIKES,
   SETS,
 } from "@/data/characters";
-import { accuracyOf, summaryOfEntry } from "@/lib/accuracy";
 import { ALL_FACTS, entryOf, factsOf, glyphOf } from "@/lib/facts";
+import { rank, stateOf, type RankCandidate } from "@/lib/scoring";
 import type {
-  AccuracyMetric,
   CharSet,
   EntryId,
   FactId,
@@ -140,65 +139,89 @@ export const DECKS: Deck[] = buildDecks();
 // ---------- history-derived decks ----------
 
 /**
- * The `n` FACTS you are worst at under `metric`, weakest first.
+ * The `n` facts most worth asking as of `now`, best question first.
  *
- * Facts, not entries, because this is a drill list and a fact is what can be
- * drilled: "you are worst at 生" is not actionable when 生 has eleven readings
- * and you only fumble two of them. The entry-level summary exists for reading
- * (accuracy.summaryOfEntry) and is deliberately not what ranks this.
+ * THIS IS THE APP'S ONE DEFINITION OF "WEAKEST", and it is not about accuracy.
+ * See src/lib/scoring.ts: the top of this list is what the app LEAST KNOWS
+ * ABOUT YOU, and both tails — you certainly know it, you have certainly lost it
+ * — are absent rather than ranked low. The order is scoring.rank()'s and
+ * nothing here or above may reproduce, adjust or second-guess it.
  *
- * Only facts with history count — an untouched fact is unknown, not weak. Ties
- * break by `seen` descending, so a 0%-from-one-showing never outranks a
- * 0%-from-twenty: the latter is the better-evidenced weakness.
+ * `now` is a parameter and not `Date.now()`, which is most of why this stays a
+ * pure function: the results screen ranks as of the run's own timestamp (so a
+ * reopened session says what it said at the time, and a render is not a clock
+ * read), and the tests rank in whatever week they please.
  *
- * The ordering is accuracy today and becomes a proper scheduling rank next —
- * a pure function of (stability, lastTested, now) dropped in place of the sort
- * below. Nothing outside this function knows how the list is ordered.
+ * WHAT USED TO BE HERE, AND WHY IT WAS THE OLD THESIS
+ * ==================================================
+ * `weakestFacts(history, metric, n)` sorted by accuracy ascending, ties to
+ * more-seen. Every line of it was defensible and the whole was wrong: accuracy
+ * is a RECORD, and a drill list is a PREDICTION. It could not see that a word
+ * was 62 days cold, because 100% never rises — so the fact you are most likely
+ * to have forgotten was the one fact it could never surface. It also had no
+ * upper tail: the thing you fail every time sat at the top forever, being asked
+ * and failed and asked again. Deleting it is the point of this change; the
+ * signature changed with it so that no call site keeps its old meaning by
+ * accident.
+ *
+ * WHY THIS TAKES NO `metric`
+ * ==========================
+ * It has nothing to take one with. firstTry-vs-attempt is a question about how
+ * to score a RECORD, and this list is not one. What counts as a hit is settled
+ * once, in aggregate.ts, at the moment evidence is folded — and it is settled
+ * as first-try, the same thing the HUD pill and the rings call "nailed it". The
+ * chips on Statistics and the results screen still choose what those numbers
+ * MEAN; they do not, and should not, change what the app asks you next.
+ *
+ * Facts the data no longer has are skipped: history outlives the material it
+ * was recorded against, and a deleted character must not be drillable.
  */
 export function weakestFacts(
   history: HistoryFile,
-  metric: AccuracyMetric,
+  now: number,
   n = 20,
 ): FactId[] {
-  const scored: Array<{ f: FactId; acc: number; seen: number }> = [];
+  const facts: RankCandidate[] = [];
   for (const [key, agg] of Object.entries(history.facts)) {
     const f = key as FactId;
-    // Guard against history for facts the data no longer has.
-    if (!agg.seen || !factsOf(entryOf(f)).length) continue;
-    const acc = accuracyOf(agg, metric);
-    if (acc === null) continue;
-    scored.push({ f, acc, seen: agg.seen });
+    if (!factsOf(entryOf(f)).length) continue;
+    facts.push({ id: f, state: stateOf(agg) });
   }
-  scored.sort((a, b) => a.acc - b.acc || b.seen - a.seen);
-  return scored.slice(0, n).map((s) => s.f);
+  return rank({ facts, limit: n }, now);
 }
 
-/**
- * The `n` ENTRIES you are worst at, weakest first — a READING order, for the
- * Statistics table.
- *
- * Ranked by each entry's summary accuracy, which is an average over its facts
- * and so is not comparable with the ratios `weakestFacts` sorts on. The two
- * lists answer different questions and are allowed to disagree.
- */
-export function weakestEntries(
-  history: HistoryFile,
-  metric: AccuracyMetric,
-  n = 20,
-): EntryId[] {
-  const scored: Array<{ e: EntryId; acc: number; seen: number }> = [];
-  for (const e of new Set(factKeysOf(history).map(entryOf))) {
-    const summary = summaryOfEntry(history, e, metric);
-    if (!summary) continue;
-    scored.push({ e, acc: summary.meanPct, seen: summary.seen });
-  }
-  scored.sort((a, b) => a.acc - b.acc || b.seen - a.seen);
-  return scored.slice(0, n).map((s) => s.e);
-}
-
-function factKeysOf(history: HistoryFile): FactId[] {
-  return Object.keys(history.facts) as FactId[];
-}
+// weakestEntries() WAS HERE. It ranked ENTRIES by summary accuracy, for the
+// Statistics table, and its own comment conceded the problem: "The two lists
+// answer different questions and are allowed to disagree." They were identical
+// while every kana was one fact and would have diverged the moment kanji landed
+// — Home saying "Weakest 20" while Statistics named different characters, with
+// nothing on either screen admitting there were two answers.
+//
+// It is deleted rather than reconciled, for three reasons, in order of force:
+//
+//   1. THE MODEL REFUSES TO RANK ENTRIES. Weakness is a function of (stability,
+//      lastTested) and those are per-FACT: 生 does not have a stability, it has
+//      eleven. An entry's weakness could only be a mean of its facts'
+//      weaknesses — an average of predictions, which is the same "61% true of
+//      nothing" the entry/fact rekey exists to prevent, one level down. So the
+//      answer to "make them one thing or argue why two is right" is neither:
+//      the second list was never a thing the model can compute. FactState is
+//      not poolable, and after this change it is not poolable in the type
+//      system either (see accuracy.totalFor).
+//   2. IT HAD NO CALLERS. Statistics never used it. characters-table.tsx sorts
+//      its own rows and merely CITED this function in a comment as the rule it
+//      was matching — so "two lists that can disagree" was, precisely, one list
+//      and one function waiting to become a second one.
+//   3. STATISTICS IS NOT A RANKING. It is the record: every row, always, sorted
+//      by whichever column you click. Its default sort is the accuracy column
+//      ascending — which is not a rival thesis about what is weak, it is a
+//      table sorting the column it is displaying. That table was already
+//      renamed from "Weakest characters" to "Characters" for exactly this
+//      reason, and with this gone the rename is true rather than tactful.
+//
+// So: ONE list means "weakest" — weakestFacts, over facts, ordered by
+// scoring.rank. Statistics displays accuracy and sorts by accuracy, and says
+// "accuracy" on the tin. Neither claims the other's job.
 
 /** Two ENTRIES you mix up, and how often. `count` is 0 for lookalikes.
  * Entries, not facts: you mix up 生 with 先, not one reading with another. */

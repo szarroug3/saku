@@ -27,7 +27,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { SmallBtn } from "@/components/ui";
-import { EMPTY_AGGREGATE, accuracyOf, formatAccuracy } from "@/lib/accuracy";
+import { EMPTY_COUNTS, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR } from "@/lib/config";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { AccuracyMetric, SessionStats } from "@/types";
@@ -86,7 +86,7 @@ function Pill({
  * is counted as seen from the first paint, so without this the sheet would
  * open at 0% and climb, reporting "unanswered" as "wrong". */
 function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | null {
-  const agg = { ...EMPTY_AGGREGATE };
+  const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     if (st.firstTryCorrect === null) continue; // not attempted yet
     agg.seen += st.seen;

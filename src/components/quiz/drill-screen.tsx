@@ -38,7 +38,7 @@ import {
 
 import { SmallBtn } from "@/components/ui";
 import { CHAR_INDEX, kanaEntry, kanaFact } from "@/data/characters";
-import { EMPTY_AGGREGATE, accuracyOf, formatAccuracy } from "@/lib/accuracy";
+import { EMPTY_COUNTS, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { loadLatencies, pushLatency } from "@/lib/latency-store";
 import { isSlow, type LatencyStyle, type LatencyWindow } from "@/lib/slow";
@@ -197,7 +197,7 @@ function Pill({
  * card currently on screen can't drag the number down before it's been
  * attempted. */
 function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | null {
-  const agg = { ...EMPTY_AGGREGATE };
+  const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     if (st.firstTryCorrect === null) continue; // still in flight
     agg.seen += st.seen;
