@@ -32,7 +32,7 @@ export function WhyDisclosure({ why }: { why: Why }) {
           onClick={() => setOpen((v) => !v)}
           className="cursor-pointer whitespace-nowrap rounded border-none bg-transparent p-0 text-[13px] text-accent underline decoration-dotted underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          {open ? "less" : "why?"}
+          {open ? "Less" : "Why?"}
         </button>
       </p>
 
