@@ -49,6 +49,7 @@ import {
 } from "@/components/settings/theme-picker";
 import { Btn, Card, Chip, Hint, Lbl, Row, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { clearAllDismissedHints } from "@/lib/claim-hint";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
 import { detectPlatform, type Platform } from "@/lib/platform";
@@ -194,6 +195,14 @@ function ResetProgress() {
         body: JSON.stringify({ reset: true }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // The server wiped history; now wipe the CLIENT-side "I dismissed this
+      // intro" flags too, so a restarting user gets the day-one introductions
+      // back (the claim explainer under the lesson cards, and any intro added
+      // later that registers in DISMISSIBLE_HINT_KEYS). Without this the reset
+      // is only half a reset: empty history but the intros still suppressed.
+      clearAllDismissedHints(
+        typeof window === "undefined" ? null : window.localStorage,
+      );
       setDone(true);
     } catch {
       // Same failure surface the sessions list uses for /api/delete.

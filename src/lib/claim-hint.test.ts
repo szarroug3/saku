@@ -13,7 +13,9 @@ import { describe, test } from "node:test";
 
 import {
   CLAIM_HINT_KEY,
+  clearAllDismissedHints,
   dismissClaimHint,
+  DISMISSIBLE_HINT_KEYS,
   isClaimHintDismissed,
 } from "./claim-hint.ts";
 
@@ -24,6 +26,7 @@ function fakeStore(initial: Record<string, string> = {}) {
   return {
     getItem: (k: string) => (map.has(k) ? map.get(k)! : null),
     setItem: (k: string, v: string) => void map.set(k, v),
+    removeItem: (k: string) => void map.delete(k),
     _map: map,
   };
 }
@@ -64,5 +67,35 @@ describe("the claim-hint dismissal persists", () => {
     };
     assert.equal(isClaimHintDismissed(hostile), false);
     assert.doesNotThrow(() => dismissClaimHint(hostile));
+  });
+});
+
+describe("the reset un-dismisses the intros", () => {
+  test("clearAllDismissedHints removes the claim-hint flag — the intro returns", () => {
+    const store = fakeStore();
+    dismissClaimHint(store);
+    assert.equal(isClaimHintDismissed(store), true);
+    // The knowledge-base reset's client-side half.
+    clearAllDismissedHints(store);
+    // Flag gone entirely, and the explainer reads as shown again — day one.
+    assert.equal(store._map.has(CLAIM_HINT_KEY), false);
+    assert.equal(isClaimHintDismissed(store), false);
+  });
+
+  test("the claim hint is in the swept registry", () => {
+    // The registry is the contract the reset sweeps; a new intro added here is
+    // cleared for free, so this pins that the claim hint is actually in it.
+    assert.ok(DISMISSIBLE_HINT_KEYS.includes(CLAIM_HINT_KEY));
+  });
+
+  test("a missing or hostile store degrades quietly, never throws", () => {
+    assert.doesNotThrow(() => clearAllDismissedHints(null));
+    assert.doesNotThrow(() => clearAllDismissedHints(undefined));
+    const hostile = {
+      removeItem() {
+        throw new Error("SecurityError");
+      },
+    };
+    assert.doesNotThrow(() => clearAllDismissedHints(hostile));
   });
 });
