@@ -36,12 +36,13 @@ export function loadHistory(): HistoryFile {
         sessions: raw?.sessions ?? [],
         facts: raw?.facts ?? {},
         claims: raw?.claims ?? {},
+        seen: raw?.seen ?? {},
       };
     } catch {
       // fall through — missing/corrupt file yields an empty history
     }
   }
-  return { sessions: [], facts: {}, claims: {} };
+  return { sessions: [], facts: {}, claims: {}, seen: {} };
 }
 
 /**
@@ -62,6 +63,25 @@ export function saveClaims(facts: FactId[], ts: number): HistoryFile {
   const hist = loadHistory();
   hist.claims ??= {};
   for (const f of facts) hist.claims[f] = ts;
+  writeHistory(hist);
+  return hist;
+}
+
+/**
+ * Record "quiz me" for a set of facts, at `ts` — the group is now in your
+ * knowledge base and fair game to drill, on your word.
+ *
+ * The twin of `saveClaims`: same write discipline (its own key, no session, no
+ * count, no fold), same idempotent-in-effect-not-in-time re-recording (saying
+ * "quiz me" again moves the timestamp forward, and the belief dates from when
+ * you said it). What differs is only what the model does with the record — see
+ * claims.seenState. Kept a separate function rather than a flag on saveClaims so
+ * the two writes read as the two intents they are.
+ */
+export function saveSeen(facts: FactId[], ts: number): HistoryFile {
+  const hist = loadHistory();
+  hist.seen ??= {};
+  for (const f of facts) hist.seen[f] = ts;
   writeHistory(hist);
   return hist;
 }
@@ -111,10 +131,11 @@ export function saveSession(session: QuizSessionRecord): HistoryFile {
  * — counts AND scoring state — from what survives. See aggregate.foldSessions:
  * the replay is time-ordered, because stability depends on the order.
  *
- * `claims` SURVIVES, and does so by construction rather than by a filter: it is
- * not derived from sessions, so a rebuild of what is has nothing to say about
- * it. Deleting your history discards what you DID. What you told the app you
- * know is a separate assertion and is still true. */
+ * `claims` and `seen` SURVIVE, and do so by construction rather than by a
+ * filter: neither is derived from sessions, so a rebuild of what is has nothing
+ * to say about them. Deleting your history discards what you DID. What you told
+ * the app you know, and what you asked to be quizzed on, are separate assertions
+ * and are still true. */
 export function deleteSessions(
   ids: number[] | null,
   deleteAll: boolean,

@@ -25,7 +25,7 @@ import { describe, test } from "node:test";
 
 import { KANA_FACTS, kanaFact } from "../data/characters.ts";
 import { freshFacts, nextGroup, planSession } from "./budget.ts";
-import { CLAIMED_DAYS } from "./claims.ts";
+import { CLAIMED_DAYS, claimedState, effectiveState, seenState } from "./claims.ts";
 import { KANA_GROUPS, KANA_GROUP_FACTS, nextLesson, setFacts } from "./lesson.ts";
 import { rank } from "./scoring.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
@@ -195,6 +195,85 @@ describe("I already know this", () => {
     assert.equal(plan.probe.length, vowels.facts.length);
     // And it is asked, not re-taught. It was never new.
     assert.deepEqual(plan.teach, []);
+  });
+});
+
+describe("Quiz me — seen is in the knowledge base, drillable, and not new", () => {
+  const seenVowels = (ts: number) =>
+    history({
+      seen: Object.fromEntries(vowels.facts.map((f) => [f, ts])) as Record<
+        FactId,
+        number
+      >,
+    });
+  const claimedVowels = (ts: number) =>
+    history({
+      claims: Object.fromEntries(vowels.facts.map((f) => [f, ts])) as Record<
+        FactId,
+        number
+      >,
+    });
+
+  test("pressing Quiz me takes the group out of `fresh` — the next lesson advances", () => {
+    // Seen, so no longer new material. The card that offered the vowels now
+    // offers the k-row, exactly as claiming or finishing them would. This is the
+    // half of the split "Quiz me" shares with "I already know these": both mean
+    // "not new".
+    const h = seenVowels(NOW - DAY);
+    assert.deepEqual(nextGroup(KANA_GROUP_FACTS, freshFacts(ALL, h)), kRow.facts);
+    assert.equal(nextLesson(h)?.group.sectionId, kRow.sectionId);
+  });
+
+  test("a seen fact IS drilled — the counterpart to a claimed fact not being", () => {
+    // The mirror of "a claimed fact is not drilled". Quiz me marks the group seen
+    // and fair game, so planSession asks it rather than staying silent — the drill
+    // is what gets surfaced next.
+    const plan = planSession({
+      candidates: vowels.facts,
+      history: seenVowels(NOW - DAY),
+      groups: KANA_GROUP_FACTS,
+      length: null,
+      now: NOW,
+    });
+    const surfaced = [...plan.probe, ...plan.teach].sort();
+    assert.deepEqual(surfaced, [...vowels.facts].sort());
+  });
+
+  test("seen and claimed route APART at the same age: one drills, one goes quiet", () => {
+    // THE two-intent distinction, in one comparison. Same facts, same one-day
+    // age — the only difference is which intent was recorded, and the model reads
+    // that as a difference of stability (floor vs a season). That difference is
+    // what makes "the drill is next" and "the next group is next" two outcomes
+    // rather than one.
+    const query = (h: HistoryFile) => ({
+      candidates: vowels.facts,
+      history: h,
+      groups: KANA_GROUP_FACTS,
+      length: null,
+      now: NOW,
+    });
+    const seen = planSession(query(seenVowels(NOW - DAY)));
+    const claimed = planSession(query(claimedVowels(NOW - DAY)));
+
+    // Quiz me → drilled.
+    assert.equal(seen.probe.length + seen.teach.length, vowels.facts.length);
+    // Already know → skipped, on the same day. The two intents diverge.
+    assert.deepEqual(claimed.probe, []);
+    assert.deepEqual(claimed.teach, []);
+  });
+
+  test("the state mapping itself: seen is the floor, claimed is a season, newest wins", () => {
+    const ts = NOW - DAY;
+    // What each click records, as the model sees it.
+    assert.equal(seenState(ts).stability, 1); // SCORING.floorDays
+    assert.equal(claimedState(ts).stability, CLAIMED_DAYS);
+    // Either one takes a fact out of `fresh`: a real lastTested, never 0.
+    assert.notEqual(effectiveState(undefined, undefined, ts).lastTested, 0);
+    // Newest record wins, unchanged from the two-record rule: a claim made after
+    // a Quiz me is the belief that stands…
+    assert.equal(effectiveState(undefined, ts + DAY, ts).stability, CLAIMED_DAYS);
+    // …and a Quiz me made after a claim puts the fact back into rotation.
+    assert.equal(effectiveState(undefined, ts, ts + DAY).stability, 1);
   });
 });
 

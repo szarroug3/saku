@@ -26,7 +26,10 @@
 // 27" is COUNTED — hiragana has twenty-seven sections, and a card that promised
 // ten would be caught out at the eleventh by the user who kept going.
 
+import { useState } from "react";
+
 import { WhyDisclosure } from "@/components/lesson/why";
+import { TeachMe } from "@/components/lesson/teach-me";
 import { Btn, Card, Hint, Lbl } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
 import { WHY_SCRIPT } from "@/data/why";
@@ -36,19 +39,35 @@ import type { FactId } from "@/types";
 
 export function NextLesson({
   lesson,
-  onStart,
+  onQuizMe,
   onClaim,
 }: {
   lesson: Lesson;
-  /** Start the lesson. The lesson's FACTS are the session — no budget, no
-   * length: the unit was decided by the material. Facts and not chars because
-   * the runtime is fact-native, and `string[]` here is a seam a branded FactId
-   * slides through in silence. */
-  onStart: (facts: FactId[]) => void;
-  /** "I already know this", over whatever slice the button named. */
+  /**
+   * "Quiz me" — I've learned these (at Tofugu, or in the walkthrough) and
+   * they're fair game. Marks the group SEEN (into the knowledge base, drillable)
+   * and drops into a drill. It is NOT gated on proving anything first: asking to
+   * be quizzed IS the statement that you've seen it, and the drill supplies the
+   * accuracy. See the seen vs claimed split in src/lib/claims.ts.
+   *
+   * Facts and not chars because the runtime is fact-native, and `string[]` here
+   * is a seam a branded FactId slides through in silence.
+   */
+  onQuizMe: (facts: FactId[]) => void;
+  /**
+   * "I already know these" — I knew them before the app; don't waste my time.
+   * Marks the group KNOWN and skips the drill, so the next thing surfaced is the
+   * next new material rather than a drill. A different record from "Quiz me", on
+   * purpose: what you route to next depends on which you meant.
+   */
   onClaim: (facts: FactId[]) => void;
 }) {
   const { group, chars, learn } = lesson;
+  // The walkthrough is a pull, not the recommendation: Tofugu is what the card
+  // points at, and "teach me here" is the quieter alternative for the learner
+  // who just wants the glyphs shown once. Closed by default so the card stays
+  // the calm thing it is until you ask for it.
+  const [teaching, setTeaching] = useState(false);
   const readings = chars
     .map((c) => CHAR_INDEX[c]?.r[0])
     .filter(Boolean)
@@ -97,26 +116,42 @@ export function NextLesson({
             only the one line shows until the reader opens it. */}
         {why ? <WhyDisclosure why={why} /> : null}
 
-        {/* Learn it, THEN be asked. The app has never taught anything and is
-            not about to start pretending: the guide is someone else's and the
-            link says whose. */}
-        <div className="kq-material mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-panel px-3.5 py-3">
+        {/* Learn it, THEN be asked. The app has never taught anything with a
+            mnemonic and is not about to: Tofugu is the recommended guide and the
+            link says whose. "Teach me here" is the other door — a bare
+            walkthrough for the learner who doesn't need a mnemonic and would
+            rather just see the glyphs than leave the app. */}
+        <div className="kq-material mt-4 rounded-lg border border-border bg-panel px-3.5 py-3">
           <p className="text-[13px]">
             <span className="font-medium">Learn them first.</span>{" "}
             <span className="text-text-muted">
-              The app asks questions; it doesn&rsquo;t teach. Tofugu does.
+              The app asks questions; it doesn&rsquo;t teach with mnemonics.
+              Tofugu does — that&rsquo;s the one to use.
             </span>
           </p>
-          <a
-            href={learn.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="kq-material cursor-pointer rounded-lg border border-border bg-card px-3.5 py-[7px] text-sm text-text no-underline hover:bg-panel"
-          >
-            {learn.label} ↗
-          </a>
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <a
+              href={learn.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="kq-material cursor-pointer rounded-lg border border-border bg-card px-3.5 py-[7px] text-sm text-text no-underline hover:bg-panel"
+            >
+              {learn.label} ↗
+            </a>
+            <Btn
+              sel={teaching}
+              onClick={() => setTeaching((t) => !t)}
+              aria-expanded={teaching}
+            >
+              Teach me here
+            </Btn>
+          </div>
+          {teaching ? <TeachMe chars={chars} /> : null}
         </div>
 
+        {/* The two intents, kept apart because they route apart. "Quiz me" is
+            the go button — it marks the group seen and drills it. "I already
+            know these" claims it and skips. See onQuizMe / onClaim above. */}
         <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap gap-1.5">
             <Btn onClick={() => onClaim(lesson.facts)}>
@@ -126,19 +161,20 @@ export function NextLesson({
               I know all {group.setLabel.toLowerCase()}
             </Btn>
           </div>
-          <Btn go onClick={() => onStart(lesson.facts)}>
-            Start · {group.label}
+          <Btn go onClick={() => onQuizMe(lesson.facts)}>
+            Quiz me
           </Btn>
         </div>
       </Card>
 
       <Card className="px-[15px] py-[13px]">
-        {/* What the claim actually does, in the claim's own terms. It is not a
-            score and it is not a promise — see src/lib/claims.ts. */}
+        {/* What each intent actually does, in its own terms — neither is a score
+            and neither is a promise. See src/lib/claims.ts. */}
         <Hint>
-          Saying you know a group adds it to your knowledge base and takes it out
-          of your way. The app takes your word for it now, and comes back to
-          check in a few months.
+          Quiz me adds the group to your knowledge base and starts a drill — the
+          drill keeps the score, not the button. Saying you already know a group
+          adds it too, but skips the drill and takes it out of your way; the app
+          takes your word now and checks back in a few months.
         </Hint>
       </Card>
     </>
