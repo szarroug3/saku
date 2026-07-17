@@ -5,7 +5,8 @@
 // order of the branches in `summarize` is the design, not an implementation
 // detail. Keeping it out of the view is what lets it be read as a cascade.
 
-import { accuracyFor, accuracyOf, EMPTY_AGGREGATE } from "@/lib/accuracy";
+import { accuracyFor, accuracyOf, EMPTY_COUNTS } from "@/lib/accuracy";
+import { foldSessions } from "@/lib/aggregate";
 import { BEHAVIOR } from "@/lib/config";
 import { DECKS } from "@/lib/decks";
 import { computeResults } from "@/lib/engine";
@@ -21,7 +22,7 @@ import type { ResultsPayload } from "@/lib/quiz-session";
 import type {
   AccuracyMetric,
   EntryId,
-  FactAggregate,
+  FactCounts,
   FactId,
   FactSessionDetail,
   HistoryFile,
@@ -65,25 +66,20 @@ export function glyphOfFact(fact: FactId): string {
  * A run must not appear in its own history: the session is POSTed the instant
  * it finishes, so by the time this screen fetches, it may already be in there —
  * and then "historically weakest" and "your first clean pass" would be reading
- * the very run they are meant to judge. Rebuilds the per-fact aggregates from
- * the surviving sessions, the same fold history.deleteSessions() does
- * server-side.
+ * the very run they are meant to judge.
+ *
+ * Rebuilds the per-fact aggregates from the surviving sessions via
+ * aggregate.foldSessions — literally the same function history.deleteSessions()
+ * calls server-side, where this used to be a hand-rolled copy of the same five
+ * `+=` lines. That copy was survivable while the fold was a commutative sum. It
+ * would not have survived the ranking model: the fold now replays scoring
+ * evidence in time order, so a second implementation that merely LOOKED right
+ * would hand this screen a set of stabilities nobody else in the app agrees
+ * with, and the only symptom would be a weakest list that is subtly wrong.
  */
 export function historyBefore(history: HistoryFile, ts: number): HistoryFile {
   const sessions = history.sessions.filter((x) => x.ts !== ts);
-  const facts: Record<FactId, FactAggregate> = {};
-  for (const session of sessions) {
-    for (const [key, a] of Object.entries(session.facts ?? {})) {
-      const f = key as FactId;
-      const agg = (facts[f] ??= { ...EMPTY_AGGREGATE });
-      agg.seen += a.seen ?? 0;
-      agg.missed += a.missed ?? 0;
-      agg.slow += a.slow ?? 0;
-      agg.firstTry += a.firstTry ?? 0;
-      agg.correct += a.correct ?? 0;
-    }
-  }
-  return { sessions, facts };
+  return { sessions, facts: foldSessions(sessions) };
 }
 
 // ---------- the run ----------
@@ -154,11 +150,13 @@ export function readableStats(results: ResultsPayload): SessionStats {
   return out;
 }
 
-/** This run as a FactAggregate, built exactly as quiz-session writes it to
- * history — so the ring, the drill HUD pill you just watched, and the numbers
- * Home shows tomorrow are the same measurement. */
-function runAggregate(stats: SessionStats): FactAggregate {
-  const agg = { ...EMPTY_AGGREGATE };
+/** This run's COUNTS, built exactly as quiz-session writes them to history — so
+ * the ring, the drill HUD pill you just watched, and the numbers Home shows
+ * tomorrow are the same measurement. Counts and not a FactAggregate: this is a
+ * pool across every fact in the run, and a pool has no scoring state (see
+ * accuracy.totalFor). */
+function runAggregate(stats: SessionStats): FactCounts {
+  const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     agg.seen += st.seen;
     agg.missed += st.misses;

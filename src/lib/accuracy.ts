@@ -48,15 +48,9 @@
 // happens by default when you reach for the obvious function.
 
 import { factsOf } from "@/lib/facts";
-import type {
-  AccuracyMetric,
-  EntryId,
-  FactAggregate,
-  FactId,
-  HistoryFile,
-} from "@/types";
+import type { AccuracyMetric, EntryId, FactCounts, FactId } from "@/types";
 
-export const EMPTY_AGGREGATE: FactAggregate = {
+export const EMPTY_COUNTS: FactCounts = {
   seen: 0,
   missed: 0,
   slow: 0,
@@ -65,17 +59,38 @@ export const EMPTY_AGGREGATE: FactAggregate = {
 };
 
 /**
- * Pool aggregates over a set of FACTS.
+ * The least a thing must be for an accuracy to be read off it: counts, per
+ * fact. Every function below takes THIS and not `HistoryFile`.
+ *
+ * A HistoryFile satisfies it, since a FactAggregate is a FactCounts plus the
+ * scoring state these functions have no business reading. So does one session's
+ * `facts` map, which the trend chart hands over one run at a time to get the
+ * same definition of accuracy the rest of the app uses — and which, since
+ * sessions carry counts and never state, is no longer even shaped like a
+ * history. Asking for the minimum is what lets both be true at once.
+ */
+export interface CountsByFact {
+  facts: Record<FactId, FactCounts>;
+}
+
+/**
+ * Pool counts over a set of FACTS.
  *
  * Legitimate because every field is a COUNT of showings, so the sum counts a
  * real, larger population and the ratio taken from it measures that population.
  * See the header for why the same operation over ONE ENTRY's facts is not.
+ *
+ * Takes and returns `FactCounts`, NOT `FactAggregate`, and that is the third
+ * fence in this file rather than a tidier import. A stored fact also carries a
+ * FactState — a stability and a lastTested — and those do not sum: "the
+ * stability of hiragana basic" is not a quantity, it is 71 separate
+ * predictions. Returning the counts type means the pooled object has no
+ * `stability` field at all, so summing one is a compile error instead of a
+ * plausible number that would then order a drill list. Same disease as the
+ * entry/fact accuracy split above, one level down.
  */
-export function totalFor(
-  history: HistoryFile,
-  facts: FactId[],
-): FactAggregate {
-  const total = { ...EMPTY_AGGREGATE };
+export function totalFor(history: CountsByFact, facts: FactId[]): FactCounts {
+  const total = { ...EMPTY_COUNTS };
   for (const f of facts) {
     const a = history.facts[f];
     if (!a) continue;
@@ -91,7 +106,7 @@ export function totalFor(
 /** Accuracy 0–100 under `metric` — a real ratio — or null when never
  * practised. */
 export function accuracyOf(
-  agg: FactAggregate,
+  agg: FactCounts,
   metric: AccuracyMetric,
 ): number | null {
   if (!agg.seen) return null;
@@ -105,7 +120,7 @@ export function accuracyOf(
 /** Pooled accuracy 0–100 over a group of FACTS — a deck ring, a run — or null
  * when none of them has ever been practised. A ratio: safe to compare. */
 export function accuracyFor(
-  history: HistoryFile,
+  history: CountsByFact,
   facts: FactId[],
   metric: AccuracyMetric,
 ): number | null {
@@ -136,7 +151,7 @@ export interface EntrySummary {
 
 /** An entry's summary accuracy, or null when none of its facts is practised. */
 export function summaryOfEntry(
-  history: HistoryFile,
+  history: CountsByFact,
   entry: EntryId,
   metric: AccuracyMetric,
 ): EntrySummary | null {
@@ -167,6 +182,6 @@ export function formatSummary(s: EntrySummary | null): string {
 }
 
 /** Practice volume for a group of facts: total showings. A count, not a rate. */
-export function volumeFor(history: HistoryFile, facts: FactId[]): number {
+export function volumeFor(history: CountsByFact, facts: FactId[]): number {
   return totalFor(history, facts).seen;
 }

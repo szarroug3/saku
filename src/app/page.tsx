@@ -62,9 +62,25 @@ export default function HomePage() {
   // dep that defeats every useMemo below it — including the one over history.
   const chars = useMemo(() => selectedChars(cfg), [cfg]);
 
+  // The clock the weakness cards are computed against, read ONCE per visit.
+  //
+  // Not Date.now() inline: weaknessDecks is pure and has to stay that way, a
+  // render that reads a clock is a render that can't be trusted to be the same
+  // twice, and an argument that changes on every render is a dep that defeats
+  // the useMemo below it. Held as state so it is stable for the life of the
+  // page, and re-read on mount — which is the same moment useHistory refetches,
+  // so the clock and the history the cards are built from always agree.
+  //
+  // It goes stale if you leave Home open for days. That is fine and is the
+  // reason this is a decision rather than an oversight: the model's unit is
+  // DAYS, so a list that was right when the page loaded is still right an hour
+  // later, and finishing a quiz — the only thing that actually changes the
+  // answer — remounts this page anyway.
+  const [now] = useState(() => Date.now());
+
   const weakness = useMemo(
-    () => weaknessDecks(history, cfg, chars),
-    [history, cfg, chars],
+    () => weaknessDecks(history, cfg, chars, now),
+    [history, cfg, chars, now],
   );
 
   // Both shelves, in the order they appear, so the sentence names them in the

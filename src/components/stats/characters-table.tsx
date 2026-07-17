@@ -20,10 +20,10 @@
 //      past row 30 is lying about what it shows. So: all of it, in a scroller.
 //
 // The default sort still reproduces the old list exactly — accuracy ascending,
-// ties broken toward the character you have seen MORE, matching
-// weakestEntries() in src/lib/decks.ts. It ranks by ACCURACY under the chosen
-// metric, not by raw misses: "missed 9 times" says nothing without knowing it
-// was shown 200.
+// ties broken toward the character you have seen MORE. It ranks by ACCURACY
+// under the chosen metric, not by raw misses: "missed 9 times" says nothing
+// without knowing it was shown 200. See COMPARE.acc for why that is this
+// table's business and NOT the same question Home's "Weakest 20" answers.
 //
 // AND SO THE SECTION IS CALLED "CHARACTERS", not "Weakest characters".
 //
@@ -109,10 +109,28 @@ const COMPARE: Record<SortKey, (a: Row, b: Row) => number> = {
   //   more evidence about rather than toward whichever one Object.entries
   //   happened to yield first.
   //
-  // Same rule as weakestEntries() in src/lib/decks.ts, deliberately — this
-  // table and that list must not disagree about which character is worst.
-  // (Home's "Weakest 20" ranks FACTS and is allowed to differ: it is a drill
-  // list, and a fact is what you drill. This table is a reading of entries.)
+  // THIS IS NOT HOME'S "WEAKEST 20", AND MUST NOT TRY TO BE.
+  // ======================================================
+  // It used to cite weakestEntries() in src/lib/decks.ts as the rule it was
+  // matching, so that this table and that list "must not disagree about which
+  // character is worst". That function is gone, and the agreement it promised
+  // was the wrong goal.
+  //
+  // Home's list is a PREDICTION — what is worth asking you next, ordered by what
+  // the app least knows about you (src/lib/scoring.ts). It ranks facts, because
+  // that is what its inputs belong to, and it deliberately omits both the
+  // characters you certainly know and the ones you have certainly lost.
+  //
+  // This table is the RECORD. Every entry you have ever practised, none of them
+  // ever dropped, sorted by whichever column you click. Its default sort is the
+  // Accuracy column, ascending — which is not a rival claim about what is weak,
+  // it is a table sorting the column it is displaying, and the arrow in the
+  // heading says so.
+  //
+  // So they can name different characters, and when kanji lands they routinely
+  // will. That is two questions with two answers, not one question with a bug:
+  // "what have I got wrong most often" and "what should I do now" are different
+  // questions, and the second one is the only one that had to be a ranking.
   acc: (a, b) => a.pct - b.pct || b.seen - a.seen,
   seen: (a, b) => a.seen - b.seen || a.pct - b.pct,
 };

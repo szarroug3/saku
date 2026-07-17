@@ -19,7 +19,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { SmallBtn } from "@/components/ui";
-import { EMPTY_AGGREGATE, accuracyOf, formatAccuracy } from "@/lib/accuracy";
+import { EMPTY_COUNTS, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR } from "@/lib/config";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { AccuracyMetric, SessionStats } from "@/types";
@@ -78,7 +78,7 @@ function Pill({
  * so they're excluded until they resolve — otherwise a fresh board would open
  * at 0% and climb, reporting "not attempted yet" as "wrong". */
 function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | null {
-  const agg = { ...EMPTY_AGGREGATE };
+  const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     if (st.firstTryCorrect === null) continue; // not matched yet
     agg.seen += st.seen;

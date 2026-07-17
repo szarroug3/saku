@@ -44,19 +44,25 @@ interface Point {
 /**
  * One session's accuracy under `metric`.
  *
- * Reads through accuracy.ts rather than deriving a ratio here: the session's
- * own `facts` map is exactly a history's `facts` map for one run, so handing
- * accuracyFor a one-session history gets the ONE definition of accuracy.
+ * Reads through accuracy.ts rather than deriving a ratio here: a session's
+ * `facts` map is counts per fact, which is all an accuracy needs, so handing it
+ * to accuracyFor gets the ONE definition of accuracy for a single run.
  * `forgivingPct`/`strictPct` on the record are a different number (share of
  * FACTS passed, not of showings), which is why they stay on the sessions list
  * and don't feed this chart.
+ *
+ * This used to pass `{ sessions: [], facts }` — a fake one-session history,
+ * with an empty `sessions` to satisfy a type that wanted a whole HistoryFile
+ * for a job that only ever touched `.facts`. accuracyFor now asks for the
+ * minimum (CountsByFact), so the pretence is gone and what is passed is just
+ * the counts, which is what this always meant.
  */
 function sessionAccuracy(
   s: QuizSessionRecord,
   metric: AccuracyMetric,
 ): number | null {
   const facts = s.facts ?? {};
-  return accuracyFor({ sessions: [], facts }, factKeys(facts), metric);
+  return accuracyFor({ facts }, factKeys(facts), metric);
 }
 
 function shortDate(ts: number): string {

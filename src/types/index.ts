@@ -214,8 +214,7 @@ export type SessionStats = Record<FactId, FactSessionDetail>;
 // ---------- history.json shapes ----------
 
 /**
- * One fact's lifetime totals. The key (a FactId) lives in the record that holds
- * this, so the aggregate itself carries no identity.
+ * What you have DONE with a fact — counts, and nothing but counts.
  *
  * Two units live here and must not be confused: `seen`, `firstTry` and
  * `correct` count SHOWINGS (the fact put on screen as a question), while
@@ -227,10 +226,11 @@ export type SessionStats = Record<FactId, FactSessionDetail>;
  *   strict    = firstTry / seen
  *   forgiving = correct  / seen
  *
- * `stability` and `lastTested` land here next; nothing below depends on this
- * field list being closed.
+ * EVERY FIELD IS A COUNT, which is exactly what makes this type poolable: add
+ * two of them and you have counted a real, larger population of showings. That
+ * is why it is its own type rather than part of FactAggregate — see FactState.
  */
-export interface FactAggregate {
+export interface FactCounts {
   /** Times the fact was shown as a question. SHOWINGS. */
   seen: number;
   /** Wrong ATTEMPTS — can exceed `seen`, since one showing allows retries. */
@@ -248,6 +248,57 @@ export interface FactAggregate {
   correct: number;
 }
 
+/**
+ * What the ranking model BELIEVES about one fact — its entire input, and the
+ * whole memory of src/lib/scoring.ts.
+ *
+ * NOT POOLABLE, and that is why it is a separate type from FactCounts. Counts
+ * sum; a belief does not. "The stability of hiragana basic" is not a quantity —
+ * you hold 71 separate predictions, and adding them up answers nothing. This is
+ * the same trap as an entry's accuracy in src/lib/accuracy.ts, one level down,
+ * and it is closed the same way: `totalFor` returns FactCounts, so a pooled
+ * thing has no `stability` field to read and reaching for one is a compile
+ * error rather than a plausible number.
+ *
+ * NEVER RENDER EITHER FIELD. The user asked, of a real stability figure, "does
+ * stability 106d mean I did that 106 days in a row?" — and that reading is the
+ * honest one for anything a study app puts on screen next to a character. It is
+ * a PREDICTION that reads as a HISTORY, and no caption fixes that. These two
+ * numbers exist to order a list. The order is the only thing the user sees.
+ */
+export interface FactState {
+  /**
+   * Days until predicted recall of this fact falls to ~37% (1/e).
+   *
+   * A duration, not a due date. The distinction is the reason this app has its
+   * own model at all: a due date is a promise the app cannot keep and the user
+   * can fail, and it turns a study session into a debt. A stability is just how
+   * fast the app's confidence decays, and it is only ever read as an ORDER.
+   */
+  stability: number;
+  /**
+   * ms epoch of the last session that tested this fact; 0 = never tested.
+   *
+   * WRITTEN ONLY BY EVIDENCE — a session you actually answered, at that
+   * session's own timestamp. Nothing else may touch it. If browsing a chart, or
+   * opening a screen, or the passage of time could write here, then the model's
+   * clock would measure app usage rather than your memory, and `elapsedDays`
+   * would silently stop meaning what its name says.
+   */
+  lastTested: number;
+}
+
+/**
+ * One fact's stored record: what you did (counts) and what the model believes
+ * (state). The key (a FactId) lives in the record that holds this, so the
+ * aggregate itself carries no identity.
+ *
+ * The two halves are folded from the same evidence, in one place —
+ * src/lib/aggregate.ts — but they are not the same KIND of thing, and the split
+ * above is what keeps the difference from being a comment.
+ */
+export interface FactAggregate extends FactCounts, FactState {}
+
 export interface QuizSessionRecord {
   ts: number;
   mode: QuizMode;
@@ -255,14 +306,35 @@ export interface QuizSessionRecord {
   total: number;
   forgivingPct: number;
   strictPct: number;
-  facts: Record<FactId, FactAggregate>;
+  /**
+   * What this run did, per fact. COUNTS, not aggregates — a session carries
+   * EVIDENCE and never belief.
+   *
+   * A session has no `stability`: stability is not a thing that happened to
+   * you on Tuesday, it is what the model concluded from every Tuesday so far,
+   * and it exists only in the fold (src/lib/aggregate.ts). Nor a `lastTested`
+   * — the session already has `ts`, which is the same fact stated once. Giving
+   * a session a state field would invite exactly one bug, and it is the bad
+   * one: some future writer stamping a stability here from a live clock, and
+   * the replay in deleteSessions then disagreeing with the incremental fold in
+   * saveSession about what the same file means.
+   */
+  facts: Record<FactId, FactCounts>;
   /** Full per-fact detail; absent on summary-only sessions. */
   detail?: SessionStats;
 }
 
 export interface HistoryFile {
   sessions: QuizSessionRecord[];
-  /** Lifetime totals per FACT. Was `chars`, keyed by the character itself —
-   * which gave 生 one accuracy slot for eleven readings. */
+  /**
+   * Per FACT: lifetime counts, and what the model believes. Was `chars`, keyed
+   * by the character itself — which gave 生 one accuracy slot for eleven
+   * readings.
+   *
+   * DERIVED, entirely, from `sessions` — src/lib/aggregate.ts is the fold, and
+   * the only writer. It is stored rather than recomputed on read because
+   * saveSession folds incrementally and the 200-session cap means the sessions
+   * no longer say everything the aggregate knows.
+   */
   facts: Record<FactId, FactAggregate>;
 }

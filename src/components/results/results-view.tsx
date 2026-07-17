@@ -128,9 +128,19 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     () => summarize(facts, stats, prior, analysis.progress),
     [facts, stats, prior, analysis.progress],
   );
+  // Ranked as of THIS RUN's timestamp, not as of now — `results.ts`, the same
+  // clock `prior` is cut at. Two reasons, and neither is tidiness:
+  //
+  //   1. A stored session reopened next week must say what it said when it
+  //      finished. Ranking it against today's clock would rewrite the past:
+  //      "here's what to work on" would drift every time you looked at it,
+  //      under a heading about a run that ended on Tuesday.
+  //   2. Date.now() in a render is not a pure render. This one is a prop of the
+  //      payload, so the screen is a function of its input and nothing here
+  //      needs a clock at all.
   const weakest = useMemo(
-    () => weakestFacts(prior, metric, 20),
-    [prior, metric],
+    () => weakestFacts(prior, results.ts, 20),
+    [prior, results.ts],
   );
 
   // The heaviest record on screen, so an improving row can say what the pair
