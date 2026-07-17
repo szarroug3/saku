@@ -36,6 +36,7 @@ import {
 } from "@/data/kanji";
 import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
+import { isKanaOnly, romajiMatches } from "@/lib/romaji";
 import type { Direction, FactId } from "@/types";
 
 /**
@@ -115,6 +116,23 @@ function glyphOfFact(fact: FactId): string {
 }
 
 /**
+ * The en2jp answer check, shared by every subject: you are shown a meaning or a
+ * reading and must produce the Japanese GLYPH.
+ *
+ * A directly-typed glyph (か, これ, 生 from an IME) always counts. On top of
+ * that, when the glyph is ALL KANA — a kana word like これ, a kana character —
+ * a romaji spelling of it counts too, so "kore" answers これ with no IME. A
+ * glyph containing kanji is left exact-match only: there is no romaji for 生, so
+ * romaji cannot and must not grade it (the drill offers those as multiple
+ * choice instead — see DrillScreen.nextQuestion).
+ */
+function checkEn2jp(fact: FactId, given: string): boolean {
+  const glyph = glyphOfFact(fact);
+  if (given.trim() === glyph) return true;
+  return isKanaOnly(glyph) && romajiMatches(given, glyph);
+}
+
+/**
  * Cross-script lookalike distractors for `glyph`, as facts — カ's 力, 力's カ.
  *
  * The one place a kana question reaches into the kanji subject and vice versa,
@@ -154,7 +172,7 @@ const kanaQuestions: QuestionType = {
   check(fact, dir, given) {
     return dir === "jp2en"
       ? accepts(fact, given)
-      : given.trim() === glyphOfFact(fact);
+      : checkEn2jp(fact, given);
   },
   distractors(fact, n) {
     const c = glyphOfFact(fact);
@@ -222,7 +240,7 @@ const kanjiQuestions: QuestionType = {
   check(fact, dir, given) {
     return dir === "jp2en"
       ? accepts(fact, given)
-      : given.trim() === glyphOfFact(fact);
+      : checkEn2jp(fact, given);
   },
   distractors(fact, n) {
     const c = glyphOfFact(fact);
@@ -292,7 +310,7 @@ const wordQuestions: QuestionType = {
   check(fact, dir, given) {
     return dir === "jp2en"
       ? accepts(fact, given)
-      : given.trim() === glyphOfFact(fact);
+      : checkEn2jp(fact, given);
   },
   distractors(fact, n) {
     // No word-level confusable data exists, and inventing "random other words"

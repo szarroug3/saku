@@ -60,7 +60,7 @@ export function howSentence(cfg: QuizConfig): string {
       styles.push(cfg.styleJp2en === "typed" ? "Type romaji" : "Multiple choice");
     }
     if (cfg.dirs.en2jp) {
-      styles.push(cfg.styleEn2jp === "typed" ? "Type kana" : "Multiple choice");
+      styles.push(cfg.styleEn2jp === "typed" ? "Type romaji" : "Multiple choice");
     }
     // Both directions answered the same way is one phrase, not two.
     const unique = [...new Set(styles)];
