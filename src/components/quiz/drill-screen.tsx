@@ -54,6 +54,7 @@ import {
   shuffle,
 } from "@/lib/engine";
 import { entryOf, factInfo } from "@/lib/facts";
+import { fitGlyphSize } from "@/lib/glyph-fit";
 import { isKanaOnly, toKana } from "@/lib/romaji";
 import { useHistory } from "@/lib/use-history";
 import { anchorForFact } from "@/lib/word-unlock";
@@ -230,7 +231,8 @@ function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | nul
 
 export function DrillScreen() {
   const { cfg, ready } = useQuizConfig();
-  const { active, finishQuiz, setProgress, saveNow } = useQuizSession();
+  const { active, session, finishQuiz, setProgress, saveNow, reviewLesson } =
+    useQuizSession();
   // History, for one thing only: framing an unlocked kanji reading on a word the
   // user actually learned (see word-unlock.ts). A reading question's answer is
   // the same in every attesting word, so this touches the CONTEXT line and
@@ -732,6 +734,10 @@ export function DrillScreen() {
     ? liveAccuracy(rt.stats, cfg.accuracyMetric)
     : null;
   const controlsLit = !fadeControls || controlsAwake || drawerOpen;
+  // "Look again" is offered only for a session that has a lesson to return to.
+  // A one-off quiz (no session) or a session with nothing new to teach has no
+  // teach screen, so the control would go nowhere.
+  const hasLesson = !!session && session.teach.length > 0;
 
   return (
     <div>
@@ -767,6 +773,12 @@ export function DrillScreen() {
               transition: fadeControls ? "opacity 250ms ease" : undefined,
             }}
           >
+            {/* Only when this session HAS a lesson — a plain custom drill has
+                nothing to look again AT. Returns to the teach screen and resumes
+                the round exactly where it was (progress is already on disk). */}
+            {hasLesson ? (
+              <SmallBtn onClick={reviewLesson}>Look again</SmallBtn>
+            ) : null}
             <SmallBtn onClick={endQuiz}>End quiz</SmallBtn>
             <SmallBtn
               aria-label="Mid-drill settings"
@@ -799,7 +811,15 @@ export function DrillScreen() {
           drainWindow={drainWindow}
           glyph={prompt.glyph}
           font={q.font}
-          fontSize={prompt.jp ? GLYPH_PX : Math.round(GLYPH_PX * 0.6)}
+          // A single glyph keeps its base size (GLYPH_PX for the Japanese side,
+          // 0.6× for latin answer text — the old distinction). A multi-char
+          // WORD scales down to sit on ONE line inside the halo instead of
+          // overflowing and wrapping. See fitGlyphSize.
+          fontSize={fitGlyphSize(
+            prompt.glyph,
+            prompt.jp,
+            prompt.jp ? GLYPH_PX : Math.round(GLYPH_PX * 0.6),
+          )}
           crossFade={q.tries === 0}
         />
         {/* Part of the question, not decoration: without "in 人生" the glyph

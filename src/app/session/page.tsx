@@ -24,6 +24,7 @@ import { useQuizSession } from "@/lib/quiz-session";
 export default function SessionPage() {
   const router = useRouter();
   const {
+    active,
     session,
     restored,
     retryLeg,
@@ -33,6 +34,7 @@ export default function SessionPage() {
     finishSession,
     startSession,
     startFirstRound,
+    resumeRound,
   } = useQuizSession();
   const { history } = useHistory();
 
@@ -58,9 +60,18 @@ export default function SessionPage() {
   const label = `${session.facts.length} item${session.facts.length === 1 ? "" : "s"}`;
 
   if (session.phase === "teaching") {
+    // A live leg here means we got back via the drill's "Look again", not the
+    // pre-round lesson — so the button RESUMES the round (keeping progress)
+    // rather than starting a fresh round 1 over the whole set.
+    const reviewing = !!active;
     return (
       <>
-        <SessionHud label={label} where="before round 1" pct={0} onDone={endSession} />
+        <SessionHud
+          label={label}
+          where={reviewing ? `round ${session.round}` : "before round 1"}
+          pct={0}
+          onDone={endSession}
+        />
         <div className="mt-3.5">
           <TeachScreen
             facts={session.teach}
@@ -70,7 +81,7 @@ export default function SessionPage() {
             // them apart, and it's read here rather than stored on the session
             // so it can't go stale against a deleted session.
             familiar={(f) => !!history.facts[f]?.seen}
-            onStart={startFirstRound}
+            onStart={reviewing ? resumeRound : startFirstRound}
           />
         </div>
       </>

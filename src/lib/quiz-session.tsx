@@ -173,6 +173,17 @@ interface QuizSessionContextValue {
   startSession(facts: FactId[], teach?: FactId[], what?: string): void;
   /** Re-ask a subset from the fork. Comes back to the same fork. */
   retryLeg(facts: FactId[]): void;
+  /**
+   * Mid-round "Look again": go back to the lesson without discarding the leg.
+   *
+   * Unlike the fork, this keeps `active` and its runtime intact, so resumeRound
+   * drops you back into the exact card you left. Only for a session that has a
+   * teach phase — the drill screen gates the control on that.
+   */
+  reviewLesson(): void;
+  /** Resume the round after a "Look again": back to /quiz with the leg
+   * untouched (NOT a fresh beginLeg, so nothing is re-asked). */
+  resumeRound(): void;
   /** Complete the round: bank it, write the floor, start the rest. */
   completeRound(): void;
   /** The rest is over (or you skipped it): run the SAME whole set again. */
@@ -508,6 +519,24 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     [session, beginLeg],
   );
 
+  const reviewLesson = useCallback(() => {
+    // Both must hold: a session (for the teach set) and a live leg to come back
+    // to. Deliberately does NOT touch `active` — the runtime carries the deck,
+    // position and per-card state, and resumeRound re-enters it untouched.
+    if (!session || !active) return;
+    setSession({ ...session, phase: "teaching", lastActiveAt: Date.now() });
+    router.push("/session");
+  }, [session, active, router]);
+
+  const resumeRound = useCallback(() => {
+    if (!session) return;
+    // No beginLeg: a fresh leg would rebuild the deck and re-ask from the top.
+    // The active leg is still here, so flipping the phase and routing back to
+    // /quiz resumes the very card "Look again" was showing.
+    setSession({ ...session, phase: "drilling", lastActiveAt: Date.now() });
+    router.push("/quiz");
+  }, [session, router]);
+
   /**
    * Bank the round that just ended: summarise it and fold it into the totals.
    *
@@ -738,6 +767,8 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       viewStoredSession,
       startSession,
       retryLeg,
+      reviewLesson,
+      resumeRound,
       completeRound,
       startNextRound,
       endSession,
@@ -759,6 +790,8 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       viewStoredSession,
       startSession,
       retryLeg,
+      reviewLesson,
+      resumeRound,
       completeRound,
       startNextRound,
       endSession,
