@@ -67,12 +67,12 @@ export function sliceFacts(slice: Slice): FactId[] {
  *
  * `quiet` never appears. That is the whole default.
  */
-export function drillOrder(
+export function drillPlan(
   slice: Slice,
   facts: Record<FactId, FactAggregate>,
   claims: Claims,
   now: number,
-): FactId[] {
+): DrillPlan {
   const probe: RankCandidate[] = [];
   const teach: FactId[] = [];
   for (const id of sliceFacts(slice)) {
@@ -88,7 +88,37 @@ export function drillOrder(
         break;
     }
   }
-  return [...rank({ facts: probe }, now), ...teach];
+  return { probe: rank({ facts: probe }, now), teach };
+}
+
+/**
+ * The two halves, kept apart — because the session loop wants them apart.
+ *
+ * This is not a convenience over `drillOrder`; it is the shape the app actually
+ * consumes. `quiz-session.startSession(chars, teach)` takes new material as its
+ * own argument and SHOWS it before asking it, which is the same distinction
+ * scoring.ts draws and for the same reason: testing someone on what they have
+ * never met is not teaching. The Library computed that split anyway to answer
+ * "what would you drill"; handing both halves over means the session gets to be
+ * a normal session rather than a flat list the loop has to re-derive.
+ */
+export interface DrillPlan {
+  /** Ranked. The app's one answer to "what should I ask", over a smaller pool. */
+  readonly probe: readonly FactId[];
+  /** Never met, or lost. Shown before it is asked. */
+  readonly teach: readonly FactId[];
+}
+
+/** The plan as one list — everything the drill would touch, probe first. For
+ * the bar's count and for anything that only needs the size of the thing. */
+export function drillOrder(
+  slice: Slice,
+  facts: Record<FactId, FactAggregate>,
+  claims: Claims,
+  now: number,
+): FactId[] {
+  const plan = drillPlan(slice, facts, claims, now);
+  return [...plan.probe, ...plan.teach];
 }
 
 /** How a slice stands, for the bar's one line of prose. */

@@ -26,7 +26,7 @@ import { AddToList } from "@/components/library/add-to-list";
 import { Btn, Hint } from "@/components/ui";
 import { drillChars, unaskableNote } from "@/lib/library/drill";
 import {
-  drillOrder,
+  drillPlan,
   sliceCount,
   sliceSentence,
   type Slice,
@@ -53,12 +53,18 @@ export function SliceBar({
    * the history this bar is rendered from and has to refresh it. */
   onClaim(facts: FactId[]): void;
 }) {
-  const { startQuiz } = useQuizSession();
+  const { startSession } = useQuizSession();
   const [adding, setAdding] = useState(false);
 
-  const order = drillOrder(slice, facts, claims, now);
+  const plan = drillPlan(slice, facts, claims, now);
+  const order = [...plan.probe, ...plan.teach];
   const count = sliceCount(slice, facts, claims, now);
   const chars = drillChars(order);
+  // The new material, as the loop wants it: shown before it is asked. Filtered
+  // through the same `drillChars` as the whole, so it cannot contain something
+  // `chars` doesn't — handing `startSession` a `teach` entry that isn't in its
+  // `chars` would be a lesson for a card the session never deals.
+  const teach = drillChars(plan.teach);
   const note = unaskableNote(order.length, chars.length);
 
   return (
@@ -115,7 +121,17 @@ export function SliceBar({
           >
             ✓ I know {slice.entries.length === 1 ? "this" : "these"}
           </Btn>
-          <Btn sel disabled={chars.length === 0} onClick={() => startQuiz(chars)}>
+          {/* startSession, NOT startQuiz. The design settles what this button
+              does: "pressing it builds a normal session that these rows are
+              only part of, so they come up at a distance from your having read
+              them." startQuiz is the one-off; the session loop is the normal
+              one, and it is what puts distance between reading セイ here and
+              being asked it. */}
+          <Btn
+            sel
+            disabled={chars.length === 0}
+            onClick={() => startSession(chars, teach)}
+          >
             Drill {chars.length}
           </Btn>
         </div>
