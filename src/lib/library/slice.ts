@@ -1,0 +1,150 @@
+// A SLICE — whatever you are currently looking at — and the three things you
+// can do with it.
+//
+// This is the Library's one real abstraction, and it exists because the bar at
+// the bottom of every reference screen is the same bar. A shelf, a section, a
+// search, a row, one entry: each is a set of entries with a name, and each
+// offers drill / claim / file. Writing that three times would be three subtly
+// different answers to "what does Drill mean here".
+//
+// THE DEFAULT IS THE FEATURE
+// ==========================
+// The bar says "everything here that isn't solid · 9 questions", never "142
+// questions". That is not a nicety; it is the difference between a button worth
+// pressing and a button that punishes you for browsing. Opening 生 — nine
+// readings, five of which you own — and being offered a nine-question drill is
+// how an app teaches you not to open 生. The user's whole thesis for the ranked
+// drill applies at this scale too: asking what you already know teaches the app
+// nothing and costs you the session.
+//
+// So a slice's drill is NOT its facts. It is its facts minus the ones the model
+// is already sure of, in the order the model wants them.
+
+import { effectiveState, type Claims } from "@/lib/claims";
+import { factsOf } from "@/lib/facts";
+import { rank, status, type RankCandidate } from "@/lib/scoring";
+import type { EntryId, FactAggregate, FactId } from "@/types";
+
+/**
+ * A named set of entries. Facts are DERIVED (`factsOf`) rather than carried,
+ * so a slice cannot be built that contains a fact its entries don't — which is
+ * the one way the two key spaces could quietly diverge on this screen.
+ */
+export interface Slice {
+  /** What the bar calls it. "K か", "で", "生", "Hiragana". */
+  readonly label: string;
+  /** What is in it, in the order the screen showed them. */
+  readonly entries: readonly EntryId[];
+}
+
+/** Every fact of every entry in the slice, in screen order. */
+export function sliceFacts(slice: Slice): FactId[] {
+  return slice.entries.flatMap((e) => factsOf(e));
+}
+
+/**
+ * The drill, in order: everything in the slice the model is not already sure
+ * of, best question first.
+ *
+ * Two groups, concatenated, and the split is scoring.ts's own:
+ *
+ *   probe — RANKED. `rank` is the app's one answer to "what should I ask", and
+ *           this is the same call the drill makes, over a smaller pool. The
+ *           Library does not have a second opinion about ordering.
+ *   teach — NOT RANKED, and appended in screen order. `rank` drops these on
+ *           purpose (p → 0 is unaskable and belongs to the new-material budget),
+ *           so a slice of untouched kana would rank EMPTY and the bar on the か
+ *           row would read "Drill 0" — for five characters you have never seen.
+ *           That is the arithmetic eating its own use case, one level up from
+ *           where scoring.ts's header describes it.
+ *
+ * Which is the right answer to a question scoring.ts explicitly left open: it
+ * says the new-material budget "does not exist yet. `status` is the seam it will
+ * read." On a slice, the budget is the slice — you pointed at these five things
+ * and asked for them, so "what new material should this session contain" has an
+ * answer that needs no budget policy at all. That is why this is here and not a
+ * change to rank().
+ *
+ * `quiet` never appears. That is the whole default.
+ */
+export function drillOrder(
+  slice: Slice,
+  facts: Record<FactId, FactAggregate>,
+  claims: Claims,
+  now: number,
+): FactId[] {
+  const probe: RankCandidate[] = [];
+  const teach: FactId[] = [];
+  for (const id of sliceFacts(slice)) {
+    const state = effectiveState(facts[id], claims[id]);
+    switch (status(state, now)) {
+      case "probe":
+        probe.push({ id, state });
+        break;
+      case "teach":
+        teach.push(id);
+        break;
+      case "quiet":
+        break;
+    }
+  }
+  return [...rank({ facts: probe }, now), ...teach];
+}
+
+/** How a slice stands, for the bar's one line of prose. */
+export interface SliceCount {
+  /** Facts the drill would ask — `drillOrder().length`. The number on the
+   * button. */
+  readonly drillable: number;
+  /** Every fact in the slice. The number the button deliberately ISN'T. */
+  readonly total: number;
+  /** Facts with any showings behind them. "7 seen, 11 in total". */
+  readonly seen: number;
+  /** Facts the model is sure of — what `drillable` leaves out, named so the bar
+   * can explain itself rather than just be smaller than you expected. */
+  readonly solid: number;
+}
+
+export function sliceCount(
+  slice: Slice,
+  facts: Record<FactId, FactAggregate>,
+  claims: Claims,
+  now: number,
+): SliceCount {
+  const all = sliceFacts(slice);
+  let seen = 0;
+  let solid = 0;
+  for (const id of all) {
+    if ((facts[id]?.seen ?? 0) > 0) seen++;
+    if (status(effectiveState(facts[id], claims[id]), now) === "quiet") solid++;
+  }
+  return { drillable: all.length - solid, total: all.length, seen, solid };
+}
+
+/**
+ * The bar's sentence. One function, so that every surface says it the same way
+ * and no screen invents its own phrasing for the same arithmetic.
+ *
+ * The cases are the ones that actually happen, and each says something true and
+ * different:
+ *
+ *   nothing to drill ... you own the whole slice. Say so; don't offer a button.
+ *   nothing seen yet ... "5 questions · not seen yet" — the honest version of a
+ *                        drill that is entirely new material.
+ *   the mixed case .... "everything here that isn't solid · 9 questions".
+ */
+export function sliceSentence(c: SliceCount): string {
+  if (c.total === 0) return "nothing here to drill";
+  if (c.drillable === 0) {
+    return `all ${c.total} solid — nothing to ask`;
+  }
+  if (c.seen === 0) {
+    return `${c.drillable} question${c.drillable === 1 ? "" : "s"} · not seen yet`;
+  }
+  if (c.solid === 0) {
+    return `${c.drillable} question${c.drillable === 1 ? "" : "s"}`;
+  }
+  return `everything here that isn't solid · ${c.drillable} question${
+    c.drillable === 1 ? "" : "s"
+  }`;
+}
