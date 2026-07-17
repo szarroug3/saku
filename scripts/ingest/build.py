@@ -68,31 +68,85 @@ def load_kradfile(path):
     return KR
 
 
+# The hand-curated commonness tags, and the only ones this ingest trusts to
+# mean "everyday". See the `CURATED` note in main() for why `news1`/`nfXX` is
+# not in here.
+CURATED = {"ichi1", "spec1", "spec2"}
+
+# JMdict ships its tags as XML entities and ET expands them, so `pos` and
+# `misc` arrive as prose, not codes: `&uk;` reads as the string below and `&vs;`
+# as "noun or participle which takes the aux. verb suru". Match on the prose;
+# there is no code to match on by the time we see it.
+UK = "word usually written using kana alone"
+
+
 def load_jmdict(path):
+    """Every entry, keyed on the form JMdict says the word is actually written in.
+
+    A JMdict entry records commonness on the HEADWORD, and a word's headword is
+    not always kanji. Two cases, and reading only `ke_pri` misses both:
+
+     - No k_ele at all: もう, ある. The tag can only be on the r_ele.
+     - `uk` -- "usually written using kana alone": これ carries eight kanji
+       spellings (此れ, 是, 之 ...), not one of which is tagged, because the
+       tag is on これ. Same for とても/迚も. These are not rare words; they are
+       the first page of any textbook.
+
+    So the priority tags are read from whichever element carries them, and the
+    headword we keep is the kana one exactly when JMdict says the word is
+    written in kana. That also settles the jouyou question for these words
+    honestly: これ contains no kanji, so it makes no parts-first claim, rather
+    than being judged on 此 -- a non-jouyou kanji nobody writes.
+    """
     W = []
     for _, el in ET.iterparse(path, events=("end",)):
         if el.tag != "entry":
             continue
-        # Take the first k_ele that CARRIES a priority tag -- not simply the
-        # first k_ele. An entry often leads with an unmarked surface form and
-        # tags the common spelling second; taking [0] blindly drops the entry
-        # and loses 7 everyday words, which is enough to re-break ties in the
-        # ordering and walk the settled first 40.
-        for ke in el.findall("k_ele"):
-            pri = [x.text for x in ke.findall("ke_pri")]
-            if not pri:
-                continue
-            nf = [int(p[2:]) for p in pri if p.startswith("nf")]
-            senses = el.findall("sense")
-            W.append(dict(
-                keb=ke.findtext("keb"),
-                pri=set(pri),
-                nf=min(nf) if nf else None,
-                reb=el.findtext("r_ele/reb"),
-                glosses=[g.text for g in senses[0].iter("gloss")][:4] if senses else [],
-                pos=sorted({p.text for s in senses for p in s.findall("pos")}),
-            ))
-            break
+        kels = [(ke.findtext("keb"), {x.text for x in ke.findall("ke_pri")})
+                for ke in el.findall("k_ele")]
+        rels = [(re_.findtext("reb"), {x.text for x in re_.findall("re_pri")})
+                for re_ in el.findall("r_ele")]
+        senses = el.findall("sense")
+        misc0 = {m.text for m in senses[0].findall("misc")} if senses else set()
+
+        # `uk` is read off the FIRST sense only. A word whose primary meaning is
+        # written in kanji and whose fourth, archaic sense is kana-only is a
+        # kanji word.
+        kana = (not kels) or (UK in misc0)
+        if kana:
+            pick = next(((r, p) for r, p in rels if p & CURATED), None) or \
+                   (rels[0] if rels else None)
+        else:
+            # Prefer the k_ele that carries a CURATED tag over merely the first
+            # k_ele carrying any tag: an entry often leads with an unmarked or
+            # `iK` surface form and tags the common spelling second.
+            pick = next(((k, p) for k, p in kels if p & CURATED), None) or \
+                   next(((k, p) for k, p in kels if p), None)
+        if pick is None or pick[0] is None:
+            el.clear()
+            continue
+        form, pri = pick
+
+        # The order input is FROZEN on the pre-fix view of this file -- the
+        # first k_ele carrying any tag, kanji only. `order.json` is a shipped
+        # artifact and does not get to drift because the ingest learned to read
+        # `re_pri`. See the vc_order/vc note in main().
+        legacy = next(((k, p) for k, p in kels if p), None)
+
+        nf = [int(p[2:]) for p in pri if p.startswith("nf")]
+        W.append(dict(
+            keb=form,
+            pri=pri,
+            kana=kana,
+            legacy_keb=legacy[0] if legacy else None,
+            legacy_pri=legacy[1] if legacy else set(),
+            nf=min(nf) if nf else None,
+            # A kana word is its own reading. Taking r_ele[0] blindly would pair
+            # とても with とても's first r_ele even when the tagged one is second.
+            reb=form if kana else el.findtext("r_ele/reb"),
+            glosses=[g.text for g in senses[0].iter("gloss")][:4] if senses else [],
+            pos=sorted({p.text for s in senses for p in s.findall("pos")}),
+        ))
         el.clear()
     return W
 
@@ -182,13 +236,43 @@ def main():
     assert len(JOYO) == 2136, f"jouyou should be 2136, got {len(JOYO)}"
     joyo_list = sorted(JOYO)
 
-    # Everyday vocabulary: ichi1 (the hand-curated ~10k list -- NOT `freq`,
-    # which is a newspaper survey) restricted to words written in jouyou kanji,
-    # so that parts-first can actually build every one of them.
+    # Everyday vocabulary: the UNION of JMdict's hand-curated commonness tags,
+    # restricted to words written in jouyou kanji so that parts-first can
+    # actually build every one of them.
+    #
+    # WHY A UNION, AND WHY NOT `news1`
+    # --------------------------------
+    # These tags are not independent axes to intersect. `news1` means nf01-24
+    # and `news2` means nf25-48 -- the same 12,000 words from the same
+    # newspaper corpus, strictly nested (verified: 0 entries violate it).
+    # Intersecting them narrows nothing. What IS independent is the SOURCE:
+    #
+    #   ichi1   9,552 entries, a hand-curated everyday list. 25.2% of it
+    #           carries no nf band at all -- which is exactly the everyday
+    #           vocabulary a newspaper corpus is worst at seeing.
+    #   spec1/2 a separate editorial judgement: "common no matter what the
+    #           corpus says". 日本 lives here and ONLY here -- it is spec1 +
+    #           news2/nf25, so `ichi1` misses it and even a `news1` filter
+    #           would miss it. It was JMdict's editors overriding the corpus.
+    #
+    # `news1`/`nfXX` is deliberately NOT in this union. It is a newspaper
+    # survey, and "common in a newspaper" is not "common for a beginner": its
+    # top band holds 安保, 委員会 and 欧州 while 食べる sits in band 25. Adding
+    # news1 would admit ~6,200 more words and is a product decision about what
+    # this quiz is for, not a bug fix -- it is left to a human. The limitation
+    # is in the corpus and cannot be filtered away; this union just declines to
+    # pretend otherwise.
     TGT = []
     for w in W:
+        if not w["pri"] & CURATED:
+            continue
         ks = [c for c in w["keb"] if c in K]
-        if not ks or "ichi1" not in w["pri"]:
+        if not ks:
+            # No kanjidic character in the headword. For a kana word that is
+            # the point (これ, もう) -- it makes no parts-first claim and is
+            # kept. For 'Ｔシャツ' or '３０００' it is a non-word for this quiz.
+            if w["kana"]:
+                TGT.append(w)
             continue
         if all(k in JOYO for k in ks):
             TGT.append(w)
@@ -199,23 +283,40 @@ def main():
         if w["keb"] in seen_keb:
             continue
         seen_keb.add(w["keb"]); VOCAB.append(w)
-    print(f"everyday vocab (ichi1, all-jouyou): {len(VOCAB)} of {len(TGT)} pre-dedup")
+    kana_n = sum(1 for w in VOCAB if w["kana"])
+    print(f"everyday vocab (ichi1|spec1|spec2, all-jouyou): {len(VOCAB)} "
+          f"of {len(TGT)} pre-dedup  ({kana_n} kana-form)")
 
-    # TWO utility counts, deliberately. They differ by ~1% and are not
-    # interchangeable:
+    # TWO utility counts, deliberately. They are not interchangeable:
     #
-    #  vc_order  counts the PRE-dedup target set, because that is what the
-    #            research scripts counted and it is the input that reproduces
-    #            the settled `ramp B` order byte-for-byte. Deduping here
-    #            re-breaks ties and walks the published order (口 and 手 swap
-    #            at item 13). The order is a shipped artifact; it does not get
-    #            to drift because the ingest tidied its input.
-    #  vc        counts distinct written words, and is the only one a screen may
-    #            show, because "appears in 31 everyday words" must not count 生
-    #            twice for having two sense groups.
+    #  vc_order  counts the FROZEN pre-fix target set -- ichi1 only, keyed on
+    #            the first k_ele carrying any tag, pre-dedup -- because that is
+    #            what the research scripts counted and it is the input that
+    #            reproduces the settled `ramp B` order byte-for-byte. Deduping
+    #            here re-breaks ties and walks the published order (口 and 手
+    #            swap at item 13), and so does widening the vocab set: adding
+    #            spec1/spec2 changes 1,700+ of these counts. The order is a
+    #            shipped artifact; it does not get to drift because the ingest
+    #            learned to read `re_pri`. Hence TGT_ORDER is rebuilt from
+    #            `legacy_keb`/`legacy_pri` rather than reusing TGT -- the two
+    #            sets are no longer the same set, and the SETTLED_40 assertion
+    #            below is what proves this seam stayed put.
+    #  vc        counts distinct written words in the SHIPPED vocab, and is the
+    #            only one a screen may show, because "appears in 31 everyday
+    #            words" must not count 生 twice for having two sense groups.
+    TGT_ORDER = []
+    for w in W:
+        lk = w["legacy_keb"]
+        if not lk or "ichi1" not in w["legacy_pri"]:
+            continue
+        ks = [c for c in lk if c in K]
+        if not ks:
+            continue
+        if all(k in JOYO for k in ks):
+            TGT_ORDER.append(lk)
     vc_order = defaultdict(int)
-    for w in TGT:
-        for k in {c for c in w["keb"] if c in JOYO}:
+    for lk in TGT_ORDER:
+        for k in {c for c in lk if c in JOYO}:
             vc_order[k] += 1
     vc = defaultdict(int)
     for w in VOCAB:
@@ -223,12 +324,19 @@ def main():
             vc[k] += 1
 
     # ---- align: the (kanji, reading) evidence carried by everyday words
+    #
+    # A kana word is not in the denominator. これ has no kanji, so "did it
+    # align?" is not a question about it -- counting it as a failure would
+    # report a 17% alignment hole that is really just the kana vocabulary
+    # doing exactly what it should. Only kanji words can align or fail to.
     pairs = defaultdict(list)   # (kanji, base) -> [(keb, surface)]
     aligned = 0
+    alignable = 0
     word_align = {}
     for w in VOCAB:
-        if not w["reb"]:
+        if not w["reb"] or w["kana"]:
             continue
+        alignable += 1
         a = align(w["keb"], w["reb"], KRD_of(K))
         if not a:
             continue
@@ -237,7 +345,8 @@ def main():
         for kanji, surface, base in a:
             if kanji in JOYO:
                 pairs[(kanji, base)].append((w["keb"], surface))
-    print(f"aligned {aligned}/{len(VOCAB)} = {100*aligned/len(VOCAB):.1f}%  "
+    print(f"aligned {aligned}/{alignable} kanji words = {100*aligned/alignable:.1f}%  "
+          f"({len(VOCAB)-alignable} kana words carry no kanji evidence by design)  "
           f"-> {len(pairs)} distinct (kanji, reading) facts")
 
     # ---- order

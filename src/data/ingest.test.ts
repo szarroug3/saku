@@ -26,7 +26,14 @@ import test from "node:test";
 
 import { LOOKALIKE_KANJI, DERIVED_CONFUSABLE, distractorsFor } from "./confusable.ts";
 import { KANJI, KANJI_FACTS, KANJI_ORDER, PREREQUISITE_ONLY, READINGS, kanjiRow } from "./kanji.ts";
-import { VOCAB, VOCAB_FACTS } from "./vocab.ts";
+import {
+  VOCAB,
+  VOCAB_FACTS,
+  isKanaWord,
+  vocabRow,
+  wordMeaningFactId,
+  wordReadingFactId,
+} from "./vocab.ts";
 
 test("jōyō is 2,136 kanji and has no grade 7", () => {
   assert.equal(KANJI.length, 2136);
@@ -47,13 +54,18 @@ test("no fact is ungradable: every fact has at least one answer", () => {
 });
 
 test("a kanji reading fact is keyed on (kanji, word), never on the kanji alone", () => {
-  // 生 has nine readings. If any of them minted a bare `kanji:生/reading` the
-  // ids would collide and eight would vanish — which is precisely the bug the
+  // 生 has eight readings. If any of them minted a bare `kanji:生/reading` the
+  // ids would collide and seven would vanish — which is precisely the bug the
   // entry/fact split exists to make impossible.
+  //
+  // Eight, not nine: 生's な came only from 生る, which JMdict marks `uk`. A
+  // `uk` word is shipped as its kana form (なる) and contributes no kanji
+  // evidence, because anchoring 生=な at a spelling nobody writes teaches a
+  // word the learner will never see. Same rule as the jukujikun case below.
   const sei = READINGS.filter((r) => r.k === "生");
-  assert.equal(sei.length, 9);
+  assert.equal(sei.length, 8);
   const ids = new Set(sei.map((r) => `${r.k}@${r.anchor}`));
-  assert.equal(ids.size, 9);
+  assert.equal(ids.size, 8);
 });
 
 test("rendaku folds into the base reading rather than splitting the score", () => {
@@ -70,6 +82,61 @@ test("jukujikun contribute no per-kanji reading rather than a made-up one", () =
   if (otona) assert.equal(otona.align, null);
   for (const r of READINGS) {
     assert.ok(!r.words.includes("大人"), `大人 fabricated evidence for ${r.k}`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// SCOPE REGRESSIONS. A missing word is the invisible failure this whole file
+// exists for: it looks exactly like a word you have not reached yet. Nothing
+// throws, no id collides, the app just quietly cannot teach 日本. Each of the
+// words below was ACTUALLY missing, and each names the mechanism that dropped
+// it, so a re-cut that reintroduces the mechanism fails here by name.
+// ---------------------------------------------------------------------------
+
+test("日本 is in the vocabulary: `spec1` is a source, not a lesser `ichi1`", () => {
+  // 日本 is spec1 + news2/nf25 and carries NO ichi1. A filter on `ichi1` alone
+  // drops the word for "Japan" out of a Japanese quiz — and the comment
+  // defending that filter cited 日本 as a word it kept.
+  const nihon = vocabRow("日本");
+  assert.ok(nihon, "日本 is missing: the curated union has collapsed back to ichi1");
+  assert.equal(nihon.reb, "にほん");
+});
+
+test("kana words are in the vocabulary: priority can live on the reading", () => {
+  // These carry their `ichi1` on the r_ele, not the k_ele. An ingest that
+  // reads only `ke_pri` never sees them AT ALL — they are not filtered out,
+  // they are never loaded. これ has eight kanji spellings (此れ, 是, 之 …) and
+  // not one is tagged, because nobody writes them.
+  for (const [keb, reb] of [
+    ["これ", "これ"],   // uk: kanji headwords exist, all untagged and non-jōyō
+    ["とても", "とても"], // uk: 迚も is the headword nobody writes
+    ["もう", "もう"],   // no k_ele at all — reading is the only headword
+  ] as const) {
+    const w = vocabRow(keb);
+    assert.ok(w, `${keb} is missing: the ingest is reading ke_pri only again`);
+    assert.equal(w.reb, reb);
+    assert.ok(w.glosses.length > 0, `${keb} has no gloss and cannot be graded`);
+  }
+});
+
+test("a kana word asks its meaning and never its reading", () => {
+  // "What is これ read as?" prints its own answer. Emitting it would be an
+  // ungradable question, so これ carries a meaning fact and no reading fact.
+  const kore = vocabRow("これ");
+  assert.ok(kore && isKanaWord(kore));
+  const ids = new Set(VOCAB_FACTS.map((f) => f.id));
+  assert.ok(ids.has(wordMeaningFactId("これ")), "これ lost its meaning fact");
+  assert.ok(!ids.has(wordReadingFactId("これ")), "これ minted a self-answering reading fact");
+  // 先生 is a kanji word and must still carry both.
+  assert.ok(ids.has(wordReadingFactId("先生")));
+  assert.ok(ids.has(wordMeaningFactId("先生")));
+});
+
+test("a kana word contributes no kanji evidence", () => {
+  // これ has no kanji, so it must not claim a reading for one — the same rule
+  // as the jukujikun case above, reached by a different route.
+  for (const w of VOCAB) {
+    if (isKanaWord(w)) assert.equal(w.align, null, `${w.keb} aligned kana to kanji`);
   }
 });
 
@@ -100,13 +167,20 @@ test("KRADFILE cannot derive the classic pairs, which is why the table exists", 
 });
 
 test("'pulled in as a prerequisite' does not mean 'not a lesson'", () => {
-  // 100 items enter via closure and 91 are ordinary lessons. Only the ones with
+  // 100 items enter via closure and 94 are ordinary lessons. Only the ones with
   // no everyday word at all are parts. Collapsing these two ideas would tell a
-  // user that 口 — 31 everyday words — is not a lesson.
+  // user that 口 — 37 everyday words — is not a lesson.
+  //
+  // Six, not nine: the curated union gave three of the old nine a real word
+  // (乙 now has 甲乙), so they are lessons now. The 100 is NOT affected and
+  // must not be — it comes from the frozen order input. See build.py's
+  // vc_order/vc note: `enteredVia` is order, `everydayWords` is the shipped
+  // vocab, and only the second one is allowed to move.
   const prereq = KANJI_ORDER.filter((o) => o.enteredVia === "prereq");
   assert.equal(prereq.length, 100);
-  assert.equal(PREREQUISITE_ONLY.length, 9);
-  assert.ok(PREREQUISITE_ONLY.includes("乙"));
+  assert.equal(PREREQUISITE_ONLY.length, 6);
+  assert.ok(PREREQUISITE_ONLY.includes("又"), "又's only word 又は is uk — it is a part");
+  assert.ok(!PREREQUISITE_ONLY.includes("乙"), "乙 has 甲乙 and is a lesson");
   for (const c of ["口", "目", "子", "白"]) {
     assert.ok(!PREREQUISITE_ONLY.includes(c), `${c} is a real lesson`);
   }
