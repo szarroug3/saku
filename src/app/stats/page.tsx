@@ -1,136 +1,93 @@
 "use client";
 
-// Statistics — the page whose job is REMEMBERING.
+// Progress — where you are, not how you're doing.
 //
-// Home answers "what do I drill now?" and deliberately keeps no history on
-// screen; the trend, the record, and the per-deck picture all live here, in
-// priority order:
+// WHAT LEFT, AND WHY IT ISN'T COMING BACK
+// =======================================
+// This page used to open with an accuracy trend, three stat tiles, a per-deck
+// accuracy grid and a sortable table of every character, all governed by a
+// first-try / eventually-right toggle. It is four cards lighter now. The cuts
+// are not tidying; each one was a number that could not be read:
 //
-//   1. the trend        am I getting better?          — the headline
-//   2. the totals       how much have I done?
-//   3. by deck          where am I strong / weak?
-//   4. the characters   what exactly is costing me?
+//   ACCURACY OVER TIME. It always climbs, because the material gets familiar —
+//   it measures how long you have been here, not how good you are. It cannot go
+//   down, so it cannot tell you anything. Its absence is the feature.
 //
-// Every number on this page reads through src/lib/accuracy.ts. This page used
-// to hand-roll (seen - missed) / seen, which mixes showings with attempts and
-// could go negative — the exact bug accuracy.ts exists to prevent.
+//   OVERALL ACCURACY, and the deck rings. A rate pooled over every showing you
+//   have ever answered, most of them from material you have since forgotten and
+//   material you learned last week, in one figure. It moves about a point a
+//   month and nothing you could do would move it faster.
 //
-// THE METRIC IS THE PAGE'S, AND THE PAGE OWNS IT
-// ==============================================
-// "first try" used to be printed as static text in the corner of two separate
-// cards — twice on one screen, and a label both times: it told you which of the
-// two accuracy definitions you were reading and gave you no way to read the
-// other one without going to Settings.
+//   THE CHARACTERS TABLE. Its own header called it the record — "every
+//   character you have ever practised, and the one place they are never
+//   forgotten". It was neither. Its rows resolve through CHAR_INDEX, which
+//   src/data/characters.ts builds from SETS, which is kana; every kanji and
+//   every word you have ever drilled hit `if (!info) return []` and vanished.
+//   The table has been silently 214 rows of a 10,476-entry app since the day
+//   kanji landed, under a heading promising the opposite. See the REPORT — the
+//   brief expected a virtualisation problem at 21,449 rows and there was never
+//   going to be one.
 //
-// It is one control now, at the top, and it governs EVERY statistic below it:
-// the trend, the Overall accuracy tile, the deck rings and the characters
-// table all take `metric` from here. That is the whole reason it sits beside
-// the title rather than in the corner of the card that used to print it — a
-// control tucked into one card claims to be that card's, and this one isn't.
+//   THE METRIC TOGGLE. It existed to govern those four cards. Nothing it
+//   governed is left. The one place the distinction still bites — is a probed
+//   fact "getting there" or "shaky" — reads cfg.accuracyMetric, i.e. the
+//   setting, from Settings, where a setting lives.
 //
-// It is LOCAL STATE and writes nothing back to settings. Two reasons:
-//
-//   1. cfg.accuracyMetric also drives Home's rings and the drill HUD. Flipping
-//      a view control on Statistics to see the other number is not the same act
-//      as changing what accuracy MEANS everywhere in the app, and silently
-//      doing the second when you asked for the first is how a settings screen
-//      stops being the place your settings live. The results screen's chips
-//      already make exactly this choice.
-//   2. The alternative — per-card local state — was the other option on the
-//      table, and it is worse: it lets the trend read "first try" while the
-//      table beside it reads "eventually right", which is two different
-//      definitions of accuracy on one screen with nothing saying so. One
-//      control for the whole page keeps the screen internally consistent
-//      without reaching into the user's settings.
-//
-// `override ?? cfg.accuracyMetric` rather than useState(cfg.accuracyMetric):
-// QuizConfigProvider starts from defaults and hydrates from localStorage after
-// mount, so seeding state from cfg on first render would capture the DEFAULT
-// and never see the user's real setting — and the fix for that is a sync
-// setState in an effect, which this codebase's lint rightly refuses. Holding
-// "has the user overridden it here?" instead means the page tracks cfg for free
-// until the moment they touch the chips, and pins to their choice after.
+// WHAT IS LEFT IS THREE CARDS AND EVERY NUMBER ON THEM IS A COUNT OF THINGS.
+// There is no decimal on this page, and there is no arithmetic that could
+// produce one.
 
 import { useState } from "react";
 
-import { AccuracyTrend } from "@/components/stats/accuracy-trend";
-import { CharactersTable } from "@/components/stats/characters-table";
-import { DeckAccuracy } from "@/components/stats/deck-accuracy";
-import { Chip, Metric, MetricsGrid, PageTitle } from "@/components/ui";
-import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
+import { BySubject } from "@/components/stats/by-subject";
+import { KnowledgeBase } from "@/components/stats/knowledge-base";
+import { MixUps } from "@/components/stats/mix-ups";
+import { tallyFacts } from "@/components/stats/tally";
+import { PageTitle } from "@/components/ui";
 import { factKeys } from "@/lib/facts";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
-import type { AccuracyMetric } from "@/types";
 
 export default function StatsPage() {
   const { cfg } = useQuizConfig();
   const { history } = useHistory();
 
-  const [override, setOverride] = useState<AccuracyMetric | null>(null);
-  const metric = override ?? cfg.accuracyMetric;
+  // ONE `now` per mount, the way the Library does it. Two reads a millisecond
+  // apart cannot disagree about whether a fact is solid — but the knowledge base
+  // and the By subject bar are the SAME facts counted twice, and two clocks is
+  // how they would come to disagree about their totals for no reason a person
+  // could see.
+  const [now] = useState(() => Date.now());
+  const claims = history.claims ?? {};
 
-  // Pooled over every fact with history — a real ratio over a real population
-  // of showings, which is what "overall" should mean.
-  const practised = factKeys(history.facts);
-  const overall = accuracyFor(history, practised, metric);
+  // The population is what the app has a record of: every fact with an
+  // aggregate, plus every fact you have claimed and never been asked. Not
+  // ALL_FACTS — 21,753 facts, 21,000 of them never met, would bury the card in
+  // a bucket that is about the dictionary rather than about you.
+  const recorded = [
+    ...new Set([...factKeys(history.facts), ...factKeys(claims)]),
+  ];
+  const tally = tallyFacts(recorded, history.facts, claims, cfg.accuracyMetric, now);
 
   return (
     <>
-      <PageTitle title="Statistics" />
+      <PageTitle title="Progress" sub="Where you are. Not how you're doing." />
 
-      {/* Same two words, same order, same component as the results screen's
-       * chips — it is the same choice, so it should not be a second dialect.
-       * A radiogroup rather than two toggles: these are one value with two
-       * settings, and "First try pressed, Eventually right unpressed" is a
-       * clumsier way to say that to a screen reader than "First try, selected,
-       * 1 of 2". */}
-      <div
-        role="radiogroup"
-        aria-label="Accuracy metric"
-        className="mb-3.5 flex flex-wrap items-center gap-1.5"
-      >
-        <Chip
-          role="radio"
-          aria-checked={metric === "firstTry"}
-          on={metric === "firstTry"}
-          onClick={() => setOverride("firstTry")}
-        >
-          First try
-        </Chip>
-        <Chip
-          role="radio"
-          aria-checked={metric === "attempt"}
-          on={metric === "attempt"}
-          onClick={() => setOverride("attempt")}
-        >
-          Eventually right
-        </Chip>
-        {/* No "every figure on this page" caption. The chips sit under this
-         * page's title with the whole page beneath them and nothing else
-         * competing for them — that IS the claim, made by position, and a
-         * caption restating it was the control apologising for itself. The
-         * scope is a fact about the code, so it lives in the header comment
-         * above, where it stays true and stays out of the way. */}
+      <KnowledgeBase tally={tally} />
+
+      {/* Two columns on a wide screen, stacked on a narrow one. The mix-ups
+       * board is the taller of the two and the one you came for; it goes second
+       * so that a stacked phone reads By subject → mix-ups, which is the same
+       * order as the wide screen's left → right. */}
+      <div className="grid gap-3 md:grid-cols-2">
+        <BySubject
+          facts={history.facts}
+          claims={claims}
+          metric={cfg.accuracyMetric}
+          now={now}
+        />
+        <MixUps history={history} graduateRuns={cfg.graduateRuns} />
       </div>
-
-      <AccuracyTrend history={history} metric={metric} />
-
-      <MetricsGrid>
-        <Metric k="Sessions" v={history.sessions.length} />
-        <Metric k="Characters practised" v={practised.length} />
-        <Metric k="Overall accuracy" v={formatAccuracy(overall)} />
-      </MetricsGrid>
-
-      {/* cfg for showVolume, but the metric comes from the page — a spread
-       * override rather than a second prop, so DeckAccuracy keeps taking the
-       * one config object it already takes and nothing is written back. */}
-      <DeckAccuracy
-        history={history}
-        cfg={{ ...cfg, accuracyMetric: metric }}
-      />
-
-      <CharactersTable history={history} metric={metric} />
     </>
   );
 }

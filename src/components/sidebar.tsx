@@ -15,7 +15,11 @@ const NAV: Array<{ href: string; label: string }> = [
   { href: "/", label: "Home" },
   { href: "/library", label: "Library" },
   { href: "/sessions", label: "Recent sessions" },
-  { href: "/stats", label: "Statistics" },
+  // "Progress", not "Statistics" — the page stopped being statistics. Nothing
+  // on it is a rate, an average or a trend any more; it is three counts of
+  // things you own. The route is still /stats and deliberately so: renaming it
+  // would break every link anyone has, to buy a tidier URL nobody reads.
+  { href: "/stats", label: "Progress" },
   { href: "/settings", label: "Settings" },
 ];
 
