@@ -3,48 +3,19 @@
 // (write-a-word, listen) and v3 (stroke order, draw) implement QuestionType
 // as pure data + logic additions.
 
-import { CHAR_INDEX, LOOK_GROUP } from "@/data/characters";
 import { BEHAVIOR } from "@/lib/config";
-import { factKeys } from "@/lib/facts";
+import { questionsFor } from "@/lib/engine/question";
+import { entryOf, factInfo, factKeys } from "@/lib/facts";
 import type {
   Direction,
+  EntryId,
   FactId,
   FactSessionDetail,
   QuizConfig,
   SessionStats,
 } from "@/types";
 
-// ---------- question type extension point ----------
-
-/**
- * A pluggable question kind. Today: character recall (jp2en / en2jp).
- *
- * DEAD SEAM, deliberately left alone. Nothing constructs or consumes this —
- * the drill screen imports checkTyped/confusedWith/buildMcOptions directly —
- * so it is an abstraction that was shaped correctly and never plugged in. Its
- * one flaw is being keyed on `char: string`; re-keying it to `fact: FactId` is
- * what makes a subject a plugin (facts + prompt + checker + distractors), and
- * that lands with the first kanji, alongside `confusedWith`. Rekeying it now
- * would have been churn on code with no callers to validate it.
- */
-export interface QuestionType {
-  id: string;
-  /** What to display as the prompt for `char` in `dir`. */
-  prompt(char: string, dir: Direction): string;
-  /** Whether `given` answers `char` correctly in `dir`. */
-  check(char: string, dir: Direction, given: string): boolean;
-}
-
-/** The one question type that exists today. */
-export const charRecall: QuestionType = {
-  id: "char-recall",
-  prompt(char, dir) {
-    return dir === "jp2en" ? char : CHAR_INDEX[char].r[0];
-  },
-  check(char, dir, given) {
-    return dir === "jp2en" ? checkTyped(char, given) : given.trim() === char;
-  },
-};
+export { questionsFor, type Prompt, type QuestionType } from "@/lib/engine/question";
 
 // ---------- deck ----------
 
@@ -58,18 +29,21 @@ export function shuffle<T>(arr: T[]): T[] {
 }
 
 /**
- * Build the starting deck for drill/pairs from the selected chars,
+ * Build the starting deck for drill/pairs from the selected FACTS,
  * honoring length=limited + limType=count (repeat-fill then cap).
+ *
+ * Facts, not characters: a deck of 生 is not one card, it is however many of
+ * 生's readings you selected, and each is separately gradeable.
  */
-export function buildDeck(chars: string[], cfg: QuizConfig): string[] {
-  let deck = shuffle(chars.slice());
+export function buildDeck(facts: FactId[], cfg: QuizConfig): FactId[] {
+  let deck = shuffle(facts.slice());
   if (
     cfg.length === "limited" &&
     cfg.limType === "count" &&
     cfg.mode === "drill"
   ) {
-    while (chars.length > 0 && deck.length < cfg.limCount) {
-      deck = deck.concat(shuffle(chars.slice()));
+    while (facts.length > 0 && deck.length < cfg.limCount) {
+      deck = deck.concat(shuffle(facts.slice()));
     }
     deck = deck.slice(0, cfg.limCount);
   }
@@ -93,45 +67,54 @@ export function pickDir(cfg: QuizConfig): Direction {
 }
 
 // ---------- answers ----------
+//
+// All three delegate to the fact's subject (see engine/question.ts). They stay
+// here as the drill screen's front door, but they no longer know what a kana
+// is, and none of them takes a character.
 
-/** Case/whitespace-forgiving check of a typed romaji answer for `char`. */
-export function checkTyped(char: string, given: string): boolean {
-  return CHAR_INDEX[char].r.includes(given.trim().toLowerCase());
+/** Case/whitespace-forgiving check of a typed answer for `fact` in `dir`. */
+export function checkTyped(
+  fact: FactId,
+  given: string,
+  dir: Direction = "jp2en",
+): boolean {
+  return questionsFor(fact).check(fact, dir, given);
 }
 
 /**
- * The char (same script as `char`) whose romaji matches a wrong typed answer,
- * for confusion tracking — or null.
+ * The ENTRY a wrong answer names, for confusion tracking — or null.
+ *
+ * Entry, not fact, and not a character: a confusion is a failure to tell two
+ * things apart, and the things you mix up are 生 and 先, never one of 生's
+ * readings with one of 先's. Searching the DISTRACTORS rather than the whole
+ * dictionary is what keeps this honest and cheap — the pool of things you
+ * could plausibly have meant is exactly the pool the question offered.
  */
-export function confusedWith(char: string, given: string): string | null {
-  const info = CHAR_INDEX[char];
+export function confusedWith(fact: FactId, given: string): EntryId | null {
+  const q = questionsFor(fact);
   const g = given.trim().toLowerCase();
-  const match = Object.keys(CHAR_INDEX).find(
-    (x) =>
-      x !== char &&
-      CHAR_INDEX[x].r.includes(g) &&
-      CHAR_INDEX[x].set === info.set,
-  );
-  return match ?? null;
+  if (!g) return null;
+  for (const other of q.distractors(fact, BEHAVIOR.mcOptions * 4)) {
+    const info = factInfo(other);
+    if (!info) continue;
+    if (info.answers.some((a) => a.trim().toLowerCase() === g)) {
+      return entryOf(other);
+    }
+  }
+  return null;
 }
 
 /**
- * Multiple-choice options (chars) for `char`: correct + lookalikes first +
- * same-script fill, shuffled, BEHAVIOR.mcOptions total.
+ * Multiple-choice options for `fact`, as FACTS: the answer plus its subject's
+ * distractors, shuffled, at most BEHAVIOR.mcOptions.
+ *
+ * May return fewer — a word has no confusable data, so it gets no distractors
+ * and MC degrades to a single option rather than three absurd ones. The drill
+ * screen checks the length and falls back to typed.
  */
-export function buildMcOptions(char: string): string[] {
-  const info = CHAR_INDEX[char];
-  const pool = Object.keys(CHAR_INDEX).filter((x) => x !== char);
-  const looks = (LOOK_GROUP[char] ?? []).filter((x) => CHAR_INDEX[x]);
-  const opts = [char];
-  shuffle(looks).forEach((x) => {
-    if (opts.length < BEHAVIOR.mcOptions && !opts.includes(x)) opts.push(x);
-  });
-  const sameSet = shuffle(pool.filter((x) => CHAR_INDEX[x].set === info.set));
-  sameSet.forEach((x) => {
-    if (opts.length < BEHAVIOR.mcOptions && !opts.includes(x)) opts.push(x);
-  });
-  return shuffle(opts);
+export function buildMcOptions(fact: FactId): FactId[] {
+  const distractors = questionsFor(fact).distractors(fact, BEHAVIOR.mcOptions - 1);
+  return shuffle([fact, ...distractors].slice(0, BEHAVIOR.mcOptions));
 }
 
 /** Retries allowed under cfg: none → 0, lim → retryN, unl → Infinity. */

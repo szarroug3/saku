@@ -17,7 +17,7 @@
 
 import { useState } from "react";
 
-import { plural } from "@/components/home/deck-card";
+import { plural } from "@/lib/words";
 import { Hint, SmallBtn } from "@/components/ui";
 import { formatAccuracy } from "@/lib/accuracy";
 import { useQuizSession } from "@/lib/quiz-session";

@@ -37,7 +37,6 @@ import {
 } from "react";
 
 import { SmallBtn } from "@/components/ui";
-import { CHAR_INDEX, kanaEntry, kanaFact } from "@/data/characters";
 import { EMPTY_AGGREGATE, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { loadLatencies, pushLatency } from "@/lib/latency-store";
@@ -49,13 +48,15 @@ import {
   confusedWith,
   newFactStat,
   pickDir,
+  questionsFor,
   requeueGap,
   retriesAllowed,
   shuffle,
 } from "@/lib/engine";
+import { entryOf, factInfo } from "@/lib/facts";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
-import type { AccuracyMetric, Direction, SessionStats } from "@/types";
+import type { AccuracyMetric, Direction, FactId, SessionStats } from "@/types";
 
 import { DrillDrawer } from "./drill-drawer";
 import { DrillHalo, GLYPH_PX, type HaloState } from "./drill-halo";
@@ -63,17 +64,33 @@ import { DrillHalo, GLYPH_PX, type HaloState } from "./drill-halo";
 // ---------- runtime shape (lives in active.runtime) ----------
 
 interface DrillQuestion {
-  /** The character being asked. */
-  c: string;
+  /** The FACT being asked. What goes on screen for it is the fact's subject's
+   * business (engine/question.ts), not this screen's. */
+  f: FactId;
   dir: Direction;
   /** Wrong attempts so far on this card. */
   tries: number;
   /** JP font picked when the question was asked — stable across remounts. */
   font: string;
-  /** Multiple-choice option chars, frozen at ask time; null in typed mode. */
-  mc: string[] | null;
-  /** Per-option fonts for en2jp MC kana labels. */
+  /** Multiple-choice option FACTS, frozen at ask time; null in typed mode, and
+   * null too when the subject had no plausible distractors to offer — see
+   * buildMcOptions. A one-option question is not a question. */
+  mc: FactId[] | null;
+  /** Per-option fonts for en2jp MC labels. */
   mcFonts: string[] | null;
+}
+
+/**
+ * An MC option's visible text.
+ *
+ * jp2en offers ANSWERS to pick between (romaji, meanings, readings); en2jp
+ * offers GLYPHS. Which is the same asymmetry the prompt has, in reverse — the
+ * option side always shows whatever the prompt side is not.
+ */
+function labelOf(fact: FactId, dir: Direction): string {
+  const info = factInfo(fact);
+  if (!info) return "";
+  return dir === "en2jp" ? info.glyph : (info.answers[0] ?? "");
 }
 
 /** How the last answer landed. There is no `text`: the halo IS the feedback —
@@ -88,7 +105,7 @@ interface DrillFeedback {
 /** Everything here must stay JSON-serializable (numbers/strings/plain
  * objects — no functions, no Infinity) for the sessionStorage snapshot. */
 interface DrillRuntime {
-  deck: string[];
+  deck: FactId[];
   /** Next deck index to draw from. */
   pos: number;
   /** Questions SHOWN so far. Used to key the per-question remount, not to
@@ -310,9 +327,9 @@ export function DrillScreen() {
         endQuiz();
         return;
       }
-      rt.deck = rt.deck.concat(shuffle(active.chars.slice()));
+      rt.deck = rt.deck.concat(shuffle(active.facts.slice()));
     }
-    const c = rt.deck[rt.pos];
+    const f = rt.deck[rt.pos];
     rt.pos++;
     rt.asked++;
     const dir = pickDir({ ...cfg, dirs: active.snapshot.dirs });
@@ -322,17 +339,21 @@ export function DrillScreen() {
         : active.snapshot.styleEn2jp === "typed";
     // Font and MC options are rolled when the question is asked and stored in
     // the runtime so a remount doesn't reroll them.
-    const mc = typedMode ? null : buildMcOptions(c);
+    //
+    // A subject with no distractors (words, today) yields a single option, and
+    // a one-option multiple choice is a free point rather than a question. Fall
+    // back to typed instead of showing it — see engine.buildMcOptions, which
+    // returns short rather than padding with randoms.
+    const built = typedMode ? null : buildMcOptions(f);
+    const mc = built && built.length > 1 ? built : null;
     rt.q = {
-      c,
+      f,
       dir,
       tries: 0,
       font: pickFont(cfg.fonts),
       mc,
       mcFonts: mc && dir === "en2jp" ? mc.map(() => pickFont(cfg.fonts)) : null,
     };
-    // The deck is characters; the stats are keyed by the fact being asked.
-    const f = kanaFact(c);
     const st = rt.stats[f] ?? (rt.stats[f] = newFactStat());
     st.seen++;
     rt.elapsedMs = 0;
@@ -346,10 +367,10 @@ export function DrillScreen() {
     force();
   }
 
-  /** Legacy submit, verbatim (plus the streak, which is the same first-try
-   * question `firstTryCorrect` already answers). `pickedChar` is set for MC
+  /** Legacy submit (plus the streak, which is the same first-try question
+   * `firstTryCorrect` already answers). `picked` is the option FACT for MC
    * clicks (both dirs). */
-  function submit(given: string, pickedChar?: string) {
+  function submit(given: string, picked?: FactId) {
     if (!rt || !rt.q || rt.waiting || finishedRef.current) return;
     const q = rt.q;
     const ms = elapsedBaseRef.current + (Date.now() - qStartRef.current);
@@ -358,14 +379,13 @@ export function DrillScreen() {
     // whole elapsed time is recall.
     const style: LatencyStyle = q.mc ? "mc" : "typed";
     if (q.mc) rt.firstKeyMs ??= ms;
+    // Clicking an MC option is answered by WHICH option, not by its label:
+    // two options can carry the same text (two kanji meaning "life") and
+    // comparing strings would mark a wrong click right. Typed answers go to the
+    // subject's own checker.
     const ok =
-      q.dir === "en2jp" && pickedChar !== undefined
-        ? pickedChar === q.c
-        : q.dir === "en2jp"
-          ? given.trim() === q.c
-          : checkTyped(q.c, given);
-    const qf = kanaFact(q.c);
-    const st = rt.stats[qf] ?? (rt.stats[qf] = newFactStat());
+      picked !== undefined ? picked === q.f : checkTyped(q.f, given, q.dir);
+    const st = rt.stats[q.f] ?? (rt.stats[q.f] = newFactStat());
     if (st.firstTryCorrect === null) st.firstTryCorrect = ok && q.tries === 0;
     if (ok) {
       // Only a clean first try extends the streak — a miss below has already
@@ -400,13 +420,18 @@ export function DrillScreen() {
       // `confused` is keyed by ENTRY — the thing you said instead of this fact's
       // answer. See FactSessionDetail: a confusion is a failure to tell two
       // entries apart, so it cannot be keyed by one of their facts.
-      if (pickedChar && pickedChar !== q.c) {
-        const said = kanaEntry(pickedChar);
-        st.confused[said] = (st.confused[said] ?? 0) + 1;
+      if (picked !== undefined && picked !== q.f) {
+        const said = entryOf(picked);
+        // Two facts of ONE entry are not a confusion: picking 生's ショウ card
+        // when the answer was 生's セイ card is a wrong answer about 生, not
+        // mixing 生 up with something. `confused` is keyed by entry precisely
+        // so this distinction has somewhere to live.
+        if (said !== entryOf(q.f)) {
+          st.confused[said] = (st.confused[said] ?? 0) + 1;
+        }
       } else if (given && given !== "(time)") {
-        const match = confusedWith(q.c, given);
-        if (match) {
-          const said = kanaEntry(match);
+        const said = confusedWith(q.f, given);
+        if (said && said !== entryOf(q.f)) {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
         }
       }
@@ -423,7 +448,7 @@ export function DrillScreen() {
         // counts as resolved even though you didn't get it.
         rt.resolved++;
         rt.feedback = { kind: "bad" };
-        rt.deck.splice(Math.min(rt.deck.length, rt.pos + requeueGap()), 0, q.c);
+        rt.deck.splice(Math.min(rt.deck.length, rt.pos + requeueGap()), 0, q.f);
         rt.requeued++;
         rt.waiting = true;
         stopCountdown();
@@ -455,7 +480,7 @@ export function DrillScreen() {
       )
         return;
       const opt = rt.q.mc[parseInt(e.key, 10) - 1];
-      if (opt) submit(rt.q.dir === "en2jp" ? opt : CHAR_INDEX[opt].r[0], opt);
+      if (opt) submit(labelOf(opt, rt.q.dir), opt);
     }
   }
 
@@ -467,10 +492,10 @@ export function DrillScreen() {
     latencyRef.current = loadLatencies();
     if (!Array.isArray(rt.deck)) {
       // Fresh quiz — build the deck. Redrill forces one full-coverage pass
-      // over exactly the given chars; otherwise honor the builder snapshot.
+      // over exactly the given facts; otherwise honor the builder snapshot.
       rt.deck = active.forceCoverage
-        ? shuffle(active.chars.slice())
-        : buildDeck(active.chars, { ...cfg, ...active.snapshot });
+        ? shuffle(active.facts.slice())
+        : buildDeck(active.facts, { ...cfg, ...active.snapshot });
       rt.pos = 0;
       rt.asked = 0;
       rt.resolved = 0;
@@ -628,18 +653,20 @@ export function DrillScreen() {
 
   const snap = active.snapshot;
   const q = rt.q;
-  const info = CHAR_INDEX[q.c];
+  // What to put on screen is the fact's subject's answer, not this screen's.
+  // The drill knows there is a glyph, maybe a line under it, and some options;
+  // it does not know whether it is asking a kana, a kanji reading or a word.
+  const prompt = questionsFor(q.f).prompt(q.f, q.dir);
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   const typedMode =
     q.dir === "jp2en"
       ? snap.styleJp2en === "typed"
       : snap.styleEn2jp === "typed";
-  const scriptTag = cfg.scriptLabel
-    ? q.dir === "jp2en"
-      ? info.setLabel.toLowerCase()
-      : `give the ${info.setLabel.toLowerCase()}`
-    : "";
+  // Two different lines, and only one of them is a preference. `context` is
+  // part of the question — "in 人生" is what makes 生 gradeable — so the
+  // setting cannot touch it. `hint` is kana's script tag, which is decoration.
+  const hintTag = cfg.scriptLabel ? (prompt.hint ?? "") : "";
 
   // Retries: pips are the only representation. Unlimited shows an ∞ instead,
   // and "none" has nothing to say, so it says nothing.
@@ -737,14 +764,20 @@ export function DrillScreen() {
           state={haloState}
           timerLeft={rt.timerLeft ?? 0}
           drainWindow={drainWindow}
-          glyph={q.dir === "jp2en" ? q.c : info.r[0]}
+          glyph={prompt.glyph}
           font={q.font}
-          fontSize={q.dir === "jp2en" ? GLYPH_PX : Math.round(GLYPH_PX * 0.6)}
+          fontSize={prompt.jp ? GLYPH_PX : Math.round(GLYPH_PX * 0.6)}
           crossFade={q.tries === 0}
         />
+        {/* Part of the question, not decoration: without "in 人生" the glyph
+            above has nine right answers. Always rendered when the subject
+            supplies one, at a size you read rather than skim. */}
+        {prompt.context ? (
+          <p className="-mt-1 text-center text-[13px] text-text">{prompt.context}</p>
+        ) : null}
         {/* min-h-4 + text-center is the script label's theme hook. */}
         <p className="min-h-4 text-center text-[10px] uppercase tracking-[0.18em] text-text-muted">
-          {scriptTag}
+          {hintTag}
         </p>
 
         {typedMode ? (
@@ -779,13 +812,11 @@ export function DrillScreen() {
             {q.mc?.map((opt, i) => (
               <button
                 key={opt}
-                onClick={() =>
-                  submit(q.dir === "en2jp" ? opt : CHAR_INDEX[opt].r[0], opt)
-                }
+                onClick={() => submit(labelOf(opt, q.dir), opt)}
                 className={cx(
                   "min-w-[74px] cursor-pointer rounded-lg border px-3.5 py-2.5 text-xl",
                   // The option you should have picked, lit alongside the reveal.
-                  revealing && opt === q.c
+                  revealing && opt === q.f
                     ? "border-success bg-success-bg text-success"
                     : "border-border bg-card text-text hover:bg-panel",
                 )}
@@ -795,7 +826,7 @@ export function DrillScreen() {
                     : undefined
                 }
               >
-                {q.dir === "en2jp" ? opt : CHAR_INDEX[opt].r[0]}
+                {labelOf(opt, q.dir)}
                 <span className="block text-[10px] text-text-muted">{i + 1}</span>
               </button>
             ))}
@@ -810,9 +841,14 @@ export function DrillScreen() {
           {revealing ? (
             <>
               <span className="text-sm">
-                <span className="text-lg text-text">{q.c}</span>{" "}
+                <span className="text-lg text-text">{prompt.glyph}</span>
+                {prompt.context ? (
+                  <span className="text-text-muted"> {prompt.context}</span>
+                ) : null}{" "}
                 <span className="text-text-muted">=</span>{" "}
-                <span className="font-semibold text-danger">{info.r[0]}</span>
+                <span className="font-semibold text-danger">
+                  {factInfo(q.f)?.answers[0] ?? ""}
+                </span>
               </span>
               <span className="text-[10px] text-text-muted">
                 Press Enter to continue

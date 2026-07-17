@@ -47,16 +47,38 @@ export type QuizSnapshot = Pick<
 >;
 
 export interface ActiveQuiz {
-  /** The chars this run draws from (selection, or the misses on a redrill).
-   * Endless mode replenishes from THIS list, never the live picker.
+  /**
+   * The FACTS this run draws from — the selection resolved at Start, or the
+   * misses on a redrill. Endless mode replenishes from THIS list, never from
+   * the live query.
    *
-   * Still CHARACTERS, not facts: the mode screens ask "what does し say" by
-   * putting a character on screen, and they build their decks, their MC
-   * options and their boards out of characters. They key the STATS they
-   * produce by fact (via characters.kanaFact) — that boundary is where the
-   * rekey lands. Turning the runtime itself fact-native is the same change
-   * that gives QuestionType a consumer, and it ships with the first kanji. */
-  chars: string[];
+   * Resolved at Start and frozen, which matters more now than it did: the
+   * selection is a query over history, and history moves the moment you answer
+   * anything. A quiz that re-ran its own query mid-flight would rewrite its own
+   * deck out from under you — you would answer 生, 生 would stop being shaky,
+   * and 生 would vanish from the run that was drilling it.
+   *
+   * Facts, not characters, and that is what makes kanji drillable at all. The
+   * screens used to put a CHARACTER on screen and look it up in CHAR_INDEX,
+   * which has no kanji in it and never will. They now render whatever the
+   * fact's subject says to render (see engine/question.ts) and know nothing
+   * about what kind of thing they are asking.
+   */
+  facts: FactId[];
+  /**
+   * What this run is, in words — FROZEN at Start, like the snapshot and for the
+   * same reason.
+   *
+   * The name cannot be re-derived later, and that is not a limitation, it is
+   * the requirement. The selection is a query over history, and history moves
+   * the moment you answer anything. A quiz started from "Kanji · Shaky" would,
+   * halfway through, re-resolve to a different set and rename itself — the
+   * resume card's predecessor documented exactly this hazard ("the card would
+   * rename the quiz under you while it ran") and dodged it by naming only the
+   * static decks, which no longer exist. Storing the sentence settles it: the
+   * quiz is called what it was called when you started it.
+   */
+  what: string;
   redrill: boolean;
   /** Forces limited/full-coverage regardless of the snapshot (redrill). */
   forceCoverage: boolean;
@@ -100,8 +122,12 @@ interface QuizSessionContextValue {
   /** Live progress for the sidebar chip; screens keep it updated. */
   progress: QuizProgress | null;
   setProgress(p: QuizProgress | null): void;
-  /** Begin a quiz over `chars` with the current cfg; navigates to /quiz. */
-  startQuiz(chars: string[], opts?: { redrill?: boolean }): void;
+  /** Begin a quiz over `facts` with the current cfg; navigates to /quiz.
+   * `what` names the run for the resume card — see ActiveQuiz.what. */
+  startQuiz(
+    facts: FactId[],
+    opts?: { redrill?: boolean; what?: string },
+  ): void;
   /** End the active quiz: compute results, POST /api/session, go to /results. */
   finishQuiz(stats: SessionStats): void;
   /** Drop the active quiz without scoring (explicit "← Setup" / new start). */
@@ -224,10 +250,15 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   }, [restored]);
 
   const startQuiz = useCallback(
-    (chars: string[], opts?: { redrill?: boolean }) => {
-      if (!chars.length) return;
+    (facts: FactId[], opts?: { redrill?: boolean; what?: string }) => {
+      if (!facts.length) return;
       setActive({
-        chars,
+        facts,
+        // The count is the fallback rather than a guess at a name: it is always
+        // true, and it is the one number that never blurs.
+        what:
+          opts?.what ??
+          `${facts.length.toLocaleString()} thing${facts.length === 1 ? "" : "s"}`,
         redrill: !!opts?.redrill,
         forceCoverage: !!opts?.redrill,
         startedAt: Date.now(),

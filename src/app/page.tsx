@@ -4,94 +4,84 @@
 //
 //   0. resume        the quiz you left running, and ONLY if there is one
 //   1. setup         HOW you drill, always visible, never behind a disclosure
-//   2. weaknesses    decks the app computed from your history   } one
-//   3. decks         the standing sets, and the door to the picker } selection
-//   4. start bar     the whole quiz as a sentence, and the only Start
+//   2. selection     WHAT you drill, as a query
+//   3. start bar     the whole quiz as a sentence, and the only Start
 //
 // THE RULE, and every line below serves it: whatever you are about to run is
 // fully on screen before you run it, and only a button starts a quiz.
 //
-// It replaces a split that read well and worked badly — "the hero owns HOW,
-// the cards own WHAT". Elegant, except it meant that at the moment you acted
-// you could only see half the quiz: Start showed you the how and not the what,
-// a deck card showed you the what and started instantly with the how folded
-// away behind "Edit setup". And a card that starts a quiz is not discoverable
-// ("it's not clear that clicking a deck will start a quiz") because it looks
-// like a card, and cards select. So: cards select, one button starts, and the
-// bar above that button says both halves out loud.
+// WHAT CHANGED, and why the shelves are gone
+// ==========================================
+// This screen used to be two shelves of cards over a flat char→bool map
+// (cfg.enabled), plus a 214-cell picker to fine-tune it. That was a good design
+// for 214 things and it does not survive 21,449: there is no shelf of cards for
+// "the useful subsets of a dictionary", and nobody fine-tunes 21,449
+// checkboxes. The cards' cleverest property — that two overlapping ones
+// deduped for free, because a map cannot hold a key twice — was real, and it
+// was a property of the storage, not of the idea.
 //
-// The selection is cfg.enabled and nothing else — not component state, not a
-// list of picked ids. That is what lets the picker be a fine-tune view of the
-// same thing the cards set coarsely, and it is what makes the union of two
-// overlapping cards dedupe itself. See src/components/home/selection.ts.
+// So selection is a QUERY (see src/types/index.ts and src/lib/selection.ts).
+// The dedup is still free, for a different reason: resolve() ends in a Set.
+// What is new is that the selection now costs six fields instead of one key per
+// thing in the app, and that "drill the kanji I'm shaky on" is a gesture you
+// can actually make.
+//
+// The query lives in cfg.selection, and resolve() is the only thing that turns
+// it into facts. Home does not know what a fact is, what a kanji is, or how
+// many of either there are.
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { CharacterPicker } from "@/components/home/character-picker";
-import { DeckShelf } from "@/components/home/deck-shelf";
 import { QuizOptionsFields } from "@/components/home/quiz-options";
 import { ResumeCard } from "@/components/home/resume-card";
-import { selectionLabels, toggled } from "@/components/home/selection";
+import { SelectionCard } from "@/components/home/selection-card";
 import { StartBar } from "@/components/home/start-bar";
-import { weaknessDecks, WeaknessShelf } from "@/components/home/weakness-shelf";
 import { Card, Lbl, PageTitle } from "@/components/ui";
-import { DECKS, deckChars, deckSelectable } from "@/lib/decks";
-import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
+import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
+import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
-
-const REPLACE_PROMPT =
-  "Starting this quiz discards the one in progress. Continue?";
+import { useLists } from "@/lib/use-lists";
 
 export default function HomePage() {
   const router = useRouter();
   const { cfg, set } = useQuizConfig();
   const { active, progress, startQuiz, abandonQuiz } = useQuizSession();
   const { history } = useHistory();
+  const { lists } = useLists();
+  const [replacing, setReplacing] = useState(false);
 
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  // The union of every toggled card, deduped — and not by any code here. The
-  // cards write true/false into cfg.enabled, so a character selected by both
-  // Weakest 20 and Hiragana Basic is one key in one map and counts once. This
-  // IS the count the start bar prints and the deck startQuiz receives.
+  // The facts the query names, right now. This IS what Start hands to the quiz
+  // and what the bar counts — one computation, so the sentence and the session
+  // can never disagree about what you pressed Start on.
   //
-  // Memoised on cfg for its IDENTITY, not its cost: selectedChars builds a new
-  // array every call, and an array that changes identity on every render is a
-  // dep that defeats every useMemo below it — including the one over history.
-  const chars = useMemo(() => selectedChars(cfg), [cfg]);
-
-  const weakness = useMemo(
-    () => weaknessDecks(history, cfg, chars),
-    [history, cfg, chars],
+  // Memoised on the query, the history and the lists for its IDENTITY as much
+  // as its cost: resolve() walks every fact in the app, and it returns a fresh
+  // array every call.
+  const facts = useMemo(
+    () => resolve(cfg.selection, history, lists, cfg.accuracyMetric),
+    [cfg.selection, cfg.accuracyMetric, history, lists],
   );
 
-  // Both shelves, in the order they appear, so the sentence names them in the
-  // order you read them.
-  const labels = useMemo(
-    () =>
-      selectionLabels(
-        // The weakness cards already speak characters; the static decks speak
-        // facts and are translated at this one edge. cfg.enabled is a char→bool
-        // map — that is a separate task, and until it lands this is the seam.
-        [...weakness, ...DECKS.map(deckSelectable)],
-        cfg.enabled,
-        chars.length,
-      ),
-    [weakness, cfg.enabled, chars.length],
+  const what = useMemo(
+    () => whatSentence(cfg.selection, facts.length, lists),
+    [cfg.selection, facts.length, lists],
   );
-
-  const toggle = (of: string[], on: boolean) =>
-    set((prev) => toggled(prev, of, on));
 
   const start = () => {
-    if (!chars.length) return;
-    if (active && !window.confirm(REPLACE_PROMPT)) return;
+    if (!facts.length) return;
+    // Starting over a running quiz asks first — but on the page, not through
+    // window.confirm. A native dialog is unstyleable, unreadable to anything
+    // driving the app, and this is a two-state button, not an interruption.
+    if (active && !replacing) {
+      setReplacing(true);
+      return;
+    }
     // Replacing rather than abandoning-then-starting: startQuiz overwrites the
     // active quiz outright, and abandonQuiz first would only add a render with
     // no quiz in it.
-    startQuiz(chars);
+    startQuiz(facts, { what });
   };
 
   return (
@@ -117,26 +107,20 @@ export default function HomePage() {
         <QuizOptionsFields />
       </Card>
 
-      <Lbl>Target a weakness</Lbl>
-      <WeaknessShelf decks={weakness} cfg={cfg} onToggle={toggle} />
-
-      <Lbl>Decks</Lbl>
-      <DeckShelf
-        history={history}
-        cfg={cfg}
-        pickerOpen={pickerOpen}
-        onToggle={(deck, on) => toggle(deckChars(deck), on)}
-        onCustom={() => setPickerOpen((v) => !v)}
+      <SelectionCard
+        sel={cfg.selection}
+        lists={lists}
+        onChange={(selection) => set((prev) => ({ ...prev, selection }))}
       />
-
-      {pickerOpen ? <CharacterPicker /> : null}
 
       <StartBar
         cfg={cfg}
-        labels={labels}
-        count={chars.length}
+        what={what}
+        count={facts.length}
         active={!!active}
+        confirmingReplace={replacing}
         onStart={start}
+        onCancelReplace={() => setReplacing(false)}
       />
     </>
   );

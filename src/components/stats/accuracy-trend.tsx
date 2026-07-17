@@ -24,7 +24,7 @@
 // Every colour is a token, so this survives all four themes; the bars carry
 // their own opacity rather than a mixed-down colour for the same reason.
 
-import { plural } from "@/components/home/deck-card";
+import { plural } from "@/lib/words";
 import { Card, Lbl } from "@/components/ui";
 import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
 import { factKeys } from "@/lib/facts";

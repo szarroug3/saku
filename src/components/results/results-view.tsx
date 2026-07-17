@@ -29,9 +29,10 @@ import { TriageSection } from "@/components/results/triage-board";
 import { Card, Chip, PageTitle } from "@/components/ui";
 import { analyzeRun } from "@/lib/confusions";
 import { weakestFacts } from "@/lib/decks";
-import { entryOf, glyphOf } from "@/lib/facts";
-import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
+import { entryOf } from "@/lib/facts";
+import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ResultsPayload } from "@/lib/quiz-session";
+import { emptySelection, resolve } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import type { AccuracyMetric, FactId, QuizMode } from "@/types";
 
@@ -158,19 +159,32 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     return true;
   };
 
-  const start = (chars: string[], redrill?: boolean) => {
-    if (!chars.length) return;
+  /** Start a run over FACTS. There is no conversion left to do — the runtime
+   * is fact-native, so what this screen scored is exactly what it can re-drill.
+   * The old bridge here mapped every fact back to its entry's glyph and started
+   * a quiz on characters, which was correct only while every entry was one kana
+   * whose glyph was its key. */
+  const startFacts = (facts: FactId[], what: string, redrill?: boolean) => {
+    if (!facts.length) return;
     if (!discardActive()) return;
-    startQuiz(chars, { redrill });
+    startQuiz(facts, { redrill, what });
   };
 
-  /** Start a run over FACTS. The quiz runtime still draws from characters, so
-   * this is the boundary that converts — correct while every entry is one kana
-   * whose glyph is its deck key, and it goes when the runtime turns fact-native
-   * (see ActiveQuiz.chars). Deduped: two facts of one entry would otherwise
-   * queue that character twice. */
-  const startFacts = (facts: FactId[], redrill?: boolean) =>
-    start([...new Set(facts.map((f) => glyphOf(entryOf(f))))], redrill);
+  /**
+   * The things THIS session asked, for Rerun.
+   *
+   * Rerun used to re-read the live selection (`selectedChars(cfg)`), which
+   * answered a different question: it ran whatever is selected NOW, not what
+   * you just did. Same button, same word, different set — and you would only
+   * notice if you had changed the selection since.
+   *
+   * A past session is a named list of keys, so this is one field on an empty
+   * query and no new code path. It goes through resolve() like everything else,
+   * which is also what makes it self-correcting: a fact the data no longer has
+   * drops out here rather than being queued for a question nobody can render.
+   */
+  const rerunFacts = (): FactId[] =>
+    resolve({ ...emptySelection(), session: results.ts }, history);
 
   return (
     <>
@@ -223,9 +237,12 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         facts={facts}
         stats={stats}
         weakest={weakest}
-        onRedrill={(picked) => startFacts(picked, true)}
-        onRerun={() => start(selectedChars(cfg))}
-        onDrillWeakest={() => startFacts(weakest)}
+        onRedrill={(picked) => startFacts(picked, "The misses", true)}
+        // Rerun is not a special case and has no code of its own: a past
+        // session is a named list of keys, so "run that again" is Drill on a
+        // slice — the same resolve() as everything else, with one field set.
+        onRerun={() => startFacts(rerunFacts(), "That session")}
+        onDrillWeakest={() => startFacts(weakest, "The weakest")}
       />
     </>
   );

@@ -9,18 +9,15 @@
 // presence the message: this component renders only when active is non-null,
 // so seeing it IS the news, and every word on it can be about the real quiz.
 //
-// It states the quiz, not the setup. The panel and the shelves below are
-// building your NEXT quiz and the snapshot rule means edits there cannot reach
-// this one (quiz-session freezes the builder settings at startQuiz) — so this
-// card reads from active.snapshot and active.chars, never from the live cfg.
-// Two cards on one screen showing different modes is correct and is the whole
-// point of the snapshot.
+// It states the quiz, not the setup. The selection card below is building your
+// NEXT quiz and the snapshot rule means edits there cannot reach this one
+// (quiz-session freezes the builder settings at startQuiz) — so this card reads
+// from active.snapshot and active.what, never from the live cfg. Two cards on
+// one screen showing different modes is correct and is the whole point of the
+// snapshot.
 
 import { Btn, SmallBtn } from "@/components/ui";
-import { DECKS, deckSelectable } from "@/lib/decks";
 import type { ActiveQuiz, QuizProgress } from "@/lib/quiz-session";
-
-import { namedSelection } from "./selection";
 
 /** "2 hours ago". Coarse on purpose — this is a nudge, not a stopwatch. */
 function ago(ts: number): string {
@@ -34,27 +31,6 @@ function ago(ts: number): string {
 }
 
 const MODE_WORD = { drill: "Drill", pairs: "Match pairs", grid: "Grid" };
-
-/**
- * What the running quiz is drilling, named off the STATIC decks only.
- *
- * Not the weakness decks, deliberately: those are computed from history, and
- * history moves. A quiz started from "Last Misses" would be named by whatever
- * the last misses are NOW, which after the previous session is a different set
- * — the card would rename the quiz under you while it ran. The static decks
- * are the same set today as they were when you pressed Start.
- */
-function deckName(chars: string[]): string {
-  const enabled: Record<string, boolean> = {};
-  for (const c of chars) enabled[c] = true;
-  const labels = namedSelection(DECKS.map(deckSelectable), enabled);
-  if (!labels.length) {
-    return `${chars.length} character${chars.length === 1 ? "" : "s"}`;
-  }
-  return labels.length <= 2
-    ? labels.join(" + ")
-    : `${labels[0]} + ${labels.length - 1} more`;
-}
 
 const DISCARD_PROMPT =
   "Discard the quiz in progress? Your answers so far will not be scored.";
@@ -96,8 +72,7 @@ export function ResumeCard({
       </span>
       <span className="min-w-0">
         <span className="block text-[15px] font-semibold">
-          {MODE_WORD[active.snapshot.mode]} in progress ·{" "}
-          {deckName(active.chars)}
+          {MODE_WORD[active.snapshot.mode]} in progress · {active.what}
         </span>
         {sub ? (
           <span className="mt-0.5 block text-xs tabular-nums text-text-muted">

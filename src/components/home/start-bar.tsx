@@ -33,8 +33,6 @@
 
 import type { QuizConfig } from "@/types";
 
-import { whatSentence } from "./selection";
-
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
@@ -73,21 +71,27 @@ export function howSentence(cfg: QuizConfig): string {
 
 export function StartBar({
   cfg,
-  labels,
+  what,
   count,
   active,
+  confirmingReplace,
   onStart,
+  onCancelReplace,
 }: {
   cfg: QuizConfig;
-  /** The cards the selection currently is — already degraded-ready. */
-  labels: string[];
-  /** Exact, deduped character count. The one number that never blurs. */
+  /** The WHAT half, already said — see selection.whatSentence. */
+  what: string;
+  /** Exact, deduped count of things selected. The one number that never
+   * blurs, and the one thing that gates Start. */
   count: number;
   /** A quiz is in progress — starting this one replaces it. */
   active: boolean;
+  /** Start was pressed with a quiz running: the button is now asking. */
+  confirmingReplace: boolean;
   onStart: () => void;
+  onCancelReplace: () => void;
 }) {
-  // Grid ignores directions, so only the char count gates it there.
+  // Grid ignores directions, so only the count gates it there.
   const howBroken =
     cfg.mode !== "grid" && !cfg.dirs.jp2en && !cfg.dirs.en2jp;
   const disabled = !count || howBroken;
@@ -96,7 +100,7 @@ export function StartBar({
   // the reason people click a thing five times and then file a bug, and both
   // of these are one click from fixed — the fix is on this same screen.
   const reason = !count
-    ? "Pick at least one deck to start."
+    ? "Nothing is selected. Widen the filters above to start."
     : howBroken
       ? "Choose a direction in the setup above."
       : null;
@@ -118,7 +122,7 @@ export function StartBar({
               {howSentence(cfg)}
             </span>
             <span className="mt-0.5 block text-xs tabular-nums text-text-muted">
-              {whatSentence(labels, count)}
+              {what}
               {/* Said here, not only in the confirm dialog: a consequence you
                   only learn about after clicking is an ambush, and the confirm
                   is a backstop, not the notice. */}
@@ -127,18 +131,43 @@ export function StartBar({
           </>
         )}
       </span>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={onStart}
-        className={cx(
-          "ml-auto flex-none cursor-pointer rounded-lg bg-text px-5 py-2",
-          "text-sm font-semibold text-bg",
-          "disabled:cursor-default disabled:opacity-40",
-        )}
-      >
-        Start
-      </button>
+      {/* Replacing a running quiz asks, and asks HERE — no window.confirm.
+          A native dialog cannot be styled, cannot be read by anything driving
+          the app, and stops the whole page to deliver one sentence that the bar
+          above has already said ("· replaces the running quiz"). The button
+          just becomes the question, and Cancel appears next to it. */}
+      {confirmingReplace ? (
+        <span className="ml-auto flex flex-none items-center gap-2">
+          <span className="text-[13px] text-text-muted">Discard the one running?</span>
+          <button
+            type="button"
+            onClick={onCancelReplace}
+            className="kq-material cursor-pointer rounded-lg border border-border bg-card px-3.5 py-[7px] text-sm text-text hover:bg-panel"
+          >
+            Keep it
+          </button>
+          <button
+            type="button"
+            onClick={onStart}
+            className="cursor-pointer rounded-lg bg-text px-5 py-2 text-sm font-semibold text-bg"
+          >
+            Replace
+          </button>
+        </span>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onStart}
+          className={cx(
+            "ml-auto flex-none cursor-pointer rounded-lg bg-text px-5 py-2",
+            "text-sm font-semibold text-bg",
+            "disabled:cursor-default disabled:opacity-40",
+          )}
+        >
+          Start
+        </button>
+      )}
     </div>
   );
 }
