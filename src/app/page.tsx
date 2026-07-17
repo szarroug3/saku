@@ -48,7 +48,7 @@ import {
   GRAMMAR_PER_LESSON_DEFAULT,
   nextGrammarLesson,
 } from "@/lib/grammar-lesson";
-import { nextWordLesson } from "@/lib/word-lesson";
+import { nextWordLesson, topWordGate } from "@/lib/word-lesson";
 import { readingsProvedBy } from "@/lib/word-unlock";
 import { KANA_GROUP_FACTS, nextLesson } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -209,6 +209,17 @@ export default function HomePage() {
     [lesson, history, cfg.wordsPerLesson],
   );
 
+  // The words card LEADS with the top-ranked unlearned word and its gate: if the
+  // best word to teach next is locked behind kanji you don't know, the card names
+  // the word and those kanji rather than silently teaching a lesser available one
+  // (which is what wordLesson, above, still supplies as the secondary offer). A
+  // pure function of history — null only when the whole curriculum is finished,
+  // the same finished state wordLesson returns null for.
+  const wordGate = useMemo(
+    () => (lesson ? null : topWordGate(history)),
+    [lesson, history],
+  );
+
   // The grammar track — opened on the SAME gate as kanji (`lesson === null`, i.e.
   // kana is done), because the owner wanted the two to appear together: "kanji
   // and grammar should open up at the same time." Once kana is complete, home
@@ -335,8 +346,9 @@ export default function HomePage() {
           parallel once kana is done. The word lesson IS its facts (meaning, and
           reading for a kanji word), all new, all taught: the same onStart the
           kanji card takes. Learning them is what unlocks the kanji readings. */}
-      {wordLesson ? (
+      {wordGate ? (
         <NextWordLesson
+          gate={wordGate}
           lesson={wordLesson}
           onStart={startWordLesson}
           onClaim={claimWordLesson}

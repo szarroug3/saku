@@ -239,6 +239,60 @@ export function nextWordLesson(
   return { cards, facts, index: Math.floor(met / size) + 1 };
 }
 
+/** One kanji a word still needs — the glyph and its first meaning, everything
+ * the words card wants to name and link the missing prerequisite without
+ * reaching back into the kanji data itself. */
+export interface MissingKanji {
+  c: string;
+  /** The kanji's first meaning — "what", "say" — so the gate can read as a
+   * sentence and not just a bare glyph. */
+  meaning: string;
+}
+
+/**
+ * The GATE the words card leads with: the top-ranked word not yet learned, and
+ * whichever of its kanji the user still doesn't know.
+ *
+ * WHY THIS IS SEPARATE FROM nextWordLesson
+ * ========================================
+ * nextWordLesson answers "what CAN I teach now" — it steps over gated words to
+ * hand out the best AVAILABLE one. This answers the different question the owner
+ * wants led with: "what word does the curriculum most want to teach next, and
+ * what's stopping it?" That top word is almost always kanji-gated early on (何 is
+ * rank 1 and needs 何), so the card can name the word and point at the exact
+ * kanji that unlocks it — turning a silent skip into a concrete "go learn this".
+ *
+ * `missing` is empty when the top word is teachable right now (kana-only, or all
+ * its kanji already known). In that case there is no gate to show and the normal
+ * lesson — whose head IS this same word — leads instead. Null only when the
+ * whole curriculum is finished, the same finished state nextWordLesson returns
+ * null for.
+ */
+export interface WordGate {
+  /** The top-ranked unlearned word — the one the track most wants to teach. */
+  word: WordCard;
+  /** Its rank in the teaching order, so the card can say "your next word". */
+  rank: number;
+  /** The kanji this word needs that the user hasn't learned yet, in written
+   * order. Empty when the word is teachable now. */
+  missing: MissingKanji[];
+}
+
+export function topWordGate(history: HistoryFile): WordGate | null {
+  for (const w of CURRICULUM_WORDS) {
+    // Learned already? It is not the NEXT word — keep walking. Same "met"
+    // signal nextWordLesson counts with: the meaning fact being non-fresh.
+    if (!isFresh(wordMeaningFactId(w.keb), history)) continue;
+
+    const missing: MissingKanji[] = wordKanji(w.keb)
+      .filter((c) => !kanjiKnown(c, history))
+      .map((c) => ({ c, meaning: kanjiRow(c)?.meanings[0] ?? "" }));
+
+    return { word: toCard(w), rank: w.beginnerRank, missing };
+  }
+  return null;
+}
+
 /** The subject these lessons belong to. Re-exported so a caller holding a
  * lesson never has to reach into the data file to name it. */
 export { VOCAB_SUBJECT };

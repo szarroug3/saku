@@ -30,7 +30,9 @@ import Link from "next/link";
 
 import { Btn, Card, Lbl } from "@/components/ui";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
+import { WhyDisclosure } from "@/components/lesson/why";
 import { kanjiEntry } from "@/data/kanji";
+import { WHY_TRACK } from "@/data/why";
 import type { KanjiLesson } from "@/lib/kanji-lesson";
 import { entryHref } from "@/lib/library/href";
 import type { FactId } from "@/types";
@@ -85,7 +87,7 @@ export function NextKanjiLesson({
             <Link
               key={card.c}
               href={entryHref(kanjiEntry(card.c))}
-              className="kq-material min-w-[92px] flex-1 rounded-lg border border-border bg-panel px-2 pb-2.5 pt-3 text-center text-text no-underline hover:bg-card"
+              className="min-w-[92px] flex-1 rounded-lg border border-border px-2 pb-2.5 pt-3 text-center text-text no-underline hover:bg-panel"
             >
               <span className="block text-[34px] font-extralight leading-[1.15]">
                 {card.c}
@@ -116,6 +118,11 @@ export function NextKanjiLesson({
             Start · lesson {group.index}
           </Btn>
         </div>
+
+        {/* Why kanji, and not words or grammar — and how learning a kanji is what
+            unlocks the words made of it. Teaching content about the language, so
+            it belongs on screen; a pull, so only the lede shows until opened. */}
+        <WhyDisclosure why={WHY_TRACK.kanji} />
       </Card>
 
       <ClaimExplainer>

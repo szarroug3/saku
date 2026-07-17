@@ -20,6 +20,8 @@
 
 import { Btn, Card, Lbl } from "@/components/ui";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
+import { WhyDisclosure } from "@/components/lesson/why";
+import { WHY_TRACK } from "@/data/why";
 import type { GrammarLesson } from "@/lib/grammar-lesson";
 import type { FactId } from "@/types";
 
@@ -58,7 +60,7 @@ export function NextGrammarLesson({
           {cards.map((card) => (
             <div
               key={card.id}
-              className="kq-material min-w-[132px] flex-1 rounded-lg border border-border bg-panel px-3 pb-2.5 pt-3 text-center"
+              className="min-w-[132px] flex-1 rounded-lg border border-border px-3 pb-2.5 pt-3 text-center"
             >
               <span className="block font-kana text-[24px] font-extralight leading-[1.2]">
                 {card.pattern}
@@ -82,6 +84,11 @@ export function NextGrammarLesson({
             Start · lesson {index}
           </Btn>
         </div>
+
+        {/* Why grammar, and how it differs from words and kanji — the glue that
+            runs alongside them rather than gating on them. Teaching content about
+            the language; a pull, so only the lede shows until opened. */}
+        <WhyDisclosure why={WHY_TRACK.grammar} />
       </Card>
 
       <ClaimExplainer>

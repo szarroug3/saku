@@ -123,3 +123,59 @@ export const WHY_KANJI: readonly (Why & { id: string })[] = [
     ],
   },
 ];
+
+/**
+ * The three tracks after kana — kanji, words, grammar — each with a "why?" that
+ * does two jobs the cards can’t do on their own.
+ *
+ * WHAT THESE ANSWER
+ * =================
+ * Once kana is done the app shows three cards at once, and a beginner has no way
+ * to know why they’d pick one over another, or how they relate. So each track’s
+ * "why?" (1) says what THAT track gives you, in the language of the other two —
+ * so the reader can choose — and (2) makes the GATE legible: learning kanji is
+ * what unlocks words, because a word can only be taught once you know all its
+ * kanji. That relationship drives the whole words card and is invisible
+ * otherwise, so every entry names it in plain beginner terms.
+ *
+ * These are content ABOUT JAPANESE, not about the app (see the file header): they
+ * teach the learner why the three tracks exist and how they feed each other, not
+ * what a button does. That is why they earn their length once opened.
+ *
+ * Keyed by track id: "kanji", "words", "grammar".
+ */
+export const WHY_TRACK: Record<string, Why> = {
+  kanji: {
+    lede: {
+      strong: "Kanji are the characters — and the key that unlocks words.",
+      rest: "Each one you learn makes a batch of words teachable.",
+    },
+    paras: [
+      "Kanji is where you learn the individual characters and what each one means: 先 is “before”, 生 is “life”. On their own they aren’t much use — you don’t go around saying a lone kanji — but they’re the pieces every written word is built from.",
+      "Here’s why this track comes first for a word: the words track will only teach you a word once you know all of its kanji. 先生 (“teacher”) stays locked until you’ve learned both 先 and 生. So each kanji you pick up here quietly unlocks the words that are made of it — that’s the payoff for a track whose characters you never use one at a time.",
+      "If the words card keeps telling you to “go learn a kanji first”, this is that kanji. Learn it here, and the word it was blocking becomes teachable.",
+    ],
+  },
+  words: {
+    lede: {
+      strong: "Words are the part you actually speak and read.",
+      rest: "Most are made of kanji, so they unlock as you learn those.",
+    },
+    paras: [
+      "Words are the real goal — 先生, 電車, たべる are the things you say and understand. Kanji and grammar both feed into this track: kanji are the characters a word is written with, grammar is how you string words into a sentence.",
+      "A word is only taught here once you know every kanji in it — 電車 waits until you’ve learned both 電 and 車 — because showing a compound built from pieces you don’t have is teaching a shape with nothing under it. That’s why the words above so often point you back to the kanji track: the fastest way to unlock more words is to learn the kanji they’re made of.",
+      "Words with no kanji at all — これ, もう, とても — have nothing to unlock, so you can learn them straight away. That’s why the earliest words you can practise here are the kana-only ones.",
+    ],
+  },
+  grammar: {
+    lede: {
+      strong: "Grammar is how words become sentences.",
+      rest: "The glue — separate from learning the words themselves.",
+    },
+    paras: [
+      "Knowing words isn’t the same as knowing how to connect them. Grammar is the patterns that turn 食べる (“eat”) into “after eating”, “want to eat”, “please eat”. It’s a different kind of thing from a word or a kanji — a rule for combining, not another item to memorise.",
+      "It runs alongside the other two rather than gating on them: you don’t need a big vocabulary before you start, because a pattern is taught with words you already have. Kanji unlock words; grammar is what you do with those words once you have them.",
+      "Patterns come easiest ones first (the app tags each with its level), so early grammar leans on the simple verbs and words you’re already meeting on the other tracks.",
+    ],
+  },
+};
