@@ -43,15 +43,28 @@ const NAV: Array<{ href: string; label: string }> = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { active, progress } = useQuizSession();
+  const { active, session, progress } = useQuizSession();
 
-  // Tab-switching never discards a running quiz; while one is active a
-  // "Current quiz" entry (with live progress) sits right under Home.
-  const items = active
+  // Tab-switching never discards a running quiz OR session; while one is going
+  // a "Current quiz" entry (with live progress) sits right under Home.
+  //
+  // `active || session`, not just `active`: a session in its LESSON, the fork,
+  // or a rest has no drilling leg (`active` is null then by design), but it is
+  // still very much running and you still want a way back to it. Keying on
+  // `active` alone made the entry vanish for exactly those phases — including
+  // the whole teach screen of a lesson session, which is where the owner
+  // reached for it.
+  const running = active || session;
+  // Drilling lives at /quiz; every other session phase (teaching, the fork, a
+  // rest, complete) renders at /session. `active` is the drilling tell — it is
+  // set only while a leg is live — so it also picks the route. Same split as
+  // continueSession().
+  const runningHref = active ? "/quiz" : "/session";
+  const items = running
     ? [
         NAV[0],
         {
-          href: "/quiz",
+          href: runningHref,
           // ONE LINE, ALWAYS. This entry is the only nav item whose text grows
           // while you look at it — "0/214" is 31px and "214/214" is 44px — and
           // at 12px the count pushed the row to ~126px inside a 124px content

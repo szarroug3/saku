@@ -207,7 +207,9 @@ export function DrillHalo({
       ) : null}
       <span
         // leading-[1.15] is the drill glyph's theme hook (see globals.css).
-        className="kq-glyph relative block leading-[1.15]"
+        // whitespace-nowrap so a multi-char word stays on ONE line — the parent
+        // has already sized the glyph (see fitGlyphSize) to fit the hole across.
+        className="kq-glyph relative block whitespace-nowrap leading-[1.15]"
         style={{
           fontSize,
           fontFamily: font,
