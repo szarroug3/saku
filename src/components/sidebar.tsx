@@ -22,6 +22,7 @@ import { useQuizSession } from "@/lib/quiz-session";
 const NAV: Array<{ href: string; label: string }> = [
   { href: "/", label: "Home" },
   { href: "/library", label: "Library" },
+  { href: "/lists", label: "Lists" },
   { href: "/sessions", label: "Recent sessions" },
   // "Progress", not "Statistics" — the page stopped being statistics. Nothing
   // on it is a rate, an average or a trend any more; it is three counts of
