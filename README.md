@@ -143,3 +143,19 @@ switches and refreshes resume mid-question.
 - **v2** — write-a-word / write-text modes (word sets as data), listen mode
   (`speechSynthesis`)
 - **v3** — stroke order + draw (KanjiVG, Japanese-only)
+
+## Licence
+
+Two licences, split at one directory:
+
+- **Code** — MIT. Everything except `src/data/generated/`. See [`LICENSE`](LICENSE).
+- **Generated dictionary data** — CC BY-SA 4.0. `src/data/generated/`, adapted
+  from EDRDG's dictionaries, so ShareAlike reaches it. See
+  [`src/data/generated/LICENSE`](src/data/generated/LICENSE) for the full
+  attribution and the Tatoeba carve-out (CC BY 2.0 FR, no ShareAlike).
+
+[`NOTICE`](NOTICE) states the boundary: the code reads the data, it isn't
+derived from it, so the two ship as a collection and ShareAlike doesn't reach
+the code.
+
+In the app, the same acknowledgement is at **[/about/data](src/app/about/data/page.tsx)**.
