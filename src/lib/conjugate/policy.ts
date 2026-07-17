@@ -257,6 +257,7 @@ const VERB_FORMS: Form[] = [
   "tara",
   "tai",
   "teiru",
+  "stem",
 ];
 
 const ADJ_FORMS: Form[] = [
@@ -268,6 +269,7 @@ const ADJ_FORMS: Form[] = [
   "naiPast",
   "ba",
   "tara",
+  "stem",
   "adverb",
   "prenominal",
 ];

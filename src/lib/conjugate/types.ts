@@ -58,6 +58,21 @@ export type Form =
   | "tara"
   | "tai"
   | "teiru"
+  /**
+   * The bare attachment stem — 連用形 for a verb (話し, 食べ, し, き), the
+   * い-less stem for an adjective (高, よ, 静か).
+   *
+   * Not a word on its own, and that is why it's here: it is the single most
+   * productive ATTACHMENT POINT in beginner grammar. 〜ながら, 〜すぎる,
+   * 〜やすい, 〜にくい, 〜方, and V-stem 〜そう all hang off it. Without it
+   * every one of those patterns would have to spell "masu minus ます" itself,
+   * which is the rules table leaking into its callers.
+   *
+   * Verbs derive it (masu − ます) so the 音便/vowel-row machinery stays the one
+   * source of truth; adjectives list it, because their stem is a trim of the
+   * dictionary form and their tables already know the trim.
+   */
+  | "stem"
   | "adverb" // adjectives only: 高く / 静かに
   | "prenominal" // adjectives only: 高い本 / 静かな本
   | "polite"; // adjectives only: 高いです
