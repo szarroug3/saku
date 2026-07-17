@@ -36,8 +36,9 @@
 // See the note on `production` in src/lib/grammar/questions.ts.
 
 import { entryId, factId } from "../../lib/fact-id.ts";
+import { buildExample } from "../../lib/grammar/example.ts";
 import type { EntryId, FactId, FactInfo } from "../../types/index.ts";
-import { RECIPES, isProducible } from "./recipes.ts";
+import { RECIPES, isProducible, recipe, type Recipe } from "./recipes.ts";
 
 export const GRAMMAR_SUBJECT = "grammar";
 
@@ -65,13 +66,23 @@ export function patternProductionFactId(recipeId: string): FactId {
  * half the pattern, graded as the whole of it. A pattern that WRAPS a slot has
  * no production fact, because there is no one string that answers it.
  */
+/** Which recipe a grammar fact belongs to, and which aspect it asks. Built
+ * alongside GRAMMAR_FACTS so the question layer (engine/question.ts) can recover
+ * the recipe WITHOUT parsing the opaque id — the same lookup-not-parse rule the
+ * kanji subject follows with READING_INDEX. Declared BEFORE GRAMMAR_FACTS, whose
+ * builder populates them, or the build reaches them in their dead zone. */
+const MEANING_OF = new Map<FactId, string>();
+const PRODUCTION_OF = new Map<FactId, string>();
+
 export const GRAMMAR_FACTS: FactInfo[] = buildGrammarFacts();
 
 function buildGrammarFacts(): FactInfo[] {
   const facts: FactInfo[] = [];
   for (const r of RECIPES) {
+    const mId = patternMeaningFactId(r.id);
+    MEANING_OF.set(mId, r.id);
     facts.push({
-      id: patternMeaningFactId(r.id),
+      id: mId,
       entry: patternEntry(r.id),
       glyph: r.pattern,
       answers: [r.gloss],
@@ -81,18 +92,51 @@ function buildGrammarFacts(): FactInfo[] {
     // isProducible, not isVacuous: a fact the generator will always refuse is
     // a fact the scheduler would schedule forever and never be able to ask.
     if (!isProducible(r)) continue;
+    // The built form on a FIXED representative verb — see lib/grammar/example.ts
+    // for why the word is fixed. Baking it here (rather than leaving a pattern
+    // placeholder for a per-prompt generator) is what makes the production fact
+    // gradeable through the ordinary `accepts` path: the glyph is the form, the
+    // answers are the form in kanji and in kana, and a generic screen reveals
+    // the real answer instead of a placeholder. The confound still stands — a
+    // production item tests the recipe AND the word's conjugation at once; see
+    // the note on `production` in src/lib/grammar/questions.ts.
+    const ex = buildExample(r);
+    if (!ex) continue;
+    const pId = patternProductionFactId(r.id);
+    PRODUCTION_OF.set(pId, r.id);
     facts.push({
-      id: patternProductionFactId(r.id),
+      id: pId,
       entry: patternEntry(r.id),
-      glyph: r.pattern,
-      // The answers for a production fact are per-PROMPT, not per-fact — the
-      // question generator computes them from the engine. `answers` carries
-      // the pattern itself so a generic screen has something to render, and
-      // the grader must use questions.ts rather than this list.
-      answers: [r.pattern],
+      glyph: ex.form,
+      answers: ex.form === ex.kanaForm ? [ex.form] : [ex.form, ex.kanaForm],
       subject: GRAMMAR_SUBJECT,
       meaning: r.gloss,
     });
   }
   return facts;
+}
+
+/** The recipe a MEANING fact asks about, or null. A lookup, never a parse. */
+export function grammarMeaning(fact: FactId): { recipe: Recipe } | null {
+  const id = MEANING_OF.get(fact);
+  const r = id ? recipe(id) : undefined;
+  return r ? { recipe: r } : null;
+}
+
+/**
+ * A PRODUCTION fact resolved to its recipe and the word it drills on, or null.
+ *
+ * `lemma` is the fixed representative verb the fact's answer was built on, so a
+ * prompt can show "行く · 〜てから form" while the fact's own answers hold the
+ * built string. Null for a fact that is not a production fact, or a recipe whose
+ * example no longer builds (a re-cut of the conjugation data).
+ */
+export function grammarProduction(
+  fact: FactId,
+): { recipe: Recipe; lemma: string } | null {
+  const id = PRODUCTION_OF.get(fact);
+  const r = id ? recipe(id) : undefined;
+  if (!r) return null;
+  const ex = buildExample(r);
+  return ex ? { recipe: r, lemma: ex.lemma } : null;
 }

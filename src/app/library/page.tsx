@@ -52,12 +52,13 @@ export default function LibraryPage() {
   // is not, and typing into a box that repaints the kanji shelf under it drops
   // frames. Deferring lets the field stay live while the results catch up.
   const deferred = useDeferredValue(query);
-  // `null` kind is the "All" view — every kind's shelf stacked, and a search
-  // that spans kinds. The DEFAULT is Kana, not All: the unfiltered page used to
-  // fall back to the kana shelf while a highlighted "All" chip claimed to be
-  // showing kanji and words it wasn't. Defaulting to Kana ends that lie and
-  // keeps first paint light (214 tiles); All is now an explicit, honest choice.
-  const [kind, setKind] = useState<Kind | null>(KANA_SUBJECT);
+  // ONE kind is shown at a time — there is no "All" view. Stacking every kind's
+  // shelf at once (kana 214 + kanji + words + grammar ≈ thousands of tiles) was
+  // genuinely laggy, and its value is already covered: SEARCH spans every kind,
+  // and the SELECTION below persists across kind switches, so you can still
+  // build a cross-kind drill without a screen that paints all of them. The
+  // default is Kana — the lightest first paint.
+  const [kind, setKind] = useState<Kind>(KANA_SUBJECT);
   // THE SELECTION — a global, cross-kind set of toggled entries you build a
   // drill from. It is NOT reset when the kind filter changes: select a hiragana
   // row, switch to kanji, and it is still in here and still in the bar's count.
@@ -79,10 +80,12 @@ export default function LibraryPage() {
     return set;
   }, [lists]);
 
-  const sections = useMemo(
-    () => search(q, { kind, pinned }),
-    [q, kind, pinned],
-  );
+  // SEARCH SPANS EVERY KIND, always — the kind chips govern the browse shelf,
+  // not the search. This is what makes removing the "All" tab safe: you lost the
+  // stacked all-kinds BROWSE (the laggy part), but a query still reaches kana,
+  // kanji, words AND grammar at once, so "must" finds the patterns even while
+  // the Kana shelf is the one selected underneath.
+  const sections = useMemo(() => search(q, { pinned }), [q, pinned]);
 
   // Every shelf, cut once. Built for all three kinds up front (cheap array work,
   // no DOM) so switching the kind filter — or the "All" view that shows all
@@ -99,10 +102,6 @@ export default function LibraryPage() {
     return m;
   }, []);
 
-  /** The kinds whose shelves are on screen: one when filtered, all three under
-   * "All". */
-  const shownKinds: readonly Kind[] = kind ? [kind] : KINDS;
-
   const onToggleEntry = (id: EntryId) =>
     setSelected((s) => toggleEntryIn(s, id));
   const onToggleSection = (ids: readonly EntryId[]) =>
@@ -116,21 +115,16 @@ export default function LibraryPage() {
   //   searching ...... the results. ALL of them, not the 8 per section the page
   //                    had room for: you asked for で and the bar means で.
   //   a single kind .. that whole shelf (the shipped "drill all of Kanji").
-  //   All, unselected  nothing — "All" is 9,761 entries, and a drill of all of
-  //                    them is meaningless. Select something; the bar says so.
   const slice = useMemo(() => {
     if (selected.size > 0) return selectionSlice(selected, LIB_ENTRIES);
     if (q) {
-      const hits = searchAll(q, { kind, pinned });
+      const hits = searchAll(q, { pinned });
       return { label: q, entries: hits.map((h) => h.entry.id) };
     }
-    if (kind) {
-      return {
-        label: KIND_LABEL[kind],
-        entries: shelvesByKind.get(kind)!.entries.map((e) => e.id),
-      };
-    }
-    return { label: "Library", entries: [] as EntryId[] };
+    return {
+      label: KIND_LABEL[kind],
+      entries: shelvesByKind.get(kind)!.entries.map((e) => e.id),
+    };
   }, [selected, q, kind, pinned, shelvesByKind]);
 
   const standingOfEntry = (entry: LibEntry) =>
@@ -158,17 +152,9 @@ export default function LibraryPage() {
         placeholder="Search anything — し, shi, 生, せんせい, telephone…"
       >
         {/* The kind chips change what you SEE, never what you have SELECTED —
-            the selection outlives them. "All" (kind null) stacks every shelf and
-            searches across kinds; the other three filter to one. */}
-        <Chip on={kind === null} onClick={() => setKind(null)}>
-          All
-        </Chip>
+            the selection outlives them. One is always active; there is no "All". */}
         {KINDS.map((k) => (
-          <Chip
-            key={k}
-            on={kind === k}
-            onClick={() => setKind(kind === k ? null : k)}
-          >
+          <Chip key={k} on={kind === k} onClick={() => setKind(k)}>
             {KIND_LABEL[k]}
           </Chip>
         ))}
@@ -240,12 +226,12 @@ export default function LibraryPage() {
             ))
           )
         ) : (
-          shownKinds.map((k) => {
-            const sh = shelvesByKind.get(k)!;
+          (() => {
+            const sh = shelvesByKind.get(kind)!;
             return (
               <Shelf
-                key={k}
-                kind={k}
+                key={kind}
+                kind={kind}
                 sections={sh.sections}
                 allEntries={sh.entries}
                 selected={selected}
@@ -258,7 +244,7 @@ export default function LibraryPage() {
                 voice={cfg.voiceName}
               />
             );
-          })
+          })()
         )}
       </div>
 

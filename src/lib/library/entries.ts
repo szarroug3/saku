@@ -53,20 +53,39 @@ import {
   wordMeaningFactId,
   wordReadingFactId,
 } from "@/data/vocab";
+import {
+  GRAMMAR_SUBJECT,
+  patternEntry,
+  patternMeaningFactId,
+  patternProductionFactId,
+} from "@/data/grammar";
+import { cluster } from "@/data/grammar/clusters";
+import { RECIPES, isProducible, type Recipe } from "@/data/grammar/recipes";
+import { buildExample } from "@/lib/grammar/example";
 import type { EntryId, FactId } from "@/types";
 
 /** Which shelf an entry lives on. The subject id, re-stated as a union so a
  * screen can switch on it — the values come from each subject's own constant,
  * so this cannot drift from what the facts carry. */
-export type Kind = typeof KANA_SUBJECT | typeof KANJI_SUBJECT | typeof VOCAB_SUBJECT;
+export type Kind =
+  | typeof KANA_SUBJECT
+  | typeof KANJI_SUBJECT
+  | typeof VOCAB_SUBJECT
+  | typeof GRAMMAR_SUBJECT;
 
-export const KINDS: readonly Kind[] = [KANA_SUBJECT, KANJI_SUBJECT, VOCAB_SUBJECT];
+export const KINDS: readonly Kind[] = [
+  KANA_SUBJECT,
+  KANJI_SUBJECT,
+  VOCAB_SUBJECT,
+  GRAMMAR_SUBJECT,
+];
 
 /** What a shelf is called on screen. */
 export const KIND_LABEL: Record<Kind, string> = {
   [KANA_SUBJECT]: "Kana",
   [KANJI_SUBJECT]: "Kanji",
   [VOCAB_SUBJECT]: "Words",
+  [GRAMMAR_SUBJECT]: "Grammar",
 };
 
 /**
@@ -95,6 +114,16 @@ export interface LibEntry {
   readonly readings: readonly string[];
   /** What it MEANS, in English. Searched. Empty for a kana. */
   readonly meanings: readonly string[];
+  /**
+   * Extra strings SEARCH matches but the screen never renders — an alias index.
+   *
+   * Grammar is the reason it exists: a pattern's cluster name ("seems", "must")
+   * is what you would type to find the whole family, and そう-hearsay's gloss
+   * ("I hear that X") does not contain the word "seems". So the cluster title
+   * rides here, findable but not shown, and the tile keeps printing the gloss.
+   * Empty (and absent from the match loop's cost) for every other kind.
+   */
+  readonly searchAlso?: readonly string[];
   /** The one-line provenance under the glyph: "Jōyō grade 1 · 5 strokes". */
   readonly sub: string;
   /**
@@ -197,7 +226,50 @@ function build(): LibEntry[] {
     });
   }
 
+  // Grammar patterns are entries too — the pattern is the glyph, the gloss is
+  // the meaning, and there is NO reading because a pattern has no single
+  // pronunciation (see the tile, which omits 🔊 for these). They sort last in
+  // browse order, after every word.
+  RECIPES.forEach((r, i) => {
+    const c = r.cluster ? cluster(r.cluster) : undefined;
+    out.push({
+      id: patternEntry(r.id),
+      kind: GRAMMAR_SUBJECT,
+      glyph: r.pattern,
+      readings: [],
+      meanings: [r.gloss],
+      searchAlso: c ? [c.title] : undefined,
+      sub: c ? `${r.level} pattern · ${c.title}` : `${r.level} pattern`,
+      // A LOW weight, below kanji — the one kind that outranks it. This is the
+      // owner's "make sure search surfaces grammar properly" as a number: when
+      // you type "must", the seven obligation PATTERNS are the answer, and a
+      // word like 糾合 ("muster") that merely starts with your letters is not.
+      // A high weight would bury the patterns under every incidental match; a
+      // low one puts them where "how do I say must" is answered. Only meaning
+      // searches pit grammar against other kinds — a pattern's glyph (〜てから)
+      // rarely collides with a word or a kanji — so leading there costs the
+      // other kinds nothing they were winning.
+      weight: 500 + i,
+    });
+  });
+
   return out;
+}
+
+/** entry id → its recipe, for the grammar-only lookups below. Built off the
+ * same RECIPES walk `build()` uses, so it cannot name an entry that walk did
+ * not mint. */
+const RECIPE_OF_ENTRY: ReadonlyMap<EntryId, Recipe> = new Map(
+  RECIPES.map((r) => [patternEntry(r.id), r]),
+);
+
+/**
+ * The cluster a grammar entry belongs to — the "compare similar patterns" view
+ * its detail page links out to. Null for a pattern in no cluster, and for every
+ * non-grammar entry.
+ */
+export function clusterOf(entry: LibEntry): string | null {
+  return RECIPE_OF_ENTRY.get(entry.id)?.cluster ?? null;
 }
 
 // ---------- the links ----------
@@ -290,6 +362,11 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
       return kanjiRow(glyph) ? kanjiEntry(glyph) : null;
     case VOCAB_SUBJECT:
       return vocabRow(glyph) ? wordEntry(glyph) : null;
+    // A pattern is not resolved by its glyph — 〜て is te-sequence AND te-cause,
+    // so a glyph names no single grammar entry. Grammar links are minted from a
+    // recipe id, never from a glyph, so nothing asks for this.
+    case GRAMMAR_SUBJECT:
+      return null;
   }
 }
 
@@ -359,7 +436,40 @@ export function factRows(entry: LibEntry): FactRow[] {
           unattested: false,
         },
       ];
+    case GRAMMAR_SUBJECT:
+      return grammarFactRows(entry);
   }
+}
+
+/**
+ * A grammar entry's facts: what it MEANS, and — when it is producible — the form
+ * it BUILDS, shown on the fixed representative verb the drill uses. A vacuous or
+ * wrap pattern (は〜より, たり〜たり) has only the meaning row, which is the
+ * same "shown, never asked" honesty the cluster page keeps.
+ */
+function grammarFactRows(entry: LibEntry): FactRow[] {
+  const r = RECIPE_OF_ENTRY.get(entry.id);
+  if (!r) return [];
+  const rows: FactRow[] = [
+    {
+      id: patternMeaningFactId(r.id),
+      label: "Meaning",
+      answer: r.gloss,
+      askedIn: [],
+      unattested: false,
+    },
+  ];
+  const ex = isProducible(r) ? buildExample(r) : null;
+  if (ex) {
+    rows.push({
+      id: patternProductionFactId(r.id),
+      label: "Build it",
+      answer: `${ex.lemma} → ${ex.form}`,
+      askedIn: [],
+      unattested: false,
+    });
+  }
+  return rows;
 }
 
 function kanjiFactRows(entry: LibEntry): FactRow[] {

@@ -29,6 +29,15 @@ import { CHAR_INDEX, KANA_SUBJECT, LOOK_GROUP, kanaFact } from "@/data/character
 import { distractorsFor } from "@/data/confusable";
 import { crossScriptLookalikes } from "@/data/cross-script";
 import {
+  GRAMMAR_SUBJECT,
+  grammarMeaning,
+  grammarProduction,
+  patternMeaningFactId,
+  patternProductionFactId,
+} from "@/data/grammar";
+import { RECIPES, isProducible } from "@/data/grammar/recipes";
+import { buildExample } from "@/lib/grammar/example";
+import {
   KANJI_SUBJECT,
   READING_INDEX,
   meaningFactId,
@@ -327,12 +336,97 @@ function isWordReading(fact: FactId): boolean {
   return !!info && wordReadingFactId(info.glyph) === fact;
 }
 
+// ---------- grammar ----------
+//
+// Two aspects, ONE direction-insensitive question each — grammar does not flip
+// jp2en/en2jp the way a character does. "What does 〜てから mean" and "build
+// 〜てから on 行く" have one answer whichever way the drill turns the card, so
+// prompt and check ignore `dir` and grade against the fact's own answer strings
+// (the gloss for a meaning; the built form, in kanji and in kana, for a
+// production — baked into the fact in data/grammar/index.ts).
+//
+// THE SAFETY IS IN THE DISTRACTORS, and it is the whole reason grammar can be
+// multiple-choice at all. The one failure this app will not commit is marking
+// correct Japanese wrong (see the は/が header in grammar/questions.ts):
+//
+//   MEANING — never a same-cluster sibling as a distractor. A cluster is by
+//     definition a family that glosses identically (all seven "must" patterns),
+//     so a sibling on the board is a second right answer. Excluded by gloss AND
+//     by cluster, belt and braces.
+//   PRODUCTION — distractors are OTHER forms of the SAME vehicle verb (行きたい,
+//     行った against 行ってから). Real, plausible, and unambiguously wrong for
+//     the named target. buildMcOptions drops any that share the answer string,
+//     so two patterns that coincide on 行く can never both be on the board.
+//
+// Only producible recipes carry a production fact, and producibility already
+// rejects は/が (no recipe exists), the vacuous rows, the order-free wraps and
+// the data-blocked しか〜ない — so the dangerous items never reach here.
+
+const grammarQuestions: QuestionType = {
+  id: "grammar",
+  prompt(fact) {
+    const prod = grammarProduction(fact);
+    if (prod) {
+      // The vehicle verb is the big glyph; the pattern names the target, which
+      // is what makes production a question with ONE answer.
+      return {
+        glyph: prod.lemma,
+        jp: true,
+        context: `${prod.recipe.pattern} form`,
+        hint: null,
+      };
+    }
+    // A meaning fact (or an unrecognised grammar fact): show the pattern, ask
+    // what it means.
+    const mean = grammarMeaning(fact);
+    return {
+      glyph: mean?.recipe.pattern ?? glyphOfFact(fact),
+      jp: true,
+      context: "meaning",
+      hint: null,
+    };
+  },
+  check(fact, _dir, given) {
+    return accepts(fact, given);
+  },
+  distractors(fact, n) {
+    const prod = grammarProduction(fact);
+    if (prod) {
+      const out: FactId[] = [];
+      for (const r of RECIPES) {
+        if (r.id === prod.recipe.id || !isProducible(r)) continue;
+        // Same vehicle verb only — a form of 高い is not a plausible wrong
+        // answer to "build 〜てから on 行く".
+        const ex = buildExample(r);
+        if (!ex || ex.lemma !== prod.lemma) continue;
+        out.push(patternProductionFactId(r.id));
+        if (out.length >= n) break;
+      }
+      return out;
+    }
+    const mean = grammarMeaning(fact);
+    if (!mean) return [];
+    const out: FactId[] = [];
+    for (const r of RECIPES) {
+      if (r.id === mean.recipe.id) continue;
+      // Same gloss = a second right answer; same cluster = same gloss by
+      // construction. Refuse both.
+      if (r.gloss === mean.recipe.gloss) continue;
+      if (mean.recipe.cluster && r.cluster === mean.recipe.cluster) continue;
+      out.push(patternMeaningFactId(r.id));
+      if (out.length >= n) break;
+    }
+    return out;
+  },
+};
+
 // ---------- the registry ----------
 
 const BY_SUBJECT: Record<string, QuestionType> = {
   [KANA_SUBJECT]: kanaQuestions,
   [KANJI_SUBJECT]: kanjiQuestions,
   [VOCAB_SUBJECT]: wordQuestions,
+  [GRAMMAR_SUBJECT]: grammarQuestions,
 };
 
 /**

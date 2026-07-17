@@ -159,19 +159,36 @@ export function searchAll(query: string, opts: SearchOpts = {}): Hit[] {
  * inside 学生" is not two answers, it is one answer and one distraction.
  */
 function classify(entry: LibEntry, q: string, lower: string): MatchKind | null {
-  if (entry.glyph === q) return "exact";
+  // A grammar pattern is written with a leading (or middle) 〜 placeholder —
+  // 〜てから, 〜は〜より. Nobody types the 〜, so the JP comparisons run over both
+  // strings with it stripped: "てから" then EXACTLY matches 〜てから, and surfaces
+  // it as the answer rather than burying it under "Appears inside". The strip is
+  // a no-op for every non-grammar glyph (none contains 〜), so this costs those
+  // nothing and changes none of their results.
+  const glyphBare = stripTilde(entry.glyph);
+  const qBare = stripTilde(q);
+  if (entry.glyph === q || (qBare !== "" && glyphBare === qBare)) return "exact";
   // A reading typed in kana (せんせい) or a kana's romaji (shi). Both are "you
   // typed how it sounds", and both name exactly one entry, so both are exact.
   if (entry.readings.some((r) => r === q || r.toLowerCase() === lower)) {
     return "exact";
   }
-  if (entry.glyph.startsWith(q)) return "prefix";
+  if (entry.glyph.startsWith(q) || (qBare !== "" && glyphBare.startsWith(qBare))) {
+    return "prefix";
+  }
   if (entry.readings.some((r) => r.startsWith(q) || r.toLowerCase().startsWith(lower))) {
     return "prefix";
   }
   if (matchesMeaning(entry, lower)) return "meaning";
-  if (entry.glyph.includes(q)) return "inside";
+  if (entry.glyph.includes(q) || (qBare !== "" && glyphBare.includes(qBare))) {
+    return "inside";
+  }
   return null;
+}
+
+/** The searchable form of a pattern: its 〜 slot markers removed. */
+function stripTilde(s: string): string {
+  return s.replace(/〜/g, "");
 }
 
 /**
@@ -185,7 +202,9 @@ function classify(entry: LibEntry, q: string, lower: string): MatchKind | null {
  */
 function matchesMeaning(entry: LibEntry, lower: string): boolean {
   if (!lower || !/[a-z]/.test(lower)) return false;
-  for (const m of entry.meanings) {
+  // The glosses, plus a grammar entry's cluster title — "seems" finds the whole
+  // evidential family, not just the one member whose gloss happens to say it.
+  for (const m of [...entry.meanings, ...(entry.searchAlso ?? [])]) {
     for (const token of m.toLowerCase().split(/[^a-z0-9]+/)) {
       if (token && token.startsWith(lower)) return true;
     }
