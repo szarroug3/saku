@@ -40,16 +40,15 @@ export function ClusterTable({ rows }: { rows: readonly BuiltRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ recipe, built, how, complete }) => (
+          {rows.map(({ recipe, built, how }) => (
             <tr key={recipe.id} className="border-b border-border last:border-b-0">
-              {/* A worked example where one can be worked out, and the pattern
-                  itself where one cannot — see BuiltRow.complete. 〜は〜より has
-                  a slot in the middle that a one-suffix recipe cannot fill, so
-                  the honest cell is the pattern, not a half-built 本は wearing
-                  the "must mean this" of the column beside it. */}
-              <td className="whitespace-nowrap py-2 pr-2.5 text-[15px]">
-                {complete ? built : recipe.pattern}
-              </td>
+              {/* Always the worked example, now that every row has one. This
+                  cell used to fall back to the bare pattern for 〜は〜より,
+                  because a one-suffix recipe could only reach 本は and printing
+                  that beside a gloss reading "X is more … than Y" would teach
+                  that 本は means that. The recipe model holds the whole wrap, so
+                  the cell holds the whole example: 本は車より. */}
+              <td className="whitespace-nowrap py-2 pr-2.5 text-[15px]">{built}</td>
               <td className="whitespace-nowrap py-2 pr-2.5 text-[12.5px] text-text-muted">
                 {how}
               </td>

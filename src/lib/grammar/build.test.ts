@@ -8,7 +8,7 @@
 // about conjugation — conjugate.test.ts already owns 音便, and re-asserting it
 // here would just be a second place to update when a rule changes. What is
 // tested here is the part this file invented: the "− trim + add" spelling, the
-// degenerate no-suffix row, and the discontinuous-pattern guard.
+// degenerate no-suffix row, and the wrap rows building whole.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -78,32 +78,70 @@ describe("how it's built", () => {
   });
 });
 
-describe("discontinuous patterns are not passed off as worked examples", () => {
-  test("〜は〜より is marked incomplete — apply() can only reach 本は", () => {
+describe("patterns that wrap a slot build whole", () => {
+  test("〜は〜より is the whole frame, not the 本は it used to be", () => {
     const row = buildRow(byId("wa-yori"));
-    assert.equal(row?.complete, false);
-    assert.equal(row?.built, "本は");
+    assert.equal(row?.built, "本は車より");
+    assert.deepEqual(row?.on, ["本", "車"]);
+    // The cell the page prints. 本は would sit beside "X is more ... than Y"
+    // and teach that 本は means that.
+    assert.notEqual(row?.built, "本は");
+  });
+
+  test("〜のほうが〜より likewise — the other half of the comparison cluster", () => {
+    assert.equal(buildRow(byId("hou-ga-yori"))?.built, "本のほうが車より");
+  });
+
+  test("〜たり〜たり closes with する, and both slots take the 音便", () => {
+    // 行く → 行った (v5k-s, the promoted-つ case) and 読む → 読んだ (v5m, ん).
+    // Two different sound changes in one cell, neither typed out here.
+    assert.equal(buildRow(byId("tari-tari"))?.built, "行ったり読んだりする");
+  });
+
+  test("〜しか〜ない opens on a noun and closes on a verb — different hosts", () => {
+    // The row that proves the closing half needed its own host and form: しか
+    // hangs off a bare 本, ない is a conjugation of 読む.
+    const row = buildRow(byId("shika-nai"));
+    assert.equal(row?.built, "本しか読まない");
+    assert.deepEqual(row?.on, ["本", "読む"]);
+  });
+
+  test("the how column spells out both slots", () => {
+    assert.equal(buildRow(byId("wa-yori"))?.how, "本 + は · 車 + より");
+    // The closing half adds nothing to 読まない, so that slot degenerates to the
+    // arrow spelling — the same rule as a 〜ば row, reached from the other side.
+    assert.equal(buildRow(byId("shika-nai"))?.how, "本 + しか · 読む → 読まない");
   });
 
   test("a parenthetical annotation is not mistaken for a middle slot", () => {
     // 〜そう (様態) and 〜られる (可能) carry display annotations, and 〜られる
-    // is a citation form the potential of 行く does not contain. Both are fine.
-    assert.equal(buildRow(byId("sou-appearance"))?.complete, true);
-    assert.equal(buildRow(byId("potential"))?.complete, true);
+    // is a citation form the potential of 行く does not contain. Both are fine,
+    // and neither is a wrap. The old guard sniffed the pattern STRING for a
+    // second 〜 and had to argue its way past these two; the model does not
+    // have to, because it never reads display text to learn structure.
+    assert.equal(byId("sou-appearance").wrap, undefined);
+    assert.equal(byId("potential").wrap, undefined);
+    assert.equal(buildRow(byId("sou-appearance"))?.built, "行きそう");
   });
 
-  // Written expecting the two comparison rows; it failed and named four. The
-  // other two are real and were news to me: 〜たり〜たり and 〜しか〜ない wrap
-  // around a slot exactly as 〜は〜より does. Neither is in a cluster, so
-  // neither reaches the page today — but the recipe model cannot express them
-  // either, and the day one joins a cluster the page must not invent 本しか as
-  // a worked example of "only X". Pinned as an inventory, so that day is loud.
-  test("the discontinuous patterns are exactly these four, app-wide", () => {
-    const bad = RECIPES.filter((r) => buildRow(r)?.complete === false).map((r) => r.id);
+  // Was an inventory of what the model could NOT express; now an inventory of
+  // what it expresses. Same four rows, and the day a fifth appears this is
+  // still the loud place.
+  test("the wraps are exactly these four, app-wide", () => {
+    const wraps = RECIPES.filter((r) => r.wrap).map((r) => r.id);
     assert.deepEqual(
-      new Set(bad),
+      new Set(wraps),
       new Set(["wa-yori", "hou-ga-yori", "tari-tari", "shika-nai"]),
     );
+  });
+
+  test("every wrap builds — none falls back to showing its own pattern", () => {
+    for (const r of RECIPES.filter((x) => x.wrap)) {
+      const row = buildRow(r);
+      assert.ok(row, `${r.id} does not build`);
+      assert.notEqual(row.built, r.pattern, `${r.id} built nothing but its own pattern`);
+      assert.ok(!row.built.includes("〜"), `${r.id} left a slot marker in a worked example`);
+    }
   });
 });
 
