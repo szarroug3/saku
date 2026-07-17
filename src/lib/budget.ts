@@ -169,7 +169,11 @@ export function planSession(query: PlanQuery): SessionPlan {
   const fresh = new Set<FactId>();
 
   for (const id of candidates) {
-    const state = effectiveState(history.facts[id], history.claims?.[id]);
+    const state = effectiveState(
+      history.facts[id],
+      history.claims?.[id],
+      history.seen?.[id],
+    );
     switch (status(state, now)) {
       case "probe":
         probeCandidates.push({ id, state });
@@ -272,7 +276,11 @@ export function freshFacts(
 ): Set<FactId> {
   const fresh = new Set<FactId>();
   for (const id of candidates) {
-    const state = effectiveState(history.facts[id], history.claims?.[id]);
+    const state = effectiveState(
+      history.facts[id],
+      history.claims?.[id],
+      history.seen?.[id],
+    );
     if (state.lastTested === 0) fresh.add(id);
   }
   return fresh;

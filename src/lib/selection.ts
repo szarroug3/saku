@@ -250,8 +250,15 @@ function sample(facts: FactId[], n: number | null): FactId[] {
  */
 function knownFacts(history: HistoryFile): FactId[] {
   const claims = history.claims ?? {};
+  // `seen` here is TWO different records that happen to share a word: the
+  // aggregate's `seen` COUNT (times a session showed the fact) and the top-level
+  // `seen` INTENT record (facts you pressed "quiz me" on but may not have
+  // answered yet). Both put a fact in the knowledge base, and they must — a
+  // group you asked to be quizzed on is drillable on your word, before the drill
+  // that would give it a count has recorded anything.
+  const seen = history.seen ?? {};
   return ALL_FACTS.filter(
-    (f) => (history.facts[f]?.seen ?? 0) > 0 || f in claims,
+    (f) => (history.facts[f]?.seen ?? 0) > 0 || f in claims || f in seen,
   );
 }
 

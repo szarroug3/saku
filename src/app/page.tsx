@@ -194,6 +194,23 @@ export default function HomePage() {
   // lesson already carries both halves — take the one the session speaks.
   const startLesson = (facts: FactId[]) => startSession(facts, facts);
 
+  // "Quiz me": the group is seen — in the knowledge base and fair game — and the
+  // next thing on screen is a drill on it. The seen record is written FIRST and
+  // does not wait on the drill: asking to be quizzed is itself the statement
+  // that you've seen it, so an abandoned drill still leaves the group seen
+  // rather than fresh. Then straight into the drill (empty teach — the user has
+  // already learned these at Tofugu or in the walkthrough, so this is not a
+  // teach-then-drill, it is the quiz they asked for). See src/lib/claims.ts for
+  // why seen and claimed are different records.
+  const quizMe = async (facts: FactId[]) => {
+    await fetch("/api/seen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ facts }),
+    }).catch(() => {});
+    startSession(facts, [], lesson?.group.label);
+  };
+
   const claim = async (facts: FactId[]) => {
     await fetch("/api/claim", {
       method: "POST",
@@ -222,7 +239,7 @@ export default function HomePage() {
       ) : null}
 
       {lesson ? (
-        <NextLesson lesson={lesson} onStart={startLesson} onClaim={claim} />
+        <NextLesson lesson={lesson} onQuizMe={quizMe} onClaim={claim} />
       ) : null}
 
       {/* The lesson IS the session: its facts, all new, all taught — the same

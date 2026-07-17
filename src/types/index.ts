@@ -539,6 +539,27 @@ export interface HistoryFile {
    */
   claims?: Record<FactId, number>;
   /**
+   * What you asked to be QUIZZED on, per fact: ms epoch you said "quiz me". A
+   * FOURTH record, and it exists for the same structural reason `claims` does —
+   * it is neither something you DID (so it is not a session) nor something
+   * DERIVED (so it does not live in `facts`, which gets rebuilt). A seen fact is
+   * in your knowledge base and fair game to drill, on your word alone, before a
+   * single answer proves anything.
+   *
+   * The difference from `claims` is the whole point, and it is a difference of
+   * MEANING the model reads as a difference of STABILITY (see claims.seenState
+   * vs claims.claimedState): "I already know these" is a season-long belief that
+   * clears the material out of your way; "quiz me" is a glance that puts the
+   * material into rotation and asks to be checked almost immediately. Both take
+   * a fact out of `fresh` — neither is new any more — but one goes quiet and the
+   * other stays drillable, which is exactly what routes the two intents apart.
+   *
+   * Stored raw and folded at read time by claims.effectiveState, and preserved
+   * across deleteSessions for the same reason `claims` is: it is a thing you
+   * SAID, not a thing you did.
+   */
+  seen?: Record<FactId, number>;
+  /**
    * Per FACT: lifetime counts, and what the model believes. Was `chars`, keyed
    * by the character itself — which gave 生 one accuracy slot for eleven
    * readings.

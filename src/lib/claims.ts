@@ -55,6 +55,10 @@ import type { FactState, HistoryFile } from "@/types";
  * the stored shape cannot drift apart. */
 export type Claims = NonNullable<HistoryFile["claims"]>;
 
+/** Fact → ms epoch you said "quiz me". Its own record, beside `claims`. Same
+ * shape, different meaning — see seenState below and HistoryFile.seen. */
+export type Seen = NonNullable<HistoryFile["seen"]>;
+
 /**
  * How stable a claim makes a fact, in days.
  *
@@ -75,6 +79,28 @@ export const CLAIMED_DAYS = 90;
  * eventually `probe` (asked once, to check). */
 export function claimedState(ts: number): FactState {
   return { stability: CLAIMED_DAYS, lastTested: ts };
+}
+
+/**
+ * The state a "quiz me" made at `ts` implies — the SAME record shape as a claim,
+ * a season shorter in stability, and that one difference carries the whole
+ * distinction between the two intents.
+ *
+ * `floorDays` is the least stability the model will hold (see UNMET, which is
+ * the same number). A claim says "leave this alone for a season"; "quiz me" says
+ * "I've seen this, put it back in front of me" — so it decays to `probe` within
+ * a day and `teach` within a few, which is precisely the fact re-entering the
+ * drill rotation. It is `quiet` only in the instant it is pressed, and that
+ * instant is the one the "Quiz me" click hands straight to a drill anyway.
+ *
+ * Why not zero stability / lastTested 0 (i.e. leave it UNMET)? Because UNMET is
+ * how `fresh` is spelled, and a fact you asked to be quizzed on is NOT new
+ * material any more — surfacing it again as the next lesson would be the app
+ * forgetting you just dealt with it. A real `lastTested` is what takes it out of
+ * `fresh` while a floor stability keeps it drillable.
+ */
+export function seenState(ts: number): FactState {
+  return { stability: SCORING.floorDays, lastTested: ts };
 }
 
 /**
@@ -99,6 +125,7 @@ export function claimedState(ts: number): FactState {
 export function effectiveState(
   agg: Partial<FactState> | undefined,
   claimedAt: number | undefined,
+  seenAt?: number,
 ): FactState {
   const tested = agg?.lastTested ?? 0;
   const stability = agg?.stability;
@@ -106,9 +133,25 @@ export function effectiveState(
     typeof stability === "number" && stability > 0 && tested > 0
       ? { stability: Math.max(SCORING.floorDays, stability), lastTested: tested }
       : UNMET;
-  if (!claimedAt) return fromHistory;
-  if (claimedAt <= tested) return fromHistory;
-  return claimedState(claimedAt);
+
+  // Newest record wins, now across THREE records rather than two, on the same
+  // rule as before: what you said or did most recently is what the model
+  // believes, and nothing is merged. A "quiz me" and a claim are both weaker
+  // than a real test occasion at the same instant, but in practice both are only
+  // ever recorded on a fact that has no test evidence yet (the lesson card that
+  // records them only appears for material you have not seen), so the tie the
+  // ordering breaks is between the two of them and against `tested = 0`.
+  let state = fromHistory;
+  let ts = tested;
+  if (claimedAt && claimedAt > ts) {
+    state = claimedState(claimedAt);
+    ts = claimedAt;
+  }
+  if (seenAt && seenAt > ts) {
+    state = seenState(seenAt);
+    ts = seenAt;
+  }
+  return state;
 }
 
 // WHY A CLAIM IS NOT A HIT
