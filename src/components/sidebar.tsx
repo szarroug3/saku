@@ -11,9 +11,20 @@ import { useQuizSession } from "@/lib/quiz-session";
 // is a shelf in there now (/chart redirects), and two entries pointing into the
 // same tab is how a reference starts competing with the drill for the top of the
 // page.
+// Grammar is its own tab, not a shelf in the Library, and that is the owner's
+// call. The two are different kinds of reference: the Library answers "what is
+// this word", one entry at a time, and Grammar answers "what are my options",
+// a whole family at a time. Sitting Grammar under Library would have made the
+// clusters a subsection of a screen you reach by searching for a glyph, and
+// there is no glyph to search for — "must" is not a character.
+//
+// It goes AFTER Library and it is not first: the reference is "an easy way to
+// look things up, not the product", and that applies to this tab exactly as it
+// applies to the one above it.
 const NAV: Array<{ href: string; label: string }> = [
   { href: "/", label: "Home" },
   { href: "/library", label: "Library" },
+  { href: "/grammar", label: "Grammar" },
   { href: "/sessions", label: "Recent sessions" },
   { href: "/stats", label: "Statistics" },
   { href: "/settings", label: "Settings" },
