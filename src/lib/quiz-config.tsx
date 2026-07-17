@@ -44,6 +44,8 @@ export function defaultConfig(): QuizConfig {
     showVolume: true,
     graduateRuns: 10,
     slowFloorMs: 1500,
+    // Dominates grade order on both axes at once — see NewKanjiOrder.
+    newKanjiOrder: "everyday",
     // The user's own numbers. Two settings, not a rule — see QuizConfig.
     restFirstMin: 5,
     restThenMin: 10,

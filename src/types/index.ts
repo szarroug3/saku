@@ -128,6 +128,25 @@ export type AnswerStyle = "typed" | "mc";
  * firstTry = nailed it immediately · attempt = share of attempts correct. */
 export type AccuracyMetric = "firstTry" | "attempt";
 
+/**
+ * The order the queue of UNSEEN kanji arrives in. Orders nothing else: not what
+ * you are asked next (that is the ranking model's, and it only ever sees facts
+ * you have met), not the Library, not a search.
+ *
+ * Three, and the fourth is not coming back. "Simplest shape first" measured
+ * identically to a flat ≤4-stroke ceiling — 291 readable words at 100 items
+ * against 294 — which is to say it was not a rival method at all, it was
+ * `everyday` with its stroke ceiling wound to the stop, and it cost 410 words
+ * to get there.
+ *
+ * `everyday` is the default because it STRICTLY DOMINATES `grade`: 704 words
+ * readable at 100 items against 537, and every character buildable from parts
+ * already taught against 71%. There is no axis on which grade wins, so there is
+ * no argument for it as the default — only as an option, which it stays,
+ * because it is the right answer if you are sitting a class.
+ */
+export type NewKanjiOrder = "everyday" | "grade" | "newspaper";
+
 export interface QuizConfig {
   mode: QuizMode;
   dirs: { jp2en: boolean; en2jp: boolean };
@@ -166,6 +185,13 @@ export interface QuizConfig {
    * start flagging 1.6s answers as "slow", which means nothing.
    */
   slowFloorMs: number;
+
+  // ---------- what arrives next ----------
+  /**
+   * Which order unseen kanji queue up in. See NewKanjiOrder, and
+   * `kanjiTeachOrder` in src/data/kanji.ts for the three sequences themselves.
+   */
+  newKanjiOrder: NewKanjiOrder;
 
   // ---------- the session loop (src/lib/session.ts) ----------
   /**
