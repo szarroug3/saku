@@ -5,11 +5,17 @@ import { usePathname } from "next/navigation";
 
 import { useQuizSession } from "@/lib/quiz-session";
 
+// ONE nav item for the reference, and it is not the first one. The user, on
+// scope: "the reference should exist as an easy way to look things up, not as
+// the product." Library REPLACES "Kana chart" rather than joining it — the chart
+// is a shelf in there now (/chart redirects), and two entries pointing into the
+// same tab is how a reference starts competing with the drill for the top of the
+// page.
 const NAV: Array<{ href: string; label: string }> = [
   { href: "/", label: "Home" },
+  { href: "/library", label: "Library" },
   { href: "/sessions", label: "Recent sessions" },
   { href: "/stats", label: "Statistics" },
-  { href: "/chart", label: "Kana chart" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -62,7 +68,12 @@ export function Sidebar() {
   return (
     <nav className="sticky top-6 flex w-[148px] flex-none flex-col gap-0.5 self-start">
       {items.map(({ href, label }) => {
-        const sel = pathname === href;
+        // An entry page is IN the Library, so /library/kanji%3A%E7%94%9F has to
+        // light the Library item — an exact match would leave the whole nav
+        // unlit on the one screen you reach by clicking a link on the previous
+        // one. The prefix guard is `href + "/"` and not `startsWith(href)`,
+        // which for "/" would match every page in the app.
+        const sel = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
             key={href}

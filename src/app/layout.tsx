@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Sidebar } from "@/components/sidebar";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ListsProvider } from "@/lib/lists";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { QuizSessionProvider } from "@/lib/quiz-session";
 import { ThemeProvider } from "@/lib/theme";
@@ -102,6 +103,10 @@ export default function RootLayout({
         <ThemeProvider>
           <QuizConfigProvider>
             <QuizSessionProvider>
+              {/* Outside Tooltip/Confirm and inside the quiz providers: a list
+                  is app-wide state like the config, and the Library's bar reads
+                  it in the same render it reads the session. */}
+              <ListsProvider>
               <TooltipProvider delayDuration={200}>
                 {/* Inside the quiz providers, because what it asks about
                     ("discard the quiz in progress?") is their state. */}
@@ -112,6 +117,7 @@ export default function RootLayout({
                   </div>
                 </ConfirmProvider>
               </TooltipProvider>
+              </ListsProvider>
             </QuizSessionProvider>
           </QuizConfigProvider>
         </ThemeProvider>
