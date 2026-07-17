@@ -122,7 +122,7 @@ export function NextLesson({
             link says whose. "Teach me here" is the other door — a bare
             walkthrough for the learner who doesn't need a mnemonic and would
             rather just see the glyphs than leave the app. */}
-        <div className="kq-material mt-4 rounded-lg border border-border bg-panel px-3.5 py-3">
+        <div className="mt-4 rounded-lg border border-border px-3.5 py-3">
           <p className="text-[13px]">
             <span className="font-medium">Learn them first.</span>{" "}
             <span className="text-text-muted">
