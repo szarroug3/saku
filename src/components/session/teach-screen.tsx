@@ -30,7 +30,10 @@
 
 import { Btn, Card, Hint } from "@/components/ui";
 import { questionsFor } from "@/lib/engine/question";
+import { speechForFact } from "@/lib/fact-speech";
 import { factInfo } from "@/lib/facts";
+import { useQuizConfig } from "@/lib/quiz-config";
+import { speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
 import { anchorForFact } from "@/lib/word-unlock";
 import type { FactId } from "@/types";
@@ -51,6 +54,7 @@ export function TeachScreen({
   // here ("生 · in 先生") matches what you're asked in a moment. See
   // word-unlock.ts.
   const { history } = useHistory();
+  const { cfg } = useQuizConfig();
   return (
     <>
       <Card>
@@ -72,9 +76,12 @@ export function TeachScreen({
             // shown here and what you are asked in a moment cannot drift. A
             // teach card that rendered its own glyph would be a second opinion
             // about what the question is.
-            const p = questionsFor(f).prompt(f, "jp2en", {
-              anchor: anchorForFact(f, history),
-            });
+            // One anchor, computed once: it frames the reading question AND is
+            // the word we'd speak for it (先生, not the bare 生). For every other
+            // fact it's undefined and speechForFact falls back on the subject.
+            const anchor = anchorForFact(f, history);
+            const p = questionsFor(f).prompt(f, "jp2en", { anchor });
+            const sound = speechForFact(info, anchor);
             return (
               <div
                 key={f}
@@ -114,6 +121,21 @@ export function TeachScreen({
                 ) : (
                   <span className="mt-1 block min-h-[11px]" />
                 )}
+                {/* 🔊 only when the fact has a single pronounceable surface (see
+                    fact-speech.ts): kana, a word, and a kanji reading heard in
+                    its anchor word — never a bare kanji meaning or a grammar
+                    pattern. `type="button"` so it can't submit; it never takes
+                    autoFocus, so `Start round 1` stays the key target. */}
+                {sound ? (
+                  <button
+                    type="button"
+                    onClick={() => speak(sound, cfg.voiceName)}
+                    aria-label={`Hear ${sound}`}
+                    className="mt-1.5 cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text"
+                  >
+                    🔊
+                  </button>
+                ) : null}
               </div>
             );
           })}
