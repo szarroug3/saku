@@ -1,24 +1,40 @@
-// The vocabulary subject: 8,045 everyday words from JMdict.
+// The vocabulary subject: 12,553 everyday words from JMdict.
 //
 // WHICH WORDS, AND WHY NOT ALL 190,000
 // ====================================
-// JMdict has ~190k entries. This takes the ones tagged `ichi1` — the
-// hand-curated common list — that are written entirely in jōyō kanji. Two
-// reasons, and neither is about file size:
+// JMdict has ~190k entries. This takes the union of its HAND-CURATED
+// commonness tags — `ichi1`, `spec1`, `spec2` — written entirely in jōyō
+// kanji, or in kana. Two reasons, and neither is about file size:
 //
-//  - `ichi1` is a HAND-CURATED list of everyday words. It is not the newspaper
-//    `freq` rank, and the difference is the whole point: `freq`'s top band
-//    holds 安保 (the security treaty), 委員会 and 欧州, while 食べる sits in
-//    band 25 (~12,000th) and 人 has no rank at all. JMdict's own editors tagged
-//    日本 `spec1` — a manual override meaning "common no matter what the corpus
-//    says" — which tells you they knew the corpus was wrong. A quiz seeded from
-//    `freq` teaches you to read a newspaper you cannot order lunch in.
+//  - Those tags are hand-curated everyday vocabulary. They are not the
+//    newspaper `freq` rank, and the difference is the whole point: `freq`'s
+//    top band holds 安保 (the security treaty), 委員会 and 欧州, while 食べる
+//    sits in band 25 (~12,000th) and 人 has no rank at all.
 //  - All-jōyō is what makes parts-first honest. A word with a non-jōyō kanji
 //    can never be built from taught components, so it could only ever be
 //    presented as a whole-word memorisation, which is the thing the component
 //    graph exists to avoid.
 //
-// The remaining ~182k words are not lost — they are in the dictionary, and
+// A UNION, NOT AN INTERSECTION — and it is not `ichi1` alone
+// ---------------------------------------------------------
+// These tags are separate SOURCES, not axes to intersect. `news1` ⟺ nf01–24
+// and `news2` ⟺ nf25–48 are the same newspaper corpus, strictly nested;
+// intersecting them narrows nothing. `ichi1` is an independent hand-curated
+// list (25.2% of it carries no nf band at all). `spec1`/`spec2` are a separate
+// editorial judgement — "common no matter what the corpus says".
+//
+// 日本 is the proof. It is `spec1` + `news2`/`nf25` and carries NO `ichi1`, so
+// a filter on `ichi1` drops 日本 — and this comment used to cite 日本 as an
+// example of a word that filter kept. It never did. JMdict's editors reaching
+// for `spec1` is them overriding the corpus, and taking only `ichi1` threw
+// that judgement away.
+//
+// `news1`/`nfXX` is deliberately NOT in the union: "common in a newspaper" is
+// not "common for a beginner", and no filter can fix that — it is a property
+// of the corpus. Admitting news1 would add ~6,200 words and is a product
+// decision, not a bug fix.
+//
+// The remaining ~178k words are not lost — they are in the dictionary, and
 // re-cutting this file is one flag in scripts/ingest/build.py. They are simply
 // not everyday words, and a beginner quiz that can serve 錻 has a scope bug,
 // not a feature.
@@ -31,9 +47,17 @@ export const VOCAB_SUBJECT = "word";
 
 /** One everyday word. */
 export interface VocabRow {
-  /** The written form. 先生. */
+  /**
+   * The written form. 先生.
+   *
+   * For a word JMdict marks `uk` ("usually written using kana alone") or that
+   * has no kanji spelling at all, this is the KANA form and `keb === reb`:
+   * これ, とても, もう. That is the word as it is actually written — これ has
+   * eight kanji spellings (此れ, 是, 之 …) and nobody writes any of them.
+   * `isKana` is exactly this equality; see `buildVocabFacts`.
+   */
   readonly keb: string;
-  /** Its reading, in kana. せんせい. */
+  /** Its reading, in kana. せんせい. For a kana word, identical to `keb`. */
   readonly reb: string;
   /** English glosses of the first sense, best first. */
   readonly glosses: readonly string[];
@@ -56,10 +80,14 @@ export interface VocabRow {
    * NEWSPAPER band, and named that way for the same reason as KanjiRow's rank.
    * Note it is NOT independent of the `news1`/`news2` tags it ships beside:
    * `news1` means nf01–24 and `news2` means nf25–48 — the same 12,000 words
-   * from the same corpus, strictly nested. Filtering on both is redundant, not
-   * an intersection. (`ichi1` is the genuinely independent signal, and 17% of
-   * it carries no band at all — which is exactly the everyday vocabulary a
-   * newspaper corpus is worst at seeing.)
+   * from the same corpus, strictly nested (verified against JMdict: zero
+   * entries violate it). Filtering on both is redundant, not an intersection.
+   * (`ichi1` is a genuinely independent signal, and 25.2% of it carries no
+   * band at all — which is exactly the everyday vocabulary a newspaper corpus
+   * is worst at seeing.)
+   *
+   * null for most kana words: これ is `ichi1` with no band, because a
+   * newspaper corpus is precisely what cannot see it.
    */
   readonly newspaperBand: number | null;
   /**
@@ -96,13 +124,25 @@ export function wordMeaningFactId(keb: string): FactId {
   return factId(wordEntry(keb), "meaning");
 }
 
+/** A word written in kana is its own reading: keb === reb. これ, とても, もう. */
+export function isKanaWord(w: VocabRow): boolean {
+  return w.keb === w.reb;
+}
+
 /**
- * Every vocabulary fact: 8,045 readings + 8,045 meanings.
+ * Every vocabulary fact: 10,427 readings + 12,553 meanings.
  *
  * A word has ONE reading fact, unqualified — unlike a kanji, which never does.
  * That asymmetry is the model working, not an inconsistency: "what is 先生
  * read as" has exactly one answer, so it can be graded, while "what is 生 read
  * as" has nine and cannot.
+ *
+ * A KANA WORD HAS NO READING FACT, which is why the two counts differ. "What
+ * is これ read as?" has the answer これ printed in the question — it is not a
+ * question, and grading it teaches nothing. これ still carries its MEANING
+ * fact ("this one"), which is the thing a learner actually has to know. This
+ * is the same rule as the jukujikun `align === null` case: emit the fact that
+ * can be graded, and decline to invent the one that cannot.
  */
 export const VOCAB_FACTS: FactInfo[] = buildVocabFacts();
 
@@ -110,14 +150,16 @@ function buildVocabFacts(): FactInfo[] {
   const facts: FactInfo[] = [];
   for (const w of VOCAB) {
     const meaning = w.glosses[0] ?? null;
-    facts.push({
-      id: wordReadingFactId(w.keb),
-      entry: wordEntry(w.keb),
-      glyph: w.keb,
-      answers: [w.reb],
-      subject: VOCAB_SUBJECT,
-      meaning,
-    });
+    if (!isKanaWord(w)) {
+      facts.push({
+        id: wordReadingFactId(w.keb),
+        entry: wordEntry(w.keb),
+        glyph: w.keb,
+        answers: [w.reb],
+        subject: VOCAB_SUBJECT,
+        meaning,
+      });
+    }
     facts.push({
       id: wordMeaningFactId(w.keb),
       entry: wordEntry(w.keb),
