@@ -27,8 +27,11 @@ import { useState } from "react";
 
 import { Btn } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
+import { useQuizConfig } from "@/lib/quiz-config";
+import { speak } from "@/lib/speech";
 
 export function TeachMe({ chars }: { chars: string[] }) {
+  const { cfg } = useQuizConfig();
   const [i, setI] = useState(0);
   const total = chars.length;
   const at = Math.min(i, total - 1);
@@ -64,6 +67,18 @@ export function TeachMe({ chars }: { chars: string[] }) {
           {char}
         </p>
         <p className="mt-3 text-[15px] text-text-muted">{reading}</p>
+        {/* One speaker, nothing more (this card is deliberately minimal — see the
+            header). Kana always has a sound, so it always shows. `type="button"`
+            keeps it off Next/Back; it never takes autoFocus, so Next stays the
+            key target. */}
+        <button
+          type="button"
+          onClick={() => speak(char, cfg.voiceName)}
+          aria-label={`Hear ${char}`}
+          className="mt-3 cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text"
+        >
+          🔊
+        </button>
       </div>
 
       <div className="flex items-center justify-between">
