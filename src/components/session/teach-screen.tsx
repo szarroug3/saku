@@ -28,10 +28,13 @@
 // next, and it never says how long ago or how badly. That would be a debt, and
 // a debt is the thing the whole app refuses to keep.
 
-import { Btn, Card, Hint } from "@/components/ui";
+import Link from "next/link";
+
+import { Btn, Card } from "@/components/ui";
 import { questionsFor } from "@/lib/engine/question";
 import { speechForFact } from "@/lib/fact-speech";
 import { factInfo } from "@/lib/facts";
+import { entryHref } from "@/lib/library/href";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
@@ -85,8 +88,23 @@ export function TeachScreen({
             return (
               <div
                 key={f}
-                className="kq-material min-w-[92px] flex-1 rounded-lg border border-border bg-panel px-2 pb-2.5 pt-3 text-center"
+                className="kq-material relative min-w-[92px] flex-1 rounded-lg border border-border bg-panel px-2 pb-2.5 pt-3 text-center"
               >
+                {/* The whole card opens this fact's Library entry — where its
+                    full story lives (readings, the words it's tested in, what
+                    it's mixed up with). A STRETCHED LINK, not a wrapping <a>: an
+                    absolutely-positioned overlay covers the card, so the click
+                    target is the whole tile yet the speaker <button> below can
+                    still sit ABOVE it (z-10) and stay a real, valid button —
+                    the same glyph-link / speaker split the Library tile makes.
+                    `Start round 1` lives outside this card, so it's untouched.
+                    Every fact kind (kana, word, kanji, grammar) has an entry
+                    page, so this always resolves. */}
+                <Link
+                  href={entryHref(info.entry)}
+                  aria-label={`Open ${p.glyph} in the Library`}
+                  className="absolute inset-0 z-0 rounded-lg"
+                />
                 {/* Sized off `jp` the same way the drill screen sizes its
                     halo: an English meaning set at 30px is a wall of text
                     where a glyph was. */}
@@ -129,9 +147,15 @@ export function TeachScreen({
                 {sound ? (
                   <button
                     type="button"
-                    onClick={() => speak(sound, cfg.voiceName)}
+                    onClick={(e) => {
+                      // Sits ABOVE the stretched link (relative z-10) and
+                      // swallows the click so hearing it never also navigates —
+                      // the Library tile's speaker/select split, exactly.
+                      e.stopPropagation();
+                      speak(sound, cfg.voiceName);
+                    }}
                     aria-label={`Hear ${sound}`}
-                    className="mt-1.5 cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text"
+                    className="relative z-10 mt-1.5 cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text"
                   >
                     🔊
                   </button>
@@ -149,14 +173,6 @@ export function TeachScreen({
             Start round 1
           </Btn>
         </div>
-      </Card>
-
-      <Card className="px-[15px] py-[13px]">
-        <Hint>
-          These are in the session because the app has nothing to go on for them
-          — either you haven&rsquo;t seen them, or it&rsquo;s been long enough
-          that it can&rsquo;t tell.
-        </Hint>
       </Card>
     </>
   );

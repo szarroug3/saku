@@ -23,10 +23,12 @@
 // walkthrough forgets where you were, which is correct: it taught you nothing
 // the model needs to remember, on purpose.
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { Btn } from "@/components/ui";
-import { CHAR_INDEX } from "@/data/characters";
+import { CHAR_INDEX, kanaEntry } from "@/data/characters";
+import { entryHref } from "@/lib/library/href";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { speak } from "@/lib/speech";
 
@@ -63,9 +65,19 @@ export function TeachMe({ chars }: { chars: string[] }) {
       </div>
 
       <div className="flex flex-col items-center py-5">
-        <p className="font-kana text-[64px] font-extralight leading-none">
+        {/* The glyph opens its Library entry — the one place its full story
+            (readings, the words it appears in, what it's mixed up with) lives.
+            A `Link`, so cmd/middle-click work; it's the glyph alone, so it never
+            swallows the speaker below or the Back/Next buttons — those stay
+            outside it. A link is fine in this deliberately tiny card: the header
+            explains the minimalism, and one tap-through is not clutter. */}
+        <Link
+          href={entryHref(kanaEntry(char))}
+          aria-label={`Open ${char} in the Library`}
+          className="font-kana text-[64px] font-extralight leading-none text-text no-underline"
+        >
           {char}
-        </p>
+        </Link>
         <p className="mt-3 text-[15px] text-text-muted">{reading}</p>
         {/* One speaker, nothing more (this card is deliberately minimal — see the
             header). Kana always has a sound, so it always shows. `type="button"`

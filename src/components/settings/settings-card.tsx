@@ -111,7 +111,7 @@ function NumIn({
         if (Number.isFinite(v) && v >= min && v <= max) onCommit(v);
       }}
       aria-label={label}
-      className="kq-material kq-num w-16 rounded-lg border border-border bg-card px-2 py-1 text-sm"
+      className="kq-material kq-num w-16 rounded-lg border border-border bg-card px-2 py-1 text-center text-sm"
     />
   );
 }
