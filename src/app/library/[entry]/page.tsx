@@ -23,9 +23,11 @@ import { AttributionLink } from "@/components/library/attribution-link";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Hint, Lbl, PageTitle, SmallBtn } from "@/components/ui";
+import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { factsOf } from "@/lib/facts";
 import {
   appearsIn,
+  clusterOf,
   confusableWith,
   entryForGlyph,
   factRows,
@@ -70,6 +72,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const words = appearsIn(entry);
   const parts = madeOf(entry);
   const confusable = confusableWith(entry);
+  const grammarCluster = clusterOf(entry);
   const mine = lists.filter((l) => l.kind === "fixed" && l.entries.includes(entry.id));
 
   // Have you ACTUALLY mixed this up with anything? A different question from
@@ -134,9 +137,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
                   all {standing.total} solid
                 </span>
               )}
-              <SmallBtn onClick={() => speak(entry.glyph, cfg.voiceName)}>
-                🔊 Hear it
-              </SmallBtn>
+              {/* A pattern has no single pronunciation — 〜てから is a shape, not
+                  a sound — so grammar omits Hear rather than speak a placeholder. */}
+              {entry.kind !== GRAMMAR_SUBJECT ? (
+                <SmallBtn onClick={() => speak(entry.glyph, cfg.voiceName)}>
+                  🔊 Hear it
+                </SmallBtn>
+              ) : null}
             </div>
           </div>
         </div>
@@ -148,8 +155,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
             kana it correctly reads "one character and one thing to know", which
             is the degenerate case saying out loud that it is one. */}
         <Lbl>
-          {entry.glyph} is one {entry.kind === "word" ? "word" : "character"} and{" "}
-          {rows.length === 1 ? "one thing" : `${rows.length} things`} to know
+          {entry.glyph} is one{" "}
+          {entry.kind === GRAMMAR_SUBJECT
+            ? "pattern"
+            : entry.kind === "word"
+              ? "word"
+              : "character"}{" "}
+          and {rows.length === 1 ? "one thing" : `${rows.length} things`} to know
         </Lbl>
         <table className="w-full text-left text-[13px]">
           <thead>
@@ -286,6 +298,24 @@ function EntryView({ entry }: { entry: LibEntry }) {
           </p>
         ) : null}
       </Card>
+
+      {/* The way BACK to the cluster map — the "seven ways to say must"
+          comparison a pattern belongs to. This is how the map is reached now
+          that Grammar is not a top-level tab: from the pattern, into its family. */}
+      {grammarCluster ? (
+        <Card>
+          <Lbl>Compare similar patterns</Lbl>
+          <p className="text-[13px] text-text-muted">
+            {entry.glyph} is one of a family that comes out as the same English.{" "}
+            <Link
+              href={`/grammar/${grammarCluster}`}
+              className="text-accent no-underline"
+            >
+              See them side by side →
+            </Link>
+          </p>
+        </Card>
+      ) : null}
 
       <SliceBar
         slice={{ label: entry.glyph, entries: [entry.id] }}

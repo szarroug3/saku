@@ -30,10 +30,18 @@
 import Link from "next/link";
 
 import { StandingChip } from "@/components/library/standing-chip";
+import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import type { LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import type { EntryStanding } from "@/lib/library/standing";
 import { speak } from "@/lib/speech";
+
+/** Whether an entry has a pronunciation worth a 🔊. A grammar pattern does not —
+ * 〜てから is a shape, not a sound — so its tile/row omits the speaker rather
+ * than render one that reads out a placeholder. */
+function speakable(entry: LibEntry): boolean {
+  return entry.kind !== GRAMMAR_SUBJECT;
+}
 
 /** The border a tile wears when it is NOT selected, so a shelf reads at a glance
  * without every tile carrying a chip. Border only — a filled tile at this
@@ -158,7 +166,7 @@ export function EntryTile({
       </div>
       <div className="truncate text-xs text-text-muted">{subLabel(entry)}</div>
       <div className="mt-1.5 flex items-center justify-center gap-1.5">
-        <HearButton entry={entry} voice={voice} />
+        {speakable(entry) ? <HearButton entry={entry} voice={voice} /> : null}
         <ViewLink entry={entry} />
       </div>
     </div>
@@ -246,7 +254,9 @@ export function EntryRow({
           <span className="block truncate text-xs text-text-muted">{note}</span>
         ) : null}
       </span>
-      <HearButton entry={entry} voice={voice} className="flex-none" />
+      {speakable(entry) ? (
+        <HearButton entry={entry} voice={voice} className="flex-none" />
+      ) : null}
       <ViewLink entry={entry} className="flex-none" />
       <span className="flex-none">
         <StandingCell standing={standing} />
