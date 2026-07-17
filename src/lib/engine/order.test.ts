@@ -100,6 +100,27 @@ test("count-limited drill: repeat-fills to limCount and every fill is shuffled",
   assert.ok(deck.every((f) => pool.has(f)));
 });
 
+test("count-limited pairs: capped to limCount, NOT repeat-filled", () => {
+  // The count is honored for a pairs run too — a Count of N means at most N
+  // pairs. But unlike a drill it is never padded above the pool: you cannot put
+  // the same pair on the board twice, so pairs takes min(pool, N) and stops.
+  const cfg = cfgOf({ mode: "pairs", limType: "count", limCount: 5 });
+  const deck = buildDeck(SET, cfg); // SET has 8; asking for 5
+  assert.equal(deck.length, 5, "capped to the count, not the pool");
+  assert.equal(new Set(deck).size, 5, "no repeats — distinct pairs only");
+  const pool = new Set(SET);
+  assert.ok(deck.every((f) => pool.has(f)));
+});
+
+test("count-limited pairs shorter than the count stays short — no padding", () => {
+  // Asking for more pairs than there are facts gives every fact once, not the
+  // count. A pairs board padded by repeating a fact is nonsense; short is honest.
+  const cfg = cfgOf({ mode: "pairs", limType: "count", limCount: SET.length + 4 });
+  const deck = buildDeck(SET, cfg);
+  assert.equal(deck.length, SET.length, "min(pool, N) — never padded above pool");
+  assert.deepEqual(sorted(deck), sorted(SET));
+});
+
 test("input is not mutated — buildDeck shuffles a copy", () => {
   const before = [...SET];
   withRandom([0], () => buildDeck(SET, cfgOf()));

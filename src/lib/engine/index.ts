@@ -30,20 +30,29 @@ export function shuffle<T>(arr: T[]): T[] {
 
 /**
  * Build the starting deck for drill/pairs from the selected FACTS,
- * honoring length=limited + limType=count (repeat-fill then cap).
+ * honoring length=limited + limType=count.
+ *
+ * The CAP applies to BOTH modes — a Count of N means at most N cards, whether
+ * they are drill questions or pairs. The REPEAT-FILL is drill-only: a drill of
+ * "20 questions" over 5 facts asks each ~4 times, which is a fine thing to do to
+ * a flashcard and a nonsense thing to do to a matching board (you cannot put the
+ * same pair on the table twice), so pairs takes min(pool, N) and stops. Pairs
+ * that runs short of N is honest — there simply are not N distinct pairs to make.
+ *
+ * In the normal flow the budget (src/lib/budget.ts) has already capped `facts`
+ * to the count before this sees them, so the slice is a no-op there; it is here
+ * so buildDeck's own contract holds for any caller, not only that one path.
  *
  * Facts, not characters: a deck of 生 is not one card, it is however many of
  * 生's readings you selected, and each is separately gradeable.
  */
 export function buildDeck(facts: FactId[], cfg: QuizConfig): FactId[] {
   let deck = shuffle(facts.slice());
-  if (
-    cfg.length === "limited" &&
-    cfg.limType === "count" &&
-    cfg.mode === "drill"
-  ) {
-    while (facts.length > 0 && deck.length < cfg.limCount) {
-      deck = deck.concat(shuffle(facts.slice()));
+  if (cfg.length === "limited" && cfg.limType === "count") {
+    if (cfg.mode === "drill") {
+      while (facts.length > 0 && deck.length < cfg.limCount) {
+        deck = deck.concat(shuffle(facts.slice()));
+      }
     }
     deck = deck.slice(0, cfg.limCount);
   }

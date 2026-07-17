@@ -42,7 +42,6 @@ export function emptySelection(): Selection {
     states: [],
     text: "",
     session: null,
-    limit: null,
   };
 }
 
@@ -195,38 +194,37 @@ function factsOfList(
   return resolve(list.query, history, lists, metric, depth + 1);
 }
 
-// ---------- sampling ----------
+// ---------- ordering ----------
 
 /**
- * A uniform random sample of `n` facts, in random order — or the whole pool,
- * shuffled, when `n` is null.
+ * The whole pool, in RANDOM order.
  *
- * THIS IS A REVIEW SCREEN, AND THAT IS WHY IT IS RANDOM. This function used to
- * be `rank` — a weakness sort, "hardest first" — and on a custom-drill screen
+ * THIS IS A REVIEW SCREEN, AND THAT IS WHY IT IS RANDOM. resolve() used to end
+ * in `rank` — a weakness sort, "hardest first" — and on a custom-drill screen
  * that is an autopilot pitfall: the same worst items in the same order every
- * time, so you drill your ten weakest into the ground and never see the other
- * nine hundred things you know. A random sample spreads the review across the
- * whole pool and never lets you memorise the running order.
+ * time. Shuffling instead means two drills of the same query meet the pool in a
+ * different order, so nothing gets memorised as a running order.
+ *
+ * It no longer TRUNCATES. "How many" used to be a second cap here (a random
+ * sample of `n`), and there were then two controls that both capped a run — a
+ * selection limit and the session's Length — which could disagree. The count is
+ * now Length's alone (see quiz-options.tsx → budget.ts); this step only orders,
+ * and hands the WHOLE selection to the budget so it can pick the session from
+ * everything you named rather than from a pre-truncated slice of it.
  *
  * This does NOT touch the learning loop's ranking. The weakness model — the
  * 4·p·(1-p) rank in src/lib/scoring.ts that src/lib/budget.ts consumes — is the
- * product and stays exactly as it was: an unlimited session still probes your
- * weakest first, because that path never comes through here. resolve() feeds
- * only the custom-drill/Rerun selection, and this is its one ordering step.
- *
- * Fisher–Yates, partial when a limit is set: shuffling only the first `k`
- * positions is a uniform sample of `k` without ordering the tail. The RETURNED
- * COUNT is `min(pool, n)` regardless of the draw, so the number in the start
- * bar is stable and only WHICH facts (and in what order) changes per call.
+ * product and stays exactly as it was: the session it builds still probes your
+ * weakest first. resolve() only decides the POOL and its order; budget.ts
+ * decides the session.
  */
-function sample(facts: FactId[], n: number | null): FactId[] {
+function shuffled(facts: FactId[]): FactId[] {
   const out = facts.slice();
-  const k = n === null ? out.length : Math.min(n, out.length);
-  for (let i = 0; i < k; i++) {
-    const j = i + Math.floor(Math.random() * (out.length - i));
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
     [out[i], out[j]] = [out[j], out[i]];
   }
-  return out.slice(0, k);
+  return out;
 }
 
 // ---------- resolve ----------
@@ -266,9 +264,9 @@ function knownFacts(history: HistoryFile): FactId[] {
  * Dedup is free, exactly as it was under cfg.enabled and for the same reason:
  * this ends in a Set. Two overlapping filters cannot yield a fact twice.
  *
- * The result is a RANDOM sample in RANDOM order (see sample) — this is a review
- * surface, not the learning loop, and its one and only caller for scheduling
- * (src/lib/budget.ts) never comes through here.
+ * The result is the WHOLE named pool in RANDOM order (see shuffled) — this is a
+ * review surface, not the learning loop. It does not cap: the count is Length's
+ * job (budget.ts), and this hands it the full selection.
  */
 export function resolve(
   sel: Selection,
@@ -309,10 +307,9 @@ export function resolve(
     out.add(f);
   }
 
-  // A random sample of the requested size, in random order. `sample` returns
-  // min(pool, limit) facts either way, so the COUNT is unaffected by the draw —
-  // only which facts, and their order, changes (see countOf).
-  return sample([...out], sel.limit);
+  // The whole named pool, in random order (see shuffled). The count is applied
+  // later, once, by the budget from Length — never here.
+  return shuffled([...out]);
 }
 
 /**
@@ -324,9 +321,9 @@ export function resolve(
  * the labels… the names are a summary and are allowed to blur; the number never
  * is") and it stays true here.
  *
- * resolve() now samples RANDOMLY, but the number never blurs: `sample` always
- * returns min(pool, limit) facts, so the count is independent of the draw and
- * of the order. Two calls disagree on WHICH facts, never on how many.
+ * resolve() now returns the whole pool in random order, so the number never
+ * blurs at all: it is the pool size, independent of the order the draw put it
+ * in. Two calls disagree on the ORDER, never on how many.
  */
 export function countOf(
   sel: Selection,

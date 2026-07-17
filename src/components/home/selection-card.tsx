@@ -14,10 +14,12 @@
 // selection.ts's knownFacts). Day one that pool is empty, and the sentence says
 // "Nothing selected" rather than inventing a special empty state.
 //
-// The count is a RANDOM sample, not "hardest first": this is a review screen,
-// and drilling the same worst N in the same order every time is the autopilot
-// this avoids. The weakness ranking still runs — but on the learning loop (see
-// budget.ts), which never comes through here.
+// HOW MANY is not asked here any more. This card only DESCRIBES the pool; the
+// count lives once, as Length in the setup panel (see quiz-options.tsx), on the
+// rule that the selection says WHAT and Length says HOW MANY. There used to be a
+// "How many" row of chips here too, and two controls that both capped the run
+// was the confusion this removed — a selection limit AND a session count could
+// disagree, and did.
 //
 // Nothing here says "fact", "weakness", "stability" or "p". The words are
 // Kana / Kanji / Words, New / Shaky / Slipping / Solid / Mix-ups, and "things".
@@ -34,10 +36,6 @@ import type { FactBand, SavedList, Selection } from "@/types";
  * stuff I already know" is how you find out you don't. */
 const BANDS: FactBand[] = ["shaky", "slipping", "mixup", "new", "solid"];
 
-/** The count chips. `null` is "all of them" — an honest option rather than a
- * number pretending to be one, and the default. */
-const LIMITS: Array<number | null> = [10, 20, 50, 100, null];
-
 export function SelectionCard({
   sel,
   lists,
@@ -50,9 +48,9 @@ export function SelectionCard({
   const patch = (p: Partial<Selection>) => onChange({ ...sel, ...p });
 
   /** Toggle membership of a set-valued field. Empty means "all", so turning the
-   * last one off widens back to everything rather than selecting nothing —
-   * which is the same rule the count chips' "All" follows, and it is what makes
-   * these read as filters rather than as checkboxes wearing a pill. */
+   * last one off widens back to everything rather than selecting nothing — which
+   * is what makes these read as filters rather than as checkboxes wearing a
+   * pill. */
   const toggle = <T,>(list: T[], v: T): T[] =>
     list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
@@ -123,18 +121,6 @@ export function SelectionCard({
               Curate a selection in the Library
             </Link>
           )}
-        </Row>
-
-        <Row label="How many">
-          {LIMITS.map((n) => (
-            <Chip
-              key={n ?? "all"}
-              on={sel.limit === n}
-              onClick={() => patch({ limit: n })}
-            >
-              {n ?? "All"}
-            </Chip>
-          ))}
         </Row>
 
         {/* A session filter can only be arrived at from Recent, never set here

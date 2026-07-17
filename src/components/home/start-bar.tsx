@@ -50,7 +50,8 @@ export function howSentence(cfg: QuizConfig): string {
       ? "Endless"
       : cfg.limType === "cov"
         ? "Full coverage"
-        : `${cfg.limCount} questions`,
+        : // A pairs run of N is N pairs, not N "questions" — it has no questions.
+          `${cfg.limCount} ${cfg.mode === "pairs" ? "pairs" : "questions"}`,
   );
 
   // Match pairs shows both sides at once — no answer style either.

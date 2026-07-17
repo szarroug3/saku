@@ -11,10 +11,11 @@
 //      learned through the lesson loop (budget.ts), not drilled here. Day one,
 //      when you know nothing, that pool is empty and that is correct.
 //
-//   2. The result is a RANDOM sample in RANDOM order, because this is a review
-//      screen: the old "hardest first" sort drilled the same worst N in the same
-//      order every time. The weakness ranking still runs — but on the learning
-//      loop, which never comes through resolve().
+//   2. The result is the whole named pool in RANDOM order, because this is a
+//      review screen: the old "hardest first" sort drilled the same worst N in
+//      the same order every time. resolve() no longer caps — the count is
+//      Length's alone (budget.ts) — so it hands the budget the whole selection.
+//      The weakness ranking still runs, but on the learning loop, never here.
 //
 // Both are asserted against the real kana data rather than a fixture: the thing
 // under test is precisely that resolve() cuts the REAL registry the right way.
@@ -92,41 +93,37 @@ describe('"Everything" is everything you KNOW, not the whole dictionary', () => 
   });
 });
 
-describe("the drill is a RANDOM sample in RANDOM order", () => {
+describe("the drill is the WHOLE pool in RANDOM order", () => {
+  // resolve() no longer caps. "How many" was removed from the What-to-drill
+  // card and the count is Length's alone (budget.ts); resolve hands the WHOLE
+  // selection to the budget so it picks the session from everything you named.
   const pool = KANA_IDS.slice(0, 30);
   const h = knowing(pool);
 
-  test("a limit yields min(pool, limit) facts, all from the pool", () => {
+  test("resolve returns the whole known pool — every fact, no duplicates", () => {
     const inPool = new Set(pool);
-    for (let i = 0; i < 10; i++) {
-      const out = resolve({ ...emptySelection(), limit: 10 }, h);
-      assert.equal(out.length, 10);
-      assert.equal(new Set(out).size, 10, "no duplicates");
-      for (const f of out) assert.ok(inPool.has(f), "sampled from the pool");
-    }
-  });
-
-  test("the COUNT is stable across draws — only which facts changes", () => {
-    for (let i = 0; i < 10; i++) {
-      assert.equal(countOf({ ...emptySelection(), limit: 10 }, h), 10);
-    }
-  });
-
-  test("the same query drilled twice gives a different sample/order", () => {
-    const seenOrderings = new Set<string>();
-    for (let i = 0; i < 30; i++) {
-      seenOrderings.add(resolve({ ...emptySelection(), limit: 10 }, h).join(","));
-    }
-    // With 30 facts sampled 10 at a time, identical orderings across 30 draws is
-    // astronomically unlikely — a deterministic (old "hardest first") resolve
-    // would produce exactly one. More than one proves the sample is random.
-    assert.ok(seenOrderings.size > 1, "repeated drills must not be identical");
-  });
-
-  test("no limit returns the whole known pool, shuffled", () => {
     const out = resolve(emptySelection(), h);
     assert.equal(out.length, pool.length);
+    assert.equal(new Set(out).size, pool.length, "no duplicates");
+    for (const f of out) assert.ok(inPool.has(f), "drawn from the pool");
     assert.deepEqual([...out].sort(), [...pool].sort());
+  });
+
+  test("the COUNT is stable across draws — it is the pool size", () => {
+    for (let i = 0; i < 10; i++) {
+      assert.equal(countOf(emptySelection(), h), pool.length);
+    }
+  });
+
+  test("the same query resolved twice gives a different order", () => {
+    const seenOrderings = new Set<string>();
+    for (let i = 0; i < 30; i++) {
+      seenOrderings.add(resolve(emptySelection(), h).join(","));
+    }
+    // Identical orderings across 30 draws of a 30-fact pool is astronomically
+    // unlikely — a deterministic (old "hardest first") resolve would produce
+    // exactly one. More than one proves the order is random.
+    assert.ok(seenOrderings.size > 1, "repeated drills must not be identical");
   });
 });
 

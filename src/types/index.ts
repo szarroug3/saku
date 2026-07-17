@@ -272,8 +272,6 @@ export interface Selection {
    * of the same resolve() as everything else.
    */
   session: number | null;
-  /** Cap on how many facts come back, hardest first; null = all of them. */
-  limit: number | null;
 }
 
 /**
