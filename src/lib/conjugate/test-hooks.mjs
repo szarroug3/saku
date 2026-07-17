@@ -58,11 +58,19 @@ function readAliasBase() {
   return pathToFileURL(dir.endsWith("/") ? dir : `${dir}/`);
 }
 
-/** Add `.ts` when the bare path doesn't exist but the TypeScript file does. */
+/** Resolve a bare, extensionless alias path the way tsconfig/Next.js does:
+ * `<path>.ts` first, then `<path>/index.ts` for a directory import. Node's ESM
+ * loader supports neither, so an import like `@/data/grammar` (a directory with
+ * an index.ts) throws ERR_UNSUPPORTED_DIR_IMPORT without this. Purely additive:
+ * a path that already has an extension, or that resolves as a `.ts` file, is
+ * untouched, so no import that resolved before can change. */
 function withExtension(url) {
   if (/\.[a-z]+$/i.test(url.pathname)) return url;
-  const candidate = new URL(`${url.href}.ts`);
-  return existsSync(fileURLToPath(candidate)) ? candidate : url;
+  const asFile = new URL(`${url.href}.ts`);
+  if (existsSync(fileURLToPath(asFile))) return asFile;
+  const asDir = new URL(`${url.href}/index.ts`);
+  if (existsSync(fileURLToPath(asDir))) return asDir;
+  return url;
 }
 
 registerHooks({
