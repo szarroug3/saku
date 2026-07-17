@@ -31,7 +31,11 @@ const serverOnlyStub = new URL(
   import.meta.url,
 );
 registerHooks({
-  resolve(specifier, context, next) {
+  resolve(
+    specifier: string,
+    context: unknown,
+    next: (s: string, c: unknown) => unknown,
+  ) {
     if (specifier === "server-only") return next(serverOnlyStub.href, context);
     return next(specifier, context);
   },
