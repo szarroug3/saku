@@ -63,6 +63,29 @@ export const SOURCES: readonly Source[] = [
     licence: "CC BY-SA 4.0",
     href: "https://www.edrdg.org/krad/kradinf.html",
   },
+  {
+    // NOT an EDRDG file, and the first source here that isn't. Two things
+    // follow and neither is optional:
+    //
+    //  - LICENCE, and why it's compatible. Tatoeba is CC BY 2.0 FR —
+    //    attribution, no share-alike. A BY work can be incorporated into a
+    //    BY-SA one (the combination is BY-SA; that is the direction share-alike
+    //    permits), so the mix is fine. It would NOT be fine in reverse, and it
+    //    would not be fine for an NC source — which is one of the reasons Tae
+    //    Kim's CC BY-NC-SA guide is linked and never bundled. See clusters.ts.
+    //
+    //  - PROVENANCE. Every example sentence carries its Tatoeba id (Example.id
+    //    in corpus.ts) so any sentence on screen can be traced to the human who
+    //    wrote it. That is what makes the attribution real rather than a line
+    //    in a footer, and it is also how a user reports a bad sentence — which
+    //    they will, because unlike the EDRDG files this source is a community
+    //    wiki and is not level-vetted. corpus.ts is blunt about that.
+    name: "Tatoeba",
+    what: "Example sentences and their human English translations, used to show each grammar pattern in a real sentence.",
+    holder: "The Tatoeba Project and its contributors",
+    licence: "CC BY 2.0 FR",
+    href: "https://tatoeba.org/eng/downloads",
+  },
 ];
 
 /**
@@ -74,7 +97,10 @@ export const LICENCE_NOTE =
   "Research and Development Group (KANJIDIC2, JMdict and KRADFILE), used in " +
   "conformance with the Group's licence. The files are made available under " +
   "the Creative Commons Attribution-ShareAlike 4.0 International licence, and " +
-  "the data shown here is derived from them.";
+  "the data shown here is derived from them. Example sentences come from the " +
+  "Tatoeba Project (tatoeba.org) and are used under the Creative Commons " +
+  "Attribution 2.0 France licence; they were written by Tatoeba's contributors, " +
+  "not by this application.";
 
 /** The EDRDG licence in full — the authority for everything above. */
 export const LICENCE_HREF = "https://www.edrdg.org/edrdg/licence.html";

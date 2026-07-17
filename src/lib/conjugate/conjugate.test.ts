@@ -585,14 +585,58 @@ describe("derived forms are pure composition", () => {
 });
 
 // ===========================================================================
+// stem (連用形) — the attachment point the grammar layer hangs patterns off
+// ===========================================================================
+
+describe("stem is the bare attachment point", () => {
+  test("godan stem is the い-row, with no suffix", () => {
+    eq("話す", "v5s", "stem", "話し");
+    eq("待つ", "v5t", "stem", "待ち");
+    eq("読む", "v5m", "stem", "読み");
+    // う takes い, not わ — the あ-row exception must not leak into the い-row.
+    eq("買う", "v5u", "stem", "買い");
+  });
+
+  test("ichidan stem is the bare stem", () => {
+    eq("食べる", "v1", "stem", "食べ");
+  });
+
+  test("the suppletive paradigms derive their stem off masu", () => {
+    eq("する", "vs-i", "stem", "し");
+    eq("来る", "vk", "stem", "来");
+    // Compounds keep their prefix — 持って来 not 来.
+    eq("持って来る", "vk", "stem", "持って来");
+  });
+
+  test("v5aru's row override reaches the stem: 下さる -> 下さい", () => {
+    eq("下さる", "v5aru", "stem", "下さい");
+  });
+
+  test("adjective stem is the い-less stem, NOT the adverb", () => {
+    eq("高い", "adj-i", "stem", "高"); // 高すぎる
+    eq("高い", "adj-i", "adverb", "高く"); // a different form, and stays that way
+    eq("静か", "adj-na", "stem", "静か");
+    // いい stems to よ, so 気持ちいい -> 気持ちよすぎる, never 気持ちいすぎる.
+    eq("いい", "adj-ix", "stem", "よ");
+    eq("気持ちいい", "adj-ix", "stem", "気持ちよ");
+  });
+
+  test("stem is refused where masu is refused, not fabricated", () => {
+    // ございます keeps its policy refusals; stem derives off masu, so anything
+    // masu can't reach, stem can't either.
+    eq("ある", "v5r-i", "stem", "あり");
+  });
+});
+
+// ===========================================================================
 // Enumeration — the search index is a loop over this
 // ===========================================================================
 
 describe("conjugateAll enumerates every form", () => {
-  test("a regular verb yields all 18 forms", () => {
+  test("a regular verb yields all 19 forms", () => {
     const all = conjugateAll("読む", "v5m");
     assert.equal(all.refused.length, 0);
-    assert.equal(Object.keys(all.forms).length, 18);
+    assert.equal(Object.keys(all.forms).length, 19);
     assert.equal(all.forms.te, "読んで");
     assert.equal(all.forms.dictionary, "読む");
   });

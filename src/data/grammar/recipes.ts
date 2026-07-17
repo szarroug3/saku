@@ -1,0 +1,918 @@
+// ===========================================================================
+// PATTERN RECIPES — the grammar subject's data. Tables, not prose.
+//
+// THE WHOLE IDEA
+// ==============
+// Most beginner grammar is: take a form the conjugation engine already
+// generates, attach a fixed string. 〜てから is not knowledge to be explained,
+// it is [V-て] + から. So a recipe is a FORM NAME and a SUFFIX, and the engine
+// in src/lib/conjugate does the rest — including every 音便 irregularity, for
+// free, for all 20,408 conjugatable entries.
+//
+// That is why this file is data and not lessons. The app's job, in the user's
+// own words, is to hand you the inventory, not the taste:
+//
+//   "i don't need the app to teach me judgement. i need it to give me the
+//    skills to make judgement calls. the judgement part comes from experience."
+//
+// So: `gloss` is a terse functional label, never an explanation. "after doing
+// X", not a paragraph about when あとで feels more final than てから. Feel is
+// shown on a cluster page and never asked (see clusters.ts). A gloss this
+// terse is also a FACT about Japanese with almost no expressive room, which is
+// what keeps this file free of anyone else's copyright.
+//
+// HOW MANY GRAMMAR POINTS ARE THERE?
+// ==================================
+// It is not a question with an answer, and this file is the argument for why
+// that's fine. N5 alone is counted at 40, 84, 125 or 132 depending which
+// vendor you ask — a 3.4x spread — and totals run 287 to 979. The JLPT
+// published the only official list and then WITHDREW it in 2010, on the
+// grounds that "publishing a list of items to memorize was not necessarily
+// appropriate."
+//
+// The reason the vendors disagree is our own thesis, arriving from outside.
+// One vendor lists ない形 as ONE entry covering ないでください / なければなり
+// ません / なくてもいいです. Another splits it into three. Neither is wrong —
+// they are answering different questions. It is exactly the 生-has-nine-
+// readings problem that forced the entry/fact split in src/types/index.ts:
+// "how many readings does 生 have" is unanswerable and ungradeable, and the
+// fix was to stop asking and key the fact on something that IS gradeable.
+//
+// Here the same move works: we store RECIPES, each of which is independently
+// askable, and "how many grammar points are there" stops being a question the
+// app needs an answer to. It is the strongest outside validation the fact
+// model has — the vendors' 3.4x disagreement is the model's failure case,
+// observed in the wild, in a subject that had never heard of us.
+//
+// SPLIT PATTERNS
+// ==============
+// Where one vendor entry is really several facts, it is several rows here,
+// each with its own id and gloss. て merges sequence/cause/request; から is
+// reason vs source; られる is potential vs passive. Note that られる is
+// ambiguous IN JAPANESE ITSELF, not merely in someone's list — 食べられる is
+// genuinely both, and no amount of splitting fixes the sentence. Splitting the
+// RECIPE is still right: they are two different things to know.
+// ===========================================================================
+
+import type { Form, WordClass } from "../../lib/conjugate/index.ts";
+
+/** JLPT level, as vendors reckon it. See the header: this is opinion, not fact. */
+export type Level = "N5" | "N4";
+
+/**
+ * What kind of word a recipe attaches to.
+ *
+ * Not the same axis as the engine's WordClass. The engine cares whether a word
+ * is v5k or v1 (how to conjugate it); a recipe cares whether it is a verb, an
+ * adjective or a noun (whether it may attach at all). 〜てから takes a verb and
+ * does not care which conjugation class it is — that is the engine's problem,
+ * already solved.
+ */
+export type Host = "verb" | "adj-i" | "adj-na" | "noun";
+
+/**
+ * One way of building a pattern: a form name and a suffix.
+ *
+ * `form: null` means "no conjugation at all" — attach to the bare word. That
+ * is the noun case (本 + だけ), and it is also the marker of a VACUOUS recipe;
+ * see `isVacuous`.
+ *
+ * `trim` mirrors the engine's own DerivedFormRule vocabulary on purpose: 〜な
+ * ければならない is ない minus い plus ければならない, and spelling that as a
+ * trim keeps it a table row instead of a special case.
+ */
+export interface Attachment {
+  readonly host: Host;
+  /** The form to attach to, or null for the bare word. */
+  readonly form: Form | null;
+  /** Text stripped off the end of the form's output before adding. */
+  readonly trim?: string;
+  readonly add: string;
+}
+
+export interface Recipe {
+  /** Stable id. Never parsed — see src/lib/fact-id.ts. */
+  readonly id: string;
+  /** How the pattern is written, for display. 〜てから */
+  readonly pattern: string;
+  /**
+   * A terse FUNCTIONAL gloss. "after doing X". Never an explanation, never a
+   * comparison to a sibling pattern — that is what the cluster page is for,
+   * and it is shown, not asked.
+   */
+  readonly gloss: string;
+  readonly level: Level;
+  /** Every host this attaches to, and how. */
+  readonly attach: readonly Attachment[];
+  /** The cluster this belongs to, if any. See clusters.ts. */
+  readonly cluster?: string;
+  /**
+   * Word- or class-specific overrides of the attachment's `add`. First match
+   * wins; a `word` match beats a `cls` match only by being listed first.
+   *
+   * This exists because ONE recipe needed it and generated wrong Japanese
+   * without it — see sou-appearance. Keep it that way: an exception here is a
+   * confession that the template model doesn't reach, and each one should be
+   * justified in the row's `note`.
+   */
+  readonly except?: readonly RecipeException[];
+  /** Why this row is interesting/awkward. Engineering notes, not lessons. */
+  readonly note?: string;
+}
+
+export interface RecipeException {
+  /** Match the host's dictionary form exactly. */
+  readonly word?: string;
+  /** Match any word of this conjugation class. */
+  readonly cls?: WordClass;
+  /** Replaces the attachment's `add`. */
+  readonly add: string;
+}
+
+/**
+ * Is this recipe vacuous — i.e. is asking it to be PRODUCED not a question?
+ *
+ * "Give me the ことができる form of 食べる" is 食べる + ことができる. The user
+ * types the word back plus a fixed string. Nothing was conjugated, so nothing
+ * was tested. That is typing, not a drill.
+ *
+ * Computed, not hand-marked, so it cannot drift from the data it describes: a
+ * recipe is vacuous exactly when no attachment transforms its host. Note this
+ * is a claim about the PRODUCTION question only — a vacuous recipe can still
+ * carry a perfectly good meaning fact, and can still appear as a distractor in
+ * a SELECTION question. It just must not be asked "now you build it".
+ */
+export function isVacuous(r: Recipe): boolean {
+  return r.attach.every((a) => (a.form === null || a.form === "dictionary") && !a.trim);
+}
+
+// ---------------------------------------------------------------------------
+// THE TABLE.
+//
+// Grouped by what the pattern DOES, because that is how a cluster forms and
+// clusters are the thing the user actually needs (7 ways to say "must").
+// Within a group, N5 before N4.
+// ---------------------------------------------------------------------------
+
+export const RECIPES: readonly Recipe[] = [
+  // --- て-form: three different things wearing one coat --------------------
+  // The classic "one vendor entry, several facts" case. A textbook teaches
+  // "the て-form" once; it is at least three unrelated jobs, and a learner who
+  // knows the て-form still does not know any of them.
+  {
+    id: "te-request",
+    pattern: "〜てください",
+    gloss: "please do X",
+    level: "N5",
+    attach: [{ host: "verb", form: "te", add: "ください" }],
+  },
+  {
+    id: "te-sequence",
+    pattern: "〜て",
+    gloss: "do X, and then",
+    level: "N5",
+    attach: [{ host: "verb", form: "te", add: "" }],
+    note:
+      "Bare て. Same string as te-cause and te-request, different job — which " +
+      "is why they are three rows. A SELECTION question can never distinguish " +
+      "these three from the blank alone; only production is honest here.",
+  },
+  {
+    id: "te-cause",
+    pattern: "〜て",
+    gloss: "because X (unintentional)",
+    level: "N4",
+    attach: [
+      { host: "verb", form: "te", add: "" },
+      { host: "adj-i", form: "te", add: "" },
+      { host: "adj-na", form: "te", add: "" },
+    ],
+    note: "遅れて / 寒くて / 静かで. See te-sequence.",
+  },
+  {
+    id: "te-permission",
+    pattern: "〜てもいい",
+    gloss: "may do X",
+    level: "N5",
+    attach: [
+      { host: "verb", form: "te", add: "もいい" },
+      { host: "adj-i", form: "te", add: "もいい" },
+    ],
+  },
+  {
+    id: "te-prohibition",
+    pattern: "〜てはいけない",
+    gloss: "must not do X",
+    level: "N5",
+    attach: [{ host: "verb", form: "te", add: "はいけない" }],
+  },
+  {
+    id: "te-kara",
+    pattern: "〜てから",
+    gloss: "after doing X",
+    level: "N5",
+    cluster: "after",
+    attach: [{ host: "verb", form: "te", add: "から" }],
+  },
+  {
+    id: "te-iru",
+    pattern: "〜ている",
+    gloss: "is doing X / is in the state of X",
+    level: "N5",
+    attach: [{ host: "verb", form: "te", add: "いる" }],
+    note:
+      "The engine already exposes this as the `teiru` form; it is restated as " +
+      "a recipe because the user meets it as a pattern, not as a form. Both " +
+      "spellings agree by construction — teiru IS te + いる in DERIVED_FORMS.",
+  },
+  {
+    id: "te-shimau",
+    pattern: "〜てしまう",
+    gloss: "do X completely / do X regrettably",
+    level: "N4",
+    attach: [{ host: "verb", form: "te", add: "しまう" }],
+  },
+  {
+    id: "te-miru",
+    pattern: "〜てみる",
+    gloss: "try doing X",
+    level: "N4",
+    attach: [{ host: "verb", form: "te", add: "みる" }],
+  },
+  {
+    id: "te-oku",
+    pattern: "〜ておく",
+    gloss: "do X in advance",
+    level: "N4",
+    attach: [{ host: "verb", form: "te", add: "おく" }],
+  },
+  {
+    id: "te-aru",
+    pattern: "〜てある",
+    gloss: "has been done (and stays done)",
+    level: "N4",
+    attach: [{ host: "verb", form: "te", add: "ある" }],
+  },
+  {
+    id: "te-iku",
+    pattern: "〜ていく",
+    gloss: "go on doing X / X from now on",
+    level: "N4",
+    attach: [{ host: "verb", form: "te", add: "いく" }],
+  },
+  {
+    id: "te-kuru",
+    pattern: "〜てくる",
+    gloss: "come to do X / X up to now",
+    level: "N4",
+    attach: [{ host: "verb", form: "te", add: "くる" }],
+  },
+  {
+    id: "te-ageru",
+    pattern: "〜てあげる",
+    gloss: "do X for someone",
+    level: "N4",
+    attach: [{ host: "verb", form: "te", add: "あげる" }],
+  },
+  {
+    id: "te-kureru",
+    pattern: "〜てくれる",
+    gloss: "someone does X for me",
+    level: "N4",
+    attach: [{ host: "verb", form: "te", add: "くれる" }],
+  },
+  {
+    id: "te-morau",
+    pattern: "〜てもらう",
+    gloss: "have someone do X",
+    level: "N4",
+    attach: [{ host: "verb", form: "te", add: "もらう" }],
+  },
+  {
+    id: "te-mo",
+    pattern: "〜ても",
+    gloss: "even if X",
+    level: "N4",
+    attach: [
+      { host: "verb", form: "te", add: "も" },
+      { host: "adj-i", form: "te", add: "も" },
+    ],
+  },
+
+  // --- ない-form ----------------------------------------------------------
+  {
+    id: "nai-request",
+    pattern: "〜ないでください",
+    gloss: "please don't do X",
+    level: "N5",
+    attach: [{ host: "verb", form: "nai", add: "でください" }],
+  },
+  {
+    id: "nai-de",
+    pattern: "〜ないで",
+    gloss: "without doing X",
+    level: "N4",
+    attach: [{ host: "verb", form: "nai", add: "で" }],
+  },
+  {
+    id: "nakute-mo-ii",
+    pattern: "〜なくてもいい",
+    gloss: "don't have to do X",
+    level: "N5",
+    attach: [{ host: "verb", form: "nai", trim: "い", add: "くてもいい" }],
+  },
+  {
+    id: "nakereba-naranai",
+    pattern: "〜なければならない",
+    gloss: "must do X",
+    level: "N4",
+    cluster: "obligation",
+    attach: [{ host: "verb", form: "nai", trim: "い", add: "ければならない" }],
+  },
+  {
+    id: "nakereba-ikenai",
+    pattern: "〜なければいけない",
+    gloss: "must do X",
+    level: "N4",
+    cluster: "obligation",
+    attach: [{ host: "verb", form: "nai", trim: "い", add: "ければいけない" }],
+  },
+  {
+    id: "nakute-wa-naranai",
+    pattern: "〜なくてはならない",
+    gloss: "must do X",
+    level: "N4",
+    cluster: "obligation",
+    attach: [{ host: "verb", form: "nai", trim: "い", add: "くてはならない" }],
+  },
+  {
+    id: "nakute-wa-ikenai",
+    pattern: "〜なくてはいけない",
+    gloss: "must do X",
+    level: "N4",
+    cluster: "obligation",
+    attach: [{ host: "verb", form: "nai", trim: "い", add: "くてはいけない" }],
+  },
+  {
+    id: "nakucha",
+    pattern: "〜なくちゃ",
+    gloss: "must do X",
+    level: "N4",
+    cluster: "obligation",
+    attach: [{ host: "verb", form: "nai", trim: "い", add: "くちゃ" }],
+    note: "Spoken contraction of なくては. Same gloss as its six siblings — see clusters.ts.",
+  },
+  {
+    id: "nakya",
+    pattern: "〜なきゃ",
+    gloss: "must do X",
+    level: "N4",
+    cluster: "obligation",
+    attach: [{ host: "verb", form: "nai", trim: "い", add: "きゃ" }],
+    note: "Spoken contraction of なければ.",
+  },
+  {
+    id: "nai-to-ikenai",
+    pattern: "〜ないといけない",
+    gloss: "must do X",
+    level: "N4",
+    cluster: "obligation",
+    attach: [{ host: "verb", form: "nai", add: "といけない" }],
+  },
+  {
+    id: "nai-hou-ga-ii",
+    pattern: "〜ないほうがいい",
+    gloss: "had better not do X",
+    level: "N4",
+    attach: [{ host: "verb", form: "nai", add: "ほうがいい" }],
+  },
+
+  // --- た-form ------------------------------------------------------------
+  {
+    id: "ta-koto-ga-aru",
+    pattern: "〜たことがある",
+    gloss: "have done X before",
+    level: "N5",
+    attach: [{ host: "verb", form: "ta", add: "ことがある" }],
+  },
+  {
+    id: "ta-ato-de",
+    pattern: "〜たあとで",
+    gloss: "after doing X",
+    level: "N5",
+    cluster: "after",
+    attach: [{ host: "verb", form: "ta", add: "あとで" }],
+    note:
+      "CORPUS-SCARCE. Only 9 Tatoeba sentences at <=10 tokens: learners write " +
+      "、where a textbook writes で. Needs hand-authored examples; see " +
+      "src/data/grammar/examples.ts.",
+  },
+  {
+    id: "ta-hou-ga-ii",
+    pattern: "〜たほうがいい",
+    gloss: "had better do X",
+    level: "N5",
+    attach: [{ host: "verb", form: "ta", add: "ほうがいい" }],
+  },
+  {
+    id: "ta-bakari",
+    pattern: "〜たばかり",
+    gloss: "just did X",
+    level: "N4",
+    cluster: "just-happened",
+    attach: [{ host: "verb", form: "ta", add: "ばかり" }],
+  },
+  {
+    id: "ta-tokoro",
+    pattern: "〜たところ",
+    gloss: "just did X",
+    level: "N4",
+    cluster: "just-happened",
+    attach: [{ host: "verb", form: "ta", add: "ところ" }],
+  },
+  {
+    id: "tari-tari",
+    pattern: "〜たり〜たり",
+    gloss: "do things like X and Y",
+    level: "N5",
+    attach: [{ host: "verb", form: "ta", add: "り" }],
+    note:
+      "CORPUS-SCARCE, structurally. Needs TWO verbs in the frame, so the " +
+      "<=14-token filter bites hardest exactly here. Hand-authored examples.",
+  },
+
+  // --- stem (連用形) -------------------------------------------------------
+  {
+    id: "nagara",
+    pattern: "〜ながら",
+    gloss: "while doing X",
+    level: "N4",
+    attach: [{ host: "verb", form: "stem", add: "ながら" }],
+  },
+  {
+    id: "sugiru",
+    pattern: "〜すぎる",
+    gloss: "do X too much / too X",
+    level: "N4",
+    attach: [
+      { host: "verb", form: "stem", add: "すぎる" },
+      { host: "adj-i", form: "stem", add: "すぎる" },
+      { host: "adj-na", form: "stem", add: "すぎる" },
+    ],
+    note: "The adjective host is why the engine's adjective `stem` is 高 and not 高く.",
+  },
+  {
+    id: "yasui",
+    pattern: "〜やすい",
+    gloss: "easy to X",
+    level: "N4",
+    attach: [{ host: "verb", form: "stem", add: "やすい" }],
+  },
+  {
+    id: "nikui",
+    pattern: "〜にくい",
+    gloss: "hard to X",
+    level: "N4",
+    cluster: "hard-to-do",
+    attach: [{ host: "verb", form: "stem", add: "にくい" }],
+  },
+  {
+    id: "zurai",
+    pattern: "〜づらい",
+    gloss: "hard to X",
+    level: "N4",
+    cluster: "hard-to-do",
+    attach: [{ host: "verb", form: "stem", add: "づらい" }],
+  },
+  {
+    id: "kata",
+    pattern: "〜方",
+    gloss: "how to X / way of doing X",
+    level: "N4",
+    attach: [{ host: "verb", form: "stem", add: "方" }],
+  },
+  {
+    id: "ni-iku",
+    pattern: "〜に行く",
+    gloss: "go in order to X",
+    level: "N5",
+    attach: [{ host: "verb", form: "stem", add: "に行く" }],
+  },
+  {
+    id: "sou-appearance",
+    pattern: "〜そう (様態)",
+    gloss: "looks like it will X / looks X",
+    level: "N4",
+    cluster: "seems",
+    attach: [
+      { host: "verb", form: "stem", add: "そう" },
+      { host: "adj-i", form: "stem", add: "そう" },
+      { host: "adj-na", form: "stem", add: "そう" },
+    ],
+    except: [
+      // THE さ-INSERTION. An い-adjective whose stem is a single mora takes さ
+      // before そう: いい -> よさそう, ない -> なさそう. Without this the recipe
+      // emits よそう, which is not merely wrong, it is a DIFFERENT WORD (予想,
+      // "a forecast"). Caught by running the table against real vocabulary.
+      //
+      // Matching on the CLASS is what makes this safe. The tempting rule —
+      // "ends with ない" — silently breaks 汚い, 危ない, 少ない (きたなそう is
+      // correct, きたなさそう is not); their stems are three morae, not one.
+      // adj-ix is exactly the いい/よい family and nothing else, so it carries
+      // the compounds (気持ちいい -> 気持ちよさそう) for free.
+      { cls: "adj-ix", add: "さそう" },
+      // ない and 無い are tagged adj-i, so they need naming outright. They are
+      // the only adj-i entries with a one-mora stem.
+      { word: "ない", add: "さそう" },
+      { word: "無い", add: "さそう" },
+    ],
+    note:
+      "SPLIT from sou-hearsay, and the split is real rather than editorial: " +
+      "the ATTACHMENT differs. 降りそう (stem) 'looks like rain' vs 降るそうだ " +
+      "(plain) 'I hear it'll rain'. Different string, different meaning — the " +
+      "one member of the そう family that a machine can tell apart. " +
+      "Carries the only `except` table in the file; see it.",
+  },
+  {
+    id: "tai",
+    pattern: "〜たい",
+    gloss: "want to X",
+    level: "N5",
+    attach: [{ host: "verb", form: "stem", add: "たい" }],
+    note: "Also exposed as the engine's `tai` form; the two agree by construction.",
+  },
+
+  // --- ます-form ----------------------------------------------------------
+  {
+    id: "mashou",
+    pattern: "〜ましょう",
+    gloss: "let's X",
+    level: "N5",
+    attach: [{ host: "verb", form: "masu", trim: "ます", add: "ましょう" }],
+  },
+  {
+    id: "masen-ka",
+    pattern: "〜ませんか",
+    gloss: "won't you X? (invitation)",
+    level: "N5",
+    attach: [{ host: "verb", form: "masu", trim: "ます", add: "ませんか" }],
+  },
+  {
+    id: "mashou-ka",
+    pattern: "〜ましょうか",
+    gloss: "shall I X?",
+    level: "N5",
+    attach: [{ host: "verb", form: "masu", trim: "ます", add: "ましょうか" }],
+  },
+
+  // --- dictionary form ----------------------------------------------------
+  // Most of these are VACUOUS as production questions — see isVacuous. They
+  // are kept because their MEANING is still a fact, and because they are
+  // indispensable as SELECTION distractors.
+  {
+    id: "koto-ga-dekiru",
+    pattern: "〜ことができる",
+    gloss: "can do X",
+    level: "N5",
+    cluster: "ability",
+    attach: [{ host: "verb", form: "dictionary", add: "ことができる" }],
+  },
+  {
+    id: "mae-ni",
+    pattern: "〜前に",
+    gloss: "before doing X",
+    level: "N5",
+    attach: [{ host: "verb", form: "dictionary", add: "前に" }],
+  },
+  {
+    id: "tsumori",
+    pattern: "〜つもり",
+    gloss: "intend to X",
+    level: "N5",
+    attach: [{ host: "verb", form: "dictionary", add: "つもり" }],
+  },
+  {
+    id: "koto-ni-suru",
+    pattern: "〜ことにする",
+    gloss: "decide to X",
+    level: "N4",
+    attach: [{ host: "verb", form: "dictionary", add: "ことにする" }],
+  },
+  {
+    id: "koto-ni-naru",
+    pattern: "〜ことになる",
+    gloss: "it is decided that X",
+    level: "N4",
+    attach: [{ host: "verb", form: "dictionary", add: "ことになる" }],
+  },
+  {
+    id: "to-omou",
+    pattern: "〜と思う",
+    gloss: "think that X",
+    level: "N5",
+    attach: [{ host: "verb", form: "dictionary", add: "と思う" }],
+  },
+  {
+    id: "hazu",
+    pattern: "〜はず",
+    gloss: "is supposed to X",
+    level: "N4",
+    attach: [{ host: "verb", form: "dictionary", add: "はず" }],
+  },
+  {
+    id: "tokoro",
+    pattern: "〜ところ",
+    gloss: "about to X",
+    level: "N4",
+    attach: [{ host: "verb", form: "dictionary", add: "ところ" }],
+  },
+
+  // --- potential / passive: ambiguous in Japanese, not just in the list ----
+  {
+    id: "potential",
+    pattern: "〜られる (可能)",
+    gloss: "can do X",
+    level: "N4",
+    cluster: "ability",
+    attach: [{ host: "verb", form: "potential", add: "" }],
+    note:
+      "SPLIT from passive, and unlike sou the split does NOT rescue the " +
+      "sentence: for every ichidan verb the two forms are the SAME STRING " +
+      "(食べられる is both 'can eat' and 'is eaten'). The ambiguity is in " +
+      "Japanese itself. Splitting the recipe is still correct — they are two " +
+      "things to know — but no SELECTION item may ever ask a learner to pick " +
+      "between these two for a v1 verb, because there is no fact of the matter.",
+  },
+  {
+    id: "passive",
+    pattern: "〜られる (受身)",
+    gloss: "is X-ed (by someone)",
+    level: "N4",
+    attach: [{ host: "verb", form: "passive", add: "" }],
+    note: "See potential.",
+  },
+  {
+    id: "causative",
+    pattern: "〜させる",
+    gloss: "make/let someone X",
+    level: "N4",
+    attach: [{ host: "verb", form: "causative", add: "" }],
+  },
+  {
+    id: "causative-passive",
+    pattern: "〜させられる",
+    gloss: "be made to X",
+    level: "N4",
+    attach: [{ host: "verb", form: "causativePassive", add: "" }],
+  },
+
+  // --- volitional ---------------------------------------------------------
+  {
+    id: "you-to-omou",
+    pattern: "〜(よ)うと思う",
+    gloss: "am thinking of X-ing",
+    level: "N4",
+    attach: [{ host: "verb", form: "volitional", add: "と思う" }],
+  },
+
+  // --- conditionals: four ways, glossed the same ---------------------------
+  {
+    id: "ba",
+    pattern: "〜ば",
+    gloss: "if X",
+    level: "N4",
+    cluster: "conditionals",
+    attach: [
+      { host: "verb", form: "ba", add: "" },
+      { host: "adj-i", form: "ba", add: "" },
+    ],
+  },
+  {
+    id: "tara",
+    pattern: "〜たら",
+    gloss: "if/when X",
+    level: "N5",
+    cluster: "conditionals",
+    attach: [
+      { host: "verb", form: "tara", add: "" },
+      { host: "adj-i", form: "tara", add: "" },
+      { host: "adj-na", form: "tara", add: "" },
+    ],
+  },
+  {
+    id: "to-conditional",
+    pattern: "〜と",
+    gloss: "whenever X, Y",
+    level: "N4",
+    cluster: "conditionals",
+    attach: [{ host: "verb", form: "dictionary", add: "と" }],
+  },
+  {
+    id: "nara",
+    pattern: "〜なら",
+    gloss: "if it's the case that X",
+    level: "N4",
+    cluster: "conditionals",
+    attach: [
+      { host: "noun", form: null, add: "なら" },
+      { host: "verb", form: "dictionary", add: "なら" },
+    ],
+  },
+
+  // --- reason: から vs ので (and から's other job) -------------------------
+  {
+    id: "kara-reason",
+    pattern: "〜から (理由)",
+    gloss: "because X",
+    level: "N5",
+    cluster: "because",
+    attach: [
+      { host: "verb", form: "dictionary", add: "から" },
+      { host: "adj-i", form: "dictionary", add: "から" },
+    ],
+    note: "SPLIT from kara-source. Same string, unrelated jobs.",
+  },
+  {
+    id: "kara-source",
+    pattern: "〜から (起点)",
+    gloss: "from X",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "から" }],
+    note: "SPLIT from kara-reason. 東京から — a starting point, not a reason.",
+  },
+  {
+    id: "node",
+    pattern: "〜ので",
+    gloss: "because X",
+    level: "N5",
+    cluster: "because",
+    attach: [
+      { host: "verb", form: "dictionary", add: "ので" },
+      { host: "adj-na", form: "prenominal", add: "ので" },
+    ],
+    note: "静かなので — the adj-na host needs the prenominal な, not the bare stem.",
+  },
+  {
+    id: "noni",
+    pattern: "〜のに",
+    gloss: "even though X",
+    level: "N4",
+    attach: [{ host: "verb", form: "dictionary", add: "のに" }],
+  },
+  {
+    id: "shi",
+    pattern: "〜し",
+    gloss: "X, and what's more",
+    level: "N4",
+    attach: [{ host: "verb", form: "dictionary", add: "し" }],
+  },
+
+  // --- evidentials: the "seems" family ------------------------------------
+  {
+    id: "sou-hearsay",
+    pattern: "〜そうだ (伝聞)",
+    gloss: "I hear that X",
+    level: "N4",
+    cluster: "seems",
+    attach: [
+      { host: "verb", form: "dictionary", add: "そうだ" },
+      { host: "adj-i", form: "dictionary", add: "そうだ" },
+    ],
+    note: "SPLIT from sou-appearance by ATTACHMENT — see that row.",
+  },
+  {
+    id: "you-da",
+    pattern: "〜ようだ",
+    gloss: "seems that X",
+    level: "N4",
+    cluster: "seems",
+    attach: [
+      { host: "verb", form: "dictionary", add: "ようだ" },
+      { host: "noun", form: null, add: "のようだ" },
+    ],
+    note:
+      "THE REGEX TRAP. A regex for ようだ scores 5,290 corpus hits against a " +
+      "morphological truth of 728 — an 86% false-positive rate, silent. に " +
+      "carries lemma だ in UniDic, so every ように matched. This row is why " +
+      "the corpus filter is fugashi and not a pattern match.",
+  },
+  {
+    id: "rashii",
+    pattern: "〜らしい",
+    gloss: "apparently X",
+    level: "N4",
+    cluster: "seems",
+    attach: [
+      { host: "verb", form: "dictionary", add: "らしい" },
+      { host: "noun", form: null, add: "らしい" },
+    ],
+  },
+  {
+    id: "kamoshirenai",
+    pattern: "〜かもしれない",
+    gloss: "might be X",
+    level: "N4",
+    cluster: "seems",
+    attach: [
+      { host: "verb", form: "dictionary", add: "かもしれない" },
+      { host: "noun", form: null, add: "かもしれない" },
+    ],
+  },
+  {
+    id: "deshou",
+    pattern: "〜でしょう",
+    gloss: "probably X",
+    level: "N5",
+    cluster: "seems",
+    attach: [
+      { host: "verb", form: "dictionary", add: "でしょう" },
+      { host: "noun", form: null, add: "でしょう" },
+    ],
+  },
+
+  // --- comparison ---------------------------------------------------------
+  {
+    id: "hou-ga-yori",
+    pattern: "〜のほうが〜より",
+    gloss: "X is more ... than Y",
+    level: "N5",
+    cluster: "comparison",
+    attach: [{ host: "noun", form: null, add: "のほうが" }],
+  },
+  {
+    id: "wa-yori",
+    pattern: "〜は〜より",
+    gloss: "X is more ... than Y",
+    level: "N5",
+    cluster: "comparison",
+    attach: [{ host: "noun", form: null, add: "は" }],
+    note:
+      "VACUOUS as production, and the clearest example of why isVacuous " +
+      "exists: 'give me the は form of 私' is not a question, it is typing.",
+  },
+
+  // --- particles: the ALLOWLIST ------------------------------------------
+  // These ship as SELECTION items only in marked frames, and the allowlist is
+  // the whole safety mechanism. See selection.ts for the argument; the short
+  // version is that は/が cloze was verified dead across 660,343 particle
+  // slots and is not here, and never will be.
+  {
+    id: "wo",
+    pattern: "を",
+    gloss: "marks the direct object",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "を" }],
+  },
+  {
+    id: "e",
+    pattern: "へ",
+    gloss: "toward (direction)",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "へ" }],
+  },
+  {
+    id: "made",
+    pattern: "まで",
+    gloss: "until / as far as",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "まで" }],
+  },
+  {
+    id: "made-ni",
+    pattern: "までに",
+    gloss: "by (a deadline)",
+    level: "N4",
+    attach: [{ host: "noun", form: null, add: "までに" }],
+  },
+  {
+    id: "dake",
+    pattern: "だけ",
+    gloss: "only",
+    level: "N5",
+    attach: [{ host: "noun", form: null, add: "だけ" }],
+  },
+  {
+    id: "shika-nai",
+    pattern: "〜しか〜ない",
+    gloss: "only X (nothing but)",
+    level: "N4",
+    attach: [{ host: "noun", form: null, add: "しか" }],
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Lookups.
+// ---------------------------------------------------------------------------
+
+const BY_ID: ReadonlyMap<string, Recipe> = new Map(RECIPES.map((r) => [r.id, r]));
+
+export function recipe(id: string): Recipe | undefined {
+  return BY_ID.get(id);
+}
+
+export function recipesInCluster(cluster: string): Recipe[] {
+  return RECIPES.filter((r) => r.cluster === cluster);
+}
+
+/** The recipes worth asking a PRODUCTION question about. */
+export const DRILLABLE: readonly Recipe[] = RECIPES.filter((r) => !isVacuous(r));

@@ -111,6 +111,11 @@ export const DERIVED_FORMS: Partial<Record<Form, DerivedFormRule>> = {
   tara: { from: "ta", trim: "", add: "ら" },
   teiru: { from: "te", trim: "", add: "いる" },
   causativePassive: { from: "causative", trim: "る", add: "られる" },
+  // 連用形, for verbs. Deriving it off masu rather than reading the i-stem
+  // directly is deliberate: the paradigm classes (する -> し, くる -> き) have
+  // no stem table to read, and this way they need no entry at all. Adjectives
+  // never reach here — they list `stem` in their own tables below.
+  stem: { from: "masu", trim: "ます", add: "" },
 };
 
 // ---------------------------------------------------------------------------
@@ -409,6 +414,7 @@ export const CLASSES: Record<WordClass, ClassDef> = {
       ta: "かった",
       nai: "くない",
       ba: "ければ",
+      stem: "", // 高 / よ — the 高すぎる, 高そう attachment point.
       adverb: "く",
       prenominal: "い",
     },
@@ -439,6 +445,7 @@ export const CLASSES: Record<WordClass, ClassDef> = {
       ta: "かった",
       nai: "くない",
       ba: "ければ",
+      stem: "", // 高 / よ — the 高すぎる, 高そう attachment point.
       adverb: "く",
       prenominal: "い",
     },
@@ -457,6 +464,7 @@ export const CLASSES: Record<WordClass, ClassDef> = {
       ta: "だった",
       nai: "ではない",
       ba: "なら",
+      stem: "", // 静か — the word already IS the stem; see stemRules above.
       adverb: "に",
       prenominal: "な",
     },
