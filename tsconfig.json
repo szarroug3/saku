@@ -11,6 +11,11 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Tests run on `node --test` with Node 24's native type stripping, which
+    // does no extension resolution — `import "./confusions.ts"` is the only
+    // spelling that loads. Safe with noEmit: nothing is compiled, so the
+    // extension never has to be rewritten.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [

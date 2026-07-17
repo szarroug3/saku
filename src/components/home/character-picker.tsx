@@ -42,6 +42,7 @@ import { PickerRow } from "@/components/home/picker-row";
 import { Card, Lbl, SmallBtn } from "@/components/ui";
 import { isExtendedSection, SETS } from "@/data/characters";
 import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
+import { kanaFact } from "@/data/characters";
 import { ALL_CHARS } from "@/lib/decks";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
@@ -136,7 +137,7 @@ export function CharacterPicker() {
         key={m.section.id}
         chars={m.chars}
         enabled={cfg.enabled}
-        pct={accuracyFor(history, chars, cfg.accuracyMetric)}
+        pct={accuracyFor(history, chars.map(kanaFact), cfg.accuracyMetric)}
         onToggleRow={() => allNone(chars, on < chars.length)}
         onToggleChar={toggleChar}
       />
@@ -220,7 +221,13 @@ export function CharacterPicker() {
         {scripts.map(({ charSet, sections }) => {
           const chars = sections.flatMap((m) => m.chars.map((c) => c.c));
           const on = chars.filter((c) => cfg.enabled[c]).length;
-          const acc = accuracyFor(history, chars, cfg.accuracyMetric);
+          // Pooled over the section's facts — a group of many entries, so this
+          // is a real ratio over showings, not an entry summary.
+          const acc = accuracyFor(
+            history,
+            chars.map(kanaFact),
+            cfg.accuracyMetric,
+          );
           const open = q ? true : !!openSets[charSet.id];
           return (
             <div

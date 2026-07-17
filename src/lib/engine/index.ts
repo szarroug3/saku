@@ -5,16 +5,28 @@
 
 import { CHAR_INDEX, LOOK_GROUP } from "@/data/characters";
 import { BEHAVIOR } from "@/lib/config";
+import { factKeys } from "@/lib/facts";
 import type {
-  CharSessionDetail,
   Direction,
+  FactId,
+  FactSessionDetail,
   QuizConfig,
   SessionStats,
 } from "@/types";
 
 // ---------- question type extension point ----------
 
-/** A pluggable question kind. Today: character recall (jp2en / en2jp). */
+/**
+ * A pluggable question kind. Today: character recall (jp2en / en2jp).
+ *
+ * DEAD SEAM, deliberately left alone. Nothing constructs or consumes this —
+ * the drill screen imports checkTyped/confusedWith/buildMcOptions directly —
+ * so it is an abstraction that was shaped correctly and never plugged in. Its
+ * one flaw is being keyed on `char: string`; re-keying it to `fact: FactId` is
+ * what makes a subject a plugin (facts + prompt + checker + distractors), and
+ * that lands with the first kanji, alongside `confusedWith`. Rekeying it now
+ * would have been churn on code with no callers to validate it.
+ */
 export interface QuestionType {
   id: string;
   /** What to display as the prompt for `char` in `dir`. */
@@ -129,8 +141,8 @@ export function retriesAllowed(cfg: QuizConfig): number {
 
 // ---------- stats ----------
 
-/** Fresh per-char stat record (legacy statFor default shape). */
-export function newCharStat(): CharSessionDetail {
+/** Fresh per-fact stat record. */
+export function newFactStat(): FactSessionDetail {
   return {
     seen: 0,
     misses: 0,
@@ -146,7 +158,7 @@ export function newCharStat(): CharSessionDetail {
 }
 
 export interface ResultsSummary {
-  chars: string[];
+  facts: FactId[];
   total: number;
   forg: number;
   strict: number;
@@ -155,38 +167,24 @@ export interface ResultsSummary {
 
 /** Totals for the results screen (forgiving vs strict + slow count). */
 export function computeResults(stats: SessionStats): ResultsSummary {
-  const chars = Object.keys(stats);
-  const total = chars.length;
-  const forg = chars.filter((c) => stats[c].everCorrect).length;
-  const strict = chars.filter((c) => stats[c].firstTryCorrect === true).length;
-  const slow = chars.reduce((n, c) => n + stats[c].slow, 0);
-  return { chars, total, forg, strict, slow };
+  const facts = factKeys(stats);
+  const total = facts.length;
+  const forg = facts.filter((f) => stats[f].everCorrect).length;
+  const strict = facts.filter((f) => stats[f].firstTryCorrect === true).length;
+  const slow = facts.reduce((n, f) => n + stats[f].slow, 0);
+  return { facts, total, forg, strict, slow };
 }
 
-/** Chars counting as "missed" under the given view, most misses first. */
-export function missedChars(
+/** Facts counting as "missed" under the given view, most misses first. */
+export function missedFacts(
   stats: SessionStats,
   view: "forg" | "strict",
-): string[] {
-  return Object.keys(stats)
-    .filter((c) =>
+): FactId[] {
+  return factKeys(stats)
+    .filter((f) =>
       view === "forg"
-        ? stats[c].misses > 0 || !stats[c].everCorrect
-        : stats[c].firstTryCorrect !== true,
+        ? stats[f].misses > 0 || !stats[f].everCorrect
+        : stats[f].firstTryCorrect !== true,
     )
     .sort((a, b) => stats[b].misses - stats[a].misses);
-}
-
-/** Symmetric confusion pairs: "a·b" (sorted) → count, sorted desc. */
-export function confusionPairs(
-  stats: SessionStats,
-): Array<[string, number]> {
-  const pairs: Record<string, number> = {};
-  for (const c of Object.keys(stats)) {
-    for (const [x, n] of Object.entries(stats[c].confused)) {
-      const key = [c, x].sort().join("·");
-      pairs[key] = (pairs[key] ?? 0) + n;
-    }
-  }
-  return Object.entries(pairs).sort((a, b) => b[1] - a[1]);
 }

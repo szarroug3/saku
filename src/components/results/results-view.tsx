@@ -28,11 +28,12 @@ import {
 import { TriageSection } from "@/components/results/triage-board";
 import { Card, Chip, PageTitle } from "@/components/ui";
 import { analyzeRun } from "@/lib/confusions";
-import { weakestChars } from "@/lib/decks";
+import { weakestFacts } from "@/lib/decks";
+import { entryOf, glyphOf } from "@/lib/facts";
 import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ResultsPayload } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
-import type { AccuracyMetric, QuizMode } from "@/types";
+import type { AccuracyMetric, FactId, QuizMode } from "@/types";
 
 const EMPTY_ANALYSIS = { patterns: [], progress: [] };
 
@@ -115,7 +116,11 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     () =>
       summaryOnly
         ? EMPTY_ANALYSIS
-        : analyzeRun(stats, history, { graduateRuns, excludeTs: results.ts }),
+        : analyzeRun(stats, history, {
+            graduateRuns,
+            entryOf,
+            excludeTs: results.ts,
+          }),
     [stats, history, graduateRuns, results.ts, summaryOnly],
   );
   const facts = useMemo(() => deriveRun(results, metric), [results, metric]);
@@ -124,7 +129,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     [facts, stats, prior, analysis.progress],
   );
   const weakest = useMemo(
-    () => weakestChars(prior, metric, 20),
+    () => weakestFacts(prior, metric, 20),
     [prior, metric],
   );
 
@@ -158,6 +163,14 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     if (!discardActive()) return;
     startQuiz(chars, { redrill });
   };
+
+  /** Start a run over FACTS. The quiz runtime still draws from characters, so
+   * this is the boundary that converts — correct while every entry is one kana
+   * whose glyph is its deck key, and it goes when the runtime turns fact-native
+   * (see ActiveQuiz.chars). Deduped: two facts of one entry would otherwise
+   * queue that character twice. */
+  const startFacts = (facts: FactId[], redrill?: boolean) =>
+    start([...new Set(facts.map((f) => glyphOf(entryOf(f))))], redrill);
 
   return (
     <>
@@ -210,9 +223,9 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         facts={facts}
         stats={stats}
         weakest={weakest}
-        onRedrill={(chars) => start(chars, true)}
+        onRedrill={(picked) => startFacts(picked, true)}
         onRerun={() => start(selectedChars(cfg))}
-        onDrillWeakest={() => start(weakest)}
+        onDrillWeakest={() => startFacts(weakest)}
       />
     </>
   );

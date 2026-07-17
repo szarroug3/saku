@@ -27,6 +27,7 @@
 import { plural } from "@/components/home/deck-card";
 import { Card, Lbl } from "@/components/ui";
 import { accuracyFor, formatAccuracy } from "@/lib/accuracy";
+import { factKeys } from "@/lib/facts";
 import type { AccuracyMetric, HistoryFile, QuizSessionRecord } from "@/types";
 
 /** How many sessions the chart shows — the recent past, not the archive. */
@@ -44,19 +45,18 @@ interface Point {
  * One session's accuracy under `metric`.
  *
  * Reads through accuracy.ts rather than deriving a ratio here: the session's
- * own `chars` map is exactly a history's `chars` map for one run, so handing
- * accuracyFor a one-session history gets the ONE definition of accuracy —
- * including its `firstTry ?? 0` guard for sessions written before that field
- * existed. `forgivingPct`/`strictPct` on the record are a different number
- * (share of CHARACTERS passed, not of showings), which is why they stay on the
- * sessions list and don't feed this chart.
+ * own `facts` map is exactly a history's `facts` map for one run, so handing
+ * accuracyFor a one-session history gets the ONE definition of accuracy.
+ * `forgivingPct`/`strictPct` on the record are a different number (share of
+ * FACTS passed, not of showings), which is why they stay on the sessions list
+ * and don't feed this chart.
  */
 function sessionAccuracy(
   s: QuizSessionRecord,
   metric: AccuracyMetric,
 ): number | null {
-  const chars = s.chars ?? {};
-  return accuracyFor({ sessions: [], chars }, Object.keys(chars), metric);
+  const facts = s.facts ?? {};
+  return accuracyFor({ sessions: [], facts }, factKeys(facts), metric);
 }
 
 function shortDate(ts: number): string {
@@ -125,7 +125,7 @@ export function AccuracyTrend({
   const points: Point[] = recent.map((s) => ({
     ts: s.ts,
     pct: sessionAccuracy(s, metric),
-    chars: s.total || Object.keys(s.chars ?? {}).length,
+    chars: s.total || Object.keys(s.facts ?? {}).length,
   }));
 
   if (!points.length) return <EmptyTrend />;

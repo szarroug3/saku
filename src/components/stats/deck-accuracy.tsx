@@ -26,14 +26,14 @@ export function DeckAccuracy({
   history: HistoryFile;
   cfg: QuizConfig;
 }) {
-  const seen = DECKS.map((d) => volumeFor(history, d.chars));
+  const seen = DECKS.map((d) => volumeFor(history, d.facts));
 
   return (
     <>
       <Lbl>Accuracy by deck</Lbl>
       <div className="mb-3.5 grid grid-cols-3 gap-2">
         {DECKS.map((deck, i) => {
-          const pct = accuracyFor(history, deck.chars, cfg.accuracyMetric);
+          const pct = accuracyFor(history, deck.facts, cfg.accuracyMetric);
           // Word for word what DeckShelf builds, and deliberately so: the two
           // screens draw the same decks and must not disagree about what one
           // says. Home has a third case these tiles can't — "12 of 46 on" —
@@ -74,7 +74,7 @@ export function DeckAccuracy({
                 {deck.label}
               </span>
               <span className="text-[11px] leading-snug tabular-nums text-text-muted">
-                {[`${deck.chars.length} characters`, tail]
+                {[`${deck.facts.length} characters`, tail]
                   .filter(Boolean)
                   .join(" · ")}
               </span>

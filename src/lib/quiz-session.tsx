@@ -30,8 +30,10 @@ import {
 } from "react";
 
 import { computeResults } from "@/lib/engine";
+import { factKeys } from "@/lib/facts";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type {
+  FactId,
   QuizConfig,
   QuizMode,
   QuizSessionRecord,
@@ -46,7 +48,14 @@ export type QuizSnapshot = Pick<
 
 export interface ActiveQuiz {
   /** The chars this run draws from (selection, or the misses on a redrill).
-   * Endless mode replenishes from THIS list, never the live picker. */
+   * Endless mode replenishes from THIS list, never the live picker.
+   *
+   * Still CHARACTERS, not facts: the mode screens ask "what does し say" by
+   * putting a character on screen, and they build their decks, their MC
+   * options and their boards out of characters. They key the STATS they
+   * produce by fact (via characters.kanaFact) — that boundary is where the
+   * rekey lands. Turning the runtime itself fact-native is the same change
+   * that gives QuestionType a consumer, and it ships with the first kanji. */
   chars: string[];
   redrill: boolean;
   /** Forces limited/full-coverage regardless of the snapshot (redrill). */
@@ -256,10 +265,10 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         ts,
         stats,
       });
-      // Per-character aggregates for history.json; fire-and-forget.
-      const chars: QuizSessionRecord["chars"] = {};
-      for (const c of s.chars) {
-        chars[c] = {
+      // Per-fact aggregates for history.json; fire-and-forget.
+      const facts: QuizSessionRecord["facts"] = {};
+      for (const c of s.facts) {
+        facts[c] = {
           seen: stats[c].seen,
           missed: stats[c].misses,
           slow: stats[c].slow,
@@ -270,12 +279,12 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
           // nobody answered contributes 0, which is the point: it is not a pass.
           //
           // TEMPORARY BRIDGE: grid and pairs don't increment detail.correct
-          // yet, so a landed character arrives here as correct: 0. Fall back to
+          // yet, so a landed fact arrives here as correct: 0. Fall back to
           // everCorrect, which collapses a session to at most one correct
-          // showing — coarse, but it never calls an unanswered character right.
+          // showing — coarse, but it never calls an unanswered fact right.
           //
-          // `||`, NOT `??`: newCharStat initialises correct to 0, so the
-          // nullish operator would never fire and every grid/pairs character
+          // `||`, NOT `??`: newFactStat initialises correct to 0, so the
+          // nullish operator would never fire and every grid/pairs fact
           // would score 0% forgiving. The only case `||` gets wrong is a real
           // 0 with everCorrect true, which can't happen — landing a card
           // increments both. Delete this once both screens keep the counter.
@@ -289,7 +298,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         total: s.total,
         forgivingPct: s.total ? Math.round((100 * s.forg) / s.total) : 0,
         strictPct: s.total ? Math.round((100 * s.strict) / s.total) : 0,
-        chars,
+        facts,
         detail: stats,
       };
       fetch("/api/session", {
@@ -322,14 +331,15 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
           slow: 0,
           confused: {},
         };
-        for (const [c, d] of Object.entries(record.detail)) {
-          stats[c] = { ...empty, ...d };
+        for (const f of factKeys(record.detail)) {
+          stats[f] = { ...empty, ...record.detail[f] };
         }
       } else {
-        // Older sessions only stored aggregates — approximate a view. The
-        // aggregate DOES know how many showings were landed, so `correct` is
-        // real here rather than synthesized like everCorrect below.
-        for (const [c, a] of Object.entries(record.chars ?? {})) {
+        // Summary-only sessions stored aggregates and no detail — approximate a
+        // view. The aggregate DOES know how many showings were landed, so
+        // `correct` is real here rather than synthesized like everCorrect below.
+        for (const [key, a] of Object.entries(record.facts ?? {})) {
+          const c = key as FactId;
           stats[c] = {
             seen: a.seen,
             misses: a.missed,

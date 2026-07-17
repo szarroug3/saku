@@ -26,6 +26,7 @@
 
 import { Lbl } from "@/components/ui";
 import { reading } from "@/components/results/summary";
+import { factsOf, glyphOf } from "@/lib/facts";
 import type { PairRow } from "@/lib/confusions";
 import type { SessionStats } from "@/types";
 
@@ -43,7 +44,7 @@ function directionText(row: PairRow): string | null {
   const d = row.direction;
   if (d.kind === "unknown") return null;
   if (d.kind === "mixed") return "mixed up both ways";
-  return `nearly always ${d.shown} read as "${reading(d.readAs)}"`;
+  return `nearly always ${glyphOf(d.shown)} read as "${reading(d.readAs)}"`;
 }
 
 /** The row's second line. Sentence case, capitalized HERE rather than in each
@@ -90,8 +91,17 @@ function lines(
       // "Right first try this run" is only sayable when it's true of both
       // halves; the pair not being confused doesn't mean the characters were
       // easy.
-      const clean = [row.a, row.b].every(
-        (c) => !(c in stats) || stats[c].firstTryCorrect === true,
+      //
+      // The pair is keyed by ENTRY and `stats` by FACT, so the entry has to be
+      // expanded into its facts before it can be looked up. Testing `row.a in
+      // stats` directly would be the same silent bug `qualifies()` was built to
+      // prevent: it would be false for every pair, every fact would vacuously
+      // pass, and every improving row would claim "Right first try this run"
+      // whether or not you got it.
+      const clean = [row.a, row.b].every((e) =>
+        factsOf(e).every(
+          (f) => !(f in stats) || stats[f].firstTryCorrect === true,
+        ),
       );
       const left = graduateRuns - record.cleanStreak;
       return [
@@ -187,7 +197,7 @@ export function PatternRow({
       )}
     >
       <span className="min-w-[58px] flex-none font-kana text-[17px] font-extralight tracking-[0.04em]">
-        {row.a} ↔ {row.b}
+        {glyphOf(row.a)} ↔ {glyphOf(row.b)}
       </span>
       <span className="flex min-w-0 flex-col">
         <span className="text-[13px] leading-snug">{first}</span>

@@ -14,7 +14,7 @@
 import { DeckCard, Shelf } from "@/components/home/deck-card";
 import { stateOf } from "@/components/home/selection";
 import { accuracyFor, volumeFor } from "@/lib/accuracy";
-import { DECKS, type Deck } from "@/lib/decks";
+import { DECKS, deckChars, type Deck } from "@/lib/decks";
 import type { HistoryFile, QuizConfig } from "@/types";
 
 export function DeckShelf({
@@ -31,22 +31,26 @@ export function DeckShelf({
   onToggle: (deck: Deck, on: boolean) => void;
   onCustom: () => void;
 }) {
-  const seen = DECKS.map((d) => volumeFor(history, d.chars));
+  const seen = DECKS.map((d) => volumeFor(history, d.facts));
 
   return (
     <Shelf>
       {DECKS.map((deck, i) => {
-        const acc = accuracyFor(history, deck.chars, cfg.accuracyMetric);
-        const state = stateOf(deck.chars, cfg.enabled);
-        const on = deck.chars.filter((c) => cfg.enabled[c]).length;
+        const acc = accuracyFor(history, deck.facts, cfg.accuracyMetric);
+        // The ring reads FACTS (what you're scored on); the selection reads
+        // CHARACTERS (what cfg.enabled is still keyed by). deckChars is the
+        // bridge, and it dies with cfg.enabled.
+        const chars = deckChars(deck);
+        const state = stateOf(chars, cfg.enabled);
+        const on = chars.filter((c) => cfg.enabled[c]).length;
         // A partial card spends its head saying HOW partial, because that is
         // the only thing about it you can't see from the border, and "46
         // characters" would be actively misleading on a deck only 12 of which
         // will be drilled.
         const head =
           state === "partial"
-            ? `${on} of ${deck.chars.length} on`
-            : `${deck.chars.length} characters`;
+            ? `${on} of ${chars.length} on`
+            : `${chars.length} characters`;
         // THIS is cfg.showVolume now. It used to gate a bar drawn relative to
         // the busiest deck, which was reported as unreadable and rightly so:
         // the denominator was invisible, and a second percentage-shaped mark
