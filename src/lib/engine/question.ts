@@ -160,24 +160,39 @@ function anchorOf(fact: FactId): string | null {
   return READING_INDEX.get(fact)?.anchor ?? null;
 }
 
+/**
+ * How to frame "which reading" for this anchor.
+ *
+ * 632 of the 3,178 reading facts (20%) are anchored to the kanji ITSELF — the
+ * word 一 is a word, and it is read いち. Rendering those the general way gives
+ * "一 · in 一", which reads as a bug and tells you nothing. It is not a bug and
+ * the fact is not redundant: 一 on its own is いち while 一 in 一つ is ひと, and
+ * those are two things you can be asked and get separately wrong. So the
+ * standalone case gets the words it actually means.
+ */
+function frameFor(glyph: string, anchor: string, lead: string): string {
+  return anchor === glyph ? "on its own" : `${lead} ${anchor}`;
+}
+
 const kanjiQuestions: QuestionType = {
   id: "kanji",
   prompt(fact, dir) {
+    const glyph = glyphOfFact(fact);
     const anchor = anchorOf(fact);
     if (dir === "jp2en") {
       return {
-        glyph: glyphOfFact(fact),
+        glyph,
         jp: true,
         // THE LINE THIS FILE EXISTS FOR. Without it the question is "生 → ?",
         // which has nine right answers and grades none of them.
-        context: anchor ? `in ${anchor}` : "meaning",
+        context: anchor ? frameFor(glyph, anchor, "in") : "meaning",
         hint: null,
       };
     }
     return {
       glyph: answerOf(fact),
       jp: !!anchor,
-      context: anchor ? `read this way in ${anchor}` : null,
+      context: anchor ? frameFor(glyph, anchor, "read this way in") : null,
       hint: null,
     };
   },
