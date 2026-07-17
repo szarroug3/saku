@@ -235,6 +235,59 @@ export function SettingsCard() {
         <NewKanjiPicker />
       </Card>
 
+      {/* The lesson length, in kanji not minutes. Two steppers, and the ONE
+          constraint that matters is enforced in the buttons themselves: the
+          shortest can't pass the longest and the longest can't drop below the
+          shortest, so the pair the packer receives is always a real range. The
+          same guard runs again on config load (clampLessonRange), for the value
+          that never came through these buttons. Cost is not shown as a raw
+          number — "6" means nothing to the person doing it — so the labels talk
+          in kanji, which is what the number roughly buys. */}
+      <Card>
+        <Lbl>How much new kanji per lesson</Lbl>
+        <Row
+          label="Shortest lesson"
+          info="A new-kanji lesson won't be shorter than this unless there's nothing left to add. Bigger kanji count for more, so this is roughly, not exactly, a number of kanji."
+        >
+          <SmallBtn
+            disabled={cfg.lessonMinCost <= 1}
+            onClick={() =>
+              update({ lessonMinCost: Math.max(1, cfg.lessonMinCost - 1) })
+            }
+          >
+            −
+          </SmallBtn>
+          <span className="tabular-nums">{cfg.lessonMinCost}</span>
+          {/* Can't climb past the longest — that would make the range
+              backwards, which the packer has no answer for. */}
+          <SmallBtn
+            disabled={cfg.lessonMinCost >= cfg.lessonMaxCost}
+            onClick={() => update({ lessonMinCost: cfg.lessonMinCost + 1 })}
+          >
+            +
+          </SmallBtn>
+        </Row>
+        <Row
+          label="Longest lesson"
+          info="A lesson fills toward this and stops. One kanji can still be bigger than it all on its own — 鬱 is 29 strokes and can't be split — and the lesson says so when that happens."
+        >
+          {/* Can't drop below the shortest — the other half of the same rule. */}
+          <SmallBtn
+            disabled={cfg.lessonMaxCost <= cfg.lessonMinCost}
+            onClick={() => update({ lessonMaxCost: cfg.lessonMaxCost - 1 })}
+          >
+            −
+          </SmallBtn>
+          <span className="tabular-nums">{cfg.lessonMaxCost}</span>
+          <SmallBtn
+            disabled={cfg.lessonMaxCost >= 40}
+            onClick={() => update({ lessonMaxCost: cfg.lessonMaxCost + 1 })}
+          >
+            +
+          </SmallBtn>
+        </Row>
+      </Card>
+
       <Card>
         <Lbl>The drill</Lbl>
 

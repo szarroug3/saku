@@ -36,9 +36,12 @@ import { QuizOptionsFields } from "@/components/home/quiz-options";
 import { SelectionCard } from "@/components/home/selection-card";
 import { SessionCard } from "@/components/home/session-card";
 import { StartBar } from "@/components/home/start-bar";
+import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { planFacts, planSession } from "@/lib/budget";
+import { kanjiTeachOrder } from "@/data/kanji";
+import { nextKanjiLesson } from "@/lib/kanji-lesson";
 import { KANA_GROUP_FACTS, nextLesson } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
@@ -157,6 +160,29 @@ export default function HomePage() {
   // teach you nothing is the lie that rule exists to prevent.
   const lesson = useMemo(() => nextLesson(history), [history]);
 
+  // What comes after kana, and ONLY after: kanji's curriculum is a thousand
+  // lessons deep and offering it beside あいうえお would be handing a beginner a
+  // second front to fight on. `lesson === null` is the whole condition — the
+  // same "no new material left" this file already trusts one line up, which
+  // means the handover is a function of history like everything else here.
+  // Finish or claim the last katakana group and kanji appears; nothing advances
+  // a pointer, because there is no pointer.
+  //
+  // The order and the lesson length are the two curriculum settings the lesson
+  // reads. They are config, not state, so the lesson is still a pure function of
+  // history for a given setup — change either and the whole curriculum re-cuts,
+  // which is why they are deps here.
+  const kanjiLesson = useMemo(
+    () =>
+      lesson
+        ? null
+        : nextKanjiLesson(history, kanjiTeachOrder(cfg.newKanjiOrder), {
+            min: cfg.lessonMinCost,
+            max: cfg.lessonMaxCost,
+          }),
+    [lesson, history, cfg.newKanjiOrder, cfg.lessonMinCost, cfg.lessonMaxCost],
+  );
+
   // The lesson IS the session: its group, all of it new, all of it taught. It
   // does not go through the budget, because the budget's job is deciding how
   // much new material to hand out and the answer is already in your hand.
@@ -197,6 +223,19 @@ export default function HomePage() {
 
       {lesson ? (
         <NextLesson lesson={lesson} onStart={startLesson} onClaim={claim} />
+      ) : null}
+
+      {/* The lesson IS the session: its facts, all new, all taught — the same
+          onStart the kana card takes, now that the runtime speaks facts. A kanji
+          lesson's meaning facts are drillable the moment it's learned; the
+          reading facts a word later proves are the words track's business, not
+          this card's. */}
+      {kanjiLesson ? (
+        <NextKanjiLesson
+          lesson={kanjiLesson}
+          onStart={startLesson}
+          onClaim={claim}
+        />
       ) : null}
 
       <Lbl>Setup</Lbl>

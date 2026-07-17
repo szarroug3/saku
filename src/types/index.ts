@@ -192,6 +192,18 @@ export interface QuizConfig {
    * `kanjiTeachOrder` in src/data/kanji.ts for the three sequences themselves.
    */
   newKanjiOrder: NewKanjiOrder;
+  /**
+   * How long a kanji lesson should be, in draw+assembly cost — see LessonRange
+   * and `kanjiCost` in src/lib/kanji-lesson.ts. A lesson fills toward `max` and
+   * only ends below `min` when the next indivisible piece won't fit.
+   *
+   * TWO NUMBERS with an ORDER between them: `max` may never be below `min`.
+   * That is enforced in two places — the Settings control and the config loader
+   * (`clampLessonRange`) — so a hand-edited value can't reach the packer, which
+   * has no defined behaviour for a ceiling under its floor.
+   */
+  lessonMinCost: number;
+  lessonMaxCost: number;
 
   // ---------- the session loop (src/lib/session.ts) ----------
   /**

@@ -15,6 +15,7 @@ import {
 } from "react";
 
 import { JP_FONTS } from "@/lib/config";
+import { LESSON_RANGE_DEFAULT, clampLessonRange } from "@/lib/kanji-lesson";
 import { emptySelection } from "@/lib/selection";
 import type { QuizConfig } from "@/types";
 
@@ -44,6 +45,9 @@ export function defaultConfig(): QuizConfig {
     slowFloorMs: 1500,
     // Dominates grade order on both axes at once — see NewKanjiOrder.
     newKanjiOrder: "everyday",
+    // How long a kanji lesson runs, in draw+assembly cost — see LessonRange.
+    lessonMinCost: LESSON_RANGE_DEFAULT.min,
+    lessonMaxCost: LESSON_RANGE_DEFAULT.max,
     // The user's own numbers. Two settings, not a rule — see QuizConfig.
     restFirstMin: 5,
     restThenMin: 10,
@@ -81,6 +85,13 @@ function loadConfig(): QuizConfig {
         // something is selected.
         cfg.selection = { ...emptySelection(), ...cfg.selection };
       }
+      // The second of the two enforcement points for the lesson range (the
+      // Settings control is the first): a stored max below min — from an older
+      // build, a hand edit, or a corrupt write — is pinned back here before it
+      // can reach a packer that has no defined behaviour for it.
+      const range = clampLessonRange(cfg.lessonMinCost, cfg.lessonMaxCost);
+      cfg.lessonMinCost = range.min;
+      cfg.lessonMaxCost = range.max;
       return cfg;
     }
   } catch {
