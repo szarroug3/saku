@@ -20,6 +20,7 @@ import { notFound } from "next/navigation";
 import { use, useState } from "react";
 
 import { AttributionLink } from "@/components/library/attribution-link";
+import { MnemonicCard } from "@/components/lesson/mnemonic-card";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Hint, Lbl, PageTitle, SmallBtn } from "@/components/ui";
@@ -36,6 +37,7 @@ import {
   madeOf,
   type LibEntry,
 } from "@/lib/library/entries";
+import { getMnemonic } from "@/data/mnemonics";
 import { entryFromParam, entryHref } from "@/lib/library/href";
 import { entryStanding, standingOf } from "@/lib/library/standing";
 import { useLists } from "@/lib/use-lists";
@@ -94,6 +96,12 @@ function EntryView({ entry }: { entry: LibEntry }) {
     await refresh();
   };
 
+  // The app's own hook for this glyph, when there is one. Only kana with an
+  // entry resolve (the five vowels, for now); word and kanji glyphs return
+  // null and their pages are untouched. Same hide-when-absent gate as the
+  // teach flow — the section below is mounted only when this is non-null.
+  const mnemonic = getMnemonic(entry.glyph);
+
   const VISIBLE = 8;
   const shown = showAll ? rows : rows.slice(0, VISIBLE);
 
@@ -148,6 +156,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
           </div>
         </div>
       </Card>
+
+      {/* Our own mnemonic for this kana, when we have one. Kana without an
+          entry — and every word/kanji entry — render nothing here. */}
+      {mnemonic ? (
+        <Card>
+          <Lbl>Remember it</Lbl>
+          <MnemonicCard m={mnemonic} />
+        </Card>
+      ) : null}
 
       <Card>
         {/* The sentence is the thesis. It is generated from the count rather
