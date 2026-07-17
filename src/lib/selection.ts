@@ -195,48 +195,80 @@ function factsOfList(
   return resolve(list.query, history, lists, metric, depth + 1);
 }
 
-// ---------- ranking ----------
+// ---------- sampling ----------
 
 /**
- * The order facts come back in: hardest first, then best-evidenced.
+ * A uniform random sample of `n` facts, in random order — or the whole pool,
+ * shuffled, when `n` is null.
  *
- * Lifted verbatim from decks.ts's `weakestFacts`, which says of its own sort:
- * "the ordering is accuracy today and becomes a proper scheduling rank next —
- * a pure function of (stability, lastTested, now) dropped in place of the sort
- * below". That branch is not in this base and this does not reimplement it.
- * This is the stub, in one place, so there is exactly one line to delete.
+ * THIS IS A REVIEW SCREEN, AND THAT IS WHY IT IS RANDOM. This function used to
+ * be `rank` — a weakness sort, "hardest first" — and on a custom-drill screen
+ * that is an autopilot pitfall: the same worst items in the same order every
+ * time, so you drill your ten weakest into the ground and never see the other
+ * nine hundred things you know. A random sample spreads the review across the
+ * whole pool and never lets you memorise the running order.
  *
- * Ties break by `seen` descending, so a 0%-from-one-showing never outranks a
- * 0%-from-twenty: the latter is the better-evidenced weakness. A fact with no
- * history sorts last — untouched is unknown, not weak — which also means
- * `limit` on a fresh selection gives you new material rather than nothing.
+ * This does NOT touch the learning loop's ranking. The weakness model — the
+ * 4·p·(1-p) rank in src/lib/scoring.ts that src/lib/budget.ts consumes — is the
+ * product and stays exactly as it was: an unlimited session still probes your
+ * weakest first, because that path never comes through here. resolve() feeds
+ * only the custom-drill/Rerun selection, and this is its one ordering step.
+ *
+ * Fisher–Yates, partial when a limit is set: shuffling only the first `k`
+ * positions is a uniform sample of `k` without ordering the tail. The RETURNED
+ * COUNT is `min(pool, n)` regardless of the draw, so the number in the start
+ * bar is stable and only WHICH facts (and in what order) changes per call.
  */
-function rank(
-  facts: FactId[],
-  history: HistoryFile,
-  metric: AccuracyMetric,
-): FactId[] {
-  return facts.slice().sort((a, b) => {
-    const aa = history.facts[a];
-    const bb = history.facts[b];
-    const accA = aa?.seen ? (accuracyOf(aa, metric) ?? 101) : 101;
-    const accB = bb?.seen ? (accuracyOf(bb, metric) ?? 101) : 101;
-    return accA - accB || (bb?.seen ?? 0) - (aa?.seen ?? 0);
-  });
+function sample(facts: FactId[], n: number | null): FactId[] {
+  const out = facts.slice();
+  const k = n === null ? out.length : Math.min(n, out.length);
+  for (let i = 0; i < k; i++) {
+    const j = i + Math.floor(Math.random() * (out.length - i));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out.slice(0, k);
 }
 
 // ---------- resolve ----------
 
 /**
+ * The facts you have a knowledge base for: anything you've seen at least once,
+ * or claimed to know. This — not the whole 21,000-entry dictionary — is what an
+ * un-narrowed drill selection means.
+ *
+ * "Everything" on a REVIEW screen is everything you know, not every character
+ * the app ships. Untaught material is not drillable here; it is learned through
+ * the lesson loop (see src/lib/budget.ts), which draws new material one group at
+ * a time. The "New" band still surfaces genuinely-new-but-touched items, because
+ * a fact you've seen once with no settled accuracy has `seen ≥ 1` and so is in
+ * this pool while still reading as New (see bandOf).
+ *
+ * Day one this is empty: a brand-new user knows nothing, so an un-narrowed
+ * selection names zero things. That is correct — the custom drill screen is for
+ * slicing a knowledge base you already have — and whatSentence renders it
+ * honestly as "Nothing selected" rather than inventing a fake empty state.
+ */
+function knownFacts(history: HistoryFile): FactId[] {
+  const claims = history.claims ?? {};
+  return ALL_FACTS.filter(
+    (f) => (history.facts[f]?.seen ?? 0) > 0 || f in claims,
+  );
+}
+
+/**
  * THE ONE FUNCTION. A query in, the facts it names out.
  *
- * Every field NARROWS — they intersect, they do not union — so an empty
- * Selection is everything and each populated field is a cut. The exception is
- * `states`, which ORs internally (see matchesStates) because its members are
- * not alternatives to each other.
+ * Every field NARROWS — they intersect, they do not union — so an un-narrowed
+ * Selection is everything you know (see knownFacts) and each populated field is
+ * a cut. The exception is `states`, which ORs internally (see matchesStates)
+ * because its members are not alternatives to each other.
  *
  * Dedup is free, exactly as it was under cfg.enabled and for the same reason:
  * this ends in a Set. Two overlapping filters cannot yield a fact twice.
+ *
+ * The result is a RANDOM sample in RANDOM order (see sample) — this is a review
+ * surface, not the learning loop, and its one and only caller for scheduling
+ * (src/lib/budget.ts) never comes through here.
  */
 export function resolve(
   sel: Selection,
@@ -245,10 +277,11 @@ export function resolve(
   metric: AccuracyMetric = "firstTry",
   depth = 0,
 ): FactId[] {
-  // The starting pool: a list if one is named, otherwise everything.
+  // The starting pool: a list if one is named, otherwise everything you know.
+  // NOT the whole dictionary — untaught material is learned, not drilled here.
   let pool: FactId[] = sel.list
     ? factsOfList(sel.list, lists, history, metric, depth)
-    : ALL_FACTS;
+    : knownFacts(history);
 
   if (sel.session !== null) {
     const record = history.sessions.find((s) => s.ts === sel.session);
@@ -276,8 +309,10 @@ export function resolve(
     out.add(f);
   }
 
-  const ranked = rank([...out], history, metric);
-  return sel.limit === null ? ranked : ranked.slice(0, sel.limit);
+  // A random sample of the requested size, in random order. `sample` returns
+  // min(pool, limit) facts either way, so the COUNT is unaffected by the draw —
+  // only which facts, and their order, changes (see countOf).
+  return sample([...out], sel.limit);
 }
 
 /**
@@ -288,6 +323,10 @@ export function resolve(
  * comment about exactly this ("`count` is passed in rather than derived from
  * the labels… the names are a summary and are allowed to blur; the number never
  * is") and it stays true here.
+ *
+ * resolve() now samples RANDOMLY, but the number never blurs: `sample` always
+ * returns min(pool, limit) facts, so the count is independent of the draw and
+ * of the order. Two calls disagree on WHICH facts, never on how many.
  */
 export function countOf(
   sel: Selection,
@@ -305,6 +344,7 @@ const SUBJECT_WORD: Record<string, string> = {
   kana: "Kana",
   kanji: "Kanji",
   word: "Words",
+  grammar: "Grammar",
 };
 
 const STATE_WORD: Record<FactBand, string> = {
@@ -351,7 +391,10 @@ export function whatSentence(
   if (sel.states.length) bits.push(sel.states.map(stateWord).join(" or "));
   if (sel.text.trim()) bits.push(`“${sel.text.trim()}”`);
 
-  const head = bits.length ? bits.join(" · ") : "Everything";
+  // Un-narrowed names your whole knowledge base, so say so: "Everything you
+  // know", not "Everything" — the pool is what you've seen or claimed, never the
+  // untaught rest of the dictionary (see knownFacts).
+  const head = bits.length ? bits.join(" · ") : "Everything you know";
   return `${head} · ${count.toLocaleString()} thing${count === 1 ? "" : "s"}`;
 }
 

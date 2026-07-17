@@ -9,8 +9,15 @@
 // So the gesture changed. You do not point at the things you want any more —
 // you DESCRIBE them, and the count tells you how many you just described. The
 // controls are the fields of Selection, one row each, and every one of them
-// NARROWS: leave them all alone and you get everything, which is why day one
-// needs no explanation and no empty state.
+// NARROWS: leave them all alone and you get everything you KNOW — the things
+// you've seen or claimed, not the untaught rest of the dictionary (see
+// selection.ts's knownFacts). Day one that pool is empty, and the sentence says
+// "Nothing selected" rather than inventing a special empty state.
+//
+// The count is a RANDOM sample, not "hardest first": this is a review screen,
+// and drilling the same worst N in the same order every time is the autopilot
+// this avoids. The weakness ranking still runs — but on the learning loop (see
+// budget.ts), which never comes through here.
 //
 // Nothing here says "fact", "weakness", "stability" or "p". The words are
 // Kana / Kanji / Words, New / Shaky / Slipping / Solid / Mix-ups, and "things".
@@ -111,7 +118,7 @@ export function SelectionCard({
           </Row>
         ) : null}
 
-        <Row label="How many" hint="hardest first">
+        <Row label="How many">
           {LIMITS.map((n) => (
             <Chip
               key={n ?? "all"}
