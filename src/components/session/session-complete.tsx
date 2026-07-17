@@ -21,7 +21,7 @@ function story(session: StudySession): string {
   const n = rounds.length;
   const last = rounds[n - 1];
   const first = rounds[0];
-  const many = `${n} round${n === 1 ? "" : "s"} of the same ${session.chars.length}.`;
+  const many = `${n} round${n === 1 ? "" : "s"} of the same ${session.facts.length}.`;
   if (n === 1) return `${many} You finished on ${last.firstTry} right first try.`;
   if (last.firstTry === first.firstTry) {
     return `${many} You finished on ${last.firstTry} right first try, the same as you started.`;

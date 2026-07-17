@@ -29,24 +29,26 @@
 // a debt is the thing the whole app refuses to keep.
 
 import { Btn, Card, Hint } from "@/components/ui";
-import { CHAR_INDEX } from "@/data/characters";
+import { questionsFor } from "@/lib/engine/question";
+import { factInfo } from "@/lib/facts";
+import type { FactId } from "@/types";
 
 export function TeachScreen({
-  chars,
+  facts,
   familiar,
   onStart,
 }: {
-  chars: string[];
+  facts: FactId[];
   /** Which of these the app has evidence about — shown before and lost, rather
    * than never met. Presentation only. */
-  familiar: (c: string) => boolean;
+  familiar: (f: FactId) => boolean;
   onStart: () => void;
 }) {
   return (
     <>
       <Card>
         <p className="mb-2 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
-          Before you start · {chars.length} to learn
+          Before you start · {facts.length} to learn
         </p>
         <h1 className="text-[22px] font-light tracking-[-0.3px]">
           Have a look at these first
@@ -56,24 +58,47 @@ export function TeachScreen({
         </p>
 
         <div className="flex flex-wrap gap-2">
-          {chars.map((c) => {
-            const info = CHAR_INDEX[c];
+          {facts.map((f) => {
+            const info = factInfo(f);
             if (!info) return null;
+            // The SAME seam the drill screen asks through — so what you are
+            // shown here and what you are asked in a moment cannot drift. A
+            // teach card that rendered its own glyph would be a second opinion
+            // about what the question is.
+            const p = questionsFor(f).prompt(f, "jp2en");
             return (
               <div
-                key={c}
+                key={f}
                 className="kq-material min-w-[92px] flex-1 rounded-lg border border-border bg-panel px-2 pb-2.5 pt-3 text-center"
               >
-                <span className="block text-[30px] font-light leading-[1.2]">
-                  {c}
+                {/* Sized off `jp` the same way the drill screen sizes its
+                    halo: an English meaning set at 30px is a wall of text
+                    where a glyph was. */}
+                <span
+                  className={
+                    p.jp
+                      ? "block text-[30px] font-light leading-[1.2]"
+                      : "block text-[15px] font-light leading-[1.35]"
+                  }
+                >
+                  {p.glyph}
                 </span>
+                {/* Not decoration — the same line that makes the QUESTION
+                    gradeable (see engine/question.ts). "生" taught bare, then
+                    asked "生 · in 人生", teaches the wrong thing: nine readings
+                    where the question wants one. */}
+                {p.context ? (
+                  <span className="mt-0.5 block text-[11px] text-text-muted">
+                    {p.context}
+                  </span>
+                ) : null}
                 {/* The answer, in full, on purpose. This is the screen's whole
                     job — everywhere else in the app showing this would be
                     giving the game away; here, withholding it would be. */}
                 <span className="mt-1 block text-sm text-accent">
-                  {info.r[0]}
+                  {info.answers[0]}
                 </span>
-                {familiar(c) ? (
+                {familiar(f) ? (
                   <span className="mt-1 block text-[9px] uppercase tracking-[0.08em] text-text-muted/70">
                     seen before
                   </span>

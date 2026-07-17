@@ -63,16 +63,38 @@ import type {
 export type { QuizSnapshot };
 
 export interface ActiveQuiz {
-  /** The chars this LEG draws from (the selection, the misses on a redrill, or
-   * a session round's whole set).
+  /**
+   * The FACTS this LEG draws from — a session round's whole set, the misses on
+   * a redrill, or a one-off's resolved selection. Endless mode replenishes
+   * from THIS list, never from the live query.
    *
-   * Still CHARACTERS, not facts: the mode screens ask "what does し say" by
-   * putting a character on screen, and they build their decks, their MC
-   * options and their boards out of characters. They key the STATS they
-   * produce by fact (via characters.kanaFact) — that boundary is where the
-   * rekey lands. Turning the runtime itself fact-native is the same change
-   * that gives QuestionType a consumer, and it ships with the first kanji. */
-  chars: string[];
+   * Resolved at Start and frozen, which matters more now than it did: the
+   * selection is a query over history, and history moves the moment you answer
+   * anything. A quiz that re-ran its own query mid-flight would rewrite its own
+   * deck out from under you — you would answer 生, 生 would stop being shaky,
+   * and 生 would vanish from the run that was drilling it.
+   *
+   * Facts, not characters, and that is what makes kanji drillable at all. The
+   * screens used to put a CHARACTER on screen and look it up in CHAR_INDEX,
+   * which has no kanji in it and never will. They now render whatever the
+   * fact's subject says to render (see engine/question.ts) and know nothing
+   * about what kind of thing they are asking.
+   */
+  facts: FactId[];
+  /**
+   * What this run is, in words — FROZEN at Start, like the snapshot and for the
+   * same reason.
+   *
+   * The name cannot be re-derived later, and that is not a limitation, it is
+   * the requirement. The selection is a query over history, and history moves
+   * the moment you answer anything. A quiz started from "Kanji · Shaky" would,
+   * halfway through, re-resolve to a different set and rename itself — the
+   * resume card's predecessor documented exactly this hazard ("the card would
+   * rename the quiz under you while it ran") and dodged it by naming only the
+   * static decks, which no longer exist. Storing the sentence settles it: the
+   * quiz is called what it was called when you started it.
+   */
+  what: string;
   redrill: boolean;
   /** Forces limited/full-coverage regardless of the snapshot (redrill). */
   forceCoverage: boolean;
@@ -127,8 +149,9 @@ interface QuizSessionContextValue {
    * effect for why a state-change-driven save is not enough.
    */
   saveNow(): void;
-  /** Begin a one-off quiz over `chars` with the current cfg; navigates to /quiz. */
-  startQuiz(chars: string[], opts?: { redrill?: boolean }): void;
+  /** Begin a one-off quiz over `facts` with the current cfg; navigates to
+   * /quiz. `what` names the run — see ActiveQuiz.what. */
+  startQuiz(facts: FactId[], opts?: { redrill?: boolean; what?: string }): void;
   /** The rest is over (or you skipped the lesson): begin round 1. */
   startFirstRound(): void;
   /** End the active leg. In a session this opens the fork; otherwise it
@@ -143,13 +166,13 @@ interface QuizSessionContextValue {
   /**
    * Start a session over the PLANNED set.
    *
-   * `chars` is what src/lib/budget.ts decided the session is — ranked material
+   * `facts` is what src/lib/budget.ts decided the session is — ranked material
    * topped up from `teach` — not the raw selection. `teach` is the subset that
-   * gets shown before it gets asked.
+   * gets shown before it gets asked. `what` names it, frozen like the snapshot.
    */
-  startSession(chars: string[], teach?: string[]): void;
+  startSession(facts: FactId[], teach?: FactId[], what?: string): void;
   /** Re-ask a subset from the fork. Comes back to the same fork. */
-  retryLeg(chars: string[]): void;
+  retryLeg(facts: FactId[]): void;
   /** Complete the round: bank it, write the floor, start the rest. */
   completeRound(): void;
   /** The rest is over (or you skipped it): run the SAME whole set again. */
@@ -190,6 +213,12 @@ interface StoredSession {
   /** Last tab to write. A tab that no longer owns the quiz stops saving, so
    * a stale background tab can't resurrect a quiz you finished elsewhere. */
   owner?: string;
+}
+
+/** The fallback name for a run nobody named. The count rather than a guess at
+ * a name: it is always true, and it is the one number that never blurs. */
+function countWhat(facts: FactId[]): string {
+  return `${facts.length.toLocaleString()} thing${facts.length === 1 ? "" : "s"}`;
 }
 
 function snapshotOf(cfg: QuizConfig): QuizSnapshot {
@@ -341,9 +370,16 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
 
   /** Start one leg of drilling. A leg is a quiz; a session is many legs. */
   const beginLeg = useCallback(
-    (chars: string[], snapshot: QuizSnapshot, redrill: boolean) => {
+    (
+      facts: FactId[],
+      what: string,
+      snapshot: QuizSnapshot,
+      redrill: boolean,
+    ) => {
+      if (!facts.length) return;
       setActive({
-        chars,
+        facts,
+        what,
         redrill,
         forceCoverage: redrill,
         startedAt: Date.now(),
@@ -357,10 +393,10 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   );
 
   const startQuiz = useCallback(
-    (chars: string[], opts?: { redrill?: boolean }) => {
-      if (!chars.length) return;
+    (facts: FactId[], opts?: { redrill?: boolean; what?: string }) => {
+      if (!facts.length) return;
       setSession(null);
-      beginLeg(chars, snapshotOf(cfg), !!opts?.redrill);
+      beginLeg(facts, opts?.what ?? countWhat(facts), snapshotOf(cfg), !!opts?.redrill);
     },
     [cfg, beginLeg],
   );
@@ -369,7 +405,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
 
   const writeRecord = useCallback(
     (stats: SessionStats, mode: QuizMode, redrill: boolean, extra: {
-      chars?: string[];
+      planned?: FactId[];
       rounds?: number;
     }) => {
       const s = computeResults(stats);
@@ -425,14 +461,16 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   // ---------- the loop ----------
 
   const startSession = useCallback(
-    (chars: string[], teach: string[] = []) => {
-      if (!chars.length) return;
+    (facts: FactId[], teach: FactId[] = [], what?: string) => {
+      if (!facts.length) return;
       const now = Date.now();
       const snapshot = snapshotOf(cfg);
       const teaching = teach.length > 0;
+      const name = what ?? countWhat(facts);
       setSession({
-        chars,
+        facts,
         teach,
+        what: name,
         snapshot,
         startedAt: now,
         round: 1,
@@ -448,7 +486,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       });
       setResults(null);
       if (teaching) router.push("/session");
-      else beginLeg(chars, snapshot, false);
+      else beginLeg(facts, name, snapshot, false);
     },
     [cfg, beginLeg, router],
   );
@@ -456,16 +494,16 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const startFirstRound = useCallback(() => {
     if (!session) return;
     setSession({ ...session, phase: "drilling", lastActiveAt: Date.now() });
-    beginLeg(session.chars, session.snapshot, false);
+    beginLeg(session.facts, session.what, session.snapshot, false);
   }, [session, beginLeg]);
 
   const retryLeg = useCallback(
-    (chars: string[]) => {
-      if (!session || !chars.length) return;
+    (facts: FactId[]) => {
+      if (!session || !facts.length) return;
       setSession({ ...session, phase: "drilling", lastActiveAt: Date.now() });
       // forceCoverage: a retry is one full pass over exactly these, whatever
       // the session's length setting says. You asked for these; you get these.
-      beginLeg(chars, session.snapshot, true);
+      beginLeg(facts, "The misses", session.snapshot, true);
     },
     [session, beginLeg],
   );
@@ -544,7 +582,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     });
     // THE SAME WHOLE SESSION — not the retried bits. This is the line the
     // whole design turns on.
-    beginLeg(session.chars, session.snapshot, false);
+    beginLeg(session.facts, session.what, session.snapshot, false);
   }, [session, beginLeg]);
 
   const endSession = useCallback(() => {
@@ -566,7 +604,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const finishSession = useCallback(() => {
     if (!session) return;
     writeRecord(session.totalStats, session.snapshot.mode, false, {
-      chars: session.chars,
+      planned: session.facts,
       rounds: session.rounds.length,
     });
     setSession(null);
@@ -614,7 +652,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         return;
       }
       const out = writeRecord(stats, quiz.snapshot.mode, quiz.redrill, {
-        chars: quiz.chars,
+        planned: quiz.facts,
       });
       setResults({
         mode: quiz.snapshot.mode,

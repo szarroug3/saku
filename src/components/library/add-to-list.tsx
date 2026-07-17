@@ -1,7 +1,7 @@
 "use client";
 
 // "＋ Add to list" — the popover, and the place the fixed/derived split is a
-// visible thing rather than a comment in src/lib/lists.tsx.
+// visible thing rather than a comment in src/types/index.ts.
 //
 // The rule it renders: a derived list is never shown as a row you could tick.
 // One line says why instead. Showing it disabled would be worse than showing it
@@ -11,7 +11,7 @@
 import { useState } from "react";
 
 import { Btn, Hint, Lbl, SmallBtn } from "@/components/ui";
-import { isWritable, useLists } from "@/lib/lists";
+import { countIn, isWritable, useLists } from "@/lib/use-lists";
 import type { EntryId } from "@/types";
 
 export function AddToList({
@@ -24,14 +24,14 @@ export function AddToList({
   label: string;
   onDone(): void;
 }) {
-  const { lists, loaded, countIn, addTo, create } = useLists();
+  const { lists, loaded, addTo, create } = useLists();
   const [name, setName] = useState("");
   const fixed = lists.filter(isWritable);
   const derived = lists.filter((l) => !isWritable(l));
 
   const submitNew = () => {
     if (!name.trim()) return;
-    create(name, entries);
+    void create(name, entries);
     setName("");
     onDone();
   };
@@ -81,7 +81,7 @@ export function AddToList({
               <button
                 key={list.id}
                 type="button"
-                onClick={() => addTo(list.id, entries)}
+                onClick={() => void addTo(list.id, [...entries])}
                 className="flex w-full cursor-pointer items-center gap-2.5 rounded-(--radius) px-1.5 py-1.5 text-left hover:bg-panel"
               >
                 <span

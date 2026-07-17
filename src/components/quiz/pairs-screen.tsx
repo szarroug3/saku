@@ -18,12 +18,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { CHAR_INDEX, kanaEntry, kanaFact } from "@/data/characters";
 import { BEHAVIOR, pickFont } from "@/lib/config";
-import { buildDeck, newFactStat, shuffle } from "@/lib/engine";
+import { buildDeck, newFactStat, questionsFor, shuffle } from "@/lib/engine";
+import { entryOf } from "@/lib/facts";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
-import type { FactSessionDetail, QuizConfig, SessionStats } from "@/types";
+import type { FactId, FactSessionDetail, QuizConfig, SessionStats } from "@/types";
 
 import { PairsHud } from "./pairs-hud";
 
@@ -41,18 +41,25 @@ import { PairsHud } from "./pairs-hud";
 // ---------- runtime (lives in active.runtime.pairs) ----------
 
 interface PairsCell {
-  /** The character this cell belongs to — kana and romaji cells share it. */
-  id: string;
+  /** The FACT this cell belongs to — the two sides of a pair share it. */
+  id: FactId;
   label: string;
-  kind: "kana" | "romaji";
-  /** Font family for kana cells, chosen at board build. */
+  /** The line under a `jp` cell that makes the pair findable at all: two of
+   * 生's readings on one board are two identical 生 cells otherwise, and the
+   * question becomes a coin flip. Null when the subject supplies none. */
+  context?: string | null;
+  /** `jp` is the glyph side, `answer` the reading/meaning side. Renamed from
+   * kana/romaji: the board is not kana any more, and a cell holding 人生 is
+   * not "a kana cell". */
+  kind: "jp" | "answer";
+  /** Font family for jp cells, chosen at board build. */
   font?: string;
   /** Matched — faded out and unclickable. */
   gone: boolean;
 }
 
 interface PairsRuntime {
-  deck: string[];
+  deck: FactId[];
   pos: number;
   asked: number;
   endless: boolean;
@@ -65,18 +72,14 @@ interface PairsRuntime {
   /** Pairs matched FIRST TRY, in a row; a mismatch puts it back to 0, exactly
    * as the drill's does. */
   streak: number;
-  /** Kana ids that have been mismatched on THIS board — the pair can still be
+  /** Facts that have been mismatched on THIS board — the pair can still be
    * matched, but not first try, so it no longer extends the streak. Cleared
-   * with every new board (the chars get a clean run at it again in endless),
-   * and it is the kana side because that is the side the miss lands on. */
-  dirty: string[];
+   * with every new board (they get a clean run at it again in endless). */
+  dirty: FactId[];
 }
 
-/** The stats for the character `c`'s fact. The board is keyed by character —
- * that is what a cell shows — and the stats by fact, which is what can be
- * graded; this is the only place the screen crosses between them. */
-function statFor(stats: SessionStats, c: string): FactSessionDetail {
-  return (stats[kanaFact(c)] ??= newFactStat());
+function statFor(stats: SessionStats, f: FactId): FactSessionDetail {
+  return (stats[f] ??= newFactStat());
 }
 
 /**
@@ -84,35 +87,33 @@ function statFor(stats: SessionStats, c: string): FactSessionDetail {
  * finished (returns false), take the next chars, mark them seen, and lay
  * out the shuffled kana+romaji cells.
  */
-function fillBoard(p: PairsRuntime, chars: string[], fonts: string[]): boolean {
+function fillBoard(p: PairsRuntime, facts: FactId[], fonts: string[]): boolean {
   p.pick = null;
   p.dirty = [];
   if (p.pos >= p.deck.length) {
-    if (p.endless) p.deck = p.deck.concat(shuffle(chars.slice()));
+    if (p.endless) p.deck = p.deck.concat(shuffle(facts.slice()));
     else return false;
   }
   const take = p.deck.slice(p.pos, p.pos + BEHAVIOR.pairsPerBoard);
   p.pos += take.length;
   p.asked += take.length;
-  for (const c of take) statFor(p.stats, c).seen++;
+  for (const f of take) statFor(p.stats, f).seen++;
   p.board = shuffle([
-    ...take.map(
-      (c): PairsCell => ({
-        id: c,
-        label: c,
-        kind: "kana",
+    ...take.map((f): PairsCell => {
+      const prompt = questionsFor(f).prompt(f, "jp2en");
+      return {
+        id: f,
+        label: prompt.glyph,
+        context: prompt.context,
+        kind: "jp",
         font: pickFont(fonts),
         gone: false,
-      }),
-    ),
-    ...take.map(
-      (c): PairsCell => ({
-        id: c,
-        label: CHAR_INDEX[c].r[0],
-        kind: "romaji",
-        gone: false,
-      }),
-    ),
+      };
+    }),
+    ...take.map((f): PairsCell => {
+      const prompt = questionsFor(f).prompt(f, "en2jp");
+      return { id: f, label: prompt.glyph, kind: "answer", gone: false };
+    }),
   ]);
   return true;
 }
@@ -127,7 +128,7 @@ function initPairs(active: ActiveQuiz, cfg: QuizConfig): PairsRuntime {
       ? { length: "limited" as const, limType: "cov" as const }
       : {}),
   };
-  const deck = buildDeck(active.chars, eff);
+  const deck = buildDeck(active.facts, eff);
   const endless = eff.length === "endless";
   const p: PairsRuntime = {
     deck,
@@ -141,7 +142,7 @@ function initPairs(active: ActiveQuiz, cfg: QuizConfig): PairsRuntime {
     streak: 0,
     dirty: [],
   };
-  fillBoard(p, active.chars, cfg.fonts); // deck is non-empty — always fills
+  fillBoard(p, active.facts, cfg.fonts); // deck is non-empty — always fills
   return p;
 }
 
@@ -195,17 +196,22 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
     cell.gone = true;
     return { kind: "matched", boardDone: p.board.every((x) => x.gone) };
   }
-  // The KANA side's char takes the miss and the confusion entry.
-  const kana = first.kind === "kana" ? first : cell;
-  const other = first.kind === "kana" ? cell : first;
-  const st = statFor(p.stats, kana.id);
+  // The JP side's fact takes the miss and the confusion entry.
+  const jp = first.kind === "jp" ? first : cell;
+  const other = first.kind === "jp" ? cell : first;
+  const st = statFor(p.stats, jp.id);
   st.misses++;
   // `confused` is keyed by ENTRY — the thing you said instead. Both cells carry
-  // their character in `id`, so the romaji cell names its own entry too.
-  const said = kanaEntry(other.id);
-  st.confused[said] = (st.confused[said] ?? 0) + 1;
+  // their fact in `id`, so the answer cell names its own entry too. Two facts
+  // of ONE entry are not a confusion (see FactSessionDetail): pairing 生's セイ
+  // cell with 生's ショウ cell is a wrong answer about 生, not mixing 生 up
+  // with something else.
+  const said = entryOf(other.id);
+  if (said !== entryOf(jp.id)) {
+    st.confused[said] = (st.confused[said] ?? 0) + 1;
+  }
   p.streak = 0;
-  if (!p.dirty.includes(kana.id)) p.dirty.push(kana.id);
+  if (!p.dirty.includes(jp.id)) p.dirty.push(jp.id);
   return { kind: "mismatch", flash: [firstIdx, i] };
 }
 
@@ -228,7 +234,7 @@ export function PairsScreen() {
 
   const advanceBoard = () => {
     if (!active || !p) return;
-    if (fillBoard(p, active.chars, cfg.fonts)) rerender();
+    if (fillBoard(p, active.facts, cfg.fonts)) rerender();
     else finishQuiz(p.stats);
   };
 
@@ -301,7 +307,7 @@ export function PairsScreen() {
               <button
                 key={i}
                 onClick={() => pick(i)}
-                style={cell.kind === "kana" ? { fontFamily: cell.font } : undefined}
+                style={cell.kind === "jp" ? { fontFamily: cell.font } : undefined}
                 className={[
                   "cursor-pointer rounded-lg px-1 py-4 text-xl",
                   "transition-[opacity,background-color,border-color,outline-color] duration-300",
@@ -325,6 +331,13 @@ export function PairsScreen() {
                 ].join(" ")}
               >
                 {cell.label}
+                {/* Two 生 cells on one board are indistinguishable without it,
+                    and the pair becomes a coin flip. */}
+                {cell.context ? (
+                  <span className="block text-[9px] leading-tight opacity-70">
+                    {cell.context}
+                  </span>
+                ) : null}
               </button>
             );
           })}

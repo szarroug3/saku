@@ -17,7 +17,7 @@
 
 import { useState } from "react";
 
-import { plural } from "@/components/home/deck-card";
+import { plural } from "@/lib/words";
 import { Hint, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatAccuracy } from "@/lib/accuracy";
@@ -106,7 +106,13 @@ function SessionRow({
             {record.mode}
             {record.redrill ? " (redrill)" : ""}
             {" · "}
-            {plural(record.total, "char")}
+            {/* "questions", not "chars". `total` counts what you were ASKED,
+                and since the runtime went fact-native that is nine things for
+                生 and one for し — so "2 chars" was printed over a session that
+                asked two READINGS of one character. "questions" is the word the
+                Library's bar already uses for the same count (see slice.ts) and
+                it is true for every subject. */}
+            {plural(record.total, "question")}
           </span>
         </span>
       </span>

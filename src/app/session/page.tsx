@@ -16,12 +16,10 @@ import { RoundComplete } from "@/components/session/round-complete";
 import { SessionComplete } from "@/components/session/session-complete";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachScreen } from "@/components/session/teach-screen";
-import { kanaFact } from "@/data/characters";
 import { useHistory } from "@/lib/use-history";
 import { restLeftMs } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
-import type { FactId } from "@/types";
 
 export default function SessionPage() {
   const router = useRouter();
@@ -57,13 +55,7 @@ export default function SessionPage() {
 
   if (!session || session.phase === "drilling") return null;
 
-  const label = `${session.chars.length} item${session.chars.length === 1 ? "" : "s"}`;
-
-  /** The fork speaks facts; a leg drills characters. This is the same seam the
-   * mode screens cross with kanaFact, taken the other way. It survives only
-   * while one kana is one fact — the first kanji makes this a real lookup. */
-  const charsFor = (facts: FactId[]): string[] =>
-    session.chars.filter((c) => facts.includes(kanaFact(c)));
+  const label = `${session.facts.length} item${session.facts.length === 1 ? "" : "s"}`;
 
   if (session.phase === "teaching") {
     return (
@@ -71,13 +63,13 @@ export default function SessionPage() {
         <SessionHud label={label} where="before round 1" pct={0} onDone={endSession} />
         <div className="mt-3.5">
           <TeachScreen
-            chars={session.teach}
+            facts={session.teach}
             // "Seen before" vs never met is a PRESENTATION difference and only
             // that — the budget put both here for the same reason and neither
             // is treated differently. History is the only thing that can tell
             // them apart, and it's read here rather than stored on the session
             // so it can't go stale against a deleted session.
-            familiar={(c) => !!history.facts[kanaFact(c)]?.seen}
+            familiar={(f) => !!history.facts[f]?.seen}
             onStart={startFirstRound}
           />
         </div>
@@ -97,7 +89,7 @@ export default function SessionPage() {
         <div className="mt-3.5">
           <RoundComplete
             session={session}
-            onRetry={(facts) => retryLeg(charsFor(facts))}
+            onRetry={(facts) => retryLeg(facts)}
             onComplete={completeRound}
           />
         </div>
@@ -139,9 +131,9 @@ export default function SessionPage() {
         <SessionComplete
           session={session}
           onRerun={() => {
-            const chars = session.chars;
+            const { facts, teach, what } = session;
             finishSession();
-            startSession(chars);
+            startSession(facts, teach, what);
           }}
           onDone={finishSession}
         />

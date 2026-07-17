@@ -14,15 +14,13 @@ import {
   type ReactNode,
 } from "react";
 
-import { CHAR_INDEX } from "@/data/characters";
 import { JP_FONTS } from "@/lib/config";
+import { emptySelection } from "@/lib/selection";
 import type { QuizConfig } from "@/types";
 
 const STORAGE_KEY = "kanaquiz-cfg";
 
 export function defaultConfig(): QuizConfig {
-  const enabled: Record<string, boolean> = {};
-  for (const c of Object.keys(CHAR_INDEX)) enabled[c] = true;
   return {
     mode: "drill",
     dirs: { jp2en: true, en2jp: false },
@@ -51,19 +49,35 @@ export function defaultConfig(): QuizConfig {
     showAccuracy: true,
     showRetryPips: true,
     fadeControls: true,
-    enabled,
+    // Everything, on day one. An empty query narrows nothing, which is both the
+    // honest default and — unlike the 214-key map this replaced — a default
+    // that costs six fields no matter how much material the app grows.
+    selection: emptySelection(),
   };
 }
 
 function loadConfig(): QuizConfig {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-    if (saved?.enabled) {
+    if (saved && typeof saved === "object") {
       const cfg: QuizConfig = { ...defaultConfig(), ...saved };
       // Migrate the pre-fonts shape: randomFont true → all fonts, false →
       // just the first (the legacy app always rendered JP_FONTS[0] then).
       if (!Array.isArray(cfg.fonts) || !cfg.fonts.length) {
         cfg.fonts = saved.randomFont === false ? [JP_FONTS[0]] : [...JP_FONTS];
+      }
+      // A stored `enabled` map is from before selection was a query. It is not
+      // migrated and none is owed: those keys were CHARACTERS, and a character
+      // is not a selection — the same reasoning history.ts applied to its own
+      // rekey. Dropping it lands you on Everything, which is where a new user
+      // starts anyway.
+      if (!cfg.selection || typeof cfg.selection !== "object") {
+        cfg.selection = emptySelection();
+      } else {
+        // A partial/older selection object still has to answer every field, or
+        // resolve() reads undefined and returns nothing while the UI insists
+        // something is selected.
+        cfg.selection = { ...emptySelection(), ...cfg.selection };
       }
       return cfg;
     }
@@ -127,9 +141,4 @@ export function useQuizConfig(): QuizConfigContextValue {
   const ctx = useContext(QuizConfigContext);
   if (!ctx) throw new Error("useQuizConfig outside QuizConfigProvider");
   return ctx;
-}
-
-/** Chars currently enabled in the picker. */
-export function selectedChars(cfg: QuizConfig): string[] {
-  return Object.keys(CHAR_INDEX).filter((c) => cfg.enabled[c]);
 }

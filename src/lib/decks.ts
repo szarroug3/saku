@@ -34,7 +34,6 @@
 // not define them.
 
 import {
-  CHAR_INDEX,
   isExtendedSection,
   kanaEntry,
   kanaFact,
@@ -61,35 +60,11 @@ export interface Deck {
   facts: FactId[];
 }
 
-/** Every character in the app, in data order. The CHARACTER list, for the
- * char-keyed selection layer (cfg.enabled) — not the deck content. */
-export const ALL_CHARS: string[] = Object.keys(CHAR_INDEX);
-
-/**
- * The characters behind a deck — the bridge to `cfg.enabled`.
- *
- * TEMPORARY, and narrow on purpose. `cfg.enabled` is still a char→bool map and
- * becomes a query in its own task; until then the shelves have to ask a
- * fact-keyed deck a character-keyed question, and this is the one place that
- * translation happens rather than fifteen inline `glyphOf(entryOf(f))`s.
- *
- * Correct only while every entry is a single kana whose glyph IS its selection
- * key. It gives the wrong answer the moment an entry has more than one fact
- * (生 would appear eleven times) or a glyph that isn't its key. Both land with
- * kanji, and this function should die in the same change.
- */
-export function deckChars(deck: Deck): string[] {
-  return [...new Set(deck.facts.map((f) => glyphOf(entryOf(f))))];
-}
-
-/** A deck as the char-keyed selection layer sees it. Same caveat as deckChars. */
-export function deckSelectable(deck: Deck): {
-  id: string;
-  label: string;
-  chars: string[];
-} {
-  return { id: deck.id, label: deck.label, chars: deckChars(deck) };
-}
+// ALL_CHARS, deckChars and deckSelectable are GONE, and they said so
+// themselves: "correct only while every entry is a single kana whose glyph IS
+// its selection key… both land with kanji, and this function should die in the
+// same change". The kanji landed and this is that change. Nothing translates a
+// deck into characters any more, because nothing selects characters.
 
 /** Card faces, keyed "<setId>-basic" / "<setId>-extended". A set with no entry
  * falls back to its own first character (see buildDecks). */
@@ -252,14 +227,10 @@ export interface Confusions {
  * into one symmetric pair.
  *
  * With no measured confusions — day one, or history from a version that never
- * stored `detail` — falls back to the LOOKALIKES groups restricted to
- * `enabled`, so the card still starts a useful quiz. Check `fromHistory`
- * before claiming a count.
+ * stored `detail` — falls back to the LOOKALIKES groups, so there is still
+ * something useful to drill. Check `fromHistory` before claiming a count.
  */
-export function confusionDecks(
-  history: HistoryFile,
-  enabled: string[] = ALL_CHARS,
-): Confusions {
+export function confusionDecks(history: HistoryFile): Confusions {
   const counts = new Map<string, number>();
   for (const session of history.sessions) {
     for (const [fact, d] of Object.entries(session.detail ?? {})) {
@@ -285,17 +256,17 @@ export function confusionDecks(
     return { pairs, facts: factsFor(pairs), fromHistory: true };
   }
 
-  const on = new Set(enabled);
+  // No `enabled` filter any more: this used to restrict the day-one fallback
+  // to the characters you had selected, which only made sense while selection
+  // WAS a set of characters you could intersect with. A query cannot be
+  // intersected with a lookalike group without resolving it, and a caller that
+  // wants "the pairs in my selection" can filter the result — that is the
+  // caller's question, not this function's.
   const pairs: ConfusionPair[] = [];
   for (const group of LOOKALIKES) {
-    const members = group.filter((c) => on.has(c));
-    for (let i = 0; i < members.length; i++) {
-      for (let j = i + 1; j < members.length; j++) {
-        pairs.push({
-          a: kanaEntry(members[i]),
-          b: kanaEntry(members[j]),
-          count: 0,
-        });
+    for (let i = 0; i < group.length; i++) {
+      for (let j = i + 1; j < group.length; j++) {
+        pairs.push({ a: kanaEntry(group[i]), b: kanaEntry(group[j]), count: 0 });
       }
     }
   }

@@ -4,114 +4,99 @@
 //
 //   0. resume        the quiz you left running, and ONLY if there is one
 //   1. setup         HOW you drill, always visible, never behind a disclosure
-//   2. weaknesses    decks the app computed from your history   } one
-//   3. decks         the standing sets, and the door to the picker } selection
-//   4. start bar     the whole quiz as a sentence, and the only Start
+//   2. selection     WHAT you drill, as a query
+//   3. start bar     the whole quiz as a sentence, and the only Start
 //
 // THE RULE, and every line below serves it: whatever you are about to run is
 // fully on screen before you run it, and only a button starts a quiz.
 //
-// It replaces a split that read well and worked badly — "the hero owns HOW,
-// the cards own WHAT". Elegant, except it meant that at the moment you acted
-// you could only see half the quiz: Start showed you the how and not the what,
-// a deck card showed you the what and started instantly with the how folded
-// away behind "Edit setup". And a card that starts a quiz is not discoverable
-// ("it's not clear that clicking a deck will start a quiz") because it looks
-// like a card, and cards select. So: cards select, one button starts, and the
-// bar above that button says both halves out loud.
+// WHAT CHANGED, and why the shelves are gone
+// ==========================================
+// This screen used to be two shelves of cards over a flat char→bool map
+// (cfg.enabled), plus a 214-cell picker to fine-tune it. That was a good design
+// for 214 things and it does not survive 21,449: there is no shelf of cards for
+// "the useful subsets of a dictionary", and nobody fine-tunes 21,449
+// checkboxes. The cards' cleverest property — that two overlapping ones
+// deduped for free, because a map cannot hold a key twice — was real, and it
+// was a property of the storage, not of the idea.
 //
-// The selection is cfg.enabled and nothing else — not component state, not a
-// list of picked ids. That is what lets the picker be a fine-tune view of the
-// same thing the cards set coarsely, and it is what makes the union of two
-// overlapping cards dedupe itself. See src/components/home/selection.ts.
+// So selection is a QUERY (see src/types/index.ts and src/lib/selection.ts).
+// The dedup is still free, for a different reason: resolve() ends in a Set.
+// What is new is that the selection now costs six fields instead of one key per
+// thing in the app, and that "drill the kanji I'm shaky on" is a gesture you
+// can actually make.
+//
+// The query lives in cfg.selection, and resolve() is the only thing that turns
+// it into facts. Home does not know what a fact is, what a kanji is, or how
+// many of either there are.
 
 import { useEffect, useMemo, useState } from "react";
 
-import { CharacterPicker } from "@/components/home/character-picker";
-import { DeckShelf } from "@/components/home/deck-shelf";
 import { QuizOptionsFields } from "@/components/home/quiz-options";
+import { SelectionCard } from "@/components/home/selection-card";
 import { SessionCard } from "@/components/home/session-card";
-import { selectionLabels, toggled } from "@/components/home/selection";
 import { StartBar } from "@/components/home/start-bar";
-import { weaknessDecks, WeaknessShelf } from "@/components/home/weakness-shelf";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { planFacts, planSession } from "@/lib/budget";
-import { kanaFact } from "@/data/characters";
-import { DECKS, deckChars, deckSelectable } from "@/lib/decks";
-import { selectedChars, useQuizConfig } from "@/lib/quiz-config";
+import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
+import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
+import { useLists } from "@/lib/use-lists";
 
 export default function HomePage() {
   const { cfg, set } = useQuizConfig();
   const { session, startSession, discardSession, continueSession } =
     useQuizSession();
   const { history } = useHistory();
+  const { lists } = useLists();
 
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  // The union of every toggled card, deduped — and not by any code here. The
-  // cards write true/false into cfg.enabled, so a character selected by both
-  // Weakest 20 and Hiragana Basic is one key in one map and counts once. This
-  // IS the count the start bar prints and the deck startQuiz receives.
+  // The facts the query names, right now. This IS what Start hands to the quiz
+  // and what the bar counts — one computation, so the sentence and the session
+  // can never disagree about what you pressed Start on.
   //
-  // Memoised on cfg for its IDENTITY, not its cost: selectedChars builds a new
-  // array every call, and an array that changes identity on every render is a
-  // dep that defeats every useMemo below it — including the one over history.
-  const chars = useMemo(() => selectedChars(cfg), [cfg]);
+  // Memoised on the query, the history and the lists for its IDENTITY as much
+  // as its cost: resolve() walks every fact in the app, and it returns a fresh
+  // array every call.
+  const facts = useMemo(
+    () => resolve(cfg.selection, history, lists, cfg.accuracyMetric),
+    [cfg.selection, cfg.accuracyMetric, history, lists],
+  );
 
-  // The clock the weakness cards are computed against, read ONCE per visit.
+  const what = useMemo(
+    () => whatSentence(cfg.selection, facts.length, lists),
+    [cfg.selection, facts.length, lists],
+  );
+
+  // The clock the BUDGET is computed against, read ONCE per visit.
   //
-  // Not Date.now() inline: weaknessDecks is pure and has to stay that way, a
+  // Not Date.now() inline: planSession is pure and has to stay that way, a
   // render that reads a clock is a render that can't be trusted to be the same
   // twice, and an argument that changes on every render is a dep that defeats
   // the useMemo below it. Held as state so it is stable for the life of the
   // page, and re-read on mount — which is the same moment useHistory refetches,
-  // so the clock and the history the cards are built from always agree.
+  // so the clock and the history the plan is built from always agree.
   //
   // It goes stale if you leave Home open for days. That is fine and is the
   // reason this is a decision rather than an oversight: the model's unit is
-  // DAYS, so a list that was right when the page loaded is still right an hour
-  // later, and finishing a quiz — the only thing that actually changes the
+  // DAYS, so a plan that was right when the page loaded is still right an hour
+  // later, and finishing a session — the only thing that actually changes the
   // answer — remounts this page anyway.
   const [now] = useState(() => Date.now());
 
   // A SECOND clock, and the difference from `now` above is not pedantry.
   //
   // `now` is seeded in a useState initialiser, which also runs on the server —
-  // fine for the weakness cards, because nothing they render says what time it
-  // is. The session card DOES ("last answer 2 hours ago"), and a timestamp
-  // seeded on the server renders text that the client then disagrees with on
-  // hydration. So the card's clock is read strictly after mount, and the card
-  // sits out the first paint rather than printing a time from another machine.
+  // fine for the budget, because nothing it renders says what time it is. The
+  // session card DOES ("last answer 2 hours ago"), and a timestamp seeded on
+  // the server renders text that the client then disagrees with on hydration.
+  // So the card's clock is read strictly after mount, and the card sits out the
+  // first paint rather than printing a time from another machine.
   const [mountedNow, setMountedNow] = useState<number | null>(null);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMountedNow(Date.now());
   }, []);
-
-  const weakness = useMemo(
-    () => weaknessDecks(history, cfg, chars, now),
-    [history, cfg, chars, now],
-  );
-
-  // Both shelves, in the order they appear, so the sentence names them in the
-  // order you read them.
-  const labels = useMemo(
-    () =>
-      selectionLabels(
-        // The weakness cards already speak characters; the static decks speak
-        // facts and are translated at this one edge. cfg.enabled is a char→bool
-        // map — that is a separate task, and until it lands this is the seam.
-        [...weakness, ...DECKS.map(deckSelectable)],
-        cfg.enabled,
-        chars.length,
-      ),
-    [weakness, cfg.enabled, chars.length],
-  );
-
-  const toggle = (of: string[], on: boolean) =>
-    set((prev) => toggled(prev, of, on));
 
   // WHAT YOU SELECTED IS THE POOL. THIS IS THE SESSION.
   //
@@ -125,9 +110,17 @@ export default function HomePage() {
   // able to say what the button will do before you press it — including the
   // case where the honest answer is "nothing, you're solid on all of these".
   // One plan, read by the sentence and by the button, so they cannot disagree.
+  //
+  // The plan is handed on WHOLE. It used to be squeezed back through the
+  // selected characters — `chars.filter((c) => inPlan.has(kanaFact(c)))` — which
+  // silently dropped every fact whose subject wasn't kana, because there was no
+  // character to match it against. That filter was the last place a kanji died
+  // on this page, and it type-checked perfectly: FactId is a branded string, so
+  // handing facts to something expecting characters costs nothing at compile
+  // time and everything at runtime.
   const planned = useMemo(() => {
     const plan = planSession({
-      candidates: chars.map(kanaFact),
+      candidates: facts,
       history,
       // "Unlimited" means no cap, not no budget — see budget.ts. Full-coverage
       // asks for the whole pool, so it has no cap either.
@@ -135,35 +128,20 @@ export default function HomePage() {
         cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null,
       now,
     });
-    // The plan speaks facts; a leg drills characters. One kana is one fact, so
-    // this is a filter today and a real lookup the day kanji lands.
-    const inPlan = new Set<string>(planFacts(plan));
-    const teachSet = new Set<string>(plan.teach);
-    const picked = chars.filter((c) => inPlan.has(kanaFact(c)));
-    return {
-      chars: picked,
-      teach: picked.filter((c) => teachSet.has(kanaFact(c))),
-    };
-  }, [chars, history, cfg.length, cfg.limType, cfg.limCount, now]);
+    return { facts: planFacts(plan), teach: plan.teach };
+  }, [facts, history, cfg.length, cfg.limType, cfg.limCount, now]);
 
   // Start IS start-a-session. The loop is the app's spine, not a mode you opt
   // into: you do the set, you fork on the misses, you rest, you do the same set
   // again. A one-off quiz is just a session you complete after one round.
-  //
-  // What you selected is the POOL, not the session. src/lib/budget.ts decides
-  // what the session actually is: the ranked material first, topped up from
-  // `teach` to the length you asked for. That top-up is what stops the drill
-  // from going dark — without it, everything at p → 0 leaves the ranking and
-  // nothing catches it, so the things you are worst at end up in no list at
-  // all.
   //
   // No confirm dialog, even though this replaces a session in progress. The
   // session card above is on screen saying there's one, with a Continue button
   // on it — the information a dialog would interrupt you to give you is already
   // in front of you, and everything in that session is already saved.
   const start = () => {
-    if (!planned.chars.length) return;
-    startSession(planned.chars, planned.teach);
+    if (!planned.facts.length) return;
+    startSession(planned.facts, planned.teach, what);
   };
 
   return (
@@ -177,7 +155,7 @@ export default function HomePage() {
           session={session}
           now={mountedNow}
           onContinue={continueSession}
-          onRestart={() => startSession(session.chars)}
+          onRestart={() => startSession(session.facts, session.teach, session.what)}
           onDiscard={discardSession}
         />
       ) : null}
@@ -190,25 +168,17 @@ export default function HomePage() {
         <QuizOptionsFields />
       </Card>
 
-      <Lbl>Target a weakness</Lbl>
-      <WeaknessShelf decks={weakness} cfg={cfg} onToggle={toggle} />
-
-      <Lbl>Decks</Lbl>
-      <DeckShelf
-        history={history}
-        cfg={cfg}
-        pickerOpen={pickerOpen}
-        onToggle={(deck, on) => toggle(deckChars(deck), on)}
-        onCustom={() => setPickerOpen((v) => !v)}
+      <SelectionCard
+        sel={cfg.selection}
+        lists={lists}
+        onChange={(selection) => set((prev) => ({ ...prev, selection }))}
       />
-
-      {pickerOpen ? <CharacterPicker /> : null}
 
       <StartBar
         cfg={cfg}
-        labels={labels}
-        count={chars.length}
-        plannedCount={planned.chars.length}
+        what={what}
+        count={facts.length}
+        plannedCount={planned.facts.length}
         active={!!session}
         onStart={start}
       />

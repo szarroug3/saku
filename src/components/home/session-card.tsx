@@ -87,8 +87,8 @@ export function SessionCard({
             Where you left off
           </p>
           <p className="text-[15px]">
-            {session.chars.length} item
-            {session.chars.length === 1 ? "" : "s"} ·{" "}
+            {session.facts.length} item
+            {session.facts.length === 1 ? "" : "s"} ·{" "}
             <span className="text-text-muted">{where(session, now)}</span>
           </p>
           {/* The sentence only exists when the emphasis has moved, and it says

@@ -186,8 +186,120 @@ export interface QuizConfig {
   showRetryPips: boolean;
   /** Fade End quiz / gear while drilling; they wake on mouse move. */
   fadeControls: boolean;
-  /** Per-character selection map: char → enabled. */
-  enabled: Record<string, boolean>;
+  /** What you are about to drill. See Selection — this replaced `enabled`, a
+   * char→bool map with one key per selectable thing. */
+  selection: Selection;
+}
+
+// ---------- selection: a query, not a set ----------
+
+/**
+ * WHAT YOU ARE ABOUT TO DRILL, as a QUESTION rather than as an answer.
+ *
+ * This replaced `QuizConfig.enabled: Record<string, boolean>` — one key per
+ * selectable thing, persisted in full to localStorage. That model has two
+ * deaths, and only one of them is technical:
+ *
+ *   - 214 keys is 4KB. 21,449 is 400KB+, rewritten on every single toggle.
+ *   - "Tick what to drill" stops being a gesture anyone can make at 21,449
+ *     items. Nobody ticks 21,449 checkboxes. The grid that made kana feel
+ *     direct makes kanji feel impossible.
+ *
+ * So selection stopped being a stored SET and became a stored QUESTION, which
+ * is a fixed handful of fields no matter how much material exists. A deck is
+ * what you get when you press Drill on a filter.
+ *
+ * Every field NARROWS: an empty Selection means everything, and each populated
+ * field intersects with the others. `resolve()` in src/lib/selection.ts is the
+ * only thing that turns one of these into facts, and it is pure.
+ */
+export interface Selection {
+  /** Subject ids to draw from ("kana", "kanji", "word"). Empty = all of them. */
+  subjects: string[];
+  /** A saved list's id, or null for "not restricted to a list". */
+  list: string | null;
+  /** Bands to include, OR-ed together — a fact is in if it matches ANY of
+   * them. Empty = no state filter. NOT a partition: `mixup` overlaps the
+   * others, which is exactly why this is a set and not one value. */
+  states: FactBand[];
+  /** Free text matched against glyph, answers and meaning. Empty = no filter. */
+  text: string;
+  /**
+   * Only facts that appeared in the session with this timestamp; null = no
+   * restriction.
+   *
+   * This is the field that makes Rerun free. A past session is a named list of
+   * keys like any other source, so "run that again" is not a feature with its
+   * own button and its own code path — it is Drill on a slice, and it comes out
+   * of the same resolve() as everything else.
+   */
+  session: number | null;
+  /** Cap on how many facts come back, hardest first; null = all of them. */
+  limit: number | null;
+}
+
+/**
+ * How well you know something, as a WORD — the only vocabulary the UI has for
+ * this.
+ *
+ * The user never sees "stability", "p", "weakness" or "fact". They see New,
+ * Shaky, Slipping, Solid and Mix-ups, because those are things a person can
+ * mean. The mapping from numbers to these words lives in ONE function
+ * (`bandOf` in src/lib/selection.ts) so that when real scheduling lands it
+ * changes there and nowhere else.
+ *
+ * NOT `FactState`, which is the MODEL's state — a stability and a lastTested —
+ * and is the thing this is a word FOR. The two were written on separate
+ * branches, both called FactState, and both were right about their own half:
+ * one is what the model believes, the other is what a person is allowed to
+ * read. They meet in `bandOf` and nowhere else, which is the point.
+ */
+export type FactBand = "new" | "shaky" | "slipping" | "solid" | "mixup";
+
+/**
+ * A named list of things to drill. ONE OBJECT, FOUR SOURCES: an imported file,
+ * a saved search, a past session, a built-in shelf. All of them are a name and
+ * a way to get keys, and everything downstream — the sidebar, the drill bar,
+ * resolve() — treats them identically.
+ *
+ * EXCEPT AT ONE MOMENT, and this is a real hole rather than a tidy-up. The
+ * "one object" claim is true for READING a list and false for WRITING to one:
+ *
+ *   You CAN add か to "Core 2k". Core 2k is a fixed set of words; adding to it
+ *   means the set now has か in it, forever, and that is the whole of what
+ *   happened.
+ *
+ *   You CANNOT add か to "Kanji I miss". That is not a set, it is a RULE that
+ *   recomputes every time you look at it. A hand-added item would either vanish
+ *   the next time the rule ran, or silently freeze your live search into a
+ *   frozen list without telling you. Both are lies.
+ *
+ * So there are two kinds, and the split is exactly "does a person or a rule
+ * decide what is in it". Derived lists are simply not offered for writing —
+ * they are one object with fixed lists everywhere else.
+ */
+export type SavedList =
+  | {
+      kind: "fixed";
+      id: string;
+      name: string;
+      created: number;
+      /** The set. ENTRIES, not facts: you file 生, not one of its readings. */
+      entries: EntryId[];
+      origin: "import" | "manual";
+    }
+  | {
+      kind: "derived";
+      id: string;
+      name: string;
+      created: number;
+      /** The rule. Re-resolved on every read, which is why you cannot add to it. */
+      query: Selection;
+      origin: "search" | "session";
+    };
+
+export interface ListsFile {
+  lists: SavedList[];
 }
 
 // ---------- per-session stats (in-memory during a quiz) ----------
@@ -336,7 +448,7 @@ export interface QuizSessionRecord {
   /** Full per-fact detail; absent on summary-only sessions. */
   detail?: SessionStats;
   /**
-   * The exact set this ran over, so Recent can run it again AS IT WAS.
+   * The exact set this ran over, so Recent could run it again AS IT WAS.
    *
    * Stored rather than derived from `facts`: the facts are what you were
    * ASKED, and a session you left a quarter of the way through was asked a
@@ -344,8 +456,21 @@ export interface QuizSessionRecord {
    * rerun a different, smaller session and call it the same one. Optional —
    * records written before this field existed don't get a Rerun button rather
    * than getting a wrong one.
+   *
+   * WRITTEN, NOT READ, AND THAT IS A KNOWN GAP. Results' Rerun resolves
+   * `{session: ts}` instead, which reads `facts` — precisely the "smaller
+   * session called the same one" this field was added to prevent. The two
+   * behaviours arrived on different branches and both have a case; the field
+   * is kept and correctly typed rather than deleted, because the argument
+   * above is still right and the data is cheap. Whoever settles it should read
+   * this comment and selection.resolve() together.
+   *
+   * `FactId[]`, not `string[]`: it used to be the latter, and since FactId is
+   * a branded string, `planned: session.facts` type-checked while meaning
+   * something else entirely. That is the same silent coercion that let the
+   * whole runtime look char-keyed while carrying facts.
    */
-  chars?: string[];
+  planned?: FactId[];
   /** How many rounds of the loop this session ran. Absent on one-off quizzes. */
   rounds?: number;
 }

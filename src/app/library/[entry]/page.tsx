@@ -36,7 +36,7 @@ import {
 } from "@/lib/library/entries";
 import { entryFromParam, entryHref } from "@/lib/library/href";
 import { entryStanding, standingOf } from "@/lib/library/standing";
-import { useLists } from "@/lib/lists";
+import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";

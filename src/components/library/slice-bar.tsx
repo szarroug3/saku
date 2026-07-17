@@ -24,7 +24,6 @@ import { useState } from "react";
 
 import { AddToList } from "@/components/library/add-to-list";
 import { Btn, Hint } from "@/components/ui";
-import { drillChars, unaskableNote } from "@/lib/library/drill";
 import {
   drillPlan,
   sliceCount,
@@ -57,15 +56,10 @@ export function SliceBar({
   const [adding, setAdding] = useState(false);
 
   const plan = drillPlan(slice, facts, claims, now);
-  const order = [...plan.probe, ...plan.teach];
+  // Teach first, then probe — the order the session should MEET them, which is
+  // budget.planFacts's rule and not this bar's to invent.
+  const order = [...plan.teach, ...plan.probe];
   const count = sliceCount(slice, facts, claims, now);
-  const chars = drillChars(order);
-  // The new material, as the loop wants it: shown before it is asked. Filtered
-  // through the same `drillChars` as the whole, so it cannot contain something
-  // `chars` doesn't — handing `startSession` a `teach` entry that isn't in its
-  // `chars` would be a lesson for a card the session never deals.
-  const teach = drillChars(plan.teach);
-  const note = unaskableNote(order.length, chars.length);
 
   return (
     <>
@@ -98,11 +92,6 @@ export function SliceBar({
               </Hint>
             </span>
           ) : null}
-          {note ? (
-            <span className="mt-0.5 block">
-              <Hint>{note}</Hint>
-            </span>
-          ) : null}
         </div>
         <div className="flex flex-none flex-wrap items-center gap-1.5">
           <Btn
@@ -127,12 +116,22 @@ export function SliceBar({
               them." startQuiz is the one-off; the session loop is the normal
               one, and it is what puts distance between reading セイ here and
               being asked it. */}
+          {/* Drill N, and N is now the real number.
+              
+              It used to be `drillChars(order).length` — the facts filtered down
+              to the ones whose subject was kana, because the runtime drilled
+              CHARACTERS and CHAR_INDEX has no kanji in it. On 生 that filter
+              matched nothing and the button said "Drill 0" next to nine facts,
+              with a line underneath admitting the quiz couldn't ask them. The
+              runtime is fact-native now, so the filter, the note and the whole
+              of src/lib/library/drill.ts are gone: what the model would drill
+              and what the quiz can ask are the same list again. */}
           <Btn
             sel
-            disabled={chars.length === 0}
-            onClick={() => startSession(chars, teach)}
+            disabled={order.length === 0}
+            onClick={() => startSession(order, [...plan.teach], slice.label)}
           >
-            Drill {chars.length}
+            Drill {order.length}
           </Btn>
         </div>
       </div>

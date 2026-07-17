@@ -75,17 +75,27 @@ export interface StudySession {
    * This is what the BUDGET decided (src/lib/budget.ts): the ranked material
    * plus enough teach material to reach the length you asked for. It is not
    * simply "what you selected" — the selection is the pool the budget drew
-   * from. */
-  chars: string[];
+   * from.
+   *
+   * FACTS, not characters. The budget always spoke facts; this field used to
+   * take `string[]`, and because FactId is a branded string a FactId[] slid
+   * into it with no complaint and no conversion — which is exactly how the
+   * app came to have a session type that LOOKED char-keyed while carrying
+   * facts. See src/lib/quiz-session.tsx. */
+  facts: FactId[];
   /**
-   * The subset of `chars` that was taught rather than asked cold — new to you,
+   * The subset of `facts` that was taught rather than asked cold — new to you,
    * or lost badly enough that the model can't tell the difference.
    *
    * Kept for the life of the session, not just the teaching phase, because the
    * session-complete screen's comparison is only honest if it knows which
    * items you had never seen when round 1 started.
    */
-  teach: string[];
+  teach: FactId[];
+  /** What this session is, in words — frozen at start, same rule and same
+   * reason as ActiveQuiz.what: the selection is a query over history, and
+   * history moves the moment you answer anything. */
+  what: string;
   /** Builder settings frozen at start, same rule as a one-off quiz. */
   snapshot: QuizSnapshot;
   startedAt: number;

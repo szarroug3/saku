@@ -28,7 +28,7 @@ import {
 } from "@/lib/library/entries";
 import { search, searchAll } from "@/lib/library/search";
 import { entryStanding } from "@/lib/library/standing";
-import { useLists } from "@/lib/lists";
+import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
 import type { FactId } from "@/types";

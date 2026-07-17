@@ -388,10 +388,11 @@ describe("rank — the drill list", () => {
   });
 
   test("an all-quiet history ranks NOTHING — an empty list is a real answer", () => {
-    // Right after drilling everything there is genuinely nothing worth asking.
-    // The Weakest 20 card empties and refills as time passes; see
-    // weakness-shelf.tsx, which has words for this case because the old
-    // accuracy sort could never produce it.
+    // Right after drilling everything there is genuinely nothing worth asking,
+    // and the selection empties and refills as time passes. The old accuracy
+    // sort could never produce this, which is why the UI needs words for it:
+    // they are now the start bar's ("You're solid on all of these for now"),
+    // the weakness shelf that used to own them having gone with cfg.enabled.
     const facts: RankCandidate[] = [
       { id: id("a"), state: { stability: 30, lastTested: T0 } },
       { id: id("b"), state: { stability: 30, lastTested: T0 } },

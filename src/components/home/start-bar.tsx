@@ -33,8 +33,6 @@
 
 import type { QuizConfig } from "@/types";
 
-import { whatSentence } from "./selection";
-
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
@@ -73,16 +71,17 @@ export function howSentence(cfg: QuizConfig): string {
 
 export function StartBar({
   cfg,
-  labels,
+  what,
   count,
   plannedCount,
   active,
   onStart,
 }: {
   cfg: QuizConfig;
-  /** The cards the selection currently is — already degraded-ready. */
-  labels: string[];
-  /** Exact, deduped character count. The one number that never blurs. */
+  /** The WHAT half, already said — see selection.whatSentence. */
+  what: string;
+  /** Exact, deduped count of things selected. The one number that never
+   * blurs, and the one thing that gates Start. */
   count: number;
   /**
    * How many of `count` the BUDGET would actually put in the session — the
@@ -91,11 +90,11 @@ export function StartBar({
    * an error and not an empty selection.
    */
   plannedCount: number;
-  /** A quiz is in progress — starting this one replaces it. */
+  /** A session is in progress — starting this one replaces it. */
   active: boolean;
   onStart: () => void;
 }) {
-  // Grid ignores directions, so only the char count gates it there.
+  // Grid ignores directions, so only the count gates it there.
   const howBroken =
     cfg.mode !== "grid" && !cfg.dirs.jp2en && !cfg.dirs.en2jp;
   // Nothing to ask is a real, reachable state — everything selected is `quiet`
@@ -109,7 +108,7 @@ export function StartBar({
   // the reason people click a thing five times and then file a bug, and both
   // of these are one click from fixed — the fix is on this same screen.
   const reason = !count
-    ? "Pick at least one deck to start."
+    ? "Nothing is selected. Widen the filters above to start."
     : howBroken
       ? "Choose a direction in the setup above."
       : nothingToAsk
@@ -137,12 +136,13 @@ export function StartBar({
               {howSentence(cfg)}
             </span>
             <span className="mt-0.5 block text-xs tabular-nums text-text-muted">
-              {whatSentence(labels, count)}
-              {/* The notice, and now the ONLY notice: there is no confirm
-                  dialog behind it. A consequence you only learn about after
-                  clicking is an ambush, so it is written on the button that
-                  causes it — which is where it always should have been, and is
-                  why the dialog it used to back up isn't missed. */}
+              {what}
+              {/* The notice, and the ONLY notice: there is no confirm dialog
+                  and no two-state button behind it. A consequence you only
+                  learn about after clicking is an ambush, so it is written on
+                  the button that causes it. Nothing more is owed here — the
+                  session card is on screen above, saying there is a session and
+                  offering Continue, and everything in it is already saved. */}
               {active ? " · replaces the session in progress" : null}
             </span>
           </>
