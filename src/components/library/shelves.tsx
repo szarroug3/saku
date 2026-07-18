@@ -342,5 +342,5 @@ const KANA_MNEMONIC: ReadonlyMap<string, string> = new Map(
 function mnemonicOf(kind: Kind, entry: LibEntry): string | undefined {
   if (kind !== KANA_SUBJECT) return undefined;
   const mn = KANA_MNEMONIC.get(entry.glyph);
-  return mn ? `${mn} · tap 🔊 to hear it` : undefined;
+  return mn ? `${mn} · tap the speaker to hear it` : undefined;
 }
