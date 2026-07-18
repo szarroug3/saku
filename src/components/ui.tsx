@@ -294,6 +294,33 @@ export function ProgressBar({ pct }: { pct: number | null }) {
   );
 }
 
+/** The "hear the sound" speaker, as crisp inline SVG rather than the 🔊 emoji.
+ *
+ * `currentColor` so it takes the text colour of whatever it sits in, and a
+ * `className` so each call site sizes it. Default ~1.05em reads a touch larger
+ * and clearer than the old glyph, especially small. `aria-hidden` because every
+ * call site already carries its own accessible label or "Hear it" text — the
+ * icon is decoration on top of that, never the only cue. The cone is filled for
+ * weight at ~15px; the two arcs are the sound waves. */
+export function SoundIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className={cx("inline-block size-[1.05em] shrink-0", className)}
+    >
+      <path d="M11 5 6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M19 5a9 9 0 0 1 0 14" />
+    </svg>
+  );
+}
+
 export function PageTitle({
   title,
   sub,

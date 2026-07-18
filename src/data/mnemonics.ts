@@ -212,7 +212,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: ".”",
     },
     example: { word: "うみ", reading: "umi", gloss: "sea", hitIndex: 0 },
-    approximate: "Japanese う is flatter than English “oo” — don’t purse your lips. Trust the 🔊 clip.",
+    approximate: "Japanese う is flatter than English “oo” — don’t purse your lips. Trust the sound clip.",
   },
 
   え: {
@@ -228,7 +228,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: "!”",
     },
     example: { word: "えき", reading: "eki", gloss: "station", hitIndex: 0 },
-    approximate: "No glide — it’s “eh,” never “ay.” Match the 🔊 clip’s flat vowel.",
+    approximate: "No glide — it’s “eh,” never “ay.” Match the sound clip’s flat vowel.",
   },
 
   お: {
@@ -244,7 +244,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: "!”",
     },
     example: { word: "おと", reading: "oto", gloss: "sound", hitIndex: 0 },
-    approximate: "Short and pure, no “oh-w” glide at the end. The 🔊 clip is the ruler.",
+    approximate: "Short and pure, no “oh-w” glide at the end. The sound clip is the ruler.",
   },
 
   // ---- K row — か き く け こ (APPROVED) --------------------------------
@@ -432,7 +432,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: "nami curls its crest and sweeps over.",
     },
     example: { word: "つき", reading: "tsuki", gloss: "moon", hitIndex: 0 },
-    approximate: "One sound — t and s pressed together, not “t” then “sue.” The 🔊 clip nails it.",
+    approximate: "One sound — t and s pressed together, not “t” then “sue.” The sound clip nails it.",
     draft: true,
   },
 
@@ -585,7 +585,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: "ji — the peak with clouds drifting past its slopes.",
     },
     example: { word: "ふね", reading: "fune", gloss: "boat", hitIndex: 0 },
-    approximate: "Not a hard English “f” — a soft breath between f and h. The 🔊 clip is the guide.",
+    approximate: "Not a hard English “f” — a soft breath between f and h. The sound clip is the guide.",
     draft: true,
   },
 
@@ -754,7 +754,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: " sits up, ears pricked forward — ら.",
     },
     example: { word: "さくら", reading: "sakura", gloss: "cherry blossom", hitIndex: 2 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
   },
 
@@ -770,7 +770,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: " standing side by side in the water — り.",
     },
     example: { word: "りんご", reading: "ringo", gloss: "apple", hitIndex: 0 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
   },
 
@@ -786,7 +786,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: " drops down and curls into a loop — る.",
     },
     example: { word: "くるま", reading: "kuruma", gloss: "car", hitIndex: 1 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
   },
 
@@ -802,7 +802,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: " — れ.",
     },
     example: { word: "きれい", reading: "kirei", gloss: "pretty", hitIndex: 1 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
   },
 
@@ -818,7 +818,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: " winding down and bending back — ろ (the open bend; る adds the full loop).",
     },
     example: { word: "ろく", reading: "roku", gloss: "six", hitIndex: 0 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
   },
 
@@ -866,7 +866,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       tail: " — ん.",
     },
     example: { word: "ほん", reading: "hon", gloss: "book", hitIndex: 1 },
-    approximate: "One held beat of nasal — its exact colour (m / n / ng) bends to what follows. Trust the 🔊 clip.",
+    approximate: "One held beat of nasal — its exact colour (m / n / ng) bends to what follows. Trust the sound clip.",
     draft: true,
   },
 };

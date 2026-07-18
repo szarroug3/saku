@@ -23,7 +23,7 @@ import { AttributionLink } from "@/components/library/attribution-link";
 import { MnemonicCard } from "@/components/lesson/mnemonic-card";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StandingChip } from "@/components/library/standing-chip";
-import { Card, Hint, Lbl, PageTitle, SmallBtn } from "@/components/ui";
+import { Card, Hint, Lbl, PageTitle, SmallBtn, SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { factsOf } from "@/lib/facts";
 import {
@@ -149,7 +149,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
                   a sound — so grammar omits Hear rather than speak a placeholder. */}
               {entry.kind !== GRAMMAR_SUBJECT ? (
                 <SmallBtn onClick={() => speak(entry.glyph, cfg.voiceName)}>
-                  🔊 Hear it
+                  <SoundIcon className="mr-1 align-[-0.15em]" /> Hear it
                 </SmallBtn>
               ) : null}
             </div>
