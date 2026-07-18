@@ -4,19 +4,28 @@
 // WHAT THIS FILE IS
 // =================
 // A pure data table, keyed by the character it teaches. It holds the words and
-// the drawing; it renders nothing. `MnemonicCard` (components/lesson/
-// mnemonic-card.tsx) is the one place it turns into pixels, and two call sites
-// (the teach-me walkthrough and the Library entry page) gate on `getMnemonic`
-// returning non-null. A kana with no row here shows no card — see the
-// hide-when-absent rule in MnemonicCard.
+// (when one exists) a drawn picture; it renders nothing. `MnemonicCard`
+// (components/lesson/mnemonic-card.tsx) is the one place it turns into pixels,
+// and two call sites (the teach-me walkthrough and the Library entry page) gate
+// on `getMnemonic` returning non-null. A kana with no row here shows no card —
+// see the hide-when-absent rule in MnemonicCard.
 //
 // ADDING A ROW IS APPENDING AN ENTRY, AND NOTHING ELSE
 // ====================================================
 // The key is the glyph, so `MnemonicKey = string`. It is deliberately NOT
 // "kana-only" anywhere: a kanji glyph ("生") is a valid key the day someone
-// authors one, with zero code change here or at either call site. To fill in
-// the rest of hiragana, append to MNEMONICS. To swap in an owner-approved
-// vowel, replace that one entry in place.
+// authors one, with zero code change here or at either call site. To author a
+// new mnemonic, append to MNEMONICS.
+//
+// THE PICTURE, OR THE GLYPH
+// =========================
+// The slot on the card shows an `image` when the entry has one — a real drawn
+// picture of the object, keyed by romaji under /public/mnemonics — and falls
+// back to the plain glyph as a placeholder when it doesn't. The picture is a
+// CONSTANT: it sits on a fixed light tile in the card so it reads the same in
+// every theme regardless of its own background/transparency (a/i are RGBA, u is
+// RGB). Only the three vowels a/i/u are drawn so far; the other 43 show the
+// glyph and gain an `image` when the owner draws them.
 //
 // THE ACCENT COLOUR IS RESERVED FOR THE SOUND
 // ===========================================
@@ -30,15 +39,11 @@
 // NOTHING — a shape word is never the fallback. mnemonics.test.ts holds the
 // line: a non-null `sound` must contain the entry's own accented sound token.
 //
-// PROVISIONAL CONTENT
-// ===================
-// The five vowels below are seeded from the "drawn over the glyph" style
-// proposal (scratchpad/vowel-mnemonics-over-glyph.html): KanjiVG stroke
-// geometry as the canvas, the mnemonic reusing those real strokes as features
-// of the pictured thing. They are PROVISIONAL — the owner replaces each with
-// the approved version by editing its entry in place. The SVG stroke data is
-// KanjiVG (© KanjiVG contributors, CC BY-SA 3.0); the hooks and drawings are
-// original to this app.
+// APPROVED vs DRAFT
+// =================
+// あ–そ (the vowels, K row, S row) are owner-approved. た–ん carry `draft: true`
+// — same voice, first-draft hooks that lean harder on the sound where the shape
+// is busy. The 🔊 clip in-app is always the source of truth for the exact sound.
 
 /** The glyph a mnemonic teaches. A string, so kanji slot in later unchanged. */
 export type MnemonicKey = string;
@@ -80,7 +85,7 @@ export interface MnemonicExample {
   hitIndex: number;
 }
 
-/** One kana's mnemonic: the hooks, the drawing, and a word that proves it. */
+/** One kana's mnemonic: the hooks, the picture, and a word that proves it. */
 export interface Mnemonic {
   /** The glyph, e.g. "あ". Matches its key in MNEMONICS. */
   glyph: string;
@@ -102,18 +107,19 @@ export interface Mnemonic {
    */
   analogy: SoundLine;
   /**
-   * The shape→picture hook: how the real strokes become the pictured thing.
-   * `sound` accents a sound-bearing word (い → "eel", う → "goose") or is
-   * `null` when the picture's name doesn't carry the sound (あ → "anchor").
+   * The shape→picture hook: the one-scene story, with the sound landing hard.
+   * `sound` accents the sound-bearing word in the story, or is `null` when the
+   * story's words name only the shape and none carries the sound.
    */
   mnemonic: SoundLine;
   /**
-   * Inline SVG markup, drawn over the glyph's true KanjiVG strokes. Uses
-   * `currentColor` for the ink strokes and `var(--accent)` for the feature the
-   * mnemonic leans on, so it survives every theme and both light and dark with
-   * no recolouring. A single 0 0 109 109 viewBox (the KanjiVG grid).
+   * A drawn picture of the object, served from /public/mnemonics and keyed by
+   * romaji (e.g. "/mnemonics/a.webp"). Optional: present only for the kana that
+   * have been drawn (a/i/u so far). When absent, the card shows the plain glyph
+   * as a placeholder. The picture is theme-agnostic — the card mounts it on a
+   * fixed light tile — so its own background/transparency doesn't matter.
    */
-  svg: string;
+  image?: string;
   /** A real beginner word with the kana highlighted. */
   example: MnemonicExample;
   /**
@@ -122,50 +128,40 @@ export interface Mnemonic {
    * Rendered muted; omitted when there's nothing to caveat.
    */
   approximate?: string;
+  /**
+   * First-draft content flag. `true` on た–ん, whose hooks are first-draft and
+   * lean harder on the sound where the shape is busy. Absent (approved) on
+   * あ–そ. Purely advisory metadata; the card renders draft and approved rows
+   * identically.
+   */
+  draft?: boolean;
 }
 
-// --- SVG stroke styling ----------------------------------------------------
-// Factored out so each drawing reads as its geometry, not its attributes. Ink
-// is currentColor (inherits the card's text); the feature the mnemonic points
-// at is the accent; faint marks (waterline) are ink at low opacity.
-const BASE = `fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"`;
-const FEAT = `fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"`;
-const ADD = `fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"`;
-const DOT = `fill="var(--accent)" stroke="none"`;
-const FAINT = `fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="2.2" stroke-linecap="round"`;
-
 /**
- * The table. Keyed by glyph — appending an entry is the whole of adding a
- * mnemonic. PROVISIONAL vowel content, seeded from the over-the-glyph style
- * proposal; the owner replaces each entry in place with the approved version.
+ * The table. Keyed by glyph — appending an entry is the whole of authoring a
+ * mnemonic. All 46 base hiragana. あ–そ are owner-approved; た–ん carry
+ * `draft: true`. a/i/u carry a drawn `image`; the rest show the glyph until one
+ * is drawn.
  */
 export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
-  // あ — the long lower-right curl is an anchor's fluke sweeping out of water.
+  // ---- Vowels — あ い う え お (APPROVED) --------------------------------
   あ: {
     glyph: "あ",
     romaji: "a",
-    sound: "a",
+    sound: "ah",
     ipa: "/a/ · ah",
-    object: "anchor",
-    analogy: { lead: "Say it like the ", sound: "a", tail: " in father — open and low." },
+    object: "acrobat",
+    analogy: { lead: "Say it like the open ", sound: "ah", tail: " in father — not the letter-name “ay,” not “cat.”" },
     mnemonic: {
-      lead: "The long curling lower-right stroke is the fluke of an ",
-      sound: null,
-      tail: "anchor, sweeping up out of the water; the vertical stroke is its shaft, the top cross-stroke its stock.",
+      lead: "An acrobat flips into a handstand — a capital A stood on its head — wobbles, and topples flat with an “",
+      sound: "ah",
+      tail: "!”",
     },
-    svg: `<svg viewBox="0 0 109 109" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="9" r="5" ${ADD}/>
-      <path d="M31.01,33c0.88,0.88,2.75,1.82,5.25,1.75c8.62-0.25,20-2.12,29.5-4.25c1.51-0.34,4.62-0.88,6.62-0.5" ${BASE}/>
-      <path d="M49.76,17.62c0.88,1,1.82,3.26,1.38,5.25c-3.75,16.75-6.25,38.13-5.13,53.63c0.41,5.7,1.88,10.88,3.38,13.62" ${BASE}/>
-      <path d="M65.63,44.12c0.75,1.12,1.16,4.39,0.5,6.12c-4.62,12.26-11.24,23.76-25.37,35.76c-6.86,5.83-15.88,3.75-16.25-8.38c-0.34-10.87,13.38-23.12,32.38-26.74c12.42-2.37,27,1.38,30.5,12.75c4.05,13.18-3.76,26.37-20.88,30.49" ${FEAT}/>
-      <path d="M60,101 l7,4 M67,105 l1,-8" ${ADD}/>
-      <path d="M8,100 q6,-5 12,0 t12,0 t12,0 t12,0 t12,0 t12,0" ${FAINT}/>
-    </svg>`,
+    image: "/mnemonics/a.webp",
     example: { word: "あめ", reading: "ame", gloss: "rain", hitIndex: 0 },
-    approximate: "Not the a in “cat.” The 🔊 clip is the truth; “father” only gets you close.",
+    approximate: "Not the a in “cat,” not “ay.” The 🔊 clip is the truth; “father” only gets you close.",
   },
 
-  // い — the two strokes ARE two eels swimming side by side.
   い: {
     glyph: "い",
     romaji: "i",
@@ -174,95 +170,684 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     object: "two eels",
     analogy: { lead: "Say it like the ", sound: "ee", tail: " in feet — the same sound as eel." },
     mnemonic: {
-      lead: "Each of the two strokes is an ",
-      sound: "eel",
-      tail: " swimming — a long one diving on the left, a shorter one on the right. Put an eye at the top of each and you can’t unsee them.",
+      lead: "Two eels tear up the river neck-and-neck, one long, one stubby, screeching a thin “",
+      sound: "eee",
+      tail: "!”",
     },
-    svg: `<svg viewBox="0 0 109 109" xmlns="http://www.w3.org/2000/svg">
-      <path d="M21.5,29.66c2.01,2.17,2.61,4.68,2.17,7.43c-3.09,19.16-1.03,32.01,7.93,41.45c6.12,6.45,6.26,3.14,7.04-5.21" ${FEAT}/>
-      <path d="M72.96,36.51c9.44,8.05,17.79,18.82,18.41,33.83" ${FEAT}/>
-      <circle cx="23.5" cy="31.5" r="2.4" ${DOT}/>
-      <circle cx="74.5" cy="39.5" r="2.4" ${DOT}/>
-      <path d="M38,73 l6,-2 M91,70 l5,3" ${ADD}/>
-      <path d="M8,95 q7,-4 13,0 t13,0 t13,0 t13,0 t13,0 t13,0" ${FAINT}/>
-    </svg>`,
+    image: "/mnemonics/i.webp",
     example: { word: "いぬ", reading: "inu", gloss: "dog", hitIndex: 0 },
-    approximate: "A clean fit, sound and shape both. Short here; a doubled いい just holds it longer.",
   },
 
-  // う — the long sweeping stroke is a goose's neck and body.
   う: {
     glyph: "う",
     romaji: "u",
     sound: "oo",
     ipa: "/ɯ/ · oo",
-    object: "goose",
-    analogy: {
-      lead: "Say it like the ",
-      sound: "oo",
-      tail: " in goose — but keep your lips unrounded.",
-    },
+    object: "u in the bath",
+    analogy: { lead: "Say it like the ", sound: "oo", tail: " in moon — but keep your lips relaxed and unrounded." },
     mnemonic: {
-      lead: "The long sweeping stroke is a ",
-      sound: "goose",
-      tail: "’s neck and body; the small top stroke is its head — add an eye and a beak.",
+      lead: "A tired letter u tips onto its side and sinks into a hot bath — the line on top is the water settling over it — and sighs a long “",
+      sound: "oooh",
+      tail: ".”",
     },
-    svg: `<svg viewBox="0 0 109 109" xmlns="http://www.w3.org/2000/svg">
-      <path d="M42,15.5c5.62,2.12,9.62,3,12.88,3c8.27,0,8,1.12-0.38,5.5" ${BASE}/>
-      <path d="M33,42.38c2.12,1.12,4.12,2.88,8.5,1.38c4.38-1.5,12.75-7.12,18.5-7c5.75,0.12,10.25,5,10.25,18c0,15.49-8.25,30.24-24.37,41.24" ${FEAT}/>
-      <circle cx="49" cy="18" r="2.3" ${DOT}/>
-      <path d="M41,17 l-7,-1 l6,4" ${ADD}/>
-    </svg>`,
+    image: "/mnemonics/u.webp",
     example: { word: "うみ", reading: "umi", gloss: "sea", hitIndex: 0 },
     approximate: "Japanese う is flatter than English “oo” — don’t purse your lips. Trust the 🔊 clip.",
   },
 
-  // え — the long bottom stroke sweeping right is an elephant's trunk.
   え: {
     glyph: "え",
     romaji: "e",
-    sound: "e",
+    sound: "eh",
     ipa: "/e/ · eh",
-    object: "elephant",
-    analogy: { lead: "Say it like the ", sound: "e", tail: " in bed — short and forward." },
+    object: "bird from an egg",
+    analogy: { lead: "Say it like the ", sound: "eh", tail: " in bed or egg — flat “eh,” never “ay.”" },
     mnemonic: {
-      lead: "The long bottom stroke that sweeps out to the right is the trunk of an ",
-      sound: "elephant",
-      tail: ", lifting at the tip; the top tick is the eye, the little arc a floppy ear.",
+      lead: "An exotic bird cracks out of a speckled egg, shakes off the shell, and squawks “",
+      sound: "eh",
+      tail: "!”",
     },
-    svg: `<svg viewBox="0 0 109 109" xmlns="http://www.w3.org/2000/svg">
-      <path d="M40.52,13.25c5.62,2.12,10,3,14.12,3c8.27,0,8,1.12-0.38,5.5" ${BASE}/>
-      <path d="M32.52,45.12c1.88,1.25,4.5,1.75,7.38,0.62c3.29-1.29,17-7.88,21.25-9.88c4.25-2,8.32,0.04,4.38,4.62c-12.26,14.27-27.26,31.52-39.51,44.4c-3.26,3.42-0.58,3.54,1.5,1.37c13.5-14.12,18.12-20.12,23.62-20.12c7.13,0,3.5,16.75,6.75,22.38c3.25,5.63,19.12,3.75,26.12,2.12" ${FEAT}/>
-      <circle cx="49" cy="15" r="2.3" ${DOT}/>
-      <path d="M52,40 q13,-3 12,14" ${ADD}/>
-      <path d="M89,80 l6,-2" ${ADD}/>
-    </svg>`,
     example: { word: "えき", reading: "eki", gloss: "station", hitIndex: 0 },
     approximate: "No glide — it’s “eh,” never “ay.” Match the 🔊 clip’s flat vowel.",
   },
 
-  // お — the looping bottom stroke is a leg mid-kick; the stray stroke is the ball.
   お: {
     glyph: "お",
     romaji: "o",
-    sound: "o",
+    sound: "oh",
     ipa: "/o/ · oh",
-    object: "kicking a ball",
-    analogy: { lead: "Say it like the ", sound: "o", tail: " in oat — a clean “oh.”" },
+    object: "wide eyes",
+    analogy: { lead: "Say it like the ", sound: "oh", tail: " in oat — a clean “oh.”" },
     mnemonic: {
-      lead: "The looping bottom-left stroke is a leg mid-kick and the stray upper-right stroke is the ball sailing off — “",
+      lead: "Two eyes go round as Os watching the fireworks burst overhead — a long, amazed “",
       sound: "oh",
-      tail: "! — what a goal.”",
+      tail: "!”",
     },
-    svg: `<svg viewBox="0 0 109 109" xmlns="http://www.w3.org/2000/svg">
-      <path d="M22.88,35.12c1.38,1,3.62,2.38,6,2.12c2.38-0.26,19.62-5.12,21.12-5.74c1.5-0.62,4-1.25,5.88-2" ${BASE}/>
-      <path d="M41.5,16.12c2.25,1,3.59,4.39,3.12,7.38c-2.5,16.12-3.37,45.53-2.25,58.38c0.75,8.62-0.64,10.45-7.12,7.12c-5.13-2.62-13.75-8-13.75-12.38c0-7.5,24.38-23.62,44.75-23.62c17.25,0,25,8.25,25,17.25c0,8.25-9.38,18.88-26.75,21" ${BASE}/>
-      <circle cx="80" cy="27" r="8" ${FEAT}/>
-      <path d="M73,22.12c5.38,2.62,8.88,5.88,10.62,8.25" ${FEAT}/>
-      <path d="M64,20 l-8,-3 M66,29 l-9,-1 M63,37 l-8,2" ${ADD}/>
-    </svg>`,
     example: { word: "おと", reading: "oto", gloss: "sound", hitIndex: 0 },
     approximate: "Short and pure, no “oh-w” glide at the end. The 🔊 clip is the ruler.",
+  },
+
+  // ---- K row — か き く け こ (APPROVED) --------------------------------
+  か: {
+    glyph: "か",
+    romaji: "ka",
+    sound: "ka",
+    object: "karate kick",
+    analogy: { lead: "Say it like the ", sound: "ka", tail: " in karate." },
+    mnemonic: {
+      lead: "A black belt snaps out a karate kick, one leg flying high, and shouts “",
+      sound: "ka",
+      tail: "!” as the board splits.",
+    },
+    example: { word: "かさ", reading: "kasa", gloss: "umbrella", hitIndex: 0 },
+  },
+
+  き: {
+    glyph: "き",
+    romaji: "ki",
+    sound: "kee",
+    object: "key",
+    analogy: { lead: "Say “", sound: "kee", tail: ",” like the word key." },
+    mnemonic: {
+      lead: "A two-toothed key jams into a rusty lock and screeches “",
+      sound: "kee",
+      tail: "!” as it forces the door open.",
+    },
+    example: { word: "き", reading: "ki", gloss: "tree", hitIndex: 0 },
+  },
+
+  く: {
+    glyph: "く",
+    romaji: "ku",
+    sound: "ku",
+    object: "cuckoo",
+    analogy: { lead: "Say “", sound: "ku", tail: "-ku,” like a cuckoo — a sharp “koo.”" },
+    mnemonic: {
+      lead: "A cuckoo explodes out of the clock, beak stabbing to a sharp point, screaming “",
+      sound: "ku-ku",
+      tail: "!” on the hour.",
+    },
+    example: { word: "くち", reading: "kuchi", gloss: "mouth", hitIndex: 0 },
+  },
+
+  け: {
+    glyph: "け",
+    romaji: "ke",
+    sound: "keh",
+    object: "kettle",
+    analogy: { lead: "Say “", sound: "keh", tail: ".”" },
+    mnemonic: {
+      lead: "A kettle hits the boil, rattles its lid — spout on one side, handle on the other — and shrieks “",
+      sound: "keh",
+      tail: "!”",
+    },
+    example: { word: "けさ", reading: "kesa", gloss: "this morning", hitIndex: 0 },
+  },
+
+  こ: {
+    glyph: "こ",
+    romaji: "ko",
+    sound: "koh",
+    object: "cobra",
+    analogy: { lead: "Say “", sound: "koh", tail: ".”" },
+    mnemonic: {
+      lead: "A cobra winds up in two tight coils, rears its hood, and hisses “",
+      sound: "koh",
+      tail: "!”",
+    },
+    example: { word: "こえ", reading: "koe", gloss: "voice", hitIndex: 0 },
+  },
+
+  // ---- S row — さ し す せ そ (APPROVED) --------------------------------
+  さ: {
+    glyph: "さ",
+    romaji: "sa",
+    sound: "sa",
+    object: "sardine",
+    analogy: { lead: "Say “", sound: "sah", tail: ",” as in sardine." },
+    mnemonic: {
+      lead: "A fat ",
+      sound: "sar",
+      tail: "dine dangles off the fishing line, body arched, tail flicking — one wriggle and it’s gone.",
+    },
+    example: { word: "さかな", reading: "sakana", gloss: "fish", hitIndex: 0 },
+  },
+
+  し: {
+    glyph: "し",
+    romaji: "shi",
+    sound: "she",
+    object: "fishhook",
+    analogy: { lead: "Say “", sound: "shee", tail: ".”" },
+    mnemonic: {
+      lead: "A single line drops straight down to a sharp hook — ",
+      sound: "she",
+      tail: " casts it out and reels one in.",
+    },
+    example: { word: "しろ", reading: "shiro", gloss: "white", hitIndex: 0 },
+  },
+
+  す: {
+    glyph: "す",
+    romaji: "su",
+    sound: "soo",
+    object: "balloon on a string",
+    analogy: { lead: "Say “", sound: "soo", tail: ".”" },
+    mnemonic: {
+      lead: "A round balloon strains at its string — let go and it swoops up and away.",
+      sound: null,
+      tail: "",
+    },
+    example: { word: "すし", reading: "sushi", gloss: "sushi", hitIndex: 0 },
+  },
+
+  せ: {
+    glyph: "せ",
+    romaji: "se",
+    sound: "se",
+    object: "seesaw",
+    analogy: { lead: "Say “", sound: "seh", tail: ".”" },
+    mnemonic: {
+      lead: "",
+      sound: "Se",
+      tail: "ven kids pile onto the seesaw and it tips with a creak — a plank across the middle, one seat flung high.",
+    },
+    example: { word: "せかい", reading: "sekai", gloss: "world", hitIndex: 0 },
+  },
+
+  そ: {
+    glyph: "そ",
+    romaji: "so",
+    sound: "so",
+    object: "zig-zag stitch",
+    analogy: { lead: "Say “", sound: "soh", tail: ".”" },
+    mnemonic: {
+      lead: "Time to sew — the needle darts back and forth in a zig-zag, pulling the seam tight.",
+      sound: null,
+      tail: "",
+    },
+    example: { word: "そら", reading: "sora", gloss: "sky", hitIndex: 0 },
+  },
+
+  // ---- T row — た ち つ て と (DRAFT) -----------------------------------
+  た: {
+    glyph: "た",
+    romaji: "ta",
+    sound: "ta",
+    object: "“ta-da!” finish",
+    analogy: { lead: "Say “", sound: "tah", tail: ".”" },
+    mnemonic: {
+      lead: "Arms and legs flung wide, the performer lands the big finish: “",
+      sound: "ta-da",
+      tail: "!”",
+    },
+    example: { word: "たまご", reading: "tamago", gloss: "egg", hitIndex: 0 },
+    draft: true,
+  },
+
+  ち: {
+    glyph: "ち",
+    romaji: "chi",
+    sound: "chee",
+    object: "cherry",
+    analogy: { lead: "Say “", sound: "chee", tail: ".”" },
+    mnemonic: {
+      lead: "Pluck the cherry off its stem and grin “",
+      sound: "chee",
+      tail: "se!”",
+    },
+    example: { word: "ちず", reading: "chizu", gloss: "map", hitIndex: 0 },
+    draft: true,
+  },
+
+  つ: {
+    glyph: "つ",
+    romaji: "tsu",
+    sound: "tsu",
+    object: "wave",
+    analogy: { lead: "Say “", sound: "tsu", tail: "” — “tsoo,” one sound, t and s together." },
+    mnemonic: {
+      lead: "A single ",
+      sound: "tsu",
+      tail: "nami curls its crest and sweeps over.",
+    },
+    example: { word: "つき", reading: "tsuki", gloss: "moon", hitIndex: 0 },
+    approximate: "One sound — t and s pressed together, not “t” then “sue.” The 🔊 clip nails it.",
+    draft: true,
+  },
+
+  て: {
+    glyph: "て",
+    romaji: "te",
+    sound: "te",
+    object: "telephone pole",
+    analogy: { lead: "Say “", sound: "teh", tail: ".”" },
+    mnemonic: {
+      lead: "A ",
+      sound: "te",
+      tail: "lephone pole with one crossbar hums in the wind — “teh.”",
+    },
+    example: { word: "てがみ", reading: "tegami", gloss: "letter", hitIndex: 0 },
+    draft: true,
+  },
+
+  と: {
+    glyph: "と",
+    romaji: "to",
+    sound: "to",
+    object: "stubbed toe",
+    analogy: { lead: "Say “", sound: "toh", tail: ".”" },
+    mnemonic: {
+      lead: "A thorn jabs the ",
+      sound: "toe",
+      tail: " — “toh!” — one long foot, one sharp splinter crossing it.",
+    },
+    example: { word: "とり", reading: "tori", gloss: "bird", hitIndex: 0 },
+    draft: true,
+  },
+
+  // ---- N row — な に ぬ ね の (DRAFT) -----------------------------------
+  な: {
+    glyph: "な",
+    romaji: "na",
+    sound: "na",
+    object: "knot",
+    analogy: { lead: "Say “", sound: "nah", tail: ".”" },
+    mnemonic: {
+      lead: "Pull the knot tight — loops crossing and cinching down.",
+      sound: null,
+      tail: "",
+    },
+    example: { word: "なつ", reading: "natsu", gloss: "summer", hitIndex: 0 },
+    draft: true,
+  },
+
+  に: {
+    glyph: "に",
+    romaji: "ni",
+    sound: "nee",
+    object: "needle and thread",
+    analogy: { lead: "Say “", sound: "nee", tail: ",” like needle." },
+    mnemonic: {
+      lead: "Thread the ",
+      sound: "nee",
+      tail: "dle — the tall needle standing, two stitches beside it.",
+    },
+    example: { word: "にく", reading: "niku", gloss: "meat", hitIndex: 0 },
+    draft: true,
+  },
+
+  ぬ: {
+    glyph: "ぬ",
+    romaji: "nu",
+    sound: "noo",
+    object: "noodles",
+    analogy: { lead: "Say “", sound: "noo", tail: ",” like noodles." },
+    mnemonic: {
+      lead: "Twirl the ",
+      sound: "noo",
+      tail: "dles up off the bowl — one big looping slurp.",
+    },
+    example: { word: "ぬの", reading: "nuno", gloss: "cloth", hitIndex: 0 },
+    draft: true,
+  },
+
+  ね: {
+    glyph: "ね",
+    romaji: "ne",
+    sound: "ne",
+    object: "curled cat",
+    analogy: { lead: "Say “", sound: "neh", tail: ".”" },
+    mnemonic: {
+      lead: "",
+      sound: "Ne",
+      tail: "ko the cat curls up to nap, tail flicking at the end.",
+    },
+    example: { word: "ねこ", reading: "neko", gloss: "cat", hitIndex: 0 },
+    draft: true,
+  },
+
+  の: {
+    glyph: "の",
+    romaji: "no",
+    sound: "no",
+    object: "snail",
+    analogy: { lead: "Say “", sound: "noh", tail: ".”" },
+    mnemonic: {
+      lead: "",
+      sound: "No",
+      tail: " rush — the snail’s whole spiral shell winds slowly by.",
+    },
+    example: { word: "のり", reading: "nori", gloss: "seaweed", hitIndex: 0 },
+    draft: true,
+  },
+
+  // ---- H row — は ひ ふ へ ほ (DRAFT) -----------------------------------
+  は: {
+    glyph: "は",
+    romaji: "ha",
+    sound: "ha",
+    object: "big laugh",
+    analogy: { lead: "Say “", sound: "hah", tail: ".”" },
+    mnemonic: {
+      lead: "Throw your head back and laugh: “",
+      sound: "ha-ha-ha",
+      tail: "!”",
+    },
+    example: { word: "はな", reading: "hana", gloss: "flower", hitIndex: 0 },
+    draft: true,
+  },
+
+  ひ: {
+    glyph: "ひ",
+    romaji: "hi",
+    sound: "hee",
+    object: "hippo’s grin",
+    analogy: { lead: "Say “", sound: "hee", tail: ".”" },
+    mnemonic: {
+      lead: "The hippo opens its wide jaw in a huge “",
+      sound: "hee",
+      tail: "-hee!”",
+    },
+    example: { word: "ひと", reading: "hito", gloss: "person", hitIndex: 0 },
+    draft: true,
+  },
+
+  ふ: {
+    glyph: "ふ",
+    romaji: "fu",
+    sound: "fu",
+    object: "Mount Fuji",
+    analogy: { lead: "A soft ", sound: "fu", tail: " — “foo,” halfway between English f and h." },
+    mnemonic: {
+      lead: "Climb ",
+      sound: "Fu",
+      tail: "ji — the peak with clouds drifting past its slopes.",
+    },
+    example: { word: "ふね", reading: "fune", gloss: "boat", hitIndex: 0 },
+    approximate: "Not a hard English “f” — a soft breath between f and h. The 🔊 clip is the guide.",
+    draft: true,
+  },
+
+  へ: {
+    glyph: "へ",
+    romaji: "he",
+    sound: "he",
+    object: "peak",
+    analogy: { lead: "Say “", sound: "heh", tail: ".”" },
+    mnemonic: {
+      lead: "A single “^” — a distant mountain peak, a bird gliding over it. ",
+      sound: "He",
+      tail: "ns nest up there.",
+    },
+    example: { word: "へや", reading: "heya", gloss: "room", hitIndex: 0 },
+    draft: true,
+  },
+
+  ほ: {
+    glyph: "ほ",
+    romaji: "ho",
+    sound: "ho",
+    object: "home",
+    analogy: { lead: "Say “", sound: "hoh", tail: ".”" },
+    mnemonic: {
+      lead: "",
+      sound: "Ho",
+      tail: "me sweet home — a tall wall, roof eaves, a round window.",
+    },
+    example: { word: "ほし", reading: "hoshi", gloss: "star", hitIndex: 0 },
+    draft: true,
+  },
+
+  // ---- M row — ま み む め も (DRAFT) -----------------------------------
+  ま: {
+    glyph: "ま",
+    romaji: "ma",
+    sound: "ma",
+    object: "horseshoe magnet",
+    analogy: { lead: "Say “", sound: "mah", tail: ".”" },
+    mnemonic: {
+      lead: "",
+      sound: "Ma",
+      tail: "ma’s magnet snaps it up — two poles up top, a U-base below.",
+    },
+    example: { word: "まど", reading: "mado", gloss: "window", hitIndex: 0 },
+    draft: true,
+  },
+
+  み: {
+    glyph: "み",
+    romaji: "mi",
+    sound: "me",
+    object: "musical note",
+    analogy: { lead: "Say “", sound: "mee", tail: ".”" },
+    mnemonic: {
+      lead: "The ",
+      sound: "me",
+      tail: "lody climbs — a note-head with its stem rising into a flag.",
+    },
+    example: { word: "みみ", reading: "mimi", gloss: "ear", hitIndex: 0 },
+    draft: true,
+  },
+
+  む: {
+    glyph: "む",
+    romaji: "mu",
+    sound: "moo",
+    object: "cow",
+    analogy: { lead: "Say “", sound: "moo", tail: ",” like a cow." },
+    mnemonic: {
+      lead: "The cow swishes its tail and says “",
+      sound: "moo",
+      tail: "!”",
+    },
+    example: { word: "むし", reading: "mushi", gloss: "insect", hitIndex: 0 },
+    draft: true,
+  },
+
+  め: {
+    glyph: "め",
+    romaji: "me",
+    sound: "me",
+    object: "eye",
+    analogy: { lead: "Say “", sound: "meh", tail: ".”" },
+    mnemonic: {
+      lead: "A ",
+      sound: "me",
+      tail: "lon-round eye winks — lid and lashes above, the eyeball below. (め even means “eye.”)",
+    },
+    example: { word: "め", reading: "me", gloss: "eye", hitIndex: 0 },
+    draft: true,
+  },
+
+  も: {
+    glyph: "も",
+    romaji: "mo",
+    sound: "mo",
+    object: "hook with worms",
+    analogy: { lead: "Say “", sound: "moh", tail: ".”" },
+    mnemonic: {
+      lead: "One ",
+      sound: "mo",
+      tail: "re fish! — a hook with two worms wriggling across the line.",
+    },
+    example: { word: "もり", reading: "mori", gloss: "forest", hitIndex: 0 },
+    draft: true,
+  },
+
+  // ---- Y row — や ゆ よ (DRAFT) -----------------------------------------
+  や: {
+    glyph: "や",
+    romaji: "ya",
+    sound: "ya",
+    object: "yacht",
+    analogy: { lead: "Say “", sound: "yah", tail: ".”" },
+    mnemonic: {
+      lead: "Set sail — the ",
+      sound: "ya",
+      tail: "cht’s mast, its billowing sail, a flag at the top.",
+    },
+    example: { word: "やま", reading: "yama", gloss: "mountain", hitIndex: 0 },
+    draft: true,
+  },
+
+  ゆ: {
+    glyph: "ゆ",
+    romaji: "yu",
+    sound: "you",
+    object: "pufferfish",
+    analogy: { lead: "Say “", sound: "you", tail: "” — “yoo.”" },
+    mnemonic: {
+      lead: "",
+      sound: "You",
+      tail: " spot a round pufferfish, one tail fin sticking out.",
+    },
+    example: { word: "ゆき", reading: "yuki", gloss: "snow", hitIndex: 0 },
+    draft: true,
+  },
+
+  よ: {
+    glyph: "よ",
+    romaji: "yo",
+    sound: "yo",
+    object: "yo-yo",
+    analogy: { lead: "Say “", sound: "yoh", tail: ".”" },
+    mnemonic: {
+      lead: "The ",
+      sound: "yo-yo",
+      tail: " spins down its string and snaps back up.",
+    },
+    example: { word: "よる", reading: "yoru", gloss: "night", hitIndex: 0 },
+    draft: true,
+  },
+
+  // ---- R row — ら り る れ ろ (DRAFT — a single soft TAP, between r/l/d) --
+  ら: {
+    glyph: "ら",
+    romaji: "ra",
+    sound: "ra",
+    object: "rabbit",
+    analogy: { lead: "Say “", sound: "rah", tail: "” — a soft tap, between r, l and d." },
+    mnemonic: {
+      lead: "The ",
+      sound: "ra",
+      tail: "bbit sits up, ears raised, round back tucked.",
+    },
+    example: { word: "さくら", reading: "sakura", gloss: "cherry blossom", hitIndex: 2 },
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    draft: true,
+  },
+
+  り: {
+    glyph: "り",
+    romaji: "ri",
+    sound: "re",
+    object: "chopsticks",
+    analogy: { lead: "Say “", sound: "ree", tail: "” — a soft tap." },
+    mnemonic: {
+      lead: "",
+      sound: "Re",
+      tail: "ach with the chopsticks — two side by side, poised to pick something up.",
+    },
+    example: { word: "りんご", reading: "ringo", gloss: "apple", hitIndex: 0 },
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    draft: true,
+  },
+
+  る: {
+    glyph: "る",
+    romaji: "ru",
+    sound: "roo",
+    object: "looping road",
+    analogy: { lead: "Say “", sound: "roo", tail: "” — a soft tap." },
+    mnemonic: {
+      lead: "The ",
+      sound: "roo",
+      tail: "te comes down and curls into a loop-de-loop. (Contrast ろ — same road, but it stays open.)",
+    },
+    example: { word: "くるま", reading: "kuruma", gloss: "car", hitIndex: 1 },
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    draft: true,
+  },
+
+  れ: {
+    glyph: "れ",
+    romaji: "re",
+    sound: "re",
+    object: "runner",
+    analogy: { lead: "Say “", sound: "reh", tail: "” — a soft tap." },
+    mnemonic: {
+      lead: "The ",
+      sound: "re",
+      tail: "lay racer leaps — front leg planted, back leg flicking out behind.",
+    },
+    example: { word: "きれい", reading: "kirei", gloss: "pretty", hitIndex: 1 },
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    draft: true,
+  },
+
+  ろ: {
+    glyph: "ろ",
+    romaji: "ro",
+    sound: "ro",
+    object: "winding road",
+    analogy: { lead: "Say “", sound: "roh", tail: "” — a soft tap." },
+    mnemonic: {
+      lead: "Down the winding ",
+      sound: "roa",
+      tail: "d — the same route as る, but it stays open, no loop.",
+    },
+    example: { word: "ろく", reading: "roku", gloss: "six", hitIndex: 0 },
+    approximate: "A single soft tap of the tongue — not a hard English “r.” The 🔊 clip is the target.",
+    draft: true,
+  },
+
+  // ---- W row + ん — わ を ん (DRAFT) ------------------------------------
+  わ: {
+    glyph: "わ",
+    romaji: "wa",
+    sound: "wa",
+    object: "waving person",
+    analogy: { lead: "Say “", sound: "wah", tail: ".”" },
+    mnemonic: {
+      lead: "“",
+      sound: "Wa",
+      tail: "tch me!” — standing tall, one arm curling up into a wave.",
+    },
+    example: { word: "わたし", reading: "watashi", gloss: "I / me", hitIndex: 0 },
+    draft: true,
+  },
+
+  を: {
+    glyph: "を",
+    romaji: "wo",
+    sound: "o",
+    object: "wok",
+    analogy: { lead: "Pronounced just like “", sound: "o", tail: "” (お) — the object-marking particle." },
+    mnemonic: {
+      lead: "Toss it in the ",
+      sound: "wo",
+      tail: "k — long handle, round bowl, food flipping up.",
+    },
+    example: { word: "パンを", reading: "pan o", gloss: "bread [object]", hitIndex: 2 },
+    approximate: "The object particle — attaches to a noun (パンを食べる, “eat bread”) and sounds exactly like お.",
+    draft: true,
+  },
+
+  ん: {
+    glyph: "ん",
+    romaji: "n",
+    sound: "n",
+    object: "a bow",
+    analogy: { lead: "A hummed ", sound: "n", tail: " — the moraic nasal." },
+    mnemonic: {
+      lead: "The performer dips into a deep bow and ends on a hummed “",
+      sound: "nn",
+      tail: ".”",
+    },
+    example: { word: "ほん", reading: "hon", gloss: "book", hitIndex: 1 },
+    approximate: "One held beat of nasal — its exact colour (m / n / ng) bends to what follows. Trust the 🔊 clip.",
+    draft: true,
   },
 };
 

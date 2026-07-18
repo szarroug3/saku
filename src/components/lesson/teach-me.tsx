@@ -99,8 +99,8 @@ export function TeachMe({ chars }: { chars: string[] }) {
         </button>
       </div>
 
-      {/* Our own mnemonic, only where we have one. The vowels show it; every
-          other kana renders exactly as before until its entry is authored. */}
+      {/* Our own mnemonic, only where we have one. Every base hiragana has one
+          now; katakana and kanji glyphs render as before until authored. */}
       {mnemonic ? <MnemonicCard m={mnemonic} /> : null}
 
       <div className="flex items-center justify-between">
