@@ -9,7 +9,7 @@
 //   1. checks the PNG has REAL transparency (transparent pixels, not just an
 //      all-opaque alpha channel) — opaque ones are skipped with a warning so
 //      you know to re-export them cut out;
-//   2. optimizes it into public/mnemonics/<script>/<romaji>.webp (360px long
+//   2. optimizes it into public/mnemonics/<script>/<romaji>.webp (512px long
 //      edge, WebP q82), overwriting any prior copy.
 // Splitting by script is what keeps か and カ (both romaji "ka") from colliding
 // on one filename. That's it — no registry, no manifest. The app derives the
@@ -140,10 +140,10 @@ function main() {
       }
 
       const out = join(outDir, `${romaji}.webp`);
-      // Resize to 360px on the long edge (never upscale), preserve alpha, WebP q82.
+      // Resize to 512px on the long edge (never upscale), preserve alpha, WebP q82.
       magick([
         src,
-        "-resize", "360x360>",
+        "-resize", "512x512>",
         "-quality", "82",
         "-define", "webp:alpha-quality=100",
         out,
