@@ -37,6 +37,7 @@
 // can't disagree about what a character is.
 
 import Link from "next/link";
+import { useState } from "react";
 
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
@@ -116,6 +117,14 @@ function KanaHero({
   const chars = [...m.example.word];
   const href = entryHref(item.entry);
 
+  // `getMnemonic` hands every kana a candidate picture path; the file may not be
+  // drawn yet. When it 404s the <img>'s onError fires and the WHOLE hero drops to
+  // the glyph layout (big character on the left, romaji leading on the right) —
+  // the exact look kana without a drawing have always had. Tracked by src, so
+  // stepping to a different kana re-tries its own picture with no reset.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const showImage = m.image != null && failedSrc !== m.image;
+
   return (
     <div className="grid items-center gap-x-12 gap-y-7 md:grid-cols-[minmax(0,440px)_1fr]">
       {/* THE HERO. With a drawing: a big square block on the app's frosted-panel
@@ -126,7 +135,7 @@ function KanaHero({
           backdrop is the page and the frost is real. Without a drawing: the
           glyph itself, set large, is the hero — no placeholder tile. */}
       <div className="flex justify-center md:justify-start">
-        {m.image ? (
+        {showImage ? (
           <Link
             href={href}
             aria-label={`Open ${item.glyph} in the Library`}
@@ -137,7 +146,12 @@ function KanaHero({
               aria-hidden
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={m.image} alt="" className="size-full object-contain p-6" />
+              <img
+                src={m.image}
+                alt=""
+                className="size-full object-contain p-6"
+                onError={() => setFailedSrc(m.image ?? null)}
+              />
             </div>
           </Link>
         ) : (
@@ -156,7 +170,7 @@ function KanaHero({
           hero, the romaji leads instead, so the glyph never doubles. */}
       <div className="min-w-0">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-          {m.image ? (
+          {showImage ? (
             <Link
               href={href}
               aria-label={`Open ${item.glyph} in the Library`}

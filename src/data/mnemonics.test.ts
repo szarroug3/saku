@@ -8,6 +8,8 @@
 // plain function this can drive directly.
 
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { MNEMONICS, getMnemonic, type SoundLine } from "./mnemonics.ts";
@@ -28,8 +30,6 @@ const ALL_HIRAGANA = [
   "わ", "を", "ん",
 ];
 
-// The kana that carry a drawn picture; everyone else falls back to the glyph.
-const WITH_IMAGE = ["あ", "え", "い", "か", "く", "さ", "う", "わ"];
 
 test("getMnemonic returns null for a glyph with no entry (hide-when-absent)", () => {
   // The hide-when-absent case the Library page and the teach flow render as
@@ -69,19 +69,46 @@ test("Library-entry / teach-flow gate: a hiragana resolves, a non-authored glyph
   assert.equal(getMnemonic("ア"), null);
 });
 
-test("exactly the eight drawn kana (a/e/i/ka/ku/sa/u/wa) expose an image path; the rest don't", () => {
+// EVERY kana now gets a CANDIDATE image path, derived from its own romaji. It's
+// a candidate: whether the file exists is decided on disk, and the renderers
+// fall back to the glyph when it 404s (MnemonicImage / KanaHero's onError). So
+// there is nothing per-kana to maintain here — the path is a pure function of
+// the romaji, and adding a drawing never touches this test.
+test("every kana yields the /mnemonics/<romaji>.webp path derived from its romaji", () => {
   for (const k of ALL_HIRAGANA) {
     const m = getMnemonic(k);
     assert.ok(m);
-    if (WITH_IMAGE.includes(k)) {
-      assert.ok(
-        typeof m.image === "string" && m.image.startsWith("/mnemonics/"),
-        `${k} should expose an image under /mnemonics/`,
-      );
-      assert.ok(m.image!.includes(m.romaji), `${k} image path should be keyed by its romaji (${m.romaji})`);
-    } else {
-      assert.equal(m.image, undefined, `${k} should have no image yet (glyph placeholder)`);
-    }
+    assert.equal(
+      m.image,
+      `/mnemonics/${m.romaji}.webp`,
+      `${k} should expose the candidate path keyed by its romaji (${m.romaji})`,
+    );
+    // The romaji goes into the path VERBATIM — the Hepburn spelling (shi/chi/
+    // tsu/fu/wo), which is the filename the owner must save. Guard the ones that
+    // differ from a naive consonant+vowel guess so the two can't drift.
+    assert.ok(m.image!.includes(`/${m.romaji}.webp`), `${k} path must use romaji verbatim`);
+  }
+  // The four irregular readings, pinned: filenames the owner saves as-is.
+  assert.equal(getMnemonic("し")!.image, "/mnemonics/shi.webp");
+  assert.equal(getMnemonic("ち")!.image, "/mnemonics/chi.webp");
+  assert.equal(getMnemonic("つ")!.image, "/mnemonics/tsu.webp");
+  assert.equal(getMnemonic("ふ")!.image, "/mnemonics/fu.webp");
+  assert.equal(getMnemonic("を")!.image, "/mnemonics/wo.webp");
+});
+
+// The eight drawings that ship today must still be on disk under the exact
+// romaji-keyed name getMnemonic derives — the guarantee that the migration
+// didn't change which kana show a picture. Reads public/mnemonics directly:
+// these files ARE the registry now.
+test("the eight shipped drawings (a/e/i/ka/ku/sa/u/wa) resolve to files on disk", () => {
+  const publicDir = fileURLToPath(new URL("../../public/mnemonics/", import.meta.url));
+  for (const glyph of ["あ", "え", "い", "か", "く", "さ", "う", "わ"]) {
+    const romaji = getMnemonic(glyph)!.romaji;
+    assert.equal(getMnemonic(glyph)!.image, `/mnemonics/${romaji}.webp`);
+    assert.ok(
+      existsSync(`${publicDir}${romaji}.webp`),
+      `${glyph}: public/mnemonics/${romaji}.webp should exist so the drawing shows`,
+    );
   }
 });
 
