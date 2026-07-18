@@ -46,8 +46,8 @@ export function NextLesson({
    * "Teach me here" — learn these in the app, then drill. Opens a session whose
    * TEACH PHASE steps each character one at a time (its mnemonic, how it's
    * written), then rolls into the drill — the same session/teach-walk.tsx the
-   * kanji and word cards reach through Start. The quieter alternative to Tofugu
-   * for the learner who'd rather stay in the app.
+   * kanji and word cards reach through Start. Kana is taught in-app now; the
+   * guides the app learned kana from are credited on the Resources page.
    */
   onTeach: (facts: FactId[]) => void;
   /**
@@ -70,13 +70,13 @@ export function NextLesson({
    */
   onClaim: (facts: FactId[]) => void;
 }) {
-  const { group, chars, learn } = lesson;
-  // The walkthrough is a pull, not the recommendation: Tofugu is what the card
-  // points at, and "teach me here" is the quieter alternative for the learner
-  // who just wants the glyphs shown in the app. It used to expand inline; it now
-  // opens the session's stepped teach phase (session/teach-walk.tsx), the same
-  // full-screen walk the kanji and word lessons use — so kana is taught the same
-  // way as everything else rather than through a one-off inline card.
+  const { group, chars } = lesson;
+  // "Teach me here" is the way in: kana is taught in the app, the same stepped
+  // teach phase (session/teach-walk.tsx) the kanji and word lessons use — so
+  // kana is taught the same way as everything else rather than through a one-off
+  // inline card or an external hand-off. The guides the app's approach came from
+  // are credited on the Resources page. (`learn` still rides along on the Lesson
+  // for that provenance; it just no longer renders a link here.)
   const readings = chars
     .map((c) => CHAR_INDEX[c]?.r[0])
     .filter(Boolean)
@@ -126,10 +126,10 @@ export function NextLesson({
         {why ? <WhyDisclosure why={why} /> : null}
 
         {/* Learn it, THEN be asked. "Teach me here" steps each character with
-            its own mnemonic and how it's written, inside the app — the primary
-            door now. The Tofugu link stays as a secondary external guide (its
-            fuller credit lives in the Library / a Resources page later). No box:
-            this sits directly on the card. */}
+            its own mnemonic and how it's written, inside the app — the only door
+            now, because kana is taught in-house. The guides the app learned kana
+            from are credited on the Resources page, not linked from the drill.
+            No box: this sits directly on the card. */}
         <div className="mt-4">
           <p className="text-[13px]">
             <span className="font-medium">Learn them first.</span>{" "}
@@ -140,14 +140,6 @@ export function NextLesson({
           </p>
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
             <Btn onClick={() => onTeach(lesson.facts)}>Teach me here</Btn>
-            <a
-              href={learn.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="kq-material cursor-pointer rounded-lg border border-border bg-card px-3.5 py-[7px] text-sm text-text no-underline hover:bg-panel"
-            >
-              {learn.label} ↗
-            </a>
           </div>
         </div>
 
