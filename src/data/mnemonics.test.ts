@@ -14,39 +14,89 @@ import { MNEMONICS, getMnemonic, type SoundLine } from "./mnemonics.ts";
 
 const VOWELS = ["あ", "い", "う", "え", "お"];
 
-test("getMnemonic returns null for a kana with no entry (hide-when-absent)", () => {
-  // を and か are real kana with Library entries but no mnemonic — the case the
-  // Library page and the teach flow must render as NOTHING. A null here is the
-  // whole of that behaviour: the callers mount no section.
-  assert.equal(getMnemonic("を"), null);
-  assert.equal(getMnemonic("か"), null);
+// All 46 base hiragana — the full set this table now covers.
+const ALL_HIRAGANA = [
+  "あ", "い", "う", "え", "お",
+  "か", "き", "く", "け", "こ",
+  "さ", "し", "す", "せ", "そ",
+  "た", "ち", "つ", "て", "と",
+  "な", "に", "ぬ", "ね", "の",
+  "は", "ひ", "ふ", "へ", "ほ",
+  "ま", "み", "む", "め", "も",
+  "や", "ゆ", "よ",
+  "ら", "り", "る", "れ", "ろ",
+  "わ", "を", "ん",
+];
+
+// The kana that carry a drawn picture; everyone else falls back to the glyph.
+const WITH_IMAGE = ["あ", "え", "い", "か", "く", "う"];
+
+test("getMnemonic returns null for a glyph with no entry (hide-when-absent)", () => {
+  // The hide-when-absent case the Library page and the teach flow render as
+  // NOTHING. No base hiragana hits this any more (all 46 are authored), so the
+  // stand-ins are katakana and kanji glyphs, which are valid keys with no row.
   assert.equal(getMnemonic("ア"), null); // katakana, none authored yet
   assert.equal(getMnemonic("生"), null); // a kanji glyph is a valid key with no row
+  assert.equal(getMnemonic(""), null);
 });
 
-test("Library-entry / teach-flow gate: a vowel resolves, a no-entry kana does not", () => {
-  // Exactly what app/library/[entry]/page.tsx and components/lesson/teach-me.tsx
-  // branch on. A vowel entry page mounts the MnemonicCard; a を entry page (or
-  // any word/kanji page) mounts nothing.
-  assert.notEqual(getMnemonic("あ"), null);
-  assert.equal(getMnemonic("を"), null);
-});
-
-test("the five vowels resolve, each with a non-empty svg and analogy", () => {
-  for (const v of VOWELS) {
-    const m = getMnemonic(v);
-    assert.ok(m, `expected a mnemonic for ${v}`);
-    assert.equal(m.glyph, v);
-    assert.ok(m.svg.trim().startsWith("<svg"), `${v} svg should be inline <svg> markup`);
-    assert.ok(m.svg.includes("currentColor"), `${v} svg should draw with currentColor`);
-    assert.ok(m.analogy.lead.length > 0, `${v} analogy should be non-empty`);
-    assert.ok(m.analogy.sound && m.analogy.sound.length > 0, `${v} analogy must accent a sound`);
+test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => {
+  for (const k of ALL_HIRAGANA) {
+    const m = getMnemonic(k);
+    assert.ok(m, `expected a mnemonic for ${k}`);
+    assert.equal(m.glyph, k, `${k} entry should be keyed by its own glyph`);
+    assert.ok(m.romaji.length > 0, `${k} should declare a romaji reading`);
+    assert.ok(m.analogy.lead.length > 0 || m.analogy.tail.length > 0, `${k} analogy should have prose`);
+    assert.ok(m.analogy.sound && m.analogy.sound.length > 0, `${k} analogy must accent a sound`);
     // The example points at a real code point in its own word.
     const chars = [...m.example.word];
     assert.ok(
       m.example.hitIndex >= 0 && m.example.hitIndex < chars.length,
-      `${v} example hitIndex out of range`,
+      `${k} example hitIndex out of range`,
     );
+    // And that code point is the kana this entry teaches.
+    assert.equal(chars[m.example.hitIndex], k, `${k} example hitIndex should land on ${k}`);
+  }
+  assert.equal(Object.keys(MNEMONICS).length, 46, "exactly the 46 base hiragana are authored");
+});
+
+test("Library-entry / teach-flow gate: a hiragana resolves, a non-authored glyph does not", () => {
+  // Exactly what app/library/[entry]/page.tsx and components/lesson/teach-me.tsx
+  // branch on. A hiragana entry page mounts the MnemonicCard; a katakana or
+  // kanji page (nothing authored) mounts nothing.
+  assert.notEqual(getMnemonic("あ"), null);
+  assert.notEqual(getMnemonic("か"), null);
+  assert.equal(getMnemonic("ア"), null);
+});
+
+test("exactly the six drawn kana (a/e/i/ka/ku/u) expose an image path; the rest don't", () => {
+  for (const k of ALL_HIRAGANA) {
+    const m = getMnemonic(k);
+    assert.ok(m);
+    if (WITH_IMAGE.includes(k)) {
+      assert.ok(
+        typeof m.image === "string" && m.image.startsWith("/mnemonics/"),
+        `${k} should expose an image under /mnemonics/`,
+      );
+      assert.ok(m.image!.includes(m.romaji), `${k} image path should be keyed by its romaji (${m.romaji})`);
+    } else {
+      assert.equal(m.image, undefined, `${k} should have no image yet (glyph placeholder)`);
+    }
+  }
+});
+
+test("every vowel is approved (no draft flag); every た–ん entry is flagged draft", () => {
+  for (const v of VOWELS) {
+    assert.notEqual(getMnemonic(v)!.draft, true, `${v} is approved, not draft`);
+  }
+  // あ–そ (through そ) are approved; た onward are draft.
+  const approvedThroughSo = ALL_HIRAGANA.slice(0, ALL_HIRAGANA.indexOf("そ") + 1);
+  for (const k of approvedThroughSo) {
+    assert.notEqual(getMnemonic(k)!.draft, true, `${k} (あ–そ) should not be draft`);
+  }
+  const draftFromTa = ALL_HIRAGANA.slice(ALL_HIRAGANA.indexOf("た"));
+  for (const k of draftFromTa) {
+    assert.equal(getMnemonic(k)!.draft, true, `${k} (た–ん) should be flagged draft`);
   }
 });
 

@@ -17,6 +17,17 @@
 // non-null. This component takes a resolved `Mnemonic`, so "there is nothing to
 // show" is simply "the caller didn't mount me."
 //
+// THE PICTURE IS A CONSTANT
+// =========================
+// The slot on the left shows the entry's drawn `image` when it has one, and
+// falls back to the plain glyph as a placeholder when it doesn't. The image
+// sits on a FIXED light tile — a constant background set in an inline style, not
+// a theme token — so the picture reads the same across all four themes and in
+// both light and dark, whatever its own background or transparency is (a/i are
+// RGBA, u is RGB). Only the surrounding chrome (the border) follows the theme.
+// The glyph placeholder, having no fixed picture to protect, uses the themed
+// panel like any other surface.
+//
 // THE ACCENT IS THE SOUND
 // =======================
 // `SoundLine` carries one optional emphasis, `sound`, and it is the substring
@@ -51,15 +62,29 @@ export function MnemonicCard({ m }: { m: Mnemonic }) {
   return (
     <div className="kq-material mt-3 rounded-lg border border-border bg-card px-3.5 py-4">
       <div className="flex items-start gap-4">
-        {/* The drawing IS the character — KanjiVG strokes as the canvas. The box
-            sets the ink to --text so the SVG's currentColor strokes read; its
-            accent feature comes from var(--accent) inside the markup, so both
-            survive every theme and both light and dark. */}
-        <div
-          className="flex size-[92px] flex-none items-center justify-center rounded-md border border-border bg-panel text-text [&>svg]:size-[80px]"
-          aria-hidden
-          dangerouslySetInnerHTML={{ __html: m.svg }}
-        />
+        {/* The picture, or the glyph. When the entry has a drawn image, it sits
+            on a FIXED light tile — the backgroundColor is a constant, not a
+            theme token — so the picture holds its look across every theme
+            regardless of its own transparency; only the border follows the
+            theme. With no image, the slot shows the plain glyph on the themed
+            panel as a placeholder. */}
+        {m.image ? (
+          <div
+            className="flex size-[92px] flex-none items-center justify-center overflow-hidden rounded-md border border-border"
+            style={{ backgroundColor: "#f7f3ec" }}
+            aria-hidden
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={m.image} alt="" className="size-[84px] object-contain" />
+          </div>
+        ) : (
+          <div
+            className="flex size-[92px] flex-none items-center justify-center rounded-md border border-border bg-panel text-text"
+            aria-hidden
+          >
+            <span className="font-kana text-[52px] leading-none">{m.glyph}</span>
+          </div>
+        )}
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

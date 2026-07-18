@@ -96,10 +96,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
     await refresh();
   };
 
-  // The app's own hook for this glyph, when there is one. Only kana with an
-  // entry resolve (the five vowels, for now); word and kanji glyphs return
-  // null and their pages are untouched. Same hide-when-absent gate as the
-  // teach flow — the section below is mounted only when this is non-null.
+  // The app's own hook for this glyph, when there is one. Every base hiragana
+  // resolves; katakana, word and kanji glyphs return null and their pages are
+  // untouched. Same hide-when-absent gate as the teach flow — the section below
+  // is mounted only when this is non-null.
   const mnemonic = getMnemonic(entry.glyph);
 
   const VISIBLE = 8;
