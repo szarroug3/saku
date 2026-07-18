@@ -19,13 +19,15 @@
 //
 // THE PICTURE SITS DIRECTLY ON THE CARD
 // =====================================
-// The slot on the left shows the entry's drawn `image` when it has one, and
-// falls back to the plain glyph as a placeholder when it doesn't. This card
-// already sits inside the entry page's own card, so the image needs no frame of
-// its own: it renders DIRECTLY on the card material with no nested box/tile
-// behind it. A transparent-PNG image (a/i are RGBA, u is RGB) shows the card's
-// material THROUGH its empty areas. The glyph placeholder likewise renders
-// plain, with no box.
+// The slot on the left shows the entry's drawn picture when one exists at
+// /mnemonics/<romaji>.webp, and falls back to the plain glyph as a placeholder
+// when it doesn't. `getMnemonic` always hands over a candidate `image` path; the
+// `MnemonicImage` wrapper loads it and swaps to the glyph on error (a missing
+// file 404s), so which kana show a drawing is decided by what's on disk, not by
+// this component. This card already sits inside the entry page's own card, so the
+// image needs no frame of its own: it renders DIRECTLY on the card material with
+// no nested box/tile behind it. A transparent-PNG image shows the card's material
+// THROUGH its empty areas. The glyph placeholder likewise renders plain, no box.
 //
 // THE ACCENT IS THE SOUND
 // =======================
@@ -35,6 +37,8 @@
 // colour and nothing else; a `null` sound accents nothing.
 
 import type { Mnemonic, SoundLine } from "@/data/mnemonics";
+
+import { MnemonicImage } from "./mnemonic-image";
 
 /** Render a SoundLine, accenting only its `sound` span (or nothing). Exported so
  * the stepped lesson's own hero (lesson-item-view.tsx) renders the same accented
@@ -67,19 +71,14 @@ export function MnemonicCard({ m }: { m: Mnemonic }) {
             page's own card, so the image needs no frame of its own — it renders
             DIRECTLY on the card with no nested box/tile behind it. A
             transparent-PNG image shows the card's material through its empty
-            areas. With no image, the plain glyph stands in as a placeholder,
-            likewise with no box. */}
-        {m.image ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={m.image} alt="" className="size-[84px] flex-none object-contain" aria-hidden />
-        ) : (
-          <span
-            className="flex size-[92px] flex-none items-center justify-center font-kana text-[52px] leading-none"
-            aria-hidden
-          >
-            {m.glyph}
-          </span>
-        )}
+            areas. When no webp exists for this kana, MnemonicImage falls the
+            candidate path back to the plain glyph placeholder, likewise no box. */}
+        <MnemonicImage
+          src={m.image!}
+          glyph={m.glyph}
+          imgClassName="size-[84px] flex-none object-contain"
+          glyphClassName="flex size-[92px] flex-none items-center justify-center font-kana text-[52px] leading-none"
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

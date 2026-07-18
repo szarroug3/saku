@@ -23,9 +23,17 @@
 // picture of the object, keyed by romaji under /public/mnemonics — and falls
 // back to the plain glyph as a placeholder when it doesn't. The picture is a
 // CONSTANT: it sits on a fixed light tile in the card so it reads the same in
-// every theme regardless of its own background/transparency (a/i are RGBA, u is
-// RGB). Only the three vowels a/i/u are drawn so far; the other 43 show the
-// glyph and gain an `image` when the owner draws them.
+// every theme regardless of its own background/transparency.
+//
+// The `image` is NOT authored on the entry below. `getMnemonic` DERIVES it for
+// every kana from the entry's own romaji — the candidate path
+// /mnemonics/<romaji>.webp. It's a candidate: the file may or may not exist. The
+// renderers load it and fall back to the plain glyph if it 404s, so a kana shows
+// its drawing when the webp is present and the character when it isn't — no
+// registry, no fs check. The owner adds a drawing by dropping <romaji>.webp into
+// public/mnemonics (or a transparent PNG named <romaji>.png into ~/Downloads/kana
+// and running `pnpm mnemonic-images`, which optimizes it to that webp). No edit
+// to this table or its test — the romaji already names the file.
 //
 // THE ACCENT COLOUR IS RESERVED FOR THE SOUND
 // ===========================================
@@ -113,11 +121,14 @@ export interface Mnemonic {
    */
   mnemonic: SoundLine;
   /**
-   * A drawn picture of the object, served from /public/mnemonics and keyed by
-   * romaji (e.g. "/mnemonics/a.webp"). Optional: present only for the kana that
-   * have been drawn (a/i/u so far). When absent, the card shows the plain glyph
-   * as a placeholder. The picture is theme-agnostic — the card mounts it on a
-   * fixed light tile — so its own background/transparency doesn't matter.
+   * The candidate path to a drawn picture of the object, served from
+   * /public/mnemonics and keyed by romaji (e.g. "/mnemonics/a.webp"). NOT
+   * authored on the entry: `getMnemonic` derives it for every kana from the
+   * entry's romaji, so it is always present on a returned Mnemonic. It is a
+   * CANDIDATE — the file may not exist. The renderers load it and fall back to
+   * the plain glyph on error, which is how a kana with no drawing shows its
+   * character. The picture is theme-agnostic — the card mounts it on a fixed
+   * light tile — so its own background/transparency doesn't matter.
    */
   image?: string;
   /** A real beginner word with the kana highlighted. */
@@ -140,8 +151,9 @@ export interface Mnemonic {
 /**
  * The table. Keyed by glyph — appending an entry is the whole of authoring a
  * mnemonic. All 46 base hiragana. あ–そ are owner-approved; た–ん carry
- * `draft: true`. a/i/u carry a drawn `image`; the rest show the glyph until one
- * is drawn.
+ * `draft: true`. No entry carries an `image` — `getMnemonic` derives the
+ * candidate /mnemonics/<romaji>.webp path, and the renderers fall back to the
+ * glyph when that file is absent, so the character shows until one is drawn.
  */
 export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
   // ---- Vowels — あ い う え お (APPROVED) --------------------------------
@@ -157,7 +169,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       sound: "ahhh",
       tail: "!”",
     },
-    image: "/mnemonics/a.webp",
     example: { word: "あめ", reading: "ame", gloss: "rain", hitIndex: 0 },
   },
 
@@ -173,7 +184,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       sound: "eee",
       tail: "!”",
     },
-    image: "/mnemonics/i.webp",
     example: { word: "いぬ", reading: "inu", gloss: "dog", hitIndex: 0 },
   },
 
@@ -189,7 +199,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       sound: "oooh",
       tail: ".”",
     },
-    image: "/mnemonics/u.webp",
     example: { word: "うみ", reading: "umi", gloss: "sea", hitIndex: 0 },
     approximate: "Japanese う is flatter than English “oo” — don’t purse your lips. Trust the 🔊 clip.",
   },
@@ -206,7 +215,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       sound: "eh",
       tail: "!”",
     },
-    image: "/mnemonics/e.webp",
     example: { word: "えき", reading: "eki", gloss: "station", hitIndex: 0 },
     approximate: "No glide — it’s “eh,” never “ay.” Match the 🔊 clip’s flat vowel.",
   },
@@ -239,7 +247,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       sound: "ka",
       tail: "!” as the board splits.",
     },
-    image: "/mnemonics/ka.webp",
     example: { word: "かさ", reading: "kasa", gloss: "umbrella", hitIndex: 0 },
   },
 
@@ -268,7 +275,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       sound: "ku-ku",
       tail: "!” on the hour.",
     },
-    image: "/mnemonics/ku.webp",
     example: { word: "くち", reading: "kuchi", gloss: "mouth", hitIndex: 0 },
   },
 
@@ -312,7 +318,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       sound: "sar",
       tail: "dine dangles off the fishing line, body arched, tail flicking — one wriggle and it’s gone.",
     },
-    image: "/mnemonics/sa.webp",
     example: { word: "さかな", reading: "sakana", gloss: "fish", hitIndex: 0 },
   },
 
@@ -811,7 +816,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "wa",
     sound: "wa",
     object: "wand",
-    image: "/mnemonics/wa.webp",
     analogy: { lead: "Say it like the ", sound: "wa", tail: " in wand." },
     mnemonic: {
       lead: "A magic ",
@@ -862,5 +866,14 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
  * placeholder, no empty box. Works for any glyph, kana or (later) kanji.
  */
 export function getMnemonic(glyph: MnemonicKey): Mnemonic | null {
-  return MNEMONICS[glyph] ?? null;
+  const entry = MNEMONICS[glyph];
+  if (!entry) return null;
+  // Every entry gets a CANDIDATE image path derived from its own romaji — the
+  // picture at public/mnemonics/<romaji>.webp. It's a candidate, not a promise:
+  // the file may not exist yet. The renderers load it and fall back to the plain
+  // glyph on error (a missing file 404s), so "the drawing shows if the webp is
+  // there, else the character" needs no registry and no fs check here. Drawing a
+  // new kana is: drop <romaji>.webp into public/mnemonics (or a PNG + run
+  // `pnpm mnemonic-images`) — no edit to this table or its test.
+  return { ...entry, image: `/mnemonics/${entry.romaji}.webp` };
 }

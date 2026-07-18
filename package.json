@@ -10,6 +10,7 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "type-check": "tsc --noEmit",
+    "mnemonic-images": "node scripts/build-mnemonic-images.mjs",
     "test": "node --import ./src/lib/conjugate/test-hooks.mjs --test \"src/**/*.test.ts\""
   },
   "dependencies": {
