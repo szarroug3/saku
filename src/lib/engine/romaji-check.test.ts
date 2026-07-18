@@ -30,16 +30,21 @@ describe("en2jp check — kana glyphs accept romaji", () => {
   });
 });
 
-describe("en2jp check — kanji glyphs never accept romaji", () => {
-  test("a kanji word reading is exact-match only", () => {
-    // 先生 is a kanji word (keb 先生 ≠ reb せんせい). Its answer glyph is the
-    // kanji, which no romaji can spell — only the kanji itself grades.
+describe("en2jp check — a word reading is answered by its kana", () => {
+  test("a kanji word's reading fact grades the kana READING, not the glyph", () => {
+    // 先生 is a kanji word (keb 先生 ≠ reb せんせい). En→jp on its READING fact
+    // is the typed gap: shown the gloss, the learner produces the reading せんせい,
+    // which romaji CAN spell — so romaji and raw kana both grade, and the kanji
+    // glyph (a different question — "write the word") does not.
     const sensei = wordReadingFactId("先生");
-    assert.equal(checkTyped(sensei, "sensei", "en2jp"), false);
-    assert.equal(checkTyped(sensei, "せんせい", "en2jp"), false); // the reading, not the glyph
-    assert.equal(checkTyped(sensei, "先生", "en2jp"), true);
+    assert.equal(checkTyped(sensei, "sensei", "en2jp"), true); // romaji, no IME
+    assert.equal(checkTyped(sensei, "せんせい", "en2jp"), true); // the reading
+    assert.equal(checkTyped(sensei, "先生", "en2jp"), false); // the glyph is not the reading
+    assert.equal(checkTyped(sensei, "gakusei", "en2jp"), false); // wrong reading
   });
+});
 
+describe("en2jp check — kanji glyphs never accept romaji", () => {
   test("a single-kanji reading fact is exact-match only", () => {
     const sei = readingFactId("生", "人生");
     assert.equal(checkTyped(sei, "sei", "en2jp"), false);

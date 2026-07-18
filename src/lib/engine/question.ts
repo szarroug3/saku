@@ -43,7 +43,14 @@ import {
   meaningFactId,
   readingFactId,
 } from "@/data/kanji";
-import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
+import {
+  VOCAB,
+  VOCAB_SUBJECT,
+  isKanaWord,
+  vocabRow,
+  wordMeaningFactId,
+  wordReadingFactId,
+} from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
 import type { Direction, FactId } from "@/types";
@@ -150,9 +157,20 @@ function glyphOfFact(fact: FactId): string {
  * choice instead — see DrillScreen.nextQuestion).
  */
 function checkEn2jp(fact: FactId, given: string): boolean {
-  const glyph = glyphOfFact(fact);
-  if (given.trim() === glyph) return true;
-  return isKanaOnly(glyph) && romajiMatches(given, glyph);
+  return checkProduces(glyphOfFact(fact), given);
+}
+
+/**
+ * Whether `given` produces the Japanese `target`: a direct match (an IME glyph,
+ * or kana typed as kana) always counts, and when `target` is ALL KANA a romaji
+ * spelling of it counts too. Factored out of checkEn2jp because a word asked
+ * en2jp by its MEANING is answered with its READING — a different target than
+ * its written glyph — and both wants exactly this forgiveness. See
+ * wordQuestions.check and en2jpTypeable.
+ */
+function checkProduces(target: string, given: string): boolean {
+  if (given.trim() === target) return true;
+  return isKanaOnly(target) && romajiMatches(given, target);
 }
 
 /**
@@ -334,22 +352,84 @@ const wordQuestions: QuestionType = {
         hint: null,
       };
     }
-    return { glyph: answerOf(fact), jp: reading, context: null, hint: null };
+    // en2jp. The READING fact is the typed en→jp gap: shown the English gloss,
+    // the learner produces the word's kana reading — which romaji can spell, so
+    // it is answerable with no IME (see en2jpTypeable). The glyph shown is the
+    // gloss; the answer to reveal is answerOf (the reading kana), which the
+    // generic reveal already prints. The MEANING fact keeps the older en→jp
+    // shape: shown the gloss, produce the WRITTEN word (先生), which carries
+    // kanji and so is offered as multiple choice (or IME), never a romaji box.
+    if (reading) {
+      return {
+        glyph: factInfo(fact)?.meaning ?? "",
+        jp: false,
+        context: "reading",
+        hint: null,
+      };
+    }
+    return { glyph: answerOf(fact), jp: false, context: "in japanese", hint: null };
   },
   check(fact, dir, given) {
-    return dir === "jp2en"
-      ? accepts(fact, given)
-      : checkEn2jp(fact, given);
+    if (dir === "jp2en") return accepts(fact, given);
+    // The reading fact's en→jp answer is its kana READING, not its glyph. Accept
+    // it typed (romaji or kana) exactly the way every other kana target is.
+    if (isWordReading(fact)) return checkProduces(answerOf(fact), given);
+    return checkEn2jp(fact, given);
   },
   distractors(fact, n) {
-    // No word-level confusable data exists, and inventing "random other words"
-    // would be padding — see the doc on `distractors`. Typed answering is
-    // unaffected; MC on a word simply has nothing plausible to offer yet.
-    void fact;
-    void n;
-    return [];
+    // A word has no confusable table, but it has neighbours: the other everyday
+    // words at a similar level. Ordered by nearness in beginnerRank — so an
+    // option is a word the learner is about as likely to know — then by a
+    // similar written length, so it is not eliminable on shape alone. Each
+    // neighbour contributes the SAME KIND of fact as the one asked: a reading
+    // question gets other readings (kana), a meaning question other glosses
+    // (English). buildMcOptions drops any that share the answer, so two words
+    // that gloss or read alike can never both sit on the board.
+    const info = factInfo(fact);
+    const target = info && vocabRow(info.glyph);
+    if (!info || !target) return [];
+    const reading = isWordReading(fact);
+    const toFact = reading ? wordReadingFactId : wordMeaningFactId;
+    const pool = VOCAB.filter(
+      // A reading question needs a word that HAS a reading fact — kana words do
+      // not (これ is its own reading), so they can only be meaning distractors.
+      (w) => w.keb !== info.glyph && (!reading || !isKanaWord(w)),
+    ).sort((a, b) => {
+      const byRank =
+        Math.abs(a.beginnerRank - target.beginnerRank) -
+        Math.abs(b.beginnerRank - target.beginnerRank);
+      if (byRank !== 0) return byRank;
+      return (
+        Math.abs(a.keb.length - target.keb.length) -
+        Math.abs(b.keb.length - target.keb.length)
+      );
+    });
+    const out: FactId[] = [];
+    for (const w of pool) {
+      const f = toFact(w.keb);
+      if (!factInfo(f)) continue;
+      out.push(f);
+      if (out.length >= n) break;
+    }
+    return out;
   },
 };
+
+/**
+ * Whether an en2jp card for `fact` can be answered by TYPING romaji — the
+ * question the drill screen asks to decide between a text box and multiple
+ * choice. True when the Japanese to produce is all kana: for most subjects that
+ * is the glyph itself, but a WORD asked en2jp by its reading is answered with
+ * its kana reading, which is typeable even though the written word has kanji.
+ * A word asked by its meaning still produces the written glyph, so it follows
+ * the same all-kana test as everyone else.
+ */
+export function en2jpTypeable(fact: FactId): boolean {
+  const info = factInfo(fact);
+  if (!info) return false;
+  if (info.subject === VOCAB_SUBJECT && isWordReading(fact)) return true;
+  return isKanaOnly(info.glyph);
+}
 
 function isWordReading(fact: FactId): boolean {
   const info = factInfo(fact);

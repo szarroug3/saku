@@ -16,6 +16,7 @@ import type {
 } from "@/types";
 
 export {
+  en2jpTypeable,
   questionsFor,
   type Prompt,
   type PromptContext,
