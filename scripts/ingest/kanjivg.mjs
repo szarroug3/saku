@@ -2,19 +2,23 @@
 //
 // WHAT THIS PRODUCES
 // ==================
-// src/data/generated/strokes/hiragana.json — keyed by glyph, each value the
-// ORDERED list of stroke `d` path strings plus the stroke-number label
-// positions, on KanjiVG's native 109×109 grid. The renderer
-// (src/components/lesson/stroke-order.tsx) draws straight from this: no SVG
-// parsing at runtime, no per-glyph network request beyond the one lazy chunk.
+// src/data/generated/strokes/hiragana.json and .../katakana.json — one file per
+// script, keyed by glyph, each value the ORDERED list of stroke `d` path strings
+// plus the stroke-number label positions, on KanjiVG's native 109×109 grid. The
+// renderer (src/components/lesson/stroke-order.tsx) draws straight from this: no
+// SVG parsing at runtime, no per-glyph network request beyond the one lazy chunk.
+// They are separate files so the loader fetches only the script in front of the
+// learner (src/lib/strokes.ts).
 //
 // WHY KANJIVG
 // ===========
 // KanjiVG (github.com/KanjiVG/kanjivg) ships one SVG per character with its
 // strokes as <path> elements IN DRAWING ORDER and a StrokeNumbers group giving
 // the numeral positions. It covers hiragana, katakana AND kanji, so the same
-// asset shape and the same renderer extend to the other scripts later — add
-// their codepoints to GLYPHS (or a sibling script) and re-run.
+// asset shape and the same renderer extend to the other scripts — add another
+// entry to SETS and re-run. Kanji is deliberately NOT ingested: it is megabytes,
+// so it needs a loading strategy (per-glyph or chunked) designed for it rather
+// than one file the loader pulls whole.
 //
 // LICENCE
 // =======
@@ -28,7 +32,7 @@
 // ===
 //   node scripts/ingest/kanjivg.mjs
 // Fetches from the KanjiVG `master` branch (raw.githubusercontent.com), parses,
-// and writes the JSON. Network access required; it fetches 46 small files.
+// and writes the JSON. Network access required; it fetches 92 small files.
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
@@ -36,11 +40,23 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
-const OUT = resolve(REPO, "src/data/generated/strokes/hiragana.json");
+const OUTDIR = resolve(REPO, "src/data/generated/strokes");
 
-/** The 46 base hiragana, in gojūon order. Katakana / kanji are a later run. */
-const GLYPHS = [
-  ..."あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん",
+/** One output file per script: the 46 base glyphs of each, in gojūon order
+ * (vowels, K/S/T/N/H/M/Y/R/W rows, ん/ン). Kanji is out of scope — see above. */
+const SETS = [
+  {
+    name: "hiragana",
+    glyphs: [
+      ..."あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん",
+    ],
+  },
+  {
+    name: "katakana",
+    glyphs: [
+      ..."アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン",
+    ],
+  },
 ];
 
 const RAW = "https://raw.githubusercontent.com/KanjiVG/kanjivg/master/kanji";
@@ -66,24 +82,31 @@ function parseNumbers(svg) {
   return nums.map(({ x, y }) => [x, y]);
 }
 
+/** Fetch and parse one glyph. Throws rather than emitting a partial entry — a
+ * glyph KanjiVG lacks must fail the run, not silently vanish from the asset. */
+async function ingestGlyph(g) {
+  const cp = g.codePointAt(0).toString(16).padStart(5, "0");
+  const res = await fetch(`${RAW}/${cp}.svg`);
+  if (!res.ok) throw new Error(`fetch ${g} (${cp}) failed: ${res.status}`);
+  const svg = await res.text();
+  const strokes = parseStrokes(svg);
+  if (!strokes.length) throw new Error(`no strokes parsed for ${g} (${cp})`);
+  return { strokes, numbers: parseNumbers(svg) };
+}
+
 async function main() {
-  const out = {};
-  for (const g of GLYPHS) {
-    const cp = g.codePointAt(0).toString(16).padStart(5, "0");
-    const res = await fetch(`${RAW}/${cp}.svg`);
-    if (!res.ok) throw new Error(`fetch ${g} (${cp}) failed: ${res.status}`);
-    const svg = await res.text();
-    const strokes = parseStrokes(svg);
-    if (!strokes.length) throw new Error(`no strokes parsed for ${g} (${cp})`);
-    const numbers = parseNumbers(svg);
-    out[g] = { strokes, numbers };
+  await mkdir(OUTDIR, { recursive: true });
+  for (const { name, glyphs } of SETS) {
+    const out = {};
+    for (const g of glyphs) out[g] = await ingestGlyph(g);
+    // Keys in gojūon order for a stable diff; the data is the payload.
+    const json = JSON.stringify(out) + "\n";
+    const file = resolve(OUTDIR, `${name}.json`);
+    await writeFile(file, json);
+    console.log(
+      `wrote ${file} — ${glyphs.length} glyphs, ${Buffer.byteLength(json)} bytes`,
+    );
   }
-  await mkdir(dirname(OUT), { recursive: true });
-  // Sorted keys for a stable diff; the data is the payload, not the order.
-  const sorted = Object.fromEntries(GLYPHS.map((g) => [g, out[g]]));
-  await writeFile(OUT, JSON.stringify(sorted) + "\n");
-  const bytes = Buffer.byteLength(JSON.stringify(sorted) + "\n");
-  console.log(`wrote ${OUT} — ${GLYPHS.length} glyphs, ${bytes} bytes`);
 }
 
 main().catch((e) => {
