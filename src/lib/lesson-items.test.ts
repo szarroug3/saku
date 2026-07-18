@@ -3,143 +3,107 @@
 //
 // WHAT THESE TESTS ARE FOR
 // ========================
-// The stepped lesson page renders whatever lessonPlan() hands it, one item at a
-// time. The step model has one load-bearing invariant that isn't visible in a
-// screenshot and type-checks either way: the items must be the lesson's facts,
-// GROUPED BY ENTRY, IN ORDER, losing none and inventing none. A bug there is a
-// glyph that steps twice, or a fact that "Quiz me" silently drops — both of
-// which look fine until you count. So these tests count.
+// The stepped teach phase renders itemsFromFacts(session.teach), one item at a
+// time. The grouping has one load-bearing invariant that isn't visible in a
+// screenshot and type-checks either way: the items must be the teach facts,
+// GROUPED BY ENTRY, IN ORDER, losing none and inventing none — otherwise a glyph
+// steps twice, or a fact the drill is about to ask never gets shown. So these
+// tests count.
 //
-// They also pin day one (the vowels), the same way kanji-lesson.test.ts pins
-// its own head of the order: if the first thing a beginner is walked through
-// ever stops being あいうえお, that is a curriculum change, and this is the line
-// that says so.
+// The fixtures are real lessons (nextLesson, nextKanjiLesson, nextGrammarLesson)
+// against a fresh learner, so the grouping is exercised on the actual material
+// the teach phase will hand it — including grammar, whose producible patterns
+// carry two facts per entry, the multi-fact-per-entry case the one-fact
+// kana/kanji lessons can't reach.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { entryOf } from "./facts.ts";
-import { GRAMMAR_PER_LESSON_DEFAULT } from "./grammar-lesson.ts";
-import { LESSON_RANGE_DEFAULT } from "./kanji-lesson.ts";
-import {
-  asTrack,
-  LESSON_TRACKS,
-  lessonPlan,
-  type LessonSettings,
-  type LessonTrack,
-} from "./lesson-items.ts";
-import type { HistoryFile } from "../types/index.ts";
+import { kanjiTeachOrder } from "../data/kanji.ts";
+import { entryOf, factInfo } from "./facts.ts";
+import { GRAMMAR_PER_LESSON_DEFAULT, nextGrammarLesson } from "./grammar-lesson.ts";
+import { LESSON_RANGE_DEFAULT, nextKanjiLesson } from "./kanji-lesson.ts";
+import { itemsFromFacts } from "./lesson-items.ts";
+import { nextLesson } from "./lesson.ts";
+import { nextWordLesson } from "./word-lesson.ts";
+import type { FactId, HistoryFile } from "../types/index.ts";
 
-const SETTINGS: LessonSettings = {
-  kanjiOrder: "everyday",
-  lessonRange: LESSON_RANGE_DEFAULT,
-  wordsPerLesson: 6,
-  grammarPerLesson: GRAMMAR_PER_LESSON_DEFAULT,
-};
-
-/** A learner who has done nothing — so every track's FIRST lesson is what
- * lessonPlan returns. */
+/** A learner who has done nothing — so every track's FIRST lesson is what the
+ * curriculum modules return. */
 const FRESH: HistoryFile = { sessions: [], facts: {} };
 
-describe("asTrack", () => {
-  test("passes through the four real tracks", () => {
-    for (const t of LESSON_TRACKS) assert.equal(asTrack(t), t);
-  });
+/** The teach facts of each track's first lesson, the way a session would carry
+ * them. */
+const TEACH_SETS: Record<string, FactId[]> = {
+  kana: nextLesson(FRESH)!.facts,
+  kanji: nextKanjiLesson(FRESH, kanjiTeachOrder("everyday"), LESSON_RANGE_DEFAULT)!
+    .facts,
+  word: nextWordLesson(FRESH, 6)!.facts,
+  grammar: nextGrammarLesson(FRESH, GRAMMAR_PER_LESSON_DEFAULT)!.facts,
+};
 
-  test("defaults anything else to kana", () => {
-    assert.equal(asTrack("nonsense"), "kana");
-    assert.equal(asTrack(""), "kana");
-    assert.equal(asTrack(null), "kana");
-    assert.equal(asTrack(undefined), "kana");
-  });
-});
-
-describe("lessonPlan — the step model", () => {
-  const tracks: LessonTrack[] = ["kana", "kanji", "word", "grammar"];
-
-  for (const track of tracks) {
+describe("itemsFromFacts — the step model", () => {
+  for (const [track, facts] of Object.entries(TEACH_SETS)) {
     describe(track, () => {
-      const plan = lessonPlan(track, FRESH, SETTINGS);
+      const items = itemsFromFacts(facts);
 
-      test("a fresh learner has a first lesson", () => {
-        assert.ok(plan, `expected a ${track} lesson for a fresh learner`);
+      test("there is something to walk through", () => {
+        assert.ok(items.length > 0);
       });
 
-      test("items are the lesson's facts, grouped by entry, in order", () => {
-        assert.ok(plan);
-        // Flattening the items' facts must reproduce plan.facts exactly — same
-        // members, same order, none lost, none invented. This is the whole
-        // grouping contract, and it is the thing "Quiz me" and the claims rely
-        // on being true.
-        const flat = plan.items.flatMap((it) => it.facts);
-        assert.deepEqual(flat, plan.facts);
+      test("items are the facts, grouped by entry, in order — none lost, none invented", () => {
+        // Flattening the items' facts must reproduce the input exactly: same
+        // members, same order. This is the whole grouping contract, and the
+        // thing the drill that follows relies on being true.
+        assert.deepEqual(
+          items.flatMap((it) => it.facts),
+          facts,
+        );
       });
 
       test("every item's facts belong to that item's entry", () => {
-        assert.ok(plan);
-        for (const it of plan.items) {
-          for (const f of it.facts) {
-            assert.equal(entryOf(f), it.entry);
-          }
+        for (const it of items) {
+          for (const f of it.facts) assert.equal(entryOf(f), it.entry);
         }
       });
 
       test("no entry is stepped through twice", () => {
-        assert.ok(plan);
-        const entries = plan.items.map((it) => it.entry);
+        const entries = items.map((it) => it.entry);
         assert.equal(new Set(entries).size, entries.length);
       });
 
-      test("every item is tagged with the plan's track", () => {
-        assert.ok(plan);
-        for (const it of plan.items) assert.equal(it.kind, track);
+      test("each item's kind is its subject, and its glyph is the fact's glyph", () => {
+        for (const it of items) {
+          const info = factInfo(it.facts[0]);
+          assert.equal(it.kind, info?.subject);
+          assert.equal(it.glyph, info?.glyph);
+        }
       });
     });
   }
 
-  test("day one is the vowels あいうえお", () => {
-    const plan = lessonPlan("kana", FRESH, SETTINGS);
-    assert.ok(plan);
+  test("kana day one steps あいうえお in order", () => {
+    const items = itemsFromFacts(TEACH_SETS.kana);
     assert.deepEqual(
-      plan.items.map((it) => it.glyph),
+      items.map((it) => it.glyph),
       ["あ", "い", "う", "え", "お"],
     );
+    for (const it of items) assert.equal(it.kind, "kana");
   });
 
-  test("kana carries a guide link and the wider 'all hiragana' claim", () => {
-    const plan = lessonPlan("kana", FRESH, SETTINGS);
-    assert.ok(plan);
-    assert.ok(plan.learn?.url.startsWith("http"), "kana lesson has a guide link");
-    assert.ok(plan.claimAll, "kana lesson can claim the whole script");
-    // The wider claim is a superset of the lesson's own facts — you can't know
-    // all of hiragana without knowing あ.
-    for (const f of plan.facts) {
-      assert.ok(
-        plan.claimAll.facts.includes(f),
-        "the lesson's facts are within the 'all hiragana' claim",
-      );
-    }
-  });
-
-  test("kanji carries a why and an over flag; no guide link", () => {
-    const plan = lessonPlan("kanji", FRESH, SETTINGS);
-    assert.ok(plan);
-    assert.ok(plan.why, "kanji lesson has a 'why?' teaching layer");
-    assert.equal(typeof plan.over, "boolean");
-    assert.equal(plan.learn, undefined);
-    assert.equal(plan.claimAll, undefined);
-  });
-
-  test("grammar groups multi-fact patterns to fewer items than facts", () => {
-    // A producible pattern has a meaning fact AND a production fact — two facts,
-    // one entry. So a grammar lesson with any producible pattern has strictly
-    // more facts than items, which is the multi-fact-per-entry grouping the
+  test("a producible grammar lesson has fewer items than facts", () => {
+    // A producible pattern is a meaning fact AND a production fact — two facts,
+    // one entry — so a grammar teach set with any producible pattern groups to
+    // strictly fewer items than facts. This is the multi-fact-per-entry case the
     // one-fact kana/kanji lessons can't exercise.
-    const plan = lessonPlan("grammar", FRESH, SETTINGS);
-    assert.ok(plan);
+    const items = itemsFromFacts(TEACH_SETS.grammar);
     assert.ok(
-      plan.facts.length >= plan.items.length,
+      items.length <= TEACH_SETS.grammar.length,
       "never more items than facts",
     );
+  });
+
+  test("an empty teach set yields no steps", () => {
+    assert.deepEqual(itemsFromFacts([]), []);
   });
 });

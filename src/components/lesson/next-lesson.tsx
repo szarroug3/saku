@@ -26,8 +26,6 @@
 // 27" is COUNTED — hiragana has twenty-seven sections, and a card that promised
 // ten would be caught out at the eleventh by the user who kept going.
 
-import Link from "next/link";
-
 import { WhyDisclosure } from "@/components/lesson/why";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { Btn, Card, Lbl } from "@/components/ui";
@@ -39,16 +37,26 @@ import type { FactId } from "@/types";
 
 export function NextLesson({
   lesson,
+  onTeach,
   onQuizMe,
   onClaim,
 }: {
   lesson: Lesson;
   /**
+   * "Teach me here" — learn these in the app, then drill. Opens a session whose
+   * TEACH PHASE steps each character one at a time (its mnemonic, how it's
+   * written), then rolls into the drill — the same session/teach-walk.tsx the
+   * kanji and word cards reach through Start. The quieter alternative to Tofugu
+   * for the learner who'd rather stay in the app.
+   */
+  onTeach: (facts: FactId[]) => void;
+  /**
    * "Quiz me" — I've learned these (at Tofugu, or in the walkthrough) and
    * they're fair game. Marks the group SEEN (into the knowledge base, drillable)
-   * and drops into a drill. It is NOT gated on proving anything first: asking to
-   * be quizzed IS the statement that you've seen it, and the drill supplies the
-   * accuracy. See the seen vs claimed split in src/lib/claims.ts.
+   * and drops STRAIGHT into a drill, skipping the teach phase. It is NOT gated on
+   * proving anything first: asking to be quizzed IS the statement that you've
+   * seen it, and the drill supplies the accuracy. See the seen vs claimed split
+   * in src/lib/claims.ts.
    *
    * Facts and not chars because the runtime is fact-native, and `string[]` here
    * is a seam a branded FactId slides through in silence.
@@ -65,10 +73,10 @@ export function NextLesson({
   const { group, chars, learn } = lesson;
   // The walkthrough is a pull, not the recommendation: Tofugu is what the card
   // points at, and "teach me here" is the quieter alternative for the learner
-  // who just wants the glyphs shown once. It used to expand inline; it is now a
-  // dedicated page (src/app/lesson/page.tsx) that steps through each character
-  // with its mnemonic, how it's written, and the intents — so the card just
-  // links out to it rather than unfolding a second flow in place.
+  // who just wants the glyphs shown in the app. It used to expand inline; it now
+  // opens the session's stepped teach phase (session/teach-walk.tsx), the same
+  // full-screen walk the kanji and word lessons use — so kana is taught the same
+  // way as everything else rather than through a one-off inline card.
   const readings = chars
     .map((c) => CHAR_INDEX[c]?.r[0])
     .filter(Boolean)
@@ -139,12 +147,7 @@ export function NextLesson({
             >
               {learn.label} ↗
             </a>
-            <Link
-              href="/lesson?track=kana"
-              className="kq-material cursor-pointer rounded-lg border border-border bg-card px-3.5 py-[7px] text-sm text-text no-underline hover:bg-panel"
-            >
-              Teach me here
-            </Link>
+            <Btn onClick={() => onTeach(lesson.facts)}>Teach me here</Btn>
           </div>
         </div>
 

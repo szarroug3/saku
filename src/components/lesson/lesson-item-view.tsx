@@ -19,8 +19,9 @@
 import Link from "next/link";
 
 import { HowItsWritten } from "@/components/lesson/how-its-written";
-import { KanaMnemonic } from "@/components/lesson/kana-mnemonic";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
+import { MnemonicCard } from "@/components/lesson/mnemonic-card";
+import { getMnemonic } from "@/data/mnemonics";
 import type { LessonItem } from "@/lib/lesson-items";
 import { appearsIn, entryForGlyph, libEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
@@ -74,6 +75,12 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // payoff the readings table points at. Only kanji attest this link.
   const words = item.kind === "kanji" ? appearsIn(libEntry(item.entry)!).slice(0, 8) : [];
   const kanaGlyph = item.kind === "kana" || item.kind === "grammar";
+  // The app's own hook for this kana, when one is authored. MnemonicCard shows
+  // the drawn image when the entry has one and falls back to the plain glyph as
+  // a placeholder when it doesn't (all 46 base hiragana carry a description;
+  // a/e/i/u/ka/ku carry a drawing). Gated on getMnemonic so an extended kana with
+  // no entry renders no section at all — the hide-when-absent rule.
+  const mnemonic = item.kind === "kana" ? getMnemonic(item.glyph) : null;
 
   return (
     <div>
@@ -104,10 +111,12 @@ export function LessonItemView({ item }: { item: LessonItem }) {
         ) : null}
       </div>
 
-      {/* KANA: the mnemonic scaffold, always present (character placeholder +
-          hook or "coming soon"). KANJI and the rest: no mnemonic slot — kanji
-          already carry everything they need in their own data. */}
-      {item.kind === "kana" ? <KanaMnemonic glyph={item.glyph} /> : null}
+      {/* KANA: the mnemonic — the drawn image when there is one, the plain glyph
+          as a placeholder when there isn't, plus the hook and an example word.
+          KANJI and the rest: no mnemonic slot — kanji carry everything they need
+          in their own data (readings, parts, words), which the sections below
+          render. */}
+      {mnemonic ? <MnemonicCard m={mnemonic} /> : null}
 
       {/* How it's written — collapsed by default, a persisted preference. */}
       <HowItsWritten item={item} />

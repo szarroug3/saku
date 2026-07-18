@@ -18,8 +18,6 @@
 // but a total on the card would read as a promise, so it counts up ("lesson 3")
 // the same way the words card does, and does not lie about the end.
 
-import Link from "next/link";
-
 import { Btn, Card, Lbl } from "@/components/ui";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { WhyDisclosure } from "@/components/lesson/why";
@@ -75,17 +73,6 @@ export function NextGrammarLesson({
               </span>
             </div>
           ))}
-        </div>
-
-        {/* The stepped walk-through — one pattern at a time, the shared lesson
-            page. A pull beside the outright tiles above. */}
-        <div className="mt-4">
-          <Link
-            href="/lesson?track=grammar"
-            className="kq-material cursor-pointer rounded-lg border border-border bg-card px-3.5 py-[7px] text-sm text-text no-underline hover:bg-panel"
-          >
-            Walk me through these
-          </Link>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-2">

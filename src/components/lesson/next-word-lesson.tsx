@@ -210,17 +210,6 @@ function TeachableLesson({
         ))}
       </div>
 
-      {/* The stepped walk-through — one word at a time, the same page kana and
-          kanji use. A pull beside the outright tiles above. */}
-      <div className="mt-4">
-        <Link
-          href="/lesson?track=word"
-          className="kq-material cursor-pointer rounded-lg border border-border bg-card px-3.5 py-[7px] text-sm text-text no-underline hover:bg-panel"
-        >
-          Walk me through these
-        </Link>
-      </div>
-
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
         <Btn onClick={() => onClaim(lesson.facts)}>
           I already know {cards.length === 1 ? "this" : `these ${cards.length}`}

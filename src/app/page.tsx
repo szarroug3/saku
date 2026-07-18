@@ -243,6 +243,14 @@ export default function HomePage() {
   // lesson already carries both halves — take the one the session speaks.
   const startLesson = (facts: FactId[]) => startSession(facts, facts);
 
+  // "Teach me here" for kana: open a session whose TEACH PHASE steps the group
+  // one character at a time (session/teach-walk.tsx), then drills — the same
+  // teach-then-drill shape the kanji/word/grammar cards use through Start, so
+  // kana is no longer the one track taught by a bespoke inline card. `what` names
+  // the run for the resume card and the HUD.
+  const teachLesson = (facts: FactId[]) =>
+    startSession(facts, facts, lesson?.group.label);
+
   // "Quiz me": the group is seen — in the knowledge base and fair game — and the
   // next thing on screen is a drill on it. The seen record is written FIRST and
   // does not wait on the drill: asking to be quizzed is itself the statement
@@ -326,7 +334,12 @@ export default function HomePage() {
       ) : null}
 
       {lesson ? (
-        <NextLesson lesson={lesson} onQuizMe={quizMe} onClaim={claim} />
+        <NextLesson
+          lesson={lesson}
+          onTeach={teachLesson}
+          onQuizMe={quizMe}
+          onClaim={claim}
+        />
       ) : null}
 
       {/* The lesson IS the session: its facts, all new, all taught — the same
