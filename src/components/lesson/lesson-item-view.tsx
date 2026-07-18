@@ -42,6 +42,7 @@ import { useState } from "react";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
 import { Line } from "@/components/lesson/mnemonic-card";
+import { SoundIcon } from "@/components/ui";
 import { getMnemonic, type Mnemonic } from "@/data/mnemonics";
 import type { LessonItem } from "@/lib/lesson-items";
 import { appearsIn, entryForGlyph, libEntry } from "@/lib/library/entries";
@@ -93,9 +94,9 @@ function HearButton({ glyph, voiceName }: { glyph: string; voiceName: string }) 
       type="button"
       onClick={() => speak(glyph, voiceName)}
       aria-label={`Hear ${glyph}`}
-      className="cursor-pointer rounded-md border border-border bg-card px-2 py-0.5 text-[12px] leading-none text-text-muted hover:bg-panel hover:text-text"
+      className="inline-flex items-center justify-center cursor-pointer rounded-md border border-border bg-card px-2 py-0.5 text-[12px] leading-none text-text-muted hover:bg-panel hover:text-text"
     >
-      🔊
+      <SoundIcon className="size-[14px]" />
     </button>
   );
 }

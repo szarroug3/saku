@@ -30,6 +30,7 @@
 import Link from "next/link";
 
 import { StandingChip } from "@/components/library/standing-chip";
+import { SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import type { LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
@@ -93,9 +94,9 @@ function HearButton({
         speak(entry.glyph, voice);
       }}
       aria-label={`Hear ${entry.glyph}`}
-      className={`cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text ${className ?? ""}`}
+      className={`inline-flex items-center justify-center cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text ${className ?? ""}`}
     >
-      🔊
+      <SoundIcon className="size-[13px]" />
     </button>
   );
 }

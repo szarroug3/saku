@@ -36,6 +36,7 @@
 // src/data/mnemonics.ts. `Line` below renders exactly that span in the accent
 // colour and nothing else; a `null` sound accents nothing.
 
+import { SoundIcon } from "@/components/ui";
 import type { Mnemonic, SoundLine } from "@/data/mnemonics";
 
 import { MnemonicImage } from "./mnemonic-image";
@@ -99,7 +100,7 @@ export function MnemonicCard({ m }: { m: Mnemonic }) {
           </p>
           {m.approximate ? (
             <p className="mt-1.5 text-[11.5px] leading-relaxed text-warning">
-              <span aria-hidden>🔊 </span>
+              <SoundIcon className="mr-1 align-[-0.15em]" />
               {m.approximate}
             </p>
           ) : null}
