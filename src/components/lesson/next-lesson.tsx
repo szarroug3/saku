@@ -26,10 +26,9 @@
 // 27" is COUNTED — hiragana has twenty-seven sections, and a card that promised
 // ten would be caught out at the eleventh by the user who kept going.
 
-import { useState } from "react";
+import Link from "next/link";
 
 import { WhyDisclosure } from "@/components/lesson/why";
-import { TeachMe } from "@/components/lesson/teach-me";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { Btn, Card, Lbl } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
@@ -66,9 +65,10 @@ export function NextLesson({
   const { group, chars, learn } = lesson;
   // The walkthrough is a pull, not the recommendation: Tofugu is what the card
   // points at, and "teach me here" is the quieter alternative for the learner
-  // who just wants the glyphs shown once. Closed by default so the card stays
-  // the calm thing it is until you ask for it.
-  const [teaching, setTeaching] = useState(false);
+  // who just wants the glyphs shown once. It used to expand inline; it is now a
+  // dedicated page (src/app/lesson/page.tsx) that steps through each character
+  // with its mnemonic, how it's written, and the intents — so the card just
+  // links out to it rather than unfolding a second flow in place.
   const readings = chars
     .map((c) => CHAR_INDEX[c]?.r[0])
     .filter(Boolean)
@@ -139,15 +139,13 @@ export function NextLesson({
             >
               {learn.label} ↗
             </a>
-            <Btn
-              sel={teaching}
-              onClick={() => setTeaching((t) => !t)}
-              aria-expanded={teaching}
+            <Link
+              href="/lesson?track=kana"
+              className="kq-material cursor-pointer rounded-lg border border-border bg-card px-3.5 py-[7px] text-sm text-text no-underline hover:bg-panel"
             >
               Teach me here
-            </Btn>
+            </Link>
           </div>
-          {teaching ? <TeachMe chars={chars} /> : null}
         </div>
 
         {/* The two intents, kept apart because they route apart. "Quiz me" is
