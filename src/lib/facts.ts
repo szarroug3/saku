@@ -87,19 +87,8 @@ export function readingOfEntry(entry: EntryId): string {
   return BY_ENTRY.get(entry)?.[0]?.answers[0] ?? glyphOf(entry);
 }
 
-/**
- * A SessionStats / history.facts key list, with the brand restored.
- *
- * `Object.keys` on a `Record<FactId, …>` returns `string[]` — a mapped type
- * over a non-literal string widens to a plain string index signature and the
- * brand is erased. This is the one sanctioned place to put it back, so that
- * the cast is spelled once here instead of scattered across every walk.
- */
-export function factKeys(record: object): FactId[] {
-  return Object.keys(record) as FactId[];
-}
-
-/** As `factKeys`, for a `Record<EntryId, …>` — `confused`, in practice. */
-export function entryKeys(record: object): EntryId[] {
-  return Object.keys(record) as EntryId[];
-}
+// `factKeys`/`entryKeys` are pure `Object.keys` brand casts that touch no
+// subject data, so they live in src/lib/fact-keys.ts — importing them must NOT
+// drag this file's whole registry (and its ~3.6 MB of vocab+kanji) into a
+// bundle. Re-exported here so registry-owning call sites keep their one import.
+export { factKeys, entryKeys } from "@/lib/fact-keys";

@@ -33,17 +33,10 @@ import type {
   Selection,
 } from "@/types";
 
-/** Everything. Every field empty means "not narrowed", so this is the query
- * that names the whole app — which is also the day-one default. */
-export function emptySelection(): Selection {
-  return {
-    subjects: [],
-    list: null,
-    states: [],
-    text: "",
-    session: null,
-  };
-}
+// `emptySelection` lives in the DATA-FREE src/lib/selection-empty.ts so the
+// always-mounted QuizConfigProvider can seed a config without importing this
+// module's fact registry. Re-exported so this module's consumers are unchanged.
+export { emptySelection } from "@/lib/selection-empty";
 
 /** True when the query narrows nothing — used to say "Everything" rather than
  * printing a filter list that is empty. */

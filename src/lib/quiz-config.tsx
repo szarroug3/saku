@@ -15,9 +15,17 @@ import {
 } from "react";
 
 import { JP_FONTS } from "@/lib/config";
-import { LESSON_RANGE_DEFAULT, clampLessonRange } from "@/lib/kanji-lesson";
-import { WORDS_PER_LESSON_DEFAULT, clampWordsPerLesson } from "@/lib/word-lesson";
-import { emptySelection } from "@/lib/selection";
+// The DATA-FREE seed modules, not kanji-lesson/word-lesson/selection: this
+// provider is mounted in the root layout on every route, and those modules
+// top-level import the kanji+vocab curricula and the fact registry. Seeding a
+// config needs only these pure defaults/clamps.
+import {
+  LESSON_RANGE_DEFAULT,
+  clampLessonRange,
+  WORDS_PER_LESSON_DEFAULT,
+  clampWordsPerLesson,
+} from "@/lib/lesson-sizing";
+import { emptySelection } from "@/lib/selection-empty";
 import type { QuizConfig } from "@/types";
 
 const STORAGE_KEY = "kanaquiz-cfg";
