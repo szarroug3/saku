@@ -1,6 +1,12 @@
 // The grammar track: the fourth curriculum, and the one whose "how many are
 // there" the data refuses to answer on purpose (see src/data/grammar/recipes.ts).
 //
+// That refusal is about JAPANESE and it stands. This file still publishes a
+// GRAMMAR_CURRICULUM_TOTAL, because "how many patterns does this track teach"
+// is a question about the app rather than the subject — the distinction, and
+// why the answer is the 53 drillable recipes and not the 81 authored ones, is
+// argued at that constant.
+//
 // WHY THIS IS word-lesson.ts, NOT kanji-lesson.ts
 // ===============================================
 // Kanji sizes a lesson by COST — the draw+assembly work of learning a shape —
@@ -41,6 +47,7 @@
 
 import { effectiveState } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
+import type { LessonPosition } from "@/lib/lesson-position";
 import {
   GRAMMAR_SUBJECT,
   patternEntry,
@@ -89,6 +96,36 @@ export const CURRICULUM_PATTERNS: readonly Recipe[] = [...DRILLABLE].sort(
   (a, b) => levelRank(a.level) - levelRank(b.level),
 );
 
+/**
+ * How many patterns the track teaches — the denominator on the lesson card.
+ * 53 (DRILLABLE), out of 81 authored RECIPES.
+ *
+ * WHY THE DRILLABLE COUNT AND NOT THE WHOLE TABLE
+ * ===============================================
+ * The 28 non-drillable recipes are real grammar and are really shown — the
+ * cluster map prints them, and a learner will read them. They are still not the
+ * denominator, because a denominator is a promise about the TRACK: "keep going
+ * and you will have met all of these". This track never teaches those 28 and,
+ * by construction, never can — data/grammar/index.ts mints no production fact
+ * for them, so a lesson card holding one would be a lesson the drill would
+ * forever refuse to quiz. 81 would promise 28 lessons that cannot exist. It is
+ * the same error as counting the 6,340 advanced words the words track declines
+ * to push: material the app HAS is not material the app TEACHES.
+ *
+ * AND THE HEADER OF recipes.ts IS NOT AN OBJECTION TO THIS
+ * =======================================================
+ * That file argues at length that "how many grammar points are there" has no
+ * answer — vendors count N5 at 40, 84, 125 or 132, and the JLPT withdrew its
+ * own list. All true, and it is a question about JAPANESE. This is a different
+ * question with a different subject: how many patterns does THIS app's grammar
+ * track teach? That one has an answer, because we authored the table and we
+ * decide what is drillable. Printing 53 claims nothing about the language; it
+ * claims something about the app, which is exactly the kind of claim a progress
+ * counter is allowed to make. Counting the authored 81 would blur the two back
+ * together by implying the table is a census of the subject.
+ */
+export const GRAMMAR_CURRICULUM_TOTAL = CURRICULUM_PATTERNS.length;
+
 /** Every fact a pattern teaches — its meaning always, its production where the
  * recipe carries one. Read off the registry (factsOf) rather than rebuilt, so
  * a drillable recipe whose example doesn't build contributes only the facts
@@ -123,15 +160,25 @@ export interface GrammarCard {
 }
 
 /** The next grammar lesson: the patterns to teach, their facts, and where you
- * are. Mirrors WordLesson — no honest TOTAL, because a "lesson N of M" is a
- * promise, and the count of teachable patterns is fixed but the card counts up
- * rather than lie about an end the user can't see coming. */
+ * are. */
 export interface GrammarLesson {
   cards: GrammarCard[];
   facts: FactId[];
-  /** How many patterns you have already met — so the card can say "lesson N"
-   * without a stored cursor. */
-  index: number;
+  /**
+   * Where you are, in PATTERNS — "3–7 of 53".
+   *
+   * The card used to say "lesson 3" and stop there, and the comment that stood
+   * here defended it: the curriculum's length is fixed but a total "would read
+   * as a promise". It reads as a promise because it IS one — the mistake was
+   * making the promise about lessons, which the app cannot keep, rather than
+   * about patterns, which it can. 53 is the whole of what this track will ever
+   * teach and it does not move; see GRAMMAR_CURRICULUM_TOTAL.
+   *
+   * ITEMS ARE PATTERNS. Not lessons, and not sentences either — a pattern is
+   * what a card teaches and what a fact hangs off, so it is the only unit whose
+   * count means anything to the person reading it.
+   */
+  position: LessonPosition;
 }
 
 function toCard(r: Recipe): GrammarCard {
@@ -176,7 +223,15 @@ export function nextGrammarLesson(
   }
 
   if (!cards.length) return null;
-  return { cards, facts, index: Math.floor(met / size) + 1 };
+  return {
+    cards,
+    facts,
+    position: {
+      from: met + 1,
+      to: met + cards.length,
+      total: GRAMMAR_CURRICULUM_TOTAL,
+    },
+  };
 }
 
 /** The subject these lessons belong to. Re-exported so a caller holding a

@@ -47,6 +47,7 @@
 // the axis that actually varies per kanji AND is about this screen's work.
 
 import { freshFacts, nextGroup } from "@/lib/budget";
+import type { LessonPosition } from "@/lib/lesson-position";
 import {
   KANJI_SUBJECT,
   PREREQUISITE_ONLY,
@@ -113,10 +114,31 @@ export interface KanjiLessonGroup {
    * than pretending the number is within range.
    */
   over: boolean;
-  /** 1-based, and how many there are. Counted from the packing, so the card
-   * cannot promise a number of lessons the order does not produce. */
+  /**
+   * 1-based ordinal of this lesson in the packing. Internal bookkeeping — how
+   * far along the packer is — and NOT for display beside a denominator. There
+   * used to be a `total` next to it and the card printed "lesson 1 of 1068";
+   * see src/lib/lesson-position.ts for why that number, though correctly
+   * computed, was a promise the app could not keep. It has no companion now.
+   */
   index: number;
-  total: number;
+  /**
+   * Where this lesson sits in the ORDER, in kanji: 1-based, inclusive, so a
+   * four-kanji first lesson is `from: 1, to: 4`. This is what the card shows.
+   *
+   * Well-defined only because a lesson is a contiguous run of the order —
+   * bundles never reorder and the packer only ever cuts between them, which
+   * kanji-lesson.test.ts asserts directly rather than leaving to trust. If that
+   * ever stopped holding, a span would start describing kanji the lesson does
+   * not contain, and the test is what would catch it.
+   *
+   * Spans the whole GROUP, not the remaining `cards` after a partial claim. A
+   * claim removes kanji from the middle of a run, which would make the span
+   * describe material that isn't on the card; the group's span is the stable
+   * answer to "where in the 2,136 am I", and the card prints the kanji anyway.
+   */
+  from: number;
+  to: number;
 }
 
 /**
@@ -230,17 +252,28 @@ export function packLessons(
   }
   if (chars.length) packed.push({ chars, cost });
 
-  return packed.map((p, i) => ({
-    chars: p.chars,
-    facts: p.chars.map(meaningFactId),
-    cost: p.cost,
-    // Over only ever means "one bundle, too big to split". A multi-bundle lesson
-    // can't exceed `max`, because the bundle that would have taken it over was
-    // pushed to the next lesson instead.
-    over: p.cost > max,
-    index: i + 1,
-    total: packed.length,
-  }));
+  // The span is a running sum rather than a lookup of each lesson's first kanji
+  // in `order`: the packer consumes the order front to back and every lesson is
+  // a contiguous run of it, so "how many kanji came before this lesson" IS the
+  // 0-based position of its first kanji. Counting is the cheaper statement of
+  // the same fact, and it cannot disagree with the packing it was counted from.
+  let seen = 0;
+  return packed.map((p, i) => {
+    const from = seen + 1;
+    seen += p.chars.length;
+    return {
+      chars: p.chars,
+      facts: p.chars.map(meaningFactId),
+      cost: p.cost,
+      // Over only ever means "one bundle, too big to split". A multi-bundle
+      // lesson can't exceed `max`, because the bundle that would have taken it
+      // over was pushed to the next lesson instead.
+      over: p.cost > max,
+      index: i + 1,
+      from,
+      to: seen,
+    };
+  });
 }
 
 /** The whole curriculum for one order and range. Not a stored const — it
@@ -274,6 +307,28 @@ export interface KanjiCard {
 /** The next kanji lesson, narrowed to what you have not seen. */
 export interface KanjiLesson {
   group: KanjiLessonGroup;
+  /**
+   * Where you are, in KANJI — "5–8 of 2,136". See lesson-position.ts for why
+   * the card counts kanji and not lessons.
+   *
+   * DOES THE 2,136 INCLUDE RADICALS TAUGHT ALONG THE WAY? Yes, and there is
+   * nothing extra to add, because this track has no radical pre-cards. A
+   * "radical" appears in exactly two places and neither mints a lesson item:
+   *
+   *   - `kanjiCost` treats a component that is itself a jōyō kanji as costing 1
+   *     instead of its strokes. That component is a kanji with its own card,
+   *     already in the 2,136, and the order teaches it before the kanji that
+   *     leans on it. It is a cost term, not a card.
+   *   - `PREREQUISITE_ONLY` — 6 kanji pulled forward only because a later kanji
+   *     needs them (又, for 取). Still jōyō, still in the 2,136, and bundling
+   *     keeps them on their consumer's card rather than giving them one.
+   *
+   * Bare strokes (｜ ノ 丶) are not kanji, have no KANJIDIC2 entry and are never
+   * taught or drilled; they are drawn, and `kanjiCost` counts them as strokes.
+   * So the order's length is the whole of what the track ever teaches, and a
+   * separate radical count would have nothing to count.
+   */
+  position: LessonPosition;
   /** The group's kanji, minus any already seen or claimed — so a half-claimed
    * lesson yields its remaining half rather than being re-taught whole. */
   cards: KanjiCard[];
@@ -314,6 +369,10 @@ export function nextKanjiLesson(
 
   return {
     group,
+    // The denominator is READ OFF the order rather than written down as 2,136,
+    // so an order that ever ships a subset (or a 2,137th jōyō revision) counts
+    // itself instead of contradicting a constant.
+    position: { from: group.from, to: group.to, total: order.length },
     cards,
     facts,
     cost: cards.reduce((n, card) => n + card.cost, 0),

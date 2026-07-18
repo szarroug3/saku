@@ -40,6 +40,7 @@ import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { kanjiEntry } from "@/data/kanji";
 import { WHY_TRACK } from "@/data/why";
+import { positionLabel } from "@/lib/lesson-position";
 import { entryHref } from "@/lib/library/href";
 import type { WordGate, WordLesson } from "@/lib/word-lesson";
 import type { FactId } from "@/types";
@@ -191,11 +192,15 @@ function TeachableLesson({
   onStart: (facts: FactId[]) => void;
   onClaim: (facts: FactId[]) => void;
 }) {
-  const { cards, index } = lesson;
+  const { cards, position } = lesson;
 
   return (
     <>
-      <Lbl>Up next · words · lesson {index}</Lbl>
+      {/* This card showed no count at all until now, on the reasoning that the
+          words track has no honest end. It has one — 6,213 curriculum words —
+          the thing it lacks is an honest number of LESSONS, which is why the
+          label counts words. See src/lib/lesson-position.ts. */}
+      <Lbl>Up next · {positionLabel("words", position)}</Lbl>
 
       <h1 className="text-[22px] font-light tracking-[-0.3px]">
         {cards.map((c) => c.meaning).join(" · ")}
@@ -214,8 +219,10 @@ function TeachableLesson({
         <Btn onClick={() => onClaim(lesson.facts)}>
           I already know {cards.length === 1 ? "this" : `these ${cards.length}`}
         </Btn>
+        {/* Plain "Start", for the reason the kanji card gives: a bare lesson
+            ordinal is a second scale contradicting the one in the label. */}
         <Btn go onClick={() => onStart(lesson.facts)}>
-          Start · lesson {index}
+          Start
         </Btn>
       </div>
     </>

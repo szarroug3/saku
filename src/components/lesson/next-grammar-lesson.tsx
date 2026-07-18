@@ -14,15 +14,19 @@
 // ===============
 // Every line is read off the recipe's own row (src/data/grammar/recipes.ts): how
 // the pattern is written, its terse functional gloss, and its JLPT level as a
-// quiet tag. It does NOT count "lesson N of M": the curriculum's length is fixed
-// but a total on the card would read as a promise, so it counts up ("lesson 3")
-// the same way the words card does, and does not lie about the end.
+// quiet tag. It counts PATTERNS, not lessons — "patterns 3–7 of 53". It used to
+// say "lesson 3" and withhold the total on the grounds that a total reads as a
+// promise; it does, and the fix was to promise something true. 53 drillable
+// patterns is the whole of what this track teaches and does not move, while the
+// number of lessons is an artifact of how many a sitting happens to hold. The
+// argument is at GRAMMAR_CURRICULUM_TOTAL and src/lib/lesson-position.ts.
 
 import { Btn, Card, Lbl } from "@/components/ui";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { WHY_TRACK } from "@/data/why";
 import type { GrammarLesson } from "@/lib/grammar-lesson";
+import { positionLabel } from "@/lib/lesson-position";
 import type { FactId } from "@/types";
 
 export function NextGrammarLesson({
@@ -37,12 +41,15 @@ export function NextGrammarLesson({
   /** "I already know these", over the lesson's patterns. */
   onClaim: (facts: FactId[]) => void;
 }) {
-  const { cards, index } = lesson;
+  const { cards, position } = lesson;
 
   return (
     <>
       <Card>
-        <Lbl>Up next · grammar · lesson {index}</Lbl>
+        {/* "grammar" stays as the track name and "patterns" names the items —
+            the two are not the same word here the way "kanji" and "words" are
+            their own tracks' items. */}
+        <Lbl>Up next · grammar · {positionLabel("patterns", position)}</Lbl>
 
         <h1 className="text-[22px] font-light tracking-[-0.3px]">
           {cards.map((c) => c.gloss).join(" · ")}
@@ -80,8 +87,10 @@ export function NextGrammarLesson({
             I already know{" "}
             {cards.length === 1 ? "this" : `these ${cards.length}`}
           </Btn>
+          {/* Plain "Start", matching the kanji and words cards: a bare lesson
+              ordinal is a second scale contradicting the one in the label. */}
           <Btn go onClick={() => onStart(lesson.facts)}>
-            Start · lesson {index}
+            Start
           </Btn>
         </div>
 

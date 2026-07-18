@@ -265,6 +265,62 @@ describe("the lesson length is a setting, and the packing follows it", () => {
   });
 });
 
+// The card says "kanji 5–8 of 2,136" and not "lesson 1 of 1068", and the span
+// is only meaningful if it lines up exactly with the order it indexes into.
+// These are the assertions that keep it honest: a span that drifted by one, or
+// that described a lesson's neighbours, would still type-check and would still
+// render a plausible-looking number.
+describe("the position counts KANJI, and the spans tile the order exactly", () => {
+  test("the spans are contiguous, 1-based, and end at the order's length", () => {
+    assert.equal(GROUPS[0].from, 1);
+    assert.equal(GROUPS[GROUPS.length - 1].to, ORDER.length);
+    for (let i = 0; i < GROUPS.length; i++) {
+      const g = GROUPS[i];
+      // The span is exactly as wide as the lesson is — this is what makes it a
+      // count of kanji rather than of anything else.
+      assert.equal(g.to - g.from + 1, g.chars.length, `lesson ${g.index} span`);
+      if (i > 0) assert.equal(g.from, GROUPS[i - 1].to + 1, `gap before ${g.index}`);
+    }
+  });
+
+  test("a span names the lesson's own kanji, not its neighbours'", () => {
+    // The span is computed by counting, and the order is indexed separately.
+    // If bundling ever reordered (the one thing the packer may not do), these
+    // two ways of naming the same kanji would stop agreeing.
+    for (const g of GROUPS) {
+      assert.deepEqual(ORDER.slice(g.from - 1, g.to), g.chars, `lesson ${g.index}`);
+    }
+  });
+
+  test("day one is kanji 1–4 of 2,136 — an item count, not a lesson count", () => {
+    const lesson = nextKanjiLesson(history(), ORDER, RANGE);
+    assert.ok(lesson);
+    assert.deepEqual(lesson.position, { from: 1, to: 4, total: 2136 });
+  });
+
+  test("the total is the material and does not move when lesson length does", () => {
+    // The whole point. 1068 lessons at max 12 and 1793 at max 6 are both true
+    // and neither is sayable; 2,136 kanji is true under either.
+    const tight = kanjiCurriculum(ORDER, { min: 3, max: 6 });
+    assert.notEqual(tight.length, GROUPS.length);
+    assert.equal(tight[tight.length - 1].to, GROUPS[GROUPS.length - 1].to);
+    assert.equal(
+      nextKanjiLesson(history(), ORDER, { min: 3, max: 6 })!.position.total,
+      nextKanjiLesson(history(), ORDER, RANGE)!.position.total,
+    );
+  });
+
+  test("2,136 covers the radicals too — the track has no radical pre-cards", () => {
+    // PREREQUISITE_ONLY kanji (又, for 取) are pulled forward to serve a later
+    // kanji, and they are ordinary jōyō kanji inside the order rather than an
+    // extra class of card. So the denominator has nothing to add for them, and
+    // no separate radical count is owed.
+    assert.ok(PREREQUISITE_ONLY.length > 0);
+    for (const c of PREREQUISITE_ONLY) assert.ok(ORDER.includes(c), c);
+    assert.equal(ORDER.length, 2136);
+  });
+});
+
 describe("the next lesson is a function of history, and there is no cursor", () => {
   test("claiming day one advances to lesson 2", () => {
     const first = nextKanjiLesson(history(), ORDER, RANGE);
