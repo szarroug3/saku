@@ -150,16 +150,15 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "a",
     sound: "ah",
     ipa: "/a/ · ah",
-    object: "acrobat",
+    object: "father",
     analogy: { lead: "Say it like the open ", sound: "ah", tail: " in father — not the letter-name “ay,” not “cat.”" },
     mnemonic: {
-      lead: "An acrobat flips into a handstand — a capital A stood on its head — wobbles, and topples flat with an “",
-      sound: "ah",
+      lead: "An acrobat tumbles through her aerials — a capital A flipping through the air — while her father watches, mouth open, and gasps “",
+      sound: "ahhh",
       tail: "!”",
     },
     image: "/mnemonics/a.webp",
     example: { word: "あめ", reading: "ame", gloss: "rain", hitIndex: 0 },
-    approximate: "Not the a in “cat,” not “ay.” The 🔊 clip is the truth; “father” only gets you close.",
   },
 
   い: {

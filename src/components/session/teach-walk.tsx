@@ -32,7 +32,7 @@
 // exactly as they did: this changed what the teach phase LOOKS like, not what it
 // IS.
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { LessonItemView } from "@/components/lesson/lesson-item-view";
 import { Btn, PrimaryBtn } from "@/components/ui";
@@ -43,23 +43,26 @@ export function TeachWalk({
   facts,
   familiar,
   onStart,
-  reviewing,
+  step,
+  onStep,
 }: {
   /** The teach set — what the budget put in front of you before the drill. */
   facts: FactId[];
   /** Which of these you've met before — shown before and forgotten, rather than
    * never met. Presentation only, exactly as the tile wall used it. */
   familiar: (f: FactId) => boolean;
-  /** Leave the teach phase for the drill: a fresh round 1, or — when you got
-   * here via the drill's "Look again" — a resume of the round in progress. */
+  /** Leave the teach phase for the drill now — a fresh round 1, or, when reached
+   * mid-round via "Look again", a resume of the round in progress. Either way it
+   * lands on the drill; the button that fires it says "Quiz me". */
   onStart: () => void;
-  /** True when reached mid-round via "Look again", so the copy and the button
-   * say "back to it" rather than "start". */
-  reviewing: boolean;
+  /** Which item is showing. Lifted to the session page so the top HUD bar can
+   * read the position ("N of M") without the walk owning a second copy of it. */
+  step: number;
+  /** Move to a different item — Back/Next and the dots all route through here. */
+  onStep: (n: number) => void;
 }) {
   const items = useMemo(() => itemsFromFacts(facts), [facts]);
-  const [i, setI] = useState(0);
-  const at = Math.min(i, items.length - 1);
+  const at = Math.min(step, items.length - 1);
   const item = items[at];
   const last = at === items.length - 1;
   const familiarHere = item ? item.facts.some(familiar) : false;
@@ -68,34 +71,18 @@ export function TeachWalk({
 
   return (
     <div className="mx-auto max-w-[920px] px-3 pt-6">
-      <div className="text-center">
-        <p className="text-[10px] uppercase tracking-[0.13em] text-text-muted">
-          {reviewing
-            ? "Reviewing"
-            : `Before you start · ${items.length} to learn`}
-        </p>
-        <h1 className="mt-1 text-[22px] font-light tracking-[-0.3px]">
-          {reviewing ? "A quick look back" : "Have a look at these first"}
-        </h1>
-        <p className="mt-0.5 text-[13px] text-text-muted">
-          {reviewing
-            ? "Nothing here is a test — pick up where you left off when you're ready."
-            : "You'll be asked them in a moment. Nothing here is a test."}
-        </p>
-      </div>
-
-      {/* Where you are: the count and the dots, so the walk never hides its own
-          length — the same affordance the drill's progress bar gives, sized for
-          a handful of items. */}
-      <div className="mt-5 flex items-center justify-between gap-3">
-        <p className="text-[11px] uppercase tracking-[0.04em] text-text-muted">
-          {at + 1} of {items.length}
+      {/* Where you are: the dots, so the walk never hides its own length. The
+          "N of M" position now lives in the top HUD bar (session/page.tsx) — it
+          isn't repeated here — leaving this row for the dots and the quiet
+          "seen before" note when the budget re-surfaced material you'd met. */}
+      <div className="flex min-h-[1.25rem] items-center justify-between gap-3">
+        <div>
           {familiarHere ? (
-            <span className="ml-2 rounded-full border border-border px-1.5 py-0.5 text-[9px] tracking-[0.08em] text-text-muted/80">
+            <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.08em] text-text-muted/80">
               seen before
             </span>
           ) : null}
-        </p>
+        </div>
         <div className="flex flex-wrap justify-end gap-1">
           {items.map((it, n) => (
             <button
@@ -103,7 +90,7 @@ export function TeachWalk({
               type="button"
               aria-label={`Go to ${it.glyph}`}
               aria-current={n === at}
-              onClick={() => setI(n)}
+              onClick={() => onStep(n)}
               className={`size-1.5 rounded-full ${
                 n === at ? "bg-text" : "bg-border hover:bg-text-muted"
               }`}
@@ -126,7 +113,7 @@ export function TeachWalk({
       {/* Step controls. */}
       <div className="mt-4 flex items-center justify-between gap-2">
         <Btn
-          onClick={() => setI(at - 1)}
+          onClick={() => onStep(at - 1)}
           disabled={at === 0}
           className="disabled:cursor-default disabled:opacity-40"
         >
@@ -134,7 +121,7 @@ export function TeachWalk({
         </Btn>
         <Btn
           go
-          onClick={() => setI(at + 1)}
+          onClick={() => onStep(at + 1)}
           disabled={last}
           className="disabled:cursor-default disabled:opacity-40"
         >
@@ -142,13 +129,13 @@ export function TeachWalk({
         </Btn>
       </div>
 
-      {/* The one action that leaves — begin (or resume) the drill. Available from
-          any step: you don't have to page through every item to start, exactly
-          as "Start round 1" always was. Full-width and filled, the screen's
-          single primary. */}
+      {/* The one action that leaves — go to the drill now. Available from any
+          step: you don't have to page through every item first, you jump
+          straight to the quiz. Full-width and filled, the screen's single
+          primary. */}
       <div className="mt-6">
         <PrimaryBtn autoFocus onClick={onStart}>
-          {reviewing ? "Back to the drill" : "Start round 1"}
+          Quiz me
         </PrimaryBtn>
       </div>
     </div>

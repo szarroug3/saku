@@ -181,12 +181,6 @@ function KanaHero({
         <p className="mt-2.5 text-[15px] leading-relaxed text-text-muted">
           <Line line={m.mnemonic} />
         </p>
-        {m.approximate ? (
-          <p className="mt-2.5 text-[12.5px] leading-relaxed text-warning">
-            <span aria-hidden>🔊 </span>
-            {m.approximate}
-          </p>
-        ) : null}
 
         {/* The kana caught in a real word, its own glyph accented. */}
         <div className="mt-6 flex items-baseline gap-2.5 border-t border-border pt-4 text-[15px]">
