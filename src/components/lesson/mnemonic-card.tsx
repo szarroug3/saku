@@ -37,8 +37,10 @@
 
 import type { Mnemonic, SoundLine } from "@/data/mnemonics";
 
-/** Render a SoundLine, accenting only its `sound` span (or nothing). */
-function Line({ line }: { line: SoundLine }) {
+/** Render a SoundLine, accenting only its `sound` span (or nothing). Exported so
+ * the stepped lesson's own hero (lesson-item-view.tsx) renders the same accented
+ * prose from the same data without re-implementing the one-span rule. */
+export function Line({ line }: { line: SoundLine }) {
   if (line.sound === null) {
     return (
       <>
