@@ -22,6 +22,7 @@ export function MnemonicImage({
   glyph,
   imgClassName,
   glyphClassName,
+  onMissing,
 }: {
   /** Candidate picture path, e.g. "/mnemonics/a.webp". */
   src: string;
@@ -31,6 +32,11 @@ export function MnemonicImage({
   imgClassName: string;
   /** Classes for the glyph <span> when the picture is missing. */
   glyphClassName: string;
+  /** Told once, when the picture turns out not to exist. Lets a caller that
+   * prints the character elsewhere (the mnemonic view's header glyph) drop it,
+   * so a kana with no drawing doesn't print its glyph twice. Fired from the
+   * <img>'s error event, never during render. */
+  onMissing?: () => void;
 }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
@@ -49,7 +55,10 @@ export function MnemonicImage({
       alt=""
       className={imgClassName}
       aria-hidden
-      onError={() => setFailedSrc(src)}
+      onError={() => {
+        setFailedSrc(src);
+        onMissing?.();
+      }}
     />
   );
 }

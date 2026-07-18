@@ -23,27 +23,28 @@
 // its own component and decides its own emptiness, so this file reads as "what
 // a lesson item is made of" and nothing more.
 //
-// THE PICTURE IS THE HERO
-// =======================
+// THE PICTURE IS THE HERO — AND THE LIBRARY SHOWS THE SAME ONE
+// ============================================================
 // For a kana we author a mnemonic, the drawn image is the memory hook, so it is
-// the largest thing on the page — a big square block, not a 120px thumbnail. A
-// kana with no drawing yet has no placeholder tile: the glyph ITSELF becomes the
-// hero, set large in its place. Either way the glyph appears exactly ONCE (it
-// used to sit big at the top AND small inside the mnemonic card): as the drawn
-// object's headword when there's an image, or as the hero when there isn't.
+// the largest thing on the page — a big square block, not a 120px thumbnail.
+// That block is no longer built here: it is `MnemonicView`, the ONE mnemonic
+// implementation, which the Library entry page renders too. The arrangement is
+// this lesson's (picture left, words right, capped at 440px) and the entry page
+// adopted it, so a character met in the walk-through looks the same when it is
+// looked up later. A kana with no drawing yet has no placeholder tile: the glyph
+// ITSELF becomes the hero, and the header glyph drops so it never doubles.
 //
 // It reads the entry's story from the Library index (libEntry / appearsIn) —
 // the same source the entry page uses — so the walk-through and the reference
 // can't disagree about what a character is.
 
 import Link from "next/link";
-import { useState } from "react";
 
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
-import { Line } from "@/components/lesson/mnemonic-card";
+import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { SoundIcon } from "@/components/ui";
-import { getMnemonic, type Mnemonic } from "@/data/mnemonics";
+import { getMnemonic } from "@/data/mnemonics";
 import type { LessonItem } from "@/lib/lesson-items";
 import { appearsIn, entryForGlyph, libEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
@@ -98,123 +99,6 @@ function HearButton({ glyph, voiceName }: { glyph: string; voiceName: string }) 
     >
       <SoundIcon className="size-[14px]" />
     </button>
-  );
-}
-
-/** The kana hero: the drawn picture (or the glyph, when nothing's drawn yet) big
- * on one side, and the reading + the sound analogy + the story + a real word on
- * the other. Two columns on a wide screen, stacked on a narrow one. This is the
- * old MnemonicCard's content, un-boxed and enlarged — the same `getMnemonic`
- * data and the same sound-accent rule (via the shared `Line`), no thumbnail. */
-function KanaHero({
-  item,
-  m,
-  voiceName,
-}: {
-  item: LessonItem;
-  m: Mnemonic;
-  voiceName: string;
-}) {
-  const chars = [...m.example.word];
-  const href = entryHref(item.entry);
-
-  // `getMnemonic` hands every kana a candidate picture path; the file may not be
-  // drawn yet. When it 404s the <img>'s onError fires and the WHOLE hero drops to
-  // the glyph layout (big character on the left, romaji leading on the right) —
-  // the exact look kana without a drawing have always had. Tracked by src, so
-  // stepping to a different kana re-tries its own picture with no reset.
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const showImage = m.image != null && failedSrc !== m.image;
-
-  return (
-    <div className="grid items-center gap-x-12 gap-y-7 md:grid-cols-[minmax(0,440px)_1fr]">
-      {/* THE HERO. With a drawing: a big square block on the app's frosted-panel
-          material (kq-material + bg-card + border) — the same surface every
-          other box wears, so the tile adapts to every theme and reads in both
-          light and dark. Transparent-PNG images show the frost THROUGH their
-          empty areas. The tile sits directly on the page, so kq-material's
-          backdrop is the page and the frost is real. Without a drawing: the
-          glyph itself, set large, is the hero — no placeholder tile. */}
-      <div className="flex justify-center md:justify-start">
-        {showImage ? (
-          <Link
-            href={href}
-            aria-label={`Open ${item.glyph} in the Library`}
-            className="block w-full max-w-[440px]"
-          >
-            <div
-              className="kq-material flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-card"
-              aria-hidden
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={m.image}
-                alt=""
-                className="size-full object-contain p-6"
-                onError={() => setFailedSrc(m.image ?? null)}
-              />
-            </div>
-          </Link>
-        ) : (
-          <Link
-            href={href}
-            aria-label={`Open ${item.glyph} in the Library`}
-            className="font-kana text-[clamp(160px,24vw,260px)] font-extralight leading-none text-text no-underline"
-          >
-            {item.glyph}
-          </Link>
-        )}
-      </div>
-
-      {/* THE READING AND THE HOOKS. The glyph rides here as the headword ONLY
-          when the drawing is the hero on the left; when the glyph is itself the
-          hero, the romaji leads instead, so the glyph never doubles. */}
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-          {showImage ? (
-            <Link
-              href={href}
-              aria-label={`Open ${item.glyph} in the Library`}
-              className="font-kana text-[52px] font-light leading-none text-text no-underline"
-            >
-              {m.glyph}
-            </Link>
-          ) : null}
-          <span className="text-[19px] text-text-muted">{m.romaji}</span>
-          {m.object ? (
-            <span className="rounded-full bg-accent-bg px-2.5 py-0.5 text-[12px] font-medium text-accent">
-              {m.object}
-            </span>
-          ) : null}
-          <span className="ml-auto">
-            <HearButton glyph={item.glyph} voiceName={voiceName} />
-          </span>
-        </div>
-
-        {/* The narrative is the memory hook, so it leads — prominent, full text
-            colour. The analogy is the muted, smaller secondary line. */}
-        <p className="mt-5 text-[16px] leading-relaxed">
-          <Line line={m.mnemonic} />
-        </p>
-        <p className="mt-2.5 text-[15px] leading-relaxed text-text-muted">
-          <Line line={m.analogy} />
-        </p>
-
-        {/* The kana caught in a real word, its own glyph accented. */}
-        <div className="mt-6 flex items-baseline gap-2.5 border-t border-border pt-4 text-[15px]">
-          <span className="font-kana text-[24px]">
-            {chars.map((c, i) => (
-              <span key={i} className={i === m.example.hitIndex ? "text-accent" : undefined}>
-                {c}
-              </span>
-            ))}
-          </span>
-          <span className="text-text-muted">
-            {m.example.reading} · {m.example.gloss}
-          </span>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -284,7 +168,12 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           and the story beside it. Everything else: the plain headword. Either
           way the glyph shows exactly once. */}
       {mnemonic ? (
-        <KanaHero item={item} m={mnemonic} voiceName={cfg.voiceName} />
+        <MnemonicView
+          m={mnemonic}
+          glyph={item.glyph}
+          voiceName={cfg.voiceName}
+          href={entryHref(item.entry)}
+        />
       ) : (
         <PlainHeadword
           item={item}
