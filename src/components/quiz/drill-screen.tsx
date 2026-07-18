@@ -46,6 +46,7 @@ import {
   buildMcOptions,
   checkTyped,
   confusedWith,
+  en2jpTypeable,
   newFactStat,
   pickDir,
   questionsFor,
@@ -55,7 +56,7 @@ import {
 } from "@/lib/engine";
 import { entryOf, factInfo } from "@/lib/facts";
 import { fitGlyphSize } from "@/lib/glyph-fit";
-import { isKanaOnly, toKana } from "@/lib/romaji";
+import { toKana } from "@/lib/romaji";
 import { useHistory } from "@/lib/use-history";
 import { anchorForFact } from "@/lib/word-unlock";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -352,11 +353,11 @@ export function DrillScreen() {
     // typing romaji, so it is asked as multiple choice instead — never left as
     // an un-typeable box that grades every answer wrong. jp2en typed always
     // stays typed: there the answer is the READING, which romaji spells for any
-    // glyph. When a non-kana en2jp card also has no distractors (words do not),
-    // buildMcOptions returns short and the fall-through below reverts it to a
-    // typed box — the residual IME-only case, called out in the report.
+    // glyph. `en2jpTypeable` owns the "is the answer all kana" test, because for
+    // a WORD asked by its meaning the en2jp answer is the kana reading — typeable
+    // even though the written word carries kanji — and only the subject knows it.
     const romajiUnanswerable =
-      styleTyped && dir === "en2jp" && !isKanaOnly(factInfo(f)?.glyph ?? "");
+      styleTyped && dir === "en2jp" && !en2jpTypeable(f);
     const typedMode = styleTyped && !romajiUnanswerable;
     // Font and MC options are rolled when the question is asked and stored in
     // the runtime so a remount doesn't reroll them.
