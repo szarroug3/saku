@@ -538,6 +538,25 @@
   --color-warning-bg: var(--warning-bg);
   --font-sans: var(--font-ui);
   --animate-gshake: gshake 0.45s;
+  /* Stroke-order draw-along. Registered here — rather than written as an
+   * inline `animation:` string in stroke-order.tsx — so the STYLESHEET itself
+   * contains a reference to the `kvg-draw` keyframes. It has to: Turbopack's
+   * dev CSS pipeline drops @keyframes that nothing in the CSS references, and
+   * a name that only ever appears in a JS style string is invisible to it. The
+   * animation then silently does nothing in dev while looking correct in the
+   * DOM. Duration and per-stroke delay come from the element as custom
+   * properties (see stroke-order.tsx), which is what makes the stagger work
+   * off a single utility class.
+   *
+   * Every stroke shares ONE clock: same cycle length, no delay, so the loop
+   * restarts for all of them on the same tick. The stagger lives in the
+   * per-stroke easing instead (a linear() curve that holds at 0, ramps over
+   * that stroke's turn, then holds at 1 for the rest of the cycle). Staggering
+   * with animation-delay would desync on a loop — delay applies to the first
+   * iteration only, so stroke 1 would blank and redraw while stroke 5 was
+   * still up, and the glyph would never be whole. This way it always is. */
+  --animate-kvg-draw: kvg-draw var(--kvg-draw-cycle, 4s)
+    var(--kvg-draw-ease, linear) infinite;
 }
 
 /* Utilities for the new per-theme tokens: font-kana, shadow-card, shadow-btn.
@@ -602,10 +621,17 @@ body {
 }
 
 /* Stroke-order draw-along (src/components/lesson/stroke-order.tsx). Each stroke
- * path is normalised to pathLength=1 and starts at dashoffset:1 (undrawn); this
- * runs it to 0, so one keyframe draws any stroke. The stagger and the
- * reduced-motion opt-out are set on the element in the component. */
+ * path is normalised to pathLength=1, so one keyframe — undrawn to drawn —
+ * fits every stroke of every character. WHEN each stroke takes its turn inside
+ * the shared cycle is the easing's job, not this rule's.
+ *
+ * Applied through the `animate-kvg-draw` utility declared in @theme above, NOT
+ * from an inline style string: a keyframes name that appears only in JS is
+ * invisible to the CSS build, which drops the rule as unreferenced and leaves
+ * the panel permanently blank. src/components/lesson/stroke-order.test.ts
+ * guards that. */
 @keyframes kvg-draw {
+  from { stroke-dashoffset: 1; }
   to { stroke-dashoffset: 0; }
 }
 
