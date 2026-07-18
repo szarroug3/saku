@@ -4,7 +4,7 @@
 // as pure data + logic additions.
 
 import { BEHAVIOR } from "@/lib/config";
-import { questionsFor } from "@/lib/engine/question";
+import { questionsFor, type PromptContext } from "@/lib/engine/question";
 import { entryOf, factInfo, factKeys } from "@/lib/facts";
 import type {
   Direction,
@@ -17,10 +17,25 @@ import type {
 
 export {
   questionsFor,
+  grammarVehicleFor,
   type Prompt,
   type PromptContext,
   type QuestionType,
+  type GrammarVehicle,
 } from "@/lib/engine/question";
+
+// The grammar MULTIPLE-CHOICE seam: selection ("which pattern?") and
+// transitivity ("which verb?") normalised into one options+correct-index card
+// the drill's MC control renders without a fork. See lib/grammar/mc.ts.
+export {
+  nextGrammarMc,
+  selectionMc,
+  selectionMcsFor,
+  transitivityMc,
+  transitivityMcs,
+  type GrammarMc,
+  type GrammarChoice,
+} from "@/lib/grammar/mc";
 
 // ---------- deck ----------
 
@@ -86,13 +101,16 @@ export function pickDir(cfg: QuizConfig): Direction {
 // here as the drill screen's front door, but they no longer know what a kana
 // is, and none of them takes a character.
 
-/** Case/whitespace-forgiving check of a typed answer for `fact` in `dir`. */
+/** Case/whitespace-forgiving check of a typed answer for `fact` in `dir`.
+ * `ctx` carries the showing's presentation (a grammar production is graded on
+ * the vehicle it was prompted with — see PromptContext). */
 export function checkTyped(
   fact: FactId,
   given: string,
   dir: Direction = "jp2en",
+  ctx?: PromptContext,
 ): boolean {
-  return questionsFor(fact).check(fact, dir, given);
+  return questionsFor(fact).check(fact, dir, given, ctx);
 }
 
 /**
@@ -160,17 +178,29 @@ export function confusedWith(
  * dropped, in either direction. Over-request and slice AFTER filtering, so the
  * subject's lookalikes-first ordering survives and the board still fills.
  */
-export function buildMcOptions(fact: FactId): FactId[] {
-  const answers = new Set(
-    (factInfo(fact)?.answers ?? []).map((a) => a.trim().toLowerCase()),
-  );
-  const distractors = questionsFor(fact)
-    .distractors(fact, BEHAVIOR.mcOptions * 4)
+export function buildMcOptions(fact: FactId, ctx?: PromptContext): FactId[] {
+  const qt = questionsFor(fact);
+  // What the ASKED option will read as. A subject with a per-showing label
+  // (grammar production on a varied vehicle) is deduped by THAT string, since
+  // the fact's baked answer is not what appears on the board; everyone else is
+  // deduped by the fact's own answers, as before. Two options reading the same
+  // thing is the one thing MC may never do, in either representation.
+  const labelKey = (f: FactId): string[] => {
+    const shown = qt.optionLabel?.(f, "en2jp", ctx);
+    if (shown != null) return [shown.trim().toLowerCase()];
+    return (factInfo(f)?.answers ?? []).map((a) => a.trim().toLowerCase());
+  };
+  const taken = new Set(labelKey(fact));
+  const distractors = qt
+    .distractors(fact, BEHAVIOR.mcOptions * 4, ctx)
     .filter((d) => {
-      const info = factInfo(d);
-      return (
-        !!info && !info.answers.some((a) => answers.has(a.trim().toLowerCase()))
-      );
+      if (!factInfo(d)) return false;
+      const keys = labelKey(d);
+      // Drop a co-correct/duplicate-label option; otherwise claim its label so
+      // two distractors reading alike can't both survive.
+      if (keys.some((k) => taken.has(k))) return false;
+      for (const k of keys) taken.add(k);
+      return true;
     })
     .slice(0, BEHAVIOR.mcOptions - 1);
   return shuffle([fact, ...distractors].slice(0, BEHAVIOR.mcOptions));

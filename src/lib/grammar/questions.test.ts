@@ -8,9 +8,11 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { BLANK, isValidDistractor, production, selection, selectableRecipes } from "./questions";
+import { BLANK, isValidDistractor, production, selection, selectableRecipes, variedProduction } from "./questions";
 import { CORPUS, CORPUS_META, SCARCE, coverage, examplesFor, isReadable } from "../../data/grammar/corpus";
-import { RECIPES, isVacuous, recipe } from "../../data/grammar/recipes";
+import { RECIPES, DRILLABLE, isVacuous, recipe } from "../../data/grammar/recipes";
+import { apply } from "./apply";
+import type { Rng } from "./vehicles";
 
 describe("PRODUCTION — naming the target destroys the ambiguity", () => {
   test("one word, one pattern, exactly one answer", () => {
@@ -43,6 +45,54 @@ describe("PRODUCTION — naming the target destroys the ambiguity", () => {
       if (q) assert.notEqual(q.answer, q.lemma, `${r.id} echoed the prompt`);
     }
   });
+});
+
+describe("PRODUCTION — the verb VARIES across a run (#50)", () => {
+  // A deterministic rng: cycles the given draws so a "run" is reproducible.
+  function seq(values: number[]): Rng {
+    let i = 0;
+    return () => values[i++ % values.length];
+  }
+
+  test("one pattern, drilled repeatedly, is not forever the same verb", () => {
+    // The bug: every 〜てから production used 行く. Ten showings with advancing
+    // rng draws must span several vehicles.
+    const draws = [0.02, 0.15, 0.3, 0.45, 0.6, 0.72, 0.85, 0.93, 0.5, 0.1];
+    const lemmas = draws.map((x) => variedProduction("te-kara", seq([x]))?.lemma);
+    assert.ok(lemmas.every((l) => l), "some showing produced no question");
+    assert.ok(new Set(lemmas).size >= 4, `only ${new Set(lemmas).size} distinct verbs`);
+  });
+
+  test("the varied answer is the pattern actually built on the chosen verb", () => {
+    // Whatever verb is picked, the answer is that verb run through the recipe —
+    // graded by the engine, never a stored string.
+    for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
+      const q = variedProduction("te-kara", seq([x]));
+      assert.ok(q);
+      const built = apply(recipe("te-kara")!, q.lemma, inferCls(q.lemma));
+      assert.ok(built.ok);
+      assert.equal(q.answer, built.value, `${q.lemma} → ${q.answer} is not its てから form`);
+    }
+  });
+
+  test("every drillable pattern can produce a varied question; no wrap can", () => {
+    for (const r of DRILLABLE) {
+      assert.ok(variedProduction(r.id, () => 0), `${r.id} produced nothing`);
+    }
+    // A wrap and a vacuous recipe are not producible, so they refuse.
+    assert.equal(variedProduction("shika-nai", Math.random), null);
+    assert.equal(variedProduction("koto-ga-dekiru", Math.random), null);
+  });
+
+  // The pool's classes, by surface — enough for the assertion above to grade.
+  function inferCls(lemma: string) {
+    const cls: Record<string, string> = {
+      行く: "v5k-s", 食べる: "v1", 見る: "v1", 起きる: "v1", 書く: "v5k",
+      泳ぐ: "v5g", 話す: "v5s", 待つ: "v5t", 死ぬ: "v5n", 遊ぶ: "v5b",
+      飲む: "v5m", 読む: "v5m", 帰る: "v5r", 買う: "v5u", する: "vs-i", 来る: "vk",
+    };
+    return cls[lemma] as never;
+  }
 });
 
 describe("SELECTION — the distractor rules are the safety argument", () => {

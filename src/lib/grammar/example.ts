@@ -16,12 +16,20 @@
 // the form be baked into the fact as a real, gradeable answer string (see
 // data/grammar/index.ts) rather than recomputed per keystroke.
 //
-// The cost is repetition: every verb pattern drills on 行く. That is a smaller
-// drill than "give me the form of THIS verb" would be, and the honest path to
-// the richer version is a per-showing lemma the question seam does not carry
-// yet. 行く is a good fixed choice for the same reason build.ts picks it: it is
+// 行く is a good fixed choice for the same reason build.ts picks it: it is
 // v5k-s, the one verb whose て-form is irregular (行って, not 行いて), so a form
 // built on it proves the engine did the hard case.
+//
+// THE FIXED FORM ANCHORS THE FACT; THE DRILL NOW VARIES THE SHOWING
+// ================================================================
+// This fixed form is still what the FACT carries — its baked answer, its
+// meaning, its unlock — and it must stay fixed for the reason above. But the
+// drill no longer has to SHOW 行く every time. engine/question.ts threads a
+// per-showing vehicle through PromptContext, picked from lib/grammar/vehicles.ts,
+// and grades by re-running the recipe on it (naming the target makes the answer
+// unique for any legal verb). So the repetition is gone from the screen while
+// the fact underneath is unchanged: presentation varies, grading and scheduling
+// do not. See vehicles.ts and the grammar QuestionType.
 
 import { apply } from "./apply.ts";
 import type { Host, Recipe } from "../../data/grammar/recipes.ts";

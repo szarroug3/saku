@@ -37,6 +37,9 @@ import {
 } from "@/data/grammar";
 import { RECIPES, isProducible } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
+import { apply } from "@/lib/grammar/apply";
+import { pickVehicle, type Rng, type Vehicle } from "@/lib/grammar/vehicles";
+import type { WordClass } from "@/lib/conjugate";
 import {
   KANJI_SUBJECT,
   READING_INDEX,
@@ -91,6 +94,24 @@ export interface Prompt {
  */
 export interface PromptContext {
   anchor?: string;
+  /**
+   * The per-showing vehicle for a grammar PRODUCTION question — the verb to
+   * build the pattern on THIS time. See lib/grammar/vehicles.ts for why the
+   * fact stays fixed while the showing varies: naming the target makes the
+   * answer unique for any legal vehicle, so the drill picks one and grades by
+   * re-running the recipe on it. Every subject but grammar ignores it, and a
+   * grammar showing with none omits it and gets the fixed vehicle baked in the
+   * fact (行く) — the pre-variety behaviour, unchanged.
+   */
+  grammarVehicle?: GrammarVehicle;
+}
+
+/** A verb picked to carry a grammar production question this showing. Plain
+ * data (no functions) so it can ride in the drill's serialized runtime. */
+export interface GrammarVehicle {
+  readonly surface: string;
+  readonly kana: string;
+  readonly cls: WordClass | null;
 }
 
 /**
@@ -104,19 +125,37 @@ export interface PromptContext {
 export interface QuestionType {
   id: string;
   /** What to show, asking `fact` in `dir`. `ctx` is an optional presentation
-   * hint — see PromptContext; only the kanji reading question reads it. */
+   * hint — see PromptContext; the kanji reading question reads its anchor, the
+   * grammar production question reads its vehicle. */
   prompt(fact: FactId, dir: Direction, ctx?: PromptContext): Prompt;
-  /** Whether `given` answers `fact` in `dir`. */
-  check(fact: FactId, dir: Direction, given: string): boolean;
+  /** Whether `given` answers `fact` in `dir`. `ctx` carries the same
+   * per-showing presentation as `prompt` — grammar grades against the vehicle
+   * it prompted on, not the fixed one baked in the fact. */
+  check(fact: FactId, dir: Direction, given: string, ctx?: PromptContext): boolean;
   /**
    * Plausible WRONG answers for a multiple-choice `fact`, as facts.
    *
    * Returns fewer than `n` — or none — rather than padding with randoms. An
    * option nobody would ever pick is not a distractor, it is a free point, and
    * four options where three are absurd is a one-option question wearing a
-   * costume.
+   * costume. `ctx` lets grammar choose distractors that are wrong for THIS
+   * vehicle (行った against 行ってから, not against 食べてから).
    */
-  distractors(fact: FactId, n: number): FactId[];
+  distractors(fact: FactId, n: number, ctx?: PromptContext): FactId[];
+  /**
+   * The visible text of an MC option, when the fact's own answer/glyph is not
+   * it. Grammar production shows the option pattern built on the SHOWING's
+   * vehicle (行きたい, not the baked 行きたい of a fixed fact — same string here,
+   * but 食べたい when the vehicle is 食べる). Absent → the drill falls back to the
+   * fact's glyph/answer, which is right for every other subject.
+   */
+  optionLabel?(fact: FactId, dir: Direction, ctx?: PromptContext): string | null;
+  /**
+   * The answer to REVEAL, when it is not the fact's first baked answer — the
+   * grammar production answer on this showing's vehicle. Absent → the drill
+   * reveals `factInfo(fact).answers[0]`, right for everyone else.
+   */
+  answerReveal?(fact: FactId, ctx?: PromptContext): string | null;
 }
 
 /** Case- and space-forgiving comparison, for both scripts. `answers` holds
@@ -382,15 +421,68 @@ function isWordReading(fact: FactId): boolean {
 // rejects は/が (no recipe exists), the vacuous rows, the order-free wraps and
 // the data-blocked しか〜ない — so the dangerous items never reach here.
 
+/**
+ * The VARIED vehicle a production showing runs on, or null to mean "use the
+ * fixed one baked in the fact".
+ *
+ * Returns the ctx vehicle only when it actually builds on this recipe; anything
+ * else (no ctx, an illegal pick, a re-cut of the data) collapses to null, and
+ * every method below then falls back to the exact pre-variety behaviour —
+ * glyph 行く, the fact's baked answers, the same-lemma distractors. So variety
+ * is strictly additive: absent a legal vehicle, this file behaves as it did.
+ */
+function variedVehicle(
+  r: import("@/data/grammar/recipes").Recipe,
+  ctx?: PromptContext,
+): GrammarVehicle | null {
+  const v = ctx?.grammarVehicle;
+  return v && apply(r, v.surface, v.cls).ok ? v : null;
+}
+
+/** The pattern built on a vehicle — surface form and kana form — or null when
+ * the recipe will not build on it (a wrap, a defective form). */
+function builtOn(
+  r: import("@/data/grammar/recipes").Recipe,
+  v: GrammarVehicle,
+): { form: string; kanaForm: string } | null {
+  const surface = apply(r, v.surface, v.cls);
+  if (!surface.ok || surface.value === v.surface) return null;
+  const kana = apply(r, v.kana, v.cls);
+  return { form: surface.value, kanaForm: kana.ok ? kana.value : surface.value };
+}
+
+/**
+ * Roll a per-showing vehicle for a grammar fact, as plain data — or null.
+ *
+ * Null for anything that is not a producible grammar production fact, and for a
+ * production fact the pool cannot host: the caller then omits `grammarVehicle`
+ * and the showing runs on the fixed baked vehicle. `rng` is injectable for
+ * tests. This is the one place the drill needs to touch the vehicle pool, so it
+ * lives here beside the QuestionType that consumes it.
+ */
+export function grammarVehicleFor(
+  fact: FactId,
+  rng: Rng = Math.random,
+): GrammarVehicle | null {
+  const prod = grammarProduction(fact);
+  if (!prod) return null;
+  const picked: Vehicle | null = pickVehicle(prod.recipe, rng);
+  return picked
+    ? { surface: picked.surface, kana: picked.kana, cls: picked.cls }
+    : null;
+}
+
 const grammarQuestions: QuestionType = {
   id: "grammar",
-  prompt(fact) {
+  prompt(fact, _dir, ctx) {
     const prod = grammarProduction(fact);
     if (prod) {
       // The vehicle verb is the big glyph; the pattern names the target, which
-      // is what makes production a question with ONE answer.
+      // is what makes production a question with ONE answer. The vehicle is the
+      // showing's (varied) one when present and legal, else the baked 行く.
+      const v = variedVehicle(prod.recipe, ctx);
       return {
-        glyph: prod.lemma,
+        glyph: v ? v.surface : prod.lemma,
         jp: true,
         context: `${prod.recipe.pattern} form`,
         hint: null,
@@ -406,17 +498,47 @@ const grammarQuestions: QuestionType = {
       hint: null,
     };
   },
-  check(fact, _dir, given) {
-    return accepts(fact, given);
-  },
-  distractors(fact, n) {
+  check(fact, _dir, given, ctx) {
     const prod = grammarProduction(fact);
     if (prod) {
+      // Grade against the pattern built on THIS showing's vehicle, not the
+      // fixed answer baked in the fact — otherwise a 食べる showing would only
+      // accept 行ってから. Both scripts count, as the baked path does. No legal
+      // vehicle → the baked answers, unchanged.
+      const v = variedVehicle(prod.recipe, ctx);
+      if (v) {
+        const built = builtOn(prod.recipe, v);
+        if (built) {
+          const g = given.trim();
+          return g === built.form || g === built.kanaForm;
+        }
+      }
+    }
+    return accepts(fact, given);
+  },
+  distractors(fact, n, ctx) {
+    const prod = grammarProduction(fact);
+    if (prod) {
+      const v = variedVehicle(prod.recipe, ctx);
       const out: FactId[] = [];
+      if (v) {
+        const answer = builtOn(prod.recipe, v);
+        for (const r of RECIPES) {
+          if (r.id === prod.recipe.id || !isProducible(r)) continue;
+          // A plausible wrong answer is ANOTHER pattern built on the SAME
+          // vehicle (行った, 行きたい against 行ってから). It must build on this
+          // vehicle and land on a different string — a distractor that coincides
+          // with the answer would be a second right option.
+          const d = builtOn(r, v);
+          if (!d || (answer && d.form === answer.form)) continue;
+          out.push(patternProductionFactId(r.id));
+          if (out.length >= n) break;
+        }
+        return out;
+      }
+      // No varied vehicle: the pre-variety same-fixed-lemma filter, verbatim.
       for (const r of RECIPES) {
         if (r.id === prod.recipe.id || !isProducible(r)) continue;
-        // Same vehicle verb only — a form of 高い is not a plausible wrong
-        // answer to "build 〜てから on 行く".
         const ex = buildExample(r);
         if (!ex || ex.lemma !== prod.lemma) continue;
         out.push(patternProductionFactId(r.id));
@@ -437,6 +559,21 @@ const grammarQuestions: QuestionType = {
       if (out.length >= n) break;
     }
     return out;
+  },
+  optionLabel(fact, _dir, ctx) {
+    // Only a VARIED production option needs a per-vehicle label. Without a legal
+    // vehicle, or for a meaning option, the fact's own glyph/answer is already
+    // right, so return null and let the drill use it.
+    const prod = grammarProduction(fact);
+    if (!prod) return null;
+    const v = variedVehicle(prod.recipe, ctx);
+    return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
+  },
+  answerReveal(fact, ctx) {
+    const prod = grammarProduction(fact);
+    if (!prod) return null;
+    const v = variedVehicle(prod.recipe, ctx);
+    return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
   },
 };
 
