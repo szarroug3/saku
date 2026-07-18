@@ -55,7 +55,8 @@ function sectionOf(item: LessonItem): string | null {
  * The teach set, as the steps the walk pages through.
  *
  * Items in the order `itemsFromFacts` gives them — untouched — with at most one
- * card in front and at most one behind.
+ * card in front and any number behind (a script's last group closes on both its
+ * long-vowel and its sokuon card).
  */
 export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
   const items = itemsFromFacts(facts);
@@ -82,9 +83,16 @@ export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
   const before = opensOn ? INTRO_BEFORE[opensOn] : undefined;
   if (before) steps.unshift({ type: "intro", key: before.id, intro: before });
 
+  // Closing a script can owe more than one card — long vowels AND small っ both
+  // come due once every shape is known — so this is a list where the opening
+  // side is a single card. They are pushed in table order, and each is an
+  // ordinary step: the walk pages through them and the HUD counts them like
+  // anything else, which is the whole reason both read this function.
   const closesOn = sectionOf(items[items.length - 1]);
   const after = closesOn ? INTRO_AFTER[closesOn] : undefined;
-  if (after) steps.push({ type: "intro", key: after.id, intro: after });
+  for (const intro of after ?? []) {
+    steps.push({ type: "intro", key: intro.id, intro });
+  }
 
   return steps;
 }

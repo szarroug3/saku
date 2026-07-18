@@ -18,7 +18,7 @@ import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
 import { SmallBtn } from "@/components/ui";
 import { useHistory } from "@/lib/use-history";
-import { groupOfFact, scriptSoFar } from "@/lib/lesson";
+import { groupOfFact, widerScope } from "@/lib/lesson";
 import { lessonSteps } from "@/lib/lesson-steps";
 import { restLeftMs } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
@@ -114,12 +114,19 @@ export default function SessionPage() {
     // choice left at that point, because the round is already running over a
     // set that was chosen when it started. Widening there would silently throw
     // away answered cards.
+    //
+    // And not offered when the wider scope resolves to the same facts as the
+    // group itself — the first group of a script, where "all hiragana so far" is
+    // just these five. widerScope() returns null there, the fork collapses, and
+    // the walk falls back to its plain "Quiz me". See widerScope() for why the
+    // test is on the SETS rather than on the group's position.
     const teachGroup = session.teach.length ? groupOfFact(session.teach[0]) : null;
+    const soFar = teachGroup && !reviewing ? widerScope(teachGroup) : null;
     const wider =
-      teachGroup && !reviewing
+      teachGroup && soFar
         ? {
             label: `Quiz me on all ${teachGroup.setLabel.toLowerCase()} so far`,
-            onStart: () => startFirstRound(scriptSoFar(teachGroup)),
+            onStart: () => startFirstRound(soFar),
           }
         : null;
     // On the last item the walk's own forward button already says "Quiz me", so

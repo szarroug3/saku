@@ -35,7 +35,7 @@ import { CHAR_INDEX } from "@/data/characters";
 import { dakutenRowFor } from "@/data/dakuten-rows";
 import { WHY_SCRIPT } from "@/data/why";
 import type { Lesson } from "@/lib/lesson";
-import { scriptSoFar, setFacts } from "@/lib/lesson";
+import { setFacts, widerScope } from "@/lib/lesson";
 import type { FactId } from "@/types";
 
 export function NextLesson({
@@ -97,6 +97,10 @@ export function NextLesson({
   // mark rather than as five character cards. Read off the data, not off the
   // label, so it cannot drift from what the walk will actually render.
   const conversion = !!dakutenRowFor(chars[0]);
+
+  // The wider drill scope, or null when it would select these same facts and the
+  // fork would be a choice between two identical drills. See widerScope().
+  const soFar = widerScope(group);
 
   return (
     <>
@@ -172,14 +176,29 @@ export function NextLesson({
               the same drill reached by the other door — skipping the teach walk
               shouldn't also skip the choice of how much to be asked. "These
               only" keeps the accent; the cumulative run is the offer beside it.
-              See scriptSoFar() for what "so far" is allowed to mean. */}
+              See scriptSoFar() for what "so far" is allowed to mean.
+
+              The fork collapses when the wider scope resolves to these same
+              facts — the first group of a script, where there is nothing before
+              it to accumulate. What's left is the ordinary "Quiz me", NOT one of
+              the two scoped labels kept on alone: "Quiz me on these only" names
+              a scope, and naming a scope implies the other one is somewhere on
+              screen. With one set there is no scope to name. */}
           <div className="flex flex-wrap gap-1.5">
-            <Btn onClick={() => onQuizMe(scriptSoFar(group))}>
-              Quiz me on all {group.setLabel.toLowerCase()} so far
-            </Btn>
-            <Btn go onClick={() => onQuizMe(lesson.facts)}>
-              Quiz me on these only
-            </Btn>
+            {soFar ? (
+              <>
+                <Btn onClick={() => onQuizMe(soFar)}>
+                  Quiz me on all {group.setLabel.toLowerCase()} so far
+                </Btn>
+                <Btn go onClick={() => onQuizMe(lesson.facts)}>
+                  Quiz me on these only
+                </Btn>
+              </>
+            ) : (
+              <Btn go onClick={() => onQuizMe(lesson.facts)}>
+                Quiz me
+              </Btn>
+            )}
           </div>
         </div>
       </Card>

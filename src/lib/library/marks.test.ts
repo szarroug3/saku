@@ -243,23 +243,31 @@ describe("the Library shows the LESSON's explanation, not a copy of it", () => {
 });
 
 describe("the small-tsu copy, which is the one thing authored for this shelf", () => {
-  test("it is in PHASE_INTROS and honestly unanchored", () => {
-    // Authored in the file where teaching copy lives, read today by the Library
-    // alone: the kana curriculum has no small-つ section to anchor it to. This
-    // asserts the state is the DECLARED one, so that wiring it into the walk is a
-    // deliberate act and not something that happened by accident.
+  test("it is in PHASE_INTROS and anchored to close the hiragana run", () => {
+    // This test used to pin the OPPOSITE state — authored here, rendered by the
+    // Library, deliberately anchored nowhere, because the kana curriculum had no
+    // small-つ section to hang it on. That was never meant to be permanent; it
+    // was meant to make wiring it in a deliberate act rather than a drift. It has
+    // now been wired in deliberately, and this pins WHERE, for the same reason:
+    // so that moving it is also a deliberate act.
     assert.ok(PHASE_INTROS.includes(SOKUON_H));
+    const after = INTRO_AFTER["h-pya"] ?? [];
+    assert.ok(
+      after.includes(SOKUON_H),
+      "the sokuon card lost its anchor on the last combo group",
+    );
+    // LAST, not merely present: small っ closes the script, after long vowels.
+    // Both cards share this anchor, so "is it there" would pass with the order
+    // reversed and the placement is the thing being asserted.
+    assert.equal(after[after.length - 1], SOKUON_H);
+    // And every other card is still anchored exactly once, so this cannot pass
+    // by the anchor tables having grown duplicates or emptied out.
     const anchored = [
       ...Object.values(INTRO_BEFORE),
-      ...Object.values(INTRO_AFTER),
+      ...Object.values(INTRO_AFTER).flat(),
     ];
-    assert.ok(
-      !anchored.includes(SOKUON_H),
-      "the sokuon card gained an anchor — update this test and say where",
-    );
-    // And every OTHER card is still anchored, so this test cannot pass by the
-    // anchor tables having emptied out.
-    assert.equal(anchored.length, 6);
+    assert.equal(anchored.length, 8);
+    assert.equal(new Set(anchored).size, 8);
   });
 });
 

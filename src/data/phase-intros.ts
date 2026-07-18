@@ -22,10 +22,11 @@
 //   BEFORE the first group of a phase — "here is what is about to change".
 //     Dakuten/handakuten (h-g, k-g) and combos (h-kya, k-kya).
 //   AFTER the last group of a script — "you have every shape now; here is the
-//     rule that isn't a shape". Long vowels (h-pya, k-pya), which is the only
-//     honest place for them: nothing about おばあさん is a new character to
-//     draw, and teaching it before the shapes are done would interrupt the
-//     shapes to talk about something that needs all of them.
+//     rule that isn't a shape". Long vowels and then small っ (both on h-pya,
+//     k-pya), which is the only honest place for either: nothing about おばあさん
+//     or きって is a new character to draw, and teaching them before the shapes
+//     are done would interrupt the shapes to talk about something that needs
+//     all of them.
 //
 // PER SCRIPT, WITH THAT SCRIPT'S GLYPHS
 // =====================================
@@ -204,27 +205,47 @@ export const LONG_K: PhaseIntro = {
   ],
 };
 
-// SMALL っ — AUTHORED HERE, WITH NO ANCHOR YET
-// ===========================================
-// The two cards below are the only teaching copy in this file that no lesson
-// currently shows, and the reason is the curriculum: src/data/characters.ts has
-// a section for every base row, every marked row and every combo, and NONE for
-// the small tsu. It is not a set of characters — it is one character that stands
-// for a beat of silence — so, exactly like long vowels before this file existed,
-// it had nowhere to live in a curriculum made of characters.
+// SMALL っ — ANCHORED LAST, AFTER LONG VOWELS
+// ==========================================
+// These two cards were authored before they had anywhere to go, and for a while
+// the Library's MARKS shelf was their only reader. The reason was the
+// curriculum: src/data/characters.ts has a section for every base row, every
+// marked row and every combo, and NONE for the small tsu. It is not a set of
+// characters — it is one character that stands for a beat of silence — so,
+// exactly like long vowels, it had nowhere to live in a curriculum made of
+// characters.
 //
-// The Library's MARKS shelf is what forced the issue: small っ is plainly one of
-// the five reading rules, a learner meets きって in week one, and the reference
-// could not be the only place in the app that explains it while the lesson stayed
-// silent — that is the drift this file's header is about, running the other way.
+// They now close each script, in INTRO_AFTER, on the same last-combo anchor the
+// long-vowel cards use (h-pya / k-pya). The earlier note here guessed at
+// INTRO_BEFORE against a section the curriculum might grow, and ruled out
+// hanging it off h-kya because that would teach two unrelated rules in one
+// breath. Both of those still hold. What changed is that AFTER turns out to be
+// the right shelf and already exists: っ is not a phase that starts, it is a
+// rule that lands once every shape is known, which is the exact thing AFTER is
+// for.
 //
-// So the copy is authored HERE, in the one place teaching copy lives, and read
-// today by the Library alone. WIRING IT INTO THE WALK IS A ONE-LINE CHANGE: give
-// it an anchor in INTRO_BEFORE below, against whichever section the curriculum
-// grows for it. It is deliberately not anchored to a section that exists — the
-// nearest candidate is h-kya, and hanging the sokuon card off the combo phase
-// would teach two unrelated rules in one breath because they happen to share a
-// font size.
+// WHY AFTER THE COMBOS, AND NOT BEFORE OR AMONG THEM
+// --------------------------------------------------
+// The sokuon copy leans on the combos having been read — "Look at the height,
+// exactly as you do with ゃ" is a callback, and it only works if ゃ is behind
+// the learner. Tofugu's hiragana guide reaches the same order for the same
+// reason and frames っ as the closer: combination kana, and then one little
+// thing left. This is where a learner who can read everything else meets the
+// one shape that is not a sound.
+//
+// WHY AFTER LONG VOWELS, WHICH SHARE THE ANCHOR
+// ---------------------------------------------
+// Both cards close on h-pya, so one of them is last and the choice had to be
+// made rather than fallen into. っ goes last: it is the closing beat of the
+// kana curriculum, the point where the script is genuinely finished.
+//
+// The honest counter-argument, recorded because it is a real one: っ is a
+// SHAPE — a shrunken つ, continuous with the small-kana logic the combos just
+// taught — while long vowels are the purest "rule that isn't a shape" in the
+// file. Ordering っ first would group the shape-ish material together and let
+// the run end on the most abstract card. That reading is defensible; the
+// placement above was chosen deliberately over it, and reversing it is a
+// reordering of one array below and nothing else.
 
 export const SOKUON_H: PhaseIntro = {
   id: "intro-sokuon-hiragana",
@@ -278,31 +299,44 @@ export const INTRO_BEFORE: Record<string, PhaseIntro> = {
 };
 
 /**
- * Section id → the card shown AFTER that section's characters.
+ * Section id → the cards shown AFTER that section's characters, IN ORDER.
  *
  * Keyed on the LAST group of each script: by then every shape in that script
- * has been taught, which is exactly what the long-vowel card assumes.
+ * has been taught, which is exactly what the long-vowel and sokuon cards both
+ * assume.
+ *
+ * A LIST, where INTRO_BEFORE is a single card, and the asymmetry is the point
+ * rather than an oversight. "Before" is the moment a phase opens and only one
+ * thing can be about to change, so a second card there would be a second
+ * answer to a question with one. "After" is the end of the script, where every
+ * rule that is not a shape has been waiting for exactly this moment — long
+ * vowels and small っ both come due at once, and the file would be lying if the
+ * type said only one of them could.
+ *
+ * The order within the array is the order the walk shows them; see the long
+ * note above SOKUON_H for why っ closes.
  */
-export const INTRO_AFTER: Record<string, PhaseIntro> = {
-  "h-pya": LONG_H,
-  "k-pya": LONG_K,
+export const INTRO_AFTER: Record<string, PhaseIntro[]> = {
+  "h-pya": [LONG_H, SOKUON_H],
+  "k-pya": [LONG_K, SOKUON_K],
 };
 
 /** Every intro, for tests and for anything that wants to list them.
  *
- * The sokuon pair is IN here and absent from both anchor tables above, which is
- * the honest state of it: authored, rendered by the Library, not yet a step of
- * any walk. A reader checking "is every card reachable from a lesson" should get
- * "no, and here is which one" rather than a list that quietly omits it. */
+ * Every card here is now reachable from a lesson: the sokuon pair was the one
+ * exception for as long as the curriculum had nowhere to put it, and closing
+ * each script on it is what settled that. The order below is the order a
+ * learner meets them, one script then the other, which is also the order the
+ * anchor tables produce. */
 export const PHASE_INTROS: PhaseIntro[] = [
   DAKUTEN_H,
   COMBO_H,
-  SOKUON_H,
   LONG_H,
+  SOKUON_H,
   DAKUTEN_K,
   COMBO_K,
-  SOKUON_K,
   LONG_K,
+  SOKUON_K,
 ];
 
 // NOT BUILT, AND SAY SO
