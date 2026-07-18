@@ -51,7 +51,9 @@ export function Sidebar() {
   const { active, session, progress } = useQuizSession();
 
   // Tab-switching never discards a running quiz OR session; while one is going
-  // a "Current quiz" entry (with live progress) sits right under Home.
+  // a "Current session" entry (with live progress) sits right under Home. It is
+  // NOT called "Current quiz": the thing running may be a lesson, and naming it
+  // after the drilling half hid the teach phase behind the wrong word.
   //
   // `active || session`, not just `active`: a session in its LESSON, the fork,
   // or a rest has no drilling leg (`active` is null then by design), but it is
@@ -86,12 +88,12 @@ export function Sidebar() {
           //     76.5 + 6 + 40.4 = 123px. It is also the size every other count
           //     in this app is set at, so it costs nothing to read.
           //   min-w-0 truncate on the label .... the backstop. If a future deck
-          //     ever pushes past four digits, "Current quiz" ellipses and the
+          //     ever pushes past four digits, "Current session" ellipses and the
           //     count — flex-none — stays whole. Degrading the label rather than
           //     the number is the right way round: the number is why you looked.
           label: (
             <>
-              <span className="min-w-0 truncate">Current quiz</span>
+              <span className="min-w-0 truncate">Current session</span>
               {progress ? (
                 <span className="ml-1.5 flex-none text-[11px] tabular-nums opacity-70">
                   {progress.done}
