@@ -1,0 +1,282 @@
+// Run: node --import ./src/lib/conjugate/test-hooks.mjs --test \
+//        src/lib/library/marks.test.ts
+//
+// WHAT THESE TESTS ARE FOR
+// ========================
+// The MARKS shelf holds five entries that break three assumptions the Library
+// was built on, and every one of them fails QUIETLY — a wrong page renders, no
+// error is thrown, and you only notice by opening it.
+//
+//   AN ENTRY IS A CHARACTER. "Long vowels" is not. Its glyph is the empty
+//   string, which is search-inert (`"".includes(q)` is false for every real
+//   query), so if it is ever findable only by its glyph it is findable by
+//   nothing, and a shelf entry with no route to it from the search box may as
+//   well not exist.
+//
+//   AN ENTRY IS DRILLABLE. A mark is not. "What is a dakuten" has no gradeable
+//   answer, and the guarantee is structural — marks publish no FactInfo — so what
+//   these tests pin is that the structure holds: no facts, therefore no Drill
+//   button, therefore nothing swept into a deck. A future hand adding a
+//   plausible-looking `markFact()` would break it without touching any of this.
+//
+//   AN EXPLANATION IS AUTHORED WHERE IT IS SHOWN. The Library's copy is the
+//   LESSON's copy, by reference. That is the whole justification for the shelf,
+//   and the way it rots is someone editing one and not the other — which is
+//   impossible while there is one object, and undetectable the moment there are
+//   two. The identity checks below are what make it detectable.
+
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
+
+import {
+  COMBO_H,
+  DAKUTEN_H,
+  INTRO_AFTER,
+  INTRO_BEFORE,
+  LONG_H,
+  LONG_K,
+  PHASE_INTROS,
+  SOKUON_H,
+} from "@/data/phase-intros";
+import { DAKUTEN_ROWS } from "@/data/dakuten-rows";
+import { MARKS, MARK_SUBJECT, bodyFor, markEntry, markFor } from "@/data/marks";
+import { factsOf } from "@/lib/facts";
+import { KINDS, factRows, libEntry } from "@/lib/library/entries";
+import { sliceIsDrillable } from "@/lib/library/slice";
+import { search } from "@/lib/library/search";
+import { kindFromParams } from "@/lib/library/url-state";
+
+const entryOfMark = (id: string) => {
+  const e = libEntry(markEntry(id));
+  assert.ok(e, `no Library entry for mark ${id}`);
+  return e;
+};
+
+/** The one section a query put an entry in, or null. Search's own answer to
+ * "why is this row in front of you". */
+function whyFound(query: string, id: string): string | null {
+  const want = markEntry(id);
+  for (const s of search(query, { perSection: 50 })) {
+    if (s.hits.some((h) => h.entry.id === want)) return s.why;
+  }
+  return null;
+}
+
+describe("the shelf exists and is reachable", () => {
+  test("mark is a Kind, and ?kind=mark selects it", () => {
+    // Singular, like `word` — the URL param is the subject id, and the words tab
+    // is `?kind=word` and not `?kind=vocab`.
+    assert.ok(KINDS.includes(MARK_SUBJECT));
+    assert.equal(kindFromParams(new URLSearchParams("?kind=mark")), MARK_SUBJECT);
+    assert.notEqual(kindFromParams(new URLSearchParams("?kind=marks")), MARK_SUBJECT);
+  });
+
+  test("all five marks are entries, and every entry route resolves", () => {
+    assert.equal(MARKS.length, 5);
+    for (const m of MARKS) {
+      const e = entryOfMark(m.id);
+      assert.equal(e.kind, MARK_SUBJECT);
+      // The round trip the entry page makes: id → entry → the mark it names.
+      assert.equal(markFor(e.id)?.id, m.id);
+    }
+  });
+
+  test("a mark's name is its heading and its rule is the line under it", () => {
+    // The arrangement every existing renderer already knows how to print: the
+    // row's main line and the page's PageTitle both take `meanings`; the note and
+    // the sub-line both take `sub`.
+    const dakuten = entryOfMark("dakuten");
+    assert.deepEqual(dakuten.meanings, ["Dakuten"]);
+    assert.match(dakuten.sub, /voice/i);
+    // NO READINGS: ゛ is not pronounced, and a romaji-shaped string here would be
+    // exact-matched by search and handed to a speech synthesiser.
+    assert.deepEqual(dakuten.readings, []);
+  });
+});
+
+describe("an entry is not always a character", () => {
+  test("long vowels has no glyph, and nothing pretends otherwise", () => {
+    const long = entryOfMark("long-vowel");
+    assert.equal(long.glyph, "", "a placeholder glyph got stuffed in");
+    // The name is what stands in wherever a glyph would have been rendered as a
+    // label — the breadcrumb, an aria-label.
+    assert.equal(long.name, "Long vowels");
+  });
+
+  test("the four that DO have a written token carry it", () => {
+    assert.equal(entryOfMark("dakuten").glyph, "゛");
+    assert.equal(entryOfMark("handakuten").glyph, "゜");
+    assert.equal(entryOfMark("small-tsu").glyph, "っ");
+    assert.equal(entryOfMark("small-ya").glyph, "ゃゅょ");
+  });
+
+  test("a glyphless entry is still findable — by name and by alias", () => {
+    // The failure this guards is total: with an empty glyph, all three of
+    // search's glyph tests are false, so if the alias path or the meaning path
+    // breaks, "long vowels" becomes an entry on a shelf with no route from the
+    // search box at all.
+    // ONE WORD, and that is search's rule rather than this shelf's: English
+    // matching is token-prefix (see `matchesMeaning`), so a multi-word query has
+    // never matched anything and "long vowels" typed in full finds nothing here
+    // either. Pinned as "long" so this test asserts what the app does.
+    assert.ok(whyFound("long", "long-vowel"), "not found by its name");
+    assert.ok(whyFound("vowel", "long-vowel"), "not found by 'vowel'");
+    assert.equal(whyFound("ー", "long-vowel"), "exact", "not found by ー");
+    assert.ok(whyFound("chouonpu", "long-vowel"), "not found by the jargon");
+  });
+
+  test("the jargon this app never prints is still typeable", () => {
+    // sokuon / yōon are what every other resource calls these. The app's own
+    // pages say "small っ", and search has to answer to both.
+    assert.ok(whyFound("sokuon", "small-tsu"));
+    assert.ok(whyFound("yoon", "small-ya"));
+    assert.ok(whyFound("dakuten", "dakuten"));
+    assert.ok(whyFound("handakuten", "handakuten"));
+  });
+
+  test("a mark's own glyph finds it", () => {
+    assert.equal(whyFound("゛", "dakuten"), "exact");
+    assert.equal(whyFound("゜", "handakuten"), "exact");
+    assert.equal(whyFound("っ", "small-tsu"), "exact");
+  });
+});
+
+describe("a mark is not drillable, and not by omission", () => {
+  test("no mark has a single fact", () => {
+    for (const m of MARKS) {
+      assert.deepEqual(
+        factsOf(markEntry(m.id)),
+        [],
+        `${m.id} grew a fact — the drill can now ask "what is a ${m.name}"`,
+      );
+    }
+  });
+
+  test("no mark page offers a Drill button", () => {
+    // The bar's own rule, asked the way the bar asks it.
+    for (const m of MARKS) {
+      assert.equal(
+        sliceIsDrillable({ label: m.name, entries: [markEntry(m.id)] }),
+        false,
+      );
+    }
+  });
+
+  test("selecting every mark at once still drills nothing", () => {
+    // The multi-select path: five marks toggled on and unioned into one slice is
+    // still zero questions, so nothing is swept into a deck by selecting a shelf.
+    const all = { label: "5 selected", entries: MARKS.map((m) => markEntry(m.id)) };
+    assert.deepEqual(sliceIsDrillable(all), false);
+  });
+
+  test("a mark has no facts table — not an empty one", () => {
+    // The precedent the 114 reading-less kanji set: no rows means the page
+    // renders no section, rather than a headed box with a header row in it.
+    for (const m of MARKS) {
+      assert.deepEqual(factRows(entryOfMark(m.id)), []);
+    }
+  });
+});
+
+describe("the Library shows the LESSON's explanation, not a copy of it", () => {
+  test("each mark points at the phase intros, by reference", () => {
+    // Identity, not deep-equality: the point is that there is ONE object. A copy
+    // that happened to be equal today is the drift this whole shelf exists to
+    // prevent, and it would pass a deepEqual.
+    const marks = new Map(MARKS.map((m) => [m.id, m]));
+    assert.equal(marks.get("dakuten")?.intros[0], DAKUTEN_H);
+    assert.equal(marks.get("small-ya")?.intros[0], COMBO_H);
+    assert.equal(marks.get("small-tsu")?.intros[0], SOKUON_H);
+    assert.equal(marks.get("long-vowel")?.intros[0], LONG_H);
+  });
+
+  test("both scripts are carried, because they are not always the same rule", () => {
+    for (const m of MARKS) {
+      assert.deepEqual(
+        m.intros.map((i) => i.setId),
+        ["hiragana", "katakana"],
+        `${m.id} does not carry both scripts`,
+      );
+    }
+    // Long vowels is the case that forces it: hiragana doubles a vowel kana,
+    // katakana uses one ー, and a page showing only the first teaches half a rule.
+    assert.notEqual(LONG_H.title, LONG_K.title);
+  });
+
+  test("the conversions come from dakuten-rows, split by their own mark", () => {
+    const marks = new Map(MARKS.map((m) => [m.id, m]));
+    const dak = marks.get("dakuten")?.rows ?? [];
+    const han = marks.get("handakuten")?.rows ?? [];
+    // Four conversions × two scripts for ゛ (k→g, s→z, t→d, h→b); one × two for ゜.
+    assert.equal(dak.length, 8);
+    assert.equal(han.length, 2);
+    assert.equal(dak.length + han.length, DAKUTEN_ROWS.length);
+    assert.ok(dak.every((r) => r.mark === "゛"));
+    assert.ok(han.every((r) => r.mark === "゜"));
+    // By reference again — these are the rows the lesson's ConversionCard gets.
+    assert.ok(dak.every((r) => DAKUTEN_ROWS.includes(r)));
+  });
+
+  test("the two marks sharing one lesson card each get their own half", () => {
+    // DAKUTEN_H teaches ゛ and ゜ on one card, which is right in a lesson and
+    // wrong on two pages. The split is by the copy's own `mark` tag.
+    const dak = bodyFor(DAKUTEN_H, "゛");
+    const han = bodyFor(DAKUTEN_H, "゜");
+    assert.ok(dak.some((p) => p.mark === "゛"));
+    assert.ok(!dak.some((p) => p.mark === "゜"), "the ゜ paragraph leaked onto ゛");
+    assert.ok(han.some((p) => p.mark === "゜"));
+    assert.ok(!han.some((p) => p.mark === "゛"), "the ゛ paragraph leaked onto ゜");
+    // The untagged closing paragraph is about neither mark specifically and is
+    // true of both, so it goes to both.
+    const shared = DAKUTEN_H.body.filter((p) => p.mark === undefined);
+    assert.equal(shared.length, 1);
+    assert.ok(dak.includes(shared[0]!) && han.includes(shared[0]!));
+  });
+
+  test("a mark whose copy has no tagged paragraphs keeps all of it", () => {
+    // bodyFor is the identity for four of the five marks. If it ever silently
+    // dropped a paragraph, those pages would lose teaching with nothing to show
+    // for it.
+    assert.deepEqual(bodyFor(LONG_H, ""), LONG_H.body);
+    assert.deepEqual(bodyFor(COMBO_H, "ゃゅょ"), COMBO_H.body);
+  });
+});
+
+describe("the small-tsu copy, which is the one thing authored for this shelf", () => {
+  test("it is in PHASE_INTROS and honestly unanchored", () => {
+    // Authored in the file where teaching copy lives, read today by the Library
+    // alone: the kana curriculum has no small-つ section to anchor it to. This
+    // asserts the state is the DECLARED one, so that wiring it into the walk is a
+    // deliberate act and not something that happened by accident.
+    assert.ok(PHASE_INTROS.includes(SOKUON_H));
+    const anchored = [
+      ...Object.values(INTRO_BEFORE),
+      ...Object.values(INTRO_AFTER),
+    ];
+    assert.ok(
+      !anchored.includes(SOKUON_H),
+      "the sokuon card gained an anchor — update this test and say where",
+    );
+    // And every OTHER card is still anchored, so this test cannot pass by the
+    // anchor tables having emptied out.
+    assert.equal(anchored.length, 6);
+  });
+});
+
+describe("ぁぃぅぇぉ — the sixth candidate, and where it went", () => {
+  test("it is a line on the small-kana page, not an entry of its own", () => {
+    const marks = new Map(MARKS.map((m) => [m.id, m]));
+    assert.ok(!marks.has("small-vowel"));
+    const note = marks.get("small-ya")?.note ?? "";
+    assert.match(note, /ぁぃぅぇぉ/);
+    // The reason it is one line: same mechanism as ゃゅょ, and the app teaches
+    // none of the sounds it writes.
+    assert.match(note, /ファ/);
+    // Nothing else carries a note, so the call-out is not quietly becoming the
+    // place marks put their overflow.
+    assert.deepEqual(
+      MARKS.filter((m) => m.note).map((m) => m.id),
+      ["small-ya"],
+    );
+  });
+});

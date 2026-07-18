@@ -22,17 +22,20 @@ import { use, useState } from "react";
 import { AttributionLink } from "@/components/library/attribution-link";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
+import { MarkView } from "@/components/library/mark-view";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Hint, Lbl, PageTitle, SmallBtn, SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
+import { markFor } from "@/data/marks";
 import { factsOf } from "@/lib/facts";
 import {
   appearsIn,
   clusterOf,
   confusableWith,
   entryForGlyph,
+  entryName,
   factRows,
   factsColumnHeader,
   factsTitle,
@@ -106,6 +109,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // is mounted only when this is non-null.
   const mnemonic = getMnemonic(entry.glyph);
 
+  // The reading rule this entry IS, when it is one. Null for every character,
+  // word and pattern, whose pages are untouched by any of this.
+  const mark = markFor(entry.id);
+
   const VISIBLE = 8;
   const shown = showAll ? rows : rows.slice(0, VISIBLE);
 
@@ -140,7 +147,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
           {KIND_LABEL[entry.kind]}
         </Link>
         {" › "}
-        {entry.glyph}
+        {/* `entryName`, not the glyph. The last crumb is a NAME — it says which
+            page you are on — and the long-vowel mark has no glyph, so this
+            rendered as a "›" followed by nothing. Every other entry's name is
+            its glyph, so nothing else moves. */}
+        {entryName(entry)}
       </p>
 
       {mnemonic ? (
@@ -162,7 +173,16 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ) : (
         <Card>
           <div className="flex flex-wrap items-start gap-5">
-            <div className="flex-none text-[76px] leading-none">{entry.glyph}</div>
+            {/* THE HERO SLOT IS THE GLYPH'S, AND IT STAYS EMPTY WHEN THERE IS NO
+                GLYPH. Long vowels is a rule, not a character; rendering its NAME
+                at 76px here would put "Long vowels" in the position every other
+                page reserves for a thing you can draw, and say "learn this
+                shape" about the one entry whose whole point is that there is no
+                shape. The title below already carries the name, so dropping the
+                slot loses nothing and asserts nothing false. */}
+            {entry.glyph ? (
+              <div className="flex-none text-[76px] leading-none">{entry.glyph}</div>
+            ) : null}
             <div className="min-w-0 flex-1">
               <PageTitle
                 title={entry.meanings.slice(0, 3).join(" · ") || entry.readings.join(" · ")}
@@ -191,7 +211,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
                 {entry.sub}
               </p>
               <div className="flex flex-wrap items-center gap-1.5">
-                {standing.standing ? (
+                {/* NO FACTS, NO STANDING — and this branch is new because marks
+                    are the first entries with none. The three branches below all
+                    assert something about your memory, and the last one ("all 0
+                    solid") is what a mark used to hit: an entry the app has never
+                    asked you about and never will, reported as a clean sweep.
+                    An entry with nothing to know has no standing, so it says
+                    nothing, which is also what the bar at the foot of the page
+                    says ("nothing here to drill"). */}
+                {standing.total === 0 ? null : standing.standing ? (
                   <StandingChip standing={standing.standing} />
                 ) : standing.needWork > 0 ? (
                   <span className="rounded-full border border-warning px-2 py-0.5 text-[11px] text-warning">
@@ -203,8 +231,12 @@ function EntryView({ entry }: { entry: LibEntry }) {
                   </span>
                 )}
                 {/* A pattern has no single pronunciation — 〜てから is a shape, not
-                    a sound — so grammar omits Hear rather than speak a placeholder. */}
-                {entry.kind !== GRAMMAR_SUBJECT ? (
+                    a sound — so grammar omits Hear rather than speak a placeholder.
+                    A MARK is the same refusal one step further: ゛ is a diacritic
+                    with no pronunciation at all, and long vowels has no glyph to
+                    hand a synthesiser. Both omit it; see `speakable` in
+                    entry-tile.tsx, which draws the same line for the same two. */}
+                {entry.kind !== GRAMMAR_SUBJECT && !mark ? (
                   <SmallBtn onClick={() => speak(entry.glyph, cfg.voiceName)}>
                     <SoundIcon className="mr-1 align-[-0.15em]" /> Hear it
                   </SmallBtn>
@@ -234,6 +266,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
           />
         </div>
       ) : null}
+
+      {/* THE RULE ITSELF — the lesson's own teaching, rendered from the lesson's
+          own data. This is where a mark page has its content, in place of the
+          mnemonic and stroke diagram above (a rule has no drawing) and of the
+          facts table below (a rule has no gradeable question). See
+          mark-view.tsx. */}
+      {mark ? <MarkView mark={mark} /> : null}
 
       {/* NO ROWS, NO SECTION. 114 of the 2,136 jōyō kanji have no reading that
           an everyday word attests, and a grammar pattern with no recipe has no
@@ -441,7 +480,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ) : null}
 
       <SliceBar
-        slice={{ label: entry.glyph, entries: [entry.id] }}
+        // `entryName`, not the glyph: the bar prints this label in bold ahead of
+        // its sentence, so on the long-vowel mark it read "— nothing here to
+        // drill" with nothing in front of the dash.
+        slice={{ label: entryName(entry), entries: [entry.id] }}
         facts={history.facts}
         claims={claims}
         now={now}

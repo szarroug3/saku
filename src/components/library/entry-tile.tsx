@@ -32,16 +32,22 @@ import Link from "next/link";
 import { StandingChip } from "@/components/library/standing-chip";
 import { SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
-import type { LibEntry } from "@/lib/library/entries";
+import { MARK_SUBJECT } from "@/data/marks";
+import { entryName, type LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import type { EntryStanding } from "@/lib/library/standing";
 import { speak } from "@/lib/speech";
 
-/** Whether an entry has a pronunciation worth a 🔊. A grammar pattern does not —
- * 〜てから is a shape, not a sound — so its tile/row omits the speaker rather
- * than render one that reads out a placeholder. */
+/** Whether an entry has a pronunciation worth a 🔊.
+ *
+ * A grammar pattern does not — 〜てから is a shape, not a sound. Neither does a
+ * MARK, and it is the clearer case of the two: ゛ has no pronunciation whatsoever
+ * (it is a diacritic; the sound it makes is the sound of the kana under it), and
+ * long vowels has no glyph for a synthesiser to be handed at all. Both omit the
+ * speaker rather than render one that reads out a placeholder — or, for a mark,
+ * one that reads out silence and looks broken. */
 function speakable(entry: LibEntry): boolean {
-  return entry.kind !== GRAMMAR_SUBJECT;
+  return entry.kind !== GRAMMAR_SUBJECT && entry.kind !== MARK_SUBJECT;
 }
 
 /** The border a tile wears when it is NOT selected, so a shelf reads at a glance
@@ -93,7 +99,7 @@ function HearButton({
         e.stopPropagation();
         speak(entry.glyph, voice);
       }}
-      aria-label={`Hear ${entry.glyph}`}
+      aria-label={`Hear ${entryName(entry)}`}
       className={`inline-flex items-center justify-center cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text ${className ?? ""}`}
     >
       <SoundIcon className="size-[13px]" />
@@ -109,7 +115,9 @@ function ViewLink({ entry, className }: { entry: LibEntry; className?: string })
     <Link
       href={entryHref(entry.id)}
       onClick={(e) => e.stopPropagation()}
-      aria-label={`Open ${entry.glyph}`}
+      // `entryName`, not the glyph: the long-vowel mark has no glyph, and this
+      // read "Open " — a control a screen reader announces with no name.
+      aria-label={`Open ${entryName(entry)}`}
       className={`cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted no-underline hover:bg-panel hover:text-text ${className ?? ""}`}
     >
       ↗
@@ -176,6 +184,13 @@ export function EntryTile({
 
 /** How an entry's standing reads when it has no adjective. */
 export function StandingCell({ standing }: { standing: EntryStanding }) {
+  // NOTHING TO KNOW, NOTHING TO SAY. Every branch below is a claim about your
+  // memory, and with no facts they all reduce to the last one — which rendered
+  // "all 0 solid" on all five marks: the app reporting a clean sweep of an entry
+  // it has never asked you about and never will. An entry with no facts has no
+  // standing, so this says nothing at all, matching the entry page's header and
+  // the slice bar's "nothing here to drill".
+  if (standing.total === 0) return null;
   if (standing.standing) return <StandingChip standing={standing.standing} />;
   if (standing.needWork === 0) {
     return <span className="text-xs text-text-muted">all {standing.total} solid</span>;
@@ -239,6 +254,12 @@ export function EntryRow({
       >
         ✓
       </span>
+      {/* THE GLYPH, AND SOMETIMES NO GLYPH. The long-vowel mark has none, and
+          this cell is left EMPTY for it rather than filled with its name: the
+          fixed width keeps the rows aligned, and the name is right beside it on
+          the main line, so the blank reads as "this one has no character" — which
+          is exactly what it is — instead of as a missing asset. `entryName` is
+          for controls that must be announced, not for a cell the eye can skip. */}
       <span className="w-[64px] flex-none truncate text-[19px]">{entry.glyph}</span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px]">
