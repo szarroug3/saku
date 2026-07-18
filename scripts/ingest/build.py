@@ -29,6 +29,7 @@ from collections import defaultdict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aligner import align, is_kanji  # noqa: E402
 from beginnerrank import compute_beginner_ranks  # noqa: E402
+from readingtype import clean_meanings, kinds_of, types_for  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "data", "generated")
 
@@ -51,9 +52,17 @@ def load_kanjidic(path):
             grade=int(g) if g else None,
             strokes=int(s) if s else None,
             freq=int(f) if f else None,
-            meanings=[x.text for x in ch.iter("meaning") if x.get("m_lang") is None],
+            # `clean_meanings` strips KANJIDIC2's radical-index entries -- 一's
+            # "one radical (no.1)" is catalogue metadata, not a meaning, and it
+            # was reaching the quiz as an accepted answer AND a distractor. It
+            # spares 基's "radical (chem)"; see readingtype.RADICAL_INDEX.
+            meanings=clean_meanings(
+                [x.text for x in ch.iter("meaning") if x.get("m_lang") is None]),
             on=[r.text for r in ch.iter("reading") if r.get("r_type") == "ja_on"],
             kun=[r.text for r in ch.iter("reading") if r.get("r_type") == "ja_kun"],
+            # on/kun per NORMALISED base, so a reading fact can say whether it
+            # is a borrowed Chinese pronunciation or the native Japanese word.
+            kinds=kinds_of(ch),
         )
     return K
 
@@ -389,8 +398,12 @@ def main():
     reading_rows = []
     for (kanji, base), ws in sorted(pairs.items()):
         best = sorted(ws, key=lambda kw: (kw[1] != base, len(kw[0]), kw[0]))[0]
-        reading_rows.append(dict(k=kanji, base=base, anchor=best[0], surface=best[1],
-                                 nWords=len(ws), words=[w for w, _ in ws]))
+        row = dict(k=kanji, base=base, anchor=best[0], surface=best[1],
+                   nWords=len(ws), words=[w for w, _ in ws])
+        t = types_for(K[kanji]["kinds"], base)
+        if t:
+            row["type"] = t
+        reading_rows.append(row)
     dump("readings.json", reading_rows)
 
     seen = set(); order_rows = []

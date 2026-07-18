@@ -396,6 +396,75 @@ export interface FactRow {
   /** A reading the ingest found no everyday word for: here to be READ, never
    * asked. The design's "＋ 4 rarer readings — here if you look, never asked." */
   readonly unattested: boolean;
+  /**
+   * Where this reading's SOUND came from, in beginner English — the answer to
+   * "why do 一's いち and ひと sound nothing like each other".
+   *
+   * The words "on'yomi" and "kun'yomi" are never used. They name the thing for
+   * someone who already knows it; the learner reading this table does not, and
+   * a label she has to look up is not a label. "from Chinese" / "native
+   * Japanese" says the same thing in words that already mean something, and the
+   * note under the table carries the one detail the phrase cannot: that the
+   * borrowed reading is the compound-word one.
+   *
+   * `null` for every row that is not a kanji reading (a kana's romaji, a word's
+   * reading, a grammar pattern) — those have no such distinction, and printing
+   * an empty column for them would invent one.
+   */
+  readonly origin: "from Chinese" | "native Japanese" | "both" | null;
+  /**
+   * The kana to SPEAK for this row, or null when there is nothing to say.
+   *
+   * Null is the common case and the honest one: a grammar pattern has no single
+   * pronunciation (the same reason the page's Hear-it button is omitted for
+   * grammar), and a meaning row's answer is English. Only a row whose label IS
+   * Japanese sound gets a speaker.
+   */
+  readonly speak: string | null;
+}
+
+/**
+ * What the entry page's facts table is CALLED, per kind.
+ *
+ * It used to be a sentence generated from the row count — "一 is one character
+ * and 4 things to know" — which was accurate and unreadable, and which lost its
+ * only justification when the meaning row left the kanji table. A heading names
+ * the thing under it; these do.
+ *
+ * PER KIND, because the table is not the same table four times. Only kanji and
+ * kana hold readings and nothing else. A word holds its reading AND its
+ * meaning, which are separately scored and both belong. Grammar holds a meaning
+ * and, when the pattern is producible, the form it builds — calling that
+ * "Readings" would be false twice over.
+ */
+export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
+  switch (entry.kind) {
+    case KANA_SUBJECT:
+      return "Reading";
+    case KANJI_SUBJECT:
+      return rows.length === 1 ? "Reading" : "Readings";
+    case VOCAB_SUBJECT:
+      return "Reading and meaning";
+    case GRAMMAR_SUBJECT:
+      // A non-producible pattern (は〜より, たり〜たり) has ONLY the meaning row,
+      // so promising a form here would be promising a row that is not there.
+      return rows.length > 1 ? "Meaning and form" : "Meaning";
+  }
+}
+
+/**
+ * The first column's header, which is the same honesty problem one level down.
+ *
+ * It said "Reading" for every kind. For kanji that is now true (the meaning row
+ * that made it false has gone) and for kana it always was. For a word the
+ * column holds a reading AND a meaning, and for a pattern a meaning and a
+ * build-it; "Reading" names neither. Those get a header that describes the
+ * column it actually heads.
+ */
+export function factsColumnHeader(entry: LibEntry): string {
+  return entry.kind === KANA_SUBJECT || entry.kind === KANJI_SUBJECT
+    ? "Reading"
+    : "What it asks";
 }
 
 /**
@@ -415,10 +484,16 @@ export function factRows(entry: LibEntry): FactRow[] {
           answer: entry.readings.join(" / "),
           askedIn: [],
           unattested: false,
+          origin: null,
+          speak: entry.glyph,
         },
       ];
     case KANJI_SUBJECT:
       return kanjiFactRows(entry);
+    // A word KEEPS its meaning row. The kanji table could drop one because what
+    // remained was still a table; here the two rows ARE the word — its reading
+    // and its meaning are separately scored, and dropping either leaves a
+    // one-row table that no longer says what the app tests.
     case VOCAB_SUBJECT:
       return [
         {
@@ -427,6 +502,11 @@ export function factRows(entry: LibEntry): FactRow[] {
           answer: entry.readings[0] ?? "",
           askedIn: [],
           unattested: false,
+          origin: null,
+          // The word's own kana. Speaking the reading rather than the written
+          // form is the point: 先生 read aloud by a synthesiser is a coin flip,
+          // せんせい is not.
+          speak: entry.readings[0] ?? null,
         },
         {
           id: wordMeaningFactId(entry.glyph),
@@ -434,6 +514,8 @@ export function factRows(entry: LibEntry): FactRow[] {
           answer: entry.meanings.join(", "),
           askedIn: [],
           unattested: false,
+          origin: null,
+          speak: null,
         },
       ];
     case GRAMMAR_SUBJECT:
@@ -457,6 +539,10 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       answer: r.gloss,
       askedIn: [],
       unattested: false,
+      origin: null,
+      // A pattern is a shape, not a sound — 〜てから has no one pronunciation,
+      // which is why the page's Hear-it button is omitted for grammar too.
+      speak: null,
     },
   ];
   const ex = isProducible(r) ? buildExample(r) : null;
@@ -467,25 +553,42 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       answer: `${ex.lemma} → ${ex.form}`,
       askedIn: [],
       unattested: false,
+      origin: null,
+      speak: null,
     });
   }
   return rows;
 }
 
+/** How a reading's KANJIDIC2 type reads to someone who has never heard the
+ * words on'yomi and kun'yomi. See FactRow.origin. */
+const ORIGIN_LABEL = {
+  on: "from Chinese",
+  kun: "native Japanese",
+  // KANJIDIC2 lists the same reading under both types for different senses.
+  // Said out loud rather than resolved: the dictionary declines to choose, so
+  // this does too.
+  both: "both",
+} as const;
+
+/**
+ * A kanji's rows: ONE PER READING, and no meaning row.
+ *
+ * The meaning row used to lead this table, which made the "Reading" column
+ * header a lie about its own first row — 一's read as "one, one radical
+ * (no.1)", which is neither a reading nor, as it turns out, a meaning. The
+ * meaning is already the page's title, so the row was duplicating it; what the
+ * row uniquely carried was its own scoring, and that moved to a StandingChip
+ * beside the definition rather than being lost. See the entry page.
+ */
 function kanjiFactRows(entry: LibEntry): FactRow[] {
-  const rows: FactRow[] = [
-    {
-      id: meaningFactId(entry.glyph),
-      label: "Meaning",
-      answer: entry.meanings.join(", "),
-      askedIn: [],
-      unattested: false,
-    },
-  ];
+  const rows: FactRow[] = [];
   for (const r of readingsOf(entry.glyph)) {
     rows.push({
       id: readingFactId(r.k, r.anchor),
       label: r.base,
+      origin: r.type ? ORIGIN_LABEL[r.type] : null,
+      speak: r.base,
       // How the reading SURFACES in its anchor — 口 in 出口 is ぐち, and the
       // fact accepts both (see buildKanjiFacts). The table shows the surface,
       // because that is what you would actually say.

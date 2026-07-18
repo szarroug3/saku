@@ -25,7 +25,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { LOOKALIKE_KANJI, DERIVED_CONFUSABLE, distractorsFor } from "./confusable.ts";
-import { KANJI, KANJI_FACTS, KANJI_ORDER, PREREQUISITE_ONLY, READINGS, kanjiRow } from "./kanji.ts";
+import {
+  KANJI,
+  KANJI_FACTS,
+  KANJI_ORDER,
+  PREREQUISITE_ONLY,
+  RADICAL_INDEX_MEANING,
+  READINGS,
+  kanjiRow,
+} from "./kanji.ts";
 import {
   VOCAB,
   VOCAB_FACTS,
@@ -249,4 +257,64 @@ test("every component is charged, jōyō or not", () => {
   );
   assert.ok(payer, "無 is taught before anything charged for 杰");
   assert.ok(payer.novelStrokes >= 8, `${payer.c} got 杰 for free`);
+});
+
+test("radical-index metadata is stripped from meanings, real 'radical' meanings are not", () => {
+  // KANJIDIC2 files a character's Kangxi radical NUMBER as an English meaning:
+  // 一 ships as ["one", "one radical (no.1)"], 二 as ["two", "two radical (no.
+  // 7)"]. It is catalogue metadata, and it reached the learner twice over — as
+  // the Library entry's page title, and inside question.ts as both an accepted
+  // answer and a multiple-choice distractor for a MEANING question.
+  //
+  // THE FILTER IS THE NUMBER, NOT THE WORD. This is the whole test: 基 really
+  // does mean "radical (chem)" — a chemical radical — and 偏 really does mean
+  // "left-side radical". A filter matching "radical" would delete correct
+  // meanings, which is a worse bug than the one it fixes.
+  const one = kanjiRow("一");
+  assert.ok(one);
+  assert.deepEqual(one.meanings, ["one"]);
+
+  const chem = kanjiRow("基");
+  assert.ok(chem);
+  assert.ok(
+    chem.meanings.includes("radical (chem)"),
+    `基 lost its chemical radical: ${chem.meanings.join(", ")}`,
+  );
+  const hen = kanjiRow("偏");
+  assert.ok(hen?.meanings.includes("left-side radical"), "偏 lost its real meaning");
+
+  // And nothing anywhere still carries the numbered form. This is the assertion
+  // that catches a re-cut done with the filter dropped.
+  for (const k of KANJI) {
+    for (const m of k.meanings) {
+      assert.ok(!RADICAL_INDEX_MEANING.test(m), `${k.c} still ships "${m}"`);
+    }
+  }
+
+  // No kanji was emptied by the filter — a meaning fact with no answers is
+  // ungradeable, and 22 rows losing their ONLY meaning would be a silent
+  // regression rather than a fix.
+  assert.equal(KANJI.filter((k) => k.meanings.length === 0).length, 0);
+});
+
+test("every reading knows whether it came from Chinese or is native Japanese", () => {
+  // KANJIDIC2's r_type is the only thing in the data that can answer "why do
+  // 一's いち and ひと sound nothing alike". Without it the entry page's table
+  // lists both as bare readings and they look arbitrary.
+  const typed = READINGS.filter((r) => r.type);
+  assert.equal(typed.length, READINGS.length, "some reading has no type");
+
+  const of = (k: string, base: string) => READINGS.find((r) => r.k === k && r.base === base);
+  assert.equal(of("一", "いち")?.type, "on", "いち is the borrowed Chinese reading");
+  assert.equal(of("一", "ひと")?.type, "kun", "ひと is the native Japanese word");
+  assert.equal(of("生", "せい")?.type, "on");
+  assert.equal(of("生", "い")?.type, "kun");
+
+  // `both` is a real answer, not a tie the ingest failed to break: KANJIDIC2
+  // lists these under ja_on AND ja_kun for different senses, and the UI says so
+  // rather than picking one the dictionary does not.
+  assert.ok(
+    READINGS.some((r) => r.type === "both"),
+    "the both-types case vanished; check the normalisation still collapses イチ→いち",
+  );
 });
