@@ -59,6 +59,7 @@ import {
   patternMeaningFactId,
   patternProductionFactId,
 } from "@/data/grammar";
+import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { cluster } from "@/data/grammar/clusters";
 import { RECIPES, isProducible, type Recipe } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
@@ -69,12 +70,17 @@ import type { EntryId, FactId } from "@/types";
  * so this cannot drift from what the facts carry. */
 export type Kind =
   | typeof KANA_SUBJECT
+  | typeof MARK_SUBJECT
   | typeof KANJI_SUBJECT
   | typeof VOCAB_SUBJECT
   | typeof GRAMMAR_SUBJECT;
 
+/** Browse order, and it is teaching order: kana, then the rules about how kana
+ * are read, then the things kana spell. Marks sit next to kana because that is
+ * the only place they mean anything — ゛ is a fact about か. */
 export const KINDS: readonly Kind[] = [
   KANA_SUBJECT,
+  MARK_SUBJECT,
   KANJI_SUBJECT,
   VOCAB_SUBJECT,
   GRAMMAR_SUBJECT,
@@ -83,6 +89,7 @@ export const KINDS: readonly Kind[] = [
 /** What a shelf is called on screen. */
 export const KIND_LABEL: Record<Kind, string> = {
   [KANA_SUBJECT]: "Kana",
+  [MARK_SUBJECT]: "Marks",
   [KANJI_SUBJECT]: "Kanji",
   [VOCAB_SUBJECT]: "Words",
   [GRAMMAR_SUBJECT]: "Grammar",
@@ -98,8 +105,36 @@ export const KIND_LABEL: Record<Kind, string> = {
 export interface LibEntry {
   readonly id: EntryId;
   readonly kind: Kind;
-  /** What it looks like. し, 生, 先生. */
+  /**
+   * What it looks like. し, 生, 先生 — AND SOMETIMES NOTHING.
+   *
+   * It was safe to assume this was a character for as long as every entry was
+   * one. Marks broke that: "long vowels" is a rule written ー in katakana and by
+   * doubling a vowel kana in hiragana, so it has no single character and its
+   * glyph is the empty string. See `name` below, and src/data/marks.ts.
+   *
+   * The empty case is SEARCH-INERT and that is worth knowing: `classify` asks
+   * `glyph === q`, `glyph.startsWith(q)` and `glyph.includes(q)`, and with a
+   * non-empty query (search trims and bails on "") all three are false for "".
+   * So a glyphless entry cannot be found by its glyph — it is found by its
+   * meanings and its `searchAlso` aliases, which is why the long-vowel mark
+   * carries ー as an alias.
+   */
   readonly glyph: string;
+  /**
+   * What to CALL it, when the glyph cannot.
+   *
+   * Absent for every entry whose glyph IS its name, which is all of kana, kanji,
+   * words and grammar — 生 is called 生. Present only where the glyph is empty or
+   * is a specimen rather than a name: "Long vowels" has no character at all, and
+   * "Small ゃ ゅ ょ" has three. Read it through `entryName`, never directly, so a
+   * caller cannot forget the fallback.
+   *
+   * This is a NAME, not a title: it goes where a glyph would have gone — a
+   * breadcrumb crumb, a row's leading cell, an aria-label — and not in place of
+   * the meanings a page prints as its heading.
+   */
+  readonly name?: string;
   /**
    * How it is READ — し's romaji, 生's nine readings, 先生's せんせい. Searched.
    *
@@ -121,6 +156,15 @@ export interface LibEntry {
    * is what you would type to find the whole family, and そう-hearsay's gloss
    * ("I hear that X") does not contain the word "seems". So the cluster title
    * rides here, findable but not shown, and the tile keeps printing the gloss.
+   *
+   * MARKS ARE THE SECOND REASON, and they widened what this field is for. Two
+   * things a learner would type can live nowhere else: the jargon every other
+   * resource uses and this app never prints ("sokuon", "yōon", "chōonpu"), and
+   * the Japanese tokens an entry is about but whose `glyph` cannot hold — ゃゅょ
+   * is one entry with three characters, and "long vowels" has no glyph at all, so
+   * ー is findable ONLY from here. That last case is why `classify` now matches an
+   * alias exactly as well as through the English-only meaning path.
+   *
    * Empty (and absent from the match loop's cost) for every other kind.
    */
   readonly searchAlso?: readonly string[];
@@ -183,6 +227,26 @@ export function libEntry(id: EntryId): LibEntry | undefined {
   return BY_ID.get(id);
 }
 
+/**
+ * What to call an entry where a character would have gone.
+ *
+ * The glyph for everything that has one, the name for the one kind that doesn't.
+ * It exists so that "render the entry's glyph" — a breadcrumb crumb, a row's
+ * leading cell, `aria-label={`Open ${…}`}` — has a single answer that is never
+ * the empty string. Before this, the long-vowel mark rendered a blank crumb after
+ * a "›" and an aria-label reading "Open ", which is a screen reader announcing a
+ * button with no name.
+ *
+ * NOT a replacement for the glyph everywhere. Where the glyph is the SUBJECT
+ * rather than a label — the 76px hero on an entry page, `speak(entry.glyph)` —
+ * an empty glyph means there is genuinely nothing to show or say, and the right
+ * answer is to render nothing, not to render the words "Long vowels" at 76px or
+ * read them out in a Japanese voice.
+ */
+export function entryName(entry: LibEntry): string {
+  return entry.glyph || entry.name || entry.id;
+}
+
 function build(): LibEntry[] {
   const out: LibEntry[] = [];
 
@@ -195,6 +259,42 @@ function build(): LibEntry[] {
       meanings: [],
       sub: `${info.setLabel} · ${info.secLabel}`,
       weight: 0,
+    });
+  }
+
+  // Marks — the reading rules, right after the kana they are rules about.
+  //
+  // `meanings` HOLDS THE NAME, and `sub` holds the one-line rule. That looks
+  // back-to-front for one beat and is the arrangement that makes every existing
+  // renderer say the right thing without being told about marks: EntryRow prints
+  // `meanings` as its main line and `sub` as the note under it, so the row reads
+  // "Dakuten / Two dashes that voice the consonant"; the entry page's PageTitle
+  // takes `meanings` and prints `sub` beneath, so the page is headed "Dakuten"
+  // and sub-headed with the rule. A mark has no gloss competing for `meanings`,
+  // so nothing is displaced — and search over meanings then finds a mark by its
+  // name, which is what anyone would type.
+  //
+  // NO READINGS, deliberately and not for want of a plausible string. ゛ is
+  // called "dakuten", but that is its NAME, not how it is read: nothing in
+  // Japanese pronounces a bare ゛, and `readings` is exact-matched by search and
+  // spoken by the tile's 🔊. A romaji-shaped name in that field would make ゛ a
+  // hit for someone sounding out a kana and hand a synthesiser something to say.
+  for (const m of MARKS) {
+    out.push({
+      id: markEntry(m.id),
+      kind: MARK_SUBJECT,
+      glyph: m.glyph,
+      name: m.name,
+      readings: [],
+      meanings: [m.name],
+      searchAlso: m.searchAlso,
+      sub: m.summary,
+      // Below kana (0) and below grammar (500+), so that when a query hits a
+      // mark and something else, the mark leads. There are five of them and they
+      // are the answer to a question about a rule; nothing is buried by putting
+      // five entries near the front, and typing "dakuten" should not turn up a
+      // word first.
+      weight: 1,
     });
   }
 
@@ -362,6 +462,12 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
       return kanjiRow(glyph) ? kanjiEntry(glyph) : null;
     case VOCAB_SUBJECT:
       return vocabRow(glyph) ? wordEntry(glyph) : null;
+    // A mark is not resolved by its glyph either, and for a stronger reason than
+    // grammar's: っ IS a kana glyph as well as a mark, ゃゅょ is three glyphs in
+    // one entry, and long vowels has none. Mark links are minted from the mark's
+    // own id (`markEntry`), so nothing asks this.
+    case MARK_SUBJECT:
+      return null;
     // A pattern is not resolved by its glyph — 〜て is te-sequence AND te-cause,
     // so a glyph names no single grammar entry. Grammar links are minted from a
     // recipe id, never from a glyph, so nothing asks for this.
@@ -449,6 +555,12 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
       // A non-producible pattern (は〜より, たり〜たり) has ONLY the meaning row,
       // so promising a form here would be promising a row that is not there.
       return rows.length > 1 ? "Meaning and form" : "Meaning";
+    // A mark never has rows (see factRows), so this string never reaches a
+    // screen — the page's `rows.length > 0` guard drops the whole section first.
+    // It is here because the switch is exhaustive and because a silent `""` for
+    // a kind that later grew a fact would ship a headed table with no heading.
+    case MARK_SUBJECT:
+      return "Nothing to test";
   }
 }
 
@@ -520,6 +632,17 @@ export function factRows(entry: LibEntry): FactRow[] {
       ];
     case GRAMMAR_SUBJECT:
       return grammarFactRows(entry);
+    // A MARK HAS NO FACTS AT ALL, and this empty array is the shape of that
+    // rather than a stub. "What is a dakuten" has no gradeable answer; the rule
+    // is read, not tested, and the thing that IS testable — きて vs きって — is a
+    // question about a WORD and is scored against the word's facts.
+    //
+    // It follows the precedent this table already sets: no rows, no section. The
+    // entry page's `rows.length > 0` guard (there for the 114 kanji with no
+    // attested reading) drops the whole box, so a mark page has no facts table
+    // instead of an empty one. Nothing here had to be added for that to work.
+    case MARK_SUBJECT:
+      return [];
   }
 }
 

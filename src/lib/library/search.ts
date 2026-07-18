@@ -168,6 +168,21 @@ function classify(entry: LibEntry, q: string, lower: string): MatchKind | null {
   const glyphBare = stripTilde(entry.glyph);
   const qBare = stripTilde(q);
   if (entry.glyph === q || (qBare !== "" && glyphBare === qBare)) return "exact";
+  // AN ALIAS, MATCHED EXACTLY. `searchAlso` used to be reachable only through
+  // `matchesMeaning`, which bails on any query with no [a-z] in it — so the alias
+  // index was English-only, and a Japanese alias was dead weight nobody could
+  // type their way to.
+  //
+  // Marks are what exposed that. "Long vowels" has NO GLYPH (the rule is written
+  // ー in katakana and by doubling a vowel in hiragana), so the three glyph tests
+  // above can never match it and typing ー — the obvious thing to type — found
+  // nothing at all. The alias carries ー; this line is what lets it answer.
+  //
+  // EXACT, and only exact. An alias is a name someone typed on purpose, so a
+  // whole-string hit is as good an answer as a glyph hit; a substring hit is not,
+  // and promoting one into the "Exact entry" section is exactly the wrong-answer-
+  // in-the-right-place failure this file's ranking exists to avoid.
+  if (entry.searchAlso?.some((a) => a === q)) return "exact";
   // A reading typed in kana (せんせい) or a kana's romaji (shi). Both are "you
   // typed how it sounds", and both name exactly one entry, so both are exact.
   if (entry.readings.some((r) => r === q || r.toLowerCase() === lower)) {

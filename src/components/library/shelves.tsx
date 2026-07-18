@@ -28,6 +28,7 @@ import { KANA_SUBJECT, SETS } from "@/data/characters";
 import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
+import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { RECIPES } from "@/data/grammar/recipes";
 import { EntryRow, EntryTile } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
@@ -97,6 +98,21 @@ export function shelfSections(kind: Kind): ShelfSection[] {
           resolve(patternEntry(r.id)),
         ),
       }));
+    // ONE SECTION, holding all five. Not "no sections" like words — that branch
+    // means "too many to browse, go and search", which is the opposite of the
+    // truth here: five entries is the whole subject and it fits on a shelf twice
+    // over. And not five sections of one, which would be a hierarchy invented to
+    // look like the other shelves have one. The data offers no cut, so the shelf
+    // takes none, and the section header still earns its place as the
+    // select-them-all toggle every other shelf has.
+    case MARK_SUBJECT:
+      return [
+        {
+          id: "marks",
+          label: "Marks and rules",
+          entries: MARKS.flatMap((m) => resolve(markEntry(m.id))),
+        },
+      ];
     case VOCAB_SUBJECT:
       return [];
   }
@@ -179,7 +195,15 @@ export function Shelf({
     );
   }
 
-  const asRows = kind === GRAMMAR_SUBJECT;
+  // ROWS, NOT TILES, for grammar AND marks — and it is the same argument both
+  // times. A tile is a 100px box built around a character; a grammar pattern is
+  // a phrase and a mark is a NAME ("Long vowels"), and neither fits. The mark
+  // case is the stronger one: long vowels has no glyph at all, so its tile would
+  // be an empty box with a caption. A row leads with the glyph when there is one
+  // and reads its name and its rule across the line when there isn't, which is
+  // the honest shape for a shelf where four entries have a character and one
+  // does not.
+  const asRows = kind === GRAMMAR_SUBJECT || kind === MARK_SUBJECT;
 
   return (
     <>

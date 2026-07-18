@@ -70,7 +70,23 @@ export interface PhaseIntro {
   body: IntroPara[];
 }
 
-const DAKUTEN_H: PhaseIntro = {
+// THE CARDS ARE EXPORTED, ONE BY ONE, AND THAT IS NEW
+// ===================================================
+// They used to be module-private, reachable only through INTRO_BEFORE /
+// INTRO_AFTER — which was right while the teach walk was the only reader, since
+// the walk wants "the card for section h-g" and never "the dakuten card".
+//
+// The Library's MARKS shelf (src/data/marks.ts) wants the other question: the
+// page for ゛ needs the dakuten copy, and it has no section id to ask with. So
+// each card is named and exported. The alternative was for the Library to author
+// its own explanation of dakuten, which is the exact failure this file exists to
+// prevent one level down — a learner who is taught a rule in a lesson and reads a
+// DIFFERENT description of it in the reference has been given two rules.
+//
+// Nothing about the walk changes: the anchors below are still how a lesson finds
+// its card, and they still key on section ids.
+
+export const DAKUTEN_H: PhaseIntro = {
   id: "intro-dakuten-hiragana",
   setId: "hiragana",
   title: "Two marks change the sound, not the character.",
@@ -91,7 +107,7 @@ const DAKUTEN_H: PhaseIntro = {
   ],
 };
 
-const DAKUTEN_K: PhaseIntro = {
+export const DAKUTEN_K: PhaseIntro = {
   id: "intro-dakuten-katakana",
   setId: "katakana",
   title: "Two marks change the sound, not the character.",
@@ -112,7 +128,7 @@ const DAKUTEN_K: PhaseIntro = {
   ],
 };
 
-const COMBO_H: PhaseIntro = {
+export const COMBO_H: PhaseIntro = {
   id: "intro-combo-hiragana",
   setId: "hiragana",
   title: "A small や, ゆ or よ fuses onto the kana in front of it.",
@@ -130,7 +146,7 @@ const COMBO_H: PhaseIntro = {
   ],
 };
 
-const COMBO_K: PhaseIntro = {
+export const COMBO_K: PhaseIntro = {
   id: "intro-combo-katakana",
   setId: "katakana",
   title: "A small ャ, ュ or ョ fuses onto the kana in front of it.",
@@ -148,7 +164,7 @@ const COMBO_K: PhaseIntro = {
   ],
 };
 
-const LONG_H: PhaseIntro = {
+export const LONG_H: PhaseIntro = {
   id: "intro-long-vowel-hiragana",
   setId: "hiragana",
   title: "A held vowel is a different word, not a decoration.",
@@ -170,7 +186,7 @@ const LONG_H: PhaseIntro = {
   ],
 };
 
-const LONG_K: PhaseIntro = {
+export const LONG_K: PhaseIntro = {
   id: "intro-long-vowel-katakana",
   setId: "katakana",
   title: "Katakana holds a vowel with one long dash.",
@@ -184,6 +200,66 @@ const LONG_K: PhaseIntro = {
     },
     {
       text: "It follows the direction of the writing: horizontal in a horizontal line, and turned upright when the text runs down the page.",
+    },
+  ],
+};
+
+// SMALL っ — AUTHORED HERE, WITH NO ANCHOR YET
+// ===========================================
+// The two cards below are the only teaching copy in this file that no lesson
+// currently shows, and the reason is the curriculum: src/data/characters.ts has
+// a section for every base row, every marked row and every combo, and NONE for
+// the small tsu. It is not a set of characters — it is one character that stands
+// for a beat of silence — so, exactly like long vowels before this file existed,
+// it had nowhere to live in a curriculum made of characters.
+//
+// The Library's MARKS shelf is what forced the issue: small っ is plainly one of
+// the five reading rules, a learner meets きって in week one, and the reference
+// could not be the only place in the app that explains it while the lesson stayed
+// silent — that is the drift this file's header is about, running the other way.
+//
+// So the copy is authored HERE, in the one place teaching copy lives, and read
+// today by the Library alone. WIRING IT INTO THE WALK IS A ONE-LINE CHANGE: give
+// it an anchor in INTRO_BEFORE below, against whichever section the curriculum
+// grows for it. It is deliberately not anchored to a section that exists — the
+// nearest candidate is h-kya, and hanging the sokuon card off the combo phase
+// would teach two unrelated rules in one breath because they happen to share a
+// font size.
+
+export const SOKUON_H: PhaseIntro = {
+  id: "intro-sokuon-hiragana",
+  setId: "hiragana",
+  title: "A small っ is not a sound. It doubles the next consonant.",
+  body: [
+    {
+      mark: "っ",
+      lead: "(small tsu) — a shrunken つ.",
+      text: "It is never said on its own. It stops the mouth for one beat and doubles the consonant that comes after it: きて kite → きって kitte, さか saka → さっか sakka.",
+    },
+    {
+      lead: "The size is the whole tell, again.",
+      text: "きって, with the small っ, is “kitte”. きつて, with a full-size つ, would be “kitsute” — three separate sounds. Look at the height, exactly as you do with ゃ.",
+    },
+    {
+      lead: "It is a beat, not a gap.",
+      text: "The pause takes as long as any other kana does, which is why きて and きって are two different words rather than one word said carelessly.",
+    },
+  ],
+};
+
+export const SOKUON_K: PhaseIntro = {
+  id: "intro-sokuon-katakana",
+  setId: "katakana",
+  title: "A small ッ does the same thing on this side.",
+  body: [
+    {
+      mark: "ッ",
+      lead: "(small tsu) — a shrunken ツ.",
+      text: "The rule you met in hiragana, on katakana shapes: ベッド beddo (bed), カップ kappu (cup), サッカー sakkā (soccer).",
+    },
+    {
+      lead: "Borrowed words are full of it,",
+      text: "because the languages Japanese borrows from are full of consonants that land hard. If a loanword stops short in the middle, expect a ッ there.",
     },
   ],
 };
@@ -212,13 +288,20 @@ export const INTRO_AFTER: Record<string, PhaseIntro> = {
   "k-pya": LONG_K,
 };
 
-/** Every intro, for tests and for anything that wants to list them. */
+/** Every intro, for tests and for anything that wants to list them.
+ *
+ * The sokuon pair is IN here and absent from both anchor tables above, which is
+ * the honest state of it: authored, rendered by the Library, not yet a step of
+ * any walk. A reader checking "is every card reachable from a lesson" should get
+ * "no, and here is which one" rather than a list that quietly omits it. */
 export const PHASE_INTROS: PhaseIntro[] = [
   DAKUTEN_H,
   COMBO_H,
+  SOKUON_H,
   LONG_H,
   DAKUTEN_K,
   COMBO_K,
+  SOKUON_K,
   LONG_K,
 ];
 
