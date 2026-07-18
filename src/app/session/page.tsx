@@ -15,7 +15,7 @@ import { RestScreen } from "@/components/session/rest-screen";
 import { RoundComplete } from "@/components/session/round-complete";
 import { SessionComplete } from "@/components/session/session-complete";
 import { SessionHud } from "@/components/session/session-hud";
-import { TeachScreen } from "@/components/session/teach-screen";
+import { TeachWalk } from "@/components/session/teach-walk";
 import { useHistory } from "@/lib/use-history";
 import { restLeftMs } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
@@ -73,7 +73,7 @@ export default function SessionPage() {
           onDone={endSession}
         />
         <div className="mt-3.5">
-          <TeachScreen
+          <TeachWalk
             facts={session.teach}
             // "Seen before" vs never met is a PRESENTATION difference and only
             // that — the budget put both here for the same reason and neither
@@ -82,6 +82,7 @@ export default function SessionPage() {
             // so it can't go stale against a deleted session.
             familiar={(f) => !!history.facts[f]?.seen}
             onStart={reviewing ? resumeRound : startFirstRound}
+            reviewing={reviewing}
           />
         </div>
       </>

@@ -114,6 +114,10 @@ export function NextKanjiLesson({
             I already know{" "}
             {cards.length === 1 ? "this" : `these ${cards.length}`}
           </Btn>
+          {/* Start IS the walk-through now: it opens a session whose teach phase
+              steps each kanji one at a time (session/teach-walk.tsx), then
+              drills. So there is no separate "walk me through" — the one button
+              teaches then asks. */}
           <Btn go onClick={() => onStart(lesson.facts)}>
             Start · lesson {group.index}
           </Btn>

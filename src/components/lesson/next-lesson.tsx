@@ -26,10 +26,7 @@
 // 27" is COUNTED — hiragana has twenty-seven sections, and a card that promised
 // ten would be caught out at the eleventh by the user who kept going.
 
-import { useState } from "react";
-
 import { WhyDisclosure } from "@/components/lesson/why";
-import { TeachMe } from "@/components/lesson/teach-me";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { Btn, Card, Lbl } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
@@ -40,16 +37,26 @@ import type { FactId } from "@/types";
 
 export function NextLesson({
   lesson,
+  onTeach,
   onQuizMe,
   onClaim,
 }: {
   lesson: Lesson;
   /**
+   * "Teach me here" — learn these in the app, then drill. Opens a session whose
+   * TEACH PHASE steps each character one at a time (its mnemonic, how it's
+   * written), then rolls into the drill — the same session/teach-walk.tsx the
+   * kanji and word cards reach through Start. The quieter alternative to Tofugu
+   * for the learner who'd rather stay in the app.
+   */
+  onTeach: (facts: FactId[]) => void;
+  /**
    * "Quiz me" — I've learned these (at Tofugu, or in the walkthrough) and
    * they're fair game. Marks the group SEEN (into the knowledge base, drillable)
-   * and drops into a drill. It is NOT gated on proving anything first: asking to
-   * be quizzed IS the statement that you've seen it, and the drill supplies the
-   * accuracy. See the seen vs claimed split in src/lib/claims.ts.
+   * and drops STRAIGHT into a drill, skipping the teach phase. It is NOT gated on
+   * proving anything first: asking to be quizzed IS the statement that you've
+   * seen it, and the drill supplies the accuracy. See the seen vs claimed split
+   * in src/lib/claims.ts.
    *
    * Facts and not chars because the runtime is fact-native, and `string[]` here
    * is a seam a branded FactId slides through in silence.
@@ -66,9 +73,10 @@ export function NextLesson({
   const { group, chars, learn } = lesson;
   // The walkthrough is a pull, not the recommendation: Tofugu is what the card
   // points at, and "teach me here" is the quieter alternative for the learner
-  // who just wants the glyphs shown once. Closed by default so the card stays
-  // the calm thing it is until you ask for it.
-  const [teaching, setTeaching] = useState(false);
+  // who just wants the glyphs shown in the app. It used to expand inline; it now
+  // opens the session's stepped teach phase (session/teach-walk.tsx), the same
+  // full-screen walk the kanji and word lessons use — so kana is taught the same
+  // way as everything else rather than through a one-off inline card.
   const readings = chars
     .map((c) => CHAR_INDEX[c]?.r[0])
     .filter(Boolean)
@@ -139,15 +147,8 @@ export function NextLesson({
             >
               {learn.label} ↗
             </a>
-            <Btn
-              sel={teaching}
-              onClick={() => setTeaching((t) => !t)}
-              aria-expanded={teaching}
-            >
-              Teach me here
-            </Btn>
+            <Btn onClick={() => onTeach(lesson.facts)}>Teach me here</Btn>
           </div>
-          {teaching ? <TeachMe chars={chars} /> : null}
         </div>
 
         {/* The two intents, kept apart because they route apart. "Quiz me" is
