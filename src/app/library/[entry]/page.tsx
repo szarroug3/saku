@@ -20,8 +20,8 @@ import { notFound } from "next/navigation";
 import { use, useState } from "react";
 
 import { AttributionLink } from "@/components/library/attribution-link";
-import { Line } from "@/components/lesson/mnemonic-card";
-import { MnemonicImage } from "@/components/lesson/mnemonic-image";
+import { HowItsWritten } from "@/components/lesson/how-its-written";
+import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Hint, Lbl, PageTitle, SmallBtn, SoundIcon } from "@/components/ui";
@@ -38,7 +38,7 @@ import {
   madeOf,
   type LibEntry,
 } from "@/lib/library/entries";
-import { getMnemonic, type Mnemonic } from "@/data/mnemonics";
+import { getMnemonic } from "@/data/mnemonics";
 import { entryFromParam, entryHref } from "@/lib/library/href";
 import { entryStanding, standingOf } from "@/lib/library/standing";
 import { useLists } from "@/lib/use-lists";
@@ -124,17 +124,31 @@ function EntryView({ entry }: { entry: LibEntry }) {
       </p>
 
       {mnemonic ? (
-        // The has-mnemonic (kana) case: ONE card, no box-in-box. The drawing is
-        // the star and the glyph-or-image is the only headword, so the old
-        // hero's big bare glyph and MnemonicCard's small header glyph — once
-        // stacked as two cards — are consolidated into a single clean header
-        // (meanings/readings + one glyph-or-image). The standing pip is dropped:
-        // the same standing is already in the facts table below, so repeating it
-        // here was redundant. The Hear-it button rides to the LEFT of the "say
-        // it like…" analogy line, inside the mnemonic body, still speaking the
-        // glyph. Composed from the mnemonic data + the shared `Line` so the
-        // stand-alone MnemonicCard (and its other consumers) is untouched.
-        <MergedMnemonicCard entry={entry} m={mnemonic} voiceName={cfg.voiceName} />
+        // The has-mnemonic (kana) case: ONE card, and inside it the ONE mnemonic
+        // implementation — `MnemonicView`, the very component the stepped lesson
+        // renders. This page used to have its own copy, which had drifted into a
+        // bigger drawing and a different arrangement; a learner then had to
+        // re-read in the Library what they had just been taught. Now the layout
+        // IS the lesson's (picture left at the lesson's 440px, words right, no
+        // tile behind the art) and the two can no longer disagree. Below it,
+        // stroke order — always expanded here, because a reference page should
+        // not hide the diagram behind a click, and absent entirely for a glyph
+        // with no stroke data.
+        <Card>
+          <MnemonicView
+            m={mnemonic}
+            glyph={entry.glyph}
+            voiceName={cfg.voiceName}
+            descriptor={descriptorOf(entry.sub)}
+          />
+          {/* Rendered bare, not inside a divider wrapper: it returns null when
+              there is no stroke data, and a wrapper would leave a rule and a gap
+              behind marking the absence. It brings its own panel and spacing. */}
+          <HowItsWritten
+            item={{ entry: entry.id, glyph: entry.glyph, kind: "kana", facts: [] }}
+            alwaysOpen
+          />
+        </Card>
       ) : (
         <Card>
           <div className="flex flex-wrap items-start gap-5">
@@ -365,129 +379,6 @@ function descriptorOf(sub: string): string {
   const kana = /[぀-ヿ]/u;
   const trimmed = sub.replace(/\s+[぀-ヿ]+$/u, "");
   return trimmed !== sub && !kana.test(trimmed) ? trimmed : sub;
-}
-
-/** The kana hero and the "remember it" mnemonic, merged into ONE card.
- *
- * The old page stacked two cards for a kana — a bare-glyph hero and a boxed
- * MnemonicCard — which read as box-in-box and printed the glyph twice. This is
- * the single-card consolidation the owner asked for, composed here from the
- * mnemonic data and the shared `Line` (so the stand-alone `MnemonicCard` and its
- * other call sites stay byte-for-byte the same). The drawing is the star, at the
- * STEPPED LESSON's own scale — a square tile up to 440px on the frosted material,
- * the same size the hero uses — so the picture reads the same in both places. A
- * drawing that big can't share a row with the header, so the header spans the
- * card's top instead: [glyph] [romaji] leading, with the script/row descriptor
- * and the object pip in the top-RIGHT corner — the character the card teaches
- * leads, the classification sits out of the way. Below it the picture and the
- * prose sit side by side and wrap to a stack when the column gets tight. When no
- * webp is drawn yet `MnemonicImage` falls back to the plain glyph, deliberately
- * sized at a modest 180px rather than 440px so an undrawn kana is a headword, not
- * a hole. The standing pip is
- * gone; the facts table below already carries the same standing. The Hear-it
- * button sits to the LEFT of the muted "say it like…" analogy line, still
- * speaking the entry's glyph. */
-function MergedMnemonicCard({
-  entry,
-  m,
-  voiceName,
-}: {
-  entry: LibEntry;
-  m: Mnemonic;
-  voiceName: string;
-}) {
-  const chars = [...m.example.word];
-
-  return (
-    <Card>
-      {/* HEADER, full width across the top of the card. Pulling it out of the
-          picture row is what lets the drawing grow: at ~132px the header could
-          ride beside the image, but a 440px drawing would squeeze the title and
-          the corner label into a gutter. Placement intent is unchanged — glyph
-          immediately left of the romaji, descriptor + object pill top-RIGHT. */}
-      <div className="flex flex-wrap items-start gap-x-5 gap-y-2">
-        <div className="min-w-0 flex-1">
-          <PageTitle
-            title={
-              <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="font-kana text-[38px] leading-none">{entry.glyph}</span>
-                <span>
-                  {entry.meanings.slice(0, 3).join(" · ") || entry.readings.join(" · ")}
-                </span>
-              </span>
-            }
-          />
-        </div>
-        <div className="ml-auto flex flex-none flex-col items-end gap-1.5 text-right">
-          <span className="text-[12.5px] text-text-muted">{descriptorOf(entry.sub)}</span>
-          {m.object ? (
-            <span className="rounded-full bg-accent-bg px-2 py-0.5 text-[11px] font-medium text-accent">
-              {m.object}
-            </span>
-          ) : null}
-        </div>
-      </div>
-
-      {/* THE STAR: the drawing at the stepped lesson's own scale (max 440px,
-          square, on the frosted material) with the prose beside it. `flex-wrap`
-          rather than a media-query grid because the fallback decides its own
-          width: with a drawing the picture claims its 440px basis and the prose
-          takes the rest, wrapping under it once the remaining column would be
-          too cramped; with NO drawing the glyph block is a modest 180px square,
-          so a kana that hasn't been drawn yet leaves no 440px hole — the prose
-          simply sits next to a large character, close to the old proportions. */}
-      <div className="mt-4 flex flex-wrap items-center gap-x-9 gap-y-6">
-        <MnemonicImage
-          src={m.image!}
-          glyph={m.glyph}
-          imgClassName="kq-material aspect-square max-w-full shrink basis-[440px] rounded-2xl border border-border bg-card object-contain p-6"
-          glyphClassName="flex size-[180px] max-w-full flex-none items-center justify-center font-kana text-[120px] font-extralight leading-none"
-        />
-
-        <div className="min-w-0 flex-1 basis-[260px]">
-          {/* The narrative is the memory hook, so it leads — prominent, full
-              text colour. The analogy is the muted, smaller secondary line, and
-              the Hear-it button rides to its left. */}
-          <p className="text-[14px] leading-relaxed">
-            <Line line={m.mnemonic} />
-          </p>
-          <p className="mt-1.5 flex items-baseline gap-1.5 text-[12.5px] leading-relaxed text-text-muted">
-            <button
-              type="button"
-              onClick={() => speak(entry.glyph, voiceName)}
-              aria-label={`Hear ${entry.glyph}`}
-              className="flex-none cursor-pointer border-none bg-transparent p-0 text-accent"
-            >
-              <SoundIcon className="align-[-0.15em]" />
-            </button>
-            <span>
-              <Line line={m.analogy} />
-            </span>
-          </p>
-          {m.approximate ? (
-            <p className="mt-1.5 text-[11.5px] leading-relaxed text-warning">
-              <SoundIcon className="mr-1 align-[-0.15em]" />
-              {m.approximate}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      {/* The kana caught in a real word, its own glyph accented. */}
-      <div className="mt-3 flex items-baseline gap-2 border-t border-border pt-2.5 text-[13px]">
-        <span className="font-kana text-[20px]">
-          {chars.map((c, i) => (
-            <span key={i} className={i === m.example.hitIndex ? "text-accent" : undefined}>
-              {c}
-            </span>
-          ))}
-        </span>
-        <span className="text-text-muted">
-          {m.example.reading} · {m.example.gloss}
-        </span>
-      </div>
-    </Card>
-  );
 }
 
 /** A word, linked to its own entry when it has one.

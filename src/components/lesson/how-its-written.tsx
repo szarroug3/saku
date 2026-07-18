@@ -105,24 +105,47 @@ function WholeShapeFallback({ item }: { item: LessonItem }) {
   );
 }
 
-export function HowItsWritten({ item }: { item: LessonItem }) {
-  const [open, setOpen] = useLessonPref("writing");
+export function HowItsWritten({
+  item,
+  alwaysOpen = false,
+}: {
+  item: LessonItem;
+  /** Render the section EXPANDED with no Show/Hide control — the Library entry
+   * page, which is a reference you read rather than a walk you step through, so
+   * hiding the diagram behind a toggle would just be a click between you and the
+   * thing you came for. In this mode the section renders NOTHING at all when the
+   * glyph has no stroke data, rather than an empty box with a heading: the lesson
+   * gets a graceful whole-shape fallback because it is walking you through every
+   * character in turn, but a reference page with nothing to show should not
+   * announce itself. Defaults to false, so the stepped lesson keeps its
+   * collapsible, persisted-preference behaviour untouched. */
+  alwaysOpen?: boolean;
+}) {
+  const [pref, setOpen] = useLessonPref("writing");
+  const open = alwaysOpen || pref;
   // Lazy — the stroke asset is only fetched once the section is open. Skipping
   // the lookup while collapsed keeps the chunk off the initial load entirely.
   const strokes = useGlyphStrokes(open ? item.glyph : "");
+
+  // Nothing to show, and nothing to promise: stay off the page entirely. Also
+  // covers the in-flight moment, so the section appears once, complete, instead
+  // of flashing an empty heading.
+  if (alwaysOpen && (strokes.status === "loading" || !strokes.data)) return null;
 
   return (
     <div className="mt-3 rounded-lg border border-border bg-panel px-3.5 py-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[13px] font-medium">How it&rsquo;s written</p>
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen(!open)}
-          className="cursor-pointer rounded-md border border-border bg-card px-2 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text"
-        >
-          {open ? "Hide" : "Show"}
-        </button>
+        {alwaysOpen ? null : (
+          <button
+            type="button"
+            aria-expanded={open}
+            onClick={() => setOpen(!pref)}
+            className="cursor-pointer rounded-md border border-border bg-card px-2 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text"
+          >
+            {open ? "Hide" : "Show"}
+          </button>
+        )}
       </div>
 
       {!open ? (
