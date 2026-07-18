@@ -373,12 +373,17 @@ function descriptorOf(sub: string): string {
  * MnemonicCard — which read as box-in-box and printed the glyph twice. This is
  * the single-card consolidation the owner asked for, composed here from the
  * mnemonic data and the shared `Line` (so the stand-alone `MnemonicCard` and its
- * other call sites stay byte-for-byte the same). The drawing is the star: the
- * left slot is sized up to ~132px and falls back to the plain glyph via
- * `MnemonicImage` when no webp is drawn yet. The header then reads
- * [picture] [glyph] [romaji], with the script/row descriptor and the object pip
- * pushed to the card's top-RIGHT as a corner label — the character the card
- * teaches leads, the classification sits out of the way. The standing pip is
+ * other call sites stay byte-for-byte the same). The drawing is the star, at the
+ * STEPPED LESSON's own scale — a square tile up to 440px on the frosted material,
+ * the same size the hero uses — so the picture reads the same in both places. A
+ * drawing that big can't share a row with the header, so the header spans the
+ * card's top instead: [glyph] [romaji] leading, with the script/row descriptor
+ * and the object pip in the top-RIGHT corner — the character the card teaches
+ * leads, the classification sits out of the way. Below it the picture and the
+ * prose sit side by side and wrap to a stack when the column gets tight. When no
+ * webp is drawn yet `MnemonicImage` falls back to the plain glyph, deliberately
+ * sized at a modest 180px rather than 440px so an undrawn kana is a headword, not
+ * a hole. The standing pip is
  * gone; the facts table below already carries the same standing. The Hear-it
  * button sits to the LEFT of the muted "say it like…" analogy line, still
  * speaking the entry's glyph. */
@@ -395,20 +400,13 @@ function MergedMnemonicCard({
 
   return (
     <Card>
-      <div className="flex flex-wrap items-start gap-5">
-        {/* The star: the drawn picture, big, directly on the card material —
-            falling back to the plain glyph placeholder when the webp is absent. */}
-        <MnemonicImage
-          src={m.image!}
-          glyph={m.glyph}
-          imgClassName="size-[132px] flex-none object-contain"
-          glyphClassName="flex size-[132px] flex-none items-center justify-center font-kana text-[80px] leading-none"
-        />
-
+      {/* HEADER, full width across the top of the card. Pulling it out of the
+          picture row is what lets the drawing grow: at ~132px the header could
+          ride beside the image, but a 440px drawing would squeeze the title and
+          the corner label into a gutter. Placement intent is unchanged — glyph
+          immediately left of the romaji, descriptor + object pill top-RIGHT. */}
+      <div className="flex flex-wrap items-start gap-x-5 gap-y-2">
         <div className="min-w-0 flex-1">
-          {/* Reading order is [picture] [glyph] [romaji]: the character itself
-              sits immediately left of the romaji title and is sized to hold its
-              own beside it, so the card names the thing it is teaching. */}
           <PageTitle
             title={
               <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -419,11 +417,38 @@ function MergedMnemonicCard({
               </span>
             }
           />
+        </div>
+        <div className="ml-auto flex flex-none flex-col items-end gap-1.5 text-right">
+          <span className="text-[12.5px] text-text-muted">{descriptorOf(entry.sub)}</span>
+          {m.object ? (
+            <span className="rounded-full bg-accent-bg px-2 py-0.5 text-[11px] font-medium text-accent">
+              {m.object}
+            </span>
+          ) : null}
+        </div>
+      </div>
 
+      {/* THE STAR: the drawing at the stepped lesson's own scale (max 440px,
+          square, on the frosted material) with the prose beside it. `flex-wrap`
+          rather than a media-query grid because the fallback decides its own
+          width: with a drawing the picture claims its 440px basis and the prose
+          takes the rest, wrapping under it once the remaining column would be
+          too cramped; with NO drawing the glyph block is a modest 180px square,
+          so a kana that hasn't been drawn yet leaves no 440px hole — the prose
+          simply sits next to a large character, close to the old proportions. */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-9 gap-y-6">
+        <MnemonicImage
+          src={m.image!}
+          glyph={m.glyph}
+          imgClassName="kq-material aspect-square max-w-full shrink basis-[440px] rounded-2xl border border-border bg-card object-contain p-6"
+          glyphClassName="flex size-[180px] max-w-full flex-none items-center justify-center font-kana text-[120px] font-extralight leading-none"
+        />
+
+        <div className="min-w-0 flex-1 basis-[260px]">
           {/* The narrative is the memory hook, so it leads — prominent, full
               text colour. The analogy is the muted, smaller secondary line, and
               the Hear-it button rides to its left. */}
-          <p className="mt-3 text-[14px] leading-relaxed">
+          <p className="text-[14px] leading-relaxed">
             <Line line={m.mnemonic} />
           </p>
           <p className="mt-1.5 flex items-baseline gap-1.5 text-[12.5px] leading-relaxed text-text-muted">
@@ -444,18 +469,6 @@ function MergedMnemonicCard({
               <SoundIcon className="mr-1 align-[-0.15em]" />
               {m.approximate}
             </p>
-          ) : null}
-        </div>
-
-        {/* Corner label: script · row, then the object the drawing depicts.
-            Top-RIGHT of the card, away from the title, so the header reads
-            [picture] [glyph] [romaji] … [what it is]. */}
-        <div className="ml-auto flex flex-none flex-col items-end gap-1.5 text-right">
-          <span className="text-[12.5px] text-text-muted">{descriptorOf(entry.sub)}</span>
-          {m.object ? (
-            <span className="rounded-full bg-accent-bg px-2 py-0.5 text-[11px] font-medium text-accent">
-              {m.object}
-            </span>
           ) : null}
         </div>
       </div>
