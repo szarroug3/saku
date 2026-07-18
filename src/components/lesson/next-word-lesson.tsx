@@ -36,7 +36,6 @@
 import Link from "next/link";
 
 import { Btn, Card, Lbl } from "@/components/ui";
-import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { kanjiEntry } from "@/data/kanji";
 import { WHY_TRACK } from "@/data/why";
@@ -66,31 +65,18 @@ export function NextWordLesson({
   const gated = gate.missing.length > 0;
 
   return (
-    <>
-      <Card>
-        {gated ? (
-          <GatedLead gate={gate} lesson={lesson} onStart={onStart} onClaim={onClaim} />
-        ) : lesson ? (
-          <TeachableLesson lesson={lesson} onStart={onStart} onClaim={onClaim} />
-        ) : null}
-
-        {/* Why words vs kanji vs grammar, and how kanji unlock words. Teaching
-            content about the language, so it belongs on screen; a pull, so only
-            the lede shows until opened — the same affordance kana's "Why?" uses. */}
-        <WhyDisclosure why={WHY_TRACK.words} />
-      </Card>
-
-      {/* The claim button's meaning — shown only when there IS a claim button,
-          i.e. some teachable words are on offer. The gate-only state has nothing
-          to claim, so it says nothing. */}
-      {lesson ? (
-        <ClaimExplainer>
-          Learning a word also opens up its kanji: once you know a word 生 is in,
-          the app starts asking how 生 is read there. Saying you already know
-          these adds them to your knowledge base and skips the drill.
-        </ClaimExplainer>
+    <Card>
+      {gated ? (
+        <GatedLead gate={gate} lesson={lesson} onStart={onStart} onClaim={onClaim} />
+      ) : lesson ? (
+        <TeachableLesson lesson={lesson} onStart={onStart} onClaim={onClaim} />
       ) : null}
-    </>
+
+      {/* Why words vs kanji vs grammar, and how kanji unlock words. Teaching
+          content about the language, so it belongs on screen; a pull, so only
+          the lede shows until opened — the same affordance kana's "Why?" uses. */}
+      <WhyDisclosure why={WHY_TRACK.words} />
+    </Card>
   );
 }
 

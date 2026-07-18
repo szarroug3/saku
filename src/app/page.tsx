@@ -36,6 +36,7 @@ import { QuizOptionsFields } from "@/components/home/quiz-options";
 import { SelectionCard } from "@/components/home/selection-card";
 import { SessionCard } from "@/components/home/session-card";
 import { StartBar } from "@/components/home/start-bar";
+import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { NextGrammarLesson } from "@/components/lesson/next-grammar-lesson";
 import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
@@ -320,6 +321,12 @@ export default function HomePage() {
   return (
     <>
       <PageTitle title="Kana quiz" />
+
+      {/* What "I already know this" means, said once for the whole page rather
+          than under each lesson card in that card's own words. The rule is the
+          same on kana, kanji, words and grammar, so it is stated generally, at
+          the top, and dismissed for good on the first "Got it". */}
+      <ClaimExplainer />
 
       {/* Not rendered at all with no session — see session-card.tsx. A card
           that offers to continue nothing is the lie this replaced. */}

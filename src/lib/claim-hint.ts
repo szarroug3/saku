@@ -9,11 +9,11 @@
 // and — because these functions take the store rather than reaching for
 // `window` — keeps the rule PURE and testable without a DOM.
 //
-// The explainer is the sentence that rides under every lesson card ("Saying you
-// know these adds them to your knowledge base…"). The owner's rule: introduce it
-// once so a new user learns what "I already know these" does, then take it out
-// of the way. One dismissal, shared across every lesson card — so this is a
-// single flag, not one per card.
+// The explainer is the one panel at the top of home saying what claiming does
+// ("Say you already know something…"). The owner's rule: introduce it once so a
+// new user learns what "I already know these" does, then take it out of the way.
+// It speaks for every track at once — kana, kanji, words, grammar — so one flag
+// is the whole of its memory.
 
 /** The localStorage key. Its own namespace, beside "kanaquiz-cfg". */
 export const CLAIM_HINT_KEY = "kanaquiz-claim-hint";

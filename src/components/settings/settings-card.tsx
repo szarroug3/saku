@@ -197,7 +197,7 @@ function ResetProgress() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // The server wiped history; now wipe the CLIENT-side "I dismissed this
       // intro" flags too, so a restarting user gets the day-one introductions
-      // back (the claim explainer under the lesson cards, and any intro added
+      // back (the claim explainer at the top of home, and any intro added
       // later that registers in DISMISSIBLE_HINT_KEYS). Without this the reset
       // is only half a reset: empty history but the intros still suppressed.
       clearAllDismissedHints(
