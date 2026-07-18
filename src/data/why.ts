@@ -39,10 +39,16 @@
 export interface Why {
   /**
    * The one honest line shown before anything is opened. A short fragment
-   * (bolded on screen) plus the plain rest of the sentence — it stands alone if
-   * the reader never opens the rest, and never blocks the button below it.
+   * (bolded on screen) plus, optionally, the plain rest of the sentence — it
+   * stands alone if the reader never opens the rest, and never blocks the button
+   * below it.
+   *
+   * `rest` is OPTIONAL on purpose. A lede whose second sentence only previews
+   * what the paragraphs already say is telling the reader the same thing twice,
+   * once before they asked; in that case the strong fragment alone is the honest
+   * line and the reasoning belongs entirely behind the "why?".
    */
-  lede: { strong: string; rest: string };
+  lede: { strong: string; rest?: string };
   /** The fuller answer, one string per paragraph. Opened only when asked. */
   paras: readonly string[];
 }
@@ -131,11 +137,18 @@ export const WHY_KANJI: readonly (Why & { id: string })[] = [
  * reader who opens it: what stroke order actually buys you, and why picking it up
  * with each character is worth doing rather than a chore to defer. Content about
  * the language, not the app — see the file header.
+ *
+ * NO `rest`, DELIBERATELY. The lede used to carry a second sentence — that stroke
+ * order makes shapes come out even and is what handwriting input and paper
+ * dictionaries expect — which is precisely the claim the first two paragraphs
+ * below already make, at length and with the reason attached. On screen that read
+ * as the answer being given twice: once as an unsupported assertion nobody asked
+ * for, then again properly behind the "why?". So the claim now lives only where
+ * it is actually argued, and the line on the page is the bare, honest one.
  */
 export const WHY_STROKE_ORDER: Why = {
   lede: {
     strong: "Stroke order is worth learning with each character.",
-    rest: "It makes shapes come out even, and it’s what handwriting input and paper dictionaries expect.",
   },
   paras: [
     "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary: follow it and the shape comes out balanced and legible almost by itself, because the rules (top to bottom, left to right) are what the shapes were designed around. Fight it and even the same strokes tend to land lopsided — so learning the order is the fastest way to characters that actually look right.",

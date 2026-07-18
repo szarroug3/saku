@@ -130,23 +130,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
         // bigger drawing and a different arrangement; a learner then had to
         // re-read in the Library what they had just been taught. Now the layout
         // IS the lesson's (picture left at the lesson's 440px, words right, no
-        // tile behind the art) and the two can no longer disagree. Below it,
-        // stroke order — always expanded here, because a reference page should
-        // not hide the diagram behind a click, and absent entirely for a glyph
-        // with no stroke data.
+        // tile behind the art) and the two can no longer disagree.
         <Card>
           <MnemonicView
             m={mnemonic}
             glyph={entry.glyph}
             voiceName={cfg.voiceName}
             descriptor={descriptorOf(entry.sub)}
-          />
-          {/* Rendered bare, not inside a divider wrapper: it returns null when
-              there is no stroke data, and a wrapper would leave a rule and a gap
-              behind marking the absence. It brings its own panel and spacing. */}
-          <HowItsWritten
-            item={{ entry: entry.id, glyph: entry.glyph, kind: "kana", facts: [] }}
-            alwaysOpen
           />
         </Card>
       ) : (
@@ -185,6 +175,21 @@ function EntryView({ entry }: { entry: LibEntry }) {
           </div>
         </Card>
       )}
+
+      {/* HOW IT'S WRITTEN — its own box, below the mnemonic, the way the stepped
+          lesson does it. It used to sit INSIDE the mnemonic card, which read as
+          the diagram being a footnote to the picture; it is its own section of
+          the reference, so it gets its own box. Always expanded here, because a
+          reference page should not hide the diagram behind a click, and the
+          component returns null outright for a glyph with no stroke data — so
+          nothing is rendered here at all rather than an empty box announcing an
+          absence. Gated on `mnemonic` because the item below is built as a kana. */}
+      {mnemonic ? (
+        <HowItsWritten
+          item={{ entry: entry.id, glyph: entry.glyph, kind: "kana", facts: [] }}
+          alwaysOpen
+        />
+      ) : null}
 
       <Card>
         {/* The sentence is the thesis. It is generated from the count rather
