@@ -30,6 +30,11 @@ const NAV: Array<{ href: string; label: string }> = [
   // would break every link anyone has, to buy a tidier URL nobody reads.
   { href: "/stats", label: "Progress" },
   { href: "/settings", label: "Settings" },
+  // The credits/attributions page — where the data, the stroke-order glyphs,
+  // and the guides the app learned from are named. A courtesy list, not a
+  // licence obligation (that is "About the data" below, which the EDRDG licence
+  // requires by name); this one exists so the sources have a home in the chrome.
+  { href: "/resources", label: "Resources" },
   // A LICENCE OBLIGATION, not a courtesy link — see attribution-link.tsx.
   // facts.ts is imported by the quiz, session, results and stats screens, so
   // KANJIDIC2 readings, JMdict glosses and Tatoeba sentences render on all of
