@@ -125,20 +125,21 @@ export function NextLesson({
             only the one line shows until the reader opens it. */}
         {why ? <WhyDisclosure why={why} /> : null}
 
-        {/* Learn it, THEN be asked. The app has never taught anything with a
-            mnemonic and is not about to: Tofugu is the recommended guide and the
-            link says whose. "Teach me here" is the other door — a bare
-            walkthrough for the learner who doesn't need a mnemonic and would
-            rather just see the glyphs than leave the app. */}
-        <div className="mt-4 rounded-lg border border-border px-3.5 py-3">
+        {/* Learn it, THEN be asked. "Teach me here" steps each character with
+            its own mnemonic and how it's written, inside the app — the primary
+            door now. The Tofugu link stays as a secondary external guide (its
+            fuller credit lives in the Library / a Resources page later). No box:
+            this sits directly on the card. */}
+        <div className="mt-4">
           <p className="text-[13px]">
             <span className="font-medium">Learn them first.</span>{" "}
             <span className="text-text-muted">
-              The app asks questions; it doesn&rsquo;t teach with mnemonics.
-              Tofugu does — that&rsquo;s the one to use.
+              Step through each one — its picture, its sound, and how it&rsquo;s
+              written — before you&rsquo;re quizzed.
             </span>
           </p>
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <Btn onClick={() => onTeach(lesson.facts)}>Teach me here</Btn>
             <a
               href={learn.url}
               target="_blank"
@@ -147,7 +148,6 @@ export function NextLesson({
             >
               {learn.label} ↗
             </a>
-            <Btn onClick={() => onTeach(lesson.facts)}>Teach me here</Btn>
           </div>
         </div>
 
