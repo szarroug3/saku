@@ -24,7 +24,8 @@
 import Link from "next/link";
 
 import { KANJI, KANJI_SUBJECT } from "@/data/kanji";
-import { KANA_SUBJECT, mnemonicFor, SETS } from "@/data/characters";
+import { KANA_SUBJECT, SETS } from "@/data/characters";
+import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
@@ -320,27 +321,22 @@ function TofuguLink({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
-/** char → its chart mnemonic, built once from the same walk that builds
- * CHAR_INDEX.
+/** The tile's hover hint.
  *
- * `mnemonicFor` wants a KanaChar and its SECTION LABEL, neither of which
- * survives into a LibEntry — and reconstructing the label by splitting
- * `entry.sub` back apart would be a round trip through a display string, which
- * is precisely the kind of join that rots the first time someone rewords a
- * heading. Walking SETS here costs one pass over 214 characters at module load
- * and cannot be wrong. */
-const KANA_MNEMONIC: ReadonlyMap<string, string> = new Map(
-  SETS.flatMap((set) =>
-    set.sections.flatMap((section) =>
-      section.chars.map(
-        (ch) => [ch.c, mnemonicFor(ch, section.label)] as const,
-      ),
-    ),
-  ).filter(([, mn]) => !!mn),
-);
-
+ * The hint comes from src/data/mnemonics.ts — the ONE authored source for what a
+ * character's story is. This used to read from a second, older table of short
+ * shape hooks, which drifted: あ's tile promised "an antenna poking out of a TV"
+ * while its entry page told the acrobat-and-father story. One character, two
+ * stories, and no way to notice. Deriving from `getMnemonic` means editing the
+ * mnemonic updates the tooltip too.
+ *
+ * `object` — the thing the drawing depicts ("father") — is the short hook a
+ * tooltip can carry; the mnemonic prose is a full sentence and belongs on the
+ * card, not in a title attribute. A glyph with nothing authored (katakana,
+ * kanji, words) gets NO invented hint — just the speaker affordance. */
 function mnemonicOf(kind: Kind, entry: LibEntry): string | undefined {
   if (kind !== KANA_SUBJECT) return undefined;
-  const mn = KANA_MNEMONIC.get(entry.glyph);
-  return mn ? `${mn} · tap the speaker to hear it` : undefined;
+  const hear = "tap the speaker to hear it";
+  const object = getMnemonic(entry.glyph)?.object;
+  return object ? `${object} · ${hear}` : hear;
 }

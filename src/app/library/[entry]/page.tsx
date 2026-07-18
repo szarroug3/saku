@@ -353,6 +353,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
   );
 }
 
+/** `entry.sub` ("Hiragana · Vowels あ") minus the section label's trailing
+ * representative kana. That kana names the ROW in a list where no character is
+ * otherwise shown; on this card the glyph is now printed beside the title, so
+ * repeating it in the corner label is a stutter — "Hiragana · Vowels" says it.
+ *
+ * Only a LONE trailing kana goes. A label whose remainder still carries kana is
+ * left whole, because there the kana are the content, not a decorative tag:
+ * "W わ + ん" would otherwise be truncated to the nonsense "W わ +". */
+function descriptorOf(sub: string): string {
+  const kana = /[぀-ヿ]/u;
+  const trimmed = sub.replace(/\s+[぀-ヿ]+$/u, "");
+  return trimmed !== sub && !kana.test(trimmed) ? trimmed : sub;
+}
+
 /** The kana hero and the "remember it" mnemonic, merged into ONE card.
  *
  * The old page stacked two cards for a kana — a bare-glyph hero and a boxed
@@ -361,9 +375,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
  * mnemonic data and the shared `Line` (so the stand-alone `MnemonicCard` and its
  * other call sites stay byte-for-byte the same). The drawing is the star: the
  * left slot is sized up to ~132px and falls back to the plain glyph via
- * `MnemonicImage` when no webp is drawn yet. There is exactly one glyph-or-image
- * (this slot) and one romaji (the readings line) — no doubles. The standing pip
- * is gone; the facts table below already carries the same standing. The Hear-it
+ * `MnemonicImage` when no webp is drawn yet. The header then reads
+ * [picture] [glyph] [romaji], with the script/row descriptor and the object pip
+ * pushed to the card's top-RIGHT as a corner label — the character the card
+ * teaches leads, the classification sits out of the way. The standing pip is
+ * gone; the facts table below already carries the same standing. The Hear-it
  * button sits to the LEFT of the muted "say it like…" analogy line, still
  * speaking the entry's glyph. */
 function MergedMnemonicCard({
@@ -381,8 +397,7 @@ function MergedMnemonicCard({
     <Card>
       <div className="flex flex-wrap items-start gap-5">
         {/* The star: the drawn picture, big, directly on the card material —
-            falling back to the plain glyph placeholder when the webp is absent.
-            This is the ONLY glyph-or-image on the card. */}
+            falling back to the plain glyph placeholder when the webp is absent. */}
         <MnemonicImage
           src={m.image!}
           glyph={m.glyph}
@@ -391,25 +406,24 @@ function MergedMnemonicCard({
         />
 
         <div className="min-w-0 flex-1">
+          {/* Reading order is [picture] [glyph] [romaji]: the character itself
+              sits immediately left of the romaji title and is sized to hold its
+              own beside it, so the card names the thing it is teaching. */}
           <PageTitle
-            title={entry.meanings.slice(0, 3).join(" · ") || entry.readings.join(" · ")}
-          />
-          <p className="mb-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-text-muted">
-            <span>
-              {entry.readings.length > 0 ? `${entry.readings.join(" · ")} — ` : ""}
-              {entry.sub}
-            </span>
-            {m.object ? (
-              <span className="rounded-full bg-accent-bg px-2 py-0.5 text-[11px] font-medium text-accent">
-                {m.object}
+            title={
+              <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="font-kana text-[38px] leading-none">{entry.glyph}</span>
+                <span>
+                  {entry.meanings.slice(0, 3).join(" · ") || entry.readings.join(" · ")}
+                </span>
               </span>
-            ) : null}
-          </p>
+            }
+          />
 
           {/* The narrative is the memory hook, so it leads — prominent, full
               text colour. The analogy is the muted, smaller secondary line, and
               the Hear-it button rides to its left. */}
-          <p className="text-[14px] leading-relaxed">
+          <p className="mt-3 text-[14px] leading-relaxed">
             <Line line={m.mnemonic} />
           </p>
           <p className="mt-1.5 flex items-baseline gap-1.5 text-[12.5px] leading-relaxed text-text-muted">
@@ -430,6 +444,18 @@ function MergedMnemonicCard({
               <SoundIcon className="mr-1 align-[-0.15em]" />
               {m.approximate}
             </p>
+          ) : null}
+        </div>
+
+        {/* Corner label: script · row, then the object the drawing depicts.
+            Top-RIGHT of the card, away from the title, so the header reads
+            [picture] [glyph] [romaji] … [what it is]. */}
+        <div className="ml-auto flex flex-none flex-col items-end gap-1.5 text-right">
+          <span className="text-[12.5px] text-text-muted">{descriptorOf(entry.sub)}</span>
+          {m.object ? (
+            <span className="rounded-full bg-accent-bg px-2 py-0.5 text-[11px] font-medium text-accent">
+              {m.object}
+            </span>
           ) : null}
         </div>
       </div>

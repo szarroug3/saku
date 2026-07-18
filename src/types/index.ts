@@ -83,8 +83,6 @@ export interface KanaChar {
   c: string;
   /** Accepted answers — first entry is the canonical display romaji. */
   r: string[];
-  /** Mnemonic, shown in the Kana chart. */
-  m?: string;
   /** Reserved for future sets (vocab). */
   meaning?: string;
   /** Reserved for the v3 stroke-order / draw modes. */
