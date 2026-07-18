@@ -4,20 +4,24 @@
 //
 // WHY IT LOADS THE WAY IT DOES
 // ============================
-// The stroke data (src/data/generated/strokes/hiragana.json) is only ever
-// needed once the learner OPENS "how it's written" on a glyph that has it. So
-// it is not imported at module load — it would ride into the client bundle for
-// every screen that never expands the section. Instead `loadStrokes()` does a
-// dynamic import the first time it's asked, which webpack code-splits into its
+// The stroke data (src/data/generated/strokes/{hiragana,katakana}.json) is only
+// ever needed once the learner OPENS "how it's written" on a glyph that has it.
+// So it is not imported at module load — it would ride into the client bundle
+// for every screen that never expands the section. Instead `loadStrokes()` does
+// a dynamic import the first time it's asked, which webpack code-splits into its
 // own chunk fetched on demand, and caches the promise so a second glyph doesn't
 // refetch. The section stays lean until it's actually used.
 //
-// EXTENDING TO KATAKANA / KANJI
-// =============================
-// Today only hiragana is ingested (scripts/ingest/kanjivg.mjs). A glyph with no
-// entry returns null and the caller falls back to "whole shape" — no crash. When
-// katakana/kanji land, add their JSON and widen `loadStrokes` to consult them;
-// the renderer and the null-fallback contract don't change.
+// One file per script, and the lookup picks the file from the glyph's codepoint,
+// so a hiragana lesson never pulls the katakana chunk and vice versa.
+//
+// EXTENDING TO KANJI
+// ==================
+// Kanji is NOT ingested (scripts/ingest/kanjivg.mjs): it is megabytes and needs
+// a loading strategy of its own — per-glyph or chunked, not one file pulled
+// whole like these two. A glyph with no entry returns null and the caller falls
+// back to "whole shape" — no crash. When kanji lands, add its source here; the
+// renderer and the null-fallback contract don't change.
 
 import { useEffect, useState } from "react";
 
@@ -34,19 +38,38 @@ export const STROKE_GRID = 109;
 
 type StrokeMap = Record<string, GlyphStrokes | undefined>;
 
-let cache: Promise<StrokeMap> | null = null;
+/** Which ingested asset a glyph lives in, or null for anything not ingested
+ * (kanji, punctuation, the collapsed-section sentinel ""). Kana are contiguous
+ * Unicode blocks, so the codepoint alone decides — no table to keep in sync. */
+type Script = "hiragana" | "katakana";
+function scriptOf(glyph: string): Script | null {
+  const cp = glyph.codePointAt(0);
+  if (cp === undefined) return null;
+  if (cp >= 0x3041 && cp <= 0x309f) return "hiragana";
+  if (cp >= 0x30a1 && cp <= 0x30ff) return "katakana";
+  return null;
+}
 
-/** Load the stroke map once and reuse it. The dynamic import is the code-split
- * point — the JSON is fetched the first time this runs, never at page load. */
-function loadStrokes(): Promise<StrokeMap> {
-  if (!cache) {
-    cache = import("@/data/generated/strokes/hiragana.json").then(
-      // The JSON infers `numbers` as number[][]; the pairs are [x, y] by
-      // construction (scripts/ingest/kanjivg.mjs), so narrow through unknown.
-      (m) => (m.default ?? m) as unknown as StrokeMap,
-    );
-  }
-  return cache;
+const cache: Partial<Record<Script, Promise<StrokeMap>>> = {};
+
+/** Load one script's stroke map once and reuse it. Each `import()` is a
+ * code-split point — the JSON is fetched the first time that script is asked
+ * for, never at page load, and only the script actually in use is fetched.
+ *
+ * The JSON infers `numbers` as number[][]; the pairs are [x, y] by construction
+ * (scripts/ingest/kanjivg.mjs), so narrow through unknown. */
+function loadStrokes(script: Script): Promise<StrokeMap> {
+  const hit = cache[script];
+  if (hit) return hit;
+  // The specifiers are literal so the bundler can see and split both chunks; a
+  // template string here would defeat that.
+  const pending = (
+    script === "hiragana"
+      ? import("@/data/generated/strokes/hiragana.json")
+      : import("@/data/generated/strokes/katakana.json")
+  ).then((m) => (m.default ?? m) as unknown as StrokeMap);
+  cache[script] = pending;
+  return pending;
 }
 
 /** The three states the stroke data can be in for a glyph: still resolving, or
@@ -58,8 +81,8 @@ export type StrokeLoad =
 /**
  * Stroke data for one glyph, lazily. Returns `loading` until the asset resolves,
  * then `ready` with the glyph's strokes — or `ready` with `null` when this glyph
- * isn't in the set yet (katakana, kanji), which the caller renders as the
- * whole-shape fallback rather than a diagram.
+ * isn't in the ingested set (kanji), which the caller renders as the whole-shape
+ * fallback rather than a diagram.
  */
 export function useGlyphStrokes(glyph: string): StrokeLoad {
   const [state, setState] = useState<StrokeLoad>({ status: "loading" });
@@ -71,7 +94,14 @@ export function useGlyphStrokes(glyph: string): StrokeLoad {
     // lesson-prefs.ts's hydration, and disabled for the same reason.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setState({ status: "loading" });
-    loadStrokes()
+    const script = scriptOf(glyph);
+    if (!script) {
+      // Nothing ingested for this glyph — settle straight to the fallback
+      // rather than fetching a chunk that couldn't contain it.
+      setState({ status: "ready", data: null });
+      return;
+    }
+    loadStrokes(script)
       .then((map) => {
         if (live) setState({ status: "ready", data: map[glyph] ?? null });
       })
