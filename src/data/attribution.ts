@@ -95,6 +95,27 @@ export const SOURCES: readonly Source[] = [
     licence: "CC BY 2.0 FR",
     href: "https://tatoeba.org/eng/downloads",
   },
+  {
+    // The second non-EDRDG source, and the second licence in the mix. KanjiVG is
+    // CC BY-SA 3.0, one version behind everything else here, and that is fine in
+    // the direction it needs to be: CC BY-SA 3.0 is upgrade-compatible with
+    // 4.0 — a 3.0 work may be used in a 4.0 BY-SA adaptation — so the stroke data
+    // sits inside a CC BY-SA 4.0 collection without a conflict. It does NOT work
+    // in reverse, so nothing 4.0 here may be redistributed as 3.0.
+    //
+    // ATTRIBUTION IS SATISFIED BY THIS PAGE. CC BY-SA 3.0 asks for credit "in
+    // any reasonable manner"; a credits screen reachable from every screen that
+    // draws a stroke diagram is that. The inline credit that used to sit under
+    // each diagram is gone BECAUSE this entry exists — delete this entry and the
+    // stroke data is uncredited, which is a licence violation, not a tidy-up.
+    // The guard test in attribution.test.ts is there to make that hard to do by
+    // accident.
+    name: "KanjiVG",
+    what: "The stroke-order data behind every “how it’s written” diagram: each stroke as a path, in the order it is drawn.",
+    holder: "© Ulrich Apel and contributors",
+    licence: "CC BY-SA 3.0",
+    href: "https://kanjivg.tagaini.net/",
+  },
   // The three sources of `beginnerRank` (see scripts/ingest/beginnerrank.py).
   // They order the words most-useful-first; the derived `beginnerRank` field in
   // vocab.json is share-alike (CC BY-SA 4.0) like the rest of generated/, which
@@ -135,7 +156,9 @@ export const LICENCE_NOTE =
   "the data shown here is derived from them. Example sentences come from the " +
   "Tatoeba Project (tatoeba.org) and are used under the Creative Commons " +
   "Attribution 2.0 France licence; they were written by Tatoeba's contributors, " +
-  "not by this application. The order in which words are introduced is derived " +
+  "not by this application. The stroke-order diagrams are drawn from KanjiVG " +
+  "(© Ulrich Apel and contributors), used under the Creative Commons " +
+  "Attribution-ShareAlike 3.0 licence. The order in which words are introduced is derived " +
   "from the JLPT vocabulary lists at tanos.co.uk (Jonathan Waller, CC BY) and " +
   "open-anki-jlpt-decks (MIT), together with the OpenSubtitles 2018 frequency " +
   "list from hermitdave/FrequencyWords (Creative Commons Attribution-ShareAlike " +
@@ -149,5 +172,14 @@ export const LICENCE_HREF = "https://www.edrdg.org/edrdg/licence.html";
 export const ATTRIBUTION_HREF = "/about/data";
 
 /** The persistent link's label. Short enough for a footer, explicit enough to
- * be the "easily accessible" route the licence asks for. */
-export const SHORT = "Dictionary data: EDRDG (CC BY-SA 4.0)";
+ * be the "easily accessible" route the licence asks for.
+ *
+ * IT NAMES WHAT IT COVERS. This used to read "Dictionary data: EDRDG (CC BY-SA
+ * 4.0)", which was accurate when the dictionaries were the only borrowed thing
+ * on screen and became a lie by omission once stroke diagrams and example
+ * sentences arrived behind the same link — a reader looking for the stroke
+ * credit had no reason to think this was it. The kinds of data are named rather
+ * than every holder, so the label stays footer-sized and still tells you what is
+ * on the other end. EDRDG stays named outright: its licence is the strict one. */
+export const SHORT =
+  "Dictionary, stroke and sentence data: EDRDG, KanjiVG, Tatoeba";

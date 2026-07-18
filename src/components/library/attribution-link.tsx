@@ -1,4 +1,4 @@
-// The EDRDG acknowledgement link. NOT DECORATION — a licence obligation.
+// The data acknowledgement link. NOT DECORATION — a licence obligation.
 //
 // src/data/attribution.ts has carried the text since the dictionaries landed and
 // has never had a UI, which means the app has been shipping a licence violation.
@@ -9,15 +9,25 @@
 // the example the licence itself gives.
 //
 // So this is the cheap half of that: a persistent link in the chrome of every
-// screen that renders dictionary data, pointing at /about/data, which renders
-// the notice in full.
+// screen that renders borrowed data, pointing at /about/data, which renders the
+// notice in full.
 //
-// IT GOES ON EVERY SCREEN THAT SHOWS THE DATA, and today that means the Library
-// and the entry page. When kanji reach the quiz screens and Home's shelves, they
-// will need it too — this component exists so that is an import and not a
-// rewrite. It deliberately does NOT live in the root layout: a link on Settings,
-// which shows no dictionary data, is not wrong but it is noise, and putting it
-// there would make it nobody's job to notice when a new screen needs it.
+// IT IS NO LONGER ONLY EDRDG. KanjiVG's stroke-order data (CC BY-SA 3.0) used to
+// carry its own credit inline under every diagram; that credit now lives on
+// /about/data too, which means a screen drawing a stroke diagram depends on this
+// link for its attribution exactly as a screen printing a reading does. The
+// label (SHORT) names all three kinds of data for that reason.
+//
+// IT GOES ON EVERY SCREEN THAT SHOWS THE DATA, and today that means the Library,
+// the entry page, and the stepped lesson (teach-walk). When kanji reach the quiz
+// screens and Home's shelves, they will need it too — this component exists so
+// that is an import and not a rewrite. It deliberately does NOT live in the root
+// layout: a link on Settings, which shows none of this data, is not wrong but it
+// is noise, and putting it there would make it nobody's job to notice when a new
+// screen needs it.
+//
+// src/data/attribution.test.ts is the backstop for the stroke half: any file
+// rendering <HowItsWritten> or <StrokeOrder> must reach an <AttributionLink>.
 
 import { SHORT, ATTRIBUTION_HREF } from "@/data/attribution";
 

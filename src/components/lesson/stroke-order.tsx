@@ -186,19 +186,16 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
         </div>
       </div>
 
-      {/* Licence attribution — required by KanjiVG's CC BY-SA 3.0. */}
-      <p className="mt-3 text-[10.5px] leading-relaxed text-text-muted/70">
-        Stroke order from{" "}
-        <a
-          href="https://kanjivg.tagaini.net"
-          target="_blank"
-          rel="noreferrer"
-          className="underline decoration-dotted underline-offset-2 hover:text-text-muted"
-        >
-          KanjiVG
-        </a>{" "}
-        (© Ulrich Apel / contributors, CC BY-SA 3.0).
-      </p>
+      {/* NO INLINE CREDIT HERE, AND THAT IS NOT AN OVERSIGHT.
+          The stroke data is KanjiVG's (© Ulrich Apel and contributors, CC BY-SA
+          3.0) and MUST be credited. It is — on /about/data, which every screen
+          that renders this component reaches through the AttributionLink in its
+          footer. CC BY-SA 3.0 asks for credit "in any reasonable manner", and a
+          credits screen one click away from the diagram is that; a line of 10px
+          legalese under every character was not the only way to satisfy it.
+          If you add a screen that renders this component, it needs an
+          AttributionLink in its footer too — src/data/attribution.test.ts fails
+          if it doesn't, and that failure is a licence violation, not a lint. */}
     </div>
   );
 }

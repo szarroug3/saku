@@ -35,6 +35,7 @@
 import { useMemo } from "react";
 
 import { LessonItemView } from "@/components/lesson/lesson-item-view";
+import { AttributionLink } from "@/components/library/attribution-link";
 import { Btn } from "@/components/ui";
 import { itemsFromFacts } from "@/lib/lesson-items";
 import type { FactId } from "@/types";
@@ -125,6 +126,12 @@ export function TeachWalk({
           {last ? "Quiz me" : "Next"}
         </Btn>
       </div>
+
+      {/* The acknowledgement link — a licence obligation, not decoration. This
+          screen shows dictionary data (readings, meanings, example words) AND
+          KanjiVG stroke diagrams, so it is exactly the kind of screen from which
+          the credits have to be reachable. See attribution-link.tsx. */}
+      <AttributionLink />
     </div>
   );
 }

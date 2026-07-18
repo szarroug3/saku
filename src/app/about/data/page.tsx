@@ -58,6 +58,12 @@ export default function AboutDataPage() {
           is MIT. Tatoeba&rsquo;s sentences are attribution-only — no
           share-alike.
         </p>
+        <p className="mt-2.5 text-[13px] leading-relaxed text-text-muted">
+          KanjiVG&rsquo;s stroke data is CC BY-SA 3.0, a version behind the rest.
+          That is compatible in the direction it needs to be: a 3.0
+          share-alike work may be used in a 4.0 one, so the diagrams sit
+          alongside the dictionary data without conflict.
+        </p>
       </Card>
     </>
   );

@@ -24,7 +24,13 @@ export function WhyDisclosure({ why }: { why: Why }) {
     <div className="mt-4 border-t border-border pt-3.5">
       <p className="text-[13px] leading-relaxed">
         <span className="font-medium">{why.lede.strong}</span>{" "}
-        <span className="text-text-muted">{why.lede.rest}</span>{" "}
+        {/* Optional: some ledes say everything they honestly can in the strong
+            fragment, and the rest of the reasoning lives behind the button. */}
+        {why.lede.rest ? (
+          <>
+            <span className="text-text-muted">{why.lede.rest}</span>{" "}
+          </>
+        ) : null}
         <button
           type="button"
           aria-expanded={open}
