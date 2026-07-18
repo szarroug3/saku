@@ -601,6 +601,14 @@ body {
   80% { transform: translateX(5px); }
 }
 
+/* Stroke-order draw-along (src/components/lesson/stroke-order.tsx). Each stroke
+ * path is normalised to pathLength=1 and starts at dashoffset:1 (undrawn); this
+ * runs it to 0, so one keyframe draws any stroke. The stagger and the
+ * reduced-motion opt-out are set on the element in the component. */
+@keyframes kvg-draw {
+  to { stroke-dashoffset: 0; }
+}
+
 /* Match-pairs mismatch flash — pairs' equivalent of the drill halo's red
  * pulse: a danger bloom that fades over the same 450ms as the shake, every
  * colour a token so it reads in all four themes. Lives here beside gshake

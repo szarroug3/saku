@@ -1,36 +1,43 @@
 "use client";
 
-// "How it's written" — the stroke-order section, collapsed by default and OFF
-// by default on purpose.
+// "How it's written" — the stroke-order section. Collapsed by default, opened on
+// a persisted preference; when open it shows the REAL stroke order.
 //
-// THE OWNER'S RULE, MADE INTO A SECTION
-// =====================================
-// A beginner is here to READ. They are unlikely to be handwriting Japanese any
-// time soon, and drilling stroke order on the day you meet a character is effort
-// spent on a skill you don't need yet. So this section keeps its head down: one
-// honest line when collapsed, and it only opens if you ask — and whether it
-// opens is a PERSISTED preference (see lesson-prefs.ts), not per-lesson state,
-// so the learner who does want to write sets it open once and every character
-// after it respects that.
+// THE SECTION, AND WHAT CHANGED
+// =============================
+// This used to keep its head down: the owner's line was that a beginner is here
+// to READ and shouldn't bother with writing, so the collapsed prompt talked the
+// learner out of it and the open state showed a TODO where a diagram belonged.
+// That stance is reversed. Stroke order genuinely matters — follow it and shapes
+// come out balanced and legible, and handwriting-recognition input and paper
+// dictionaries both assume the standard order — so the section now teaches it
+// properly instead of apologising for existing.
 //
 // WHAT IT SHOWS WHEN OPEN
 // =======================
-// Not the animated diagram — that data (KanjiVG / strokesvg) isn't ingested yet,
-// and the brief is explicit that this must not block on it. So when open it
-// shows what the existing data DOES know: for a kanji built entirely from parts
-// that are themselves jōyō kanji, the component breakdown (the same "every
-// component has its own card" test kanjiCost uses); otherwise the stroke count;
-// and for kana, that it's learned as a whole shape. The animated diagram is left
-// as a clearly-marked TODO rather than a blank box. And the "why?" — why order
-// matters, and that it's okay to do it your own way — sits behind the same pull.
+// If we have KanjiVG stroke data for the glyph (all base hiragana today, see
+// src/lib/strokes.ts + scripts/ingest/kanjivg.mjs), it renders the real thing:
+// an animated draw-along plus the numbered step-by-step chart (StrokeOrder). The
+// data is lazy — nothing is fetched until the section is expanded. For a glyph
+// with no data yet (katakana, kanji), it FALLS BACK gracefully to what the
+// existing data knows: a kanji's component breakdown, or the stroke count, or
+// "whole shape" — never a crash, never a blank box.
+//
+// COLLAPSED / PERSISTED
+// =====================
+// Still collapsible, still a persisted preference (see lesson-prefs.ts): set it
+// open once and every character respects that. The collapsed prompt is now
+// inviting, not discouraging — expanding shows real stroke order.
 
 import Link from "next/link";
 
+import { StrokeOrder } from "@/components/lesson/stroke-order";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { WHY_STROKE_ORDER } from "@/data/why";
 import type { LessonItem } from "@/lib/lesson-items";
 import { useLessonPref } from "@/lib/lesson-prefs";
+import { useGlyphStrokes } from "@/lib/strokes";
 import { entryHref } from "@/lib/library/href";
 
 /** The jōyō components of a kanji, EXCLUDING itself — the same test kanjiCost
@@ -50,11 +57,59 @@ function teachableParts(glyph: string): Array<{ c: string; meaning: string }> | 
   }));
 }
 
-export function HowItsWritten({ item }: { item: LessonItem }) {
-  const [open, setOpen] = useLessonPref("writing");
-
+/** The whole-shape fallback, shown when there's no stroke data for the glyph.
+ * A kanji made of teachable parts shows the breakdown; otherwise the stroke
+ * count if we have it; otherwise the plain "whole shape" line. */
+function WholeShapeFallback({ item }: { item: LessonItem }) {
   const row = item.kind === "kanji" ? kanjiRow(item.glyph) : undefined;
   const parts = item.kind === "kanji" ? teachableParts(item.glyph) : null;
+
+  if (parts) {
+    return (
+      <div className="text-[13px]">
+        <p className="text-text-muted">Built from parts you learn on their own:</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {parts.map((p, i) => (
+            <span key={`${p.c}-${i}`} className="flex items-center gap-2">
+              {i > 0 ? <span className="text-text-muted">+</span> : null}
+              <Link
+                href={entryHref(kanjiEntry(p.c))}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-text no-underline hover:bg-panel"
+              >
+                <span className="text-[20px] leading-none">{p.c}</span>
+                <span className="text-[11px] text-text-muted">{p.meaning}</span>
+              </Link>
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (row) {
+    return (
+      <p className="text-[13px] text-text-muted">
+        <span className="text-text">
+          {row.strokes} stroke{row.strokes === 1 ? "" : "s"}
+        </span>{" "}
+        — the stroke-order diagram for this one isn&rsquo;t in yet.
+      </p>
+    );
+  }
+
+  return (
+    <p className="text-[13px] text-text-muted">
+      Learned as a whole shape — the stroke-order diagram for this one
+      isn&rsquo;t in yet.
+    </p>
+  );
+}
+
+export function HowItsWritten({ item }: { item: LessonItem }) {
+  const [open, setOpen] = useLessonPref("writing");
+  // Lazy — the stroke asset is only fetched once the section is open. Skipping
+  // the lookup while collapsed keeps the chunk off the initial load entirely.
+  const strokes = useGlyphStrokes(open ? item.glyph : "");
 
   return (
     <div className="mt-3 rounded-lg border border-border bg-panel px-3.5 py-3">
@@ -71,56 +126,25 @@ export function HowItsWritten({ item }: { item: LessonItem }) {
       </div>
 
       {!open ? (
-        // The one line the collapsed section owes — the owner's own reasoning,
-        // said plainly, with the door left open.
+        // Inviting, not discouraging: it's worth learning, and here's why.
         <p className="mt-1.5 text-[12px] leading-relaxed text-text-muted">
-          We don&rsquo;t recommend learning to write yet — you&rsquo;re unlikely
-          to be handwriting Japanese, and it&rsquo;s not worth the effort this
-          early. Expand it if you want to.
+          Stroke order is worth learning — draw a character the standard way and
+          it comes out balanced and legible. Expand to see how this one is
+          drawn.
         </p>
       ) : (
         <div className="mt-2.5">
-          {/* What the existing data knows about the shape. */}
-          {parts ? (
-            <div className="text-[13px]">
-              <p className="text-text-muted">Built from parts you learn on their own:</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {parts.map((p, i) => (
-                  <span key={`${p.c}-${i}`} className="flex items-center gap-2">
-                    {i > 0 ? <span className="text-text-muted">+</span> : null}
-                    <Link
-                      href={entryHref(kanjiEntry(p.c))}
-                      className="flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-text no-underline hover:bg-panel"
-                    >
-                      <span className="text-[20px] leading-none">{p.c}</span>
-                      <span className="text-[11px] text-text-muted">{p.meaning}</span>
-                    </Link>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : row ? (
-            <p className="text-[13px] text-text-muted">
-              <span className="text-text">
-                {row.strokes} stroke{row.strokes === 1 ? "" : "s"}
-              </span>{" "}
-              — learned as a whole shape for now.
-            </p>
+          {strokes.status === "loading" ? (
+            <p className="text-[13px] text-text-muted">Loading stroke order&hellip;</p>
+          ) : strokes.data ? (
+            // The real thing: animated draw-along + numbered step chart.
+            <StrokeOrder data={strokes.data} />
           ) : (
-            <p className="text-[13px] text-text-muted">
-              Learned as a whole shape — no need to break it into strokes.
-            </p>
+            // No stroke data for this glyph yet — degrade, don't crash.
+            <WholeShapeFallback item={item} />
           )}
 
-          {/* The animated diagram is not here yet, and the section says so
-              rather than pretending. Stroke-order data (KanjiVG / strokesvg) is
-              a separate ingest — see the brief's scope note. */}
-          <p className="mt-2.5 rounded-md border border-dashed border-border px-2.5 py-1.5 text-[11px] leading-relaxed text-text-muted/80">
-            TODO · animated stroke-order diagram — the stroke data isn&rsquo;t
-            ingested yet, so there&rsquo;s no drawing to show here.
-          </p>
-
-          {/* Why order matters, and that your own way is fine for now. */}
+          {/* Why order matters — reframed as worth learning, not "your own way". */}
           <WhyDisclosure why={WHY_STROKE_ORDER} />
         </div>
       )}
