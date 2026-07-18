@@ -12,7 +12,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { MNEMONICS, getMnemonic, type SoundLine } from "./mnemonics.ts";
+import { MNEMONICS, getMnemonic, kanaScript, type SoundLine } from "./mnemonics.ts";
 
 const VOWELS = ["あ", "い", "う", "え", "お"];
 
@@ -74,26 +74,46 @@ test("Library-entry / teach-flow gate: a hiragana resolves, a non-authored glyph
 // fall back to the glyph when it 404s (MnemonicImage / KanaHero's onError). So
 // there is nothing per-kana to maintain here — the path is a pure function of
 // the romaji, and adding a drawing never touches this test.
-test("every kana yields the /mnemonics/<romaji>.webp path derived from its romaji", () => {
+test("every hiragana yields the /mnemonics/hiragana/<romaji>.webp path derived from its romaji", () => {
   for (const k of ALL_HIRAGANA) {
     const m = getMnemonic(k);
     assert.ok(m);
     assert.equal(
       m.image,
-      `/mnemonics/${m.romaji}.webp`,
-      `${k} should expose the candidate path keyed by its romaji (${m.romaji})`,
+      `/mnemonics/hiragana/${m.romaji}.webp`,
+      `${k} should expose the candidate path keyed by its script + romaji (${m.romaji})`,
     );
     // The romaji goes into the path VERBATIM — the Hepburn spelling (shi/chi/
     // tsu/fu/wo), which is the filename the owner must save. Guard the ones that
     // differ from a naive consonant+vowel guess so the two can't drift.
-    assert.ok(m.image!.includes(`/${m.romaji}.webp`), `${k} path must use romaji verbatim`);
+    assert.ok(m.image!.endsWith(`/${m.romaji}.webp`), `${k} path must use romaji verbatim`);
   }
-  // The four irregular readings, pinned: filenames the owner saves as-is.
-  assert.equal(getMnemonic("し")!.image, "/mnemonics/shi.webp");
-  assert.equal(getMnemonic("ち")!.image, "/mnemonics/chi.webp");
-  assert.equal(getMnemonic("つ")!.image, "/mnemonics/tsu.webp");
-  assert.equal(getMnemonic("ふ")!.image, "/mnemonics/fu.webp");
-  assert.equal(getMnemonic("を")!.image, "/mnemonics/wo.webp");
+  // The four irregular readings, pinned: filenames the owner saves as-is,
+  // under the hiragana/ prefix.
+  assert.equal(getMnemonic("し")!.image, "/mnemonics/hiragana/shi.webp");
+  assert.equal(getMnemonic("ち")!.image, "/mnemonics/hiragana/chi.webp");
+  assert.equal(getMnemonic("つ")!.image, "/mnemonics/hiragana/tsu.webp");
+  assert.equal(getMnemonic("ふ")!.image, "/mnemonics/hiragana/fu.webp");
+  assert.equal(getMnemonic("を")!.image, "/mnemonics/hiragana/wo.webp");
+});
+
+// The katakana branch: none are authored yet, so there's no MNEMONICS row to
+// resolve. Guard the derivation directly — `kanaScript` classifies カ as
+// katakana, and IF an entry existed its image path would carry the katakana/
+// folder, keeping か (hiragana) and カ (katakana) from sharing one filename.
+test("kanaScript classifies script by Unicode block, and katakana derives the katakana/ folder", () => {
+  assert.equal(kanaScript("か"), "hiragana");
+  assert.equal(kanaScript("カ"), "katakana");
+  assert.equal(kanaScript("生"), null); // kanji — no script folder
+  assert.equal(kanaScript(""), null);
+  assert.equal(kanaScript("かa"), null); // multi-code-point, not a single glyph
+  // No カ row is authored, so getMnemonic returns null today…
+  assert.equal(getMnemonic("カ"), null);
+  // …but the path a katakana entry WOULD derive is under katakana/, distinct
+  // from the hiragana か path. This mirrors getMnemonic's derivation.
+  const script = kanaScript("カ");
+  assert.equal(`/mnemonics/${script}/ka.webp`, "/mnemonics/katakana/ka.webp");
+  assert.notEqual(getMnemonic("か")!.image, `/mnemonics/${script}/ka.webp`);
 });
 
 // The eight drawings that ship today must still be on disk under the exact
@@ -101,13 +121,13 @@ test("every kana yields the /mnemonics/<romaji>.webp path derived from its romaj
 // didn't change which kana show a picture. Reads public/mnemonics directly:
 // these files ARE the registry now.
 test("the eight shipped drawings (a/e/i/ka/ku/sa/u/wa) resolve to files on disk", () => {
-  const publicDir = fileURLToPath(new URL("../../public/mnemonics/", import.meta.url));
+  const hiraganaDir = fileURLToPath(new URL("../../public/mnemonics/hiragana/", import.meta.url));
   for (const glyph of ["あ", "え", "い", "か", "く", "さ", "う", "わ"]) {
     const romaji = getMnemonic(glyph)!.romaji;
-    assert.equal(getMnemonic(glyph)!.image, `/mnemonics/${romaji}.webp`);
+    assert.equal(getMnemonic(glyph)!.image, `/mnemonics/hiragana/${romaji}.webp`);
     assert.ok(
-      existsSync(`${publicDir}${romaji}.webp`),
-      `${glyph}: public/mnemonics/${romaji}.webp should exist so the drawing shows`,
+      existsSync(`${hiraganaDir}${romaji}.webp`),
+      `${glyph}: public/mnemonics/hiragana/${romaji}.webp should exist so the drawing shows`,
     );
   }
 });
