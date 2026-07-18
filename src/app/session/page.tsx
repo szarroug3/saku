@@ -9,7 +9,7 @@
 // would be the one lying.
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { RestScreen } from "@/components/session/rest-screen";
 import { RoundComplete } from "@/components/session/round-complete";
@@ -17,6 +17,7 @@ import { SessionComplete } from "@/components/session/session-complete";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
 import { useHistory } from "@/lib/use-history";
+import { itemsFromFacts } from "@/lib/lesson-items";
 import { restLeftMs } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
@@ -43,6 +44,26 @@ export default function SessionPage() {
   // resting and is simply unread otherwise.
   const now = useNow(session?.phase === "resting");
 
+  // Where the teach walk is, lifted here so the top HUD bar can show the
+  // position ("N of M") — the walk itself no longer prints it. The items are
+  // the walk's own units (facts collapsed per glyph), so we derive them from
+  // the same helper it uses.
+  const teachKey = session ? session.teach.join(",") : "";
+  const teachItems = useMemo(
+    () => (session ? itemsFromFacts(session.teach) : []),
+    [teachKey], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  // Reset to the first item whenever the teach set changes (a new session, or a
+  // new round's material). Done by adjusting state during render off a stored
+  // key — the pattern React prefers over a reset effect (react.dev "You Might
+  // Not Need an Effect").
+  const [teachStep, setTeachStep] = useState(0);
+  const [prevTeachKey, setPrevTeachKey] = useState(teachKey);
+  if (teachKey !== prevTeachKey) {
+    setPrevTeachKey(teachKey);
+    setTeachStep(0);
+  }
+
   // No session (deep link, or a refresh with nothing stored) → Home. Wait for
   // the restore, or a refresh mid-rest would bounce you off your own break.
   useEffect(() => {
@@ -64,11 +85,17 @@ export default function SessionPage() {
     // pre-round lesson — so the button RESUMES the round (keeping progress)
     // rather than starting a fresh round 1 over the whole set.
     const reviewing = !!active;
+    const total = teachItems.length;
+    const at = Math.min(teachStep, Math.max(0, total - 1));
     return (
       <>
+        {/* The top bar carries the position through the lesson — "1 of 5",
+            updating as you step — in place of the item count and the round.
+            There is no round while teaching, and the count reads better as a
+            place ("where am I") than a size ("how many"). */}
         <SessionHud
-          label={label}
-          where={reviewing ? `round ${session.round}` : "before round 1"}
+          label={total > 0 ? `${at + 1} of ${total}` : label}
+          where=""
           pct={0}
           onDone={endSession}
         />
@@ -82,7 +109,8 @@ export default function SessionPage() {
             // so it can't go stale against a deleted session.
             familiar={(f) => !!history.facts[f]?.seen}
             onStart={reviewing ? resumeRound : startFirstRound}
-            reviewing={reviewing}
+            step={at}
+            onStep={setTeachStep}
           />
         </div>
       </>
