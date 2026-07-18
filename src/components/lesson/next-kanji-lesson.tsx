@@ -31,7 +31,6 @@
 import Link from "next/link";
 
 import { Btn, Card, Lbl } from "@/components/ui";
-import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { kanjiEntry } from "@/data/kanji";
 import { WHY_TRACK } from "@/data/why";
@@ -55,7 +54,6 @@ export function NextKanjiLesson({
   const { position, cards, over } = lesson;
 
   return (
-    <>
       <Card>
         {/* "kanji 5–8 of 2,136", never "lesson 1 of 1068". The lesson count was
             real arithmetic and still a promise the app couldn't keep — it moves
@@ -137,12 +135,5 @@ export function NextKanjiLesson({
             it belongs on screen; a pull, so only the lede shows until opened. */}
         <WhyDisclosure why={WHY_TRACK.kanji} />
       </Card>
-
-      <ClaimExplainer>
-        Saying you know these adds them to your knowledge base and takes them
-        out of your way. The app takes your word for it now, and comes back to
-        check in a few months.
-      </ClaimExplainer>
-    </>
   );
 }

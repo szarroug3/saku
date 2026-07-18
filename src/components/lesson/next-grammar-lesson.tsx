@@ -22,7 +22,6 @@
 // argument is at GRAMMAR_CURRICULUM_TOTAL and src/lib/lesson-position.ts.
 
 import { Btn, Card, Lbl } from "@/components/ui";
-import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { WHY_TRACK } from "@/data/why";
 import type { GrammarLesson } from "@/lib/grammar-lesson";
@@ -44,7 +43,6 @@ export function NextGrammarLesson({
   const { cards, position } = lesson;
 
   return (
-    <>
       <Card>
         {/* "grammar" stays as the track name and "patterns" names the items —
             the two are not the same word here the way "kanji" and "words" are
@@ -99,12 +97,5 @@ export function NextGrammarLesson({
             the language; a pull, so only the lede shows until opened. */}
         <WhyDisclosure why={WHY_TRACK.grammar} />
       </Card>
-
-      <ClaimExplainer>
-        Saying you know these adds them to your knowledge base and takes them out
-        of your way. The app takes your word for it now, and comes back to check
-        in a few months.
-      </ClaimExplainer>
-    </>
   );
 }

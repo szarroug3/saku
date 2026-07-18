@@ -180,12 +180,13 @@ export const WHY_STROKE_ORDER: Why = {
 export const WHY_TRACK: Record<string, Why> = {
   kanji: {
     lede: {
-      strong: "Kanji are the characters — and the key that unlocks words.",
-      rest: "Each one you learn makes a batch of words teachable.",
+      strong: "Kanji and words unlock each other.",
+      rest: "Each kanji you learn makes a batch of words teachable — and each word you learn proves how its kanji is read there.",
     },
     paras: [
       "Kanji is where you learn the individual characters and what each one means: 先 is “before”, 生 is “life”. On their own they aren’t much use — you don’t go around saying a lone kanji — but they’re the pieces every written word is built from.",
       "Here’s why this track comes first for a word: the words track will only teach you a word once you know all of its kanji. 先生 (“teacher”) stays locked until you’ve learned both 先 and 生. So each kanji you pick up here quietly unlocks the words that are made of it — that’s the payoff for a track whose characters you never use one at a time.",
+      "It runs the other way too. A kanji has several readings and which one you use depends on the word, so “how is 生 read?” has no single answer — but “how is 生 read in 先生?” does. Once you’ve learned a word 生 is in, that word is the proof, and the app starts asking you the reading there. Kanji let you meet words; words are what pin down how the kanji are said.",
       "If the words card keeps telling you to “go learn a kanji first”, this is that kanji. Learn it here, and the word it was blocking becomes teachable.",
     ],
   },
