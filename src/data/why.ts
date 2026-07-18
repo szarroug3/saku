@@ -125,23 +125,22 @@ export const WHY_KANJI: readonly (Why & { id: string })[] = [
 ];
 
 /**
- * Why stroke order matters — and why it is okay to do it your own way.
+ * Why stroke order matters — and why it's worth learning.
  *
- * Shown on the "how it's written" section, which is collapsed by default because
- * the owner's line is that a beginner is unlikely to be handwriting Japanese and
- * it isn't worth the effort this early. This is the fuller answer for the reader
- * who opens it: what stroke order actually buys you, and permission to ignore it
- * until it does. Content about the language, not the app — see the file header.
+ * Shown on the "how it's written" section. This is the fuller answer for the
+ * reader who opens it: what stroke order actually buys you, and why picking it up
+ * with each character is worth doing rather than a chore to defer. Content about
+ * the language, not the app — see the file header.
  */
 export const WHY_STROKE_ORDER: Why = {
   lede: {
-    strong: "Stroke order is worth knowing later — not memorising now.",
-    rest: "It makes characters come out even, and it’s how you’d look one up by handwriting.",
+    strong: "Stroke order is worth learning with each character.",
+    rest: "It makes shapes come out even, and it’s what handwriting input and paper dictionaries expect.",
   },
   paras: [
-    "Every character has a “correct” order and direction to draw its strokes, and it isn’t arbitrary: follow it and the shape comes out balanced and legible almost by itself, because the rules (top to bottom, left to right) are what the shapes were designed around. Fight it and even the same strokes tend to land lopsided.",
-    "There’s a practical payoff too, further down the road. Handwriting-recognition input and paper kanji dictionaries both assume the standard order — draw a character the usual way and they can follow along; draw it your own way and they lose you. That’s a reason to learn it eventually, not a reason to drill it on day one.",
-    "So do it your own way for now. You are here to READ, and reading a character never asks how you would have drawn it. If you get to a point where you’re writing by hand a lot, come back and learn the order then — it’s a small, quick thing to pick up once you actually need it, and nothing you learn now has to be unlearned.",
+    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary: follow it and the shape comes out balanced and legible almost by itself, because the rules (top to bottom, left to right) are what the shapes were designed around. Fight it and even the same strokes tend to land lopsided — so learning the order is the fastest way to characters that actually look right.",
+    "It pays off the moment you write anything by hand. Handwriting-recognition input — the way you’ll look up a character you can’t yet type — and paper kanji dictionaries both assume the standard order: draw a character the usual way and they follow along; draw it your own way and they lose you. Learn the order now and that door is already open when you need it.",
+    "It’s also a small thing to pick up, and it sticks best learned alongside the character rather than bolted on later. You’re seeing the diagram the same day you meet the shape, so the order comes for free with recognising it — a few strokes, in order, and you’ve got both.",
   ],
 };
 

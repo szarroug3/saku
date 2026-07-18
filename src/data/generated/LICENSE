@@ -20,6 +20,12 @@ They are adaptations of CC BY-SA 4.0 dictionaries, so ShareAlike requires that
 they carry the same licence. See the Tatoeba carve-out below — it is the one
 part of this directory that is not ShareAlike upstream.
 
+The stroke-order files under strokes/ are adapted from KanjiVG, which is CC
+BY-SA 3.0. That is an earlier version of the same ShareAlike licence; combining
+it into this CC BY-SA 4.0 collection is the allowed upgrade direction, so they
+carry CC BY-SA 4.0 here. See their entry under WHAT CAME FROM WHERE and
+ATTRIBUTION.
+
 
 WHAT CAME FROM WHERE
 --------------------
@@ -42,6 +48,8 @@ WHAT CAME FROM WHERE
                            multiset and a stroke count)
   grammar-corpus.json      Tatoeba (see carve-out)
   grammar-corpus-meta.json Tatoeba (build parameters and counts)
+  strokes/hiragana.json    KanjiVG (ordered stroke paths + stroke-number
+                           positions for the 46 base hiragana)
 
 
 ATTRIBUTION
@@ -93,6 +101,18 @@ FrequencyWords — OpenSubtitles 2018 (Japanese)
   A snapshot is committed at scripts/ingest/sources/opensubtitles-ja-2018.txt.
   Being CC BY-SA 4.0, ShareAlike carries through to vocab.json, which is already
   under that licence.
+
+KanjiVG
+  Ordered, numbered stroke paths on a 109×109 grid, for hiragana (and, for
+  later use, katakana and kanji). strokes/hiragana.json is generated from the
+  per-character SVGs by scripts/ingest/kanjivg.mjs.
+  Copyright (c) Ulrich Apel and the KanjiVG contributors
+  Licence:  CC BY-SA 3.0
+  Source:   https://github.com/KanjiVG/kanjivg  (https://kanjivg.tagaini.net)
+  Full text: https://creativecommons.org/licenses/by-sa/3.0/legalcode
+  CC BY-SA 3.0 → 4.0 is an allowed upgrade, so this data ships CC BY-SA 4.0 with
+  the rest of the directory; the in-app "how it's written" section also credits
+  KanjiVG where the strokes are shown.
 
 Tatoeba
   Example sentences and their human English translations.
