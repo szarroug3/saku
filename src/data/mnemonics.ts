@@ -86,6 +86,15 @@ export interface SoundSpan {
    * span that merely looks like the kana but sounds different stays plain.
    */
   accent?: boolean;
+  /**
+   * When present, this run is a LINK to `href` — rendered as an anchor opening
+   * in a new tab. It exists because for a few kana the honest answer is to
+   * point at a real explanation: ら's r-sound has no English equivalent, so the
+   * prose sends the reader to a guide rather than pretending an analogy works.
+   * A span may be BOTH `accent` and `href` — a linked run that is also spoken
+   * as the sound keeps the accent colour and becomes a link.
+   */
+  href?: string;
 }
 
 /**
@@ -198,7 +207,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     mnemonic: [
       { text: "An acrobat tumbles through her aerials while her f" },
       { text: "a", accent: true },
-      { text: "ther watches, mouth open, and gasps “ooooh, " },
+      { text: "ther watches, mouth open, and claps saying “ooooh, " },
       { text: "ahhh", accent: true },
       { text: "!”" },
     ],
@@ -434,7 +443,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     glyph: "し",
     romaji: "shi",
     sound: "shee",
-    object: "shepherd's crook",
+    object: "shepherd’s crook",
     analogy: [
       { text: "Say “" },
       { text: "shee", accent: true },
@@ -449,7 +458,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "she", accent: true },
       { text: " yells “come back " },
       { text: "shee", accent: true },
-      { text: "p!”" },
+      { text: "p!!”" },
     ],
     example: { word: "しろ", reading: "shiro", gloss: "white", hitIndex: 0 },
   },
@@ -489,8 +498,8 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     mnemonic: [
       { text: "Se", accent: true },
       { text: "ven kids " },
-      { text: "settle", accent: true },
-      { text: " onto the seesaw and it tips, a plank across the middle, one seat flung high." },
+      { text: "se", accent: true },
+      { text: "ttle onto the seesaw and it tips, a plank across the middle with one seat flung high." },
     ],
     example: { word: "せかい", reading: "sekai", gloss: "world", hitIndex: 0 },
   },
@@ -581,19 +590,19 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
   て: {
     glyph: "て",
     romaji: "te",
-    sound: "te",
+    sound: "teh",
     object: "telephone pole",
     analogy: [
       { text: "Say “" },
       { text: "teh", accent: true },
-      { text: ".”" },
+      { text: "” as in " },
+      { text: "te", accent: true },
+      { text: "lephone." },
     ],
     mnemonic: [
       { text: "A " },
       { text: "te", accent: true },
-      { text: "lephone pole with one crossbar hums in the wind — “" },
-      { text: "teh", accent: true },
-      { text: ".”" },
+      { text: "lephone pole with one crossbar hums in the wind." },
     ],
     example: { word: "てがみ", reading: "tegami", gloss: "letter", hitIndex: 0 },
     draft: true,
@@ -602,19 +611,19 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
   と: {
     glyph: "と",
     romaji: "to",
-    sound: "to",
+    sound: "toh",
     object: "stubbed toe",
     analogy: [
       { text: "Say “" },
       { text: "toh", accent: true },
-      { text: ".”" },
+      { text: "” like " },
+      { text: "toe", accent: true },
+      { text: "." },
     ],
     mnemonic: [
       { text: "A thorn jabs the " },
       { text: "toe", accent: true },
-      { text: " — “" },
-      { text: "toh", accent: true },
-      { text: "!” — one long foot, one sharp splinter crossing it." },
+      { text: " one long foot, one sharp splinter crossing it." },
     ],
     example: { word: "とり", reading: "tori", gloss: "bird", hitIndex: 0 },
     draft: true,
@@ -657,9 +666,11 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "dle." },
     ],
     mnemonic: [
-      { text: "A tall, threaded " },
+      { text: "A tall threaded " },
       { text: "nee", accent: true },
-      { text: "dle standing beside two stitches sewn in beside it." },
+      { text: "dle standing upright, two " },
+      { text: "nea", accent: true },
+      { text: "t stitches sewn in beside it." },
     ],
     example: { word: "にく", reading: "niku", gloss: "meat", hitIndex: 0 },
     draft: true,
@@ -784,9 +795,9 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "ji." },
     ],
     mnemonic: [
-      { text: "A windy road up the peak of Mount " },
+      { text: "A windy road climbing up the peak of Mount " },
       { text: "Fu", accent: true },
-      { text: "ji’s, clouds all around." },
+      { text: "ji, clouds drifting all around it." },
     ],
     example: { word: "ふね", reading: "fune", gloss: "boat", hitIndex: 0 },
     approximate: "Not a hard English “f” — a soft breath between f and h. The sound clip is the guide.",
@@ -839,16 +850,20 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
   ま: {
     glyph: "ま",
     romaji: "ma",
-    sound: "ma",
-    object: "horseshoe magnet",
+    sound: "mah",
+    object: "mama",
     analogy: [
       { text: "Say “" },
       { text: "mah", accent: true },
-      { text: ".”" },
+      { text: "” as in " },
+      { text: "mama", accent: true },
+      { text: "." },
     ],
     mnemonic: [
-      { text: "Ma", accent: true },
-      { text: "ma’s magnet snaps it up — two poles up top, a U-base below." },
+      { text: "Mama", accent: true },
+      { text: " standing arms out wide, baby running towards hard arms out wide running into " },
+      { text: "mama", accent: true },
+      { text: "’s arms." },
     ],
     example: { word: "まど", reading: "mado", gloss: "window", hitIndex: 0 },
     draft: true,
@@ -888,9 +903,9 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "." },
     ],
     mnemonic: [
-      { text: "A cow swishes its tail and lows, “" },
-      { text: "moo", accent: true },
-      { text: ".”" },
+      { text: "A cow swishes its tail in a pasture and bellows, “" },
+      { text: "mooooo", accent: true },
+      { text: "!”" },
     ],
     example: { word: "むし", reading: "mushi", gloss: "insect", hitIndex: 0 },
     draft: true,
@@ -911,7 +926,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     mnemonic: [
       { text: "A " },
       { text: "me", accent: true },
-      { text: "lon-round eye winks — lid and lashes above wearing make-up. め even means “eye”!" },
+      { text: "lon-round eye winks up at you, lid and lashes heavy with make-up. め even means “eye”!" },
     ],
     example: { word: "め", reading: "me", gloss: "eye", hitIndex: 0 },
     draft: true,
@@ -947,14 +962,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     sound: "ya",
     object: "a yacht",
     analogy: [
-      { text: "Sounds like the start of " },
+      { text: "Say " },
+      { text: "ya", accent: true },
+      { text: " as in " },
       { text: "ya", accent: true },
       { text: "cht." },
     ],
     mnemonic: [
       { text: "A " },
       { text: "ya", accent: true },
-      { text: "cht, mast up and sail full — や." },
+      { text: "cht, mast up and sail full, swaying in the wind." },
     ],
     example: { word: "やま", reading: "yama", gloss: "mountain", hitIndex: 0 },
     draft: true,
@@ -976,8 +993,10 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "A " },
       { text: "un", accent: true },
       { text: "ique " },
-      { text: "Eu", accent: true },
-      { text: "chalon fish, its long tail looping back." },
+      { text: "eu", accent: true },
+      { text: "lachon fish named " },
+      { text: "Yu", accent: true },
+      { text: "ni, its long tail swaying in the water." },
     ],
     example: { word: "ゆき", reading: "yuki", gloss: "snow", hitIndex: 0 },
     draft: true,
@@ -1137,7 +1156,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     mnemonic: [
       { text: "A " },
       { text: "wa", accent: true },
-      { text: "nd waving around swishing magical spells." },
+      { text: "nd waving around swishing magical spells in the air." },
     ],
     example: { word: "わたし", reading: "watashi", gloss: "I / me", hitIndex: 0 },
     draft: true,
@@ -1176,9 +1195,9 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "." },
     ],
     mnemonic: [
-      { text: "It even looks like a lowercase cursive " },
+      { text: "It looks like a lowercase cursive " },
       { text: "n", accent: true },
-      { text: "." },
+      { text: "!" },
     ],
     example: { word: "ほん", reading: "hon", gloss: "book", hitIndex: 1 },
     approximate: "One held beat of nasal — its exact colour (m / n / ng) bends to what follows. Trust the sound clip.",

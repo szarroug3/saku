@@ -35,7 +35,9 @@
 // the kana's sound is actually spoken in, and it — and only it — takes the
 // accent colour. A shape word is never accented (see the rule in
 // src/data/mnemonics.ts). `Line` below maps the spans, painting accent spans and
-// leaving the rest plain.
+// leaving the rest plain. A span may also carry an `href`, which makes that run
+// a link — the escape hatch for sounds English can't approximate (ら), where the
+// honest hook is a pointer to a real explanation rather than a fake analogy.
 //
 // THE NARRATIVE LEADS, THE ANALOGY FOLLOWS
 // ========================================
@@ -50,21 +52,32 @@ import type { Mnemonic, SoundLine } from "@/data/mnemonics";
 import { MnemonicImage } from "./mnemonic-image";
 
 /** Render a SoundLine's spans, painting `accent: true` spans in the accent
- * colour and leaving the rest plain. Exported so the stepped lesson's own hero
+ * colour and leaving the rest plain. A span carrying an `href` renders as an
+ * anchor into a new tab — and a span that is BOTH accented and linked keeps the
+ * accent colour. Exported so the stepped lesson's own hero
  * (lesson-item-view.tsx) renders the same accented prose from the same data
  * without re-implementing the span rule. */
 export function Line({ line }: { line: SoundLine }) {
   return (
     <>
-      {line.map((span, i) =>
-        span.accent ? (
-          <span key={i} className="font-semibold text-accent">
+      {line.map((span, i) => {
+        const accent = span.accent ? "font-semibold text-accent" : undefined;
+        return span.href ? (
+          <a
+            key={i}
+            href={span.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`underline underline-offset-2 hover:opacity-80 ${accent ?? "font-medium text-accent"}`}
+          >
+            {span.text}
+          </a>
+        ) : (
+          <span key={i} className={accent}>
             {span.text}
           </span>
-        ) : (
-          <span key={i}>{span.text}</span>
-        ),
-      )}
+        );
+      })}
     </>
   );
 }

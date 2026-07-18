@@ -8,7 +8,7 @@
 // plain function this can drive directly.
 
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
@@ -171,14 +171,20 @@ test("every line is a well-formed span array; the analogy always cues its sound"
       assert.ok(Array.isArray(line) && line.length > 0, `${glyph} ${name} should be a non-empty span array`);
       for (const span of line) {
         assert.deepEqual(
-          Object.keys(span).sort().filter((k) => k !== "accent"),
+          Object.keys(span).sort().filter((k) => k !== "accent" && k !== "href"),
           ["text"],
-          `${glyph} ${name} span should be a plain SoundSpan (text, optional accent)`,
+          `${glyph} ${name} span should be a SoundSpan (text, optional accent, optional href)`,
         );
         assert.equal(typeof span.text, "string");
         assert.ok(span.text.length > 0, `${glyph} ${name} has an empty-text span`);
         if ("accent" in span) {
           assert.equal(typeof span.accent, "boolean", `${glyph} ${name} accent must be a boolean when present`);
+        }
+        if ("href" in span) {
+          assert.ok(
+            typeof span.href === "string" && /^https:\/\/\S+$/.test(span.href),
+            `${glyph} ${name} href must be an absolute https URL`,
+          );
         }
       }
     }
@@ -190,5 +196,51 @@ test("every line is a well-formed span array; the analogy always cues its sound"
       `${glyph} analogy must accent a span carrying the sound "${m.sound}"`,
     );
     // The mnemonic MAY accent nothing — a story that names only the shape.
+  }
+});
+
+// THE LINK SPAN.
+//
+// Some sounds have no English equivalent to point at — ら's tapped r is the
+// case that forced this — so a span may carry an `href` and become a link to a
+// real explanation instead of a fake analogy. Two things must hold: the
+// renderer turns such a span into an anchor that leaves the app safely, and the
+// accent invariant is unaffected — a linked span can ALSO be the accented sound
+// cue, and a line with links still has to cue its sound.
+test("an href span renders as a safe anchor, and links don't weaken the accent rule", () => {
+  // The renderer. Read as source because node:test strips types, not JSX, so
+  // the .tsx cannot be imported here (see this file's header).
+  const card = readFileSync(
+    fileURLToPath(new URL("../components/lesson/mnemonic-card.tsx", import.meta.url)),
+    "utf-8",
+  );
+  const lineFn = card.slice(card.indexOf("export function Line("), card.indexOf("export function MnemonicCard("));
+  assert.ok(lineFn.length > 0, "Line renderer not found in mnemonic-card.tsx");
+  assert.match(lineFn, /span\.href/, "Line must branch on span.href");
+  assert.match(lineFn, /<a\b/, "an href span must render as an anchor");
+  assert.match(lineFn, /href=\{span\.href\}/, "the anchor must carry the span's href");
+  assert.match(lineFn, /target="_blank"/, "the link must open in a new tab");
+  assert.match(lineFn, /rel="noopener noreferrer"/, "the link must not leak the opener");
+
+  // A span that is BOTH the sound and the link still satisfies the invariant
+  // every analogy is held to above.
+  const cuesSound = (line: SoundLine, sound: string) =>
+    line.some((s) => s.accent && s.text.toLowerCase().includes(sound.toLowerCase()));
+  const linked: SoundLine = [
+    { text: "There is a guide on " },
+    { text: "Tofugu", href: "https://www.tofugu.com/japanese/japanese-r-sound/" },
+    { text: " for the " },
+    { text: "ra", accent: true, href: "https://www.tofugu.com/japanese/japanese-r-sound/" },
+    { text: " sound." },
+  ];
+  assert.ok(cuesSound(linked, "ra"), "an accented link still cues the sound");
+  assert.ok(!cuesSound([{ text: "Tofugu", href: "https://www.tofugu.com/" }], "ra"),
+    "an unaccented link is not a sound cue — it cannot stand in for the accent span");
+
+  // And every shipped href is a real absolute URL (shape checked per-span above).
+  for (const [glyph, m] of Object.entries(MNEMONICS)) {
+    for (const span of [...m.analogy, ...m.mnemonic]) {
+      if (span.href) assert.doesNotThrow(() => new URL(span.href!), `${glyph} href must parse`);
+    }
   }
 });
