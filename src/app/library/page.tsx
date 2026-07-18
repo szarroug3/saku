@@ -9,7 +9,16 @@
 // thing you do. It has a search box, because that is the front door OF THIS TAB
 // and nothing else on it matters as much.
 
-import { useDeferredValue, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Suspense,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { AttributionLink } from "@/components/library/attribution-link";
 import { EntryRow } from "@/components/library/entry-tile";
@@ -17,7 +26,6 @@ import { Shelf, shelfSections, type ShelfSection } from "@/components/library/sh
 import { SliceBar } from "@/components/library/slice-bar";
 import { StickySearch } from "@/components/library/sticky-search";
 import { Card, Chip, GhostBtn, Hint, Lbl, PageTitle } from "@/components/ui";
-import { KANA_SUBJECT } from "@/data/characters";
 import { factsOf } from "@/lib/facts";
 import {
   KIND_LABEL,
@@ -35,30 +43,112 @@ import {
   type Selection,
 } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
+import {
+  kindFromParams,
+  libraryUrl,
+  queryFromParams,
+} from "@/lib/library/url-state";
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
 import type { EntryId, FactId } from "@/types";
 
+/** `useSearchParams` client-side-renders everything up to the nearest Suspense
+ * boundary, and a production build of a static page fails without one. The
+ * Library reads two params, so the boundary is the page and the body below is
+ * what it wraps. */
 export default function LibraryPage() {
+  return (
+    <Suspense fallback={null}>
+      <LibraryBody />
+    </Suspense>
+  );
+}
+
+function LibraryBody() {
   const { history, refresh } = useHistory();
   const { cfg } = useQuizConfig();
   const { lists } = useLists();
 
-  const [query, setQuery] = useState("");
-  // The search runs over 9,761 entries per keystroke. That is ~1–2ms and would
-  // be fine synchronously; `useDeferredValue` is here for the RENDER, which is
-  // the expensive half — a section of 8 rows is cheap but a shelf of 2,136 tiles
-  // is not, and typing into a box that repaints the kanji shelf under it drops
-  // frames. Deferring lets the field stay live while the results catch up.
-  const deferred = useDeferredValue(query);
+  // THE URL IS THE STATE, for both the tab and the box. See url-state.ts for
+  // why (short version: the entry-page breadcrumb has always linked here with a
+  // ?kind= that this page ignored, and Back used to leave the Library).
+  const router = useRouter();
+  const searchParams = useSearchParams();
   // ONE kind is shown at a time — there is no "All" view. Stacking every kind's
   // shelf at once (kana 214 + kanji + words + grammar ≈ thousands of tiles) was
   // genuinely laggy, and its value is already covered: SEARCH spans every kind,
   // and the SELECTION below persists across kind switches, so you can still
   // build a cross-kind drill without a screen that paints all of them. The
   // default is Kana — the lightest first paint.
-  const [kind, setKind] = useState<Kind>(KANA_SUBJECT);
+  const kind = kindFromParams(searchParams);
+  const urlQuery = queryFromParams(searchParams);
+
+  // THE BOX IS TYPED INTO AND THE URL IS NOT TYPED INTO, so the box keeps a
+  // local copy. A controlled input whose value round-trips through the router
+  // on every keystroke is a field that can drop characters; this one is
+  // instant, and the URL catches up (see `commitQuery`).
+  const [query, setQuery] = useState(urlQuery);
+  // The last query WE wrote to the URL. Anything else the URL says arrived from
+  // outside — Back, Forward, a pasted link — and must win over what is in the
+  // box. Without this the effect below would fight the debounce and undo the
+  // character you just typed.
+  const ownQuery = useRef(urlQuery);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (urlQuery === ownQuery.current) return;
+    ownQuery.current = urlQuery;
+    if (debounce.current) clearTimeout(debounce.current);
+    setQuery(urlQuery);
+  }, [urlQuery]);
+
+  useEffect(() => () => {
+    if (debounce.current) clearTimeout(debounce.current);
+  }, []);
+
+  // TYPING REPLACES, SWITCHING TABS PUSHES.
+  //
+  // A push per keystroke means "shirasu" buries the previous page under seven
+  // history entries and Back becomes a stuck key. So the query is a `replace`,
+  // and debounced on top of it (250ms) — replace alone still runs a router
+  // transition per character, which is the expensive half on a page that paints
+  // a 2,136-tile shelf. What you get back is one URL that always describes the
+  // box, and a Back that leaves the Library in one press from a typed word.
+  //
+  // The tab, by contrast, IS a navigation: you chose Kanji, you can expect Back
+  // to return you to Kana. That is a `push`, and it is the behaviour the
+  // breadcrumb was already written as if it had.
+  const commitQuery = useCallback(
+    (value: string) => {
+      setQuery(value);
+      if (debounce.current) clearTimeout(debounce.current);
+      debounce.current = setTimeout(() => {
+        ownQuery.current = value;
+        router.replace(libraryUrl({ kind, query: value }), { scroll: false });
+      }, 250);
+    },
+    [kind, router],
+  );
+
+  const selectKind = useCallback(
+    (next: Kind) => {
+      // Flush the pending query first — the tab switch carries whatever is in
+      // the box RIGHT NOW, not whatever the debounce last got around to
+      // writing, or the new history entry would disagree with the screen.
+      if (debounce.current) clearTimeout(debounce.current);
+      ownQuery.current = query;
+      router.push(libraryUrl({ kind: next, query }), { scroll: false });
+    },
+    [query, router],
+  );
+
+  // The search runs over 9,761 entries per keystroke. That is ~1–2ms and would
+  // be fine synchronously; `useDeferredValue` is here for the RENDER, which is
+  // the expensive half — a section of 8 rows is cheap but a shelf of 2,136 tiles
+  // is not, and typing into a box that repaints the kanji shelf under it drops
+  // frames. Deferring lets the field stay live while the results catch up.
+  const deferred = useDeferredValue(query);
   // THE SELECTION — a global, cross-kind set of toggled entries you build a
   // drill from. It is NOT reset when the kind filter changes: select a hiragana
   // row, switch to kanji, and it is still in here and still in the bar's count.
@@ -148,13 +238,13 @@ export default function LibraryPage() {
 
       <StickySearch
         value={query}
-        onChange={setQuery}
+        onChange={commitQuery}
         placeholder="Search anything — し, shi, 生, せんせい, telephone…"
       >
         {/* The kind chips change what you SEE, never what you have SELECTED —
             the selection outlives them. One is always active; there is no "All". */}
         {KINDS.map((k) => (
-          <Chip key={k} on={kind === k} onClick={() => setKind(k)}>
+          <Chip key={k} on={kind === k} onClick={() => selectKind(k)}>
             {KIND_LABEL[k]}
           </Chip>
         ))}
