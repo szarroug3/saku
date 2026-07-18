@@ -85,6 +85,9 @@ export interface KanaChar {
   r: string[];
   /** Reserved for future sets (vocab). */
   meaning?: string;
+  /** A short call-out for a character whose sound is NOT the one its row
+   * predicts — し is "shi", ふ is "fu". Absent for the regular majority. */
+  note?: string;
   /** Reserved for the v3 stroke-order / draw modes. */
   strokes?: unknown;
   /** Reserved for the v2 listen mode. */

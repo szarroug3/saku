@@ -40,16 +40,17 @@
 
 import Link from "next/link";
 
+import { Callout } from "@/components/lesson/callout";
+import { HearButton } from "@/components/lesson/hear-button";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
-import { SoundIcon } from "@/components/ui";
+import { noteFor } from "@/data/characters";
 import { getMnemonic } from "@/data/mnemonics";
 import type { LessonItem } from "@/lib/lesson-items";
 import { appearsIn, entryForGlyph, libEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import { useQuizConfig } from "@/lib/quiz-config";
-import { speak } from "@/lib/speech";
 
 /** The one-line reading/meaning under the headword, per track. Read off the
  * Library entry so it matches the reference exactly. */
@@ -83,22 +84,6 @@ function WordLink({ word }: { word: string }) {
     >
       {word}
     </Link>
-  );
-}
-
-/** The speaker — pronounceable surfaces only (a kana or a word have one sound; a
- * bare kanji meaning and a grammar pattern do not). Same control the header and
- * the entry page use. */
-function HearButton({ glyph, voiceName }: { glyph: string; voiceName: string }) {
-  return (
-    <button
-      type="button"
-      onClick={() => speak(glyph, voiceName)}
-      aria-label={`Hear ${glyph}`}
-      className="inline-flex items-center justify-center cursor-pointer rounded-md border border-border bg-card px-2 py-0.5 text-[12px] leading-none text-text-muted hover:bg-panel hover:text-text"
-    >
-      <SoundIcon className="size-[14px]" />
-    </button>
   );
 }
 
@@ -161,6 +146,12 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // when absent — an extended kana, or any non-kana — the plain headword stands
   // in. Gated on getMnemonic so the hide-when-absent rule holds.
   const mnemonic = item.kind === "kana" ? getMnemonic(item.glyph) : null;
+  // The seven kana that don't say what their row says they say — し is "shi",
+  // ふ is "fu", ぢ sounds exactly like じ. Named here, on the card where the
+  // character is met, because a learner who infers "si" from the grid will not
+  // find out they were wrong until the drill marks them down for it. Absent
+  // for the regular majority, so this is silent rather than empty.
+  const note = item.kind === "kana" ? noteFor(item.glyph) : null;
 
   return (
     <div>
@@ -183,6 +174,16 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           voiceName={cfg.voiceName}
         />
       )}
+
+      {/* The call-out, when the sound is irregular. Directly under the hero and
+          above the divider, because it is a correction to the thing you just
+          read, not a reference section to open later. A left rule in the accent
+          rather than a boxed card: it belongs to the hero. */}
+      {note ? (
+        <div className="mt-6">
+          <Callout>{note}</Callout>
+        </div>
+      ) : null}
 
       {/* The reference sections, full-width below the hero, off a single light
           divider — no card around them, the flattening the owner asked for.

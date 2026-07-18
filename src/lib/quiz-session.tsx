@@ -156,8 +156,17 @@ interface QuizSessionContextValue {
   /** Begin a one-off quiz over `facts` with the current cfg; navigates to
    * /quiz. `what` names the run — see ActiveQuiz.what. */
   startQuiz(facts: FactId[], opts?: { redrill?: boolean; what?: string }): void;
-  /** The rest is over (or you skipped the lesson): begin round 1. */
-  startFirstRound(): void;
+  /**
+   * The rest is over (or you skipped the lesson): begin round 1.
+   *
+   * `scope` WIDENS the session before the first card is drawn — the kana
+   * lessons' "quiz me on all hiragana so far" fork. It rewrites `facts`, not
+   * just the leg, because a session that drilled thirty facts and then reported
+   * five would be lying about what you did; every later round, the results and
+   * the record all read the widened set. Only legal before round 1, which is
+   * the only moment nothing has been answered yet and so nothing is lost.
+   */
+  startFirstRound(scope?: FactId[]): void;
   /** End the active leg. In a session this opens the fork; otherwise it
    * computes results, POSTs /api/session and goes to /results. */
   finishQuiz(stats: SessionStats): void;
@@ -506,11 +515,26 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     [cfg, beginLeg, router],
   );
 
-  const startFirstRound = useCallback(() => {
-    if (!session) return;
-    setSession({ ...session, phase: "drilling", lastActiveAt: Date.now() });
-    beginLeg(session.facts, session.what, session.snapshot, false);
-  }, [session, beginLeg]);
+  const startFirstRound = useCallback(
+    (scope?: FactId[]) => {
+      if (!session) return;
+      // A widened scope replaces the session's set outright — see the interface
+      // note. `what` is recounted with it so the HUD and the stored record name
+      // the run the user actually chose rather than the lesson it started from.
+      const widen = !!scope?.length;
+      const facts = widen ? scope! : session.facts;
+      const what = widen ? countWhat(facts) : session.what;
+      setSession({
+        ...session,
+        facts,
+        what,
+        phase: "drilling",
+        lastActiveAt: Date.now(),
+      });
+      beginLeg(facts, what, session.snapshot, false);
+    },
+    [session, beginLeg],
+  );
 
   const retryLeg = useCallback(
     (facts: FactId[]) => {

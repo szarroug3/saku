@@ -23,16 +23,19 @@
 // ===============
 // Every word on it is read off `src/data/characters.ts` or counted from it: the
 // label, the characters, their readings, which group of how many. "Group 1 of
-// 27" is COUNTED — hiragana has twenty-seven sections, and a card that promised
-// ten would be caught out at the eleventh by the user who kept going.
+// 26" is COUNTED, never written down — a card that promised ten would be caught
+// out at the eleventh by the user who kept going, and the count really does
+// move: merging the は row's two marks into one group took hiragana from
+// twenty-seven sections to twenty-six without a line changing here.
 
 import { WhyDisclosure } from "@/components/lesson/why";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { Btn, Card, Lbl } from "@/components/ui";
 import { CHAR_INDEX } from "@/data/characters";
+import { dakutenRowFor } from "@/data/dakuten-rows";
 import { WHY_SCRIPT } from "@/data/why";
 import type { Lesson } from "@/lib/lesson";
-import { setFacts } from "@/lib/lesson";
+import { scriptSoFar, setFacts } from "@/lib/lesson";
 import type { FactId } from "@/types";
 
 export function NextLesson({
@@ -90,6 +93,11 @@ export function NextLesson({
   // rather than empty.
   const why = group.index === 1 ? WHY_SCRIPT[group.setId] : undefined;
 
+  // Whether this group is a dakuten CONVERSION — taught as one card about a
+  // mark rather than as five character cards. Read off the data, not off the
+  // label, so it cannot drift from what the walk will actually render.
+  const conversion = !!dakutenRowFor(chars[0]);
+
   return (
     <>
       <Card>
@@ -131,11 +139,16 @@ export function NextLesson({
             from are credited on the Resources page, not linked from the drill.
             No box: this sits directly on the card. */}
         <div className="mt-4">
+          {/* What the walk will actually do, which is not the same for every
+              phase. A dakuten row is taught as ONE card — the mark, the rule,
+              the five results — so promising a picture and a stroke diagram per
+              character would be describing a screen that no longer exists. */}
           <p className="text-[13px]">
             <span className="font-medium">Learn them first.</span>{" "}
             <span className="text-text-muted">
-              Step through each one — its picture, its sound, and how it&rsquo;s
-              written — before you&rsquo;re quizzed.
+              {conversion
+                ? "One card: the mark, what it does to the sound, and all five at once — before you’re quizzed."
+                : "Step through each one — its picture, its sound, and how it’s written — before you’re quizzed."}
             </span>
           </p>
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
@@ -155,9 +168,19 @@ export function NextLesson({
               I know all {group.setLabel.toLowerCase()}
             </Btn>
           </div>
-          <Btn go onClick={() => onQuizMe(lesson.facts)}>
-            Quiz me
-          </Btn>
+          {/* The same scope fork the end of the lesson offers, because this is
+              the same drill reached by the other door — skipping the teach walk
+              shouldn't also skip the choice of how much to be asked. "These
+              only" keeps the accent; the cumulative run is the offer beside it.
+              See scriptSoFar() for what "so far" is allowed to mean. */}
+          <div className="flex flex-wrap gap-1.5">
+            <Btn onClick={() => onQuizMe(scriptSoFar(group))}>
+              Quiz me on all {group.setLabel.toLowerCase()} so far
+            </Btn>
+            <Btn go onClick={() => onQuizMe(lesson.facts)}>
+              Quiz me on these only
+            </Btn>
+          </div>
         </div>
       </Card>
 
