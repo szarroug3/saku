@@ -6,12 +6,22 @@
 // ===============
 // Two views of the same ordered strokes, side by side:
 //
-//   1. An ANIMATED diagram. The character draws itself stroke by stroke, in
-//      order, via an SVG stroke-dashoffset animation (each path normalised to
-//      pathLength=1 so one keyframe fits every stroke). A "Replay" control
-//      re-runs it by remounting the drawing. Under prefers-reduced-motion there
-//      is no animation and no Replay: the finished glyph is shown still, and the
-//      numbered chart below carries the order instead.
+//   1. An ANIMATED diagram, looping. The character draws itself stroke by
+//      stroke, in order, via an SVG stroke-dashoffset animation (each path
+//      normalised to pathLength=1 so one keyframe fits every stroke); the
+//      finished glyph then holds for a beat before the cycle starts over, so
+//      you can watch it as many times as you need without a control to press.
+//      Under prefers-reduced-motion there is no animation at all: the finished
+//      glyph is shown still, and the numbered chart below carries the order.
+//
+//      HOW THE STAGGER SURVIVES LOOPING
+//      Every stroke runs the SAME animation on the SAME clock — one cycle
+//      length, no delay — and takes its turn via a per-stroke linear() easing
+//      that holds the stroke undrawn until its moment, draws it, then holds it
+//      drawn for the rest of the cycle. The obvious alternative, staggering
+//      with animation-delay, only staggers the FIRST iteration: after that
+//      every stroke loops on its own offset clock and the character is never
+//      whole at any instant. See strokeEase() below.
 //
 //   2. A STEP-BY-STEP numbered chart — the classic KanjiVG sequence. One small
 //      cell per stroke: cell i shows strokes 1..i with the newest stroke picked
@@ -29,7 +39,7 @@
 // Strokes come from src/lib/strokes.ts (lazy). This component is only mounted
 // with real data; the loading / no-data cases are the caller's (how-its-written).
 
-import { useSyncExternalStore, useState } from "react";
+import { useSyncExternalStore, type CSSProperties } from "react";
 
 import { STROKE_GRID, type GlyphStrokes } from "@/lib/strokes";
 
@@ -52,9 +62,32 @@ function usePrefersReducedMotion(): boolean {
 }
 
 /** Timing for the draw-along, in seconds. Each stroke draws over DRAW, then a
- * short GAP before the next begins. */
+ * short GAP before the next begins; once the last one lands the finished
+ * character HOLDs before the loop starts over. The hold is what keeps a loop
+ * from reading as a strobe — it's the beat where you actually see the glyph. */
 const DRAW = 0.7;
 const GAP = 0.18;
+const HOLD = 1.4;
+
+/** Seconds for one full pass over `n` strokes, including the closing hold. */
+function cycleSeconds(n: number): number {
+  return Math.max(1, n - 1) * (DRAW + GAP) + DRAW + HOLD;
+}
+
+/**
+ * The easing that gives stroke `i` its turn.
+ *
+ * The keyframes run undrawn→drawn over the WHOLE cycle; this curve decides
+ * when within that cycle the progress actually moves. It pins progress at 0
+ * until the stroke's start, ramps linearly to 1 over DRAW, then pins it at 1
+ * to the end — so the stroke waits, draws, and stays drawn until every stroke
+ * has landed and the shared clock wraps.
+ */
+function strokeEase(i: number, cycle: number): string {
+  const pct = (s: number) => `${((s / cycle) * 100).toFixed(3)}%`;
+  const start = i * (DRAW + GAP);
+  return `linear(0 0%, 0 ${pct(start)}, 1 ${pct(start + DRAW)}, 1 100%)`;
+}
 
 /** The faint square-plus writing guide behind every diagram — the same crutch a
  * genkō-yōshi practice box gives, so the eye can judge balance. */
@@ -69,9 +102,8 @@ function Guide() {
   );
 }
 
-/** The animated draw-along. `runId` remounts it (via the caller's key) to replay.
- * When `animate` is false every stroke is shown finished — the reduced-motion
- * and Replay-less still. */
+/** The looping draw-along. When `animate` is false every stroke is shown
+ * finished and nothing moves — the reduced-motion still. */
 function DrawAlong({
   strokes,
   animate,
@@ -79,6 +111,7 @@ function DrawAlong({
   strokes: string[];
   animate: boolean;
 }) {
+  const cycle = cycleSeconds(strokes.length);
   return (
     <svg
       viewBox={`0 0 ${STROKE_GRID} ${STROKE_GRID}`}
@@ -100,12 +133,13 @@ function DrawAlong({
             d={d}
             pathLength={1}
             strokeDasharray={1}
+            className={animate ? "animate-kvg-draw" : undefined}
             style={
               animate
-                ? {
-                    strokeDashoffset: 1,
-                    animation: `kvg-draw ${DRAW}s linear ${i * (DRAW + GAP)}s forwards`,
-                  }
+                ? ({
+                    "--kvg-draw-cycle": `${cycle}s`,
+                    "--kvg-draw-ease": strokeEase(i, cycle),
+                  } as CSSProperties)
                 : undefined
             }
           />
@@ -150,33 +184,21 @@ function StepCell({ strokes, upTo }: { strokes: string[]; upTo: number }) {
  */
 export function StrokeOrder({ data }: { data: GlyphStrokes }) {
   const reduced = usePrefersReducedMotion();
-  const [runId, setRunId] = useState(0);
   const { strokes } = data;
   const steps = Array.from({ length: strokes.length }, (_, i) => i + 1);
 
   return (
     <div className="mt-1">
       <div className="flex flex-wrap items-start gap-4">
-        {/* The draw-along. Keyed by runId so Replay remounts and restarts it. */}
-        <div className="flex flex-col items-center gap-1.5">
-          <div className="rounded-lg border border-border bg-card p-1">
-            <DrawAlong key={runId} strokes={strokes} animate={!reduced} />
-          </div>
-          {!reduced ? (
-            <button
-              type="button"
-              onClick={() => setRunId((n) => n + 1)}
-              className="cursor-pointer rounded-md border border-border bg-card px-2 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text"
-            >
-              Replay
-            </button>
-          ) : null}
+        {/* The draw-along. It loops on its own, so there is nothing to press. */}
+        <div className="rounded-lg border border-border bg-card p-1">
+          <DrawAlong strokes={strokes} animate={!reduced} />
         </div>
 
         {/* The numbered step-by-step chart. */}
         <div className="min-w-0 flex-1">
           <p className="mb-1.5 text-[11px] text-text-muted">
-            Stroke by stroke ({strokes.length} in all)
+            Stroke by stroke
           </p>
           <div className="flex flex-wrap gap-2">
             {steps.map((n) => (
