@@ -18,6 +18,7 @@ import { VOCAB, wordMeaningFactId } from "../data/vocab.ts";
 import {
   CURRICULUM_WORDS,
   WORDS_CURRICULUM_MAX,
+  WORDS_CURRICULUM_TOTAL,
   WORDS_PER_LESSON_DEFAULT,
   clampWordsPerLesson,
   isKanaOnlyWord,
@@ -152,7 +153,38 @@ describe("a kanji word gates on knowing EVERY one of its kanji", () => {
     for (const card of second.cards) {
       assert.ok(!firstKebs.has(card.keb), `${card.keb} was re-taught`);
     }
-    assert.ok(second.index > first.index);
+    // The position moves forward by the words actually met, not by a lesson
+    // ordinal: the second lesson starts where the first one ended.
+    assert.equal(second.position.from, first.position.to + 1);
+  });
+});
+
+// The card counts WORDS — "12–17 of 6,213" — where it used to count lessons and
+// print no total at all.
+describe("the position counts WORDS, against a total that does not move", () => {
+  test("the total is counted off the curriculum, not the rank bound", () => {
+    // Equal today because beginnerRank is dense. They are different claims, and
+    // the constant is the one that stays right if a re-cut leaves a hole.
+    assert.equal(WORDS_CURRICULUM_TOTAL, CURRICULUM_WORDS.length);
+    assert.equal(WORDS_CURRICULUM_TOTAL, 6213);
+    assert.ok(WORDS_CURRICULUM_TOTAL <= WORDS_CURRICULUM_MAX);
+  });
+
+  test("the span is as wide as the lesson, and starts at words-met + 1", () => {
+    const first = nextWordLesson(allKanjiKnown(), 4)!;
+    assert.equal(first.position.from, 1);
+    assert.equal(first.position.to, first.cards.length);
+    assert.equal(first.position.total, WORDS_CURRICULUM_TOTAL);
+  });
+
+  test("the total is the same whatever the lesson size — only the span moves", () => {
+    // The reason to count items: lesson SIZE is a setting, so a lesson count
+    // would swing with it while the material stands still.
+    const small = nextWordLesson(allKanjiKnown(), 2)!;
+    const big = nextWordLesson(allKanjiKnown(), 8)!;
+    assert.equal(small.position.total, big.position.total);
+    assert.equal(small.position.to, 2);
+    assert.equal(big.position.to, 8);
   });
 });
 

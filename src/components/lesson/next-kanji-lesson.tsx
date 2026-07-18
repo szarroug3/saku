@@ -15,7 +15,9 @@
 // WHAT IT MAY SAY
 // ===============
 // Every word is read off src/data/kanji.ts or counted from it: the kanji, their
-// first meaning, and which lesson of how many. The size is COST, not a question
+// first meaning, and which KANJI of how many — a span, "5–8 of 2,136", because
+// a lesson teaches several at once and the count of lessons is not a number the
+// app can promise. The size is COST, not a question
 // count — the draw+assembly work of learning the shapes (see kanji-lesson.ts) —
 // and it is not printed as a raw number, because "cost 10" means nothing to the
 // person doing it. The card shows the kanji and lets them count.
@@ -34,6 +36,7 @@ import { WhyDisclosure } from "@/components/lesson/why";
 import { kanjiEntry } from "@/data/kanji";
 import { WHY_TRACK } from "@/data/why";
 import type { KanjiLesson } from "@/lib/kanji-lesson";
+import { positionLabel } from "@/lib/lesson-position";
 import { entryHref } from "@/lib/library/href";
 import type { FactId } from "@/types";
 
@@ -49,14 +52,16 @@ export function NextKanjiLesson({
   /** "I already know this", over whatever slice the button named. */
   onClaim: (facts: FactId[]) => void;
 }) {
-  const { group, cards, over } = lesson;
+  const { position, cards, over } = lesson;
 
   return (
     <>
       <Card>
-        <Lbl>
-          Up next · kanji · lesson {group.index} of {group.total}
-        </Lbl>
+        {/* "kanji 5–8 of 2,136", never "lesson 1 of 1068". The lesson count was
+            real arithmetic and still a promise the app couldn't keep — it moves
+            with the lesson-length slider and the teaching order while the
+            material doesn't. See src/lib/lesson-position.ts. */}
+        <Lbl>Up next · {positionLabel("kanji", position)}</Lbl>
 
         <h1 className="text-[22px] font-light tracking-[-0.3px]">
           {cards.map((c) => c.meaning).join(" · ")}
@@ -118,8 +123,12 @@ export function NextKanjiLesson({
               steps each kanji one at a time (session/teach-walk.tsx), then
               drills. So there is no separate "walk me through" — the one button
               teaches then asks. */}
+          {/* Just "Start". It used to say "Start · lesson N", which is the
+              lesson-counting the label above just stopped doing — and an
+              ordinal with no denominator beside a header that counts kanji
+              would read as a second, contradicting scale. */}
           <Btn go onClick={() => onStart(lesson.facts)}>
-            Start · lesson {group.index}
+            Start
           </Btn>
         </div>
 

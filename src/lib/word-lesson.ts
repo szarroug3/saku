@@ -45,6 +45,7 @@
 // `--check` reprints it if the ingest is ever re-cut.
 
 import { effectiveState } from "@/lib/claims";
+import type { LessonPosition } from "@/lib/lesson-position";
 import { kanjiRow, meaningFactId as kanjiMeaningFactId } from "@/data/kanji";
 import {
   VOCAB,
@@ -108,6 +109,19 @@ export const CURRICULUM_WORDS: readonly VocabRow[] = [...VOCAB]
   .filter((w) => w.beginnerRank <= WORDS_CURRICULUM_MAX)
   .sort((a, b) => a.beginnerRank - b.beginnerRank);
 
+/**
+ * How many words the track teaches — the denominator on the lesson card.
+ *
+ * COUNTED, not set to WORDS_CURRICULUM_MAX. The two are equal today (6,213,
+ * because beginnerRank is dense over 1..12,553 with no gaps or ties) and they
+ * are different claims: MAX is the last RANK taught, this is how many ROWS are
+ * at or below it. If a re-cut ingest ever leaves a hole in the ranking, the
+ * rank would over-promise by exactly the size of the hole and the count would
+ * still be right. Cheap to count once at module load; there is no reason to
+ * assume the density instead.
+ */
+export const WORDS_CURRICULUM_TOTAL = CURRICULUM_WORDS.length;
+
 /** The facts a word teaches: its meaning always, its reading unless it is kana
  * (a kana word IS its own reading, so there is no reading fact — see
  * buildVocabFacts). */
@@ -165,11 +179,26 @@ export interface WordCard {
 export interface WordLesson {
   cards: WordCard[];
   facts: FactId[];
-  /** How many words you have already met — so the card can count "lesson N"
-   * without a stored cursor. There is no honest TOTAL: the teachable set grows
-   * as the kanji track advances, so a "lesson N of M" would promise an M that
-   * moves. */
-  index: number;
+  /**
+   * Where you are, in WORDS — "12–17 of 6,213".
+   *
+   * This card used to show "lesson N" with no total, and the comment that stood
+   * here defended the omission: the teachable set grows as the kanji track
+   * advances, so a "lesson N of M" promises an M that moves. That was right
+   * about lessons and wrong about the conclusion. The number of LESSONS is
+   * unknowable — the gate decides how many teachable words a sitting can find —
+   * but the number of WORDS is not. CURRICULUM_WORDS is a fixed 6,213, decided
+   * by the ingest and by WORDS_CURRICULUM_MAX, and no amount of studying moves
+   * it. Counting items instead of lessons is what makes the total sayable.
+   *
+   * `from` is "words met + 1", so it is a count of what you have learned rather
+   * than a position in the order. That matters here and nowhere else: the gate
+   * steps OVER kanji-locked words, so the lesson's words are not a contiguous
+   * run of beginnerRank the way a kanji lesson is a run of its order. "These
+   * are your 12th through 17th words" stays true under the skipping; "you are
+   * at rank 12 of 6,213" would not be.
+   */
+  position: LessonPosition;
 }
 
 function toCard(w: VocabRow): WordCard {
@@ -222,7 +251,11 @@ export function nextWordLesson(
   }
 
   if (!cards.length) return null;
-  return { cards, facts, index: Math.floor(met / size) + 1 };
+  return {
+    cards,
+    facts,
+    position: { from: met + 1, to: met + cards.length, total: WORDS_CURRICULUM_TOTAL },
+  };
 }
 
 /** One kanji a word still needs — the glyph and its first meaning, everything

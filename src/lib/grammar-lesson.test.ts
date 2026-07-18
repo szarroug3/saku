@@ -31,6 +31,7 @@ import {
 } from "../data/grammar/recipes.ts";
 import {
   CURRICULUM_PATTERNS,
+  GRAMMAR_CURRICULUM_TOTAL,
   GRAMMAR_PER_LESSON_DEFAULT,
   clampGrammarPerLesson,
   nextGrammarLesson,
@@ -158,7 +159,9 @@ describe("lessons advance without a cursor", () => {
     for (const card of second.cards) {
       assert.ok(!firstIds.has(card.id), `${card.id} was re-taught`);
     }
-    assert.ok(second.index > first.index);
+    // The position moves forward by the patterns actually met, not by a lesson
+    // ordinal: the second lesson starts where the first one ended.
+    assert.equal(second.position.from, first.position.to + 1);
   });
 
   test("null once every pattern is met — the curriculum finishes", () => {
@@ -183,5 +186,39 @@ describe("lesson sizing is a count, clamped", () => {
     assert.equal(clampGrammarPerLesson(4.4), 4);
     assert.equal(clampGrammarPerLesson(999), 20);
     assert.equal(clampGrammarPerLesson(NaN), GRAMMAR_PER_LESSON_DEFAULT);
+  });
+});
+
+// The card counts PATTERNS — "3–7 of 53" — where it used to say "lesson 3" and
+// deliberately withhold a total.
+describe("the position counts PATTERNS, and the total is the drillable set", () => {
+  test("the total is the 53 drillable recipes, not the 81 authored ones", () => {
+    // The 28 reference-only recipes are shown on cluster pages and never
+    // taught, so counting them would promise 28 lessons that cannot exist —
+    // data/grammar/index.ts mints no production fact for them.
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, CURRICULUM_PATTERNS.length);
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, DRILLABLE.length);
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 53);
+    assert.equal(RECIPES.length, 81);
+    assert.ok(GRAMMAR_CURRICULUM_TOTAL < RECIPES.length);
+  });
+
+  // That every counted pattern is one a lesson can actually reach is already
+  // pinned above ("every taught pattern is producible"), which is the same
+  // guarantee the denominator rests on — not restated here.
+
+  test("the span is as wide as the lesson, and starts at patterns-met + 1", () => {
+    const first = nextGrammarLesson(allKanaClaimed(), 4)!;
+    assert.equal(first.position.from, 1);
+    assert.equal(first.position.to, first.cards.length);
+    assert.equal(first.position.total, GRAMMAR_CURRICULUM_TOTAL);
+  });
+
+  test("the total is the same whatever the lesson size — only the span moves", () => {
+    const small = nextGrammarLesson(allKanaClaimed(), 2)!;
+    const big = nextGrammarLesson(allKanaClaimed(), 8)!;
+    assert.equal(small.position.total, big.position.total);
+    assert.equal(small.position.to, 2);
+    assert.equal(big.position.to, 8);
   });
 });
