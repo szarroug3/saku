@@ -118,11 +118,13 @@ function KanaHero({
 
   return (
     <div className="grid items-center gap-x-12 gap-y-7 md:grid-cols-[minmax(0,440px)_1fr]">
-      {/* THE HERO. With a drawing: a big square block on a FIXED light tile — a
-          constant, not a theme token — so the picture holds its look across
-          every theme regardless of its own transparency; only the border
-          follows the theme. Without one: the glyph itself, set large, is the
-          hero — no placeholder tile. */}
+      {/* THE HERO. With a drawing: a big square block on the app's frosted-panel
+          material (kq-material + bg-card + border) — the same surface every
+          other box wears, so the tile adapts to every theme and reads in both
+          light and dark. Transparent-PNG images show the frost THROUGH their
+          empty areas. The tile sits directly on the page, so kq-material's
+          backdrop is the page and the frost is real. Without a drawing: the
+          glyph itself, set large, is the hero — no placeholder tile. */}
       <div className="flex justify-center md:justify-start">
         {m.image ? (
           <Link
@@ -131,8 +133,7 @@ function KanaHero({
             className="block w-full max-w-[440px]"
           >
             <div
-              className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-border"
-              style={{ backgroundColor: "#f7f3ec" }}
+              className="kq-material flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-card"
               aria-hidden
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
