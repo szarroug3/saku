@@ -220,13 +220,13 @@ export function PrimaryBtn({ className, ...props }: BtnProps) {
   );
 }
 
-/** Pill chip toggle; `part` is the dashed/amber partial state. */
+/** Pill chip toggle; `partial` is the dashed/amber partial state. */
 export function Chip({
   on,
-  part,
+  partial,
   className,
   ...props
-}: BtnProps & { on?: boolean; part?: boolean }) {
+}: BtnProps & { on?: boolean; partial?: boolean }) {
   return (
     <button
       {...props}
@@ -234,7 +234,7 @@ export function Chip({
         "kq-material cursor-pointer select-none rounded-full border px-3 py-1 text-[13px]",
         on
           ? "border-accent bg-accent-bg text-accent"
-          : part
+          : partial
             ? "border-warning bg-warning-bg text-warning"
             : "border-border bg-card text-text-muted",
         className,
