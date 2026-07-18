@@ -17,16 +17,17 @@
 // non-null. This component takes a resolved `Mnemonic`, so "there is nothing to
 // show" is simply "the caller didn't mount me."
 //
-// THE PICTURE IS A CONSTANT
-// =========================
+// THE PICTURE SITS ON THE APP'S FROSTED MATERIAL
+// ==============================================
 // The slot on the left shows the entry's drawn `image` when it has one, and
 // falls back to the plain glyph as a placeholder when it doesn't. The image
-// sits on a FIXED light tile — a constant background set in an inline style, not
-// a theme token — so the picture reads the same across all four themes and in
-// both light and dark, whatever its own background or transparency is (a/i are
-// RGBA, u is RGB). Only the surrounding chrome (the border) follows the theme.
-// The glyph placeholder, having no fixed picture to protect, uses the themed
-// panel like any other surface.
+// tile wears the app's frosted-panel material so it matches every other box and
+// adapts to each theme; a transparent-PNG image (a/i are RGBA, u is RGB) shows
+// the frost THROUGH its empty areas. Because this tile is nested inside the
+// card's own `kq-material`, where a second `kq-material`'s blur is a Chromium
+// no-op, it uses `kq-surface` — the card's material rebuilt opaquely — which
+// must ride a positioned element (hence `relative`). The glyph placeholder uses
+// the themed panel like any other surface.
 //
 // THE ACCENT IS THE SOUND
 // =======================
@@ -65,15 +66,16 @@ export function MnemonicCard({ m }: { m: Mnemonic }) {
     <div className="kq-material mt-3 rounded-lg border border-border bg-card px-3.5 py-4">
       <div className="flex items-start gap-4">
         {/* The picture, or the glyph. When the entry has a drawn image, it sits
-            on a FIXED light tile — the backgroundColor is a constant, not a
-            theme token — so the picture holds its look across every theme
-            regardless of its own transparency; only the border follows the
-            theme. With no image, the slot shows the plain glyph on the themed
-            panel as a placeholder. */}
+            on the app's frosted-panel material so the tile matches every other
+            box and adapts to each theme; a transparent-PNG image shows the frost
+            THROUGH its empty areas. This tile is nested INSIDE the card's own
+            kq-material, where a second kq-material's blur is a Chromium no-op —
+            so it wears kq-surface, the card's material rebuilt opaquely, which
+            requires the element be positioned (hence `relative`). With no image,
+            the slot shows the plain glyph on the themed panel as a placeholder. */}
         {m.image ? (
           <div
-            className="flex size-[92px] flex-none items-center justify-center overflow-hidden rounded-md border border-border"
-            style={{ backgroundColor: "#f7f3ec" }}
+            className="kq-surface relative flex size-[92px] flex-none items-center justify-center overflow-hidden rounded-md border border-border"
             aria-hidden
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
