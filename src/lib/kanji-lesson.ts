@@ -65,37 +65,17 @@ import type { FactId, HistoryFile } from "@/types";
  * where they can be argued with rather than buried here. This is only the
  * DEFAULT and the shape; the live values ride on QuizConfig.
  */
-export interface LessonRange {
-  /** The floor a lesson is filled toward. A lesson ends below it only when the
-   * next indivisible bundle would push over `max`, or the material runs out. */
-  min: number;
-  /** The ceiling. Never exceeded except by a single bundle that cannot be split
-   * and is bigger than it on its own — 鬱 alone is 21. Those lessons are flagged
-   * `over` and the card says so, rather than the number quietly lying. */
-  max: number;
-}
+// LessonRange, its default, and the clamp live in the DATA-FREE
+// src/lib/lesson-sizing.ts so the always-mounted QuizConfigProvider can seed a
+// config without importing this module's KANJI_ORDER curriculum. Imported for
+// this module's own internal use and re-exported so its consumers are unchanged.
+import {
+  type LessonRange,
+  LESSON_RANGE_DEFAULT,
+  clampLessonRange,
+} from "@/lib/lesson-sizing";
 
-/** 6 and 12: a short sitting is roughly two or three ordinary kanji, a long one
- * half a dozen. Anchored to nothing but how long a beginner's session should
- * feel; move them in Settings. */
-export const LESSON_RANGE_DEFAULT: LessonRange = { min: 6, max: 12 };
-
-/**
- * The one place a range is made safe, and it is called on BOTH sides — the
- * Settings control and the config-load path — so a `max` below `min` cannot
- * reach the packer even through hand-edited localStorage.
- *
- * A packer handed max < min has no defined behaviour (fill toward a ceiling
- * under the floor?), so this does not trust the caller to have checked: `max`
- * is pinned at or above `min`, and both are whole and at least 1. It is a clamp
- * and not a throw because a bad stored value should degrade to a sane lesson,
- * not a blank screen — the same instinct history.ts has about stale data.
- */
-export function clampLessonRange(min: number, max: number): LessonRange {
-  const lo = Math.max(1, Math.round(Number.isFinite(min) ? min : LESSON_RANGE_DEFAULT.min));
-  const hi = Math.max(lo, Math.round(Number.isFinite(max) ? max : LESSON_RANGE_DEFAULT.max));
-  return { min: lo, max: hi };
-}
+export { type LessonRange, LESSON_RANGE_DEFAULT, clampLessonRange };
 
 /**
  * The draw+assembly cost of one kanji. See the header for the shape and the

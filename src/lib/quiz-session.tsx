@@ -42,8 +42,12 @@ import {
   type ReactNode,
 } from "react";
 
-import { computeResults } from "@/lib/engine";
-import { factKeys } from "@/lib/facts";
+// Both from the DATA-FREE engine/fact modules, not the barrels: this provider
+// is mounted in the root layout on every route, so a static edge from here to
+// facts.ts would pull the whole vocab+kanji payload into the eager client
+// bundle everywhere. computeResults + factKeys need no registry.
+import { computeResults } from "@/lib/engine/results";
+import { factKeys } from "@/lib/fact-keys";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import {

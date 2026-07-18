@@ -36,7 +36,9 @@
 // have that bug, because there is nothing alive to break. Leaving during a
 // rest is free: nothing is in flight.
 
-import { factKeys } from "@/lib/facts";
+// From the data-free module, not facts.ts: session.ts is on the always-mounted
+// QuizSessionProvider's import path, and factKeys needs no fact registry.
+import { factKeys } from "@/lib/fact-keys";
 import type { FactId, FactSessionDetail, SessionStats } from "@/types";
 
 import type { QuizSnapshot } from "@/lib/quiz-session-types";

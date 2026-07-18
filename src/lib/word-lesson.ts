@@ -55,27 +55,13 @@ import {
 } from "@/data/vocab";
 import type { FactId, HistoryFile } from "@/types";
 
-/**
- * How many NEW words a lesson teaches. The words analogue of the kanji lesson's
- * cost range — but a COUNT, not a cost, because a word adds no new kanji and the
- * draw+assembly work that sizes a kanji lesson does not apply. Each word is one
- * word to learn (a meaning, sometimes a reading), so the honest unit is how many
- * of them you meet in a sitting.
- *
- * A single number, not a min/max: a word is indivisible and uniform, so there is
- * no "bundle bigger than the ceiling" case the kanji range exists to handle. The
- * lesson is simply the next N teachable words.
- */
-export const WORDS_PER_LESSON_DEFAULT = 6;
+// The words-per-lesson default and clamp live in the DATA-FREE
+// src/lib/lesson-sizing.ts so the always-mounted QuizConfigProvider can seed a
+// config without importing this module's VOCAB curriculum. Imported for this
+// module's own internal use and re-exported so its consumers are unchanged.
+import { WORDS_PER_LESSON_DEFAULT, clampWordsPerLesson } from "@/lib/lesson-sizing";
 
-/** Clamp a stored/edited count to a sane lesson size — whole, at least 1. Same
- * instinct as `clampLessonRange`: a corrupt value should degrade to a small
- * lesson, not a blank screen. Capped so a hand-edit can't ask for a 500-word
- * teach screen. */
-export function clampWordsPerLesson(n: number): number {
-  const v = Math.round(Number.isFinite(n) ? n : WORDS_PER_LESSON_DEFAULT);
-  return Math.min(20, Math.max(1, v));
-}
+export { WORDS_PER_LESSON_DEFAULT, clampWordsPerLesson };
 
 /**
  * The last beginnerRank the curriculum teaches: the JLPT-joined core.
