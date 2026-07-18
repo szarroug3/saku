@@ -17,17 +17,15 @@
 // non-null. This component takes a resolved `Mnemonic`, so "there is nothing to
 // show" is simply "the caller didn't mount me."
 //
-// THE PICTURE SITS ON THE APP'S FROSTED MATERIAL
-// ==============================================
+// THE PICTURE SITS DIRECTLY ON THE CARD
+// =====================================
 // The slot on the left shows the entry's drawn `image` when it has one, and
-// falls back to the plain glyph as a placeholder when it doesn't. The image
-// tile wears the app's frosted-panel material so it matches every other box and
-// adapts to each theme; a transparent-PNG image (a/i are RGBA, u is RGB) shows
-// the frost THROUGH its empty areas. Because this tile is nested inside the
-// card's own `kq-material`, where a second `kq-material`'s blur is a Chromium
-// no-op, it uses `kq-surface` — the card's material rebuilt opaquely — which
-// must ride a positioned element (hence `relative`). The glyph placeholder uses
-// the themed panel like any other surface.
+// falls back to the plain glyph as a placeholder when it doesn't. This card
+// already sits inside the entry page's own card, so the image needs no frame of
+// its own: it renders DIRECTLY on the card material with no nested box/tile
+// behind it. A transparent-PNG image (a/i are RGBA, u is RGB) shows the card's
+// material THROUGH its empty areas. The glyph placeholder likewise renders
+// plain, with no box.
 //
 // THE ACCENT IS THE SOUND
 // =======================
@@ -65,29 +63,22 @@ export function MnemonicCard({ m }: { m: Mnemonic }) {
   return (
     <div className="kq-material mt-3 rounded-lg border border-border bg-card px-3.5 py-4">
       <div className="flex items-start gap-4">
-        {/* The picture, or the glyph. When the entry has a drawn image, it sits
-            on the app's frosted-panel material so the tile matches every other
-            box and adapts to each theme; a transparent-PNG image shows the frost
-            THROUGH its empty areas. This tile is nested INSIDE the card's own
-            kq-material, where a second kq-material's blur is a Chromium no-op —
-            so it wears kq-surface, the card's material rebuilt opaquely, which
-            requires the element be positioned (hence `relative`). With no image,
-            the slot shows the plain glyph on the themed panel as a placeholder. */}
+        {/* The picture, or the glyph. This card already sits inside the entry
+            page's own card, so the image needs no frame of its own — it renders
+            DIRECTLY on the card with no nested box/tile behind it. A
+            transparent-PNG image shows the card's material through its empty
+            areas. With no image, the plain glyph stands in as a placeholder,
+            likewise with no box. */}
         {m.image ? (
-          <div
-            className="kq-surface relative flex size-[92px] flex-none items-center justify-center overflow-hidden rounded-md border border-border"
-            aria-hidden
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={m.image} alt="" className="size-[84px] object-contain" />
-          </div>
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={m.image} alt="" className="size-[84px] flex-none object-contain" aria-hidden />
         ) : (
-          <div
-            className="flex size-[92px] flex-none items-center justify-center rounded-md border border-border bg-panel text-text"
+          <span
+            className="flex size-[92px] flex-none items-center justify-center font-kana text-[52px] leading-none"
             aria-hidden
           >
-            <span className="font-kana text-[52px] leading-none">{m.glyph}</span>
-          </div>
+            {m.glyph}
+          </span>
         )}
 
         <div className="min-w-0 flex-1">
