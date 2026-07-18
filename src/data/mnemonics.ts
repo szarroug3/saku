@@ -45,17 +45,21 @@
 // it to that webp). No edit to this table or its test — the romaji and the
 // glyph's script already name the file.
 //
-// THE ACCENT COLOUR IS RESERVED FOR THE SOUND
-// ===========================================
-// This is the rule the whole shape of `SoundLine` exists to enforce. When a
-// line highlights a span, that span carries the KANA'S SOUND — never a word
-// that describes the drawing. The first draft of this content underlined
-// "loop" for あ; "loop" sounds like "oo" and あ is "ah", so that accent was a
-// lie the reader's ear had to fight. Here it is not expressible: `SoundLine`
-// has one emphasis field, named `sound`, and it is the substring to accent. A
-// line with no sound-bearing word to accent sets `sound: null` and highlights
-// NOTHING — a shape word is never the fallback. mnemonics.test.ts holds the
-// line: a non-null `sound` must contain the entry's own accented sound token.
+// THE ACCENT COLOUR IS RESERVED FOR THE SOUND — WHEREVER IT IS SPOKEN
+// ==================================================================
+// This is the rule the shape of `SoundLine` exists to serve. When a span is
+// accented, that span carries the KANA'S SOUND — never a word that describes
+// the drawing. The first draft of this content underlined "loop" for あ; "loop"
+// sounds like "oo" and あ is "ah", so that accent was a lie the reader's ear had
+// to fight. A `SoundLine` is now an ordered array of `SoundSpan`s, and an
+// accent lands on EVERY span the sound is actually PRONOUNCED in — the standalone
+// phonetic cue ("ah"), the sound inside a reference word (the "a" in f·a·ther,
+// split out as its own accented span), and a voiced exclamation of it ("ahhh").
+// A span whose letters merely LOOK like the kana but sound different (capital A =
+// "ay", the schwa in "acrobat") is left plain. A line with no sound to accent
+// carries no accent span at all — a shape word is never a consolation highlight.
+// mnemonics.test.ts holds the line: every analogy has at least one accent span
+// whose text contains the entry's own accented sound token.
 //
 // APPROVED vs DRAFT
 // =================
@@ -67,29 +71,33 @@
 export type MnemonicKey = string;
 
 /**
- * A line of prose with one optional emphasized span — and the emphasis is
- * ALWAYS the sound.
- *
- * There is exactly one emphasis field and it is named `sound`, on purpose: the
- * accent colour on a mnemonic is reserved for the span that carries the kana's
- * pronunciation, and this type cannot express "accent a shape word." When a
- * line has no word that carries the sound, `sound` is `null` and nothing is
- * accented — never a shape word as a consolation highlight.
+ * One run of a line: a piece of text, accented or not. `accent: true` paints it
+ * in the accent colour — and the accent colour is reserved for the sound, so an
+ * accented span is one the kana's pronunciation is actually spoken in. A plain
+ * span (no `accent`, or `accent: false`) is ordinary prose. Never author an
+ * empty-text span.
  */
-export interface SoundLine {
-  /** Text before the accented span. */
-  lead: string;
+export interface SoundSpan {
+  /** The text of this run. Always non-empty. */
+  text: string;
   /**
-   * The exact substring to render in the accent colour — a span that carries
-   * the kana's SOUND. `null` when the line has no sound-bearing word, in which
-   * case nothing is accented. Invariant (see mnemonics.test.ts): when non-null
-   * this contains the entry's accented sound token (`Mnemonic.sound`),
-   * case-insensitively.
+   * `true` to render this run in the accent colour, meaning its letters are
+   * PRONOUNCED as the kana's sound. Omit (or `false`) for ordinary prose — a
+   * span that merely looks like the kana but sounds different stays plain.
    */
-  sound: string | null;
-  /** Text after the accented span. */
-  tail: string;
+  accent?: boolean;
 }
+
+/**
+ * A line of prose as an ordered array of spans. The accent colour lands on
+ * EVERY span the sound is pronounced in — the phonetic cue, each in-word
+ * instance (e.g. the "a" in f·a·ther split out as its own span), and any voiced
+ * exclamation of it — and never on a shape word. A line with no sound to accent
+ * is simply all-plain spans (or a single plain span). Invariant (see
+ * mnemonics.test.ts): every analogy carries at least one accent span whose text
+ * contains the entry's accented sound token (`Mnemonic.sound`), case-insensitively.
+ */
+export type SoundLine = SoundSpan[];
 
 /** A real beginner word that shows the kana in use, with the kana highlighted. */
 export interface MnemonicExample {
@@ -111,8 +119,9 @@ export interface Mnemonic {
   romaji: string;
   /**
    * The accented SOUND token — the English sound the analogy calls out and the
-   * one span the accent colour is reserved for, e.g. "ee" for い. Every
-   * `SoundLine.sound` in this entry carries this (enforced by test).
+   * one the accent colour is reserved for, e.g. "ee" for い. The analogy always
+   * carries an accent span whose text contains this token (enforced by test);
+   * it stays the invariant anchor across every re-segmentation of the prose.
    */
   sound: string;
   /** Optional IPA / spelled-out sound shown under the reading, e.g. "/a/ · ah". */
@@ -120,14 +129,18 @@ export interface Mnemonic {
   /** What the drawing depicts, e.g. "anchor". Shown as a small tag. */
   object?: string;
   /**
-   * The "say it like the X in Y" hook. `sound` accents the English sound. This
-   * line always has a sound to accent — an analogy with none would not be one.
+   * The "say it like the X in Y" hook, as a span array. Accents every span the
+   * sound is spoken in (the cue and each in-word instance). This line always
+   * carries at least one accent span — an analogy with none would not be one.
+   * Rendered SECONDARY: muted and slightly smaller than the mnemonic below.
    */
   analogy: SoundLine;
   /**
-   * The shape→picture hook: the one-scene story, with the sound landing hard.
-   * `sound` accents the sound-bearing word in the story, or is `null` when the
-   * story's words name only the shape and none carries the sound.
+   * The shape→picture hook: the one-scene story, as a span array, with the sound
+   * accented wherever it is pronounced. MAY carry zero accent spans when the
+   * story's words name only the shape and none is spoken as the sound. This is
+   * the memory hook, so it is rendered PROMINENT — full text colour, comfortable
+   * size — and the analogy is the muted secondary line.
    */
   mnemonic: SoundLine;
   /**
@@ -175,12 +188,20 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     sound: "ah",
     ipa: "/a/ · ah",
     object: "father",
-    analogy: { lead: "Say it like the open ", sound: "ah", tail: " in father — not the letter-name “ay,” not “cat.”" },
-    mnemonic: {
-      lead: "An acrobat tumbles through her aerials — a capital A flipping through the air — while her father watches, mouth open, and gasps “",
-      sound: "ahhh",
-      tail: "!”",
-    },
+    analogy: [
+      { text: "Say it like the open " },
+      { text: "ah", accent: true },
+      { text: " in f" },
+      { text: "a", accent: true },
+      { text: "ther — not the letter-name “ay,” not “cat.”" },
+    ],
+    mnemonic: [
+      { text: "An acrobat tumbles through her aerials — a capital A flipping through the air — while her f" },
+      { text: "a", accent: true },
+      { text: "ther watches, mouth open, and gasps “ooooh, " },
+      { text: "ahhh", accent: true },
+      { text: "!”" },
+    ],
     example: { word: "あめ", reading: "ame", gloss: "rain", hitIndex: 0 },
   },
 
@@ -190,12 +211,24 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     sound: "ee",
     ipa: "/i/ · ee",
     object: "two eels",
-    analogy: { lead: "Say it like the ", sound: "ee", tail: " in feet — the same sound as eel." },
-    mnemonic: {
-      lead: "Two eels tear up the river neck-and-neck, one long, one stubby, screeching a thin “",
-      sound: "eee",
-      tail: "!”",
-    },
+    analogy: [
+      { text: "Say it like the " },
+      { text: "ee", accent: true },
+      { text: " in f" },
+      { text: "ee", accent: true },
+      { text: "t — the same sound as " },
+      { text: "ee", accent: true },
+      { text: "l." },
+    ],
+    mnemonic: [
+      { text: "Two " },
+      { text: "ee", accent: true },
+      { text: "ls tear up the river neck-and-neck, one long, one stubby, scr" },
+      { text: "ee", accent: true },
+      { text: "ching a thin “" },
+      { text: "eee", accent: true },
+      { text: "!”" },
+    ],
     example: { word: "いぬ", reading: "inu", gloss: "dog", hitIndex: 0 },
   },
 
@@ -205,12 +238,18 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     sound: "oo",
     ipa: "/ɯ/ · oo",
     object: "u in the bath",
-    analogy: { lead: "Say it like the ", sound: "oo", tail: " in moon — but keep your lips relaxed and unrounded." },
-    mnemonic: {
-      lead: "A tired letter u tips onto its side and sinks into a hot bath — the line on top is the water settling over it — and sighs a long “",
-      sound: "oooh",
-      tail: ".”",
-    },
+    analogy: [
+      { text: "Say it like the " },
+      { text: "oo", accent: true },
+      { text: " in m" },
+      { text: "oo", accent: true },
+      { text: "n — but keep your lips relaxed and unrounded." },
+    ],
+    mnemonic: [
+      { text: "A tired letter u tips onto its side and sinks into a hot bath — the line on top is the water settling over it — and sighs a long “" },
+      { text: "oooh", accent: true },
+      { text: ".”" },
+    ],
     example: { word: "うみ", reading: "umi", gloss: "sea", hitIndex: 0 },
     approximate: "Japanese う is flatter than English “oo” — don’t purse your lips. Trust the sound clip.",
   },
@@ -221,12 +260,28 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     sound: "eh",
     ipa: "/e/ · eh",
     object: "bird from an egg",
-    analogy: { lead: "Say it like the ", sound: "eh", tail: " in bed or egg — flat “eh,” never “ay.”" },
-    mnemonic: {
-      lead: "An exotic bird cracks out of a speckled egg, shakes off the shell, and squawks “",
-      sound: "eh",
-      tail: "!”",
-    },
+    analogy: [
+      { text: "Say it like the " },
+      { text: "eh", accent: true },
+      { text: " in b" },
+      { text: "e", accent: true },
+      { text: "d or " },
+      { text: "e", accent: true },
+      { text: "gg — flat “" },
+      { text: "eh", accent: true },
+      { text: ",” never “ay.”" },
+    ],
+    mnemonic: [
+      { text: "An exotic bird cracks out of a sp" },
+      { text: "e", accent: true },
+      { text: "ckled " },
+      { text: "e", accent: true },
+      { text: "gg, shakes off the sh" },
+      { text: "e", accent: true },
+      { text: "ll, and squawks “" },
+      { text: "eh", accent: true },
+      { text: "!”" },
+    ],
     example: { word: "えき", reading: "eki", gloss: "station", hitIndex: 0 },
     approximate: "No glide — it’s “eh,” never “ay.” Match the sound clip’s flat vowel.",
   },
@@ -237,12 +292,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     sound: "oh",
     ipa: "/o/ · oh",
     object: "wide eyes",
-    analogy: { lead: "Say it like the ", sound: "oh", tail: " in oat — a clean “oh.”" },
-    mnemonic: {
-      lead: "Two eyes go round as Os watching the fireworks burst overhead — a long, amazed “",
-      sound: "oh",
-      tail: "!”",
-    },
+    analogy: [
+      { text: "Say it like the " },
+      { text: "oh", accent: true },
+      { text: " in " },
+      { text: "oa", accent: true },
+      { text: "t — a clean “" },
+      { text: "oh", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "Two eyes g" },
+      { text: "o", accent: true },
+      { text: " round as " },
+      { text: "O", accent: true },
+      { text: "s watching the fireworks burst " },
+      { text: "o", accent: true },
+      { text: "verhead — a long, amazed “" },
+      { text: "oh", accent: true },
+      { text: "!”" },
+    ],
     example: { word: "おと", reading: "oto", gloss: "sound", hitIndex: 0 },
     approximate: "Short and pure, no “oh-w” glide at the end. The sound clip is the ruler.",
   },
@@ -253,12 +322,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ka",
     sound: "ka",
     object: "karate kick",
-    analogy: { lead: "Say it like the ", sound: "ka", tail: " in karate." },
-    mnemonic: {
-      lead: "A black belt snaps out a karate kick, one leg flying high, and shouts “",
-      sound: "ka",
-      tail: "!” as the board splits.",
-    },
+    analogy: [
+      { text: "Say it like the " },
+      { text: "ka", accent: true },
+      { text: " in karate." },
+    ],
+    mnemonic: [
+      { text: "A black belt snaps out a karate kick, one leg flying high, and shouts “" },
+      { text: "ka", accent: true },
+      { text: "!” as the board splits." },
+    ],
     example: { word: "かさ", reading: "kasa", gloss: "umbrella", hitIndex: 0 },
   },
 
@@ -267,12 +340,20 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ki",
     sound: "kee",
     object: "key",
-    analogy: { lead: "Say “", sound: "kee", tail: ",” like the word key." },
-    mnemonic: {
-      lead: "A two-toothed key jams into a rusty lock and screeches “",
-      sound: "kee",
-      tail: "!” as it forces the door open.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "kee", accent: true },
+      { text: ",” like the word " },
+      { text: "key", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "A two-toothed " },
+      { text: "key", accent: true },
+      { text: " jams into a rusty lock and screeches “" },
+      { text: "kee", accent: true },
+      { text: "!” as it forces the door open." },
+    ],
     example: { word: "き", reading: "ki", gloss: "tree", hitIndex: 0 },
   },
 
@@ -281,12 +362,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ku",
     sound: "ku",
     object: "cuckoo",
-    analogy: { lead: "Say “", sound: "ku", tail: "-ku,” like a cuckoo — a sharp “koo.”" },
-    mnemonic: {
-      lead: "A cuckoo explodes out of the clock, beak stabbing to a sharp point, screaming “",
-      sound: "ku-ku",
-      tail: "!” on the hour.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "ku", accent: true },
+      { text: "-" },
+      { text: "ku", accent: true },
+      { text: ",” like a cuc" },
+      { text: "koo", accent: true },
+      { text: " — a sharp “" },
+      { text: "koo", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "A cuc" },
+      { text: "koo", accent: true },
+      { text: " explodes out of the clock, beak stabbing to a sharp point, screaming “" },
+      { text: "ku", accent: true },
+      { text: "-" },
+      { text: "ku", accent: true },
+      { text: "!” on the hour." },
+    ],
     example: { word: "くち", reading: "kuchi", gloss: "mouth", hitIndex: 0 },
   },
 
@@ -295,12 +390,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ke",
     sound: "ke",
     object: "kelp",
-    analogy: { lead: "Say it like the e in bed — “", sound: "keh", tail: ".”" },
-    mnemonic: {
-      lead: "Two ribbons of ",
-      sound: "ke",
-      tail: "lp sway in the tide, leaning and parting in the current.",
-    },
+    analogy: [
+      { text: "Say it like the e in bed — “" },
+      { text: "keh", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "Two ribbons of " },
+      { text: "ke", accent: true },
+      { text: "lp sway in the tide, leaning and parting in the current." },
+    ],
     example: { word: "けさ", reading: "kesa", gloss: "this morning", hitIndex: 0 },
   },
 
@@ -309,12 +408,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ko",
     sound: "co",
     object: "a cobra",
-    analogy: { lead: "Sounds like the start of ", sound: "cobra", tail: "." },
-    mnemonic: {
-      lead: "A ",
-      sound: "cobra",
-      tail: " coiled twice — one loop stacked above the other, like こ.",
-    },
+    analogy: [
+      { text: "Sounds like the start of " },
+      { text: "co", accent: true },
+      { text: "bra." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "co", accent: true },
+      { text: "bra coiled twice — one loop stacked above the other, like こ." },
+    ],
     example: { word: "こえ", reading: "koe", gloss: "voice", hitIndex: 0 },
   },
 
@@ -324,12 +427,18 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "sa",
     sound: "sa",
     object: "sardine",
-    analogy: { lead: "Say “", sound: "sah", tail: ",” as in sardine." },
-    mnemonic: {
-      lead: "A fat ",
-      sound: "sar",
-      tail: "dine dangles off the fishing line, body arched, tail flicking — one wriggle and it’s gone.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "sah", accent: true },
+      { text: ",” as in " },
+      { text: "sa", accent: true },
+      { text: "rdine." },
+    ],
+    mnemonic: [
+      { text: "A fat " },
+      { text: "sa", accent: true },
+      { text: "rdine dangles off the fishing line, body arched, tail flicking — one wriggle and it’s gone." },
+    ],
     example: { word: "さかな", reading: "sakana", gloss: "fish", hitIndex: 0 },
   },
 
@@ -338,12 +447,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "shi",
     sound: "shee",
     object: "a shepherd's crook",
-    analogy: { lead: "Like the start of ", sound: "sheep", tail: "." },
-    mnemonic: {
-      lead: "A shepherd's crook reaches out to hook a stray ",
-      sound: "sheep",
-      tail: " — し.",
-    },
+    analogy: [
+      { text: "Like the start of " },
+      { text: "shee", accent: true },
+      { text: "p." },
+    ],
+    mnemonic: [
+      { text: "A shepherd's crook reaches out to hook a stray " },
+      { text: "shee", accent: true },
+      { text: "p — し." },
+    ],
     example: { word: "しろ", reading: "shiro", gloss: "white", hitIndex: 0 },
   },
 
@@ -352,12 +465,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "su",
     sound: "soo",
     object: "a bowl of soup",
-    analogy: { lead: "Say “", sound: "soo", tail: ".”" },
-    mnemonic: {
-      lead: "A bowl of soup, a curl of steam rising off the top — す.",
-      sound: null,
-      tail: "",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "soo", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "A bowl of " },
+      { text: "sou", accent: true },
+      { text: "p, a curl of steam rising off the top — す." },
+    ],
     example: { word: "すし", reading: "sushi", gloss: "sushi", hitIndex: 0 },
   },
 
@@ -366,12 +483,18 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "se",
     sound: "se",
     object: "a seesaw",
-    analogy: { lead: "Say “", sound: "seh", tail: ".”" },
-    mnemonic: {
-      lead: "Seven kids ",
-      sound: "settle",
-      tail: " onto the seesaw and it tips — a plank across the middle, one seat flung high — せ.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "seh", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "S" },
+      { text: "e", accent: true },
+      { text: "ven kids " },
+      { text: "se", accent: true },
+      { text: "ttle onto the seesaw and it tips — a plank across the middle, one seat flung high — せ." },
+    ],
     example: { word: "せかい", reading: "sekai", gloss: "world", hitIndex: 0 },
   },
 
@@ -380,12 +503,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "so",
     sound: "sew",
     object: "sewing",
-    analogy: { lead: "Sounds like ", sound: "sew", tail: "." },
-    mnemonic: {
-      lead: "A needle ",
-      sound: "sew",
-      tail: "s a zig-zag stitch — そ.",
-    },
+    analogy: [
+      { text: "Sounds like " },
+      { text: "sew", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "A needle " },
+      { text: "sew", accent: true },
+      { text: "s a zig-zag stitch — そ." },
+    ],
     example: { word: "そら", reading: "sora", gloss: "sky", hitIndex: 0 },
   },
 
@@ -395,12 +522,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ta",
     sound: "ta",
     object: "“ta-da!” finish",
-    analogy: { lead: "Say “", sound: "tah", tail: ".”" },
-    mnemonic: {
-      lead: "Arms and legs flung wide, the performer lands the big finish: “",
-      sound: "ta-da",
-      tail: "!”",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "tah", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "Arms and legs flung wide, the performer lands the big finish: “" },
+      { text: "ta", accent: true },
+      { text: "-da!”" },
+    ],
     example: { word: "たまご", reading: "tamago", gloss: "egg", hitIndex: 0 },
     draft: true,
   },
@@ -410,12 +541,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "chi",
     sound: "chee",
     object: "a wheel of cheese",
-    analogy: { lead: "Say “", sound: "chee", tail: ".”" },
-    mnemonic: {
-      lead: "A big wheel of ",
-      sound: "cheese",
-      tail: " with a wedge cut out — ち.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "chee", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "A big wheel of " },
+      { text: "chee", accent: true },
+      { text: "se with a wedge cut out — ち." },
+    ],
     example: { word: "ちず", reading: "chizu", gloss: "map", hitIndex: 0 },
     draft: true,
   },
@@ -425,12 +560,18 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "tsu",
     sound: "tsu",
     object: "wave",
-    analogy: { lead: "Say “", sound: "tsu", tail: "” — “tsoo,” one sound, t and s together." },
-    mnemonic: {
-      lead: "A single ",
-      sound: "tsu",
-      tail: "nami curls its crest and sweeps over.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "tsu", accent: true },
+      { text: "” — “" },
+      { text: "tsoo", accent: true },
+      { text: ",” one sound, t and s together." },
+    ],
+    mnemonic: [
+      { text: "A single " },
+      { text: "tsu", accent: true },
+      { text: "nami curls its crest and sweeps over." },
+    ],
     example: { word: "つき", reading: "tsuki", gloss: "moon", hitIndex: 0 },
     approximate: "One sound — t and s pressed together, not “t” then “sue.” The sound clip nails it.",
     draft: true,
@@ -441,12 +582,18 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "te",
     sound: "te",
     object: "telephone pole",
-    analogy: { lead: "Say “", sound: "teh", tail: ".”" },
-    mnemonic: {
-      lead: "A ",
-      sound: "te",
-      tail: "lephone pole with one crossbar hums in the wind — “teh.”",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "teh", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "te", accent: true },
+      { text: "lephone pole with one crossbar hums in the wind — “" },
+      { text: "teh", accent: true },
+      { text: ".”" },
+    ],
     example: { word: "てがみ", reading: "tegami", gloss: "letter", hitIndex: 0 },
     draft: true,
   },
@@ -456,12 +603,18 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "to",
     sound: "to",
     object: "stubbed toe",
-    analogy: { lead: "Say “", sound: "toh", tail: ".”" },
-    mnemonic: {
-      lead: "A thorn jabs the ",
-      sound: "toe",
-      tail: " — “toh!” — one long foot, one sharp splinter crossing it.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "toh", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "A thorn jabs the " },
+      { text: "toe", accent: true },
+      { text: " — “" },
+      { text: "toh", accent: true },
+      { text: "!” — one long foot, one sharp splinter crossing it." },
+    ],
     example: { word: "とり", reading: "tori", gloss: "bird", hitIndex: 0 },
     draft: true,
   },
@@ -472,12 +625,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "na",
     sound: "na",
     object: "a plate of nachos",
-    analogy: { lead: "Say “", sound: "nah", tail: ".”" },
-    mnemonic: {
-      lead: "A plate of ",
-      sound: "nachos",
-      tail: " piled high — な.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "nah", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "A plate of " },
+      { text: "na", accent: true },
+      { text: "chos piled high — な." },
+    ],
     example: { word: "なつ", reading: "natsu", gloss: "summer", hitIndex: 0 },
     draft: true,
   },
@@ -487,12 +644,20 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ni",
     sound: "nee",
     object: "needle and thread",
-    analogy: { lead: "Say “", sound: "nee", tail: ",” like needle." },
-    mnemonic: {
-      lead: "Thread the ",
-      sound: "nee",
-      tail: "dle — the tall needle standing, two stitches beside it.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "nee", accent: true },
+      { text: ",” like " },
+      { text: "nee", accent: true },
+      { text: "dle." },
+    ],
+    mnemonic: [
+      { text: "Thread the " },
+      { text: "nee", accent: true },
+      { text: "dle — the tall " },
+      { text: "nee", accent: true },
+      { text: "dle standing, two stitches beside it." },
+    ],
     example: { word: "にく", reading: "niku", gloss: "meat", hitIndex: 0 },
     draft: true,
   },
@@ -502,12 +667,18 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "nu",
     sound: "noo",
     object: "noodles",
-    analogy: { lead: "Say “", sound: "noo", tail: ",” like noodles." },
-    mnemonic: {
-      lead: "Twirl the ",
-      sound: "noo",
-      tail: "dles up off the bowl — one big looping slurp.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "noo", accent: true },
+      { text: ",” like " },
+      { text: "noo", accent: true },
+      { text: "dles." },
+    ],
+    mnemonic: [
+      { text: "Twirl the " },
+      { text: "noo", accent: true },
+      { text: "dles up off the bowl — one big looping slurp." },
+    ],
     example: { word: "ぬの", reading: "nuno", gloss: "cloth", hitIndex: 0 },
     draft: true,
   },
@@ -517,12 +688,15 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ne",
     sound: "ne",
     object: "Nelly the cat",
-    analogy: { lead: "Starts like ", sound: "Nelly", tail: "." },
-    mnemonic: {
-      lead: "",
-      sound: "Nelly",
-      tail: " the cat curls her tail into a loop — ね.",
-    },
+    analogy: [
+      { text: "Starts like " },
+      { text: "Ne", accent: true },
+      { text: "lly." },
+    ],
+    mnemonic: [
+      { text: "Ne", accent: true },
+      { text: "lly the cat curls her tail into a loop — ね." },
+    ],
     example: { word: "ねこ", reading: "neko", gloss: "cat", hitIndex: 0 },
     draft: true,
   },
@@ -532,12 +706,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "no",
     sound: "no",
     object: "a pig's nose",
-    analogy: { lead: "Say “", sound: "noh", tail: ".”" },
-    mnemonic: {
-      lead: "A pig's ",
-      sound: "nose",
-      tail: " — one round snout with a curl, like の.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "noh", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "A pig's " },
+      { text: "no", accent: true },
+      { text: "se — one round snout with a curl, like の." },
+    ],
     example: { word: "のり", reading: "nori", gloss: "seaweed", hitIndex: 0 },
     draft: true,
   },
@@ -548,12 +726,20 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ha",
     sound: "ha",
     object: "big laugh",
-    analogy: { lead: "Say “", sound: "hah", tail: ".”" },
-    mnemonic: {
-      lead: "Throw your head back and laugh: “",
-      sound: "ha-ha-ha",
-      tail: "!”",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "hah", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "Throw your head back and laugh: “" },
+      { text: "ha", accent: true },
+      { text: "-" },
+      { text: "ha", accent: true },
+      { text: "-" },
+      { text: "ha", accent: true },
+      { text: "!”" },
+    ],
     example: { word: "はな", reading: "hana", gloss: "flower", hitIndex: 0 },
     draft: true,
   },
@@ -563,12 +749,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "hi",
     sound: "hee",
     object: "a heel",
-    analogy: { lead: "Like the vowel in ", sound: "heel", tail: "." },
-    mnemonic: {
-      lead: "A bare foot — the ",
-      sound: "heel",
-      tail: " juts out at the back, just like ひ.",
-    },
+    analogy: [
+      { text: "Like the vowel in " },
+      { text: "hee", accent: true },
+      { text: "l." },
+    ],
+    mnemonic: [
+      { text: "A bare foot — the " },
+      { text: "hee", accent: true },
+      { text: "l juts out at the back, just like ひ." },
+    ],
     example: { word: "ひと", reading: "hito", gloss: "person", hitIndex: 0 },
     draft: true,
   },
@@ -578,12 +768,18 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "fu",
     sound: "fu",
     object: "Mount Fuji",
-    analogy: { lead: "A soft ", sound: "fu", tail: " — “foo,” halfway between English f and h." },
-    mnemonic: {
-      lead: "Climb ",
-      sound: "Fu",
-      tail: "ji — the peak with clouds drifting past its slopes.",
-    },
+    analogy: [
+      { text: "A soft " },
+      { text: "fu", accent: true },
+      { text: " — “" },
+      { text: "foo", accent: true },
+      { text: ",” halfway between English f and h." },
+    ],
+    mnemonic: [
+      { text: "Climb " },
+      { text: "Fu", accent: true },
+      { text: "ji — the peak with clouds drifting past its slopes." },
+    ],
     example: { word: "ふね", reading: "fune", gloss: "boat", hitIndex: 0 },
     approximate: "Not a hard English “f” — a soft breath between f and h. The sound clip is the guide.",
     draft: true,
@@ -594,12 +790,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "he",
     sound: "he",
     object: "a mountain peak",
-    analogy: { lead: "Sounds like the start of ", sound: "Helens", tail: "." },
-    mnemonic: {
-      lead: "A single mountain peak — Mount St. ",
-      sound: "Helens",
-      tail: " — へ.",
-    },
+    analogy: [
+      { text: "Sounds like the start of " },
+      { text: "He", accent: true },
+      { text: "lens." },
+    ],
+    mnemonic: [
+      { text: "A single mountain peak — Mount St. " },
+      { text: "He", accent: true },
+      { text: "lens — へ." },
+    ],
     example: { word: "へや", reading: "heya", gloss: "room", hitIndex: 0 },
     draft: true,
   },
@@ -609,12 +809,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ho",
     sound: "ho",
     object: "a home",
-    analogy: { lead: "Sounds like the start of ", sound: "home", tail: "." },
-    mnemonic: {
-      lead: "A little ",
-      sound: "home",
-      tail: " with a wall and a chimney — ほ.",
-    },
+    analogy: [
+      { text: "Sounds like the start of " },
+      { text: "ho", accent: true },
+      { text: "me." },
+    ],
+    mnemonic: [
+      { text: "A little " },
+      { text: "ho", accent: true },
+      { text: "me with a wall and a chimney — ほ." },
+    ],
     example: { word: "ほし", reading: "hoshi", gloss: "star", hitIndex: 0 },
     draft: true,
   },
@@ -625,12 +829,15 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ma",
     sound: "ma",
     object: "horseshoe magnet",
-    analogy: { lead: "Say “", sound: "mah", tail: ".”" },
-    mnemonic: {
-      lead: "",
-      sound: "Ma",
-      tail: "ma’s magnet snaps it up — two poles up top, a U-base below.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "mah", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "Ma", accent: true },
+      { text: "ma’s magnet snaps it up — two poles up top, a U-base below." },
+    ],
     example: { word: "まど", reading: "mado", gloss: "window", hitIndex: 0 },
     draft: true,
   },
@@ -640,12 +847,20 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "mi",
     sound: "mi",
     object: "a musical note",
-    analogy: { lead: "Say “", sound: "mi", tail: ",” the note — you say it “mee.”" },
-    mnemonic: {
-      lead: "A musical note — the ",
-      sound: "mi",
-      tail: " in do-re-mi — み.",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "mi", accent: true },
+      { text: ",” the note — you say it “" },
+      { text: "mee", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "A musical note — the " },
+      { text: "mi", accent: true },
+      { text: " in do-re-" },
+      { text: "mi", accent: true },
+      { text: " — み." },
+    ],
     example: { word: "みみ", reading: "mimi", gloss: "ear", hitIndex: 0 },
     draft: true,
   },
@@ -655,12 +870,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "mu",
     sound: "moo",
     object: "a cow",
-    analogy: { lead: "Sounds like a cow's ", sound: "moo", tail: "." },
-    mnemonic: {
-      lead: "A cow swishes its tail and lows, ",
-      sound: "moo",
-      tail: " — む.",
-    },
+    analogy: [
+      { text: "Sounds like a cow's " },
+      { text: "moo", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "A cow swishes its tail and lows, " },
+      { text: "moo", accent: true },
+      { text: " — む." },
+    ],
     example: { word: "むし", reading: "mushi", gloss: "insect", hitIndex: 0 },
     draft: true,
   },
@@ -670,12 +889,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "me",
     sound: "me",
     object: "eye",
-    analogy: { lead: "Say “", sound: "meh", tail: ".”" },
-    mnemonic: {
-      lead: "A ",
-      sound: "me",
-      tail: "lon-round eye winks — lid and lashes above, the eyeball below. (め even means “eye.”)",
-    },
+    analogy: [
+      { text: "Say “" },
+      { text: "meh", accent: true },
+      { text: ".”" },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "me", accent: true },
+      { text: "lon-round eye winks — lid and lashes above, the eyeball below. (め even means “eye.”)" },
+    ],
     example: { word: "め", reading: "me", gloss: "eye", hitIndex: 0 },
     draft: true,
   },
@@ -685,12 +908,18 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "mo",
     sound: "mo",
     object: "a fishhook",
-    analogy: { lead: "Sounds like ", sound: "more", tail: "." },
-    mnemonic: {
-      lead: "A fishhook baited with two worms — the ",
-      sound: "more",
-      tail: " worms, the more fish — も.",
-    },
+    analogy: [
+      { text: "Sounds like " },
+      { text: "mo", accent: true },
+      { text: "re." },
+    ],
+    mnemonic: [
+      { text: "A fishhook baited with two worms — the " },
+      { text: "mo", accent: true },
+      { text: "re worms, the " },
+      { text: "mo", accent: true },
+      { text: "re fish — も." },
+    ],
     example: { word: "もり", reading: "mori", gloss: "forest", hitIndex: 0 },
     draft: true,
   },
@@ -701,12 +930,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ya",
     sound: "ya",
     object: "a yacht",
-    analogy: { lead: "Sounds like the start of ", sound: "yacht", tail: "." },
-    mnemonic: {
-      lead: "A ",
-      sound: "yacht",
-      tail: ", mast up and sail full — や.",
-    },
+    analogy: [
+      { text: "Sounds like the start of " },
+      { text: "ya", accent: true },
+      { text: "cht." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "ya", accent: true },
+      { text: "cht, mast up and sail full — や." },
+    ],
     example: { word: "やま", reading: "yama", gloss: "mountain", hitIndex: 0 },
     draft: true,
   },
@@ -716,12 +949,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "yu",
     sound: "uni",
     object: "a unique fish",
-    analogy: { lead: "Sounds like the start of ", sound: "unique", tail: "." },
-    mnemonic: {
-      lead: "A ",
-      sound: "unique",
-      tail: " fish, its long tail looping back — ゆ.",
-    },
+    analogy: [
+      { text: "Sounds like the start of " },
+      { text: "uni", accent: true },
+      { text: "que." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "uni", accent: true },
+      { text: "que fish, its long tail looping back — ゆ." },
+    ],
     example: { word: "ゆき", reading: "yuki", gloss: "snow", hitIndex: 0 },
     draft: true,
   },
@@ -731,12 +968,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "yo",
     sound: "yo",
     object: "\"yo\"",
-    analogy: { lead: "Sounds like ", sound: "yo", tail: "." },
-    mnemonic: {
-      lead: "It even reads like the word ",
-      sound: "yo",
-      tail: " — よ.",
-    },
+    analogy: [
+      { text: "Sounds like " },
+      { text: "yo", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "It even reads like the word " },
+      { text: "yo", accent: true },
+      { text: " — よ." },
+    ],
     example: { word: "よる", reading: "yoru", gloss: "night", hitIndex: 0 },
     draft: true,
   },
@@ -747,12 +988,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ra",
     sound: "ra",
     object: "a rabbit",
-    analogy: { lead: "Sounds like the start of ", sound: "rabbit", tail: "." },
-    mnemonic: {
-      lead: "A ",
-      sound: "rabbit",
-      tail: " sits up, ears pricked forward — ら.",
-    },
+    analogy: [
+      { text: "Sounds like the start of " },
+      { text: "ra", accent: true },
+      { text: "bbit." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "ra", accent: true },
+      { text: "bbit sits up, ears pricked forward — ら." },
+    ],
     example: { word: "さくら", reading: "sakura", gloss: "cherry blossom", hitIndex: 2 },
     approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
@@ -763,12 +1008,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ri",
     sound: "ree",
     object: "reeds",
-    analogy: { lead: "Sounds like ", sound: "reeds", tail: "." },
-    mnemonic: {
-      lead: "Two ",
-      sound: "reeds",
-      tail: " standing side by side in the water — り.",
-    },
+    analogy: [
+      { text: "Sounds like " },
+      { text: "ree", accent: true },
+      { text: "ds." },
+    ],
+    mnemonic: [
+      { text: "Two " },
+      { text: "ree", accent: true },
+      { text: "ds standing side by side in the water — り." },
+    ],
     example: { word: "りんご", reading: "ringo", gloss: "apple", hitIndex: 0 },
     approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
@@ -779,12 +1028,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ru",
     sound: "rou",
     object: "a looping road",
-    analogy: { lead: "Sounds like ", sound: "route", tail: "." },
-    mnemonic: {
-      lead: "The ",
-      sound: "route",
-      tail: " drops down and curls into a loop — る.",
-    },
+    analogy: [
+      { text: "Sounds like " },
+      { text: "rou", accent: true },
+      { text: "te." },
+    ],
+    mnemonic: [
+      { text: "The " },
+      { text: "rou", accent: true },
+      { text: "te drops down and curls into a loop — る." },
+    ],
     example: { word: "くるま", reading: "kuruma", gloss: "car", hitIndex: 1 },
     approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
@@ -795,12 +1048,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "re",
     sound: "re",
     object: "someone retching",
-    analogy: { lead: "Sounds like the start of ", sound: "retching", tail: "." },
-    mnemonic: {
-      lead: "A person doubled over the toilet, ",
-      sound: "retching",
-      tail: " — れ.",
-    },
+    analogy: [
+      { text: "Sounds like the start of " },
+      { text: "re", accent: true },
+      { text: "tching." },
+    ],
+    mnemonic: [
+      { text: "A person doubled over the toilet, " },
+      { text: "re", accent: true },
+      { text: "tching — れ." },
+    ],
     example: { word: "きれい", reading: "kirei", gloss: "pretty", hitIndex: 1 },
     approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
@@ -811,12 +1068,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "ro",
     sound: "ro",
     object: "a winding road",
-    analogy: { lead: "Sounds like ", sound: "road", tail: "." },
-    mnemonic: {
-      lead: "A ",
-      sound: "road",
-      tail: " winding down and bending back — ろ (the open bend; る adds the full loop).",
-    },
+    analogy: [
+      { text: "Sounds like " },
+      { text: "ro", accent: true },
+      { text: "ad." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "ro", accent: true },
+      { text: "ad winding down and bending back — ろ (the open bend; る adds the full loop)." },
+    ],
     example: { word: "ろく", reading: "roku", gloss: "six", hitIndex: 0 },
     approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
     draft: true,
@@ -828,12 +1089,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "wa",
     sound: "wa",
     object: "someone waving",
-    analogy: { lead: "Sounds like the start of ", sound: "waving", tail: "." },
-    mnemonic: {
-      lead: "A person ",
-      sound: "waving",
-      tail: " one arm high — わ.",
-    },
+    analogy: [
+      { text: "Sounds like the start of " },
+      { text: "wa", accent: true },
+      { text: "ving." },
+    ],
+    mnemonic: [
+      { text: "A person " },
+      { text: "wa", accent: true },
+      { text: "ving one arm high — わ." },
+    ],
     example: { word: "わたし", reading: "watashi", gloss: "I / me", hitIndex: 0 },
     draft: true,
   },
@@ -843,12 +1108,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "wo",
     sound: "wo",
     object: "a wok",
-    analogy: { lead: "Sounds like ", sound: "wok", tail: "." },
-    mnemonic: {
-      lead: "A ",
-      sound: "wok",
-      tail: " tossing food up in an arc — を.",
-    },
+    analogy: [
+      { text: "Sounds like " },
+      { text: "wo", accent: true },
+      { text: "k." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "wo", accent: true },
+      { text: "k tossing food up in an arc — を." },
+    ],
     example: { word: "パンを", reading: "pan o", gloss: "bread [object]", hitIndex: 2 },
     approximate: "The object particle — attaches to a noun (パンを食べる, “eat bread”) and sounds exactly like お.",
     draft: true,
@@ -859,12 +1128,16 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     romaji: "n",
     sound: "n",
     object: "the letter n",
-    analogy: { lead: "Sounds like the letter ", sound: "n", tail: "." },
-    mnemonic: {
-      lead: "It even looks like a lowercase ",
-      sound: "n",
-      tail: " — ん.",
-    },
+    analogy: [
+      { text: "Sounds like the letter " },
+      { text: "n", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "It even looks like a lowercase " },
+      { text: "n", accent: true },
+      { text: " — ん." },
+    ],
     example: { word: "ほん", reading: "hon", gloss: "book", hitIndex: 1 },
     approximate: "One held beat of nasal — its exact colour (m / n / ng) bends to what follows. Trust the sound clip.",
     draft: true,
