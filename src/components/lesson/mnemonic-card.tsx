@@ -61,7 +61,7 @@ export function MnemonicCard({ m }: { m: Mnemonic }) {
   const chars = [...m.example.word];
 
   return (
-    <div className="kq-material mt-3 rounded-lg border border-border bg-card px-3.5 py-4">
+    <div className="mt-3">
       <div className="flex items-start gap-4">
         {/* The picture, or the glyph. This card already sits inside the entry
             page's own card, so the image needs no frame of its own — it renders
