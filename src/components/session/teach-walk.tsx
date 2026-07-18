@@ -67,7 +67,7 @@ export function TeachWalk({
   if (!item) return null;
 
   return (
-    <div className="mx-auto max-w-[560px] px-3 pt-6">
+    <div className="mx-auto max-w-[920px] px-3 pt-6">
       <div className="text-center">
         <p className="text-[10px] uppercase tracking-[0.13em] text-text-muted">
           {reviewing
@@ -112,11 +112,14 @@ export function TeachWalk({
         </div>
       </div>
 
-      {/* The item — glyph, mnemonic (kana), how it's written, readings (kanji),
-          example words. Keyed on the entry so each step is a clean remount: the
-          persisted-preference sections re-read their state and no open/closed
-          disclosure leaks between glyphs. */}
-      <div className="mt-3 rounded-xl border border-border bg-card p-[18px] kq-material">
+      {/* The item — glyph/picture, the kana hook, how it's written, readings
+          (kanji), example words. NO card around it: the lesson is meant to read
+          as one coherent page, not a page within a page, so the item sits
+          directly on the session ground (the owner's note). Keyed on the entry
+          so each step is a clean remount: the persisted-preference sections
+          re-read their state and no open/closed disclosure leaks between
+          glyphs. */}
+      <div className="mt-7">
         <LessonItemView key={item.entry} item={item} />
       </div>
 
