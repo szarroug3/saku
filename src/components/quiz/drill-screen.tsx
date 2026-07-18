@@ -47,12 +47,15 @@ import {
   checkTyped,
   confusedWith,
   en2jpTypeable,
+  grammarVehicleFor,
   newFactStat,
   pickDir,
   questionsFor,
   requeueGap,
   retriesAllowed,
   shuffle,
+  type GrammarVehicle,
+  type PromptContext,
 } from "@/lib/engine";
 import { entryOf, factInfo } from "@/lib/facts";
 import { fitGlyphSize } from "@/lib/glyph-fit";
@@ -83,6 +86,20 @@ interface DrillQuestion {
   mc: FactId[] | null;
   /** Per-option fonts for en2jp MC labels. */
   mcFonts: string[] | null;
+  /**
+   * The verb this grammar PRODUCTION showing is built on — rolled once at ask
+   * time so a remount doesn't re-pick it, exactly like `font` and `mc`. null
+   * for every non-grammar card and for a grammar card with no varied vehicle
+   * (it then runs on the fixed 行く baked in the fact). Plain data, so it rides
+   * the serialized runtime. */
+  grammarVehicle: GrammarVehicle | null;
+}
+
+/** The per-showing presentation context for a card: the anchor word for a kanji
+ * reading, the vehicle verb for a grammar production. Rebuilt from the frozen
+ * runtime so prompt, check, options and reveal all agree on one showing. */
+function ctxFor(q: DrillQuestion, anchor?: string): PromptContext {
+  return { anchor, grammarVehicle: q.grammarVehicle ?? undefined };
 }
 
 /**
@@ -92,7 +109,12 @@ interface DrillQuestion {
  * offers GLYPHS. Which is the same asymmetry the prompt has, in reverse — the
  * option side always shows whatever the prompt side is not.
  */
-function labelOf(fact: FactId, dir: Direction): string {
+function labelOf(fact: FactId, dir: Direction, ctx?: PromptContext): string {
+  // A subject may override the visible text per showing — grammar production
+  // shows the pattern built on this card's vehicle (食べたい, not the baked
+  // 行きたい). Everyone else has no optionLabel and falls to glyph/answer.
+  const shown = questionsFor(fact).optionLabel?.(fact, dir, ctx);
+  if (shown != null) return shown;
   const info = factInfo(fact);
   if (!info) return "";
   return dir === "en2jp" ? info.glyph : (info.answers[0] ?? "");
@@ -366,7 +388,13 @@ export function DrillScreen() {
     // a one-option multiple choice is a free point rather than a question. Fall
     // back to typed instead of showing it — see engine.buildMcOptions, which
     // returns short rather than padding with randoms.
-    const built = typedMode ? null : buildMcOptions(f);
+    // A grammar production card picks its vehicle verb here, once, so the whole
+    // showing (prompt, options, grading, reveal) runs on ONE verb and a remount
+    // can't swap it. null for every other card and for a grammar card the pool
+    // can't host — that one runs on the fixed baked vehicle, unchanged.
+    const grammarVehicle = grammarVehicleFor(f);
+    const ctx: PromptContext = { grammarVehicle: grammarVehicle ?? undefined };
+    const built = typedMode ? null : buildMcOptions(f, ctx);
     const mc = built && built.length > 1 ? built : null;
     rt.q = {
       f,
@@ -375,6 +403,7 @@ export function DrillScreen() {
       font: pickFont(cfg.fonts),
       mc,
       mcFonts: mc && dir === "en2jp" ? mc.map(() => pickFont(cfg.fonts)) : null,
+      grammarVehicle,
     };
     const st = rt.stats[f] ?? (rt.stats[f] = newFactStat());
     st.seen++;
@@ -406,7 +435,9 @@ export function DrillScreen() {
     // comparing strings would mark a wrong click right. Typed answers go to the
     // subject's own checker.
     const ok =
-      picked !== undefined ? picked === q.f : checkTyped(q.f, given, q.dir);
+      picked !== undefined
+        ? picked === q.f
+        : checkTyped(q.f, given, q.dir, ctxFor(q));
     const st = rt.stats[q.f] ?? (rt.stats[q.f] = newFactStat());
     if (st.firstTryCorrect === null) st.firstTryCorrect = ok && q.tries === 0;
     if (ok) {
@@ -509,7 +540,7 @@ export function DrillScreen() {
       )
         return;
       const opt = rt.q.mc[parseInt(e.key, 10) - 1];
-      if (opt) submit(labelOf(opt, rt.q.dir), opt);
+      if (opt) submit(labelOf(opt, rt.q.dir, ctxFor(rt.q)), opt);
     }
   }
 
@@ -684,9 +715,8 @@ export function DrillScreen() {
   // What to put on screen is the fact's subject's answer, not this screen's.
   // The drill knows there is a glyph, maybe a line under it, and some options;
   // it does not know whether it is asking a kana, a kanji reading or a word.
-  const prompt = questionsFor(q.f).prompt(q.f, q.dir, {
-    anchor: anchorForFact(q.f, history),
-  });
+  const ctx = ctxFor(q, anchorForFact(q.f, history));
+  const prompt = questionsFor(q.f).prompt(q.f, q.dir, ctx);
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   // The card already decided its shape at ask time: MC options were built (or
@@ -882,7 +912,7 @@ export function DrillScreen() {
             {q.mc?.map((opt, i) => (
               <button
                 key={opt}
-                onClick={() => submit(labelOf(opt, q.dir), opt)}
+                onClick={() => submit(labelOf(opt, q.dir, ctx), opt)}
                 className={cx(
                   "min-w-[74px] cursor-pointer rounded-lg border px-3.5 py-2.5 text-xl",
                   // The option you should have picked, lit alongside the reveal.
@@ -896,7 +926,7 @@ export function DrillScreen() {
                     : undefined
                 }
               >
-                {labelOf(opt, q.dir)}
+                {labelOf(opt, q.dir, ctx)}
                 <span className="block text-[10px] text-text-muted">{i + 1}</span>
               </button>
             ))}
@@ -917,7 +947,11 @@ export function DrillScreen() {
                 ) : null}{" "}
                 <span className="text-text-muted">=</span>{" "}
                 <span className="font-semibold text-danger">
-                  {factInfo(q.f)?.answers[0] ?? ""}
+                  {/* The answer on THIS showing's vehicle when the subject has
+                      one (grammar's 食べてから), else the fact's baked answer. */}
+                  {questionsFor(q.f).answerReveal?.(q.f, ctx) ??
+                    factInfo(q.f)?.answers[0] ??
+                    ""}
                 </span>
               </span>
               <span className="text-[10px] text-text-muted">

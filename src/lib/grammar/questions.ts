@@ -55,6 +55,7 @@
 import { RECIPES, isProducible, recipe, type Recipe } from "../../data/grammar/recipes.ts";
 import { examplesFor, type Example } from "../../data/grammar/corpus.ts";
 import { apply } from "./apply.ts";
+import { pickVehicle, type Rng } from "./vehicles.ts";
 import type { WordClass } from "../conjugate/index.ts";
 
 // ---------------------------------------------------------------------------
@@ -125,6 +126,30 @@ export function production(
     gloss: r.gloss,
     answer: built.value,
   };
+}
+
+/**
+ * A production question on a VARIED vehicle, so a run does not drill every
+ * pattern on 行く.
+ *
+ * Picks a legal vehicle from the pool (see vehicles.ts — legality is decided by
+ * actually building the recipe, so nothing illegal is ever offered) and hands
+ * it to `production`, which is already vehicle-agnostic. Returns null exactly
+ * when `production` would: a non-producible recipe, or one no pooled word can
+ * host (a wrap). A null here is the caller's cue to fall back to the fixed
+ * vehicle baked in the fact.
+ *
+ * `rng` is injectable so a test can pin the choice; it defaults to Math.random.
+ */
+export function variedProduction(
+  recipeId: string,
+  rng: Rng = Math.random,
+): ProductionQuestion | null {
+  const r = recipe(recipeId);
+  if (!r || !isProducible(r)) return null;
+  const v = pickVehicle(r, rng);
+  if (!v) return null;
+  return production(r.id, v.surface, v.cls as WordClass);
 }
 
 // ---------------------------------------------------------------------------
