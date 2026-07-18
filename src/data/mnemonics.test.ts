@@ -29,7 +29,7 @@ const ALL_HIRAGANA = [
 ];
 
 // The kana that carry a drawn picture; everyone else falls back to the glyph.
-const WITH_IMAGE = ["あ", "え", "い", "か", "く", "う"];
+const WITH_IMAGE = ["あ", "え", "い", "か", "く", "さ", "う"];
 
 test("getMnemonic returns null for a glyph with no entry (hide-when-absent)", () => {
   // The hide-when-absent case the Library page and the teach flow render as
@@ -69,7 +69,7 @@ test("Library-entry / teach-flow gate: a hiragana resolves, a non-authored glyph
   assert.equal(getMnemonic("ア"), null);
 });
 
-test("exactly the six drawn kana (a/e/i/ka/ku/u) expose an image path; the rest don't", () => {
+test("exactly the seven drawn kana (a/e/i/ka/ku/sa/u) expose an image path; the rest don't", () => {
   for (const k of ALL_HIRAGANA) {
     const m = getMnemonic(k);
     assert.ok(m);

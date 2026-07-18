@@ -313,6 +313,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       sound: "sar",
       tail: "dine dangles off the fishing line, body arched, tail flicking — one wriggle and it’s gone.",
     },
+    image: "/mnemonics/sa.webp",
     example: { word: "さかな", reading: "sakana", gloss: "fish", hitIndex: 0 },
   },
 
