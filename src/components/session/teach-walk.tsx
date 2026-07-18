@@ -35,7 +35,7 @@
 import { useMemo } from "react";
 
 import { LessonItemView } from "@/components/lesson/lesson-item-view";
-import { Btn, PrimaryBtn } from "@/components/ui";
+import { Btn } from "@/components/ui";
 import { itemsFromFacts } from "@/lib/lesson-items";
 import type { FactId } from "@/types";
 
@@ -53,12 +53,14 @@ export function TeachWalk({
   familiar: (f: FactId) => boolean;
   /** Leave the teach phase for the drill now — a fresh round 1, or, when reached
    * mid-round via "Look again", a resume of the round in progress. Either way it
-   * lands on the drill; the button that fires it says "Quiz me". */
+   * lands on the drill; the button that fires it says "Quiz me". Two controls
+   * fire it: the floating bar's escape hatch (session/page.tsx) and, on the last
+   * item, the forward button below — see the note there. */
   onStart: () => void;
   /** Which item is showing. Lifted to the session page so the top HUD bar can
    * read the position ("N of M") without the walk owning a second copy of it. */
   step: number;
-  /** Move to a different item — Back/Next and the dots all route through here. */
+  /** Move to a different item — Back and Next both route through here. */
   onStep: (n: number) => void;
 }) {
   const items = useMemo(() => itemsFromFacts(facts), [facts]);
@@ -71,32 +73,18 @@ export function TeachWalk({
 
   return (
     <div className="mx-auto max-w-[920px] px-3 pt-6">
-      {/* Where you are: the dots, so the walk never hides its own length. The
-          "N of M" position now lives in the top HUD bar (session/page.tsx) — it
-          isn't repeated here — leaving this row for the dots and the quiet
-          "seen before" note when the budget re-surfaced material you'd met. */}
-      <div className="flex min-h-[1.25rem] items-center justify-between gap-3">
-        <div>
-          {familiarHere ? (
-            <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.08em] text-text-muted/80">
-              seen before
-            </span>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap justify-end gap-1">
-          {items.map((it, n) => (
-            <button
-              key={it.entry}
-              type="button"
-              aria-label={`Go to ${it.glyph}`}
-              aria-current={n === at}
-              onClick={() => onStep(n)}
-              className={`size-1.5 rounded-full ${
-                n === at ? "bg-text" : "bg-border hover:bg-text-muted"
-              }`}
-            />
-          ))}
-        </div>
+      {/* Where you are is the floating bar's job now — it prints "N of M" and
+          updates as you step. The row of dots that used to sit here said the
+          same thing a second time, less precisely, so it's gone; what's left is
+          the quiet "seen before" note when the budget re-surfaced material you'd
+          already met. The row keeps its height either way so the item below
+          doesn't jump between a familiar step and a new one. */}
+      <div className="flex min-h-[1.25rem] items-center gap-3">
+        {familiarHere ? (
+          <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.08em] text-text-muted/80">
+            seen before
+          </span>
+        ) : null}
       </div>
 
       {/* The item — glyph/picture, the kana hook, how it's written, readings
@@ -110,7 +98,21 @@ export function TeachWalk({
         <LessonItemView key={item.entry} item={item} />
       </div>
 
-      {/* Step controls. */}
+      {/* Step controls, and the end of the walk.
+
+          The forward button is ONE button with two jobs: "Next" while there is
+          a next item, "Quiz me" on the last one. There is nothing to advance to
+          from the last card, and a disabled Next there was a dead end you had to
+          look away from to leave — so the forward action simply becomes the
+          finishing action, and paging through the lesson walks you into the
+          quiz rather than stopping just short of it.
+
+          The huge full-width "Quiz me" that used to sit under this row is gone.
+          Its job — leave from ANY step, without paging through the rest — moved
+          up into the floating bar as a small button beside "Done for now", where
+          it reads as the escape hatch it always was instead of the screen's
+          loudest element. The bar hides it on the last card so the two never say
+          "Quiz me" at once (see session/page.tsx). */}
       <div className="mt-4 flex items-center justify-between gap-2">
         <Btn
           onClick={() => onStep(at - 1)}
@@ -119,24 +121,9 @@ export function TeachWalk({
         >
           Back
         </Btn>
-        <Btn
-          go
-          onClick={() => onStep(at + 1)}
-          disabled={last}
-          className="disabled:cursor-default disabled:opacity-40"
-        >
-          Next
+        <Btn go autoFocus onClick={last ? onStart : () => onStep(at + 1)}>
+          {last ? "Quiz me" : "Next"}
         </Btn>
-      </div>
-
-      {/* The one action that leaves — go to the drill now. Available from any
-          step: you don't have to page through every item first, you jump
-          straight to the quiz. Full-width and filled, the screen's single
-          primary. */}
-      <div className="mt-6">
-        <PrimaryBtn autoFocus onClick={onStart}>
-          Quiz me
-        </PrimaryBtn>
       </div>
     </div>
   );
