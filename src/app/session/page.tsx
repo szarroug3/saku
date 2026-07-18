@@ -18,7 +18,8 @@ import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
 import { SmallBtn } from "@/components/ui";
 import { useHistory } from "@/lib/use-history";
-import { itemsFromFacts } from "@/lib/lesson-items";
+import { groupOfFact, scriptSoFar } from "@/lib/lesson";
+import { lessonSteps } from "@/lib/lesson-steps";
 import { restLeftMs } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
@@ -46,12 +47,13 @@ export default function SessionPage() {
   const now = useNow(session?.phase === "resting");
 
   // Where the teach walk is, lifted here so the top HUD bar can show the
-  // position ("N of M") — the walk itself no longer prints it. The items are
-  // the walk's own units (facts collapsed per glyph), so we derive them from
-  // the same helper it uses.
+  // position ("N of M") — the walk itself no longer prints it. The steps are
+  // the walk's own units (facts collapsed per glyph, plus any phase intro that
+  // opens or closes the lesson), so we derive them from the same helper it
+  // uses — one count, one source, no chance of "1 of 5" over a six-step walk.
   const teachKey = session ? session.teach.join(",") : "";
   const teachItems = useMemo(
-    () => (session ? itemsFromFacts(session.teach) : []),
+    () => (session ? lessonSteps(session.teach) : []),
     [teachKey], // eslint-disable-line react-hooks/exhaustive-deps
   );
   // Reset to the first item whenever the teach set changes (a new session, or a
@@ -82,16 +84,44 @@ export default function SessionPage() {
   const label = `${session.facts.length} item${session.facts.length === 1 ? "" : "s"}`;
 
   if (session.phase === "teaching") {
-    // A live leg here means we got back via the drill's "Look again", not the
-    // pre-round lesson — so the button RESUMES the round (keeping progress)
-    // rather than starting a fresh round 1 over the whole set.
-    const reviewing = !!active;
+    // A live leg BELONGING TO THIS SESSION means we got back via the drill's
+    // "Look again", not the pre-round lesson — so the button RESUMES the round
+    // (keeping progress) rather than starting a fresh round 1 over the set.
+    //
+    // The `startedAt` comparison is not a nicety. `active` outlives the session
+    // that made it — start a session, drill, walk away, and the leg is still in
+    // the snapshot when the NEXT lesson opens. Tested on `!!active` alone, that
+    // stale leg made every lesson after your first drill look like a resume:
+    // the forward button called resumeRound (jumping you into an unrelated
+    // quiz) and the scope fork below vanished, because a resume has no scope
+    // left to choose. A leg started before its session cannot be that session's.
+    // (`startedAt` is optional on a leg snapshotted before the field existed;
+    // an undated leg is old by definition, so it is not this session's.)
+    const reviewing = !!active?.startedAt && active.startedAt >= session.startedAt;
     const total = teachItems.length;
     const at = Math.min(teachStep, Math.max(0, total - 1));
     // Leave the lesson for the drill. Named here because two controls fire it:
     // the bar's "Quiz me" below, and the walk's forward button once it reaches
     // the last item.
-    const toDrill = reviewing ? resumeRound : startFirstRound;
+    const toDrill = reviewing ? resumeRound : () => startFirstRound();
+    // The wider of the two scopes the lesson's drill offers: everything in this
+    // script up to and including the group being taught. Derived from the teach
+    // set's first fact — a lesson is one group, so any of its facts names it —
+    // and absent for anything that isn't a kana group, which is what makes the
+    // fork appear in kana lessons and nowhere else.
+    //
+    // Not offered when `reviewing` ("Look again" mid-round): there IS no scope
+    // choice left at that point, because the round is already running over a
+    // set that was chosen when it started. Widening there would silently throw
+    // away answered cards.
+    const teachGroup = session.teach.length ? groupOfFact(session.teach[0]) : null;
+    const wider =
+      teachGroup && !reviewing
+        ? {
+            label: `Quiz me on all ${teachGroup.setLabel.toLowerCase()} so far`,
+            onStart: () => startFirstRound(scriptSoFar(teachGroup)),
+          }
+        : null;
     // On the last item the walk's own forward button already says "Quiz me", so
     // the bar drops its copy rather than showing the same words twice.
     const onLast = total > 0 && at === total - 1;
@@ -132,6 +162,7 @@ export default function SessionPage() {
             // so it can't go stale against a deleted session.
             familiar={(f) => !!history.facts[f]?.seen}
             onStart={toDrill}
+            wider={wider}
             step={at}
             onStep={setTeachStep}
           />

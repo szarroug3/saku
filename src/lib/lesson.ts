@@ -30,6 +30,7 @@
 // to be wrong about a row of the data file, and the row can say what it is.
 
 import { KANA_SUBJECT, SETS, isExtendedSection, kanaFact } from "@/data/characters";
+import { DAKUTEN_ROWS, DAKUTEN_SECTIONS, type DakutenRow } from "@/data/dakuten-rows";
 import { freshFacts, nextGroup } from "@/lib/budget";
 import type { FactId, HistoryFile } from "@/types";
 
@@ -105,22 +106,67 @@ export const KANA_GROUP_FACTS: readonly FactId[][] = KANA_GROUPS.map(
   (g) => g.facts,
 );
 
+/**
+ * The label a conversion group wears — "Dakuten G が", "Handakuten P ぱ".
+ *
+ * Built from the row rather than read off a section, because a conversion is
+ * NOT a section: は takes both marks, so the merged `h-bp` section holds ten
+ * characters and two conversions, and the two are separate lessons. Everything
+ * outside the dakuten phase still takes the data file's own section label.
+ */
+function conversionLabel(row: DakutenRow): string {
+  const kind = row.markName === "handakuten" ? "Handakuten" : "Dakuten";
+  return `${kind} ${row.to.toUpperCase()} ${row.pairs[0][1]}`;
+}
+
 function buildGroups(): LessonGroup[] {
   const groups: LessonGroup[] = [];
   for (const set of SETS) {
-    set.sections.forEach((section, i) => {
-      groups.push({
+    const out: Omit<LessonGroup, "index" | "total">[] = [];
+    const rows = DAKUTEN_ROWS.filter((r) => r.setId === set.id);
+    let dakutenDone = false;
+
+    for (const section of set.sections) {
+      // The dakuten phase is paced by conversion, not by section — emitted in
+      // one go at the position of its first section, and its sections then
+      // skipped so nothing is taught twice.
+      if (DAKUTEN_SECTIONS.has(section.id)) {
+        if (dakutenDone) continue;
+        dakutenDone = true;
+        // ONE GROUPING AT A TIME: card k→g, drill those five, card s→z, drill
+        // those five. The rhythm the rest of the curriculum already has — a
+        // group is read, then it is drilled — extended to a phase whose unit is
+        // a conversion rather than a section.
+        for (const row of rows) {
+          const chars = row.pairs.map(([, c]) => c);
+          out.push({
+            setId: set.id,
+            setLabel: set.label,
+            sectionId: row.id,
+            label: conversionLabel(row),
+            chars,
+            facts: chars.map(kanaFact),
+            extended: true,
+          });
+        }
+        continue;
+      }
+
+      out.push({
         setId: set.id,
         setLabel: set.label,
         sectionId: section.id,
         label: section.label,
         chars: section.chars.map((c) => c.c),
         facts: section.chars.map((c) => kanaFact(c.c)),
-        index: i + 1,
-        total: set.sections.length,
         extended: isExtendedSection(section.label),
       });
-    });
+    }
+
+    // Counted, never written down — the same rule the lesson card's "group N of
+    // M" has always followed. Pacing the dakuten rows changed M, and nothing
+    // had to be told.
+    out.forEach((g, i) => groups.push({ ...g, index: i + 1, total: out.length }));
   }
   return groups;
 }
@@ -167,6 +213,42 @@ export function nextLesson(history: HistoryFile): Lesson | null {
     facts,
     learn: LEARN_LINKS[group.setId] ?? LEARN_LINKS.hiragana,
   };
+}
+
+/**
+ * WHAT A DRILL IS ALLOWED TO COVER
+ * ================================
+ * Every kana drill offers two scopes: the group you were just taught, and
+ * everything in that script up to and including it. The second is what makes a
+ * lesson stop being an island — five characters drilled alone are five
+ * characters you can tell apart from each other, which is not the same skill as
+ * telling が from か from さ.
+ *
+ * SCRIPT-SEPARATE, AND CUMULATIVE IN LESSON ORDER. Not "everything in the app"
+ * (that is the Everything deck, and it is a different offer), not "everything
+ * history has seen" (that would grow with claims and make the button mean a
+ * different thing on different days), and not hiragana-plus-katakana at a
+ * katakana drill — which would change what the drill measures, at the one
+ * moment the learner is trying to find out whether katakana stuck.
+ */
+
+/** The group a fact belongs to, or null for a fact outside the curriculum. */
+export function groupOfFact(f: FactId): LessonGroup | null {
+  return KANA_GROUPS.find((g) => g.facts.includes(f)) ?? null;
+}
+
+/**
+ * Everything in this group's script taught up to and INCLUDING it — the wider
+ * of the two scopes a lesson's drill offers.
+ *
+ * A function of the curriculum's order, not of history: it means the same thing
+ * on day one and in year two, which is what lets one short label ("all hiragana
+ * so far") be honest without a paragraph under it.
+ */
+export function scriptSoFar(group: LessonGroup): FactId[] {
+  return KANA_GROUPS.filter(
+    (g) => g.setId === group.setId && g.index <= group.index,
+  ).flatMap((g) => g.facts);
 }
 
 /** Every fact in a script — what "I know all of hiragana" claims. */

@@ -14,7 +14,7 @@
 // joints the REAL data file has. A fixture with a tidy three-group curriculum
 // would pass while the app shipped 214 on one screen.
 //
-// The numbers below (5, 27) are read off characters.ts at the top of the file
+// The numbers below (5, 26) are read off characters.ts at the top of the file
 // and not typed in, with ONE exception: `assert.equal(vowels.chars.length, 5)`.
 // That one is typed in on purpose. If あいうえお ever stops being five
 // characters, every other test here is asserting against a moved ruler, and this
@@ -437,7 +437,9 @@ describe("the curriculum is the data file, not a copy of it", () => {
     // The card shows this, and it is the one place kana owes the honesty the
     // kanji lesson owes its parts. It is the data file's own test.
     assert.equal(vowels.extended, false);
-    assert.equal(KANA_GROUPS.find((g) => g.sectionId === "h-g")!.extended, true);
+    // The dakuten phase is grouped by CONVERSION, not by section — one card,
+    // one drill, per mark applied to a row. See src/data/dakuten-rows.ts.
+    assert.equal(KANA_GROUPS.find((g) => g.sectionId === "h-conv-g")!.extended, true);
     assert.equal(KANA_GROUPS.find((g) => g.sectionId === "h-ja")!.extended, true);
   });
 });

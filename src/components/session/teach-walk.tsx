@@ -34,16 +34,19 @@
 
 import { useMemo } from "react";
 
+import { ConversionCard } from "@/components/lesson/conversion-card";
 import { LessonItemView } from "@/components/lesson/lesson-item-view";
+import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { AttributionLink } from "@/components/library/attribution-link";
 import { Btn } from "@/components/ui";
-import { itemsFromFacts } from "@/lib/lesson-items";
+import { lessonSteps } from "@/lib/lesson-steps";
 import type { FactId } from "@/types";
 
 export function TeachWalk({
   facts,
   familiar,
   onStart,
+  wider,
   step,
   onStep,
 }: {
@@ -54,23 +57,36 @@ export function TeachWalk({
   familiar: (f: FactId) => boolean;
   /** Leave the teach phase for the drill now — a fresh round 1, or, when reached
    * mid-round via "Look again", a resume of the round in progress. Either way it
-   * lands on the drill; the button that fires it says "Quiz me". Two controls
-   * fire it: the floating bar's escape hatch (session/page.tsx) and, on the last
-   * item, the forward button below — see the note there. */
+   * lands on the drill. Two controls fire it: the floating bar's escape hatch
+   * (session/page.tsx) and, on the last item, the forward button below — see
+   * the note there. */
   onStart: () => void;
+  /** The WIDER of the two scopes this lesson's drill offers: everything in this
+   * script taught up to and including this group. Null when the lesson isn't a
+   * kana group (a kanji or word lesson has no script to be cumulative over), and
+   * the end of the walk then falls back to the single "Quiz me" it always had. */
+  wider?: { label: string; onStart: () => void } | null;
   /** Which item is showing. Lifted to the session page so the top HUD bar can
    * read the position ("N of M") without the walk owning a second copy of it. */
   step: number;
   /** Move to a different item — Back and Next both route through here. */
   onStep: (n: number) => void;
 }) {
-  const items = useMemo(() => itemsFromFacts(facts), [facts]);
-  const at = Math.min(step, items.length - 1);
-  const item = items[at];
-  const last = at === items.length - 1;
-  const familiarHere = item ? item.facts.some(familiar) : false;
+  // The walk's units. A step is usually a character; where the curriculum
+  // changes shape it is a teaching card instead (src/lib/lesson-steps.ts). A
+  // lesson with no card produces exactly the item list this used to hold, so
+  // everything below — Back/Next, the last-card "Quiz me", the HUD's count —
+  // works unchanged for the phases that have none.
+  const steps = useMemo(() => lessonSteps(facts), [facts]);
+  const at = Math.min(step, steps.length - 1);
+  const current = steps[at];
+  const last = at === steps.length - 1;
+  // "Seen before" is a fact about material you've met. A concept card is not
+  // material you can have forgotten, so it never wears the badge.
+  const familiarHere =
+    current?.type === "item" ? current.item.facts.some(familiar) : false;
 
-  if (!item) return null;
+  if (!current) return null;
 
   return (
     <div className="mx-auto max-w-[920px] px-3 pt-6">
@@ -96,7 +112,13 @@ export function TeachWalk({
           re-read their state and no open/closed disclosure leaks between
           glyphs. */}
       <div className="mt-7">
-        <LessonItemView key={item.entry} item={item} />
+        {current.type === "intro" ? (
+          <PhaseIntroView key={current.key} intro={current.intro} />
+        ) : current.type === "conversion" ? (
+          <ConversionCard key={current.key} row={current.row} />
+        ) : (
+          <LessonItemView key={current.key} item={current.item} />
+        )}
       </div>
 
       {/* Step controls, and the end of the walk.
@@ -114,7 +136,7 @@ export function TeachWalk({
           it reads as the escape hatch it always was instead of the screen's
           loudest element. The bar hides it on the last card so the two never say
           "Quiz me" at once (see session/page.tsx). */}
-      <div className="mt-4 flex items-center justify-between gap-2">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <Btn
           onClick={() => onStep(at - 1)}
           disabled={at === 0}
@@ -122,9 +144,28 @@ export function TeachWalk({
         >
           Back
         </Btn>
-        <Btn go autoFocus onClick={last ? onStart : () => onStep(at + 1)}>
-          {last ? "Quiz me" : "Next"}
-        </Btn>
+        {/* THE SCOPE FORK. Reaching the end of a kana lesson is a choice, not a
+            button: drill the group you were just shown, or drill everything in
+            this script you have reached so far. Both are here, at the moment
+            the drill actually starts, because that is when the question "how
+            hard do I want this to be" is live.
+
+            Two labels and no explanation under them — they say what they do,
+            and a paragraph telling you why you might pick each would be longer
+            than both. "These only" keeps the accent: it is the lesson's own
+            path, and the wider one is an offer rather than a nag. */}
+        {last && wider ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Btn onClick={wider.onStart}>{wider.label}</Btn>
+            <Btn go autoFocus onClick={onStart}>
+              Quiz me on these only
+            </Btn>
+          </div>
+        ) : (
+          <Btn go autoFocus onClick={last ? onStart : () => onStep(at + 1)}>
+            {last ? "Quiz me" : "Next"}
+          </Btn>
+        )}
       </div>
 
       {/* The acknowledgement link — a licence obligation, not decoration. This

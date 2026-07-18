@@ -55,9 +55,50 @@ function sec(
   const kanaList = typeof kana === "string" ? [...kana] : kana;
   const chars: KanaChar[] = kanaList.map((c, i) => {
     const r = romaji[i];
-    return { c, r: Array.isArray(r) ? r : [r] };
+    return { c, r: Array.isArray(r) ? r : [r], note: NOTES[c] };
   });
   return { id: secId, label, chars };
+}
+
+// ---------- the irregular ones, named out loud ----------
+//
+// Most kana say what the grid says they say. Seven do not, and a learner who
+// meets し expecting "si" is not confused by the app — they are confused by
+// Japanese, and the fix is to SAY SO at the moment they meet the character
+// rather than let them get it wrong in the drill and infer a rule that isn't
+// there.
+//
+// One clause or two, keyed by the character itself so hiragana and katakana get
+// the same call-out without a second table. This is not the mnemonic (that is
+// src/data/mnemonics.ts, the one source for a character's story) — a mnemonic
+// helps you REMEMBER the shape; a note tells you the sound is not the one the
+// row would predict.
+//
+// The ぢ / づ note is also the app explaining its own romaji layer rather than
+// defending it: "ji" and "zi" both reach じ, and "di" is the only way to reach
+// ぢ. That is the standard IME behaviour, and it is only surprising if nobody
+// tells you the two characters genuinely sound the same.
+const NOTES: Record<string, string> = {
+  し: 'Said "shi", not "si" — the one odd sound in the s row.',
+  シ: 'Said "shi", not "si" — the one odd sound in the s row.',
+  ち: 'Said "chi", not "ti".',
+  チ: 'Said "chi", not "ti".',
+  つ: 'Said "tsu", not "tu" — it starts like the ts in "cats".',
+  ツ: 'Said "tsu", not "tu" — it starts like the ts in "cats".',
+  ふ: 'Said "fu", not "hu" — a soft sound between f and h, made with both lips rather than teeth.',
+  フ: 'Said "fu", not "hu" — a soft sound between f and h, made with both lips rather than teeth.',
+  じ: 'Said "ji", not "zi" — it comes from し, so it keeps し\'s odd sound.',
+  ジ: 'Said "ji", not "zi" — it comes from シ, so it keeps シ\'s odd sound.',
+  ぢ: 'Sounds exactly like じ. It\'s rare — but when you do need it, it\'s typed "di".',
+  ヂ: 'Sounds exactly like ジ. It\'s rare — but when you do need it, it\'s typed "di".',
+  づ: 'Sounds exactly like ず. It\'s rare — but when you do need it, it\'s typed "du".',
+  ヅ: 'Sounds exactly like ズ. It\'s rare — but when you do need it, it\'s typed "du".',
+};
+
+/** The call-out for a character, when its sound isn't the one its row predicts.
+ * Null for the great majority, which are regular and need no excuse. */
+export function noteFor(c: string): string | null {
+  return NOTES[c] ?? null;
 }
 
 // Romaji rows shared by both scripts (list item = one character's accepted answers)
@@ -113,8 +154,8 @@ const HIRAGANA_ROWS: Row[] = [
   ["h-g", "Dakuten G が", "がぎぐげご", R.g],
   ["h-z", "Dakuten Z ざ", "ざじずぜぞ", R.z],
   ["h-d", "Dakuten D だ", "だぢづでど", R.d],
-  ["h-b", "Dakuten B ば", "ばびぶべぼ", R.b],
-  ["h-p", "Handakuten P ぱ", "ぱぴぷぺぽ", R.p],
+  // ONE row, two marks — see the note above KATAKANA_ROWS' twin of this line.
+  ["h-bp", "Dakuten B ば + Handakuten P ぱ", "ばびぶべぼぱぴぷぺぽ", [...R.b, ...R.p]],
   ["h-kya", "Combo き", ["きゃ", "きゅ", "きょ"], R.ky],
   ["h-sha", "Combo し", ["しゃ", "しゅ", "しょ"], R.sh],
   ["h-cha", "Combo ち", ["ちゃ", "ちゅ", "ちょ"], R.ch],
@@ -143,8 +184,12 @@ const KATAKANA_ROWS: Row[] = [
   ["k-g", "Dakuten G ガ", "ガギグゲゴ", R.g],
   ["k-z", "Dakuten Z ザ", "ザジズゼゾ", R.z],
   ["k-d", "Dakuten D ダ", "ダヂヅデド", R.d],
-  ["k-b", "Dakuten B バ", "バビブベボ", R.b],
-  ["k-p", "Handakuten P パ", "パピプペポ", R.p],
+  // The は row is the only row that takes BOTH marks, and that contrast is the
+  // teaching point — は → ば with two dashes, は → ぱ with a circle. Shipping
+  // them as two sections taught the contrast as two unrelated rows and buried
+  // the one fact that makes ぱ make sense. They are one base row, so they are
+  // one group. (Tofugu presents them together for the same reason.)
+  ["k-bp", "Dakuten B バ + Handakuten P パ", "バビブベボパピプペポ", [...R.b, ...R.p]],
   ["k-kya", "Combo キ", ["キャ", "キュ", "キョ"], R.ky],
   ["k-sha", "Combo シ", ["シャ", "シュ", "ショ"], R.sh],
   ["k-cha", "Combo チ", ["チャ", "チュ", "チョ"], R.ch],
