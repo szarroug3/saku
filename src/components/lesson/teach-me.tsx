@@ -26,8 +26,10 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { MnemonicCard } from "@/components/lesson/mnemonic-card";
 import { Btn } from "@/components/ui";
 import { CHAR_INDEX, kanaEntry } from "@/data/characters";
+import { getMnemonic } from "@/data/mnemonics";
 import { entryHref } from "@/lib/library/href";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { speak } from "@/lib/speech";
@@ -40,6 +42,10 @@ export function TeachMe({ chars }: { chars: string[] }) {
   const char = chars[at];
   const reading = CHAR_INDEX[char]?.r[0] ?? "";
   const last = at === total - 1;
+  // The app's own hook for this kana, when there is one. Gated here so kana
+  // with no entry (everything but the five vowels, for now) show nothing —
+  // no placeholder, no empty box. See getMnemonic / MnemonicCard.
+  const mnemonic = getMnemonic(char);
 
   return (
     <div className="kq-material mt-3 rounded-lg border border-border bg-panel px-3.5 py-4">
@@ -92,6 +98,10 @@ export function TeachMe({ chars }: { chars: string[] }) {
           🔊
         </button>
       </div>
+
+      {/* Our own mnemonic, only where we have one. Every base hiragana has one
+          now; katakana and kanji glyphs render as before until authored. */}
+      {mnemonic ? <MnemonicCard m={mnemonic} /> : null}
 
       <div className="flex items-center justify-between">
         <Btn
