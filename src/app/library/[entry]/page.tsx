@@ -184,11 +184,16 @@ function EntryView({ entry }: { entry: LibEntry }) {
           component returns null outright for a glyph with no stroke data — so
           nothing is rendered here at all rather than an empty box announcing an
           absence. Gated on `mnemonic` because the item below is built as a kana. */}
+      {/* mb-3.5 matches what <Card> carries internally. HowItsWritten renders
+          its own panel rather than a Card, so without this it butts straight up
+          against the reading table below it with no gap. */}
       {mnemonic ? (
-        <HowItsWritten
-          item={{ entry: entry.id, glyph: entry.glyph, kind: "kana", facts: [] }}
-          alwaysOpen
-        />
+        <div className="mb-3.5">
+          <HowItsWritten
+            item={{ entry: entry.id, glyph: entry.glyph, kind: "kana", facts: [] }}
+            alwaysOpen
+          />
+        </div>
       ) : null}
 
       <Card>
