@@ -26,6 +26,7 @@ import { SliceBar } from "@/components/library/slice-bar";
 import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Hint, Lbl, PageTitle, SmallBtn, SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
 import { factsOf } from "@/lib/facts";
 import {
   appearsIn,
@@ -33,6 +34,8 @@ import {
   confusableWith,
   entryForGlyph,
   factRows,
+  factsColumnHeader,
+  factsTitle,
   KIND_LABEL,
   libEntry,
   madeOf,
@@ -106,6 +109,23 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const VISIBLE = 8;
   const shown = showAll ? rows : rows.slice(0, VISIBLE);
 
+  // See the chip beside the title. `standingOf` is the same call the table row
+  // made, so the two can never disagree — this is a move, not a reimplementation.
+  const meaningStanding =
+    entry.kind === KANJI_SUBJECT
+      ? standingOf(
+          history.facts[meaningFactId(entry.glyph)],
+          claims[meaningFactId(entry.glyph)],
+          cfg.accuracyMetric,
+          now,
+        ).standing
+      : null;
+
+  // WHETHER THE ORIGIN COLUMN EXISTS AT ALL. Only a kanji reading is borrowed
+  // Chinese or native Japanese; a kana's romaji and a word's reading are
+  // neither, and a column of dashes would invent a distinction they do not have.
+  const showOrigin = rows.some((r) => r.origin !== null);
+
   return (
     <>
       <p className="mb-3 text-[11.5px] text-text-muted">
@@ -147,6 +167,25 @@ function EntryView({ entry }: { entry: LibEntry }) {
               <PageTitle
                 title={entry.meanings.slice(0, 3).join(" · ") || entry.readings.join(" · ")}
               />
+              {/* THE MEANING'S OWN SCORE, and the reason this is here rather
+                  than nowhere. A kanji's meaning is a separately-scored fact
+                  the app quizzes, and its standing used to be visible only in
+                  the table's meaning row — which has now gone, because a row
+                  labelled "Reading" holding "one, one radical (no.1)" was the
+                  thing that made this table confusing. The row went; the score
+                  did not get to go with it. Same component, same computation,
+                  now beside the definition it belongs to.
+
+                  Kanji only. Every other kind still shows its meaning fact in
+                  the table below (a word keeps its Meaning row; a pattern's
+                  meaning row is the only row it is guaranteed), so a chip here
+                  would be the same number printed twice. */}
+              {meaningStanding ? (
+                <p className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px] text-text-muted">
+                  <span>Meaning</span>
+                  <StandingChip standing={meaningStanding} />
+                </p>
+              ) : null}
               <p className="mb-3 text-[13px] text-text-muted">
                 {entry.readings.length > 0 ? `${entry.readings.join(" · ")} — ` : ""}
                 {entry.sub}
@@ -196,72 +235,109 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </div>
       ) : null}
 
-      <Card>
-        {/* The sentence is the thesis. It is generated from the count rather
-            than written, so it cannot drift from the table under it — and for a
-            kana it correctly reads "one character and one thing to know", which
-            is the degenerate case saying out loud that it is one. */}
-        <Lbl>
-          {entry.glyph} is one{" "}
-          {entry.kind === GRAMMAR_SUBJECT
-            ? "pattern"
-            : entry.kind === "word"
-              ? "word"
-              : "character"}{" "}
-          and {rows.length === 1 ? "one thing" : `${rows.length} things`} to know
-        </Lbl>
-        <table className="w-full text-left text-[13px]">
-          <thead>
-            <tr className="border-b border-border text-xs font-medium text-text-muted">
-              <th className="py-1.5 pr-2 font-medium">Reading</th>
-              <th className="py-1.5 pr-2 font-medium">Tested in</th>
-              <th className="py-1.5 font-medium">How it&rsquo;s going</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((row) => {
-              const s = standingOf(
-                history.facts[row.id],
-                claims[row.id],
-                cfg.accuracyMetric,
-                now,
-              );
-              return (
-                <tr key={row.id} className="border-b border-border last:border-b-0">
-                  <td className="py-2 pr-2 align-middle">
-                    <span className="text-[15px]">{row.label}</span>
-                    {row.label !== row.answer ? (
-                      <span className="ml-1.5 text-text-muted">— {row.answer}</span>
+      {/* NO ROWS, NO SECTION. 114 of the 2,136 jōyō kanji have no reading that
+          an everyday word attests, and a grammar pattern with no recipe has no
+          rows either. Now that the kanji meaning row is gone there is nothing
+          to backfill those tables with, and a headed box containing a header
+          row and nothing else reads as broken. Their meaning is still scored
+          and still shown — as the chip beside the definition above. */}
+      {rows.length > 0 ? (
+        <Card>
+          {/* Named, not generated. The old heading was a sentence built from
+              the row count ("一 is one character and 4 things to know"), which
+              survived only as long as the table was a grab-bag; `factsTitle`
+              names what is actually in it, per kind. */}
+          <Lbl>{factsTitle(entry, rows)}</Lbl>
+          <table className="w-full text-left text-[13px]">
+            <thead>
+              <tr className="border-b border-border text-xs font-medium text-text-muted">
+                <th className="py-1.5 pr-2 font-medium">
+                  {factsColumnHeader(entry)}
+                </th>
+                {showOrigin ? (
+                  <th className="py-1.5 pr-2 font-medium">Comes from</th>
+                ) : null}
+                <th className="py-1.5 pr-2 font-medium">Tested in</th>
+                <th className="py-1.5 font-medium">How it&rsquo;s going</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((row) => {
+                const s = standingOf(
+                  history.facts[row.id],
+                  claims[row.id],
+                  cfg.accuracyMetric,
+                  now,
+                );
+                return (
+                  <tr key={row.id} className="border-b border-border last:border-b-0">
+                    <td className="py-2 pr-2 align-middle">
+                      <span className="text-[15px]">{row.label}</span>
+                      {row.label !== row.answer ? (
+                        <span className="ml-1.5 text-text-muted">— {row.answer}</span>
+                      ) : null}
+                      {/* Hear THIS reading, not the character. The page's
+                          Hear-it button says the glyph, which for a kanji with
+                          four readings is one of them at the synthesiser's
+                          discretion; this says the row you are looking at.
+                          Absent wherever there is no sound to make — a meaning
+                          row, a grammar pattern. */}
+                      {row.speak ? (
+                        <button
+                          type="button"
+                          aria-label={`Hear ${row.speak}`}
+                          onClick={() => speak(row.speak as string, cfg.voiceName)}
+                          className="ml-1.5 cursor-pointer border-none bg-transparent p-0 align-[-0.15em] text-text-muted"
+                        >
+                          <SoundIcon />
+                        </button>
+                      ) : null}
+                    </td>
+                    {showOrigin ? (
+                      <td className="py-2 pr-2 align-middle text-text-muted">
+                        {row.origin ?? "—"}
+                      </td>
                     ) : null}
-                  </td>
-                  <td className="py-2 pr-2 align-middle">
-                    {row.askedIn.length ? (
-                      <span className="flex flex-wrap gap-1.5">
-                        {row.askedIn.map((w) => <WordLink key={w} word={w} />)}
-                      </span>
-                    ) : (
-                      <span className="text-text-muted">—</span>
-                    )}
-                  </td>
-                  <td className="py-2 align-middle">
-                    <StandingChip standing={s.standing} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {rows.length > VISIBLE && !showAll ? (
-          <button
-            type="button"
-            onClick={() => setShowAll(true)}
-            className="mt-2.5 cursor-pointer border-none bg-transparent p-0 text-xs text-text-muted underline"
-          >
-            ＋ {rows.length - VISIBLE} more{" "}
-            {rows.length - VISIBLE === 1 ? "reading" : "readings"}
-          </button>
-        ) : null}
-      </Card>
+                    <td className="py-2 pr-2 align-middle">
+                      {row.askedIn.length ? (
+                        <span className="flex flex-wrap gap-1.5">
+                          {row.askedIn.map((w) => <WordLink key={w} word={w} />)}
+                        </span>
+                      ) : (
+                        <span className="text-text-muted">—</span>
+                      )}
+                    </td>
+                    <td className="py-2 align-middle">
+                      <StandingChip standing={s.standing} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {/* ONE LINE, and it carries the only part "from Chinese" cannot say by
+              itself: WHERE you meet each one. Without it the column is trivia;
+              with it, 一's いち and ひと stop looking arbitrary. */}
+          {showOrigin ? (
+            <p className="mt-2.5 text-xs text-text-muted">
+              Readings <b className="text-text">from Chinese</b> came in with the
+              character and turn up mostly inside longer words;{" "}
+              <b className="text-text">native Japanese</b> ones are the Japanese
+              word the character was given to, usually on its own.
+            </p>
+          ) : null}
+          {rows.length > VISIBLE && !showAll ? (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="mt-2.5 cursor-pointer border-none bg-transparent p-0 text-xs text-text-muted underline"
+            >
+              ＋ {rows.length - VISIBLE} more{" "}
+              {rows.length - VISIBLE === 1 ? "reading" : "readings"}
+            </button>
+          ) : null}
+        </Card>
+      ) : null}
 
       <Card>
         <Lbl>Links</Lbl>

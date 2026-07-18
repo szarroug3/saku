@@ -80,6 +80,27 @@ export interface ReadingRow {
   /** How many everyday words attest this reading. Evidence weight, not a score. */
   readonly nWords: number;
   readonly words: readonly string[];
+  /**
+   * KANJIDIC2's `r_type` for this reading, folded onto the normalised base.
+   *
+   * "on"   — on'yomi: a pronunciation borrowed from Chinese when the character
+   *          was. Turns up mostly inside compound words (一年 いちねん).
+   * "kun"  — kun'yomi: the native Japanese word the character was assigned to.
+   *          Usually the character standing alone (一つ ひとつ).
+   * "both" — KANJIDIC2 lists this same reading under BOTH types, for different
+   *          senses. 20 of 3,496 facts. It is not a tie to break: picking one
+   *          would state something the dictionary does not.
+   *
+   * This is THE answer to "why do いち and ひと sound nothing alike" — they are
+   * two different languages' worth of pronunciation wearing one character. No
+   * screen may print the words "on'yomi"/"kun'yomi" at a beginner; see the
+   * entry page for the wording that ships.
+   *
+   * Optional because a base the aligner derived is occasionally not one
+   * KANJIDIC2 lists verbatim. Zero rows are untyped as shipped; the field stays
+   * optional so a future re-cut cannot make the JSON un-loadable.
+   */
+  readonly type?: "on" | "kun" | "both";
 }
 
 /** One item of the default teaching order. */
@@ -119,7 +140,33 @@ export interface OrderRow {
   readonly novelStrokes: number;
 }
 
-export const KANJI: readonly KanjiRow[] = kanjiJson as readonly KanjiRow[];
+/**
+ * KANJIDIC2 files a character's RADICAL INDEX as if it were an English
+ * meaning: 一 is `["one", "one radical (no.1)"]` and 二 is `["two", "two
+ * radical (no. 7)"]`. That is catalogue metadata about the Kangxi radical
+ * table, not what the character means, and 19 of the shipped 2,136 jōyō rows
+ * carry one.
+ *
+ * It is a CORRECTNESS bug, not a cosmetic one. Every consumer reads `meanings`:
+ * it became an accepted answer and a multiple-choice distractor in
+ * src/lib/engine/question.ts, and the page title of the Library entry. So it is
+ * stripped HERE, at the one place the JSON is turned into the app's data, and
+ * every consumer benefits without knowing this happened.
+ *
+ * THE PATTERN IS THE NUMBER, NOT THE WORD "RADICAL". 基 genuinely means
+ * "radical (chem)" — a chemical radical — and 偏 genuinely means "left-side
+ * radical". Matching the word would delete correct meanings; only the numbered
+ * `radical (no. N)` form is metadata. scripts/ingest/readingtype.py holds the
+ * same regex for a full re-cut, and src/data/ingest.test.ts pins both halves.
+ */
+export const RADICAL_INDEX_MEANING = /\bradical\s*\(no\.\s*\d+\s*\)/i;
+
+export const KANJI: readonly KanjiRow[] = (kanjiJson as readonly KanjiRow[]).map(
+  (k) =>
+    k.meanings.some((m) => RADICAL_INDEX_MEANING.test(m))
+      ? { ...k, meanings: k.meanings.filter((m) => !RADICAL_INDEX_MEANING.test(m)) }
+      : k,
+);
 export const READINGS: readonly ReadingRow[] = readingsJson as readonly ReadingRow[];
 
 /**
