@@ -16,6 +16,7 @@ import { RoundComplete } from "@/components/session/round-complete";
 import { SessionComplete } from "@/components/session/session-complete";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
+import { SmallBtn } from "@/components/ui";
 import { useHistory } from "@/lib/use-history";
 import { itemsFromFacts } from "@/lib/lesson-items";
 import { restLeftMs } from "@/lib/session";
@@ -87,18 +88,40 @@ export default function SessionPage() {
     const reviewing = !!active;
     const total = teachItems.length;
     const at = Math.min(teachStep, Math.max(0, total - 1));
+    // Leave the lesson for the drill. Named here because two controls fire it:
+    // the bar's "Quiz me" below, and the walk's forward button once it reaches
+    // the last item.
+    const toDrill = reviewing ? resumeRound : startFirstRound;
+    // On the last item the walk's own forward button already says "Quiz me", so
+    // the bar drops its copy rather than showing the same words twice.
+    const onLast = total > 0 && at === total - 1;
     return (
       <>
         {/* The top bar carries the position through the lesson — "1 of 5",
             updating as you step — in place of the item count and the round.
             There is no round while teaching, and the count reads better as a
-            place ("where am I") than a size ("how many"). */}
+            place ("where am I") than a size ("how many").
+
+            It FLOATS, like the drill's HUD: a lesson is a long scrolling page
+            and the two things you might want at any moment — leave for the quiz,
+            leave entirely — shouldn't be somewhere you have to scroll back to.
+            Same treatment the drill wears, so the two phases share one piece of
+            furniture (see SessionHud's `float`).
+
+            "Quiz me" lives here now, beside "Done for now": both are ways OUT of
+            the lesson, and they belong together. It's the escape hatch — quiz me
+            without paging through the rest — not the screen's primary, so it
+            wears the same small button "Done for now" does rather than the
+            full-width slab it used to be. */}
         <SessionHud
           label={total > 0 ? `${at + 1} of ${total}` : label}
           where=""
           pct={0}
+          float
           onDone={endSession}
-        />
+        >
+          {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
+        </SessionHud>
         <div className="mt-3.5">
           <TeachWalk
             facts={session.teach}
@@ -108,7 +131,7 @@ export default function SessionPage() {
             // them apart, and it's read here rather than stored on the session
             // so it can't go stale against a deleted session.
             familiar={(f) => !!history.facts[f]?.seen}
-            onStart={reviewing ? resumeRound : startFirstRound}
+            onStart={toDrill}
             step={at}
             onStep={setTeachStep}
           />
