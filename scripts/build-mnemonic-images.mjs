@@ -3,22 +3,31 @@
 //
 // WHAT IT DOES
 // ============
-// Run `pnpm mnemonic-images`. For every `<romaji>.png` in the source dir
-// (default ~/Downloads/kana) whose name is a real hiragana romaji, it:
+// Run `pnpm mnemonic-images`. The source dir (default ~/Downloads/kana) holds
+// two subfolders, `hiragana/` and `katakana/`. For every `<romaji>.png` in each
+// whose name is a real kana romaji, it:
 //   1. checks the PNG has REAL transparency (transparent pixels, not just an
 //      all-opaque alpha channel) — opaque ones are skipped with a warning so
 //      you know to re-export them cut out;
-//   2. optimizes it into public/mnemonics/<romaji>.webp (360px long edge,
-//      WebP q82), overwriting any prior copy.
-// That's it — no registry, no manifest. The app derives the candidate path
-// /mnemonics/<romaji>.webp for every kana and shows the picture when the file
-// exists, so dropping the webp in public/mnemonics IS the registration.
+//   2. optimizes it into public/mnemonics/<script>/<romaji>.webp (360px long
+//      edge, WebP q82), overwriting any prior copy.
+// Splitting by script is what keeps か and カ (both romaji "ka") from colliding
+// on one filename. That's it — no registry, no manifest. The app derives the
+// candidate path /mnemonics/<script>/<romaji>.webp for every kana and shows the
+// picture when the file exists, so dropping the webp in public/mnemonics/<script>
+// IS the registration.
+//
+// A romaji filename alone can't say hiragana vs katakana ("ka" is both), so a
+// loose PNG sitting directly in the source dir (the OLD flat layout) can't be
+// placed — the run prints a clear warning telling you to move it into
+// `hiragana/` or `katakana/`.
 //
 // It edits no data table and no test. Safe to run repeatedly — same inputs
 // produce the same outputs.
 //
-// SOURCE DIR: arg 1, or $KANA_SOURCE_DIR, or ~/Downloads/kana.
-//   pnpm mnemonic-images                 # ~/Downloads/kana
+// SOURCE DIR: arg 1, or $KANA_SOURCE_DIR, or ~/Downloads/kana. It must contain
+// `hiragana/` and/or `katakana/` subfolders holding the PNGs.
+//   pnpm mnemonic-images                 # ~/Downloads/kana/{hiragana,katakana}
 //   pnpm mnemonic-images ~/Desktop/kana  # explicit
 //   KANA_SOURCE_DIR=/tmp/foo pnpm mnemonic-images
 //
@@ -40,9 +49,14 @@ const SOURCE_DIR = resolve(process.argv[2] ?? process.env.KANA_SOURCE_DIR ?? DEF
 
 // ---- The valid names -------------------------------------------------------
 
-// Every base-hiragana romaji, in the spelling the mnemonics table uses (shi /
-// chi / tsu / fu / wo). A source PNG must be named `<one of these>.png`; any
-// other basename is ignored (it isn't a kana we teach).
+// The scripts we split storage by, and the subfolder each lives in — both under
+// the source dir (input PNGs) and public/mnemonics (output webp).
+const SCRIPTS = ["hiragana", "katakana"];
+
+// Every base-kana romaji, in the spelling the mnemonics table uses (shi / chi /
+// tsu / fu / wo). The same 46 readings name both syllabaries. A source PNG must
+// be named `<one of these>.png`; any other basename is ignored (it isn't a kana
+// we teach).
 const VALID_ROMAJI = new Set([
   "a", "i", "u", "e", "o",
   "ka", "ki", "ku", "ke", "ko",
@@ -90,46 +104,60 @@ function main() {
   if (!existsSync(SOURCE_DIR)) {
     console.error(
       `error: source dir not found: ${SOURCE_DIR}\n` +
-        `       Create it and drop <romaji>.png files in, or pass a path:\n` +
+        `       Create it with hiragana/ and katakana/ subfolders and drop\n` +
+        `       <romaji>.png files in, or pass a path:\n` +
         `         pnpm mnemonic-images /path/to/kana`,
     );
     process.exit(1);
   }
 
-  mkdirSync(PUBLIC_DIR, { recursive: true });
+  const written = []; // { script, romaji }
+  const skippedOpaque = []; // { script, file }
+  const skippedName = []; // { script, file } (basename not a romaji)
 
-  const pngs = readdirSync(SOURCE_DIR)
+  for (const script of SCRIPTS) {
+    const srcDir = join(SOURCE_DIR, script);
+    if (!existsSync(srcDir)) continue; // that syllabary just has no drawings yet
+
+    const outDir = join(PUBLIC_DIR, script);
+    mkdirSync(outDir, { recursive: true });
+
+    const pngs = readdirSync(srcDir)
+      .filter((f) => extname(f).toLowerCase() === ".png")
+      .sort();
+
+    for (const file of pngs) {
+      const romaji = basename(file, extname(file));
+      if (!VALID_ROMAJI.has(romaji)) {
+        skippedName.push({ script, file });
+        continue;
+      }
+      const src = join(srcDir, file);
+
+      if (!hasRealTransparency(src)) {
+        skippedOpaque.push({ script, file });
+        continue;
+      }
+
+      const out = join(outDir, `${romaji}.webp`);
+      // Resize to 360px on the long edge (never upscale), preserve alpha, WebP q82.
+      magick([
+        src,
+        "-resize", "360x360>",
+        "-quality", "82",
+        "-define", "webp:alpha-quality=100",
+        out,
+      ]);
+      written.push({ script, romaji });
+    }
+  }
+
+  // Loose PNGs sitting DIRECTLY in the source dir are the old flat layout. Their
+  // romaji filename can't say hiragana vs katakana, so we can't place them — warn
+  // rather than silently miss them.
+  const loosePngs = readdirSync(SOURCE_DIR)
     .filter((f) => extname(f).toLowerCase() === ".png")
     .sort();
-
-  const written = []; // { romaji }
-  const skippedOpaque = []; // { file }
-  const skippedName = []; // file (basename not a romaji)
-
-  for (const file of pngs) {
-    const romaji = basename(file, extname(file));
-    if (!VALID_ROMAJI.has(romaji)) {
-      skippedName.push(file);
-      continue;
-    }
-    const src = join(SOURCE_DIR, file);
-
-    if (!hasRealTransparency(src)) {
-      skippedOpaque.push({ file });
-      continue;
-    }
-
-    const out = join(PUBLIC_DIR, `${romaji}.webp`);
-    // Resize to 360px on the long edge (never upscale), preserve alpha, WebP q82.
-    magick([
-      src,
-      "-resize", "360x360>",
-      "-quality", "82",
-      "-define", "webp:alpha-quality=100",
-      out,
-    ]);
-    written.push({ romaji });
-  }
 
   // ---- Summary -------------------------------------------------------------
 
@@ -137,8 +165,8 @@ function main() {
   console.log(`Output: ${PUBLIC_DIR}\n`);
 
   if (written.length) {
-    console.log(`Optimized ${written.length} image(s) → public/mnemonics/:`);
-    for (const { romaji } of written) console.log(`  ✓ ${romaji}.webp`);
+    console.log(`Optimized ${written.length} image(s) → public/mnemonics/<script>/:`);
+    for (const { script, romaji } of written) console.log(`  ✓ ${script}/${romaji}.webp`);
   } else {
     console.log("No images optimized this run.");
   }
@@ -148,24 +176,40 @@ function main() {
       `\nSkipped ${skippedOpaque.length} PNG(s) with NO transparency ` +
         `(re-export cut out, on a transparent background):`,
     );
-    for (const { file } of skippedOpaque) console.log(`  ⚠ ${file}`);
+    for (const { script, file } of skippedOpaque) console.log(`  ⚠ ${script}/${file}`);
   }
 
   if (skippedName.length) {
     console.log(`\nIgnored ${skippedName.length} PNG(s) not named after a kana romaji:`);
-    for (const file of skippedName) console.log(`  · ${file}`);
+    for (const { script, file } of skippedName) console.log(`  · ${script}/${file}`);
+  }
+
+  if (loosePngs.length) {
+    console.log(
+      `\n⚠ ${loosePngs.length} loose PNG(s) sit directly in ${SOURCE_DIR} ` +
+        `(old flat layout) and were NOT processed.\n` +
+        `  A romaji filename alone can't say which syllabary, so move each into\n` +
+        `  the hiragana/ or katakana/ subfolder:`,
+    );
+    for (const file of loosePngs) console.log(`  ! ${file}`);
   }
 
   // What the app will now show, straight from disk — no manifest to keep in sync.
-  const present = readdirSync(PUBLIC_DIR)
-    .filter((f) => extname(f).toLowerCase() === ".webp")
-    .map((f) => basename(f, extname(f)))
-    .filter((name) => VALID_ROMAJI.has(name))
-    .sort();
-  console.log(
-    `\npublic/mnemonics now holds ${present.length} drawn kana: ` +
-      `${present.join(", ") || "(none)"}\n`,
-  );
+  for (const script of SCRIPTS) {
+    const outDir = join(PUBLIC_DIR, script);
+    const present = existsSync(outDir)
+      ? readdirSync(outDir)
+          .filter((f) => extname(f).toLowerCase() === ".webp")
+          .map((f) => basename(f, extname(f)))
+          .filter((name) => VALID_ROMAJI.has(name))
+          .sort()
+      : [];
+    console.log(
+      `\npublic/mnemonics/${script} now holds ${present.length} drawn kana: ` +
+        `${present.join(", ") || "(none)"}`,
+    );
+  }
+  console.log("");
 }
 
 main();

@@ -26,14 +26,24 @@
 // every theme regardless of its own background/transparency.
 //
 // The `image` is NOT authored on the entry below. `getMnemonic` DERIVES it for
-// every kana from the entry's own romaji — the candidate path
-// /mnemonics/<romaji>.webp. It's a candidate: the file may or may not exist. The
-// renderers load it and fall back to the plain glyph if it 404s, so a kana shows
-// its drawing when the webp is present and the character when it isn't — no
-// registry, no fs check. The owner adds a drawing by dropping <romaji>.webp into
-// public/mnemonics (or a transparent PNG named <romaji>.png into ~/Downloads/kana
-// and running `pnpm mnemonic-images`, which optimizes it to that webp). No edit
-// to this table or its test — the romaji already names the file.
+// every kana from the entry's own romaji AND the glyph's SCRIPT — the candidate
+// path /mnemonics/<script>/<romaji>.webp, where <script> is "hiragana" or
+// "katakana" (see `kanaScript`). Splitting by script is what keeps か and カ,
+// which share the romaji "ka", from colliding on one filename: they land in
+// /mnemonics/hiragana/ka.webp and /mnemonics/katakana/ka.webp. Every entry
+// authored today is hiragana, so today's paths are all
+// /mnemonics/hiragana/<romaji>.webp. A glyph that is neither kana (a future
+// kanji) has no script folder, so it falls back to the flat
+// /mnemonics/<romaji>.webp.
+//
+// It's a candidate: the file may or may not exist. The renderers load it and
+// fall back to the plain glyph if it 404s, so a kana shows its drawing when the
+// webp is present and the character when it isn't — no registry, no fs check.
+// The owner adds a drawing by dropping <romaji>.webp into
+// public/mnemonics/<script>/ (or a transparent PNG named <romaji>.png into
+// ~/Downloads/kana/<script>/ and running `pnpm mnemonic-images`, which optimizes
+// it to that webp). No edit to this table or its test — the romaji and the
+// glyph's script already name the file.
 //
 // THE ACCENT COLOUR IS RESERVED FOR THE SOUND
 // ===========================================
@@ -122,9 +132,10 @@ export interface Mnemonic {
   mnemonic: SoundLine;
   /**
    * The candidate path to a drawn picture of the object, served from
-   * /public/mnemonics and keyed by romaji (e.g. "/mnemonics/a.webp"). NOT
-   * authored on the entry: `getMnemonic` derives it for every kana from the
-   * entry's romaji, so it is always present on a returned Mnemonic. It is a
+   * /public/mnemonics and keyed by the glyph's SCRIPT + romaji (e.g.
+   * "/mnemonics/hiragana/a.webp"). NOT authored on the entry: `getMnemonic`
+   * derives it for every kana from the entry's romaji and the glyph's script
+   * (see `kanaScript`), so it is always present on a returned Mnemonic. It is a
    * CANDIDATE — the file may not exist. The renderers load it and fall back to
    * the plain glyph on error, which is how a kana with no drawing shows its
    * character. The picture is theme-agnostic — the card mounts it on a fixed
@@ -152,8 +163,9 @@ export interface Mnemonic {
  * The table. Keyed by glyph — appending an entry is the whole of authoring a
  * mnemonic. All 46 base hiragana. あ–そ are owner-approved; た–ん carry
  * `draft: true`. No entry carries an `image` — `getMnemonic` derives the
- * candidate /mnemonics/<romaji>.webp path, and the renderers fall back to the
- * glyph when that file is absent, so the character shows until one is drawn.
+ * candidate /mnemonics/<script>/<romaji>.webp path, and the renderers fall back
+ * to the glyph when that file is absent, so the character shows until one is
+ * drawn.
  */
 export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
   // ---- Vowels — あ い う え お (APPROVED) --------------------------------
@@ -860,6 +872,24 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
 };
 
 /**
+ * The syllabary a single glyph belongs to, by Unicode block: "hiragana" for a
+ * code point in the Hiragana block (U+3040–U+309F) and "katakana" for one in the
+ * Katakana block (U+30A0–U+30FF). `null` for anything else — a kanji, a Latin
+ * letter, an empty string, or a multi-code-point string. This is what splits the
+ * mnemonic-image storage by script, so か and カ (both romaji "ka") don't collide
+ * on one filename.
+ */
+export function kanaScript(glyph: string): "hiragana" | "katakana" | null {
+  const cp = glyph.codePointAt(0);
+  if (cp === undefined) return null;
+  // Guard against multi-code-point strings: only a single-glyph input classifies.
+  if (String.fromCodePoint(cp) !== glyph) return null;
+  if (cp >= 0x3040 && cp <= 0x309f) return "hiragana";
+  if (cp >= 0x30a0 && cp <= 0x30ff) return "katakana";
+  return null;
+}
+
+/**
  * The mnemonic for a glyph, or `null` when there is none. This is the whole of
  * the hide-when-absent rule: both call sites render the card only when this
  * returns non-null, so a kana with no entry shows nothing at all — no
@@ -868,12 +898,20 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
 export function getMnemonic(glyph: MnemonicKey): Mnemonic | null {
   const entry = MNEMONICS[glyph];
   if (!entry) return null;
-  // Every entry gets a CANDIDATE image path derived from its own romaji — the
-  // picture at public/mnemonics/<romaji>.webp. It's a candidate, not a promise:
-  // the file may not exist yet. The renderers load it and fall back to the plain
-  // glyph on error (a missing file 404s), so "the drawing shows if the webp is
-  // there, else the character" needs no registry and no fs check here. Drawing a
-  // new kana is: drop <romaji>.webp into public/mnemonics (or a PNG + run
-  // `pnpm mnemonic-images`) — no edit to this table or its test.
-  return { ...entry, image: `/mnemonics/${entry.romaji}.webp` };
+  // Every entry gets a CANDIDATE image path derived from its own romaji AND the
+  // glyph's script — the picture at public/mnemonics/<script>/<romaji>.webp.
+  // Splitting by script keeps か and カ (both "ka") from sharing one filename.
+  // It's a candidate, not a promise: the file may not exist yet. The renderers
+  // load it and fall back to the plain glyph on error (a missing file 404s), so
+  // "the drawing shows if the webp is there, else the character" needs no
+  // registry and no fs check here. Drawing a new kana is: drop <romaji>.webp
+  // into public/mnemonics/<script>/ (or a PNG + run `pnpm mnemonic-images`) — no
+  // edit to this table or its test. A glyph that is neither kana (a future
+  // kanji) has no script folder, so it keeps the flat /mnemonics/<romaji>.webp
+  // fallback rather than crashing.
+  const script = kanaScript(glyph);
+  const image = script
+    ? `/mnemonics/${script}/${entry.romaji}.webp`
+    : `/mnemonics/${entry.romaji}.webp`;
+  return { ...entry, image };
 }
