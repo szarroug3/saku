@@ -251,6 +251,39 @@ export function scriptSoFar(group: LessonGroup): FactId[] {
   ).flatMap((g) => g.facts);
 }
 
+/**
+ * The wider scope, or null when it would not actually be wider.
+ *
+ * WHY THIS EXISTS
+ * ===============
+ * At the FIRST group of a script, "everything so far" IS the group — there is
+ * nothing before it to accumulate. Both buttons then select an identical set of
+ * facts and start an identical drill, so the screen offers a choice between two
+ * things that are the same thing. That is worse than offering nothing: the
+ * learner reads two labels, looks for the difference, and there isn't one.
+ *
+ * A SET COMPARISON, NOT AN INDEX CHECK
+ * ====================================
+ * `group.index === 1` would be true today and is the wrong rule. It encodes a
+ * coincidence of the current curriculum — that exactly one group per script is
+ * degenerate — as if it were the reason. Compare what the two scopes RESOLVE
+ * TO and the condition stays correct if a script ever opens with two groups, if
+ * groups get merged, or if scriptSoFar's definition of "so far" changes: the
+ * fork appears exactly when the two offers differ, which is what the fork means.
+ * It also reads as its own justification at the call site.
+ *
+ * Both come from KANA_GROUPS in curriculum order, so the wide list is the narrow
+ * one plus whatever preceded it — a length check settles it. Membership is
+ * checked anyway rather than assumed, because "same length implies same facts"
+ * is a property of today's builder and not of the callers' question.
+ */
+export function widerScope(group: LessonGroup): FactId[] | null {
+  const soFar = scriptSoFar(group);
+  const own = new Set(group.facts);
+  const same = soFar.length === group.facts.length && soFar.every((f) => own.has(f));
+  return same ? null : soFar;
+}
+
 /** Every fact in a script — what "I know all of hiragana" claims. */
 export function setFacts(setId: string): FactId[] {
   return KANA_GROUPS.filter((g) => g.setId === setId).flatMap((g) => g.facts);

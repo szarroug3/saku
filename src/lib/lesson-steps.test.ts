@@ -25,7 +25,7 @@ import { describe, test } from "node:test";
 import { SETS, kanaFact, noteFor } from "../data/characters.ts";
 import { DAKUTEN_ROWS, dakutenRowFor, hookRuns } from "../data/dakuten-rows.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
-import { KANA_GROUPS, groupOfFact, scriptSoFar } from "./lesson.ts";
+import { KANA_GROUPS, groupOfFact, scriptSoFar, widerScope } from "./lesson.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { lessonSteps } from "./lesson-steps.ts";
 
@@ -231,6 +231,43 @@ describe("the drill's wider scope is cumulative, and script-separate", () => {
     assert.deepEqual(scriptSoFar(last), all);
   });
 
+  test("the opening group of each script offers NO fork", () => {
+    // "Quiz me on all hiragana so far" and "Quiz me on these only" select the
+    // same facts at group one, so the screen would be offering a choice between
+    // two identical drills. widerScope returns null and the UI collapses to a
+    // plain "Quiz me" — see widerScope() in lesson.ts.
+    for (const secId of ["h-vowels", "k-vowels"]) {
+      assert.equal(widerScope(group(secId)), null, `${secId} offered a fake fork`);
+    }
+  });
+
+  test("the second group onward does offer one, and it is genuinely wider", () => {
+    // The other half of the claim: the fork collapsing at group one is not the
+    // fork being broken everywhere.
+    for (const secId of ["h-k", "k-k", "h-conv-z", "h-pya"]) {
+      const g = group(secId);
+      const wide = widerScope(g);
+      assert.ok(wide, `${secId} lost its fork`);
+      assert.ok(
+        wide.length > g.facts.length,
+        `${secId} offered a fork that isn't wider`,
+      );
+      // It really is a superset — the group itself plus what came before.
+      for (const f of g.facts) assert.ok(wide.includes(f));
+    }
+  });
+
+  test("a fork is offered exactly when the two scopes differ", () => {
+    // The invariant behind the rule, stated over the whole curriculum rather
+    // than the two ends of it: no group has a null fork while its scopes differ,
+    // and none offers a fork while they match. This is what an index check
+    // would start getting wrong if the curriculum were ever regrouped.
+    for (const g of KANA_GROUPS) {
+      const differs = scriptSoFar(g).length !== g.facts.length;
+      assert.equal(widerScope(g) !== null, differs, `${g.sectionId} disagrees`);
+    }
+  });
+
   test("every group's scope grows and never shrinks", () => {
     for (const setId of ["hiragana", "katakana"]) {
       const groups = KANA_GROUPS.filter((g) => g.setId === setId);
@@ -244,20 +281,31 @@ describe("the drill's wider scope is cumulative, and script-separate", () => {
   });
 });
 
-describe("long vowels close the script", () => {
-  for (const [secId, introId] of [
-    ["h-pya", "intro-long-vowel-hiragana"],
-    ["k-pya", "intro-long-vowel-katakana"],
+describe("long vowels then small っ close the script", () => {
+  for (const [secId, longId, sokuonId] of [
+    ["h-pya", "intro-long-vowel-hiragana", "intro-sokuon-hiragana"],
+    ["k-pya", "intro-long-vowel-katakana", "intro-sokuon-katakana"],
   ] as const) {
-    test(`${secId}: the card is the LAST step, after every shape is taught`, () => {
+    test(`${secId}: both cards trail every shape, long vowels then っ`, () => {
       const g = group(secId);
-      // It really is the last group of its script — the claim the card makes.
+      // It really is the last group of its script — the claim both cards make.
       assert.equal(g.index, g.total);
       const steps = lessonSteps(g.facts);
-      const last = steps[steps.length - 1];
-      assert.equal(last.type, "intro");
-      assert.equal(last.type === "intro" && last.intro.id, introId);
-      assert.equal(steps.length, g.chars.length + 1);
+      // The two closing cards, in order, with the characters ahead of them.
+      const tail = steps.slice(-2);
+      assert.deepEqual(
+        tail.map((s) => (s.type === "intro" ? s.intro.id : s.type)),
+        [longId, sokuonId],
+      );
+      // THE COUNT INVARIANT. The HUD's "n of N" is steps.length from this very
+      // call, so this is really asserting that adding a second closing card
+      // moved BOTH the render and the count together — the reason this helper
+      // exists at all rather than the walk and the HUD each counting for
+      // themselves.
+      assert.equal(steps.length, g.chars.length + 2);
+      // And nothing crept in among the characters: everything before the tail
+      // is still a glyph step, one for one.
+      assert.ok(steps.slice(0, -2).every((s) => s.type === "item"));
     });
   }
 
