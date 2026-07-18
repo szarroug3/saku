@@ -31,33 +31,40 @@
 //
 // THE ACCENT IS THE SOUND
 // =======================
-// `SoundLine` carries one optional emphasis, `sound`, and it is the substring
-// this accents. A shape word is never accented — see the rule in
-// src/data/mnemonics.ts. `Line` below renders exactly that span in the accent
-// colour and nothing else; a `null` sound accents nothing.
+// A `SoundLine` is an ordered array of spans; a span with `accent: true` is one
+// the kana's sound is actually spoken in, and it — and only it — takes the
+// accent colour. A shape word is never accented (see the rule in
+// src/data/mnemonics.ts). `Line` below maps the spans, painting accent spans and
+// leaving the rest plain.
+//
+// THE NARRATIVE LEADS, THE ANALOGY FOLLOWS
+// ========================================
+// The mnemonic (the one-scene story) is the memory hook, so it is the prominent
+// line — full text colour, comfortable size. The analogy (the "say it like…"
+// cue) is the secondary line — muted and a touch smaller. The accent colour
+// still marks the sound in both.
 
 import { SoundIcon } from "@/components/ui";
 import type { Mnemonic, SoundLine } from "@/data/mnemonics";
 
 import { MnemonicImage } from "./mnemonic-image";
 
-/** Render a SoundLine, accenting only its `sound` span (or nothing). Exported so
- * the stepped lesson's own hero (lesson-item-view.tsx) renders the same accented
- * prose from the same data without re-implementing the one-span rule. */
+/** Render a SoundLine's spans, painting `accent: true` spans in the accent
+ * colour and leaving the rest plain. Exported so the stepped lesson's own hero
+ * (lesson-item-view.tsx) renders the same accented prose from the same data
+ * without re-implementing the span rule. */
 export function Line({ line }: { line: SoundLine }) {
-  if (line.sound === null) {
-    return (
-      <>
-        {line.lead}
-        {line.tail}
-      </>
-    );
-  }
   return (
     <>
-      {line.lead}
-      <span className="font-medium text-accent">{line.sound}</span>
-      {line.tail}
+      {line.map((span, i) =>
+        span.accent ? (
+          <span key={i} className="font-semibold text-accent">
+            {span.text}
+          </span>
+        ) : (
+          <span key={i}>{span.text}</span>
+        ),
+      )}
     </>
   );
 }
@@ -92,11 +99,13 @@ export function MnemonicCard({ m }: { m: Mnemonic }) {
             ) : null}
           </div>
 
-          <p className="mt-2 text-[13px] leading-relaxed">
-            <Line line={m.analogy} />
-          </p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">
+          {/* The narrative is the memory hook, so it leads — prominent, full
+              text colour. The analogy is the muted, smaller secondary line. */}
+          <p className="mt-2 text-[14px] leading-relaxed">
             <Line line={m.mnemonic} />
+          </p>
+          <p className="mt-1.5 text-[12.5px] leading-relaxed text-text-muted">
+            <Line line={m.analogy} />
           </p>
           {m.approximate ? (
             <p className="mt-1.5 text-[11.5px] leading-relaxed text-warning">

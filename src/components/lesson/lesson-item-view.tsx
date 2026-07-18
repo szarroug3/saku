@@ -191,11 +191,13 @@ function KanaHero({
           </span>
         </div>
 
+        {/* The narrative is the memory hook, so it leads — prominent, full text
+            colour. The analogy is the muted, smaller secondary line. */}
         <p className="mt-5 text-[16px] leading-relaxed">
-          <Line line={m.analogy} />
+          <Line line={m.mnemonic} />
         </p>
         <p className="mt-2.5 text-[15px] leading-relaxed text-text-muted">
-          <Line line={m.mnemonic} />
+          <Line line={m.analogy} />
         </p>
 
         {/* The kana caught in a real word, its own glyph accented. */}

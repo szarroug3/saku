@@ -46,8 +46,8 @@ test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => 
     assert.ok(m, `expected a mnemonic for ${k}`);
     assert.equal(m.glyph, k, `${k} entry should be keyed by its own glyph`);
     assert.ok(m.romaji.length > 0, `${k} should declare a romaji reading`);
-    assert.ok(m.analogy.lead.length > 0 || m.analogy.tail.length > 0, `${k} analogy should have prose`);
-    assert.ok(m.analogy.sound && m.analogy.sound.length > 0, `${k} analogy must accent a sound`);
+    assert.ok(m.analogy.length > 0, `${k} analogy should have prose`);
+    assert.ok(m.analogy.some((s) => s.accent), `${k} analogy must accent a sound`);
     // The example points at a real code point in its own word.
     const chars = [...m.example.word];
     assert.ok(
@@ -149,13 +149,16 @@ test("every vowel is approved (no draft flag); every た–ん entry is flagged 
 
 // THE EMPHASIS RULE, encoded.
 //
-// A SoundLine has exactly one emphasis field — `sound` — and it is the span the
-// accent colour paints. There is no "shape" emphasis to express: the type has
-// no such field, so a shape word simply cannot be marked "correct." What is
-// left to check on the DATA is that a non-null `sound` really carries the
-// kana's sound — i.e. it contains the entry's own accented token — and never
-// silently drifts to a shape word that happens to type-check.
-test("every accented span carries the kana's sound, never a shape word", () => {
+// A SoundLine is an ordered array of spans; `accent: true` paints a span in the
+// accent colour, and the accent colour is reserved for the sound. There is no
+// "shape" emphasis to express. What the DATA must hold:
+//   • every line is a non-empty array of {text, accent?} spans, none empty;
+//   • the analogy carries at least one accent span whose text contains the
+//     entry's own sound token — the explicit phonetic cue is always present;
+//   • the mnemonic MAY carry zero accent spans (a story naming only the shape).
+// In-word accent spans need NOT contain the token literally: they carry the
+// sound phonetically (the "a" in father is the sound without spelling "ah").
+test("every line is a well-formed span array; the analogy always cues its sound", () => {
   for (const [glyph, m] of Object.entries(MNEMONICS)) {
     const token = m.sound.toLowerCase();
     assert.ok(token.length > 0, `${glyph} must declare its accented sound token`);
@@ -165,21 +168,27 @@ test("every accented span carries the kana's sound, never a shape word", () => {
       ["mnemonic", m.mnemonic],
     ];
     for (const [name, line] of lines) {
-      // Structural: the only emphasis a line can carry is `sound`.
-      assert.deepEqual(
-        Object.keys(line).sort(),
-        ["lead", "sound", "tail"],
-        `${glyph} ${name} should be a plain SoundLine (lead/sound/tail only)`,
-      );
-      if (line.sound !== null) {
-        assert.ok(
-          line.sound.toLowerCase().includes(token),
-          `${glyph} ${name} accents "${line.sound}", which does not carry the sound "${m.sound}" — accent the sound or accent nothing, never a shape word`,
+      assert.ok(Array.isArray(line) && line.length > 0, `${glyph} ${name} should be a non-empty span array`);
+      for (const span of line) {
+        assert.deepEqual(
+          Object.keys(span).sort().filter((k) => k !== "accent"),
+          ["text"],
+          `${glyph} ${name} span should be a plain SoundSpan (text, optional accent)`,
         );
+        assert.equal(typeof span.text, "string");
+        assert.ok(span.text.length > 0, `${glyph} ${name} has an empty-text span`);
+        if ("accent" in span) {
+          assert.equal(typeof span.accent, "boolean", `${glyph} ${name} accent must be a boolean when present`);
+        }
       }
     }
 
-    // The analogy always has a sound to accent (an analogy with none isn't one).
-    assert.notEqual(m.analogy.sound, null, `${glyph} analogy must accent its sound`);
+    // The analogy always cues the sound: at least one accent span whose text
+    // carries the entry's own token (the explicit "say it like…" phonetic cue).
+    assert.ok(
+      m.analogy.some((s) => s.accent && s.text.toLowerCase().includes(token)),
+      `${glyph} analogy must accent a span carrying the sound "${m.sound}"`,
+    );
+    // The mnemonic MAY accent nothing — a story that names only the shape.
   }
 });
