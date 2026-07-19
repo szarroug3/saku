@@ -95,11 +95,17 @@ function RadicalView({ glyph }: { glyph: string }) {
             Not "no KANJIDIC2 row", not "our data has no gloss for this" — a
             beginner cannot act on either, and both are the app talking about
             itself. What she needs to know is that there is nothing here to
-            learn and she has not missed it. */}
+            learn and she has not missed it.
+
+            IT CARRIED A THIRD SENTENCE for an hour — "worth knowing by sight,
+            because it turns up inside a lot of kanji" — and 鬯 caught it on
+            screen: that shape is inside exactly ONE of the 2,136, so the page
+            was arguing for learning something its own next card refuted. The
+            utility argument belongs to the count in "Used as a part in", which
+            is measured per shape and is therefore right for all 82. */}
         <p className="m-0 mt-1 text-[13px] leading-relaxed text-text-muted">
           This is a shape, not a character. It has no meaning or sound of its
-          own. It is worth knowing by sight, because it turns up inside a lot of
-          kanji.
+          own.
         </p>
       </Card>
 
