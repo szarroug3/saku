@@ -62,7 +62,7 @@ export function NextKanjiLesson({
   inSession?: boolean;
   onContinue?: () => void;
 }) {
-  const { position, cards, over } = lesson;
+  const { position, cards } = lesson;
 
   return (
       <Card>
@@ -71,23 +71,6 @@ export function NextKanjiLesson({
             with the lesson-length slider and the teaching order while the
             material doesn't. See src/lib/lesson-position.ts. */}
         <Lbl>Up next · {positionLabel("kanji", position)}</Lbl>
-
-        <h1 className="text-[22px] font-light tracking-[-0.3px]">
-          {cards.map((c) => c.meaning).join(" · ")}
-        </h1>
-
-        {/* The one warning this card owes. A single kanji (or a set that can
-            only be learned together) can be bigger than the lesson length you
-            asked for and cannot be cut smaller — so the app says so rather than
-            quietly handing you a lesson over your limit. Honest and specific:
-            the kanji is right there to see how big. */}
-        {over ? (
-          <p className="mt-2 rounded-lg border border-border bg-panel px-3 py-2 text-[12px] text-text-muted">
-            {cards.length === 1
-              ? "This is one large kanji, bigger than your usual lesson, and it can't be split."
-              : "These must be learned together and are bigger than your usual lesson."}
-          </p>
-        ) : null}
 
         {/* The kanji ARE the links. A separate "learn it first" block would be a
             second thing to read saying what the tiles already do, and the app's
