@@ -49,7 +49,11 @@ WHAT CAME FROM WHERE
   grammar-corpus.json      Tatoeba (see carve-out)
   grammar-corpus-meta.json Tatoeba (build parameters and counts)
   strokes/hiragana.json    KanjiVG (ordered stroke paths + stroke-number
-                           positions for the 46 base hiragana)
+  strokes/katakana.json    positions) — the 46 base hiragana, the 46 base
+  strokes/kanji-NN.json    katakana, and the 2,136 jouyou kanji split across 48
+  strokes/kanji-index.ts   chunks by codepoint. kanji-index.ts is generated
+                           alongside them and carries the same data (the list of
+                           characters ingested), so it is covered here too.
 
 
 ATTRIBUTION
@@ -103,8 +107,8 @@ FrequencyWords — OpenSubtitles 2018 (Japanese)
   under that licence.
 
 KanjiVG
-  Ordered, numbered stroke paths on a 109×109 grid, for hiragana (and, for
-  later use, katakana and kanji). strokes/hiragana.json is generated from the
+  Ordered, numbered stroke paths on a 109×109 grid, for hiragana, katakana and
+  the jouyou kanji. Everything under strokes/ is generated from the
   per-character SVGs by scripts/ingest/kanjivg.mjs.
   Copyright (c) Ulrich Apel and the KanjiVG contributors
   Licence:  CC BY-SA 3.0
