@@ -18,13 +18,15 @@ export function Callout({
   children,
 }: {
   /** The opener. Overridable because "Heads up." is right beside a character
-   * and flat next to a rule that has a named exception. */
+   * and flat next to a rule that has a named exception. Pass an empty string to
+   * suppress the opener entirely, for asides whose own text already announces
+   * itself (the glyph-variant note opens with "Note:"). */
   label?: string;
   children: ReactNode;
 }) {
   return (
     <p className="border-l-2 border-accent pl-3.5 text-[13px] leading-relaxed text-text-muted">
-      <span className="font-medium text-text">{label} </span>
+      {label ? <span className="font-medium text-text">{label} </span> : null}
       {children}
     </p>
   );

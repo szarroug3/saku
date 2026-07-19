@@ -125,11 +125,11 @@ export function noteFor(c: string): string | null {
 // look-alike pairs (ソ/ン, シ/ツ) are DIFFERENT characters, not variants of one,
 // and already live in LOOKALIKES.
 const GLYPH_VARIANTS: Record<string, string> = {
-  き: "In print the bottom of き is often one connected curve, but by hand the lower stroke is usually written on its own, separate from the rest. Both are the same kana.",
-  さ: "In print the bottom of さ often joins into one curve, but by hand the lower stroke is usually written on its own, separate from the rest. Both are the same kana.",
-  り: "In print the two strokes of り are often joined into one flowing shape, but by hand they are usually written as two separate strokes. Both are the same kana.",
-  そ: "そ is sometimes written as one continuous stroke and sometimes with a small break near the top before the long stroke. Both are the same kana.",
-  ふ: "In print ふ can look like one connected shape, but by hand it is usually written as four separate strokes. Both are the same kana.",
+  き: "Note: Sometimes you will see this kana written with the lower stroke detached, leaving a small gap below the curve above it. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
+  さ: "Note: Sometimes you will see this kana written with the bottom stroke on its own, leaving a small gap instead of joining into one curve. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
+  り: "Note: Sometimes you will see this kana written with its two strokes kept fully separate rather than flowing together. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
+  そ: "Note: Sometimes you will see this kana written with a small break near the top instead of one continuous stroke. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
+  ふ: "Note: Sometimes you will see this kana written as separate strokes rather than a single connected shape. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
 };
 
 /** The call-out for a kana whose printed shape and handwritten shape differ

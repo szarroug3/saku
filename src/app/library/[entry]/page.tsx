@@ -574,10 +574,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
           ) : null}
           {/* The written-form aside, in its own card so it reads as a standalone
               fact about the shape rather than a footnote to the mnemonic. Same
-              sentence, same source as the lesson. */}
+              sentence, same source as the lesson. No opener label: the note's
+              own text starts with "Note:", so a heading would only repeat it. */}
           {glyphVariant ? (
             <Card>
-              <Callout label="Written by hand.">{glyphVariant}</Callout>
+              <Callout label="">{glyphVariant}</Callout>
             </Card>
           ) : null}
           {/* ONE ROW, ONE HEIGHT. Every two-column row on this page (here, the
