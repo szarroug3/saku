@@ -62,8 +62,9 @@ import {
 } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { cluster } from "@/data/grammar/clusters";
-import { RECIPES, isProducible, type Host, type Recipe } from "@/data/grammar/recipes";
+import { RECIPES, isProducible, type Recipe } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
+import { HOST_LABEL } from "@/lib/grammar/formula";
 import type { EntryId, FactId } from "@/types";
 
 /** Which shelf an entry lives on. The subject id, re-stated as a union so a
@@ -395,6 +396,18 @@ export function clusterOf(entry: LibEntry): string | null {
   return RECIPE_OF_ENTRY.get(entry.id)?.cluster ?? null;
 }
 
+/**
+ * The recipe behind a grammar entry, or null for every other kind.
+ *
+ * The entry page needs the RECIPE and not just its cluster: the formula, the
+ * hosts it attaches to and which production facts it carries all live on the
+ * recipe, and the page had no way to reach it that was not re-deriving the id.
+ * A lookup, never a parse — the same rule `clusterOf` follows and the same map.
+ */
+export function recipeOf(entry: LibEntry): Recipe | null {
+  return RECIPE_OF_ENTRY.get(entry.id) ?? null;
+}
+
 // ---------- the links ----------
 
 /** kanji glyph → every everyday word containing it, in vocab order. The join
@@ -675,14 +688,11 @@ export function factRows(entry: LibEntry): FactRow[] {
  * wrap pattern (は〜より, たり〜たり) has only the meaning row, which is the
  * same "shown, never asked" honesty the cluster page keeps.
  */
-/** What a host is called on an entry page. Plain words, not the table's ids:
- * "adj-i" is this codebase's vocabulary, not the reader's. */
-const HOST_LABEL: Record<Host, string> = {
-  verb: "verb",
-  "adj-i": "い-adjective",
-  "adj-na": "な-adjective",
-  noun: "noun",
-};
+// HOST_LABEL — what a host is called on screen — used to be a private copy
+// here. It is now imported from lib/grammar/formula.ts, because the entry page
+// names hosts in three more places (the line under the pattern, the production
+// chips, the formula's slot) and four copies of "い-adjective" are four chances
+// to disagree about it.
 
 function grammarFactRows(entry: LibEntry): FactRow[] {
   const r = RECIPE_OF_ENTRY.get(entry.id);

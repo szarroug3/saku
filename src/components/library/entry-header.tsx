@@ -20,6 +20,7 @@ import { PageTitle, SoundIcon } from "@/components/ui";
 
 export function EntryHeader({
   glyph,
+  glyphClass,
   title,
   sub,
   chips,
@@ -30,6 +31,17 @@ export function EntryHeader({
    * slot is then dropped rather than filled with the entry's NAME at 76px, which
    * would say "learn this shape" about the one entry that has none. */
   glyph: string;
+  /**
+   * Overrides the 76px glyph size. For a KIND WHOSE "GLYPH" IS NOT ONE
+   * CHARACTER — a grammar pattern is 〜なければならない, nine of them — and at
+   * 76px that is a title bar and a half, wrapping over three lines and pushing
+   * the gloss and the chips off the fold.
+   *
+   * A prop rather than a `kind` test inside this component, because the
+   * component's whole point is that it does not know what it is showing: the
+   * caller knows its material is long, and it is the caller that has to say so.
+   */
+  glyphClass?: string;
   title: string;
   /** The provenance line — "Hiragana · Vowels", "Jōyō grade 1 · 5 strokes". */
   sub?: string;
@@ -46,19 +58,38 @@ export function EntryHeader({
   return (
     <div className="flex flex-wrap items-start gap-5">
       {glyph ? (
-        <div className="flex-none text-[76px] leading-none">{glyph}</div>
+        <div className={glyphClass ?? "flex-none text-[76px] leading-none"}>{glyph}</div>
       ) : null}
 
-      <div className="min-w-0 flex-1">
+      {/* A FLOOR, NOT `min-w-0`, and it is a bug fix rather than a preference.
+          The row wraps, the chip stack is `flex-none`, and the middle column
+          used to be allowed to shrink to nothing — so instead of the chips
+          wrapping to their own line when they got wide, the TITLE collapsed.
+          〜すぎる carries four chips (a meaning and one production rule per
+          host) and its gloss came out as "do X / too / much / too / X", five
+          words on five lines, with the sub-line a ribbon beside it. A minimum
+          width means the chips are the thing that gives, which is the right way
+          round: a chip row reads fine on its own line and a title does not read
+          at all in a 60px column. */}
+      <div className="min-w-[16rem] flex-1">
         <PageTitle title={title} />
         {sub ? <p className="mb-3 text-[13px] text-text-muted">{sub}</p> : null}
       </div>
 
       {/* The right-hand stack: chips in a row, sound beneath them. `items-end`
           keeps both flush to the page edge so the chips and the reading share a
-          right margin rather than drifting apart at different widths. */}
+          right margin rather than drifting apart at different widths, and
+          `ml-auto` keeps them there after they have wrapped onto a line of
+          their own — without it a wrapped stack sizes to its content and lands
+          on the LEFT, under the glyph.
+
+          NOT `flex-none`, which it was. A stack that cannot shrink sizes to its
+          content and then overflows the card, and its own inner `flex-wrap` can
+          never fire because it is never squeezed: 〜すぎる's fourth chip ran
+          straight off the right edge on a narrow window. Allowed to shrink, the
+          chip row wraps two-deep instead, which is what the wrap was for. */}
       {chips || sound ? (
-        <div className="flex flex-none flex-col items-end gap-1.5">
+        <div className="ml-auto flex min-w-0 flex-col items-end gap-1.5">
           {chips ? (
             <div className="flex flex-wrap items-center justify-end gap-1.5">{chips}</div>
           ) : null}
