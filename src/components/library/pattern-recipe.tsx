@@ -185,13 +185,17 @@ export function PatternRecipe({
     <Card className="h-full">
       <Lbl>How to build it</Lbl>
       <table className="w-full text-left">
-        {/* The left column is unlabelled on purpose: the card's own title is
-            already its heading, and "Recipe" over the recipe would be the page
-            saying it twice. The header row exists to name the score column. */}
+        {/* THE HEADER ROW EXISTS ONLY WHEN THERE ARE TWO COLUMNS. "The rule"
+            names the left column, which holds the formula and the worked
+            examples that are its evidence. Not "How it's built": the card's own
+            title already says that, and a column header repeating it stutters.
+            When nothing here is scored the score column is dropped, and a lone
+            "The rule" over the only column is noise, so the whole row goes with
+            it. */}
         {anyScored ? (
           <thead>
             <tr className="border-b border-border text-xs font-medium text-text-muted">
-              <th className="py-1.5 pr-2 font-medium" />
+              <th className="py-1.5 pr-2 font-medium">The rule</th>
               <th className="py-1.5 font-medium">How you&rsquo;re doing</th>
             </tr>
           </thead>

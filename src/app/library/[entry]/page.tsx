@@ -391,7 +391,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
         // the design mocking it as 丿 + 土. Said in words rather than rendered as
         // an empty row, which would read as missing data.
         <LinkRow label="Made of">
-          <Hint>nothing smaller — this one is its own shape</Hint>
+          <Hint>nothing smaller, this one is its own shape</Hint>
         </LinkRow>
       ) : null}
 
@@ -465,7 +465,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
             </span>
           ))
         ) : (
-          <Hint>not on any — the bar below can file it</Hint>
+          <Hint>None</Hint>
         )}
       </LinkRow>
     </>
@@ -754,10 +754,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
           link. */}
 
       <SliceBar
-        // `entryName`, not the glyph: the bar prints this label in bold ahead of
-        // its sentence, so on the long-vowel mark it read "— nothing here to
-        // drill" with nothing in front of the dash.
+        // NOT SHOWN, but still required. The bar's label is the page's own
+        // name here, printed a few inches above in the header and again in the
+        // breadcrumb, so `showLabel={false}` keeps the bar to its sentence
+        // alone. The label is still passed because it is not only decoration:
+        // it names the add-to-list panel and the session the Drill button
+        // starts. `entryName`, not the glyph, because the long-vowel mark has
+        // no glyph and would name those nothing.
         slice={{ label: entryName(entry), entries: [entry.id] }}
+        showLabel={false}
         facts={history.facts}
         claims={claims}
         now={now}

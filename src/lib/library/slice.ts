@@ -181,7 +181,7 @@ export function sliceCount(
 export function sliceSentence(c: SliceCount): string {
   if (c.total === 0) return "nothing here to drill";
   if (c.drillable === 0) {
-    return `all ${c.total} solid — nothing to ask`;
+    return `all ${c.total} solid, nothing to ask`;
   }
   if (c.seen === 0) {
     return `${c.drillable} question${c.drillable === 1 ? "" : "s"} · not seen yet`;
