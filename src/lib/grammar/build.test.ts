@@ -13,7 +13,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { buildRow, buildRows, countWord, wordsUsed } from "./build";
+import { buildRow, buildRows, countWord, patternsShown, wordsUsed } from "./build";
 import { CLUSTERS, membersOf } from "../../data/grammar/clusters";
 import { RECIPES } from "../../data/grammar/recipes";
 
@@ -149,12 +149,49 @@ describe("every cluster renders", () => {
   test("no clustered recipe is silently dropped from its page", () => {
     for (const c of CLUSTERS) {
       const members = membersOf(c);
-      assert.equal(
-        buildRows(members).length,
-        members.length,
+      const shown = new Set(buildRows(members).map((r) => r.recipe.id));
+      // A member may contribute SEVERAL rows now (one per host), so the count is
+      // no longer the membership — but every member that builds at all must
+      // still appear, which is what this test was always for.
+      const buildable = members.filter((r) => r.attach.some((a) => buildRow(r, a.host)));
+      assert.deepEqual(
+        shown,
+        new Set(buildable.map((r) => r.id)),
         `cluster '${c.id}' loses a member to a refused build`,
       );
     }
+  });
+
+  test("a multi-host pattern gets a row PER HOST, not one standing for all", () => {
+    // The bug: buildRow read attach[0], so 〜すぎる printed 行きすぎる and stopped.
+    // Every cell was true and the column said something false — that 〜すぎる is
+    // a verb pattern. On the one page whose stated promise is that this column
+    // cannot be wrong, a true row implying a false whole breaks it too.
+    for (const c of CLUSTERS) {
+      for (const r of membersOf(c)) {
+        const hosts = r.attach.filter((a) => buildRow(r, a.host)).map((a) => a.host);
+        const rows = buildRows([r]);
+        assert.deepEqual(
+          rows.map((x) => x.host),
+          hosts,
+          `${r.id} shows ${rows.length} row(s) for ${hosts.length} buildable host(s)`,
+        );
+      }
+    }
+  });
+
+  test("〜すぎる shows the adjective stem beside the verb stem", () => {
+    // The worked example of the whole fix: same ending, different stem, and the
+    // second line is the only place a reader can see that 高い loses its い.
+    const rows = buildRows([byId("sugiru")]);
+    assert.deepEqual(
+      rows.map((r) => r.built),
+      ["行きすぎる", "高すぎる", "静かすぎる"],
+    );
+    assert.deepEqual(
+      rows.map((r) => r.how),
+      ["行き + すぎる", "高 + すぎる", "静か + すぎる"],
+    );
   });
 
   test("the map-only clusters have no rows, and that is not an error", () => {
@@ -168,7 +205,30 @@ describe("every cluster renders", () => {
 describe("card label bits", () => {
   test("wordsUsed dedupes and keeps first-seen order", () => {
     const rows = buildRows(membersOf(CLUSTERS.find((c) => c.id === "conditionals")!));
-    assert.deepEqual(wordsUsed(rows), ["行く", "本"]);
+    // 高い and 静か are here because 〜ば and 〜たら take adjectives and the page
+    // now says so. The card used to promise "built on 行く and 本" under a table
+    // that showed only half of two of its four patterns.
+    assert.deepEqual(wordsUsed(rows), ["行く", "高い", "静か", "本"]);
+  });
+
+  test("the count is PATTERNS, not rows — 'The seven', not 'The thirteen'", () => {
+    // The card's headline is a claim about the language: English has one word
+    // for seven Japanese patterns. Once a multi-host pattern started printing a
+    // row per host, `rows.length` began answering a different question — the
+    // 'seems' cluster announced "The 13" over seven patterns.
+    for (const c of CLUSTERS) {
+      const members = membersOf(c);
+      const rows = buildRows(members);
+      if (rows.length === 0) continue;
+      assert.equal(patternsShown(rows), new Set(rows.map((r) => r.recipe.id)).size);
+      assert.ok(
+        patternsShown(rows) <= members.length,
+        `cluster '${c.id}' counts more patterns than it has members`,
+      );
+    }
+    const seems = buildRows(membersOf(CLUSTERS.find((c) => c.id === "seems")!));
+    assert.equal(patternsShown(seems), 6);
+    assert.equal(seems.length, 13, "the seems cluster prints 13 rows over its 6 patterns");
   });
 
   test("countWord spells small numbers and falls back past nine", () => {

@@ -87,3 +87,80 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
     assert.ok(checkTyped(TE_KARA, "行ってから", "en2jp", bad));
   });
 });
+
+describe("a split production fact is drilled on ITS OWN host", () => {
+  const SUGIRU_V = patternProductionFactId("sugiru");
+  const SUGIRU_I = patternProductionFactId("sugiru", "adj-i");
+  const TAKAI: GrammarVehicle = { surface: "高い", kana: "たかい", cls: "adj-i" };
+  const IKU: GrammarVehicle = { surface: "行く", kana: "いく", cls: "v5k-s" };
+
+  test("the two facts are different ids with different baked answers", () => {
+    // If these ever collapse to one id the split is undone and one score is
+    // being kept for two rules — silently, because everything still renders.
+    assert.notEqual(SUGIRU_V, SUGIRU_I);
+    assert.equal(factInfo(SUGIRU_V)?.glyph, "行きすぎる");
+    assert.equal(factInfo(SUGIRU_I)?.glyph, "高すぎる");
+  });
+
+  test("the verb fact keeps the UNQUALIFIED id — the one history already holds", () => {
+    // The whole reason the primary host is unqualified. A user's existing
+    // `grammar:sugiru/production` record has answers behind it that were given
+    // on 行く, and it must go on meaning that.
+    assert.equal(String(SUGIRU_V), "grammar:sugiru/production");
+    assert.equal(String(SUGIRU_I), "grammar:sugiru/production@adj-i");
+  });
+
+  test("rolled vehicles never cross the host boundary, across the rng range", () => {
+    for (const x of [0, 0.2, 0.4, 0.6, 0.8, 0.99]) {
+      assert.equal(grammarVehicleFor(SUGIRU_I, () => x)?.cls?.startsWith("adj"), true);
+      assert.equal(grammarVehicleFor(SUGIRU_V, () => x)?.cls?.startsWith("v"), true);
+    }
+  });
+
+  test("a wrong-host ctx vehicle is refused like an illegal one", () => {
+    // 行く builds 行きすぎる perfectly well — this is not about legality. It is
+    // the OTHER fact's question, and answering it here would score the verb rule
+    // under the adjective one. A stale ctx must collapse to the baked example.
+    const qt = questionsFor(SUGIRU_I);
+    assert.equal(qt.prompt(SUGIRU_I, "en2jp", { grammarVehicle: IKU }).glyph, "高い");
+    assert.equal(qt.prompt(SUGIRU_I, "en2jp", { grammarVehicle: TAKAI }).glyph, "高い");
+    assert.equal(qt.prompt(SUGIRU_V, "en2jp", { grammarVehicle: TAKAI }).glyph, "行く");
+  });
+
+  test("grading follows the same boundary", () => {
+    assert.ok(checkTyped(SUGIRU_I, "高すぎる", "en2jp", { grammarVehicle: TAKAI }));
+    // Wrong-host vehicle → the baked adj-i answer, not the verb one.
+    assert.ok(checkTyped(SUGIRU_I, "高すぎる", "en2jp", { grammarVehicle: IKU }));
+    assert.ok(!checkTyped(SUGIRU_I, "行きすぎる", "en2jp", { grammarVehicle: IKU }));
+  });
+
+  test("MC options for an adjective fact are all built on the adjective", () => {
+    const ctx = { grammarVehicle: TAKAI };
+    const opts = buildMcOptions(SUGIRU_I, ctx);
+    assert.ok(opts.length > 1, "MC degenerated to one option");
+    assert.equal(opts.filter((o) => o === SUGIRU_I).length, 1);
+    const qt = questionsFor(SUGIRU_I);
+    const labels = opts.map((o) => qt.optionLabel?.(o, "en2jp", ctx));
+    assert.ok(labels.every((l) => l && l.startsWith("高")), `an option escaped the host: ${labels}`);
+    assert.equal(new Set(labels).size, labels.length, "two options read alike");
+  });
+
+  test("a distractor is never a fact that does not exist", () => {
+    // 〜ても builds 高くても fine but has NO adj-i production fact (it defers to
+    // te-cause), so offering it would put an unresolvable id on the board.
+    const qt = questionsFor(SUGIRU_I);
+    for (const d of qt.distractors(SUGIRU_I, 6, { grammarVehicle: TAKAI })) {
+      assert.ok(factInfo(d), `${d} is on the board and resolves to nothing`);
+    }
+  });
+
+  test("〜ので is drilled on 静か now, not on 行く", () => {
+    // The standalone bug, at the seam the user actually meets.
+    const node = patternProductionFactId("node");
+    assert.equal(factInfo(node)?.glyph, "静かなので");
+    assert.equal(questionsFor(node).prompt(node, "en2jp").glyph, "静か");
+    for (const x of [0, 0.3, 0.6, 0.9]) {
+      assert.equal(grammarVehicleFor(node, () => x)?.cls, "adj-na");
+    }
+  });
+});

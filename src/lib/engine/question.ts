@@ -35,9 +35,9 @@ import {
   patternMeaningFactId,
   patternProductionFactId,
 } from "@/data/grammar";
-import { RECIPES, isProducible } from "@/data/grammar/recipes";
+import { RECIPES, isProducible, type Host } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
-import { apply } from "@/lib/grammar/apply";
+import { apply, hostOfClass } from "@/lib/grammar/apply";
 import { pickVehicle, type Rng, type Vehicle } from "@/lib/grammar/vehicles";
 import type { WordClass } from "@/lib/conjugate";
 import {
@@ -514,9 +514,30 @@ function isWordReading(fact: FactId): boolean {
 function variedVehicle(
   r: import("@/data/grammar/recipes").Recipe,
   ctx?: PromptContext,
+  onHost?: Host,
 ): GrammarVehicle | null {
   const v = ctx?.grammarVehicle;
-  return v && apply(r, v.surface, v.cls).ok ? v : null;
+  if (!v || !apply(r, v.surface, v.cls).ok) return null;
+  // A vehicle of the WRONG HOST is treated exactly like an illegal one: dropped,
+  // and the showing falls back to the fact's own baked example. A stale ctx (a
+  // remount, a serialized runtime written before the host split) could otherwise
+  // put 行く on the adj-i card, which grades and reveals the other fact's answer.
+  return onHost === undefined || hostOf(v) === onHost ? v : null;
+}
+
+/** The recipe host a vehicle satisfies. A noun has no class and no form, which
+ * is exactly what makes it the noun host. */
+function hostOf(v: GrammarVehicle): Host {
+  return v.cls === null ? "noun" : hostOfClass(v.cls);
+}
+
+/** A recipe's production fact for one host, or null if it has none there.
+ * Existence is checked against the REGISTRY rather than recomputed, because
+ * "which hosts split" is data/grammar/index.ts's decision and a second opinion
+ * about it here is a second place for it to be wrong. */
+function productionFactOn(recipeId: string, host: Host): FactId | null {
+  const id = patternProductionFactId(recipeId, host);
+  return factInfo(id) ? id : null;
 }
 
 /** The pattern built on a vehicle — surface form and kana form — or null when
@@ -546,7 +567,11 @@ export function grammarVehicleFor(
 ): GrammarVehicle | null {
   const prod = grammarProduction(fact);
   if (!prod) return null;
-  const picked: Vehicle | null = pickVehicle(prod.recipe, rng);
+  // PINNED TO THE FACT'S HOST. A production fact is a fact about one host now
+  // (行きそう and 高そう are separate facts because they are separate rules), so
+  // rolling a verb for the adj-i fact would ask the other fact's question and
+  // record the answer against this one.
+  const picked: Vehicle | null = pickVehicle(prod.recipe, rng, prod.host);
   return picked
     ? { surface: picked.surface, kana: picked.kana, cls: picked.cls }
     : null;
@@ -560,7 +585,7 @@ const grammarQuestions: QuestionType = {
       // The vehicle verb is the big glyph; the pattern names the target, which
       // is what makes production a question with ONE answer. The vehicle is the
       // showing's (varied) one when present and legal, else the baked 行く.
-      const v = variedVehicle(prod.recipe, ctx);
+      const v = variedVehicle(prod.recipe, ctx, prod.host);
       return {
         glyph: v ? v.surface : prod.lemma,
         jp: true,
@@ -585,7 +610,7 @@ const grammarQuestions: QuestionType = {
       // fixed answer baked in the fact — otherwise a 食べる showing would only
       // accept 行ってから. Both scripts count, as the baked path does. No legal
       // vehicle → the baked answers, unchanged.
-      const v = variedVehicle(prod.recipe, ctx);
+      const v = variedVehicle(prod.recipe, ctx, prod.host);
       if (v) {
         const built = builtOn(prod.recipe, v);
         if (built) {
@@ -599,7 +624,7 @@ const grammarQuestions: QuestionType = {
   distractors(fact, n, ctx) {
     const prod = grammarProduction(fact);
     if (prod) {
-      const v = variedVehicle(prod.recipe, ctx);
+      const v = variedVehicle(prod.recipe, ctx, prod.host);
       const out: FactId[] = [];
       if (v) {
         const answer = builtOn(prod.recipe, v);
@@ -611,17 +636,28 @@ const grammarQuestions: QuestionType = {
           // with the answer would be a second right option.
           const d = builtOn(r, v);
           if (!d || (answer && d.form === answer.form)) continue;
-          out.push(patternProductionFactId(r.id));
+          // The distractor's fact is the one for THIS vehicle's host, and it has
+          // to be a fact that exists: 〜ても builds fine on 高い but has no adj-i
+          // production fact (it defers to te-cause — see sharedProductionWith),
+          // so offering `production@adj-i` for it would put an id on the board
+          // that resolves to nothing. Its verb fact is not a substitute; that is
+          // a different question with a different answer.
+          const dFact = productionFactOn(r.id, hostOf(v));
+          if (!dFact) continue;
+          out.push(dFact);
           if (out.length >= n) break;
         }
         return out;
       }
-      // No varied vehicle: the pre-variety same-fixed-lemma filter, verbatim.
+      // No varied vehicle: the pre-variety same-fixed-lemma filter, verbatim,
+      // now per host — a fact's baked lemma is its own host's example word.
       for (const r of RECIPES) {
         if (r.id === prod.recipe.id || !isProducible(r)) continue;
-        const ex = buildExample(r);
+        const ex = buildExample(r, prod.host);
         if (!ex || ex.lemma !== prod.lemma) continue;
-        out.push(patternProductionFactId(r.id));
+        const dFact = productionFactOn(r.id, prod.host);
+        if (!dFact) continue;
+        out.push(dFact);
         if (out.length >= n) break;
       }
       return out;
@@ -646,13 +682,13 @@ const grammarQuestions: QuestionType = {
     // right, so return null and let the drill use it.
     const prod = grammarProduction(fact);
     if (!prod) return null;
-    const v = variedVehicle(prod.recipe, ctx);
+    const v = variedVehicle(prod.recipe, ctx, prod.host);
     return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
   },
   answerReveal(fact, ctx) {
     const prod = grammarProduction(fact);
     if (!prod) return null;
-    const v = variedVehicle(prod.recipe, ctx);
+    const v = variedVehicle(prod.recipe, ctx, prod.host);
     return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
   },
 };

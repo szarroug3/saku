@@ -40,8 +40,13 @@ export function ClusterTable({ rows }: { rows: readonly BuiltRow[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ recipe, built, how }) => (
-            <tr key={recipe.id} className="border-b border-border last:border-b-0">
+          {/* Keyed on (recipe, host): a pattern that takes a verb AND an
+              adjective now prints one row for each — 行きすぎる then 高すぎる —
+              because a column that stopped at the verb was telling the reader
+              〜すぎる is a verb pattern. The id alone stopped being unique with
+              it. */}
+          {rows.map(({ recipe, host, built, how }) => (
+            <tr key={`${recipe.id}/${host}`} className="border-b border-border last:border-b-0">
               {/* Always the worked example, now that every row has one. This
                   cell used to fall back to the bare pattern for 〜は〜より,
                   because a one-suffix recipe could only reach 本は and printing

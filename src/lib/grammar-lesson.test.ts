@@ -22,6 +22,7 @@ import { KANA_GROUP_FACTS, nextLesson } from "./lesson.ts";
 import {
   patternMeaningFactId,
   patternProductionFactId,
+  productionHosts,
 } from "../data/grammar/index.ts";
 import {
   DRILLABLE,
@@ -119,9 +120,14 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
     for (const card of lesson.cards) {
       const r = recipe(card.id)!;
       expected.add(patternMeaningFactId(r.id));
-      // Every drillable pattern carries a production fact (its example builds),
-      // so both facts are seeded.
-      expected.add(patternProductionFactId(r.id));
+      // Every drillable pattern carries a production fact per HOST it teaches a
+      // separate rule for — usually one (the verb), three for 〜そう. Derived
+      // from productionHosts rather than assumed to be one, because a lesson
+      // that seeded only the verb fact would leave the adjective rule unmet
+      // forever: the lesson is where a fact is first introduced.
+      for (const host of productionHosts(r)) {
+        expected.add(patternProductionFactId(r.id, host));
+      }
     }
     assert.deepEqual(new Set(lesson.facts as unknown as string[]), expected);
   });

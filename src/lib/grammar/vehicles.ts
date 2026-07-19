@@ -79,8 +79,25 @@ export const VERB_VEHICLES: readonly Vehicle[] = [
   { surface: "来る", kana: "くる", cls: "vk", host: "verb" },
 ];
 
-/** い-adjective vehicles, for a recipe that attaches to adj-i (〜そう, 〜て…). */
+/**
+ * い-adjective vehicles, for a recipe that attaches to adj-i (〜そう, 〜て…).
+ *
+ * いい LEADS, and it is here for the reason 行く leads the verbs: it is the
+ * irregular one. Its class is adj-ix, whose stem is よ and not い — so 〜そう on
+ * it is よさそう, through BOTH of sou-appearance's `except` rules at once (the
+ * さ-insertion, matched on the class).
+ *
+ * That row used to be unreachable. `except` was written after a run against
+ * real vocabulary showed the template emitting よそう — not merely wrong but a
+ * DIFFERENT WORD (予想, "a forecast") — and then no adj-ix word existed in this
+ * pool, in example.ts's HOST_EXAMPLE, or in build.ts's EXAMPLE, so nothing the
+ * app can actually show ever exercised it. Correctness code that cannot fire
+ * reads as covered when it is not; the fix is a vehicle that fires it, not a
+ * deletion, because the rule guards real Japanese the moment the drill meets
+ * an いい. A test now asserts every `except` row is reachable from some vehicle.
+ */
 export const ADJ_I_VEHICLES: readonly Vehicle[] = [
+  { surface: "いい", kana: "いい", cls: "adj-ix", host: "adj-i" }, // stem is よ: よさそう
   { surface: "高い", kana: "たかい", cls: "adj-i", host: "adj-i" },
   { surface: "安い", kana: "やすい", cls: "adj-i", host: "adj-i" },
   { surface: "新しい", kana: "あたらしい", cls: "adj-i", host: "adj-i" },
@@ -130,12 +147,19 @@ export type Rng = () => number;
  * with an empty list has no varied question to ask and falls back to the fixed
  * vehicle baked in the fact.
  */
-export function vehiclesFor(r: Recipe): Vehicle[] {
+export function vehiclesFor(r: Recipe, onHost?: Host): Vehicle[] {
   if (r.wrap) return []; // a wrap needs two words; apply() refuses it anyway.
   const hosts = new Set(r.attach.map((a) => a.host));
   const out: Vehicle[] = [];
   for (const host of HOST_ORDER) {
     if (!hosts.has(host)) continue;
+    // A production fact is keyed on ONE host now (see productionAspect), so a
+    // showing of the adj-i fact must never roll 行く. Without this filter the
+    // split buys nothing: both facts would draw from the same pool, the drill
+    // would ask the same mixed question twice, and two separate scores would be
+    // kept for it. Unfiltered (no host given) is still the right default for a
+    // caller asking "what can this recipe be built on at all".
+    if (onHost !== undefined && host !== onHost) continue;
     for (const v of POOL[host]) {
       const built = apply(r, v.surface, v.cls);
       if (!built.ok || built.value === v.surface) continue;
@@ -151,9 +175,12 @@ export function vehiclesFor(r: Recipe): Vehicle[] {
  * `rng` defaults to Math.random; pass a seeded one in tests. Null means the
  * caller should fall back to the fixed vehicle (行く) — a wrap, or a recipe the
  * pool cannot host.
+ *
+ * `onHost` pins the pick to one host, and a production showing always passes
+ * it: the fact being drilled is a fact ABOUT that host. See `vehiclesFor`.
  */
-export function pickVehicle(r: Recipe, rng: Rng = Math.random): Vehicle | null {
-  const options = vehiclesFor(r);
+export function pickVehicle(r: Recipe, rng: Rng = Math.random, onHost?: Host): Vehicle | null {
+  const options = vehiclesFor(r, onHost);
   if (options.length === 0) return null;
   return options[Math.floor(rng() * options.length)] ?? options[0];
 }
