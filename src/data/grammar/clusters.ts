@@ -182,7 +182,7 @@ export const CLUSTERS: readonly Cluster[] = [
   {
     id: "conditionals",
     title: "if",
-    gloss: "four conditionals, one English word",
+    gloss: "ば, たら, と and なら",
     members: ["ba", "tara", "to-conditional", "nara"],
     feel:
       "と is the most mechanical (whenever X, Y follows); たら is the most " +

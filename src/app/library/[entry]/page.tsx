@@ -672,7 +672,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
               guard against the data changing, not a case you can reach.) */}
           {familyCluster && familyMembers.length > 1 ? (
             <PatternFamily
-              cluster={familyCluster}
               members={familyMembers}
               current={pattern}
               facts={history.facts}

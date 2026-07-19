@@ -39,7 +39,6 @@ import Link from "next/link";
 
 import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Lbl } from "@/components/ui";
-import type { Cluster } from "@/data/grammar/clusters";
 import { patternEntry, patternMeaningFactId } from "@/data/grammar";
 import type { Recipe } from "@/data/grammar/recipes";
 import { buildRow } from "@/lib/grammar/build";
@@ -50,7 +49,6 @@ import type { Claims } from "@/lib/claims";
 import type { AccuracyMetric, HistoryFile } from "@/types";
 
 export function PatternFamily({
-  cluster,
   members,
   current,
   facts,
@@ -58,7 +56,6 @@ export function PatternFamily({
   metric,
   now,
 }: {
-  cluster: Cluster;
   members: readonly Recipe[];
   /** The recipe whose page this is. Marked, not filtered out: a family with the
    * member you are reading about missing is not that family. */
@@ -136,25 +133,11 @@ export function PatternFamily({
         </table>
       </div>
 
-      {/* THE FEEL NOTE. A plain paragraph, under the table, with no title and no
-          box.
-          It had a label — "Feel · shown, never asked, never scored" — which is
-          the phrasing the cluster page still uses, and which is the app
-          explaining its own scoring model to someone who did not ask about it.
-          The sentence below says the same thing as a fact about JAPANESE ("feel
-          comes from hearing them used") and mentions the app once, at the end,
-          to say what it will not do. That is the difference between teaching the
-          user and narrating the software.
-          The authored text sits in the middle because it is the only part that
-          is about THIS family; the frame around it is the same on all nine. */}
-      {cluster.feel ? (
-        <p className="mt-3 text-[13px] leading-relaxed text-text-muted">
-          All of these are correct ways to say this. {cluster.feel} Which one
-          someone reaches for is a matter of feel, and feel comes from hearing
-          them used, so this page shows you the difference and never tests you
-          on it.
-        </p>
-      ) : null}
+      {/* NO FEEL NOTE HERE. `feel` is authored per FAMILY, and this component
+          renders on 29 individual pattern pages, so a family note on a member's
+          page can spend all of itself on a different member: on 〜かもしれない
+          it described 〜そう and never named 〜かもしれない at all. It lives on
+          the cluster page, which is the page about the whole family. */}
     </Card>
   );
 }
