@@ -138,18 +138,18 @@ export function EntryTile({
   mnemonic?: string;
   voice: string;
   selected: boolean;
-  onToggleSelect(): void;
+  onToggleSelect(shiftKey: boolean): void;
 }) {
   return (
     <div
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      onClick={onToggleSelect}
+      onClick={(e) => onToggleSelect(e.shiftKey)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onToggleSelect();
+          onToggleSelect(e.shiftKey);
         }
       }}
       // Selected owns BOTH border and fill so it beats the tone border and is
@@ -226,18 +226,18 @@ export function EntryRow({
   note?: string;
   voice: string;
   selected: boolean;
-  onToggleSelect(): void;
+  onToggleSelect(shiftKey: boolean): void;
 }) {
   return (
     <div
       role="button"
       tabIndex={0}
       aria-pressed={selected}
-      onClick={onToggleSelect}
+      onClick={(e) => onToggleSelect(e.shiftKey)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onToggleSelect();
+          onToggleSelect(e.shiftKey);
         }
       }}
       className={`flex cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 ${

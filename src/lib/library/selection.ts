@@ -66,6 +66,75 @@ export function sectionState(
 }
 
 /**
+ * SHIFT-CLICK RANGE SELECT — the desktop gesture, over the Library's flat set.
+ *
+ * A plain click sets an ANCHOR (the page tracks which id that is); Shift-clicking
+ * another item selects everything between the anchor and that item. The two
+ * functions here are the pure math of that gesture, kept out of the component so
+ * they can be tested against real ordered id lists.
+ *
+ * `visible` is the entries CURRENTLY ON SCREEN, in DISPLAY ORDER — already cut by
+ * the kind filter, the knowledge-state filter and the search box, and already
+ * past each section's render cap. The range is a slice of THAT list, so it can
+ * never reach a hidden, filtered-out or capped-off entry: if you cannot see it,
+ * a Shift-click cannot select it.
+ *
+ * CROSS-SHELF / CROSS-SECTION BEHAVIOUR IS DELIBERATE. `visible` is the flattened
+ * order of every on-screen tile and row, ACROSS section (and, in search, across
+ * kind) boundaries — the browse shelf shows one kind at a time, so the boundaries
+ * a range crosses are its sections (kana rows, kanji hundreds), and search stacks
+ * sections of different kinds. A range from an anchor in one section to a target
+ * in another therefore fills every visible item between them, section dividers
+ * and all, which is what "drag-select from here to there" means on a page you
+ * read top to bottom. The selection set is already flat and cross-kind (see the
+ * file header), so this needs no per-section bucket to express.
+ */
+
+/**
+ * The ids in `visible` from `anchor` to `target` inclusive, in display order —
+ * the contiguous run a Shift-click turns on. Works in BOTH directions: it does
+ * not matter whether the anchor sits before or after the target on screen.
+ *
+ * Returns `[]` when either id is absent from the visible list. That is the
+ * anchor-scrolled-away case (a filter or the search box changed what is visible
+ * since the anchor was set) and the never-visible-target case; the caller falls
+ * back to a plain toggle so a Shift-click is never a no-op that looks broken.
+ */
+export function rangeIds(
+  visible: readonly EntryId[],
+  anchor: EntryId,
+  target: EntryId,
+): EntryId[] {
+  const a = visible.indexOf(anchor);
+  const b = visible.indexOf(target);
+  if (a === -1 || b === -1) return [];
+  const [lo, hi] = a <= b ? [a, b] : [b, a];
+  return visible.slice(lo, hi + 1);
+}
+
+/**
+ * Shift-click applied: the current selection UNIONED with the visible range from
+ * anchor to target. Additive on purpose — the Library builds a drill by turning
+ * things ON, so a range never clears what you had selected elsewhere; it only
+ * adds the run between the two clicks. Entries already in the range stay on.
+ *
+ * If no range can be formed (anchor or target not currently visible) the target
+ * is toggled instead, so the click still does the obvious thing and re-anchors.
+ */
+export function addRange(
+  sel: Selection,
+  visible: readonly EntryId[],
+  anchor: EntryId,
+  target: EntryId,
+): Set<EntryId> {
+  const range = rangeIds(visible, anchor, target);
+  if (range.length === 0) return toggleEntry(sel, target);
+  const next = new Set(sel);
+  for (const id of range) next.add(id);
+  return next;
+}
+
+/**
  * The selection as a Slice, so the one bar can drill / claim / file it exactly
  * like any other slice — no second code path for "the drill you built".
  *

@@ -164,6 +164,35 @@ function resolve(id: EntryId | null): LibEntry[] {
   return e ? [e] : [];
 }
 
+/**
+ * The ids the shelf actually PAINTS, in display order — what a Shift-click range
+ * is allowed to reach. It mirrors `Shelf`'s render exactly and must stay in lock
+ * step with it: the words shelf's `WORD_TILES` slice, each section's knowledge
+ * filter, the dropping of sections the filter empties, and each section's render
+ * `cap`. Anything the shelf hides (past the word cap, filtered out, or beyond a
+ * grade section's cap) is absent here, so the range can never select it.
+ *
+ * It lives beside the render, not in the page, so the two cannot drift: the same
+ * `keep`, `WORD_TILES` and `cap` govern both.
+ */
+export function visibleShelfIds(
+  kind: Kind,
+  sections: readonly ShelfSection[],
+  allEntries: readonly LibEntry[],
+  keep?: (entry: LibEntry) => boolean,
+): EntryId[] {
+  if (kind === VOCAB_SUBJECT) {
+    const words = keep ? allEntries.filter(keep) : allEntries;
+    return words.slice(0, WORD_TILES).map((e) => e.id);
+  }
+  const shown = keep
+    ? sections
+        .map((s) => ({ ...s, entries: s.entries.filter(keep) }))
+        .filter((s) => s.entries.length > 0)
+    : sections;
+  return shown.flatMap((s) => s.entries.slice(0, s.cap ?? Infinity).map((e) => e.id));
+}
+
 export function Shelf({
   kind,
   sections,
@@ -185,7 +214,7 @@ export function Shelf({
   allEntries: readonly LibEntry[];
   /** The global, cross-kind selection this shelf draws its on-state from. */
   selected: Selection;
-  onToggleEntry(id: EntryId): void;
+  onToggleEntry(id: EntryId, shiftKey: boolean): void;
   onToggleSection(ids: readonly EntryId[]): void;
   facts: Record<EntryId | string, FactAggregate>;
   claims: Claims;
@@ -208,7 +237,7 @@ export function Shelf({
       mnemonic={mnemonicOf(kind, entry)}
       standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
       selected={selected.has(entry.id)}
-      onToggleSelect={() => onToggleEntry(entry.id)}
+      onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
   );
 
@@ -223,7 +252,7 @@ export function Shelf({
       note={entry.sub}
       standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
       selected={selected.has(entry.id)}
-      onToggleSelect={() => onToggleEntry(entry.id)}
+      onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
   );
 

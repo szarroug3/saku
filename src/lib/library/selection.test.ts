@@ -20,7 +20,9 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { LIB_ENTRIES } from "@/lib/library/entries";
 import {
+  addRange,
   EMPTY_SELECTION,
+  rangeIds,
   sectionState,
   selectionSlice,
   toggleEntry,
@@ -127,5 +129,90 @@ describe("sectionState — what the header renders", () => {
 
   test("an empty section is never 'all'", () => {
     assert.equal(sectionState(EMPTY_SELECTION, []), "none");
+  });
+});
+
+// A visible, in-DISPLAY-ORDER list drawn from real ids, deliberately MIXING two
+// kinds so the "cross-shelf / cross-section" range is exercised against the same
+// flat, cross-kind order the search view actually produces. v[0..2] are kana,
+// v[3..5] are kanji: a range that starts in one and ends in the other crosses
+// the boundary, which is the documented behaviour.
+const kanas = LIB_ENTRIES.filter((e) => e.kind === KANA_SUBJECT).slice(0, 3).map((e) => e.id);
+const kanjis = LIB_ENTRIES.filter((e) => e.kind === KANJI_SUBJECT).slice(0, 3).map((e) => e.id);
+const visible: EntryId[] = [...kanas, ...kanjis];
+// An id the app mints but that is NOT in `visible` — the anchor-scrolled-away /
+// filtered-out case.
+const offscreen = LIB_ENTRIES.filter((e) => e.kind === VOCAB_SUBJECT)[0].id;
+
+describe("rangeIds — the contiguous visible run a Shift-click covers", () => {
+  test("forward: anchor before target, inclusive of both ends", () => {
+    assert.deepEqual(rangeIds(visible, visible[1], visible[4]), [
+      visible[1],
+      visible[2],
+      visible[3],
+      visible[4],
+    ]);
+  });
+
+  test("backward: anchor after target gives the same run, still in display order", () => {
+    assert.deepEqual(rangeIds(visible, visible[4], visible[1]), [
+      visible[1],
+      visible[2],
+      visible[3],
+      visible[4],
+    ]);
+  });
+
+  test("anchor == target is the single item", () => {
+    assert.deepEqual(rangeIds(visible, visible[2], visible[2]), [visible[2]]);
+  });
+
+  test("crosses the kind/section boundary — the whole visible run between the two", () => {
+    // v[2] is the last kana, v[3] the first kanji: a range spanning them fills
+    // both sides, proving the range follows the flattened display order across
+    // the boundary rather than stopping at it.
+    assert.deepEqual(rangeIds(visible, visible[2], visible[3]), [visible[2], visible[3]]);
+  });
+
+  test("target not in the visible list yields no range", () => {
+    assert.deepEqual(rangeIds(visible, visible[0], offscreen), []);
+  });
+
+  test("anchor not in the visible list yields no range", () => {
+    assert.deepEqual(rangeIds(visible, offscreen, visible[0]), []);
+  });
+});
+
+describe("addRange — Shift-click applied to the selection", () => {
+  test("unions the range onto what was already selected, without clobbering it", () => {
+    // Start with an unrelated pick, then Shift-select a run: the earlier pick
+    // survives and the whole run is added.
+    const base = toggleEntry(EMPTY_SELECTION, offscreen);
+    const next = addRange(base, visible, visible[1], visible[3]);
+    assert.equal(next.has(offscreen), true, "the prior selection is kept");
+    for (const id of [visible[1], visible[2], visible[3]]) {
+      assert.equal(next.has(id), true);
+    }
+    assert.equal(next.has(visible[0]), false, "outside the range, untouched");
+    assert.equal(next.has(visible[4]), false, "outside the range, untouched");
+  });
+
+  test("entries already on inside the range stay on (additive, never a toggle-off)", () => {
+    const base = toggleEntry(EMPTY_SELECTION, visible[2]);
+    const next = addRange(base, visible, visible[1], visible[3]);
+    assert.equal(next.has(visible[2]), true, "already-on middle stays on");
+  });
+
+  test("no usable range (anchor offscreen) degrades to toggling the target", () => {
+    const on = addRange(EMPTY_SELECTION, visible, offscreen, visible[0]);
+    assert.equal(on.has(visible[0]), true, "target toggled on");
+    const off = addRange(on, visible, offscreen, visible[0]);
+    assert.equal(off.has(visible[0]), false, "and off again");
+  });
+
+  test("does not mutate the input set", () => {
+    const base = EMPTY_SELECTION;
+    addRange(base, visible, visible[0], visible[2]);
+    assert.equal(base.size, 0);
   });
 });

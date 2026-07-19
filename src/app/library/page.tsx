@@ -22,7 +22,7 @@ import {
 
 import { AttributionLink } from "@/components/library/attribution-link";
 import { EntryRow } from "@/components/library/entry-tile";
-import { Shelf, shelfSections, type ShelfSection } from "@/components/library/shelves";
+import { Shelf, shelfSections, visibleShelfIds, type ShelfSection } from "@/components/library/shelves";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StickySearch } from "@/components/library/sticky-search";
 import { Card, Chip, GhostBtn, Hint, Lbl, PageTitle } from "@/components/ui";
@@ -36,6 +36,7 @@ import {
 } from "@/lib/library/entries";
 import { search, searchAll } from "@/lib/library/search";
 import {
+  addRange,
   EMPTY_SELECTION,
   selectionSlice,
   toggleEntry as toggleEntryIn,
@@ -186,6 +187,11 @@ function LibraryBody() {
   // drill from. It is NOT reset when the kind filter changes: select a hiragana
   // row, switch to kanji, and it is still in here and still in the bar's count.
   const [selected, setSelected] = useState<Selection>(EMPTY_SELECTION);
+  // THE SHIFT-CLICK ANCHOR — the last item picked WITHOUT Shift, the fixed end a
+  // range extends from. A plain click sets it; a Shift-click reads it and leaves
+  // it put (so you can sweep a range wider or narrower from the same anchor).
+  // Null until the first plain click, and reset when the selection is cleared.
+  const [anchor, setAnchor] = useState<EntryId | null>(null);
   // ONE `now` per mount, not `Date.now()` per render. Two calls a millisecond
   // apart cannot disagree about whether a fact is solid — but a `now` that
   // changes identity on every render makes every memo below useless, and a page
@@ -248,8 +254,31 @@ function LibraryBody() {
     return m;
   }, [cfg.newKanjiOrder]);
 
-  const onToggleEntry = (id: EntryId) =>
-    setSelected((s) => toggleEntryIn(s, id));
+  // WHAT A SHIFT-CLICK RANGE MAY REACH — the ids currently ON SCREEN, in display
+  // order. Search view flattens its result sections (only the shown hits, never
+  // the "+N more" it withholds); the browse shelf hands off to `visibleShelfIds`,
+  // which mirrors the shelf's own render (word cap, knowledge filter, section
+  // caps). Either way it excludes everything hidden, so a range is bounded by
+  // what you can see. The order is the flattened top-to-bottom reading order
+  // across sections (and, in search, across kinds), which is the order a range
+  // follows.
+  const visibleIds = useMemo<EntryId[]>(() => {
+    if (q) return sections.flatMap((s) => s.hits.map((h) => h.entry.id));
+    const sh = shelvesByKind.get(kind)!;
+    return visibleShelfIds(kind, sh.sections, sh.entries, keep);
+  }, [q, sections, kind, shelvesByKind, keep]);
+
+  // A CLICK ON A TILE OR ROW. Without Shift it toggles the entry and drops the
+  // anchor there. With Shift, IF there is a live anchor still on screen, it adds
+  // the visible range from the anchor to here (additive — see addRange); the
+  // anchor stays so the range can be re-swept. A Shift-click with no usable
+  // anchor (none set yet, or it scrolled out under a filter change) degrades to
+  // a plain toggle that re-anchors, so the gesture is never a dead click.
+  const onToggleEntry = (id: EntryId, shiftKey = false) => {
+    const canRange = shiftKey && anchor !== null && visibleIds.includes(anchor);
+    setSelected((s) => (canRange ? addRange(s, visibleIds, anchor, id) : toggleEntryIn(s, id)));
+    if (!canRange) setAnchor(id);
+  };
   const onToggleSection = (ids: readonly EntryId[]) =>
     setSelected((s) => toggleSectionIn(s, ids));
 
@@ -323,7 +352,10 @@ function LibraryBody() {
         {selected.size > 0 ? (
           <GhostBtn
             className="ml-auto text-xs"
-            onClick={() => setSelected(EMPTY_SELECTION)}
+            onClick={() => {
+              setSelected(EMPTY_SELECTION);
+              setAnchor(null);
+            }}
           >
             Clear {selected.size} selected
           </GhostBtn>
@@ -387,7 +419,7 @@ function LibraryBody() {
                     note={h.entry.sub}
                     voice={cfg.voiceName}
                     selected={selected.has(h.entry.id)}
-                    onToggleSelect={() => onToggleEntry(h.entry.id)}
+                    onToggleSelect={(shift) => onToggleEntry(h.entry.id, shift)}
                   />
                 ))}
                 {s.more > 0 ? (
