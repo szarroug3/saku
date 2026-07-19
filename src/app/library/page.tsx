@@ -244,7 +244,7 @@ function LibraryBody() {
       <StickySearch
         value={query}
         onChange={commitQuery}
-        placeholder="Search anything — し, shi, 生, せんせい, telephone…"
+        placeholder="Search anything: し, shi, 生, せんせい, telephone…"
       >
         {/* The kind chips change what you SEE, never what you have SELECTED —
             the selection outlives them. One is always active; there is no "All". */}
@@ -278,7 +278,7 @@ function LibraryBody() {
               <p className="mt-1.5">
                 <Hint>
                   Searching an inflected form won&rsquo;t find its dictionary
-                  word yet — 読んで doesn&rsquo;t reach 読む. That&rsquo;s a
+                  word yet. 読んで doesn&rsquo;t reach 読む. That&rsquo;s a
                   known gap, not a missing word.
                 </Hint>
               </p>
@@ -312,7 +312,7 @@ function LibraryBody() {
                   <p className="pt-2.5">
                     <Hint>
                       ＋ {s.more} more like this. Narrow the search, or use the
-                      shelf chips — the bar below already means all{" "}
+                      shelf chips. The bar below already means all{" "}
                       {s.hits.length + s.more}.
                     </Hint>
                   </p>

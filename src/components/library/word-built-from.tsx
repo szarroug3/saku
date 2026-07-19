@@ -76,7 +76,7 @@ export function WordBuiltFrom({ pieces }: { pieces: readonly WordPiece[] }) {
       <div className="mt-auto">
         {tail ? (
           <p className="mt-2.5 text-xs text-text-muted">
-            The dashed piece is <b className="text-text">okurigana</b> — the part
+            The dashed piece is <b className="text-text">okurigana</b>, the part
             that changes. The kanji stays put and the tail decides which word it
             is.
           </p>

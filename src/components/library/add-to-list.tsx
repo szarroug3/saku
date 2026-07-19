@@ -138,7 +138,7 @@ export function AddToList({
         <p className="mt-2.5">
           <Hint>
             {derived.map((l) => l.name).join(", ")}{" "}
-            {derived.length === 1 ? "isn't" : "aren't"} here — they build
+            {derived.length === 1 ? "isn't" : "aren't"} here. They build
             themselves from a rule, so there&rsquo;s nothing to add to.
           </Hint>
         </p>

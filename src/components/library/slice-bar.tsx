@@ -41,6 +41,7 @@ export function SliceBar({
   claims,
   now,
   onClaim,
+  showLabel = true,
 }: {
   slice: Slice;
   facts: Record<FactId, FactAggregate>;
@@ -52,6 +53,13 @@ export function SliceBar({
   /** Marks the slice known. Async and owned by the page, because the page holds
    * the history this bar is rendered from and has to refresh it. */
   onClaim(facts: FactId[]): void;
+  /** Whether to print `slice.label` in bold ahead of the sentence. True on the
+   * shelf, where the label is the current selection or search and nothing else
+   * on screen names it. False on an entry page, where the label is the entry's
+   * own name and the header and the breadcrumb have both already said it. The
+   * label is still PASSED either way: it names the add-to-list panel and the
+   * session the Drill button starts. */
+  showLabel?: boolean;
 }) {
   const { startSession } = useQuizSession();
   const [adding, setAdding] = useState(false);
@@ -88,8 +96,12 @@ export function SliceBar({
           nobody's business but its own. */}
       <div className="kq-band sticky bottom-0 z-10 mt-3.5 flex flex-wrap items-center gap-3 rounded-(--radius) border border-border p-3 shadow-card">
         <div className="min-w-0 flex-1 text-[13px] text-text-muted">
-          <b className="font-medium text-text">{slice.label}</b>
-          {" — "}
+          {showLabel ? (
+            <>
+              <b className="font-medium text-text">{slice.label}</b>
+              {", "}
+            </>
+          ) : null}
           {sliceSentence(count)}
           {count.seen > 0 && count.seen < count.total ? (
             <span className="ml-1.5">

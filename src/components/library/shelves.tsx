@@ -211,7 +211,7 @@ export function Shelf({
         <Lbl>Everyday words</Lbl>
         <p className="mb-3">
           <Hint>
-            Common everyday words — the first {WORD_TILES} are here. Search to
+            Common everyday words. The first {WORD_TILES} are here. Search to
             find any of the others.
           </Hint>
         </p>
@@ -272,7 +272,7 @@ export function Shelf({
               </span>
               {state !== "none" ? (
                 <Hint>
-                  — {onCount} selected{state === "all" ? " (all)" : ""}
+                  · {onCount} selected{state === "all" ? " (all)" : ""}
                 </Hint>
               ) : null}
             </div>
@@ -286,7 +286,8 @@ export function Shelf({
             {hidden > 0 ? (
               <p className="pt-2.5">
                 <Hint>
-                  ＋ {hidden} more in {section.label} — search to find any of them.
+                  ＋ {hidden} more in {section.label}. Search to find any of
+                  them.
                 </Hint>
               </p>
             ) : null}
@@ -306,7 +307,7 @@ function GrammarClustersCard() {
     <Card>
       <Lbl>Patterns that mean the same thing</Lbl>
       <p className="text-[13px] text-text-muted">
-        Some patterns come out as the same English — seven ways to say{" "}
+        Some patterns come out as the same English: seven ways to say{" "}
         <b className="font-medium text-text">must</b>, four ways to say{" "}
         <b className="font-medium text-text">if</b>. Those are laid out side by
         side on their own.{" "}
