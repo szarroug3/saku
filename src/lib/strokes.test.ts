@@ -23,6 +23,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
+import { scriptOf } from "./strokes.ts";
+
 interface GlyphStrokes {
   strokes: string[];
   numbers: [number, number][];
@@ -125,5 +127,43 @@ describe("stroke-order asset", () => {
     // to the whole-shape view.
     assert.equal(lookup("水"), null); // kanji
     assert.equal(lookup(""), null); // the collapsed sentinel
+  });
+});
+
+describe("scriptOf: which asset to fetch, if any", () => {
+  test("a single kana picks its own script's asset", () => {
+    assert.equal(scriptOf("あ"), "hiragana");
+    assert.equal(scriptOf("ん"), "hiragana");
+    assert.equal(scriptOf("ア"), "katakana");
+    assert.equal(scriptOf("ヲ"), "katakana");
+  });
+
+  test("nothing is fetched for a glyph with no ingested asset", () => {
+    assert.equal(scriptOf("水"), null); // kanji
+    assert.equal(scriptOf(""), null); // the collapsed-section sentinel
+    assert.equal(scriptOf("〜"), null); // punctuation
+    assert.equal(scriptOf("A"), null);
+  });
+
+  // THE BUG THIS PINS: これ starts with hiragana, so a first-codepoint-only
+  // test said "hiragana" and the whole hiragana map was fetched over the
+  // network — and then missed, because the map is keyed by ONE character.
+  // A download that could not possibly succeed. Multi-character strings must
+  // settle to null WITHOUT asking for an asset.
+  test("a multi-character string never asks for an asset", () => {
+    for (const s of ["これ", "がっこう", "学生", "〜てから", "サッカー"]) {
+      assert.equal(scriptOf(s), null, `${s} must not trigger a stroke fetch`);
+      // And the reason it must not: the asset could never have answered it.
+      assert.equal(lookup(s), null, `${s} is not a key in the stroke map`);
+    }
+  });
+
+  test("a glyph outside the BMP still counts as one character", () => {
+    // Counted in codepoints, not UTF-16 units: a surrogate pair is one glyph,
+    // and must not be rejected as if it were two characters.
+    const surrogatePair = "\u{20BB7}"; // 𠮷, a kanji — null for lack of data,
+    assert.equal(surrogatePair.length, 2); // not for being "two characters".
+    assert.equal([...surrogatePair].length, 1);
+    assert.equal(scriptOf(surrogatePair), null);
   });
 });
