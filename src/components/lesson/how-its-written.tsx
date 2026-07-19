@@ -59,10 +59,22 @@ function teachableParts(glyph: string): Array<{ c: string; meaning: string }> | 
 
 /** The whole-shape fallback, shown when there's no stroke data for the glyph.
  * A kanji made of teachable parts shows the breakdown; otherwise the stroke
- * count if we have it; otherwise the plain "whole shape" line. */
-function WholeShapeFallback({ item }: { item: LessonItem }) {
+ * count if we have it; otherwise the plain "whole shape" line.
+ *
+ * `reference` is the Library entry page. There the parts breakdown is SUPPRESSED
+ * — not because it is wrong, but because that page's Links section already
+ * carries a "Made of" row, and printing the same components twice on one screen
+ * reads as two different claims. The lesson keeps it: a walk-through has no
+ * Links section, so the breakdown is the only place the parts appear. */
+function WholeShapeFallback({
+  item,
+  reference = false,
+}: {
+  item: LessonItem;
+  reference?: boolean;
+}) {
   const row = item.kind === "kanji" ? kanjiRow(item.glyph) : undefined;
-  const parts = item.kind === "kanji" ? teachableParts(item.glyph) : null;
+  const parts = item.kind === "kanji" && !reference ? teachableParts(item.glyph) : null;
 
   if (parts) {
     return (
@@ -127,10 +139,21 @@ export function HowItsWritten({
   // the lookup while collapsed keeps the chunk off the initial load entirely.
   const strokes = useGlyphStrokes(open ? item.glyph : "");
 
-  // Nothing to show, and nothing to promise: stay off the page entirely. Also
-  // covers the in-flight moment, so the section appears once, complete, instead
-  // of flashing an empty heading.
-  if (alwaysOpen && (strokes.status === "loading" || !strokes.data)) return null;
+  // KANJI STROKE DATA IS NOT INGESTED YET (src/lib/strokes.ts: hiragana and
+  // katakana only — KanjiVG's kanji set is megabytes and needs a chunking
+  // strategy of its own). So on a kanji page `strokes.data` is null today, and
+  // the honest thing to show is not nothing: the stroke COUNT is real data, it
+  // is the one thing about the writing the app can state without guessing, and a
+  // reference page that knows 生 is 5 strokes should say so.
+  //
+  // That is the whole difference between this and "announcing an absence". A
+  // glyph we know NOTHING about — no count, no row — still renders nothing
+  // rather than an empty heading.
+  const hasFallback = item.kind === "kanji" && kanjiRow(item.glyph) !== undefined;
+  if (alwaysOpen && strokes.status === "loading") return null;
+  if (alwaysOpen && strokes.status === "ready" && !strokes.data && !hasFallback) {
+    return null;
+  }
 
   return (
     <div className="mt-3 rounded-lg border border-border bg-panel px-3.5 py-3">
@@ -164,7 +187,7 @@ export function HowItsWritten({
             <StrokeOrder data={strokes.data} />
           ) : (
             // No stroke data for this glyph yet — degrade, don't crash.
-            <WholeShapeFallback item={item} />
+            <WholeShapeFallback item={item} reference={alwaysOpen} />
           )}
 
           {/* Why order matters — reframed as worth learning, not "your own way". */}

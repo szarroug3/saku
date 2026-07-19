@@ -211,6 +211,28 @@ function readingsOf(c: string): readonly ReadingRow[] {
   return BY_KANJI_READINGS.get(c) ?? [];
 }
 
+/**
+ * A kanji's readings, richest evidence first — the WHOLE row, not the flattened
+ * FactRow the generic table takes.
+ *
+ * The entry page's kanji branch needs three things FactRow deliberately drops:
+ * `nWords` (how common the reading is, as a real number rather than a bar), the
+ * full `words` list (to name the word that OPENS a shut reading, which may be
+ * one the four-word `askedIn` sample never reaches), and `anchor` (the word the
+ * fact is keyed on). Widening FactRow with kanji-only fields would push subject
+ * knowledge into a shape four kinds share; this is a second, narrower accessor
+ * for the one kind that needs it.
+ *
+ * NO FILTER, EVER. Measured: the most readings any kanji has is 8, and it is 生;
+ * 1,944 of 2,022 have three or fewer. There is no length to manage, so the page
+ * shows them all and the "＋ N more" control that a words list needs has no
+ * business here.
+ */
+export function readingRowsOf(entry: LibEntry): readonly ReadingRow[] {
+  if (entry.kind !== KANJI_SUBJECT) return [];
+  return readingsOf(entry.glyph);
+}
+
 // ---------- the index ----------
 
 /** Every entry in the app, in browse order: kana, then kanji, then words. */
