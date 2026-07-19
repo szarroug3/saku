@@ -66,11 +66,8 @@ import { KANA_SUBJECT } from "@/data/characters";
 import {
   GRAMMAR_SUBJECT,
   patternMeaningFactId,
-  patternProductionFactId,
-  productionHosts,
 } from "@/data/grammar";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
-import { isProducible } from "@/data/grammar/recipes";
 import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
 import { getMnemonic } from "@/data/mnemonics";
@@ -95,7 +92,7 @@ import {
   recipeOf,
   type LibEntry,
 } from "@/lib/library/entries";
-import { attachesTo, HOST_LABEL, recipeFormula } from "@/lib/grammar/formula";
+import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { entryFromParam, entryHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
@@ -166,22 +163,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const pattern = recipeOf(entry);
   const isGrammar = pattern !== null;
   const formula = useMemo(() => (pattern ? recipeFormula(pattern) : null), [pattern]);
-  /**
-   * The hosts this pattern carries a SEPARATE production fact for.
-   *
-   * 5 of the 53 drillable recipes have more than one (te-cause, sugiru,
-   * sou-appearance, ba, tara — see productionHosts, added by the split that
-   * gave 〜すぎる's adjective rule somewhere to be asked). Those get more than
-   * two chips, one per rule, rather than a single "building it" that would be
-   * an average of two skills the app scores separately. The chip names its host
-   * ONLY when there is more than one, for the same reason the facts table does:
-   * "(verb)" on all 48 of the single-fact patterns would be noise on every page
-   * to serve five.
-   *
-   * Empty for the 28 reference-only patterns, which is the whole of that case —
-   * no production fact, no chip, and nothing anywhere saying a chip is missing.
-   */
-  const prodHosts = pattern && isProducible(pattern) ? productionHosts(pattern) : [];
+  // WHICH HOSTS ARE SCORED IS NOT DECIDED HERE ANY MORE. It used to be, to
+  // build a chip per production host in the header. Those scores are now a
+  // column in PatternRecipe, which already lays out one row per host, so the
+  // join between "hosts with a fact" and "hosts with a formula" happens once,
+  // in the one component that has both.
   /** The pattern's family, or null. Null covers all three of: not grammar, a
    * pattern in no cluster (52 of the 81), and a cluster with no recipe members
    * at all (は/が, に/で, transitivity — map-only, and a pattern cannot be in one
@@ -307,29 +293,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
               }
             />
           </span>
-          {/* NO CHIP AT ALL for the 28 reference-only patterns, and no sentence
-              explaining the absence. 〜ことができる is 食べる + ことができる:
-              nothing is conjugated, so "build it" is typing and there is no
-              fact to score. A chip reading "not seen" would be worse than
-              nothing — it implies a question that is waiting for you. */}
-          {prodHosts.map((host) => {
-            const id = patternProductionFactId(pattern.id, host);
-            return (
-              <span
-                key={id}
-                className="flex items-center gap-1.5 text-[11px] text-text-muted"
-              >
-                Building it
-                {prodHosts.length > 1 ? ` (${HOST_LABEL[host]})` : ""}{" "}
-                <StandingChip
-                  standing={
-                    standingOf(history.facts[id], claims[id], cfg.accuracyMetric, now)
-                      .standing
-                  }
-                />
-              </span>
-            );
-          })}
+          {/* AND NOTHING ELSE. The production standings used to sit here too,
+              one chip per host, which gave 〜すぎる four chips and a header row
+              so wide the title had nowhere to go — the min-w floor on the gloss
+              in entry-header.tsx is the scar. They are now a column in the
+              recipe card, exactly where a kanji's eight readings are: one row
+              per host already existed there, so the score joins the thing it is
+              about instead of being summarised beside the title. */}
         </>
       ) : null}
 
@@ -666,7 +636,14 @@ function EntryView({ entry }: { entry: LibEntry }) {
               into an even split they reflow into a ribbon. The pairing is what
               stops the page being a stack of full-width boxes. */}
           <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] items-start gap-3.5 max-[860px]:grid-cols-1">
-            <PatternRecipe formula={formula} />
+            <PatternRecipe
+              pattern={pattern}
+              formula={formula}
+              facts={history.facts}
+              claims={claims}
+              metric={cfg.accuracyMetric}
+              now={now}
+            />
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
 
