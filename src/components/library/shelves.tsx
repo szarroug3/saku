@@ -44,7 +44,7 @@
 
 import Link from "next/link";
 
-import { KANJI, KANJI_SUBJECT } from "@/data/kanji";
+import { KANJI_SUBJECT } from "@/data/kanji";
 import { KANA_SUBJECT, SETS } from "@/data/characters";
 import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT } from "@/data/vocab";
@@ -57,32 +57,22 @@ import { EntryRow, EntryTile } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
 import type { Claims } from "@/lib/claims";
 import { entryForGlyph, libEntry, type Kind, type LibEntry } from "@/lib/library/entries";
-import { KANJI_SECTIONS_SHOWN, kanjiCuts } from "@/lib/library/kanji-shelf";
+import { kanjiCuts } from "@/lib/library/kanji-shelf";
+import {
+  filterSections,
+  sectionCapFor,
+  WORD_TILES,
+  type ShelfSection,
+} from "@/lib/library/shelf-view";
 import { sectionState, type Selection } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
 import type { KnowledgeFilter } from "@/lib/library/url-state";
 import { factsOf } from "@/lib/facts";
 import type { AccuracyMetric, EntryId, FactAggregate, NewKanjiOrder } from "@/types";
 
-/** One cut of a shelf: a name and the entries under it. */
-export interface ShelfSection {
-  readonly id: string;
-  readonly label: string;
-  readonly entries: readonly LibEntry[];
-  /** Tiles to paint before deferring the rest to search, if the section is too
-   * big to render whole. Only the huge school-grade sections set it; a section
-   * without one is shown in full, which is every section on every other shelf
-   * and every range section on the kanji shelf. */
-  readonly cap?: number;
-}
-
-/** How many word tiles the words shelf shows before it tells you to search.
- *
- * A display cap: the words shelf shows this many everyday-word tiles and points
- * the rest at search. The drill is now built from what you SELECT, so there is
- * no longer a hidden "all 8,045" the bar acts on behind a screenful of 120 —
- * what you can see and toggle is what you drill. */
-const WORD_TILES = 120;
+/** One cut of a shelf: a name and the entries under it. Its type and the view
+ * math that reads it now live in @/lib/library/shelf-view (a .ts, so the filter
+ * and cap logic can be unit-tested); this file only builds and renders them. */
 
 /** How many kanji tiles a SCHOOL-GRADE section paints before it defers the rest
  * to search — the words shelf's honesty, applied per grade, because grade 8
@@ -113,18 +103,20 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
       );
     case KANJI_SUBJECT: {
       const cuts = kanjiCuts(kanjiOrder);
-      // THE CAP LIVES HERE, not in kanjiCuts. The cut is arithmetic and stays
-      // complete — its tests hold that the cuts tile all 2,136 — so this is the
-      // shelf deciding how much of a complete cut it is willing to paint. Only
-      // the range modes stop early; `grade`'s seven sections are the study order
-      // and all seven stay. Whatever this drops, the trailing line in `Shelf`
-      // counts and names, so the two cannot drift apart.
-      return (kanjiOrder === "grade" ? cuts : cuts.slice(0, KANJI_SECTIONS_SHOWN)).map((cut) => ({
+      // BUILD EVERY CUT — do not stop at KANJI_SECTIONS_SHOWN here. The shelf's
+      // three-section cap belongs AFTER the knowledge filter (see shelf-view.ts:
+      // sectionCapFor / shownSectionsOf), because a filter that empties the
+      // leading sections must still reveal the surviving ones behind them. The
+      // cut itself stays complete — its tests hold that the cuts tile all 2,136
+      // — and both `grade`'s seven sections and every range section come back
+      // whole; the render decides how many to paint.
+      return cuts.map((cut) => ({
         id: cut.id,
         label: cut.label,
         entries: cut.glyphs.flatMap((c) => resolve(entryForGlyph(KANJI_SUBJECT, c))),
-        // Only the grade sections need a cap; a range is already small enough
-        // to render whole.
+        // Only the grade sections need a tile cap; a range is already small
+        // enough to render whole. This `cap` is also how the render tells grade
+        // mode from a range mode (see sectionCapFor).
         cap: kanjiOrder === "grade" ? KANJI_TILES : undefined,
       }));
     }
@@ -185,35 +177,6 @@ function resolve(id: EntryId | null): LibEntry[] {
   if (!id) return [];
   const e = libEntry(id);
   return e ? [e] : [];
-}
-
-/**
- * The ids the shelf actually PAINTS, in display order — what a Shift-click range
- * is allowed to reach. It mirrors `Shelf`'s render exactly and must stay in lock
- * step with it: the words shelf's `WORD_TILES` slice, each section's knowledge
- * filter, the dropping of sections the filter empties, and each section's render
- * `cap`. Anything the shelf hides (past the word cap, filtered out, or beyond a
- * grade section's cap) is absent here, so the range can never select it.
- *
- * It lives beside the render, not in the page, so the two cannot drift: the same
- * `keep`, `WORD_TILES` and `cap` govern both.
- */
-export function visibleShelfIds(
-  kind: Kind,
-  sections: readonly ShelfSection[],
-  allEntries: readonly LibEntry[],
-  keep?: (entry: LibEntry) => boolean,
-): EntryId[] {
-  if (kind === VOCAB_SUBJECT) {
-    const words = keep ? allEntries.filter(keep) : allEntries;
-    return words.slice(0, WORD_TILES).map((e) => e.id);
-  }
-  const shown = keep
-    ? sections
-        .map((s) => ({ ...s, entries: s.entries.filter(keep) }))
-        .filter((s) => s.entries.length > 0)
-    : sections;
-  return shown.flatMap((s) => s.entries.slice(0, s.cap ?? Infinity).map((e) => e.id));
 }
 
 export function Shelf({
@@ -314,31 +277,30 @@ export function Shelf({
   // does not.
   const asRows = kind === GRAMMAR_SUBJECT || kind === MARK_SUBJECT;
 
-  // The knowledge filter applied to the cut. Each section keeps only the entries
-  // that pass, and a section left empty drops out entirely — a card headed "1–100"
-  // with nothing under it would be a worse answer than no card. With no filter
-  // this is the sections list unchanged.
-  const shownSections = keep
-    ? sections
-        .map((s) => ({ ...s, entries: s.entries.filter(keep) }))
-        .filter((s) => s.entries.length > 0)
-    : sections;
+  // The knowledge filter applied to the cut, then the shelf's section cap. FILTER
+  // FIRST, CAP SECOND: each section keeps only the entries that pass and an
+  // emptied section drops out (a card headed "1–100" with nothing under it is a
+  // worse answer than no card), and only THEN does the kanji shelf take its first
+  // KANJI_SECTIONS_SHOWN. Capping before the filter was the bug — "Not known"
+  // would run against just the first three sections and call the shelf empty
+  // while thousands of unknown kanji waited in section four and on. `filtered`
+  // is the whole matching population (for the off-shelf count); `shownSections`
+  // is what actually paints. See shelf-view.ts for the shared math.
+  const filtered = filterSections(sections, keep);
+  const shownSections = filtered.slice(0, sectionCapFor(kind, sections));
 
-  // What the kanji shelf is not showing you. COUNTED, never written down: it is
-  // the whole set minus what the sections above actually hold, so it stays right
-  // if KANJI_SECTIONS_SHOWN or KANJI_CHUNK ever moves. In `grade` mode the
-  // sections cover all 2,136, so this is 0 and the line does not appear — that
-  // mode says what it is holding back per section instead.
-  //
-  // SUPPRESSED WHILE FILTERING. "+1,836 more kanji" counts the raw shelf, and
-  // under Known / Not known that number would describe a population the screen
-  // is no longer showing. Rather than compute a filtered off-shelf count (which
-  // would mean resolving every one of 2,136 kanji on a browse render), the line
-  // simply steps aside and search takes over, which is where a filtered hunt
-  // belongs anyway.
+  // What the kanji shelf is not showing you. COUNTED, never written down: the
+  // matching population minus what the sections above actually hold, so it stays
+  // right if KANJI_SECTIONS_SHOWN or KANJI_CHUNK ever moves. It now reflects the
+  // FILTER too — under "Not known" it is the unknown kanji past the three shown
+  // sections, not the raw shelf — because `filtered` already carries the filter.
+  // In `grade` mode the sections cover everything and none is capped, so this is
+  // 0 and the line does not appear; that mode says what it holds back per
+  // section instead.
   const offShelf =
-    kind === KANJI_SUBJECT && !keep
-      ? KANJI.length - sections.reduce((n, s) => n + s.entries.length, 0)
+    kind === KANJI_SUBJECT
+      ? filtered.reduce((n, s) => n + s.entries.length, 0) -
+        shownSections.reduce((n, s) => n + s.entries.length, 0)
       : 0;
 
   // Everything on the shelf fell outside the filter. The clusters/Tofugu cards

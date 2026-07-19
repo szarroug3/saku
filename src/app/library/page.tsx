@@ -22,7 +22,8 @@ import {
 
 import { AttributionLink } from "@/components/library/attribution-link";
 import { EntryRow } from "@/components/library/entry-tile";
-import { Shelf, shelfSections, visibleShelfIds, type ShelfSection } from "@/components/library/shelves";
+import { Shelf, shelfSections } from "@/components/library/shelves";
+import { visibleShelfIds, type ShelfSection } from "@/lib/library/shelf-view";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StickySearch } from "@/components/library/sticky-search";
 import { Card, Chip, GhostBtn, Hint, Lbl, PageTitle } from "@/components/ui";
