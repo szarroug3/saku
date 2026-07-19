@@ -7,10 +7,12 @@
 //
 // WHY HAND-AUTHORED
 // =================
-// KanjiVG (stroke geometry) is not ingested, so there is nothing to derive
-// these from — the resemblance is in the drawn shape, not in any component or
-// reading data the app holds. So they are hand-verified, one pair at a time,
-// against Unicode UTS #39 confusables.txt.
+// There is nothing to derive these from: the resemblance is in the drawn shape,
+// not in any component or reading data the app holds. KanjiVG stroke PATHS are
+// ingested now (src/lib/strokes.ts), but a path is a drawing instruction, not a
+// shape descriptor — two glyphs that look alike have no reliably similar `d`
+// strings, so they still would not fall out of it. So they are hand-verified,
+// one pair at a time, against Unicode UTS #39 confusables.txt.
 //
 // The bar is the same as every other distractor table: would a learner reading
 // at speed actually pick the wrong one. カ (katakana KA) and 力 (power) are two

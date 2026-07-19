@@ -15,13 +15,14 @@
 //
 // WHAT IT SHOWS WHEN OPEN
 // =======================
-// If we have KanjiVG stroke data for the glyph (all base hiragana today, see
-// src/lib/strokes.ts + scripts/ingest/kanjivg.mjs), it renders the real thing:
-// an animated draw-along plus the numbered step-by-step chart (StrokeOrder). The
-// data is lazy — nothing is fetched until the section is expanded. For a glyph
-// with no data yet (katakana, kanji), it FALLS BACK gracefully to what the
-// existing data knows: a kanji's component breakdown, or the stroke count, or
-// "whole shape" — never a crash, never a blank box.
+// If we have KanjiVG stroke data for the glyph (every base kana and every jōyō
+// kanji, see src/lib/strokes.ts + scripts/ingest/kanjivg.mjs), it renders the
+// real thing: an animated draw-along plus the numbered step-by-step chart
+// (StrokeOrder). The data is lazy — nothing is fetched until the section is
+// expanded, and then it is one chunk, not the whole set. For a glyph with no
+// data (a non-jōyō kanji), it FALLS BACK gracefully to what the existing data
+// knows: a kanji's component breakdown, or the stroke count, or "whole shape" —
+// never a crash, never a blank box.
 //
 // COLLAPSED / PERSISTED
 // =====================
@@ -126,12 +127,13 @@ export function HowItsWritten({
   // the lookup while collapsed keeps the chunk off the initial load entirely.
   const strokes = useGlyphStrokes(open ? item.glyph : "");
 
-  // KANJI STROKE DATA IS NOT INGESTED YET (src/lib/strokes.ts: hiragana and
-  // katakana only — KanjiVG's kanji set is megabytes and needs a chunking
-  // strategy of its own). So on a kanji page `strokes.data` is null today, and
-  // the honest thing to show is not nothing: the stroke COUNT is real data, it
-  // is the one thing about the writing the app can state without guessing, and a
-  // reference page that knows 生 is 5 strokes should say so.
+  // WHEN THERE IS STILL NO DIAGRAM. The jōyō kanji have stroke data now
+  // (src/lib/strokes.ts, chunked), so this path is no longer what a normal kanji
+  // page takes — but it is still reachable, for a kanji outside the ingested
+  // set. There the honest thing to show is not nothing: the stroke COUNT is real
+  // data, it is the one thing about the writing the app can state without
+  // guessing, and a reference page that knows a glyph is 5 strokes should say
+  // so.
   //
   // That is the whole difference between this and "announcing an absence". A
   // glyph we know NOTHING about — no count, no row — still renders nothing
