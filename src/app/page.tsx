@@ -233,6 +233,28 @@ export default function HomePage() {
     [lesson, history],
   );
 
+  // "These are in my knowledge base now" — the one seen write, in one place.
+  //
+  // Every route that puts material into a drill WITHOUT walking it first has to
+  // go through here first, and the ordering is the point: the seen record is
+  // written BEFORE the drill starts and does not wait on it, so an abandoned
+  // drill still leaves the material seen rather than fresh. That is what stops
+  // the card re-offering a lesson you already chose to skip, and it is what
+  // makes the drill's questions legal — the scoring model reads `seen` as "the
+  // app has shown you this", and a drill over facts with no seen record is the
+  // app asking about material it believes it never showed. See src/lib/claims.ts
+  // for why seen, claimed and a session are three different records.
+  //
+  // Errors are swallowed on purpose, as they were at each of the call sites this
+  // replaced: failing to record the intent must not cost you the drill you asked
+  // for.
+  const markSeen = (facts: FactId[]) =>
+    fetch("/api/seen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ facts }),
+    }).catch(() => {});
+
   // The lesson IS the session: its group, all of it new, all of it taught. It
   // does not go through the budget, because the budget's job is deciding how
   // much new material to hand out and the answer is already in your hand.
@@ -242,7 +264,17 @@ export default function HomePage() {
   // branded string, so a fact array satisfies string[] with no cast, and a
   // character array satisfies nothing the fact-native runtime can drill. The
   // lesson already carries both halves — take the one the session speaks.
-  const startLesson = (facts: FactId[]) => startSession(facts, facts);
+  //
+  // `teach` is the fork the claim explainer promises: Start walks the material
+  // and then drills it (teach = the facts), "Quiz me" drills it now (teach = no
+  // facts, so startSession opens in the drilling phase). ONE handler with a
+  // flag rather than two, because the two routes differ in exactly one thing —
+  // whether the walk happens — and everything before it (which facts, what gets
+  // marked seen) must not be able to drift between them.
+  const startLesson = async (facts: FactId[], { teach = true } = {}) => {
+    if (!teach) await markSeen(facts);
+    startSession(facts, teach ? facts : []);
+  };
 
   // "Teach me here" for kana: open a session whose TEACH PHASE steps the group
   // one character at a time (session/teach-walk.tsx), then drills — the same
@@ -253,19 +285,19 @@ export default function HomePage() {
     startSession(facts, facts, lesson?.group.label);
 
   // "Quiz me": the group is seen — in the knowledge base and fair game — and the
-  // next thing on screen is a drill on it. The seen record is written FIRST and
-  // does not wait on the drill: asking to be quizzed is itself the statement
-  // that you've seen it, so an abandoned drill still leaves the group seen
-  // rather than fresh. Then straight into the drill (empty teach — the user has
-  // already learned these at Tofugu or in the walkthrough, so this is not a
-  // teach-then-drill, it is the quiz they asked for). See src/lib/claims.ts for
-  // why seen and claimed are different records.
+  // next thing on screen is a drill on it. Asking to be quizzed is itself the
+  // statement that you've seen it, so the seen record goes down first (markSeen
+  // above owns that ordering). Then straight into the drill (empty teach — the
+  // user has already learned these elsewhere or in the walkthrough, so this is
+  // not a teach-then-drill, it is the quiz they asked for).
+  //
+  // This is the ORIGINAL of the skip route the other three tracks now have. It
+  // keeps its own handler rather than folding into startLesson because kana's
+  // needs one thing theirs don't: `lesson.group.label` names the run ("Vowels
+  // あ") for the HUD and the resume card, where a kanji or grammar lesson has no
+  // name to give.
   const quizMe = async (facts: FactId[]) => {
-    await fetch("/api/seen", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ facts }),
-    }).catch(() => {});
+    await markSeen(facts);
     startSession(facts, [], lesson?.group.label);
   };
 
@@ -286,15 +318,15 @@ export default function HomePage() {
   // you've met them) but every kanji reading those words prove. The readings
   // then enter the drill anchored on the word you just learned, via the same
   // seen record everything else uses. Then straight into the drill of the words.
-  const startWordLesson = async (facts: FactId[]) => {
+  //
+  // Both routes into the words drill come through here — Start (walk, then
+  // drill) and "Quiz me" (drill now) — so the unlock cannot depend on which
+  // button you pressed. Teaching a word unlocks its kanji's readings because you
+  // met the word, not because you paged through a screen about it.
+  const startWordLesson = async (facts: FactId[], { teach = true } = {}) => {
     const kebs = wordLesson?.cards.map((c) => c.keb) ?? [];
-    const seen = [...facts, ...readingsProvedBy(kebs)];
-    await fetch("/api/seen", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ facts: seen }),
-    }).catch(() => {});
-    startSession(facts, facts);
+    await markSeen([...facts, ...readingsProvedBy(kebs)]);
+    startSession(facts, teach ? facts : []);
   };
 
   // "I already know these words" — claim the words (skip the drill), but still
@@ -308,13 +340,7 @@ export default function HomePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ facts, known: true }),
     }).catch(() => {});
-    if (readings.length) {
-      await fetch("/api/seen", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ facts: readings }),
-      }).catch(() => {});
-    }
+    if (readings.length) await markSeen(readings);
     await refresh();
   };
 

@@ -57,9 +57,16 @@ export function NextWordLesson({
    * yet. When the gate is open this is the LESSON; when the gate is closed it is
    * the clearly-secondary "or practise…" offer. */
   lesson: WordLesson | null;
-  /** Start a lesson. The facts ARE the session — the count was the unit, so
-   * there is no budget and no length to apply. */
-  onStart: (facts: FactId[]) => void;
+  /**
+   * Start a lesson. The facts ARE the session — the count was the unit, so
+   * there is no budget and no length to apply.
+   *
+   * `teach: false` is the skip-the-lesson route: drill these words now, without
+   * the walk. Same handler either way, which is what guarantees the kanji
+   * readings these words prove get unlocked on both routes — that unlock is a
+   * consequence of meeting the word, not of paging through a screen about it.
+   */
+  onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
   /** "I already know these", over the lesson's words. */
   onClaim: (facts: FactId[]) => void;
 }) {
@@ -92,7 +99,7 @@ function GatedLead({
 }: {
   gate: WordGate;
   lesson: WordLesson | null;
-  onStart: (facts: FactId[]) => void;
+  onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
   onClaim: (facts: FactId[]) => void;
 }) {
   const { word, missing } = gate;
@@ -154,12 +161,24 @@ function GatedLead({
                 ? "this"
                 : `these ${lesson.cards.length}`}
             </Btn>
-            <Btn go onClick={() => onStart(lesson.facts)}>
-              Practise{" "}
-              {lesson.cards.length === 1
-                ? "this word"
-                : `these ${lesson.cards.length}`}
-            </Btn>
+            {/* The same skip-the-lesson fork the teachable shape carries, and
+                it has to be here too: this block is a whole lesson, just a
+                secondary one, and the claim explainer's promise does not stop
+                applying because the card's headline is about something else.
+                Bare "Quiz me" next to a "Practise these N" that already names
+                its scope — the scope is the same either way, so naming it twice
+                in one row would only make the row longer. */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Btn onClick={() => onStart(lesson.facts, { teach: false })}>
+                Quiz me
+              </Btn>
+              <Btn go onClick={() => onStart(lesson.facts)}>
+                Practise{" "}
+                {lesson.cards.length === 1
+                  ? "this word"
+                  : `these ${lesson.cards.length}`}
+              </Btn>
+            </div>
           </div>
         </div>
       ) : null}
@@ -175,7 +194,7 @@ function TeachableLesson({
   onClaim,
 }: {
   lesson: WordLesson;
-  onStart: (facts: FactId[]) => void;
+  onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
   onClaim: (facts: FactId[]) => void;
 }) {
   const { cards, position } = lesson;
@@ -205,11 +224,23 @@ function TeachableLesson({
         <Btn onClick={() => onClaim(lesson.facts)}>
           I already know {cards.length === 1 ? "this" : `these ${cards.length}`}
         </Btn>
-        {/* Plain "Start", for the reason the kanji card gives: a bare lesson
+        {/* The two routes into the words, in kana's arrangement — see the long
+            note on next-kanji-lesson.tsx for the argument. Start shows each word
+            (word · reading · meaning, stepped) and then drills it; "Quiz me"
+            drills now. Both mark the words seen AND unlock the kanji readings
+            those words prove, because that unlock follows from meeting the word
+            rather than from having read a screen about it.
+
+            Plain "Start", for the reason the kanji card gives: a bare lesson
             ordinal is a second scale contradicting the one in the label. */}
-        <Btn go onClick={() => onStart(lesson.facts)}>
-          Start
-        </Btn>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Btn onClick={() => onStart(lesson.facts, { teach: false })}>
+            Quiz me
+          </Btn>
+          <Btn go onClick={() => onStart(lesson.facts)}>
+            Start
+          </Btn>
+        </div>
       </div>
     </>
   );
