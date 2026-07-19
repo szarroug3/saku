@@ -81,15 +81,28 @@ export function sliceIsDrillable(slice: Slice): boolean {
  * change to rank().
  *
  * `quiet` never appears. That is the whole default.
+ *
+ * EXCEPT when you asked for these by name. `includeSolid` is the one seam that
+ * bends the default, and only for an EXPLICIT selection: you toggled these five
+ * things and pressed Drill, so "don't re-drill what you know" stops being a
+ * kindness and starts being the app refusing the thing you literally pointed at.
+ * When it is true, a `quiet`/solid fact is not dropped — it is put into `probe`,
+ * asked directly (no teach step; you already know it). Whole-shelf and
+ * whole-section drills never pass it, so browsing still costs you nothing.
  */
 export function drillPlan(
   slice: Slice,
   facts: Record<FactId, FactAggregate>,
   claims: Claims,
   now: number,
+  includeSolid = false,
 ): DrillPlan {
   const probe: RankCandidate[] = [];
   const teach: FactId[] = [];
+  // Solid facts an explicit selection asks anyway. Kept apart because `rank`
+  // drops them on purpose (a quiet fact scores p → 1 and is unrankable); they
+  // are appended after the ranked probes rather than routed through it.
+  const solid: FactId[] = [];
   for (const id of sliceFacts(slice)) {
     const state = effectiveState(facts[id], claims[id]);
     switch (status(state, now)) {
@@ -100,10 +113,12 @@ export function drillPlan(
         teach.push(id);
         break;
       case "quiet":
+        // The default drops this; an explicit selection asks it anyway.
+        if (includeSolid) solid.push(id);
         break;
     }
   }
-  return { probe: rank({ facts: probe }, now), teach };
+  return { probe: [...rank({ facts: probe }, now), ...solid], teach };
 }
 
 /**
@@ -155,6 +170,7 @@ export function sliceCount(
   facts: Record<FactId, FactAggregate>,
   claims: Claims,
   now: number,
+  includeSolid = false,
 ): SliceCount {
   const all = sliceFacts(slice);
   let seen = 0;
@@ -163,6 +179,10 @@ export function sliceCount(
     if ((facts[id]?.seen ?? 0) > 0) seen++;
     if (status(effectiveState(facts[id], claims[id]), now) === "quiet") solid++;
   }
+  // An explicit selection drills its solid facts too, so they are not the
+  // number the button "deliberately isn't": drillable is everything, and the
+  // bar has no solid remainder to explain away.
+  if (includeSolid) return { drillable: all.length, total: all.length, seen, solid: 0 };
   return { drillable: all.length - solid, total: all.length, seen, solid };
 }
 

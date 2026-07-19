@@ -42,6 +42,7 @@ export function SliceBar({
   now,
   onClaim,
   showLabel = true,
+  includeSolid = false,
 }: {
   slice: Slice;
   facts: Record<FactId, FactAggregate>;
@@ -60,15 +61,31 @@ export function SliceBar({
    * label is still PASSED either way: it names the add-to-list panel and the
    * session the Drill button starts. */
   showLabel?: boolean;
+  /** True ONLY for an explicit selection — the user toggled these items by hand
+   * and pressed Drill. It makes solid/quiet facts drillable (asked directly)
+   * instead of dropped, so a selection of things you already know still drills.
+   * The default "don't re-drill what you know" holds for whole-shelf and
+   * whole-section slices, which never set it. */
+  includeSolid?: boolean;
 }) {
   const { startSession } = useQuizSession();
   const [adding, setAdding] = useState(false);
 
-  const plan = drillPlan(slice, facts, claims, now);
+  const plan = drillPlan(slice, facts, claims, now, includeSolid);
   // Teach first, then probe — the order the session should MEET them, which is
   // budget.planFacts's rule and not this bar's to invent.
   const order = [...plan.teach, ...plan.probe];
-  const count = sliceCount(slice, facts, claims, now);
+  // Claim only ever touches NOT-solid facts: claiming what the model already
+  // calls solid is a documented no-op. So even when Drill is force-including
+  // solid facts, claim runs off the default plan and is disabled once every
+  // not-solid fact is claimed.
+  const claimOrder = includeSolid
+    ? (() => {
+        const base = drillPlan(slice, facts, claims, now);
+        return [...base.teach, ...base.probe];
+      })()
+    : order;
+  const count = sliceCount(slice, facts, claims, now, includeSolid);
   // ONE thing to learn is not a drill. A single kana IS its one reading, and a
   // "drill" of it is a one-question session that teaches nothing the screen above
   // this bar hasn't already shown — so hide Drill (only Drill) on single-fact
@@ -120,11 +137,11 @@ export function SliceBar({
             ＋ Add to list
           </Btn>
           <Btn
-            onClick={() => onClaim(order)}
+            onClick={() => onClaim(claimOrder)}
             // Claiming what the model already calls solid is a no-op with a
-            // confirmation animation. `order` is exactly the not-solid facts,
-            // so an empty order means there is nothing left to claim.
-            disabled={order.length === 0}
+            // confirmation animation. `claimOrder` is exactly the not-solid
+            // facts, so an empty order means there is nothing left to claim.
+            disabled={claimOrder.length === 0}
           >
             ✓ I know {slice.entries.length === 1 ? "this" : "these"}
           </Btn>

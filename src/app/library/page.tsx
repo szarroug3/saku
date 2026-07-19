@@ -465,6 +465,7 @@ function LibraryBody() {
         claims={claims}
         now={now}
         onClaim={claim}
+        includeSolid={selected.size > 0}
       />
 
       <AttributionLink />
