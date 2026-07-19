@@ -304,8 +304,16 @@ export const CLUSTERS: readonly Cluster[] = [
   },
   {
     id: "transitivity",
-    title: "transitive vs intransitive",
-    gloss: "開ける vs 開く: verb pairs that come in twos",
+    // NAMED BY ITS OWN JAPANESE, not by the grammar words for it. "transitive"
+    // and "intransitive" are jargon by this app's own standard, and the word
+    // pages already refuse both of them — a verb that just happens says so as
+    // "it happens, rather than being done to something" (INTRANSITIVE_NOTE in
+    // lib/word-forms.ts), because what the learner is actually choosing between
+    // is 開ける and 開く. So that is what the cluster is called. The gloss no
+    // longer repeats the pair, which was stranded there while the title spent
+    // itself on two words nobody looks up.
+    title: "開ける vs 開く",
+    gloss: "most verbs come in twos: one you do, one that just happens",
     members: [],
     feel:
       "Japanese pairs most verbs: one you do to something (を), one that just " +
