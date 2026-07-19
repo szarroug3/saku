@@ -11,6 +11,7 @@ import { SmallBtn } from "@/components/ui";
 
 export function SessionHud({
   label,
+  sublabel,
   where,
   pct,
   tone = "accent",
@@ -23,6 +24,10 @@ export function SessionHud({
 }: {
   /** What's running — "Review · 20". */
   label: string;
+  /** A quiet second pill beside the first — used by the teach phase to name the
+   * subject being taught ("Kanji", "Words") next to the "N of M" position.
+   * Same pill furniture as `label`; omitted when there's nothing to say. */
+  sublabel?: string;
   /** Where you are — "round 1 · done", "resting", "complete". */
   where: string;
   /** Bar fill, 0–100. */
@@ -62,6 +67,11 @@ export function SessionHud({
         <span className="kq-material rounded-full border border-border px-2.5 py-0.5">
           {label}
         </span>
+        {sublabel ? (
+          <span className="kq-material rounded-full border border-border px-2.5 py-0.5">
+            {sublabel}
+          </span>
+        ) : null}
         <span className="tabular-nums">{where}</span>
         <span className="ml-auto flex items-center gap-1.5">
           {children}

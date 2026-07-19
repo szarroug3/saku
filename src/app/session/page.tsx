@@ -18,6 +18,8 @@ import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
 import { SmallBtn } from "@/components/ui";
 import { useHistory } from "@/lib/use-history";
+import { factInfo } from "@/lib/facts";
+import { KIND_LABEL, type Kind } from "@/lib/library/entries";
 import { groupOfFact, widerScope } from "@/lib/lesson";
 import { lessonSteps } from "@/lib/lesson-steps";
 import { restLeftMs, SESSION_ROUND_TARGET } from "@/lib/session";
@@ -133,6 +135,16 @@ export default function SessionPage() {
     // On the last item the walk's own forward button already says "Quiz me", so
     // the bar drops its copy rather than showing the same words twice.
     const onLast = total > 0 && at === total - 1;
+    // What KIND of thing this lesson teaches — "Kanji", "Words". A lesson is
+    // single-subject, so the first teach fact names it for all of them; there's
+    // no subject on the session to read, so we resolve it from the fact and map
+    // it through the Library's canonical labels rather than restating them here.
+    const teachSubject = session.teach.length
+      ? factInfo(session.teach[0])?.subject
+      : undefined;
+    const subjectLabel = teachSubject
+      ? KIND_LABEL[teachSubject as Kind]
+      : undefined;
     return (
       <>
         {/* The top bar carries the position through the lesson — "1 of 5",
@@ -153,6 +165,7 @@ export default function SessionPage() {
             full-width slab it used to be. */}
         <SessionHud
           label={total > 0 ? `${at + 1} of ${total}` : label}
+          sublabel={subjectLabel}
           where=""
           pct={0}
           float
@@ -161,7 +174,7 @@ export default function SessionPage() {
         >
           {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
         </SessionHud>
-        <div className="mt-3.5">
+        <div className="mt-2">
           <TeachWalk
             facts={session.teach}
             // "Seen before" vs never met is a PRESENTATION difference and only
