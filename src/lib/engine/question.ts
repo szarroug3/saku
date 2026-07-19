@@ -37,6 +37,11 @@ import {
 } from "@/data/grammar";
 import { RECIPES, isProducible, type Host } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
+import { selectionMcsFor } from "@/lib/grammar/mc";
+// The blank's own text, so the frame in `context` and the halo stand-in for a
+// host-less signature are the same string the generator wrote.
+import { BLANK as SELECTION_BLANK } from "@/lib/grammar/questions";
+import { BEHAVIOR } from "@/lib/config";
 import { apply, hostOfClass } from "@/lib/grammar/apply";
 import { pickVehicle, type Rng, type Vehicle } from "@/lib/grammar/vehicles";
 import type { WordClass } from "@/lib/conjugate";
@@ -88,6 +93,21 @@ export interface Prompt {
    * chart you are in. `cfg.scriptLabel` hides this and only this.
    */
   hint: string | null;
+  /**
+   * A SECOND line of question, under `context`. Optional, and today exactly one
+   * subject has anything to put here: a grammar SELECTION showing, whose
+   * question is a Japanese sentence with a blank (`context`) plus its English
+   * translation (this).
+   *
+   * Not decoration and not gateable, for the same reason `context` isn't: the
+   * English is the only thing telling you WHICH pattern the blank wants, so a
+   * selection card without it is unanswerable rather than hard (see the
+   * SelectionQuestion docs in lib/grammar/questions.ts). A separate field rather
+   * than a longer `context` because the two lines are different languages and
+   * want different weights — and because every other subject returns nothing
+   * here and renders exactly as it did.
+   */
+  note?: string | null;
 }
 
 /**
@@ -111,6 +131,17 @@ export interface PromptContext {
    * fact (行く) — the pre-variety behaviour, unchanged.
    */
   grammarVehicle?: GrammarVehicle;
+  /**
+   * The per-showing SELECTION frame for a grammar MEANING fact — the corpus
+   * sentence whose blank this card is asking the learner to fill.
+   *
+   * Same discipline as `grammarVehicle`: the FACT is fixed ("do you know what
+   * 〜てから means and where it goes"), the SHOWING varies, and the showing is
+   * rolled once at ask time and carried here so prompt, option labels and
+   * reveal all agree. Absent → the meaning fact is asked the old way (the
+   * pattern, "meaning", glosses to choose between), unchanged.
+   */
+  grammarSelection?: GrammarSelection;
 }
 
 /** A verb picked to carry a grammar production question this showing. Plain
@@ -119,6 +150,31 @@ export interface GrammarVehicle {
   readonly surface: string;
   readonly kana: string;
   readonly cls: WordClass | null;
+}
+
+/**
+ * One selection showing, flattened to plain data so it rides the drill's
+ * serialized runtime beside `GrammarVehicle`.
+ *
+ * `choices` is the whole reason this type carries FACT ids rather than the
+ * recipe ids GrammarMc speaks: the drill's MC control takes `FactId[]` and
+ * grades by WHICH fact was clicked, so handing it the board as facts means the
+ * existing control renders and scores a selection card with no new grading
+ * path — and the fact it scores is the answer pattern's MEANING fact, which is
+ * the standing the Library entry page shows. The mapping recipe id → fact id
+ * happens once, in `grammarSelectionFor`.
+ */
+export interface GrammarSelection {
+  /** The sentence with the pattern (and its host verb) blanked out. */
+  readonly frame: string;
+  /** The host verb's dictionary form; the blank swallowed the conjugated one. */
+  readonly host: string | null;
+  /** The human English translation. Always shown — it is the only context. */
+  readonly en: string;
+  /** Tatoeba id, for attribution and for reporting a bad item. */
+  readonly sourceId: number;
+  /** The board, already shuffled. Meaning facts; exactly one is the asked one. */
+  readonly choices: readonly FactId[];
 }
 
 /**
@@ -577,6 +633,72 @@ export function grammarVehicleFor(
     : null;
 }
 
+/**
+ * Roll a SELECTION showing for a grammar meaning fact, as plain data — or null.
+ *
+ * Null for anything that is not a meaning fact, and for a pattern the corpus
+ * cannot make a safe selection item out of (30 of the 81 recipes, which is the
+ * design working — see selectableRecipes). The caller then omits
+ * `grammarSelection` and the fact is asked the old way.
+ *
+ * Everything hard already happened upstream: `selectionMcsFor` runs the
+ * distractor safety argument (gloss test, cluster test, prefix test, particle
+ * allowlist) per SENTENCE and ships only the items where the answer is uniquely
+ * determined. This function does the one thing that layer deliberately does not
+ * do — name the fact — by mapping each choice's recipe id to its MEANING fact.
+ *
+ * NOT the production fact, and the distinction is the whole point. "Which
+ * pattern fills this blank?" is a question about what 〜てから MEANS and where it
+ * goes; "build 〜てから on 食べる" is a question about the FORM. They are two
+ * facts, they move independently on the entry page, and a selection answer must
+ * only ever move the first.
+ *
+ * `rng` is injectable so a test can pin the sentence and the board order.
+ */
+export function grammarSelectionFor(
+  fact: FactId,
+  rng: Rng = Math.random,
+): GrammarSelection | null {
+  const mean = grammarMeaning(fact);
+  if (!mean) return null;
+  const cards = selectionMcsFor(mean.recipe.id, rng, BEHAVIOR.mcOptions);
+  if (cards.length === 0) return null;
+  const card = cards[Math.floor(rng() * cards.length)] ?? cards[0];
+  const choices: FactId[] = [];
+  for (const c of card.choices) {
+    // A choice with no recipe id cannot be scored, so the whole board is
+    // refused rather than shown with a hole in it. Unreachable for a selection
+    // card (fromSelection sets every id); the guard is here because a silent
+    // partial board would grade a click against the wrong fact.
+    if (!c.id) return null;
+    choices.push(patternMeaningFactId(c.id));
+  }
+  // The asked fact must BE on the board it is asked with. Belt and braces: if
+  // the ids ever drifted from the fact registry this would put six wrong
+  // options up and mark every answer wrong, which is the failure this app cares
+  // about most.
+  if (!choices.includes(fact)) return null;
+  return {
+    frame: card.prompt,
+    host: card.host,
+    en: card.en ?? "",
+    sourceId: card.sourceId ?? 0,
+    choices,
+  };
+}
+
+/** The selection showing for THIS fact, or null. Mirrors `variedVehicle`: a ctx
+ * carrying someone else's board (a stale serialized runtime, a re-cut of the
+ * data) is dropped rather than rendered, and the showing falls back to the
+ * pattern-and-glosses card. */
+function selectionShowing(
+  fact: FactId,
+  ctx?: PromptContext,
+): GrammarSelection | null {
+  const s = ctx?.grammarSelection;
+  return s && s.choices.includes(fact) ? s : null;
+}
+
 const grammarQuestions: QuestionType = {
   id: "grammar",
   prompt(fact, _dir, ctx) {
@@ -591,6 +713,27 @@ const grammarQuestions: QuestionType = {
         jp: true,
         context: `${prod.recipe.pattern} form`,
         hint: null,
+      };
+    }
+    // A meaning fact asked as a SELECTION item: the question is a real sentence
+    // with the pattern (and its host verb) cut out of it.
+    //
+    // The HOST goes in the halo, because the blank swallowed the conjugated verb
+    // and without its dictionary form the item is unanswerable rather than hard
+    // — and because a whole sentence in the halo would shrink to the 15px floor
+    // and overflow the ring (see glyph-fit.ts). The frame is one short centred
+    // line, which is exactly what `context` already is; the English is the
+    // second one. Nothing new gets invented: same halo, same option buttons.
+    const sel = selectionShowing(fact, ctx);
+    if (sel) {
+      return {
+        // No host for the handful of signatures with no host anchor (そう, たら);
+        // the blank itself stands in, so the halo is never empty.
+        glyph: sel.host ?? SELECTION_BLANK,
+        jp: true,
+        context: sel.frame,
+        hint: null,
+        note: sel.en,
       };
     }
     // A meaning fact (or an unrecognised grammar fact): show the pattern, ask
@@ -677,6 +820,13 @@ const grammarQuestions: QuestionType = {
     return out;
   },
   optionLabel(fact, _dir, ctx) {
+    // A SELECTION board offers PATTERNS to choose between, in both directions.
+    // Left to the drill's default a jp2en board would label each option with its
+    // English gloss, which asks a different (and much easier) question than the
+    // one the blank asks — and the glosses are exactly what the distractor rules
+    // proved distinct, not what goes in the sentence.
+    const sel = selectionShowing(fact, ctx);
+    if (sel) return grammarMeaning(fact)?.recipe.pattern ?? null;
     // Only a VARIED production option needs a per-vehicle label. Without a legal
     // vehicle, or for a meaning option, the fact's own glyph/answer is already
     // right, so return null and let the drill use it.
@@ -686,6 +836,11 @@ const grammarQuestions: QuestionType = {
     return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
   },
   answerReveal(fact, ctx) {
+    // A missed selection item reveals the PATTERN that fits the blank, not the
+    // fact's baked gloss: the gloss is the answer to "what does 〜てから mean",
+    // and this card asked something else.
+    const sel = selectionShowing(fact, ctx);
+    if (sel) return grammarMeaning(fact)?.recipe.pattern ?? null;
     const prod = grammarProduction(fact);
     if (!prod) return null;
     const v = variedVehicle(prod.recipe, ctx, prod.host);
