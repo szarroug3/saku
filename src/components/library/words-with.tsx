@@ -30,6 +30,7 @@ const VISIBLE = 8;
 
 export function WordsWith({
   words,
+  label = "Words with this character",
   facts,
   claims,
   metric,
@@ -37,6 +38,15 @@ export function WordsWith({
 }: {
   /** Every everyday word written with this character, in vocab order. */
   words: readonly string[];
+  /**
+   * The heading. A prop and not a constant because the component page passes a
+   * DIFFERENT LIST with the same rows: "words you know that use it", which is
+   * the user's own vocabulary filtered through a shape rather than every word
+   * containing a character. The rows — link, reading, gloss, standing dot — are
+   * identical, and reimplementing them beside a different heading is how two
+   * lists start disagreeing about what a standing dot means.
+   */
+  label?: string;
   facts: HistoryFile["facts"];
   claims: Claims;
   metric: AccuracyMetric;
@@ -52,7 +62,7 @@ export function WordsWith({
 
   return (
     <Card>
-      <Lbl>Words with this character</Lbl>
+      <Lbl>{label}</Lbl>
       <div className="flex flex-col gap-1.5">
         {shown.map((w) => {
           const id = entryForGlyph(VOCAB_SUBJECT, w);

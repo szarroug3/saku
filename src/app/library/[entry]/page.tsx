@@ -47,6 +47,7 @@ import { notFound } from "next/navigation";
 import { use, useMemo, useState } from "react";
 
 import { AttributionLink } from "@/components/library/attribution-link";
+import { ComponentUses } from "@/components/library/component-uses";
 import { EntryHeader } from "@/components/library/entry-header";
 import { EntryLinks, GlyphLink, LinkRow } from "@/components/library/entry-links";
 import { KanaFamilyView } from "@/components/library/kana-family-view";
@@ -93,7 +94,7 @@ import {
   type LibEntry,
 } from "@/lib/library/entries";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
-import { entryFromParam, entryHref } from "@/lib/library/href";
+import { entryFromParam, entryHref, radicalHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
 import { piecesOf } from "@/lib/library/word-pieces";
@@ -376,12 +377,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
               {p.id ? (
                 <GlyphLink id={p.id} />
               ) : (
-                // A radical primitive with no KANJIDIC2 entry — ｜, ノ, マ. Plain
-                // text, because there is no page to send you to and a dead link
-                // is worse than none.
-                <span className="text-text-muted" title="a radical, not a kanji">
+                // A radical primitive with no KANJIDIC2 entry — ｜, ノ, マ. It
+                // USED TO BE DEAD GREY TEXT, on the reasoning that there was no
+                // page to send you to. There is one now: /radical/ノ says what
+                // the shape is, admits it has no meaning, and shows the 246
+                // kanji built from it. The link is a different colour from a
+                // kanji's on purpose — it goes somewhere thinner, and a reader
+                // who clicks expecting a character should be able to see that
+                // coming.
+                <Link
+                  href={radicalHref(p.c)}
+                  className="text-[17px] text-text-muted no-underline"
+                >
                   {p.c}
-                </span>
+                </Link>
               )}
             </span>
           ))}
@@ -614,6 +623,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
               now={now}
             />
           ) : null}
+          {/* THIS KANJI SEEN AS A PART OF OTHERS — 口 is inside 381 of them.
+              155 of the 237 KRADFILE components are themselves jōyō kanji, and
+              they get this section HERE rather than a second page at
+              /radical/口: one character, one page. The other 82 are primitives
+              with no entry at all and mount the identical component on their
+              own route. Absent — not empty — for the 74 kanji nothing is built
+              from; ComponentUses returns null and says so in its header. */}
+          <ComponentUses
+            component={entry.glyph}
+            history={history}
+            claims={claims}
+            metric={cfg.accuracyMetric}
+            now={now}
+          />
         </>
       ) : null}
 
