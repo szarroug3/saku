@@ -16,6 +16,7 @@ import { describe, test } from "node:test";
 
 import { attachesTo, FORM_LABEL, HOST_LABEL, recipeFormula } from "./formula";
 import { RECIPES, isProducible, type Recipe } from "../../data/grammar/recipes";
+import { productionHosts } from "../../data/grammar/index";
 import { formsFor } from "../conjugate/index";
 
 function byId(id: string): Recipe {
@@ -176,5 +177,47 @@ describe("what it attaches to", () => {
 
   test("every recipe produces a non-empty line", () => {
     for (const r of RECIPES) assert.ok(attachesTo(r).length > 0, r.id);
+  });
+});
+
+// THE JOIN THE RECIPE CARD'S SCORE COLUMN IS BUILT ON
+// ===================================================
+// The card puts a production standing beside the formula it belongs to. It has
+// two lists to reconcile: `opening`, one entry per HOST the pattern attaches
+// to, and `productionHosts`, one entry per host that carries a FACT. They are
+// different lengths on three patterns, so the card joins them on `host` and
+// never by index. These tests pin the two things that join assumes.
+describe("production hosts against formula rows", () => {
+  test("every scored host has a row to sit beside", () => {
+    // If this ever fails, a pattern has a fact whose formula the card cannot
+    // draw, and its standing would be invisible rather than merely unplaced.
+    for (const r of RECIPES) {
+      if (!isProducible(r)) continue;
+      const rows = new Set(recipeFormula(r).opening.map((f) => f.host));
+      for (const h of productionHosts(r)) {
+        assert.ok(rows.has(h), `${r.id}: scored host '${h}' has no formula row`);
+      }
+    }
+  });
+
+  test("the mixed patterns really do have unscored rows, and only those three", () => {
+    // The empty-cell case is not hypothetical and it is not everywhere: it is
+    // exactly 〜てもいい, 〜ても and 〜ので. If this list changes the card is
+    // still correct, but the header comment explaining the empty cell is not.
+    const mixed = RECIPES.filter((r) => {
+      if (!isProducible(r)) return false;
+      const scored = new Set(productionHosts(r));
+      const rows = recipeFormula(r).opening;
+      return rows.some((f) => !scored.has(f.host));
+    }).map((r) => r.id);
+    assert.deepEqual(mixed.toSorted(), ["node", "te-mo", "te-permission"]);
+  });
+
+  test("a wrap never carries a score column", () => {
+    // The closing half sits outside the table. It may do so precisely because
+    // no wrap is producible, so the two never have to share a row grid.
+    for (const r of RECIPES) {
+      if (r.wrap) assert.equal(isProducible(r), false, r.id);
+    }
   });
 });
