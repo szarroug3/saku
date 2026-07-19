@@ -33,6 +33,7 @@ import Link from "next/link";
 
 import { StrokeOrder } from "@/components/lesson/stroke-order";
 import { WhyDisclosure } from "@/components/lesson/why";
+import { Card } from "@/components/ui";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { WHY_STROKE_ORDER } from "@/data/why";
 import type { LessonItem } from "@/lib/lesson-items";
@@ -155,8 +156,8 @@ export function HowItsWritten({
     return null;
   }
 
-  return (
-    <div className="mt-3 rounded-lg border border-border bg-panel px-3.5 py-3">
+  const content = (
+    <>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[13px] font-medium">How it&rsquo;s written</p>
         {alwaysOpen ? null : (
@@ -179,7 +180,10 @@ export function HowItsWritten({
           drawn.
         </p>
       ) : (
-        <div className="mt-2.5">
+        // In reference mode the box is stretched to its row's height, so the
+        // body becomes the growing column and the "why?" rule below is pushed
+        // to the bottom edge. The stepped lesson keeps plain block flow.
+        <div className={alwaysOpen ? "mt-2.5 flex flex-1 flex-col" : "mt-2.5"}>
           {strokes.status === "loading" ? (
             <p className="text-[13px] text-text-muted">Loading stroke order&hellip;</p>
           ) : strokes.data ? (
@@ -191,9 +195,31 @@ export function HowItsWritten({
           )}
 
           {/* Why order matters — reframed as worth learning, not "your own way". */}
-          <WhyDisclosure why={WHY_STROKE_ORDER} />
+          {alwaysOpen ? (
+            <div className="mt-auto">
+              <WhyDisclosure why={WHY_STROKE_ORDER} />
+            </div>
+          ) : (
+            <WhyDisclosure why={WHY_STROKE_ORDER} />
+          )}
         </div>
       )}
+    </>
+  );
+
+  // TWO MATERIALS, ONE COMPONENT. Inside the stepped lesson this is a section
+  // NESTED in a card, so it wears nested-panel material: --panel, the smaller
+  // radius, the tighter padding. On the Library entry page (the one and only
+  // alwaysOpen caller) it is a TOP-LEVEL box sitting directly beside a Card,
+  // and panel material next to card material reads as a different surface — so
+  // there it IS a Card, sharing the card token, radius, padding and frost.
+  if (alwaysOpen) {
+    return <Card className="flex h-full flex-col">{content}</Card>;
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border border-border bg-panel px-3.5 py-3">
+      {content}
     </div>
   );
 }

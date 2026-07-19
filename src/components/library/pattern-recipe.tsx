@@ -120,7 +120,9 @@ export function PatternRecipe({ formula }: { formula: RecipeFormula }) {
   const { opening, closing } = formula;
   if (opening.length === 0) return null;
   return (
-    <Card>
+    // Full height: the page pairs this with the Links card in a row that shares
+    // one height, so the box fills its half rather than ending short of it.
+    <Card className="h-full">
       <Lbl>How to build it</Lbl>
       <div className="flex flex-col gap-3.5">
         {opening.map((f) => (
