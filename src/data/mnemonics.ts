@@ -434,8 +434,8 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     mnemonic: [
       { text: "A fat " },
-      { text: "sar", accent: true },
-      { text: "dine dangles off the fishing line, body arched, tail flicking." },
+      { text: "sa", accent: true },
+      { text: "rdine dangles off the fishing line, body arched, tail flicking." },
     ],
     example: { word: "さかな", reading: "sakana", gloss: "fish", hitIndex: 0 },
   },
@@ -478,8 +478,8 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     mnemonic: [
       { text: "A bowl of " },
-      { text: "soup", accent: true },
-      { text: ", a curl of steam rising off the top." },
+      { text: "sou", accent: true },
+      { text: "p, a curl of steam rising off the top." },
     ],
     example: { word: "すし", reading: "sushi", gloss: "sushi", hitIndex: 0 },
   },
@@ -992,8 +992,8 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     mnemonic: [
       { text: "A " },
-      { text: "un", accent: true },
-      { text: "ique " },
+      { text: "u", accent: true },
+      { text: "nique " },
       { text: "eu", accent: true },
       { text: "lachon fish named " },
       { text: "Yu", accent: true },

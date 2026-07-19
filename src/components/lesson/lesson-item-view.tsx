@@ -480,11 +480,11 @@ export function LessonItemView({ item }: { item: LessonItem }) {
       {/* The written-form aside, when print and handwriting differ. Its own
           call-out because it corrects a different mistake than the sound note:
           not "you will say it wrong" but "you will not recognise it when it is
-          written by hand". No opener label: the note's own text starts with
-          "Note:", so a separate heading would only repeat it. */}
+          written by hand". The opener "Note:" is the Callout label so it renders
+          bold; the note string itself carries no prefix, so nothing repeats. */}
       {glyphVariant ? (
         <div className={note ? "mt-3" : "mt-6"}>
-          <Callout label="">{glyphVariant}</Callout>
+          <Callout label="Note:">{glyphVariant}</Callout>
         </div>
       ) : null}
 

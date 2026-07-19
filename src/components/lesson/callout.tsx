@@ -20,7 +20,8 @@ export function Callout({
   /** The opener. Overridable because "Heads up." is right beside a character
    * and flat next to a rule that has a named exception. Pass an empty string to
    * suppress the opener entirely, for asides whose own text already announces
-   * itself (the glyph-variant note opens with "Note:"). */
+   * itself. The glyph-variant note passes its "Note:" opener as the label, so
+   * the aside still gets a bold opener without the string carrying the prefix. */
   label?: string;
   children: ReactNode;
 }) {

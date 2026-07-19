@@ -125,11 +125,11 @@ export function noteFor(c: string): string | null {
 // look-alike pairs (ソ/ン, シ/ツ) are DIFFERENT characters, not variants of one,
 // and already live in LOOKALIKES.
 const GLYPH_VARIANTS: Record<string, string> = {
-  き: "Note: Sometimes you will see this kana written with the lower stroke detached, leaving a small gap below the curve above it. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
-  さ: "Note: Sometimes you will see this kana written with the bottom stroke on its own, leaving a small gap instead of joining into one curve. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
-  り: "Note: Sometimes you will see this kana written with its two strokes kept fully separate rather than flowing together. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
-  そ: "Note: Sometimes you will see this kana written with a small break near the top instead of one continuous stroke. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
-  ふ: "Note: Sometimes you will see this kana written as separate strokes rather than a single connected shape. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
+  き: "Sometimes you will see this kana written with the lower stroke detached, leaving a small gap below the curve above it. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
+  さ: "Sometimes you will see this kana written with the bottom stroke on its own, leaving a small gap instead of joining into one curve. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
+  り: "Sometimes you will see this kana written with its two strokes kept fully separate rather than flowing together. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
+  そ: "Sometimes you will see this kana written with a small break near the top instead of one continuous stroke. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
+  ふ: "Sometimes you will see this kana written as separate strokes rather than a single connected shape. This especially happens in handwriting, but it appears in some fonts too. It is the same kana.",
 };
 
 /** The call-out for a kana whose printed shape and handwritten shape differ
