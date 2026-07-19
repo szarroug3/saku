@@ -65,7 +65,7 @@ import { cluster } from "@/data/grammar/clusters";
 import { RECIPES, isProducible, type Recipe } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
-import type { EntryId, FactId } from "@/types";
+import type { EntryId, FactId, FactInfo } from "@/types";
 
 /** Which shelf an entry lives on. The subject id, re-stated as a union so a
  * screen can switch on it — the values come from each subject's own constant,
@@ -96,6 +96,31 @@ export const KIND_LABEL: Record<Kind, string> = {
   [VOCAB_SUBJECT]: "Words",
   [GRAMMAR_SUBJECT]: "Grammar",
 };
+
+/**
+ * Where a lesson's specific type differs from the shelf it lives on. A lesson
+ * teaches one word, so the "Words" shelf reads "Word" in the session header;
+ * every other non-kana subject's shelf label is already the right singular.
+ */
+const SUBJECT_LABEL: Partial<Record<Kind, string>> = {
+  [VOCAB_SUBJECT]: "Word",
+};
+
+/**
+ * The specific lesson-type label for a fact — what the session header's subject
+ * pip shows. More pointed than KIND_LABEL: a kana lesson is either "Hiragana"
+ * or "Katakana" depending on the character's own script, read off CHAR_INDEX by
+ * the fact's glyph rather than by parsing its id. Every other subject falls
+ * back to SUBJECT_LABEL and then KIND_LABEL. Undefined when the fact is gone.
+ */
+export function subjectLabel(info: FactInfo | undefined): string | undefined {
+  if (!info) return undefined;
+  const kind = info.subject as Kind;
+  if (kind === KANA_SUBJECT) {
+    return CHAR_INDEX[info.glyph]?.setLabel ?? KIND_LABEL[kind];
+  }
+  return SUBJECT_LABEL[kind] ?? KIND_LABEL[kind];
+}
 
 /**
  * One thing you can look up.

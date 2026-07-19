@@ -24,11 +24,16 @@ import {
   factsColumnHeader,
   factsTitle,
   libEntry,
+  subjectLabel,
   type LibEntry,
 } from "./entries.ts";
 import { kanjiEntry } from "@/data/kanji";
 import { kanaEntry } from "@/data/characters";
 import { wordEntry } from "@/data/vocab";
+import { factInfo } from "@/lib/facts.ts";
+import { kanaFact } from "@/data/characters";
+import { meaningFactId } from "@/data/kanji";
+import { wordMeaningFactId } from "@/data/vocab";
 
 const need = (e: LibEntry | undefined): LibEntry => {
   assert.ok(e);
@@ -101,4 +106,17 @@ test("no kind renders a headed table with no rows", () => {
   // guards.
   const first = need(libEntry(kanjiEntry(empty[0]!.c)));
   assert.ok(first.meanings.length > 0);
+});
+
+test("the subject pip splits kana by script and singularises words", () => {
+  // Kana is the whole point of the split: the same "Kana" shelf reads
+  // "Hiragana" or "Katakana" in the header, decided by the character itself.
+  assert.equal(subjectLabel(factInfo(kanaFact("し"))), "Hiragana");
+  assert.equal(subjectLabel(factInfo(kanaFact("シ"))), "Katakana");
+  // A lesson teaches ONE word, so the "Words" shelf reads "Word" here.
+  assert.equal(subjectLabel(factInfo(wordMeaningFactId("先生"))), "Word");
+  // Kanji already reads right as a shelf label.
+  assert.equal(subjectLabel(factInfo(meaningFactId("一"))), "Kanji");
+  // A fact the data no longer has has no label rather than throwing.
+  assert.equal(subjectLabel(undefined), undefined);
 });

@@ -11,6 +11,7 @@ import { SmallBtn } from "@/components/ui";
 
 export function SessionHud({
   label,
+  sublabel,
   where,
   pct,
   tone = "accent",
@@ -23,6 +24,10 @@ export function SessionHud({
 }: {
   /** What's running — "Review · 20". */
   label: string;
+  /** A quiet second pill beside the first — used by the teach phase to name the
+   * subject being taught ("Kanji", "Words") next to the "N of M" position.
+   * Same pill furniture as `label`; omitted when there's nothing to say. */
+  sublabel?: string;
   /** Where you are — "round 1 · done", "resting", "complete". */
   where: string;
   /** Bar fill, 0–100. */
@@ -35,15 +40,8 @@ export function SessionHud({
    * Float the strip at the top of the viewport instead of scrolling away with
    * the page — `sticky top-0 z-10 px-3 py-1.5`, the same treatment the three
    * quiz HUDs wear (drill-screen, grid-hud, pairs-hud), so the lesson's chrome
-   * reads as the same furniture the drill's does.
-   *
-   * One addition the drill doesn't need: `kq-band`. A drill card is a single
-   * stage that barely scrolls, so its transparent bar never has anything
-   * passing under it; a lesson is a long page that certainly does, and a
-   * transparent band would let glyphs slide through the pills. `kq-band` is
-   * this codebase's answer to exactly that (see globals.css) — it occludes with
-   * the page's own ground in the opaque themes and with the blur in kiri,
-   * rather than stamping a flat rectangle over kiri's mesh.
+   * reads as the same furniture the drill's does. The pills sit directly on the
+   * page ground with no filled band behind them.
    */
   float?: boolean;
   /** Omitted on the complete screen, which has nothing left to leave. */
@@ -56,12 +54,17 @@ export function SessionHud({
 }) {
   return (
     <div
-      className={`px-3 py-1.5 ${float ? "kq-band sticky top-0 z-10" : ""}`}
+      className={`px-3 py-1.5 ${float ? "sticky top-0 z-10" : ""}`}
     >
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
         <span className="kq-material rounded-full border border-border px-2.5 py-0.5">
           {label}
         </span>
+        {sublabel ? (
+          <span className="kq-material rounded-full border border-border px-2.5 py-0.5">
+            {sublabel}
+          </span>
+        ) : null}
         <span className="tabular-nums">{where}</span>
         <span className="ml-auto flex items-center gap-1.5">
           {children}

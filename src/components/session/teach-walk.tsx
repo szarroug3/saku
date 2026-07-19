@@ -89,13 +89,14 @@ export function TeachWalk({
   if (!current) return null;
 
   return (
-    <div className="mx-auto max-w-[920px] px-3 pt-6">
+    <div className="mx-auto max-w-[920px] px-3">
       {/* Where you are is the floating bar's job now — it prints "N of M" and
           updates as you step. The row of dots that used to sit here said the
           same thing a second time, less precisely, so it's gone; what's left is
           the quiet "seen before" note when the budget re-surfaced material you'd
-          already met. The row keeps its height either way so the item below
-          doesn't jump between a familiar step and a new one. */}
+          already met. The row reserves only the badge's own height (min-h) so
+          the item below doesn't jump between a familiar step and a new one, and
+          it sits tight under the bar rather than behind a tall gap. */}
       <div className="flex min-h-[1.25rem] items-center gap-3">
         {familiarHere ? (
           <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.08em] text-text-muted/80">
@@ -111,7 +112,7 @@ export function TeachWalk({
           so each step is a clean remount: the persisted-preference sections
           re-read their state and no open/closed disclosure leaks between
           glyphs. */}
-      <div className="mt-7">
+      <div className="mt-2">
         {current.type === "intro" ? (
           <PhaseIntroView key={current.key} intro={current.intro} />
         ) : current.type === "conversion" ? (
