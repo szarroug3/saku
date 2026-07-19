@@ -2,18 +2,36 @@
 
 // The shelves — what the Library is when you haven't typed anything.
 //
-// A shelf is a Kind, cut into sections that the DATA already has. That
-// qualifier is the whole design of this file: the kana shelf's sections are the
-// gojūon rows because kana genuinely comes in rows, and the kanji shelf's are
-// jōyō grades because that is what KANJIDIC2 records. The words shelf has no
-// sections, because the data gives it none; it shows the first screenful of
-// everyday words and sends you to search for the rest, instead of pretending to
-// be browsable. A shelf you cannot honestly cut is a search box, and saying so
-// is cheaper than a fake hierarchy.
+// A shelf is a Kind, cut where a cut MEANS something to the person reading it.
+// Usually that is a cut the data already has: the kana shelf's sections are the
+// gojūon rows because kana genuinely comes in rows, and grammar's are JLPT
+// levels because the recipes carry them. The words shelf has no sections,
+// because the data gives it none; it shows the first screenful of everyday
+// words and sends you to search for the rest, instead of pretending to be
+// browsable. A shelf you cannot honestly cut is a search box, and saying so is
+// cheaper than a fake hierarchy.
+//
+// THE KANJI SHELF IS THE EXCEPTION, AND IT IS CUT BY A SETTING. It used to be
+// cut into jōyō grades, because that is what KANJIDIC2 records — and both
+// halves of that were wrong for the reader. "Jōyō" is the 2,136-kanji list that
+// is the entire contents of this app, so the word distinguishes nothing; and a
+// grade is the school year a Japanese CHILD meets it, a curriculum for people
+// who already speak the language. Worse, it was not the order she was studying
+// in: kanji order is `cfg.newKanjiOrder`, it defaults to `everyday`, and under
+// grade sections the kanji she will actually meet next were scattered across
+// seven cards, one of which held 1,110 of the 2,136 and showed 60 of them.
+//
+// So `shelfSections` takes the order, and the kanji shelf is cut into
+// consecutive hundreds OF THAT ORDER, labelled by range ("1–100", "101–200").
+// Reading the shelf left to right, top to bottom, is reading the order you will
+// meet them in. `grade` mode still cuts by grade, because in THAT mode the
+// grades are the study order — the boundary between grade 3 and grade 4 is a
+// real event in the queue, and a range label would erase it. Its label just
+// drops the jargon: "School grade 4", the wording the setting already uses.
 //
 // SECTIONS AND TILES ARE MULTI-SELECT TOGGLES. You BUILD a drill by turning
-// things on: a section header toggles its whole row (hiragana vowels, the k-row,
-// a jōyō grade), and a single tile toggles just that glyph. Several can be on at
+// things on: a section header toggles its whole row (hiragana vowels, the
+// k-row, kanji 101–200), and a single tile toggles just that glyph. Several can be on at
 // once, across kinds — the set lives on the page (see lib/library/selection.ts),
 // not here, so this file only draws the on/some/off state and reports toggles
 // up. The bar downstream unions everything on into one Slice, so "mark as known"
@@ -23,7 +41,7 @@
 
 import Link from "next/link";
 
-import { KANJI, KANJI_SUBJECT } from "@/data/kanji";
+import { KANJI_SUBJECT } from "@/data/kanji";
 import { KANA_SUBJECT, SETS } from "@/data/characters";
 import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT } from "@/data/vocab";
@@ -34,16 +52,22 @@ import { EntryRow, EntryTile } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
 import type { Claims } from "@/lib/claims";
 import { entryForGlyph, libEntry, type Kind, type LibEntry } from "@/lib/library/entries";
+import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import { sectionState, type Selection } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
 import { factsOf } from "@/lib/facts";
-import type { AccuracyMetric, EntryId, FactAggregate } from "@/types";
+import type { AccuracyMetric, EntryId, FactAggregate, NewKanjiOrder } from "@/types";
 
 /** One cut of a shelf: a name and the entries under it. */
 export interface ShelfSection {
   readonly id: string;
   readonly label: string;
   readonly entries: readonly LibEntry[];
+  /** Tiles to paint before deferring the rest to search, if the section is too
+   * big to render whole. Only the huge school-grade sections set it; a section
+   * without one is shown in full, which is every section on every other shelf
+   * and every range section on the kanji shelf. */
+  readonly cap?: number;
 }
 
 /** How many word tiles the words shelf shows before it tells you to search.
@@ -54,15 +78,22 @@ export interface ShelfSection {
  * what you can see and toggle is what you drill. */
 const WORD_TILES = 120;
 
-/** How many kanji tiles a grade section paints before it defers the rest to
- * search — the words shelf's honesty, applied per grade so the Kanji tab does
- * not render all ~2,136 at once. The SELECT toggle and the count stay over the
+/** How many kanji tiles a SCHOOL-GRADE section paints before it defers the rest
+ * to search — the words shelf's honesty, applied per grade, because grade 8
+ * alone holds 1,110 of the 2,136. The SELECT toggle and the count stay over the
  * WHOLE grade, so "select all of grade 1" still means all of it; only the tiles
- * are capped. */
+ * are capped. The range sections do NOT use this: a range is 100 long, capping
+ * it at 60 would hide 40 of every 100, and rendering all 2,136 measured cheap
+ * enough (see kanji-shelf.ts) that the apologetic "go and search" line is gone
+ * from the default mode entirely. */
 const KANJI_TILES = 60;
 
-/** The sections of a shelf, cut the way the data is already cut. */
-export function shelfSections(kind: Kind): ShelfSection[] {
+/** The sections of a shelf.
+ *
+ * `kanjiOrder` is the one thing here that is a SETTING and not data — the kanji
+ * shelf is cut by the order the reader is studying in (see the file header).
+ * The other four kinds ignore it, and should keep ignoring it. */
+export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSection[] {
   switch (kind) {
     case KANA_SUBJECT:
       return SETS.flatMap((set) =>
@@ -74,19 +105,15 @@ export function shelfSections(kind: Kind): ShelfSection[] {
             .flatMap((id) => resolve(id)),
         })),
       );
-    case KANJI_SUBJECT: {
-      // 1–6 and 8. THERE IS NO GRADE 7 (see KanjiRow.grade) — this reads the
-      // grades that are actually present rather than iterating a range, which
-      // is how a screen invents one.
-      const grades = [...new Set(KANJI.map((k) => k.grade))].sort((a, b) => a - b);
-      return grades.map((g) => ({
-        id: `grade-${g}`,
-        label: `Jōyō grade ${g}`,
-        entries: KANJI.filter((k) => k.grade === g).flatMap((k) =>
-          resolve(entryForGlyph(KANJI_SUBJECT, k.c)),
-        ),
+    case KANJI_SUBJECT:
+      return kanjiCuts(kanjiOrder).map((cut) => ({
+        id: cut.id,
+        label: cut.label,
+        entries: cut.glyphs.flatMap((c) => resolve(entryForGlyph(KANJI_SUBJECT, c))),
+        // Only the grade sections need a cap; a range is already small enough
+        // to render whole.
+        cap: kanjiOrder === "grade" ? KANJI_TILES : undefined,
       }));
-    }
     case GRAMMAR_SUBJECT:
       // By JLPT level, the one cut the recipes already carry. It is opinion, not
       // fact (see recipes.ts) — good enough for a shelf, and it keeps the two
@@ -213,10 +240,9 @@ export function Shelf({
         const ids = section.entries.map((e) => e.id);
         const state = sectionState(selected, ids);
         const onCount = ids.filter((id) => selected.has(id)).length;
-        // Display cap for the huge kanji grade sections. The toggle and count
+        // Display cap for the huge school-grade sections. The toggle and count
         // above use the FULL `ids`; only what renders is sliced.
-        const cap = kind === KANJI_SUBJECT ? KANJI_TILES : Infinity;
-        const shown = section.entries.slice(0, cap);
+        const shown = section.entries.slice(0, section.cap ?? Infinity);
         const hidden = section.entries.length - shown.length;
         return (
           <Card key={section.id}>

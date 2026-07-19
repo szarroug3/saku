@@ -181,16 +181,21 @@ function LibraryBody() {
   // no DOM) so switching the kind filter — or the "All" view that shows all
   // three — is a lookup, not a re-cut. Only the kinds actually shown get their
   // tiles rendered, which is where the real cost is.
+  //
+  // RE-CUT WHEN THE KANJI ORDER CHANGES. The kanji shelf is sectioned by the
+  // order you are studying in, so it is the one shelf whose cut is a setting;
+  // change it in Settings and the sections have to follow, or the Library shows
+  // you a curriculum you are no longer on.
   const shelvesByKind = useMemo(() => {
     const m = new Map<Kind, { sections: ShelfSection[]; entries: LibEntry[] }>();
     for (const k of KINDS) {
       m.set(k, {
-        sections: shelfSections(k),
+        sections: shelfSections(k, cfg.newKanjiOrder),
         entries: LIB_ENTRIES.filter((e) => e.kind === k),
       });
     }
     return m;
-  }, []);
+  }, [cfg.newKanjiOrder]);
 
   const onToggleEntry = (id: EntryId) =>
     setSelected((s) => toggleEntryIn(s, id));
