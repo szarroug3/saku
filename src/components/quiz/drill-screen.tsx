@@ -869,8 +869,16 @@ export function DrillScreen() {
   // and an image that never loads means the same thing. The button renders from
   // it, the "?" key reads it off the ref, and neither can offer a hint the other
   // would refuse.
+  //
+  // NO HINT ON MULTIPLE CHOICE. A hint is calibrated against a blank box, where
+  // narrowing the answer still leaves you to produce it. Against six printed
+  // options it usually IS the answer: 先生 asked for its reading is hinted "先 is
+  // せん here", and exactly one option starts せん. So an mc showing is treated
+  // the same way a card with nothing honest to say is treated — no button at
+  // all, not a disabled one, and the "?" key inert, both of which fall out of
+  // hintReady being false. Typed cards are untouched.
   const hint =
-    active && rt?.q
+    active && rt?.q && !rt.q.mc
       ? hintFor(rt.q.f, rt.q.dir, ctxFor(rt.q, anchorForFact(rt.q.f, history)))
       : null;
   const hintDrawn = useDrawnImage(hint?.kind === "image" ? hint.src : null);

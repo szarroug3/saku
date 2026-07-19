@@ -87,6 +87,17 @@ test("the drill scores a hinted showing through the engine's one rule", () => {
   );
 });
 
+test("a multiple-choice showing is offered no hint at all", () => {
+  // On six printed options a hint is usually the answer: "先 is せん here" leaves
+  // exactly one option starting せん. So mc is folded into the SAME availability
+  // the button and the "?" key both read, which makes the button absent rather
+  // than disabled and the key inert, and leaves typed cards untouched.
+  assert.ok(
+    /active && rt\?\.q && !rt\.q\.mc/.test(SRC),
+    "the hint is not built for a showing with multiple-choice options",
+  );
+});
+
 test("a hint is only offered when there is one to give", () => {
   // Both entry points — the button and the "?" key — read the same
   // availability, so neither can spend the first-try credit on a card with
