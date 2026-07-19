@@ -52,8 +52,15 @@ import type { FactId, HistoryFile } from "@/types";
 
 /** A word is KNOWN once its meaning has been learned — seen, claimed, or tested.
  * The same "not fresh" signal the words and kanji tracks gate on, read here for
- * a word's meaning fact. */
-function wordKnown(keb: string, history: HistoryFile): boolean {
+ * a word's meaning fact.
+ *
+ * EXPORTED so there is one answer to "do I know this word" and not three. The
+ * reading unlock asks it, `lib/grammar/readable.ts` asks it of every content
+ * lemma in a sentence, and the Library's "words you know that use this
+ * component" asks it of the vocabulary. A second definition would drift, and it
+ * would drift on `claims` — the "I already know this" record is the half a
+ * re-implementation always forgets. */
+export function wordKnown(keb: string, history: HistoryFile): boolean {
   const state = effectiveState(
     history.facts[wordMeaningFactId(keb)],
     history.claims?.[wordMeaningFactId(keb)],

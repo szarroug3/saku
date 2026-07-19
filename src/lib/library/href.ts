@@ -33,6 +33,27 @@ export function entryHref(id: EntryId): string {
 }
 
 /**
+ * Where a radical primitive's page lives — /radical/%E3%83%8E for ノ.
+ *
+ * THE GLYPH IS THE ID HERE, and that is not a contradiction of everything
+ * above. The argument against /library/生 is that a glyph names no entry
+ * uniquely: 生 is a kanji AND a word, two entries, one shape. A primitive has
+ * the opposite property by construction — the 82 are exactly the components
+ * with NO entry of any kind (see data/components.ts), so `｜` names one thing
+ * or nothing, and there is no id to be opaque about because these are not
+ * entries and have no ids. The route is separate from /library for the same
+ * reason /grammar/[cluster] is: what is on the page is not an entry, has no
+ * facts and is never scored.
+ *
+ * The encode is transport, exactly as above; the route decodes with
+ * `entryFromParam`'s twin and hands the result to a Map lookup that answers
+ * undefined for a stranger.
+ */
+export function radicalHref(glyph: string): string {
+  return `/radical/${encodeURIComponent(glyph)}`;
+}
+
+/**
  * The id a route param carries.
  *
  * IT DECODES, and that is not obvious — this function was a bare cast for an
@@ -50,9 +71,21 @@ export function entryHref(id: EntryId): string {
  * `libEntry()`, which is a lookup and answers undefined for a stranger.
  */
 export function entryFromParam(param: string): EntryId {
+  return glyphFromParam(param) as EntryId;
+}
+
+/**
+ * A path segment, decoded — the same unwrap `entryFromParam` does, without the
+ * brand, for the radical route whose param is a bare glyph.
+ *
+ * `decodeURIComponent` throws on a malformed sequence ("%E0%A4%A") that a URL
+ * bar can produce, so a bad escape comes back unchanged and reads as "no such
+ * thing" at the lookup rather than as a 500.
+ */
+export function glyphFromParam(param: string): string {
   try {
-    return decodeURIComponent(param) as EntryId;
+    return decodeURIComponent(param);
   } catch {
-    return param as EntryId;
+    return param;
   }
 }
