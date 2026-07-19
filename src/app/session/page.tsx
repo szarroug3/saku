@@ -20,7 +20,7 @@ import { SmallBtn } from "@/components/ui";
 import { useHistory } from "@/lib/use-history";
 import { groupOfFact, widerScope } from "@/lib/lesson";
 import { lessonSteps } from "@/lib/lesson-steps";
-import { restLeftMs } from "@/lib/session";
+import { restLeftMs, SESSION_ROUND_TARGET } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
 
@@ -33,6 +33,7 @@ export default function SessionPage() {
     retryLeg,
     completeRound,
     startNextRound,
+    pauseSession,
     endSession,
     finishSession,
     startSession,
@@ -155,7 +156,8 @@ export default function SessionPage() {
           where=""
           pct={0}
           float
-          onDone={endSession}
+          onDone={pauseSession}
+          onEnd={endSession}
         >
           {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
         </SessionHud>
@@ -183,9 +185,10 @@ export default function SessionPage() {
       <>
         <SessionHud
           label={label}
-          where={`round ${session.round} · done`}
+          where={`round ${session.round} of ${SESSION_ROUND_TARGET} · done`}
           pct={100}
-          onDone={endSession}
+          onDone={pauseSession}
+          onEnd={endSession}
         />
         <div className="mt-3.5">
           <RoundComplete
@@ -208,17 +211,19 @@ export default function SessionPage() {
       <>
         <SessionHud
           label={label}
-          where="resting"
+          where={`resting before round ${Math.min(SESSION_ROUND_TARGET, session.round + 1)}`}
           pct={pct}
           tone="muted"
-          onDone={endSession}
+          onDone={pauseSession}
+          onEnd={endSession}
         />
         <div className="mt-3.5">
           <RestScreen
             session={session}
             now={now}
             onStart={startNextRound}
-            onDone={endSession}
+            onDone={pauseSession}
+            onComplete={endSession}
           />
         </div>
       </>

@@ -59,16 +59,16 @@ describe("the lesson gates How it's written on the track", () => {
     // a ternary, `&&` for a guard — and never the `>` or `}` that would mean
     // the element is just the next sibling in the list.
     const before = SOURCE.slice(0, SOURCE.indexOf("<HowItsWritten")).trimEnd();
-    assert.match(
+    assert.doesNotMatch(
       before,
-      /[(&]$/,
-      "<HowItsWritten> is mounted for every step again — a word and a grammar\n" +
+      /[>}]\s*$/,
+      "<HowItsWritten> is mounted for every step again - a word and a grammar\n" +
         "pattern have no stroke order and get the misleading whole-shape line.",
     );
   });
 
-  /** The single-braced JSX expression that wraps the element, i.e. its gate. */
-  const gate = /\{([^{}]*)\?\s*\(\s*<HowItsWritten/.exec(SOURCE)?.[1] ?? "";
+  /** The JSX expression that wraps the element, i.e. its gate. */
+  const gate = /\{([^{}]*)\?\s*<HowItsWritten/.exec(SOURCE)?.[1] ?? "";
 
   test("kana and kanji keep the section", () => {
     assert.match(gate, /item\.kind\s*===\s*"kana"/, `gate was: ${gate.trim()}`);

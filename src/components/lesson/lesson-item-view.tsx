@@ -39,18 +39,32 @@
 // can't disagree about what a character is.
 
 import Link from "next/link";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Callout } from "@/components/lesson/callout";
 import { HearButton } from "@/components/lesson/hear-button";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
+import { KanjiPartsRow } from "@/components/lesson/kanji-parts-row";
+import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
+import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor } from "@/data/characters";
+import { cluster, membersOf } from "@/data/grammar/clusters";
+import { kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
+import { exampleFor } from "@/data/word-examples";
+import { vocabRow, type VocabRow } from "@/data/vocab";
+import { buildRow } from "@/lib/grammar/build";
+import { primaryHost } from "@/lib/grammar/example";
+import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
+import { knownLookalikes } from "@/lib/kanji-lookalikes";
 import type { LessonItem } from "@/lib/lesson-items";
-import { appearsIn, entryForGlyph, libEntry } from "@/lib/library/entries";
+import { formsOfWord } from "@/lib/word-forms";
+import { libEntry, recipeOf } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { useHistory } from "@/lib/use-history";
 
 /** The one-line reading/meaning under the headword, per track. Read off the
  * Library entry so it matches the reference exactly. */
@@ -71,19 +85,236 @@ function subtitleOf(item: LessonItem): string {
   }
 }
 
-/** A word, linked to its own entry when it has one — the entry page's WordLink,
- * for the "appears in" list. Degrades to plain text for a word with no page,
- * which is the join being honest (see the entry page). */
-function WordLink({ word }: { word: string }) {
-  const id = entryForGlyph("word", word);
-  if (!id) return <span className="font-kana text-[15px]">{word}</span>;
+type GrammarExample = {
+  jp: string;
+  en: string;
+} | null;
+
+function useGrammarExample(recipeId: string | null): GrammarExample {
+  const [example, setExample] = useState<GrammarExample>(null);
+  useEffect(() => {
+    if (!recipeId) return;
+    const ac = new AbortController();
+    void fetch(`/api/grammar-example?recipe=${encodeURIComponent(recipeId)}`, {
+      cache: "no-store",
+      signal: ac.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return (await res.json()) as GrammarExample;
+      })
+      .then((x) => setExample(x))
+      .catch(() => setExample(null));
+    return () => ac.abort();
+  }, [recipeId]);
+  return example;
+}
+
+function FormulaLine({
+  slot,
+  formLabel,
+  trim,
+  add,
+}: {
+  slot: string;
+  formLabel: string | null;
+  trim: string | null;
+  add: string | null;
+}) {
   return (
-    <Link
-      href={entryHref(id)}
-      className="font-kana text-[15px] text-accent no-underline hover:opacity-80"
-    >
-      {word}
-    </Link>
+    <div className="flex flex-wrap items-center gap-2 text-[13px]">
+      <span className="rounded-md border border-dashed border-border px-2 py-1 text-text-muted">
+        {slot}
+      </span>
+      {formLabel ? (
+        <>
+          <span className="text-text-muted">→</span>
+          <span className="rounded-md border border-border px-2 py-1 text-text">
+            {formLabel}
+          </span>
+        </>
+      ) : null}
+      {trim ? (
+        <span className="flex items-center gap-2 whitespace-nowrap">
+          <span className="text-text-muted">-</span>
+          <span className="font-kana text-[15px] text-accent">{trim}</span>
+        </span>
+      ) : null}
+      {add ? (
+        <span className="flex items-center gap-2 whitespace-nowrap">
+          <span className="text-text-muted">+</span>
+          <span className="font-kana text-[15px] text-accent">{add}</span>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function WorkedLine({
+  examples,
+  wraps,
+  slot,
+}: {
+  examples: readonly { from: string; to: string }[];
+  wraps: boolean;
+  slot: string;
+}) {
+  if (!examples.length) return null;
+  return (
+    <p className="mt-2 text-[12px] text-text-muted">
+      {wraps ? "Worked out: " : `Any ${slot.replace("any ", "")} you know: `}
+      {examples.map((w, i) => (
+        <span key={w.from}>
+          {i > 0 ? <span> · </span> : null}
+          <span className="whitespace-nowrap">
+            <span className="font-kana text-text">{w.from}</span> →{" "}
+            <span className="font-kana text-text">{w.to}</span>
+          </span>
+        </span>
+      ))}
+    </p>
+  );
+}
+
+function WordReadingsPanel({
+  word,
+  voiceName,
+}: {
+  word: VocabRow;
+  voiceName: string;
+}) {
+  if (!word.align || word.align.length === 0) return null;
+  return (
+    <LessonPanel title="Why it sounds like that">
+      <div className="space-y-2">
+        {word.align.map(([k, surface], i) => {
+          const meaning = kanjiRow(k)?.meanings[0] ?? "";
+          return (
+            <div key={`${k}-${i}`} className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
+              <span className="flex items-center gap-2">
+                <HearButton glyph={surface} voiceName={voiceName} />
+                <span className="font-kana text-[20px] leading-none">{k}</span>
+              </span>
+              <span className="font-kana text-[16px] leading-none text-text">
+                {surface}
+              </span>
+              <span className="text-[11px] text-text-muted">meaning</span>
+              <span className="text-[11px] text-text-muted">
+                {meaning || "(no meaning listed)"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </LessonPanel>
+  );
+}
+
+function WordSentencePanel({ keb }: { keb: string }) {
+  const ex = exampleFor(keb);
+  return (
+    <LessonPanel title="Used like this">
+      {ex ? (
+        <>
+          <p className="font-kana text-[18px] leading-relaxed text-text">{ex.jp}</p>
+          <p className="mt-1.5 text-[13px] text-text-muted">{ex.en}</p>
+        </>
+      ) : null}
+    </LessonPanel>
+  );
+}
+
+function GrammarBuildPanel({ item }: { item: LessonItem }) {
+  const entry = libEntry(item.entry);
+  if (!entry) return null;
+  const pattern = recipeOf(entry);
+  if (!pattern) return null;
+  const formula = recipeFormula(pattern);
+  if (!formula.opening.length) return null;
+
+  return (
+    <LessonPanel title="How to build it">
+      <div className="space-y-3">
+        {formula.opening.map((f) => (
+          <div key={`${f.host}-${f.slot}`} className="rounded-md border border-border bg-card px-3 py-2">
+            <FormulaLine
+              slot={f.slot}
+              formLabel={f.formLabel}
+              trim={f.trim}
+              add={f.add}
+            />
+            <WorkedLine examples={f.worked} wraps={f.wraps} slot={f.slot} />
+          </div>
+        ))}
+      </div>
+    </LessonPanel>
+  );
+}
+
+function GrammarSentencePanel({
+  item,
+  example,
+}: {
+  item: LessonItem;
+  example: Exclude<GrammarExample, null>;
+}) {
+  const entry = libEntry(item.entry);
+  const pattern = entry ? recipeOf(entry) : null;
+  if (!entry || !pattern) return null;
+  return (
+    <LessonPanel title="Used like this">
+      <p className="font-kana text-[18px] leading-relaxed text-text">{example.jp}</p>
+      <p className="mt-1.5 text-[13px] text-text-muted">{example.en}</p>
+    </LessonPanel>
+  );
+}
+
+function GrammarFamilyPanel({ item }: { item: LessonItem }) {
+  const entry = libEntry(item.entry);
+  if (!entry) return null;
+  const pattern = recipeOf(entry);
+  if (!pattern || !pattern.cluster) return null;
+  const c = cluster(pattern.cluster);
+  if (!c) return null;
+  const members = membersOf(c);
+  if (members.length < 2) return null;
+
+  return (
+    <LessonPanel title="Ways to say this">
+      <div className="-mx-1 overflow-x-auto px-1">
+        <table className="w-full text-left text-[13px]">
+          <thead>
+            <tr className="border-b border-border text-[11px] font-medium text-text-muted">
+              <th className="py-1.5 pr-2 font-medium">Pattern</th>
+              <th className="py-1.5 pr-2 font-medium">Built form</th>
+              <th className="py-1.5 font-medium">What it means</th>
+            </tr>
+          </thead>
+          <tbody>
+            {members.map((r) => {
+              const row = buildRow(r, primaryHost(r) ?? undefined);
+              const current = r.id === pattern.id;
+              return (
+                <tr key={r.id} className="border-b border-border last:border-b-0">
+                  <td className="py-2 pr-2 font-kana text-[15px]">
+                    {current ? <span className="text-accent">{r.pattern}</span> : r.pattern}
+                  </td>
+                  <td className="py-2 pr-2 font-kana text-text-muted">
+                    {row?.built ?? ""}
+                  </td>
+                  <td className="py-2">{r.gloss}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[12px] text-text-muted">
+        All of these are correct ways to say this. {c.feel ?? ""} Which one someone
+        reaches for is a matter of feel, and feel comes from hearing them used, so
+        this lesson shows you the difference and never tests you on it.
+      </p>
+    </LessonPanel>
   );
 }
 
@@ -93,39 +324,81 @@ function WordLink({ word }: { word: string }) {
  * still opens on the character. */
 function PlainHeadword({
   item,
-  subtitle,
+  titleRow,
+  pronunciation,
+  sub,
   canHear,
   kanaGlyph,
+  right,
   voiceName,
 }: {
   item: LessonItem;
-  subtitle: string;
+  titleRow: string;
+  pronunciation?: string;
+  sub?: string;
   canHear: boolean;
   kanaGlyph: boolean;
+  right?: ReactNode;
   voiceName: string;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-      <Link
-        href={entryHref(item.entry)}
-        aria-label={`Open ${item.glyph} in the Library`}
-        className={`${
-          kanaGlyph ? "font-kana" : ""
-        } text-[92px] font-extralight leading-none text-text no-underline`}
-      >
-        {item.glyph}
-      </Link>
-      <div className="min-w-0 flex-1">
-        {subtitle ? (
-          <p className="text-[17px] leading-relaxed text-text-muted">{subtitle}</p>
-        ) : null}
-        {canHear ? (
-          <div className="mt-3">
-            <HearButton glyph={item.glyph} voiceName={voiceName} />
-          </div>
-        ) : null}
+    <div className="grid gap-3.5 md:grid-cols-[auto_1fr]">
+      <div className="flex min-w-0 items-start gap-x-6 gap-y-2">
+        <Link
+          href={entryHref(item.entry)}
+          aria-label={`Open ${item.glyph} in the Library`}
+          className={`${
+            kanaGlyph ? "font-kana" : ""
+          } text-[72px] font-extralight leading-none text-text no-underline`}
+        >
+          {item.glyph}
+        </Link>
+        <div className="min-w-0 flex-1">
+          {titleRow ? <p className="text-[16px] leading-relaxed text-text-muted">{titleRow}</p> : null}
+          {sub ? <p className="mt-0.5 text-[12px] text-text-muted">{sub}</p> : null}
+          {canHear || pronunciation ? (
+            <div className="mt-2 flex items-center gap-2">
+              {canHear ? <HearButton glyph={item.glyph} voiceName={voiceName} /> : null}
+              {pronunciation ? (
+                <span className="font-kana text-[15px] text-text-muted">{pronunciation}</span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
+      {right}
     </div>
+  );
+}
+
+function wordTypeOf(word: VocabRow): string {
+  const pos = word.pos[0]?.toLowerCase() ?? "";
+  if (pos.includes("verb")) return "verb";
+  if (pos.includes("adjective")) return "adjective";
+  if (pos.includes("adverb")) return "adverb";
+  if (pos.includes("particle")) return "particle";
+  if (pos.includes("expression")) return "expression";
+  return "noun";
+}
+
+function KanjiConfusables({ glyph }: { glyph: string }) {
+  const { history } = useHistory();
+  const lookalikes = knownLookalikes(glyph, history);
+  if (!lookalikes.length) return null;
+  return (
+    <LessonPanel title="Commonly confused with" className="h-full">
+      <div className="flex flex-wrap items-center gap-2">
+        {lookalikes.map((l) => (
+          <span
+            key={l.c}
+            className="rounded-md border border-border bg-card px-2 py-1 text-[13px]"
+          >
+            <span className="text-[18px] leading-none">{l.c}</span>{" "}
+            <span className="text-text-muted">{l.meaning}</span>
+          </span>
+        ))}
+      </div>
+    </LessonPanel>
   );
 }
 
@@ -137,9 +410,6 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // (a meaning) and a grammar pattern do not — the same split the entry page
   // and the teach screen make.
   const canHear = item.kind === "kana" || item.kind === "word";
-  // The everyday words a kanji is written in — its example words, and the
-  // payoff the readings table points at. Only kanji attest this link.
-  const words = item.kind === "kanji" ? appearsIn(libEntry(item.entry)!).slice(0, 8) : [];
   const kanaGlyph = item.kind === "kana" || item.kind === "grammar";
   // The app's own hook for this kana, when one is authored. When present it
   // drives the hero (big image, or the glyph as the hero when nothing's drawn);
@@ -152,6 +422,20 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // find out they were wrong until the drill marks them down for it. Absent
   // for the regular majority, so this is silent rather than empty.
   const note = item.kind === "kana" ? noteFor(item.glyph) : null;
+  const entry = libEntry(item.entry);
+  const pattern = entry ? recipeOf(entry) : null;
+  const word = item.kind === "word" ? vocabRow(item.glyph) : undefined;
+  const forms = word ? formsOfWord(word) : null;
+  const grammarSub = item.kind === "grammar" && pattern ? attachesTo(pattern) : undefined;
+  const grammarExample = useGrammarExample(
+    item.kind === "grammar" && pattern ? pattern.id : null,
+  );
+  const wordExample = word ? exampleFor(word.keb) : null;
+  const wordAlign = word?.align && word.align.length > 0 ? word : null;
+  const wordHeader = word
+    ? `${wordTypeOf(word)} · ${(entry?.meanings?.[0] ?? "").trim()}`
+    : subtitle;
+  const wordPronunciation = word?.reb;
 
   return (
     <div>
@@ -168,9 +452,12 @@ export function LessonItemView({ item }: { item: LessonItem }) {
       ) : (
         <PlainHeadword
           item={item}
-          subtitle={subtitle}
+          titleRow={item.kind === "word" ? wordHeader : subtitle}
+          pronunciation={item.kind === "word" ? wordPronunciation : undefined}
+          sub={grammarSub}
           canHear={canHear}
           kanaGlyph={kanaGlyph}
+          right={item.kind === "kanji" ? <KanjiConfusables glyph={item.glyph} /> : null}
           voiceName={cfg.voiceName}
         />
       )}
@@ -191,43 +478,32 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           own emptiness, so a kana shows only "how it's written" and a kanji adds
           its readings and the words it shows up in. */}
       <div className="mt-9 space-y-3 border-t border-border pt-7">
-        {/* How it's written. Collapsed by default, a persisted preference, and
-            gated on the track the same way the two sections below it are.
-
-            SINGLE CHARACTERS ONLY. A kana has a real stroke diagram; a kanji has
-            no diagram yet but a real stroke COUNT, which is worth showing and
-            stays. A WORD is several characters and a GRAMMAR pattern is a shape
-            with no stroke order at all, so for those the section had nothing to
-            say and said so out loud: "learned as a whole shape, the stroke-order
-            diagram for this one isn't in yet." That is wrong for 学生, whose two
-            kanji each have their own order, and meaningless for 〜てから. The
-            Library reached the same conclusion from the other side (see the
-            alwaysOpen branch of how-its-written.tsx, which returns null rather
-            than announcing an absence). */}
-        {item.kind === "kana" || item.kind === "kanji" ? (
-          <HowItsWritten item={item} />
+        {item.kind === "kanji" ? <KanjiPartsRow glyph={item.glyph} /> : null}
+        {item.kind === "kanji" ? (
+          <LessonReadings item={item} voiceName={cfg.voiceName} />
         ) : null}
-
-        {/* KANJI readings — minimised, collapsed, not drilled until words unlock
-            them. Renders nothing for other tracks. */}
-        {item.kind === "kanji" ? <LessonReadings item={item} /> : null}
-
-        {/* Example words: where a kanji actually shows up. Kana carry their own
-            example inside the hero; words and patterns don't have this link. */}
-        {words.length ? (
-          <div className="rounded-lg border border-border bg-panel px-3.5 py-3">
-            <p className="text-[13px] font-medium">Shows up in</p>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              {words.map((w) => (
-                <WordLink key={w} word={w} />
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-text-muted/80">
-              You&rsquo;ll learn these as words later. Each one you learn unlocks a
-              reading above.
-            </p>
-          </div>
+        {item.kind === "word" && word && forms ? (
+          <WordFormFan dictionary={word.keb} groups={forms} />
         ) : null}
+        {item.kind === "word" && word ? (
+          <PairedRow
+            wide={wordAlign ? <WordReadingsPanel word={wordAlign} voiceName={cfg.voiceName} /> : null}
+            narrow={wordExample ? <WordSentencePanel keb={word.keb} /> : null}
+            even
+          />
+        ) : null}
+        {item.kind === "grammar" ? (
+          <PairedRow
+            wide={<GrammarBuildPanel item={item} />}
+            narrow={
+              grammarExample ? (
+                <GrammarSentencePanel item={item} example={grammarExample} />
+              ) : null
+            }
+          />
+        ) : null}
+        {item.kind === "grammar" ? <GrammarFamilyPanel item={item} /> : null}
+        {item.kind === "kana" || item.kind === "kanji" ? <HowItsWritten item={item} /> : null}
       </div>
     </div>
   );

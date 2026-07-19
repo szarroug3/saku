@@ -42,6 +42,8 @@ export function NextLesson({
   onTeach,
   onQuizMe,
   onClaim,
+  inSession = false,
+  onContinue,
 }: {
   lesson: Lesson;
   /**
@@ -71,6 +73,8 @@ export function NextLesson({
    * purpose: what you route to next depends on which you meant.
    */
   onClaim: (facts: FactId[]) => void;
+  inSession?: boolean;
+  onContinue?: () => void;
 }) {
   const { group, chars } = lesson;
   // "Teach me here" is the way in: kana is taught in the app, the same stepped
@@ -153,9 +157,6 @@ export function NextLesson({
               : "Step through each one: its picture, its sound, and how it’s written, before you’re quizzed."}
           </span>
         </p>
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <Btn onClick={() => onTeach(lesson.facts)}>Teach me here</Btn>
-        </div>
       </div>
 
       {/* The two intents, kept apart because they route apart. "Quiz me" is
@@ -188,13 +189,22 @@ export function NextLesson({
               <Btn onClick={() => onQuizMe(soFar)}>
                 Quiz me on all {group.setLabel.toLowerCase()} so far
               </Btn>
-              <Btn go onClick={() => onQuizMe(lesson.facts)}>
+              <Btn onClick={() => onQuizMe(lesson.facts)}>
                 Quiz me on these only
               </Btn>
             </>
           ) : (
-            <Btn go onClick={() => onQuizMe(lesson.facts)}>
+            <Btn onClick={() => onQuizMe(lesson.facts)}>
               Quiz me
+            </Btn>
+          )}
+          {inSession && onContinue ? (
+            <Btn go onClick={onContinue}>
+              Continue session
+            </Btn>
+          ) : (
+            <Btn go onClick={() => onTeach(lesson.facts)}>
+              Start
             </Btn>
           )}
         </div>

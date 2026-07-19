@@ -47,13 +47,17 @@
 
 import { effectiveState } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
+import { primaryHost } from "@/lib/grammar/example";
 import type { LessonPosition } from "@/lib/lesson-position";
+import { wordClassOf } from "@/lib/word-forms";
+import { CURRICULUM_WORDS } from "@/lib/word-lesson";
 import {
   GRAMMAR_SUBJECT,
   patternEntry,
   patternMeaningFactId,
 } from "@/data/grammar";
-import { DRILLABLE, type Level, type Recipe } from "@/data/grammar/recipes";
+import { DRILLABLE, type Host, type Level, type Recipe } from "@/data/grammar/recipes";
+import { wordMeaningFactId, type VocabRow } from "@/data/vocab";
 import type { FactId, HistoryFile } from "@/types";
 
 /**
@@ -186,43 +190,117 @@ function toCard(r: Recipe): GrammarCard {
 }
 
 /**
- * The next grammar lesson, or null when there is nothing new to teach.
+ * The word type a vocab row is, in the grammar track's terms — the same four
+ * hosts a recipe attaches to (see the `Host` doc in recipes.ts). Derived from
+ * the conjugation class the row's JMdict tags resolve to: an adjective class is
+ * an adjective host, any verb class is a verb, and everything else (nouns,
+ * する-nouns, adverbs, particles) is a noun as far as a pattern is concerned.
  *
- * Walk the curriculum in teaching order and take the next `count` patterns whose
- * MEANING fact is still fresh — "met" is the meaning being non-fresh, the same
- * signal the words track uses, because meeting a pattern is being shown what it
- * means (its production is the drill's job, not the lesson's). A met pattern is
- * skipped and counted; there is no gate to step over the way a kanji word waits
- * on its kanji, because a pattern has no prerequisite of its own.
- *
- * Null is a real state, not an error: it means the curriculum is finished, and
- * the card is then not rendered — the same rule every other lesson card follows.
- *
- * PURE OF KANA. Like nextKanjiLesson and nextWordLesson, this does not know
- * whether kana is done. That gate is the caller's (see src/app/page.tsx, which
- * opens grammar on the same `lesson === null` condition as kanji), so a beginner
- * is never handed grammar before finishing the first front.
+ * This is deliberately COARSER than the engine's WordClass — a pattern cares
+ * whether it may attach at all (verb vs adjective vs noun), not which
+ * conjugation table drives the attachment.
  */
-export function nextGrammarLesson(
+export function wordHost(w: VocabRow): Host {
+  const cls = wordClassOf(w);
+  if (cls === "adj-i" || cls === "adj-ix") return "adj-i";
+  if (cls === "adj-na") return "adj-na";
+  if (cls) return "verb";
+  return "noun";
+}
+
+/** The host a pattern must be taught on — the one its example is built on, so
+ * the one the learner needs a real word of before the lesson means anything.
+ * See `primaryHost`. */
+function requiredHost(r: Recipe): Host | null {
+  return primaryHost(r);
+}
+
+/**
+ * The word types the learner has actually met — a word of that host whose
+ * MEANING is no longer fresh. This is what a grammar pattern's host requirement
+ * is checked against: 〜てから needs a learned VERB behind it, 〜ので a learned
+ * な-adjective, before the pattern has anything to stand on.
+ *
+ * Scans the words curriculum (the only words the app teaches) and stops early
+ * once all four hosts are accounted for.
+ */
+export function learnedHosts(history: HistoryFile): Set<Host> {
+  const hosts = new Set<Host>();
+  for (const w of CURRICULUM_WORDS) {
+    if (isFresh(wordMeaningFactId(w.keb), history)) continue;
+    hosts.add(wordHost(w));
+    if (hosts.size >= 4) break;
+  }
+  return hosts;
+}
+
+/** Has the learner met any grammar pattern at all? The words track's
+ * `hasStartedWordTrack`, for grammar: it decides whether a LOCKED grammar card
+ * is shown (only after the track has opened) versus hidden entirely. */
+export function hasStartedGrammarTrack(history: HistoryFile): boolean {
+  for (const r of CURRICULUM_PATTERNS) {
+    if (!isFresh(patternMeaningFactId(r.id), history)) return true;
+  }
+  return false;
+}
+
+/** The next `size` fresh patterns in teaching order, and how many were met
+ * before them. The set the lesson OR the lock is computed from — shared so the
+ * two can never disagree about which patterns are next. */
+function nextGrammarSet(
   history: HistoryFile,
   count: number,
-): GrammarLesson | null {
+): { rows: Recipe[]; met: number } {
   const size = clampGrammarPerLesson(count);
-  const cards: GrammarCard[] = [];
-  const facts: FactId[] = [];
+  const rows: Recipe[] = [];
   let met = 0;
-
   for (const r of CURRICULUM_PATTERNS) {
     if (!isFresh(patternMeaningFactId(r.id), history)) {
       met++;
       continue;
     }
-    cards.push(toCard(r));
-    facts.push(...patternFacts(r));
-    if (cards.length >= size) break;
+    rows.push(r);
+    if (rows.length >= size) break;
   }
+  return { rows, met };
+}
 
-  if (!cards.length) return null;
+/**
+ * The next grammar lesson, or null when there is nothing teachable to hand out.
+ *
+ * Walk the curriculum in teaching order and take the next `count` patterns whose
+ * MEANING fact is still fresh. A met pattern is skipped and counted, the same
+ * signal the words track uses.
+ *
+ * THE HOST GATE. Unlike before, a pattern DOES have a prerequisite: the learner
+ * needs a real word of the type it attaches to (see `requiredHost`). If any
+ * pattern in the next set needs a host the learner has not met, the lesson is
+ * LOCKED and this returns null — the caller then shows the locked card
+ * (nextGrammarLock) instead, exactly as the words track locks a set behind its
+ * kanji.
+ *
+ * Null also means the curriculum is finished (no fresh patterns left). Either
+ * way there is no teachable lesson, and the card falls back to lock or nothing.
+ *
+ * PURE OF KANA. Like the other tracks, this does not know whether kana is done;
+ * that gate is the caller's (see src/app/page.tsx).
+ */
+export function nextGrammarLesson(
+  history: HistoryFile,
+  count: number,
+): GrammarLesson | null {
+  const { rows, met } = nextGrammarSet(history, count);
+  if (!rows.length) return null;
+
+  const learned = learnedHosts(history);
+  const locked = rows.some((r) => {
+    const host = requiredHost(r);
+    return host !== null && !learned.has(host);
+  });
+  if (locked) return null;
+
+  const cards = rows.map(toCard);
+  const facts = rows.flatMap(patternFacts);
   return {
     cards,
     facts,
@@ -232,6 +310,38 @@ export function nextGrammarLesson(
       total: GRAMMAR_CURRICULUM_TOTAL,
     },
   };
+}
+
+/** The locked grammar card's data: which word types the next set still needs. */
+export interface GrammarLock {
+  /** The hosts the next set requires that the learner has not met yet, in
+   * HOST_ORDER, deduped. Empty is impossible — a lock with nothing missing is
+   * not a lock, and nextGrammarLock returns null for that. */
+  hosts: Host[];
+}
+
+/**
+ * The lock on the next grammar set, or null when it is teachable (or there is
+ * nothing next). The mirror of nextWordLock: same next set, and it reports what
+ * is standing in the way rather than what to teach.
+ */
+export function nextGrammarLock(
+  history: HistoryFile,
+  count: number,
+): GrammarLock | null {
+  const { rows } = nextGrammarSet(history, count);
+  if (!rows.length) return null;
+
+  const learned = learnedHosts(history);
+  const missing = new Set<Host>();
+  for (const r of rows) {
+    const host = requiredHost(r);
+    if (host !== null && !learned.has(host)) missing.add(host);
+  }
+  if (!missing.size) return null;
+
+  const order: Host[] = ["verb", "adj-i", "adj-na", "noun"];
+  return { hosts: order.filter((h) => missing.has(h)) };
 }
 
 /** The subject these lessons belong to. Re-exported so a caller holding a

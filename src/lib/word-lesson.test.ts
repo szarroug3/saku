@@ -22,8 +22,8 @@ import {
   WORDS_PER_LESSON_DEFAULT,
   clampWordsPerLesson,
   isKanaOnlyWord,
+  nextWordLock,
   nextWordLesson,
-  topWordGate,
   wordKanji,
   wordTeachable,
 } from "./word-lesson.ts";
@@ -87,17 +87,12 @@ describe("the curriculum is the JLPT core, in beginnerRank order", () => {
   });
 });
 
-describe("kana-only words come first — the gate, not a re-sort", () => {
-  test("with no kanji known, the lesson is all kana-only, though 何 outranks them", () => {
-    const lesson = nextWordLesson(history(), 6)!;
-    assert.ok(lesson.cards.length > 0);
-    for (const card of lesson.cards) {
-      assert.ok(card.kana, `${card.keb} should be kana-only`);
-    }
-    // 何 is rank 1 and would lead if it weren't gated — it is stepped over, not
-    // reordered away. The first teachable word is the lowest-rank kana-only one.
-    assert.notEqual(lesson.cards[0].keb, "何");
-    assert.equal(lesson.cards[0].keb, "あなた");
+describe("locked set behavior", () => {
+  test("with no kanji known, the next set is locked and no lesson is returned", () => {
+    assert.equal(nextWordLesson(history(), 6), null);
+    const lock = nextWordLock(history(), 6);
+    assert.ok(lock);
+    assert.ok(lock.away >= 1);
   });
 
   test("a kana-only word is teachable with an empty history", () => {
@@ -130,14 +125,7 @@ describe("a kanji word gates on knowing EVERY one of its kanji", () => {
     // Know only 先 and 生: any kanji word the lesson offers must be built solely
     // from known kanji (kana-only words are always fair game).
     const h = claiming([kanjiMeaningFactId("先"), kanjiMeaningFactId("生")]);
-    const known = new Set(["先", "生"]);
-    const lesson = nextWordLesson(h, 8)!;
-    for (const card of lesson.cards) {
-      if (card.kana) continue;
-      for (const c of wordKanji(card.keb)) {
-        assert.ok(known.has(c), `${card.keb} needs unknown kanji ${c}`);
-      }
-    }
+    assert.equal(nextWordLesson(h, 8), null);
   });
 
   test("a met word is skipped, not re-taught", () => {
@@ -188,67 +176,26 @@ describe("the position counts WORDS, against a total that does not move", () => 
   });
 });
 
-describe("the words card LEADS with the top word's gate", () => {
-  test("day one: the top word is 何 (rank 1) and it is gated on 何", () => {
-    // topWordGate names the word the curriculum most wants to teach next — the
-    // lowest-rank unlearned word — REGARDLESS of whether it is teachable. On an
-    // empty history that is 何, which nextWordLesson steps over.
-    const gate = topWordGate(history())!;
-    assert.equal(gate.word.keb, "何");
-    assert.equal(gate.rank, 1);
-    // Gated: its one kanji 何 is unknown, so it is named as the thing to learn.
-    assert.deepEqual(
-      gate.missing.map((m) => m.c),
-      ["何"],
-    );
-    // And the missing kanji carries a meaning to read in the sentence.
-    assert.ok(gate.missing[0].meaning.length > 0);
+describe("word lock distance", () => {
+  test("away counts to the furthest missing required kanji", () => {
+    const school = VOCAB.find((w) => w.keb === "学校")!;
+    const below = CURRICULUM_WORDS.filter(
+      (w) => w.beginnerRank < school.beginnerRank,
+    ).map((w) => wordMeaningFactId(w.keb));
+    const lock = nextWordLock(claiming(below), 6)!;
+    assert.ok(lock.away >= 1);
   });
 
-  test("a gated lead still offers the available words secondarily", () => {
-    // The gate is the lead, but the track is never a dead end: nextWordLesson
-    // still returns the best words you CAN learn (all kana-only on day one).
-    const h = history();
-    assert.ok(topWordGate(h)!.missing.length > 0, "top word is gated");
-    const secondary = nextWordLesson(h, 6)!;
-    assert.ok(secondary.cards.length > 0, "available words still surface");
-    for (const card of secondary.cards) {
-      assert.ok(card.kana, `${card.keb} should be kana-only on day one`);
-    }
-  });
-
-  test("with every kanji known the lead is TEACHABLE — no gate, 何 leads", () => {
-    const gate = topWordGate(allKanjiKnown())!;
-    assert.equal(gate.word.keb, "何");
-    // Nothing missing → the card falls through to the normal lesson, whose head
-    // is this same word.
-    assert.deepEqual(gate.missing, []);
+  test("with every kanji known the lock disappears and the lesson opens", () => {
+    assert.equal(nextWordLock(allKanjiKnown(), 6), null);
     assert.equal(nextWordLesson(allKanjiKnown(), 6)!.cards[0].keb, "何");
   });
 
-  test("missing lists ONLY the unknown kanji of the top word", () => {
-    // Make 先生 the top unlearned word: meet every lower-ranked word, and know
-    // 先 but not 生. The gate then names 先生 and only its still-missing kanji 生.
-    const sensei = VOCAB.find((w) => w.keb === "先生")!;
-    const below = CURRICULUM_WORDS.filter(
-      (w) => w.beginnerRank < sensei.beginnerRank,
-    ).map((w) => wordMeaningFactId(w.keb));
-    const h = claiming([...below, kanjiMeaningFactId("先")]);
-
-    const gate = topWordGate(h)!;
-    assert.equal(gate.word.keb, "先生");
-    assert.deepEqual(
-      gate.missing.map((m) => m.c),
-      ["生"],
-    );
-  });
-
-  test("topWordGate is null only when the whole curriculum is learned", () => {
+  test("lock and lesson are both null only when the whole curriculum is learned", () => {
     const everyWord = claiming(
       CURRICULUM_WORDS.map((w) => wordMeaningFactId(w.keb)),
     );
-    assert.equal(topWordGate(everyWord), null);
-    // The same finished state nextWordLesson returns null for.
+    assert.equal(nextWordLock(everyWord, 6), null);
     assert.equal(nextWordLesson(everyWord, 6), null);
   });
 });

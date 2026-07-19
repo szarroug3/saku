@@ -28,7 +28,11 @@ import { StandingChip } from "@/components/library/standing-chip";
 import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
 import { factInfo } from "@/lib/facts";
 import { standingFor } from "@/lib/library/standing";
-import { roundCompleteView, type StudySession } from "@/lib/session";
+import {
+  roundCompleteView,
+  SESSION_ROUND_TARGET,
+  type StudySession,
+} from "@/lib/session";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
 import type { FactId } from "@/types";
@@ -157,7 +161,9 @@ export function RoundComplete({
             Retry {pickedList.length || "…"}
           </Btn>
           <Btn go className="ml-auto" onClick={onComplete}>
-            Complete round
+            {session.round >= SESSION_ROUND_TARGET
+              ? "Complete session"
+              : "Complete round"}
           </Btn>
         </div>
       </Card>

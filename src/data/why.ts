@@ -180,14 +180,13 @@ export const WHY_STROKE_ORDER: Why = {
 export const WHY_TRACK: Record<string, Why> = {
   kanji: {
     lede: {
-      strong: "Kanji and words unlock each other.",
-      rest: "Each kanji you learn makes a batch of words teachable, and each word you learn proves how its kanji is read there.",
+      strong: "Kanji are used as both words and as building blocks for other words.",
+      rest: "Once you've learned all the kanji required for a set of words, the word set will be unlocked as a separate Word track. Because of this, it may be a while before you unlock the next set of words. By default, we use commonality for ordering but this can be updated in the settings.",
     },
     paras: [
-      "Kanji is where you learn the individual characters and what each one means: 先 is “before”, 生 is “life”. On their own they aren’t much use (you don’t go around saying a lone kanji), but they’re the pieces every written word is built from.",
-      "Here’s why this track comes first for a word: the words track will only teach you a word once you know all of its kanji. 先生 (“teacher”) stays locked until you’ve learned both 先 and 生. So each kanji you pick up here quietly unlocks the words that are made of it: that’s the payoff for a track whose characters you never use one at a time.",
-      "It runs the other way too. A kanji has several readings and which one you use depends on the word, so “how is 生 read?” has no single answer, but “how is 生 read in 先生?” does. Once you’ve learned a word 生 is in, that word is the proof, and the app starts asking you the reading there. Kanji let you meet words; words are what pin down how the kanji are said.",
-      "If the words card keeps telling you to “go learn a kanji first”, this is that kanji. Learn it here, and the word it was blocking becomes teachable.",
+      "Kanji carry meaning and are reused across many words, so learning one kanji can unlock several words at once. This makes the word track inconsistent. Sometimes it will have a lot of content while other times, it will be locked for a long time.",
+      "Each kanji can have multiple readings, and words are what pin down which reading is used. Learning kanji first gives you the pieces, and learning words gives those pieces real pronunciation and context.",
+      "The words track waits for complete sets so new word lessons open with material you can actually understand. By default, we use commonality ordering, so the most common useful material is prioritized first. You can change this in the settings menu.",
     ],
   },
   words: {
@@ -204,12 +203,12 @@ export const WHY_TRACK: Record<string, Why> = {
   grammar: {
     lede: {
       strong: "Grammar is how words become sentences.",
-      rest: "The glue, separate from learning the words themselves.",
+      rest: "Knowing words isn’t the same as knowing how to connect them.",
     },
     paras: [
-      "Knowing words isn’t the same as knowing how to connect them. Grammar is the patterns that turn 食べる (“eat”) into “after eating”, “want to eat”, “please eat”. It’s a different kind of thing from a word or a kanji: a rule for combining, not another item to memorise.",
-      "It runs alongside the other two rather than gating on them: you don’t need a big vocabulary before you start, because a pattern is taught with words you already have. Kanji unlock words; grammar is what you do with those words once you have them.",
-      "Patterns come easiest ones first (the app tags each with its level), so early grammar leans on the simple verbs and words you’re already meeting on the other tracks.",
+      "Grammar is the patterns that turn 食べる (“eat”) into “after eating”, “want to eat”, “please eat”. It’s a different kind of thing from a word or a kanji. It's a rule for combining, not another item to memorize.",
+      "You don’t need a big vocabulary before you start because a pattern is taught with words you already know. Kanji unlocks words; grammar is what you do with those words once you know them.",
+      "Patterns are taught starting with the easiest ones first so early grammar leans on the simple verbs and words you’re already learning in the other tracks.",
     ],
   },
 };
