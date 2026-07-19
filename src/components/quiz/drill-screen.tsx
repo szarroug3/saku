@@ -48,6 +48,7 @@ import {
   checkTyped,
   confusedWith,
   en2jpTypeable,
+  firstTryCredit,
   grammarSelectionFor,
   grammarVehicleFor,
   newFactStat,
@@ -572,7 +573,7 @@ export function DrillScreen() {
     // an existing shape, not a new one (it is what a second-try success already
     // records), so nothing about the persisted file or the standings changes.
     if (st.firstTryCorrect === null) {
-      st.firstTryCorrect = ok && q.tries === 0 && !q.hinted;
+      st.firstTryCorrect = firstTryCredit(ok, q.tries, q.hinted);
     }
     if (ok) {
       // Only a clean first try extends the streak — a miss below has already
