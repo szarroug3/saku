@@ -58,6 +58,7 @@ import { PatternRecipe } from "@/components/library/pattern-recipe";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StandingChip } from "@/components/library/standing-chip";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
+import { WordExampleView } from "@/components/library/word-example-view";
 import { WordFormsView } from "@/components/library/word-forms-view";
 import { WordsWith } from "@/components/library/words-with";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
@@ -71,6 +72,7 @@ import {
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
+import { exampleFor } from "@/data/word-examples";
 import { getMnemonic } from "@/data/mnemonics";
 import {
   VOCAB_SUBJECT,
@@ -191,6 +193,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
     : null;
 
   const wordRow = isWord ? vocabRow(entry.glyph) : undefined;
+  // null for four words in five, and the word branch renders nothing at all in
+  // that case. A single Map lookup: the choosing happened at build time, in
+  // scripts/build-word-examples.ts.
+  const example = isWord ? exampleFor(entry.glyph) : null;
 
   const chips = (
     <>
@@ -650,6 +656,18 @@ function EntryView({ entry }: { entry: LibEntry }) {
             {pieces ? <WordBuiltFrom pieces={pieces} /> : <div />}
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
+          {/* THE SENTENCE SITS BETWEEN THE PIECES AND THE FORMS, and full width
+              because a sentence in a half-column wraps to four ribboned lines.
+              The order is the word getting steadily more useful: what it is made
+              of, then it being used, then the table of what it turns into.
+              It goes ABOVE the forms rather than at the foot for the same reason
+              the forms table goes at the foot — that table is reference, long
+              and scanned rather than read, and three lines of high-value
+              Japanese buried under it would be found by nobody.
+
+              ABSENT, not empty, for the four words in five with no corpus
+              sentence. No card, no heading, no line about the gap. */}
+          {example ? <WordExampleView example={example} /> : null}
           {/* NO FORMS SECTION AT ALL when there are none — which is two thirds of
               the vocabulary, so absence has to look finished rather than
               truncated. */}

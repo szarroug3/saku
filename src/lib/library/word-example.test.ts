@@ -1,0 +1,166 @@
+// Run:
+//   node --import ./src/lib/conjugate/test-hooks.mjs --test src/lib/library/word-example.test.ts
+//
+// Two things are being defended here. The first is that the picker is a TOTAL
+// order: the word page renders on every navigation and a sentence that changes
+// between two renders of the same word is a page that cannot be trusted about
+// anything else. The second is that the generated artifact still contains what
+// it was measured to contain — the file is committed, so a regeneration that
+// quietly halved it would otherwise ship.
+
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
+
+import { UNRANKED, chooseExample, hardestRank, indexByWord } from "./word-example";
+import type { Example } from "../../data/grammar/corpus";
+import { CORPUS } from "../../data/grammar/corpus";
+import { VOCAB } from "../../data/vocab";
+import { EXAMPLE_COUNT, exampleFor } from "../../data/word-examples";
+
+function ex(id: number, v: readonly string[], n = v.length): Example {
+  return { id, jp: "…", en: "…", n, v, p: [], sp: {} };
+}
+
+/** The three-word vocabulary the synthetic cases below are ranked against. */
+const RANKS = new Map([
+  ["食べる", 10],
+  ["犬", 50],
+  ["寡婦", 9000],
+]);
+const rankOf = (l: string) => RANKS.get(l);
+
+describe("hardestRank", () => {
+  test("is the rank of the hardest OTHER word", () => {
+    assert.equal(hardestRank(ex(1, ["食べる", "犬"]), "食べる", rankOf), 50);
+  });
+
+  test("excludes the target, so a rare word does not mask its own sentence", () => {
+    // 寡婦 is rank 9000. If it counted, both of these would score 9000 and the
+    // ranking would collapse to the tie-break.
+    assert.equal(hardestRank(ex(1, ["寡婦", "犬"]), "寡婦", rankOf), 50);
+    assert.equal(hardestRank(ex(2, ["寡婦", "食べる"]), "寡婦", rankOf), 10);
+  });
+
+  test("an unlisted lemma is harder than any listed word", () => {
+    assert.equal(hardestRank(ex(1, ["食べる", "トム"]), "食べる", rankOf), UNRANKED);
+    assert.ok(UNRANKED > VOCAB.length, "UNRANKED must exceed every beginnerRank");
+  });
+
+  test("a sentence of nothing but the target scores 0, not UNRANKED", () => {
+    assert.equal(hardestRank(ex(1, ["食べる"]), "食べる", rankOf), 0);
+  });
+});
+
+describe("chooseExample", () => {
+  test("prefers the sentence whose hardest word is commoner", () => {
+    const easy = ex(900, ["食べる", "犬"]);
+    const hard = ex(100, ["食べる", "寡婦"]);
+    // The harder one is shorter AND has the lower id, so it wins on both
+    // tie-breaks. Commonness must still beat it.
+    assert.equal(chooseExample([hard, easy], "食べる", rankOf)?.id, 900);
+    assert.equal(chooseExample([easy, hard], "食べる", rankOf)?.id, 900);
+  });
+
+  test("a proper noun loses to a ranked word, rather than scoring as free", () => {
+    const named = ex(1, ["食べる", "トム"]);
+    const known = ex(2, ["食べる", "寡婦"]);
+    assert.equal(chooseExample([named, known], "食べる", rankOf)?.id, 2);
+  });
+
+  test("ties on hardness break on the shorter sentence", () => {
+    const long = ex(1, ["食べる", "犬"], 12);
+    const short = ex(2, ["食べる", "犬"], 4);
+    assert.equal(chooseExample([long, short], "食べる", rankOf)?.id, 2);
+  });
+
+  test("ties on hardness and length break on the Tatoeba id", () => {
+    const a = ex(77, ["食べる", "犬"], 5);
+    const b = ex(12, ["食べる", "犬"], 5);
+    assert.equal(chooseExample([a, b], "食べる", rankOf)?.id, 12);
+    assert.equal(chooseExample([b, a], "食べる", rankOf)?.id, 12);
+  });
+
+  test("is deterministic under any input order", () => {
+    const pool = [
+      ex(5, ["食べる", "犬"], 6),
+      ex(3, ["食べる", "犬"], 6),
+      ex(4, ["食べる", "寡婦"], 2),
+      ex(9, ["食べる", "トム"], 1),
+      ex(8, ["食べる", "犬"], 9),
+    ];
+    const first = chooseExample(pool, "食べる", rankOf)!.id;
+    assert.equal(first, 3);
+    for (let i = 0; i < pool.length; i++) {
+      const rotated = [...pool.slice(i), ...pool.slice(0, i)];
+      assert.equal(chooseExample(rotated, "食べる", rankOf)!.id, first);
+    }
+    assert.equal(chooseExample([...pool].reverse(), "食べる", rankOf)!.id, first);
+  });
+
+  test("no candidates is null, not a thrown error or a placeholder", () => {
+    assert.equal(chooseExample([], "食べる", rankOf), null);
+  });
+});
+
+describe("the generated artifact", () => {
+  const index = indexByWord(CORPUS);
+
+  test("covers exactly the words the corpus can cover", () => {
+    const expected = VOCAB.filter((w) => index.has(w.keb)).length;
+    assert.equal(expected, 2692, "corpus coverage moved; remeasure before editing this");
+    assert.equal(EXAMPLE_COUNT, expected);
+  });
+
+  test("covers most of the words a beginner meets first", () => {
+    const first500 = [...VOCAB]
+      .sort((a, b) => a.beginnerRank - b.beginnerRank)
+      .slice(0, 500);
+    assert.equal(first500.filter((w) => exampleFor(w.keb) !== null).length, 393);
+  });
+
+  test("a word with no corpus sentence yields null", () => {
+    // 沿う has no sentence spelling it 沿う; the corpus only has そう, which is
+    // deliberately not matched — see the module header.
+    assert.equal(exampleFor("沿う"), null);
+    assert.equal(exampleFor("この単語は存在しない"), null);
+  });
+
+  test("every row is a real sentence containing its word", () => {
+    // `Example.v` holds LEMMAS, so the sentence carries the word INFLECTED:
+    // くすぐる is in くすぐらないで, 演ずる is in 演じている. 567 of the 2,692
+    // rows do not contain their dictionary form literally and every one of them
+    // is a conjugation, not a mismatch. What survives inflection in all 2,692 is
+    // the head character, so that is what is checked; the literal count is
+    // pinned below it so a genuine mis-index still has something to trip.
+    let literal = 0;
+    for (const w of VOCAB) {
+      const got = exampleFor(w.keb);
+      if (got === null) continue;
+      if (got.jp.includes(w.keb)) literal++;
+      // する is the one word with no stable head: it inflects to し, さ and せ
+      // and keeps none of its dictionary spelling. It is the language's
+      // irregular verb, not a broken row — 何がしたい？ is a する sentence.
+      if (w.keb === "する") continue;
+      assert.ok(got.jp.includes(w.keb[0]), `${w.keb}: sentence is not about this word`);
+      assert.ok(got.en.length > 0, `${w.keb}: empty translation`);
+      assert.ok(Number.isInteger(got.id) && got.id > 0, `${w.keb}: bad Tatoeba id`);
+    }
+    assert.equal(literal, 2125);
+  });
+
+  test("agrees with the chooser it was generated by", () => {
+    const rank = new Map(VOCAB.map((w) => [w.keb, w.beginnerRank]));
+    for (const w of VOCAB) {
+      const candidates = index.get(w.keb);
+      const got = exampleFor(w.keb);
+      if (!candidates) {
+        assert.equal(got, null, `${w.keb}: row with no candidates`);
+        continue;
+      }
+      const want = chooseExample(candidates, w.keb, (l) => rank.get(l))!;
+      assert.equal(got?.id, want.id, `${w.keb}: artifact is stale`);
+      assert.equal(got?.jp, want.jp);
+      assert.equal(got?.en, want.en);
+    }
+  });
+});
