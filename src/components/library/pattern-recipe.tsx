@@ -46,19 +46,67 @@
 // WHEN ONE CELL IS EMPTY
 // ======================
 // The three mixed patterns (〜ので, 〜ても, 〜てもいい) have rows on both sides of
-// that line. An unscored row's cell is EMPTY — not "not seen", which would
-// promise a question that is waiting for you, and not a sentence explaining the
-// absence, which would be the app narrating itself. The row's own formula
-// already says why: "just as it is" is a step that asks nothing.
+// that line, and they are unscored for TWO DIFFERENT REASONS that used to render
+// identically — a blank cell either way.
+//
+//   NOTHING HAPPENS TO THE WORD. 〜ので's verb row is 行く + ので and its
+//   い-adjective row is 高い + ので. The cell stays EMPTY — not "not seen", which
+//   would promise a question that is waiting for you, and not a sentence
+//   explaining the absence, which would be the app narrating itself. The row's
+//   own formula already says why: "just as it is" is a step that asks nothing.
+//
+//   THE RULE IS SCORED ON ANOTHER PAGE. 〜ても's い-adjective row is 高い → 高くて,
+//   a real transformation, and it is blank because 〜て already scores い → くて —
+//   see `sharedProductionWith` in data/grammar/recipes.ts. THAT blank was a
+//   defect: the row visibly transforms, shows nothing, and gives no hint the
+//   score exists one page over. It now prints "same rule as 〜て", muted, with the
+//   pattern linked to its own entry.
+//
+// The line is GENERATED from `sharedProductionWith` and the owning recipe's own
+// `pattern` string, never authored per row, so it cannot drift from the data it
+// describes. It is four words because the reader is a beginner: "same rule as"
+// is the whole of what may be said without explaining the app to itself.
+
+import Link from "next/link";
 
 import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Lbl } from "@/components/ui";
-import { productionHosts, patternProductionFactId } from "@/data/grammar";
+import {
+  patternEntry,
+  productionHosts,
+  patternProductionFactId,
+  sharedRuleOwner,
+} from "@/data/grammar";
 import { isProducible, type Recipe } from "@/data/grammar/recipes";
 import type { Claims } from "@/lib/claims";
 import type { Formula, RecipeFormula } from "@/lib/grammar/formula";
+import { entryHref } from "@/lib/library/href";
 import { standingOf } from "@/lib/library/standing";
 import type { AccuracyMetric, HistoryFile } from "@/types";
+
+/** "same rule as 〜て", muted, with the pattern linked to its own entry.
+ *
+ * The decision of WHETHER to print is `sharedRuleOwner`'s, in data/grammar,
+ * because it is a question about the data and it is the one the tests pin. This
+ * is only the typesetting, and it takes the owning RECIPE rather than a string
+ * so the words on screen are that recipe's own `pattern` — a copy here is a copy
+ * that drifts.
+ *
+ * Styled as the kanji page styles "opens with <word>": muted phrase, accent
+ * link, no underline. Same shape of thing, same look, deliberately. */
+function SharedRule({ owner }: { owner: Recipe }) {
+  return (
+    <span className="text-[13px] text-text-muted">
+      same rule as{" "}
+      <Link
+        href={entryHref(patternEntry(owner.id))}
+        className="font-kana text-accent no-underline"
+      >
+        {owner.pattern}
+      </Link>
+    </span>
+  );
+}
 
 /** A fixed piece of the pattern — the suffix, the trim. Accent, because it is
  * the part the pattern contributes and the part you have to remember. */
@@ -203,6 +251,7 @@ export function PatternRecipe({
         <tbody>
           {opening.map((f) => {
             const id = patternProductionFactId(pattern.id, f.host);
+            const owner = sharedRuleOwner(pattern, f.host);
             return (
               <tr
                 key={`open-${f.host}`}
@@ -215,6 +264,8 @@ export function PatternRecipe({
                 {anyScored ? (
                   // EMPTY, not "not seen": see the header. A row is here
                   // because the Japanese is real, not because a question is.
+                  // Unless the rule is scored on ANOTHER pattern's page, which
+                  // is a different silence and says so — see the doc up top.
                   <td className="py-2.5 align-top">
                     {scored.has(f.host) ? (
                       <StandingChip
@@ -222,6 +273,8 @@ export function PatternRecipe({
                           standingOf(facts[id], claims[id], metric, now).standing
                         }
                       />
+                    ) : owner ? (
+                      <SharedRule owner={owner} />
                     ) : null}
                   </td>
                 ) : null}
