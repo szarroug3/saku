@@ -52,9 +52,9 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
 
   test("the reveal is the answer on the chosen verb", () => {
     const qt = questionsFor(TE_KARA);
-    assert.equal(qt.answerReveal?.(TE_KARA, { grammarVehicle: TABERU }), "食べてから");
+    assert.equal(qt.answerReveal?.(TE_KARA, "en2jp", { grammarVehicle: TABERU }), "食べてから");
     // No vehicle → null, so the drill falls back to the baked answer.
-    assert.equal(qt.answerReveal?.(TE_KARA, {}), null);
+    assert.equal(qt.answerReveal?.(TE_KARA, "en2jp", {}), null);
     assert.equal(factInfo(TE_KARA)?.answers[0], "行ってから");
   });
 

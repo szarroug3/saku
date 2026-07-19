@@ -208,14 +208,25 @@ export function transitivityMc(
  * Every selection MC the corpus can produce for `recipeId`, shuffled. Empty
  * when the pattern is not selectable in any of its sentences — a real answer,
  * not a bug (see selectableRecipes in questions.ts).
+ *
+ * `admits` screens the SENTENCE before an item is built from it. The drill
+ * passes a readability gate (lib/grammar/readable.ts): a cloze in a sentence
+ * whose words the learner does not know is not a grammar question. It takes an
+ * Example rather than a GrammarMc because knownness is a property of the source
+ * sentence's content lemmas, which the normalised card no longer carries — and
+ * because screening first means the refused sentences are never built.
+ * Omitted → every selectable sentence, which is what the corpus tools and the
+ * item-safety tests want.
  */
 export function selectionMcsFor(
   recipeId: string,
   rng: Rng = Math.random,
   wanted = 4,
+  admits?: (ex: Example) => boolean,
 ): GrammarMc[] {
   const out: GrammarMc[] = [];
   for (const ex of examplesFor(recipeId)) {
+    if (admits && !admits(ex)) continue;
     const mc = selectionMc(ex, recipeId, rng, wanted);
     if (mc) out.push(mc);
   }

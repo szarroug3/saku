@@ -272,10 +272,11 @@ export function DrillScreen() {
   const { cfg, ready } = useQuizConfig();
   const { active, session, finishQuiz, setProgress, saveNow, reviewLesson } =
     useQuizSession();
-  // History, for one thing only: framing an unlocked kanji reading on a word the
-  // user actually learned (see word-unlock.ts). A reading question's answer is
-  // the same in every attesting word, so this touches the CONTEXT line and
-  // nothing the drill grades.
+  // History, for two things, and NEITHER of them is grading. Framing an
+  // unlocked kanji reading on a word the user actually learned (word-unlock.ts),
+  // and deciding whether a grammar pattern has a selection sentence she can read
+  // (grammar/readable.ts). Both move what is SHOWN; the fact asked and the score
+  // recorded are untouched by either.
   const { history } = useHistory();
 
   // Runtime mutations don't go through setState — bump this to re-render.
@@ -418,7 +419,13 @@ export function DrillScreen() {
     // share a board), so offering it on a typed card would override a setting
     // the user chose. Null for every non-grammar fact, for a production fact,
     // and for a pattern with no safe corpus item.
-    const grammarSelection = typedMode ? null : grammarSelectionFor(f);
+    //
+    // History gates it: an item is offered only when every content word in its
+    // sentence is one the learner knows (lib/grammar/readable.ts). Null is the
+    // ORDINARY answer early on — the card then falls back to the fixed meaning
+    // question, which asks the pattern in one direction and its English in the
+    // other, so grammar meaning is always askable.
+    const grammarSelection = typedMode ? null : grammarSelectionFor(f, history);
     const ctx: PromptContext = {
       grammarVehicle: grammarVehicle ?? undefined,
       grammarSelection: grammarSelection ?? undefined,
@@ -1000,7 +1007,7 @@ export function DrillScreen() {
                 <span className="font-semibold text-danger">
                   {/* The answer on THIS showing's vehicle when the subject has
                       one (grammar's 食べてから), else the fact's baked answer. */}
-                  {questionsFor(q.f).answerReveal?.(q.f, ctx) ??
+                  {questionsFor(q.f).answerReveal?.(q.f, q.dir, ctx) ??
                     factInfo(q.f)?.answers[0] ??
                     ""}
                 </span>

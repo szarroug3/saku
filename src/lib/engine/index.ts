@@ -192,15 +192,30 @@ export function confusedWith(
  */
 export function buildMcOptions(fact: FactId, ctx?: PromptContext): FactId[] {
   const qt = questionsFor(fact);
-  // What the ASKED option will read as. A subject with a per-showing label
-  // (grammar production on a varied vehicle) is deduped by THAT string, since
-  // the fact's baked answer is not what appears on the board; everyone else is
-  // deduped by the fact's own answers, as before. Two options reading the same
-  // thing is the one thing MC may never do, in either representation.
+  // What the option will READ AS — in BOTH directions, because one board is
+  // built and either direction may render it, and an option that collides in
+  // the direction we did not check is the same free point as one that collides
+  // in the direction we did.
+  //
+  // The old version only asked for the en2jp label and, when a subject had none
+  // (a grammar meaning fact does not), fell back to the fact's ANSWERS — the
+  // glosses. So two patterns with distinct glosses and the identical rendered
+  // pattern 〜て both survived, and the board showed 〜て twice. Deduping on the
+  // GLYPH as well as the answers is what catches that: en2jp renders the glyph,
+  // so the glyph is a label, so it has to be claimed like one.
   const labelKey = (f: FactId): string[] => {
-    const shown = qt.optionLabel?.(f, "en2jp", ctx);
-    if (shown != null) return [shown.trim().toLowerCase()];
-    return (factInfo(f)?.answers ?? []).map((a) => a.trim().toLowerCase());
+    const keys: string[] = [];
+    const push = (s: string | null | undefined) => {
+      const k = s?.trim().toLowerCase();
+      if (k) keys.push(k);
+    };
+    for (const dir of ["en2jp", "jp2en"] as const) {
+      const shown = qt.optionLabel?.(f, dir, ctx);
+      if (shown != null) push(shown);
+      else if (dir === "en2jp") push(factInfo(f)?.glyph);
+      else for (const a of factInfo(f)?.answers ?? []) push(a);
+    }
+    return keys;
   };
   const taken = new Set(labelKey(fact));
   const distractors = qt
