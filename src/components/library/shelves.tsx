@@ -50,6 +50,7 @@ import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
+import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { CLUSTERS } from "@/data/grammar/clusters";
 import { RECIPES } from "@/data/grammar/recipes";
 import { EntryRow, EntryTile } from "@/components/library/entry-tile";
@@ -155,6 +156,28 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
       ];
     case VOCAB_SUBJECT:
       return [];
+    // All 214, in canonical Kangxi order, cut by traditional stroke count — the
+    // way every radical chart is printed, and a real cut the data carries (each
+    // radical knows its strokes). Not one card of 214 (unbrowsable) and not a
+    // search box (this IS the whole subject, and 214 is a curriculum, not a
+    // dictionary). No cap: a stroke group is a dozen tiles, shown whole.
+    case RADICAL_SUBJECT: {
+      const byStroke = new Map<number, LibEntry[]>();
+      for (const r of RADICALS) {
+        const e = libEntry(radicalEntry(r.glyph));
+        if (!e) continue;
+        const group = byStroke.get(r.strokes) ?? [];
+        group.push(e);
+        byStroke.set(r.strokes, group);
+      }
+      return [...byStroke.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([strokes, entries]) => ({
+          id: `strokes-${strokes}`,
+          label: `${strokes} stroke${strokes === 1 ? "" : "s"}`,
+          entries,
+        }));
+    }
   }
 }
 

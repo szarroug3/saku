@@ -61,6 +61,13 @@ import {
   productionHosts,
 } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
+import {
+  RADICAL_SUBJECT,
+  RADICALS,
+  radicalEntry,
+  radicalByGlyph,
+  radicalMeaningFactId,
+} from "@/data/radicals";
 import { cluster } from "@/data/grammar/clusters";
 import { RECIPES, isProducible, type Recipe } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
@@ -73,16 +80,20 @@ import type { EntryId, FactId, FactInfo } from "@/types";
 export type Kind =
   | typeof KANA_SUBJECT
   | typeof MARK_SUBJECT
+  | typeof RADICAL_SUBJECT
   | typeof KANJI_SUBJECT
   | typeof VOCAB_SUBJECT
   | typeof GRAMMAR_SUBJECT;
 
 /** Browse order, and it is teaching order: kana, then the rules about how kana
- * are read, then the things kana spell. Marks sit next to kana because that is
- * the only place they mean anything — ゛ is a fact about か. */
+ * are read, then radicals, then the kanji built around them, then the words
+ * kanji spell. Marks sit next to kana because that is the only place they mean
+ * anything — ゛ is a fact about か. Radicals sit just before kanji for the same
+ * reason — 氵 is a fact about 海. */
 export const KINDS: readonly Kind[] = [
   KANA_SUBJECT,
   MARK_SUBJECT,
+  RADICAL_SUBJECT,
   KANJI_SUBJECT,
   VOCAB_SUBJECT,
   GRAMMAR_SUBJECT,
@@ -92,6 +103,7 @@ export const KINDS: readonly Kind[] = [
 export const KIND_LABEL: Record<Kind, string> = {
   [KANA_SUBJECT]: "Kana",
   [MARK_SUBJECT]: "Marks",
+  [RADICAL_SUBJECT]: "Radicals",
   [KANJI_SUBJECT]: "Kanji",
   [VOCAB_SUBJECT]: "Words",
   [GRAMMAR_SUBJECT]: "Grammar",
@@ -99,11 +111,13 @@ export const KIND_LABEL: Record<Kind, string> = {
 
 /**
  * Where a lesson's specific type differs from the shelf it lives on. A lesson
- * teaches one word, so the "Words" shelf reads "Word" in the session header;
- * every other non-kana subject's shelf label is already the right singular.
+ * teaches one word, so the "Words" shelf reads "Word" in the session header, and
+ * one radical, so the "Radicals" shelf reads "Radical"; every other non-kana
+ * subject's shelf label is already the right singular.
  */
 const SUBJECT_LABEL: Partial<Record<Kind, string>> = {
   [VOCAB_SUBJECT]: "Word",
+  [RADICAL_SUBJECT]: "Radical",
 };
 
 /**
@@ -347,6 +361,26 @@ function build(): LibEntry[] {
     });
   }
 
+  // Radicals — the shapes kanji are built around and filed under, right before
+  // the kanji that gate on them. The glyph is the radical, `meanings` its one
+  // sense (so search finds 氵 by "water" and the tile prints it), and `sub`
+  // carries the Kangxi number and stroke count. No readings: a radical is a
+  // shape and an idea, not a pronunciation.
+  for (const r of RADICALS) {
+    out.push({
+      id: radicalEntry(r.glyph),
+      kind: RADICAL_SUBJECT,
+      glyph: r.glyph,
+      readings: [],
+      meanings: [r.meaning],
+      sub: `Radical ${r.num} · ${r.strokes} stroke${r.strokes === 1 ? "" : "s"}`,
+      // Below kanji and words: someone searching "water" wants 水 the kanji or
+      // the word before 氵 the radical, so radicals sort after both on a shared
+      // meaning. The Kangxi number keeps them in canonical order among themselves.
+      weight: 2000 + r.num,
+    });
+  }
+
   for (const k of KANJI) {
     out.push({
       id: kanjiEntry(k.c),
@@ -523,6 +557,11 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
       return CHAR_INDEX[glyph] ? kanaEntry(glyph) : null;
     case KANJI_SUBJECT:
       return kanjiRow(glyph) ? kanjiEntry(glyph) : null;
+    // A radical IS resolved by its glyph: the 214 glyphs are unique and the
+    // entry is keyed on the glyph, so a kanji page's "filed under" link mints its
+    // radical link this way. radical:水 and kanji:水 stay apart by subject.
+    case RADICAL_SUBJECT:
+      return radicalByGlyph(glyph) ? radicalEntry(glyph) : null;
     case VOCAB_SUBJECT:
       return vocabRow(glyph) ? wordEntry(glyph) : null;
     // A mark is not resolved by its glyph either, and for a stronger reason than
@@ -614,6 +653,10 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
       return rows.length === 1 ? "Reading" : "Readings";
     case VOCAB_SUBJECT:
       return "Reading and meaning";
+    // A radical has one fact and it is its meaning, so the table is headed by
+    // what it holds.
+    case RADICAL_SUBJECT:
+      return "Meaning";
     case GRAMMAR_SUBJECT:
       // A non-producible pattern (は〜より, たり〜たり) has ONLY the meaning row,
       // so promising a form here would be promising a row that is not there.
@@ -695,6 +738,21 @@ export function factRows(entry: LibEntry): FactRow[] {
       ];
     case GRAMMAR_SUBJECT:
       return grammarFactRows(entry);
+    // A radical's one fact is its meaning — the same meaning-recall row a kanji
+    // carries, and the fact that unlocks the kanji filed under it. No reading:
+    // a radical is a shape and an idea, never a sound.
+    case RADICAL_SUBJECT:
+      return [
+        {
+          id: radicalMeaningFactId(entry.glyph),
+          label: "Meaning",
+          answer: entry.meanings.join(", "),
+          askedIn: [],
+          unattested: false,
+          origin: null,
+          speak: null,
+        },
+      ];
     // A MARK HAS NO FACTS AT ALL, and this empty array is the shape of that
     // rather than a stub. "What is a dakuten" has no gradeable answer; the rule
     // is read, not tested, and the thing that IS testable — きて vs きって — is a
