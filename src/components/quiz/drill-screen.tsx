@@ -36,6 +36,7 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { SmallBtn } from "@/components/ui";
 import { EMPTY_COUNTS, accuracyOf, formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
@@ -47,6 +48,7 @@ import {
   checkTyped,
   confusedWith,
   en2jpTypeable,
+  firstTryCredit,
   grammarSelectionFor,
   grammarVehicleFor,
   newFactStat,
@@ -59,6 +61,7 @@ import {
   type GrammarVehicle,
   type PromptContext,
 } from "@/lib/engine";
+import { hintFor } from "@/lib/engine/hint";
 import { entryOf, factInfo } from "@/lib/facts";
 import { fitGlyphSize } from "@/lib/glyph-fit";
 import { toKana } from "@/lib/romaji";
@@ -104,6 +107,27 @@ interface DrillQuestion {
    * glosses to choose between), unchanged. Plain data, so it rides the
    * serialized runtime. */
   grammarSelection: GrammarSelection | null;
+  /**
+   * Whether the HINT was taken on this showing.
+   *
+   * Per SHOWING, not per card and not per attempt. It is set here — beside
+   * `font`, `mc`, `grammarVehicle` and `grammarSelection` — for exactly the
+   * reason they are: everything frozen at ask time lives on `q`, and `q` is
+   * rebuilt from scratch by nextQuestion, so the flag resets when the next card
+   * is asked and cannot survive a remount as a stale true. (The `??=` hazard the
+   * markFirstKey comment describes is why this is written flat at construction
+   * rather than defaulted later.)
+   *
+   * It stays true across RETRIES of the same showing, which is the point: the
+   * hint you read on try one is still on screen on try two.
+   *
+   * WHAT IT COSTS: the first-try credit, and nothing else. See submit — the
+   * showing still counts as seen, still counts as correct, still ends the card;
+   * it just cannot be `firstTryCorrect`. Nothing is persisted about hints: a
+   * hinted-correct answer is recorded exactly as a "right on the second try" one
+   * is, which is already what "did not nail it" means everywhere in this app.
+   */
+  hinted: boolean;
 }
 
 /** The per-showing presentation context for a card: the anchor word for a kanji
@@ -225,6 +249,41 @@ function usePrefersReducedMotion(): boolean {
   );
 }
 
+// ---------- the mnemonic drawing, before it is offered ----------
+
+/**
+ * Whether the drawing at `src` actually exists.
+ *
+ * getMnemonic hands out a CANDIDATE path for every kana whether or not the webp
+ * has been drawn (28 of 46 hiragana today, no katakana), and that is deliberate:
+ * the owner adds a picture by dropping a file in, with no registry to update. On
+ * a lesson card that is free — MnemonicImage loads it and falls back to the
+ * glyph on a 404. Here it is not, because the fallback glyph IS the prompt: a
+ * Hint button that spends your first-try credit to reprint the character you
+ * were just shown is a worse outcome than no button.
+ *
+ * So the drill asks the only question that respects the no-registry rule: it
+ * loads the image and offers the button when it arrives. Browser-cached after
+ * the first time a kana comes round, and the button lives in a fixed-height row,
+ * so nothing moves when it appears.
+ */
+function useDrawnImage(src: string | null): boolean {
+  const [loaded, setLoaded] = useState<string | null>(null);
+  useEffect(() => {
+    if (!src) return;
+    let live = true;
+    const img = new window.Image();
+    img.onload = () => {
+      if (live) setLoaded(src);
+    };
+    img.src = src;
+    return () => {
+      live = false;
+    };
+  }, [src]);
+  return src !== null && loaded === src;
+}
+
 // ---------- HUD pieces ----------
 
 /** Small, quiet HUD chip. `tone` is the only colour the HUD ever uses. */
@@ -296,6 +355,11 @@ export function DrillScreen() {
    * slow verdict is measured against. Loaded once; a ref rather than state
    * because nothing renders from it. */
   const latencyRef = useRef<LatencyWindow>({});
+  /** Whether THIS render has a hint to give — including, for kana, whether the
+   * drawing actually exists (see useDrawnImage). Mirrored into a ref because the
+   * document keydown handler has to answer the same question the button does,
+   * and the button's answer is computed down in the render. */
+  const hintReadyRef = useRef(false);
   const startedRef = useRef(false);
   const finishedRef = useRef(false);
   /** Async entry points (interval, timeout, document keydown) call through
@@ -315,6 +379,20 @@ export function DrillScreen() {
   function markFirstKey() {
     if (!rt || rt.waiting) return;
     rt.firstKeyMs ??= elapsedBaseRef.current + (Date.now() - qStartRef.current);
+  }
+
+  /** Take the hint on this showing. Idempotent, and refused once the card has
+   * resolved: a hint after the answer is in would be a scoring change with
+   * nothing to show for it. It deliberately does NOT touch `q.tries` — a retry
+   * pip is a separate affordance and a hint must never spend one. */
+  function takeHint() {
+    if (!rt || !rt.q || rt.waiting || rt.q.hinted || finishedRef.current) return;
+    // A card with no hint must not be able to spend the first-try credit on
+    // nothing. The button is already absent there; this guards the key, which
+    // has no button to be absent.
+    if (!hintReadyRef.current) return;
+    rt.q.hinted = true;
+    force();
   }
 
   function stopCountdown() {
@@ -452,6 +530,9 @@ export function DrillScreen() {
       mcFonts: mc && dir === "en2jp" ? mc.map(() => pickFont(cfg.fonts)) : null,
       grammarVehicle,
       grammarSelection,
+      // A new showing has not been hinted. Written here rather than backfilled,
+      // so there is exactly one place a showing's hint state begins.
+      hinted: false,
     };
     const st = rt.stats[f] ?? (rt.stats[f] = newFactStat());
     st.seen++;
@@ -487,7 +568,13 @@ export function DrillScreen() {
         ? picked === q.f
         : checkTyped(q.f, given, q.dir, ctxFor(q));
     const st = rt.stats[q.f] ?? (rt.stats[q.f] = newFactStat());
-    if (st.firstTryCorrect === null) st.firstTryCorrect = ok && q.tries === 0;
+    // A HINT FORFEITS "NAILED IT", and that is the whole of what it costs. Right
+    // with a hint is the third outcome: seen, correct, not first-try — which is
+    // an existing shape, not a new one (it is what a second-try success already
+    // records), so nothing about the persisted file or the standings changes.
+    if (st.firstTryCorrect === null) {
+      st.firstTryCorrect = firstTryCredit(ok, q.tries, q.hinted);
+    }
     if (ok) {
       // Only a clean first try extends the streak — a miss below has already
       // zeroed it, so getting there on the retry doesn't restore it.
@@ -574,6 +661,18 @@ export function DrillScreen() {
       if (e.key === "Enter") nextQuestion();
       return;
     }
+    // "?" TAKES THE HINT, and it is the one key that works with the answer box
+    // focused. The digits below deliberately stand off a focused field, but a
+    // typed card is exactly where the box IS focused — a binding that only
+    // worked on multiple choice would be no binding at all. "?" is safe to
+    // swallow there: no romaji, no reading and no English gloss contains one, so
+    // preventDefault cannot eat a character anybody was answering with. (1–9 are
+    // the MC options and Enter submits, so both were spoken for.)
+    if (e.key === "?") {
+      e.preventDefault();
+      takeHint();
+      return;
+    }
     if (e.key === "Enter" && document.activeElement === inputRef.current) {
       const v = inputRef.current?.value ?? "";
       if (v.trim()) submit(v);
@@ -622,6 +721,10 @@ export function DrillScreen() {
     // Resuming a runtime written before these fields existed.
     if (typeof rt.streak !== "number") rt.streak = 0;
     if (rt.firstKeyMs === undefined) rt.firstKeyMs = null;
+    // A showing in flight from before the hint existed was not hinted. Reading
+    // `undefined` as "not hinted" is also what the flat `!q.hinted` test in
+    // submit does, so this is belt and braces rather than the load-bearing part.
+    if (rt.q && typeof rt.q.hinted !== "boolean") rt.q.hinted = false;
     // A quiz mid-flight before this field existed: best-effort backfill so the
     // count doesn't jump. asked minus the card currently on screen (unresolved).
     if (typeof rt.resolved !== "number") {
@@ -754,6 +857,25 @@ export function DrillScreen() {
       clearTimeout(idle);
     };
   }, [fadeControls]);
+
+  // ---------- the hint, decided before the early return ----------
+  //
+  // Up here because useDrawnImage is a hook and the early return below is
+  // conditional; everything else about the hint is ordinary render work.
+  //
+  // `hintReady` is the single answer to "is there a hint on this card": null
+  // from the builder means the fact has nothing honest to say (a katakana glyph
+  // with no drawing, an all-kana word, a kanji whose parts aren't teachable),
+  // and an image that never loads means the same thing. The button renders from
+  // it, the "?" key reads it off the ref, and neither can offer a hint the other
+  // would refuse.
+  const hint =
+    active && rt?.q
+      ? hintFor(rt.q.f, rt.q.dir, ctxFor(rt.q, anchorForFact(rt.q.f, history)))
+      : null;
+  const hintDrawn = useDrawnImage(hint?.kind === "image" ? hint.src : null);
+  const hintReady = !!hint && (hint.kind !== "image" || hintDrawn);
+  hintReadyRef.current = hintReady;
 
   // ---------- render ----------
 
@@ -922,6 +1044,32 @@ export function DrillScreen() {
           {hintTag}
         </p>
 
+        {/* THE HINT, once taken — and it stays for the rest of the showing,
+            retries included. Subordinate to the prompt on purpose: the picture
+            is smaller than the halo and the line is one muted sentence, because
+            a hint that competes with the question has become the question.
+            Nothing is reserved for it while it is unread — it is a thing you
+            asked for, so it is allowed to arrive. */}
+        {q.hinted && hint ? (
+          hint.kind === "image" ? (
+            // The drawing ALONE: no story, no analogy line, no example word. The
+            // mnemonic's text says the answer out loud ("a person saying AH"),
+            // and a hint that prints the answer is not a hint. MnemonicImage
+            // still falls back to the glyph if the file vanishes between the
+            // probe and here, which is the same graceful degrade the lesson has.
+            <MnemonicImage
+              src={hint.src}
+              glyph={hint.glyph}
+              imgClassName="h-[104px] w-[104px] rounded-lg object-contain"
+              glyphClassName="text-4xl text-text-muted"
+            />
+          ) : (
+            <p className="max-w-[320px] text-center text-[12px] text-text-muted">
+              {hint.text}
+            </p>
+          )
+        ) : null}
+
         {typedMode ? (
           <input
             key={rt.asked}
@@ -990,6 +1138,19 @@ export function DrillScreen() {
             ))}
           </div>
         )}
+
+        {/* Hint: one SmallBtn, the same material as End quiz and the gear,
+            sitting under the answer control where your hand already is. Absent
+            on a card with no hint (see hintReady) and gone the moment it is
+            taken — there is nothing to press twice. Fixed-height row so a card
+            with a hint and a card without are the same shape. */}
+        <span className="flex min-h-7 items-center">
+          {hintReady && !q.hinted && !rt.waiting ? (
+            <SmallBtn onClick={takeHint} title="Hint (?)">
+              Hint
+            </SmallBtn>
+          ) : null}
+        </span>
 
         {/* The reveal: the one thing colour can't say is WHICH answer was
             right. Held until you press Enter, so it's read rather than

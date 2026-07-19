@@ -240,6 +240,29 @@ export function retriesAllowed(cfg: QuizConfig): number {
 
 // ---------- stats ----------
 
+/**
+ * Whether a resolved showing earned the FIRST-TRY credit — `firstTryCorrect`,
+ * the strict-accuracy numerator and the thing the Library entry page calls
+ * "nailed it".
+ *
+ * Three terms, and the third is the only new one: a hint forfeits the credit.
+ * That is the whole cost of a hint. The showing still counts as SEEN and, when
+ * it lands, as CORRECT — "right, with a hint" is the third outcome, and it is
+ * recorded in the shape that already existed for "right on the second try". No
+ * new metric, no new persisted field, no new standing.
+ *
+ * A function rather than three terms inlined at the call site because it is the
+ * one rule that decides what a hint costs, and a rule with a name can be tested
+ * on its own and pointed at from a comment.
+ */
+export function firstTryCredit(
+  ok: boolean,
+  tries: number,
+  hinted: boolean,
+): boolean {
+  return ok && tries === 0 && !hinted;
+}
+
 /** Fresh per-fact stat record. */
 export function newFactStat(): FactSessionDetail {
   return {
