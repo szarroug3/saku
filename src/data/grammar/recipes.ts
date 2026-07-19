@@ -124,6 +124,32 @@ export interface Recipe {
    * justified in the row's `note`.
    */
   readonly except?: readonly RecipeException[];
+  /**
+   * The recipe whose rule this row's NON-PRIMARY hosts reuse, so they do not get
+   * production facts of their own. See `productionHosts` in ./index.ts.
+   *
+   * THE DEFAULT IS TO SPLIT, AND THIS IS THE OPT-OUT.
+   * =================================================
+   * A recipe that attaches to a verb AND to an adjective is usually two skills
+   * wearing one row: 〜そう is [V-stem]+そう on 行く and "chop the い"+そう on
+   * 高い, and knowing one does not give you the other. So by default each host
+   * whose attachment actually transforms carries its own production fact, and
+   * the drill can find out about them separately.
+   *
+   * Two rows are not like that, and this field is where they say so. 〜ても and
+   * 〜てもいい on an い-adjective are te-cause's rule (い → くて) plus a fixed
+   * string — 高くて, then も or もいい. Minting adjective facts for them would
+   * score ONE rule three times and call the result three numbers, which is the
+   * same error as scoring two rules once: a figure true of nothing. The owner
+   * made this call on dakuten too — five row-level mnemonics, not twenty-five
+   * per-kana ones.
+   *
+   * A recipe id rather than a boolean, because the claim being made is not "no
+   * split here" but "that rule is already scored, THERE" — and a name can be
+   * checked. A test asserts the named recipe exists, is producible, and really
+   * does carry a fact for every host this row is handing off.
+   */
+  readonly sharedProductionWith?: string;
   /** Why this row is interesting/awkward. Engineering notes, not lessons. */
   readonly note?: string;
 }
@@ -192,8 +218,29 @@ export interface Wrap {
  * NEITHER end does any work, which is exactly the two comparison rows.
  */
 export function isVacuous(r: Recipe): boolean {
-  const trivial = (a: Attachment) => (a.form === null || a.form === "dictionary") && !a.trim;
-  return r.attach.every(trivial) && (r.wrap?.close ?? []).every(trivial);
+  return r.attach.every(isTrivialAttachment) && (r.wrap?.close ?? []).every(isTrivialAttachment);
+}
+
+/**
+ * Does this attachment leave its host ALONE — bare word or dictionary form, no
+ * trim — so that building it is retyping the word plus a fixed string?
+ *
+ * Lifted out of `isVacuous`, which used to hold it as a local, because a second
+ * caller needs the SAME predicate and a copy would be a bug waiting: example.ts
+ * picks which host a recipe's production is baked on, and "the one that isn't
+ * trivial" is exactly this test. Keeping one definition is what makes the two
+ * agree by construction rather than by review.
+ *
+ * The bug that made this necessary: 〜ので attaches to a verb's dictionary form
+ * (行く + ので — trivial) and to an adj-na's PRENOMINAL form (静か → 静かな +
+ * ので — not). It therefore passes `isVacuous`, correctly, on the strength of
+ * its adjective half — and then baked its example on the verb, because that was
+ * simply first in the host order. The shipped question was "行く · 〜ので form"
+ * → 行くので, i.e. retyping: the exact item `isVacuous` exists to prevent,
+ * reached through the one door nobody was watching.
+ */
+export function isTrivialAttachment(a: Attachment): boolean {
+  return (a.form === null || a.form === "dictionary") && !a.trim;
 }
 
 /**
@@ -272,6 +319,14 @@ export const RECIPES: readonly Recipe[] = [
       { host: "verb", form: "te", add: "もいい" },
       { host: "adj-i", form: "te", add: "もいい" },
     ],
+    sharedProductionWith: "te-cause",
+    note:
+      "NO adjective production fact of its own, and that asymmetry is a " +
+      "decision rather than an oversight — see sharedProductionWith. 高くても" +
+      "いい is te-cause's rule (高い → 高くて) plus もいい, and te-cause already " +
+      "scores that rule on the adj-i host. Its verb half DOES get its own fact: " +
+      "行く → 行って is the て-form's 音便, which is a real transformation and " +
+      "the thing the item measures.",
   },
   {
     id: "te-prohibition",
@@ -371,6 +426,11 @@ export const RECIPES: readonly Recipe[] = [
       { host: "verb", form: "te", add: "も" },
       { host: "adj-i", form: "te", add: "も" },
     ],
+    sharedProductionWith: "te-cause",
+    note:
+      "Same call as te-permission, for the same reason: 高くても is te-cause's " +
+      "い → くて plus も, and one rule scored three times across 〜て, 〜ても and " +
+      "〜てもいい would be three numbers about one skill.",
   },
 
   // --- ない-form ----------------------------------------------------------
@@ -830,9 +890,18 @@ export const RECIPES: readonly Recipe[] = [
     cluster: "because",
     attach: [
       { host: "verb", form: "dictionary", add: "ので" },
+      { host: "adj-i", form: "dictionary", add: "ので" },
       { host: "adj-na", form: "prenominal", add: "ので" },
     ],
-    note: "静かなので — the adj-na host needs the prenominal な, not the bare stem.",
+    note:
+      "静かなので — the adj-na host needs the prenominal な, not the bare stem. " +
+      "THE adj-i ROW IS NOT AN ODD ONE OUT. 高いので is plain form + ので, the " +
+      "same attachment the verb takes, and it was missing purely because this " +
+      "note explained the な and nobody noticed it did not explain the absence. " +
+      "It adds no production fact — plain form + a fixed string is retyping, " +
+      "exactly as the verb row is — but the cluster page now prints it, and " +
+      "a table that stops at 行くので / 静かなので implies い-adjectives cannot " +
+      "take ので, which is false.",
   },
   {
     id: "noni",

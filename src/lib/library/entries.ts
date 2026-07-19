@@ -58,10 +58,11 @@ import {
   patternEntry,
   patternMeaningFactId,
   patternProductionFactId,
+  productionHosts,
 } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { cluster } from "@/data/grammar/clusters";
-import { RECIPES, isProducible, type Recipe } from "@/data/grammar/recipes";
+import { RECIPES, isProducible, type Host, type Recipe } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
 import type { EntryId, FactId } from "@/types";
 
@@ -652,6 +653,15 @@ export function factRows(entry: LibEntry): FactRow[] {
  * wrap pattern (は〜より, たり〜たり) has only the meaning row, which is the
  * same "shown, never asked" honesty the cluster page keeps.
  */
+/** What a host is called on an entry page. Plain words, not the table's ids:
+ * "adj-i" is this codebase's vocabulary, not the reader's. */
+const HOST_LABEL: Record<Host, string> = {
+  verb: "verb",
+  "adj-i": "い-adjective",
+  "adj-na": "な-adjective",
+  noun: "noun",
+};
+
 function grammarFactRows(entry: LibEntry): FactRow[] {
   const r = RECIPE_OF_ENTRY.get(entry.id);
   if (!r) return [];
@@ -668,17 +678,29 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       speak: null,
     },
   ];
-  const ex = isProducible(r) ? buildExample(r) : null;
-  if (ex) {
-    rows.push({
-      id: patternProductionFactId(r.id),
-      label: "Build it",
-      answer: `${ex.lemma} → ${ex.form}`,
-      askedIn: [],
-      unattested: false,
-      origin: null,
-      speak: null,
-    });
+  // ONE ROW PER PRODUCTION FACT, which is one per host that carries one. The
+  // page is a list of the entry's FACTS, so a pattern with a separate adjective
+  // fact has to show it — otherwise the split exists in the scheduler and the
+  // one screen that promises to enumerate what is scored still says there is a
+  // single "Build it". The label names the host for the same reason.
+  const hosts = isProducible(r) ? productionHosts(r) : [];
+  {
+    for (const host of hosts) {
+      const ex = buildExample(r, host);
+      if (!ex) continue;
+      rows.push({
+        id: patternProductionFactId(r.id, host),
+        // The host is named only when there is something to tell apart. One
+        // production fact needs no qualifier, and adding "(verb)" to all 45 of
+        // them to be uniform would be noise on every page to serve five.
+        label: hosts.length > 1 ? `Build it (${HOST_LABEL[host]})` : "Build it",
+        answer: `${ex.lemma} → ${ex.form}`,
+        askedIn: [],
+        unattested: false,
+        origin: null,
+        speak: null,
+      });
+    }
   }
   return rows;
 }

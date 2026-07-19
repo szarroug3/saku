@@ -32,7 +32,7 @@
 // do not. See vehicles.ts and the grammar QuestionType.
 
 import { apply } from "./apply.ts";
-import type { Host, Recipe } from "../../data/grammar/recipes.ts";
+import { isTrivialAttachment, type Host, type Recipe } from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
 
 /** A representative word for a host: its surface form, its kana reading, and
@@ -56,7 +56,7 @@ const HOST_EXAMPLE: Record<Host, HostExample> = {
 /** The order hosts are tried in when a recipe accepts several — verb first,
  * because a verb pattern is the interesting one and 行く is the interesting
  * word. */
-const HOST_ORDER: readonly Host[] = ["verb", "adj-i", "adj-na", "noun"];
+export const HOST_ORDER: readonly Host[] = ["verb", "adj-i", "adj-na", "noun"];
 
 export interface BuiltExample {
   /** The vehicle word, surface form. 行く */
@@ -72,45 +72,74 @@ export interface BuiltExample {
 const CACHE = new Map<string, BuiltExample | null>();
 
 /**
- * Build a recipe on its representative word, or null if none of its hosts has
- * an example that applies.
+ * The host a recipe's production is baked on when nobody names one — the FIRST
+ * host in HOST_ORDER whose attachment actually TRANSFORMS its word.
  *
- * Null should not happen for a producible recipe — every one conjugates
- * something on a host we have a word for — but it is a VALUE rather than a
- * throw, exactly as apply() is: a recipe that will not build on a given word is
- * a normal outcome, and the caller drops the production instead of crashing.
+ * NOT simply the first host in HOST_ORDER, and that distinction was a shipped
+ * wrong item. 〜ので takes a verb's dictionary form (行く + ので) and an adj-na's
+ * prenominal (静か → 静かな + ので). Only the second does any work; the first is
+ * the word retyped with a fixed string on the end. Under "first host wins" the
+ * verb won, so the baked fact was 行くので and the QUESTION WAS "type 行く again,
+ * with ので". `isVacuous` exists to stop exactly that item, and 〜ので passed it
+ * — honestly, on the strength of an adjective half that then never got shown.
  *
- * Cached by recipe id: this is called once per fact at module load and again
- * per candidate distractor, and the answer never changes.
+ * So the rule is "first host that is a QUESTION", and the verb still wins every
+ * time it is one, which is all but this one row. Falls back to the plain host
+ * order when nothing transforms; such a recipe is vacuous and has no production
+ * fact anyway, and a null here would lose the cluster page's row for it.
  */
-export function buildExample(r: Recipe): BuiltExample | null {
-  const hit = CACHE.get(r.id);
+export function primaryHost(r: Recipe): Host | null {
+  const has = (h: Host) => r.attach.some((a) => a.host === h);
+  const real = HOST_ORDER.find((h) => r.attach.some((a) => a.host === h && !isTrivialAttachment(a)));
+  return real ?? HOST_ORDER.find(has) ?? null;
+}
+
+/**
+ * Build a recipe on its representative word for one host, or null if it will
+ * not build there.
+ *
+ * `host` omitted means the PRIMARY host — see `primaryHost` for which that is
+ * and why it is not just the first one. Naming a host is what lets a pattern
+ * with two of them bake two facts, one per rule: 行きそう and 高そう are
+ * different skills and each needs its own answer string. See `productionHosts`
+ * in data/grammar/index.ts for which hosts get one.
+ *
+ * Null should not happen for a producible recipe on its primary host — every
+ * one conjugates something on a host we have a word for — but it is a VALUE
+ * rather than a throw, exactly as apply() is: a recipe that will not build on a
+ * given word is a normal outcome, and the caller drops the production instead
+ * of crashing.
+ *
+ * Cached by (recipe id, host): this is called once per fact at module load and
+ * again per candidate distractor, and the answer never changes.
+ */
+export function buildExample(r: Recipe, host?: Host): BuiltExample | null {
+  const on = host ?? primaryHost(r);
+  const key = `${r.id}|${on ?? ""}`;
+  const hit = CACHE.get(key);
   if (hit !== undefined) return hit;
-  const built = compute(r);
-  CACHE.set(r.id, built);
+  const built = on ? compute(r, on) : null;
+  CACHE.set(key, built);
   return built;
 }
 
-function compute(r: Recipe): BuiltExample | null {
+function compute(r: Recipe, host: Host): BuiltExample | null {
   // A wrap has two slots and no single-word form; apply() refuses it and so do
   // we. Producible recipes are never wraps (isProducible drops them), so this
   // only bites a caller reaching past the gate.
   if (r.wrap) return null;
-  for (const host of HOST_ORDER) {
-    if (!r.attach.some((a) => a.host === host)) continue;
-    const ex = HOST_EXAMPLE[host];
-    const surface = apply(r, ex.surface, ex.cls);
-    if (!surface.ok) continue;
-    // A form that leaves the word untouched (the vacuous rows) is typing, not a
-    // question — mirror the production generator's own guard.
-    if (surface.value === ex.surface) continue;
-    const kana = apply(r, ex.kana, ex.cls);
-    return {
-      lemma: ex.surface,
-      kana: ex.kana,
-      form: surface.value,
-      kanaForm: kana.ok ? kana.value : surface.value,
-    };
-  }
-  return null;
+  if (!r.attach.some((a) => a.host === host)) return null;
+  const ex = HOST_EXAMPLE[host];
+  const surface = apply(r, ex.surface, ex.cls);
+  if (!surface.ok) return null;
+  // A form that leaves the word untouched (the vacuous rows) is typing, not a
+  // question — mirror the production generator's own guard.
+  if (surface.value === ex.surface) return null;
+  const kana = apply(r, ex.kana, ex.cls);
+  return {
+    lemma: ex.surface,
+    kana: ex.kana,
+    form: surface.value,
+    kanaForm: kana.ok ? kana.value : surface.value,
+  };
 }

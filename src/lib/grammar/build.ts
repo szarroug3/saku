@@ -62,6 +62,13 @@ const CLOSING_EXAMPLE: Record<Host, Example> = {
 export interface BuiltRow {
   readonly recipe: Recipe;
   /**
+   * The host this row demonstrates. A pattern with two of them gets two rows.
+   *
+   * Here because the page keys its rows on something, and the recipe id stopped
+   * being unique the moment 〜すぎる printed twice.
+   */
+  readonly host: Host;
+  /**
    * The words this row is demonstrated on, in slot order. [行く], or [本, 車]
    * for a wrap.
    *
@@ -158,26 +165,38 @@ function buildHalf(
 }
 
 /**
- * A cluster member's row, or null if it cannot be shown.
+ * A cluster member's row for ONE host, or null if it cannot be shown.
  *
  * Null is a refusal from the engine or a host this file has no example for, and
  * it propagates as a VALUE for the same reason apply() does: a recipe that will
  * not build on a given word is a normal outcome, not an exception. The caller
  * drops the row rather than crashing the page.
  *
+ * `host` omitted means the recipe's FIRST attachment, which is what this
+ * function used to hardcode — and hardcoding it was a bug on the one page whose
+ * stated promise is that its middle column cannot be wrong. 〜すぎる attaches to
+ * a verb, an い-adjective and a な-adjective; the page printed 行きすぎる and
+ * stopped. Every cell was true and the column as a whole said something false —
+ * that 〜すぎる is a verb pattern. A true row implying a false whole breaks the
+ * promise just as a wrong cell would, so `buildRows` now emits one row per host.
+ *
  * A WRAP BUILDS WHOLE OR NOT AT ALL. Both halves go through the same code on
  * two different words, and the row is the two halves joined — 本は車より, not
  * 本は with the rest left to the reader's imagination.
  */
-export function buildRow(r: Recipe): BuiltRow | null {
-  const at = r.attach[0];
+export function buildRow(r: Recipe, host?: Host): BuiltRow | null {
+  const at = host ? r.attach.find((a) => a.host === host) : r.attach[0];
   if (!at) return null;
   const ex = EXAMPLE[at.host];
-  const open = buildHalf(r, r.attach, ex);
+  // Only the named host's attachment goes in, or apply() would resolve the
+  // recipe by the WORD's class and hand back the first-listed host's build for
+  // free — which is precisely how one row came to stand for three.
+  const half = [at];
+  const open = buildHalf(r, half, ex);
   if (!open) return null;
 
   if (!r.wrap) {
-    return { recipe: r, on: [ex.word], built: open.built, how: open.how };
+    return { recipe: r, host: at.host, on: [ex.word], built: open.built, how: open.how };
   }
 
   const ct = r.wrap.close[0];
@@ -195,6 +214,7 @@ export function buildRow(r: Recipe): BuiltRow | null {
 
   return {
     recipe: r,
+    host: at.host,
     on: [ex.word, cex.word],
     built: whole.value,
     // Two builds, one per slot, in the order they appear in the string. The
@@ -204,12 +224,40 @@ export function buildRow(r: Recipe): BuiltRow | null {
   };
 }
 
-/** Every member that can be shown, in the cluster's order. */
+/**
+ * Every member that can be shown, in the cluster's order — ONE ROW PER HOST.
+ *
+ * A pattern that takes a verb and an adjective takes up two lines, and that is
+ * the page telling the truth rather than the page getting longer. The repetition
+ * argument in cluster-table.tsx applies here too: 高すぎる sitting under
+ * 行きすぎる is the content, because "the same ending, a different stem" is the
+ * thing an い-adjective row teaches and no gloss can say it.
+ *
+ * Hosts come out in the recipe's own attach order, which is verb-first
+ * throughout the table — so the verb line still leads every pattern that has
+ * one, and the column reads down as it always did.
+ */
 export function buildRows(members: readonly Recipe[]): BuiltRow[] {
-  return members.flatMap((r) => {
-    const row = buildRow(r);
-    return row ? [row] : [];
-  });
+  return members.flatMap((r) =>
+    r.attach.flatMap((a) => {
+      const row = buildRow(r, a.host);
+      return row ? [row] : [];
+    }),
+  );
+}
+
+/**
+ * How many PATTERNS a set of rows covers — not how many rows there are.
+ *
+ * The card above the table says "The seven · built on 行く", and the seven is a
+ * claim about the language: English has one word for seven Japanese patterns,
+ * which is the entire reason the page exists. Rows stopped being patterns when a
+ * multi-host pattern started printing one per host, and the 'seems' cluster
+ * immediately began announcing "The 13" over seven patterns — a true count of
+ * the wrong thing, on the page that promises it cannot be wrong.
+ */
+export function patternsShown(rows: readonly BuiltRow[]): number {
+  return new Set(rows.map((r) => r.recipe.id)).size;
 }
 
 /** The distinct words a set of rows is built on, in first-seen order. */

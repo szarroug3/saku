@@ -29,7 +29,7 @@ import { ClusterTable } from "@/components/grammar/cluster-table";
 import { LinkSlot } from "@/components/grammar/link-slot";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { CLUSTERS, cluster, membersOf } from "@/data/grammar/clusters";
-import { buildRows, countWord, wordsUsed } from "@/lib/grammar/build";
+import { buildRows, countWord, patternsShown, wordsUsed } from "@/lib/grammar/build";
 
 export function generateStaticParams() {
   return CLUSTERS.map((c) => ({ cluster: c.id }));
@@ -71,7 +71,7 @@ export default async function ClusterPage({
       {rows.length > 0 ? (
         <Card>
           <Lbl>
-            {countWord(rows.length)} · built on {on.join(" · ")}
+            {countWord(patternsShown(rows))} · built on {on.join(" · ")}
           </Lbl>
           <ClusterTable rows={rows} />
         </Card>
