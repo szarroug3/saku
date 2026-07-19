@@ -487,7 +487,11 @@ export function DrillScreen() {
     // showing (prompt, options, grading, reveal) runs on ONE verb and a remount
     // can't swap it. null for every other card and for a grammar card the pool
     // can't host — that one runs on the fixed baked vehicle, unchanged.
-    const grammarVehicle = grammarVehicleFor(f);
+    //
+    // History gates the pool to words the learner knows, exactly as it gates the
+    // selection item below: a production is never drilled on a word she has not
+    // met. Null (she knows none of the pool yet) falls back to the baked vehicle.
+    const grammarVehicle = grammarVehicleFor(f, history);
     // A grammar MEANING card may be asked as a SELECTION item instead — "which
     // pattern fills this blank in a real sentence", rather than "what does this
     // pattern mean". Same fact, same score, a harder and more honest showing.

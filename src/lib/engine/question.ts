@@ -41,7 +41,7 @@ import { selectionMcsFor } from "@/lib/grammar/mc";
 // The blank's own text, so the frame in `context` and the halo stand-in for a
 // host-less signature are the same string the generator wrote.
 import { BLANK as SELECTION_BLANK } from "@/lib/grammar/questions";
-import { readerFor } from "@/lib/grammar/readable";
+import { readerFor, wordKnown } from "@/lib/grammar/readable";
 import { BEHAVIOR } from "@/lib/config";
 import { apply, hostOfClass } from "@/lib/grammar/apply";
 import { pickVehicle, type Rng, type Vehicle } from "@/lib/grammar/vehicles";
@@ -653,9 +653,20 @@ function builtOn(
  * and the showing runs on the fixed baked vehicle. `rng` is injectable for
  * tests. This is the one place the drill needs to touch the vehicle pool, so it
  * lives here beside the QuestionType that consumes it.
+ *
+ * KNOWN VEHICLES ONLY. `history` is REQUIRED and gates the pool to words the
+ * learner has met — the same discipline as `grammarSelectionFor`: a production
+ * item drilled on a word she has not learned measures vocabulary, not the
+ * pattern (see vehicles.ts's header on why a vehicle must be known cold), and
+ * an optional gate is one a caller forgets silently. "Known" is the app's one
+ * notion of known (`wordKnown`, through `effectiveState`), so a CLAIM makes a
+ * word an eligible vehicle exactly as a lesson does. Null is the ORDINARY early
+ * answer when she knows none of the pool yet: the showing falls back to the
+ * fixed baked vehicle, so a production fact is never unaskable.
  */
 export function grammarVehicleFor(
   fact: FactId,
+  history: HistoryFile,
   rng: Rng = Math.random,
 ): GrammarVehicle | null {
   const prod = grammarProduction(fact);
@@ -664,7 +675,9 @@ export function grammarVehicleFor(
   // (行きそう and 高そう are separate facts because they are separate rules), so
   // rolling a verb for the adj-i fact would ask the other fact's question and
   // record the answer against this one.
-  const picked: Vehicle | null = pickVehicle(prod.recipe, rng, prod.host);
+  const picked: Vehicle | null = pickVehicle(prod.recipe, rng, prod.host, (surface) =>
+    wordKnown(surface, history),
+  );
   return picked
     ? { surface: picked.surface, kana: picked.kana, cls: picked.cls }
     : null;

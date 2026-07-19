@@ -146,8 +146,21 @@ export type Rng = () => number;
  * Empty is a real answer: a wrap, or a recipe no pooled word can host. A caller
  * with an empty list has no varied question to ask and falls back to the fixed
  * vehicle baked in the fact.
+ *
+ * `known`, when given, is the KNOWN-WORD gate: a vehicle is kept only when the
+ * predicate accepts its surface form. The live drill passes one built from the
+ * learner's history, so a production item is never drilled on a word she has not
+ * met — the item would then measure vocabulary, not the pattern (see the header
+ * on why a vehicle must be a word known cold). It is INJECTED rather than read
+ * here so this module stays a pure pool, and it is optional so the callers that
+ * want every legal vehicle (a cluster page's worked examples) still get them.
+ * An empty result is the same routine fallback either way.
  */
-export function vehiclesFor(r: Recipe, onHost?: Host): Vehicle[] {
+export function vehiclesFor(
+  r: Recipe,
+  onHost?: Host,
+  known?: (surface: string) => boolean,
+): Vehicle[] {
   if (r.wrap) return []; // a wrap needs two words; apply() refuses it anyway.
   const hosts = new Set(r.attach.map((a) => a.host));
   const out: Vehicle[] = [];
@@ -161,6 +174,7 @@ export function vehiclesFor(r: Recipe, onHost?: Host): Vehicle[] {
     // caller asking "what can this recipe be built on at all".
     if (onHost !== undefined && host !== onHost) continue;
     for (const v of POOL[host]) {
+      if (known && !known(v.surface)) continue;
       const built = apply(r, v.surface, v.cls);
       if (!built.ok || built.value === v.surface) continue;
       out.push(v);
@@ -178,9 +192,18 @@ export function vehiclesFor(r: Recipe, onHost?: Host): Vehicle[] {
  *
  * `onHost` pins the pick to one host, and a production showing always passes
  * it: the fact being drilled is a fact ABOUT that host. See `vehiclesFor`.
+ *
+ * `known` is the KNOWN-WORD gate, threaded straight to `vehiclesFor`: with it,
+ * only words the learner has met are eligible, and null (fall back to the baked
+ * vehicle) is the ordinary early answer when she knows none of the pool yet.
  */
-export function pickVehicle(r: Recipe, rng: Rng = Math.random, onHost?: Host): Vehicle | null {
-  const options = vehiclesFor(r, onHost);
+export function pickVehicle(
+  r: Recipe,
+  rng: Rng = Math.random,
+  onHost?: Host,
+  known?: (surface: string) => boolean,
+): Vehicle | null {
+  const options = vehiclesFor(r, onHost, known);
   if (options.length === 0) return null;
   return options[Math.floor(rng() * options.length)] ?? options[0];
 }
