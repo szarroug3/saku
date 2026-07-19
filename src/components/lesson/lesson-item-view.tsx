@@ -49,7 +49,7 @@ import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
-import { noteFor } from "@/data/characters";
+import { noteFor, glyphVariantFor } from "@/data/characters";
 import { cluster, membersOf } from "@/data/grammar/clusters";
 import { kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
@@ -422,6 +422,11 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // find out they were wrong until the drill marks them down for it. Absent
   // for the regular majority, so this is silent rather than empty.
   const note = item.kind === "kana" ? noteFor(item.glyph) : null;
+  // The kana whose printed shape and handwritten shape diverge — き's connected
+  // loop vs its detached lower stroke. Shown right beside the sound note, on the
+  // card where the character is met, so a learner who has only seen one form is
+  // not thrown by the other later. Absent for the majority whose forms match.
+  const glyphVariant = item.kind === "kana" ? glyphVariantFor(item.glyph) : null;
   const entry = libEntry(item.entry);
   const pattern = entry ? recipeOf(entry) : null;
   const word = item.kind === "word" ? vocabRow(item.glyph) : undefined;
@@ -469,6 +474,16 @@ export function LessonItemView({ item }: { item: LessonItem }) {
       {note ? (
         <div className="mt-6">
           <Callout>{note}</Callout>
+        </div>
+      ) : null}
+
+      {/* The written-form aside, when print and handwriting differ. Its own
+          labelled call-out because it corrects a different mistake than the
+          sound note: not "you will say it wrong" but "you will not recognise it
+          when it is written by hand". */}
+      {glyphVariant ? (
+        <div className={note ? "mt-3" : "mt-6"}>
+          <Callout label="Written by hand.">{glyphVariant}</Callout>
         </div>
       ) : null}
 

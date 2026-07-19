@@ -101,6 +101,44 @@ export function noteFor(c: string): string | null {
   return NOTES[c] ?? null;
 }
 
+// ---------- the ones that are drawn two ways ----------
+//
+// A handful of kana have a shape in print that a learner never reproduces by
+// hand, and the gap is wide enough to look like two different characters. き in
+// a textbook font is often one connected loop at the bottom; the same き written
+// out has that lower stroke floating free. A beginner who has only met the
+// printed form meets the handwritten one on a sign or in a friend's notes and
+// stalls on a character they already "know".
+//
+// This is NOT the sound note above and NOT the mnemonic (that is the shape's
+// STORY, in src/data/mnemonics.ts). It is one honest sentence that the two forms
+// are the same kana, said at the moment the character is met so the learner is
+// never left to guess whether a stray-looking stroke is a different letter.
+//
+// Deliberately SMALL. Only the kana with a genuinely well-documented print vs
+// handwriting split get an entry — き さ り そ ふ — the same discipline the sound
+// note keeps: an absent key is silence, not an empty box, and no note is invented
+// for a shape that only varies the way any two people's handwriting varies.
+//
+// Keyed by the hiragana glyph itself. The katakana forms are angular and
+// standardised and do not carry the same split, so they get no entry; the
+// look-alike pairs (ソ/ン, シ/ツ) are DIFFERENT characters, not variants of one,
+// and already live in LOOKALIKES.
+const GLYPH_VARIANTS: Record<string, string> = {
+  き: "In print the bottom of き is often one connected curve, but by hand the lower stroke is usually written on its own, separate from the rest. Both are the same kana.",
+  さ: "In print the bottom of さ often joins into one curve, but by hand the lower stroke is usually written on its own, separate from the rest. Both are the same kana.",
+  り: "In print the two strokes of り are often joined into one flowing shape, but by hand they are usually written as two separate strokes. Both are the same kana.",
+  そ: "そ is sometimes written as one continuous stroke and sometimes with a small break near the top before the long stroke. Both are the same kana.",
+  ふ: "In print ふ can look like one connected shape, but by hand it is usually written as four separate strokes. Both are the same kana.",
+};
+
+/** The call-out for a kana whose printed shape and handwritten shape differ
+ * enough to confuse a beginner. Null for the great majority, whose forms match
+ * closely enough to need no aside. */
+export function glyphVariantFor(c: string): string | null {
+  return GLYPH_VARIANTS[c] ?? null;
+}
+
 // Romaji rows shared by both scripts (list item = one character's accepted answers)
 const R: Record<string, Romaji[]> = {
   vowels: ["a", "i", "u", "e", "o"],

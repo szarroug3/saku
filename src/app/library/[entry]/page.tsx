@@ -62,10 +62,11 @@ import { WordExampleView } from "@/components/library/word-example-view";
 import { WordFormsView } from "@/components/library/word-forms-view";
 import { WordsWith } from "@/components/library/words-with";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
+import { Callout } from "@/components/lesson/callout";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { Card, Hint, Lbl, SoundIcon } from "@/components/ui";
-import { KANA_SUBJECT } from "@/data/characters";
+import { KANA_SUBJECT, glyphVariantFor } from "@/data/characters";
 import {
   GRAMMAR_SUBJECT,
   patternMeaningFactId,
@@ -158,6 +159,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const isKana = entry.kind === KANA_SUBJECT;
   const isKanji = entry.kind === KANJI_SUBJECT;
   const isWord = entry.kind === VOCAB_SUBJECT;
+  // The print vs handwriting aside — き's connected loop vs its detached lower
+  // stroke — read from the same source the lesson reads, so a learner looking a
+  // kana up sees the identical sentence they met while learning it. Absent for
+  // the majority whose forms match.
+  const glyphVariant = isKana ? glyphVariantFor(entry.glyph) : null;
 
   // ---- grammar-only material ----
 
@@ -564,6 +570,14 @@ function EntryView({ entry }: { entry: LibEntry }) {
                 voiceName={cfg.voiceName}
                 descriptor={descriptorOf(entry.sub)}
               />
+            </Card>
+          ) : null}
+          {/* The written-form aside, in its own card so it reads as a standalone
+              fact about the shape rather than a footnote to the mnemonic. Same
+              sentence, same source as the lesson. */}
+          {glyphVariant ? (
+            <Card>
+              <Callout label="Written by hand.">{glyphVariant}</Callout>
             </Card>
           ) : null}
           {/* ONE ROW, ONE HEIGHT. Every two-column row on this page (here, the
