@@ -15,15 +15,32 @@
 // app's own arithmetic agrees (review() at p ≈ 1 multiplies by 1.0). The bar at
 // the bottom builds a normal session these facts are only part of.
 //
-// THREE LAYOUTS, ONE HEADER, ONE LINKS ORDER
-// ==========================================
-// Kana, kanji and words each get the arrangement their material wants — a kana's
-// story beside its strokes, a kanji's readings full width, a word taken apart
-// into pieces. What does NOT vary is where you look for things: the header is
-// the same shape on all three (glyph left, sense middle, standing right, sound
-// beneath), and the Links card always runs "you've mixed up with", then
-// "commonly mixed up with", then everything else. See entry-links.tsx for why
-// those two lines are different questions and must never be one.
+// FOUR LAYOUTS, ONE HEADER, ONE LINKS ORDER
+// =========================================
+// Kana, kanji, words and grammar each get the arrangement their material wants
+// — a kana's story beside its strokes, a kanji's readings full width, a word
+// taken apart into pieces, a pattern's formula beside its links. What does NOT
+// vary is where you look for things: the header is the same shape on all four
+// (glyph left, sense middle, standing right, sound beneath), and the Links card
+// always runs "you've mixed up with", then "commonly mixed up with", then
+// everything else. See entry-links.tsx for why those two lines are different
+// questions and must never be one.
+//
+// GRAMMAR IS THE FOURTH KIND, NOT A FIFTH DESIGN
+// ==============================================
+// The one thing a pattern has that nothing else does is a RECIPE, and it takes
+// the wide half of the paired row exactly where a kanji puts its strokes. The
+// family table below it is the same table the kanji readings use. Everything
+// else — the header, the chips, the Links order, the attribution — is what the
+// other three already do.
+//
+// THERE IS NO JLPT LEVEL ON THIS PAGE, anywhere, and that is the same decision
+// as the missing newspaper-frequency rank on the kanji page. The level orders
+// the curriculum internally; a learner cannot act on "N4" and it is not a fact
+// about the pattern, it is a fact about an exam three vendors disagree about by
+// 3.4x (see the header of data/grammar/recipes.ts). The muted line under the
+// gloss says what the pattern ATTACHES TO instead, which is the thing you need
+// and cannot get anywhere else.
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -35,6 +52,8 @@ import { EntryLinks, GlyphLink, LinkRow } from "@/components/library/entry-links
 import { KanaFamilyView } from "@/components/library/kana-family-view";
 import { KanjiReadings } from "@/components/library/kanji-readings";
 import { MarkView } from "@/components/library/mark-view";
+import { PatternFamily } from "@/components/library/pattern-family";
+import { PatternRecipe } from "@/components/library/pattern-recipe";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StandingChip } from "@/components/library/standing-chip";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
@@ -44,7 +63,14 @@ import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { Card, Hint, Lbl, SoundIcon } from "@/components/ui";
 import { KANA_SUBJECT } from "@/data/characters";
-import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import {
+  GRAMMAR_SUBJECT,
+  patternMeaningFactId,
+  patternProductionFactId,
+  productionHosts,
+} from "@/data/grammar";
+import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
+import { isProducible } from "@/data/grammar/recipes";
 import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
 import { getMnemonic } from "@/data/mnemonics";
@@ -57,7 +83,6 @@ import {
 import { factsOf } from "@/lib/facts";
 import {
   appearsIn,
-  clusterOf,
   entryForGlyph,
   entryName,
   factRows,
@@ -67,8 +92,10 @@ import {
   libEntry,
   madeOf,
   readingRowsOf,
+  recipeOf,
   type LibEntry,
 } from "@/lib/library/entries";
+import { attachesTo, HOST_LABEL, recipeFormula } from "@/lib/grammar/formula";
 import { entryFromParam, entryHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
@@ -107,7 +134,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const standing = entryStanding(facts, history.facts, claims, cfg.accuracyMetric, now);
   const words = appearsIn(entry);
   const parts = madeOf(entry);
-  const grammarCluster = clusterOf(entry);
   const mine = lists.filter((l) => l.kind === "fixed" && l.entries.includes(entry.id));
   const mark = markFor(entry.id);
   const mnemonic = getMnemonic(entry.glyph);
@@ -131,6 +157,40 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const isKana = entry.kind === KANA_SUBJECT;
   const isKanji = entry.kind === KANJI_SUBJECT;
   const isWord = entry.kind === VOCAB_SUBJECT;
+
+  // ---- grammar-only material ----
+
+  // The recipe, not just its id. Everything a pattern page shows that no other
+  // page shows — the formula, the hosts, which production facts exist — hangs
+  // off this one object, and a null here is simply "not a grammar entry".
+  const pattern = recipeOf(entry);
+  const isGrammar = pattern !== null;
+  const formula = useMemo(() => (pattern ? recipeFormula(pattern) : null), [pattern]);
+  /**
+   * The hosts this pattern carries a SEPARATE production fact for.
+   *
+   * 5 of the 53 drillable recipes have more than one (te-cause, sugiru,
+   * sou-appearance, ba, tara — see productionHosts, added by the split that
+   * gave 〜すぎる's adjective rule somewhere to be asked). Those get more than
+   * two chips, one per rule, rather than a single "building it" that would be
+   * an average of two skills the app scores separately. The chip names its host
+   * ONLY when there is more than one, for the same reason the facts table does:
+   * "(verb)" on all 48 of the single-fact patterns would be noise on every page
+   * to serve five.
+   *
+   * Empty for the 28 reference-only patterns, which is the whole of that case —
+   * no production fact, no chip, and nothing anywhere saying a chip is missing.
+   */
+  const prodHosts = pattern && isProducible(pattern) ? productionHosts(pattern) : [];
+  /** The pattern's family, or null. Null covers all three of: not grammar, a
+   * pattern in no cluster (52 of the 81), and a cluster with no recipe members
+   * at all (は/が, に/で, transitivity — map-only, and a pattern cannot be in one
+   * of those since they name no members). */
+  const familyCluster = pattern?.cluster ? (clusterById(pattern.cluster) ?? null) : null;
+  const familyMembers = useMemo(
+    () => (familyCluster ? membersOf(familyCluster) : []),
+    [familyCluster],
+  );
 
   // ---- the header's three variable parts, decided per kind ----
 
@@ -220,11 +280,64 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </>
       ) : null}
 
+      {/* GRAMMAR: what it MEANS, and what it takes to BUILD it. Two questions
+          the app scores separately, so two chips — a single pooled adjective
+          would average "I know what 〜てから means" with "I can produce
+          行ってから", which are not the same knowledge and go wrong at different
+          times.
+
+          ONLY THE SIX REAL STANDINGS appear here (not seen · you know this ·
+          solid · getting there · shaky · slipping), because StandingChip can
+          only paint those and standing.ts is the only thing allowed to pick
+          one. "needs work" is the kanji header's AGGREGATE phrase over a count
+          of facts; it is not a standing and has no business on a pattern, which
+          has at most four facts and names each of them. */}
+      {isGrammar && pattern ? (
+        <>
+          <span className="flex items-center gap-1.5 text-[11px] text-text-muted">
+            Meaning{" "}
+            <StandingChip
+              standing={
+                standingOf(
+                  history.facts[patternMeaningFactId(pattern.id)],
+                  claims[patternMeaningFactId(pattern.id)],
+                  cfg.accuracyMetric,
+                  now,
+                ).standing
+              }
+            />
+          </span>
+          {/* NO CHIP AT ALL for the 28 reference-only patterns, and no sentence
+              explaining the absence. 〜ことができる is 食べる + ことができる:
+              nothing is conjugated, so "build it" is typing and there is no
+              fact to score. A chip reading "not seen" would be worse than
+              nothing — it implies a question that is waiting for you. */}
+          {prodHosts.map((host) => {
+            const id = patternProductionFactId(pattern.id, host);
+            return (
+              <span
+                key={id}
+                className="flex items-center gap-1.5 text-[11px] text-text-muted"
+              >
+                Building it
+                {prodHosts.length > 1 ? ` (${HOST_LABEL[host]})` : ""}{" "}
+                <StandingChip
+                  standing={
+                    standingOf(history.facts[id], claims[id], cfg.accuracyMetric, now)
+                      .standing
+                  }
+                />
+              </span>
+            );
+          })}
+        </>
+      ) : null}
+
       {/* KANA and everything else with exactly one fact: the entry's standing IS
           that fact's standing — no pooling happened, because there was nothing
           to pool. An entry with NO facts (a mark) says nothing at all: it has
           never been asked and never will be, and "all 0 solid" was the old bug. */}
-      {!isKanji && !isWord && standing.total > 0 && standing.standing ? (
+      {!isKanji && !isWord && !isGrammar && standing.total > 0 && standing.standing ? (
         <StandingChip standing={standing.standing} />
       ) : null}
     </>
@@ -268,10 +381,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
   const family = isKana ? kanaFamily(entry.glyph) : [];
 
-  // The generic facts table still serves grammar (and anything new): kanji has
-  // its own richer table, a word's two facts are chips in the header, and a kana
-  // had a one-row table that said nothing its header chip does not.
-  const genericRows = isKana || isKanji || isWord ? [] : factRows(entry);
+  // The generic facts table is now the fallback for ANYTHING NEW and nothing
+  // else: kanji has its own richer table, a word's two facts are chips in the
+  // header, a kana had a one-row table that said nothing its header chip does
+  // not, and grammar's facts are now chips too.
+  //
+  // Grammar left it for the reason words did. Its rows were "Meaning — after
+  // doing X" and "Build it — 行く → 行ってから", both of which the header and the
+  // recipe card now say better and in the place the reader is already looking.
+  // A two-row table restating them under the heading "Meaning and form" is the
+  // page saying the same thing twice, which is the one thing a reference page
+  // cannot afford. `factRows`/`factsTitle` keep their grammar arms — they are
+  // the enumeration of what is scored, other callers use them, and the arms
+  // stay correct — this page just no longer prints them.
+  const genericRows = isKana || isKanji || isWord || isGrammar ? [] : factRows(entry);
 
   const linkRows = (
     <>
@@ -322,6 +445,46 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </LinkRow>
       ) : null}
 
+      {/* GRAMMAR'S OUTGOING LINKS. They sit in "everything else", after the two
+          confusion lines, exactly like a kanji's "Made of" — and a grammar page
+          simply STARTS here, because `confusableWith` returns [] for anything
+          that is not kana or kanji and a pattern accumulates no shape
+          neighbours. Nothing below tests for the kind; the rows are absent
+          because there is nothing in them. */}
+      {familyCluster && familyMembers.length > 1 ? (
+        <LinkRow label="Family">
+          <Link
+            href={`/grammar/${familyCluster.id}`}
+            className="text-[13px] text-accent no-underline"
+          >
+            all {familyMembers.length} side by side →
+          </Link>
+        </LinkRow>
+      ) : null}
+
+      {/* THERE IS NO "no outside link" MESSAGE, and this is the decision that
+          `noLinkReason` does not get to override. 7 of the 12 clusters have
+          `link: null`, and 52 of the 81 patterns are in no cluster at all — so
+          "we have nothing for you" would be the message on nearly every pattern
+          page in the app. A slot that is empty almost everywhere is not a
+          finding, it is furniture, and the cluster page (which is ABOUT one
+          cluster, where the gap is genuinely about that cluster) is the right
+          place for that argument. `noLinkReason` stays in clusters.ts as
+          documentation of the bet nobody could make. Here the row is absent. */}
+      {familyCluster?.link ? (
+        <LinkRow label="Read about it">
+          <a
+            href={familyCluster.link.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[13px] text-accent no-underline"
+          >
+            {familyCluster.link.label}
+          </a>
+          <Hint>opens in a new tab</Hint>
+        </LinkRow>
+      ) : null}
+
       <LinkRow label="Your lists">
         {mine.length ? (
           mine.map((l) => (
@@ -362,10 +525,23 @@ function EntryView({ entry }: { entry: LibEntry }) {
       <Card>
         <EntryHeader
           glyph={entry.glyph}
+          // A pattern is up to nine characters long. At the default 76px
+          // 〜なければならない wraps three times and buries the gloss; 34px in the
+          // kana face keeps it the biggest thing on the card without it
+          // becoming the whole card.
+          glyphClass={
+            isGrammar ? "flex-none font-kana text-[34px] leading-tight" : undefined
+          }
           title={
             entry.meanings.slice(0, 3).join(" · ") || entry.readings.join(" · ")
           }
-          sub={entry.sub}
+          // NOT `entry.sub` for grammar. That string is "N4 pattern · must",
+          // and the level is the one thing this page has decided not to print
+          // (see the header). What replaces it is the more useful fact and the
+          // one nothing else on the page carries: knowing 〜すぎる means "too
+          // much" and not knowing it takes adjectives means never writing
+          // 高すぎる.
+          sub={isGrammar && pattern ? attachesTo(pattern) : entry.sub}
           chips={chips}
           sound={sound}
           onSpeak={say}
@@ -480,6 +656,49 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </>
       ) : null}
 
+      {/* ================= GRAMMAR ================= */}
+      {isGrammar && pattern && formula ? (
+        <>
+          {/* THE RECIPE TAKES THE WIDER HALF, in the same 1.45fr/1fr row where a
+              kana puts its mnemonic and a kanji its strokes. It needs the space
+              for the same reason they do: the formula and its three worked
+              examples are a line of Japanese plus three arrows, and squeezed
+              into an even split they reflow into a ribbon. The pairing is what
+              stops the page being a stack of full-width boxes. */}
+          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] items-start gap-3.5 max-[860px]:grid-cols-1">
+            <PatternRecipe formula={formula} />
+            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+          </div>
+
+          {/* FULL WIDTH AT THE FOOT, like the kana family and the kanji
+              readings, and for the same reason: the obligation seven is four
+              columns of Japanese and inside a half it would reflow everything
+              above it.
+
+              ABSENT, not empty, in two cases. A pattern in no cluster (52 of
+              the 81) has no family, and a cluster with a single member would
+              render a one-row "ways to say this" table, which is the page
+              repeating its own header under a heading that promises
+              alternatives. Neither prints a sentence about the absence: a
+              missing section is already legible, and 52 pages carrying "this
+              one has no family" would be the app narrating itself on the
+              majority of its own grammar shelf. (No singleton exists today —
+              the smallest populated cluster has two members — so the `> 1` is a
+              guard against the data changing, not a case you can reach.) */}
+          {familyCluster && familyMembers.length > 1 ? (
+            <PatternFamily
+              cluster={familyCluster}
+              members={familyMembers}
+              current={pattern}
+              facts={history.facts}
+              claims={claims}
+              metric={cfg.accuracyMetric}
+              now={now}
+            />
+          ) : null}
+        </>
+      ) : null}
+
       {/* The rule itself — a mark's page has its content here, in place of the
           mnemonic and stroke diagram (a rule has no drawing) and of the facts
           table (a rule has no gradeable question). */}
@@ -535,27 +754,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </Card>
       ) : null}
 
-      {/* Links for the kinds whose layout above did not already place it. */}
-      {!isKana && !isKanji && !isWord ? (
+      {/* Links for the kinds whose layout above did not already place it — a
+          mark, and anything new. */}
+      {!isKana && !isKanji && !isWord && !isGrammar ? (
         <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
       ) : null}
 
-      {/* The way BACK to the cluster map — the "seven ways to say must"
-          comparison a pattern belongs to. */}
-      {grammarCluster ? (
-        <Card>
-          <Lbl>Compare similar patterns</Lbl>
-          <p className="text-[13px] text-text-muted">
-            {entry.glyph} is one of a family that comes out as the same English.{" "}
-            <Link
-              href={`/grammar/${grammarCluster}`}
-              className="text-accent no-underline"
-            >
-              See them side by side →
-            </Link>
-          </p>
-        </Card>
-      ) : null}
+      {/* THE "Compare similar patterns" CARD IS GONE. It was a whole card
+          holding one sentence whose only content was a link to the cluster
+          page, sitting BELOW the facts table on a page that had nothing else to
+          say about the family. The family is now on the page — the actual table,
+          with each sibling's standing beside it — and the link to the side-by-
+          side view is a row in Links, where every other outgoing link on every
+          other kind already lives. A card that exists to link somewhere is a
+          link. */}
 
       <SliceBar
         // `entryName`, not the glyph: the bar prints this label in bold ahead of
