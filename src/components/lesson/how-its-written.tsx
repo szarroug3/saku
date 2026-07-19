@@ -36,27 +36,13 @@ import { WhyDisclosure } from "@/components/lesson/why";
 import { Card } from "@/components/ui";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { WHY_STROKE_ORDER } from "@/data/why";
+// The parts test lives in lib now, because the drill's hint builder asks it too
+// and the lesson and the hint must never disagree about what 明 is made of.
+import { teachableParts } from "@/lib/kanji-parts";
 import type { LessonItem } from "@/lib/lesson-items";
 import { useLessonPref } from "@/lib/lesson-prefs";
 import { useGlyphStrokes } from "@/lib/strokes";
 import { entryHref } from "@/lib/library/href";
-
-/** The jōyō components of a kanji, EXCLUDING itself — the same test kanjiCost
- * uses for a "known radical". Returns them only when EVERY component is itself a
- * jōyō kanji with a card; otherwise null, which the caller reads as "fall back
- * to strokes". Raw KRADFILE comps (｜ ノ マ) are never shown: they are unreliable
- * for teaching and half of them have no page to link. */
-function teachableParts(glyph: string): Array<{ c: string; meaning: string }> | null {
-  const row = kanjiRow(glyph);
-  if (!row) return null;
-  const parts = row.comps.filter((c) => c !== glyph);
-  if (!parts.length) return null;
-  if (!parts.every((c) => kanjiRow(c) !== undefined)) return null;
-  return parts.map((c) => ({
-    c,
-    meaning: kanjiRow(c)?.meanings[0] ?? "",
-  }));
-}
 
 /** The whole-shape fallback, shown when there's no stroke data for the glyph.
  * A kanji made of teachable parts shows the breakdown; otherwise the stroke
