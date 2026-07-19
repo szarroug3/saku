@@ -4,11 +4,12 @@
 // WHAT THIS FILE IS
 // =================
 // A pure data table, keyed by the character it teaches. It holds the words and
-// (when one exists) a drawn picture; it renders nothing. `MnemonicCard`
-// (components/lesson/mnemonic-card.tsx) is the one place it turns into pixels,
-// and two call sites (the teach-me walkthrough and the Library entry page) gate
-// on `getMnemonic` returning non-null. A kana with no row here shows no card —
-// see the hide-when-absent rule in MnemonicCard.
+// (when one exists) a drawn picture; it renders nothing. `MnemonicView`
+// (components/lesson/mnemonic-view.tsx) is the one place it turns into pixels,
+// and two call sites (the lesson walk-through, via
+// components/lesson/lesson-item-view.tsx, and the Library entry page) gate on
+// `getMnemonic` returning non-null. A kana with no row here shows no block —
+// see the hide-when-absent rule in MnemonicView.
 //
 // ADDING A ROW IS APPENDING AN ENTRY, AND NOTHING ELSE
 // ====================================================

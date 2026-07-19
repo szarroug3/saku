@@ -66,19 +66,19 @@ export const WHY_SCRIPT: Record<string, Why> = {
       rest: "It’s the smallest set of characters that lets you read and write anything.",
     },
     paras: [
-      "Japanese isn’t written with the letters you already know. There’s no way to sound あ out with A, B, C — it’s a separate system, and you can’t step around it to get to the “real” Japanese later. Hiragana is where that system starts.",
-      "Each hiragana stands for a sound: か is “ka”, き is “ki”. There are about forty-six of them, and together they can spell any Japanese word out loud. That’s why a beginner’s book opens assuming you have them already — lesson one is printed in hiragana, with nothing telling you so.",
-      "There are two other writing systems, and hiragana goes ahead of both on purpose. Katakana is a second set of shapes for these same sounds — you’ll want it soon. Kanji are a much bigger job that comes later. Hiragana is the small set that unlocks the most, so it’s the door in.",
+      "Japanese isn’t written with the letters you already know. There’s no way to sound あ out with A, B, C: it’s a separate system, and you can’t step around it to get to the “real” Japanese later. Hiragana is where that system starts.",
+      "Each hiragana stands for a sound: か is “ka”, き is “ki”. There are about forty-six of them, and together they can spell any Japanese word out loud. That’s why a beginner’s book opens assuming you have them already: lesson one is printed in hiragana, with nothing telling you so.",
+      "There are two other writing systems, and hiragana goes ahead of both on purpose. Katakana is a second set of shapes for these same sounds, and you’ll want it soon. Kanji are a much bigger job that comes later. Hiragana is the small set that unlocks the most, so it’s the door in.",
     ],
   },
   katakana: {
     lede: {
       strong: "Katakana is next: the same sounds, a second set of shapes.",
-      rest: "Nothing new to pronounce — only new shapes to recognize.",
+      rest: "Nothing new to pronounce, only new shapes to recognize.",
     },
     paras: [
       "Katakana spells the exact same sounds hiragana does. カ is “ka”, just like か. You already know how all of it sounds; you’re only learning to recognize a second way of writing it.",
-      "It’s used for words borrowed from other languages — コーヒー is “coffee” — and for names and sound effects. You run into it constantly, so it’s worth having in hand before you spend real time on words.",
+      "It’s used for words borrowed from other languages (コーヒー is “coffee”) and for names and sound effects. You run into it constantly, so it’s worth having in hand before you spend real time on words.",
       "It’s about the same size as hiragana and reuses sounds you already have, which is why it’s a quick second step rather than a whole new climb.",
     ],
   },
@@ -97,13 +97,13 @@ export const WHY_KANJI: readonly (Why & { id: string })[] = [
   {
     id: "why-kanji",
     lede: {
-      strong: "You only ever use words — so why learn kanji?",
+      strong: "You only ever use words, so why learn kanji?",
       rest: "Because every kanji you know is a discount on words you haven’t seen yet.",
     },
     paras: [
       "You’re right that you never really “use” a lone kanji. You use words. But kanji are how words are built, and knowing the pieces means new words aren’t fully new.",
-      "火 is fire. 山 is mountain. The first time you see 火山, you can guess it: fire-mountain, a volcano — and nobody had to teach you that word. Learn a few hundred kanji and thousands of words stop landing as strangers.",
-      "There’s a second reason, and it isn’t optional. Japanese doesn’t put spaces between words. Kanji are a big part of how you tell where one word ends and the next begins — they break a solid row of characters into pieces your eye can grab.",
+      "火 is fire. 山 is mountain. The first time you see 火山, you can guess it: fire-mountain, a volcano, and nobody had to teach you that word. Learn a few hundred kanji and thousands of words stop landing as strangers.",
+      "There’s a second reason, and it isn’t optional. Japanese doesn’t put spaces between words. Kanji are a big part of how you tell where one word ends and the next begins: they break a solid row of characters into pieces your eye can grab.",
     ],
   },
   {
@@ -114,18 +114,18 @@ export const WHY_KANJI: readonly (Why & { id: string })[] = [
     },
     paras: [
       "A kanji is one character that stands for a meaning and, most of the time, a sound. 山 means mountain and is read “yama”.",
-      "Sometimes a kanji is a whole word by itself — 山 is the word “mountain”. Sometimes it’s just one piece of a longer word — the 火 inside 火山. Both are completely normal, and the same kanji does both depending on the word it’s in.",
+      "Sometimes a kanji is a whole word by itself: 山 is the word “mountain”. Sometimes it’s just one piece of a longer word: the 火 inside 火山. Both are completely normal, and the same kanji does both depending on the word it’s in.",
     ],
   },
   {
     id: "what-radical",
     lede: {
       strong: "What’s a radical? Is it a word?",
-      rest: "It’s a building block of a kanji — and most of them are kanji themselves.",
+      rest: "It’s a building block of a kanji, and most of them are kanji themselves.",
     },
     paras: [
-      "Kanji are built out of smaller parts, and a radical is one of those parts. Most radicals are themselves kanji you’ll learn on their own — 火 (fire) is a part you’ll find inside other kanji and also a character in its own right.",
-      "A few radicals are only ever building blocks and never show up as a character you’d study by itself — shapes like 宀 or ノ. So not every radical is a word, but the large majority are kanji you’ll run into anyway.",
+      "Kanji are built out of smaller parts, and a radical is one of those parts. Most radicals are themselves kanji you’ll learn on their own: 火 (fire) is a part you’ll find inside other kanji and also a character in its own right.",
+      "A few radicals are only ever building blocks and never show up as a character you’d study by itself: shapes like 宀 or ノ. So not every radical is a word, but the large majority are kanji you’ll run into anyway.",
     ],
   },
 ];
@@ -151,9 +151,9 @@ export const WHY_STROKE_ORDER: Why = {
     strong: "Stroke order is worth learning with each character.",
   },
   paras: [
-    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary: follow it and the shape comes out balanced and legible almost by itself, because the rules (top to bottom, left to right) are what the shapes were designed around. Fight it and even the same strokes tend to land lopsided — so learning the order is the fastest way to characters that actually look right.",
-    "It pays off the moment you write anything by hand. Handwriting-recognition input — the way you’ll look up a character you can’t yet type — and paper kanji dictionaries both assume the standard order: draw a character the usual way and they follow along; draw it your own way and they lose you. Learn the order now and that door is already open when you need it.",
-    "It’s also a small thing to pick up, and it sticks best learned alongside the character rather than bolted on later. You’re seeing the diagram the same day you meet the shape, so the order comes for free with recognising it — a few strokes, in order, and you’ve got both.",
+    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary: follow it and the shape comes out balanced and legible almost by itself, because the rules (top to bottom, left to right) are what the shapes were designed around. Fight it and even the same strokes tend to land lopsided, so learning the order is the fastest way to characters that actually look right.",
+    "It pays off the moment you write anything by hand. Handwriting-recognition input (the way you’ll look up a character you can’t yet type) and paper kanji dictionaries both assume the standard order: draw a character the usual way and they follow along; draw it your own way and they lose you. Learn the order now and that door is already open when you need it.",
+    "It’s also a small thing to pick up, and it sticks best learned alongside the character rather than bolted on later. You’re seeing the diagram the same day you meet the shape, so the order comes for free with recognising it: a few strokes, in order, and you’ve got both.",
   ],
 };
 
@@ -181,12 +181,12 @@ export const WHY_TRACK: Record<string, Why> = {
   kanji: {
     lede: {
       strong: "Kanji and words unlock each other.",
-      rest: "Each kanji you learn makes a batch of words teachable — and each word you learn proves how its kanji is read there.",
+      rest: "Each kanji you learn makes a batch of words teachable, and each word you learn proves how its kanji is read there.",
     },
     paras: [
-      "Kanji is where you learn the individual characters and what each one means: 先 is “before”, 生 is “life”. On their own they aren’t much use — you don’t go around saying a lone kanji — but they’re the pieces every written word is built from.",
-      "Here’s why this track comes first for a word: the words track will only teach you a word once you know all of its kanji. 先生 (“teacher”) stays locked until you’ve learned both 先 and 生. So each kanji you pick up here quietly unlocks the words that are made of it — that’s the payoff for a track whose characters you never use one at a time.",
-      "It runs the other way too. A kanji has several readings and which one you use depends on the word, so “how is 生 read?” has no single answer — but “how is 生 read in 先生?” does. Once you’ve learned a word 生 is in, that word is the proof, and the app starts asking you the reading there. Kanji let you meet words; words are what pin down how the kanji are said.",
+      "Kanji is where you learn the individual characters and what each one means: 先 is “before”, 生 is “life”. On their own they aren’t much use (you don’t go around saying a lone kanji), but they’re the pieces every written word is built from.",
+      "Here’s why this track comes first for a word: the words track will only teach you a word once you know all of its kanji. 先生 (“teacher”) stays locked until you’ve learned both 先 and 生. So each kanji you pick up here quietly unlocks the words that are made of it: that’s the payoff for a track whose characters you never use one at a time.",
+      "It runs the other way too. A kanji has several readings and which one you use depends on the word, so “how is 生 read?” has no single answer, but “how is 生 read in 先生?” does. Once you’ve learned a word 生 is in, that word is the proof, and the app starts asking you the reading there. Kanji let you meet words; words are what pin down how the kanji are said.",
       "If the words card keeps telling you to “go learn a kanji first”, this is that kanji. Learn it here, and the word it was blocking becomes teachable.",
     ],
   },
@@ -196,18 +196,18 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "Most are made of kanji, so they unlock as you learn those.",
     },
     paras: [
-      "Words are the real goal — 先生, 電車, たべる are the things you say and understand. Kanji and grammar both feed into this track: kanji are the characters a word is written with, grammar is how you string words into a sentence.",
-      "A word is only taught here once you know every kanji in it — 電車 waits until you’ve learned both 電 and 車 — because showing a compound built from pieces you don’t have is teaching a shape with nothing under it. That’s why the words above so often point you back to the kanji track: the fastest way to unlock more words is to learn the kanji they’re made of.",
-      "Words with no kanji at all — これ, もう, とても — have nothing to unlock, so you can learn them straight away. That’s why the earliest words you can practise here are the kana-only ones.",
+      "Words are the real goal: 先生, 電車, たべる are the things you say and understand. Kanji and grammar both feed into this track: kanji are the characters a word is written with, grammar is how you string words into a sentence.",
+      "A word is only taught here once you know every kanji in it (電車 waits until you’ve learned both 電 and 車), because showing a compound built from pieces you don’t have is teaching a shape with nothing under it. That’s why the words above so often point you back to the kanji track: the fastest way to unlock more words is to learn the kanji they’re made of.",
+      "Words with no kanji at all (これ, もう, とても) have nothing to unlock, so you can learn them straight away. That’s why the earliest words you can practise here are the kana-only ones.",
     ],
   },
   grammar: {
     lede: {
       strong: "Grammar is how words become sentences.",
-      rest: "The glue — separate from learning the words themselves.",
+      rest: "The glue, separate from learning the words themselves.",
     },
     paras: [
-      "Knowing words isn’t the same as knowing how to connect them. Grammar is the patterns that turn 食べる (“eat”) into “after eating”, “want to eat”, “please eat”. It’s a different kind of thing from a word or a kanji — a rule for combining, not another item to memorise.",
+      "Knowing words isn’t the same as knowing how to connect them. Grammar is the patterns that turn 食べる (“eat”) into “after eating”, “want to eat”, “please eat”. It’s a different kind of thing from a word or a kanji: a rule for combining, not another item to memorise.",
       "It runs alongside the other two rather than gating on them: you don’t need a big vocabulary before you start, because a pattern is taught with words you already have. Kanji unlock words; grammar is what you do with those words once you have them.",
       "Patterns come easiest ones first (the app tags each with its level), so early grammar leans on the simple verbs and words you’re already meeting on the other tracks.",
     ],

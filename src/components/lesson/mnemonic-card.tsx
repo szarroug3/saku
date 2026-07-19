@@ -1,21 +1,27 @@
-// The mnemonic, on screen — the one place src/data/mnemonics.ts becomes pixels.
+// `MnemonicCard` IS NO LONGER MOUNTED ANYWHERE. `MnemonicView`
+// (components/lesson/mnemonic-view.tsx) is now the one place
+// src/data/mnemonics.ts becomes pixels, for both call sites: the lesson
+// walk-through (via components/lesson/lesson-item-view.tsx) and the Library
+// entry page (app/library/[entry]/page.tsx).
 //
-// SELF-CONTAINED, ON PURPOSE
-// ==========================
-// This renders one entry and nothing else: no state, no hooks, no speech, no
-// data lookup of its own beyond the `getMnemonic` gate its callers apply. Two
-// call sites use it as-is — the teach-me walkthrough (components/lesson/
-// teach-me.tsx) and the Library entry page (app/library/[entry]/page.tsx) — and
-// a third (the future stepped teach screen) will re-consume it. Keeping it
-// dependency-light is what lets it move between them without a rewrite.
+// WHAT IS STILL LIVE HERE
+// =======================
+// One export: `Line`, the span renderer, which MnemonicView imports. That is
+// the only reason this file is still in the tree. `MnemonicCard` below is kept
+// as the record of the layout MnemonicView replaced, and because
+// src/data/mnemonics.test.ts reads this file off disk BY PATH and slices out
+// the Line renderer using the two function declarations below as string
+// markers: it takes everything between the start of Line's declaration and the
+// start of MnemonicCard's. So neither may be renamed, removed, or reordered
+// without updating that test, Line must stay first, and no comment above them
+// may repeat either declaration verbatim (the slice would start in the prose).
 //
-// HIDE WHEN ABSENT
-// ================
-// The card never renders an empty state. A glyph with no mnemonic shows no
-// section at all, and that decision lives with the CALLER: each gates on
-// `getMnemonic(glyph)` and renders <MnemonicCard> only when it returns
-// non-null. This component takes a resolved `Mnemonic`, so "there is nothing to
-// show" is simply "the caller didn't mount me."
+// The notes below describe MnemonicCard's own design. They are history, not a
+// description of what the app renders today; MnemonicView's header is the
+// current account. The one rule that outlived the card is HIDE WHEN ABSENT: a
+// glyph with no mnemonic shows no section at all, and that decision lives with
+// the CALLER, which gates on `getMnemonic(glyph)` and mounts the block only
+// when it returns non-null.
 //
 // THE PICTURE SITS DIRECTLY ON THE CARD
 // =====================================
@@ -54,9 +60,9 @@ import { MnemonicImage } from "./mnemonic-image";
 /** Render a SoundLine's spans, painting `accent: true` spans in the accent
  * colour and leaving the rest plain. A span carrying an `href` renders as an
  * anchor into a new tab — and a span that is BOTH accented and linked keeps the
- * accent colour. Exported so the stepped lesson's own hero
- * (lesson-item-view.tsx) renders the same accented prose from the same data
- * without re-implementing the span rule. */
+ * accent colour. Exported so `MnemonicView` (mnemonic-view.tsx) renders the
+ * same accented prose from the same data without re-implementing the span
+ * rule. This is the only export of this file that is still mounted. */
 export function Line({ line }: { line: SoundLine }) {
   return (
     <>
