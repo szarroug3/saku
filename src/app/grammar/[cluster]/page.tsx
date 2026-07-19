@@ -29,7 +29,7 @@ import { ClusterTable } from "@/components/grammar/cluster-table";
 import { LinkSlot } from "@/components/grammar/link-slot";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { CLUSTERS, cluster, membersOf } from "@/data/grammar/clusters";
-import { buildRows, countWord, patternsShown, wordsUsed } from "@/lib/grammar/build";
+import { buildRows, wordsUsed } from "@/lib/grammar/build";
 
 export function generateStaticParams() {
   return CLUSTERS.map((c) => ({ cluster: c.id }));
@@ -70,9 +70,13 @@ export default async function ClusterPage({
 
       {rows.length > 0 ? (
         <Card>
-          <Lbl>
-            {countWord(patternsShown(rows))} · built on {on.join(" · ")}
-          </Lbl>
+          {/* "Forms", not a count. The label used to spell the number of
+              PATTERNS ("The seven"), which read as a promise about the table
+              underneath it and was not one: `seems` has six members and
+              thirteen rows, so that page printed "The six" above thirteen
+              lines. A fixed noun cannot be wrong. The "built on" half IS
+              generated from the rows and stays. */}
+          <Lbl>Forms · built on {on.join(" · ")}</Lbl>
           <ClusterTable rows={rows} />
         </Card>
       ) : null}
@@ -87,10 +91,17 @@ export default async function ClusterPage({
         </Card>
       ) : null}
 
-      <Card>
-        <Lbl>If you want the difference explained · opens in a new tab</Lbl>
-        <LinkSlot link={c.link} reason={c.noLinkReason} />
-      </Card>
+      {/* NO LINK, NO CARD. This slot used to render even when empty, showing a
+          "No link" chip and the cluster's `noLinkReason`. 7 of the 12 clusters
+          have no link, so that message was on most of the shelf. It is gone
+          from the screen; the reason strings stay in clusters.ts as data. See
+          that file's header. */}
+      {c.link ? (
+        <Card>
+          <Lbl>If you want the difference explained</Lbl>
+          <LinkSlot link={c.link} />
+        </Card>
+      ) : null}
     </>
   );
 }
