@@ -47,6 +47,7 @@ import {
   checkTyped,
   confusedWith,
   en2jpTypeable,
+  grammarSelectionFor,
   grammarVehicleFor,
   newFactStat,
   pickDir,
@@ -54,6 +55,7 @@ import {
   requeueGap,
   retriesAllowed,
   shuffle,
+  type GrammarSelection,
   type GrammarVehicle,
   type PromptContext,
 } from "@/lib/engine";
@@ -93,13 +95,27 @@ interface DrillQuestion {
    * (it then runs on the fixed 行く baked in the fact). Plain data, so it rides
    * the serialized runtime. */
   grammarVehicle: GrammarVehicle | null;
+  /**
+   * The corpus sentence a grammar MEANING card is asking as a fill-the-blank
+   * SELECTION item — rolled once at ask time exactly like `font`, `mc` and
+   * `grammarVehicle`, so a remount cannot swap the sentence or the board under
+   * the user. null for every other card, and for a pattern the corpus can make
+   * no safe item out of; that one is asked the old way (the pattern, "meaning",
+   * glosses to choose between), unchanged. Plain data, so it rides the
+   * serialized runtime. */
+  grammarSelection: GrammarSelection | null;
 }
 
 /** The per-showing presentation context for a card: the anchor word for a kanji
- * reading, the vehicle verb for a grammar production. Rebuilt from the frozen
- * runtime so prompt, check, options and reveal all agree on one showing. */
+ * reading, the vehicle verb for a grammar production, the blanked sentence for a
+ * grammar selection. Rebuilt from the frozen runtime so prompt, check, options
+ * and reveal all agree on one showing. */
 function ctxFor(q: DrillQuestion, anchor?: string): PromptContext {
-  return { anchor, grammarVehicle: q.grammarVehicle ?? undefined };
+  return {
+    anchor,
+    grammarVehicle: q.grammarVehicle ?? undefined,
+    grammarSelection: q.grammarSelection ?? undefined,
+  };
 }
 
 /**
@@ -393,8 +409,32 @@ export function DrillScreen() {
     // can't swap it. null for every other card and for a grammar card the pool
     // can't host — that one runs on the fixed baked vehicle, unchanged.
     const grammarVehicle = grammarVehicleFor(f);
-    const ctx: PromptContext = { grammarVehicle: grammarVehicle ?? undefined };
-    const built = typedMode ? null : buildMcOptions(f, ctx);
+    // A grammar MEANING card may be asked as a SELECTION item instead — "which
+    // pattern fills this blank in a real sentence", rather than "what does this
+    // pattern mean". Same fact, same score, a harder and more honest showing.
+    //
+    // Only on a card that was already going to be multiple choice: selection IS
+    // multiple choice (its whole safety argument is about which distractors may
+    // share a board), so offering it on a typed card would override a setting
+    // the user chose. Null for every non-grammar fact, for a production fact,
+    // and for a pattern with no safe corpus item.
+    const grammarSelection = typedMode ? null : grammarSelectionFor(f);
+    const ctx: PromptContext = {
+      grammarVehicle: grammarVehicle ?? undefined,
+      grammarSelection: grammarSelection ?? undefined,
+    };
+    // The selection board comes PRE-BUILT and pre-shuffled: its options were
+    // chosen per-sentence by the generator, which proved each one wrong for THIS
+    // frame (gloss, cluster, prefix and particle tests — see grammar/questions.ts).
+    // buildMcOptions cannot reproduce that, because its distractors are a
+    // property of the fact and these are a property of the sentence. They are
+    // still FactIds, so everything downstream — grading by which option, the
+    // reveal, confusion tracking — is the untouched existing path.
+    const built = grammarSelection
+      ? grammarSelection.choices.slice()
+      : typedMode
+        ? null
+        : buildMcOptions(f, ctx);
     const mc = built && built.length > 1 ? built : null;
     rt.q = {
       f,
@@ -404,6 +444,7 @@ export function DrillScreen() {
       mc,
       mcFonts: mc && dir === "en2jp" ? mc.map(() => pickFont(cfg.fonts)) : null,
       grammarVehicle,
+      grammarSelection,
     };
     const st = rt.stats[f] ?? (rt.stats[f] = newFactStat());
     st.seen++;
@@ -858,6 +899,16 @@ export function DrillScreen() {
             supplies one, at a size you read rather than skim. */}
         {prompt.context ? (
           <p className="-mt-1 text-center text-[13px] text-text">{prompt.context}</p>
+        ) : null}
+        {/* The second line of the question, when a subject has one — today the
+            English translation under a selection card's blanked sentence.
+            Quieter than `context` because it is the support, not the frame, but
+            never hidden: without it the blank has no way of telling you which
+            pattern it wants. */}
+        {prompt.note ? (
+          <p className="max-w-[320px] text-center text-[12px] text-text-muted">
+            {prompt.note}
+          </p>
         ) : null}
         {/* min-h-4 + text-center is the script label's theme hook. */}
         <p className="min-h-4 text-center text-[10px] uppercase tracking-[0.18em] text-text-muted">

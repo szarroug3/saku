@@ -18,10 +18,12 @@ export {
   en2jpTypeable,
   questionsFor,
   grammarVehicleFor,
+  grammarSelectionFor,
   type Prompt,
   type PromptContext,
   type QuestionType,
   type GrammarVehicle,
+  type GrammarSelection,
 } from "@/lib/engine/question";
 
 // The pure totals/stats math lives in engine/results.ts — no registry, no

@@ -48,6 +48,18 @@ export interface GrammarChoice {
   /** True when `label` is Japanese and wants the quiz's JP font. */
   readonly jp: boolean;
   readonly sub?: string;
+  /**
+   * WHICH PATTERN this choice is — the recipe id, for selection; null for
+   * transitivity, whose choices are verbs and have no recipe.
+   *
+   * The card grades by index (see the header), so nothing in THIS module needs
+   * it. A scheduler does: the drill scores an answer against a FACT, and a
+   * pattern's fact is derived from its recipe id (patternMeaningFactId). Without
+   * an id here a caller can render the board and cannot tell the scheduler what
+   * was just answered — which is why the seam sat unused. Recipe ids, not fact
+   * ids, so this module stays clear of the facts layer; the caller maps.
+   */
+  readonly id: string | null;
 }
 
 /**
@@ -57,6 +69,17 @@ export interface GrammarChoice {
  */
 export interface GrammarMc {
   readonly kind: "selection" | "transitivity";
+  /**
+   * WHICH PATTERN is being asked — the answer's recipe id, for selection; null
+   * for transitivity, which has no recipe (and, deliberately, no fact — see
+   * data/transitivity.ts).
+   *
+   * The companion to GrammarChoice.id, and for the same reason: a selection item
+   * asks "do you know what this pattern MEANS and where it goes", which is the
+   * fact patternMeaningFactId(recipeId) already scores. Selection must never
+   * touch the PRODUCTION fact — that is the other question ("build the form").
+   */
+  readonly recipeId: string | null;
   /** The big line: a sentence FRAME with a blank (selection), or the English
    * cue (transitivity). */
   readonly prompt: string;
@@ -114,11 +137,13 @@ function fromSelection(q: SelectionQuestion, rng: Rng): GrammarMc {
     label: c.pattern,
     jp: true,
     sub: c.gloss,
+    id: c.id,
   }));
   const correct = q.choices.findIndex((c) => c.id === q.answerId);
   const { choices, correctIndex } = place(raw, correct, rng);
   return {
     kind: "selection",
+    recipeId: q.answerId,
     prompt: q.frame,
     promptJp: true,
     instruction: SELECTION_PROMPT,
@@ -157,11 +182,16 @@ export function transitivityMc(
 ): GrammarMc | null {
   const q = transitivityQ(pair, side);
   if (!q) return null;
-  const raw: GrammarChoice[] = q.choices.map((c) => ({ label: c.word, jp: true }));
+  const raw: GrammarChoice[] = q.choices.map((c) => ({
+    label: c.word,
+    jp: true,
+    id: null,
+  }));
   const correct = q.choices.findIndex((c) => c.word === q.answer);
   const { choices, correctIndex } = place(raw, correct, rng);
   return {
     kind: "transitivity",
+    recipeId: null,
     prompt: q.en,
     promptJp: false,
     instruction: TRANSITIVITY_PROMPT,
@@ -179,10 +209,14 @@ export function transitivityMc(
  * when the pattern is not selectable in any of its sentences — a real answer,
  * not a bug (see selectableRecipes in questions.ts).
  */
-export function selectionMcsFor(recipeId: string, rng: Rng = Math.random): GrammarMc[] {
+export function selectionMcsFor(
+  recipeId: string,
+  rng: Rng = Math.random,
+  wanted = 4,
+): GrammarMc[] {
   const out: GrammarMc[] = [];
   for (const ex of examplesFor(recipeId)) {
-    const mc = selectionMc(ex, recipeId, rng);
+    const mc = selectionMc(ex, recipeId, rng, wanted);
     if (mc) out.push(mc);
   }
   return out;
