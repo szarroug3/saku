@@ -156,6 +156,14 @@ export function formatCountdown(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** "3:47 PM" — the wall-clock time the rest ends, in the browser's timezone. */
+export function formatReturnTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 // ---------- stats merging ----------
 
 function emptyStat(): FactSessionDetail {

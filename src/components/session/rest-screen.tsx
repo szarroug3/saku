@@ -16,7 +16,8 @@
 // that felt so helpful in the first draft. An earlier version of this screen
 // was the nicest-looking one in the set and it defeated the entire feature.
 //
-// What's left is: how long, and the two ways out. That's the screen.
+// What's left is: how long (the countdown and the wall-clock return time), and
+// the two ways out. That's the screen.
 //
 // (The SESSION-COMPLETE screen may show results — it's a different screen,
 // after a different decision, and nothing follows it. Don't reason from it
@@ -34,7 +35,12 @@
 // flight.
 
 import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
-import { formatCountdown, restLeftMs, type StudySession } from "@/lib/session";
+import {
+  formatCountdown,
+  formatReturnTime,
+  restLeftMs,
+  type StudySession,
+} from "@/lib/session";
 
 export function RestScreen({
   session,
@@ -88,9 +94,11 @@ export function RestScreen({
             <p className="text-[76px] font-extralight leading-none tracking-[-2.5px] tabular-nums">
               {Number.isFinite(left) ? formatCountdown(left) : " "}
             </p>
-            <p className="mx-auto mt-4.5 max-w-[34ch] text-[13px] text-text-muted">
-              Rest. Nothing to read here.
-            </p>
+            {session.restUntil !== null && (
+              <p className="mt-4.5 text-[13px] text-text-muted">
+                Come back at {formatReturnTime(session.restUntil)}
+              </p>
+            )}
             <div className="mt-6 flex justify-center gap-2">
               <SmallBtn onClick={onDone}>Done for now</SmallBtn>
               <SmallBtn onClick={onComplete}>Complete session now</SmallBtn>
@@ -108,8 +116,7 @@ export function RestScreen({
           you need to.
         </Hint>
         <Hint>
-          No notification, no sound. Close the tab if you like, come back
-          whenever and it says ready.
+          Reloading or closing the page will not lose your progress.
         </Hint>
       </Card>
     </>
