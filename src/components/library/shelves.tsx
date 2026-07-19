@@ -24,7 +24,10 @@
 // So `shelfSections` takes the order, and the kanji shelf is cut into
 // consecutive hundreds OF THAT ORDER, labelled by range ("1–100", "101–200").
 // Reading the shelf left to right, top to bottom, is reading the order you will
-// meet them in. `grade` mode still cuts by grade, because in THAT mode the
+// meet them in. IT STOPS AFTER THREE OF THEM, because 2,136 kanji is 22 cards
+// nobody scrolls and 300 is plenty to have on a page; a counted line says how
+// many are left and sends you to search, which is what the words shelf has
+// always done with its 12,553. `grade` mode still cuts by grade, because in THAT mode the
 // grades are the study order — the boundary between grade 3 and grade 4 is a
 // real event in the queue, and a range label would erase it. Its label just
 // drops the jargon: "School grade 4", the wording the setting already uses.
@@ -41,7 +44,7 @@
 
 import Link from "next/link";
 
-import { KANJI_SUBJECT } from "@/data/kanji";
+import { KANJI, KANJI_SUBJECT } from "@/data/kanji";
 import { KANA_SUBJECT, SETS } from "@/data/characters";
 import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT } from "@/data/vocab";
@@ -52,7 +55,7 @@ import { EntryRow, EntryTile } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
 import type { Claims } from "@/lib/claims";
 import { entryForGlyph, libEntry, type Kind, type LibEntry } from "@/lib/library/entries";
-import { kanjiCuts } from "@/lib/library/kanji-shelf";
+import { KANJI_SECTIONS_SHOWN, kanjiCuts } from "@/lib/library/kanji-shelf";
 import { sectionState, type Selection } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
 import { factsOf } from "@/lib/facts";
@@ -82,10 +85,10 @@ const WORD_TILES = 120;
  * to search — the words shelf's honesty, applied per grade, because grade 8
  * alone holds 1,110 of the 2,136. The SELECT toggle and the count stay over the
  * WHOLE grade, so "select all of grade 1" still means all of it; only the tiles
- * are capped. The range sections do NOT use this: a range is 100 long, capping
- * it at 60 would hide 40 of every 100, and rendering all 2,136 measured cheap
- * enough (see kanji-shelf.ts) that the apologetic "go and search" line is gone
- * from the default mode entirely. */
+ * are capped. The range sections do NOT use this: a range is 100 long, and
+ * capping it at 60 would hide 40 of every 100 — a range section is shown WHOLE
+ * or not at all, and the range modes stop after KANJI_SECTIONS_SHOWN of them
+ * instead. */
 const KANJI_TILES = 60;
 
 /** The sections of a shelf.
@@ -105,8 +108,15 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
             .flatMap((id) => resolve(id)),
         })),
       );
-    case KANJI_SUBJECT:
-      return kanjiCuts(kanjiOrder).map((cut) => ({
+    case KANJI_SUBJECT: {
+      const cuts = kanjiCuts(kanjiOrder);
+      // THE CAP LIVES HERE, not in kanjiCuts. The cut is arithmetic and stays
+      // complete — its tests hold that the cuts tile all 2,136 — so this is the
+      // shelf deciding how much of a complete cut it is willing to paint. Only
+      // the range modes stop early; `grade`'s seven sections are the study order
+      // and all seven stay. Whatever this drops, the trailing line in `Shelf`
+      // counts and names, so the two cannot drift apart.
+      return (kanjiOrder === "grade" ? cuts : cuts.slice(0, KANJI_SECTIONS_SHOWN)).map((cut) => ({
         id: cut.id,
         label: cut.label,
         entries: cut.glyphs.flatMap((c) => resolve(entryForGlyph(KANJI_SUBJECT, c))),
@@ -114,6 +124,7 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
         // to render whole.
         cap: kanjiOrder === "grade" ? KANJI_TILES : undefined,
       }));
+    }
     case GRAMMAR_SUBJECT:
       // By JLPT level, the one cut the recipes already carry. It is opinion, not
       // fact (see recipes.ts) — good enough for a shelf, and it keeps the two
@@ -232,6 +243,16 @@ export function Shelf({
   // does not.
   const asRows = kind === GRAMMAR_SUBJECT || kind === MARK_SUBJECT;
 
+  // What the kanji shelf is not showing you. COUNTED, never written down: it is
+  // the whole set minus what the sections above actually hold, so it stays right
+  // if KANJI_SECTIONS_SHOWN or KANJI_CHUNK ever moves. In `grade` mode the
+  // sections cover all 2,136, so this is 0 and the line does not appear — that
+  // mode says what it is holding back per section instead.
+  const offShelf =
+    kind === KANJI_SUBJECT
+      ? KANJI.length - sections.reduce((n, s) => n + s.entries.length, 0)
+      : 0;
+
   return (
     <>
       {kind === KANA_SUBJECT ? <TofuguCard /> : null}
@@ -293,6 +314,14 @@ export function Shelf({
           </Card>
         );
       })}
+      {offShelf > 0 ? (
+        <p className="pt-0.5">
+          <Hint>
+            ＋ {offShelf.toLocaleString()} more kanji further along your order —
+            search to find any of them.
+          </Hint>
+        </p>
+      ) : null}
     </>
   );
 }
