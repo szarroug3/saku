@@ -104,15 +104,15 @@ function WholeShapeFallback({
       <p className="text-[13px] text-text-muted">
         <span className="text-text">
           {row.strokes} stroke{row.strokes === 1 ? "" : "s"}
-        </span>{" "}
-        — the stroke-order diagram for this one isn&rsquo;t in yet.
+        </span>
+        , and the stroke-order diagram for this one isn&rsquo;t in yet.
       </p>
     );
   }
 
   return (
     <p className="text-[13px] text-text-muted">
-      Learned as a whole shape — the stroke-order diagram for this one
+      Learned as a whole shape. The stroke-order diagram for this one
       isn&rsquo;t in yet.
     </p>
   );
@@ -175,7 +175,7 @@ export function HowItsWritten({
       {!open ? (
         // Inviting, not discouraging: it's worth learning, and here's why.
         <p className="mt-1.5 text-[12px] leading-relaxed text-text-muted">
-          Stroke order is worth learning — draw a character the standard way and
+          Stroke order is worth learning: draw a character the standard way and
           it comes out balanced and legible. Expand to see how this one is
           drawn.
         </p>

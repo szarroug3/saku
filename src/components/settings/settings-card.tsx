@@ -228,7 +228,7 @@ function ResetProgress() {
       </p>
       {done ? (
         <Hint>
-          Knowledge base cleared. The app is back to its first lesson — open the
+          Knowledge base cleared. The app is back to its first lesson. Open the
           home page to start over.
         </Hint>
       ) : (
@@ -364,7 +364,7 @@ export function SettingsCard() {
         </Row>
         <Row
           label="Longest lesson"
-          info="A lesson fills toward this and stops. One kanji can still be bigger than it all on its own — 鬱 is 29 strokes and can't be split — and the lesson says so when that happens."
+          info="A lesson fills toward this and stops. One kanji can still be bigger than it all on its own, and 鬱 is 29 strokes and can't be split, so the lesson says so when that happens."
         >
           {/* Can't drop below the shortest — the other half of the same rule. */}
           <SmallBtn
@@ -392,7 +392,7 @@ export function SettingsCard() {
         <Lbl>How many new words per lesson</Lbl>
         <Row
           label="Words per lesson"
-          info="A word lesson teaches this many new words. A word only shows up once you know the kanji it's written with, so the track hands them to you as they unlock — this is how many at a time."
+          info="A word lesson teaches this many new words. A word only shows up once you know the kanji it's written with, so the track hands them to you as they unlock. This is how many at a time."
         >
           <SmallBtn
             disabled={cfg.wordsPerLesson <= 1}
@@ -551,7 +551,7 @@ export function SettingsCard() {
         <Lbl>Breaks between rounds</Lbl>
         <Row
           label="First break"
-          info="The rest after your first round. Nothing runs during it — close the tab if you like, the clock is just a time it ends at."
+          info="The rest after your first round. Nothing runs during it, so close the tab if you like: the clock is just a time it ends at."
         >
           <NumIn
             value={cfg.restFirstMin}
@@ -628,7 +628,7 @@ export function SettingsCard() {
             seconds, and 1500 is not a number anyone has an opinion about. */}
         <Row
           label="Never call an answer slow if it came in under"
-          info="Slow is measured against your own recent pace, not a fixed number, so as you get faster and steadier the bar comes down with you. This is the floor it can't go below — without one, a very quick, very consistent run would start flagging good answers."
+          info="Slow is measured against your own recent pace, not a fixed number, so as you get faster and steadier the bar comes down with you. This is the floor it can't go below. Without one, a very quick, very consistent run would start flagging good answers."
         >
           <NumIn
             value={Math.round(cfg.slowFloorMs / 100) / 10}

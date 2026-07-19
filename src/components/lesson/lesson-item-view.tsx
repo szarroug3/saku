@@ -65,7 +65,7 @@ function subtitleOf(item: LessonItem): string {
     case "word":
       return [entry.readings[0], entry.meanings.slice(0, 3).join(", ")]
         .filter(Boolean)
-        .join(" — ");
+        .join(": ");
     case "grammar":
       return entry.meanings[0] ?? "";
   }
@@ -191,8 +191,22 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           own emptiness, so a kana shows only "how it's written" and a kanji adds
           its readings and the words it shows up in. */}
       <div className="mt-9 space-y-3 border-t border-border pt-7">
-        {/* How it's written — collapsed by default, a persisted preference. */}
-        <HowItsWritten item={item} />
+        {/* How it's written. Collapsed by default, a persisted preference, and
+            gated on the track the same way the two sections below it are.
+
+            SINGLE CHARACTERS ONLY. A kana has a real stroke diagram; a kanji has
+            no diagram yet but a real stroke COUNT, which is worth showing and
+            stays. A WORD is several characters and a GRAMMAR pattern is a shape
+            with no stroke order at all, so for those the section had nothing to
+            say and said so out loud: "learned as a whole shape, the stroke-order
+            diagram for this one isn't in yet." That is wrong for 学生, whose two
+            kanji each have their own order, and meaningless for 〜てから. The
+            Library reached the same conclusion from the other side (see the
+            alwaysOpen branch of how-its-written.tsx, which returns null rather
+            than announcing an absence). */}
+        {item.kind === "kana" || item.kind === "kanji" ? (
+          <HowItsWritten item={item} />
+        ) : null}
 
         {/* KANJI readings — minimised, collapsed, not drilled until words unlock
             them. Renders nothing for other tracks. */}
@@ -209,7 +223,7 @@ export function LessonItemView({ item }: { item: LessonItem }) {
               ))}
             </div>
             <p className="mt-2 text-[11px] leading-relaxed text-text-muted/80">
-              You&rsquo;ll learn these as words later — each one you learn unlocks a
+              You&rsquo;ll learn these as words later. Each one you learn unlocks a
               reading above.
             </p>
           </div>

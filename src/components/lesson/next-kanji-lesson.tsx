@@ -83,7 +83,7 @@ export function NextKanjiLesson({
         {over ? (
           <p className="mt-2 rounded-lg border border-border bg-panel px-3 py-2 text-[12px] text-text-muted">
             {cards.length === 1
-              ? "This is one large kanji — bigger than your usual lesson, and it can't be split."
+              ? "This is one large kanji, bigger than your usual lesson, and it can't be split."
               : "These must be learned together and are bigger than your usual lesson."}
           </p>
         ) : null}

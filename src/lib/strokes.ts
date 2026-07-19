@@ -40,9 +40,23 @@ type StrokeMap = Record<string, GlyphStrokes | undefined>;
 
 /** Which ingested asset a glyph lives in, or null for anything not ingested
  * (kanji, punctuation, the collapsed-section sentinel ""). Kana are contiguous
- * Unicode blocks, so the codepoint alone decides — no table to keep in sync. */
-type Script = "hiragana" | "katakana";
-function scriptOf(glyph: string): Script | null {
+ * Unicode blocks, so the codepoint alone decides — no table to keep in sync.
+ *
+ * SINGLE CHARACTER ONLY, AND WHY THE GUARD LIVES HERE
+ * ===================================================
+ * The asset is keyed by ONE glyph. A multi-character string can never hit it:
+ * a kana word like これ starts with hiragana, so testing the first codepoint
+ * alone said "hiragana", the whole hiragana map was fetched over the network,
+ * and `map["これ"]` missed anyway — a download paid for a guaranteed miss. The
+ * length test sits here rather than at a call site because this is the ONE
+ * funnel every lookup passes through on its way to a fetch, so a future caller
+ * cannot route around it. Counted in codepoints, not UTF-16 units, so a glyph
+ * outside the BMP still reads as one character.
+ *
+ * Exported for the test; the hook is the only runtime caller. */
+export type Script = "hiragana" | "katakana";
+export function scriptOf(glyph: string): Script | null {
+  if ([...glyph].length !== 1) return null;
   const cp = glyph.codePointAt(0);
   if (cp === undefined) return null;
   if (cp >= 0x3041 && cp <= 0x309f) return "hiragana";

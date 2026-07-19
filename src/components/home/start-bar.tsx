@@ -117,7 +117,7 @@ export function StartBar({
           // statement about right now, with the way out in the same sentence:
           // the app has nothing to learn by asking these today, and the fix is
           // to select more — which is the screen you are already on.
-          "You're solid on all of these for now — pick another deck to drill something else."
+          "You're solid on all of these for now. Pick another deck to drill something else."
         : null;
 
   return (

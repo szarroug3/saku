@@ -57,7 +57,7 @@ function where(session: StudySession, now: number): string {
         ? `resting before round ${session.round + 1}`
         : `ready for round ${session.round + 1}`;
     case "complete":
-      return "finished — not saved yet";
+      return "finished, not saved yet";
   }
 }
 

@@ -114,7 +114,7 @@ function GatedLead({
       <h1 className="text-[22px] font-light tracking-[-0.3px]">{word.meaning}</h1>
       <p className="mt-0.5 text-[13px] text-text-muted">
         Your next word is{" "}
-        <span className="font-kana text-text">{word.keb}</span> — learn the
+        <span className="font-kana text-text">{word.keb}</span>. Learn the
         kanji <MissingList missing={missing} /> to unlock it.
       </p>
 

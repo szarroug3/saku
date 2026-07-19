@@ -53,7 +53,7 @@ export function LessonReadings({ item }: { item: LessonItem }) {
 
       {!open ? (
         <p className="mt-1.5 text-[12px] leading-relaxed text-text-muted">
-          You only just learned this character — you can&rsquo;t read these yet,
+          You only just learned this character, so you can&rsquo;t read these yet,
           and the app won&rsquo;t ask for one until a word teaches it. Here if you
           want a look.
         </p>
@@ -72,7 +72,7 @@ export function LessonReadings({ item }: { item: LessonItem }) {
                   <td className="py-2 pr-2 align-middle">
                     <span className="text-[15px]">{r.label}</span>
                     {r.answer && r.answer !== r.label ? (
-                      <span className="ml-1.5 text-text-muted">— {r.answer}</span>
+                      <span className="ml-1.5 text-text-muted">({r.answer})</span>
                     ) : null}
                   </td>
                   <td className="py-2 align-middle text-text-muted">
@@ -81,7 +81,7 @@ export function LessonReadings({ item }: { item: LessonItem }) {
                         {r.askedIn.slice(0, 3).join(" · ")}
                       </span>
                     ) : r.unattested ? (
-                      <span className="text-[11px] italic">rarer — here, never asked</span>
+                      <span className="text-[11px] italic">rarer: here, never asked</span>
                     ) : (
                       "—"
                     )}
@@ -91,7 +91,7 @@ export function LessonReadings({ item }: { item: LessonItem }) {
             </tbody>
           </table>
           <p className="mt-2 text-[11px] leading-relaxed text-text-muted/80">
-            Not drilled yet — each reading unlocks when you learn a word that
+            Not drilled yet. Each reading unlocks when you learn a word that
             uses it.
           </p>
         </div>
