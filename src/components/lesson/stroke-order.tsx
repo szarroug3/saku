@@ -39,7 +39,14 @@
 // Strokes come from src/lib/strokes.ts (lazy). This component is only mounted
 // with real data; the loading / no-data cases are the caller's (how-its-written).
 
-import { useSyncExternalStore, type CSSProperties } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
 
 import { STROKE_GRID, type GlyphStrokes } from "@/lib/strokes";
 
@@ -180,6 +187,34 @@ function StepCell({ strokes, upTo }: { strokes: string[]; upTo: number }) {
 }
 
 /**
+ * How many ROWS of frames the chart shows before it offers to open up.
+ *
+ * THE CUT IS BY ROWS, NOT BY A COUNT, and that is the whole reason this needs
+ * measuring rather than a `slice`. A fixed count has to be wrong on one screen
+ * or the other: 12 frames is two tidy rows on a laptop and six on a phone.
+ * Cutting by rows means a wide window simply shows more per row and fewer rows
+ * are hidden — one rule that produces the right answer at every width, with no
+ * breakpoint to keep in sync.
+ *
+ * Two rows because of the measured distribution: kana top out at 4 strokes (き
+ * is 4, not 3) so they never truncate at any width, and of 2,136 kanji the
+ * median is 10 — 1,095 sit at 1–10 and only 11 are past 21. The cap exists for
+ * the tail (鬱 is 29 and printed 29 cells before this), not for the common case.
+ */
+const COLLAPSED_ROWS = 2;
+
+/** One frame's full height: the 48px cell, the 4px gap under it, and the ordinal.
+ * Kept beside the markup it measures — `h-12`, `gap-1`, `text-[10px]
+ * leading-none` — because a change there and not here silently clips a row. */
+const CELL_H = 62;
+/** `gap-2` between wrapped rows. */
+const ROW_GAP = 8;
+
+function collapsedHeight(rows: number): number {
+  return rows * CELL_H + (rows - 1) * ROW_GAP;
+}
+
+/**
  * The full stroke-order display for a glyph that has data.
  */
 export function StrokeOrder({ data }: { data: GlyphStrokes }) {
@@ -187,24 +222,77 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
   const { strokes } = data;
   const steps = Array.from({ length: strokes.length }, (_, i) => i + 1);
 
+  const [open, setOpen] = useState(false);
+  // Whether the frames actually overflow the collapsed height AT THIS WIDTH.
+  // Measured rather than inferred from the stroke count, for the same reason the
+  // cut is by rows: at 29 strokes a wide window may still fit two rows, and
+  // offering to "show all" when everything is already shown is a control that
+  // does nothing.
+  const [clipped, setClipped] = useState(false);
+  const frames = useRef<HTMLDivElement>(null);
+
+  const measure = useCallback(() => {
+    const el = frames.current;
+    if (!el) return;
+    setClipped(el.scrollHeight > collapsedHeight(COLLAPSED_ROWS) + 1);
+  }, []);
+
+  // Layout effect + a resize observer: the answer depends on the element's
+  // width, which is not known until after layout and changes when the window
+  // does. An effect alone would flash the wrong state on first paint.
+  useLayoutEffect(() => {
+    measure();
+    const el = frames.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [measure, strokes.length]);
+
   return (
     <div className="mt-1">
-      <div className="flex flex-wrap items-start gap-4">
+      {/* `flex-nowrap` — NOT the default wrap. The frames live in their own
+          column BESIDE the animation and wrap INSIDE it; let the row wrap and a
+          long kanji pushes the whole chart underneath the diagram instead,
+          which is the layout this pairing exists to avoid. */}
+      <div className="flex flex-nowrap items-start gap-4">
         {/* The draw-along. It loops on its own, so there is nothing to press. */}
         <div className="rounded-lg border border-border bg-card p-1">
           <DrawAlong strokes={strokes} animate={!reduced} />
         </div>
 
-        {/* The numbered step-by-step chart. */}
-        <div className="min-w-0 flex-1">
-          <p className="mb-1.5 text-[11px] text-text-muted">
-            Stroke by stroke
-          </p>
-          <div className="flex flex-wrap gap-2">
+        {/* The numbered step-by-step chart. No heading: these are numbered
+            frames under a card already titled "How it's written", and naming
+            them twice is the card explaining itself.
+
+            `min-w-0` IS LOAD-BEARING and is not the same as `flex-1`. A flex
+            item's default `min-width: auto` refuses to shrink below its content,
+            so without this a 29-frame chart forces the row wider than its
+            container and the row breaks rather than the frames wrapping — the
+            exact failure the `flex-nowrap` above is trying to prevent. */}
+        <div className="min-w-0 flex-[1_1_0]">
+          <div
+            ref={frames}
+            className="flex flex-wrap gap-2 overflow-hidden"
+            style={open ? undefined : { maxHeight: collapsedHeight(COLLAPSED_ROWS) }}
+          >
             {steps.map((n) => (
               <StepCell key={n} strokes={strokes} upTo={n} />
             ))}
           </div>
+          {/* EXPANDS IN PLACE. Never a modal: this page IS the reference, and a
+              dialog puts a dismissal between the reader and the thing they came
+              for — and costs them reading the strokes and the mnemonic together,
+              which is the pairing the page is arranged around. */}
+          {clipped || open ? (
+            <button
+              type="button"
+              onClick={() => setOpen(!open)}
+              className="mt-1.5 cursor-pointer border-none bg-transparent p-0 text-[11px] text-text-muted underline"
+            >
+              {open ? "Show fewer" : `Show all ${strokes.length} strokes`}
+            </button>
+          ) : null}
         </div>
       </div>
 
