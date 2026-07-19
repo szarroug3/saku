@@ -221,8 +221,8 @@ export const PREREQUISITE_ONLY: readonly string[] = KANJI_ORDER.filter(
  * The queue of kanji, in the order the user asked for — all 2,136, every mode.
  *
  * A TOTAL ORDER IN ALL THREE CASES, and the tie-breaks are why this is a
- * function and not three `.sort()` calls at three call sites. `grade` puts 1,006
- * kanji in grades 1–6 and 1,130 in grade 8; `newspaperFreq` is null for every
+ * function and not three `.sort()` calls at three call sites. `grade` puts 1,026
+ * kanji in grades 1–6 and 1,110 in grade 8; `newspaperFreq` is null for every
  * kanji outside KANJIDIC2's 2,501-strong survey. Sorting on either alone leaves
  * hundreds of items in whatever order the JSON happened to be written in, which
  * is a stable-looking sequence that is nobody's curriculum. Every mode below
@@ -247,7 +247,7 @@ export function kanjiTeachOrder(mode: NewKanjiOrder): readonly string[] {
   }
 }
 
-/** Unranked in the newspaper survey — ~10,600 kanji, 1,130 of them jōyō. Sorts
+/** Unranked in the newspaper survey — ~10,600 kanji, 99 of them jōyō. Sorts
  * last rather than first, which sorting on `null` numerically would do. */
 const UNRANKED = Number.MAX_SAFE_INTEGER;
 
