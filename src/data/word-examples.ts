@@ -36,11 +36,6 @@ const RAW = examplesJson as unknown as Readonly<
   Record<string, readonly [number, string, string]>
 >;
 
-/** Where a sentence can be read in context, and its contributors credited. */
-export function tatoebaHref(id: number): string {
-  return `https://tatoeba.org/en/sentences/show/${id}`;
-}
-
 /** The example sentence for a word's written form, or null if it has none.
  * Absent is a normal answer for four words in five — see the header. */
 export function exampleFor(keb: string): WordExample | null {

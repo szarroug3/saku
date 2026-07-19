@@ -17,15 +17,14 @@
 // page. A missing section is already legible, and 9,861 pages carrying a line
 // about their own gap would be the app narrating itself.
 //
-// THE ID IS THE ATTRIBUTION. Every sentence links to its Tatoeba page, where
-// the contributors who wrote and translated it are named. The licence
-// acknowledgement is the AttributionLink at the foot of the page — its label
-// already names sentence data and Tatoeba — and this link is the provenance on
-// top of it: it is how a reader checks a sentence, and how they report a bad
-// one.
+// ATTRIBUTION LIVES IN THE PAGE FOOTER. AttributionLink names Tatoeba and leads
+// to /about/data, which identifies the contributors and CC BY 2.0 FR licence.
+// Tatoeba's own reuse guidance permits one shared acknowledgement, so repeating
+// a provenance line under every example is unnecessary. The source id remains
+// in WordExample and the generated data for auditing or reporting a bad row.
 
 import { Card, Lbl } from "@/components/ui";
-import { tatoebaHref, type WordExample } from "@/data/word-examples";
+import type { WordExample } from "@/data/word-examples";
 
 export function WordExampleView({ example }: { example: WordExample }) {
   return (
@@ -35,16 +34,6 @@ export function WordExampleView({ example }: { example: WordExample }) {
         {example.jp}
       </p>
       <p className="mt-1.5 text-sm text-text-muted">{example.en}</p>
-      <p className="mt-2.5 text-xs text-text-muted">
-        <a
-          href={tatoebaHref(example.id)}
-          target="_blank"
-          rel="noreferrer"
-          className="text-text-muted underline"
-        >
-          Sentence {example.id} from Tatoeba
-        </a>
-      </p>
     </Card>
   );
 }
