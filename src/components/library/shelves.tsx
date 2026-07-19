@@ -50,6 +50,7 @@ import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
+import { CLUSTERS } from "@/data/grammar/clusters";
 import { RECIPES } from "@/data/grammar/recipes";
 import { EntryRow, EntryTile } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
@@ -330,18 +331,47 @@ export function Shelf({
 /** The way into the cluster maps, now that Grammar is a Library shelf rather
  * than a tab. The maps are uniquely grammar — "the seven ways to say must", side
  * by side — and do not fit a tile grid, so they stay their own view and this is
- * the door to it. */
+ * the door to it.
+ *
+ * EVERY CLUSTER IS NAMED HERE, and that is the change: this card used to be one
+ * sentence and a single link to the index, so the twelve maps existed but could
+ * only be found by someone who already knew to go looking. Naming them makes the
+ * Library the place they are discovered, which is what a Library is for, and a
+ * cluster's name is short enough that all twelve fit in a wrapped row.
+ *
+ * A CLUSTER IS NOT A SIXTH `Kind`, on purpose. The temptation is real — the
+ * shelf switcher would then list it beside Kana and Kanji — but a `Kind` is a
+ * thing with an `EntryId`, a page under /library/[entry], and (for four of the
+ * five) FACTS the scheduler asks about. A cluster has no facts by construction:
+ * it is a MAP, it never touches the scheduler, and that independence is the
+ * whole promise of the page. It also already has a home at /grammar/[id], so a
+ * sixth kind would need `entryHref` to carry a per-kind escape hatch for the one
+ * kind whose pages are not where every other kind's pages are. A row of links to
+ * the maps that exist costs none of that. */
 function GrammarClustersCard() {
   return (
     <Card>
       <Lbl>Patterns that mean the same thing</Lbl>
-      <p className="text-[13px] text-text-muted">
+      <p className="mb-2.5 text-[13px] text-text-muted">
         Some patterns come out as the same English: seven ways to say{" "}
         <b className="font-medium text-text">must</b>, four ways to say{" "}
-        <b className="font-medium text-text">if</b>. Those are laid out side by
-        side on their own.{" "}
-        <Link href="/grammar" className="text-accent no-underline">
-          Compare similar patterns →
+        <b className="font-medium text-text">if</b>. Each family is laid out side
+        by side on a map of its own.
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {CLUSTERS.map((c) => (
+          <Link
+            key={c.id}
+            href={`/grammar/${c.id}`}
+            className="rounded-full border border-border px-2.5 py-0.5 text-[12.5px] text-text no-underline hover:border-accent hover:text-accent"
+          >
+            {c.title}
+          </Link>
+        ))}
+      </div>
+      <p className="pt-2.5">
+        <Link href="/grammar" className="text-[13px] text-accent no-underline">
+          All {CLUSTERS.length} side by side →
         </Link>
       </p>
     </Card>

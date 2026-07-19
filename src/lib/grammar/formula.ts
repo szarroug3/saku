@@ -50,8 +50,12 @@ export const HOST_LABEL: Record<Host, string> = {
 };
 
 /** The indefinite article each label wants. English, and irregular enough that
- * a vowel test would get "an い-adjective" wrong — the label starts with a kana. */
-const HOST_ARTICLE: Record<Host, string> = {
+ * a vowel test would get "an い-adjective" wrong — the label starts with a kana.
+ *
+ * Exported for the same reason HOST_LABEL is: the cluster page's group headings
+ * read "On an い-adjective", and a second article table would be a second chance
+ * to disagree with this one about which hosts take "an". */
+export const HOST_ARTICLE: Record<Host, string> = {
   verb: "a verb",
   "adj-i": "an い-adjective",
   "adj-na": "a な-adjective",
