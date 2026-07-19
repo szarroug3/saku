@@ -49,7 +49,10 @@ export function WordBuiltFrom({ pieces }: { pieces: readonly WordPiece[] }) {
   const tail = pieces.some((p) => p.kind === "kana" && p.okurigana);
 
   return (
-    <Card>
+    // A column, because the page pairs this box with the Links card in a row of
+    // one shared height: when this is the shorter of the two the notes below go
+    // to the bottom edge rather than floating in the middle of the dead space.
+    <Card className="flex h-full flex-col">
       <Lbl>Built from</Lbl>
       <div className="flex flex-wrap items-stretch gap-2">
         {pieces.map((p, i) =>
@@ -69,17 +72,21 @@ export function WordBuiltFrom({ pieces }: { pieces: readonly WordPiece[] }) {
         )}
       </div>
 
-      {tail ? (
-        <p className="mt-2.5 text-xs text-text-muted">
-          The dashed piece is <b className="text-text">okurigana</b> — the part
-          that changes. The kanji stays put and the tail decides which word it is.
-        </p>
-      ) : null}
+      {/* The footnotes, pinned to the foot. */}
+      <div className="mt-auto">
+        {tail ? (
+          <p className="mt-2.5 text-xs text-text-muted">
+            The dashed piece is <b className="text-text">okurigana</b> — the part
+            that changes. The kanji stays put and the tail decides which word it
+            is.
+          </p>
+        ) : null}
 
-      {/* Rendered ONLY when every piece resolved. A half-known compound gets no
-          sentence rather than a hedged one — see compoundNote, which returns
-          null the moment one reading is ambiguous. */}
-      {note ? <p className="mt-2 text-xs text-text-muted">{note}</p> : null}
+        {/* Rendered ONLY when every piece resolved. A half-known compound gets
+            no sentence rather than a hedged one — see compoundNote, which
+            returns null the moment one reading is ambiguous. */}
+        {note ? <p className="mt-2 text-xs text-text-muted">{note}</p> : null}
+      </div>
     </Card>
   );
 }

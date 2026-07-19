@@ -581,7 +581,16 @@ function EntryView({ entry }: { entry: LibEntry }) {
               />
             </Card>
           ) : null}
-          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] items-start gap-3.5 max-[860px]:grid-cols-1">
+          {/* ONE ROW, ONE HEIGHT. Every two-column row on this page (here, the
+              kanji strokes, the word's pieces, the grammar recipe) drops
+              `items-start` so both boxes take the row's height and read as a
+              pair rather than as two unrelated boxes of different sizes. The
+              Card's own `mb-3.5` is zeroed inside the grid — the gap and the
+              row's own bottom margin already do that spacing, and a margin on a
+              stretched item would end it short of its neighbour. Below 860px
+              the grid is one column, so each item is its own row and stretching
+              means nothing: heights go back to content. */}
+          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
             <HowItsWritten
               item={{ entry: entry.id, glyph: entry.glyph, kind: "kana", facts: [] }}
               alwaysOpen
@@ -608,7 +617,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
           {/* Strokes take the wider half: five frames plus the animation do not
               fit an even split. The pairing is what stops the page being a stack
               of full-width boxes. */}
-          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] items-start gap-3.5 max-[860px]:grid-cols-1">
+          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
             <HowItsWritten
               item={{ entry: entry.id, glyph: entry.glyph, kind: "kanji", facts: [] }}
               alwaysOpen
@@ -642,7 +651,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* ================= WORD ================= */}
       {isWord ? (
         <>
-          <div className="mb-3.5 grid grid-cols-2 items-start gap-3.5 max-[860px]:grid-cols-1">
+          <div className="mb-3.5 grid grid-cols-2 gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
             {/* Absent, not empty, for a jukujikun (大人/おとな) and an all-kana
                 word: there is no per-kanji reading to show, and inventing one
                 would be a fact that cannot be graded. */}
@@ -665,7 +674,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
               examples are a line of Japanese plus three arrows, and squeezed
               into an even split they reflow into a ribbon. The pairing is what
               stops the page being a stack of full-width boxes. */}
-          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] items-start gap-3.5 max-[860px]:grid-cols-1">
+          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
             <PatternRecipe formula={formula} />
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
