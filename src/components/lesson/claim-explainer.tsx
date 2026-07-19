@@ -22,6 +22,40 @@
 // carries accent weight rather than the muted-footnote styling it had when it
 // was an aside to a single card.
 //
+// THE WORDING, AND THE TWO MECHANISMS IT HAS TO SURVIVE
+// =====================================================
+// "…the app stops putting it in front of you. It counts as known, so whatever
+// was waiting on it opens up."
+//
+// Claiming does two different things, and a shorter phrasing breaks one of them:
+//
+//  1. THE SCHEDULER LEAVES IT ALONE. claimedFact in src/lib/claims.ts writes
+//     CLAIMED_DAYS = 90 of stability, so weakness ranking treats it as known and
+//     stops surfacing it. This is why claiming is worth doing at all.
+//  2. AN EXPLICIT SCOPE SWEEPS IT BACK IN. "Quiz me on all hiragana so far"
+//     resolves through scriptSoFar() in src/lib/lesson.ts, which is built from
+//     KANA_GROUPS in curriculum order and reads no history at all — so a kana
+//     you claimed IS in that set and WILL be asked. Same for any deck you build
+//     by hand in the Library, which selects by query, not by what you drilled.
+//
+// Hence "the app stops putting it in front of you" rather than the shorter
+// "stops coming up": the app stops CHOOSING it for you, but it does not refuse
+// to ask it when YOU choose it. "Stops coming up" reads as a promise that it is
+// gone for good, which (2) breaks. The converse trap is just as bad — do NOT
+// reword toward "fair game for future lessons and drills," which reads as a
+// promise it keeps coming up, and (1) breaks that.
+//
+// The second sentence is the payoff, and it is the sense of "opens up" the owner
+// meant: claiming counts through effectiveState, so everything GATED on it
+// becomes teachable — claim a kanji and the words needing it open (word-
+// lesson.ts), claim a word and the readings it attests unlock (word-unlock.ts).
+//
+// The sentence this replaced ("takes your word for it now, and checks back in a
+// few months") was TRUE — CLAIMED_DAYS decays to a probe in a season — and it
+// dodged both traps by simply not making a claim about scope. But it spent the
+// one sentence we get on the app's own bookkeeping instead of on what claiming
+// buys you. The recheck still happens; it introduces itself when it arrives.
+//
 // WHY useState + useEffect AND NOT read-during-render
 // ===================================================
 // localStorage can't be read during SSR or the first client paint without a
@@ -62,8 +96,9 @@ export function ClaimExplainer() {
     <div className="kq-material mb-3.5 flex items-start gap-3 rounded-xl border border-accent bg-accent-bg p-[18px]">
       <p className="flex-1 text-[13px] leading-relaxed text-text">
         Say you already know something — a kana, a kanji, a word, a grammar
-        pattern — and it goes into your knowledge base and stops coming up. The
-        app takes your word for it now, and checks back in a few months.
+        pattern — and it goes into your knowledge base, and the app stops putting
+        it in front of you. It counts as known, so whatever was waiting on it
+        opens up.
       </p>
       <button
         type="button"
