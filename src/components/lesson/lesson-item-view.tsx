@@ -52,6 +52,7 @@ import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor } from "@/data/characters";
 import { cluster, membersOf } from "@/data/grammar/clusters";
 import { kanjiRow } from "@/data/kanji";
+import { radicalByGlyph } from "@/data/radicals";
 import { getMnemonic } from "@/data/mnemonics";
 import { exampleFor } from "@/data/word-examples";
 import { vocabRow, type VocabRow } from "@/data/vocab";
@@ -60,6 +61,7 @@ import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { knownLookalikes } from "@/lib/kanji-lookalikes";
 import type { LessonItem } from "@/lib/lesson-items";
+import { radicalConsumerCount } from "@/lib/radical-order";
 import { formsOfWord } from "@/lib/word-forms";
 import { libEntry, recipeOf } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
@@ -423,6 +425,12 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // find out they were wrong until the drill marks them down for it. Absent
   // for the regular majority, so this is silent rather than empty.
   const note = item.kind === "kana" ? noteFor(item.glyph) : null;
+  // The radical being taught, when this step is one — its meaning and how many
+  // kanji it feeds are the whole lesson: a radical is a shape and an idea, not a
+  // sound, so there is no reading table or mnemonic, just what it means and the
+  // promise that it comes back.
+  const radical = item.kind === "radical" ? radicalByGlyph(item.glyph) : null;
+  const radicalAppearsIn = radical ? radicalConsumerCount(radical.num) : 0;
   const entry = libEntry(item.entry);
   const pattern = entry ? recipeOf(entry) : null;
   const word = item.kind === "word" ? vocabRow(item.glyph) : undefined;
@@ -470,6 +478,22 @@ export function LessonItemView({ item }: { item: LessonItem }) {
       {note ? (
         <div className="mt-6">
           <Callout>{note}</Callout>
+        </div>
+      ) : null}
+
+      {/* What a radical IS, on the one screen it is taught. A building block used
+          inside kanji rather than a word you speak, so the lesson asks only for
+          its meaning. The "appears in N kanji" line is the reason it earns a
+          card: this piece is about to come back. */}
+      {radical ? (
+        <div className="mt-6">
+          <Callout label="Radical.">
+            A building block used inside kanji, not a word on its own. This one
+            means &ldquo;{radical.meaning}&rdquo;.
+            {radicalAppearsIn > 0
+              ? ` It appears in ${radicalAppearsIn} kanji, so you'll meet it again.`
+              : " No common kanji uses it, so you're learning it to round out the set."}
+          </Callout>
         </div>
       ) : null}
 

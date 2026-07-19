@@ -142,6 +142,11 @@ export function nextRadicalLesson(
   };
 }
 
+/** How many radicals a single card teaches by default. A COUNT, not a cost:
+ * a radical is one meaning, so a handful per card keeps the run ahead of the
+ * kanji it gates without front-loading a wall of shapes. */
+export const RADICALS_PER_LESSON_DEFAULT = 5;
+
 /** Has the learner met any radical yet? Drives whether the radical card stays on
  * screen once opened, the way the other tracks track their own start. */
 export function hasStartedRadicalTrack(history: HistoryFile): boolean {
