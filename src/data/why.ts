@@ -180,8 +180,8 @@ export const WHY_STROKE_ORDER: Why = {
 export const WHY_TRACK: Record<string, Why> = {
   kanji: {
     lede: {
-      strong: "Kanji and words unlock each other.",
-      rest: "Each kanji you learn makes a batch of words teachable, and each word you learn proves how its kanji is read there.",
+      strong: "Kanji are the pieces words are built from.",
+      rest: "Learning them first makes the words track unlock cleanly.",
     },
     paras: [
       "Kanji is where you learn the individual characters and what each one means: 先 is “before”, 生 is “life”. On their own they aren’t much use (you don’t go around saying a lone kanji), but they’re the pieces every written word is built from.",

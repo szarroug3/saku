@@ -49,7 +49,7 @@ import {
   GRAMMAR_PER_LESSON_DEFAULT,
   nextGrammarLesson,
 } from "@/lib/grammar-lesson";
-import { nextWordLesson, topWordGate } from "@/lib/word-lesson";
+import { nextWordLesson, nextWordLock } from "@/lib/word-lesson";
 import { readingsProvedBy } from "@/lib/word-unlock";
 import { KANA_GROUP_FACTS, nextLesson } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -58,6 +58,13 @@ import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
 import type { FactId } from "@/types";
+
+function sameFactSet(a: readonly FactId[], b: readonly FactId[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set(a);
+  for (const f of b) if (!set.has(f)) return false;
+  return true;
+}
 
 export default function HomePage() {
   const { cfg, set } = useQuizConfig();
@@ -216,9 +223,16 @@ export default function HomePage() {
   // (which is what wordLesson, above, still supplies as the secondary offer). A
   // pure function of history — null only when the whole curriculum is finished,
   // the same finished state wordLesson returns null for.
-  const wordGate = useMemo(
-    () => (lesson ? null : topWordGate(history)),
-    [lesson, history],
+  const wordLock = useMemo(
+    () =>
+      lesson
+        ? null
+        : nextWordLock(
+            history,
+            cfg.wordsPerLesson,
+            kanjiTeachOrder(cfg.newKanjiOrder),
+          ),
+    [lesson, history, cfg.wordsPerLesson, cfg.newKanjiOrder],
   );
 
   // The grammar track — opened on the SAME gate as kanji (`lesson === null`, i.e.
@@ -344,6 +358,27 @@ export default function HomePage() {
     await refresh();
   };
 
+  const lessonInSession =
+    !!lesson &&
+    !!session &&
+    session.phase !== "complete" &&
+    sameFactSet(session.facts, lesson.facts);
+  const kanjiInSession =
+    !!kanjiLesson &&
+    !!session &&
+    session.phase !== "complete" &&
+    sameFactSet(session.facts, kanjiLesson.facts);
+  const wordInSession =
+    !!wordLesson &&
+    !!session &&
+    session.phase !== "complete" &&
+    sameFactSet(session.facts, wordLesson.facts);
+  const grammarInSession =
+    !!grammarLesson &&
+    !!session &&
+    session.phase !== "complete" &&
+    sameFactSet(session.facts, grammarLesson.facts);
+
   return (
     <>
       <PageTitle title="Kana quiz" />
@@ -372,6 +407,8 @@ export default function HomePage() {
           onTeach={teachLesson}
           onQuizMe={quizMe}
           onClaim={claim}
+          inSession={lessonInSession}
+          onContinue={continueSession}
         />
       ) : null}
 
@@ -385,6 +422,8 @@ export default function HomePage() {
           lesson={kanjiLesson}
           onStart={startLesson}
           onClaim={claim}
+          inSession={kanjiInSession}
+          onContinue={continueSession}
         />
       ) : null}
 
@@ -392,12 +431,14 @@ export default function HomePage() {
           parallel once kana is done. The word lesson IS its facts (meaning, and
           reading for a kanji word), all new, all taught: the same onStart the
           kanji card takes. Learning them is what unlocks the kanji readings. */}
-      {wordGate ? (
+      {wordLesson || wordLock ? (
         <NextWordLesson
-          gate={wordGate}
           lesson={wordLesson}
+          lock={wordLock}
           onStart={startWordLesson}
           onClaim={claimWordLesson}
+          inSession={wordInSession}
+          onContinue={continueSession}
         />
       ) : null}
 
@@ -411,6 +452,8 @@ export default function HomePage() {
           lesson={grammarLesson}
           onStart={startLesson}
           onClaim={claim}
+          inSession={grammarInSession}
+          onContinue={continueSession}
         />
       ) : null}
 

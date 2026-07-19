@@ -117,6 +117,9 @@ export interface StudySession {
   lastActiveAt: number;
 }
 
+/** The fixed number of quizzes in one session run. */
+export const SESSION_ROUND_TARGET = 3;
+
 /**
  * How long the rest before `nextRound` is, in minutes.
  *

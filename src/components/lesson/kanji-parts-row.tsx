@@ -34,12 +34,10 @@
 
 import Link from "next/link";
 
-import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
+import { LessonPanel } from "@/components/lesson/lesson-panel";
 import { kanjiEntry } from "@/data/kanji";
-import { knownLookalikes } from "@/lib/kanji-lookalikes";
 import { teachableParts } from "@/lib/kanji-parts";
 import { entryHref } from "@/lib/library/href";
-import type { HistoryFile } from "@/types";
 
 /** One character with its meaning, as a link to its own page. The shared tile
  * both halves use, so a part and a lookalike are visibly the same KIND of thing
@@ -56,17 +54,12 @@ function CharTile({ c, meaning }: { c: string; meaning: string }) {
   );
 }
 
-export function KanjiPartsRow({
-  glyph,
-  history,
-}: {
-  glyph: string;
-  history: HistoryFile;
-}) {
+export function KanjiPartsRow({ glyph }: { glyph: string }) {
   const parts = teachableParts(glyph);
-  const lookalikes = knownLookalikes(glyph, history);
 
-  const builtFrom = parts ? (
+  if (!parts) return null;
+
+  return (
     <LessonPanel title="Built from">
       <div className="flex flex-wrap items-center gap-2">
         {parts.map((p, i) => (
@@ -83,22 +76,5 @@ export function KanjiPartsRow({
         Each piece is a character you have already learned on its own.
       </p>
     </LessonPanel>
-  ) : null;
-
-  const lookOutFor = lookalikes.length ? (
-    <LessonPanel title="Look out for">
-      <div className="flex flex-wrap items-center gap-2">
-        {lookalikes.map((l) => (
-          <CharTile key={l.c} c={l.c} meaning={l.meaning} />
-        ))}
-      </div>
-      <p className="mt-auto pt-2.5 text-[11px] leading-relaxed text-text-muted/80">
-        {lookalikes.length === 1 ? "This one is" : "These are"} easy to read as{" "}
-        <span className="text-text">{glyph}</span> at speed. Look at what is
-        different.
-      </p>
-    </LessonPanel>
-  ) : null;
-
-  return <PairedRow wide={builtFrom} narrow={lookOutFor} even />;
+  );
 }

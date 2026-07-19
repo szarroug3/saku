@@ -33,30 +33,35 @@
 // a TOTAL: the teachable set grows as the kanji track advances, so "lesson 3 of
 // 40" would promise a 40 that moves. The card counts up ("lesson 3").
 
-import Link from "next/link";
-
 import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
-import { kanjiEntry } from "@/data/kanji";
+import type { Why } from "@/data/why";
 import { WHY_TRACK } from "@/data/why";
 import { positionLabel } from "@/lib/lesson-position";
-import { entryHref } from "@/lib/library/href";
-import type { WordGate, WordLesson } from "@/lib/word-lesson";
+import type { WordLesson, WordLock } from "@/lib/word-lesson";
 import type { FactId } from "@/types";
 
+const WORD_LOCK_WHY: Why = {
+  lede: {
+    strong: "Words are made of kanji.",
+    rest: "You learn the pieces first, then the set unlocks.",
+  },
+  paras: [
+    "Most words in this track are written with kanji, so the lesson waits until you know those characters.",
+    "Word lessons are ordered by commonality, so once this set unlocks you start with the most common words first.",
+  ],
+};
+
 export function NextWordLesson({
-  gate,
   lesson,
+  lock,
   onStart,
   onClaim,
+  inSession = false,
+  onContinue,
 }: {
-  /** The top-ranked unlearned word and its missing kanji — what the track most
-   * wants to teach next, and what (if anything) is gating it. */
-  gate: WordGate;
-  /** The best words you can already learn, or null when nothing is teachable
-   * yet. When the gate is open this is the LESSON; when the gate is closed it is
-   * the clearly-secondary "or practise…" offer. */
   lesson: WordLesson | null;
+  lock: WordLock | null;
   /**
    * Start a lesson. The facts ARE the session — the count was the unit, so
    * there is no budget and no length to apply.
@@ -69,119 +74,35 @@ export function NextWordLesson({
   onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
   /** "I already know these", over the lesson's words. */
   onClaim: (facts: FactId[]) => void;
+  inSession?: boolean;
+  onContinue?: () => void;
 }) {
-  const gated = gate.missing.length > 0;
-
   return (
     <Card>
-      {gated ? (
-        <GatedLead gate={gate} lesson={lesson} onStart={onStart} onClaim={onClaim} />
+      {lock ? (
+        <LockedLead away={lock.away} />
       ) : lesson ? (
-        <TeachableLesson lesson={lesson} onStart={onStart} onClaim={onClaim} />
+        <TeachableLesson
+          lesson={lesson}
+          onStart={onStart}
+          onClaim={onClaim}
+          inSession={inSession}
+          onContinue={onContinue}
+        />
       ) : null}
 
-      {/* Why words vs kanji vs grammar, and how kanji unlock words. Teaching
-          content about the language, so it belongs on screen; a pull, so only
-          the lede shows until opened — the same affordance kana's "Why?" uses. */}
-      <WhyDisclosure why={WHY_TRACK.words} />
+      <WhyDisclosure why={lock ? WORD_LOCK_WHY : WHY_TRACK.words} />
     </Card>
   );
 }
 
-/** The gated lead: the word the track wants to teach next, the kanji standing in
- * its way (linked to their Library entries), and — secondary — the best words
- * you can already learn. */
-function GatedLead({
-  gate,
-  lesson,
-  onStart,
-  onClaim,
-}: {
-  gate: WordGate;
-  lesson: WordLesson | null;
-  onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
-  onClaim: (facts: FactId[]) => void;
-}) {
-  const { word, missing } = gate;
-
+function LockedLead({ away }: { away: number }) {
   return (
     <>
       <Lbl>Up next · words</Lbl>
-
-      {/* The word, by its meaning — the same headline the teachable lesson uses,
-          so the two shapes read as one card. The written form and the gate come
-          just below; the reading is withheld (the word isn't teachable yet). */}
-      <h1 className="text-[22px] font-light tracking-[-0.3px]">{word.meaning}</h1>
       <p className="mt-0.5 text-[13px] text-text-muted">
-        Your next word is{" "}
-        <span className="font-kana text-text">{word.keb}</span>. Learn the
-        kanji <MissingList missing={missing} /> to unlock it.
+        You are {away} kanji away from learning the next set of words.
       </p>
-
-      {/* The kanji ARE the links — to the same Library entry the kanji track
-          points at, which prints the meaning, the readings and the word each
-          reading is proved by. Internal, so a plain Next <Link>, no new tab. */}
-      <div className="mt-4 flex flex-wrap gap-2">
-        {missing.map((m) => (
-          <Link
-            key={m.c}
-            href={entryHref(kanjiEntry(m.c))}
-            className="min-w-[92px] flex-1 rounded-lg border border-border px-2 pb-2.5 pt-3 text-center text-text no-underline hover:bg-panel"
-          >
-            <span className="block text-[34px] font-extralight leading-[1.15]">
-              {m.c}
-            </span>
-            <span className="mt-1 block text-[13px] text-text-muted">
-              {m.meaning}
-            </span>
-            <span className="mt-1 block text-[10px] leading-tight text-accent">
-              Learn this kanji
-            </span>
-          </Link>
-        ))}
-      </div>
-
-      {/* Secondary — the owner's word. Still offered, never the lead: the best
-          words you can already learn, behind a divider and a quieter heading, so
-          the track is never a dead end while the gate does its pushing. */}
-      {lesson ? (
-        <div className="mt-5 border-t border-border pt-4">
-          <p className="text-[13px] font-medium text-text-muted">
-            Or practise words you can already learn
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {lesson.cards.map((card) => (
-              <WordTile key={card.keb} card={card} />
-            ))}
-          </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-            <Btn onClick={() => onClaim(lesson.facts)}>
-              I already know{" "}
-              {lesson.cards.length === 1
-                ? "this"
-                : `these ${lesson.cards.length}`}
-            </Btn>
-            {/* The same skip-the-lesson fork the teachable shape carries, and
-                it has to be here too: this block is a whole lesson, just a
-                secondary one, and the claim explainer's promise does not stop
-                applying because the card's headline is about something else.
-                Bare "Quiz me" next to a "Practise these N" that already names
-                its scope — the scope is the same either way, so naming it twice
-                in one row would only make the row longer. */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Btn onClick={() => onStart(lesson.facts, { teach: false })}>
-                Quiz me
-              </Btn>
-              <Btn go onClick={() => onStart(lesson.facts)}>
-                Practise{" "}
-                {lesson.cards.length === 1
-                  ? "this word"
-                  : `these ${lesson.cards.length}`}
-              </Btn>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }
@@ -192,10 +113,14 @@ function TeachableLesson({
   lesson,
   onStart,
   onClaim,
+  inSession = false,
+  onContinue,
 }: {
   lesson: WordLesson;
   onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
   onClaim: (facts: FactId[]) => void;
+  inSession?: boolean;
+  onContinue?: () => void;
 }) {
   const { cards, position } = lesson;
 
@@ -237,9 +162,15 @@ function TeachableLesson({
           <Btn onClick={() => onStart(lesson.facts, { teach: false })}>
             Quiz me
           </Btn>
-          <Btn go onClick={() => onStart(lesson.facts)}>
-            Start
-          </Btn>
+          {inSession && onContinue ? (
+            <Btn go onClick={onContinue}>
+              Continue session
+            </Btn>
+          ) : (
+            <Btn go onClick={() => onStart(lesson.facts)}>
+              Start
+            </Btn>
+          )}
         </div>
       </div>
     </>
@@ -263,22 +194,5 @@ function WordTile({ card }: { card: WordLesson["cards"][number] }) {
       )}
       <span className="mt-1 block text-[13px] text-text">{card.meaning}</span>
     </div>
-  );
-}
-
-/** The missing kanji, named inline in the gate sentence — "先 and 生", "言, 行 and
- * 何". Just the glyphs; the linked tiles below carry the meaning and the tap
- * target. */
-function MissingList({ missing }: { missing: WordGate["missing"] }) {
-  const glyphs = missing.map((m) => m.c);
-  return (
-    <>
-      {glyphs.map((c, i) => (
-        <span key={c}>
-          {i > 0 ? (i === glyphs.length - 1 ? " and " : ", ") : null}
-          <span className="font-kana text-text">{c}</span>
-        </span>
-      ))}
-    </>
   );
 }

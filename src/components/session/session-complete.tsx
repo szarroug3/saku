@@ -67,9 +67,9 @@ export function SessionComplete({
         <div className="mt-5.5 flex justify-center gap-2">
           {/* Rerun is the same operation Recent's Rerun is: replay the session
               as it was, same set, fresh rounds. */}
-          <SmallBtn onClick={onRerun}>Rerun it now</SmallBtn>
+          <SmallBtn onClick={onRerun}>Quiz again</SmallBtn>
           <Btn autoFocus go onClick={onDone}>
-            Done
+            Complete session
           </Btn>
         </div>
       </Card>

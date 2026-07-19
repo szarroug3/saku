@@ -32,6 +32,8 @@ export function NextGrammarLesson({
   lesson,
   onStart,
   onClaim,
+  inSession = false,
+  onContinue,
 }: {
   lesson: GrammarLesson;
   /**
@@ -45,6 +47,8 @@ export function NextGrammarLesson({
   onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
   /** "I already know these", over the lesson's patterns. */
   onClaim: (facts: FactId[]) => void;
+  inSession?: boolean;
+  onContinue?: () => void;
 }) {
   const { cards, position } = lesson;
 
@@ -106,9 +110,15 @@ export function NextGrammarLesson({
             <Btn onClick={() => onStart(lesson.facts, { teach: false })}>
               Quiz me
             </Btn>
-            <Btn go onClick={() => onStart(lesson.facts)}>
-              Start
-            </Btn>
+            {inSession && onContinue ? (
+              <Btn go onClick={onContinue}>
+                Continue session
+              </Btn>
+            ) : (
+              <Btn go onClick={() => onStart(lesson.facts)}>
+                Start
+              </Btn>
+            )}
           </div>
         </div>
 

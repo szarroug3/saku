@@ -63,6 +63,7 @@ import { WordFormsView } from "@/components/library/word-forms-view";
 import { WordsWith } from "@/components/library/words-with";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
+import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { Card, Hint, Lbl, SoundIcon } from "@/components/ui";
 import { KANA_SUBJECT } from "@/data/characters";
 import {
@@ -666,6 +667,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
             {pieces ? <WordBuiltFrom pieces={pieces} /> : <div />}
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
+          {wordRow && forms ? <WordFormFan dictionary={wordRow.keb} groups={forms} /> : null}
           {/* THE SENTENCE SITS BETWEEN THE PIECES AND THE FORMS, and full width
               because a sentence in a half-column wraps to four ribboned lines.
               The order is the word getting steadily more useful: what it is made

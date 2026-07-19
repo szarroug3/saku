@@ -41,6 +41,7 @@ export function RestScreen({
   now,
   onStart,
   onDone,
+  onComplete,
 }: {
   session: StudySession;
   /** The ticking clock, owned by the route so this and the bar above it agree.
@@ -49,6 +50,7 @@ export function RestScreen({
   now: number | null;
   onStart: () => void;
   onDone: () => void;
+  onComplete: () => void;
 }) {
   // Before the clock has been read, show the countdown rather than the Start
   // button: claiming "ready" and being wrong would skip someone's rest, where
@@ -68,6 +70,7 @@ export function RestScreen({
             <p className="text-[26px] font-light">Ready when you are.</p>
             <div className="mt-6 flex justify-center gap-2">
               <SmallBtn onClick={onDone}>Done for now</SmallBtn>
+              <SmallBtn onClick={onComplete}>Complete session now</SmallBtn>
               <Btn autoFocus go onClick={onStart}>
                 Start round {nextRound}
               </Btn>
@@ -90,6 +93,7 @@ export function RestScreen({
             </p>
             <div className="mt-6 flex justify-center gap-2">
               <SmallBtn onClick={onDone}>Done for now</SmallBtn>
+              <SmallBtn onClick={onComplete}>Complete session now</SmallBtn>
               {/* Skipping is yours to do. The app doesn't hide it and doesn't
                   argue with you about it. */}
               <SmallBtn onClick={onStart}>Start now →</SmallBtn>
@@ -99,6 +103,10 @@ export function RestScreen({
       </Card>
 
       <Card className="px-[15px] py-[13px]">
+        <Hint>
+          Spacing works best when you do the rests, but you can complete early if
+          you need to.
+        </Hint>
         <Hint>
           No notification, no sound. Close the tab if you like, come back
           whenever and it says ready.

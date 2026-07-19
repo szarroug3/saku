@@ -25,12 +25,23 @@ import { GRAMMAR_PER_LESSON_DEFAULT, nextGrammarLesson } from "./grammar-lesson.
 import { LESSON_RANGE_DEFAULT, nextKanjiLesson } from "./kanji-lesson.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { nextLesson } from "./lesson.ts";
-import { nextWordLesson } from "./word-lesson.ts";
+import { CURRICULUM_WORDS, nextWordLesson, wordKanji } from "./word-lesson.ts";
+import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 /** A learner who has done nothing — so every track's FIRST lesson is what the
  * curriculum modules return. */
 const FRESH: HistoryFile = { sessions: [], facts: {} };
+const WORD_READY: HistoryFile = {
+  sessions: [],
+  facts: {},
+  claims: Object.fromEntries(
+    [...new Set(CURRICULUM_WORDS.flatMap((w) => wordKanji(w.keb)))].map((c) => [
+      kanjiMeaningFactId(c),
+      Date.UTC(2026, 0, 1),
+    ]),
+  ) as HistoryFile["claims"],
+};
 
 /** The teach facts of each track's first lesson, the way a session would carry
  * them. */
@@ -38,7 +49,7 @@ const TEACH_SETS: Record<string, FactId[]> = {
   kana: nextLesson(FRESH)!.facts,
   kanji: nextKanjiLesson(FRESH, kanjiTeachOrder("everyday"), LESSON_RANGE_DEFAULT)!
     .facts,
-  word: nextWordLesson(FRESH, 6)!.facts,
+  word: nextWordLesson(WORD_READY, 6)!.facts,
   grammar: nextGrammarLesson(FRESH, GRAMMAR_PER_LESSON_DEFAULT)!.facts,
 };
 

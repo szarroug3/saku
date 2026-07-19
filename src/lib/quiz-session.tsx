@@ -53,6 +53,7 @@ import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import {
   mergeStats,
   restMinutes,
+  SESSION_ROUND_TARGET,
   summariseRound,
   type StudySession,
 } from "@/lib/session";
@@ -201,6 +202,8 @@ interface QuizSessionContextValue {
   completeRound(): void;
   /** The rest is over (or you skipped it): run the SAME whole set again. */
   startNextRound(): void;
+  /** Leave to home without changing session state. */
+  pauseSession(): void;
   /** Stop for good — banks the current round and shows Session complete. */
   endSession(): void;
   /** Session complete → Done: write history and clear. */
@@ -613,6 +616,17 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const completeRound = useCallback(() => {
     if (!session) return;
     const now = Date.now();
+    if (session.round >= SESSION_ROUND_TARGET) {
+      setSession({
+        ...closeRound(session, now),
+        phase: "complete",
+        restUntil: null,
+      });
+      setActive(null);
+      setProgress(null);
+      router.push("/session");
+      return;
+    }
     const nextRound = session.round + 1;
     const mins = restMinutes(nextRound, cfg.restFirstMin, cfg.restThenMin);
     setSession({
@@ -629,6 +643,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
 
   const startNextRound = useCallback(() => {
     if (!session) return;
+    if (session.round >= SESSION_ROUND_TARGET) return;
     setSession({
       ...session,
       round: session.round + 1,
@@ -641,6 +656,11 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     // whole design turns on.
     beginLeg(session.facts, session.what, session.snapshot, false);
   }, [session, beginLeg]);
+
+  const pauseSession = useCallback(() => {
+    if (!session) return;
+    router.push("/");
+  }, [session, router]);
 
   const endSession = useCallback(() => {
     if (!session) return;
@@ -658,8 +678,15 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     router.push("/session");
   }, [session, closeRound, router]);
 
-  const finishSession = useCallback(() => {
+  const finishSession = useCallback(async () => {
     if (!session) return;
+    if (session.teach.length) {
+      await fetch("/api/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ facts: session.teach, known: true }),
+      }).catch(() => {});
+    }
     writeRecord(session.totalStats, session.snapshot.mode, false, {
       planned: session.facts,
       rounds: session.rounds.length,
@@ -799,6 +826,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       resumeRound,
       completeRound,
       startNextRound,
+      pauseSession,
       endSession,
       finishSession,
       discardSession,
@@ -822,6 +850,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       resumeRound,
       completeRound,
       startNextRound,
+      pauseSession,
       endSession,
       finishSession,
       discardSession,

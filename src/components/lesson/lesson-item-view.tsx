@@ -39,7 +39,7 @@
 // can't disagree about what a character is.
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Callout } from "@/components/lesson/callout";
 import { HearButton } from "@/components/lesson/hear-button";
@@ -58,6 +58,7 @@ import { vocabRow, type VocabRow } from "@/data/vocab";
 import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
+import { knownLookalikes } from "@/lib/kanji-lookalikes";
 import type { LessonItem } from "@/lib/lesson-items";
 import { formsOfWord } from "@/lib/word-forms";
 import { libEntry, recipeOf } from "@/lib/library/entries";
@@ -211,11 +212,14 @@ function WordReadingsPanel({
 
 function WordSentencePanel({ keb }: { keb: string }) {
   const ex = exampleFor(keb);
-  if (!ex) return null;
   return (
     <LessonPanel title="Used like this">
-      <p className="font-kana text-[18px] leading-relaxed text-text">{ex.jp}</p>
-      <p className="mt-1.5 text-[13px] text-text-muted">{ex.en}</p>
+      {ex ? (
+        <>
+          <p className="font-kana text-[18px] leading-relaxed text-text">{ex.jp}</p>
+          <p className="mt-1.5 text-[13px] text-text-muted">{ex.en}</p>
+        </>
+      ) : null}
     </LessonPanel>
   );
 }
@@ -247,16 +251,20 @@ function GrammarBuildPanel({ item }: { item: LessonItem }) {
   );
 }
 
-function GrammarSentencePanel({ item }: { item: LessonItem }) {
+function GrammarSentencePanel({
+  item,
+  example,
+}: {
+  item: LessonItem;
+  example: Exclude<GrammarExample, null>;
+}) {
   const entry = libEntry(item.entry);
   const pattern = entry ? recipeOf(entry) : null;
-  const ex = useGrammarExample(pattern ? pattern.id : null);
   if (!entry || !pattern) return null;
-  if (!ex) return null;
   return (
     <LessonPanel title="Used like this">
-      <p className="font-kana text-[18px] leading-relaxed text-text">{ex.jp}</p>
-      <p className="mt-1.5 text-[13px] text-text-muted">{ex.en}</p>
+      <p className="font-kana text-[18px] leading-relaxed text-text">{example.jp}</p>
+      <p className="mt-1.5 text-[13px] text-text-muted">{example.en}</p>
     </LessonPanel>
   );
 }
@@ -316,48 +324,86 @@ function GrammarFamilyPanel({ item }: { item: LessonItem }) {
  * still opens on the character. */
 function PlainHeadword({
   item,
-  subtitle,
+  titleRow,
+  pronunciation,
   sub,
   canHear,
   kanaGlyph,
+  right,
   voiceName,
 }: {
   item: LessonItem;
-  subtitle: string;
+  titleRow: string;
+  pronunciation?: string;
   sub?: string;
   canHear: boolean;
   kanaGlyph: boolean;
+  right?: ReactNode;
   voiceName: string;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-      <Link
-        href={entryHref(item.entry)}
-        aria-label={`Open ${item.glyph} in the Library`}
-        className={`${
-          kanaGlyph ? "font-kana" : ""
-        } text-[92px] font-extralight leading-none text-text no-underline`}
-      >
-        {item.glyph}
-      </Link>
-      <div className="min-w-0 flex-1">
-        {subtitle ? (
-          <p className="text-[17px] leading-relaxed text-text-muted">{subtitle}</p>
-        ) : null}
-        {sub ? <p className="text-[12px] text-text-muted">{sub}</p> : null}
-        {canHear ? (
-          <div className="mt-3">
-            <HearButton glyph={item.glyph} voiceName={voiceName} />
-          </div>
-        ) : null}
+    <div className="grid gap-3.5 md:grid-cols-[auto_1fr]">
+      <div className="flex min-w-0 items-start gap-x-6 gap-y-2">
+        <Link
+          href={entryHref(item.entry)}
+          aria-label={`Open ${item.glyph} in the Library`}
+          className={`${
+            kanaGlyph ? "font-kana" : ""
+          } text-[72px] font-extralight leading-none text-text no-underline`}
+        >
+          {item.glyph}
+        </Link>
+        <div className="min-w-0 flex-1">
+          {titleRow ? <p className="text-[16px] leading-relaxed text-text-muted">{titleRow}</p> : null}
+          {sub ? <p className="mt-0.5 text-[12px] text-text-muted">{sub}</p> : null}
+          {canHear || pronunciation ? (
+            <div className="mt-2 flex items-center gap-2">
+              {canHear ? <HearButton glyph={item.glyph} voiceName={voiceName} /> : null}
+              {pronunciation ? (
+                <span className="font-kana text-[15px] text-text-muted">{pronunciation}</span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
+      {right}
     </div>
+  );
+}
+
+function wordTypeOf(word: VocabRow): string {
+  const pos = word.pos[0]?.toLowerCase() ?? "";
+  if (pos.includes("verb")) return "verb";
+  if (pos.includes("adjective")) return "adjective";
+  if (pos.includes("adverb")) return "adverb";
+  if (pos.includes("particle")) return "particle";
+  if (pos.includes("expression")) return "expression";
+  return "noun";
+}
+
+function KanjiConfusables({ glyph }: { glyph: string }) {
+  const { history } = useHistory();
+  const lookalikes = knownLookalikes(glyph, history);
+  if (!lookalikes.length) return null;
+  return (
+    <LessonPanel title="Commonly confused with" className="h-full">
+      <div className="flex flex-wrap items-center gap-2">
+        {lookalikes.map((l) => (
+          <span
+            key={l.c}
+            className="rounded-md border border-border bg-card px-2 py-1 text-[13px]"
+          >
+            <span className="text-[18px] leading-none">{l.c}</span>{" "}
+            <span className="text-text-muted">{l.meaning}</span>
+          </span>
+        ))}
+      </div>
+    </LessonPanel>
   );
 }
 
 export function LessonItemView({ item }: { item: LessonItem }) {
   const { cfg } = useQuizConfig();
-  const { history } = useHistory();
 
   const subtitle = subtitleOf(item);
   // Pronounceable surfaces only: a kana and a word have one sound, a bare kanji
@@ -381,6 +427,15 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   const word = item.kind === "word" ? vocabRow(item.glyph) : undefined;
   const forms = word ? formsOfWord(word) : null;
   const grammarSub = item.kind === "grammar" && pattern ? attachesTo(pattern) : undefined;
+  const grammarExample = useGrammarExample(
+    item.kind === "grammar" && pattern ? pattern.id : null,
+  );
+  const wordExample = word ? exampleFor(word.keb) : null;
+  const wordAlign = word?.align && word.align.length > 0 ? word : null;
+  const wordHeader = word
+    ? `${wordTypeOf(word)} · ${(entry?.meanings?.[0] ?? "").trim()}`
+    : subtitle;
+  const wordPronunciation = word?.reb;
 
   return (
     <div>
@@ -397,10 +452,12 @@ export function LessonItemView({ item }: { item: LessonItem }) {
       ) : (
         <PlainHeadword
           item={item}
-          subtitle={subtitle}
+          titleRow={item.kind === "word" ? wordHeader : subtitle}
+          pronunciation={item.kind === "word" ? wordPronunciation : undefined}
           sub={grammarSub}
           canHear={canHear}
           kanaGlyph={kanaGlyph}
+          right={item.kind === "kanji" ? <KanjiConfusables glyph={item.glyph} /> : null}
           voiceName={cfg.voiceName}
         />
       )}
@@ -421,7 +478,7 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           own emptiness, so a kana shows only "how it's written" and a kanji adds
           its readings and the words it shows up in. */}
       <div className="mt-9 space-y-3 border-t border-border pt-7">
-        {item.kind === "kanji" ? <KanjiPartsRow glyph={item.glyph} history={history} /> : null}
+        {item.kind === "kanji" ? <KanjiPartsRow glyph={item.glyph} /> : null}
         {item.kind === "kanji" ? (
           <LessonReadings item={item} voiceName={cfg.voiceName} />
         ) : null}
@@ -430,15 +487,19 @@ export function LessonItemView({ item }: { item: LessonItem }) {
         ) : null}
         {item.kind === "word" && word ? (
           <PairedRow
-            wide={<WordReadingsPanel word={word} voiceName={cfg.voiceName} />}
-            narrow={<WordSentencePanel keb={word.keb} />}
+            wide={wordAlign ? <WordReadingsPanel word={wordAlign} voiceName={cfg.voiceName} /> : null}
+            narrow={wordExample ? <WordSentencePanel keb={word.keb} /> : null}
             even
           />
         ) : null}
         {item.kind === "grammar" ? (
           <PairedRow
             wide={<GrammarBuildPanel item={item} />}
-            narrow={<GrammarSentencePanel item={item} />}
+            narrow={
+              grammarExample ? (
+                <GrammarSentencePanel item={item} example={grammarExample} />
+              ) : null
+            }
           />
         ) : null}
         {item.kind === "grammar" ? <GrammarFamilyPanel item={item} /> : null}

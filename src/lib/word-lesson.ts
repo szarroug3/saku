@@ -46,7 +46,7 @@
 
 import { effectiveState } from "@/lib/claims";
 import type { LessonPosition } from "@/lib/lesson-position";
-import { kanjiRow } from "@/data/kanji";
+import { kanjiTeachOrder } from "@/data/kanji";
 import { kanjiKnown } from "@/lib/kanji-known";
 import {
   VOCAB,
@@ -232,9 +232,12 @@ export function nextWordLesson(
   history: HistoryFile,
   perLesson: number,
 ): WordLesson | null {
-  const size = clampWordsPerLesson(perLesson);
-  const cards: WordCard[] = [];
-  const facts: FactId[] = [];
+  const rows = nextWordSet(history, perLesson);
+  if (!rows.length) return null;
+  if (rows.some((w) => !wordTeachable(w, history))) return null;
+
+  const cards: WordCard[] = rows.map(toCard);
+  const facts: FactId[] = rows.flatMap(wordFacts);
   let met = 0;
 
   for (const w of CURRICULUM_WORDS) {
@@ -245,14 +248,9 @@ export function nextWordLesson(
       met++;
       continue;
     }
-    if (!wordTeachable(w, history)) continue;
-
-    cards.push(toCard(w));
-    facts.push(...wordFacts(w));
-    if (cards.length >= size) break;
+    break;
   }
 
-  if (!cards.length) return null;
   return {
     cards,
     facts,
@@ -263,55 +261,58 @@ export function nextWordLesson(
 /** One kanji a word still needs — the glyph and its first meaning, everything
  * the words card wants to name and link the missing prerequisite without
  * reaching back into the kanji data itself. */
-export interface MissingKanji {
-  c: string;
-  /** The kanji's first meaning — "what", "say" — so the gate can read as a
-   * sentence and not just a bare glyph. */
-  meaning: string;
+export interface WordLock {
+  /** How many kanji remain before the furthest kanji needed by the next lesson
+   * set is reached in the current kanji teaching order. */
+  away: number;
 }
 
-/**
- * The GATE the words card leads with: the top-ranked word not yet learned, and
- * whichever of its kanji the user still doesn't know.
- *
- * WHY THIS IS SEPARATE FROM nextWordLesson
- * ========================================
- * nextWordLesson answers "what CAN I teach now" — it steps over gated words to
- * hand out the best AVAILABLE one. This answers the different question the owner
- * wants led with: "what word does the curriculum most want to teach next, and
- * what's stopping it?" That top word is almost always kanji-gated early on (何 is
- * rank 1 and needs 何), so the card can name the word and point at the exact
- * kanji that unlocks it — turning a silent skip into a concrete "go learn this".
- *
- * `missing` is empty when the top word is teachable right now (kana-only, or all
- * its kanji already known). In that case there is no gate to show and the normal
- * lesson — whose head IS this same word — leads instead. Null only when the
- * whole curriculum is finished, the same finished state nextWordLesson returns
- * null for.
- */
-export interface WordGate {
-  /** The top-ranked unlearned word — the one the track most wants to teach. */
-  word: WordCard;
-  /** Its rank in the teaching order, so the card can say "your next word". */
-  rank: number;
-  /** The kanji this word needs that the user hasn't learned yet, in written
-   * order. Empty when the word is teachable now. */
-  missing: MissingKanji[];
-}
-
-export function topWordGate(history: HistoryFile): WordGate | null {
-  for (const w of CURRICULUM_WORDS) {
-    // Learned already? It is not the NEXT word — keep walking. Same "met"
-    // signal nextWordLesson counts with: the meaning fact being non-fresh.
-    if (!isFresh(wordMeaningFactId(w.keb), history)) continue;
-
-    const missing: MissingKanji[] = wordKanji(w.keb)
-      .filter((c) => !kanjiKnown(c, history))
-      .map((c) => ({ c, meaning: kanjiRow(c)?.meanings[0] ?? "" }));
-
-    return { word: toCard(w), rank: w.beginnerRank, missing };
+function kanjiAway(
+  history: HistoryFile,
+  missing: readonly string[],
+  order: readonly string[],
+): number {
+  if (!missing.length) return 0;
+  const index = new Map(order.map((c, i) => [c, i]));
+  let furthest = -1;
+  for (const c of missing) {
+    furthest = Math.max(furthest, index.get(c) ?? -1);
   }
-  return null;
+  if (furthest < 0) return missing.length;
+  let away = 0;
+  for (let i = 0; i <= furthest; i++) {
+    if (!kanjiKnown(order[i], history)) away++;
+  }
+  return away;
+}
+
+function nextWordSet(history: HistoryFile, perLesson: number): VocabRow[] {
+  const size = clampWordsPerLesson(perLesson);
+  const rows: VocabRow[] = [];
+  for (const w of CURRICULUM_WORDS) {
+    if (!isFresh(wordMeaningFactId(w.keb), history)) continue;
+    rows.push(w);
+    if (rows.length >= size) break;
+  }
+  return rows;
+}
+
+export function nextWordLock(
+  history: HistoryFile,
+  perLesson: number,
+  kanjiOrder: readonly string[] = kanjiTeachOrder("everyday"),
+): WordLock | null {
+  const rows = nextWordSet(history, perLesson);
+  if (!rows.length) return null;
+  let away = 0;
+  let locked = false;
+  for (const w of rows) {
+    const missing = wordKanji(w.keb).filter((c) => !kanjiKnown(c, history));
+    if (!missing.length) continue;
+    locked = true;
+    away = Math.max(away, kanjiAway(history, missing, kanjiOrder));
+  }
+  return locked ? { away } : null;
 }
 
 /** The subject these lessons belong to. Re-exported so a caller holding a

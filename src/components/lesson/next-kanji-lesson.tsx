@@ -43,6 +43,8 @@ export function NextKanjiLesson({
   lesson,
   onStart,
   onClaim,
+  inSession = false,
+  onContinue,
 }: {
   lesson: KanjiLesson;
   /**
@@ -57,6 +59,8 @@ export function NextKanjiLesson({
   onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
   /** "I already know this", over whatever slice the button named. */
   onClaim: (facts: FactId[]) => void;
+  inSession?: boolean;
+  onContinue?: () => void;
 }) {
   const { position, cards, over } = lesson;
 
@@ -71,9 +75,6 @@ export function NextKanjiLesson({
         <h1 className="text-[22px] font-light tracking-[-0.3px]">
           {cards.map((c) => c.meaning).join(" · ")}
         </h1>
-        <p className="mt-0.5 text-[13px] text-text-muted">
-          Look each one up, then come back.
-        </p>
 
         {/* The one warning this card owes. A single kanji (or a set that can
             only be learned together) can be bigger than the lesson length you
@@ -163,9 +164,15 @@ export function NextKanjiLesson({
             <Btn onClick={() => onStart(lesson.facts, { teach: false })}>
               Quiz me
             </Btn>
-            <Btn go onClick={() => onStart(lesson.facts)}>
-              Start
-            </Btn>
+            {inSession && onContinue ? (
+              <Btn go onClick={onContinue}>
+                Continue session
+              </Btn>
+            ) : (
+              <Btn go onClick={() => onStart(lesson.facts)}>
+                Start
+              </Btn>
+            )}
           </div>
         </div>
 

@@ -16,6 +16,9 @@ export function SessionHud({
   tone = "accent",
   float,
   onDone,
+  onEnd,
+  doneLabel = "Done for now",
+  endLabel = "End session",
   children,
 }: {
   /** What's running — "Review · 20". */
@@ -45,6 +48,10 @@ export function SessionHud({
   float?: boolean;
   /** Omitted on the complete screen, which has nothing left to leave. */
   onDone?: () => void;
+  /** Optional explicit end action that completes the session immediately. */
+  onEnd?: () => void;
+  doneLabel?: string;
+  endLabel?: string;
   children?: ReactNode;
 }) {
   return (
@@ -58,7 +65,8 @@ export function SessionHud({
         <span className="tabular-nums">{where}</span>
         <span className="ml-auto flex items-center gap-1.5">
           {children}
-          {onDone ? <SmallBtn onClick={onDone}>Done for now</SmallBtn> : null}
+          {onEnd ? <SmallBtn onClick={onEnd}>{endLabel}</SmallBtn> : null}
+          {onDone ? <SmallBtn onClick={onDone}>{doneLabel}</SmallBtn> : null}
         </span>
       </div>
       <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">

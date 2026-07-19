@@ -19,13 +19,10 @@ describe("lesson layout wiring", () => {
   });
 
   test("the two paired rows use full-width fallback helper", () => {
-    assert.match(
-      KANJI_ROW,
-      /return\s*<PairedRow\s+wide=\{builtFrom\}\s+narrow=\{lookOutFor\}\s+even\s*\/>/,
-    );
+    assert.match(KANJI_ROW, /return\s*\(\s*<LessonPanel title="Built from">/);
     assert.match(
       LESSON,
-      /<PairedRow[\s\S]*wide=\{<WordReadingsPanel[\s\S]*narrow=\{<WordSentencePanel[\s\S]*\/>/,
+      /<PairedRow[\s\S]*wide=\{wordAlign \? <WordReadingsPanel[\s\S]*narrow=\{wordExample \? <WordSentencePanel[\s\S]*\/>/,
     );
   });
 
