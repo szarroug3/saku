@@ -185,6 +185,16 @@ const PARTICLE_IDS: ReadonlySet<string> = new Set([
 /** What a blank looks like. One place, so the renderer and tests agree. */
 export const BLANK = "＿＿＿";
 
+/**
+ * True when a frame is the blank and nothing else — punctuation aside.
+ *
+ * Exported so the count is checkable from a test rather than asserted in prose.
+ */
+export function isBlankOnly(frame: string): boolean {
+  const rest = frame.replaceAll(BLANK, "").trim();
+  return rest === "" || /^[。．、，!?！？…\s]+$/u.test(rest);
+}
+
 export interface SelectionQuestion {
   readonly kind: "selection";
   /** The sentence with the pattern (and its host verb) replaced by BLANK. */
@@ -293,10 +303,27 @@ export function selection(
   // that phrasing would now silently drop 〜たり〜たり and 〜しか〜ない from the
   // pool. Being unaskable AS AN ANSWER says nothing about being offerable as a
   // CHOICE: a distractor is a pattern name and a gloss, and it is never built.
+  // NO TWO CHOICES MAY RENDER THE SAME TEXT. Seen on screen: the frame
+  // トムが行かない＿＿＿行かない。 shipped with 〜て on button 1 AND button 2 —
+  // two recipes with distinct glosses and the identical pattern string. The
+  // board offers PATTERNS, so two buttons reading 〜て are the same button
+  // twice: whichever the learner picks, one of the two is graded wrong for a
+  // reason nothing on screen can express.
+  //
+  // The gloss test above cannot catch this. It is the right test for "are these
+  // two the same MEANING"; this is "are these two the same LABEL", a different
+  // question that only the rendered string can answer. The answer's own pattern
+  // is claimed first so a distractor can never shadow it.
+  const labels = new Set([answer.pattern]);
   const distractors = RECIPES.filter((d) => isValidDistractor(answer, d))
     // A distractor whose own text is already in the sentence gives the game
     // away, or makes two answers true.
-    .filter((d) => !ex.p.includes(d.id));
+    .filter((d) => !ex.p.includes(d.id))
+    .filter((d) => {
+      if (labels.has(d.pattern)) return false;
+      labels.add(d.pattern);
+      return true;
+    });
 
   if (distractors.length < wanted - 1) return null;
 
@@ -310,9 +337,22 @@ export function selection(
   if (!span) return null;
   const [start, end, host] = span;
 
+  const frame = ex.jp.slice(0, start) + BLANK + ex.jp.slice(end);
+  // A FRAME THAT IS NOTHING BUT THE BLANK IS NOT A SELECTION ITEM.
+  //
+  // 114 corpus sentences blank down to ＿＿＿。 — the pattern was the whole
+  // sentence. What is left is an English line and six patterns, which is the
+  // meaning card wearing a blank: nothing Japanese to read, no context to
+  // choose from, and the frame contributes literally zero. Worse, it is the
+  // shape that looks most like a real item while being the least like one.
+  // Refused here rather than in the caller because it is a property of the
+  // ITEM, true for every learner, and the fixed meaning card already asks this
+  // question properly.
+  if (isBlankOnly(frame)) return null;
+
   return {
     kind: "selection",
-    frame: ex.jp.slice(0, start) + BLANK + ex.jp.slice(end),
+    frame,
     host,
     en: ex.en,
     answerId: answer.id,

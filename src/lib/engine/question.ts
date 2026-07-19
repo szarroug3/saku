@@ -41,6 +41,7 @@ import { selectionMcsFor } from "@/lib/grammar/mc";
 // The blank's own text, so the frame in `context` and the halo stand-in for a
 // host-less signature are the same string the generator wrote.
 import { BLANK as SELECTION_BLANK } from "@/lib/grammar/questions";
+import { readerFor } from "@/lib/grammar/readable";
 import { BEHAVIOR } from "@/lib/config";
 import { apply, hostOfClass } from "@/lib/grammar/apply";
 import { pickVehicle, type Rng, type Vehicle } from "@/lib/grammar/vehicles";
@@ -61,7 +62,7 @@ import {
 } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
-import type { Direction, FactId } from "@/types";
+import type { Direction, FactId, HistoryFile } from "@/types";
 
 /**
  * What to put on screen. Two parts, because one is not enough and three is
@@ -217,8 +218,13 @@ export interface QuestionType {
    * The answer to REVEAL, when it is not the fact's first baked answer — the
    * grammar production answer on this showing's vehicle. Absent → the drill
    * reveals `factInfo(fact).answers[0]`, right for everyone else.
+   *
+   * `dir` because the answer is not always the same string both ways round: an
+   * en2jp grammar meaning card asks for the PATTERN, so revealing the fact's
+   * first baked answer would reprint the English that was the prompt — "decide
+   * to X pattern = decide to X", which tells you nothing you were not shown.
    */
-  answerReveal?(fact: FactId, ctx?: PromptContext): string | null;
+  answerReveal?(fact: FactId, dir: Direction, ctx?: PromptContext): string | null;
 }
 
 /** Case- and space-forgiving comparison, for both scripts. `answers` holds
@@ -533,12 +539,21 @@ function isWordReading(fact: FactId): boolean {
 
 // ---------- grammar ----------
 //
-// Two aspects, ONE direction-insensitive question each — grammar does not flip
-// jp2en/en2jp the way a character does. "What does 〜てから mean" and "build
-// 〜てから on 行く" have one answer whichever way the drill turns the card, so
-// prompt and check ignore `dir` and grade against the fact's own answer strings
-// (the gloss for a meaning; the built form, in kanji and in kana, for a
-// production — baked into the fact in data/grammar/index.ts).
+// Two aspects. PRODUCTION is direction-insensitive — "build 〜てから on 行く" has
+// one answer whichever way the drill turns the card, so it ignores `dir` and
+// grades against the built form in kanji and in kana.
+//
+// MEANING IS NOT, and pretending it was is what shipped the degenerate card.
+// A meaning fact holds a pair (pattern, gloss), and a direction picks which half
+// is the question:
+//
+//   jp2en   〜てから      → "after doing X"   (the gloss; the baked answers)
+//   en2jp   "after doing X" → 〜てから         (the pattern)
+//
+// Ignoring `dir` meant en2jp showed the pattern AND offered glyphs, so the
+// prompt was reprinted on a button. Both `prompt` and `check` read the
+// direction now; `distractors` does not need to, because the same set of rival
+// patterns is wrong either way round.
 //
 // THE SAFETY IS IN THE DISTRACTORS, and it is the whole reason grammar can be
 // multiple-choice at all. The one failure this app will not commit is marking
@@ -641,6 +656,20 @@ export function grammarVehicleFor(
  * design working — see selectableRecipes). The caller then omits
  * `grammarSelection` and the fact is asked the old way.
  *
+ * NULL IS ALSO THE NORMAL ANSWER FOR A BEGINNER, and that is the point of
+ * `history`. An item is offered only when every content lemma in its sentence
+ * is a word the learner knows (lib/grammar/readable.ts) — "you can't expect me
+ * to fill in a blank in a sentence I can't read". With an empty history nothing
+ * qualifies and EVERY pattern falls back; at 1,000 words known, 44 of 51
+ * patterns have a readable item. The caller must therefore treat null as
+ * routine rather than exceptional: the fallback is the fixed meaning card, and
+ * grammar meaning is never unaskable.
+ *
+ * `history` is REQUIRED, not optional-defaulting-to-unfiltered. An optional
+ * gate is a gate that gets skipped by the one caller that forgets it, and the
+ * failure mode is silent — a beginner served unreadable sentences again, with
+ * nothing on screen saying the filter was bypassed.
+ *
  * Everything hard already happened upstream: `selectionMcsFor` runs the
  * distractor safety argument (gloss test, cluster test, prefix test, particle
  * allowlist) per SENTENCE and ships only the items where the answer is uniquely
@@ -657,11 +686,17 @@ export function grammarVehicleFor(
  */
 export function grammarSelectionFor(
   fact: FactId,
+  history: HistoryFile,
   rng: Rng = Math.random,
 ): GrammarSelection | null {
   const mean = grammarMeaning(fact);
   if (!mean) return null;
-  const cards = selectionMcsFor(mean.recipe.id, rng, BEHAVIOR.mcOptions);
+  const cards = selectionMcsFor(
+    mean.recipe.id,
+    rng,
+    BEHAVIOR.mcOptions,
+    readerFor(history),
+  );
   if (cards.length === 0) return null;
   const card = cards[Math.floor(rng() * cards.length)] ?? cards[0];
   const choices: FactId[] = [];
@@ -701,7 +736,7 @@ function selectionShowing(
 
 const grammarQuestions: QuestionType = {
   id: "grammar",
-  prompt(fact, _dir, ctx) {
+  prompt(fact, dir, ctx) {
     const prod = grammarProduction(fact);
     if (prod) {
       // The vehicle verb is the big glyph; the pattern names the target, which
@@ -736,9 +771,33 @@ const grammarQuestions: QuestionType = {
         note: sel.en,
       };
     }
-    // A meaning fact (or an unrecognised grammar fact): show the pattern, ask
-    // what it means.
+    // A meaning fact (or an unrecognised grammar fact) asked the FIXED way, and
+    // the direction is not decoration here — it decides which half of the pair
+    // is the question.
+    //
+    // THE BUG THIS SHAPE FIXES. This branch used to ignore `dir` and always show
+    // the PATTERN. In en2jp the options are glyphs, and a meaning fact's glyph
+    // IS its pattern, so the board rendered 〜てから under a prompt reading
+    // 〜てから: the answer was printed in the question. A free point, shipped, on
+    // the fallback card every unselectable pattern lands on.
+    //
+    //   jp2en  〜てから  → pick the English gloss   (options are answers)
+    //   en2jp  "after doing X" → pick the pattern   (options are glyphs)
+    //
+    // Each direction shows exactly what the other one asks for, which is the
+    // asymmetry every other subject already has and this one had lost.
     const mean = grammarMeaning(fact);
+    if (dir === "en2jp") {
+      const gloss = mean?.recipe.gloss ?? factInfo(fact)?.answers[0] ?? "";
+      return {
+        glyph: gloss,
+        // English, so no JP font — the same call the word subject makes when it
+        // prompts with a meaning.
+        jp: false,
+        context: "pattern",
+        hint: null,
+      };
+    }
     return {
       glyph: mean?.recipe.pattern ?? glyphOfFact(fact),
       jp: true,
@@ -746,7 +805,7 @@ const grammarQuestions: QuestionType = {
       hint: null,
     };
   },
-  check(fact, _dir, given, ctx) {
+  check(fact, dir, given, ctx) {
     const prod = grammarProduction(fact);
     if (prod) {
       // Grade against the pattern built on THIS showing's vehicle, not the
@@ -760,6 +819,20 @@ const grammarQuestions: QuestionType = {
           const g = given.trim();
           return g === built.form || g === built.kanaForm;
         }
+      }
+    }
+    // A MEANING fact asked en2jp asks for the PATTERN, so the pattern is what it
+    // has to accept. Five patterns (を, へ, まで, までに, だけ) are pure kana and
+    // so reach the drill as a TYPED en2jp card, where the only thing the romaji
+    // input can produce is kana — the gloss was never typeable there, and the
+    // card graded every answer wrong. The 〜 is a citation mark, not something
+    // anybody types, so it is optional. jp2en still wants the gloss, unchanged.
+    if (dir === "en2jp") {
+      const mean = grammarMeaning(fact);
+      if (mean) {
+        const g = given.trim();
+        const pattern = mean.recipe.pattern;
+        if (g === pattern || g === pattern.replace(/^〜/, "")) return true;
       }
     }
     return accepts(fact, given);
@@ -835,12 +908,17 @@ const grammarQuestions: QuestionType = {
     const v = variedVehicle(prod.recipe, ctx, prod.host);
     return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
   },
-  answerReveal(fact, ctx) {
+  answerReveal(fact, dir, ctx) {
     // A missed selection item reveals the PATTERN that fits the blank, not the
     // fact's baked gloss: the gloss is the answer to "what does 〜てから mean",
     // and this card asked something else.
     const sel = selectionShowing(fact, ctx);
     if (sel) return grammarMeaning(fact)?.recipe.pattern ?? null;
+    // Same argument for the fixed meaning card asked en2jp — it asked for the
+    // pattern, so the pattern is what a miss has to show. Falling through to the
+    // baked answer printed "decide to X pattern = decide to X".
+    const mean = grammarMeaning(fact);
+    if (mean && dir === "en2jp") return mean.recipe.pattern;
     const prod = grammarProduction(fact);
     if (!prod) return null;
     const v = variedVehicle(prod.recipe, ctx, prod.host);
