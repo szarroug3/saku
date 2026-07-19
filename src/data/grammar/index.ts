@@ -120,6 +120,42 @@ export function productionHosts(r: Recipe): Host[] {
 }
 
 /**
+ * The pattern that scores THIS row's rule, when the row is unscored because
+ * another pattern owns the rule rather than because nothing happens to the word.
+ *
+ * WHY A ROW-LEVEL FUNCTION AND NOT A FLAG ON THE RECIPE
+ * ====================================================
+ * `sharedProductionWith` is a fact about the RECIPE and the answer needed is per
+ * ROW. 〜ても defers, but only its adj-i row is unscored — its verb row is 行く →
+ * 行って, which is the て-form's 音便 and carries its own fact. A component that
+ * read the recipe flag alone would print "same rule as 〜て" beside a chip.
+ * `productionHosts` already knows which hosts kept a fact, so the join happens
+ * here, once, against the same list the chip is drawn from.
+ *
+ * The two empties this distinguishes are the reason it exists. 〜ので's verb row
+ * (行く + ので) transforms nothing, so there is no rule to be scored ANYWHERE and
+ * the answer is undefined — that cell stays blank, and its own formula already
+ * says why by reading "just as it is". 〜ても's adj-i row IS 高い → 高くて, a real
+ * transformation, and it was blank for a reason no reader could see.
+ *
+ * Returns the RECIPE, not a string, so the caller renders that recipe's own
+ * `pattern` and links to its own entry. A caller handed "〜て" as text would be
+ * holding a copy that can drift from the recipe it names.
+ */
+export function sharedRuleOwner(r: Recipe, host: Host): Recipe | undefined {
+  if (!r.sharedProductionWith) return undefined;
+  // Nothing on the card is scored, so there is no score column and no cell to
+  // put this in. No recipe is in this state today; the guard is here so that a
+  // recipe becoming vacuous cannot turn the column back on by the back door.
+  if (!isProducible(r)) return undefined;
+  // Scored right here — this row gets the chip, not the note.
+  if (productionHosts(r).includes(host)) return undefined;
+  // A lookup, so a recipe deferring to an id that no longer exists answers
+  // undefined and the cell falls back to blank rather than linking to a 404.
+  return recipe(r.sharedProductionWith);
+}
+
+/**
  * Every grammar fact: 81 meanings + 62 productions.
  *
  * The asymmetry is the model working, not an inconsistency — exactly as a word
