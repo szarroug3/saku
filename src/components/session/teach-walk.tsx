@@ -26,8 +26,8 @@
 // HOLDS ONLY A STEP
 // =================
 // Where you are in the walk is not a fact about your memory and is not on the
-// session. It is local state, reset on remount — the same call teach-me.tsx made
-// and for the same reason. The session's own state (its facts, its round, its
+// session. It is local state, reset on remount — the same call the teach-me
+// walkthrough this replaced made, and for the same reason. The session's own state (its facts, its round, its
 // progress) is untouched, so resume and the Current-lesson nav keep working
 // exactly as they did: this changed what the teach phase LOOKS like, not what it
 // IS.

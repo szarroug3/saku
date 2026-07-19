@@ -2,8 +2,8 @@
 //
 // node:test + native TypeScript stripping. No framework, no new deps — same as
 // ingest.test.ts. This file cannot import the .tsx component (the runner strips
-// types, not JSX), and it doesn't need to: both call sites — the teach-me
-// walkthrough and the Library entry page — render the card ONLY when
+// types, not JSX), and it doesn't need to: both call sites — the lesson
+// walk-through and the Library entry page — render the block ONLY when
 // `getMnemonic(glyph)` is non-null, so the gate IS `getMnemonic`, and that is a
 // plain function this can drive directly.
 
@@ -61,9 +61,10 @@ test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => 
 });
 
 test("Library-entry / teach-flow gate: a hiragana resolves, a non-authored glyph does not", () => {
-  // Exactly what app/library/[entry]/page.tsx and components/lesson/teach-me.tsx
-  // branch on. A hiragana entry page mounts the MnemonicCard; a katakana or
-  // kanji page (nothing authored) mounts nothing.
+  // Exactly what app/library/[entry]/page.tsx and
+  // components/lesson/lesson-item-view.tsx branch on. A hiragana entry page
+  // mounts the MnemonicView; a katakana or kanji page (nothing authored) mounts
+  // nothing.
   assert.notEqual(getMnemonic("あ"), null);
   assert.notEqual(getMnemonic("か"), null);
   assert.equal(getMnemonic("ア"), null);
