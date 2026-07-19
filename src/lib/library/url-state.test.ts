@@ -27,9 +27,11 @@ import { VOCAB_SUBJECT } from "@/data/vocab";
 import { KINDS } from "@/lib/library/entries";
 import {
   DEFAULT_KIND,
+  DEFAULT_STATE,
   kindFromParams,
   libraryUrl,
   queryFromParams,
+  stateFromParams,
 } from "@/lib/library/url-state";
 
 /** A URL, as the page sees it. `useSearchParams()` hands back a read-only
@@ -117,4 +119,53 @@ describe("libraryUrl", () => {
     assert.equal(kindFromParams(params(search)), KANA_SUBJECT);
     assert.equal(queryFromParams(params(search)), "a&kind=kanji");
   });
+
+  test("the all filter is omitted, the two narrowings are carried", () => {
+    // All is the default, so it stays out of the URL like an empty query does.
+    assert.equal(
+      libraryUrl({ kind: KANA_SUBJECT, query: "", state: "all" }),
+      "/library",
+    );
+    assert.equal(
+      libraryUrl({ kind: KANA_SUBJECT, query: "", state: "known" }),
+      "/library?state=known",
+    );
+    assert.equal(
+      libraryUrl({ kind: KANA_SUBJECT, query: "", state: "unknown" }),
+      "/library?state=unknown",
+    );
+  });
+
+  test("kind, query and filter all survive together", () => {
+    const url = libraryUrl({ kind: KANJI_SUBJECT, query: "life", state: "unknown" });
+    const search = url.slice(url.indexOf("?"));
+    assert.equal(kindFromParams(params(search)), KANJI_SUBJECT);
+    assert.equal(queryFromParams(params(search)), "life");
+    assert.equal(stateFromParams(params(search)), "unknown");
+  });
 });
+
+describe("stateFromParams", () => {
+  test("reads the two real filter values", () => {
+    assert.equal(stateFromParams(params("?state=known")), "known");
+    assert.equal(stateFromParams(params("?state=unknown")), "unknown");
+  });
+
+  test("an absent, empty, literal-all or hostile value falls back to all", () => {
+    // Same rule as the kind: a stale link or a hand-typed value must show the
+    // whole shelf, not an empty one.
+    assert.equal(stateFromParams(params("")), DEFAULT_STATE);
+    assert.equal(stateFromParams(params("?kind=kanji")), DEFAULT_STATE);
+    assert.equal(stateFromParams(params("?state=")), DEFAULT_STATE);
+    assert.equal(stateFromParams(params("?state=all")), DEFAULT_STATE);
+    assert.equal(stateFromParams(params("?state=KNOWN")), DEFAULT_STATE);
+    assert.equal(stateFromParams(params("?state=banana")), DEFAULT_STATE);
+    assert.equal(stateFromParams(params("?state=__proto__")), DEFAULT_STATE);
+    assert.equal(DEFAULT_STATE, "all");
+  });
+
+  test("a fallback is a fallback, not a throw", () => {
+    assert.doesNotThrow(() => stateFromParams(params("?state=%%%")));
+  });
+});
+

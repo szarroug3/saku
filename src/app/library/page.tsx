@@ -42,21 +42,32 @@ import {
   toggleSection as toggleSectionIn,
   type Selection,
 } from "@/lib/library/selection";
-import { entryStanding } from "@/lib/library/standing";
+import { entryStanding, entryIsKnown } from "@/lib/library/standing";
 import {
   kindFromParams,
   libraryUrl,
   queryFromParams,
+  stateFromParams,
+  type KnowledgeFilter,
 } from "@/lib/library/url-state";
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
 import type { EntryId, FactId } from "@/types";
 
+/** The knowledge-filter chips, in the order they read: the escape hatch first,
+ * then the two narrowings. Their values are the `KnowledgeFilter` the URL
+ * carries; the labels are the user's words for them. */
+const STATE_CHIPS: readonly { value: KnowledgeFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "known", label: "Known" },
+  { value: "unknown", label: "Not known" },
+];
+
 /** `useSearchParams` client-side-renders everything up to the nearest Suspense
  * boundary, and a production build of a static page fails without one. The
- * Library reads two params, so the boundary is the page and the body below is
- * what it wraps. */
+ * Library reads its tab, query and knowledge filter from the URL, so the
+ * boundary is the page and the body below is what it wraps. */
 export default function LibraryPage() {
   return (
     <Suspense fallback={null}>
@@ -83,6 +94,12 @@ function LibraryBody() {
   // default is Kana — the lightest first paint.
   const kind = kindFromParams(searchParams);
   const urlQuery = queryFromParams(searchParams);
+  // THE KNOWLEDGE FILTER — All / Known / Not known. Like the kind, it lives in
+  // the URL so a link carries it and Back steps through it, and it spans every
+  // kind: it governs both the browse shelf and the search results, so "which
+  // kanji don't I know" is the same question whether you are browsing or
+  // searching. Its default is All, and All is omitted from the URL.
+  const stateFilter = stateFromParams(searchParams);
 
   // THE BOX IS TYPED INTO AND THE URL IS NOT TYPED INTO, so the box keeps a
   // local copy. A controlled input whose value round-trips through the router
@@ -125,10 +142,12 @@ function LibraryBody() {
       if (debounce.current) clearTimeout(debounce.current);
       debounce.current = setTimeout(() => {
         ownQuery.current = value;
-        router.replace(libraryUrl({ kind, query: value }), { scroll: false });
+        router.replace(libraryUrl({ kind, query: value, state: stateFilter }), {
+          scroll: false,
+        });
       }, 250);
     },
-    [kind, router],
+    [kind, stateFilter, router],
   );
 
   const selectKind = useCallback(
@@ -138,9 +157,23 @@ function LibraryBody() {
       // writing, or the new history entry would disagree with the screen.
       if (debounce.current) clearTimeout(debounce.current);
       ownQuery.current = query;
-      router.push(libraryUrl({ kind: next, query }), { scroll: false });
+      router.push(libraryUrl({ kind: next, query, state: stateFilter }), {
+        scroll: false,
+      });
     },
-    [query, router],
+    [query, stateFilter, router],
+  );
+
+  // The knowledge filter is a navigation like the kind chips: choosing "Known"
+  // is a decision you can expect Back to undo, so it PUSHES. It carries the
+  // live query for the same reason the tab switch does.
+  const selectState = useCallback(
+    (next: KnowledgeFilter) => {
+      if (debounce.current) clearTimeout(debounce.current);
+      ownQuery.current = query;
+      router.push(libraryUrl({ kind, query, state: next }), { scroll: false });
+    },
+    [kind, query, router],
   );
 
   // The search runs over 9,761 entries per keystroke. That is ~1–2ms and would
@@ -161,7 +194,10 @@ function LibraryBody() {
   const [now] = useState(() => Date.now());
 
   const q = deferred.trim();
-  const claims = history.claims ?? {};
+  // A stable identity for the claims map, so the memos that now depend on it
+  // (the knowledge filter's `keep`) don't recompute every render just because
+  // `?? {}` minted a fresh empty object. `history.claims` is the only input.
+  const claims = useMemo(() => history.claims ?? {}, [history.claims]);
 
   /** Entries you have filed. Search sorts these to the front of a section. */
   const pinned = useMemo(() => {
@@ -170,12 +206,27 @@ function LibraryBody() {
     return set;
   }, [lists]);
 
+  // THE KNOWLEDGE FILTER AS A PREDICATE, in one place, so search and browse
+  // apply the identical test. Undefined for All — the callers treat "no keep"
+  // as "keep everything", so the common case adds no per-entry work. For Known
+  // and Not known it resolves each entry through `entryStanding`, the same
+  // effective-progress-and-claims path the tiles already use, so a thing you
+  // marked "I already know this" filters as Known without a Library-only rule.
+  const keep = useMemo(() => {
+    if (stateFilter === "all") return undefined;
+    const wantKnown = stateFilter === "known";
+    return (entry: LibEntry) =>
+      entryIsKnown(
+        entryStanding(factsOf(entry.id), history.facts, claims, cfg.accuracyMetric, now),
+      ) === wantKnown;
+  }, [stateFilter, history.facts, claims, cfg.accuracyMetric, now]);
+
   // SEARCH SPANS EVERY KIND, always — the kind chips govern the browse shelf,
   // not the search. This is what makes removing the "All" tab safe: you lost the
   // stacked all-kinds BROWSE (the laggy part), but a query still reaches kana,
   // kanji, words AND grammar at once, so "must" finds the patterns even while
   // the Kana shelf is the one selected underneath.
-  const sections = useMemo(() => search(q, { pinned }), [q, pinned]);
+  const sections = useMemo(() => search(q, { pinned, keep }), [q, pinned, keep]);
 
   // Every shelf, cut once. Built for all three kinds up front (cheap array work,
   // no DOM) so switching the kind filter — or the "All" view that shows all
@@ -213,14 +264,15 @@ function LibraryBody() {
   const slice = useMemo(() => {
     if (selected.size > 0) return selectionSlice(selected, LIB_ENTRIES);
     if (q) {
-      const hits = searchAll(q, { pinned });
+      const hits = searchAll(q, { pinned, keep });
       return { label: q, entries: hits.map((h) => h.entry.id) };
     }
+    const entries = shelvesByKind.get(kind)!.entries;
     return {
       label: KIND_LABEL[kind],
-      entries: shelvesByKind.get(kind)!.entries.map((e) => e.id),
+      entries: (keep ? entries.filter(keep) : entries).map((e) => e.id),
     };
-  }, [selected, q, kind, pinned, shelvesByKind]);
+  }, [selected, q, kind, pinned, keep, shelvesByKind]);
 
   const standingOfEntry = (entry: LibEntry) =>
     entryStanding(factsOf(entry.id), history.facts, claims, cfg.accuracyMetric, now);
@@ -253,6 +305,21 @@ function LibraryBody() {
             {KIND_LABEL[k]}
           </Chip>
         ))}
+        {/* The knowledge filter, a group of its own — a hairline sets it apart
+            from the kind chips so "Kanji" and "Known" don't read as one row of
+            equals. Unlike the kinds, "All" IS a chip here: the two states are
+            narrowings and All is how you get back out of one. It governs the
+            shelf AND the search results below. */}
+        <span aria-hidden className="mx-0.5 h-4 w-px bg-border" />
+        {STATE_CHIPS.map(({ value, label }) => (
+          <Chip
+            key={value}
+            on={stateFilter === value}
+            onClick={() => selectState(value)}
+          >
+            {label}
+          </Chip>
+        ))}
         {selected.size > 0 ? (
           <GhostBtn
             className="ml-auto text-xs"
@@ -273,13 +340,28 @@ function LibraryBody() {
           sections.length === 0 ? (
             <Card>
               <p className="text-[13px]">
-                Nothing matches <b>{q}</b>.
+                {stateFilter === "all" ? (
+                  <>
+                    Nothing matches <b>{q}</b>.
+                  </>
+                ) : (
+                  <>
+                    No <b>{stateFilter === "known" ? "known" : "not-known"}</b>{" "}
+                    entries match <b>{q}</b>.
+                  </>
+                )}
               </p>
               <p className="mt-1.5">
                 <Hint>
-                  Searching an inflected form won&rsquo;t find its dictionary
-                  word yet. 読んで doesn&rsquo;t reach 読む. That&rsquo;s a
-                  known gap, not a missing word.
+                  {stateFilter === "all" ? (
+                    <>
+                      Searching an inflected form won&rsquo;t find its dictionary
+                      word yet. 読んで doesn&rsquo;t reach 読む. That&rsquo;s a
+                      known gap, not a missing word.
+                    </>
+                  ) : (
+                    <>Switch the filter back to All to see every match.</>
+                  )}
                 </Hint>
               </p>
             </Card>
@@ -337,6 +419,8 @@ function LibraryBody() {
                 metric={cfg.accuracyMetric}
                 now={now}
                 voice={cfg.voiceName}
+                keep={keep}
+                filter={stateFilter}
               />
             );
           })()

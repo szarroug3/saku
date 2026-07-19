@@ -80,6 +80,14 @@ export interface SearchOpts {
    * exact one.
    */
   readonly pinned?: ReadonlySet<string>;
+  /**
+   * Keep only the entries this returns true for — the Library's knowledge
+   * filter (Known / Not known). It runs BEFORE the per-section cap, so a filter
+   * that drops half the matches still fills the section and the "show the other
+   * N" count reflects the filtered population, not the raw one. Absent keeps
+   * everything, which is the All filter and every caller that doesn't filter.
+   */
+  readonly keep?: (entry: LibEntry) => boolean;
 }
 
 const DEFAULT_PER_SECTION = 8;
@@ -111,6 +119,7 @@ export function search(query: string, opts: SearchOpts = {}): Section[] {
   const buckets = new Map<MatchKind, Hit[]>();
   for (const entry of LIB_ENTRIES) {
     if (opts.kind && entry.kind !== opts.kind) continue;
+    if (opts.keep && !opts.keep(entry)) continue;
     const why = classify(entry, q, lower);
     if (!why) continue;
     const list = buckets.get(why) ?? [];

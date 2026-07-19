@@ -29,10 +29,20 @@ import { KANA_SUBJECT } from "@/data/characters";
 export const KIND_PARAM = "kind";
 /** What you typed in the search box. */
 export const QUERY_PARAM = "q";
+/** The knowledge-state filter: `known`, `unknown`, or absent for all. */
+export const STATE_PARAM = "state";
 
 /** The shelf a Library with no opinion in its URL opens on — the lightest
  * first paint, and what the page defaulted to before the URL carried it. */
 export const DEFAULT_KIND: Kind = KANA_SUBJECT;
+
+/**
+ * The knowledge filter, in one of three states. `all` is the default and, like
+ * the default kind and an empty query, is OMITTED from the URL — the plain
+ * `/library` shows everything, which is what a reference is for.
+ */
+export type KnowledgeFilter = "all" | "known" | "unknown";
+export const DEFAULT_STATE: KnowledgeFilter = "all";
 
 /** Just enough of `URLSearchParams` to read one — which is also all of the
  * read-only view `useSearchParams()` hands back. */
@@ -61,23 +71,41 @@ export function queryFromParams(params: ReadableParams): string {
 }
 
 /**
+ * The knowledge filter a URL is asking for.
+ *
+ * Like `kindFromParams`, a missing, empty, misspelled or hostile value is not
+ * an error: it reads as `all`, so a stale link or a hand-typed `?state=banana`
+ * shows the whole shelf rather than an empty one. Only the two non-default
+ * words are recognised; everything else, including the literal `all`, collapses
+ * to the default so the URL and the chips cannot drift.
+ */
+export function stateFromParams(params: ReadableParams): KnowledgeFilter {
+  const raw = params.get(STATE_PARAM);
+  return raw === "known" || raw === "unknown" ? raw : DEFAULT_STATE;
+}
+
+/**
  * The Library URL for a given state.
  *
- * The default kind and an empty query are OMITTED, so the plain `/library` stays
- * plain: a page that rewrote itself to `/library?kind=kana&q=` the moment it
- * mounted would put a URL in the address bar that the user never asked for, and
- * make the first Back press a no-op that only undoes our own tidying.
+ * The default kind, an empty query, and the `all` filter are OMITTED, so the
+ * plain `/library` stays plain: a page that rewrote itself to
+ * `/library?kind=kana&q=&state=all` the moment it mounted would put a URL in the
+ * address bar that the user never asked for, and make the first Back press a
+ * no-op that only undoes our own tidying.
  */
 export function libraryUrl({
   kind,
   query,
+  state = DEFAULT_STATE,
 }: {
   kind: Kind;
   query: string;
+  state?: KnowledgeFilter;
 }): string {
   const params = new URLSearchParams();
   if (kind !== DEFAULT_KIND) params.set(KIND_PARAM, kind);
   if (query !== "") params.set(QUERY_PARAM, query);
+  if (state !== DEFAULT_STATE) params.set(STATE_PARAM, state);
   const qs = params.toString();
   return qs ? `/library?${qs}` : "/library";
 }

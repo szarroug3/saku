@@ -59,6 +59,7 @@ import { entryForGlyph, libEntry, type Kind, type LibEntry } from "@/lib/library
 import { KANJI_SECTIONS_SHOWN, kanjiCuts } from "@/lib/library/kanji-shelf";
 import { sectionState, type Selection } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
+import type { KnowledgeFilter } from "@/lib/library/url-state";
 import { factsOf } from "@/lib/facts";
 import type { AccuracyMetric, EntryId, FactAggregate, NewKanjiOrder } from "@/types";
 
@@ -175,6 +176,8 @@ export function Shelf({
   metric,
   now,
   voice,
+  keep,
+  filter = "all",
 }: {
   kind: Kind;
   sections: readonly ShelfSection[];
@@ -189,6 +192,13 @@ export function Shelf({
   metric: AccuracyMetric;
   now: number;
   voice: string;
+  /** The knowledge filter, as a predicate. Undefined is All — the shelf shows
+   * every entry, which is what it did before this existed. Known / Not known
+   * pass a test that runs over the SAME `entryStanding` the tiles already use. */
+  keep?: (entry: LibEntry) => boolean;
+  /** Which filter is active, for the empty-state copy. The predicate above does
+   * the work; this only picks the words when it removes everything. */
+  filter?: KnowledgeFilter;
 }) {
   const tile = (entry: LibEntry) => (
     <EntryTile
@@ -218,18 +228,26 @@ export function Shelf({
   );
 
   if (kind === VOCAB_SUBJECT) {
+    const words = keep ? allEntries.filter(keep) : allEntries;
     return (
       <Card>
         <Lbl>Everyday words</Lbl>
-        <p className="mb-3">
-          <Hint>
-            Common everyday words. The first {WORD_TILES} are here. Search to
-            find any of the others.
-          </Hint>
-        </p>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
-          {allEntries.slice(0, WORD_TILES).map(tile)}
-        </div>
+        {words.length === 0 ? (
+          <FilterEmpty filter={filter} />
+        ) : (
+          <>
+            <p className="mb-3">
+              <Hint>
+                {keep
+                  ? `The first ${WORD_TILES} that match. Search to find any of the others.`
+                  : `Common everyday words. The first ${WORD_TILES} are here. Search to find any of the others.`}
+              </Hint>
+            </p>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+              {words.slice(0, WORD_TILES).map(tile)}
+            </div>
+          </>
+        )}
       </Card>
     );
   }
@@ -244,21 +262,48 @@ export function Shelf({
   // does not.
   const asRows = kind === GRAMMAR_SUBJECT || kind === MARK_SUBJECT;
 
+  // The knowledge filter applied to the cut. Each section keeps only the entries
+  // that pass, and a section left empty drops out entirely — a card headed "1–100"
+  // with nothing under it would be a worse answer than no card. With no filter
+  // this is the sections list unchanged.
+  const shownSections = keep
+    ? sections
+        .map((s) => ({ ...s, entries: s.entries.filter(keep) }))
+        .filter((s) => s.entries.length > 0)
+    : sections;
+
   // What the kanji shelf is not showing you. COUNTED, never written down: it is
   // the whole set minus what the sections above actually hold, so it stays right
   // if KANJI_SECTIONS_SHOWN or KANJI_CHUNK ever moves. In `grade` mode the
   // sections cover all 2,136, so this is 0 and the line does not appear — that
   // mode says what it is holding back per section instead.
+  //
+  // SUPPRESSED WHILE FILTERING. "+1,836 more kanji" counts the raw shelf, and
+  // under Known / Not known that number would describe a population the screen
+  // is no longer showing. Rather than compute a filtered off-shelf count (which
+  // would mean resolving every one of 2,136 kanji on a browse render), the line
+  // simply steps aside and search takes over, which is where a filtered hunt
+  // belongs anyway.
   const offShelf =
-    kind === KANJI_SUBJECT
+    kind === KANJI_SUBJECT && !keep
       ? KANJI.length - sections.reduce((n, s) => n + s.entries.length, 0)
       : 0;
+
+  // Everything on the shelf fell outside the filter. The clusters/Tofugu cards
+  // still render above (they are references, not filtered content), but the
+  // shelf itself needs to say why it is empty rather than show nothing.
+  const shelfEmpty = shownSections.length === 0;
 
   return (
     <>
       {kind === KANA_SUBJECT ? <TofuguCard /> : null}
       {kind === GRAMMAR_SUBJECT ? <GrammarClustersCard /> : null}
-      {sections.map((section) => {
+      {shelfEmpty ? (
+        <Card>
+          <FilterEmpty filter={filter} />
+        </Card>
+      ) : null}
+      {shownSections.map((section) => {
         const ids = section.entries.map((e) => e.id);
         const state = sectionState(selected, ids);
         const onCount = ids.filter((id) => selected.has(id)).length;
@@ -325,6 +370,20 @@ export function Shelf({
         </p>
       ) : null}
     </>
+  );
+}
+
+/** What the shelf says when the knowledge filter removed everything on it. Only
+ * reached with a filter active — All never empties a shelf — so it always names
+ * the filter and points at the way out. */
+function FilterEmpty({ filter }: { filter: KnowledgeFilter }) {
+  return (
+    <p className="text-[13px] text-text-muted">
+      {filter === "known"
+        ? "Nothing on this shelf is marked known yet."
+        : "Everything shown on this shelf is already known."}{" "}
+      <Hint>Switch the filter to All to see the whole shelf, or search.</Hint>
+    </p>
   );
 }
 

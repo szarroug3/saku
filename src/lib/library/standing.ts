@@ -195,3 +195,22 @@ export function entryStanding(
     seen,
   };
 }
+
+/**
+ * Is an entry KNOWN — the one boolean the Library's knowledge filter runs on?
+ *
+ * It reuses `entryStanding`, so it inherits the exact effective-progress and
+ * claim resolution the tiles, rows and drills already use: an item marked
+ * through "I already know this" counts, and a fact the app has proved counts.
+ * There is deliberately no Library-only definition of known.
+ *
+ * KNOWN = every fact is solid or claimed (`needWork === 0`), over a real
+ * population (`total > 0`). This is the whole-entry claim, not a per-fact one:
+ * 生 is known only when all its readings are, which is the same bar
+ * `entryStanding` already draws with its `needWork` count. Everything else —
+ * not seen, slipping, shaky, getting there, or a mix — is NOT known, which is
+ * what the "Not known" filter is for: the pile that still wants work.
+ */
+export function entryIsKnown(standing: EntryStanding): boolean {
+  return standing.total > 0 && standing.needWork === 0;
+}
