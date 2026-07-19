@@ -89,7 +89,7 @@ export function TeachWalk({
   if (!current) return null;
 
   return (
-    <div className="mx-auto max-w-[920px] px-3 pt-3">
+    <div className="mx-auto max-w-[920px] px-3">
       {/* Where you are is the floating bar's job now — it prints "N of M" and
           updates as you step. The row of dots that used to sit here said the
           same thing a second time, less precisely, so it's gone; what's left is
@@ -112,7 +112,7 @@ export function TeachWalk({
           so each step is a clean remount: the persisted-preference sections
           re-read their state and no open/closed disclosure leaks between
           glyphs. */}
-      <div className="mt-4">
+      <div className="mt-2">
         {current.type === "intro" ? (
           <PhaseIntroView key={current.key} intro={current.intro} />
         ) : current.type === "conversion" ? (
