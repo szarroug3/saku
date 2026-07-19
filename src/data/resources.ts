@@ -42,13 +42,13 @@ export const RESOURCE_SECTIONS: readonly ResourceSection[] = [
     title: "Kana",
     items: [
       {
-        name: "Tofugu — Learn hiragana",
+        name: "Tofugu: Learn hiragana",
         url: "https://www.tofugu.com/japanese/learn-hiragana/",
         blurb: "A mnemonic for every shape, free, start to finish in a weekend.",
         lastVerified: VERIFIED,
       },
       {
-        name: "Tofugu — Learn katakana",
+        name: "Tofugu: Learn katakana",
         url: "https://www.tofugu.com/japanese/learn-katakana/",
         blurb: "The same guide for the other set. Do it after hiragana.",
         lastVerified: VERIFIED,
@@ -128,7 +128,7 @@ export const RESOURCE_SECTIONS: readonly ResourceSection[] = [
       {
         name: "Minna no Nihongo",
         url: "https://www.3anet.co.jp/np/list.html?series_id=1",
-        blurb: "The classroom standard. Buy the translation booklet with it — the textbook itself is all Japanese.",
+        blurb: "The classroom standard. Buy the translation booklet with it; the textbook itself is all Japanese.",
         lastVerified: VERIFIED,
       },
     ],

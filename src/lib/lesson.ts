@@ -63,12 +63,12 @@ export interface LearnLink {
 export const LEARN_LINKS: Record<string, LearnLink> = {
   hiragana: {
     url: "https://www.tofugu.com/japanese/learn-hiragana/",
-    label: "Tofugu — Learn Hiragana",
+    label: "Tofugu: Learn Hiragana",
     lastVerified: "2026-07-17",
   },
   katakana: {
     url: "https://www.tofugu.com/japanese/learn-katakana/",
-    label: "Tofugu — Learn Katakana",
+    label: "Tofugu: Learn Katakana",
     lastVerified: "2026-07-17",
   },
 };

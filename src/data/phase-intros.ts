@@ -94,12 +94,12 @@ export const DAKUTEN_H: PhaseIntro = {
   body: [
     {
       mark: "゛",
-      lead: "(dakuten) — two dashes.",
+      lead: "(dakuten): two dashes.",
       text: "It voices the consonant, meaning your vocal cords buzz: か ka → が ga, さ sa → ざ za, た ta → だ da, は ha → ば ba.",
     },
     {
       mark: "゜",
-      lead: "(handakuten) — a small circle,",
+      lead: "(handakuten): a small circle,",
       text: "and it only ever lands on the は row: は ha → ぱ pa.",
     },
     {
@@ -115,12 +115,12 @@ export const DAKUTEN_K: PhaseIntro = {
   body: [
     {
       mark: "゛",
-      lead: "(dakuten) — two dashes.",
+      lead: "(dakuten): two dashes.",
       text: "It voices the consonant, meaning your vocal cords buzz: カ ka → ガ ga, サ sa → ザ za, タ ta → ダ da, ハ ha → バ ba.",
     },
     {
       mark: "゜",
-      lead: "(handakuten) — a small circle,",
+      lead: "(handakuten): a small circle,",
       text: "and it only ever lands on the ハ row: ハ ha → パ pa.",
     },
     {
@@ -135,11 +135,11 @@ export const COMBO_H: PhaseIntro = {
   title: "A small や, ゆ or よ fuses onto the kana in front of it.",
   body: [
     {
-      text: "A full-size kana followed by a SMALL や, ゆ or よ is one syllable, not two: き + ゃ is “kya”, said in a single beat — not “ki-ya”.",
+      text: "A full-size kana followed by a SMALL や, ゆ or よ is one syllable, not two: き + ゃ is “kya”, said in a single beat, not “ki-ya”.",
     },
     {
       lead: "The size is the whole tell.",
-      text: "きゃ, with the small ゃ, is “kya”. きや, with a full-size や, is “kiya” — two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height.",
+      text: "きゃ, with the small ゃ, is “kya”. きや, with a full-size や, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height.",
     },
     {
       text: "No new shapes again. Every combo is two characters you already know, one of them shrunk.",
@@ -153,11 +153,11 @@ export const COMBO_K: PhaseIntro = {
   title: "A small ャ, ュ or ョ fuses onto the kana in front of it.",
   body: [
     {
-      text: "A full-size kana followed by a SMALL ャ, ュ or ョ is one syllable, not two: キ + ャ is “kya”, said in a single beat — not “ki-ya”.",
+      text: "A full-size kana followed by a SMALL ャ, ュ or ョ is one syllable, not two: キ + ャ is “kya”, said in a single beat, not “ki-ya”.",
     },
     {
       lead: "The size is the whole tell.",
-      text: "キャ, with the small ャ, is “kya”. キヤ, with a full-size ヤ, is “kiya” — two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height.",
+      text: "キャ, with the small ャ, is “kya”. キヤ, with a full-size ヤ, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height.",
     },
     {
       text: "Same rule as the hiragana combos, on shapes you already know. Nothing new to draw.",
@@ -179,10 +179,10 @@ export const LONG_H: PhaseIntro = {
     },
     {
       lead: "Two that surprise people.",
-      text: "え is usually lengthened with い — せんせい is said “sensee”, not “sen-say”. And お is usually lengthened with う — おとうさん is said “otoosan”, not “oto-u-san”.",
+      text: "え is usually lengthened with い: せんせい is said “sensee”, not “sen-say”. And お is usually lengthened with う: おとうさん is said “otoosan”, not “oto-u-san”.",
     },
     {
-      text: "This is a rule, not a new set of characters. There is nothing here to draw — only something to listen for.",
+      text: "This is a rule, not a new set of characters. There is nothing here to draw, only something to listen for.",
     },
   ],
 };
@@ -193,7 +193,7 @@ export const LONG_K: PhaseIntro = {
   title: "Katakana holds a vowel with one long dash.",
   body: [
     {
-      text: "The rule is the one you met in hiragana — a held vowel is a different word — written a different way. Katakana uses a single dash, ー, whatever the vowel is: コーヒー (coffee), ケーキ (cake).",
+      text: "The rule is the one you met in hiragana (a held vowel is a different word), written a different way. Katakana uses a single dash, ー, whatever the vowel is: コーヒー (coffee), ケーキ (cake).",
     },
     {
       lead: "One mark covers all five vowels,",
@@ -254,12 +254,12 @@ export const SOKUON_H: PhaseIntro = {
   body: [
     {
       mark: "っ",
-      lead: "(small tsu) — a shrunken つ.",
+      lead: "(small tsu): a shrunken つ.",
       text: "It is never said on its own. It stops the mouth for one beat and doubles the consonant that comes after it: きて kite → きって kitte, さか saka → さっか sakka.",
     },
     {
       lead: "The size is the whole tell, again.",
-      text: "きって, with the small っ, is “kitte”. きつて, with a full-size つ, would be “kitsute” — three separate sounds. Look at the height, exactly as you do with ゃ.",
+      text: "きって, with the small っ, is “kitte”. きつて, with a full-size つ, would be “kitsute”: three separate sounds. Look at the height, exactly as you do with ゃ.",
     },
     {
       lead: "It is a beat, not a gap.",
@@ -275,7 +275,7 @@ export const SOKUON_K: PhaseIntro = {
   body: [
     {
       mark: "ッ",
-      lead: "(small tsu) — a shrunken ツ.",
+      lead: "(small tsu): a shrunken ツ.",
       text: "The rule you met in hiragana, on katakana shapes: ベッド beddo (bed), カップ kappu (cup), サッカー sakkā (soccer).",
     },
     {

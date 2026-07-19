@@ -55,7 +55,7 @@ export default function AboutDataPage() {
           CC BY-SA is share-alike. The dictionary files this app reads are
           adaptations of EDRDG&rsquo;s, so they carry the same licence. The
           app&rsquo;s own code reads that data rather than deriving from it, and
-          is MIT. Tatoeba&rsquo;s sentences are attribution-only — no
+          is MIT. Tatoeba&rsquo;s sentences are attribution-only, with no
           share-alike.
         </p>
         <p className="mt-2.5 text-[13px] leading-relaxed text-text-muted">

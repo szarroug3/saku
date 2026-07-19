@@ -69,8 +69,8 @@ export function AddToList({
           </div>
           <p className="mt-3 border-t border-border pt-2.5">
             <Hint>
-              A list you make here and a deck you import are the same thing —
-              this one just starts empty.
+              A list you make here and a deck you import are the same thing.
+              This one just starts empty.
             </Hint>
           </p>
         </>

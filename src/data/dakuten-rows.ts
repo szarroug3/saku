@@ -103,7 +103,7 @@ const SPECS: ConvSpec[] = [
     from: "s",
     to: "z",
     callout:
-      'The odd one carries over. し is "shi", not "si" — so its voiced twin じ is "ji", not "zi".',
+      'The odd one carries over. し is "shi", not "si", so its voiced twin じ is "ji", not "zi".',
   },
   {
     conv: "d",
@@ -112,7 +112,7 @@ const SPECS: ConvSpec[] = [
     from: "t",
     to: "d",
     callout:
-      'ぢ and づ sound EXACTLY like じ and ず — same sounds, different characters. They are rare; when you do need them, they are typed "di" and "du".',
+      'ぢ and づ sound EXACTLY like じ and ず: same sounds, different characters. They are rare; when you do need them, they are typed "di" and "du".',
   },
   { conv: "b", mark: DAKUTEN, markName: "dakuten", from: "h", to: "b" },
   {
@@ -124,7 +124,7 @@ const SPECS: ConvSpec[] = [
     // No bare ゛ in this sentence on purpose: a lone mark inside a line of body
     // text is a speck, and this is the one call-out that must not be skimmed.
     aside:
-      "Same row you just marked with the two dashes — the h row is the only one that takes both. Two dashes make it b, a small circle makes it p, and the circle lands on no other row in the language.",
+      "Same row you just marked with the two dashes. The h row is the only one that takes both. Two dashes make it b, a small circle makes it p, and the circle lands on no other row in the language.",
   },
 ];
 

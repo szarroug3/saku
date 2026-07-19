@@ -188,7 +188,7 @@ export function compoundNote(pieces: readonly WordPiece[]): string | null {
   const many = kanji.length === 2 ? "Both kanji" : `All ${kanji.length} kanji`;
 
   if (all("on")) {
-    return `${many} use their Chinese reading here — the usual pattern when kanji sit together in a compound.`;
+    return `${many} use their Chinese reading here, the usual pattern when kanji sit together in a compound.`;
   }
   if (all("kun")) {
     return `${many} use their native Japanese reading here.`;
@@ -198,5 +198,5 @@ export function compoundNote(pieces: readonly WordPiece[]): string | null {
   const named = kanji
     .map((p, i) => `${p.written} its ${types[i] === "on" ? "Chinese" : "native Japanese"}`)
     .join(", ");
-  return `A mix here — ${named} reading.`;
+  return `A mix here: ${named} reading.`;
 }

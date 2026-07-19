@@ -174,7 +174,7 @@ const HANDAKUTEN = "゜";
  * katakana extension row, this is the sentence that becomes a page.
  */
 const SMALL_VOWEL_NOTE =
-  "ぁぃぅぇぉ (and ァィゥェォ) shrink the same way, but they fuse a VOWEL onto the kana in front of them, to write sounds Japanese does not natively have — ファ fa, ティ ti, ウェ we. You meet them almost only in katakana loanwords, so they are worth recognising when they turn up rather than learning as a set.";
+  "ぁぃぅぇぉ (and ァィゥェォ) shrink the same way, but they fuse a VOWEL onto the kana in front of them, to write sounds Japanese does not natively have: ファ fa, ティ ti, ウェ we. You meet them almost only in katakana loanwords, so they are worth recognising when they turn up rather than learning as a set.";
 
 /**
  * The five marks, in the order the curriculum meets them.
@@ -188,7 +188,7 @@ export const MARKS: readonly Mark[] = [
     id: "dakuten",
     name: "Dakuten",
     glyph: DAKUTEN,
-    summary: "Two dashes that voice the consonant — k→g, s→z, t→d, h→b.",
+    summary: "Two dashes that voice the consonant: k→g, s→z, t→d, h→b.",
     searchAlso: [DAKUTEN, "dakuten", "voiced sounds", "voicing mark", "ten ten"],
     intros: [DAKUTEN_H, DAKUTEN_K],
     rows: DAKUTEN_ROWS.filter((r) => r.mark === DAKUTEN),
@@ -207,7 +207,7 @@ export const MARKS: readonly Mark[] = [
     name: "Small っ",
     glyph: "っ",
     summary:
-      "Not a sound of its own — it doubles the consonant that follows. きて / きって.",
+      "This is not a sound of its own. It doubles the consonant that follows. きて / きって.",
     searchAlso: [
       "っ",
       "ッ",
@@ -248,7 +248,7 @@ export const MARKS: readonly Mark[] = [
     name: "Long vowels",
     glyph: "",
     summary:
-      "Hold a vowel a beat longer and it is a different word — ー in katakana, a doubled vowel in hiragana.",
+      "Hold a vowel a beat longer and it is a different word: ー in katakana, a doubled vowel in hiragana.",
     searchAlso: [
       "ー",
       "chouonpu",

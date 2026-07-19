@@ -79,20 +79,20 @@ function sec(
 // ぢ. That is the standard IME behaviour, and it is only surprising if nobody
 // tells you the two characters genuinely sound the same.
 const NOTES: Record<string, string> = {
-  し: 'Said "shi", not "si" — the one odd sound in the s row.',
-  シ: 'Said "shi", not "si" — the one odd sound in the s row.',
+  し: 'This is said "shi", not "si". This is the one odd sound in the s row.',
+  シ: 'This is said "shi", not "si". This is the one odd sound in the s row.',
   ち: 'Said "chi", not "ti".',
   チ: 'Said "chi", not "ti".',
-  つ: 'Said "tsu", not "tu" — it starts like the ts in "cats".',
-  ツ: 'Said "tsu", not "tu" — it starts like the ts in "cats".',
-  ふ: 'Said "fu", not "hu" — a soft sound between f and h, made with both lips rather than teeth.',
-  フ: 'Said "fu", not "hu" — a soft sound between f and h, made with both lips rather than teeth.',
-  じ: 'Said "ji", not "zi" — it comes from し, so it keeps し\'s odd sound.',
-  ジ: 'Said "ji", not "zi" — it comes from シ, so it keeps シ\'s odd sound.',
-  ぢ: 'Sounds exactly like じ. It\'s rare — but when you do need it, it\'s typed "di".',
-  ヂ: 'Sounds exactly like ジ. It\'s rare — but when you do need it, it\'s typed "di".',
-  づ: 'Sounds exactly like ず. It\'s rare — but when you do need it, it\'s typed "du".',
-  ヅ: 'Sounds exactly like ズ. It\'s rare — but when you do need it, it\'s typed "du".',
+  つ: 'This is said "tsu", not "tu". It starts like the ts in "cats".',
+  ツ: 'This is said "tsu", not "tu". It starts like the ts in "cats".',
+  ふ: 'This is said "fu", not "hu". It is a soft sound between f and h, made with both lips rather than teeth.',
+  フ: 'This is said "fu", not "hu". It is a soft sound between f and h, made with both lips rather than teeth.',
+  じ: 'This is said "ji", not "zi". It comes from し, so it keeps し\'s odd sound.',
+  ジ: 'This is said "ji", not "zi". It comes from シ, so it keeps シ\'s odd sound.',
+  ぢ: 'This sounds exactly like じ. It\'s rare, but when you do need it, it\'s typed "di".',
+  ヂ: 'This sounds exactly like ジ. It\'s rare, but when you do need it, it\'s typed "di".',
+  づ: 'This sounds exactly like ず. It\'s rare, but when you do need it, it\'s typed "du".',
+  ヅ: 'This sounds exactly like ズ. It\'s rare, but when you do need it, it\'s typed "du".',
 };
 
 /** The call-out for a character, when its sound isn't the one its row predicts.

@@ -319,8 +319,8 @@ export function Shelf({
       {offShelf > 0 ? (
         <p className="pt-0.5">
           <Hint>
-            ＋ {offShelf.toLocaleString()} more kanji further along your order —
-            search to find any of them.
+            ＋ {offShelf.toLocaleString()} more kanji further along your order.
+            Search to find any of them.
           </Hint>
         </p>
       ) : null}

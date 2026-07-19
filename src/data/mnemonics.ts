@@ -257,7 +257,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: ".”" },
     ],
     example: { word: "うみ", reading: "umi", gloss: "sea", hitIndex: 0 },
-    approximate: "Japanese う is flatter than English “oo” — don’t purse your lips. Trust the sound clip.",
+    approximate: "Japanese う is flatter than English “oo”. Don’t purse your lips.",
   },
 
   え: {
@@ -281,7 +281,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "!”" },
     ],
     example: { word: "えき", reading: "eki", gloss: "station", hitIndex: 0 },
-    approximate: "No glide — it’s “eh,” never “ay.” Match the sound clip’s flat vowel.",
+    approximate: "No glide. It’s “eh,” not “ay.”",
   },
 
   お: {
@@ -305,7 +305,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "!” from the crowd." },
     ],
     example: { word: "おと", reading: "oto", gloss: "sound", hitIndex: 0 },
-    approximate: "Short and pure, no “oh-w” glide at the end. The sound clip is the ruler.",
+    approximate: "Short and pure, no “oh-w” glide at the end.",
   },
 
   // ---- K row — か き く け こ (APPROVED) --------------------------------
@@ -560,7 +560,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     mnemonic: [
       { text: "A big wheel of " },
       { text: "chee", accent: true },
-      { text: "se with a wedge cut out — ち." },
+      { text: "se with a wedge cut out: ち." },
     ],
     example: { word: "ちず", reading: "chizu", gloss: "map", hitIndex: 0 },
     draft: true,
@@ -584,7 +584,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "nami curls its crest and sweeps over." },
     ],
     example: { word: "つき", reading: "tsuki", gloss: "moon", hitIndex: 0 },
-    approximate: "One sound — t and s pressed together, not “t” then “sue.” The sound clip nails it.",
+    approximate: "One sound: t and s pressed together, not “t” then “sue.”",
     draft: true,
   },
 
@@ -801,7 +801,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "ji, clouds drifting all around it." },
     ],
     example: { word: "ふね", reading: "fune", gloss: "boat", hitIndex: 0 },
-    approximate: "Not a hard English “f” — a soft breath between f and h. The sound clip is the guide.",
+    approximate: "Not a hard English “f”, but a soft breath between f and h.",
     draft: true,
   },
 
@@ -883,7 +883,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "." },
     ],
     mnemonic: [
-      { text: "A musical note — the " },
+      { text: "A musical note: the " },
       { text: "mi", accent: true },
       { text: " in do-re-mi." },
     ],
@@ -1045,7 +1045,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "dishes excitedly." },
     ],
     example: { word: "さくら", reading: "sakura", gloss: "cherry blossom", hitIndex: 2 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
+    approximate: "A single soft tap of the tongue, not a hard English “r.”",
     draft: true,
   },
 
@@ -1071,7 +1071,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "lly soaking in some afternoon sun." },
     ],
     example: { word: "りんご", reading: "ringo", gloss: "apple", hitIndex: 0 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
+    approximate: "A single soft tap of the tongue, not a hard English “r.”",
     draft: true,
   },
 
@@ -1093,7 +1093,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "te drops down and curls into a loop." },
     ],
     example: { word: "くるま", reading: "kuruma", gloss: "car", hitIndex: 1 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
+    approximate: "A single soft tap of the tongue, not a hard English “r.”",
     draft: true,
   },
 
@@ -1115,7 +1115,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "tching, their back curved up as they heave." },
     ],
     example: { word: "きれい", reading: "kirei", gloss: "pretty", hitIndex: 1 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
+    approximate: "A single soft tap of the tongue, not a hard English “r.”",
     draft: true,
   },
 
@@ -1137,7 +1137,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "ad winding down and bending back." },
     ],
     example: { word: "ろく", reading: "roku", gloss: "six", hitIndex: 0 },
-    approximate: "A single soft tap of the tongue — not a hard English “r.” The sound clip is the target.",
+    approximate: "A single soft tap of the tongue, not a hard English “r.”",
     draft: true,
   },
 
@@ -1178,10 +1178,10 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     mnemonic: [
       { text: "A " },
       { text: "wo", accent: true },
-      { text: "k tossing food up in an arc — を." },
+      { text: "k tossing food up in an arc: を." },
     ],
     example: { word: "パンを", reading: "pan o", gloss: "bread [object]", hitIndex: 2 },
-    approximate: "The object particle — attaches to a noun (パンを食べる, “eat bread”) and sounds exactly like お.",
+    approximate: "This is the object particle. It attaches to a noun (パンを食べる, “eat bread”) and sounds exactly like お.",
     draft: true,
   },
 
@@ -1201,7 +1201,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "!" },
     ],
     example: { word: "ほん", reading: "hon", gloss: "book", hitIndex: 1 },
-    approximate: "One held beat of nasal — its exact colour (m / n / ng) bends to what follows. Trust the sound clip.",
+    approximate: "One held beat of nasal. Its exact colour (m / n / ng) bends to what follows.",
     draft: true,
   },
 };
