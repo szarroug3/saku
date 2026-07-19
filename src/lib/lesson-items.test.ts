@@ -27,6 +27,8 @@ import {
   wordHost,
 } from "./grammar-lesson.ts";
 import { LESSON_RANGE_DEFAULT, nextKanjiLesson } from "./kanji-lesson.ts";
+import { nextRadicalLesson } from "./radical-lesson.ts";
+import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { nextLesson } from "./lesson.ts";
 import { CURRICULUM_WORDS, nextWordLesson, wordKanji } from "./word-lesson.ts";
@@ -37,6 +39,16 @@ import type { FactId, HistoryFile } from "../types/index.ts";
 /** A learner who has done nothing — so every track's FIRST lesson is what the
  * curriculum modules return. */
 const FRESH: HistoryFile = { sessions: [], facts: {} };
+/** A learner who knows every radical — the kanji track now gates on a kanji's
+ * radical being learned (radical-lesson.ts), so its first lesson only appears
+ * once the radicals are met. */
+const KANJI_READY: HistoryFile = {
+  sessions: [],
+  facts: {},
+  claims: Object.fromEntries(
+    RADICALS.map((r) => [radicalMeaningFactId(r.glyph), Date.UTC(2026, 0, 1)]),
+  ) as HistoryFile["claims"],
+};
 const WORD_READY: HistoryFile = {
   sessions: [],
   facts: {},
@@ -64,8 +76,17 @@ const GRAMMAR_READY: HistoryFile = {
  * them. */
 const TEACH_SETS: Record<string, FactId[]> = {
   kana: nextLesson(FRESH)!.facts,
-  kanji: nextKanjiLesson(FRESH, kanjiTeachOrder("everyday"), LESSON_RANGE_DEFAULT)!
-    .facts,
+  radical: nextRadicalLesson(
+    FRESH,
+    kanjiTeachOrder("everyday"),
+    LESSON_RANGE_DEFAULT,
+    6,
+  )!.facts,
+  kanji: nextKanjiLesson(
+    KANJI_READY,
+    kanjiTeachOrder("everyday"),
+    LESSON_RANGE_DEFAULT,
+  )!.facts,
   word: nextWordLesson(WORD_READY, 6)!.facts,
   grammar: nextGrammarLesson(GRAMMAR_READY, GRAMMAR_PER_LESSON_DEFAULT)!.facts,
 };

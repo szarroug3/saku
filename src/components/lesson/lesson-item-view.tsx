@@ -75,6 +75,7 @@ function subtitleOf(item: LessonItem): string {
     case "kana":
       return entry.readings.join(" · ");
     case "kanji":
+    case "radical":
       return entry.meanings.slice(0, 4).join(" · ");
     case "word":
       return [entry.readings[0], entry.meanings.slice(0, 3).join(", ")]

@@ -48,6 +48,7 @@
 
 import { freshFacts, nextGroup } from "@/lib/budget";
 import type { LessonPosition } from "@/lib/lesson-position";
+import { kanjiRadicalKnown } from "@/lib/radical-known";
 import {
   KANJI_SUBJECT,
   PREREQUISITE_ONLY,
@@ -363,6 +364,15 @@ export function nextKanjiLesson(
 
   const group = groups.find((g) => g.facts.includes(facts[0]));
   if (!group) return null;
+
+  // THE RADICAL GATE. A kanji is not taught until the radical it is filed under
+  // is known, exactly as a word is not taught until its kanji are (word-lesson.ts
+  // returns null the same way). If any kanji in the next group is still waiting on
+  // its radical, the kanji track shows nothing new: the radical track leads,
+  // teaches those radicals (radical-lesson.ts dueRadicals reads this same group),
+  // and the group unlocks on the next pass. Order is preserved because the gate
+  // blocks the FIRST fresh group rather than skipping to a later teachable one.
+  if (group.chars.some((c) => !kanjiRadicalKnown(c, history))) return null;
 
   const left = new Set(facts);
   const cards = group.chars.filter((c) => left.has(meaningFactId(c))).map(toCard);

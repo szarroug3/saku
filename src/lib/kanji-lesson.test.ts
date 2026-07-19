@@ -24,6 +24,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { KANJI_ORDER, PREREQUISITE_ONLY, kanjiRow, orderRow } from "../data/kanji.ts";
+import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
 import {
   clampLessonRange,
   kanjiCost,
@@ -38,8 +39,25 @@ const ORDER: readonly string[] = KANJI_ORDER.map((o) => o.c);
 const RANGE = LESSON_RANGE_DEFAULT;
 const GROUPS = kanjiCurriculum(ORDER, RANGE);
 
+// RADICALS KNOWN BY DEFAULT. This file tests the kanji PACKING — cost, boundary,
+// order — and a kanji now waits on its radical (the radical gate in
+// nextKanjiLesson), so without this every lesson would be blocked and every
+// packing assertion would read null. The gate itself is tested in
+// radical-lesson.test.ts; here it is satisfied so the packing shows through.
+const RADICAL_CLAIMS: Record<string, number> = Object.fromEntries(
+  RADICALS.map((r) => [radicalMeaningFactId(r.glyph), Date.UTC(2026, 0, 1)]),
+);
+
 function history(over: Partial<HistoryFile> = {}): HistoryFile {
-  return { sessions: [], facts: {}, claims: {}, ...over };
+  return {
+    sessions: [],
+    facts: {},
+    ...over,
+    claims: {
+      ...RADICAL_CLAIMS,
+      ...(over.claims ?? {}),
+    } as HistoryFile["claims"],
+  };
 }
 
 /** Claim these facts as known — the cheap way to move history forward without

@@ -67,3 +67,19 @@ const TEACH_INDEX: ReadonlyMap<number, number> = new Map(
 export function radicalTeachIndex(num: number): number {
   return TEACH_INDEX.get(num) ?? -1;
 }
+
+/** How many jōyō kanji are filed under each radical — the "appears in N kanji"
+ * a radical card shows. Zero for the 16 orphans. */
+const CONSUMER_COUNT: ReadonlyMap<number, number> = (() => {
+  const count = new Map<number, number>();
+  for (const o of KANJI_ORDER) {
+    const rad = radicalOfKanji(o.c);
+    if (!rad) continue;
+    count.set(rad.num, (count.get(rad.num) ?? 0) + 1);
+  }
+  return count;
+})();
+
+export function radicalConsumerCount(num: number): number {
+  return CONSUMER_COUNT.get(num) ?? 0;
+}
