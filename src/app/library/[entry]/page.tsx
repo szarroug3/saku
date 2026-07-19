@@ -598,16 +598,16 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* ================= KANJI ================= */}
       {isKanji ? (
         <>
-          {/* Strokes take the wider half: five frames plus the animation do not
-              fit an even split. The pairing is what stops the page being a stack
-              of full-width boxes. */}
-          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
-            <HowItsWritten
-              item={{ entry: entry.id, glyph: entry.glyph, kind: "kanji", facts: [] }}
-              alwaysOpen
-            />
-            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
-          </div>
+          {/* READINGS FIRST. They are what the page is for: 生 is one glyph and
+              eight readings keyed on the word each is read in, and that table is
+              the only place in the app it can be checked. How the glyph is drawn
+              and what it links to are both true and neither is the question a
+              reader came here with, so they follow rather than lead.
+
+              ABSENT, not empty, for the 114 jōyō kanji with no reading rows —
+              and because this is now the first thing in the branch, absence has
+              to leave the strokes row at the top of the page rather than a
+              margin. It does: the guard renders nothing, not an empty box. */}
           {readingRows.length > 0 ? (
             <KanjiReadings
               glyph={entry.glyph}
@@ -620,6 +620,16 @@ function EntryView({ entry }: { entry: LibEntry }) {
               onSpeak={say}
             />
           ) : null}
+          {/* Strokes take the wider half: five frames plus the animation do not
+              fit an even split. The pairing is what stops the page being a stack
+              of full-width boxes. */}
+          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
+            <HowItsWritten
+              item={{ entry: entry.id, glyph: entry.glyph, kind: "kanji", facts: [] }}
+              alwaysOpen
+            />
+            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+          </div>
           {words.length > 0 ? (
             <WordsWith
               words={words}
