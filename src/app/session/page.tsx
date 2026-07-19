@@ -19,7 +19,7 @@ import { TeachWalk } from "@/components/session/teach-walk";
 import { SmallBtn } from "@/components/ui";
 import { useHistory } from "@/lib/use-history";
 import { factInfo } from "@/lib/facts";
-import { KIND_LABEL, type Kind } from "@/lib/library/entries";
+import { subjectLabel as teachSubjectLabel } from "@/lib/library/entries";
 import { groupOfFact, widerScope } from "@/lib/lesson";
 import { lessonSteps } from "@/lib/lesson-steps";
 import { restLeftMs, SESSION_ROUND_TARGET } from "@/lib/session";
@@ -135,15 +135,13 @@ export default function SessionPage() {
     // On the last item the walk's own forward button already says "Quiz me", so
     // the bar drops its copy rather than showing the same words twice.
     const onLast = total > 0 && at === total - 1;
-    // What KIND of thing this lesson teaches — "Kanji", "Words". A lesson is
-    // single-subject, so the first teach fact names it for all of them; there's
-    // no subject on the session to read, so we resolve it from the fact and map
-    // it through the Library's canonical labels rather than restating them here.
-    const teachSubject = session.teach.length
-      ? factInfo(session.teach[0])?.subject
-      : undefined;
-    const subjectLabel = teachSubject
-      ? KIND_LABEL[teachSubject as Kind]
+    // What KIND of thing this lesson teaches — "Hiragana", "Kanji", "Word". A
+    // lesson is single-subject, so the first teach fact names it for all of
+    // them; there's no subject on the session to read, so we resolve it from the
+    // fact and let the Library turn it into the specific lesson-type label
+    // (kana splits by script) rather than restating that mapping here.
+    const subjectLabel = session.teach.length
+      ? teachSubjectLabel(factInfo(session.teach[0]))
       : undefined;
     return (
       <>
