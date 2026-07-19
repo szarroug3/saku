@@ -58,7 +58,7 @@ const OPTIONS: readonly Option[] = [
   {
     id: "everyday",
     label: "Everyday words first",
-    sub: "Kanji from the most common everyday words — but never before the parts it's built from.",
+    sub: "Kanji from the most common everyday words, but never before the parts it's built from.",
   },
   {
     id: "grade",

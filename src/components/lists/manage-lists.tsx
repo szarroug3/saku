@@ -127,7 +127,7 @@ export function ManageLists() {
       body:
         list.kind === "fixed"
           ? `This removes the list and its ${count} ${count === 1 ? "entry" : "entries"}. The characters themselves stay in the app.`
-          : "This removes the saved list. The rule it was built from — your search or that session — is untouched.",
+          : "This removes the saved list. The rule it was built from, your search or that session, is untouched.",
       confirmLabel: "Delete list",
     });
     if (ok) await remove(list.id);
@@ -137,7 +137,7 @@ export function ManageLists() {
     <>
       <PageTitle
         title="Lists"
-        sub="Every list you have — decks you imported, lists you named, searches and sessions you saved. Rename, drill, or clear them out."
+        sub="Every list you have: decks you imported, lists you named, searches and sessions you saved. Rename, drill, or clear them out."
       />
 
       {!loaded ? null : lists.length === 0 ? (
@@ -258,7 +258,7 @@ function ListCard({
         <p className="mt-1">
           <Hint>
             This one builds itself from a rule, so there&rsquo;s nothing to
-            rename around — drill it or clear it out.
+            rename around. Drill it or clear it out.
           </Hint>
         </p>
       ) : null}

@@ -65,7 +65,7 @@ function subtitleOf(item: LessonItem): string {
     case "word":
       return [entry.readings[0], entry.meanings.slice(0, 3).join(", ")]
         .filter(Boolean)
-        .join(" — ");
+        .join(": ");
     case "grammar":
       return entry.meanings[0] ?? "";
   }
@@ -223,7 +223,7 @@ export function LessonItemView({ item }: { item: LessonItem }) {
               ))}
             </div>
             <p className="mt-2 text-[11px] leading-relaxed text-text-muted/80">
-              You&rsquo;ll learn these as words later — each one you learn unlocks a
+              You&rsquo;ll learn these as words later. Each one you learn unlocks a
               reading above.
             </p>
           </div>

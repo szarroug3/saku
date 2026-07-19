@@ -117,7 +117,7 @@ export function ClaimExplainer() {
       <button
         type="button"
         onClick={onDismiss}
-        aria-label="Got it — don't show this again"
+        aria-label="Got it, don't show this again"
         className="kq-material -my-0.5 shrink-0 cursor-pointer rounded-lg border border-accent bg-card px-2 py-0.5 text-xs text-accent hover:bg-panel"
       >
         Got it

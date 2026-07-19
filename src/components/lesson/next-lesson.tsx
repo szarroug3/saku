@@ -149,8 +149,8 @@ export function NextLesson({
           <span className="font-medium">Learn them first.</span>{" "}
           <span className="text-text-muted">
             {conversion
-              ? "One card: the mark, what it does to the sound, and all five at once — before you’re quizzed."
-              : "Step through each one — its picture, its sound, and how it’s written — before you’re quizzed."}
+              ? "One card: the mark, what it does to the sound, and all five at once, before you’re quizzed."
+              : "Step through each one: its picture, its sound, and how it’s written, before you’re quizzed."}
           </span>
         </p>
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">

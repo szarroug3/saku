@@ -100,7 +100,7 @@ export function RestScreen({
 
       <Card className="px-[15px] py-[13px]">
         <Hint>
-          No notification, no sound. Close the tab if you like — come back
+          No notification, no sound. Close the tab if you like, come back
           whenever and it says ready.
         </Hint>
       </Card>
