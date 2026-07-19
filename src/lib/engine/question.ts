@@ -262,6 +262,28 @@ function checkEn2jp(fact: FactId, given: string): boolean {
 }
 
 /**
+ * The jp2en answer check, shared by every subject: you are shown the Japanese
+ * and must produce what it SAYS — a reading, or an English meaning.
+ *
+ * `accepts` on its own is exact-match (case- and space-forgiving), which is
+ * right for an English meaning and WRONG for a reading. A kanji reading answer
+ * is all kana, and this owner has no IME: she types "mei" for めい exactly as
+ * she types "a" for あ in the kana drill, and exactly as the en2jp side of every
+ * subject already allows. So an all-kana answer is graded through checkProduces
+ * as well, which is the same romaji forgiveness en2jp has always had.
+ *
+ * The asymmetry cuts only one way: an answer containing KANJI, and an English
+ * meaning, are untouched, because isKanaOnly refuses both. Romaji cannot grade
+ * 生 and must not start grading "life".
+ */
+function checkJp2en(fact: FactId, given: string): boolean {
+  if (accepts(fact, given)) return true;
+  const info = factInfo(fact);
+  if (!info) return false;
+  return info.answers.some((a) => checkProduces(a, given));
+}
+
+/**
  * Whether `given` produces the Japanese `target`: a direct match (an IME glyph,
  * or kana typed as kana) always counts, and when `target` is ALL KANA a romaji
  * spelling of it counts too. Factored out of checkEn2jp because a word asked
@@ -313,7 +335,7 @@ const kanaQuestions: QuestionType = {
   },
   check(fact, dir, given) {
     return dir === "jp2en"
-      ? accepts(fact, given)
+      ? checkJp2en(fact, given)
       : checkEn2jp(fact, given);
   },
   distractors(fact, n) {
@@ -387,7 +409,7 @@ const kanjiQuestions: QuestionType = {
   },
   check(fact, dir, given) {
     return dir === "jp2en"
-      ? accepts(fact, given)
+      ? checkJp2en(fact, given)
       : checkEn2jp(fact, given);
   },
   distractors(fact, n) {
@@ -471,7 +493,7 @@ const wordQuestions: QuestionType = {
     return { glyph: answerOf(fact), jp: false, context: "in japanese", hint: null };
   },
   check(fact, dir, given) {
-    if (dir === "jp2en") return accepts(fact, given);
+    if (dir === "jp2en") return checkJp2en(fact, given);
     // The reading fact's en→jp answer is its kana READING, not its glyph. Accept
     // it typed (romaji or kana) exactly the way every other kana target is.
     if (isWordReading(fact)) return checkProduces(answerOf(fact), given);
@@ -835,7 +857,10 @@ const grammarQuestions: QuestionType = {
         if (g === pattern || g === pattern.replace(/^〜/, "")) return true;
       }
     }
-    return accepts(fact, given);
+    // jp2en reaches here for a meaning fact (an English gloss, which isKanaOnly
+    // refuses, so nothing changes) and for a production fact with no varied
+    // vehicle, whose baked answer may be all kana. Same rule as everyone else.
+    return dir === "jp2en" ? checkJp2en(fact, given) : accepts(fact, given);
   },
   distractors(fact, n, ctx) {
     const prod = grammarProduction(fact);
