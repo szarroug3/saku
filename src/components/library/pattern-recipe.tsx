@@ -98,9 +98,14 @@ function SharedRule({ owner }: { owner: Recipe }) {
   return (
     <span className="text-[13px] text-text-muted">
       same rule as{" "}
+      {/* NOWRAP ON THE PATTERN. The score column is narrow and this line wrapped
+          BETWEEN 〜 and て, splitting a two-character pattern down the middle and
+          leaving a line ending in a bare 〜 — the same misread the "+ すぎる" note
+          above describes, arrived at the same way. The phrase may wrap before the
+          pattern; the pattern may not wrap inside itself. */}
       <Link
         href={entryHref(patternEntry(owner.id))}
-        className="font-kana text-accent no-underline"
+        className="whitespace-nowrap font-kana text-accent no-underline"
       >
         {owner.pattern}
       </Link>
