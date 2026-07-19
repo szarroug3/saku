@@ -46,7 +46,8 @@
 
 import { effectiveState } from "@/lib/claims";
 import type { LessonPosition } from "@/lib/lesson-position";
-import { kanjiRow, meaningFactId as kanjiMeaningFactId } from "@/data/kanji";
+import { kanjiRow } from "@/data/kanji";
+import { kanjiKnown } from "@/lib/kanji-known";
 import {
   VOCAB,
   VOCAB_SUBJECT,
@@ -143,14 +144,15 @@ function isFresh(fact: FactId, history: HistoryFile): boolean {
   return state.lastTested === 0;
 }
 
-/** A kanji is KNOWN once its meaning has been learned — seen, claimed, or
- * tested. The same "not fresh" signal that advances the kanji curriculum, read
- * for the gate. Knowing a kanji's meaning is exactly the prerequisite a word's
- * kanji must satisfy before the word can be taught. */
-function kanjiKnown(c: string, history: HistoryFile): boolean {
-  if (!kanjiRow(c)) return false;
-  return !isFresh(kanjiMeaningFactId(c), history);
-}
+// A kanji is KNOWN once its meaning has been learned — seen, claimed, or
+// tested. The same "not fresh" signal that advances the kanji curriculum, read
+// for the gate. Knowing a kanji's meaning is exactly the prerequisite a word's
+// kanji must satisfy before the word can be taught.
+//
+// LIFTED OUT, because the lesson's "Look out for" row asks the identical
+// question of a lookalike kanji and two copies would be two chances to disagree
+// about what "known" means (and the second copy is always the one that forgets
+// `claims`). See src/lib/kanji-known.ts.
 
 /**
  * Is this word teachable right now? Kana-only words always are; a kanji word is
