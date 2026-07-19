@@ -18,7 +18,7 @@ export default function SettingsPage() {
           Import a list →
         </Link>
         <Hint>
-          A file you already have — a .csv or .txt with one word per line. Every
+          A file you already have: a .csv or .txt with one word per line. Every
           row is looked up in the dictionary, and you see what didn&apos;t match
           before anything is added.
         </Hint>
