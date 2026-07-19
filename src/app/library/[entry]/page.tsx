@@ -574,7 +574,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
               stretched item would end it short of its neighbour. Below 860px
               the grid is one column, so each item is its own row and stretching
               means nothing: heights go back to content. */}
-          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
+          {/* Only the 46 base glyphs in each script have stroke assets. For a
+              voiced kana or a combination, HowItsWritten is absent; the Links
+              card is then the only child and takes the whole row instead of
+              leaving the wider column blank. */}
+          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*:only-child]:col-span-full [&>*]:mb-0 [&>*]:h-full">
             <HowItsWritten
               item={{ entry: entry.id, glyph: entry.glyph, kind: "kana", facts: [] }}
               alwaysOpen
@@ -659,25 +663,27 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* ================= WORD ================= */}
       {isWord ? (
         <>
-          <div className="mb-3.5 grid grid-cols-2 gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
-            {/* Absent, not empty, for a jukujikun (大人/おとな) and an all-kana
-                word: there is no per-kanji reading to show, and inventing one
-                would be a fact that cannot be graded. */}
-            {pieces ? <WordBuiltFrom pieces={pieces} /> : <div />}
-            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
-          </div>
-          {/* THE SENTENCE SITS BETWEEN THE PIECES AND THE FORMS, and full width
+          {/* THE SENTENCE COMES FIRST, and stays full width
               because a sentence in a half-column wraps to four ribboned lines.
-              The order is the word getting steadily more useful: what it is made
-              of, then it being used, then the table of what it turns into.
-              It goes ABOVE the forms rather than at the foot for the same reason
-              the forms table goes at the foot — that table is reference, long
-              and scanned rather than read, and three lines of high-value
-              Japanese buried under it would be found by nobody.
+              Seeing the word in use is closer to what the reader came for than
+              its parts breakdown. The forms table stays at the foot because it
+              is reference material that is scanned rather than read.
 
               ABSENT, not empty, for the four words in five with no corpus
               sentence. No card, no heading, no line about the gap. */}
           {example ? <WordExampleView example={example} /> : null}
+          {/* Absent, not empty, for a jukujikun (大人/おとな) and an all-kana
+              word: there is no per-kanji reading to show, and inventing one
+              would be a fact that cannot be graded. With no pieces, Links is a
+              full-width row rather than half a grid beside a placeholder. */}
+          {pieces ? (
+            <div className="mb-3.5 grid grid-cols-2 gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
+              <WordBuiltFrom pieces={pieces} />
+              <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+            </div>
+          ) : (
+            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+          )}
           {/* NO FORMS SECTION AT ALL when there are none — which is two thirds of
               the vocabulary, so absence has to look finished rather than
               truncated. */}
