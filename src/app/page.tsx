@@ -47,9 +47,11 @@ import { kanjiTeachOrder } from "@/data/kanji";
 import { nextKanjiLesson } from "@/lib/kanji-lesson";
 import {
   GRAMMAR_PER_LESSON_DEFAULT,
+  hasStartedGrammarTrack,
   nextGrammarLesson,
+  nextGrammarLock,
 } from "@/lib/grammar-lesson";
-import { nextWordLesson, nextWordLock } from "@/lib/word-lesson";
+import { hasStartedWordTrack, nextWordLesson, nextWordLock } from "@/lib/word-lesson";
 import { readingsProvedBy } from "@/lib/word-unlock";
 import { KANA_GROUP_FACTS, nextLesson } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -234,17 +236,25 @@ export default function HomePage() {
           ),
     [lesson, history, cfg.wordsPerLesson, cfg.newKanjiOrder],
   );
+  const wordsTrackStarted = useMemo(() => hasStartedWordTrack(history), [history]);
 
-  // The grammar track — opened on the SAME gate as kanji (`lesson === null`, i.e.
-  // kana is done), because the owner wanted the two to appear together: "kanji
-  // and grammar should open up at the same time." Once kana is complete, home
-  // shows the kanji card AND the grammar card, side by side down the page. A pure
-  // function of history and one COUNT (how many patterns a lesson teaches — a
-  // constant, not a Settings knob; see grammar-lesson.ts). Null when the grammar
-  // curriculum is done, and then it renders nothing, like every card here.
+  // The grammar track opens after kana is done, and each grammar lesson waits
+  // on a word of the type its patterns attach to: 〜てから needs a learned verb,
+  // 〜ので a な-adjective (see nextGrammarLesson). So the track stays hidden until
+  // kana is done AND the first patterns are teachable; once opened, a later
+  // lesson whose word type the learner lacks shows a locked card rather than
+  // vanishing — the words track's lock model, for grammar.
   const grammarLesson = useMemo(
     () => (lesson ? null : nextGrammarLesson(history, GRAMMAR_PER_LESSON_DEFAULT)),
     [lesson, history],
+  );
+  const grammarLock = useMemo(
+    () => (lesson ? null : nextGrammarLock(history, GRAMMAR_PER_LESSON_DEFAULT)),
+    [lesson, history],
+  );
+  const grammarTrackStarted = useMemo(
+    () => hasStartedGrammarTrack(history),
+    [history],
   );
 
   // "These are in my knowledge base now" — the one seen write, in one place.
@@ -431,7 +441,7 @@ export default function HomePage() {
           parallel once kana is done. The word lesson IS its facts (meaning, and
           reading for a kanji word), all new, all taught: the same onStart the
           kanji card takes. Learning them is what unlocks the kanji readings. */}
-      {wordLesson || wordLock ? (
+      {wordLesson || (wordLock && wordsTrackStarted) ? (
         <NextWordLesson
           lesson={wordLesson}
           lock={wordLock}
@@ -442,14 +452,15 @@ export default function HomePage() {
         />
       ) : null}
 
-      {/* The grammar track's next lesson — the fourth card, opened on the same
-          kana-done gate as kanji so the two appear together. A pattern is taught
-          teach-then-drill (its facts ARE the session, like kanji's), and its
-          drilling is already wired through grammarQuestions in question.ts.
-          Claiming skips the drill, on the same claim record as every other card. */}
-      {grammarLesson ? (
+      {/* The grammar track's next lesson — the fourth card, opened once kana is
+          done. A pattern is taught teach-then-drill (its facts ARE the session,
+          like kanji's). When the next patterns need a word type the learner
+          hasn't met, the card locks (naming the type) instead of disappearing,
+          but only after the track has opened — like the words track. */}
+      {grammarLesson || (grammarLock && grammarTrackStarted) ? (
         <NextGrammarLesson
           lesson={grammarLesson}
+          lock={grammarTrackStarted ? grammarLock : null}
           onStart={startLesson}
           onClaim={claim}
           inSession={grammarInSession}

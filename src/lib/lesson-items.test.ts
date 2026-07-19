@@ -21,12 +21,17 @@ import { describe, test } from "node:test";
 
 import { kanjiTeachOrder } from "../data/kanji.ts";
 import { entryOf, factInfo } from "./facts.ts";
-import { GRAMMAR_PER_LESSON_DEFAULT, nextGrammarLesson } from "./grammar-lesson.ts";
+import {
+  GRAMMAR_PER_LESSON_DEFAULT,
+  nextGrammarLesson,
+  wordHost,
+} from "./grammar-lesson.ts";
 import { LESSON_RANGE_DEFAULT, nextKanjiLesson } from "./kanji-lesson.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { nextLesson } from "./lesson.ts";
 import { CURRICULUM_WORDS, nextWordLesson, wordKanji } from "./word-lesson.ts";
 import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
+import { wordMeaningFactId } from "../data/vocab.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 /** A learner who has done nothing — so every track's FIRST lesson is what the
@@ -43,6 +48,18 @@ const WORD_READY: HistoryFile = {
   ) as HistoryFile["claims"],
 };
 
+/** A learner who has learned one verb — the host the head of the grammar
+ * curriculum attaches to, so nextGrammarLesson has a teachable lesson to hand
+ * out (it is now host-gated: no learned verb means the 〜て family is locked). */
+const FIRST_VERB = CURRICULUM_WORDS.find((w) => wordHost(w) === "verb")!;
+const GRAMMAR_READY: HistoryFile = {
+  sessions: [],
+  facts: {},
+  claims: {
+    [wordMeaningFactId(FIRST_VERB.keb)]: Date.UTC(2026, 0, 1),
+  } as HistoryFile["claims"],
+};
+
 /** The teach facts of each track's first lesson, the way a session would carry
  * them. */
 const TEACH_SETS: Record<string, FactId[]> = {
@@ -50,7 +67,7 @@ const TEACH_SETS: Record<string, FactId[]> = {
   kanji: nextKanjiLesson(FRESH, kanjiTeachOrder("everyday"), LESSON_RANGE_DEFAULT)!
     .facts,
   word: nextWordLesson(WORD_READY, 6)!.facts,
-  grammar: nextGrammarLesson(FRESH, GRAMMAR_PER_LESSON_DEFAULT)!.facts,
+  grammar: nextGrammarLesson(GRAMMAR_READY, GRAMMAR_PER_LESSON_DEFAULT)!.facts,
 };
 
 describe("itemsFromFacts — the step model", () => {

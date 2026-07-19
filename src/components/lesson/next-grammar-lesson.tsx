@@ -23,19 +23,56 @@
 
 import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
+import type { Why } from "@/data/why";
 import { WHY_TRACK } from "@/data/why";
-import type { GrammarLesson } from "@/lib/grammar-lesson";
+import type { GrammarLesson, GrammarLock } from "@/lib/grammar-lesson";
 import { positionLabel } from "@/lib/lesson-position";
+import type { Host } from "@/data/grammar/recipes";
 import type { FactId } from "@/types";
+
+/** How a host reads in a sentence to a beginner. The grammar track's own words
+ * for the four word types a pattern can attach to. */
+const HOST_LABEL: Record<Host, string> = {
+  verb: "verb",
+  "adj-i": "い-adjective",
+  "adj-na": "な-adjective",
+  noun: "noun",
+};
+
+/** "a verb", "an い-adjective" — the indefinite article picked by sound. */
+function withArticle(label: string): string {
+  return /^[aeiou]/i.test(label) || label.startsWith("い") ? `an ${label}` : `a ${label}`;
+}
+
+/** Join host labels into "a verb and a な-adjective". */
+function hostList(hosts: Host[]): string {
+  const parts = hosts.map((h) => withArticle(HOST_LABEL[h]));
+  if (parts.length <= 1) return parts[0] ?? "";
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`;
+  return `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
+}
+
+const GRAMMAR_LOCK_WHY: Why = {
+  lede: {
+    strong: "Grammar attaches to words.",
+    rest: "A pattern unlocks once you've learned a word it can attach to.",
+  },
+  paras: [
+    "Every grammar pattern is built on a word: 〜てから needs a verb, 〜ので leans on a な-adjective. Until you've learned a word of that type, there is nothing to build the pattern on.",
+    "Learn a word of the needed type on the words track, and this grammar lesson unlocks. Patterns are taught starting with the easiest ones first.",
+  ],
+};
 
 export function NextGrammarLesson({
   lesson,
+  lock,
   onStart,
   onClaim,
   inSession = false,
   onContinue,
 }: {
-  lesson: GrammarLesson;
+  lesson: GrammarLesson | null;
+  lock: GrammarLock | null;
   /**
    * Start the lesson — teach-then-drill. The facts ARE the session: a count was
    * the unit, so there is no budget and no length to apply.
@@ -50,10 +87,61 @@ export function NextGrammarLesson({
   inSession?: boolean;
   onContinue?: () => void;
 }) {
+  return (
+    <Card>
+      {lock ? (
+        <LockedLead hosts={lock.hosts} />
+      ) : lesson ? (
+        <TeachableLesson
+          lesson={lesson}
+          onStart={onStart}
+          onClaim={onClaim}
+          inSession={inSession}
+          onContinue={onContinue}
+        />
+      ) : null}
+
+      {/* Why grammar, and how it differs from words and kanji — or, when locked,
+          why a pattern waits on a word of its type. Teaching content about the
+          language; a pull, so only the lede shows until opened. */}
+      <WhyDisclosure why={lock ? GRAMMAR_LOCK_WHY : WHY_TRACK.grammar} />
+    </Card>
+  );
+}
+
+/** The locked card: the next patterns need a word type the learner has not met,
+ * so the card names the type and points at the words track, showing no pattern.
+ * The words-track lock's twin. */
+function LockedLead({ hosts }: { hosts: Host[] }) {
+  return (
+    <>
+      <Lbl>Up next · grammar</Lbl>
+      <p className="mt-0.5 text-[13px] text-text-muted">
+        Learn {hostList(hosts)} to unlock the next grammar lesson.
+      </p>
+    </>
+  );
+}
+
+/** The normal lesson — every pattern in the next set is teachable, so the
+ * patterns ARE the lesson, shown outright. */
+function TeachableLesson({
+  lesson,
+  onStart,
+  onClaim,
+  inSession = false,
+  onContinue,
+}: {
+  lesson: GrammarLesson;
+  onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
+  onClaim: (facts: FactId[]) => void;
+  inSession?: boolean;
+  onContinue?: () => void;
+}) {
   const { cards, position } = lesson;
 
   return (
-      <Card>
+    <>
         {/* "grammar" stays as the track name and "patterns" names the items —
             the two are not the same word here the way "kanji" and "words" are
             their own tracks' items. */}
@@ -121,11 +209,6 @@ export function NextGrammarLesson({
             )}
           </div>
         </div>
-
-        {/* Why grammar, and how it differs from words and kanji — the glue that
-            runs alongside them rather than gating on them. Teaching content about
-            the language; a pull, so only the lede shows until opened. */}
-        <WhyDisclosure why={WHY_TRACK.grammar} />
-      </Card>
+    </>
   );
 }

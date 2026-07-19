@@ -9,11 +9,11 @@
 //              preserving the authored within-level grouping.
 //   DRILLABLE  it teaches ONLY producible patterns — never a reference-only
 //              wrap or a vacuous pattern the drill would forever refuse to quiz.
-//   THE GATE   it opens on the SAME condition kanji does: kana is done. Handed
-//              to a beginner before kana, it would be a third front on day one.
+//   THE GATE   it opens after kana is done AND at least one word is learned, so
+//              grammar lessons start with known material.
 //
 // So these pin the order, the drillable filter, the count sizing, and — using
-// the exact gate src/app/page.tsx applies — the kana-done handover.
+// the exact gate src/app/page.tsx applies.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -35,11 +35,22 @@ import {
   GRAMMAR_CURRICULUM_TOTAL,
   GRAMMAR_PER_LESSON_DEFAULT,
   clampGrammarPerLesson,
+  hasStartedGrammarTrack,
   nextGrammarLesson,
+  nextGrammarLock,
+  wordHost,
 } from "./grammar-lesson.ts";
+import { CURRICULUM_WORDS } from "./word-lesson.ts";
+import { wordMeaningFactId } from "../data/vocab.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 const AT = Date.UTC(2026, 0, 1);
+
+/** The first curriculum word of each host — the cheapest way to hand the gate a
+ * learned word of a given type. 言う (a verb) unlocks the head of the order;
+ * 大丈夫 (a な-adjective) is what 〜ので waits on. */
+const FIRST_VERB = CURRICULUM_WORDS.find((w) => wordHost(w) === "verb")!;
+const FIRST_ADJ_NA = CURRICULUM_WORDS.find((w) => wordHost(w) === "adj-na")!;
 
 function history(over: Partial<HistoryFile> = {}): HistoryFile {
   return { sessions: [], facts: {}, claims: {}, ...over };
@@ -58,6 +69,14 @@ function claiming(facts: readonly FactId[]): HistoryFile {
  * src/app/page.tsx reads to open both kanji and grammar. */
 function allKanaClaimed(): HistoryFile {
   return claiming(KANA_GROUP_FACTS.flat());
+}
+
+/** Kana done AND one verb learned — the state that opens the HEAD of the grammar
+ * curriculum, whose first patterns all attach to a verb (〜て family). This is
+ * the real gate for a teachable lesson: kana alone leaves grammar LOCKED now,
+ * because a pattern needs a real word of its host type behind it. */
+function kanaAndVerb(): HistoryFile {
+  return claiming([...KANA_GROUP_FACTS.flat(), wordMeaningFactId(FIRST_VERB.keb)]);
 }
 
 describe("the curriculum is the drillable patterns, N5 before N4", () => {
@@ -101,8 +120,8 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
     }
   });
 
-  test("a lesson from a fresh (kana-done) history is the head of the order — all N5", () => {
-    const lesson = nextGrammarLesson(allKanaClaimed(), 4)!;
+  test("a lesson from a kana-done, verb-learned history is the head of the order — all N5", () => {
+    const lesson = nextGrammarLesson(kanaAndVerb(), 4)!;
     assert.equal(lesson.cards.length, 4);
     for (const card of lesson.cards) {
       assert.equal(card.level, "N5");
@@ -115,7 +134,7 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
   });
 
   test("a lesson's facts are the taught patterns' meaning + production facts", () => {
-    const lesson = nextGrammarLesson(allKanaClaimed(), 3)!;
+    const lesson = nextGrammarLesson(kanaAndVerb(), 3)!;
     const expected = new Set<string>();
     for (const card of lesson.cards) {
       const r = recipe(card.id)!;
@@ -133,31 +152,75 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
   });
 });
 
-describe("the gate: grammar opens exactly when kana is done", () => {
-  test("kana incomplete → the page gates grammar off, even though patterns exist", () => {
-    // The page's own expression: `lesson ? null : nextGrammarLesson(...)`.
+describe("the gate: a pattern waits for a word of its host type", () => {
+  test("kana incomplete → the caller keeps grammar hidden", () => {
     const h = history(); // nothing learned — kana is the first front
     assert.notEqual(nextLesson(h), null, "kana should be incomplete on empty history");
-    const gated = nextLesson(h) ? null : nextGrammarLesson(h, GRAMMAR_PER_LESSON_DEFAULT);
-    assert.equal(gated, null);
+    // The kana gate is the caller's (src/app/page.tsx); the lib itself is pure
+    // of kana and only reports whether the track has been started.
+    assert.equal(hasStartedGrammarTrack(h), false);
   });
 
-  test("kana done → nextLesson is null and grammar is offered", () => {
+  test("kana done but no word learned → head lesson is LOCKED, lock names the verb", () => {
     const h = allKanaClaimed();
     assert.equal(nextLesson(h), null, "kana should be complete");
-    const opened = nextLesson(h) ? null : nextGrammarLesson(h, GRAMMAR_PER_LESSON_DEFAULT);
+    // The first patterns attach to a verb; with no verb learned there is nothing
+    // teachable, and the lock says exactly what is missing.
+    assert.equal(nextGrammarLesson(h, GRAMMAR_PER_LESSON_DEFAULT), null);
+    const lock = nextGrammarLock(h, GRAMMAR_PER_LESSON_DEFAULT);
+    assert.notEqual(lock, null);
+    assert.ok(lock!.hosts.includes("verb"));
+  });
+
+  test("kana done and one verb learned → grammar unlocks, no lock", () => {
+    const h = kanaAndVerb();
+    const opened = nextGrammarLesson(h, GRAMMAR_PER_LESSON_DEFAULT);
     assert.notEqual(opened, null);
     assert.ok(opened!.cards.length > 0);
+    assert.equal(nextGrammarLock(h, GRAMMAR_PER_LESSON_DEFAULT), null);
+  });
+
+  test("a pattern that needs a な-adjective locks until one is learned", () => {
+    // Meet every pattern except 〜ので (node), and learn a verb but no
+    // な-adjective. node is the one pattern whose host is a な-adjective, so it is
+    // the next fresh pattern and it is locked.
+    const base: FactId[] = [
+      ...KANA_GROUP_FACTS.flat(),
+      wordMeaningFactId(FIRST_VERB.keb),
+      ...CURRICULUM_PATTERNS.filter((r) => r.id !== "node").map((r) =>
+        patternMeaningFactId(r.id),
+      ),
+    ];
+    const locked = claiming(base);
+    assert.equal(nextGrammarLesson(locked, 4), null);
+    assert.deepEqual(nextGrammarLock(locked, 4)!.hosts, ["adj-na"]);
+
+    // Learn a な-adjective and node opens as the last teachable pattern.
+    const opened = claiming([...base, wordMeaningFactId(FIRST_ADJ_NA.keb)]);
+    const lesson = nextGrammarLesson(opened, 4)!;
+    assert.equal(lesson.cards.length, 1);
+    assert.equal(lesson.cards[0].id, "node");
+  });
+
+  test("hasStartedGrammarTrack flips once a pattern is met", () => {
+    assert.equal(hasStartedGrammarTrack(kanaAndVerb()), false);
+    const met = claiming([
+      ...KANA_GROUP_FACTS.flat(),
+      wordMeaningFactId(FIRST_VERB.keb),
+      patternMeaningFactId(CURRICULUM_PATTERNS[0].id),
+    ]);
+    assert.equal(hasStartedGrammarTrack(met), true);
   });
 });
 
 describe("lessons advance without a cursor", () => {
   test("a met pattern is skipped, not re-taught", () => {
-    const first = nextGrammarLesson(allKanaClaimed(), 3)!;
+    const first = nextGrammarLesson(kanaAndVerb(), 3)!;
     // Meet the first lesson (claim its patterns' meaning), and the next call moves
-    // past them.
+    // past them. Keep the learned verb so the next set stays teachable.
     const met = claiming([
       ...KANA_GROUP_FACTS.flat(),
+      wordMeaningFactId(FIRST_VERB.keb),
       ...first.cards.map((c) => patternMeaningFactId(c.id)),
     ]);
     const second = nextGrammarLesson(met, 3)!;
@@ -184,7 +247,7 @@ describe("lesson sizing is a count, clamped", () => {
     assert.equal(GRAMMAR_PER_LESSON_DEFAULT, 4);
   });
   test("a lesson holds at most `count` patterns", () => {
-    const lesson = nextGrammarLesson(allKanaClaimed(), 2)!;
+    const lesson = nextGrammarLesson(kanaAndVerb(), 2)!;
     assert.ok(lesson.cards.length <= 2);
   });
   test("clamp keeps it whole and in range", () => {
@@ -214,15 +277,15 @@ describe("the position counts PATTERNS, and the total is the drillable set", () 
   // guarantee the denominator rests on — not restated here.
 
   test("the span is as wide as the lesson, and starts at patterns-met + 1", () => {
-    const first = nextGrammarLesson(allKanaClaimed(), 4)!;
+    const first = nextGrammarLesson(kanaAndVerb(), 4)!;
     assert.equal(first.position.from, 1);
     assert.equal(first.position.to, first.cards.length);
     assert.equal(first.position.total, GRAMMAR_CURRICULUM_TOTAL);
   });
 
   test("the total is the same whatever the lesson size — only the span moves", () => {
-    const small = nextGrammarLesson(allKanaClaimed(), 2)!;
-    const big = nextGrammarLesson(allKanaClaimed(), 8)!;
+    const small = nextGrammarLesson(kanaAndVerb(), 2)!;
+    const big = nextGrammarLesson(kanaAndVerb(), 8)!;
     assert.equal(small.position.total, big.position.total);
     assert.equal(small.position.to, 2);
     assert.equal(big.position.to, 8);

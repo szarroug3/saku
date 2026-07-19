@@ -315,6 +315,13 @@ export function nextWordLock(
   return locked ? { away } : null;
 }
 
+export function hasStartedWordTrack(history: HistoryFile): boolean {
+  for (const w of CURRICULUM_WORDS) {
+    if (!isFresh(wordMeaningFactId(w.keb), history)) return true;
+  }
+  return false;
+}
+
 /** The subject these lessons belong to. Re-exported so a caller holding a
  * lesson never has to reach into the data file to name it. */
 export { VOCAB_SUBJECT };

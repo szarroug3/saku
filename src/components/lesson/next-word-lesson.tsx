@@ -43,12 +43,12 @@ import type { FactId } from "@/types";
 
 const WORD_LOCK_WHY: Why = {
   lede: {
-    strong: "Words are made of kanji.",
-    rest: "You learn the pieces first, then the set unlocks.",
+    strong: "Words are made up of kanji and radicals.",
+    rest: "We wait until the complete set of kanji are learned for the word set before unlocking it.",
   },
   paras: [
-    "Most words in this track are written with kanji, so the lesson waits until you know those characters.",
-    "Word lessons are ordered by commonality, so once this set unlocks you start with the most common words first.",
+    "In English, you cannot learn words until you first learn the alphabet. This follows the same idea: learn the pieces first, then the words built from them.",
+    "By default, we use commonality for ordering but this can be updated in the settings.",
   ],
 };
 
