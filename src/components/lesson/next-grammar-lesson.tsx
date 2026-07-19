@@ -34,9 +34,15 @@ export function NextGrammarLesson({
   onClaim,
 }: {
   lesson: GrammarLesson;
-  /** Start the lesson — teach-then-drill. The facts ARE the session: a count
-   * was the unit, so there is no budget and no length to apply. */
-  onStart: (facts: FactId[]) => void;
+  /**
+   * Start the lesson — teach-then-drill. The facts ARE the session: a count was
+   * the unit, so there is no budget and no length to apply.
+   *
+   * `teach: false` is the skip-the-lesson route: drill these patterns now,
+   * without the walk. Same handler, same facts, same seen record (page.tsx
+   * writes it either way); the flag decides only whether the walk happens.
+   */
+  onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
   /** "I already know these", over the lesson's patterns. */
   onClaim: (facts: FactId[]) => void;
 }) {
@@ -85,11 +91,25 @@ export function NextGrammarLesson({
             I already know{" "}
             {cards.length === 1 ? "this" : `these ${cards.length}`}
           </Btn>
-          {/* Plain "Start", matching the kanji and words cards: a bare lesson
+          {/* The same two routes the kanji and words cards offer, in the same
+              arrangement, because the claim explainer's promise ("skip just the
+              lesson and go straight to the quiz") is made once for the whole
+              page and has to be true on every card under it. Start walks the
+              patterns and then drills them; "Quiz me" drills them now. Both mark
+              them seen. The skip is unaccented and shares Start's group: it is
+              Start without the walk, not a third intent, and the claim on the
+              left is still the only other decision on the card.
+
+              Plain "Start", matching the kanji and words cards: a bare lesson
               ordinal is a second scale contradicting the one in the label. */}
-          <Btn go onClick={() => onStart(lesson.facts)}>
-            Start
-          </Btn>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Btn onClick={() => onStart(lesson.facts, { teach: false })}>
+              Quiz me
+            </Btn>
+            <Btn go onClick={() => onStart(lesson.facts)}>
+              Start
+            </Btn>
+          </div>
         </div>
 
         {/* Why grammar, and how it differs from words and kanji — the glue that

@@ -45,9 +45,16 @@ export function NextKanjiLesson({
   onClaim,
 }: {
   lesson: KanjiLesson;
-  /** Start the lesson. The facts ARE the session — no budget, no length: the
-   * unit was decided by the material. */
-  onStart: (facts: FactId[]) => void;
+  /**
+   * Start the lesson. The facts ARE the session — no budget, no length: the
+   * unit was decided by the material.
+   *
+   * `teach: false` is the skip-the-lesson route: drill these now, without the
+   * walk. It is the same handler and the same facts on purpose — the two routes
+   * differ in whether the walk happens and in nothing else, and page.tsx marks
+   * the material seen before the drill either way. See the buttons below.
+   */
+  onStart: (facts: FactId[], opts?: { teach?: boolean }) => void;
   /** "I already know this", over whatever slice the button named. */
   onClaim: (facts: FactId[]) => void;
 }) {
@@ -117,17 +124,49 @@ export function NextKanjiLesson({
             I already know{" "}
             {cards.length === 1 ? "this" : `these ${cards.length}`}
           </Btn>
-          {/* Start IS the walk-through now: it opens a session whose teach phase
-              steps each kanji one at a time (session/teach-walk.tsx), then
-              drills. So there is no separate "walk me through" — the one button
-              teaches then asks. */}
-          {/* Just "Start". It used to say "Start · lesson N", which is the
-              lesson-counting the label above just stopped doing — and an
-              ordinal with no denominator beside a header that counts kanji
-              would read as a second, contradicting scale. */}
-          <Btn go onClick={() => onStart(lesson.facts)}>
-            Start
-          </Btn>
+          {/* THE TWO ROUTES INTO THE MATERIAL, in kana's arrangement.
+              ========================================================
+              Start opens a session whose teach phase steps each kanji one at a
+              time (session/teach-walk.tsx) and then drills. "Quiz me" skips
+              that walk and drills now. Both mark these kanji seen; only the
+              first shows them to you first.
+
+              This card used to have Start and nothing else — the comment here
+              said "there is no separate 'walk me through', the one button
+              teaches then asks", which was true and was also the gap. The claim
+              explainer at the top of home promises you can "skip just the lesson
+              and go straight to the quiz", and that promise was only kept on
+              kana. It is kept here now, in kana's own shape: a quiet secondary
+              beside the accented go button, in ONE group on the right, the same
+              way next-lesson.tsx offers "Quiz me on all hiragana so far" beside
+              "Quiz me on these only".
+
+              WHY THIS IS TWO BUTTONS AND NOT THREE
+              ------------------------------------
+              Read as a row it is still the same two decisions the card always
+              posed: on the left, do I need this lesson at all; on the right, how
+              do I take it. The claim is the exit and keeps its own side. The
+              skip is not a third intent — it is Start without the walk — so it
+              lives in Start's group, unaccented, and reads as a modifier of the
+              button beside it rather than a rival to it.
+
+              The label is "Quiz me" and not "Skip the lesson" because the app
+              already has this button, on the kana card, under that exact word.
+              A second name for the same route would be a second thing to learn,
+              and "skip" names what you lose where "Quiz me" names what you get.
+
+              Just "Start", still. It used to say "Start · lesson N", which is
+              the lesson-counting the label above stopped doing — and an ordinal
+              with no denominator beside a header that counts kanji would read as
+              a second, contradicting scale. */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Btn onClick={() => onStart(lesson.facts, { teach: false })}>
+              Quiz me
+            </Btn>
+            <Btn go onClick={() => onStart(lesson.facts)}>
+              Start
+            </Btn>
+          </div>
         </div>
 
         {/* Why kanji, and not words or grammar — and how learning a kanji is what
