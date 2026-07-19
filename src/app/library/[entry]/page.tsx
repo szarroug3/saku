@@ -451,7 +451,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
           >
             {familyCluster.link.label}
           </a>
-          <Hint>opens in a new tab</Hint>
         </LinkRow>
       ) : null}
 

@@ -49,10 +49,24 @@
 //
 // NOT EVERY CLUSTER GETS ONE. `obligation` — the biggest and most useful
 // cluster in the file, the seven ways to say "must" — has NO verified link
-// covering it. The slot ships VISIBLY EMPTY, with the reason shown. Inventing
-// a plausible URL, or pointing at a page that covers three of the seven and
-// pretending, would be worse than the gap: it teaches the user that our links
-// are decorative.
+// covering it. Inventing a plausible URL, or pointing at a page that covers
+// three of the seven and pretending, would be worse than the gap: it teaches
+// the user that our links are decorative. That rule has not changed and is not
+// negotiable: we do not fill an empty slot with an approximation.
+//
+// WHAT DID CHANGE: the slot used to ship VISIBLY EMPTY, rendering a "No link"
+// chip and the `noLinkReason` text on the cluster page. It no longer renders at
+// all. 7 of the 12 clusters have `link: null`, so the empty slot appeared on
+// most of the shelf, and the owner's read is that a message repeated on most
+// pages is furniture rather than a finding:
+//
+//   "if something doesn't have a read about, don't display that."
+//
+// So the cluster page now omits the whole card when `link` is null. The
+// `noLinkReason` strings are KEPT as data: they are the written record of a bet
+// nobody could make, they are what a future contributor reads before adding a
+// link, and they are what a sweep script can print. They are simply no longer
+// shown to the reader.
 //
 // AND NEVER TAE KIM
 // =================
@@ -111,7 +125,12 @@ export interface Cluster {
    * — see obligation.
    */
   readonly link: Link | null;
-  /** Required when `link` is null. Rendered, not hidden. */
+  /**
+   * Required when `link` is null. NOT RENDERED ANYWHERE — it is documentation
+   * for whoever next goes looking for a link, and for a sweep script. See the
+   * header. A test still requires it, because "there is no link" without a
+   * stated reason is an omission rather than a decision.
+   */
   readonly noLinkReason?: string;
 }
 
@@ -134,11 +153,11 @@ export const CLUSTERS: readonly Cluster[] = [
       "なくちゃ / なきゃ are spoken contractions of なくては / なければ. " +
       "〜ならない and 〜いけない are interchangeable in nearly every frame.",
     link: null,
-    // `noLinkReason` is RENDERED — it is the text beside the empty slot, not a
-    // comment. So it may not name a source file: "see clusters.ts" was in here
-    // and would have shipped to the screen, telling a user learning Japanese to
-    // go read our TypeScript. The reason a reader needs is the one about the
-    // links, and it is above this line, where readers of the code will find it.
+    // `noLinkReason` is no longer rendered (see the header), but it is still
+    // written for a reader rather than for us: keep it free of source-file
+    // names. "see clusters.ts" was in here once, back when this text reached
+    // the screen, and it told a user learning Japanese to go read our
+    // TypeScript. If it ever gets shown again it should still be safe.
     noLinkReason:
       "No verified link covers all seven. The pages that exist cover three or " +
       "four and stop, and pointing at one would imply a completeness it does " +
@@ -147,7 +166,7 @@ export const CLUSTERS: readonly Cluster[] = [
   {
     id: "seems",
     title: "seems",
-    gloss: "evidentials — how sure you are, and how you know",
+    gloss: "how sure you are, and how you know",
     members: ["sou-appearance", "sou-hearsay", "you-da", "rashii", "kamoshirenai", "deshou"], //
     feel:
       "そう splits by ATTACHMENT, which is the only split in this family a " +
@@ -171,7 +190,7 @@ export const CLUSTERS: readonly Cluster[] = [
       "raised. The overlap is large and real.",
     link: {
       url: "https://guidetojapanese.org/learn/grammar/conditionals",
-      label: "Tae Kim's Grammar Guide — Conditionals",
+      label: "Tae Kim's Grammar Guide: Conditionals",
       lastVerified: "2026-07-17",
     },
   },
@@ -183,11 +202,11 @@ export const CLUSTERS: readonly Cluster[] = [
     feel:
       "ので is softer and more deferential; から states a reason more baldly " +
       "and is the one you can end a sentence on. Note から has a second, " +
-      "unrelated job — 東京から, 'from Tokyo' — which has nothing to do with " +
+      "unrelated job, 東京から, 'from Tokyo', which has nothing to do with " +
       "reasons.",
     link: {
       url: "https://www.tofugu.com/japanese-grammar/conjunctive-particle-node/",
-      label: "Tofugu — ので",
+      label: "Tofugu: ので",
       lastVerified: "2026-07-17",
     },
   },
@@ -221,7 +240,7 @@ export const CLUSTERS: readonly Cluster[] = [
     feel:
       "ことができる is longer and more formal; the potential form is what " +
       "people say. Note 〜られる is ALSO the passive, and for every ichidan " +
-      "verb the two are the same string (食べられる) — that ambiguity is in " +
+      "verb the two are the same string (食べられる). That ambiguity is in " +
       "Japanese itself, not in this list.",
     link: null,
     noLinkReason: "No verified link compares the two.",
@@ -259,7 +278,7 @@ export const CLUSTERS: readonly Cluster[] = [
   {
     id: "wa-ga",
     title: "は vs が",
-    gloss: "the topic/subject pair — read about it, never drilled",
+    gloss: "the topic/subject pair: read about it, never drilled",
     members: [],
     feel:
       "は marks what the sentence is about; が marks who or what is doing the " +
@@ -267,7 +286,7 @@ export const CLUSTERS: readonly Cluster[] = [
       "them often doesn't survive into English.",
     link: {
       url: "https://www.tofugu.com/japanese/wa-and-ga/",
-      label: "Tofugu — は vs が",
+      label: "Tofugu: は vs が",
       lastVerified: "2026-07-17",
     },
   },
@@ -279,21 +298,21 @@ export const CLUSTERS: readonly Cluster[] = [
     feel: "Roughly: に marks existence and destination, で marks the site of an action.",
     link: {
       url: "https://www.tofugu.com/japanese/ni-vs-de/",
-      label: "Tofugu — に vs で",
+      label: "Tofugu: に vs で",
       lastVerified: "2026-07-17",
     },
   },
   {
     id: "transitivity",
     title: "transitive vs intransitive",
-    gloss: "開ける vs 開く — verb pairs that come in twos",
+    gloss: "開ける vs 開く: verb pairs that come in twos",
     members: [],
     feel:
       "Japanese pairs most verbs: one you do to something (を), one that just " +
       "happens (が). The pairing is lexical, not a rule you can derive.",
     link: {
       url: "https://www.tofugu.com/japanese-grammar/transitivity/",
-      label: "Tofugu — Transitivity",
+      label: "Tofugu: Transitivity",
       lastVerified: "2026-07-17",
     },
   },
@@ -318,5 +337,5 @@ export function membersOf(c: Cluster): Recipe[] {
   });
 }
 
-/** Clusters shipping a visibly empty link slot, with their stated reason. */
+/** Clusters with no link out, each carrying its stated (unrendered) reason. */
 export const UNLINKED: readonly Cluster[] = CLUSTERS.filter((c) => c.link === null);

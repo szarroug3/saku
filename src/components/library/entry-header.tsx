@@ -43,7 +43,7 @@ export function EntryHeader({
    */
   glyphClass?: string;
   title: string;
-  /** The provenance line — "Hiragana · Vowels", "Jōyō grade 1 · 5 strokes". */
+  /** The line under the title — "Hiragana · Vowels", "5 strokes". */
   sub?: string;
   /** Standing chips, in a row. Built by the caller because what an entry is
    * allowed to claim about itself differs per kind — see standing.ts, which

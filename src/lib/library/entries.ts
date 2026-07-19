@@ -170,7 +170,7 @@ export interface LibEntry {
    * Empty (and absent from the match loop's cost) for every other kind.
    */
   readonly searchAlso?: readonly string[];
-  /** The one-line provenance under the glyph: "Jōyō grade 1 · 5 strokes". */
+  /** The one line under the glyph: "5 strokes", "Everyday word". */
   readonly sub: string;
   /**
    * Tie-break weight for search: LOWER sorts first. Not shown, ever.
@@ -329,11 +329,12 @@ function build(): LibEntry[] {
       glyph: k.c,
       readings: readingsOf(k.c).map((r) => r.base),
       meanings: k.meanings,
-      // There is no grade 7 (see KanjiRow.grade), so this prints what the data
-      // says and never "grade 8 of 8".
-      sub: `Jōyō grade ${k.grade} · ${k.strokes} stroke${
-        k.strokes === 1 ? "" : "s"
-      } · KANJIDIC2`,
+      // Stroke count only. The jōyō grade and the name of the dictionary the
+      // row came from were both here and both removed: a grade is a fact about
+      // the Japanese school system, not about the character, and a data-source
+      // name means nothing to a beginner. Attribution is not lost — the entry
+      // page foot credits every source.
+      sub: `${k.strokes} stroke${k.strokes === 1 ? "" : "s"}`,
       weight: 1000 + (k.newspaperFreq ?? 3000),
     });
   }
@@ -345,7 +346,8 @@ function build(): LibEntry[] {
       glyph: w.keb,
       readings: [w.reb],
       meanings: w.glosses,
-      sub: "Everyday word · JMdict",
+      // No source name here either. See the kanji sub-line above.
+      sub: "Everyday word",
       weight: 10_000 + (w.newspaperBand ?? 60),
     });
   }
