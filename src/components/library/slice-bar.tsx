@@ -151,8 +151,9 @@ export function SliceBar({
               them." startQuiz is the one-off; the session loop is the normal
               one, and it is what puts distance between reading セイ here and
               being asked it. */}
-          {/* Drill N, and N is now the real number.
-              
+          {/* Drill N, and N is now the real number — and the button is GONE
+              when N would be zero.
+
               It used to be `drillChars(order).length` — the facts filtered down
               to the ones whose subject was kana, because the runtime drilled
               CHARACTERS and CHAR_INDEX has no kanji in it. On 生 that filter
@@ -160,11 +161,18 @@ export function SliceBar({
               with a line underneath admitting the quiz couldn't ask them. The
               runtime is fact-native now, so the filter, the note and the whole
               of src/lib/library/drill.ts are gone: what the model would drill
-              and what the quiz can ask are the same list again. */}
-          {canDrill ? (
+              and what the quiz can ask are the same list again.
+
+              "Drill 0" could still surface the honest way, though: a multi-fact
+              slice every fact of which is already solid (a filtered shelf where
+              nothing needs work) drills nothing, so `order` is empty. A drill of
+              nothing is not a thing to offer — the sentence beside it already
+              says "all N solid, nothing to ask" — so the button is HIDDEN, not
+              shown disabled, whenever `order` is empty. `sliceIsDrillable` still
+              hides it on single-fact slices; this hides it on empty ones. */}
+          {canDrill && order.length > 0 ? (
             <Btn
               sel
-              disabled={order.length === 0}
               onClick={() => startSession(order, [...plan.teach], slice.label)}
             >
               Drill {order.length}

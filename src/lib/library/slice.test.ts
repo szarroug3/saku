@@ -19,7 +19,7 @@ import { VOCAB_SUBJECT } from "@/data/vocab";
 import type { Claims } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
 import { LIB_ENTRIES } from "@/lib/library/entries";
-import { drillPlan, sliceIsDrillable } from "@/lib/library/slice";
+import { drillOrder, drillPlan, sliceIsDrillable } from "@/lib/library/slice";
 import type { FactAggregate, FactId } from "@/types";
 
 /** One real entry id of each kind, so the assertions run against ids the app
@@ -96,5 +96,37 @@ describe("drillPlan includeSolid — an explicit selection drills what you know"
       "every selected solid fact is drillable",
     );
     assert.deepEqual([...plan.probe].sort(), [...ids].sort());
+  });
+});
+
+// "Drill 0 shouldn't be an option." A multi-fact slice clears sliceIsDrillable
+// (fact count > 1), but if every one of its facts is already solid the default
+// drill drops them all and the order is empty. The bar must offer no drill —
+// and never print "Drill 0" — so its condition is drillable AND a non-empty
+// order, not drillable alone.
+describe("a zero-item drill is never offered", () => {
+  const now = Date.UTC(2026, 0, 1);
+  const allClaimed = (ids: readonly FactId[]): Claims => {
+    const claims: Claims = {};
+    for (const id of ids) claims[id] = now;
+    return claims;
+  };
+  const noFacts: Record<FactId, FactAggregate> = {};
+
+  test("a multi-fact slice with every fact solid drills nothing and offers no button", () => {
+    const ids = factsOf(kanji.id);
+    const slice = { label: kanji.glyph, entries: [kanji.id] };
+
+    // The single-fact gate would let this through: a kanji is multi-fact.
+    assert.equal(sliceIsDrillable(slice), true);
+
+    // But the default drill drops every solid fact, so the order is empty.
+    const order = drillOrder(slice, noFacts, allClaimed(ids), now);
+    assert.equal(order.length, 0, "an all-solid slice drills nothing");
+
+    // The bar's offer condition — drillable AND a non-empty order — is false,
+    // so no "Drill 0" is ever shown even though sliceIsDrillable is true.
+    const offersDrill = sliceIsDrillable(slice) && order.length > 0;
+    assert.equal(offersDrill, false);
   });
 });
