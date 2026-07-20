@@ -96,6 +96,14 @@ export interface Recipe {
   /** How the pattern is written, for display. 〜てから */
   readonly pattern: string;
   /**
+   * An optional Japanese SENSE label for the pattern, for display only. Some
+   * patterns share a bare `pattern` string but differ in sense (〜られる is both
+   * 可能 and 受身; 〜から is both 理由 and 起点), and a few carry a sense even when
+   * unambiguous (〜そう 様態 vs 〜そうだ 伝聞). Rendered beside the pattern at a
+   * smaller/secondary size, never folded into `pattern` itself. Never parsed.
+   */
+  readonly sense?: string;
+  /**
    * A terse FUNCTIONAL gloss. "after doing X". Never an explanation, never a
    * comparison to a sibling pattern — that is what the cluster page is for,
    * and it is shown, not asked.
@@ -642,7 +650,8 @@ export const RECIPES: readonly Recipe[] = [
   },
   {
     id: "sou-appearance",
-    pattern: "〜そう (様態)",
+    pattern: "〜そう",
+    sense: "様態",
     gloss: "looks like it will X / looks X",
     level: "N4",
     cluster: "seems",
@@ -772,7 +781,8 @@ export const RECIPES: readonly Recipe[] = [
   // --- potential / passive: ambiguous in Japanese, not just in the list ----
   {
     id: "potential",
-    pattern: "〜られる (可能)",
+    pattern: "〜られる",
+    sense: "可能",
     gloss: "can do X",
     level: "N4",
     cluster: "ability",
@@ -787,7 +797,8 @@ export const RECIPES: readonly Recipe[] = [
   },
   {
     id: "passive",
-    pattern: "〜られる (受身)",
+    pattern: "〜られる",
+    sense: "受身",
     gloss: "is X-ed (by someone)",
     level: "N4",
     attach: [{ host: "verb", form: "passive", add: "" }],
@@ -864,7 +875,8 @@ export const RECIPES: readonly Recipe[] = [
   // --- reason: から vs ので (and から's other job) -------------------------
   {
     id: "kara-reason",
-    pattern: "〜から (理由)",
+    pattern: "〜から",
+    sense: "理由",
     gloss: "because X",
     level: "N5",
     cluster: "because",
@@ -876,7 +888,8 @@ export const RECIPES: readonly Recipe[] = [
   },
   {
     id: "kara-source",
-    pattern: "〜から (起点)",
+    pattern: "〜から",
+    sense: "起点",
     gloss: "from X",
     level: "N5",
     attach: [{ host: "noun", form: null, add: "から" }],
@@ -921,7 +934,8 @@ export const RECIPES: readonly Recipe[] = [
   // --- evidentials: the "seems" family ------------------------------------
   {
     id: "sou-hearsay",
-    pattern: "〜そうだ (伝聞)",
+    pattern: "〜そうだ",
+    sense: "伝聞",
     gloss: "I hear that X",
     level: "N4",
     cluster: "seems",
