@@ -20,7 +20,7 @@
 // then how it asks, then Start.
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { PracticeResume } from "@/components/practice/practice-resume";
 import { QuizOptionsFields } from "@/components/practice/quiz-options";
@@ -35,17 +35,15 @@ import { useLists } from "@/lib/use-lists";
 import type { Selection } from "@/types";
 
 export default function PracticePage() {
-  const router = useRouter();
   const { cfg, set } = useQuizConfig();
-  const { active, session, progress, startQuiz, discardSession } =
-    useQuizSession();
+  const { runs, startQuiz, continueRun, discardRun } = useQuizSession();
   const { history } = useHistory();
   const { lists } = useLists();
 
   // The clock the resume card is read against. Set strictly after mount, not in
   // a useState initialiser, so a server-seeded "started 4 minutes ago" can't
   // disagree with the client on hydration. The card itself is client-only
-  // anyway (active is null until localStorage is restored), so this is belt and
+  // anyway (runs is empty until localStorage is restored), so this is belt and
   // braces — but it keeps the time text honest the moment the card appears.
   const [mountedNow, setMountedNow] = useState<number | null>(null);
   useEffect(() => {
@@ -53,11 +51,14 @@ export default function PracticePage() {
     setMountedNow(Date.now());
   }, []);
 
-  // A practice quiz in progress is `active` with no `session`: startQuiz runs a
-  // one-off leg and clears the session loop. A lesson session (which keeps
-  // `session` set, and is resumed from the Home lesson cards) is deliberately
-  // NOT offered here — this card is for the thing Practice itself starts.
-  const practiceInProgress = !!active && !session;
+  // The single most-recently-touched run, whatever it is — a one-off quiz, a
+  // Library "Teach me", or a curriculum lesson. `runs` is ordered focused-first
+  // then newest-parked, so runs[0] is always "where you were last". Continuing
+  // it routes to wherever it left off; to pick a DIFFERENT run you go to the
+  // Current sessions page (linked below). This is the one place that no longer
+  // filters by origin: with many runs live at once the honest thing is to offer
+  // the latest and point at the full list for the rest.
+  const recent = runs[0] ?? null;
 
   // The facts the query names, right now — what Start hands the quiz and what
   // the bar counts, computed once so the sentence and the session can never
@@ -89,8 +90,8 @@ export default function PracticePage() {
   }, [facts, cfg.length, cfg.limType, cfg.limCount]);
 
   // A one-off quiz, not a session: straight to /quiz, then /results when it ends.
-  // No teach screen, no rest timer, no fork loop. startQuiz clears any session in
-  // progress (the bar warns when there is one).
+  // No teach screen, no rest timer, no fork loop. startQuiz parks any run in
+  // progress rather than overwriting it, so Start never destroys anything.
   const start = () => {
     if (!planned.facts.length) return;
     startQuiz(planned.facts, { what });
@@ -106,18 +107,31 @@ export default function PracticePage() {
         sub="Pick a pool and how it should ask, then drill."
       />
 
-      {/* The quiz you left running, and only then — Continue re-enters the very
-          card you left on (the runtime is on disk); Discard drops it. A lesson
-          session is not shown here; the Home lesson cards resume those. */}
-      {practiceInProgress && active ? (
-        <PracticeResume
-          what={active.what}
-          progress={progress}
-          startedAt={active.startedAt}
-          now={mountedNow}
-          onContinue={() => router.push("/quiz")}
-          onDiscard={discardSession}
-        />
+      {/* The most recent run, whatever kind — a one-off quiz, a Library "Teach
+          me", or a curriculum lesson. Continue lands where it left off; Discard
+          drops just this one. Every other run in progress lives on the Current
+          sessions page, linked when there is more than one. */}
+      {recent ? (
+        <>
+          <PracticeResume
+            kind={recent.kind}
+            what={recent.what}
+            progress={recent.progress}
+            startedAt={recent.startedAt}
+            now={mountedNow}
+            onContinue={() => continueRun(recent.id)}
+            onDiscard={() => discardRun(recent.id)}
+          />
+          {runs.length > 1 ? (
+            <p className="mb-3 text-[13px] text-text-muted">
+              To continue a different session,{" "}
+              <Link href="/current" className="underline hover:text-text">
+                go to Current sessions
+              </Link>
+              .
+            </p>
+          ) : null}
+        </>
       ) : null}
 
       <Lbl>What to practise</Lbl>
@@ -139,7 +153,6 @@ export default function PracticePage() {
         what={what}
         count={facts.length}
         plannedCount={planned.facts.length}
-        active={practiceInProgress || !!session}
         onStart={start}
       />
     </>

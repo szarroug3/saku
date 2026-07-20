@@ -75,7 +75,6 @@ export function StartBar({
   what,
   count,
   plannedCount,
-  active,
   onStart,
 }: {
   cfg: QuizConfig;
@@ -91,8 +90,6 @@ export function StartBar({
    * an error and not an empty selection.
    */
   plannedCount: number;
-  /** A session is in progress — starting this one replaces it. */
-  active: boolean;
   onStart: () => void;
 }) {
   // Grid ignores directions, so only the count gates it there.
@@ -138,13 +135,6 @@ export function StartBar({
             </span>
             <span className="mt-0.5 block text-xs tabular-nums text-text-muted">
               {what}
-              {/* The notice, and the ONLY notice: there is no confirm dialog
-                  and no two-state button behind it. A consequence you only
-                  learn about after clicking is an ambush, so it is written on
-                  the button that causes it. Nothing more is owed here — the
-                  session card is on screen above, saying there is a session and
-                  offering Continue, and everything in it is already saved. */}
-              {active ? " · replaces the session in progress" : null}
             </span>
           </>
         )}

@@ -115,7 +115,17 @@ export interface StudySession {
   totalStats: SessionStats;
   /** Last time an answer landed. Drives Home's Continue/Restart emphasis. */
   lastActiveAt: number;
+  /** Where this session was started, so a resume surface can decide whether to
+   * offer it. A curriculum lesson ("lesson", the default) is resumed from its
+   * own Home card and MUST NOT double up on Practice; a Library "Teach me"
+   * session ("library") has no card of its own, so Practice resumes it. Absent
+   * on sessions snapshotted before this field existed — read those as "lesson",
+   * which is what every session was until the Library grew a one-off Quiz. */
+  origin?: SessionOrigin;
 }
+
+/** Who opened a session. See StudySession.origin. */
+export type SessionOrigin = "lesson" | "library";
 
 /** The fixed number of quizzes in one session run. */
 export const SESSION_ROUND_TARGET = 3;

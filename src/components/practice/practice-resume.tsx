@@ -1,19 +1,24 @@
 "use client";
 
-// The practice quiz you left running — and NOTHING when there isn't one.
+// The most recent run you have going — and NOTHING when there isn't one.
 //
-// A Practice run is a ONE-OFF QUIZ (startQuiz), not the teach → drill → rest
-// session loop the lesson cards and the Library Drill use. It lives in the
-// provider's `active` leg with `session` null, and its runtime — the deck, your
-// position in it, every card's state — is snapshotted to localStorage as you
-// answer (saveNow). So Continue re-enters the very card you left on rather than
-// re-asking the set from the top, which is why this card offers Continue and
-// not Restart: there is nothing to restart, only somewhere to go back to.
+// Several runs can be in progress at once now (see PARKING in quiz-session).
+// Practice shows the ONE you touched last; every other run lives on the Current
+// sessions page. This card resumes both kinds:
 //
-// It shows ONLY while such a quiz is in progress. A lesson session (which the
-// lesson cards on Home resume) is a different thing and keeps `session` set, so
-// the page that renders this passes `active && !session` and this card never
-// stands in for a lesson.
+//   • a QUIZ (kind="quiz"): the one-off startQuiz makes — from this page, or the
+//     Library's "Quiz me N" button. It lives in the provider's `active` leg with
+//     `session` null, and its runtime (the deck, your position, every card's
+//     state) is snapshotted to localStorage as you answer. Continue re-enters
+//     the very card you left on; there is nothing to restart.
+//
+//   • a SESSION (kind="session"): the teach → drill → rest loop startSession
+//     makes — a Library "Teach me N" run or a curriculum lesson. Continue lands
+//     on whatever step it's on: the lesson, the drill, or the rest between
+//     rounds (continueRun knows the phase).
+//
+// The page passes exactly one run (runs[0], the most recent) and wires Continue
+// and Discard to that run's id.
 //
 // NO CONFIRM DIALOG, EVER — every answer is already on disk, so leaving costs
 // nothing and Discard needs no "are you sure".
@@ -33,11 +38,12 @@ function ago(ts: number, now: number): string {
 }
 
 export function PracticeResume({
+  kind,
   what,
   progress,
-  /** When Start was pressed. Optional: a quiz snapshotted before this field
-   * existed restores without it, and the "started …" line is then omitted
-   * rather than inventing a time. */
+  /** When it was started. Optional: a run snapshotted before this field existed
+   * restores without it, and the "started …" line is then omitted rather than
+   * inventing a time. */
   startedAt,
   /** Passed in rather than read here so the card can be rendered without the
    * markup disagreeing with the client a moment later. Null until mounted. */
@@ -45,6 +51,7 @@ export function PracticeResume({
   onContinue,
   onDiscard,
 }: {
+  kind: "quiz" | "session";
   what: string;
   progress: QuizProgress | null;
   startedAt?: number;
@@ -52,11 +59,17 @@ export function PracticeResume({
   onContinue: () => void;
   onDiscard: () => void;
 }) {
-  const answered = !progress
-    ? "not started yet"
-    : progress.total !== null
-      ? `${progress.done} of ${progress.total} answered`
-      : `${progress.done} answered`;
+  const noun = kind === "quiz" ? "quiz" : "lesson";
+
+  // Only claim a count when there is one. A session mid-teach has no answered
+  // total yet, and "not started yet" would be a lie about a run you're in the
+  // middle of — so when there's no progress the card just names the run.
+  const answered =
+    progress && progress.done > 0
+      ? progress.total !== null
+        ? `${progress.done} of ${progress.total} answered`
+        : `${progress.done} answered`
+      : null;
 
   return (
     <Card>
@@ -66,7 +79,13 @@ export function PracticeResume({
             Where you left off
           </p>
           <p className="text-[15px]">
-            {what} · <span className="text-text-muted">{answered}</span>
+            {what}
+            {answered ? (
+              <>
+                {" · "}
+                <span className="text-text-muted">{answered}</span>
+              </>
+            ) : null}
           </p>
           {startedAt && now ? (
             <p className="mt-1 max-w-[46ch] text-xs text-text-muted">
@@ -76,14 +95,14 @@ export function PracticeResume({
         </div>
         <div className="flex flex-none items-center gap-2">
           <Btn sel onClick={onContinue}>
-            Continue quiz
+            Continue {noun}
           </Btn>
         </div>
       </div>
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2.5">
         <Hint>Everything you answered is saved.</Hint>
         {/* One click, no dialog — see the header. */}
-        <SmallBtn onClick={onDiscard}>Discard this quiz ✕</SmallBtn>
+        <SmallBtn onClick={onDiscard}>Discard this {noun} ✕</SmallBtn>
       </div>
     </Card>
   );

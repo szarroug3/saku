@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { useHistory } from "@/lib/use-history";
+import { useQuizSession } from "@/lib/quiz-session";
 
 // ONE nav item for the reference, and it is not the first one. The user, on
 // scope: "the reference should exist as an easy way to look things up, not as
@@ -62,19 +63,38 @@ export function Sidebar() {
   // the server render), so it simply fades in once the history loads and there
   // is a session in it, with no hydration mismatch.
   //
-  // There is deliberately NO "Current session" entry. A running session is
-  // reached where it makes sense already: a lesson from its own Home card, a
-  // one-off practice quiz from the Practice page. A permanent chrome shortcut to
-  // it was a second door to a thing the pages themselves already surface.
+  // "Current sessions" (runs IN PROGRESS) is a SEPARATE, conditional entry under
+  // Practice — see below. It is the door to the page that lists every run you
+  // have going so you can continue or discard any of them; it appears only while
+  // at least one run is live, so it too never points at an empty room.
   const { history } = useHistory();
+  const { runs } = useQuizSession();
   const hasRecent = history.sessions.length > 0;
+  const runCount = runs.length;
 
   // The nav, assembled top-down: Home, then Recent sessions when there is any
-  // history to open, then the rest of the static list.
+  // history to open, then Practice, then Current sessions when at least one run
+  // is in progress, then the rest of the static list.
   const items: Array<{ href: string; label: ReactNode }> = [
     NAV[0],
     ...(hasRecent ? [{ href: "/sessions", label: "Recent sessions" }] : []),
-    ...NAV.slice(1),
+    NAV[1],
+    ...(runCount > 0
+      ? [
+          {
+            href: "/current",
+            label: (
+              <span className="flex w-full items-baseline justify-between gap-2">
+                <span>Current sessions</span>
+                <span className="tabular-nums text-xs text-text-muted">
+                  {runCount}
+                </span>
+              </span>
+            ),
+          },
+        ]
+      : []),
+    ...NAV.slice(2),
   ];
 
   return (

@@ -47,8 +47,8 @@ export function sliceFacts(slice: Slice): FactId[] {
  *
  * A single kana IS its one reading — か has exactly one fact — so a "drill" of it
  * is a one-question session that teaches nothing the screen above the bar hasn't
- * already shown. The bar hides its Drill button on these, and this is the rule it
- * asks. It gates on TOTAL facts, not on how many are unlearned: a kana has one
+ * already shown. The bar hides its Teach me and Quiz buttons on these, and this
+ * is the rule it asks. It gates on TOTAL facts, not on how many are unlearned: a kana has one
  * thing to know whether or not you know it, and "one thing to learn → no drill"
  * is the owner's rule. A kanji (meaning + readings) or a word (reading + meaning)
  * clears it; a single kana, or a subject that resolves to one fact, does not.

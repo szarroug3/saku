@@ -20,11 +20,12 @@
 // the door for hand-picking exact items, and Home stays the low-decision
 // lesson feed.
 //
-// There is NO generic "where you left off" card here any more either. A lesson
-// left mid-session is resumed from that lesson's own card (it shows Continue
-// when it is the session in progress); a one-off practice quiz is resumed from
-// the Practice page. So a session is always resumed where it makes sense, and
-// Home does not carry a second, redundant door to it.
+// There is NO generic "where you left off" card here either. A lesson left
+// mid-session is resumed from that lesson's own card (it shows Continue when a
+// run in progress matches its facts); the most recent run of any kind is on the
+// Practice card, and the full list of everything in progress is the Current
+// sessions page. So a lesson is always resumable where it makes sense, and Home
+// does not carry a second, generic door to it.
 //
 // Home reads history and the curriculum settings (kanji order, lesson cost,
 // words per lesson) to decide the next lesson in each track. It does not resolve
@@ -69,7 +70,7 @@ function sameFactSet(a: readonly FactId[], b: readonly FactId[]): boolean {
 
 export default function HomePage() {
   const { cfg } = useQuizConfig();
-  const { session, startSession, continueSession } = useQuizSession();
+  const { startSession, runs, continueRun } = useQuizSession();
   const { history, refresh } = useHistory();
 
   // The next lesson is a view of history, not a cursor — see next-lesson.tsx.
@@ -283,31 +284,26 @@ export default function HomePage() {
     await refresh();
   };
 
-  const lessonInSession =
-    !!lesson &&
-    !!session &&
-    session.phase !== "complete" &&
-    sameFactSet(session.facts, lesson.facts);
-  const kanjiInSession =
-    !!kanjiLesson &&
-    !!session &&
-    session.phase !== "complete" &&
-    sameFactSet(session.facts, kanjiLesson.facts);
-  const radicalInSession =
-    !!radicalLesson &&
-    !!session &&
-    session.phase !== "complete" &&
-    sameFactSet(session.facts, radicalLesson.facts);
-  const wordInSession =
-    !!wordLesson &&
-    !!session &&
-    session.phase !== "complete" &&
-    sameFactSet(session.facts, wordLesson.facts);
-  const grammarInSession =
-    !!grammarLesson &&
-    !!session &&
-    session.phase !== "complete" &&
-    sameFactSet(session.facts, grammarLesson.facts);
+  // Which run, if any, IS this lesson — matched across EVERY run in progress,
+  // not just the focused one. Several sessions can be parked at once now (see
+  // PARKING), so a lesson you left to start something else still has to light up
+  // its own card. A run counts as "this lesson" when it's a session (not a
+  // one-off quiz), not finished, and drills exactly this lesson's facts. Its id
+  // is what Continue routes back to.
+  const runForFacts = (facts: readonly FactId[] | undefined) =>
+    facts
+      ? runs.find(
+          (r) =>
+            r.kind === "session" &&
+            r.phase !== "complete" &&
+            sameFactSet(r.facts, facts),
+        )
+      : undefined;
+  const lessonRun = runForFacts(lesson?.facts);
+  const kanjiRun = runForFacts(kanjiLesson?.facts);
+  const radicalRun = runForFacts(radicalLesson?.facts);
+  const wordRun = runForFacts(wordLesson?.facts);
+  const grammarRun = runForFacts(grammarLesson?.facts);
 
   return (
     <>
@@ -325,8 +321,8 @@ export default function HomePage() {
           onTeach={teachLesson}
           onQuizMe={quizMe}
           onClaim={claim}
-          inSession={lessonInSession}
-          onContinue={continueSession}
+          inSession={!!lessonRun}
+          onContinue={() => lessonRun && continueRun(lessonRun.id)}
         />
       ) : null}
 
@@ -340,8 +336,8 @@ export default function HomePage() {
           lesson={radicalLesson}
           onStart={startLesson}
           onClaim={claim}
-          inSession={radicalInSession}
-          onContinue={continueSession}
+          inSession={!!radicalRun}
+          onContinue={() => radicalRun && continueRun(radicalRun.id)}
         />
       ) : null}
 
@@ -355,8 +351,8 @@ export default function HomePage() {
           lesson={kanjiLesson}
           onStart={startLesson}
           onClaim={claim}
-          inSession={kanjiInSession}
-          onContinue={continueSession}
+          inSession={!!kanjiRun}
+          onContinue={() => kanjiRun && continueRun(kanjiRun.id)}
         />
       ) : null}
 
@@ -370,8 +366,8 @@ export default function HomePage() {
           lock={wordLock}
           onStart={startWordLesson}
           onClaim={claimWordLesson}
-          inSession={wordInSession}
-          onContinue={continueSession}
+          inSession={!!wordRun}
+          onContinue={() => wordRun && continueRun(wordRun.id)}
         />
       ) : null}
 
@@ -386,8 +382,8 @@ export default function HomePage() {
           lock={grammarTrackStarted ? grammarLock : null}
           onStart={startLesson}
           onClaim={claim}
-          inSession={grammarInSession}
-          onContinue={continueSession}
+          inSession={!!grammarRun}
+          onContinue={() => grammarRun && continueRun(grammarRun.id)}
         />
       ) : null}
     </>
