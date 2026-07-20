@@ -205,11 +205,15 @@ export function entryStanding(
  * There is deliberately no Library-only definition of known.
  *
  * KNOWN = every fact is solid or claimed (`needWork === 0`), over a real
- * population (`total > 0`). This is the whole-entry claim, not a per-fact one:
- * 生 is known only when all its readings are, which is the same bar
- * `entryStanding` already draws with its `needWork` count. Everything else —
- * not seen, slipping, shaky, getting there, or a mix — is NOT known, which is
- * what the "Not known" filter is for: the pile that still wants work.
+ * population (`total > 0`). That is the ONE bar, and it never bends. What DOES
+ * vary by kind is which facts the caller pools into that `entryStanding` in the
+ * first place: `knownFactsOf` hands this all of a word's or kana's facts, but a
+ * KANJI's meaning fact alone — the fact the curriculum teaches, claims and
+ * displays as the character's standing (kanji-known.ts, and the entry page's
+ * meaning chip). So a kanji is known when its meaning is, and everything else is
+ * known only when every fact is. Not seen, slipping, shaky, getting there, or a
+ * mix — over whichever facts define the entry — is NOT known, which is what the
+ * "Not known" filter is for: the pile that still wants work.
  */
 export function entryIsKnown(standing: EntryStanding): boolean {
   return standing.total > 0 && standing.needWork === 0;

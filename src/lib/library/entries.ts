@@ -72,6 +72,7 @@ import { cluster } from "@/data/grammar/clusters";
 import { RECIPES, isProducible, patternLabel, type Recipe } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
+import { factsOf } from "@/lib/facts";
 import type { EntryId, FactId, FactInfo } from "@/types";
 
 /** Which shelf an entry lives on. The subject id, re-stated as a union so a
@@ -272,6 +273,31 @@ function readingsOf(c: string): readonly ReadingRow[] {
 export function readingRowsOf(entry: LibEntry): readonly ReadingRow[] {
   if (entry.kind !== KANJI_SUBJECT) return [];
   return readingsOf(entry.glyph);
+}
+
+/**
+ * Which of an entry's facts decide whether it is KNOWN — the input to the
+ * Library's knowledge filter, and the one place the choice is made per kind.
+ *
+ * For almost everything it is all of them (`factsOf`): a kana is its one fact,
+ * a radical is meaning-only already, a word is known when its reading AND its
+ * meaning are, a grammar pattern when its meaning (and any production) is. The
+ * "known" bar itself — every one of these solid or claimed — never changes; only
+ * WHICH facts have to clear it does.
+ *
+ * A KANJI is the one exception, and it is not a Library invention: the whole
+ * curriculum teaches, claims and displays a kanji by its MEANING (see
+ * kanji-known.ts, "A kanji is KNOWN once its MEANING has been learned"; the
+ * lesson claims only `meaningFactId`; the entry page's kanji chip is the meaning
+ * fact's standing alone). Its readings open one word at a time, through
+ * vocabulary, long after the character itself is familiar. So a kanji counts as
+ * known on its meaning fact, which is exactly what the entry page already shows —
+ * without this, 人 read "you know this" on its own page yet failed the shelf's
+ * Known filter, because that filter demanded all eleven facts.
+ */
+export function knownFactsOf(entry: LibEntry): readonly FactId[] {
+  if (entry.kind === KANJI_SUBJECT) return [meaningFactId(entry.glyph)];
+  return factsOf(entry.id);
 }
 
 // ---------- the index ----------

@@ -31,6 +31,7 @@ import { factsOf } from "@/lib/facts";
 import {
   KIND_LABEL,
   KINDS,
+  knownFactsOf,
   LIB_ENTRIES,
   type Kind,
   type LibEntry,
@@ -219,12 +220,18 @@ function LibraryBody() {
   // and Not known it resolves each entry through `entryStanding`, the same
   // effective-progress-and-claims path the tiles already use, so a thing you
   // marked "I already know this" filters as Known without a Library-only rule.
+  //
+  // WHICH facts define "known" is `knownFactsOf`'s call, not this predicate's:
+  // all of them for most kinds, but a KANJI on its MEANING alone — the fact the
+  // curriculum teaches, claims and shows as the character's standing. That is
+  // what makes 人 ("Meaning: you know this" on its page) filter as Known here,
+  // instead of failing because its ten unlearned readings looked like work.
   const keep = useMemo(() => {
     if (stateFilter === "all") return undefined;
     const wantKnown = stateFilter === "known";
     return (entry: LibEntry) =>
       entryIsKnown(
-        entryStanding(factsOf(entry.id), history.facts, claims, cfg.accuracyMetric, now),
+        entryStanding(knownFactsOf(entry), history.facts, claims, cfg.accuracyMetric, now),
       ) === wantKnown;
   }, [stateFilter, history.facts, claims, cfg.accuracyMetric, now]);
 
