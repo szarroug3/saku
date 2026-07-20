@@ -195,7 +195,7 @@ export const DAKUTEN_H: PhaseIntro = {
       text: "and it only ever lands on the は row.",
     },
     {
-      text: "You already know every shape here. か and が are the same character wearing a mark, so this is 25 more sounds without a single new drawing to learn.",
+      text: "You already know every shape here. か and が are the same character with a mark, so this is 25 more sounds without a single new drawing to learn.",
     },
   ],
 };
@@ -216,7 +216,7 @@ export const DAKUTEN_K: PhaseIntro = {
       text: "and it only ever lands on the ハ row: ハ ha → パ pa.",
     },
     {
-      text: "The marks work exactly as they did in hiragana, on shapes you already know. カ and ガ are the same character wearing a mark, so this is 25 more sounds without a single new drawing to learn.",
+      text: "The marks work exactly as they did in hiragana, on shapes you already know. カ and ガ are the same character with a mark, so this is 25 more sounds without a single new drawing to learn.",
     },
   ],
 };
