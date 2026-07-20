@@ -100,7 +100,11 @@ export function MnemonicView({
         onMissing={() => setFailed(true)}
         // NO tile: no kq-material, no border, no bg — the art on the bare
         // surface it was asked to sit on.
-        imgClassName="w-full max-w-[440px] object-contain"
+        // Every drawing gets the same responsive square viewport. Width alone
+        // let portrait sources grow much taller than square ones (か was about
+        // 440x690 while あ was 440x440); object-contain preserves each drawing
+        // without letting its intrinsic aspect ratio change the row height.
+        imgClassName="aspect-square w-full max-w-[440px] object-contain"
         glyphClassName={glyphClassName}
       />
     );
