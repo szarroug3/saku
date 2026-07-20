@@ -25,6 +25,7 @@ import { describe, test } from "node:test";
 import { SETS, kanaFact, noteFor } from "../data/characters.ts";
 import { DAKUTEN_ROWS, dakutenRowFor, hookRuns } from "../data/dakuten-rows.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
+import { wordReadingFactId } from "../data/vocab.ts";
 import { KANA_GROUPS, groupOfFact, scriptSoFar, widerScope } from "./lesson.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { lessonSteps } from "./lesson-steps.ts";
@@ -298,16 +299,36 @@ describe("long vowels then small っ close the script", () => {
         [longId, sokuonId],
       );
       // THE COUNT INVARIANT. The HUD's "n of N" is steps.length from this very
-      // call, so this is really asserting that adding a second closing card
-      // moved BOTH the render and the count together — the reason this helper
-      // exists at all rather than the walk and the HUD each counting for
-      // themselves.
-      assert.equal(steps.length, g.chars.length + 2);
-      // And nothing crept in among the characters: everything before the tail
-      // is still a glyph step, one for one.
-      assert.ok(steps.slice(0, -2).every((s) => s.type === "item"));
+      // call, so this is really asserting that adding a closing card moved BOTH
+      // the render and the count together — the reason this helper exists at all
+      // rather than the walk and the HUD each counting for themselves. The
+      // after-run is the source of truth for how many cards close the script:
+      // hiragana closes on three (punctuation, long vowels, small っ) and
+      // katakana on two.
+      const after = INTRO_AFTER[secId] ?? [];
+      assert.equal(steps.length, g.chars.length + after.length);
+      // And nothing crept in among the characters: everything before the whole
+      // after-run is still a glyph step, one for one.
+      assert.ok(steps.slice(0, -after.length).every((s) => s.type === "item"));
     });
   }
+
+  test("punctuation leads the hiragana close, ahead of the two word marks", () => {
+    // Punctuation is script-neutral and rides the front of the hiragana
+    // after-run only — it is about the whole sentence a learner can now read,
+    // while long vowels and small っ refine single words. It is not in the
+    // katakana run, because it is not a per-script rule to be taught twice.
+    const h = lessonSteps(group("h-pya").facts).slice(-3);
+    assert.deepEqual(
+      h.map((s) => (s.type === "intro" ? s.intro.id : s.type)),
+      ["intro-punctuation", "intro-long-vowel-hiragana", "intro-sokuon-hiragana"],
+    );
+    const k = lessonSteps(group("k-pya").facts);
+    assert.ok(
+      k.every((s) => s.type !== "intro" || s.intro.id !== "intro-punctuation"),
+      "punctuation leaked into the katakana run",
+    );
+  });
 
   test("long vowels are not drillable — no fact was invented for them", () => {
     // The card teaches a rule. If this ever fails, something turned a rule into
@@ -391,3 +412,52 @@ describe("every intro is anchored to a section that exists", () => {
     }
   });
 });
+
+describe("々 and rendaku ride the first 々 word", () => {
+  // These two rules have no kana section to anchor to — they are about kanji and
+  // compounds. Their home is the first WORD whose spelling uses 々 (時々, rank
+  // 154), the first place both are provably in play at once: ときどき is 々 AND the
+  // と → ど voicing rendaku does. See phase-intros.ts and lesson-steps.ts.
+  test("時々 opens both cards, in order, ahead of the word", () => {
+    const steps = lessonSteps([wordReadingFactId("時々")]);
+    assert.deepEqual(
+      steps.map((s) =>
+        s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
+      ),
+      ["intro-iteration-mark", "intro-rendaku", "時々"],
+    );
+  });
+
+  test("a word with no 々 gets neither card", () => {
+    // The gate is the glyph, not the subject — an ordinary word teaches nothing
+    // about 々, so the walk is the item alone.
+    const steps = lessonSteps([wordReadingFactId("先生")]);
+    assert.deepEqual(
+      steps.map((s) => (s.type === "item" ? s.item.glyph : s.type)),
+      ["先生"],
+    );
+  });
+
+  test("a teach set full of 々 words teaches the pair once", () => {
+    // The cards ride the FIRST 々 word only; the rest are plain items, so a
+    // review batch of 々 words does not re-explain the rules before each one.
+    const steps = lessonSteps([
+      wordReadingFactId("時々"),
+      wordReadingFactId("様々"),
+      wordReadingFactId("我々"),
+    ]);
+    const intros = steps.filter((s) => s.type === "intro");
+    assert.deepEqual(
+      intros.map((s) => (s.type === "intro" ? s.intro.id : null)),
+      ["intro-iteration-mark", "intro-rendaku"],
+    );
+    // And they lead the run: the two cards, then the three words in order.
+    assert.deepEqual(
+      steps.map((s) =>
+        s.type === "intro" ? "intro" : s.type === "item" ? s.item.glyph : s.type,
+      ),
+      ["intro", "intro", "時々", "様々", "我々"],
+    );
+  });
+});
+

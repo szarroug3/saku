@@ -11,9 +11,12 @@
 // きって in the wild and wanted to know what the small っ was doing had no page to
 // open.
 //
-// So a mark is a Library entry whose subject is a READING RULE. Five of them,
-// and they are exactly the five things the kana curriculum teaches that are not
-// kana.
+// So a mark is a Library entry whose subject is a READING RULE. Eight of them:
+// the five things the kana curriculum teaches that are not kana, plus three that
+// belong to reading BEYOND kana - the iteration mark 々 (a kanji rule), rendaku
+// (the voicing that happens on its own in compounds), and punctuation (how a
+// sentence is pointed). The first five are kana-adjacent; the last three are met
+// once you are reading kanji, compounds and whole sentences, and each says so.
 //
 // NOT A SECOND COPY OF THE LESSON
 // ===============================
@@ -53,8 +56,11 @@ import {
   COMBO_K,
   DAKUTEN_H,
   DAKUTEN_K,
+  ITERATION_MARK,
   LONG_H,
   LONG_K,
+  PUNCTUATION,
+  RENDAKU,
   SOKUON_H,
   SOKUON_K,
   type IntroPara,
@@ -77,14 +83,14 @@ export function markEntry(id: string): EntryId {
 /**
  * One reading rule.
  *
- * `glyph` IS ALLOWED TO BE EMPTY, and long vowels is why. Four of the five marks
- * have a written token you can point at — ゛ ゜ っ ゃゅょ — and one does not: a
- * long vowel is written ー in katakana and by doubling a vowel kana in hiragana,
- * which is two different-looking rules for one idea and no single character. The
- * honest answer is the empty string, and every renderer downstream had to be
- * taught to cope with it (see `entryName` in src/lib/library/entries.ts). Putting
- * a stand-in ー here would have been easier and would have told a beginner that
- * hiragana lengthens with a dash, which it does not.
+ * `glyph` IS ALLOWED TO BE EMPTY, and three marks need it to be. A long vowel is
+ * written ー in katakana and by doubling a vowel kana in hiragana, which is two
+ * looks for one idea and no single character. Rendaku has no written form at all
+ * (it is the sound the dakuten writes, happening on its own). Punctuation is a
+ * whole SET of glyphs (。、「」・〜), not one. The honest answer for all three is
+ * the empty string, and every renderer downstream copes with it (see `entryName`
+ * in src/lib/library/entries.ts). Putting a stand-in ー, or a lone 。, here would
+ * have told a beginner a rule the glyph does not actually stand for.
  */
 export interface Mark {
   /** Stable id — the URL, the React key, and what a test names. */
@@ -110,11 +116,12 @@ export interface Mark {
    * The teaching copy, per script, IN THE LESSON'S OWN WORDS.
    *
    * A PhaseIntro from src/data/phase-intros.ts, unmodified — the Library renders
-   * its paragraphs with the same component the teach walk does. Two entries,
-   * hiragana then katakana, because every one of these rules is taught twice and
-   * the two are not always the same rule wearing different glyphs: hiragana
-   * lengthens a vowel with another vowel and katakana with one dash, and a page
-   * that showed only one of those would be teaching half of it.
+   * its paragraphs with the same component the teach walk does. Usually TWO
+   * entries, hiragana then katakana, because most of these rules are taught once
+   * per script and the two are not always the same rule wearing different glyphs.
+   * The three script-neutral marks (々, rendaku, punctuation) carry ONE intro:
+   * their rule is the same whichever script spells the words around it, so a
+   * second per-script copy would be the same card twice. See NO_SCRIPT.
    */
   readonly intros: readonly PhaseIntro[];
   /**
@@ -177,11 +184,13 @@ const SMALL_VOWEL_NOTE =
   "ぁぃぅぇぉ (and ァィゥェォ) shrink the same way, but they fuse a VOWEL onto the kana in front of them, to write sounds Japanese does not natively have: ファ fa, ティ ti, ウェ we. You meet them almost only in katakana loanwords, so they are worth recognising when they turn up rather than learning as a set.";
 
 /**
- * The five marks, in the order the curriculum meets them.
+ * The eight marks, in the order the curriculum meets them.
  *
  * Which is also the order they build on each other: the two marks that change a
  * consonant, then the two small kana that change a syllable's shape, then the
- * one rule that is about time rather than about a character at all.
+ * one kana rule that is about time rather than about a character at all - and
+ * then the three that belong to reading BEYOND kana: the iteration mark 々, the
+ * voicing rendaku does at a compound's seam, and how a sentence is pointed.
  */
 export const MARKS: readonly Mark[] = [
   {
@@ -260,6 +269,63 @@ export const MARKS: readonly Mark[] = [
       "doubled vowel",
     ],
     intros: [LONG_H, LONG_K],
+    rows: [],
+  },
+  {
+    id: "iteration-mark",
+    name: "々",
+    glyph: "々",
+    summary: "The iteration mark: it repeats the kanji before it. 時 → 時々.",
+    searchAlso: [
+      "々",
+      "iteration mark",
+      "odoriji",
+      "repeat mark",
+      "kanji repetition",
+    ],
+    intros: [ITERATION_MARK],
+    rows: [],
+  },
+  {
+    id: "rendaku",
+    // No glyph - like long vowels, but for a cleaner reason: rendaku is not a
+    // written thing at all, it is the voicing the dakuten writes happening on
+    // its own at the seam of a compound.
+    name: "Rendaku",
+    glyph: "",
+    summary:
+      "Sequential voicing: join two words and the second often voices. て + かみ → てがみ.",
+    searchAlso: [
+      "rendaku",
+      "sequential voicing",
+      "voicing",
+      "compound voicing",
+    ],
+    intros: [RENDAKU],
+    rows: [],
+  },
+  {
+    id: "punctuation",
+    // No glyph — punctuation is a whole SET of marks (。、「」・〜), not one, so
+    // a lone 。 here would name a rule the glyph does not stand for.
+    name: "Punctuation",
+    glyph: "",
+    summary: "How a Japanese sentence is pointed: 。 、 「 」 ・ 〜, and no spaces.",
+    searchAlso: [
+      "。",
+      "、",
+      "「",
+      "」",
+      "・",
+      "〜",
+      "punctuation",
+      "kuten",
+      "touten",
+      "full stop",
+      "comma",
+      "quotation marks",
+    ],
+    intros: [PUNCTUATION],
     rows: [],
   },
 ];

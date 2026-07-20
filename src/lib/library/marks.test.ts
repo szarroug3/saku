@@ -3,7 +3,7 @@
 //
 // WHAT THESE TESTS ARE FOR
 // ========================
-// The MARKS shelf holds five entries that break three assumptions the Library
+// The MARKS shelf holds eight entries that break three assumptions the Library
 // was built on, and every one of them fails QUIETLY — a wrong page renders, no
 // error is thrown, and you only notice by opening it.
 //
@@ -33,9 +33,12 @@ import {
   DAKUTEN_H,
   INTRO_AFTER,
   INTRO_BEFORE,
+  ITERATION_MARK,
   LONG_H,
   LONG_K,
   PHASE_INTROS,
+  PUNCTUATION,
+  RENDAKU,
   SOKUON_H,
 } from "@/data/phase-intros";
 import { DAKUTEN_ROWS } from "@/data/dakuten-rows";
@@ -71,13 +74,32 @@ describe("the shelf exists and is reachable", () => {
     assert.notEqual(kindFromParams(new URLSearchParams("?kind=marks")), MARK_SUBJECT);
   });
 
-  test("all five marks are entries, and every entry route resolves", () => {
-    assert.equal(MARKS.length, 5);
+  test("all eight marks are entries, and every entry route resolves", () => {
+    assert.equal(MARKS.length, 8);
     for (const m of MARKS) {
       const e = entryOfMark(m.id);
       assert.equal(e.kind, MARK_SUBJECT);
       // The round trip the entry page makes: id → entry → the mark it names.
       assert.equal(markFor(e.id)?.id, m.id);
+    }
+  });
+
+  test("the three reading-rule marks resolve, round-trip and stay inert", () => {
+    // 々, rendaku and punctuation break the same three assumptions the first
+    // five do (a character, a drill, both scripts), so they are held to the same
+    // structural guarantees: they resolve, they carry no readings and no facts,
+    // and nothing about them is drillable.
+    for (const id of ["iteration-mark", "rendaku", "punctuation"]) {
+      const e = entryOfMark(id);
+      assert.equal(e.kind, MARK_SUBJECT);
+      assert.equal(markFor(e.id)?.id, id);
+      assert.deepEqual(e.readings, [], `${id} grew a reading`);
+      assert.deepEqual(factsOf(markEntry(id)), [], `${id} grew a fact`);
+      assert.equal(
+        sliceIsDrillable({ label: id, entries: [markEntry(id)] }),
+        false,
+        `${id} offered a Drill button`,
+      );
     }
   });
 
@@ -163,9 +185,12 @@ describe("a mark is not drillable, and not by omission", () => {
   });
 
   test("selecting every mark at once still drills nothing", () => {
-    // The multi-select path: five marks toggled on and unioned into one slice is
+    // The multi-select path: every mark toggled on and unioned into one slice is
     // still zero questions, so nothing is swept into a deck by selecting a shelf.
-    const all = { label: "5 selected", entries: MARKS.map((m) => markEntry(m.id)) };
+    const all = {
+      label: `${MARKS.length} selected`,
+      entries: MARKS.map((m) => markEntry(m.id)),
+    };
     assert.deepEqual(sliceIsDrillable(all), false);
   });
 
@@ -188,19 +213,41 @@ describe("the Library shows the LESSON's explanation, not a copy of it", () => {
     assert.equal(marks.get("small-ya")?.intros[0], COMBO_H);
     assert.equal(marks.get("small-tsu")?.intros[0], SOKUON_H);
     assert.equal(marks.get("long-vowel")?.intros[0], LONG_H);
+    // The three reading-rule marks carry ONE intro each, by reference too.
+    assert.equal(marks.get("iteration-mark")?.intros[0], ITERATION_MARK);
+    assert.equal(marks.get("rendaku")?.intros[0], RENDAKU);
+    assert.equal(marks.get("punctuation")?.intros[0], PUNCTUATION);
   });
 
   test("both scripts are carried, because they are not always the same rule", () => {
-    for (const m of MARKS) {
+    // The five kana-era marks are taught once per script and carry both.
+    const kanaEra = ["dakuten", "handakuten", "small-tsu", "small-ya", "long-vowel"];
+    const byId = new Map(MARKS.map((m) => [m.id, m]));
+    for (const id of kanaEra) {
       assert.deepEqual(
-        m.intros.map((i) => i.setId),
+        byId.get(id)!.intros.map((i) => i.setId),
         ["hiragana", "katakana"],
-        `${m.id} does not carry both scripts`,
+        `${id} does not carry both scripts`,
       );
     }
     // Long vowels is the case that forces it: hiragana doubles a vowel kana,
     // katakana uses one ー, and a page showing only the first teaches half a rule.
     assert.notEqual(LONG_H.title, LONG_K.title);
+  });
+
+  test("the three reading-rule marks carry a single script-neutral intro", () => {
+    // 々, rendaku and punctuation are the same rule whichever script spells the
+    // words around them, so a second per-script copy would be the same card
+    // twice. Their one intro is script-neutral: setId "" (NO_SCRIPT), which the
+    // Library's script label prints nothing for. See marks.ts.
+    for (const id of ["iteration-mark", "rendaku", "punctuation"]) {
+      const byId = new Map(MARKS.map((m) => [m.id, m]));
+      assert.deepEqual(
+        byId.get(id)!.intros.map((i) => i.setId),
+        [""],
+        `${id} does not carry exactly one script-neutral intro`,
+      );
+    }
   });
 
   test("the conversions come from dakuten-rows, split by their own mark", () => {
@@ -261,13 +308,16 @@ describe("the small-tsu copy, which is the one thing authored for this shelf", (
     // reversed and the placement is the thing being asserted.
     assert.equal(after[after.length - 1], SOKUON_H);
     // And every other card is still anchored exactly once, so this cannot pass
-    // by the anchor tables having grown duplicates or emptied out.
+    // by the anchor tables having grown duplicates or emptied out. PUNCTUATION
+    // now rides the front of the hiragana after-run, so the count is nine (eight
+    // kana anchors plus it); 々 and rendaku are word-gated, not anchored, so they
+    // are deliberately absent here.
     const anchored = [
       ...Object.values(INTRO_BEFORE),
       ...Object.values(INTRO_AFTER).flat(),
     ];
-    assert.equal(anchored.length, 8);
-    assert.equal(new Set(anchored).size, 8);
+    assert.equal(anchored.length, 9);
+    assert.equal(new Set(anchored).size, 9);
   });
 });
 

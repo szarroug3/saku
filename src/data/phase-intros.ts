@@ -43,6 +43,38 @@
 // fact for "how do you lengthen え" would put a rule into a drill built to ask
 // about glyphs. See the note at the bottom of this file.
 
+// THREE CARDS THAT ARE NOT KANA, AND ONE OF THEM HAS NO SCRIPT
+// ============================================================
+// Everything above teaches a rule of the kana era, and each such rule is taught
+// twice, once per script, because a katakana learner meeting ガ should be shown
+// カ → ガ and not か → が. Three of the rules this file now carries are not like
+// that:
+//
+//   々 (the iteration mark) is a KANJI thing. It repeats the kanji before it, so
+//   it has no meaning until compounds exist and no hiragana-vs-katakana form to
+//   split. One card.
+//
+//   Rendaku (sequential voicing) is a SOUND thing. When two elements join, the
+//   second often voices — て+かみ becomes てがみ — and that happens to the reading,
+//   not to one script's glyphs. One card.
+//
+//   Punctuation is a SENTENCE thing. 。、「」 and the no-spaces rule are the same
+//   whichever kana spells the words between them. One card.
+//
+// So these three carry a single, SCRIPT-NEUTRAL intro each: setId is "" because
+// the honest answer to "which script's run is this" is "none of them". The only
+// reader of setId is the Library's script label (src/components/library/
+// mark-view.tsx), which prints nothing for "" rather than a stray "In hiragana".
+// Their WHEN is argued at each card and wired below: punctuation rides the end of
+// the first script (you can read hiragana sentences now, so here is how a
+// sentence is pointed), and 々 and rendaku are word-gated in lesson-steps.ts,
+// appearing the moment the first 々 word (時々 at rank 154) is taught, which is
+// the first place BOTH rules are provably in play at once (ときどき is 々 AND
+// rendaku). See marks.ts for how the Library renders the same copy.
+
+/** A card that belongs to no script, so it renders no "In hiragana" label. */
+const NO_SCRIPT = "";
+
 /**
  * One paragraph of an intro.
  *
@@ -285,6 +317,108 @@ export const SOKUON_K: PhaseIntro = {
   ],
 };
 
+// PUNCTUATION — the sentence-level card, anchored to the end of hiragana.
+// =====================================================================
+// It is script-neutral (see NO_SCRIPT) and taught ONCE, not once per script,
+// because 。、「」 do not change between them. The WHEN is "as soon as sentences
+// become readable": finishing hiragana is the first point a learner can read a
+// whole Japanese sentence, and a sentence needs its points. It is wired as the
+// FIRST card of the hiragana after-run (see INTRO_AFTER), ahead of long vowels
+// and small っ, because those two refine individual WORDS while this is about the
+// sentence they sit in — and because putting it last would displace small っ,
+// which closes the script on purpose (see the long note above SOKUON_H).
+//
+// This card describes real usage only. It names the marks a beginner actually
+// meets and the one genuinely surprising rule (no spaces between words); it does
+// not try to be a full style guide for a system that has one.
+export const PUNCTUATION: PhaseIntro = {
+  id: "intro-punctuation",
+  setId: NO_SCRIPT,
+  title: "Japanese points its sentences differently.",
+  body: [
+    {
+      lead: "。 (kuten) is the full stop,",
+      text: "a small hollow circle rather than a dot, and 、(touten) is the comma. They do the jobs the English period and comma do, they just look different: これはペンです。",
+    },
+    {
+      lead: "Quotation marks are corner brackets.",
+      text: "「 」(kagi) wrap speech and quotes the way English quotation marks do: 「おはよう」と言った. The double form 『 』wraps a quote inside a quote, and the titles of books and works.",
+    },
+    {
+      lead: "A few more you will see.",
+      text: "・(nakaguro) is a middle dot that separates list items or the parts of a foreign name: アメリカ・カナダ. 〜 (the wave dash) marks a range or a “from, to”: 5〜10. ？ and ！ are borrowed from the West and used mostly in casual writing; formal text often does without them.",
+    },
+    {
+      lead: "And the thing that is missing.",
+      text: "Japanese leaves NO spaces between words. The switches between kanji, hiragana and katakana do the work an English space does, so you learn to see where one word ends by the change in script rather than by a gap.",
+    },
+  ],
+};
+
+// 々 — THE ITERATION MARK, and the first mark in this file that is not kana.
+// ========================================================================
+// It repeats the kanji before it. That is the whole rule, and it is a KANJI
+// rule: 々 is meaningless next to a kana and only earns its keep once compounds
+// exist, which is why it is word-gated (lesson-steps.ts) rather than anchored to
+// a kana section, and why it has one card rather than a hiragana and a katakana
+// one. The examples are real ichi1/spec vocabulary the app ships (人々, 時々,
+// 様々, 少々, 国々), not invented forms.
+export const ITERATION_MARK: PhaseIntro = {
+  id: "intro-iteration-mark",
+  setId: NO_SCRIPT,
+  title: "々 repeats the kanji before it.",
+  body: [
+    {
+      mark: "々",
+      lead: "(odoriji): a repeat mark.",
+      text: "It stands in for the kanji just before it, so you write the character once and 々 says “again”. 人 (ひと, person) becomes 人々 (ひとびと, people); 時 (とき, time) becomes 時々 (ときどき, sometimes).",
+    },
+    {
+      lead: "It repeats the CHARACTER, not the reading.",
+      text: "々 copies the kanji, and the copy is then read like the second half of any compound, which often means its sound voices. That is why 人々 is “hito-bito”, not “hito-hito”: see rendaku, the rule doing that.",
+    },
+    {
+      lead: "You meet it only once compounds do.",
+      text: "That is why it waits here and does not sit with the kana marks. It is common once you are reading: 様々 (さまざま, various), 少々 (しょうしょう, a little), 国々 (くにぐに, various countries).",
+    },
+  ],
+};
+
+// RENDAKU — sequential voicing, and the app's second glyphless mark.
+// =================================================================
+// Long vowels proved a mark can have no glyph; rendaku is the second, and for a
+// cleaner reason: it is not a written thing at all. It is what the dakuten
+// WRITES, happening on its own at the seam of a compound. That is why it belongs
+// beside dakuten on the shelf (marks.ts) and why it is taught alongside 々: the
+// first 々 word a learner meets, 時々, voices (とき → どき), so the two rules are
+// visible in one word.
+//
+// HONEST ABOUT THE IRREGULARITY. Rendaku is a strong TENDENCY, not a law: it has
+// well-known brakes (it tends not to fire when the second element already holds a
+// voiced sound), and it simply does not apply to plenty of compounds. The copy
+// says so, and tells the learner to trust a word's given reading over the rule.
+// Naming the brakes precisely would be inventing a completeness this app does not
+// have; the tendency plus "learn the reading as given" is the honest amount.
+export const RENDAKU: PhaseIntro = {
+  id: "intro-rendaku",
+  setId: NO_SCRIPT,
+  title: "Join two words and the second often voices.",
+  body: [
+    {
+      lead: "Rendaku (sequential voicing):",
+      text: "when two elements form a compound, the first consonant of the SECOND element often picks up a dakuten sound. て (hand) + かみ (paper) becomes てがみ (letter), か → が. It is the voicing the dakuten writes, happening on its own at the join.",
+    },
+    {
+      lead: "You just saw it in 々.",
+      text: "時 とき + 時 とき is ときどき, the second half's と voicing to ど; 人 ひと + 人 ひと is ひとびと, ひ voicing to び. The repeated half voices exactly like any second element does.",
+    },
+    {
+      lead: "It is a tendency, not a law.",
+      text: "It does not always happen, and there are known brakes on it, so treat it as something to expect and recognise rather than a rule to apply blindly. When a word's reading is given to you, trust the reading.",
+    },
+  ],
+};
+
 /**
  * Section id → the card shown BEFORE that section's characters.
  *
@@ -315,9 +449,15 @@ export const INTRO_BEFORE: Record<string, PhaseIntro> = {
  *
  * The order within the array is the order the walk shows them; see the long
  * note above SOKUON_H for why っ closes.
+ *
+ * PUNCTUATION rides the front of the hiragana run only. It is script-neutral and
+ * belongs once sentences are readable, which is here; it leads the run because it
+ * is about the whole sentence while long vowels and small っ refine single words,
+ * and it stays out of the katakana run because it is not a per-script rule to be
+ * taught twice. Small っ is still the last card of each script.
  */
 export const INTRO_AFTER: Record<string, PhaseIntro[]> = {
-  "h-pya": [LONG_H, SOKUON_H],
+  "h-pya": [PUNCTUATION, LONG_H, SOKUON_H],
   "k-pya": [LONG_K, SOKUON_K],
 };
 
@@ -327,7 +467,9 @@ export const INTRO_AFTER: Record<string, PhaseIntro[]> = {
  * exception for as long as the curriculum had nowhere to put it, and closing
  * each script on it is what settled that. The order below is the order a
  * learner meets them, one script then the other, which is also the order the
- * anchor tables produce. */
+ * anchor tables produce. The three script-neutral cards close the list: PUNCT is
+ * reachable from the hiragana after-run, and ITERATION_MARK and RENDAKU from the
+ * word-gated seam in lesson-steps.ts, so every card here has a lesson home. */
 export const PHASE_INTROS: PhaseIntro[] = [
   DAKUTEN_H,
   COMBO_H,
@@ -337,6 +479,9 @@ export const PHASE_INTROS: PhaseIntro[] = [
   COMBO_K,
   LONG_K,
   SOKUON_K,
+  PUNCTUATION,
+  ITERATION_MARK,
+  RENDAKU,
 ];
 
 // NOT BUILT, AND SAY SO

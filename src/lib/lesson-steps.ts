@@ -28,12 +28,22 @@
 // out of step with history. A group re-taught later shows its card again, which
 // is the right answer for a card whose whole job is to explain the material.
 //
-// Kana only, by the item's own `kind`. A kanji or word lesson gets its items and
-// nothing else, because the anchors are kana section ids.
+// Kana only, by the item's own `kind` — with ONE exception. A kanji/word rule
+// with no kana section to hang on rides the WORD that first puts it in play: the
+// iteration mark 々 and rendaku both surface the moment the first 々 word (時々)
+// is taught, because that one word makes both rules visible at once (ときどき is
+// 々 AND the と → ど voicing). See phase-intros.ts for why those two are
+// word-gated rather than anchored to a section.
 
 import { CHAR_INDEX } from "@/data/characters";
 import { dakutenRowFor, type DakutenRow } from "@/data/dakuten-rows";
-import { INTRO_AFTER, INTRO_BEFORE, type PhaseIntro } from "@/data/phase-intros";
+import {
+  INTRO_AFTER,
+  INTRO_BEFORE,
+  ITERATION_MARK,
+  RENDAKU,
+  type PhaseIntro,
+} from "@/data/phase-intros";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
 import type { FactId } from "@/types";
 
@@ -51,12 +61,18 @@ function sectionOf(item: LessonItem): string | null {
   return CHAR_INDEX[item.glyph]?.sec ?? null;
 }
 
+/** The iteration mark, whose presence in a word's spelling is the whole gate for
+ * the two rules it introduces. A word that contains it is by definition the first
+ * place both 々 and rendaku are in play. */
+const ITERATION_GLYPH = "々";
+
 /**
  * The teach set, as the steps the walk pages through.
  *
  * Items in the order `itemsFromFacts` gives them — untouched — with at most one
  * card in front and any number behind (a script's last group closes on both its
- * long-vowel and its sokuon card).
+ * long-vowel and its sokuon card), plus the two word-gated cards (々 and rendaku)
+ * ahead of the first word that carries 々.
  */
 export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
   const items = itemsFromFacts(facts);
@@ -67,6 +83,10 @@ export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
   // its other four fold into the same card rather than adding four steps. See
   // src/data/dakuten-rows.ts.
   const rowsSeen = new Set<string>();
+  // The iteration mark and rendaku have no kana section to anchor to; they ride
+  // the first word whose spelling uses 々, and only the first one, so a teach set
+  // full of 々 words teaches the pair once rather than before every word.
+  let markedIteration = false;
   for (const item of items) {
     const row = item.kind === "kana" ? dakutenRowFor(item.glyph) : null;
     if (row) {
@@ -74,6 +94,11 @@ export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
       rowsSeen.add(row.id);
       steps.push({ type: "conversion", key: row.id, row });
       continue;
+    }
+    if (!markedIteration && item.glyph.includes(ITERATION_GLYPH)) {
+      markedIteration = true;
+      steps.push({ type: "intro", key: ITERATION_MARK.id, intro: ITERATION_MARK });
+      steps.push({ type: "intro", key: RENDAKU.id, intro: RENDAKU });
     }
     steps.push({ type: "item", key: item.entry, item });
   }

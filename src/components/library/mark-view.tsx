@@ -42,11 +42,14 @@ import { Card, Lbl } from "@/components/ui";
 import { bodyFor, type Mark } from "@/data/marks";
 
 /** "hiragana" → "In hiragana". The intro already carries which script it belongs
- * to; this only puts a word on it. Anything else it might say is a set id we do
- * not ship, printed as-is rather than mapped to a guess. */
-function scriptLabel(setId: string): string {
+ * to; this only puts a word on it. A script-neutral card (setId "") belongs to no
+ * script and gets NO label at all rather than an empty pill — see NO_SCRIPT in
+ * src/data/phase-intros.ts. Anything else is a set id we do not ship, printed
+ * as-is rather than mapped to a guess. */
+function scriptLabel(setId: string): string | null {
   if (setId === "hiragana") return "In hiragana";
   if (setId === "katakana") return "In katakana";
+  if (setId === "") return null;
   return setId;
 }
 
@@ -59,9 +62,10 @@ export function MarkView({ mark }: { mark: Mark }) {
         // is about the one you opened. See `bodyFor`.
         const body = bodyFor(intro, mark.glyph);
         if (body.length === 0) return null;
+        const label = scriptLabel(intro.setId);
         return (
           <Card key={intro.id}>
-            <Lbl>{scriptLabel(intro.setId)}</Lbl>
+            {label ? <Lbl>{label}</Lbl> : null}
             <IntroBody body={body} />
           </Card>
         );
