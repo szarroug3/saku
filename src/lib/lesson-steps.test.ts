@@ -28,7 +28,7 @@ import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
 import { wordReadingFactId } from "../data/vocab.ts";
 import { KANA_GROUPS, groupOfFact, scriptSoFar, widerScope } from "./lesson.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
-import { hasOkurigana, lessonSteps } from "./lesson-steps.ts";
+import { hasOkurigana, hasRendaku, lessonSteps } from "./lesson-steps.ts";
 
 /** A group by its id — the unit the budget hands out. Outside the dakuten
  * phase that id is a section of the data file; inside it, a conversion. */
@@ -413,24 +413,39 @@ describe("every intro is anchored to a section that exists", () => {
   });
 });
 
-describe("々 and rendaku ride the first 々 word", () => {
-  // These two rules have no kana section to anchor to — they are about kanji and
-  // compounds. Their home is the first WORD whose spelling uses 々 (時々, rank
-  // 154), the first place both are provably in play at once: ときどき is 々 AND the
-  // と → ど voicing rendaku does. See phase-intros.ts and lesson-steps.ts.
-  test("時々 opens both cards, in order, ahead of the word", () => {
+describe("々 and rendaku each ride the first word that shows them", () => {
+  // Neither rule has a kana section to anchor to — they are about kanji and
+  // compounds — so each rides the first WORD that puts it on screen, and the two
+  // are decoupled: 々 fires on the first word spelled with 々, rendaku on the
+  // first word that actually voices at a seam. Those are different words: rendaku
+  // first shows at 仕事 (し + こと → しごと, rank 22), long before any 々 word, so
+  // 々 no longer drags rendaku in with it. See phase-intros.ts / lesson-steps.ts.
+  test("時々 opens the iteration card alone (its repeat is not rendaku)", () => {
+    // 時々's align stores the repeat as already-voiced (どき/どき), so there is no
+    // unvoiced-to-voiced seam for hasRendaku to see: it is a 々 word, not a
+    // rendaku one.
     const steps = lessonSteps([wordReadingFactId("時々")]);
     assert.deepEqual(
       steps.map((s) =>
         s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
       ),
-      ["intro-iteration-mark", "intro-rendaku", "時々"],
+      ["intro-iteration-mark", "時々"],
     );
   });
 
-  test("a word with no 々 gets neither card", () => {
-    // The gate is the glyph, not the subject — an ordinary word teaches nothing
-    // about 々, so the walk is the item alone.
+  test("仕事 opens the rendaku card alone (no 々)", () => {
+    const steps = lessonSteps([wordReadingFactId("仕事")]);
+    assert.deepEqual(
+      steps.map((s) =>
+        s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
+      ),
+      ["intro-rendaku", "仕事"],
+    );
+  });
+
+  test("a plain word gets neither card", () => {
+    // The gate is the spelling, not the subject — an ordinary word teaches
+    // nothing about either rule, so the walk is the item alone.
     const steps = lessonSteps([wordReadingFactId("先生")]);
     assert.deepEqual(
       steps.map((s) => (s.type === "item" ? s.item.glyph : s.type)),
@@ -438,26 +453,41 @@ describe("々 and rendaku ride the first 々 word", () => {
     );
   });
 
-  test("a teach set full of 々 words teaches the pair once", () => {
-    // The cards ride the FIRST 々 word only; the rest are plain items, so a
-    // review batch of 々 words does not re-explain the rules before each one.
+  test("in one set each card fires once, on its own first word", () => {
+    // 時々 opens the iteration card (it has 々 but does not voice); 様々 opens the
+    // rendaku card (さま → ざま, the first voicing seam in the set); 我々 has 々 but
+    // the card already fired and it does not voice, so it stands plain.
     const steps = lessonSteps([
       wordReadingFactId("時々"),
       wordReadingFactId("様々"),
       wordReadingFactId("我々"),
     ]);
-    const intros = steps.filter((s) => s.type === "intro");
-    assert.deepEqual(
-      intros.map((s) => (s.type === "intro" ? s.intro.id : null)),
-      ["intro-iteration-mark", "intro-rendaku"],
-    );
-    // And they lead the run: the two cards, then the three words in order.
     assert.deepEqual(
       steps.map((s) =>
-        s.type === "intro" ? "intro" : s.type === "item" ? s.item.glyph : s.type,
+        s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
       ),
-      ["intro", "intro", "時々", "様々", "我々"],
+      ["intro-iteration-mark", "時々", "intro-rendaku", "様々", "我々"],
     );
+  });
+});
+
+describe("hasRendaku reads voicing off a word's align", () => {
+  test("flags a word whose non-first element voices at the seam", () => {
+    // 仕事 し + こと → しごと (こ → ご), 手紙 て + かみ → てがみ (か → が), 言葉
+    // こと + は → ことば (は → ば), 人々 ひと + ひと → ひとびと (ひ → び), 様々 さま +
+    // さま → さまざま (さ → ざ).
+    for (const w of ["仕事", "手紙", "言葉", "人々", "様々"]) {
+      assert.equal(hasRendaku(w), true, w);
+    }
+  });
+
+  test("does not flag a word with no voicing seam", () => {
+    // 先生 せんせい reads straight; 我々 われわれ repeats without voicing; 時々's
+    // repeat is stored already voiced (どき/どき), so there is no unvoiced base to
+    // detect a shift against.
+    for (const w of ["先生", "我々", "時々"]) {
+      assert.equal(hasRendaku(w), false, w);
+    }
   });
 });
 

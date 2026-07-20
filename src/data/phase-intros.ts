@@ -92,6 +92,53 @@ export interface IntroPara {
   text: string;
 }
 
+/**
+ * One worked example of a rule — the same fact the prose states in a sentence,
+ * pulled out as a formula the eye can scan: `生 + きる = 生きる (いきる) · to live`.
+ *
+ * The prose TEACHES the rule; these SHOW it, side by side, so a page about a
+ * writing rule reads as an explanation with its evidence beside it rather than
+ * as a paragraph the reader has to mine for the words. Real curriculum vocabulary
+ * only — the same words the prose names — so the two never disagree.
+ */
+export interface IntroExample {
+  /** The left of the formula — "生 + きる", "時 + 時", or a plain word "生きる". */
+  from: string;
+  /** The operator between the two sides. "=" for a word built from parts (the
+   *  default), "→" for one form becoming another. */
+  op?: "=" | "→";
+  /** The right of the formula — the finished word or form: "生きる", "生きた". */
+  to: string;
+  /** The reading of `to`, shown in parentheses. Omitted where it adds nothing
+   *  (a form change that keeps the same kanji reading). */
+  reading?: string;
+  /** The plain-language gloss, printed after a middot — "to live". */
+  gloss: string;
+  /** The Japanese text to pronounce when the example carries an audible change
+   *  (a voicing, a held vowel, a doubled consonant, a fused syllable). Present
+   *  turns on a speaker on that line; omitted leaves the line silent (a purely
+   *  written distinction with nothing to hear). */
+  say?: string;
+}
+
+/**
+ * One row of the punctuation reference: a mark, its Japanese name, the English
+ * mark it stands in for, and what it does. Punctuation is a catalogue rather than
+ * a rule with worked examples, so it reads best as a table (see PunctuationTable
+ * in phase-intro-view.tsx) instead of the prose-plus-examples every other card
+ * uses.
+ */
+export interface PunctuationRow {
+  /** The glyph, or a pair like "「 」". */
+  mark: string;
+  /** Its Japanese name in romaji, e.g. "kuten". Empty where it has no common one. */
+  name: string;
+  /** The English mark it does the job of, e.g. "full stop". */
+  english: string;
+  /** One line on what it does. */
+  note: string;
+}
+
 /** A teaching card: one concept, shown as a step of the teach walk. */
 export interface PhaseIntro {
   /** Stable id — React key, and what a test names. */
@@ -101,6 +148,19 @@ export interface PhaseIntro {
   /** One line, the whole point of the card. */
   title: string;
   body: IntroPara[];
+  /**
+   * Worked examples for the rule, shown beside the prose on the Library page (see
+   * mark-view.tsx) and below it in the teach walk. Optional: the kana marks carry
+   * their evidence in conversion tables (dakuten-rows.ts) instead, so only the
+   * glyphless writing rules — 々, rendaku, okurigana — use this.
+   */
+  examples?: readonly IntroExample[];
+  /**
+   * A punctuation catalogue, rendered as a table. Only PUNCTUATION uses this: its
+   * content is a set of marks with names and jobs, not a rule with worked
+   * examples, so it reads as a reference table with a closing sentence beneath.
+   */
+  punctuation?: readonly PunctuationRow[];
 }
 
 // THE CARDS ARE EXPORTED, ONE BY ONE, AND THAT IS NEW
@@ -127,12 +187,12 @@ export const DAKUTEN_H: PhaseIntro = {
     {
       mark: "゛",
       lead: "(dakuten): two dashes.",
-      text: "It voices the consonant, meaning your vocal cords buzz: か ka → が ga, さ sa → ざ za, た ta → だ da, は ha → ば ba.",
+      text: "It voices the consonant, meaning your vocal cords buzz, turning the sound into its harder-edged partner.",
     },
     {
       mark: "゜",
       lead: "(handakuten): a small circle,",
-      text: "and it only ever lands on the は row: は ha → ぱ pa.",
+      text: "and it only ever lands on the は row.",
     },
     {
       text: "You already know every shape here. か and が are the same character wearing a mark, so this is 25 more sounds without a single new drawing to learn.",
@@ -167,7 +227,7 @@ export const COMBO_H: PhaseIntro = {
   title: "A small や, ゆ or よ fuses onto the kana in front of it.",
   body: [
     {
-      text: "A full-size kana followed by a SMALL や, ゆ or よ is one syllable, not two: き + ゃ is “kya”, said in a single beat, not “ki-ya”.",
+      text: "A full-size kana followed by a small や, ゆ or よ is one syllable, not two. The two are said together, in a single beat, not as two separate kana.",
     },
     {
       lead: "The size is the whole tell.",
@@ -177,6 +237,11 @@ export const COMBO_H: PhaseIntro = {
       text: "No new shapes again. Every combo is two characters you already know, one of them shrunk.",
     },
   ],
+  examples: [
+    { from: "き + ゃ", to: "きゃ", reading: "kya", gloss: "one beat", say: "きゃ" },
+    { from: "し + ゅ", to: "しゅ", reading: "shu", gloss: "one beat", say: "しゅ" },
+    { from: "ち + ょ", to: "ちょ", reading: "cho", gloss: "one beat", say: "ちょ" },
+  ],
 };
 
 export const COMBO_K: PhaseIntro = {
@@ -185,7 +250,7 @@ export const COMBO_K: PhaseIntro = {
   title: "A small ャ, ュ or ョ fuses onto the kana in front of it.",
   body: [
     {
-      text: "A full-size kana followed by a SMALL ャ, ュ or ョ is one syllable, not two: キ + ャ is “kya”, said in a single beat, not “ki-ya”.",
+      text: "A full-size kana followed by a small ャ, ュ or ョ is one syllable, not two. The two are said together, in a single beat, not as two separate kana.",
     },
     {
       lead: "The size is the whole tell.",
@@ -195,6 +260,11 @@ export const COMBO_K: PhaseIntro = {
       text: "Same rule as the hiragana combos, on shapes you already know. Nothing new to draw.",
     },
   ],
+  examples: [
+    { from: "キ + ャ", to: "キャ", reading: "kya", gloss: "one beat", say: "キャ" },
+    { from: "シ + ュ", to: "シュ", reading: "shu", gloss: "one beat", say: "シュ" },
+    { from: "チ + ョ", to: "チョ", reading: "cho", gloss: "one beat", say: "チョ" },
+  ],
 };
 
 export const LONG_H: PhaseIntro = {
@@ -203,19 +273,22 @@ export const LONG_H: PhaseIntro = {
   title: "A held vowel is a different word, not a decoration.",
   body: [
     {
-      text: "おばさん is “aunt”; おばあさん is “grandmother”. ゆき is “snow”; ゆうき is “courage”. Hold the vowel a beat longer and you have said something else, so length is part of the word.",
+      text: "Hold a vowel a beat longer and you have said a different word, so length is part of the word, not decoration.",
     },
     {
-      lead: "In hiragana you write the extra length with a vowel kana:",
-      text: "あ+あ, い+い, う+う.",
+      lead: "In hiragana you hold the sound by adding the matching vowel kana.",
+      text: "おばさん becomes おばあさん: the あ after ば doubles that あ sound, so ば is held a beat longer. い lengthens with another い, う with another う.",
     },
     {
       lead: "Two that surprise people.",
-      text: "え is usually lengthened with い: せんせい is said “sensee”, not “sen-say”. And お is usually lengthened with う: おとうさん is said “otoosan”, not “oto-u-san”.",
+      text: "え is usually lengthened with い, not another え. And お is usually lengthened with う, not another お.",
     },
-    {
-      text: "This is a rule, not a new set of characters. There is nothing here to draw, only something to listen for.",
-    },
+  ],
+  examples: [
+    { from: "おばさん", to: "obasan", gloss: "aunt", say: "おばさん" },
+    { from: "おばあさん", to: "obaasan", gloss: "grandmother", say: "おばあさん" },
+    { from: "せんせい", to: "sensee", gloss: "teacher (え held with い)", say: "せんせい" },
+    { from: "おとうさん", to: "otōsan", gloss: "father (お held with う)", say: "おとうさん" },
   ],
 };
 
@@ -225,7 +298,7 @@ export const LONG_K: PhaseIntro = {
   title: "Katakana holds a vowel with one long dash.",
   body: [
     {
-      text: "The rule is the one you met in hiragana (a held vowel is a different word), written a different way. Katakana uses a single dash, ー, whatever the vowel is: コーヒー (coffee), ケーキ (cake).",
+      text: "The same rule you saw in hiragana, a held vowel is a different word, written a different way. Katakana uses a single dash, ー, whatever the vowel is.",
     },
     {
       lead: "One mark covers all five vowels,",
@@ -234,6 +307,10 @@ export const LONG_K: PhaseIntro = {
     {
       text: "It follows the direction of the writing: horizontal in a horizontal line, and turned upright when the text runs down the page.",
     },
+  ],
+  examples: [
+    { from: "コーヒー", to: "kōhī", gloss: "coffee", say: "コーヒー" },
+    { from: "ケーキ", to: "kēki", gloss: "cake", say: "ケーキ" },
   ],
 };
 
@@ -287,7 +364,7 @@ export const SOKUON_H: PhaseIntro = {
     {
       mark: "っ",
       lead: "(small tsu): a shrunken つ.",
-      text: "It is never said on its own. It stops the mouth for one beat and doubles the consonant that comes after it: きて kite → きって kitte, さか saka → さっか sakka.",
+      text: "It is never said on its own. It stops the mouth for one beat and doubles the consonant that comes after it.",
     },
     {
       lead: "The size is the whole tell, again.",
@@ -295,8 +372,12 @@ export const SOKUON_H: PhaseIntro = {
     },
     {
       lead: "It is a beat, not a gap.",
-      text: "The pause takes as long as any other kana does, which is why きて and きって are two different words rather than one word said carelessly.",
+      text: "The pause takes as long as any other kana does, which is why きて and きって are two different words rather than one said carelessly.",
     },
+  ],
+  examples: [
+    { from: "きて", op: "→", to: "きって", gloss: "kite → kitte", say: "きって" },
+    { from: "さか", op: "→", to: "さっか", gloss: "saka → sakka", say: "さっか" },
   ],
 };
 
@@ -308,12 +389,17 @@ export const SOKUON_K: PhaseIntro = {
     {
       mark: "ッ",
       lead: "(small tsu): a shrunken ツ.",
-      text: "The rule you met in hiragana, on katakana shapes: ベッド beddo (bed), カップ kappu (cup), サッカー sakkā (soccer).",
+      text: "The same rule you saw in hiragana, on katakana shapes.",
     },
     {
       lead: "Borrowed words are full of it,",
       text: "because the languages Japanese borrows from are full of consonants that land hard. If a loanword stops short in the middle, expect a ッ there.",
     },
+  ],
+  examples: [
+    { from: "ベッド", to: "beddo", gloss: "bed", say: "ベッド" },
+    { from: "カップ", to: "kappu", gloss: "cup", say: "カップ" },
+    { from: "サッカー", to: "sakkā", gloss: "soccer", say: "サッカー" },
   ],
 };
 
@@ -337,21 +423,18 @@ export const PUNCTUATION: PhaseIntro = {
   title: "Japanese points its sentences differently.",
   body: [
     {
-      lead: "。 (kuten) is the full stop,",
-      text: "a small hollow circle rather than a dot, and 、(touten) is the comma. They do the jobs the English period and comma do, they just look different: これはペンです。",
-    },
-    {
-      lead: "Quotation marks are corner brackets.",
-      text: "「 」(kagi) wrap speech and quotes the way English quotation marks do: 「おはよう」と言った. The double form 『 』wraps a quote inside a quote, and the titles of books and works.",
-    },
-    {
-      lead: "A few more you will see.",
-      text: "・(nakaguro) is a middle dot that separates list items or the parts of a foreign name: アメリカ・カナダ. 〜 (the wave dash) marks a range or a “from, to”: 5〜10. ？ and ！ are borrowed from the West and used mostly in casual writing; formal text often does without them.",
-    },
-    {
       lead: "And the thing that is missing.",
-      text: "Japanese leaves NO spaces between words. The switches between kanji, hiragana and katakana do the work an English space does, so you learn to see where one word ends by the change in script rather than by a gap.",
+      text: "Japanese leaves no spaces between words. The switches between kanji, hiragana and katakana do the work an English space does, so you learn to see where one word ends by the change in script rather than by a gap.",
     },
+  ],
+  punctuation: [
+    { mark: "。", name: "kuten", english: "full stop", note: "Ends a sentence. A small hollow circle, not a dot." },
+    { mark: "、", name: "touten", english: "comma", note: "Separates parts of a sentence." },
+    { mark: "「 」", name: "kagi", english: "quotation marks", note: "Wrap speech and quotes." },
+    { mark: "『 』", name: "double kagi", english: "quotation marks", note: "A quote inside a quote, and the titles of works." },
+    { mark: "・", name: "nakaguro", english: "middle dot", note: "Separates list items or the parts of a foreign name." },
+    { mark: "〜", name: "nami", english: "wave dash", note: "Marks a range or a “from, to”: 5〜10." },
+    { mark: "？ ！", name: "", english: "question, exclamation", note: "Borrowed from the West and used mostly in casual writing." },
   ],
 };
 
@@ -369,18 +452,23 @@ export const ITERATION_MARK: PhaseIntro = {
   title: "々 repeats the kanji before it.",
   body: [
     {
-      mark: "々",
-      lead: "(odoriji): a repeat mark.",
-      text: "It stands in for the kanji just before it, so you write the character once and 々 says “again”. 人 (ひと, person) becomes 人々 (ひとびと, people); 時 (とき, time) becomes 時々 (ときどき, sometimes).",
+      lead: "This is called an odoriji, a repeat mark.",
+      text: "It stands in for the kanji just before it, so you write the character once and 々 says “again”.",
     },
     {
-      lead: "It repeats the CHARACTER, not the reading.",
-      text: "々 copies the kanji, and the copy is then read like the second half of any compound, which often means its sound voices. That is why 人々 is “hito-bito”, not “hito-hito”: see rendaku, the rule doing that.",
+      lead: "It repeats the character, not the reading.",
+      text: "The copy is read like the second half of a compound, which often uses rendaku so that 人々 is “hito-bito”, not “hito-hito”.",
     },
     {
-      lead: "You meet it only once compounds do.",
-      text: "That is why it waits here and does not sit with the kana marks. It is common once you are reading: 様々 (さまざま, various), 少々 (しょうしょう, a little), 国々 (くにぐに, various countries).",
+      lead: "It shows up in compounds.",
+      text: "Repeating a noun this way often reads as a plural or as “various”. It is a habit of particular words, not the general way Japanese marks number.",
     },
+  ],
+  examples: [
+    { from: "時 + 時", to: "時々", reading: "ときどき", gloss: "sometimes", say: "時々" },
+    { from: "人 + 人", to: "人々", reading: "ひとびと", gloss: "people", say: "人々" },
+    { from: "様 + 様", to: "様々", reading: "さまざま", gloss: "various", say: "様々" },
+    { from: "国 + 国", to: "国々", reading: "くにぐに", gloss: "various countries", say: "国々" },
   ],
 };
 
@@ -389,9 +477,10 @@ export const ITERATION_MARK: PhaseIntro = {
 // Long vowels proved a mark can have no glyph; rendaku is the second, and for a
 // cleaner reason: it is not a written thing at all. It is what the dakuten
 // WRITES, happening on its own at the seam of a compound. That is why it belongs
-// beside dakuten on the shelf (marks.ts) and why it is taught alongside 々: the
-// first 々 word a learner meets, 時々, voices (とき → どき), so the two rules are
-// visible in one word.
+// beside dakuten on the shelf (marks.ts), and it is word-gated in lesson-steps.ts
+// on the first word that actually voices at a seam — 仕事 (し + こと → しごと),
+// rank 22 — so it is taught the moment a learner first meets the thing it
+// explains, well ahead of 々.
 //
 // HONEST ABOUT THE IRREGULARITY. Rendaku is a strong TENDENCY, not a law: it has
 // well-known brakes (it tends not to fire when the second element already holds a
@@ -402,20 +491,25 @@ export const ITERATION_MARK: PhaseIntro = {
 export const RENDAKU: PhaseIntro = {
   id: "intro-rendaku",
   setId: NO_SCRIPT,
-  title: "Join two words and the second often voices.",
+  title: "In a compound, the second word's first sound often changes.",
   body: [
     {
-      lead: "Rendaku (sequential voicing):",
-      text: "when two elements form a compound, the first consonant of the SECOND element often picks up a dakuten sound. て (hand) + かみ (paper) becomes てがみ (letter), か → が. It is the voicing the dakuten writes, happening on its own at the join.",
+      lead: "Rendaku:",
+      text: "when two elements form a compound, the first consonant of the second element often picks up a dakuten sound.",
     },
     {
-      lead: "You just saw it in 々.",
-      text: "時 とき + 時 とき is ときどき, the second half's と voicing to ど; 人 ひと + 人 ひと is ひとびと, ひ voicing to び. The repeated half voices exactly like any second element does.",
+      lead: "The kanji does not change, only the sound.",
+      text: "The second half reads as it always does, one consonant softer. You will see it constantly in compounds from here on.",
     },
     {
-      lead: "It is a tendency, not a law.",
-      text: "It does not always happen, and there are known brakes on it, so treat it as something to expect and recognise rather than a rule to apply blindly. When a word's reading is given to you, trust the reading.",
+      lead: "It is a tendency, not a requirement.",
+      text: "It does not always happen so treat it as something to expect and recognize rather than a rule to apply blindly.",
     },
+  ],
+  examples: [
+    { from: "仕 + 事", to: "仕事", reading: "しごと", gloss: "work (こ → ご)", say: "仕事" },
+    { from: "手 + 紙", to: "手紙", reading: "てがみ", gloss: "letter (か → が)", say: "手紙" },
+    { from: "言 + 葉", to: "言葉", reading: "ことば", gloss: "word (は → ば)", say: "言葉" },
   ],
 };
 
@@ -454,13 +548,17 @@ export const OKURIGANA_INTRO: PhaseIntro = {
   title: "The kanji does not finish the word.",
   body: [
     {
-      lead: "A word can be a kanji plus a kana tail.",
-      text: "The kana written after a kanji is part of the word, not a separate thing tacked on. The single character 生 becomes 生きる (いきる, to live) and 生まれる (うまれる, to be born): one kanji, two words, and the kana tail is what tells them apart.",
+      lead: "This kana tail is called okurigana.",
+      text: "The kana written after a kanji is part of the word, not a separate thing tacked on. One character can start several words, and the tail is what tells them apart.",
     },
     {
       lead: "The tail even settles the reading.",
-      text: "生 on its own can be read several ways, and the kana after it decides which. 生きる takes い, 生まれる takes う: same character, different tail, different sound. That trailing kana has a name, okurigana.",
+      text: "生 on its own can be read several ways, and the kana after it decides which. 生きる takes い, 生まれる takes う: same character, different tail, different sound.",
     },
+  ],
+  examples: [
+    { from: "生 + きる", to: "生きる", reading: "いきる", gloss: "to live", say: "生きる" },
+    { from: "生 + まれる", to: "生まれる", reading: "うまれる", gloss: "to be born", say: "生まれる" },
   ],
 };
 
@@ -471,12 +569,17 @@ export const OKURIGANA_MOVING: PhaseIntro = {
   body: [
     {
       lead: "On a verb or an い-adjective, the tail changes.",
-      text: "The okurigana is exactly the part that shifts when the word does a different job. 生きる (いきる) becomes 生きた (lived) and 生きない (does not live); 高い (たかい, expensive) becomes 高かった (was expensive). The kanji holds still and the tail carries the change.",
+      text: "The okurigana is exactly the part that shifts when the word does a different job. The kanji holds still and the tail carries the change.",
     },
     {
       lead: "How it changes is grammar.",
-      text: "For now, just notice that the tail is the moving part. Which form to use, and when, is taught on the grammar side, not here.",
+      text: "For now, just notice that the tail is the moving part. Which form to use, and when, is taught in the grammar track.",
     },
+  ],
+  examples: [
+    { from: "生きる", op: "→", to: "生きた", gloss: "lived", say: "生きた" },
+    { from: "生きる", op: "→", to: "生きない", gloss: "does not live", say: "生きない" },
+    { from: "高い", op: "→", to: "高かった", gloss: "was expensive", say: "高かった" },
   ],
 };
 
@@ -490,9 +593,13 @@ export const OKURIGANA_FIXED: PhaseIntro = {
       text: "Plenty of words carry a kana tail that never changes. 一つ (ひとつ, one) is just 一つ: the つ sits on the end and stays put, however the word is used.",
     },
     {
-      lead: "Compare a verb you have already met.",
-      text: "行く (いく, to go) reshapes its tail as it works: 行った (went), 行かない (does not go). 一つ does none of that. It is the same kind of kana tail, but a fixed one, so read it as part of the word and leave it be.",
+      lead: "Compare a verb you have already seen.",
+      text: "A verb like 行く reshapes its tail as it works, but 一つ does none of that. It is the same kind of kana tail, only a fixed one, so read it as part of the word and leave it be.",
     },
+  ],
+  examples: [
+    { from: "一 + つ", to: "一つ", reading: "ひとつ", gloss: "one (tail sits still)", say: "一つ" },
+    { from: "行く", op: "→", to: "行った", gloss: "went (tail moves)", say: "行った" },
   ],
 };
 

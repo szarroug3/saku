@@ -192,7 +192,7 @@ const HANDAKUTEN = "゜";
  * katakana extension row, this is the sentence that becomes a page.
  */
 const SMALL_VOWEL_NOTE =
-  "ぁぃぅぇぉ (and ァィゥェォ) shrink the same way, but they fuse a VOWEL onto the kana in front of them, to write sounds Japanese does not natively have: ファ fa, ティ ti, ウェ we. You meet them almost only in katakana loanwords, so they are worth recognising when they turn up rather than learning as a set.";
+  "ぁぃぅぇぉ (and ァィゥェォ) shrink the same way, but they fuse a VOWEL onto the kana in front of them, to write sounds Japanese does not natively have: ファ fa, ティ ti, ウェ we. You will see them almost only in katakana loanwords, so they are worth recognizing when they turn up rather than learning as a set.";
 
 /**
  * The nine marks, in the order the curriculum meets them.
@@ -285,9 +285,9 @@ export const MARKS: readonly Mark[] = [
   },
   {
     id: "iteration-mark",
-    name: "々",
+    name: "Iteration mark",
     glyph: "々",
-    summary: "The iteration mark: it repeats the kanji before it. 時 → 時々.",
+    summary: "Repeats the kanji before it. 時 → 時々.",
     searchAlso: [
       "々",
       "iteration mark",
@@ -306,7 +306,7 @@ export const MARKS: readonly Mark[] = [
     name: "Rendaku",
     glyph: "",
     summary:
-      "Sequential voicing: join two words and the second often voices. て + かみ → てがみ.",
+      "Join two words and the second word's first sound often changes: て + かみ → てがみ.",
     searchAlso: [
       "rendaku",
       "sequential voicing",
