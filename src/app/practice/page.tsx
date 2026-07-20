@@ -19,14 +19,12 @@
 // it. So the page reads top to bottom as the sentence Start acts on — the pool,
 // then how it asks, then Start.
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { QuizOptionsFields } from "@/components/practice/quiz-options";
 import { StartBar } from "@/components/practice/start-bar";
 import { PracticeSelector } from "@/components/practice/practice-selector";
 import { Card, Lbl, PageTitle } from "@/components/ui";
-import { planFacts, planSession } from "@/lib/budget";
-import { KANA_GROUP_FACTS } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { resolve, whatSentence } from "@/lib/selection";
@@ -39,12 +37,6 @@ export default function PracticePage() {
   const { session, startQuiz } = useQuizSession();
   const { history } = useHistory();
   const { lists } = useLists();
-
-  // The clock the BUDGET is computed against, read ONCE per visit. planSession
-  // is pure, so it takes a fixed `now` rather than reading a clock mid-render;
-  // held as state so it is stable for the life of the page. It goes stale only
-  // if you leave the page open for days, and starting a session remounts it.
-  const [now] = useState(() => Date.now());
 
   // The facts the query names, right now — what Start hands the quiz and what
   // the bar counts, computed once so the sentence and the session can never
@@ -59,28 +51,21 @@ export default function PracticePage() {
     [cfg.selection, facts.length, lists],
   );
 
-  // What actually runs: the drillable pool, capped to the requested length. This
-  // excludes what you're solid on (nothing to gain today) and, on a Count of N,
-  // takes a uniform random N. Computed here (not inside start) so the bar can say
-  // what Start will do — including "nothing, you're solid on all of these" —
-  // before you press it. Practice quizzes this set directly: there is no teach
-  // phase, so the teach/probe split only matters as "which items make the cut",
-  // not as "which get taught first".
+  // What actually runs: exactly the pool you picked, capped to the requested
+  // length. This is an EXPLICIT selection — you chose "Everything I have seen"
+  // or "Just the shaky ones" or a saved list — so Practice drills all of it,
+  // solid facts included. It deliberately does NOT run the curriculum budget
+  // (planSession), which drops what you're solid on: that budget is for the
+  // app choosing material FOR you, and applying it here would refuse the thing
+  // you literally pointed at (the same seam the Library opens with includeSolid).
+  // resolve() already returns the pool in random order, so a Count of N is a
+  // uniform random N: take the first N. This keeps the selector's promise that
+  // the number on the tile is the number you get.
   const planned = useMemo(() => {
-    const plan = planSession({
-      candidates: facts,
-      history,
-      groups: KANA_GROUP_FACTS,
-      length:
-        cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null,
-      // A user-built selection: a Count of N takes a uniform random N, not the
-      // weakest N. The suggested/study loop weakness-ranks instead and is not
-      // this page.
-      random: true,
-      now,
-    });
-    return { facts: planFacts(plan) };
-  }, [facts, history, cfg.length, cfg.limType, cfg.limCount, now]);
+    const cap =
+      cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null;
+    return { facts: cap === null ? facts : facts.slice(0, cap) };
+  }, [facts, cfg.length, cfg.limType, cfg.limCount]);
 
   // A one-off quiz, not a session: straight to /quiz, then /results when it ends.
   // No teach screen, no rest timer, no fork loop. startQuiz clears any session in
