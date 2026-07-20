@@ -692,6 +692,27 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "せかい", reading: "sekai", gloss: "world", hitIndex: 0 },
   },
 
+  セ: {
+    glyph: "セ",
+    romaji: "se",
+    sound: "seh",
+    object: "seesaw",
+    analogy: [
+      { text: "Say “" },
+      { text: "seh", accent: true },
+      { text: "” as in " },
+      { text: "se", accent: true },
+      { text: "ven." },
+    ],
+    mnemonic: [
+      { text: "Se", accent: true },
+      { text: "ven kids pile high on one side of a seesaw, the other side flying high as they " },
+      { text: "se", accent: true },
+      { text: "ttle." },
+    ],
+    example: { word: "セーター", reading: "seetaa", gloss: "sweater", hitIndex: 0 },
+  },
+
   そ: {
     glyph: "そ",
     romaji: "so",

@@ -57,7 +57,7 @@ test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => 
     // And that code point is the kana this entry teaches.
     assert.equal(chars[m.example.hitIndex], k, `${k} example hitIndex should land on ${k}`);
   }
-  assert.equal(Object.keys(MNEMONICS).length, 55, "the 46 base hiragana and nine approved katakana are authored");
+  assert.equal(Object.keys(MNEMONICS).length, 56, "the 46 base hiragana and ten approved katakana are authored");
 });
 
 test("Library-entry / teach-flow gate: authored kana resolve, a non-authored glyph does not", () => {
@@ -111,7 +111,7 @@ test("kanaScript classifies script by Unicode block, and katakana derives the ka
   const approvedKatakana = [
     ["ウ", "u"], ["エ", "e"], ["カ", "ka"],
     ["キ", "ki"], ["ケ", "ke"], ["コ", "ko"],
-    ["サ", "sa"], ["シ", "shi"], ["ス", "su"],
+    ["サ", "sa"], ["シ", "shi"], ["ス", "su"], ["セ", "se"],
   ];
   for (const [glyph, romaji] of approvedKatakana) {
     assert.equal(getMnemonic(glyph)!.image, `/mnemonics/katakana/${romaji}.webp`);
