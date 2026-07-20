@@ -57,6 +57,7 @@ import { getMnemonic } from "@/data/mnemonics";
 import { exampleFor } from "@/data/word-examples";
 import { vocabRow, type VocabRow } from "@/data/vocab";
 import { pairForEntry } from "@/data/transitivity-facts";
+import { pairPattern } from "@/lib/transitivity-pattern";
 import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
@@ -454,6 +455,7 @@ function TransitivityTeachView({
 }) {
   const pair = pairForEntry(item.entry);
   if (!pair) return null;
+  const pattern = pairPattern(pair.happens.reading, pair.doIt.reading);
   return (
     <div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -461,7 +463,22 @@ function TransitivityTeachView({
         <VerbSide member={pair.doIt} role="Someone does it" voiceName={voiceName} />
       </div>
       <div className="mt-9 border-t border-border pt-7">
-        <p className="text-[14px] leading-relaxed text-text-muted">
+        {pattern.isException ? (
+          <p className="text-[13px] leading-relaxed text-text-muted">
+            <span className="font-medium text-text">Exception.</span> This pair
+            does not follow one of the usual ending swaps, so learn it on its own.
+          </p>
+        ) : (
+          <p className="text-[13px] leading-relaxed text-text-muted">
+            <span className="font-medium text-text">Pattern:</span>{" "}
+            <span className="font-kana text-text">{pattern.from}</span>{" "}
+            <span aria-hidden>&rarr;</span>{" "}
+            <span className="font-kana text-text">{pattern.to}</span>. A common
+            ending swap, but it does not tell you which verb is which, so still
+            learn the pair.
+          </p>
+        )}
+        <p className="mt-3 text-[14px] leading-relaxed text-text-muted">
           Same event, two verbs. The English tells you which one to reach for:
           whether it happens on its own, or someone makes it happen. You cannot
           build one from the other, so learn them together as a pair.

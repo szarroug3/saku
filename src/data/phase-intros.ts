@@ -628,14 +628,14 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
       text: "In English you can always hear the difference: whether something acts on its own, or someone acts on it. Noticing that is the whole job, and it points to exactly one of the two verbs.",
     },
     {
-      lead: "There is no shortcut between them.",
-      text: "You cannot build one verb from the other, so each pair is worth knowing as a pair. You already know both verbs on their own; this only teaches which one goes with which situation.",
+      lead: "The endings often shift in familiar ways.",
+      text: "Most pairs share a kanji and only swap a kana tail, and the swap is usually one of a few: -ある to -える, -る to -す, or -う to -える cover most of them. Naming the shift helps you remember the pair, but it never tells you which verb is which, and a handful of pairs follow no rule at all. So you still learn each pair as a pair; every card marks which shift it uses, or flags it as an exception.",
     },
   ],
   examples: [
-    { from: "開く (あく)", op: "→", to: "開ける (あける)", gloss: "the door opened → I opened the door" },
-    { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "the class started → I started the class" },
-    { from: "出る (でる)", op: "→", to: "出す (だす)", gloss: "it came out → I took it out" },
+    { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "-ある → -える (the class started → I started the class)" },
+    { from: "直る (なおる)", op: "→", to: "直す (なおす)", gloss: "-る → -す (it got fixed → I fixed it)" },
+    { from: "開く (あく)", op: "→", to: "開ける (あける)", gloss: "-う → -える (the door opened → I opened the door)" },
   ],
 };
 
