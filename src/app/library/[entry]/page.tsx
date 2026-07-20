@@ -677,6 +677,8 @@ function EntryView({ entry }: { entry: LibEntry }) {
           claims={claims}
           metric={cfg.accuracyMetric}
           now={now}
+          asTable
+          tableCap={30}
         />
       ) : null}
 
