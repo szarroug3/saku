@@ -460,7 +460,12 @@ export function DrillScreen() {
     const f = rt.deck[rt.pos];
     rt.pos++;
     rt.asked++;
-    const dir = pickDir({ ...cfg, dirs: active.snapshot.dirs });
+    // A subject may pin the direction (transitivity is only askable en2jp) and
+    // force multiple choice (its answer is a pick, never a typed verb). Read both
+    // off the question type before choosing a direction or a typed mode, so those
+    // choices honor the subject rather than override it.
+    const qt = questionsFor(f);
+    const dir = qt.fixedDir ?? pickDir({ ...cfg, dirs: active.snapshot.dirs });
     const styleTyped =
       dir === "jp2en"
         ? active.snapshot.styleJp2en === "typed"
@@ -475,7 +480,7 @@ export function DrillScreen() {
     // even though the written word carries kanji — and only the subject knows it.
     const romajiUnanswerable =
       styleTyped && dir === "en2jp" && !en2jpTypeable(f);
-    const typedMode = styleTyped && !romajiUnanswerable;
+    const typedMode = styleTyped && !romajiUnanswerable && !qt.mcOnly;
     // Font and MC options are rolled when the question is asked and stored in
     // the runtime so a remount doesn't reroll them.
     //

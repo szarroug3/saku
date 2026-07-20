@@ -33,14 +33,14 @@
 // it is why a curated table pays for itself here and would not for, say,
 // synonyms. The app supplies the inventory; the English supplies the cue.
 //
-// SCOPE: 70 PAIRS, NOT 413
+// SCOPE: 69 PAIRS, NOT 413
 // ========================
 // scripts/ingest/transitivity.py proposes candidates mechanically (shared kanji
 // stem, one intransitive member, one transitive member) and found 413 from the
-// 1,238 curated verbs JMdict tags for transitivity. 70 survive here. What was
+// 1,238 curated verbs JMdict tags for transitivity. 69 survive here. What was
 // cut and why is in that script's header and in the report; the short version
 // is that the heuristic's job is recall and this file's job is precision, and a
-// table of 413 pairs that includes 翻る/翻す is worse than 70 the owner will
+// table of 413 pairs that includes 翻る/翻す is worse than 69 the owner will
 // meet in Minna no Nihongo. Candidacy required `ichi1|spec1|spec2` -- the same
 // hand-curated union the vocabulary ingest uses, and `news1` is excluded here
 // for the same reason it is excluded there.
@@ -391,9 +391,5 @@ export const VERB_PAIRS: readonly VerbPair[] = [
   {
     happens: { word: "乗る", reading: "のる", cls: "v5r", en: "The child got in the car.", jmdict: "vi" },
     doIt: { word: "乗せる", reading: "のせる", cls: "v1", en: "I put the child in the car.", jmdict: "vt" },
-  },
-  {
-    happens: { word: "終わる", reading: "おわる", cls: "v5r", en: "The meeting ended.", jmdict: "split" },
-    doIt: { word: "終える", reading: "おえる", cls: "v1", en: "I ended the meeting.", jmdict: "split" },
   },
 ];

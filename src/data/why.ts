@@ -222,4 +222,15 @@ export const WHY_TRACK: Record<string, Why> = {
       "Patterns are taught starting with the easiest ones first so early grammar leans on the simple verbs and words you’re already learning in the other tracks.",
     ],
   },
+  transitivity: {
+    lede: {
+      strong: "Some verbs come in twos: one for when it happens, one for when you do it.",
+      rest: "You already know both verbs on their own; this teaches which one goes with which situation.",
+    },
+    paras: [
+      "Japanese often has two verbs for the same event: one for when something happens on its own, and one for when someone makes it happen. 開く is “the door opened”, 開ける is “I opened the door”. It is the same door and the same event, but the two sentences use different verbs, and picking the wrong one sounds wrong the way “the door was opened by itself on purpose” would in English.",
+      "The good news is that English already tells you which to use. Whenever you can say whether something acted on its own or someone acted on it, you have chosen the verb. That is the whole skill, and this track drills exactly that: you read the English and pick the verb that fits.",
+      "A pair is taught only once you have learned both of its verbs as vocabulary, because the choice between them means nothing until you know both. There is no rule that builds one verb from the other, so each pair is worth learning as a pair rather than guessing.",
+    ],
+  },
 };

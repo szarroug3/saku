@@ -39,6 +39,7 @@ import { NextGrammarLesson } from "@/components/lesson/next-grammar-lesson";
 import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
 import { NextRadicalLesson } from "@/components/lesson/next-radical-lesson";
+import { NextTransitivityLesson } from "@/components/lesson/next-transitivity-lesson";
 import { NextWordLesson } from "@/components/lesson/next-word-lesson";
 import { PageTitle } from "@/components/ui";
 import { kanjiTeachOrder } from "@/data/kanji";
@@ -54,6 +55,11 @@ import {
   nextRadicalLesson,
 } from "@/lib/radical-lesson";
 import { hasStartedWordTrack, nextWordLesson, nextWordLock } from "@/lib/word-lesson";
+import {
+  TRANSITIVITY_PER_LESSON_DEFAULT,
+  nextTransitivityLesson,
+} from "@/lib/transitivity-lesson";
+
 import { readingsProvedBy } from "@/lib/word-unlock";
 import { nextLesson } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -171,6 +177,20 @@ export default function HomePage() {
   const grammarTrackStarted = useMemo(
     () => hasStartedGrammarTrack(history),
     [history],
+  );
+
+  // The transitivity track opens after kana is done and teaches verb pairs one
+  // at a time, each unlocked only once BOTH of its verbs are learned vocabulary
+  // (see nextTransitivityLesson). It interleaves rather than blocking: a pair
+  // whose verbs aren't both met is skipped, so the card is either teaching the
+  // next ready pairs or absent — no lock card. Gated on `lesson === null` like
+  // every post-kana track.
+  const transitivityLesson = useMemo(
+    () =>
+      lesson
+        ? null
+        : nextTransitivityLesson(history, TRANSITIVITY_PER_LESSON_DEFAULT),
+    [lesson, history],
   );
 
   // "These are in my knowledge base now" — the one seen write, in one place.
@@ -304,6 +324,7 @@ export default function HomePage() {
   const radicalRun = runForFacts(radicalLesson?.facts);
   const wordRun = runForFacts(wordLesson?.facts);
   const grammarRun = runForFacts(grammarLesson?.facts);
+  const transitivityRun = runForFacts(transitivityLesson?.facts);
 
   return (
     <>
@@ -384,6 +405,21 @@ export default function HomePage() {
           onClaim={claim}
           inSession={!!grammarRun}
           onContinue={() => grammarRun && continueRun(grammarRun.id)}
+        />
+      ) : null}
+
+      {/* The transitivity track's next lesson — the fifth card, opened once kana
+          is done and a pair's two verbs are both learned. Each pair is taught
+          teach-then-drill (its facts ARE the session, like the others). No lock
+          card: an unready pair is skipped rather than blocking, so this is
+          present only when there are ready pairs to teach. */}
+      {transitivityLesson ? (
+        <NextTransitivityLesson
+          lesson={transitivityLesson}
+          onStart={startLesson}
+          onClaim={claim}
+          inSession={!!transitivityRun}
+          onContinue={() => transitivityRun && continueRun(transitivityRun.id)}
         />
       ) : null}
     </>

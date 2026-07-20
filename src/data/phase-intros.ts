@@ -603,6 +603,42 @@ export const OKURIGANA_FIXED: PhaseIntro = {
   ],
 };
 
+// TRANSITIVITY — the pair intro, this file's first card that is not a writing
+// rule. It opens the transitivity track: a handful of verbs come in twos, one
+// for when something happens on its own and one for when someone makes it
+// happen, and the whole skill is noticing which the sentence describes. Like the
+// okurigana and rendaku cards it has no kana section to hang on, so it is gated
+// on the first transitivity item of a teach set (see lesson-steps.ts) rather
+// than tied to a script's run. Script-neutral (NO_SCRIPT): the idea is about
+// verbs, not spelling. The copy never uses the words "transitive" or
+// "intransitive" — the app does not lead with the grammatical terms (see the
+// header of src/data/transitivity.ts) and describes the contrast in plain
+// language instead. The examples are early, common curated pairs.
+export const TRANSITIVITY_INTRO: PhaseIntro = {
+  id: "intro-transitivity",
+  setId: NO_SCRIPT,
+  title: "Some verbs come in twos: one for when it happens, one for when you do it.",
+  body: [
+    {
+      lead: "Two verbs, one event.",
+      text: "Japanese often has two verbs for the same happening: one for when it happens on its own, and one for when someone makes it happen. 'The door opened' and 'I opened the door' use different verbs.",
+    },
+    {
+      lead: "The sentence already tells you which.",
+      text: "In English you can always hear the difference: whether something acts on its own, or someone acts on it. Noticing that is the whole job, and it points to exactly one of the two verbs.",
+    },
+    {
+      lead: "There is no shortcut between them.",
+      text: "You cannot build one verb from the other, so each pair is worth knowing as a pair. You already know both verbs on their own; this only teaches which one goes with which situation.",
+    },
+  ],
+  examples: [
+    { from: "開く (あく)", op: "→", to: "開ける (あける)", gloss: "the door opened → I opened the door" },
+    { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "the class started → I started the class" },
+    { from: "出る (でる)", op: "→", to: "出す (だす)", gloss: "it came out → I took it out" },
+  ],
+};
+
 /**
  * Section id → the card shown BEFORE that section's characters.
  *
@@ -670,6 +706,7 @@ export const PHASE_INTROS: PhaseIntro[] = [
   OKURIGANA_INTRO,
   OKURIGANA_MOVING,
   OKURIGANA_FIXED,
+  TRANSITIVITY_INTRO,
 ];
 
 // NOT BUILT, AND SAY SO

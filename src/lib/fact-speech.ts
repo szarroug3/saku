@@ -27,6 +27,7 @@
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { KANJI_SUBJECT } from "@/data/kanji";
+import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import type { FactInfo } from "@/types";
 
@@ -41,7 +42,9 @@ export function speechForFact(info: FactInfo, anchor?: string): string | null {
   switch (info.subject) {
     case KANA_SUBJECT:
     case VOCAB_SUBJECT:
-      // The glyph is itself a speakable surface: a kana character, a whole word.
+    case TRANSITIVITY_SUBJECT:
+      // The glyph is itself a speakable surface: a kana character, a whole word,
+      // or (transitivity) the verb the fact asks for — 開ける is "akeru".
       return info.glyph;
     case KANJI_SUBJECT:
       // Reading fact → speak the word that carries the reading (先生), never the

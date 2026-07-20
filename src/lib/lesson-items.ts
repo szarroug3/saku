@@ -32,9 +32,9 @@ import type { EntryId, FactId } from "@/types";
 /** Which subject an item belongs to — its FactInfo.subject, which is exactly one
  * of these strings. The view switches on it (kana gets a mnemonic, kanji gets
  * readings), so it is named as a union rather than a bare string. */
-export type LessonKind = "kana" | "radical" | "kanji" | "word" | "grammar";
+export type LessonKind = "kana" | "radical" | "kanji" | "word" | "grammar" | "transitivity";
 
-const KINDS: readonly LessonKind[] = ["kana", "radical", "kanji", "word", "grammar"];
+const KINDS: readonly LessonKind[] = ["kana", "radical", "kanji", "word", "grammar", "transitivity"];
 
 /** A subject id from the registry, narrowed to a LessonKind; falls back to
  * "kana" for anything unrecognised so a stray fact renders as something rather

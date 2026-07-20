@@ -70,6 +70,7 @@ import {
 } from "@/data/radicals";
 import { cluster } from "@/data/grammar/clusters";
 import { RECIPES, isProducible, patternLabel, type Recipe } from "@/data/grammar/recipes";
+import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
 import { factsOf } from "@/lib/facts";
@@ -130,6 +131,11 @@ const SUBJECT_LABEL: Partial<Record<Kind, string>> = {
  */
 export function subjectLabel(info: FactInfo | undefined): string | undefined {
   if (!info) return undefined;
+  // Transitivity is a scheduled subject but not a Library shelf (a pair has no
+  // entry page), so it is not a `Kind`. The session header still needs a name
+  // for a transitivity teach set, and "Verb pair" is it — the singular, like
+  // "Word" and "Radical" below.
+  if (info.subject === TRANSITIVITY_SUBJECT) return "Verb pair";
   const kind = info.subject as Kind;
   if (kind === KANA_SUBJECT) {
     return CHAR_INDEX[info.glyph]?.setLabel ?? KIND_LABEL[kind];
