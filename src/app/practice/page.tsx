@@ -5,8 +5,14 @@
 // This is HOW and WHAT, moved off Home. Home is the curriculum ("what should I
 // learn next?"); Practice is the open builder ("what do I want to drill, and how
 // should it ask?"). The split is option A from the plates: Practice owns the
-// session settings and offers a few ready pools, and the Library is the door for
+// drill settings and offers a few ready pools, and the Library is the door for
 // picking exact items by hand.
+//
+// PRACTICE IS A ONE-OFF QUIZ, NOT A SESSION. Start runs the selected pool as a
+// single quiz — straight to the drill, no lesson/teach screen first, and no rest
+// timer or fork loop after. When the quiz ends it goes to the results page. That
+// is why this page calls startQuiz (the one-off) and not startSession (the
+// teach → drill → rest → repeat loop the lesson cards and the Library Drill use).
 //
 // The rule the old Home start bar kept still holds here: whatever you are about
 // to run is fully on screen before you run it, and only the Start button starts
@@ -30,7 +36,7 @@ import type { Selection } from "@/types";
 
 export default function PracticePage() {
   const { cfg, set } = useQuizConfig();
-  const { session, startSession } = useQuizSession();
+  const { session, startQuiz } = useQuizSession();
   const { history } = useHistory();
   const { lists } = useLists();
 
@@ -53,10 +59,13 @@ export default function PracticePage() {
     [cfg.selection, facts.length, lists],
   );
 
-  // What actually runs: rank the pool, then top up new material one group at a
-  // time so the drill never goes dark. Computed here (not inside start) so the
-  // bar can say what Start will do — including "nothing, you're solid on all of
-  // these" — before you press it.
+  // What actually runs: the drillable pool, capped to the requested length. This
+  // excludes what you're solid on (nothing to gain today) and, on a Count of N,
+  // takes a uniform random N. Computed here (not inside start) so the bar can say
+  // what Start will do — including "nothing, you're solid on all of these" —
+  // before you press it. Practice quizzes this set directly: there is no teach
+  // phase, so the teach/probe split only matters as "which items make the cut",
+  // not as "which get taught first".
   const planned = useMemo(() => {
     const plan = planSession({
       candidates: facts,
@@ -70,12 +79,15 @@ export default function PracticePage() {
       random: true,
       now,
     });
-    return { facts: planFacts(plan), teach: plan.teach };
+    return { facts: planFacts(plan) };
   }, [facts, history, cfg.length, cfg.limType, cfg.limCount, now]);
 
+  // A one-off quiz, not a session: straight to /quiz, then /results when it ends.
+  // No teach screen, no rest timer, no fork loop. startQuiz clears any session in
+  // progress (the bar warns when there is one).
   const start = () => {
     if (!planned.facts.length) return;
-    startSession(planned.facts, planned.teach, what);
+    startQuiz(planned.facts, { what });
   };
 
   const setSelection = (selection: Selection) =>
