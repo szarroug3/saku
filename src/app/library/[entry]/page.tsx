@@ -73,6 +73,7 @@ import {
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
+import { RADICAL_SUBJECT } from "@/data/radicals";
 import { exampleFor } from "@/data/word-examples";
 import { getMnemonic } from "@/data/mnemonics";
 import {
@@ -158,6 +159,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const isKana = entry.kind === KANA_SUBJECT;
   const isKanji = entry.kind === KANJI_SUBJECT;
   const isWord = entry.kind === VOCAB_SUBJECT;
+  const isRadical = entry.kind === RADICAL_SUBJECT;
 
   // ---- grammar-only material ----
 
@@ -659,6 +661,23 @@ function EntryView({ entry }: { entry: LibEntry }) {
             now={now}
           />
         </>
+      ) : null}
+
+      {/* ================= RADICAL ================= */}
+      {/* A radical's whole reason for being is the kanji built on it, so the
+          entry page ends where the lesson pointed: the kanji written with this
+          shape (and any of them the reader already knows). The same
+          ComponentUses the kanji page and the primitive route mount, so a
+          radical looked up here reads like the component it is. Absent, not
+          empty, for a radical no jōyō kanji is written with. */}
+      {isRadical ? (
+        <ComponentUses
+          component={entry.glyph}
+          history={history}
+          claims={claims}
+          metric={cfg.accuracyMetric}
+          now={now}
+        />
       ) : null}
 
       {/* ================= WORD ================= */}
