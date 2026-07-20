@@ -390,6 +390,28 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "エアコン", reading: "eakon", gloss: "air conditioner", hitIndex: 0 },
   },
 
+  オ: {
+    glyph: "オ",
+    romaji: "o",
+    sound: "oh",
+    object: "old oak tree",
+    analogy: [
+      { text: "Say “" },
+      { text: "oh", accent: true },
+      { text: "” as in " },
+      { text: "oa", accent: true },
+      { text: "k." },
+    ],
+    mnemonic: [
+      { text: "An old " },
+      { text: "oa", accent: true },
+      { text: "k stretches its weathered trunk and ancient limbs wide, and you stop to whisper “" },
+      { text: "oh", accent: true },
+      { text: "!”" },
+    ],
+    example: { word: "オレンジ", reading: "orenji", gloss: "orange", hitIndex: 0 },
+  },
+
   キ: {
     glyph: "キ",
     romaji: "ki",
