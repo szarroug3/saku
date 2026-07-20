@@ -109,25 +109,24 @@ test("the cue shown is the cue of the answer, not of the distractor", () => {
   }
 });
 
-test("refuses the frame whose distractor is ambitransitive", () => {
-  // The one safety refusal. If the distractor can play the asked-for role, the
-  // item has two right answers.
+test("asks both frames even when a member is tagged ambitransitive", () => {
+  // The curated pair table defines the role split this subject teaches, so both
+  // sides are always asked.
   for (const p of VERB_PAIRS) {
     if (p.doIt.jmdict === "ambi") {
-      assert.equal(question(p, "happens"), null, `${p.happens.word}: unsafe frame shipped`);
+      assert.ok(question(p, "happens"), `${p.happens.word}: missing happens frame`);
     }
     if (p.happens.jmdict === "ambi") {
-      assert.equal(question(p, "doIt"), null, `${p.doIt.word}: unsafe frame shipped`);
+      assert.ok(question(p, "doIt"), `${p.doIt.word}: missing doIt frame`);
     }
   }
 });
 
 test("the table still produces a useful number of items", () => {
-  // A canary, not a spec. If a refusal starts eating the table this fails
-  // loudly rather than the app quietly showing fewer questions.
+  // A canary, and now an exact count: both sides of every pair are askable.
   const qs = allQuestions();
   assert.ok(qs.length > 130, `only ${qs.length} items`);
-  assert.equal(qs.length, VERB_PAIRS.length * 2 - 2); // two ambi distractors refused
+  assert.equal(qs.length, VERB_PAIRS.length * 2);
 });
 
 test("no rendered string leaks a grammatical term", () => {

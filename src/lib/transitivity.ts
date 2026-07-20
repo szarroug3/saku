@@ -45,24 +45,16 @@ export interface TransitivityQuestion {
 export type Side = "happens" | "doIt";
 
 /**
- * Build the item for one side of one pair, or refuse.
+ * Build the item for one side of one pair.
  *
- * Refuses when the DISTRACTOR is `ambi` -- genuinely tagged both ways on a
- * single sense. If 上げる can itself be intransitive, then offering it against
- * "The price went up." risks an item whose distractor is also correct, and
- * marking correct Japanese wrong is the failure this codebase kills question
- * types over (see the は/が note in lib/grammar/questions.ts). The answer side
- * being `ambi` is fine and is not checked: a verb that covers both roles still
- * covers the one being asked for.
- *
- * `split` is not a refusal. Its vi and vt tags sit on different senses, and the
- * cue names the sense.
+ * We always ask both sides of every curated pair. The pair table itself carries
+ * the intended role split in plain-language cues ("it happened" vs "someone did
+ * it"), and those cues are what the learner is answering from. Dictionary-level
+ * ambitransitive tags are retained as metadata on the source rows but do not
+ * suppress questions.
  */
 export function question(pair: VerbPair, side: Side): TransitivityQuestion | null {
   const answer: PairMember = pair[side];
-  const distractor: PairMember = side === "happens" ? pair.doIt : pair.happens;
-
-  if (distractor.jmdict === "ambi") return null;
 
   return {
     kind: "transitivity",
