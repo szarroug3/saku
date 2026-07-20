@@ -80,8 +80,24 @@ export const WORDS_CURRICULUM_MAX = 6213;
 
 const HAN = /\p{Script=Han}/u;
 
+/** The iteration mark 々 (U+3005). Unicode files it under Han script, so the
+ * HAN test matches it, but it is NOT a kanji: it is a writing rule that repeats
+ * the character before it (時々 is 時 written twice), and it is taught exactly
+ * like okurigana — a lesson card fired ahead of the first word that uses it, in
+ * the teach walk (see ITERATION_MARK in src/lib/lesson-steps.ts), not a shape in
+ * the kanji track. lesson-steps.ts already excludes it from its own KANJI test
+ * for this reason; this is the same call, one file over.
+ *
+ * Left in the prerequisite list it becomes a gate nothing can satisfy — there is
+ * no kanji lesson for 々, so `kanjiKnown("々")` is always false — and every 々
+ * word (時々, 様々, 少々, …) locks forever showing "1 kanji away" with no lesson
+ * to clear it. Excluded here so a 々 word gates on the kanji it repeats, which is
+ * already in the list, and learns the mark itself inline when it is taught. */
+const ITERATION_MARK = "々";
+
 /**
- * The kanji in a word's written form — every Han character, in order, deduped.
+ * The kanji in a word's written form — every Han character, in order, deduped,
+ * excluding the iteration mark (see ITERATION_MARK).
  *
  * Used for the gate: a word is teachable once EVERY kanji here is known. All
  * curriculum words are all-jōyō (see vocab.ts), so each has a card; a Han
@@ -91,6 +107,7 @@ const HAN = /\p{Script=Han}/u;
 export function wordKanji(keb: string): string[] {
   const out: string[] = [];
   for (const c of keb) {
+    if (c === ITERATION_MARK) continue;
     if (HAN.test(c) && !out.includes(c)) out.push(c);
   }
   return out;

@@ -147,6 +147,27 @@ describe("a kanji word gates on knowing EVERY one of its kanji", () => {
   });
 });
 
+describe("々 is a writing rule, not a kanji prerequisite", () => {
+  // The iteration mark 々 is Unicode Han script, so a naive Han scan would treat
+  // it as a blocking kanji. But 々 has no kanji row (it is not in the jōyō set),
+  // so it could never be "known" and would lock its words forever. It is taught
+  // inline as a writing-rule card (like okurigana), never a gate.
+  test("wordKanji drops 々, keeping only the real kanji", () => {
+    assert.deepEqual(wordKanji("時々"), ["時"]);
+    assert.deepEqual(wordKanji("人々"), ["人"]);
+    assert.deepEqual(wordKanji("様々"), ["様"]);
+  });
+
+  test("a 々 word unlocks once its real kanji is known", () => {
+    const tokidoki = VOCAB.find((w) => w.keb === "時々")!;
+    assert.ok(!wordTeachable(tokidoki, history()));
+    assert.ok(
+      wordTeachable(tokidoki, claiming([kanjiMeaningFactId("時")])),
+      "時 known → 時々 teachable; 々 does not gate",
+    );
+  });
+});
+
 // The card counts WORDS — "12–17 of 6,213" — where it used to count lessons and
 // print no total at all.
 describe("the position counts WORDS, against a total that does not move", () => {
