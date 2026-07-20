@@ -16,9 +16,11 @@ import { describe, test } from "node:test";
 import { KANA_SUBJECT } from "@/data/characters";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { VOCAB_SUBJECT } from "@/data/vocab";
+import type { Claims } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
 import { LIB_ENTRIES } from "@/lib/library/entries";
-import { sliceIsDrillable } from "@/lib/library/slice";
+import { drillPlan, sliceIsDrillable } from "@/lib/library/slice";
+import type { FactAggregate, FactId } from "@/types";
 
 /** One real entry id of each kind, so the assertions run against ids the app
  * actually mints and the fact counts its data actually carries. */
@@ -60,5 +62,39 @@ describe("sliceIsDrillable — one thing to learn is not a drill", () => {
       sliceIsDrillable({ label: "two kana", entries: kana2.map((e) => e.id) }),
       true,
     );
+  });
+});
+
+describe("drillPlan includeSolid — an explicit selection drills what you know", () => {
+  const now = Date.UTC(2026, 0, 1);
+  // A fresh claim on every fact makes them all solid/quiet right now — the exact
+  // shape of "I selected these and they are all well-known".
+  const allClaimed = (ids: readonly FactId[]): Claims => {
+    const claims: Claims = {};
+    for (const id of ids) claims[id] = now;
+    return claims;
+  };
+  // No test evidence: solidity comes purely from the claims above.
+  const noFacts: Record<FactId, FactAggregate> = {};
+
+  test("the default DROPS solid facts — the whole-shelf feature is preserved", () => {
+    const ids = factsOf(kanji.id);
+    const slice = { label: kanji.glyph, entries: [kanji.id] };
+    const plan = drillPlan(slice, noFacts, allClaimed(ids), now);
+    assert.equal(plan.probe.length, 0, "solid facts must not be probed by default");
+    assert.equal(plan.teach.length, 0, "solid facts are not teach either");
+  });
+
+  test("includeSolid=true puts solid facts into probe, asked directly", () => {
+    const ids = factsOf(kanji.id);
+    const slice = { label: kanji.glyph, entries: [kanji.id] };
+    const plan = drillPlan(slice, noFacts, allClaimed(ids), now, true);
+    assert.equal(plan.teach.length, 0, "already-known facts need no teaching");
+    assert.equal(
+      plan.probe.length,
+      ids.length,
+      "every selected solid fact is drillable",
+    );
+    assert.deepEqual([...plan.probe].sort(), [...ids].sort());
   });
 });
