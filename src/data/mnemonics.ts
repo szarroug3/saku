@@ -605,6 +605,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "すし", reading: "sushi", gloss: "sushi", hitIndex: 0 },
   },
 
+  ス: {
+    glyph: "ス",
+    romaji: "su",
+    sound: "sue",
+    object: "superhero",
+    analogy: [
+      { text: "Say “" },
+      { text: "sue", accent: true },
+      { text: "” as in " },
+      { text: "su", accent: true },
+      { text: "perhero." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "su", accent: true },
+      { text: "perhero hovers facing right, chest puffed out while his cape streams across the top." },
+    ],
+    example: { word: "スキー", reading: "sukii", gloss: "ski", hitIndex: 0 },
+  },
+
   せ: {
     glyph: "せ",
     romaji: "se",
