@@ -184,9 +184,9 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "You learn each one just before the first kanji that uses it, so a kanji is never broken down into a piece you haven’t seen.",
     },
     paras: [
-      "A radical is a small shape that recurs inside many kanji. 木 (tree) sits inside 林 and 森; 氵 (water) sits inside 海, 泳 and 湖. Knowing the piece is what lets a new kanji read as parts you recognize rather than a wall of strokes.",
-      "A radical is usually not a word you speak, it’s a component. So this track only asks you for its meaning, and that meaning is the thing you carry into the kanji that use it.",
-      "We teach a radical just ahead of the kanji that need it, the same way words wait on their kanji. Once you know a kanji’s radical, that kanji unlocks. A handful of radicals are used in no common kanji; those are taught at the very end, for completeness.",
+      "A radical is a small shape that recurs inside many kanji, and it usually hints at what those kanji mean. The water radical 氵 turns up in kanji about water and liquids: 海 (sea), 泳 (swim), 湖 (lake). The tree radical 木 turns up in kanji about trees and wood: 林 (woods), 森 (forest). So spotting a familiar radical gives you a head start on what a brand-new kanji means, not just how it is drawn. It is a strong hint rather than a promise, since some radicals are only structural.",
+      "A radical is usually not a word you speak, it’s a component. This track only asks you for its meaning, because that meaning is what you bring to the kanji that use it.",
+      "We teach a radical just before the first kanji that needs it. Once you know that radical’s meaning, the kanji that uses it unlocks. A handful of radicals appear in no common kanji; those are taught at the very end, for completeness.",
     ],
   },
   kanji: {
