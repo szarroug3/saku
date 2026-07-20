@@ -32,9 +32,9 @@
 // "katakana" (see `kanaScript`). Splitting by script is what keeps か and カ,
 // which share the romaji "ka", from colliding on one filename: they land in
 // /mnemonics/hiragana/ka.webp and /mnemonics/katakana/ka.webp. Every entry
-// authored today is hiragana, so today's paths are all
-// /mnemonics/hiragana/<romaji>.webp. A glyph that is neither kana (a future
-// kanji) has no script folder, so it falls back to the flat
+// authored today is hiragana except カ, whose original no-wind karate drawing
+// now lives at /mnemonics/katakana/ka.webp. A glyph that is neither kana (a
+// future kanji) has no script folder, so it falls back to the flat
 // /mnemonics/<romaji>.webp.
 //
 // It's a candidate: the file may or may not exist. The renderers load it and
@@ -322,13 +322,38 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "rate." },
     ],
     mnemonic: [
-      { text: "A black belt prepares a " },
+      { text: "A black belt shouts “" },
       { text: "ka", accent: true },
-      { text: "rate kick and shouts “" },
+      { text: "!” as his " },
       { text: "ka", accent: true },
-      { text: "!” as he strikes." },
+      { text: "rate kick sends a gust curling beside his knee." },
     ],
     example: { word: "かさ", reading: "kasa", gloss: "umbrella", hitIndex: 0 },
+  },
+
+  // The same kick without か's separate wind stroke teaches angular カ.
+  カ: {
+    glyph: "カ",
+    romaji: "ka",
+    sound: "ka",
+    object: "karateka",
+    analogy: [
+      { text: "Say “" },
+      { text: "ka", accent: true },
+      { text: "” as in " },
+      { text: "ka", accent: true },
+      { text: "rate." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "ka", accent: true },
+      { text: "rate" },
+      { text: "ka", accent: true },
+      { text: " snaps up one knee and delivers a powerful " },
+      { text: "ka", accent: true },
+      { text: "rate kick." },
+    ],
+    example: { word: "カメラ", reading: "kamera", gloss: "camera", hitIndex: 0 },
   },
 
   き: {

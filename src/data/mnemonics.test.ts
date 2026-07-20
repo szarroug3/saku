@@ -34,8 +34,8 @@ const ALL_HIRAGANA = [
 test("getMnemonic returns null for a glyph with no entry (hide-when-absent)", () => {
   // The hide-when-absent case the Library page and the teach flow render as
   // NOTHING. No base hiragana hits this any more (all 46 are authored), so the
-  // stand-ins are katakana and kanji glyphs, which are valid keys with no row.
-  assert.equal(getMnemonic("ア"), null); // katakana, none authored yet
+  // stand-ins are an un-authored katakana and a kanji glyph.
+  assert.equal(getMnemonic("ア"), null);
   assert.equal(getMnemonic("生"), null); // a kanji glyph is a valid key with no row
   assert.equal(getMnemonic(""), null);
 });
@@ -57,16 +57,16 @@ test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => 
     // And that code point is the kana this entry teaches.
     assert.equal(chars[m.example.hitIndex], k, `${k} example hitIndex should land on ${k}`);
   }
-  assert.equal(Object.keys(MNEMONICS).length, 46, "exactly the 46 base hiragana are authored");
+  assert.equal(Object.keys(MNEMONICS).length, 47, "the 46 base hiragana and カ are authored");
 });
 
-test("Library-entry / teach-flow gate: a hiragana resolves, a non-authored glyph does not", () => {
+test("Library-entry / teach-flow gate: authored kana resolve, a non-authored glyph does not", () => {
   // Exactly what app/library/[entry]/page.tsx and
-  // components/lesson/lesson-item-view.tsx branch on. A hiragana entry page
-  // mounts the MnemonicView; a katakana or kanji page (nothing authored) mounts
-  // nothing.
+  // components/lesson/lesson-item-view.tsx branch on. Authored kana mount the
+  // MnemonicView; a glyph without a row mounts nothing.
   assert.notEqual(getMnemonic("あ"), null);
   assert.notEqual(getMnemonic("か"), null);
+  assert.notEqual(getMnemonic("カ"), null);
   assert.equal(getMnemonic("ア"), null);
 });
 
@@ -98,23 +98,17 @@ test("every hiragana yields the /mnemonics/hiragana/<romaji>.webp path derived f
   assert.equal(getMnemonic("を")!.image, "/mnemonics/hiragana/wo.webp");
 });
 
-// The katakana branch: none are authored yet, so there's no MNEMONICS row to
-// resolve. Guard the derivation directly — `kanaScript` classifies カ as
-// katakana, and IF an entry existed its image path would carry the katakana/
-// folder, keeping か (hiragana) and カ (katakana) from sharing one filename.
+// The katakana branch: カ is the first authored entry. Its image path carries
+// the katakana/ folder, keeping か and カ from sharing one filename.
 test("kanaScript classifies script by Unicode block, and katakana derives the katakana/ folder", () => {
   assert.equal(kanaScript("か"), "hiragana");
   assert.equal(kanaScript("カ"), "katakana");
   assert.equal(kanaScript("生"), null); // kanji — no script folder
   assert.equal(kanaScript(""), null);
   assert.equal(kanaScript("かa"), null); // multi-code-point, not a single glyph
-  // No カ row is authored, so getMnemonic returns null today…
-  assert.equal(getMnemonic("カ"), null);
-  // …but the path a katakana entry WOULD derive is under katakana/, distinct
-  // from the hiragana か path. This mirrors getMnemonic's derivation.
-  const script = kanaScript("カ");
-  assert.equal(`/mnemonics/${script}/ka.webp`, "/mnemonics/katakana/ka.webp");
-  assert.notEqual(getMnemonic("か")!.image, `/mnemonics/${script}/ka.webp`);
+  assert.equal(getMnemonic("カ")!.image, "/mnemonics/katakana/ka.webp");
+  assert.notEqual(getMnemonic("か")!.image, getMnemonic("カ")!.image);
+  assert.ok(existsSync(fileURLToPath(new URL("../../public/mnemonics/katakana/ka.webp", import.meta.url))));
 });
 
 // The eight drawings that ship today must still be on disk under the exact
