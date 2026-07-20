@@ -479,7 +479,7 @@ function TransitivityTeachView({
           </p>
         )}
         <p className="mt-3 text-[14px] leading-relaxed text-text-muted">
-          Same event, two verbs. The English tells you which one to reach for:
+          Same event, two verbs. The English version tells you which one to use:
           whether it happens on its own, or someone makes it happen. You cannot
           build one from the other, so learn them together as a pair.
         </p>

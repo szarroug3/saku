@@ -625,11 +625,11 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
     },
     {
       lead: "The sentence already tells you which.",
-      text: "In English you can always hear the difference: whether something acts on its own, or someone acts on it. Noticing that is the whole job, and it points to exactly one of the two verbs.",
+      text: "In English you can always hear the difference: whether something acts on its own, or someone acts on it.",
     },
     {
       lead: "The endings often shift in familiar ways.",
-      text: "Most pairs share a kanji and only swap a kana tail, and the swap is usually one of a few: -ある to -える, -る to -す, or -う to -える cover most of them. Naming the shift helps you remember the pair, but it never tells you which verb is which, and a handful of pairs follow no rule at all. So you still learn each pair as a pair; every card marks which shift it uses, or flags it as an exception.",
+      text: "Most pairs share a kanji and only swap a kana tail, and the swap is usually one of a few: -ある to -える, -る to -す, or -う to -える cover most of them. Naming the shift helps you remember the pair, but it never tells you which verb is which, and a handful of pairs follow no rule at all. You still learn each pair as a pair; every card marks which shift it uses, or flags it as an exception.",
     },
   ],
   examples: [
