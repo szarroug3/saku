@@ -224,6 +224,12 @@ interface DrillHandlers {
 const DRAIN_WINDOW_S = 5;
 /** How long the controls stay lit after the mouse stops. */
 const CONTROLS_IDLE_MS = 2000;
+/** How long a resolved multiple-choice MISS holds on screen before advancing on
+ * its own. Longer than the 650ms a correct answer waits, because a miss shows a
+ * reveal (the answer you should have picked) that wants reading. Multiple choice
+ * has no keystroke to advance with, so it advances itself rather than stranding
+ * a mouse user on the reveal. */
+const MC_MISS_ADVANCE_MS = 1600;
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -649,6 +655,19 @@ export function DrillScreen() {
         rt.requeued++;
         rt.waiting = true;
         stopCountdown();
+        // Multiple choice is answered entirely by clicking — there is no
+        // keystroke in hand to press Enter with, and a mouse user has nothing to
+        // click to move on. So once the retries are gone, advance the card the
+        // same way a correct answer advances, holding the reveal a beat longer so
+        // the right answer can be read. Typed cards keep waiting for Enter: the
+        // hands are already on the keyboard there.
+        if (q.mc) {
+          clearAdvance();
+          advanceRef.current = setTimeout(
+            () => handlersRef.current?.nextQuestion(),
+            MC_MISS_ADVANCE_MS,
+          );
+        }
         syncProgress(); // requeue grew the limited total
       }
     }
@@ -749,11 +768,18 @@ export function DrillScreen() {
     elapsedBaseRef.current = rt.elapsedMs ?? 0;
     qStartRef.current = Date.now();
     if (rt.waiting) {
-      // A correct answer was mid auto-advance when we unmounted — re-arm it.
+      // A correct answer was mid auto-advance when we unmounted — re-arm it. A
+      // multiple-choice miss auto-advances too (see submit), so re-arm that as
+      // well; without it a card resolved just before a remount would sit forever.
       if (rt.feedback?.kind === "good") {
         advanceRef.current = setTimeout(
           () => handlersRef.current?.nextQuestion(),
           650,
+        );
+      } else if (rt.feedback?.kind === "bad" && rt.q?.mc) {
+        advanceRef.current = setTimeout(
+          () => handlersRef.current?.nextQuestion(),
+          MC_MISS_ADVANCE_MS,
         );
       }
     } else if (cfg.timer) {
@@ -1200,9 +1226,11 @@ export function DrillScreen() {
                     ""}
                 </span>
               </span>
-              <span className="text-[10px] text-text-muted">
-                Press Enter to continue
-              </span>
+              {q.mc ? null : (
+                <span className="text-[10px] text-text-muted">
+                  Press Enter to continue
+                </span>
+              )}
             </>
           ) : null}
         </p>
