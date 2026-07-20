@@ -733,6 +733,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "そら", reading: "sora", gloss: "sky", hitIndex: 0 },
   },
 
+  ソ: {
+    glyph: "ソ",
+    romaji: "so",
+    sound: "so",
+    object: "needle",
+    analogy: [
+      { text: "Say “" },
+      { text: "so", accent: true },
+      { text: "” like " },
+      { text: "sew", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "A needle dips in and " },
+      { text: "sew", accent: true },
+      { text: "s one sharp stitch, then the thread pulls tight with a snap." },
+    ],
+    example: { word: "ソース", reading: "soosu", gloss: "sauce", hitIndex: 0 },
+  },
+
   // ---- T row — た ち つ て と (DRAFT) -----------------------------------
   た: {
     glyph: "た",
