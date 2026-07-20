@@ -1,10 +1,10 @@
 "use client";
 
 // HOW you drill: mode, direction, per-direction answer styles, and length.
-// Home's setup panel, and it is ALWAYS OPEN. It used to live behind the hero's
-// "Edit setup" disclosure, which is how you could press Start without being
-// able to see the settings Start would use — half the reported confusion about
-// that screen. Four rows is not a wall; hiding them cost more than it saved.
+// The Practice page's setup panel, and it is ALWAYS OPEN. It used to live behind
+// the hero's "Edit setup" disclosure, which is how you could press Start without
+// being able to see the settings Start would use — half the reported confusion
+// about that screen. Four rows is not a wall; hiding them cost more than it saved.
 //
 // The Length row is where "Full coverage" lives, and where it always belonged.
 // A deck card used to set it as an invisible side-effect of picking 214

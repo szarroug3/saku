@@ -21,6 +21,11 @@ import { useQuizSession } from "@/lib/quiz-session";
 // which is the same argument that keeps Library itself down here.
 const NAV: Array<{ href: string; label: string }> = [
   { href: "/", label: "Home" },
+  // Practice owns the open-ended drill builder that used to live on Home: pick a
+  // pool and how to ask, then start. Home stays the curriculum feed; Practice is
+  // where you drill what you choose. It sits right under Home because building a
+  // drill is a top-level verb, not a corner of the reference.
+  { href: "/practice", label: "Practice" },
   { href: "/library", label: "Library" },
   { href: "/lists", label: "Lists" },
   { href: "/sessions", label: "Recent sessions" },

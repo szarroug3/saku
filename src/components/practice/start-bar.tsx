@@ -2,7 +2,7 @@
 
 // The whole quiz, in two lines, above the only button that runs it.
 //
-// THIS IS THE FIX. Home used to split HOW (a hero that owned mode/direction/
+// THIS IS THE FIX. Setup used to split HOW (a hero that owned mode/direction/
 // length) from WHAT (cards that owned the characters), and each one started
 // quizzes on its own — so at the moment you acted you could only ever see half
 // of what you were about to run. Press Start and you saw the how, not the what
@@ -14,9 +14,9 @@
 // So it says the how, then the what, then Start — in that order, because that
 // is the order of the sentence, and Start acts on exactly what it sits under.
 //
-// `sticky bottom-0` rather than pinned to the page: the bar belongs to Home,
-// rides its bottom edge, and follows you down the picker's 54 rows so that the
-// selection you are fine-tuning is always one click from running. It matches
+// `sticky bottom-0` rather than pinned to the page: the bar belongs to the
+// Practice page, rides its bottom edge, and follows you down the picker so that
+// the selection you are fine-tuning is always one click from running. It matches
 // the language the picker's own footer set.
 //
 // `kq-band` is what makes this bar OCCLUDE, and it replaces the `bg-bg` that
