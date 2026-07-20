@@ -215,6 +215,24 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "あめ", reading: "ame", gloss: "rain", hitIndex: 0 },
   },
 
+  ア: {
+    glyph: "ア",
+    romaji: "a",
+    sound: "ah",
+    object: "sideways A",
+    analogy: [
+      { text: "Say “" },
+      { text: "ah", accent: true },
+      { text: "” like hiragana あ." },
+    ],
+    mnemonic: [
+      { text: "A sideways superhero " },
+      { text: "A", accent: true },
+      { text: " flies high through the sky, its cape swaying in the wind." },
+    ],
+    example: { word: "アイス", reading: "aisu", gloss: "ice cream", hitIndex: 0 },
+  },
+
   い: {
     glyph: "い",
     romaji: "i",
@@ -238,6 +256,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "!”" },
     ],
     example: { word: "いぬ", reading: "inu", gloss: "dog", hitIndex: 0 },
+  },
+
+  イ: {
+    glyph: "イ",
+    romaji: "i",
+    sound: "ee",
+    object: "eagle",
+    analogy: [
+      { text: "Say “" },
+      { text: "ee", accent: true },
+      { text: "” as in " },
+      { text: "ea", accent: true },
+      { text: "gle." },
+    ],
+    mnemonic: [
+      { text: "An " },
+      { text: "ea", accent: true },
+      { text: "gle leans into a dive, its body slanting while its legs hang straight down." },
+    ],
+    example: { word: "イメージ", reading: "imeeji", gloss: "image", hitIndex: 0 },
   },
 
   う: {
@@ -520,6 +558,28 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "!”" },
     ],
     example: { word: "くち", reading: "kuchi", gloss: "mouth", hitIndex: 0 },
+  },
+
+  ク: {
+    glyph: "ク",
+    romaji: "ku",
+    sound: "ku",
+    object: "cook’s hat",
+    analogy: [
+      { text: "Say “" },
+      { text: "ku", accent: true },
+      { text: "” as in " },
+      { text: "coo", accent: true },
+      { text: "k." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "coo", accent: true },
+      { text: "k’s hat leans forward as the " },
+      { text: "coo", accent: true },
+      { text: "k bends to smell his delicious cooking." },
+    ],
+    example: { word: "クラス", reading: "kurasu", gloss: "class", hitIndex: 0 },
   },
 
   け: {
@@ -880,6 +940,30 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     draft: true,
   },
 
+  ト: {
+    glyph: "ト",
+    romaji: "to",
+    sound: "toh",
+    object: "toad totem",
+    analogy: [
+      { text: "Say “" },
+      { text: "toh", accent: true },
+      { text: "” as in " },
+      { text: "to", accent: true },
+      { text: "tem and " },
+      { text: "toa", accent: true },
+      { text: "d." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "to", accent: true },
+      { text: "tem pole bears a carved " },
+      { text: "toa", accent: true },
+      { text: "d whose long tongue juts out to the side." },
+    ],
+    example: { word: "トマト", reading: "tomato", gloss: "tomato", hitIndex: 0 },
+  },
+
   // ---- N row — な に ぬ ね の (DRAFT) -----------------------------------
   な: {
     glyph: "な",
@@ -990,6 +1074,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     draft: true,
   },
 
+  ヌ: {
+    glyph: "ヌ",
+    romaji: "nu",
+    sound: "noo",
+    object: "noodle on a fork",
+    analogy: [
+      { text: "Say “" },
+      { text: "noo", accent: true },
+      { text: "” as in " },
+      { text: "noo", accent: true },
+      { text: "dle." },
+    ],
+    mnemonic: [
+      { text: "A fork twirls one long " },
+      { text: "noo", accent: true },
+      { text: "dle, its loose ends curling around the tines." },
+    ],
+    example: { word: "ヌードル", reading: "nuudoru", gloss: "noodle", hitIndex: 0 },
+  },
+
   ね: {
     glyph: "ね",
     romaji: "ne",
@@ -1049,6 +1153,28 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "のり", reading: "nori", gloss: "seaweed", hitIndex: 0 },
     draft: true,
+  },
+
+  ノ: {
+    glyph: "ノ",
+    romaji: "no",
+    sound: "noh",
+    object: "ski slope",
+    analogy: [
+      { text: "Say “" },
+      { text: "noh", accent: true },
+      { text: "” like " },
+      { text: "no", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "A steep " },
+      { text: "no", accent: true },
+      { text: "-nonsense ski slope makes the terrified skier at the top tremble and say “" },
+      { text: "nope", accent: true },
+      { text: "!”" },
+    ],
+    example: { word: "ノート", reading: "nooto", gloss: "notebook", hitIndex: 0 },
   },
 
   // ---- H row — は ひ ふ へ ほ (DRAFT) -----------------------------------

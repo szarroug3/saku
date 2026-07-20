@@ -35,7 +35,7 @@ test("getMnemonic returns null for a glyph with no entry (hide-when-absent)", ()
   // The hide-when-absent case the Library page and the teach flow render as
   // NOTHING. No base hiragana hits this any more (all 46 are authored), so the
   // stand-ins are an un-authored katakana and a kanji glyph.
-  assert.equal(getMnemonic("ア"), null);
+  assert.equal(getMnemonic("タ"), null);
   assert.equal(getMnemonic("生"), null); // a kanji glyph is a valid key with no row
   assert.equal(getMnemonic(""), null);
 });
@@ -57,7 +57,7 @@ test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => 
     // And that code point is the kana this entry teaches.
     assert.equal(chars[m.example.hitIndex], k, `${k} example hitIndex should land on ${k}`);
   }
-  assert.equal(Object.keys(MNEMONICS).length, 61, "the 46 base hiragana and fifteen approved katakana are authored");
+  assert.equal(Object.keys(MNEMONICS).length, 67, "the 46 base hiragana and twenty-one approved katakana are authored");
 });
 
 test("Library-entry / teach-flow gate: authored kana resolve, a non-authored glyph does not", () => {
@@ -67,7 +67,7 @@ test("Library-entry / teach-flow gate: authored kana resolve, a non-authored gly
   assert.notEqual(getMnemonic("あ"), null);
   assert.notEqual(getMnemonic("か"), null);
   assert.notEqual(getMnemonic("カ"), null);
-  assert.equal(getMnemonic("ア"), null);
+  assert.equal(getMnemonic("タ"), null);
 });
 
 // EVERY kana now gets a CANDIDATE image path, derived from its own romaji. It's
@@ -109,10 +109,12 @@ test("kanaScript classifies script by Unicode block, and katakana derives the ka
   assert.equal(getMnemonic("カ")!.image, "/mnemonics/katakana/ka.webp");
   assert.notEqual(getMnemonic("か")!.image, getMnemonic("カ")!.image);
   const approvedKatakana = [
-    ["ウ", "u"], ["エ", "e"], ["オ", "o"], ["カ", "ka"],
-    ["キ", "ki"], ["ケ", "ke"], ["コ", "ko"],
+    ["ア", "a"], ["イ", "i"], ["ウ", "u"], ["エ", "e"], ["オ", "o"],
+    ["カ", "ka"], ["キ", "ki"], ["ク", "ku"], ["ケ", "ke"], ["コ", "ko"],
     ["サ", "sa"], ["シ", "shi"], ["ス", "su"], ["セ", "se"], ["ソ", "so"],
+    ["ト", "to"],
     ["ナ", "na"], ["ニ", "ni"], ["ネ", "ne"],
+    ["ヌ", "nu"], ["ノ", "no"],
   ];
   for (const [glyph, romaji] of approvedKatakana) {
     assert.equal(getMnemonic(glyph)!.image, `/mnemonics/katakana/${romaji}.webp`);
