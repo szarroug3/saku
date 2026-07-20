@@ -561,6 +561,30 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "さかな", reading: "sakana", gloss: "fish", hitIndex: 0 },
   },
 
+  サ: {
+    glyph: "サ",
+    romaji: "sa",
+    sound: "sah",
+    object: "samurai",
+    analogy: [
+      { text: "Say “" },
+      { text: "sah", accent: true },
+      { text: "” as in " },
+      { text: "sa", accent: true },
+      { text: "murai." },
+    ],
+    mnemonic: [
+      { text: "A fierce " },
+      { text: "sa", accent: true },
+      { text: "murai guards with a " },
+      { text: "sa", accent: true },
+      { text: "kura-patterned sword and a hidden " },
+      { text: "sa", accent: true },
+      { text: "suga knife." },
+    ],
+    example: { word: "サラダ", reading: "sarada", gloss: "salad", hitIndex: 0 },
+  },
+
   し: {
     glyph: "し",
     romaji: "shi",
