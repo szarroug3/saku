@@ -40,6 +40,7 @@ import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { NextGrammarLesson } from "@/components/lesson/next-grammar-lesson";
 import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
+import { NextRadicalLesson } from "@/components/lesson/next-radical-lesson";
 import { NextWordLesson } from "@/components/lesson/next-word-lesson";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { planFacts, planSession } from "@/lib/budget";
@@ -51,6 +52,10 @@ import {
   nextGrammarLesson,
   nextGrammarLock,
 } from "@/lib/grammar-lesson";
+import {
+  RADICALS_PER_LESSON_DEFAULT,
+  nextRadicalLesson,
+} from "@/lib/radical-lesson";
 import { hasStartedWordTrack, nextWordLesson, nextWordLock } from "@/lib/word-lesson";
 import { readingsProvedBy } from "@/lib/word-unlock";
 import { KANA_GROUP_FACTS, nextLesson } from "@/lib/lesson";
@@ -207,7 +212,28 @@ export default function HomePage() {
     [lesson, history, cfg.newKanjiOrder, cfg.lessonMinCost, cfg.lessonMaxCost],
   );
 
-  // The words track — active after kana, alongside kanji, because the two
+  // The radical track runs a step AHEAD of kanji: a kanji is gated on its
+  // radical (kanji-lesson.ts), so when the next kanji group is blocked by an
+  // unlearned radical, nextKanjiLesson returns null and this card supplies the
+  // radicals to learn first. It reads the SAME kanji order and range, because
+  // the radical order is derived from the kanji order — teach the radical of the
+  // next kanji group, that group unlocks, the next group's radicals become due.
+  // Orphans (no kanji needs them) surface only after the whole kanji track is
+  // done. A pure function of history and the kanji-curriculum settings, gated on
+  // `lesson === null` like every post-kana track.
+  const radicalLesson = useMemo(
+    () =>
+      lesson
+        ? null
+        : nextRadicalLesson(
+            history,
+            kanjiTeachOrder(cfg.newKanjiOrder),
+            { min: cfg.lessonMinCost, max: cfg.lessonMaxCost },
+            RADICALS_PER_LESSON_DEFAULT,
+          ),
+    [lesson, history, cfg.newKanjiOrder, cfg.lessonMinCost, cfg.lessonMaxCost],
+  );
+
   // reinforce each other: learning a word opens up its kanji's readings (see
   // word-unlock.ts). Gated the same way kanji is on kana — `lesson === null` —
   // so a beginner is never handed a third front before finishing the first. A
@@ -378,6 +404,11 @@ export default function HomePage() {
     !!session &&
     session.phase !== "complete" &&
     sameFactSet(session.facts, kanjiLesson.facts);
+  const radicalInSession =
+    !!radicalLesson &&
+    !!session &&
+    session.phase !== "complete" &&
+    sameFactSet(session.facts, radicalLesson.facts);
   const wordInSession =
     !!wordLesson &&
     !!session &&
@@ -418,6 +449,21 @@ export default function HomePage() {
           onQuizMe={quizMe}
           onClaim={claim}
           inSession={lessonInSession}
+          onContinue={continueSession}
+        />
+      ) : null}
+
+      {/* The radical track's next lesson, ABOVE kanji's — it runs a step ahead,
+          because a kanji is gated on its radical. When the next kanji group is
+          blocked by an unlearned radical, the kanji card below falls silent and
+          this one names the radicals to learn first. Same onStart as kanji: the
+          lesson IS its facts, all new, all taught. */}
+      {radicalLesson ? (
+        <NextRadicalLesson
+          lesson={radicalLesson}
+          onStart={startLesson}
+          onClaim={claim}
+          inSession={radicalInSession}
           onContinue={continueSession}
         />
       ) : null}

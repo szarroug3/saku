@@ -74,6 +74,7 @@ import {
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
+import { RADICAL_SUBJECT } from "@/data/radicals";
 import { exampleFor } from "@/data/word-examples";
 import { getMnemonic } from "@/data/mnemonics";
 import {
@@ -164,6 +165,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // kana up sees the identical sentence they met while learning it. Absent for
   // the majority whose forms match.
   const glyphVariant = isKana ? glyphVariantFor(entry.glyph) : null;
+  const isRadical = entry.kind === RADICAL_SUBJECT;
 
   // ---- grammar-only material ----
 
@@ -378,7 +380,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // cannot afford. `factRows`/`factsTitle` keep their grammar arms — they are
   // the enumeration of what is scored, other callers use them, and the arms
   // stay correct — this page just no longer prints them.
-  const genericRows = isKana || isKanji || isWord || isGrammar ? [] : factRows(entry);
+  //
+  // A RADICAL leaves for the same reason a kana did. Its one fact is its
+  // meaning, and that meaning is already the hero title while its score is
+  // already the header's standing chip; a one-row "Meaning" table under them
+  // would be the page saying the same thing a third time. `factRows` keeps its
+  // radical arm for the same reason it keeps grammar's — other callers still
+  // enumerate what is scored — this page just no longer prints it.
+  const genericRows =
+    isKana || isKanji || isWord || isGrammar || isRadical ? [] : factRows(entry);
 
   const linkRows = (
     <>
@@ -675,6 +685,25 @@ function EntryView({ entry }: { entry: LibEntry }) {
             now={now}
           />
         </>
+      ) : null}
+
+      {/* ================= RADICAL ================= */}
+      {/* A radical's whole reason for being is the kanji built on it, so the
+          entry page ends where the lesson pointed: the kanji written with this
+          shape (and any of them the reader already knows). The same
+          ComponentUses the kanji page and the primitive route mount, so a
+          radical looked up here reads like the component it is. Absent, not
+          empty, for a radical no jōyō kanji is written with. */}
+      {isRadical ? (
+        <ComponentUses
+          component={entry.glyph}
+          history={history}
+          claims={claims}
+          metric={cfg.accuracyMetric}
+          now={now}
+          asTable
+          tableCap={30}
+        />
       ) : null}
 
       {/* ================= WORD ================= */}

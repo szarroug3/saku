@@ -26,6 +26,7 @@
 import Link from "next/link";
 
 import { WordsWith } from "@/components/library/words-with";
+import { RadicalKanjiTable } from "@/components/library/radical-kanji-table";
 import { Card, Hint, Lbl } from "@/components/ui";
 import { kanjiEntry } from "@/data/kanji";
 import { COMPONENT_USE_CAP, knownWordsUsing, usedAsPartIn } from "@/lib/library/components";
@@ -39,6 +40,8 @@ export function ComponentUses({
   claims,
   metric,
   now,
+  asTable = false,
+  tableCap = 30,
 }: {
   /** The shape itself — a jōyō kanji, or one of the 82 primitives. */
   component: string;
@@ -46,6 +49,12 @@ export function ComponentUses({
   claims: Claims;
   metric: AccuracyMetric;
   now: number;
+  /** Render "Used as a part in" as a learning-ordered table with each kanji's
+   * meaning and the reader's score — the shape a RADICAL entry wants. Kanji
+   * keep the flat glyph row. */
+  asTable?: boolean;
+  /** Row cap for the table variant. */
+  tableCap?: number;
 }) {
   const kanji = usedAsPartIn(component);
   // NO `useMemo`, though the join walks all 12,553 vocabulary rows. The React
@@ -64,29 +73,40 @@ export function ComponentUses({
 
   return (
     <>
-      <Card>
-        <Lbl>Used as a part in</Lbl>
-        <div className="flex flex-wrap items-center gap-2.5">
-          {shown.map((c) => (
-            <Link
-              key={c}
-              href={entryHref(kanjiEntry(c))}
-              className="text-[22px] leading-none text-text no-underline"
-            >
-              {c}
-            </Link>
-          ))}
-          {/* The true total, in the same shape the entry page's "Appears in"
-              row uses for its own overflow. 376 more is the interesting number
-              on this page and it is not going to be rendered as 376 links. */}
-          {rest > 0 ? <Hint>· {rest} more</Hint> : null}
-        </div>
-        <p className="mt-2.5 text-xs text-text-muted">
-          {kanji.length === 1
-            ? "1 kanji is written with this shape."
-            : `${kanji.length} kanji are written with this shape.`}
-        </p>
-      </Card>
+      {asTable ? (
+        <RadicalKanjiTable
+          component={component}
+          cap={tableCap}
+          facts={history.facts}
+          claims={claims}
+          metric={metric}
+          now={now}
+        />
+      ) : (
+        <Card>
+          <Lbl>Used as a part in</Lbl>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {shown.map((c) => (
+              <Link
+                key={c}
+                href={entryHref(kanjiEntry(c))}
+                className="text-[22px] leading-none text-text no-underline"
+              >
+                {c}
+              </Link>
+            ))}
+            {/* The true total, in the same shape the entry page's "Appears in"
+                row uses for its own overflow. 376 more is the interesting number
+                on this page and it is not going to be rendered as 376 links. */}
+            {rest > 0 ? <Hint>· {rest} more</Hint> : null}
+          </div>
+          <p className="mt-2.5 text-xs text-text-muted">
+            {kanji.length === 1
+              ? "1 kanji is written with this shape."
+              : `${kanji.length} kanji are written with this shape.`}
+          </p>
+        </Card>
+      )}
 
       {known.length > 0 ? (
         <WordsWith

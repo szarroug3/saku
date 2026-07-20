@@ -178,6 +178,17 @@ export const WHY_STROKE_ORDER: Why = {
  * Keyed by track id: "kanji", "words", "grammar".
  */
 export const WHY_TRACK: Record<string, Why> = {
+  radical: {
+    lede: {
+      strong: "Radicals are the building blocks kanji are made of.",
+      rest: "You learn each one just before the first kanji that uses it, so a kanji is never broken down into a piece you haven’t seen.",
+    },
+    paras: [
+      "A radical is a small shape that recurs inside many kanji, and it usually hints at what those kanji mean. The water radical 氵 turns up in kanji about water and liquids: 海 (sea), 泳 (swim), 湖 (lake). The tree radical 木 turns up in kanji about trees and wood: 林 (woods), 森 (forest). So spotting a familiar radical gives you a head start on what a brand-new kanji means, not just how it is drawn. It is a strong hint rather than a promise, since some radicals are only structural.",
+      "A radical is usually not a word you speak, it’s a component. This track only asks you for its meaning, because that meaning is what you bring to the kanji that use it.",
+      "We teach a radical just before the first kanji that needs it. Once you know that radical’s meaning, the kanji that uses it unlocks. A handful of radicals appear in no common kanji; those are taught at the very end, for completeness.",
+    ],
+  },
   kanji: {
     lede: {
       strong: "Kanji are used as both words and as building blocks for other words.",

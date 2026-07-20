@@ -46,6 +46,9 @@ WHAT CAME FROM WHERE
                            components)
   confusable-derived.json  KRADFILE + KANJIDIC2 (kanji sharing a component
                            multiset and a stroke count)
+  radicals.json            Unicode UCD (the 214 Kangxi radicals, their glyphs
+                           and meanings) + KANJIDIC2 (radical stroke counts)
+  kanji-radicals.json      KANJIDIC2 (each jouyou kanji's classical radical)
   grammar-corpus.json      Tatoeba (see carve-out)
   grammar-corpus-meta.json Tatoeba (build parameters and counts)
   strokes/hiragana.json    KanjiVG (ordered stroke paths + stroke-number
@@ -81,6 +84,14 @@ KRADFILE
 
   The EDRDG licence, which covers all three files above and is the authority
   for their CC BY-SA 4.0 terms: https://www.edrdg.org/edrdg/licence.html
+
+Unicode Character Database (UCD)
+  The 214 Kangxi radicals in radicals.json: their number, canonical glyph, and
+  meaning, read from the Kangxi Radicals block of UnicodeData.txt.
+  Copyright (c) Unicode, Inc.
+  Licence:  Unicode License (permissive; see terms)
+  Source:   https://www.unicode.org/Public/UCD/latest/ucd/
+  Terms:    https://www.unicode.org/license.txt
 
 JLPT vocabulary lists (tanos.co.uk)
   One of two JLPT level lists whose consensus gates vocab.json's `beginnerRank`.

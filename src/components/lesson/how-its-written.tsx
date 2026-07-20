@@ -36,6 +36,7 @@ import { StrokeOrder } from "@/components/lesson/stroke-order";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { Card } from "@/components/ui";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
+import { radicalByGlyph } from "@/data/radicals";
 import { WHY_STROKE_ORDER } from "@/data/why";
 // The parts test lives in lib now, because the drill's hint builder asks it too
 // and the lesson and the hint must never disagree about what 明 is made of.
@@ -62,6 +63,7 @@ function WholeShapeFallback({
   reference?: boolean;
 }) {
   const row = item.kind === "kanji" ? kanjiRow(item.glyph) : undefined;
+  const radRow = item.kind === "radical" ? radicalByGlyph(item.glyph) : undefined;
   const parts = item.kind === "kanji" && !reference ? teachableParts(item.glyph) : null;
 
   if (parts) {
@@ -86,11 +88,12 @@ function WholeShapeFallback({
     );
   }
 
-  if (row) {
+  const strokes = row?.strokes ?? radRow?.strokes;
+  if (strokes !== undefined) {
     return (
       <p className="text-[13px] text-text-muted">
         <span className="text-text">
-          {row.strokes} stroke{row.strokes === 1 ? "" : "s"}
+          {strokes} stroke{strokes === 1 ? "" : "s"}
         </span>
         , and the stroke-order diagram for this one isn&rsquo;t in yet.
       </p>
@@ -138,7 +141,9 @@ export function HowItsWritten({
   // That is the whole difference between this and "announcing an absence". A
   // glyph we know NOTHING about — no count, no row — still renders nothing
   // rather than an empty heading.
-  const hasFallback = item.kind === "kanji" && kanjiRow(item.glyph) !== undefined;
+  const hasFallback =
+    (item.kind === "kanji" && kanjiRow(item.glyph) !== undefined) ||
+    (item.kind === "radical" && radicalByGlyph(item.glyph) !== undefined);
   if (alwaysOpen && strokes.status === "loading") return null;
   if (alwaysOpen && strokes.status === "ready" && !strokes.data && !hasFallback) {
     return null;

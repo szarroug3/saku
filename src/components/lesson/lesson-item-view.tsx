@@ -48,6 +48,7 @@ import { KanjiPartsRow } from "@/components/lesson/kanji-parts-row";
 import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
+import { RadicalKanjiTable } from "@/components/library/radical-kanji-table";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor, glyphVariantFor } from "@/data/characters";
 import { cluster, membersOf } from "@/data/grammar/clusters";
@@ -75,6 +76,7 @@ function subtitleOf(item: LessonItem): string {
     case "kana":
       return entry.readings.join(" · ");
     case "kanji":
+    case "radical":
       return entry.meanings.slice(0, 4).join(" · ");
     case "word":
       return [entry.readings[0], entry.meanings.slice(0, 3).join(", ")]
@@ -404,6 +406,9 @@ function KanjiConfusables({ glyph }: { glyph: string }) {
 
 export function LessonItemView({ item }: { item: LessonItem }) {
   const { cfg } = useQuizConfig();
+  const { history } = useHistory();
+  const claims = history.claims ?? {};
+  const [now] = useState(() => Date.now());
 
   const subtitle = subtitleOf(item);
   // Pronounceable surfaces only: a kana and a word have one sound, a bare kanji
@@ -519,7 +524,20 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           />
         ) : null}
         {item.kind === "grammar" ? <GrammarFamilyPanel item={item} /> : null}
-        {item.kind === "kana" || item.kind === "kanji" ? <HowItsWritten item={item} /> : null}
+        {item.kind === "kana" || item.kind === "kanji" || item.kind === "radical" ? <HowItsWritten item={item} /> : null}
+        {/* A radical's kanji, in learning order: the shape's whole payoff is the
+            meaning it lends the kanji built on it, so the teach card ends on the
+            first few of them, each with its meaning and the reader's score. */}
+        {item.kind === "radical" ? (
+          <RadicalKanjiTable
+            component={item.glyph}
+            cap={5}
+            facts={history.facts}
+            claims={claims}
+            metric={cfg.accuracyMetric}
+            now={now}
+          />
+        ) : null}
       </div>
     </div>
   );
