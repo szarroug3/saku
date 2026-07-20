@@ -19,7 +19,7 @@ import { VOCAB_SUBJECT } from "@/data/vocab";
 import type { Claims } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
 import { LIB_ENTRIES } from "@/lib/library/entries";
-import { drillOrder, drillPlan, sliceIsDrillable } from "@/lib/library/slice";
+import { drillOrder, drillPlan, sliceIsDrillable, sliceSentence } from "@/lib/library/slice";
 import type { FactAggregate, FactId } from "@/types";
 
 /** One real entry id of each kind, so the assertions run against ids the app
@@ -128,5 +128,26 @@ describe("a zero-item drill is never offered", () => {
     // so no "Drill 0" is ever shown even though sliceIsDrillable is true.
     const offersDrill = sliceIsDrillable(slice) && order.length > 0;
     assert.equal(offersDrill, false);
+  });
+});
+
+// The bar's sentence, and one case that must stay empty: a slice with no facts
+// at all (an empty filtered shelf or a search with no hits). The surface it sits
+// on already shows its own empty message, so the bar says nothing rather than
+// repeating "nothing here to drill".
+describe("sliceSentence — an empty slice has no sentence", () => {
+  test("total 0 returns the empty string", () => {
+    assert.equal(sliceSentence({ drillable: 0, total: 0, seen: 0, solid: 0 }), "");
+  });
+
+  test("a non-empty slice still gets its sentence", () => {
+    assert.equal(
+      sliceSentence({ drillable: 3, total: 3, seen: 0, solid: 0 }),
+      "3 questions · not seen yet",
+    );
+    assert.equal(
+      sliceSentence({ drillable: 0, total: 4, seen: 4, solid: 4 }),
+      "all 4 solid, nothing to ask",
+    );
   });
 });

@@ -197,9 +197,13 @@ export function sliceCount(
  *   nothing seen yet ... "5 questions · not seen yet" — the honest version of a
  *                        drill that is entirely new material.
  *   the mixed case .... "everything here that isn't solid · 9 questions".
+ *
+ * An empty slice (no facts at all) returns "": there is nothing to summarise and
+ * the surface it sits on already shows its own empty-shelf/empty-search message,
+ * so the bar stays quiet rather than repeating "nothing here to drill".
  */
 export function sliceSentence(c: SliceCount): string {
-  if (c.total === 0) return "nothing here to drill";
+  if (c.total === 0) return "";
   if (c.drillable === 0) {
     return `all ${c.total} solid, nothing to ask`;
   }

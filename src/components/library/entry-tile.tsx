@@ -189,7 +189,7 @@ export function StandingCell({ standing }: { standing: EntryStanding }) {
   // "all 0 solid" on all five marks: the app reporting a clean sweep of an entry
   // it has never asked you about and never will. An entry with no facts has no
   // standing, so this says nothing at all, matching the entry page's header and
-  // the slice bar's "nothing here to drill".
+  // the slice bar, which stays silent on an empty slice too.
   if (standing.total === 0) return null;
   if (standing.standing) return <StandingChip standing={standing.standing} />;
   if (standing.needWork === 0) {

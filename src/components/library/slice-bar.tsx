@@ -86,6 +86,7 @@ export function SliceBar({
       })()
     : order;
   const count = sliceCount(slice, facts, claims, now, includeSolid);
+  const sentence = sliceSentence(count);
   // ONE thing to learn is not a drill. A single kana IS its one reading, and a
   // "drill" of it is a one-question session that teaches nothing the screen above
   // this bar hasn't already shown — so hide Drill (only Drill) on single-fact
@@ -113,19 +114,26 @@ export function SliceBar({
           nobody's business but its own. */}
       <div className="kq-band sticky bottom-0 z-10 mt-3.5 flex flex-wrap items-center gap-3 rounded-(--radius) border border-border p-3 shadow-card">
         <div className="min-w-0 flex-1 text-[13px] text-text-muted">
-          {showLabel ? (
+          {/* An empty slice has no sentence (see sliceSentence): show nothing
+              here at all rather than a lone label with a trailing comma and no
+              clause after it. */}
+          {sentence ? (
             <>
-              <b className="font-medium text-text">{slice.label}</b>
-              {", "}
+              {showLabel ? (
+                <>
+                  <b className="font-medium text-text">{slice.label}</b>
+                  {", "}
+                </>
+              ) : null}
+              {sentence}
+              {count.seen > 0 && count.seen < count.total ? (
+                <span className="ml-1.5">
+                  <Hint>
+                    · {count.seen} seen, {count.total} in total
+                  </Hint>
+                </span>
+              ) : null}
             </>
-          ) : null}
-          {sliceSentence(count)}
-          {count.seen > 0 && count.seen < count.total ? (
-            <span className="ml-1.5">
-              <Hint>
-                · {count.seen} seen, {count.total} in total
-              </Hint>
-            </span>
           ) : null}
         </div>
         <div className="flex flex-none flex-wrap items-center gap-1.5">
