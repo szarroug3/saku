@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { useQuizSession } from "@/lib/quiz-session";
+import { useHistory } from "@/lib/use-history";
 
 // ONE nav item for the reference, and it is not the first one. The user, on
 // scope: "the reference should exist as an easy way to look things up, not as
@@ -19,7 +21,7 @@ import { useQuizSession } from "@/lib/quiz-session";
 // /grammar, but nothing in the nav points there any more, because a reference
 // with two front doors starts competing with the drill for the top of the page,
 // which is the same argument that keeps Library itself down here.
-const NAV: Array<{ href: string; label: string }> = [
+const NAV: Array<{ href: string; label: ReactNode }> = [
   { href: "/", label: "Home" },
   // Practice owns the open-ended drill builder that used to live on Home: pick a
   // pool and how to ask, then start. Home stays the curriculum feed; Practice is
@@ -28,7 +30,10 @@ const NAV: Array<{ href: string; label: string }> = [
   { href: "/practice", label: "Practice" },
   { href: "/library", label: "Library" },
   { href: "/lists", label: "Lists" },
-  { href: "/sessions", label: "Recent sessions" },
+  // "Recent sessions" is NOT in this static list. It rides directly under the
+  // "Current session" entry (see below), shown only when there is finished
+  // history to open — a permanent nav slot pointing at "No sessions yet" is a
+  // door onto an empty room.
   // "Progress", not "Statistics" — the page stopped being statistics. Nothing
   // on it is a rate, an average or a trend any more; it is three counts of
   // things you own. The route is still /stats and deliberately so: renaming it
@@ -54,6 +59,12 @@ const NAV: Array<{ href: string; label: string }> = [
 export function Sidebar() {
   const pathname = usePathname();
   const { active, session, progress } = useQuizSession();
+  // Finished quizzes, for the "Recent sessions" entry below. It rides directly
+  // under "Current session" and appears ONLY when there is history to open —
+  // starts empty (matching the server render), so it simply fades in once the
+  // history loads and there is a session in it, with no hydration mismatch.
+  const { history } = useHistory();
+  const hasRecent = history.sessions.length > 0;
 
   // Tab-switching never discards a running quiz OR session; while one is going
   // a "Current session" entry (with live progress) sits right under Home. It is
@@ -72,45 +83,50 @@ export function Sidebar() {
   // set only while a leg is live — so it also picks the route. Same split as
   // continueSession().
   const runningHref = active ? "/quiz" : "/session";
-  const items = running
-    ? [
-        NAV[0],
-        {
-          href: runningHref,
-          // ONE LINE, ALWAYS. This entry is the only nav item whose text grows
-          // while you look at it — "0/214" is 31px and "214/214" is 44px — and
-          // at 12px the count pushed the row to ~126px inside a 124px content
-          // box, so the item silently became two lines tall somewhere around
-          // the third digit and the sidebar twitched. The row is not allowed to
-          // change height as a number ticks up.
-          //
-          // Three things hold it, and each covers a case the others don't:
-          //
-          //   whitespace-nowrap (on the Link) .. no wrapping, ever. The rest is
-          //     about making "no wrapping" also mean "no overflow".
-          //   text-[11px] on the count ......... buys the 4px that makes the
-          //     worst REAL case ("214/214", every deck) fit with room to spare:
-          //     76.5 + 6 + 40.4 = 123px. It is also the size every other count
-          //     in this app is set at, so it costs nothing to read.
-          //   min-w-0 truncate on the label .... the backstop. If a future deck
-          //     ever pushes past four digits, "Current session" ellipses and the
-          //     count — flex-none — stays whole. Degrading the label rather than
-          //     the number is the right way round: the number is why you looked.
-          label: (
-            <>
-              <span className="min-w-0 truncate">Current session</span>
-              {progress ? (
-                <span className="ml-1.5 flex-none text-[11px] tabular-nums opacity-70">
-                  {progress.done}
-                  {progress.total !== null ? `/${progress.total}` : ""}
-                </span>
-              ) : null}
-            </>
-          ),
-        },
-        ...NAV.slice(1),
-      ]
-    : NAV;
+  // The nav, assembled top-down: Home, then the two session entries when they
+  // have something to point at, then the rest. "Current session" shows while a
+  // quiz or lesson is running; "Recent sessions" sits directly under it and
+  // shows only when there is finished history — so the top of the nav is your
+  // session, live above and past below, and neither slot is a dead door.
+  const currentSessionItem = {
+    href: runningHref,
+    // ONE LINE, ALWAYS. This entry is the only nav item whose text grows
+    // while you look at it — "0/214" is 31px and "214/214" is 44px — and
+    // at 12px the count pushed the row to ~126px inside a 124px content
+    // box, so the item silently became two lines tall somewhere around
+    // the third digit and the sidebar twitched. The row is not allowed to
+    // change height as a number ticks up.
+    //
+    // Three things hold it, and each covers a case the others don't:
+    //
+    //   whitespace-nowrap (on the Link) .. no wrapping, ever. The rest is
+    //     about making "no wrapping" also mean "no overflow".
+    //   text-[11px] on the count ......... buys the 4px that makes the
+    //     worst REAL case ("214/214", every deck) fit with room to spare:
+    //     76.5 + 6 + 40.4 = 123px. It is also the size every other count
+    //     in this app is set at, so it costs nothing to read.
+    //   min-w-0 truncate on the label .... the backstop. If a future deck
+    //     ever pushes past four digits, "Current session" ellipses and the
+    //     count — flex-none — stays whole. Degrading the label rather than
+    //     the number is the right way round: the number is why you looked.
+    label: (
+      <>
+        <span className="min-w-0 truncate">Current session</span>
+        {progress ? (
+          <span className="ml-1.5 flex-none text-[11px] tabular-nums opacity-70">
+            {progress.done}
+            {progress.total !== null ? `/${progress.total}` : ""}
+          </span>
+        ) : null}
+      </>
+    ),
+  };
+  const items: Array<{ href: string; label: ReactNode }> = [
+    NAV[0],
+    ...(running ? [currentSessionItem] : []),
+    ...(hasRecent ? [{ href: "/sessions", label: "Recent sessions" }] : []),
+    ...NAV.slice(1),
+  ];
 
   return (
     <nav className="sticky top-6 flex w-[148px] flex-none flex-col gap-0.5 self-start">
