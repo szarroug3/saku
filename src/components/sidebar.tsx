@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
+import { useHistory } from "@/lib/use-history";
 import { useQuizSession } from "@/lib/quiz-session";
 
 // ONE nav item for the reference, and it is not the first one. The user, on
@@ -19,7 +21,7 @@ import { useQuizSession } from "@/lib/quiz-session";
 // /grammar, but nothing in the nav points there any more, because a reference
 // with two front doors starts competing with the drill for the top of the page,
 // which is the same argument that keeps Library itself down here.
-const NAV: Array<{ href: string; label: string }> = [
+const NAV: Array<{ href: string; label: ReactNode }> = [
   { href: "/", label: "Home" },
   // Practice owns the open-ended drill builder that used to live on Home: pick a
   // pool and how to ask, then start. Home stays the curriculum feed; Practice is
@@ -28,7 +30,10 @@ const NAV: Array<{ href: string; label: string }> = [
   { href: "/practice", label: "Practice" },
   { href: "/library", label: "Library" },
   { href: "/lists", label: "Lists" },
-  { href: "/sessions", label: "Recent sessions" },
+  // "Recent sessions" is NOT in this static list. It rides directly under Home
+  // (see the assembly in Sidebar), shown only when there is finished history to
+  // open — a permanent nav slot pointing at "No sessions yet" is a door onto an
+  // empty room.
   // "Progress", not "Statistics" — the page stopped being statistics. Nothing
   // on it is a rate, an average or a trend any more; it is three counts of
   // things you own. The route is still /stats and deliberately so: renaming it
@@ -53,64 +58,44 @@ const NAV: Array<{ href: string; label: string }> = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { active, session, progress } = useQuizSession();
-
-  // Tab-switching never discards a running quiz OR session; while one is going
-  // a "Current session" entry (with live progress) sits right under Home. It is
-  // NOT called "Current quiz": the thing running may be a lesson, and naming it
-  // after the drilling half hid the teach phase behind the wrong word.
+  // Finished quizzes, for the "Recent sessions" entry. It rides directly under
+  // Home and appears ONLY when there is history to open — starts empty (matching
+  // the server render), so it simply fades in once the history loads and there
+  // is a session in it, with no hydration mismatch.
   //
-  // `active || session`, not just `active`: a session in its LESSON, the fork,
-  // or a rest has no drilling leg (`active` is null then by design), but it is
-  // still very much running and you still want a way back to it. Keying on
-  // `active` alone made the entry vanish for exactly those phases — including
-  // the whole teach screen of a lesson session, which is where the owner
-  // reached for it.
-  const running = active || session;
-  // Drilling lives at /quiz; every other session phase (teaching, the fork, a
-  // rest, complete) renders at /session. `active` is the drilling tell — it is
-  // set only while a leg is live — so it also picks the route. Same split as
-  // continueSession().
-  const runningHref = active ? "/quiz" : "/session";
-  const items = running
-    ? [
-        NAV[0],
-        {
-          href: runningHref,
-          // ONE LINE, ALWAYS. This entry is the only nav item whose text grows
-          // while you look at it — "0/214" is 31px and "214/214" is 44px — and
-          // at 12px the count pushed the row to ~126px inside a 124px content
-          // box, so the item silently became two lines tall somewhere around
-          // the third digit and the sidebar twitched. The row is not allowed to
-          // change height as a number ticks up.
-          //
-          // Three things hold it, and each covers a case the others don't:
-          //
-          //   whitespace-nowrap (on the Link) .. no wrapping, ever. The rest is
-          //     about making "no wrapping" also mean "no overflow".
-          //   text-[11px] on the count ......... buys the 4px that makes the
-          //     worst REAL case ("214/214", every deck) fit with room to spare:
-          //     76.5 + 6 + 40.4 = 123px. It is also the size every other count
-          //     in this app is set at, so it costs nothing to read.
-          //   min-w-0 truncate on the label .... the backstop. If a future deck
-          //     ever pushes past four digits, "Current session" ellipses and the
-          //     count — flex-none — stays whole. Degrading the label rather than
-          //     the number is the right way round: the number is why you looked.
-          label: (
-            <>
-              <span className="min-w-0 truncate">Current session</span>
-              {progress ? (
-                <span className="ml-1.5 flex-none text-[11px] tabular-nums opacity-70">
-                  {progress.done}
-                  {progress.total !== null ? `/${progress.total}` : ""}
+  // "Current sessions" (runs IN PROGRESS) is a SEPARATE, conditional entry under
+  // Practice — see below. It is the door to the page that lists every run you
+  // have going so you can continue or discard any of them; it appears only while
+  // at least one run is live, so it too never points at an empty room.
+  const { history } = useHistory();
+  const { runs } = useQuizSession();
+  const hasRecent = history.sessions.length > 0;
+  const runCount = runs.length;
+
+  // The nav, assembled top-down: Home, then Recent sessions when there is any
+  // history to open, then Practice, then Current sessions when at least one run
+  // is in progress, then the rest of the static list.
+  const items: Array<{ href: string; label: ReactNode }> = [
+    NAV[0],
+    ...(hasRecent ? [{ href: "/sessions", label: "Recent sessions" }] : []),
+    NAV[1],
+    ...(runCount > 0
+      ? [
+          {
+            href: "/current",
+            label: (
+              <span className="flex w-full items-baseline justify-between gap-2">
+                <span>Current sessions</span>
+                <span className="tabular-nums text-xs text-text-muted">
+                  {runCount}
                 </span>
-              ) : null}
-            </>
-          ),
-        },
-        ...NAV.slice(1),
-      ]
-    : NAV;
+              </span>
+            ),
+          },
+        ]
+      : []),
+    ...NAV.slice(2),
+  ];
 
   return (
     <nav className="sticky top-6 flex w-[148px] flex-none flex-col gap-0.5 self-start">
@@ -125,12 +110,10 @@ export function Sidebar() {
           <Link
             key={href}
             href={href}
-            // flex + whitespace-nowrap on every item, not just the quiz one:
-            // the width is fixed at w-[148px] either way, so the four static
-            // labels lay out identically (they are anonymous flex items, and
-            // they already fit), and the one growing label gets a row it can
-            // truncate inside. A rule that applies to the whole nav is also one
-            // fewer thing to rediscover when the next item gets a badge.
+            // flex + whitespace-nowrap on every item: the width is fixed at
+            // w-[148px], the labels are short and already fit, and keeping one
+            // layout rule for the whole nav is one fewer thing to rediscover
+            // when the next item gets a badge or a count.
             className={`flex items-baseline whitespace-nowrap rounded-lg px-3 py-[9px] text-left text-sm ${
               sel ? "bg-accent-bg text-accent" : "text-text-muted hover:bg-panel"
             }`}

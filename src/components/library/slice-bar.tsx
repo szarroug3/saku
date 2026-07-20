@@ -16,9 +16,11 @@
 // GET TO ASK THE QUESTION. The entry page prints セイ two inches above the
 // button; a drill of exactly that, right now, is the purest possible massed
 // repetition, and the app's own arithmetic scores it at nothing (review() at
-// p ≈ 1 multiplies stability by 1.0 — see scoring.ts). So pressing Drill builds
-// a NORMAL session that these facts are part of, and they come up at a distance
-// from your having read them.
+// p ≈ 1 multiplies stability by 1.0 — see scoring.ts). So the primary verb,
+// "Teach me", builds a NORMAL session that these facts are part of, and they
+// come up at a distance from your having read them. "Quiz" is the deliberate
+// opt-out beside it: a one-off that asks exactly this set right now, for when
+// you already know it and just want to be tested — the same run Practice starts.
 
 import { useState } from "react";
 
@@ -59,7 +61,7 @@ export function SliceBar({
    * on screen names it. False on an entry page, where the label is the entry's
    * own name and the header and the breadcrumb have both already said it. The
    * label is still PASSED either way: it names the add-to-list panel and the
-   * session the Drill button starts. */
+   * run the Teach me and Quiz buttons start. */
   showLabel?: boolean;
   /** True ONLY for an explicit selection — the user toggled these items by hand
    * and pressed Drill. It makes solid/quiet facts drillable (asked directly)
@@ -68,7 +70,7 @@ export function SliceBar({
    * whole-section slices, which never set it. */
   includeSolid?: boolean;
 }) {
-  const { startSession } = useQuizSession();
+  const { startSession, startQuiz } = useQuizSession();
   const [adding, setAdding] = useState(false);
 
   const plan = drillPlan(slice, facts, claims, now, includeSolid);
@@ -153,38 +155,44 @@ export function SliceBar({
           >
             ✓ I know {slice.entries.length === 1 ? "this" : "these"}
           </Btn>
-          {/* startSession, NOT startQuiz. The design settles what this button
-              does: "pressing it builds a normal session that these rows are
-              only part of, so they come up at a distance from your having read
-              them." startQuiz is the one-off; the session loop is the normal
-              one, and it is what puts distance between reading セイ here and
-              being asked it. */}
-          {/* Drill N, and N is now the real number — and the button is GONE
-              when N would be zero.
+          {/* Two ways to run a slice, both gated identically (see below).
+              "Quiz me" is the one-off (startQuiz): straight to the questions, no
+              teach screen and no rest loop, ending on the results page — the
+              same run the Practice page starts, for when you already know this
+              and just want to be asked. It is the highlighted default now that
+              most Library visits are review. "Teach me" builds a normal SESSION
+              (startSession): read the new material, then probe it, then rest and
+              repeat — so セイ comes up at a distance from your having just read
+              it, the only way a drill of something on screen scores anything
+              (see the note up top).
 
-              It used to be `drillChars(order).length` — the facts filtered down
+              N is the real number, and the buttons are GONE when N would be
+              zero. It used to be `drillChars(order).length` — the facts filtered
               to the ones whose subject was kana, because the runtime drilled
               CHARACTERS and CHAR_INDEX has no kanji in it. On 生 that filter
-              matched nothing and the button said "Drill 0" next to nine facts,
-              with a line underneath admitting the quiz couldn't ask them. The
-              runtime is fact-native now, so the filter, the note and the whole
-              of src/lib/library/drill.ts are gone: what the model would drill
-              and what the quiz can ask are the same list again.
-
-              "Drill 0" could still surface the honest way, though: a multi-fact
-              slice every fact of which is already solid (a filtered shelf where
-              nothing needs work) drills nothing, so `order` is empty. A drill of
-              nothing is not a thing to offer — the sentence beside it already
-              says "all N solid, nothing to ask" — so the button is HIDDEN, not
-              shown disabled, whenever `order` is empty. `sliceIsDrillable` still
-              hides it on single-fact slices; this hides it on empty ones. */}
+              matched nothing and the button said "Drill 0" next to nine facts.
+              The runtime is fact-native now, so the filter, the note and the
+              whole of src/lib/library/drill.ts are gone: what the model would
+              drill and what the quiz can ask are the same list again. A run of 0
+              can still surface the honest way — a multi-fact slice every fact of
+              which is already solid drills nothing, so `order` is empty — and a
+              run of nothing is not a thing to offer (the sentence beside them
+              already says "all N solid, nothing to ask"), so both buttons are
+              HIDDEN, not shown disabled. `sliceIsDrillable` hides them on
+              single-fact slices; `order.length` hides them on empty ones. */}
           {canDrill && order.length > 0 ? (
-            <Btn
-              sel
-              onClick={() => startSession(order, [...plan.teach], slice.label)}
-            >
-              Drill {order.length}
-            </Btn>
+            <>
+              <Btn sel onClick={() => startQuiz(order, { what: slice.label })}>
+                Quiz me {order.length}
+              </Btn>
+              <Btn
+                onClick={() =>
+                  startSession(order, [...plan.teach], slice.label, "library")
+                }
+              >
+                Teach me {order.length}
+              </Btn>
+            </>
           ) : null}
         </div>
       </div>

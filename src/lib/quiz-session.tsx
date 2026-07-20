@@ -55,6 +55,7 @@ import {
   restMinutes,
   SESSION_ROUND_TARGET,
   summariseRound,
+  type SessionOrigin,
   type StudySession,
 } from "@/lib/session";
 import type {
@@ -184,7 +185,12 @@ interface QuizSessionContextValue {
    * topped up from `teach` — not the raw selection. `teach` is the subset that
    * gets shown before it gets asked. `what` names it, frozen like the snapshot.
    */
-  startSession(facts: FactId[], teach?: FactId[], what?: string): void;
+  startSession(
+    facts: FactId[],
+    teach?: FactId[],
+    what?: string,
+    origin?: SessionOrigin,
+  ): void;
   /** Re-ask a subset from the fork. Comes back to the same fork. */
   retryLeg(facts: FactId[]): void;
   /**
@@ -212,6 +218,18 @@ interface QuizSessionContextValue {
   discardSession(): void;
   /** Continue a session you left: back to whatever it was doing. */
   continueSession(): void;
+
+  // ---------- many runs at once (see PARKING) ----------
+  /** Every run in progress right now — the focused one plus every parked one.
+   * The Current sessions page, Home's lesson cards and Practice's resume card
+   * all read this. Ordered focused-first, then most-recently-parked. */
+  runs: RunInfo[];
+  /** Continue a run by id (FOCUSED_RUN for the focused one). A parked run is
+   * swapped in — whatever is focused now is parked first, so nothing is lost —
+   * and routed to wherever it left off. */
+  continueRun(id: string): void;
+  /** Discard a run by id without scoring it. */
+  discardRun(id: string): void;
 }
 
 const QuizSessionContext = createContext<QuizSessionContextValue | null>(null);
@@ -232,14 +250,115 @@ const STORAGE_KEY = "kanaquiz-session";
  * every tab gets its own. */
 const TAB_ID = Math.random().toString(36).slice(2);
 
+/** A short unique id for a parked run. Time-prefixed only for legibility in
+ * dev; uniqueness comes from the random tail. */
+function genRunId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Where a run should resume: a session mid-drill goes to /quiz, any other
+ * session to /session, a one-off quiz to /quiz. */
+function routeForRun(active: ActiveQuiz | null, session: StudySession | null): string {
+  if (session) return session.phase === "drilling" && active ? "/quiz" : "/session";
+  return "/quiz";
+}
+
+/** A run you left to start another. See PARKING below.
+ *
+ * It is the whole focused triple frozen: the leg (with its runtime), the
+ * session loop it belongs to (null for a one-off quiz), and its progress. Put
+ * back verbatim when you continue it, so it resumes exactly where you left. */
+interface ParkedRun {
+  id: string;
+  active: ActiveQuiz | null;
+  session: StudySession | null;
+  progress: QuizProgress | null;
+  /** When it was set aside — orders the Current sessions list under the one
+   * you're doing now. */
+  parkedAt: number;
+}
+
 interface StoredSession {
   active: ActiveQuiz | null;
   session: StudySession | null;
   results: ResultsPayload | null;
   progress: QuizProgress | null;
+  /** Runs set aside to start others — see PARKING. */
+  parked?: ParkedRun[];
   /** Last tab to write. A tab that no longer owns the quiz stops saving, so
    * a stale background tab can't resurrect a quiz you finished elsewhere. */
   owner?: string;
+}
+
+/** The stable id for the FOCUSED run — the one /quiz or /session is rendering
+ * right now. Parked runs carry their own generated ids; the focused run is
+ * "whatever is focused", so it needs no persistent id, and callers refer to it
+ * by this sentinel. */
+export const FOCUSED_RUN = "focused";
+
+/** What a screen needs to LIST a run without knowing the leg/session split:
+ * the Current sessions page, Home's lesson cards and Practice's resume card all
+ * read this shape and never touch ActiveQuiz/StudySession directly. */
+export interface RunInfo {
+  /** FOCUSED_RUN for the focused run, else the parked run's id. */
+  id: string;
+  /** A one-off quiz (ends at results) vs a session (teach → drill → rest). */
+  kind: "quiz" | "session";
+  /** Where a session came from — a curriculum lesson or the Library. Undefined
+   * for one-off quizzes. */
+  origin?: SessionOrigin;
+  /** Its name, frozen at start. */
+  what: string;
+  /** The facts it drills — Home matches its lesson against this. */
+  facts: FactId[];
+  /** A session's phase; undefined for a quiz. */
+  phase?: StudySession["phase"];
+  progress: QuizProgress | null;
+  startedAt?: number;
+  /** For ordering: a session's last-answer time, else when it was parked (or
+   * now, for the focused run). */
+  lastActiveAt: number;
+  /** True for the one /quiz or /session is currently rendering. */
+  focused: boolean;
+}
+
+function quizRunInfo(
+  id: string,
+  quiz: ActiveQuiz,
+  progress: QuizProgress | null,
+  lastActiveAt: number,
+  focused: boolean,
+): RunInfo {
+  return {
+    id,
+    kind: "quiz",
+    what: quiz.what,
+    facts: quiz.facts,
+    progress,
+    startedAt: quiz.startedAt,
+    lastActiveAt,
+    focused,
+  };
+}
+
+function sessionRunInfo(
+  id: string,
+  s: StudySession,
+  progress: QuizProgress | null,
+  focused: boolean,
+): RunInfo {
+  return {
+    id,
+    kind: "session",
+    origin: s.origin ?? "lesson",
+    what: s.what,
+    facts: s.facts,
+    phase: s.phase,
+    progress,
+    startedAt: s.startedAt,
+    lastActiveAt: s.lastActiveAt,
+    focused,
+  };
 }
 
 /** The fallback name for a run nobody named. The count rather than a guess at
@@ -268,6 +387,11 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const [results, setResults] = useState<ResultsPayload | null>(null);
   const [progress, setProgress] = useState<QuizProgress | null>(null);
   const [restored, setRestored] = useState(false);
+  // Runs set aside to start another. See PARKING: startQuiz/startSession no
+  // longer clear what's running — they park it here and open the new one, so
+  // several runs can be in progress at once and the Current sessions page lists
+  // them all. Newest-first.
+  const [parked, setParked] = useState<ParkedRun[]>([]);
   /** True for exactly one state update: the one applying another tab's write. */
   const adoptedRef = useRef(false);
 
@@ -283,6 +407,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         if (saved.session) setSession(saved.session);
         if (saved.results) setResults(saved.results);
         if (saved.progress) setProgress(saved.progress);
+        if (saved.parked) setParked(saved.parked);
       }
     } catch {
       // corrupt snapshot — start clean
@@ -305,10 +430,11 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     session: null,
     results: null,
     progress: null,
+    parked: [],
   });
   const restoredRef = useRef(false);
   useEffect(() => {
-    latest.current = { active, session, results, progress };
+    latest.current = { active, session, results, progress, parked };
     restoredRef.current = restored;
   });
 
@@ -367,7 +493,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     // ANSWERED is already on disk by the time this could fire.
     window.addEventListener("beforeunload", saveNow);
     return () => window.removeEventListener("beforeunload", saveNow);
-  }, [active, session, results, progress, restored, saveNow]);
+  }, [active, session, results, progress, parked, restored, saveNow]);
 
   // Newest tab wins. Opening the app in a second tab takes the quiz over, and
   // this tab steps back rather than fighting it — otherwise both would keep
@@ -387,6 +513,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         setSession(next.session);
         setResults(next.results);
         setProgress(next.progress);
+        setParked(next.parked ?? []);
       } catch {
         // another tab wrote something unreadable — ignore it
       }
@@ -394,6 +521,38 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, [restored]);
+
+  // ---------- PARKING: many runs at once ----------
+  //
+  // The app used to hold ONE run. Starting anything threw away whatever you
+  // were doing. Now starting parks the focused run instead: it's pushed onto
+  // `parked` and the new run takes focus. Continuing a parked run swaps it back
+  // (parking whatever was focused), so you can bounce between several lessons
+  // and quizzes and lose none of them. Terminal actions (finish/discard) only
+  // ever clear the FOCUSED run — parked runs live until you finish or discard
+  // them from the Current sessions page.
+
+  /** Set the focused run aside if there is one, so a new run can take focus
+   * without overwriting it. Reads the live state from `latest` so it's correct
+   * inside a click handler, and clears the focused slots. No-op when nothing is
+   * focused. */
+  const parkIfActive = useCallback(() => {
+    const cur = latest.current;
+    if (!cur.active && !cur.session) return;
+    setParked((prev) => [
+      {
+        id: genRunId(),
+        active: cur.active,
+        session: cur.session,
+        progress: cur.progress,
+        parkedAt: Date.now(),
+      },
+      ...prev,
+    ]);
+    setActive(null);
+    setSession(null);
+    setProgress(null);
+  }, []);
 
   /** Start one leg of drilling. A leg is a quiz; a session is many legs. */
   const beginLeg = useCallback(
@@ -422,10 +581,11 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const startQuiz = useCallback(
     (facts: FactId[], opts?: { redrill?: boolean; what?: string }) => {
       if (!facts.length) return;
-      setSession(null);
+      // Don't overwrite what's running — set it aside, then open the new quiz.
+      parkIfActive();
       beginLeg(facts, opts?.what ?? countWhat(facts), snapshotOf(cfg), !!opts?.redrill);
     },
-    [cfg, beginLeg],
+    [cfg, beginLeg, parkIfActive],
   );
 
   // ---------- history ----------
@@ -488,8 +648,15 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   // ---------- the loop ----------
 
   const startSession = useCallback(
-    (facts: FactId[], teach: FactId[] = [], what?: string) => {
+    (
+      facts: FactId[],
+      teach: FactId[] = [],
+      what?: string,
+      origin: SessionOrigin = "lesson",
+    ) => {
       if (!facts.length) return;
+      // Don't overwrite what's running — set it aside, then open the lesson.
+      parkIfActive();
       const now = Date.now();
       const snapshot = snapshotOf(cfg);
       const teaching = teach.length > 0;
@@ -510,12 +677,13 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         rounds: [],
         totalStats: {},
         lastActiveAt: now,
+        origin,
       });
       setResults(null);
       if (teaching) router.push("/session");
       else beginLeg(facts, name, snapshot, false);
     },
-    [cfg, beginLeg, router],
+    [cfg, beginLeg, router, parkIfActive],
   );
 
   const startFirstRound = useCallback(
@@ -708,6 +876,76 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     router.push(session.phase === "drilling" && active ? "/quiz" : "/session");
   }, [session, active, router]);
 
+  // ---------- PARKING: continue / discard / list ----------
+
+  /** Continue any run by id. FOCUSED_RUN just routes the focused run. A parked
+   * run is swapped into focus — whatever was focused is parked first (in the
+   * same update, so nothing is lost) — then routed to where it left off. */
+  const continueRun = useCallback(
+    (id: string) => {
+      if (id === FOCUSED_RUN) {
+        const cur = latest.current;
+        router.push(routeForRun(cur.active, cur.session));
+        return;
+      }
+      const run = parked.find((r) => r.id === id);
+      if (!run) return;
+      const cur = latest.current;
+      setParked((prev) => {
+        const without = prev.filter((r) => r.id !== id);
+        if (cur.active || cur.session) {
+          return [
+            {
+              id: genRunId(),
+              active: cur.active,
+              session: cur.session,
+              progress: cur.progress,
+              parkedAt: Date.now(),
+            },
+            ...without,
+          ];
+        }
+        return without;
+      });
+      setActive(run.active);
+      setSession(run.session);
+      setProgress(run.progress);
+      router.push(routeForRun(run.active, run.session));
+    },
+    [parked, router],
+  );
+
+  /** Discard a run by id without scoring it. FOCUSED_RUN clears the focused
+   * slots; a parked id is dropped from the list. */
+  const discardRun = useCallback((id: string) => {
+    if (id === FOCUSED_RUN) {
+      setActive(null);
+      setSession(null);
+      setProgress(null);
+      return;
+    }
+    setParked((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
+  /** Every run in progress, focused-first then most-recently-parked. Screens
+   * read this instead of the leg/session split. */
+  const runs = useMemo<RunInfo[]>(() => {
+    const out: RunInfo[] = [];
+    if (session) {
+      out.push(sessionRunInfo(FOCUSED_RUN, session, progress, true));
+    } else if (active) {
+      out.push(quizRunInfo(FOCUSED_RUN, active, progress, active.startedAt ?? 0, true));
+    }
+    for (const r of parked) {
+      if (r.session) {
+        out.push(sessionRunInfo(r.id, r.session, r.progress, false));
+      } else if (r.active) {
+        out.push(quizRunInfo(r.id, r.active, r.progress, r.parkedAt, false));
+      }
+    }
+    return out;
+  }, [active, session, progress, parked]);
+
   // ---------- finishing a leg ----------
 
   const finishQuiz = useCallback(
@@ -831,6 +1069,9 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       finishSession,
       discardSession,
       continueSession,
+      runs,
+      continueRun,
+      discardRun,
     }),
     [
       restored,
@@ -855,6 +1096,9 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       finishSession,
       discardSession,
       continueSession,
+      runs,
+      continueRun,
+      discardRun,
     ],
   );
   return (
