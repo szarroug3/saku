@@ -419,6 +419,83 @@ export const RENDAKU: PhaseIntro = {
   ],
 };
 
+// OKURIGANA — the kana tail written after a kanji, and this file's first rule
+// taught over THREE cards instead of one.
+// =========================================================================
+// Okurigana is not a character and not a single mark; it is the kana that
+// finishes a word a kanji only starts (生きる, 高い, 一つ). It is a writing rule,
+// so it lives on the Writing rules shelf (src/data/marks.ts) beside the others,
+// and — like 々 and rendaku — it has no kana section to anchor to, so it is
+// word-gated in lesson-steps.ts rather than tied to a script's run.
+//
+// THREE CARDS, THREE MOMENTS. The one idea splits cleanly into three, and each
+// wants a different point in the word order:
+//
+//   1. OKURIGANA_INTRO — "the kanji does not finish the word". The whole idea,
+//      shown on 生 / 生きる / 生まれる: one character, three words, three sounds.
+//      Gated ahead of the FIRST word that carries a kana tail (言う, the third
+//      curriculum word), because that is the first place the rule is visible.
+//
+//   2. OKURIGANA_MOVING — "sometimes the tail moves". The same first tail word
+//      is a verb, so this rides in right behind card 1: the tail is the part
+//      that changes (生きる → 生きた → 生きない, 高い → 高かった), and HOW it changes
+//      is grammar, not this card.
+//
+//   3. OKURIGANA_FIXED — "sometimes it just sits there". Held back until the
+//      first word whose tail does NOT move, so the contrast is real rather than
+//      hypothetical. See lesson-steps.ts for which word that is and why.
+//
+// All three are script-neutral (see NO_SCRIPT): the rule is the same whichever
+// kana spells the tail. The examples are real curriculum vocabulary, not
+// invented forms. marks.ts renders the same three objects on the Library page.
+export const OKURIGANA_INTRO: PhaseIntro = {
+  id: "intro-okurigana",
+  setId: NO_SCRIPT,
+  title: "The kanji does not finish the word.",
+  body: [
+    {
+      lead: "A word can be a kanji plus a kana tail.",
+      text: "The kana written after a kanji is part of the word, not a separate thing tacked on. The single character 生 becomes 生きる (いきる, to live) and 生まれる (うまれる, to be born): one kanji, two words, and the kana tail is what tells them apart.",
+    },
+    {
+      lead: "The tail even settles the reading.",
+      text: "生 on its own can be read several ways, and the kana after it decides which. 生きる takes い, 生まれる takes う: same character, different tail, different sound. That trailing kana has a name, okurigana.",
+    },
+  ],
+};
+
+export const OKURIGANA_MOVING: PhaseIntro = {
+  id: "intro-okurigana-moving",
+  setId: NO_SCRIPT,
+  title: "Sometimes the tail moves.",
+  body: [
+    {
+      lead: "On a verb or an い-adjective, the tail changes.",
+      text: "The okurigana is exactly the part that shifts when the word does a different job. 生きる (いきる) becomes 生きた (lived) and 生きない (does not live); 高い (たかい, expensive) becomes 高かった (was expensive). The kanji holds still and the tail carries the change.",
+    },
+    {
+      lead: "How it changes is grammar.",
+      text: "For now, just notice that the tail is the moving part. Which form to use, and when, is taught on the grammar side, not here.",
+    },
+  ],
+};
+
+export const OKURIGANA_FIXED: PhaseIntro = {
+  id: "intro-okurigana-fixed",
+  setId: NO_SCRIPT,
+  title: "Sometimes it just sits there.",
+  body: [
+    {
+      lead: "Not every tail moves.",
+      text: "Plenty of words carry a kana tail that never changes. 一つ (ひとつ, one) is just 一つ: the つ sits on the end and stays put, however the word is used.",
+    },
+    {
+      lead: "Compare a verb you have already met.",
+      text: "行く (いく, to go) reshapes its tail as it works: 行った (went), 行かない (does not go). 一つ does none of that. It is the same kind of kana tail, but a fixed one, so read it as part of the word and leave it be.",
+    },
+  ],
+};
+
 /**
  * Section id → the card shown BEFORE that section's characters.
  *
@@ -467,9 +544,10 @@ export const INTRO_AFTER: Record<string, PhaseIntro[]> = {
  * exception for as long as the curriculum had nowhere to put it, and closing
  * each script on it is what settled that. The order below is the order a
  * learner meets them, one script then the other, which is also the order the
- * anchor tables produce. The three script-neutral cards close the list: PUNCT is
- * reachable from the hiragana after-run, and ITERATION_MARK and RENDAKU from the
- * word-gated seam in lesson-steps.ts, so every card here has a lesson home. */
+ * anchor tables produce. The script-neutral cards close the list: PUNCT is
+ * reachable from the hiragana after-run, and ITERATION_MARK, RENDAKU and the
+ * three okurigana cards from the word-gated seams in lesson-steps.ts, so every
+ * card here has a lesson home. */
 export const PHASE_INTROS: PhaseIntro[] = [
   DAKUTEN_H,
   COMBO_H,
@@ -482,6 +560,9 @@ export const PHASE_INTROS: PhaseIntro[] = [
   PUNCTUATION,
   ITERATION_MARK,
   RENDAKU,
+  OKURIGANA_INTRO,
+  OKURIGANA_MOVING,
+  OKURIGANA_FIXED,
 ];
 
 // NOT BUILT, AND SAY SO

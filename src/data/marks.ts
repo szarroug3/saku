@@ -11,12 +11,13 @@
 // きって in the wild and wanted to know what the small っ was doing had no page to
 // open.
 //
-// So a mark is a Library entry whose subject is a READING RULE. Eight of them:
-// the five things the kana curriculum teaches that are not kana, plus three that
+// So a mark is a Library entry whose subject is a READING RULE. Nine of them:
+// the five things the kana curriculum teaches that are not kana, plus four that
 // belong to reading BEYOND kana - the iteration mark 々 (a kanji rule), rendaku
-// (the voicing that happens on its own in compounds), and punctuation (how a
-// sentence is pointed). The first five are kana-adjacent; the last three are met
-// once you are reading kanji, compounds and whole sentences, and each says so.
+// (the voicing that happens on its own in compounds), punctuation (how a
+// sentence is pointed), and okurigana (the kana tail a kanji word ends in). The
+// first five are kana-adjacent; the last four are met once you are reading
+// kanji, compounds and whole sentences, and each says so.
 //
 // NOT A SECOND COPY OF THE LESSON
 // ===============================
@@ -59,6 +60,9 @@ import {
   ITERATION_MARK,
   LONG_H,
   LONG_K,
+  OKURIGANA_FIXED,
+  OKURIGANA_INTRO,
+  OKURIGANA_MOVING,
   PUNCTUATION,
   RENDAKU,
   SOKUON_H,
@@ -123,9 +127,12 @@ export interface Mark {
    * its paragraphs with the same component the teach walk does. Usually TWO
    * entries, hiragana then katakana, because most of these rules are taught once
    * per script and the two are not always the same rule wearing different glyphs.
-   * The three script-neutral marks (々, rendaku, punctuation) carry ONE intro:
-   * their rule is the same whichever script spells the words around it, so a
-   * second per-script copy would be the same card twice. See NO_SCRIPT.
+   * The three single-card script-neutral marks (々, rendaku, punctuation) carry
+   * ONE intro: their rule is the same whichever script spells the words around
+   * it, so a second per-script copy would be the same card twice. Okurigana is
+   * script-neutral too but carries THREE cards, because the one rule is taught
+   * in three moments (see the okurigana cards in phase-intros.ts); the Library
+   * shows all three, the lessons gate them one at a time. See NO_SCRIPT.
    */
   readonly intros: readonly PhaseIntro[];
   /**
@@ -188,13 +195,14 @@ const SMALL_VOWEL_NOTE =
   "ぁぃぅぇぉ (and ァィゥェォ) shrink the same way, but they fuse a VOWEL onto the kana in front of them, to write sounds Japanese does not natively have: ファ fa, ティ ti, ウェ we. You meet them almost only in katakana loanwords, so they are worth recognising when they turn up rather than learning as a set.";
 
 /**
- * The eight marks, in the order the curriculum meets them.
+ * The nine marks, in the order the curriculum meets them.
  *
  * Which is also the order they build on each other: the two marks that change a
  * consonant, then the two small kana that change a syllable's shape, then the
  * one kana rule that is about time rather than about a character at all - and
- * then the three that belong to reading BEYOND kana: the iteration mark 々, the
- * voicing rendaku does at a compound's seam, and how a sentence is pointed.
+ * then the four that belong to reading BEYOND kana: the iteration mark 々, the
+ * voicing rendaku does at a compound's seam, how a sentence is pointed, and the
+ * okurigana tail a kanji word ends in.
  */
 export const MARKS: readonly Mark[] = [
   {
@@ -330,6 +338,30 @@ export const MARKS: readonly Mark[] = [
       "quotation marks",
     ],
     intros: [PUNCTUATION],
+    rows: [],
+  },
+  {
+    id: "okurigana",
+    // No glyph — okurigana is not a character but the kana TAIL a kanji word
+    // ends in (生きる, 高い, 一つ), which is a different tail on every word, so
+    // no single token can stand for it.
+    name: "Okurigana",
+    glyph: "",
+    summary:
+      "The kana tail written after a kanji, part of the word: 生きる, 高い, 一つ.",
+    searchAlso: [
+      "okurigana",
+      "kana tail",
+      "kanji tail",
+      "trailing kana",
+      "inflectional ending",
+      "verb ending",
+    ],
+    // Script-neutral like 々, rendaku and punctuation, but taught over THREE
+    // moments rather than one — the whole idea, the tail that moves, and the
+    // tail that sits still — so it carries all three cards. See the okurigana
+    // note in phase-intros.ts and the word-gating in lesson-steps.ts.
+    intros: [OKURIGANA_INTRO, OKURIGANA_MOVING, OKURIGANA_FIXED],
     rows: [],
   },
 ];

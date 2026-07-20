@@ -3,7 +3,7 @@
 //
 // WHAT THESE TESTS ARE FOR
 // ========================
-// The MARKS shelf holds eight entries that break three assumptions the Library
+// The MARKS shelf holds nine entries that break three assumptions the Library
 // was built on, and every one of them fails QUIETLY — a wrong page renders, no
 // error is thrown, and you only notice by opening it.
 //
@@ -82,8 +82,8 @@ describe("the shelf exists and is reachable", () => {
     );
   });
 
-  test("all eight marks are entries, and every entry route resolves", () => {
-    assert.equal(MARKS.length, 8);
+  test("all nine marks are entries, and every entry route resolves", () => {
+    assert.equal(MARKS.length, 9);
     for (const m of MARKS) {
       const e = entryOfMark(m.id);
       assert.equal(e.kind, MARK_SUBJECT);
