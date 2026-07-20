@@ -34,6 +34,7 @@
 
 import { useMemo } from "react";
 
+import { CurriculumComplete } from "@/components/home/curriculum-complete";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { NextGrammarLesson } from "@/components/lesson/next-grammar-lesson";
 import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
@@ -326,6 +327,23 @@ export default function HomePage() {
   const grammarRun = runForFacts(grammarLesson?.facts);
   const transitivityRun = runForFacts(transitivityLesson?.facts);
 
+  // The curriculum is finished only when EVERY track's card would render
+  // nothing — the exact negation of the render conditions below, so this is
+  // true precisely when the lesson feed would otherwise be empty. The word and
+  // grammar tracks each render on a lock (not just a lesson) once started, so a
+  // locked-but-started track still counts as unfinished here. Transitivity has
+  // no lock card (an unready pair is skipped), so it counts as unfinished
+  // exactly while it still has a ready lesson to teach.
+  const curriculumComplete =
+    !lesson &&
+    !radicalLesson &&
+    !kanjiLesson &&
+    !wordLesson &&
+    !(wordLock && wordsTrackStarted) &&
+    !grammarLesson &&
+    !(grammarLock && grammarTrackStarted) &&
+    !transitivityLesson;
+
   return (
     <>
       <PageTitle title="Kana quiz" />
@@ -422,6 +440,11 @@ export default function HomePage() {
           onContinue={() => transitivityRun && continueRun(transitivityRun.id)}
         />
       ) : null}
+
+      {/* Every track is exhausted: the lesson feed above rendered nothing, so
+          Home says so on purpose rather than leaving a title over blank space,
+          and points at the two jobs that outlast new material. */}
+      {curriculumComplete ? <CurriculumComplete /> : null}
     </>
   );
 }
