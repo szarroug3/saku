@@ -374,7 +374,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // cannot afford. `factRows`/`factsTitle` keep their grammar arms — they are
   // the enumeration of what is scored, other callers use them, and the arms
   // stay correct — this page just no longer prints them.
-  const genericRows = isKana || isKanji || isWord || isGrammar ? [] : factRows(entry);
+  //
+  // A RADICAL leaves for the same reason a kana did. Its one fact is its
+  // meaning, and that meaning is already the hero title while its score is
+  // already the header's standing chip; a one-row "Meaning" table under them
+  // would be the page saying the same thing a third time. `factRows` keeps its
+  // radical arm for the same reason it keeps grammar's — other callers still
+  // enumerate what is scored — this page just no longer prints it.
+  const genericRows =
+    isKana || isKanji || isWord || isGrammar || isRadical ? [] : factRows(entry);
 
   const linkRows = (
     <>
