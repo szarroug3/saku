@@ -28,13 +28,32 @@
 // out of step with history. A group re-taught later shows its card again, which
 // is the right answer for a card whose whole job is to explain the material.
 //
-// Kana only, by the item's own `kind`. A kanji or word lesson gets its items and
-// nothing else, because the anchors are kana section ids.
+// Kana only, by the item's own `kind` — with EXCEPTIONS. A kanji/word rule with
+// no kana section to hang on rides the WORD that first puts it in play: the
+// iteration mark 々 surfaces the moment the first 々 word (時々) is taught, and
+// rendaku the moment the first word that voices at a compound seam (仕事) is —
+// each ahead of the word that first makes its rule visible. Okurigana is
+// word-gated the same way, over three cards: the idea rides the first word that
+// carries a kana tail, and the moving and fixed cards ride the first word whose
+// tail moves and the first whose tail does not, so each contrast is real rather
+// than hypothetical. See phase-intros.ts for why these are word-gated rather than
+// anchored to a section.
 
 import { CHAR_INDEX } from "@/data/characters";
 import { dakutenRowFor, type DakutenRow } from "@/data/dakuten-rows";
-import { INTRO_AFTER, INTRO_BEFORE, type PhaseIntro } from "@/data/phase-intros";
+import {
+  INTRO_AFTER,
+  INTRO_BEFORE,
+  ITERATION_MARK,
+  OKURIGANA_FIXED,
+  OKURIGANA_INTRO,
+  OKURIGANA_MOVING,
+  RENDAKU,
+  type PhaseIntro,
+} from "@/data/phase-intros";
+import { vocabRow } from "@/data/vocab";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
+import { wordClassOf } from "@/lib/word-forms";
 import type { FactId } from "@/types";
 
 /** One step of the walk — a character to learn, a conversion to learn, or a
@@ -51,12 +70,98 @@ function sectionOf(item: LessonItem): string | null {
   return CHAR_INDEX[item.glyph]?.sec ?? null;
 }
 
+/** The iteration mark, whose presence in a word's spelling is the gate for the
+ * card that teaches it. A word that contains it is by definition the first place
+ * 々 is in play. */
+const ITERATION_GLYPH = "々";
+
+/** A kanji, roughly: the CJK unified ideographs plus extension A. Deliberately
+ * not 々 (U+3005), which is punctuation the iteration-mark gate owns. */
+const KANJI = /[\u4e00-\u9faf\u3400-\u4dbf]/;
+/** A hiragana. Okurigana is always hiragana — the katakana range is not it. */
+const HIRAGANA = /[\u3040-\u309f]/;
+
+/**
+ * Does this written form end a kanji with a kana tail — okurigana?
+ *
+ * True when a hiragana appears somewhere AFTER a kanji: a kanji stem followed by
+ * a hiragana tail (生きる, 高い, 一つ, 言う). Pure kana (これ) has no kanji, pure
+ * kanji (先生) has no tail, and 時々 has only 々 after its kanji — none is
+ * okurigana. A word with a hiragana in front of a later kanji (お茶) is not
+ * caught either, because the tail has to come after the kanji, not before it.
+ */
+export function hasOkurigana(word: string): boolean {
+  let seenKanji = false;
+  for (const ch of word) {
+    if (KANJI.test(ch)) {
+      seenKanji = true;
+      continue;
+    }
+    if (seenKanji && HIRAGANA.test(ch)) return true;
+  }
+  return false;
+}
+
+/** Does the word's tail MOVE — i.e. does it conjugate? A non-null conjugation
+ * class (verb or い-adjective) means the okurigana is the part that changes;
+ * null (a counter, a plain noun) means the tail is fixed. Resolved through the
+ * app's own pos→class bridge (`wordClassOf`), because vocab.json stores JMdict's
+ * EXPANDED pos names and `classFromTags` speaks the short codes — see the head of
+ * word-forms.ts. A word with no vocab row cannot be shown to conjugate, so it
+ * counts as fixed. */
+function tailMoves(word: string): boolean {
+  const row = vocabRow(word);
+  return row ? wordClassOf(row) !== null : false;
+}
+
+/** Each kana to its rendaku (voiced/semi-voiced) form: か→が, は→ば/ぱ. Only the
+ * initial mora of a compound's second element voices, so only its first kana is
+ * ever looked up here. */
+const RENDAKU_VOICED: Readonly<Record<string, readonly string[]>> = {
+  か: ["が"], き: ["ぎ"], く: ["ぐ"], け: ["げ"], こ: ["ご"],
+  さ: ["ざ"], し: ["じ"], す: ["ず"], せ: ["ぜ"], そ: ["ぞ"],
+  た: ["だ"], ち: ["ぢ"], つ: ["づ"], て: ["で"], と: ["ど"],
+  は: ["ば", "ぱ"], ひ: ["び", "ぴ"], ふ: ["ぶ", "ぷ"], へ: ["べ", "ぺ"], ほ: ["ぼ", "ぽ"],
+};
+
+/**
+ * Does this word show rendaku — a compound whose second (or later) element's
+ * initial consonant has voiced at the seam? 仕事 (し+こと→しごと), 手紙
+ * (て+かみ→てがみ), 言葉 (こと+は→ことば).
+ *
+ * Read off the word's `align` — the per-kanji [kanji, surface-in-word, base]
+ * breakdown vocab.ts ships (see VocabRow.align). An element voiced iff its
+ * surface is its base with the first kana swapped for the voiced counterpart and
+ * the rest unchanged; the FIRST element is skipped, because rendaku is what
+ * happens to the element that follows another. A word with no align (the ~2.6%
+ * jukujikun) cannot be shown to voice and so counts as not-rendaku, the same
+ * conservative default `tailMoves` takes.
+ *
+ * Note this is BLIND to a word whose align already records the voiced form as the
+ * base — 時々's second element is stored as [時, どき, どき], not [時, どき, とき] —
+ * which is correct for gating: 時々 (rank 154) is far behind the first genuine
+ * rendaku word (仕事, rank 22), so the card has always fired by the time it is
+ * reached, and 々 carries its own card regardless. See phase-intros.ts.
+ */
+export function hasRendaku(word: string): boolean {
+  const align = vocabRow(word)?.align;
+  if (!align) return false;
+  return align.some(([, surface, base], i) => {
+    if (i === 0 || !surface || !base) return false;
+    const voiced = RENDAKU_VOICED[base[0]];
+    return !!voiced && voiced.includes(surface[0]) && surface.slice(1) === base.slice(1);
+  });
+}
+
 /**
  * The teach set, as the steps the walk pages through.
  *
  * Items in the order `itemsFromFacts` gives them — untouched — with at most one
  * card in front and any number behind (a script's last group closes on both its
- * long-vowel and its sokuon card).
+ * long-vowel and its sokuon card), plus the two word-gated cards (々 and rendaku)
+ * ahead of the first word that carries 々, and the three okurigana cards ahead of
+ * the first word with a kana tail (intro), the first whose tail moves (moving),
+ * and the first whose tail is fixed (fixed).
  */
 export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
   const items = itemsFromFacts(facts);
@@ -67,6 +172,19 @@ export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
   // its other four fold into the same card rather than adding four steps. See
   // src/data/dakuten-rows.ts.
   const rowsSeen = new Set<string>();
+  // The iteration mark rides the first word whose spelling uses 々, and only the
+  // first one, so a teach set full of 々 words teaches it once.
+  let markedIteration = false;
+  // Rendaku rides the first word that actually voices at a compound seam (仕事,
+  // rank 22) — far ahead of 々 — so it is a rule already in hand by the time 々's
+  // own voicing turns up. See hasRendaku.
+  let markedRendaku = false;
+  // Okurigana rides words the same way, over three cards each fired once: the
+  // idea at the first word with a kana tail, the moving card at the first whose
+  // tail conjugates, the fixed card at the first whose tail does not.
+  let markedOkurigana = false;
+  let markedOkuriganaMoving = false;
+  let markedOkuriganaFixed = false;
   for (const item of items) {
     const row = item.kind === "kana" ? dakutenRowFor(item.glyph) : null;
     if (row) {
@@ -74,6 +192,31 @@ export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
       rowsSeen.add(row.id);
       steps.push({ type: "conversion", key: row.id, row });
       continue;
+    }
+    if (!markedIteration && item.glyph.includes(ITERATION_GLYPH)) {
+      markedIteration = true;
+      steps.push({ type: "intro", key: ITERATION_MARK.id, intro: ITERATION_MARK });
+    }
+    if (!markedRendaku && item.kind === "word" && hasRendaku(item.glyph)) {
+      markedRendaku = true;
+      steps.push({ type: "intro", key: RENDAKU.id, intro: RENDAKU });
+    }
+    if (item.kind === "word" && hasOkurigana(item.glyph)) {
+      // The idea leads, so when the first tail word is itself a moving word the
+      // intro and moving cards land together ahead of it, intro first.
+      if (!markedOkurigana) {
+        markedOkurigana = true;
+        steps.push({ type: "intro", key: OKURIGANA_INTRO.id, intro: OKURIGANA_INTRO });
+      }
+      const moves = tailMoves(item.glyph);
+      if (!markedOkuriganaMoving && moves) {
+        markedOkuriganaMoving = true;
+        steps.push({ type: "intro", key: OKURIGANA_MOVING.id, intro: OKURIGANA_MOVING });
+      }
+      if (!markedOkuriganaFixed && !moves) {
+        markedOkuriganaFixed = true;
+        steps.push({ type: "intro", key: OKURIGANA_FIXED.id, intro: OKURIGANA_FIXED });
+      }
     }
     steps.push({ type: "item", key: item.entry, item });
   }

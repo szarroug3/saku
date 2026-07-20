@@ -37,16 +37,23 @@
 
 import { Callout } from "@/components/lesson/callout";
 import { ConversionCard } from "@/components/lesson/conversion-card";
-import { IntroBody } from "@/components/lesson/phase-intro-view";
+import {
+  IntroBody,
+  IntroExamples,
+  PunctuationTable,
+} from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
 import { bodyFor, type Mark } from "@/data/marks";
 
 /** "hiragana" → "In hiragana". The intro already carries which script it belongs
- * to; this only puts a word on it. Anything else it might say is a set id we do
- * not ship, printed as-is rather than mapped to a guess. */
-function scriptLabel(setId: string): string {
+ * to; this only puts a word on it. A script-neutral card (setId "") belongs to no
+ * script and gets NO label at all rather than an empty pill — see NO_SCRIPT in
+ * src/data/phase-intros.ts. Anything else is a set id we do not ship, printed
+ * as-is rather than mapped to a guess. */
+function scriptLabel(setId: string): string | null {
   if (setId === "hiragana") return "In hiragana";
   if (setId === "katakana") return "In katakana";
+  if (setId === "") return null;
   return setId;
 }
 
@@ -57,13 +64,60 @@ export function MarkView({ mark }: { mark: Mark }) {
         // The paragraphs about THIS mark. For four of the five marks that is all
         // of them; for ゛ and ゜, which share one lesson card, it is the half that
         // is about the one you opened. See `bodyFor`.
-        const body = bodyFor(intro, mark.glyph);
+        const body = bodyFor(intro, mark.glyph).map((p) =>
+          // Drop the paragraph's mark plate on the Library page. The entry header
+          // already shows this rule's glyph at 76px directly above, and `bodyFor`
+          // only ever keeps paragraphs whose plate IS that glyph (the ゜ half of
+          // the dakuten card is filtered out on the ゛ page and vice versa), so
+          // every plate that would render here is the header glyph a second time,
+          // the same character twice with nothing between them. The plate still
+          // earns its place in the teach walk, whose hero is a sentence, not a
+          // glyph — there is no header there for it to repeat. Library-only.
+          p.mark === mark.glyph ? { ...p, mark: undefined } : p,
+        );
         if (body.length === 0) return null;
+        const label = scriptLabel(intro.setId);
         return (
-          <Card key={intro.id}>
-            <Lbl>{scriptLabel(intro.setId)}</Lbl>
-            <IntroBody body={body} />
-          </Card>
+          // Prose in one Card, its worked examples in a SEPARATE Card beside it,
+          // so the examples read as their own box in the row rather than a panel
+          // sunk inside the prose box. A container query drives the split (this
+          // column is far narrower than the viewport once the Library sidebar is
+          // there, so a viewport breakpoint left it one column with room to
+          // spare); it stacks below when the column is genuinely narrow. The
+          // threshold is @xl (36rem) to match the walk and to clear the 148px
+          // sidebar at ordinary laptop widths. `items-stretch` makes the two
+          // Cards share the row's height, so the shorter examples box lines up
+          // with the prose rather than floating. The prose passes no `measure`
+          // cap: it sits in a sized flex column, and a 64ch cap on top of that
+          // was the early word-wrap these pages had.
+          <div key={intro.id} className="@container">
+            {intro.punctuation?.length ? (
+              // Punctuation is a catalogue, so it gets a table Card of the marks
+              // with the closing sentence in a Card beneath, rather than the
+              // prose-plus-examples split the other marks use.
+              <div className="space-y-3.5">
+                <Card>
+                  {label ? <Lbl>{label}</Lbl> : null}
+                  <PunctuationTable rows={intro.punctuation} />
+                </Card>
+                <Card>
+                  <IntroBody body={body} measure="" />
+                </Card>
+              </div>
+            ) : (
+              <div className="flex flex-col @xl:flex-row @xl:items-stretch @xl:gap-3.5">
+                <Card className="min-w-0 flex-1">
+                  {label ? <Lbl>{label}</Lbl> : null}
+                  <IntroBody body={body} measure="" />
+                </Card>
+                {intro.examples?.length ? (
+                  <Card className="@xl:w-[20rem] @xl:shrink-0">
+                    <IntroExamples examples={intro.examples} bare />
+                  </Card>
+                ) : null}
+              </div>
+            )}
+          </div>
         );
       })}
 

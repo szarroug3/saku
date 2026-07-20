@@ -147,14 +147,6 @@ function TeachableLesson({
             their own tracks' items. */}
         <Lbl>Up next · grammar · {positionLabel("patterns", position)}</Lbl>
 
-        <h1 className="text-[22px] font-light tracking-[-0.3px]">
-          {cards.map((c) => c.gloss).join(" · ")}
-        </h1>
-        <p className="mt-0.5 text-[13px] text-text-muted">
-          Learn {cards.length === 1 ? "this pattern" : "these patterns"}, then a
-          quick drill.
-        </p>
-
         {/* The patterns ARE the lesson — shown outright, pattern · gloss, because
             a pattern is a form you already conjugate plus a fixed string. The
             level rides along as a quiet tag: a beginner meets N5 before N4, and

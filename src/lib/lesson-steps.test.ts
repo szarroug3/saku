@@ -25,9 +25,10 @@ import { describe, test } from "node:test";
 import { SETS, kanaFact, noteFor } from "../data/characters.ts";
 import { DAKUTEN_ROWS, dakutenRowFor, hookRuns } from "../data/dakuten-rows.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
+import { wordReadingFactId } from "../data/vocab.ts";
 import { KANA_GROUPS, groupOfFact, scriptSoFar, widerScope } from "./lesson.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
-import { lessonSteps } from "./lesson-steps.ts";
+import { hasOkurigana, hasRendaku, lessonSteps } from "./lesson-steps.ts";
 
 /** A group by its id — the unit the budget hands out. Outside the dakuten
  * phase that id is a section of the data file; inside it, a conversion. */
@@ -298,16 +299,36 @@ describe("long vowels then small っ close the script", () => {
         [longId, sokuonId],
       );
       // THE COUNT INVARIANT. The HUD's "n of N" is steps.length from this very
-      // call, so this is really asserting that adding a second closing card
-      // moved BOTH the render and the count together — the reason this helper
-      // exists at all rather than the walk and the HUD each counting for
-      // themselves.
-      assert.equal(steps.length, g.chars.length + 2);
-      // And nothing crept in among the characters: everything before the tail
-      // is still a glyph step, one for one.
-      assert.ok(steps.slice(0, -2).every((s) => s.type === "item"));
+      // call, so this is really asserting that adding a closing card moved BOTH
+      // the render and the count together — the reason this helper exists at all
+      // rather than the walk and the HUD each counting for themselves. The
+      // after-run is the source of truth for how many cards close the script:
+      // hiragana closes on three (punctuation, long vowels, small っ) and
+      // katakana on two.
+      const after = INTRO_AFTER[secId] ?? [];
+      assert.equal(steps.length, g.chars.length + after.length);
+      // And nothing crept in among the characters: everything before the whole
+      // after-run is still a glyph step, one for one.
+      assert.ok(steps.slice(0, -after.length).every((s) => s.type === "item"));
     });
   }
+
+  test("punctuation leads the hiragana close, ahead of the two word marks", () => {
+    // Punctuation is script-neutral and rides the front of the hiragana
+    // after-run only — it is about the whole sentence a learner can now read,
+    // while long vowels and small っ refine single words. It is not in the
+    // katakana run, because it is not a per-script rule to be taught twice.
+    const h = lessonSteps(group("h-pya").facts).slice(-3);
+    assert.deepEqual(
+      h.map((s) => (s.type === "intro" ? s.intro.id : s.type)),
+      ["intro-punctuation", "intro-long-vowel-hiragana", "intro-sokuon-hiragana"],
+    );
+    const k = lessonSteps(group("k-pya").facts);
+    assert.ok(
+      k.every((s) => s.type !== "intro" || s.intro.id !== "intro-punctuation"),
+      "punctuation leaked into the katakana run",
+    );
+  });
 
   test("long vowels are not drillable — no fact was invented for them", () => {
     // The card teaches a rule. If this ever fails, something turned a rule into
@@ -391,3 +412,198 @@ describe("every intro is anchored to a section that exists", () => {
     }
   });
 });
+
+describe("々 and rendaku each ride the first word that shows them", () => {
+  // Neither rule has a kana section to anchor to — they are about kanji and
+  // compounds — so each rides the first WORD that puts it on screen, and the two
+  // are decoupled: 々 fires on the first word spelled with 々, rendaku on the
+  // first word that actually voices at a seam. Those are different words: rendaku
+  // first shows at 仕事 (し + こと → しごと, rank 22), long before any 々 word, so
+  // 々 no longer drags rendaku in with it. See phase-intros.ts / lesson-steps.ts.
+  test("時々 opens the iteration card alone (its repeat is not rendaku)", () => {
+    // 時々's align stores the repeat as already-voiced (どき/どき), so there is no
+    // unvoiced-to-voiced seam for hasRendaku to see: it is a 々 word, not a
+    // rendaku one.
+    const steps = lessonSteps([wordReadingFactId("時々")]);
+    assert.deepEqual(
+      steps.map((s) =>
+        s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
+      ),
+      ["intro-iteration-mark", "時々"],
+    );
+  });
+
+  test("仕事 opens the rendaku card alone (no 々)", () => {
+    const steps = lessonSteps([wordReadingFactId("仕事")]);
+    assert.deepEqual(
+      steps.map((s) =>
+        s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
+      ),
+      ["intro-rendaku", "仕事"],
+    );
+  });
+
+  test("a plain word gets neither card", () => {
+    // The gate is the spelling, not the subject — an ordinary word teaches
+    // nothing about either rule, so the walk is the item alone.
+    const steps = lessonSteps([wordReadingFactId("先生")]);
+    assert.deepEqual(
+      steps.map((s) => (s.type === "item" ? s.item.glyph : s.type)),
+      ["先生"],
+    );
+  });
+
+  test("in one set each card fires once, on its own first word", () => {
+    // 時々 opens the iteration card (it has 々 but does not voice); 様々 opens the
+    // rendaku card (さま → ざま, the first voicing seam in the set); 我々 has 々 but
+    // the card already fired and it does not voice, so it stands plain.
+    const steps = lessonSteps([
+      wordReadingFactId("時々"),
+      wordReadingFactId("様々"),
+      wordReadingFactId("我々"),
+    ]);
+    assert.deepEqual(
+      steps.map((s) =>
+        s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type,
+      ),
+      ["intro-iteration-mark", "時々", "intro-rendaku", "様々", "我々"],
+    );
+  });
+});
+
+describe("hasRendaku reads voicing off a word's align", () => {
+  test("flags a word whose non-first element voices at the seam", () => {
+    // 仕事 し + こと → しごと (こ → ご), 手紙 て + かみ → てがみ (か → が), 言葉
+    // こと + は → ことば (は → ば), 人々 ひと + ひと → ひとびと (ひ → び), 様々 さま +
+    // さま → さまざま (さ → ざ).
+    for (const w of ["仕事", "手紙", "言葉", "人々", "様々"]) {
+      assert.equal(hasRendaku(w), true, w);
+    }
+  });
+
+  test("does not flag a word with no voicing seam", () => {
+    // 先生 せんせい reads straight; 我々 われわれ repeats without voicing; 時々's
+    // repeat is stored already voiced (どき/どき), so there is no unvoiced base to
+    // detect a shift against.
+    for (const w of ["先生", "我々", "時々"]) {
+      assert.equal(hasRendaku(w), false, w);
+    }
+  });
+});
+
+describe("hasOkurigana reads a kanji stem with a kana tail", () => {
+  test("a kanji followed by a hiragana tail is okurigana", () => {
+    // The four the phase-intro copy is written on: a verb, an い-adjective, a
+    // counter and a godan verb. All are one kanji plus a trailing kana.
+    for (const w of ["生きる", "高い", "一つ", "言う"]) {
+      assert.ok(hasOkurigana(w), `${w} carries a kana tail`);
+    }
+  });
+
+  test("pure kana and tail-less kanji are not okurigana", () => {
+    // No kanji at all (これ, katakana), or a kanji with nothing hiragana after
+    // it (先生), or only 々 after the kanji (時々 — that is the iteration mark, a
+    // different gate). None of these is a kana tail on a kanji.
+    for (const w of ["これ", "ラーメン", "先生", "日本", "々", "時々"]) {
+      assert.ok(!hasOkurigana(w), `${w} is not okurigana`);
+    }
+  });
+
+  test("a hiragana in FRONT of the kanji does not count", () => {
+    // The tail has to come after the kanji. お茶 leads with a hiragana and ends
+    // on the kanji, so there is no trailing kana to teach.
+    assert.ok(!hasOkurigana("お茶"));
+    // …but a lead hiragana does not blind it to a real tail later.
+    assert.ok(hasOkurigana("お書き"));
+  });
+});
+
+describe("okurigana rides the words that make it visible", () => {
+  // Three cards, three moments, each fired once in item order: the idea at the
+  // first word with a kana tail, the moving card at the first whose tail
+  // conjugates, the fixed card at the first whose tail does not. See
+  // lesson-steps.ts and the okurigana note in phase-intros.ts.
+  const label = (s: ReturnType<typeof lessonSteps>[number]) =>
+    s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type;
+
+  test("言う opens the idea and the moving card together, ahead of it", () => {
+    // 言う (rank 3) is the first curriculum word with a kana tail AND it
+    // conjugates, so the intro and moving cards land together in front of it,
+    // intro first — the intended overlap, not a bug.
+    const steps = lessonSteps([wordReadingFactId("言う")]);
+    assert.deepEqual(steps.map(label), [
+      "intro-okurigana",
+      "intro-okurigana-moving",
+      "言う",
+    ]);
+  });
+
+  test("a fixed-tail word opens the idea and the fixed card together", () => {
+    // 一つ (a counter) does not conjugate, so on its own it draws the idea and
+    // the fixed card — never the moving card, which has no moving word to ride.
+    const steps = lessonSteps([wordReadingFactId("一つ")]);
+    assert.deepEqual(steps.map(label), [
+      "intro-okurigana",
+      "intro-okurigana-fixed",
+      "一つ",
+    ]);
+    assert.ok(
+      !steps.some((s) => s.type === "intro" && s.intro.id === "intro-okurigana-moving"),
+      "the moving card fired with no moving word",
+    );
+  });
+
+  test("intro then moving then fixed, each ahead of the word that earns it", () => {
+    // The full contrast in curriculum order: 言う (moving) draws intro+moving,
+    // then 一つ (fixed) draws the fixed card, and 高い (moving) and 先生 (no
+    // tail) add nothing more.
+    const steps = lessonSteps(
+      ["言う", "一つ", "高い", "先生"].map(wordReadingFactId),
+    );
+    assert.deepEqual(steps.map(label), [
+      "intro-okurigana",
+      "intro-okurigana-moving",
+      "言う",
+      "intro-okurigana-fixed",
+      "一つ",
+      "高い",
+      "先生",
+    ]);
+  });
+
+  test("each card fires at most once across the whole walk", () => {
+    // A batch full of okurigana words — two moving, two fixed — still teaches
+    // each card exactly once, at the first word that earns it.
+    const steps = lessonSteps(
+      ["生きる", "高い", "一つ", "二つ", "言う"].map(wordReadingFactId),
+    );
+    const intros = steps
+      .filter((s) => s.type === "intro")
+      .map((s) => (s.type === "intro" ? s.intro.id : null));
+    assert.deepEqual(intros, [
+      "intro-okurigana",
+      "intro-okurigana-moving",
+      "intro-okurigana-fixed",
+    ]);
+    // And the first word (生きる, a moving verb) carries intro+moving ahead of
+    // it; the fixed card waits for 一つ.
+    assert.deepEqual(steps.map(label), [
+      "intro-okurigana",
+      "intro-okurigana-moving",
+      "生きる",
+      "高い",
+      "intro-okurigana-fixed",
+      "一つ",
+      "二つ",
+      "言う",
+    ]);
+  });
+
+  test("a word with no kana tail gets no okurigana card", () => {
+    // The gate is the tail, not the subject: 先生 is a word but teaches nothing
+    // about okurigana, so the walk is the item alone.
+    const steps = lessonSteps([wordReadingFactId("先生")]);
+    assert.deepEqual(steps.map(label), ["先生"]);
+  });
+});
+

@@ -103,7 +103,7 @@ export const KINDS: readonly Kind[] = [
 /** What a shelf is called on screen. */
 export const KIND_LABEL: Record<Kind, string> = {
   [KANA_SUBJECT]: "Kana",
-  [MARK_SUBJECT]: "Marks",
+  [MARK_SUBJECT]: "Writing rules",
   [RADICAL_SUBJECT]: "Radicals",
   [KANJI_SUBJECT]: "Kanji",
   [VOCAB_SUBJECT]: "Words",
