@@ -31,13 +31,14 @@
 // inviting, not discouraging — expanding shows real stroke order.
 
 import Link from "next/link";
+import { useId, useState } from "react";
 
 import { StrokeOrder } from "@/components/lesson/stroke-order";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { Card } from "@/components/ui";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph } from "@/data/radicals";
-import { WHY_STROKE_ORDER } from "@/data/why";
+import { WHY_STROKE_ORDER, WHY_WRITING_EARLY } from "@/data/why";
 // The parts test lives in lib now, because the drill's hint builder asks it too
 // and the lesson and the hint must never disagree about what 明 is made of.
 import { teachableParts } from "@/lib/kanji-parts";
@@ -108,6 +109,59 @@ function WholeShapeFallback({
   );
 }
 
+/** The stepped lesson's "how it's written" body: the "we don't recommend
+ * learning to write early" notice, with the full reasoning folded behind a
+ * "why?". Reads its lede and paragraphs from WHY_WRITING_EARLY so the wording
+ * lives in one place (src/data/why.ts).
+ *
+ * Its own disclosure, not the shared WhyDisclosure, for two reasons: it adds one
+ * app-specific line the shared, language-only Why component must never carry (the
+ * "use the Show button" out), and its open state must be OWNED HERE so it
+ * survives the reader pressing Show — the notice stays mounted while the diagram
+ * appears below it, so opening the writing does not collapse the why.
+ *
+ * `open` is the section's Show state: once the diagram is already showing, the
+ * "use Show to see it" paragraph would contradict the screen, so it is dropped. */
+function WritingEarlyNotice({ open }: { open: boolean }) {
+  const [why, setWhy] = useState(false);
+  const panelId = useId();
+  return (
+    <div className="mt-2">
+      <p className="text-[13px] leading-relaxed">
+        <span className="font-medium">{WHY_WRITING_EARLY.lede.strong}</span>{" "}
+        <button
+          type="button"
+          aria-expanded={why}
+          aria-controls={panelId}
+          onClick={() => setWhy((v) => !v)}
+          className="cursor-pointer whitespace-nowrap rounded border-none bg-transparent p-0 text-[13px] text-accent underline decoration-dotted underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {why ? "Less" : "Why?"}
+        </button>
+      </p>
+
+      {why ? (
+        <div
+          id={panelId}
+          className="mt-2.5 flex flex-col gap-2.5 text-[13px] leading-relaxed text-text-muted"
+        >
+          {WHY_WRITING_EARLY.paras.map((p, i) => (
+            <p key={i}>{p}</p>
+          ))}
+          {!open ? (
+            <p>
+              That being said, if you would prefer to learn how to write now,
+              expand this section using the{" "}
+              <span className="font-medium">Show</span> button above and you will
+              see stroke order step by step as well as in an animation.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function HowItsWritten({
   item,
   alwaysOpen = false,
@@ -149,6 +203,17 @@ export function HowItsWritten({
     return null;
   }
 
+  const diagram =
+    strokes.status === "loading" ? (
+      <p className="text-[13px] text-text-muted">Loading stroke order&hellip;</p>
+    ) : strokes.data ? (
+      // The real thing: animated draw-along + numbered step chart.
+      <StrokeOrder data={strokes.data} />
+    ) : (
+      // No stroke data for this glyph yet — degrade, don't crash.
+      <WholeShapeFallback item={item} reference={alwaysOpen} />
+    );
+
   const content = (
     <>
       <div className="flex items-center justify-between gap-2">
@@ -165,37 +230,24 @@ export function HowItsWritten({
         )}
       </div>
 
-      {!open ? (
-        // Inviting, not discouraging: it's worth learning, and here's why.
-        <p className="mt-1.5 text-[12px] leading-relaxed text-text-muted">
-          Stroke order is worth learning: draw a character the standard way and
-          it comes out balanced and legible. Expand to see how this one is
-          drawn.
-        </p>
-      ) : (
-        // In reference mode the box is stretched to its row's height, so the
-        // body becomes the growing column and the "why?" rule below is pushed
-        // to the bottom edge. The stepped lesson keeps plain block flow.
-        <div className={alwaysOpen ? "mt-2.5 flex flex-1 flex-col" : "mt-2.5"}>
-          {strokes.status === "loading" ? (
-            <p className="text-[13px] text-text-muted">Loading stroke order&hellip;</p>
-          ) : strokes.data ? (
-            // The real thing: animated draw-along + numbered step chart.
-            <StrokeOrder data={strokes.data} />
-          ) : (
-            // No stroke data for this glyph yet — degrade, don't crash.
-            <WholeShapeFallback item={item} reference={alwaysOpen} />
-          )}
-
-          {/* Why order matters — reframed as worth learning, not "your own way". */}
-          {alwaysOpen ? (
-            <div className="mt-auto">
-              <WhyDisclosure why={WHY_STROKE_ORDER} />
-            </div>
-          ) : (
+      {alwaysOpen ? (
+        // Library reference: the diagram is the thing you came for, always open,
+        // with the encouraging "worth learning" why pinned to the bottom edge so
+        // the box stretches to its row's height.
+        <div className="mt-2.5 flex flex-1 flex-col">
+          {diagram}
+          <div className="mt-auto">
             <WhyDisclosure why={WHY_STROKE_ORDER} />
-          )}
+          </div>
         </div>
+      ) : (
+        // Stepped lesson: the "not yet" notice is ALWAYS mounted, so opening the
+        // diagram with Show never collapses its why. Show just reveals the
+        // stroke order below the notice.
+        <>
+          <WritingEarlyNotice open={open} />
+          {open ? <div className="mt-3">{diagram}</div> : null}
+        </>
       )}
     </>
   );

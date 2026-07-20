@@ -158,6 +158,31 @@ export const WHY_STROKE_ORDER: Why = {
 };
 
 /**
+ * Why we steer a beginner away from learning to WRITE this early — the reasoning
+ * behind the "how it's written" section being collapsed by default on every
+ * stepped lesson card.
+ *
+ * This is the single home for that copy: the lesson's collapsed notice reads its
+ * lede and paragraphs from here rather than hardcoding them, so the wording lives
+ * in one place. The notice adds one more line on screen — the app-specific "use
+ * the Show button" out — which is deliberately NOT here, because this file holds
+ * content about the language, never instructions about a control (see header).
+ *
+ * Distinct from WHY_STROKE_ORDER on purpose: that one is the encouraging note
+ * shown on the Library reference page, where the diagram is always open; this one
+ * is the "not yet" the lesson leads with. Two different messages, kept apart.
+ */
+export const WHY_WRITING_EARLY: Why = {
+  lede: {
+    strong: "We don’t recommend learning to write early.",
+  },
+  paras: [
+    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary. In addition to being the traditional way of writing, stroke order is worth learning because when you follow it, the shape comes out balanced and legible almost by itself. The rules (top to bottom, left to right) are what the shapes were designed around. When you write it a different way, even the same strokes tend to land lopsided. Learning the order is the fastest way to write characters that actually look right. This is especially important when writing by hand.",
+    "People don’t do much handwriting these days with so much technology around. Japanese is a difficult language to learn coming from a western language that doesn’t use the same writing system. We think your time is better spent learning how to read, speak, and understanding what you hear.",
+  ],
+};
+
+/**
  * The three tracks after kana — kanji, words, grammar — each with a "why?" that
  * does two jobs the cards can’t do on their own.
  *
