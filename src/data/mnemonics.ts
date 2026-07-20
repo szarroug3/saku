@@ -32,9 +32,9 @@
 // "katakana" (see `kanaScript`). Splitting by script is what keeps か and カ,
 // which share the romaji "ka", from colliding on one filename: they land in
 // /mnemonics/hiragana/ka.webp and /mnemonics/katakana/ka.webp. Every entry
-// authored today is hiragana except カ, whose original no-wind karate drawing
-// now lives at /mnemonics/katakana/ka.webp. A glyph that is neither kana (a
-// future kanji) has no script folder, so it falls back to the flat
+// authored today is hiragana except the approved Katakana rows, whose drawings
+// live under /mnemonics/katakana/. A glyph that is neither kana (a future
+// kanji) has no script folder, so it falls back to the flat
 // /mnemonics/<romaji>.webp.
 //
 // It's a candidate: the file may or may not exist. The renderers load it and
@@ -354,6 +354,102 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "rate kick." },
     ],
     example: { word: "カメラ", reading: "kamera", gloss: "camera", hitIndex: 0 },
+  },
+
+  ウ: {
+    glyph: "ウ",
+    romaji: "u",
+    sound: "oo",
+    object: "snowy roof",
+    analogy: [
+      { text: "Say “" },
+      { text: "oo", accent: true },
+      { text: "” like hiragana う." },
+    ],
+    mnemonic: [
+      { text: "A snowy roof has one little chimney poking up while snow slides off its long slope." },
+    ],
+    example: { word: "ウニ", reading: "uni", gloss: "sea urchin", hitIndex: 0 },
+  },
+
+  エ: {
+    glyph: "エ",
+    romaji: "e",
+    sound: "eh",
+    object: "engineer's I-beam",
+    analogy: [
+      { text: "Say “" },
+      { text: "eh", accent: true },
+      { text: "” like hiragana え." },
+    ],
+    mnemonic: [
+      { text: "An " },
+      { text: "e", accent: true },
+      { text: "ngineer bolts an I-beam level, then taps it to check his work." },
+    ],
+    example: { word: "エアコン", reading: "eakon", gloss: "air conditioner", hitIndex: 0 },
+  },
+
+  キ: {
+    glyph: "キ",
+    romaji: "ki",
+    sound: "kee",
+    object: "ski rack",
+    analogy: [
+      { text: "Say “" },
+      { text: "kee", accent: true },
+      { text: "” as in " },
+      { text: "ski", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "Two bright " },
+      { text: "ski", accent: true },
+      { text: "s rest one above the other on a crooked rack." },
+    ],
+    example: { word: "キー", reading: "kii", gloss: "key", hitIndex: 0 },
+  },
+
+  ケ: {
+    glyph: "ケ",
+    romaji: "ke",
+    sound: "keh",
+    object: "kelp",
+    analogy: [
+      { text: "Say “" },
+      { text: "keh", accent: true },
+      { text: "” as in " },
+      { text: "ke", accent: true },
+      { text: "lp." },
+    ],
+    mnemonic: [
+      { text: "Two ribbons of " },
+      { text: "ke", accent: true },
+      { text: "lp sway and part in the tide." },
+    ],
+    example: { word: "ケーキ", reading: "keeki", gloss: "cake", hitIndex: 0 },
+  },
+
+  コ: {
+    glyph: "コ",
+    romaji: "ko",
+    sound: "koh",
+    object: "cardboard corners",
+    analogy: [
+      { text: "Say “" },
+      { text: "koh", accent: true },
+      { text: "” as in " },
+      { text: "co", accent: true },
+      { text: "zy." },
+    ],
+    mnemonic: [
+      { text: "You fold the " },
+      { text: "co", accent: true },
+      { text: "rners of a " },
+      { text: "co", accent: true },
+      { text: "zy cardboard box, one side still flopping open." },
+    ],
+    example: { word: "コップ", reading: "koppu", gloss: "cup", hitIndex: 0 },
   },
 
   き: {

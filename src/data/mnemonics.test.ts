@@ -57,7 +57,7 @@ test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => 
     // And that code point is the kana this entry teaches.
     assert.equal(chars[m.example.hitIndex], k, `${k} example hitIndex should land on ${k}`);
   }
-  assert.equal(Object.keys(MNEMONICS).length, 47, "the 46 base hiragana and カ are authored");
+  assert.equal(Object.keys(MNEMONICS).length, 52, "the 46 base hiragana and six approved katakana are authored");
 });
 
 test("Library-entry / teach-flow gate: authored kana resolve, a non-authored glyph does not", () => {
@@ -98,8 +98,8 @@ test("every hiragana yields the /mnemonics/hiragana/<romaji>.webp path derived f
   assert.equal(getMnemonic("を")!.image, "/mnemonics/hiragana/wo.webp");
 });
 
-// The katakana branch: カ is the first authored entry. Its image path carries
-// the katakana/ folder, keeping か and カ from sharing one filename.
+// Approved katakana image paths carry the katakana/ folder, keeping matching
+// hiragana and katakana readings from sharing one filename.
 test("kanaScript classifies script by Unicode block, and katakana derives the katakana/ folder", () => {
   assert.equal(kanaScript("か"), "hiragana");
   assert.equal(kanaScript("カ"), "katakana");
@@ -108,7 +108,15 @@ test("kanaScript classifies script by Unicode block, and katakana derives the ka
   assert.equal(kanaScript("かa"), null); // multi-code-point, not a single glyph
   assert.equal(getMnemonic("カ")!.image, "/mnemonics/katakana/ka.webp");
   assert.notEqual(getMnemonic("か")!.image, getMnemonic("カ")!.image);
-  assert.ok(existsSync(fileURLToPath(new URL("../../public/mnemonics/katakana/ka.webp", import.meta.url))));
+  const approvedKatakana = [
+    ["ウ", "u"], ["エ", "e"], ["カ", "ka"],
+    ["キ", "ki"], ["ケ", "ke"], ["コ", "ko"],
+  ];
+  for (const [glyph, romaji] of approvedKatakana) {
+    assert.equal(getMnemonic(glyph)!.image, `/mnemonics/katakana/${romaji}.webp`);
+    const image = new URL(`../../public/mnemonics/katakana/${romaji}.webp`, import.meta.url);
+    assert.ok(existsSync(fileURLToPath(image)));
+  }
 });
 
 // The eight drawings that ship today must still be on disk under the exact
