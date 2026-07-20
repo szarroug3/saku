@@ -132,13 +132,6 @@ function TeachableLesson({
           label counts words. See src/lib/lesson-position.ts. */}
       <Lbl>Up next · {positionLabel("words", position)}</Lbl>
 
-      <h1 className="text-[22px] font-light tracking-[-0.3px]">
-        {cards.map((c) => c.meaning).join(" · ")}
-      </h1>
-      <p className="mt-0.5 text-[13px] text-text-muted">
-        Learn these {cards.length === 1 ? "word" : "words"}, then a quick drill.
-      </p>
-
       <div className="mt-4 flex flex-wrap gap-2">
         {cards.map((card) => (
           <WordTile key={card.keb} card={card} />
