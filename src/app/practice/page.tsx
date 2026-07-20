@@ -19,8 +19,10 @@
 // it. So the page reads top to bottom as the sentence Start acts on — the pool,
 // then how it asks, then Start.
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
+import { PracticeResume } from "@/components/practice/practice-resume";
 import { QuizOptionsFields } from "@/components/practice/quiz-options";
 import { StartBar } from "@/components/practice/start-bar";
 import { PracticeSelector } from "@/components/practice/practice-selector";
@@ -33,10 +35,29 @@ import { useLists } from "@/lib/use-lists";
 import type { Selection } from "@/types";
 
 export default function PracticePage() {
+  const router = useRouter();
   const { cfg, set } = useQuizConfig();
-  const { session, startQuiz } = useQuizSession();
+  const { active, session, progress, startQuiz, discardSession } =
+    useQuizSession();
   const { history } = useHistory();
   const { lists } = useLists();
+
+  // The clock the resume card is read against. Set strictly after mount, not in
+  // a useState initialiser, so a server-seeded "started 4 minutes ago" can't
+  // disagree with the client on hydration. The card itself is client-only
+  // anyway (active is null until localStorage is restored), so this is belt and
+  // braces — but it keeps the time text honest the moment the card appears.
+  const [mountedNow, setMountedNow] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMountedNow(Date.now());
+  }, []);
+
+  // A practice quiz in progress is `active` with no `session`: startQuiz runs a
+  // one-off leg and clears the session loop. A lesson session (which keeps
+  // `session` set, and is resumed from the Home lesson cards) is deliberately
+  // NOT offered here — this card is for the thing Practice itself starts.
+  const practiceInProgress = !!active && !session;
 
   // The facts the query names, right now — what Start hands the quiz and what
   // the bar counts, computed once so the sentence and the session can never
@@ -85,6 +106,20 @@ export default function PracticePage() {
         sub="Pick a pool and how it should ask, then drill."
       />
 
+      {/* The quiz you left running, and only then — Continue re-enters the very
+          card you left on (the runtime is on disk); Discard drops it. A lesson
+          session is not shown here; the Home lesson cards resume those. */}
+      {practiceInProgress && active ? (
+        <PracticeResume
+          what={active.what}
+          progress={progress}
+          startedAt={active.startedAt}
+          now={mountedNow}
+          onContinue={() => router.push("/quiz")}
+          onDiscard={discardSession}
+        />
+      ) : null}
+
       <Lbl>What to practise</Lbl>
       <PracticeSelector
         sel={cfg.selection}
@@ -104,7 +139,7 @@ export default function PracticePage() {
         what={what}
         count={facts.length}
         plannedCount={planned.facts.length}
-        active={!!session}
+        active={practiceInProgress || !!session}
         onStart={start}
       />
     </>

@@ -2,7 +2,6 @@
 
 // Home — the curriculum, top to bottom: what to learn next.
 //
-//   0. resume        the quiz you left running, and ONLY if there is one
 //   1. lessons       the next lesson in each track (kana, radicals, kanji,
 //                    words, grammar), each card rendered only when it has
 //                    something to teach
@@ -21,14 +20,19 @@
 // the door for hand-picking exact items, and Home stays the low-decision
 // lesson feed.
 //
+// There is NO generic "where you left off" card here any more either. A lesson
+// left mid-session is resumed from that lesson's own card (it shows Continue
+// when it is the session in progress); a one-off practice quiz is resumed from
+// the Practice page. So a session is always resumed where it makes sense, and
+// Home does not carry a second, redundant door to it.
+//
 // Home reads history and the curriculum settings (kanji order, lesson cost,
 // words per lesson) to decide the next lesson in each track. It does not resolve
 // selections, plan sessions, or start a drill of its own; the lesson cards start
 // their own sessions from their own facts.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import { SessionCard } from "@/components/home/session-card";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { NextGrammarLesson } from "@/components/lesson/next-grammar-lesson";
 import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
@@ -65,20 +69,8 @@ function sameFactSet(a: readonly FactId[], b: readonly FactId[]): boolean {
 
 export default function HomePage() {
   const { cfg } = useQuizConfig();
-  const { session, startSession, discardSession, continueSession } =
-    useQuizSession();
+  const { session, startSession, continueSession } = useQuizSession();
   const { history, refresh } = useHistory();
-
-  // The clock the session card is read against. Held as state and set strictly
-  // after mount, not in a useState initialiser: a timestamp seeded on the server
-  // renders text ("last answer 2 hours ago") the client then disagrees with on
-  // hydration, so the card sits out the first paint rather than printing a time
-  // from another machine.
-  const [mountedNow, setMountedNow] = useState<number | null>(null);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMountedNow(Date.now());
-  }, []);
 
   // The next lesson is a view of history, not a cursor — see next-lesson.tsx.
   // Null when there is no new material left, and the card is then not rendered
@@ -326,18 +318,6 @@ export default function HomePage() {
           same on kana, kanji, words and grammar, so it is stated generally, at
           the top, and dismissed for good on the first "Got it". */}
       <ClaimExplainer />
-
-      {/* Not rendered at all with no session — see session-card.tsx. A card
-          that offers to continue nothing is the lie this replaced. */}
-      {session && mountedNow !== null ? (
-        <SessionCard
-          session={session}
-          now={mountedNow}
-          onContinue={continueSession}
-          onRestart={() => startSession(session.facts, session.teach, session.what)}
-          onDiscard={discardSession}
-        />
-      ) : null}
 
       {lesson ? (
         <NextLesson
