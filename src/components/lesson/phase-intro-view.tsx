@@ -225,12 +225,17 @@ export function PunctuationTable({ rows }: { rows: readonly PunctuationRow[] }) 
           {rows.map((r, i) => (
             <tr key={i} className="border-b border-border/60 align-top last:border-0">
               <td className="whitespace-nowrap px-4 py-3">
-                <span lang="ja" className="font-kana text-[20px] font-light text-text">
-                  {r.mark}
+                <span className="flex items-baseline gap-3">
+                  <span
+                    lang="ja"
+                    className="inline-block min-w-[3.5rem] font-kana text-[20px] font-light text-text"
+                  >
+                    {r.mark}
+                  </span>
+                  {r.name ? (
+                    <span className="text-[13px] text-text-muted">{r.name}</span>
+                  ) : null}
                 </span>
-                {r.name ? (
-                  <span className="ml-2 text-[13px] text-text-muted">{r.name}</span>
-                ) : null}
               </td>
               <td className="px-4 py-3 text-text-muted">{r.english}</td>
               <td className="px-4 py-3 text-text-muted">{r.note}</td>
