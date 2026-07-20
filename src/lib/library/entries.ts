@@ -62,7 +62,7 @@ import {
 } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { cluster } from "@/data/grammar/clusters";
-import { RECIPES, isProducible, type Recipe } from "@/data/grammar/recipes";
+import { RECIPES, isProducible, patternLabel, type Recipe } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
 import type { EntryId, FactId, FactInfo } from "@/types";
@@ -386,7 +386,7 @@ function build(): LibEntry[] {
     out.push({
       id: patternEntry(r.id),
       kind: GRAMMAR_SUBJECT,
-      glyph: r.pattern,
+      glyph: patternLabel(r),
       readings: [],
       meanings: [r.gloss],
       searchAlso: c ? [c.title] : undefined,

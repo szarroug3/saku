@@ -1103,6 +1103,22 @@ export function recipesInCluster(cluster: string): Recipe[] {
 }
 
 /**
+ * The pattern with its sense appended, for the STRING-ONLY surfaces that cannot
+ * render a second styled span — the drill's MC prompt, option labels and reveal,
+ * and the fact/entry glyph the results and Library browse read. "〜られる (可能)",
+ * never bare "〜られる", so 可能 and 受身 (and 理由 vs 起点) read apart where both
+ * could otherwise be the same string. The " (sense)" form — halfwidth parens, a
+ * leading space — is the one the crammed pattern strings used before sense was
+ * split out, kept so nothing downstream changes shape. Rich surfaces render
+ * `pattern` and `sense` as two elements instead; this is the fallback for the
+ * ones that can only hold text. Bare `pattern` when the recipe carries no sense,
+ * which is all but six rows.
+ */
+export function patternLabel(r: Recipe): string {
+  return r.sense ? `${r.pattern} (${r.sense})` : r.pattern;
+}
+
+/**
  * Can a production question be built from this recipe at all?
  *
  * Three ways to fail, and each is a different kind of "no":

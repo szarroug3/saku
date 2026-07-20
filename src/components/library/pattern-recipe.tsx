@@ -109,6 +109,11 @@ function SharedRule({ owner }: { owner: Recipe }) {
       >
         {owner.pattern}
       </Link>
+      {owner.sense && (
+        <span className="whitespace-nowrap font-kana text-[13px] text-text-muted">
+          {" "}({owner.sense})
+        </span>
+      )}
     </span>
   );
 }
