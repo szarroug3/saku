@@ -38,6 +38,7 @@
 import { Card, Lbl } from "@/components/ui";
 import { BUCKETS, fillFor, tallyFacts } from "@/components/stats/tally";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import type { Claims } from "@/lib/claims";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { KIND_LABEL } from "@/lib/library/entries";
@@ -50,6 +51,11 @@ import type { AccuracyMetric, EntryId, FactAggregate, FactId } from "@/types";
 const SUBJECT_LABEL: Record<string, string> = {
   ...KIND_LABEL,
   [GRAMMAR_SUBJECT]: "Grammar",
+  // Transitivity is a scheduled subject with no Library shelf, so it has no
+  // KIND_LABEL entry and would otherwise fall back to its raw id ("transitivity")
+  // here. "Verb pairs" is the app's word for it everywhere else — the session
+  // header and the Home card both avoid the jargon — so Progress says the same.
+  [TRANSITIVITY_SUBJECT]: "Verb pairs",
 };
 
 interface Subject {
