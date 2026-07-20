@@ -1056,31 +1056,54 @@ export function DrillScreen() {
           {hintTag}
         </p>
 
-        {/* THE HINT, once taken — and it stays for the rest of the showing,
-            retries included. Subordinate to the prompt on purpose: the picture
-            is smaller than the halo and the line is one muted sentence, because
-            a hint that competes with the question has become the question.
-            Nothing is reserved for it while it is unread — it is a thing you
-            asked for, so it is allowed to arrive. */}
-        {q.hinted && hint ? (
-          hint.kind === "image" ? (
-            // The drawing ALONE: no story, no analogy line, no example word. The
-            // mnemonic's text says the answer out loud ("a person saying AH"),
-            // and a hint that prints the answer is not a hint. MnemonicImage
-            // still falls back to the glyph if the file vanishes between the
-            // probe and here, which is the same graceful degrade the lesson has.
-            <MnemonicImage
-              src={hint.src}
-              glyph={hint.glyph}
-              imgClassName="h-[104px] w-[104px] rounded-lg object-contain"
-              glyphClassName="text-4xl text-text-muted"
-            />
-          ) : (
-            <p className="max-w-[320px] text-center text-[12px] text-text-muted">
-              {hint.text}
-            </p>
-          )
-        ) : null}
+        {/* THE HINT SLOT — the button and the hint it produces share one
+            place, directly above the answer control. Before it is taken the
+            slot holds the Hint button; the moment it is taken the same slot
+            holds the hint itself, so what you pressed becomes what you read
+            without the stage shifting the answer down under you. The hint
+            then stays for the rest of the showing, retries included, and is
+            subordinate to the prompt on purpose: the picture is smaller than
+            the halo and the line is one muted sentence, because a hint that
+            competes with the question has become the question.
+
+            The button is one SmallBtn, the same material as End quiz and the
+            gear. Absent on a card with no hint (see hintReady), absent during
+            a reveal wait, and gone the moment the hint is taken — there is
+            nothing to press twice. The two states are mutually exclusive, so
+            the slot is either button or hint, never both.
+
+            min-h-7 holds the baseline stable across the three unhinted-or-
+            text states — a card with no hint, a card showing the button, and
+            a card whose taken hint is a line of text — so nothing jumps as
+            you move between cards. A taken IMAGE is taller than that floor and
+            is allowed to be, exactly as before: it is a thing you asked for,
+            so it is allowed to arrive at its own size. */}
+        <span className="flex min-h-7 flex-col items-center justify-center">
+          {q.hinted && hint ? (
+            hint.kind === "image" ? (
+              // The drawing ALONE: no story, no analogy line, no example word.
+              // The mnemonic's text says the answer out loud ("a person saying
+              // AH"), and a hint that prints the answer is not a hint.
+              // MnemonicImage still falls back to the glyph if the file
+              // vanishes between the probe and here, which is the same graceful
+              // degrade the lesson has.
+              <MnemonicImage
+                src={hint.src}
+                glyph={hint.glyph}
+                imgClassName="h-[104px] w-[104px] rounded-lg object-contain"
+                glyphClassName="text-4xl text-text-muted"
+              />
+            ) : (
+              <p className="max-w-[320px] text-center text-[12px] text-text-muted">
+                {hint.text}
+              </p>
+            )
+          ) : hintReady && !q.hinted && !rt.waiting ? (
+            <SmallBtn onClick={takeHint} title="Hint (?)">
+              Hint
+            </SmallBtn>
+          ) : null}
+        </span>
 
         {typedMode ? (
           <input
@@ -1150,19 +1173,6 @@ export function DrillScreen() {
             ))}
           </div>
         )}
-
-        {/* Hint: one SmallBtn, the same material as End quiz and the gear,
-            sitting under the answer control where your hand already is. Absent
-            on a card with no hint (see hintReady) and gone the moment it is
-            taken — there is nothing to press twice. Fixed-height row so a card
-            with a hint and a card without are the same shape. */}
-        <span className="flex min-h-7 items-center">
-          {hintReady && !q.hinted && !rt.waiting ? (
-            <SmallBtn onClick={takeHint} title="Hint (?)">
-              Hint
-            </SmallBtn>
-          ) : null}
-        </span>
 
         {/* The reveal: the one thing colour can't say is WHICH answer was
             right. Held until you press Enter, so it's read rather than
