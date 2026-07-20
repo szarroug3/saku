@@ -217,3 +217,49 @@ describe("a vehicle is pinned to the fact's HOST", () => {
     }
   });
 });
+
+describe("the known-word gate filters the pool", () => {
+  test("only vehicles the predicate accepts are offered", () => {
+    const r = recipe("te-kara")!;
+    // A learner who knows exactly two verbs of the pool: the rest are dropped.
+    const known = (s: string) => s === "食べる" || s === "書く";
+    const offered = vehiclesFor(r, "verb", known).map((v) => v.surface);
+    assert.deepEqual(offered, ["食べる", "書く"]);
+  });
+
+  test("the gate only ever REMOVES: filtered is a subset, all-known is the full pool", () => {
+    // The gate composes with legality rather than replacing it — it can only
+    // drop legal vehicles the learner has not met, never add one or change which
+    // builds are legal. So for every recipe and host: the filtered list is a
+    // subset of the unfiltered one, and knowing everything reproduces it exactly.
+    const knowEverything = () => true;
+    const knowNothing = () => false;
+    for (const r of DRILLABLE) {
+      for (const host of ["verb", "adj-i", "adj-na", "noun"] as const) {
+        const full = vehiclesFor(r, host).map((v) => v.surface);
+        const all = vehiclesFor(r, host, knowEverything).map((v) => v.surface);
+        const none = vehiclesFor(r, host, knowNothing).map((v) => v.surface);
+        assert.deepEqual(all, full, `${r.id}/${host}: all-known should equal the full pool`);
+        assert.deepEqual(none, [], `${r.id}/${host}: knowing nothing should offer nothing`);
+      }
+    }
+  });
+
+  test("knowing none of the pool leaves nothing to offer", () => {
+    const r = recipe("te-kara")!;
+    assert.deepEqual(vehiclesFor(r, "verb", () => false), []);
+  });
+
+  test("pickVehicle returns null when the learner knows no legal vehicle", () => {
+    const r = recipe("te-kara")!;
+    assert.equal(pickVehicle(r, () => 0, "verb", () => false), null);
+  });
+
+  test("pickVehicle can only ever roll a known vehicle", () => {
+    const r = recipe("te-kara")!;
+    const known = (s: string) => s === "読む";
+    for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
+      assert.equal(pickVehicle(r, seq([x]), "verb", known)!.surface, "読む");
+    }
+  });
+});

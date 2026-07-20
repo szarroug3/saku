@@ -14,9 +14,38 @@ import { questionsFor, grammarVehicleFor, type GrammarVehicle } from "./question
 import { buildMcOptions, checkTyped } from "./index";
 import { patternProductionFactId, GRAMMAR_SUBJECT } from "@/data/grammar";
 import { factInfo } from "@/lib/facts";
+import {
+  ADJ_I_VEHICLES,
+  ADJ_NA_VEHICLES,
+  NOUN_VEHICLES,
+  VERB_VEHICLES,
+} from "@/lib/grammar/vehicles";
+import { wordMeaningFactId } from "@/data/vocab";
+import type { HistoryFile } from "@/types";
 
 const TE_KARA = patternProductionFactId("te-kara");
 const TABERU: GrammarVehicle = { surface: "食べる", kana: "たべる", cls: "v1" };
+
+const NOW = 1_700_000_000_000;
+
+/** A learner who has CLAIMED these words and nothing else — the app's cheapest
+ * route to "known" (see readable.ts's wordKnown, which reads the same claim). */
+function knowing(...surfaces: string[]): HistoryFile {
+  return {
+    sessions: [],
+    facts: {},
+    claims: Object.fromEntries(surfaces.map((s) => [wordMeaningFactId(s), NOW])),
+  };
+}
+
+/** A learner who knows the WHOLE vehicle pool, so `grammarVehicleFor` rolls
+ * exactly as it did before the known-word gate existed — the fixture for every
+ * test that is about host/legality, not about the gate itself. */
+const ALL_VEHICLES: HistoryFile = knowing(
+  ...[...VERB_VEHICLES, ...ADJ_I_VEHICLES, ...ADJ_NA_VEHICLES, ...NOUN_VEHICLES].map(
+    (v) => v.surface,
+  ),
+);
 
 describe("grammar production varies on the ctx vehicle (#50)", () => {
   test("prompt shows the SHOWING's verb, not the baked 行く", () => {
@@ -71,7 +100,7 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
   });
 
   test("grammarVehicleFor rolls a plausible vehicle for a production fact, null otherwise", () => {
-    const v = grammarVehicleFor(TE_KARA, () => 0.3);
+    const v = grammarVehicleFor(TE_KARA, ALL_VEHICLES, () => 0.3);
     assert.ok(v && v.surface.length > 0 && v.cls);
     // A meaning fact is not a production fact — no vehicle.
     const meaning = factInfo(TE_KARA)?.subject;
@@ -112,8 +141,8 @@ describe("a split production fact is drilled on ITS OWN host", () => {
 
   test("rolled vehicles never cross the host boundary, across the rng range", () => {
     for (const x of [0, 0.2, 0.4, 0.6, 0.8, 0.99]) {
-      assert.equal(grammarVehicleFor(SUGIRU_I, () => x)?.cls?.startsWith("adj"), true);
-      assert.equal(grammarVehicleFor(SUGIRU_V, () => x)?.cls?.startsWith("v"), true);
+      assert.equal(grammarVehicleFor(SUGIRU_I, ALL_VEHICLES, () => x)?.cls?.startsWith("adj"), true);
+      assert.equal(grammarVehicleFor(SUGIRU_V, ALL_VEHICLES, () => x)?.cls?.startsWith("v"), true);
     }
   });
 
@@ -160,7 +189,41 @@ describe("a split production fact is drilled on ITS OWN host", () => {
     assert.equal(factInfo(node)?.glyph, "静かなので");
     assert.equal(questionsFor(node).prompt(node, "en2jp").glyph, "静か");
     for (const x of [0, 0.3, 0.6, 0.9]) {
-      assert.equal(grammarVehicleFor(node, () => x)?.cls, "adj-na");
+      assert.equal(grammarVehicleFor(node, ALL_VEHICLES, () => x)?.cls, "adj-na");
     }
+  });
+});
+
+describe("grammarVehicleFor rolls only KNOWN vehicles", () => {
+  const SUGIRU_I = patternProductionFactId("sugiru", "adj-i");
+
+  test("a learner who knows one pool verb always rolls that verb", () => {
+    // Knowing 読む and nothing else: every showing of てから is on 読む, never a
+    // verb she has not met. This is the whole point — a production item tests the
+    // pattern, not whether she can conjugate an unknown word.
+    const knows = knowing("読む");
+    for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
+      assert.equal(grammarVehicleFor(TE_KARA, knows, () => x)?.surface, "読む");
+    }
+  });
+
+  test("a CLAIM makes a word an eligible vehicle, exactly like a lesson", () => {
+    // knowing() records claims, not tests — so this asserts the claim path.
+    assert.equal(grammarVehicleFor(TE_KARA, knowing("食べる"), () => 0)?.surface, "食べる");
+  });
+
+  test("knowing no pool word yields null, so the showing falls back to baked", () => {
+    const NOBODY: HistoryFile = { sessions: [], facts: {} };
+    assert.equal(grammarVehicleFor(TE_KARA, NOBODY, () => 0.3), null);
+  });
+
+  test("the gate respects the host pin: a known verb does not unlock an adj fact", () => {
+    // SUGIRU_I is the adj-i fact. Knowing only a verb leaves it with no legal
+    // KNOWN vehicle, so it rolls null and falls back to its baked 高い — never a
+    // verb, which would be the other fact's question.
+    const onlyVerb = knowing("行く");
+    assert.equal(grammarVehicleFor(SUGIRU_I, onlyVerb, () => 0.3), null);
+    // And knowing the adjective unlocks it.
+    assert.equal(grammarVehicleFor(SUGIRU_I, knowing("高い"), () => 0.3)?.surface, "高い");
   });
 });
