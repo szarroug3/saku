@@ -146,15 +146,17 @@ export function SliceBar({
           >
             ＋ Add to list
           </Btn>
-          <Btn
-            onClick={() => onClaim(claimOrder)}
-            // Claiming what the model already calls solid is a no-op with a
-            // confirmation animation. `claimOrder` is exactly the not-solid
-            // facts, so an empty order means there is nothing left to claim.
-            disabled={claimOrder.length === 0}
-          >
-            ✓ I know {slice.entries.length === 1 ? "this" : "these"}
-          </Btn>
+          {/* HIDDEN, not disabled, once there is nothing left to claim.
+              Claiming what the model already calls solid is a no-op, and
+              `claimOrder` is exactly the not-solid facts, so an empty order
+              means the slice is already known and the button is GONE — the
+              same "don't ask what you've answered" rule the Quiz/Teach
+              buttons follow below. */}
+          {claimOrder.length > 0 ? (
+            <Btn onClick={() => onClaim(claimOrder)}>
+              ✓ I know {slice.entries.length === 1 ? "this" : "these"}
+            </Btn>
+          ) : null}
           {/* Two ways to run a slice, both gated identically (see below).
               "Quiz me" is the one-off (startQuiz): straight to the questions, no
               teach screen and no rest loop, ending on the results page — the
