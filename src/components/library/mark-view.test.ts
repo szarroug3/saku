@@ -5,10 +5,10 @@
 // =====================================================
 // Five marks are taught once per script and their intro carries setId "hiragana"
 // or "katakana", which the page prints as "In hiragana" / "In katakana". The
-// three reading-rule marks (々, rendaku, punctuation) carry a script-neutral
-// intro whose setId is "" (NO_SCRIPT). The bug this guards is quiet: a
-// scriptLabel that returned setId as a fallback would hand "" to <Lbl>, which
-// renders a stray empty pill above the card rather than nothing.
+// four reading-rule marks (々, rendaku, punctuation, okurigana) carry
+// script-neutral intros whose setId is "" (NO_SCRIPT). The bug this guards is
+// quiet: a scriptLabel that returned setId as a fallback would hand "" to <Lbl>,
+// which renders a stray empty pill above the card rather than nothing.
 //
 // WHY A SOURCE-SHAPE TEST
 // =======================
@@ -43,13 +43,13 @@ describe("a script-neutral mark renders no script label", () => {
     assert.match(SRC, /\{label \? <Lbl>\{label\}<\/Lbl> : null\}/);
   });
 
-  test("exactly the three reading-rule marks are script-neutral", () => {
+  test("exactly the four reading-rule marks are script-neutral", () => {
     // The data side of the same guarantee, so the source-shape test above is
     // pinning behaviour that some mark actually exercises.
     const neutral = MARKS.filter((m) => m.intros.some((i) => i.setId === ""));
     assert.deepEqual(
       neutral.map((m) => m.id),
-      ["iteration-mark", "rendaku", "punctuation"],
+      ["iteration-mark", "rendaku", "punctuation", "okurigana"],
     );
     for (const m of neutral) {
       assert.ok(

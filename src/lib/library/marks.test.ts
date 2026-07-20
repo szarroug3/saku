@@ -36,6 +36,9 @@ import {
   ITERATION_MARK,
   LONG_H,
   LONG_K,
+  OKURIGANA_FIXED,
+  OKURIGANA_INTRO,
+  OKURIGANA_MOVING,
   PHASE_INTROS,
   PUNCTUATION,
   RENDAKU,
@@ -241,6 +244,28 @@ describe("the Library shows the LESSON's explanation, not a copy of it", () => {
     // Long vowels is the case that forces it: hiragana doubles a vowel kana,
     // katakana uses one ー, and a page showing only the first teaches half a rule.
     assert.notEqual(LONG_H.title, LONG_K.title);
+  });
+
+  test("okurigana carries its three cards, by reference and in order", () => {
+    // Okurigana is script-neutral like the three above, but the one rule is
+    // taught in three moments, so it carries all three cards — by reference, so
+    // the Library and the lessons render the same objects, and in the order the
+    // lessons gate them.
+    const oku = MARKS.find((m) => m.id === "okurigana");
+    assert.ok(oku, "the okurigana mark is missing from the shelf");
+    assert.equal(oku.glyph, "", "okurigana grew a glyph it does not have");
+    assert.deepEqual(oku.intros, [
+      OKURIGANA_INTRO,
+      OKURIGANA_MOVING,
+      OKURIGANA_FIXED,
+    ]);
+    // Script-neutral: all three cards are NO_SCRIPT (setId ""), like 々.
+    assert.deepEqual(
+      oku.intros.map((i) => i.setId),
+      ["", "", ""],
+    );
+    // It resolves and stays inert like every other mark: no readings, no facts.
+    assert.deepEqual(entryOfMark("okurigana").readings, []);
   });
 
   test("the three reading-rule marks carry a single script-neutral intro", () => {
