@@ -904,6 +904,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     draft: true,
   },
 
+  ナ: {
+    glyph: "ナ",
+    romaji: "na",
+    sound: "nah",
+    object: "narwhal",
+    analogy: [
+      { text: "Say “" },
+      { text: "nah", accent: true },
+      { text: "” as in " },
+      { text: "na", accent: true },
+      { text: "rwhal." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "na", accent: true },
+      { text: "rwhal jumps straight out of the water, its long tusk held high in the air." },
+    ],
+    example: { word: "ナス", reading: "nasu", gloss: "eggplant", hitIndex: 0 },
+  },
+
   に: {
     glyph: "に",
     romaji: "ni",
@@ -925,6 +945,28 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "にく", reading: "niku", gloss: "meat", hitIndex: 0 },
     draft: true,
+  },
+
+  ニ: {
+    glyph: "ニ",
+    romaji: "ni",
+    sound: "nee",
+    object: "needle stitches",
+    analogy: [
+      { text: "Say “" },
+      { text: "nee", accent: true },
+      { text: "” as in " },
+      { text: "nee", accent: true },
+      { text: "dle." },
+    ],
+    mnemonic: [
+      { text: "Two " },
+      { text: "nea", accent: true },
+      { text: "t " },
+      { text: "nee", accent: true },
+      { text: "dle stitches lie flat and parallel, and you tug the thread to check they hold." },
+    ],
+    example: { word: "ニット", reading: "nitto", gloss: "knitwear", hitIndex: 0 },
   },
 
   ぬ: {
@@ -966,6 +1008,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "ねこ", reading: "neko", gloss: "cat", hitIndex: 0 },
     draft: true,
+  },
+
+  ネ: {
+    glyph: "ネ",
+    romaji: "ne",
+    sound: "neh",
+    object: "nest",
+    analogy: [
+      { text: "Say “" },
+      { text: "neh", accent: true },
+      { text: "” as in " },
+      { text: "ne", accent: true },
+      { text: "st." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "ne", accent: true },
+      { text: "st of crossed twigs sits up in the rafters, one long tail of straw hanging down where the bird got lazy." },
+    ],
+    example: { word: "ネクタイ", reading: "nekutai", gloss: "necktie", hitIndex: 0 },
   },
 
   の: {
