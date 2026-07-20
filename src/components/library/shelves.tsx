@@ -277,7 +277,6 @@ export function Shelf({
         entry={entry}
         pair={pair}
         voice={voice}
-        note={entry.sub !== "Verb pair" ? entry.sub : undefined}
         standing={entryStanding(knownFactsOf(entry), facts, claims, metric, now)}
         selected={selected.has(entry.id)}
         onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}

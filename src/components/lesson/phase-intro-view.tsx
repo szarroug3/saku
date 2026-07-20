@@ -24,6 +24,7 @@ import type {
   IntroPara,
   PhaseIntro,
   PunctuationRow,
+  TransitivityPairRow,
 } from "@/data/phase-intros";
 
 export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
@@ -63,14 +64,19 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
             <IntroBody body={intro.body} measure="" />
           </div>
         ) : (
-          <div className="flex flex-col gap-6 @xl:flex-row @xl:items-start @xl:gap-8">
-            <div className="min-w-0 flex-1">
-              <IntroBody body={intro.body} />
-            </div>
-            {intro.examples?.length ? (
-              <div className="@xl:w-[20rem] @xl:shrink-0">
-                <IntroExamples examples={intro.examples} />
+          <div className="space-y-6">
+            <div className="flex flex-col gap-6 @xl:flex-row @xl:items-start @xl:gap-8">
+              <div className="min-w-0 flex-1">
+                <IntroBody body={intro.body} />
               </div>
+              {intro.examples?.length ? (
+                <div className="@xl:w-[20rem] @xl:shrink-0">
+                  <IntroExamples examples={intro.examples} />
+                </div>
+              ) : null}
+            </div>
+            {intro.transitivityPairs?.length ? (
+              <TransitivityPairsTable rows={intro.transitivityPairs} />
             ) : null}
           </div>
         )}
@@ -166,6 +172,11 @@ export function IntroExamples({
   bare?: boolean;
 }) {
   const { cfg } = useQuizConfig();
+  const pairGloss = (gloss: string): [string, string] | null => {
+    const inner = /\(([^)]+)\)/.exec(gloss)?.[1] ?? gloss;
+    const bits = inner.split("→").map((s) => s.trim());
+    return bits.length === 2 ? [bits[0], bits[1]] : null;
+  };
   return (
     <div className={bare ? "" : "rounded-lg border border-border bg-panel/40 p-4"}>
       <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
@@ -176,25 +187,53 @@ export function IntroExamples({
           <li
             key={i}
             lang="ja"
-            className="flex flex-wrap items-baseline gap-x-1.5 text-[15px] leading-relaxed"
+            className="text-[15px] leading-relaxed"
           >
-            <span className="text-text-muted">{ex.from}</span>
-            <span className="text-text-muted/70">{ex.op ?? "="}</span>
-            <span className="font-medium text-text">{ex.to}</span>
-            {ex.reading ? (
-              <span className="text-[13px] text-text-muted">({ex.reading})</span>
-            ) : null}
-            <span className="text-text-muted/70">·</span>
-            <span lang="en" className="text-[13px] text-text-muted">
-              {ex.gloss}
-            </span>
-            {ex.say ? (
-              <HearButton
-                glyph={ex.say}
-                voiceName={cfg.voiceName}
-                className="ml-1 self-center"
-              />
-            ) : null}
+            {ex.op === "→" && pairGloss(ex.gloss) ? (
+              <div className={i === 0 ? "" : "mt-2 border-t border-border/60 pt-2"}>
+                {(() => {
+                  const [left, right] = pairGloss(ex.gloss)!;
+                  return (
+                    <>
+                      <p className="font-kana text-text">
+                        {ex.from}
+                        <span className="text-text-muted"> · </span>
+                        <span lang="en" className="font-sans text-[13px] text-text-muted">
+                          {left}
+                        </span>
+                      </p>
+                      <p className="mt-1 font-kana text-text">
+                        {ex.to}
+                        <span className="text-text-muted"> · </span>
+                        <span lang="en" className="font-sans text-[13px] text-text-muted">
+                          {right}
+                        </span>
+                      </p>
+                    </>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-baseline gap-x-1.5">
+                <span className="text-text-muted">{ex.from}</span>
+                <span className="text-text-muted/70">{ex.op ?? "="}</span>
+                <span className="font-medium text-text">{ex.to}</span>
+                {ex.reading ? (
+                  <span className="text-[13px] text-text-muted">({ex.reading})</span>
+                ) : null}
+                <span className="text-text-muted/70">·</span>
+                <span lang="en" className="text-[13px] text-text-muted">
+                  {ex.gloss}
+                </span>
+                {ex.say ? (
+                  <HearButton
+                    glyph={ex.say}
+                    voiceName={cfg.voiceName}
+                    className="ml-1 self-center"
+                  />
+                ) : null}
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -239,6 +278,29 @@ export function PunctuationTable({ rows }: { rows: readonly PunctuationRow[] }) 
               </td>
               <td className="px-4 py-3 text-text-muted">{r.english}</td>
               <td className="px-4 py-3 text-text-muted">{r.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TransitivityPairsTable({ rows }: { rows: readonly TransitivityPairRow[] }) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-border">
+      <table className="w-full border-collapse text-left text-[14px]">
+        <thead>
+          <tr className="border-b border-border bg-panel/40 text-[11px] uppercase tracking-[0.1em] text-text-muted">
+            <th className="px-4 py-2.5 font-semibold">It happened</th>
+            <th className="px-4 py-2.5 font-semibold">Someone did it</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} className="border-b border-border/60 align-top last:border-0">
+              <td className="px-4 py-3 font-kana text-text">{r.happensTail}</td>
+              <td className="px-4 py-3 font-kana text-text">{r.doItTail}</td>
             </tr>
           ))}
         </tbody>

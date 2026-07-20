@@ -94,6 +94,7 @@ import {
   factsColumnHeader,
   factsTitle,
   KIND_LABEL,
+  knownFactsOf,
   libEntry,
   madeOf,
   readingRowsOf,
@@ -136,7 +137,9 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
   const claims = history.claims ?? {};
   const facts = factsOf(entry.id);
-  const standing = entryStanding(facts, history.facts, claims, cfg.accuracyMetric, now);
+  const isTransitivity = entry.kind === TRANSITIVITY_SUBJECT;
+  const standingFacts = isTransitivity ? knownFactsOf(entry) : facts;
+  const standing = entryStanding(standingFacts, history.facts, claims, cfg.accuracyMetric, now);
   const words = appearsIn(entry);
   const parts = madeOf(entry);
   const mine = lists.filter((l) => l.kind === "fixed" && l.entries.includes(entry.id));
@@ -172,7 +175,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // with the teach walk (VerbPairView), draws it. `pair` is the two verbs and
   // the one event behind this entry's id; null only if the id names no pair the
   // build knows, which the branches below treat as "render nothing".
-  const isTransitivity = entry.kind === TRANSITIVITY_SUBJECT;
   const pair = isTransitivity ? pairForEntry(entry.id) : null;
 
   // ---- grammar-only material ----
@@ -239,6 +241,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
               says — facts you HAVE been asked and are not on top of — and it
               correctly disappears on a character you have never studied, where
               "9 not seen" is the whole story. */}
+          {standing.needWork - (standing.total - standing.seen) > 0 ? (
+            <span className="rounded-full border border-warning px-2 py-0.5 text-[11px] text-warning">
+              {standing.needWork - (standing.total - standing.seen)} need work
+            </span>
+          ) : null}
+          {standing.total - standing.seen > 0 ? (
+            <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-text-muted">
+              {standing.total - standing.seen} not seen
+            </span>
+          ) : null}
+        </>
+      ) : null}
+      {isTransitivity && standing.total > 1 ? (
+        <>
           {standing.needWork - (standing.total - standing.seen) > 0 ? (
             <span className="rounded-full border border-warning px-2 py-0.5 text-[11px] text-warning">
               {standing.needWork - (standing.total - standing.seen)} need work

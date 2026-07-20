@@ -501,6 +501,12 @@ function build(): LibEntry[] {
   // pair is also findable by either verb even though the empty glyph cannot be.
   VERB_PAIRS.forEach((p, i) => {
     const pattern = pairPattern(p.happens.reading, p.doIt.reading);
+    const tailLabel = pattern.isException ? "Exception" : shiftLabel(pattern);
+    const tailFrom = pattern.from?.replace(/^-/, "");
+    const tailTo = pattern.to?.replace(/^-/, "");
+    const tailSearch = pattern.isException
+      ? ["exception", "verb pair"]
+      : [tailLabel, `${tailFrom} ${tailTo}`, `${tailFrom}${tailTo}`];
     out.push({
       id: pairEntry(p),
       kind: TRANSITIVITY_SUBJECT,
@@ -508,12 +514,12 @@ function build(): LibEntry[] {
       name: `${p.happens.word} / ${p.doIt.word}`,
       readings: [p.happens.reading, p.doIt.reading],
       meanings: [p.happens.en, p.doIt.en],
-      searchAlso: [p.happens.word, p.doIt.word],
+      searchAlso: [p.happens.word, p.doIt.word, ...tailSearch],
       // The tail-shift name is the one line worth carrying — "the -ある/-える swap
       // again" is a real memory aid (see transitivity-pattern.ts). A pair that
       // fits no rule says "Verb pair" rather than "Exception", which would read
       // as a warning on a shelf where the shift name is a help, not a grade.
-      sub: pattern.isException ? "Verb pair" : shiftLabel(pattern),
+      sub: tailLabel,
       // Their own band, below kanji (1000+) and above grammar (500+): a pair
       // rarely collides with another kind on a query, because its meanings are
       // whole English sentences, so this only breaks ties among pairs — in data

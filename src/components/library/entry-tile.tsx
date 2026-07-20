@@ -38,6 +38,7 @@ import { entryHref } from "@/lib/library/href";
 import type { EntryStanding } from "@/lib/library/standing";
 import { speak } from "@/lib/speech";
 import type { VerbPair } from "@/data/transitivity";
+import { pairPattern } from "@/lib/transitivity-pattern";
 
 /** Whether an entry has a pronunciation worth a 🔊.
  *
@@ -119,7 +120,7 @@ function ViewLink({ entry, className }: { entry: LibEntry; className?: string })
       // `entryName`, not the glyph: the long-vowel mark has no glyph, and this
       // read "Open " — a control a screen reader announces with no name.
       aria-label={`Open ${entryName(entry)}`}
-      className={`cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted no-underline hover:bg-panel hover:text-text ${className ?? ""}`}
+      className={`inline-flex size-5 items-center justify-center cursor-pointer rounded-md border border-border bg-card p-0 text-[11px] leading-none text-text-muted no-underline hover:bg-panel hover:text-text ${className ?? ""}`}
     >
       ↗
     </Link>
@@ -193,6 +194,19 @@ export function StandingCell({ standing }: { standing: EntryStanding }) {
   // the slice bar, which stays silent on an empty slice too.
   if (standing.total === 0) return null;
   if (standing.standing) return <StandingChip standing={standing.standing} />;
+  const unseen = standing.total - standing.seen;
+  const activeNeedWork = standing.needWork - unseen;
+  if (activeNeedWork > 0 && unseen > 0) {
+    return (
+      <span className="whitespace-nowrap text-xs text-text-muted">
+        <b className="font-medium text-warning">{activeNeedWork}</b> need work ·{" "}
+        <b className="font-medium">{unseen}</b> not seen
+      </span>
+    );
+  }
+  if (unseen > 0) {
+    return <span className="text-xs text-text-muted">{unseen} not seen</span>;
+  }
   if (standing.needWork === 0) {
     return <span className="text-xs text-text-muted">all {standing.total} solid</span>;
   }
@@ -319,12 +333,21 @@ function HearWord({
 /** One verb of a pair, as a shelf cell: the word, its reading, its own speaker,
  * and the English cue that points to THIS verb rather than its partner — the one
  * thing that tells the two apart. */
-function PairCell({ side, voice }: { side: VerbPair["happens"]; voice: string }) {
+function PairCell({
+  side,
+  voice,
+  tail,
+}: {
+  side: VerbPair["happens"];
+  voice: string;
+  tail?: string;
+}) {
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-1.5">
         <span className="truncate font-kana text-[17px]">{side.word}</span>
         <span className="truncate text-xs text-text-muted">{side.reading}</span>
+        {tail ? <span className="truncate text-xs text-text-muted">· {tail}</span> : null}
         <HearWord word={side.word} voice={voice} />
       </div>
       <span className="mt-0.5 block truncate text-xs text-text-muted">{side.en}</span>
@@ -338,12 +361,16 @@ function PairCell({ side, voice }: { side: VerbPair["happens"]; voice: string })
  * headings sit over the columns they name. */
 export function VerbPairHeader() {
   return (
-    <div className="flex items-center gap-3 border-b border-border px-1 pb-1.5 pt-1">
+    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] items-center gap-3 border-b border-border px-1 pb-1.5 pt-1">
       <span className="h-4 w-4 flex-none" aria-hidden />
-      <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 text-[11px] uppercase tracking-wide text-text-muted">
-        <span className="truncate">It happens on its own</span>
-        <span className="truncate">Someone does it</span>
-      </div>
+      <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
+        It happens on its own
+      </span>
+      <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
+        Someone does it
+      </span>
+      <span aria-hidden />
+      <span aria-hidden />
     </div>
   );
 }
@@ -358,7 +385,6 @@ export function VerbPairRow({
   entry,
   pair,
   standing,
-  note,
   voice,
   selected,
   onToggleSelect,
@@ -366,12 +392,13 @@ export function VerbPairRow({
   entry: LibEntry;
   pair: VerbPair;
   standing: EntryStanding;
-  /** The tail-shift label ("-る → -す"), when the pair follows a rule. */
-  note?: string;
   voice: string;
   selected: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
+  const pattern = pairPattern(pair.happens.reading, pair.doIt.reading);
+  const happensTail = pattern.isException ? undefined : pattern.from ?? undefined;
+  const doItTail = pattern.isException ? undefined : pattern.to ?? undefined;
   return (
     <div
       role="button"
@@ -384,7 +411,7 @@ export function VerbPairRow({
           onToggleSelect(e.shiftKey);
         }
       }}
-      className={`flex cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 ${
+      className={`grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 ${
         selected ? "bg-accent-bg" : "hover:bg-panel"
       }`}
     >
@@ -396,13 +423,8 @@ export function VerbPairRow({
       >
         ✓
       </span>
-      <div className="grid min-w-0 flex-1 grid-cols-2 gap-3">
-        <PairCell side={pair.happens} voice={voice} />
-        <PairCell side={pair.doIt} voice={voice} />
-      </div>
-      {note ? (
-        <span className="hidden flex-none text-xs text-text-muted sm:block">{note}</span>
-      ) : null}
+      <PairCell side={pair.happens} voice={voice} tail={happensTail} />
+      <PairCell side={pair.doIt} voice={voice} tail={doItTail} />
       <ViewLink entry={entry} className="flex-none" />
       <span className="flex-none">
         <StandingCell standing={standing} />

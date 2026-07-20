@@ -139,6 +139,18 @@ export interface PunctuationRow {
   note: string;
 }
 
+/** One row in the transitivity "common pairs" table. */
+export interface TransitivityPairRow {
+  /** The "it happens on its own" verb, with reading. */
+  happens: string;
+  /** The "someone does it" verb, with reading. */
+  doIt: string;
+  /** Tail shown in the "it happened" column. */
+  happensTail: string;
+  /** Tail shown in the "someone did it" column. */
+  doItTail: string;
+}
+
 /** A teaching card: one concept, shown as a step of the teach walk. */
 export interface PhaseIntro {
   /** Stable id — React key, and what a test names. */
@@ -161,6 +173,11 @@ export interface PhaseIntro {
    * examples, so it reads as a reference table with a closing sentence beneath.
    */
   punctuation?: readonly PunctuationRow[];
+  /**
+   * A compact table of common verb-pair shapes. Used by the transitivity intro's
+   * "Before you go on" card.
+   */
+  transitivityPairs?: readonly TransitivityPairRow[];
 }
 
 // THE CARDS ARE EXPORTED, ONE BY ONE, AND THAT IS NEW
@@ -633,9 +650,29 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
     },
   ],
   examples: [
-    { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "-ある → -える (the class started → I started the class)" },
-    { from: "直る (なおる)", op: "→", to: "直す (なおす)", gloss: "-る → -す (it got fixed → I fixed it)" },
-    { from: "開く (あく)", op: "→", to: "開ける (あける)", gloss: "-う → -える (the door opened → I opened the door)" },
+    { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "-ある → -える (The class started. → I started the class.)" },
+    { from: "直る (なおる)", op: "→", to: "直す (なおす)", gloss: "-る → -す (It got fixed. → I fixed it.)" },
+    { from: "開く (あく)", op: "→", to: "開ける (あける)", gloss: "-う → -える (The door opened. → I opened the door.)" },
+  ],
+  transitivityPairs: [
+    {
+      happens: "始まる (はじまる)",
+      doIt: "始める (はじめる)",
+      happensTail: "-ある",
+      doItTail: "-える",
+    },
+    {
+      happens: "直る (なおる)",
+      doIt: "直す (なおす)",
+      happensTail: "-る",
+      doItTail: "-す",
+    },
+    {
+      happens: "開く (あく)",
+      doIt: "開ける (あける)",
+      happensTail: "-う",
+      doItTail: "-える",
+    },
   ],
 };
 
