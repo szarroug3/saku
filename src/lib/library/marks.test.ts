@@ -66,12 +66,20 @@ function whyFound(query: string, id: string): string | null {
 }
 
 describe("the shelf exists and is reachable", () => {
-  test("mark is a Kind, and ?kind=mark selects it", () => {
-    // Singular, like `word` — the URL param is the subject id, and the words tab
-    // is `?kind=word` and not `?kind=vocab`.
+  test("writing-rule is a Kind, and ?kind=writing-rule selects it", () => {
+    // The URL kind value is `writing-rule`: the shelf is "Writing rules" on
+    // screen, and the query value is the subject id, like `?kind=word`.
     assert.ok(KINDS.includes(MARK_SUBJECT));
-    assert.equal(kindFromParams(new URLSearchParams("?kind=mark")), MARK_SUBJECT);
-    assert.notEqual(kindFromParams(new URLSearchParams("?kind=marks")), MARK_SUBJECT);
+    assert.equal(
+      kindFromParams(new URLSearchParams("?kind=writing-rule")),
+      MARK_SUBJECT,
+    );
+    // The old value no longer selects it: the rename moved the query value, and
+    // a stale `?kind=mark` link falls back to the default shelf.
+    assert.notEqual(
+      kindFromParams(new URLSearchParams("?kind=mark")),
+      MARK_SUBJECT,
+    );
   });
 
   test("all eight marks are entries, and every entry route resolves", () => {

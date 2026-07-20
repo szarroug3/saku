@@ -69,10 +69,14 @@ import {
 import { entryId } from "@/lib/fact-id";
 import type { EntryId } from "@/types";
 
-/** The subject id, in the same shape as KANA_SUBJECT / KANJI_SUBJECT. SINGULAR
- * ("mark", not "marks") because that is what every other subject does — the URL
- * says `?kind=word`, not `?kind=vocab` or `?kind=words`. */
-export const MARK_SUBJECT = "mark";
+/** The subject id, in the same shape as KANA_SUBJECT / KANJI_SUBJECT. The URL
+ * kind value is `writing-rule`: the shelf is called "Writing rules" on screen,
+ * because "Marks" only ever described the dakuten/handakuten and the real
+ * category is the writing rules that are not standalone characters. The constant
+ * keeps its MARK_ name because the DATA layer here is still a set of `Mark`
+ * objects — exactly the split VOCAB_SUBJECT = "word" already makes, where the
+ * constant names the module and the string names the URL. */
+export const MARK_SUBJECT = "writing-rule";
 
 /** Mint a mark's entry id. Like every other minter, this is the ONLY place a
  * mark id is constructed; everything downstream resolves it by lookup. */

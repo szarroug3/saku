@@ -141,8 +141,8 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
     case MARK_SUBJECT:
       return [
         {
-          id: "marks",
-          label: "Marks and rules",
+          id: "writing-rules",
+          label: "Writing rules",
           entries: MARKS.flatMap((m) => resolve(markEntry(m.id))),
         },
       ];
