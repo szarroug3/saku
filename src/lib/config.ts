@@ -3,9 +3,6 @@
 import { availableFonts } from "@/lib/font-detect";
 
 export const BEHAVIOR = {
-  /** Size of the big character on the drill card, px. */
-  cardSizePx: 96,
-
   // ---------- what counts as a hesitation (see src/lib/slow.ts) ----------
   /** How many MADs above your median median counts as an outlier. 3 is the
    * standard robust-outlier constant; it is a knob with a right answer, so it
