@@ -504,7 +504,7 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           />
         ) : null}
         {item.kind === "grammar" ? <GrammarFamilyPanel item={item} /> : null}
-        {item.kind === "kana" || item.kind === "kanji" ? <HowItsWritten item={item} /> : null}
+        {item.kind === "kana" || item.kind === "kanji" || item.kind === "radical" ? <HowItsWritten item={item} /> : null}
       </div>
     </div>
   );
