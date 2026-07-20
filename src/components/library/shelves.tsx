@@ -51,12 +51,19 @@ import { VOCAB_SUBJECT } from "@/data/vocab";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
+import { VERB_PAIRS } from "@/data/transitivity";
+import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CLUSTERS } from "@/data/grammar/clusters";
 import { RECIPES } from "@/data/grammar/recipes";
-import { EntryRow, EntryTile } from "@/components/library/entry-tile";
+import {
+  EntryRow,
+  EntryTile,
+  VerbPairHeader,
+  VerbPairRow,
+} from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
 import type { Claims } from "@/lib/claims";
-import { entryForGlyph, libEntry, type Kind, type LibEntry } from "@/lib/library/entries";
+import { entryForGlyph, knownFactsOf, libEntry, type Kind, type LibEntry } from "@/lib/library/entries";
 import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import {
   filterSections,
@@ -144,6 +151,19 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
           id: "writing-rules",
           label: "Writing rules",
           entries: MARKS.flatMap((m) => resolve(markEntry(m.id))),
+        },
+      ];
+    // ONE SECTION, holding every pair, for the same reason marks take one: the
+    // whole subject fits on a shelf and offers no cut worth inventing. Rendered
+    // as rows (see asRows) because a pair has no glyph to tile — its name is
+    // "出る / 出す" and its note is the tail-shift, both of which read across a
+    // line, not inside a 100px box.
+    case TRANSITIVITY_SUBJECT:
+      return [
+        {
+          id: "verb-pairs",
+          label: "Verb pairs",
+          entries: VERB_PAIRS.flatMap((p) => resolve(pairEntry(p))),
         },
       ];
     case VOCAB_SUBJECT:
@@ -242,6 +262,29 @@ export function Shelf({
     />
   );
 
+  // A verb pair is neither a glyph nor a phrase but a CONTRAST — two verbs and
+  // one event — so it gets its own row, two cells wide, each verb with its own
+  // reading, speaker and English cue. Standing runs over knownFactsOf, not every
+  // fact: a pair mints a fact per side but only quizzes the askable ones, so the
+  // count must ignore the distractor-only side or a fully-learned pair would read
+  // "1 of 2" forever (see entries.ts).
+  const pairRow = (entry: LibEntry) => {
+    const pair = pairForEntry(entry.id);
+    if (!pair) return null;
+    return (
+      <VerbPairRow
+        key={entry.id}
+        entry={entry}
+        pair={pair}
+        voice={voice}
+        note={entry.sub !== "Verb pair" ? entry.sub : undefined}
+        standing={entryStanding(knownFactsOf(entry), facts, claims, metric, now)}
+        selected={selected.has(entry.id)}
+        onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
+      />
+    );
+  };
+
   if (kind === VOCAB_SUBJECT) {
     const words = keep ? allEntries.filter(keep) : allEntries;
     return (
@@ -267,15 +310,18 @@ export function Shelf({
     );
   }
 
-  // ROWS, NOT TILES, for grammar AND marks — and it is the same argument both
-  // times. A tile is a 100px box built around a character; a grammar pattern is
-  // a phrase and a mark is a NAME ("Long vowels"), and neither fits. The mark
+  // ROWS, NOT TILES, for grammar, marks AND verb pairs — the same argument all
+  // three times. A tile is a 100px box built around a character; a grammar
+  // pattern is a phrase, a mark is a NAME ("Long vowels"), and a verb pair is two
+  // words and a tail-shift note ("出る / 出す", "-る → -す") — none fit. The mark
   // case is the stronger one: long vowels has no glyph at all, so its tile would
-  // be an empty box with a caption. A row leads with the glyph when there is one
-  // and reads its name and its rule across the line when there isn't, which is
-  // the honest shape for a shelf where four entries have a character and one
-  // does not.
-  const asRows = kind === GRAMMAR_SUBJECT || kind === MARK_SUBJECT;
+  // be an empty box with a caption; a pair has no glyph either. A row leads with
+  // the glyph when there is one and reads its name and its rule across the line
+  // when there isn't, which is the honest shape for these shelves.
+  const asRows =
+    kind === GRAMMAR_SUBJECT ||
+    kind === MARK_SUBJECT ||
+    kind === TRANSITIVITY_SUBJECT;
 
   // The knowledge filter applied to the cut, then the shelf's section cap. FILTER
   // FIRST, CAP SECOND: each section keeps only the entries that pass and an
@@ -358,7 +404,14 @@ export function Shelf({
               ) : null}
             </div>
             {asRows ? (
-              <div className="flex flex-col">{shown.map(row)}</div>
+              kind === TRANSITIVITY_SUBJECT ? (
+                <div className="flex flex-col">
+                  <VerbPairHeader />
+                  {shown.map(pairRow)}
+                </div>
+              ) : (
+                <div className="flex flex-col">{shown.map(row)}</div>
+              )
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
                 {shown.map(tile)}

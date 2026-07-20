@@ -56,6 +56,7 @@ import { MarkView } from "@/components/library/mark-view";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternRecipe } from "@/components/library/pattern-recipe";
 import { SliceBar } from "@/components/library/slice-bar";
+import { VerbPairView } from "@/components/library/verb-pair-view";
 import { StandingChip } from "@/components/library/standing-chip";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
 import { WordExampleView } from "@/components/library/word-example-view";
@@ -77,6 +78,7 @@ import { markFor } from "@/data/marks";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { exampleFor } from "@/data/word-examples";
 import { getMnemonic } from "@/data/mnemonics";
+import { TRANSITIVITY_SUBJECT, pairForEntry } from "@/data/transitivity-facts";
 import {
   VOCAB_SUBJECT,
   vocabRow,
@@ -166,6 +168,12 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // the majority whose forms match.
   const glyphVariant = isKana ? glyphVariantFor(entry.glyph) : null;
   const isRadical = entry.kind === RADICAL_SUBJECT;
+  // A verb pair is neither a glyph nor a single fact — its own layout, shared
+  // with the teach walk (VerbPairView), draws it. `pair` is the two verbs and
+  // the one event behind this entry's id; null only if the id names no pair the
+  // build knows, which the branches below treat as "render nothing".
+  const isTransitivity = entry.kind === TRANSITIVITY_SUBJECT;
+  const pair = isTransitivity ? pairForEntry(entry.id) : null;
 
   // ---- grammar-only material ----
 
@@ -388,7 +396,9 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // radical arm for the same reason it keeps grammar's — other callers still
   // enumerate what is scored — this page just no longer prints it.
   const genericRows =
-    isKana || isKanji || isWord || isGrammar || isRadical ? [] : factRows(entry);
+    isKana || isKanji || isWord || isGrammar || isRadical || isTransitivity
+      ? []
+      : factRows(entry);
 
   const linkRows = (
     <>
@@ -790,6 +800,18 @@ function EntryView({ entry }: { entry: LibEntry }) {
           table (a rule has no gradeable question). */}
       {mark ? <MarkView mark={mark} /> : null}
 
+      {/* The pair itself — the shared card the teach walk draws, so the Library
+          and the lesson cannot show a pair two different ways. It stands in for
+          the mnemonic, the stroke diagram and the facts table all three: a pair
+          has no drawing and its "facts" are the two English cues the card
+          already prints, so the generic table below is suppressed for it (see
+          genericRows) the way it is for a mark. */}
+      {isTransitivity && pair ? (
+        <Card>
+          <VerbPairView pair={pair} voiceName={cfg.voiceName} />
+        </Card>
+      ) : null}
+
       {/* The generic table, now serving grammar and anything new. No rows, no
           section: a headed box containing a header row and nothing else reads as
           broken. */}
@@ -841,8 +863,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ) : null}
 
       {/* Links for the kinds whose layout above did not already place it — a
-          mark, and anything new. */}
-      {!isKana && !isKanji && !isWord && !isGrammar ? (
+          mark, and anything new. A verb pair is excluded: it has no parts, no
+          words that contain it, and no glyph to confuse with another, so its
+          links row would be an empty card. */}
+      {!isKana && !isKanji && !isWord && !isGrammar && !isTransitivity ? (
         <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
       ) : null}
 

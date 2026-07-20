@@ -70,7 +70,15 @@ import {
 } from "@/data/radicals";
 import { cluster } from "@/data/grammar/clusters";
 import { RECIPES, isProducible, patternLabel, type Recipe } from "@/data/grammar/recipes";
-import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
+import { VERB_PAIRS } from "@/data/transitivity";
+import {
+  TRANSITIVITY_SUBJECT,
+  pairEntry,
+  pairForEntry,
+  sideFactId,
+  transitivitySide,
+} from "@/data/transitivity-facts";
+import { pairPattern, shiftLabel } from "@/lib/transitivity-pattern";
 import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
 import { factsOf } from "@/lib/facts";
@@ -85,20 +93,26 @@ export type Kind =
   | typeof RADICAL_SUBJECT
   | typeof KANJI_SUBJECT
   | typeof VOCAB_SUBJECT
-  | typeof GRAMMAR_SUBJECT;
+  | typeof GRAMMAR_SUBJECT
+  | typeof TRANSITIVITY_SUBJECT;
 
-/** Browse order, and it is teaching order: kana, then the rules about how kana
- * are read, then radicals, then the kanji built around them, then the words
- * kanji spell. Marks sit next to kana because that is the only place they mean
- * anything — ゛ is a fact about か. Radicals sit just before kanji for the same
- * reason — 氵 is a fact about 海. */
+/** Browse order, and it is teaching order: kana, then radicals, then the kanji
+ * built around them, then the words kanji spell, then grammar, then the verb
+ * pairs grammar makes usable. Radicals sit just before kanji because 氵 is a
+ * fact about 海; verb pairs sit after grammar because that is where the
+ * curriculum teaches them (you need to build a sentence before "the door opened"
+ * vs "I opened the door" is a distinction you can act on). WRITING RULES COME
+ * LAST, by product decision: ゛ is a fact about か and once sat next to kana, but
+ * the reading rules are reference a learner returns to, not a first stop, so the
+ * shelf is parked at the end rather than second. */
 export const KINDS: readonly Kind[] = [
   KANA_SUBJECT,
-  MARK_SUBJECT,
   RADICAL_SUBJECT,
   KANJI_SUBJECT,
   VOCAB_SUBJECT,
   GRAMMAR_SUBJECT,
+  TRANSITIVITY_SUBJECT,
+  MARK_SUBJECT,
 ];
 
 /** What a shelf is called on screen. */
@@ -109,6 +123,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   [KANJI_SUBJECT]: "Kanji",
   [VOCAB_SUBJECT]: "Words",
   [GRAMMAR_SUBJECT]: "Grammar",
+  [TRANSITIVITY_SUBJECT]: "Verb pairs",
 };
 
 /**
@@ -131,10 +146,9 @@ const SUBJECT_LABEL: Partial<Record<Kind, string>> = {
  */
 export function subjectLabel(info: FactInfo | undefined): string | undefined {
   if (!info) return undefined;
-  // Transitivity is a scheduled subject but not a Library shelf (a pair has no
-  // entry page), so it is not a `Kind`. The session header still needs a name
-  // for a transitivity teach set, and "Verb pair" is it — the singular, like
-  // "Word" and "Radical" below.
+  // Transitivity IS a Library shelf now ("Verb pairs"), but the session header
+  // wants the singular lesson-type name for a teach set, like "Word" and
+  // "Radical" below — and it is "Verb pair", not the shelf's plural.
   if (info.subject === TRANSITIVITY_SUBJECT) return "Verb pair";
   const kind = info.subject as Kind;
   if (kind === KANA_SUBJECT) {
@@ -303,6 +317,14 @@ export function readingRowsOf(entry: LibEntry): readonly ReadingRow[] {
  */
 export function knownFactsOf(entry: LibEntry): readonly FactId[] {
   if (entry.kind === KANJI_SUBJECT) return [meaningFactId(entry.glyph)];
+  // A pair mints a fact per side but SCHEDULES only the askable ones — the
+  // unaskable side rides along solely as a distractor and is never quizzed, so
+  // it can never be "known". Counting it would leave every pair permanently
+  // not-known and hold the "I know this" button open forever. See
+  // transitivity-facts.ts.
+  if (entry.kind === TRANSITIVITY_SUBJECT) {
+    return factsOf(entry.id).filter((f) => transitivitySide(f)?.askable);
+  }
   return factsOf(entry.id);
 }
 
@@ -470,6 +492,36 @@ function build(): LibEntry[] {
     });
   });
 
+  // Verb pairs — the transitivity subject, taught after grammar (see KINDS), so
+  // they browse after it. A pair is TWO verbs and one event, not a character: it
+  // has no glyph, so `glyph` is the empty string (search-inert, exactly like a
+  // mark's) and `name` carries the pair — "出る / 出す" — for every place a glyph
+  // would have gone. The English cues are the `meanings`, so a search for "the
+  // door opened" lands here; both written forms ride in `searchAlso`, so the
+  // pair is also findable by either verb even though the empty glyph cannot be.
+  VERB_PAIRS.forEach((p, i) => {
+    const pattern = pairPattern(p.happens.reading, p.doIt.reading);
+    out.push({
+      id: pairEntry(p),
+      kind: TRANSITIVITY_SUBJECT,
+      glyph: "",
+      name: `${p.happens.word} / ${p.doIt.word}`,
+      readings: [p.happens.reading, p.doIt.reading],
+      meanings: [p.happens.en, p.doIt.en],
+      searchAlso: [p.happens.word, p.doIt.word],
+      // The tail-shift name is the one line worth carrying — "the -ある/-える swap
+      // again" is a real memory aid (see transitivity-pattern.ts). A pair that
+      // fits no rule says "Verb pair" rather than "Exception", which would read
+      // as a warning on a shelf where the shift name is a help, not a grade.
+      sub: pattern.isException ? "Verb pair" : shiftLabel(pattern),
+      // Their own band, below kanji (1000+) and above grammar (500+): a pair
+      // rarely collides with another kind on a query, because its meanings are
+      // whole English sentences, so this only breaks ties among pairs — in data
+      // order, which is the order the table was curated in.
+      weight: 700 + i,
+    });
+  });
+
   return out;
 }
 
@@ -607,6 +659,10 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
     // recipe id, never from a glyph, so nothing asks for this.
     case GRAMMAR_SUBJECT:
       return null;
+    // A pair has no glyph at all — `glyph` is the empty string — so nothing
+    // resolves one this way. Its links are minted from the pair id (pairEntry).
+    case TRANSITIVITY_SUBJECT:
+      return null;
   }
 }
 
@@ -699,6 +755,11 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
     // a kind that later grew a fact would ship a headed table with no heading.
     case MARK_SUBJECT:
       return "Nothing to test";
+    // A pair's facts are chips on its own page, never this generic table (the
+    // entry page excludes transitivity from genericRows), so this heading is not
+    // shown. Present for exhaustiveness, and named for what the rows would ask.
+    case TRANSITIVITY_SUBJECT:
+      return "Which verb";
   }
 }
 
@@ -796,7 +857,40 @@ export function factRows(entry: LibEntry): FactRow[] {
     // instead of an empty one. Nothing here had to be added for that to work.
     case MARK_SUBJECT:
       return [];
+    // A pair's gradeable facts, one row per ASKABLE side. Not rendered by the
+    // entry page (which draws the pair itself), but kept honest for any generic
+    // caller: see transitivityFactRows.
+    case TRANSITIVITY_SUBJECT:
+      return transitivityFactRows(entry);
   }
+}
+
+/** A pair's facts as table rows: one per ASKABLE side — the English cue as the
+ * label, the verb it points to as the answer, its reading to speak. The
+ * unaskable side is omitted for the same reason knownFactsOf drops it (it is
+ * never quizzed). Empty when the entry names no pair the build knows. */
+function transitivityFactRows(entry: LibEntry): FactRow[] {
+  const pair = pairForEntry(entry.id);
+  if (!pair) return [];
+  const rows: FactRow[] = [];
+  for (const side of ["happens", "doIt"] as const) {
+    const id = sideFactId(pair, side);
+    const info = transitivitySide(id);
+    if (!info?.askable) continue;
+    rows.push({
+      id,
+      label: info.en,
+      answer: info.word,
+      askedIn: [],
+      unattested: false,
+      origin: null,
+      // The reading, not the written form: a synthesiser handed 出す reads it
+      // as one of its verbs at random, だす is unambiguous — the same call the
+      // word table makes.
+      speak: info.reading,
+    });
+  }
+  return rows;
 }
 
 /**

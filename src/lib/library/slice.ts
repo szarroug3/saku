@@ -23,6 +23,7 @@
 import { effectiveState, type Claims } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
 import { rank, status, type RankCandidate } from "@/lib/scoring";
+import { transitivitySide } from "@/data/transitivity-facts";
 import type { EntryId, FactAggregate, FactId } from "@/types";
 
 /**
@@ -37,9 +38,22 @@ export interface Slice {
   readonly entries: readonly EntryId[];
 }
 
-/** Every fact of every entry in the slice, in screen order. */
+/** Every fact of every entry in the slice, in screen order.
+ *
+ * A verb pair's UNASKABLE side is dropped here. A pair mints a fact per side but
+ * only schedules the askable ones (see transitivity-facts.ts); the other rides
+ * along solely as a distractor and is never taught or quizzed. Left in, it would
+ * sit forever as never-met "teach" work, so a pair could never be drilled empty
+ * and its "I know this" button — which hides only when nothing is left to claim
+ * — would never disappear. Non-transitivity facts are untouched: transitivitySide
+ * returns nothing for them, so the guard keeps them. */
 export function sliceFacts(slice: Slice): FactId[] {
-  return slice.entries.flatMap((e) => factsOf(e));
+  return slice.entries
+    .flatMap((e) => factsOf(e))
+    .filter((f) => {
+      const side = transitivitySide(f);
+      return !side || side.askable;
+    });
 }
 
 /**

@@ -78,6 +78,16 @@ const rule = (id: string, from: string, to: string): PairPattern => ({
  * transitive one. The order matters: the rules are directional labels, not a
  * claim that the direction is predictable.
  */
+/** The tail shift as a printable label: the two tails with an arrow between
+ * them ("-ある → -える"), or "Exception" for a pair that fits no rule. One
+ * string, so the Library shelf, the shelf sub-line and the entry page all name
+ * a pattern the same way. */
+export function shiftLabel(p: PairPattern): string {
+  return p.isException || p.from === null || p.to === null
+    ? "Exception"
+    : `${p.from} → ${p.to}`;
+}
+
 export function pairPattern(happensReading: string, doItReading: string): PairPattern {
   const stem = sharedStem(happensReading, doItReading);
   if (stem.length === 0) return EXCEPTION; // no shared reading stem to point at

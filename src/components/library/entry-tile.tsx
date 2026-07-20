@@ -37,6 +37,7 @@ import { entryName, type LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import type { EntryStanding } from "@/lib/library/standing";
 import { speak } from "@/lib/speech";
+import type { VerbPair } from "@/data/transitivity";
 
 /** Whether an entry has a pronunciation worth a 🔊.
  *
@@ -278,6 +279,129 @@ export function EntryRow({
       </span>
       {speakable(entry) ? (
         <HearButton entry={entry} voice={voice} className="flex-none" />
+      ) : null}
+      <ViewLink entry={entry} className="flex-none" />
+      <span className="flex-none">
+        <StandingCell standing={standing} />
+      </span>
+    </div>
+  );
+}
+
+/** The 🔊 for one verb of a pair. Like HearButton, but a pair row has TWO things
+ * to say — the two verbs — so each side gets its own speaker keyed to its own
+ * word, instead of the row's single glyph (which a pair does not have). Swallows
+ * the click so it never also toggles SELECT. */
+function HearWord({
+  word,
+  voice,
+  className,
+}: {
+  word: string;
+  voice: string;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        speak(word, voice);
+      }}
+      aria-label={`Hear ${word}`}
+      className={`inline-flex flex-none items-center justify-center cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text ${className ?? ""}`}
+    >
+      <SoundIcon className="size-[13px]" />
+    </button>
+  );
+}
+
+/** One verb of a pair, as a shelf cell: the word, its reading, its own speaker,
+ * and the English cue that points to THIS verb rather than its partner — the one
+ * thing that tells the two apart. */
+function PairCell({ side, voice }: { side: VerbPair["happens"]; voice: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-1.5">
+        <span className="truncate font-kana text-[17px]">{side.word}</span>
+        <span className="truncate text-xs text-text-muted">{side.reading}</span>
+        <HearWord word={side.word} voice={voice} />
+      </div>
+      <span className="mt-0.5 block truncate text-xs text-text-muted">{side.en}</span>
+    </div>
+  );
+}
+
+/** The column headings for the verb-pairs shelf, once above the rows so the two
+ * cells of every row read as the two sides of one contrast instead of two
+ * verbs in a list. The leading spacer matches the row's checkbox + gap so the
+ * headings sit over the columns they name. */
+export function VerbPairHeader() {
+  return (
+    <div className="flex items-center gap-3 border-b border-border px-1 pb-1.5 pt-1">
+      <span className="h-4 w-4 flex-none" aria-hidden />
+      <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 text-[11px] uppercase tracking-wide text-text-muted">
+        <span className="truncate">It happens on its own</span>
+        <span className="truncate">Someone does it</span>
+      </div>
+    </div>
+  );
+}
+
+/** A verb pair on a shelf: the two verbs side by side, each with its own reading,
+ * speaker and English cue, so the row shows the whole contrast a pair IS. Not
+ * EntryRow: that row is built around a single glyph in a fixed cell, and a pair
+ * has no glyph and two things to say, which left its checkbox stranded a cell
+ * away from any content and only one of its two verbs a speaker. SELECT is still
+ * the row body; VIEW and the two HEAR targets swallow their own clicks. */
+export function VerbPairRow({
+  entry,
+  pair,
+  standing,
+  note,
+  voice,
+  selected,
+  onToggleSelect,
+}: {
+  entry: LibEntry;
+  pair: VerbPair;
+  standing: EntryStanding;
+  /** The tail-shift label ("-る → -す"), when the pair follows a rule. */
+  note?: string;
+  voice: string;
+  selected: boolean;
+  onToggleSelect(shiftKey: boolean): void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={(e) => onToggleSelect(e.shiftKey)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggleSelect(e.shiftKey);
+        }
+      }}
+      className={`flex cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 ${
+        selected ? "bg-accent-bg" : "hover:bg-panel"
+      }`}
+    >
+      <span
+        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none ${
+          selected ? "bg-accent text-bg" : "border border-border text-transparent"
+        }`}
+        aria-hidden
+      >
+        ✓
+      </span>
+      <div className="grid min-w-0 flex-1 grid-cols-2 gap-3">
+        <PairCell side={pair.happens} voice={voice} />
+        <PairCell side={pair.doIt} voice={voice} />
+      </div>
+      {note ? (
+        <span className="hidden flex-none text-xs text-text-muted sm:block">{note}</span>
       ) : null}
       <ViewLink entry={entry} className="flex-none" />
       <span className="flex-none">

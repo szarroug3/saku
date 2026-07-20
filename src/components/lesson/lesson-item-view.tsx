@@ -49,6 +49,7 @@ import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { RadicalKanjiTable } from "@/components/library/radical-kanji-table";
+import { VerbPairView } from "@/components/library/verb-pair-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor, glyphVariantFor } from "@/data/characters";
 import { cluster, membersOf } from "@/data/grammar/clusters";
@@ -57,7 +58,6 @@ import { getMnemonic } from "@/data/mnemonics";
 import { exampleFor } from "@/data/word-examples";
 import { vocabRow, type VocabRow } from "@/data/vocab";
 import { pairForEntry } from "@/data/transitivity-facts";
-import { pairPattern } from "@/lib/transitivity-pattern";
 import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
@@ -415,37 +415,10 @@ function KanjiConfusables({ glyph }: { glyph: string }) {
   );
 }
 
-/** The transitivity pair teach card: both verbs of a pair side by side, each
- * with its reading, a speaker, and the English cue that points to it, over a
- * short reminder that the two go together and neither builds from the other.
- * A dedicated layout (not the single-glyph PlainHeadword) because the unit here
- * is a PAIR, and because a pair entry has no Library page to link a glyph to. */
-function VerbSide({
-  member,
-  role,
-  voiceName,
-}: {
-  member: { word: string; reading: string; en: string };
-  role: string;
-  voiceName: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-5">
-      <p className="text-[12px] uppercase tracking-wide text-text-muted">{role}</p>
-      <div className="mt-2 flex items-baseline gap-3">
-        <span className="font-kana text-[40px] font-extralight leading-none text-text">
-          {member.word}
-        </span>
-        <span className="font-kana text-[15px] text-text-muted">{member.reading}</span>
-      </div>
-      <div className="mt-3">
-        <HearButton glyph={member.word} voiceName={voiceName} />
-      </div>
-      <p className="mt-3 text-[15px] leading-relaxed text-text">{member.en}</p>
-    </div>
-  );
-}
-
+/** The transitivity pair teach card — the shared pair view, fed the pair the
+ * lesson item names. A pair has no Library glyph and no single fact, so it never
+ * used the shared single-glyph hero; now it does not author its own layout
+ * either — the Library entry page shows the identical card. */
 function TransitivityTeachView({
   item,
   voiceName,
@@ -455,37 +428,7 @@ function TransitivityTeachView({
 }) {
   const pair = pairForEntry(item.entry);
   if (!pair) return null;
-  const pattern = pairPattern(pair.happens.reading, pair.doIt.reading);
-  return (
-    <div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <VerbSide member={pair.happens} role="It happens on its own" voiceName={voiceName} />
-        <VerbSide member={pair.doIt} role="Someone does it" voiceName={voiceName} />
-      </div>
-      <div className="mt-9 border-t border-border pt-7">
-        {pattern.isException ? (
-          <p className="text-[13px] leading-relaxed text-text-muted">
-            <span className="font-medium text-text">Exception.</span> This pair
-            does not follow one of the usual ending swaps, so learn it on its own.
-          </p>
-        ) : (
-          <p className="text-[13px] leading-relaxed text-text-muted">
-            <span className="font-medium text-text">Pattern:</span>{" "}
-            <span className="font-kana text-text">{pattern.from}</span>{" "}
-            <span aria-hidden>&rarr;</span>{" "}
-            <span className="font-kana text-text">{pattern.to}</span>. A common
-            ending swap, but it does not tell you which verb is which, so still
-            learn the pair.
-          </p>
-        )}
-        <p className="mt-3 text-[14px] leading-relaxed text-text-muted">
-          Same event, two verbs. The English version tells you which one to use:
-          whether it happens on its own, or someone makes it happen. You cannot
-          build one from the other, so learn them together as a pair.
-        </p>
-      </div>
-    </div>
-  );
+  return <VerbPairView pair={pair} voiceName={voiceName} />;
 }
 
 export function LessonItemView({ item }: { item: LessonItem }) {
