@@ -35,7 +35,7 @@ import {
   patternMeaningFactId,
   patternProductionFactId,
 } from "@/data/grammar";
-import { RECIPES, isProducible, type Host } from "@/data/grammar/recipes";
+import { RECIPES, isProducible, patternLabel, type Host } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
 import { selectionMcsFor } from "@/lib/grammar/mc";
 // The blank's own text, so the frame in `context` and the halo stand-in for a
@@ -781,7 +781,7 @@ const grammarQuestions: QuestionType = {
       return {
         glyph: v ? v.surface : prod.lemma,
         jp: true,
-        context: `${prod.recipe.pattern} form`,
+        context: `${patternLabel(prod.recipe)} form`,
         hint: null,
       };
     }
@@ -834,7 +834,7 @@ const grammarQuestions: QuestionType = {
       };
     }
     return {
-      glyph: mean?.recipe.pattern ?? glyphOfFact(fact),
+      glyph: mean ? patternLabel(mean.recipe) : glyphOfFact(fact),
       jp: true,
       context: "meaning",
       hint: null,
@@ -930,33 +930,53 @@ const grammarQuestions: QuestionType = {
     }
     return out;
   },
-  optionLabel(fact, _dir, ctx) {
+  optionLabel(fact, dir, ctx) {
     // A SELECTION board offers PATTERNS to choose between, in both directions.
     // Left to the drill's default a jp2en board would label each option with its
     // English gloss, which asks a different (and much easier) question than the
     // one the blank asks — and the glosses are exactly what the distractor rules
-    // proved distinct, not what goes in the sentence.
+    // proved distinct, not what goes in the sentence. The sense rides along so a
+    // board holding two members of a shared bare pattern is not two identical
+    // buttons.
     const sel = selectionShowing(fact, ctx);
-    if (sel) return grammarMeaning(fact)?.recipe.pattern ?? null;
+    if (sel) {
+      const r = grammarMeaning(fact)?.recipe;
+      return r ? patternLabel(r) : null;
+    }
     // Only a VARIED production option needs a per-vehicle label. Without a legal
     // vehicle, or for a meaning option, the fact's own glyph/answer is already
     // right, so return null and let the drill use it.
     const prod = grammarProduction(fact);
-    if (!prod) return null;
-    const v = variedVehicle(prod.recipe, ctx, prod.host);
-    return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
+    if (prod) {
+      const v = variedVehicle(prod.recipe, ctx, prod.host);
+      return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
+    }
+    // A fixed MEANING card asked en2jp offers PATTERN glyphs. Its distractors are
+    // other recipes and two of them can share a bare pattern with the answer
+    // (〜られる 可能 vs 受身, 〜から 理由 vs 起点), which would put two identical
+    // buttons up and grade the right one wrong. The sense makes them distinct;
+    // jp2en offers glosses, so the fact's own answer is left alone there.
+    if (dir === "en2jp") {
+      const r = grammarMeaning(fact)?.recipe;
+      if (r) return patternLabel(r);
+    }
+    return null;
   },
   answerReveal(fact, dir, ctx) {
     // A missed selection item reveals the PATTERN that fits the blank, not the
     // fact's baked gloss: the gloss is the answer to "what does 〜てから mean",
-    // and this card asked something else.
+    // and this card asked something else. The sense rides along so the reveal
+    // matches the option it lights up.
     const sel = selectionShowing(fact, ctx);
-    if (sel) return grammarMeaning(fact)?.recipe.pattern ?? null;
+    if (sel) {
+      const r = grammarMeaning(fact)?.recipe;
+      return r ? patternLabel(r) : null;
+    }
     // Same argument for the fixed meaning card asked en2jp — it asked for the
     // pattern, so the pattern is what a miss has to show. Falling through to the
     // baked answer printed "decide to X pattern = decide to X".
     const mean = grammarMeaning(fact);
-    if (mean && dir === "en2jp") return mean.recipe.pattern;
+    if (mean && dir === "en2jp") return patternLabel(mean.recipe);
     const prod = grammarProduction(fact);
     if (!prod) return null;
     const v = variedVehicle(prod.recipe, ctx, prod.host);

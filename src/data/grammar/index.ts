@@ -48,6 +48,7 @@ import {
   RECIPES,
   isProducible,
   isTrivialAttachment,
+  patternLabel,
   recipe,
   type Host,
   type Recipe,
@@ -191,7 +192,7 @@ function buildGrammarFacts(): FactInfo[] {
     facts.push({
       id: mId,
       entry: patternEntry(r.id),
-      glyph: r.pattern,
+      glyph: patternLabel(r),
       answers: [r.gloss],
       subject: GRAMMAR_SUBJECT,
       meaning: r.gloss,

@@ -157,6 +157,9 @@ export interface GrammarCard {
   id: string;
   /** How the pattern is written. 〜てから */
   pattern: string;
+  /** The optional Japanese sense label, shown as a quiet second line so two
+   * patterns that share a bare form (〜られる 可能 vs 受身) read apart. */
+  sense?: string;
   /** The terse functional gloss. "after doing X" */
   gloss: string;
   /** N5 or N4, for a quiet level tag on the card. */
@@ -186,7 +189,7 @@ export interface GrammarLesson {
 }
 
 function toCard(r: Recipe): GrammarCard {
-  return { id: r.id, pattern: r.pattern, gloss: r.gloss, level: r.level };
+  return { id: r.id, pattern: r.pattern, sense: r.sense, gloss: r.gloss, level: r.level };
 }
 
 /**

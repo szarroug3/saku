@@ -168,6 +168,11 @@ function TeachableLesson({
               <span className="block font-kana text-[24px] font-extralight leading-[1.2]">
                 {card.pattern}
               </span>
+              {card.sense && (
+                <span className="mt-0.5 block font-kana text-[13px] text-text-muted">
+                  ({card.sense})
+                </span>
+              )}
               <span className="mt-1 block text-[13px] text-text">
                 {card.gloss}
               </span>

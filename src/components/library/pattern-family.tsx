@@ -108,6 +108,11 @@ export function PatternFamily({
                         {r.pattern}
                       </Link>
                     )}
+                    {r.sense && (
+                      <span className="ml-1 text-[12px] text-text-muted">
+                        ({r.sense})
+                      </span>
+                    )}
                   </td>
                   {/* The engine's output, not a typed-out string. If a cell
                       here is wrong the engine is wrong and 20,408 entries are

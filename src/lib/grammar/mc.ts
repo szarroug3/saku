@@ -31,7 +31,7 @@
 
 import { selection, type SelectionQuestion } from "./questions.ts";
 import { examplesFor, type Example } from "../../data/grammar/corpus.ts";
-import { RECIPES } from "../../data/grammar/recipes.ts";
+import { RECIPES, patternLabel, recipe } from "../../data/grammar/recipes.ts";
 import { question as transitivityQ, PROMPT as TRANSITIVITY_PROMPT } from "../transitivity.ts";
 import { VERB_PAIRS, type VerbPair } from "../../data/transitivity.ts";
 import type { Rng } from "./vehicles.ts";
@@ -133,8 +133,14 @@ function place(
 
 /** Normalise a built SelectionQuestion into a GrammarMc (choices shuffled). */
 function fromSelection(q: SelectionQuestion, rng: Rng): GrammarMc {
+  // The board offers PATTERNS, and a pattern's sense rides in its label so a
+  // sense-bearing member (〜られる 可能) never reads as its bare-form sibling.
+  const label = (id: string, fallback: string): string => {
+    const r = recipe(id);
+    return r ? patternLabel(r) : fallback;
+  };
   const raw: GrammarChoice[] = q.choices.map((c) => ({
-    label: c.pattern,
+    label: label(c.id, c.pattern),
     jp: true,
     sub: c.gloss,
     id: c.id,
@@ -151,7 +157,7 @@ function fromSelection(q: SelectionQuestion, rng: Rng): GrammarMc {
     en: q.en,
     choices,
     correctIndex,
-    answer: q.choices[correct].pattern,
+    answer: label(q.choices[correct].id, q.choices[correct].pattern),
     sourceId: q.sourceId,
   };
 }

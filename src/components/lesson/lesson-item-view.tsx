@@ -300,6 +300,11 @@ function GrammarFamilyPanel({ item }: { item: LessonItem }) {
                 <tr key={r.id} className="border-b border-border last:border-b-0">
                   <td className="py-2 pr-2 font-kana text-[15px]">
                     {current ? <span className="text-accent">{r.pattern}</span> : r.pattern}
+                    {r.sense && (
+                      <span className="ml-1 text-[12px] text-text-muted">
+                        ({r.sense})
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 pr-2 font-kana text-text-muted">
                     {row?.built ?? ""}
