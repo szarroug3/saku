@@ -21,6 +21,7 @@ import { KANA_FACTS } from "@/data/characters";
 import { GRAMMAR_FACTS } from "@/data/grammar";
 import { KANJI_FACTS } from "@/data/kanji";
 import { RADICAL_FACTS } from "@/data/radicals";
+import { TRANSITIVITY_FACTS } from "@/data/transitivity-facts";
 import { VOCAB_FACTS } from "@/data/vocab";
 import type { EntryId, FactId, FactInfo } from "@/types";
 
@@ -31,6 +32,7 @@ const SUBJECTS: FactInfo[][] = [
   KANJI_FACTS,
   VOCAB_FACTS,
   GRAMMAR_FACTS,
+  TRANSITIVITY_FACTS,
 ];
 
 /** Every fact in the app, in data order. */

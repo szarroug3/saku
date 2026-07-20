@@ -56,6 +56,7 @@ import { kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
 import { exampleFor } from "@/data/word-examples";
 import { vocabRow, type VocabRow } from "@/data/vocab";
+import { pairForEntry } from "@/data/transitivity-facts";
 import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
@@ -84,6 +85,10 @@ function subtitleOf(item: LessonItem): string {
         .join(": ");
     case "grammar":
       return entry.meanings[0] ?? "";
+    case "transitivity":
+      // Transitivity items never reach here — they get their own card in
+      // LessonItemView before the shared hero — but the switch is exhaustive.
+      return "";
   }
 }
 
@@ -409,6 +414,63 @@ function KanjiConfusables({ glyph }: { glyph: string }) {
   );
 }
 
+/** The transitivity pair teach card: both verbs of a pair side by side, each
+ * with its reading, a speaker, and the English cue that points to it, over a
+ * short reminder that the two go together and neither builds from the other.
+ * A dedicated layout (not the single-glyph PlainHeadword) because the unit here
+ * is a PAIR, and because a pair entry has no Library page to link a glyph to. */
+function VerbSide({
+  member,
+  role,
+  voiceName,
+}: {
+  member: { word: string; reading: string; en: string };
+  role: string;
+  voiceName: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-5">
+      <p className="text-[12px] uppercase tracking-wide text-text-muted">{role}</p>
+      <div className="mt-2 flex items-baseline gap-3">
+        <span className="font-kana text-[40px] font-extralight leading-none text-text">
+          {member.word}
+        </span>
+        <span className="font-kana text-[15px] text-text-muted">{member.reading}</span>
+      </div>
+      <div className="mt-3">
+        <HearButton glyph={member.word} voiceName={voiceName} />
+      </div>
+      <p className="mt-3 text-[15px] leading-relaxed text-text">{member.en}</p>
+    </div>
+  );
+}
+
+function TransitivityTeachView({
+  item,
+  voiceName,
+}: {
+  item: LessonItem;
+  voiceName: string;
+}) {
+  const pair = pairForEntry(item.entry);
+  if (!pair) return null;
+  return (
+    <div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <VerbSide member={pair.happens} role="It happens on its own" voiceName={voiceName} />
+        <VerbSide member={pair.doIt} role="Someone does it" voiceName={voiceName} />
+      </div>
+      <div className="mt-9 border-t border-border pt-7">
+        <p className="text-[14px] leading-relaxed text-text-muted">
+          Same event, two verbs. The English tells you which one to reach for:
+          whether it happens on its own, or someone makes it happen. You cannot
+          build one from the other, so learn them together as a pair.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function LessonItemView({ item }: { item: LessonItem }) {
   const { cfg } = useQuizConfig();
   const { history } = useHistory();
@@ -451,6 +513,13 @@ export function LessonItemView({ item }: { item: LessonItem }) {
     ? `${wordTypeOf(word)} · ${(entry?.meanings?.[0] ?? "").trim()}`
     : subtitle;
   const wordPronunciation = word?.reb;
+
+  // A transitivity pair is neither a glyph nor a single fact, so it gets its own
+  // card rather than the shared hero. This return is after every hook above, so
+  // the rules-of-hooks hold.
+  if (item.kind === "transitivity") {
+    return <TransitivityTeachView item={item} voiceName={cfg.voiceName} />;
+  }
 
   return (
     <div>

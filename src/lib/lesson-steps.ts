@@ -49,6 +49,7 @@ import {
   OKURIGANA_INTRO,
   OKURIGANA_MOVING,
   RENDAKU,
+  TRANSITIVITY_INTRO,
   type PhaseIntro,
 } from "@/data/phase-intros";
 import { vocabRow } from "@/data/vocab";
@@ -185,6 +186,10 @@ export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
   let markedOkurigana = false;
   let markedOkuriganaMoving = false;
   let markedOkuriganaFixed = false;
+  // Transitivity rides the first pair item of the teach set — the moment the
+  // pair contrast is in play — so its intro lands once, ahead of the first pair,
+  // the same word-gated shape the rules above use. See phase-intros.ts.
+  let markedTransitivity = false;
   for (const item of items) {
     const row = item.kind === "kana" ? dakutenRowFor(item.glyph) : null;
     if (row) {
@@ -217,6 +222,10 @@ export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
         markedOkuriganaFixed = true;
         steps.push({ type: "intro", key: OKURIGANA_FIXED.id, intro: OKURIGANA_FIXED });
       }
+    }
+    if (!markedTransitivity && item.kind === "transitivity") {
+      markedTransitivity = true;
+      steps.push({ type: "intro", key: TRANSITIVITY_INTRO.id, intro: TRANSITIVITY_INTRO });
     }
     steps.push({ type: "item", key: item.entry, item });
   }

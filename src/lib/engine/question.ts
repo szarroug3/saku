@@ -61,6 +61,11 @@ import {
   wordReadingFactId,
 } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
+import {
+  TRANSITIVITY_SUBJECT,
+  transitivitySide,
+} from "@/data/transitivity-facts";
+import { PROMPT as TRANSITIVITY_PROMPT } from "@/lib/transitivity";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
 import type { Direction, FactId, HistoryFile } from "@/types";
 
@@ -225,6 +230,23 @@ export interface QuestionType {
    * to X pattern = decide to X", which tells you nothing you were not shown.
    */
   answerReveal?(fact: FactId, dir: Direction, ctx?: PromptContext): string | null;
+  /**
+   * When true, this fact is ONLY ever asked as multiple choice — never typed,
+   * whatever the session's answer style. Transitivity sets it: the question is
+   * "pick the verb for this English cue", and typing a verb from an English
+   * sentence is a different, harder task than the one being taught (and there is
+   * no romaji prompt to type against). The drill reads this instead of deciding
+   * typeability from the fact's script.
+   */
+  mcOnly?: boolean;
+  /**
+   * When set, this fact is ALWAYS asked in this one direction, whatever the
+   * session enables. Transitivity sets `en2jp`: the cue is English and the
+   * answer is the Japanese verb, and there is no coherent jp2en reading of it
+   * ("what does 開ける mean" is a vocab question, not a transitivity one). The
+   * drill uses this in place of picking a direction from the enabled set.
+   */
+  fixedDir?: Direction;
 }
 
 /** Case- and space-forgiving comparison, for both scripts. `answers` holds
@@ -986,11 +1008,53 @@ const grammarQuestions: QuestionType = {
 
 // ---------- the registry ----------
 
+/**
+ * Transitivity: pick the verb for an English cue.
+ *
+ * The one-way, MC-only shape is not a limitation to route around, it is the
+ * whole question. See the header of lib/transitivity.ts: the only gradable
+ * thing here is "given this English meaning, is it the happens-verb or the
+ * doIt-verb", so the direction is fixed to en2jp and the two sides of the pair
+ * ARE the two options. There is never a third option and never a typed answer.
+ */
+const transitivityQuestions: QuestionType = {
+  id: TRANSITIVITY_SUBJECT,
+  mcOnly: true,
+  fixedDir: "en2jp",
+  prompt(fact) {
+    const side = transitivitySide(fact);
+    // The English cue is the glyph — the big line the drill halo shows — and it
+    // is English, so `jp` is false and it gets no JP font. `context` is the
+    // fixed instruction that turns a bare sentence into a question.
+    return {
+      glyph: side?.en ?? factInfo(fact)?.meaning ?? "",
+      jp: false,
+      context: TRANSITIVITY_PROMPT,
+      hint: null,
+    };
+  },
+  check(fact, _dir, given) {
+    const side = transitivitySide(fact);
+    if (!side) return false;
+    const g = given.trim();
+    return g === side.word || g === side.reading;
+  },
+  distractors(fact, n) {
+    const side = transitivitySide(fact);
+    if (!side || n <= 0) return [];
+    // The one distractor is the partner side — the other verb of the pair. It
+    // always exists (both sides are minted) and is always the single plausible
+    // wrong answer, so the board is exactly two choices.
+    return factInfo(side.partner) ? [side.partner] : [];
+  },
+};
+
 const BY_SUBJECT: Record<string, QuestionType> = {
   [KANA_SUBJECT]: kanaQuestions,
   [KANJI_SUBJECT]: kanjiQuestions,
   [VOCAB_SUBJECT]: wordQuestions,
   [GRAMMAR_SUBJECT]: grammarQuestions,
+  [TRANSITIVITY_SUBJECT]: transitivityQuestions,
 };
 
 /**
