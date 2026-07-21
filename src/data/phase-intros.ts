@@ -316,14 +316,14 @@ export const COMBO_K: PhaseIntro = {
 export const LONG_H: PhaseIntro = {
   id: "intro-long-vowel-hiragana",
   setId: "hiragana",
-  title: "A held vowel is a different word, not a decoration.",
+  title: "A held vowel is a different word.",
   body: [
     {
-      text: "Hold a vowel a beat longer and you have said a different word, so length is part of the word, not decoration.",
+      text: "おばさん is your aunt. おばあさん, with the vowel held one beat longer, is your grandmother.",
     },
     {
       lead: "In hiragana you hold the sound by adding the matching vowel kana.",
-      text: "おばさん becomes おばあさん: the あ after ば doubles that あ sound, so ば is held a beat longer. い lengthens with another い, う with another う.",
+      text: "The あ after ば doubles that あ sound, so ば is held a beat longer. い lengthens with another い, う with another う.",
     },
     {
       lead: "Two that surprise people.",
@@ -595,7 +595,7 @@ export const OKURIGANA_INTRO: PhaseIntro = {
   body: [
     {
       lead: "This kana tail is called okurigana.",
-      text: "The kana written after a kanji is part of the word, not a separate thing tacked on. One character can start several words, and the tail is what tells them apart.",
+      text: "The kana written after a kanji is part of the word. One character can start several words, and the tail is what tells them apart.",
     },
     {
       lead: "The tail even settles the reading.",
