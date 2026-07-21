@@ -38,7 +38,9 @@
 // fixed-vehicle path honours it.
 
 import { apply } from "./apply.ts";
-import type { Host, Recipe } from "../../data/grammar/recipes.ts";
+import { vocabRow } from "../../data/vocab.ts";
+import { isIntransitive, isTransitive } from "../word-forms.ts";
+import type { Host, Recipe, Transitivity } from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
 
 /** A candidate word to build a pattern on. */
@@ -52,6 +54,57 @@ export interface Vehicle {
   readonly cls: WordClass | null;
   /** Which recipe host this word satisfies — the axis recipes attach on. */
   readonly host: Host;
+  /**
+   * Whether somebody does this verb TO something, or it just happens. Null for
+   * a word the axis does not apply to (every non-verb) and for a verb the
+   * dictionary declines to tag.
+   *
+   * READ FROM THE DICTIONARY, NOT TYPED HERE. The app already knows this — it
+   * is JMdict's vt/vi, sitting in vocab.json, and lib/word-forms.ts already
+   * reads it to caption a word's page. A hand-kept copy in this table would be
+   * a second answer to a question that already has one, free to drift from it
+   * on the next ingest. See `transitivityOf`.
+   */
+  readonly transitivity: Transitivity | null;
+}
+
+/**
+ * What the dictionary says about a word, on the transitivity axis. Null when it
+ * has no entry, or when the entry carries neither tag (a noun, an adjective).
+ *
+ * BOTH TAGS RESOLVE TO TRANSITIVE. 待つ and する carry vi AND vt, and a pattern
+ * asking for a transitive verb is asking whether a transitive reading exists —
+ * for those two it does. See `isTransitive` in lib/word-forms.ts.
+ */
+export function transitivityOf(surface: string): Transitivity | null {
+  const row = vocabRow(surface);
+  if (!row) return null;
+  if (isTransitive(row)) return "transitive";
+  return isIntransitive(row) ? "intransitive" : null;
+}
+
+/**
+ * Does this recipe accept this word, on the transitivity axis?
+ *
+ * True for every recipe that sets no restriction, which is all but 〜てある —
+ * so this is a pass-through on 80 of the 81 rows and the one row it is not a
+ * pass-through on is the one where the app was generating Japanese nobody says.
+ *
+ * Takes a SURFACE FORM rather than a Vehicle on purpose. The drill's serialized
+ * runtime carries a vehicle as three plain strings (see `GrammarVehicle` in
+ * engine/question.ts), and the GRADER is a caller: an item that arrives with an
+ * intransitive vehicle — a stale runtime, a re-cut of the pool, anything — must
+ * be refused there too, not merely never dealt. One predicate, both ends.
+ */
+export function transitivityAllows(r: Recipe, surface: string): boolean {
+  if (!r.transitivity) return true;
+  return transitivityOf(surface) === r.transitivity;
+}
+
+/** One verb pool row. The transitivity comes from the dictionary rather than
+ * from the argument list, which is what keeps this table a table. */
+function verb(surface: string, kana: string, cls: WordClass): Vehicle {
+  return { surface, kana, cls, host: "verb", transitivity: transitivityOf(surface) };
 }
 
 /**
@@ -61,22 +114,22 @@ export interface Vehicle {
  * rest are the everyday verbs a beginner meets first.
  */
 export const VERB_VEHICLES: readonly Vehicle[] = [
-  { surface: "行く", kana: "いく", cls: "v5k-s", host: "verb" }, // て-form irregular
-  { surface: "食べる", kana: "たべる", cls: "v1", host: "verb" },
-  { surface: "見る", kana: "みる", cls: "v1", host: "verb" },
-  { surface: "起きる", kana: "おきる", cls: "v1", host: "verb" },
-  { surface: "書く", kana: "かく", cls: "v5k", host: "verb" },
-  { surface: "泳ぐ", kana: "およぐ", cls: "v5g", host: "verb" },
-  { surface: "話す", kana: "はなす", cls: "v5s", host: "verb" },
-  { surface: "待つ", kana: "まつ", cls: "v5t", host: "verb" },
-  { surface: "死ぬ", kana: "しぬ", cls: "v5n", host: "verb" },
-  { surface: "遊ぶ", kana: "あそぶ", cls: "v5b", host: "verb" },
-  { surface: "飲む", kana: "のむ", cls: "v5m", host: "verb" },
-  { surface: "読む", kana: "よむ", cls: "v5m", host: "verb" },
-  { surface: "帰る", kana: "かえる", cls: "v5r", host: "verb" },
-  { surface: "買う", kana: "かう", cls: "v5u", host: "verb" },
-  { surface: "する", kana: "する", cls: "vs-i", host: "verb" },
-  { surface: "来る", kana: "くる", cls: "vk", host: "verb" },
+  verb("行く", "いく", "v5k-s"), // て-form irregular
+  verb("食べる", "たべる", "v1"),
+  verb("見る", "みる", "v1"),
+  verb("起きる", "おきる", "v1"),
+  verb("書く", "かく", "v5k"),
+  verb("泳ぐ", "およぐ", "v5g"),
+  verb("話す", "はなす", "v5s"),
+  verb("待つ", "まつ", "v5t"),
+  verb("死ぬ", "しぬ", "v5n"),
+  verb("遊ぶ", "あそぶ", "v5b"),
+  verb("飲む", "のむ", "v5m"),
+  verb("読む", "よむ", "v5m"),
+  verb("帰る", "かえる", "v5r"),
+  verb("買う", "かう", "v5u"),
+  verb("する", "する", "vs-i"),
+  verb("来る", "くる", "vk"),
 ];
 
 /**
@@ -97,24 +150,24 @@ export const VERB_VEHICLES: readonly Vehicle[] = [
  * an いい. A test now asserts every `except` row is reachable from some vehicle.
  */
 export const ADJ_I_VEHICLES: readonly Vehicle[] = [
-  { surface: "いい", kana: "いい", cls: "adj-ix", host: "adj-i" }, // stem is よ: よさそう
-  { surface: "高い", kana: "たかい", cls: "adj-i", host: "adj-i" },
-  { surface: "安い", kana: "やすい", cls: "adj-i", host: "adj-i" },
-  { surface: "新しい", kana: "あたらしい", cls: "adj-i", host: "adj-i" },
+  { surface: "いい", kana: "いい", cls: "adj-ix", host: "adj-i", transitivity: null }, // stem is よ: よさそう
+  { surface: "高い", kana: "たかい", cls: "adj-i", host: "adj-i", transitivity: null },
+  { surface: "安い", kana: "やすい", cls: "adj-i", host: "adj-i", transitivity: null },
+  { surface: "新しい", kana: "あたらしい", cls: "adj-i", host: "adj-i", transitivity: null },
 ];
 
 /** な-adjective vehicles. */
 export const ADJ_NA_VEHICLES: readonly Vehicle[] = [
-  { surface: "静か", kana: "しずか", cls: "adj-na", host: "adj-na" },
-  { surface: "元気", kana: "げんき", cls: "adj-na", host: "adj-na" },
-  { surface: "便利", kana: "べんり", cls: "adj-na", host: "adj-na" },
+  { surface: "静か", kana: "しずか", cls: "adj-na", host: "adj-na", transitivity: null },
+  { surface: "元気", kana: "げんき", cls: "adj-na", host: "adj-na", transitivity: null },
+  { surface: "便利", kana: "べんり", cls: "adj-na", host: "adj-na", transitivity: null },
 ];
 
 /** Noun vehicles (no conjugation class). */
 export const NOUN_VEHICLES: readonly Vehicle[] = [
-  { surface: "本", kana: "ほん", cls: null, host: "noun" },
-  { surface: "車", kana: "くるま", cls: null, host: "noun" },
-  { surface: "水", kana: "みず", cls: null, host: "noun" },
+  { surface: "本", kana: "ほん", cls: null, host: "noun", transitivity: null },
+  { surface: "車", kana: "くるま", cls: null, host: "noun", transitivity: null },
+  { surface: "水", kana: "みず", cls: null, host: "noun", transitivity: null },
 ];
 
 /** Every vehicle, keyed by host. verb first — a verb pattern is the interesting
@@ -174,6 +227,12 @@ export function vehiclesFor(
     // caller asking "what can this recipe be built on at all".
     if (onHost !== undefined && host !== onHost) continue;
     for (const v of POOL[host]) {
+      // THE ONE CONSTRAINT apply() CANNOT SEE. Everything else this function
+      // refuses, it refuses by building and looking — see the header. 〜てある
+      // on 行く BUILDS: the engine produces 行ってある happily, because the
+      // conjugation is fine and it is the sentence that is not Japanese. So the
+      // recipe has to say it, and this is where it is heard.
+      if (!transitivityAllows(r, v.surface)) continue;
       if (known && !known(v.surface)) continue;
       const built = apply(r, v.surface, v.cls);
       if (!built.ok || built.value === v.surface) continue;

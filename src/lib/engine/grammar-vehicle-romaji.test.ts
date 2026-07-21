@@ -34,6 +34,7 @@ import {
   ADJ_NA_VEHICLES,
   NOUN_VEHICLES,
   VERB_VEHICLES,
+  transitivityAllows,
   type Vehicle,
 } from "@/lib/grammar/vehicles";
 import { isKanaOnly, toHiragana, toKana } from "@/lib/romaji";
@@ -117,9 +118,18 @@ interface Case {
 /**
  * Every (producible recipe × legal vehicle) pair, as a gradeable case.
  *
- * Legality is decided by the same two things the drill's own path uses — the
- * recipe applies to the vehicle, and the production fact for the vehicle's HOST
- * exists — so a case here is a card the drill can actually deal.
+ * Legality is decided by the same three things the drill's own path uses — the
+ * recipe applies to the vehicle, the production fact for the vehicle's HOST
+ * exists, and the recipe accepts that KIND of verb — so a case here is a card
+ * the drill can actually deal.
+ *
+ * The third one arrived later, and this file is where its absence showed. A
+ * recipe can restrict its verbs (`transitivity` in recipes.ts) and 〜てある does:
+ * it needs a verb somebody does to something, so 行ってある is not Japanese. The
+ * builder had no notion of that, so it minted te-aru × 行く as a case and the
+ * property below then asserted the ungrammatical answer graded TRUE. The
+ * property is unchanged and still holds for every card the drill can deal; what
+ * changed is that this is no longer one of them.
  */
 const CASES: Case[] = (() => {
   const out: Case[] = [];
@@ -129,6 +139,7 @@ const CASES: Case[] = (() => {
       const host = v.cls === null ? "noun" : hostOfClass(v.cls);
       const fact = patternProductionFactId(r.id, host);
       if (!factInfo(fact)) continue;
+      if (!transitivityAllows(r, v.surface)) continue;
       const surface = apply(r, v.surface, v.cls);
       if (!surface.ok || surface.value === v.surface) continue;
       const kana = apply(r, v.kana, v.cls);
