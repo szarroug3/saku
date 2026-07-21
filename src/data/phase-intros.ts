@@ -590,7 +590,7 @@ export const OKURIGANA_MOVING: PhaseIntro = {
     },
     {
       lead: "How it changes is grammar.",
-      text: "For now, just notice that the tail is the moving part. Which form to use, and when, is taught in the grammar track.",
+      text: "For now, just notice that the tail is the moving part. Which form to use, and when, comes later with grammar.",
     },
   ],
   examples: [

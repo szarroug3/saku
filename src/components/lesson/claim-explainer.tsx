@@ -109,8 +109,8 @@ export function ClaimExplainer() {
     <div className="kq-material mb-3.5 flex items-start gap-3 rounded-xl border border-accent bg-accent-bg p-[18px]">
       <p className="flex-1 text-[13px] leading-relaxed text-text">
         Saying you already know something (a kana, a kanji, a word, a grammar
-        pattern) lets you skip its lesson and quizzes. It goes into your
-        knowledge base so anything that requires it is no longer blocked by it.
+        pattern) lets you skip its lesson and quizzes. It counts as learned, so
+        anything that was waiting on it is no longer waiting.
         You can choose to completely skip the lesson and quiz or skip just the
         lesson and go straight to the quiz.
       </p>

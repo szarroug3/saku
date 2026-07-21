@@ -402,7 +402,7 @@ export function SettingsCard() {
         <Lbl>How many new words per lesson</Lbl>
         <Row
           label="Words per lesson"
-          info="A word lesson teaches this many new words. A word only shows up once you know the kanji it's written with, so the track hands them to you as they unlock. This is how many at a time."
+          info="A word lesson teaches this many new words. A word only shows up once you know the kanji it's written with, so they arrive as you learn those. This is how many at a time."
         >
           <SmallBtn
             disabled={cfg.wordsPerLesson <= 1}

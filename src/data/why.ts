@@ -229,12 +229,12 @@ export const WHY_TRACK: Record<string, Why> = {
   kanji: {
     lede: {
       strong: "Kanji are used as both words and as building blocks for other words.",
-      rest: "Once you've learned all the kanji required for a set of words, the word set will be unlocked as a separate Word track. Because of this, it may be a while before you unlock the next set of words. By default, we use commonality for ordering but this can be updated in the settings.",
+      rest: "A word is only taught once you know every kanji in it, so words arrive in bursts: nothing for a while, then several at once.",
     },
     paras: [
-      "Kanji carry meaning and are reused across many words, so learning one kanji can unlock several words at once. This makes the word track inconsistent. Sometimes it will have a lot of content while other times, it will be locked for a long time.",
+      "Kanji are reused across many words, so learning one can open up several at once. That makes the pace uneven. Some days you will have a pile of new words, some days none, because you are still collecting the kanji they need.",
       "Each kanji can have multiple readings, and words are what pin down which reading is used. Learning kanji first gives you the pieces, and learning words gives those pieces real pronunciation and context.",
-      "The words track waits for complete sets so new word lessons open with material you can actually understand. By default, we use commonality ordering, so the most common useful material is prioritized first. You can change this in the settings menu.",
+      "Words wait for their full set of kanji, so when one arrives you can actually read it. The most common ones come first.",
     ],
   },
   words: {

@@ -55,11 +55,11 @@ function hostList(hosts: Host[]): string {
 const GRAMMAR_LOCK_WHY: Why = {
   lede: {
     strong: "Grammar attaches to words.",
-    rest: "A pattern unlocks once you've learned a word it can attach to.",
+    rest: "Grammar needs words to apply to. Until you know a verb to practise with, you can't learn the verb ending.",
   },
   paras: [
     "Every grammar pattern is built on a word: 〜てから needs a verb, 〜ので leans on a な-adjective. Until you've learned a word of that type, there is nothing to build the pattern on.",
-    "Learn a word of the needed type on the words track, and this grammar lesson unlocks. Patterns are taught starting with the easiest ones first.",
+    "Learn a verb on the words track and this grammar lesson opens. Patterns are taught starting with the easiest ones first.",
   ],
 };
 
@@ -117,7 +117,7 @@ function LockedLead({ hosts }: { hosts: Host[] }) {
     <>
       <Lbl>Up next · grammar</Lbl>
       <p className="mt-0.5 text-[13px] text-text-muted">
-        Learn {hostList(hosts)} to unlock the next grammar lesson.
+        Learn {hostList(hosts)} and the next grammar lesson opens.
       </p>
     </>
   );
