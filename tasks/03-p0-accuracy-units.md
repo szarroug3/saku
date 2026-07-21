@@ -10,7 +10,7 @@ resumed run reads exactly what it read before the upgrade rather than NaN or a
 false 0%. `mergeStats` went from zero assertions to seven tests.
 
 **The pill was not the only site.** Two more had the identical unit error, and
-the follow-up is on branch `fix/aggregate-units`:
+the follow-up merged as `d603d4d`:
 
 - `quiz-session.tsx:~723` writes the flag into `history.json`
 - `summary.ts:~164` `runAggregate` is the end-of-run results ring
@@ -20,8 +20,12 @@ The crux found while scoping that follow-up: **`firstTry` serves two masters.**
 match the pill); `aggregate.ts:89` reads it as the spaced-repetition HIT, whose
 one-per-session behaviour is **deliberate** — see the comment at `aggregate.ts:30-43`,
 "the requeue is the app teaching you; it is not three independent tests". So the
-fix splits the field rather than changing either meaning. Scheduling must come
-out bit-identical.
+fix splits the field rather than changing either meaning: `firstTry` is the count,
+`firstTryHit` is the verdict. Scheduling verified bit-identical over a 500-session
+replay, and re-deriving the hit from the count fails 3 tests.
+
+The ring and the durable record were both **50 points adrift downward** (29% where
+the pill read 79%). All three readers now agree.
 
 ## Decision
 

@@ -40,7 +40,7 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 | 19 | **done** | en2jp kana answers itself | high | **trivial** | Merged `379e519`. Now a six-option board. **Same root as 01.** |
 | 17 | **done** | Shipped-data problems | medium-high | **trivial** | Merged `ffbc40d`. 0 dashes; vulgar words now outside the first 120. |
 | 13 | **done** | Remove the `draft` flag **?** | low | **trivial** | Merged `db993e0`. 31 entries, not 33. |
-| 06 | **in progress** | Conjugation policy too narrow | medium | small | Scoped to ある/できる; いる excluded (10 false positives). |
+| 06 | **done** | Conjugation policy too narrow | medium | small | Merged `f84952a`. いる excluded (13 false positives, not 10). |
 | 01 | not started | Reveal shows the prompt back | **highest** | small | Every wrong answer, 4 of 5 subjects. **Do with 19.** |
 | 03 | **done** | Accuracy pill mixes units | high | small | Merged `0d8c36b`. Aggregate split dispatched separately. |
 | 04 | **needs review** | Corpus tagger **?** | high | small | Filter the data first; the check is already written. |
