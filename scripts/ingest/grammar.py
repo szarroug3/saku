@@ -750,6 +750,16 @@ def main():
             indent=2,
         )
     print(f"wrote {meta}")
+    # THIS OUTPUT IS NOT SHIPPABLE ON ITS OWN. Six signatures here match a token
+    # run that a different, real pattern also produces — ので also matches んじゃ,
+    # 仮定形+ば also matches the ば inside なければならない — and the tokens cannot
+    # tell them apart. scripts/audit-corpus.ts removes those, and a test fails if
+    # it was not run. See src/data/grammar/corpus-audit.ts for the six and why.
+    print(
+        "\nNOT DONE. This output still contains the confounds the audit removes:\n"
+        "  node scripts/audit-corpus.ts\n"
+        "  node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-word-examples.ts"
+    )
 
 
 if __name__ == "__main__":

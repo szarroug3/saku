@@ -11,6 +11,8 @@
     "lint:fix": "eslint --fix",
     "type-check": "tsc --noEmit",
     "mnemonic-images": "node scripts/build-mnemonic-images.mjs",
+    "audit-corpus": "node scripts/audit-corpus.ts",
+    "audit-corpus:check": "node scripts/audit-corpus.ts --check",
     "test": "node --import ./src/lib/conjugate/test-hooks.mjs --test \"src/**/*.test.ts\"",
     "test:e2e": "playwright test"
   },
