@@ -16,7 +16,7 @@
 // what lets the filter see the whole shelf.
 
 import { KANJI_SUBJECT } from "@/data/kanji";
-import { VOCAB_SUBJECT } from "@/data/vocab";
+import { VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import type { LibEntry, Kind } from "@/lib/library/entries";
 import { KANJI_SECTIONS_SHOWN } from "@/lib/library/kanji-shelf";
 import type { EntryId } from "@/types";
@@ -40,6 +40,45 @@ export interface ShelfSection {
  * no longer a hidden "all 8,045" the bar acts on behind a screenful of 120 —
  * what you can see and toggle is what you drill. */
 export const WORD_TILES = 120;
+
+/**
+ * The words shelf, in the order it is painted: teaching order, then the filter,
+ * and the WORD_TILES cap is the caller's.
+ *
+ * ORDERED BY `beginnerRank`, WHICH IS THE ONLY ORDER THE LABEL CAN SURVIVE. The
+ * card says "Common everyday words" and used to show whatever order the vocab
+ * data happens to sit in — あべこべ (topsy-turvy), あやふや (vague), いざこざ
+ * (trouble) in the first ten, and うんこ / おっぱい inside the first hundred, on
+ * a grid that prints no English to warn you. That is a shelf contradicting its
+ * own heading. `beginnerRank` blends the two-list JLPT consensus (which band a
+ * word is in) with OpenSubtitles conversational frequency (its order inside the
+ * band), so it ranks 何, あなた, 言う, 行く first — words a beginner would
+ * recognise, which is what the heading promises. Deliberately NOT
+ * `newspaperBand`, which fronts 委員会 and 与党 and buries 食べる (see VocabRow).
+ *
+ * This is the same key `usedAsPartIn` and WordsWith already sort by, so the
+ * Library tells one story about which word comes first wherever it is asked.
+ *
+ * A WORD WITH NO RANK SORTS LAST, not first. `beginnerRank` is dense over
+ * 1..12,553 today so nothing takes this branch, but the failure it prevents is
+ * the bug above: an unranked word treated as rank 0 would land at the very
+ * front of the beginner's first screen, which is precisely how あべこべ got
+ * there. Infinity — the same fallback components.ts and WordsWith use — puts
+ * anything unranked past every ranked word instead.
+ */
+export function shownWordsOf(
+  allEntries: readonly LibEntry[],
+  keep?: (entry: LibEntry) => boolean,
+): LibEntry[] {
+  const words = keep ? allEntries.filter(keep) : allEntries.slice();
+  return words
+    .slice()
+    .sort(
+      (a, b) =>
+        (vocabRow(a.glyph)?.beginnerRank ?? Infinity) -
+        (vocabRow(b.glyph)?.beginnerRank ?? Infinity),
+    );
+}
 
 /** How many SECTIONS a shelf paints, applied AFTER the knowledge filter.
  *
@@ -93,8 +132,12 @@ export function shownSectionsOf(
  * (past the word cap, filtered out, beyond the section cap, or beyond a grade
  * section's tile cap) is absent here, so the range can never select it.
  *
- * It shares `shownSectionsOf` with the render, not a hand-synced copy, so the
- * two cannot drift: the same `keep` and caps govern both.
+ * It shares `shownSectionsOf` — and, for words, `shownWordsOf` — with the
+ * render, not a hand-synced copy, so the two cannot drift: the same `keep`,
+ * caps and word ORDER govern both. The order matters as much as the membership
+ * here: a Shift-range runs between two points in the painted sequence, so if
+ * this sorted the words differently from the grid the range would select a
+ * stretch nobody swept.
  */
 export function visibleShelfIds(
   kind: Kind,
@@ -103,8 +146,9 @@ export function visibleShelfIds(
   keep?: (entry: LibEntry) => boolean,
 ): EntryId[] {
   if (kind === VOCAB_SUBJECT) {
-    const words = keep ? allEntries.filter(keep) : allEntries;
-    return words.slice(0, WORD_TILES).map((e) => e.id);
+    return shownWordsOf(allEntries, keep)
+      .slice(0, WORD_TILES)
+      .map((e) => e.id);
   }
   return shownSectionsOf(kind, sections, keep).flatMap((s) =>
     s.entries.slice(0, s.cap ?? Infinity).map((e) => e.id),

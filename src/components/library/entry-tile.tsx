@@ -36,6 +36,9 @@ import { MARK_SUBJECT } from "@/data/marks";
 import { entryName, type LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import type { EntryStanding } from "@/lib/library/standing";
+// What goes under the glyph — a .ts module so the "no entry shows a dash while
+// it has a reading" property is testable (the runner cannot load JSX).
+import { subLabel } from "@/lib/library/sub-label";
 import { speak } from "@/lib/speech";
 import type { VerbPair } from "@/data/transitivity";
 import { pairPattern } from "@/lib/transitivity-pattern";
@@ -71,15 +74,6 @@ function toneClass(s: EntryStanding): string {
     default:
       return "border-border";
   }
-}
-
-/** What a tile/row shows below the glyph: its one reading, or — for a kanji with
- * many — its meaning. "生 · せい" would be picking one of nine and calling it THE
- * reading; the entry page is where the nine live. */
-function subLabel(entry: LibEntry): string {
-  return entry.readings.length === 1
-    ? entry.readings[0]
-    : (entry.meanings[0] ?? "—");
 }
 
 /** The small 🔊 target. Its own component because the tile and the row want the

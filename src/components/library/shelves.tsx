@@ -68,6 +68,7 @@ import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import {
   filterSections,
   sectionCapFor,
+  shownWordsOf,
   WORD_TILES,
   type ShelfSection,
 } from "@/lib/library/shelf-view";
@@ -285,7 +286,11 @@ export function Shelf({
   };
 
   if (kind === VOCAB_SUBJECT) {
-    const words = keep ? allEntries.filter(keep) : allEntries;
+    // `shownWordsOf`, not a local filter: it carries the shelf's teaching order
+    // (`beginnerRank`, so "Common everyday words" is true of what you see) and
+    // it is the SAME call `visibleShelfIds` makes, so the grid and the range a
+    // Shift-click sweeps cannot disagree about which word is where.
+    const words = shownWordsOf(allEntries, keep);
     return (
       <Card>
         <Lbl>Everyday words</Lbl>
