@@ -1,6 +1,33 @@
 # P1 · Three shipped-data problems that make the app look unfinished
 
-**Status: in progress** — `lists.json` done; items 2 and 3 dispatched on `fix/shelf-data`
+**Status: done** — merged to main as `ffbc40d`
+
+## Outcome
+
+**0 entries** now show `—`, and the kanji guard survived: 生 (8 readings) still
+shows "life" rather than picking one. し → `shi · si`, を → `wo · o`,
+じゃ → `ja · jya · zya`.
+
+Shelf first 30: 何 · あなた · 言う · 行く · 知る · 話 · 話す · 来る · 聞く · 前 ·
+中 · あの · 大丈夫 · 自分 · 持つ · 時間 · 一 · 一つ · 家 · 会う · 年 · 仕事 · 手 ·
+一緒 · 後 · 後ろ · 電話 · 目 · 車 · 所
+
+**All eight complained-of words** (あべこべ, あやふや, いざこざ, うずうず, うんこ,
+ウンチ, おしっこ, おっぱい) are now outside the first 120 — so no exclusion list is
+needed, contrary to my earlier worry that frequency ranking would keep the vulgar
+ones near the front.
+
+Every word has a `beginnerRank` (dense and unique over 1..12,553), so the unranked
+path is defensive only; unranked sorts LAST, since sorting them at 0 is precisely
+how an unvetted word lands on a beginner's first screen.
+
+**Left open:** 前 displays reading ぜん where a beginner meeting it as "before"
+expects まえ. Pre-existing vocab-row data, untouched by this change.
+
+**Out of scope, investigated only:** glosses in the words grid. Cheapest route is
+rendering that shelf as rows rather than tiles — `asRows`/`EntryRow` already exist
+and already print `reading · meanings`, and grammar/marks/verb-pairs already take
+that branch. Biggest visual change, so it is Sam's call.
 
 ## Decision
 

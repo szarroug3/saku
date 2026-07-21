@@ -1,6 +1,6 @@
 # P2 · Remove the `draft` flag
 
-**Status: done** — merged `db993e0` — merged `db993e0`
+**Status: done** — merged `db993e0`
 
 ## Open questions
 

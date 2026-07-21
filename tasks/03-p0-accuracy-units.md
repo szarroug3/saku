@@ -1,6 +1,27 @@
 # P0 · The accuracy pill punishes you for practising
 
-**Status: in progress**
+**Status: done** — merged to main as `0d8c36b`
+
+## Outcome
+
+A perfect learner now reads **100% at 1, 2, 3, 5, 10 and 21 showings**. A session
+snapshot saved before `firstTryCount` existed derives it from the old flag, so a
+resumed run reads exactly what it read before the upgrade rather than NaN or a
+false 0%. `mergeStats` went from zero assertions to seven tests.
+
+**The pill was not the only site.** Two more had the identical unit error, and
+the follow-up is on branch `fix/aggregate-units`:
+
+- `quiz-session.tsx:~723` writes the flag into `history.json`
+- `summary.ts:~164` `runAggregate` is the end-of-run results ring
+
+The crux found while scoping that follow-up: **`firstTry` serves two masters.**
+`aggregate.ts:65` pools it as the durable ACCURACY numerator (wants showings, to
+match the pill); `aggregate.ts:89` reads it as the spaced-repetition HIT, whose
+one-per-session behaviour is **deliberate** — see the comment at `aggregate.ts:30-43`,
+"the requeue is the app teaching you; it is not three independent tests". So the
+fix splits the field rather than changing either meaning. Scheduling must come
+out bit-identical.
 
 ## Decision
 

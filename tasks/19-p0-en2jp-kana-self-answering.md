@@ -1,6 +1,21 @@
 # P0 · The English to Japanese kana card answers itself
 
-**Status: in progress**
+**Status: done** — merged to main as `379e519`
+
+## Outcome
+
+Kana en2jp is now a six-option board. `mcOnly` widened to `boolean | Direction`
+with a single `mcOnlyIn(fact, dir)` reader.
+
+**Sam's ruling on the hint question below:** *"i'm good with no hint for that.
+it's better to have something than nothing at all and the hint gives too much
+away."* jp2en keeps its hint, so the mnemonic picture stays reachable for every
+character.
+
+**Out of scope, pinned by count:** the same self-answering shape exists for **68
+word facts** — loanwords whose gloss is their own romanization, so 寿司 prompts
+"sushi" and accepts "sushi" (also おでん, パンダ, カラオケ, たこ焼き, 焼き鳥) — and
+structurally for **all 81 grammar facts**. Neither was introduced here.
 
 ## Open questions
 

@@ -1,6 +1,26 @@
 # P0 · A correct romaji answer is marked wrong on grammar production
 
-**Status: needs review**
+**Status: done** — merged to main as `9467e10`
+
+## Outcome
+
+Both halves fixed. `tabetekudasai` now grades true (it was the only one of four
+spellings rejected); the varied-vehicle branch calls `checkProduces` on both
+written forms instead of raw `===`, so katakana folding comes along too.
+
+Live romaji conversion is keyed on **`answerIsJapanese(fact, dir)`**, not on
+direction — direction was the wrong axis. Readings and productions convert;
+meanings do not. Sam's condition was measured, not argued: zero jp2en cards can
+be answered by typing the prompt, tested against the *converted* prompt as well
+as the raw one. Grammar production is safe because `builtOn` refuses a recipe
+that leaves the vehicle unchanged.
+
+A property test over 589 recipe/vehicle pairs fails 2 of 7 on the pre-fix code
+and passes 7/7 after — verified independently, so it genuinely covers the bug.
+
+**Known and not a bug:** づ can only be typed `du`, never `zu`. The converter
+resolves the ず/づ collision in favour of ず, exactly as real IMEs do. So 〜づらい
+is unreachable via `zurai`.
 
 ## Open questions
 

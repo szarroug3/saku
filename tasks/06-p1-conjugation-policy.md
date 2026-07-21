@@ -1,6 +1,32 @@
 # P1 · The conjugation guard is too narrow, so four words show impossible forms
 
-**Status: not started**
+**Status: in progress** — dispatched on `fix/defective-compounds`
+
+## Decision
+
+**Scoped to ある and できる only. いる is explicitly excluded.**
+
+The sweep (card step 3, run before dispatch, across all 12,553 vocab rows):
+
+| stem | words ending in it | verdict |
+|---|---|---|
+| ある | ことがある, である, でもある, **人気のある** | all genuine compounds |
+| できる | ことができる | genuine |
+| いる | 悔いる, 陥る, 気に入る, 強いる, まいる, 手に入る, 報いる, 用いる, 率いる, 老いる | **all ten are false positives** |
+
+**The card undercounts: it is five words, not four — 人気のある is missing from it.**
+
+いる is why this must not be a naive `endsWith`. 用いる (to use), 率いる (to lead),
+陥る (to fall into) are independent verbs that merely end in those characters, and
+いる's rule is the harshest in the table — six forms including volitional. The
+dangerous version of this fix would strip six forms from ten ordinary verbs.
+
+**Correction to the card:** it says of である's forms "None of these are Japanese."
+That holds for であれる, であられる and でありたい, but **であれ is attested** as a
+literary imperative (民主的であれ, "be democratic!"). Gating it is still right for a
+beginner app — shown unlabelled beside everyday forms it teaches the wrong
+register — but we are hiding a form that exists, not one that doesn't, and the
+rule's `reason` string must not claim otherwise.
 
 Sam asked: how do we fix this?
 

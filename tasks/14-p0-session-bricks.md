@@ -1,6 +1,6 @@
 # P0 · The session bricks and cannot be recovered from inside the app
 
-**Status: done** — merged `abc454c` — merged `abc454c` — merged `abc454c`
+**Status: done** — merged `abc454c`
 
 **The most severe finding of the whole round.** A beginner could not finish
 lesson 1. Everything else is cosmetic next to this.
