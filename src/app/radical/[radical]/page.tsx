@@ -30,7 +30,7 @@
 //
 // THE 155 OTHER COMPONENTS DO NOT COME HERE. 木, 日 and 口 are components too,
 // and they are also jōyō kanji with a full entry page. They get the same two
-// sections ON that page (see library/[entry]/page.tsx) rather than a rival page
+// sections ON that page (see library/[...entry]/page.tsx) rather than a rival page
 // here, because splitting one character across two URLs is worse than either.
 // This route 404s for them on purpose.
 

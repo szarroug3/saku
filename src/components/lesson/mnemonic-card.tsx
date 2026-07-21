@@ -2,7 +2,7 @@
 // (components/lesson/mnemonic-view.tsx) is now the one place
 // src/data/mnemonics.ts becomes pixels, for both call sites: the lesson
 // walk-through (via components/lesson/lesson-item-view.tsx) and the Library
-// entry page (app/library/[entry]/page.tsx).
+// entry page (app/library/[...entry]/page.tsx).
 //
 // WHAT IS STILL LIVE HERE
 // =======================

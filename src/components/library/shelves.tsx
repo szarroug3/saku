@@ -466,7 +466,7 @@ function FilterEmpty({ filter }: { filter: KnowledgeFilter }) {
  *
  * A CLUSTER IS NOT A SIXTH `Kind`, on purpose. The temptation is real — the
  * shelf switcher would then list it beside Kana and Kanji — but a `Kind` is a
- * thing with an `EntryId`, a page under /library/[entry], and (for four of the
+ * thing with an `EntryId`, a page under /library/[...entry], and (for four of the
  * five) FACTS the scheduler asks about. A cluster has no facts by construction:
  * it is a MAP, it never touches the scheduler, and that independence is the
  * whole promise of the page. It also already has a home at /grammar/[id], so a
