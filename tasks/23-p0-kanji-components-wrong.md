@@ -95,7 +95,36 @@ The depth question is the real one and it is Sam's: 時 should show 日 + 寺, n
 日 + 土 + 寸, but "stop at the first meaningful level" needs a definition the
 generator can apply.
 
-## RECOMMENDED FIX — for Sam's approval
+## CORRECTION — the recommended fix needs a data source the repo does not have
+
+Before dispatching this I traced where `comps` actually comes from, and it changes
+the plan. **`comps` is generated from KRADFILE** (`scripts/ingest/build.py:77`,
+`load_kradfile`), which is a FLAT radical index: it lists every radical that
+appears anywhere in a kanji, with no hierarchy. That is exactly why 時 emits
+寸 + 土 + 日 — KRADFILE has no notion of "top level", so there is nothing to stop at.
+
+And **KRADFILE encodes the person radical 亻 as 化**, which is defect 1. We pass it
+through raw.
+
+So "regenerate from IDS, depth 1" is right in spirit but **the repo ships no IDS
+source.** KRADFILE cannot produce hierarchical output no matter how it is
+processed. Doing this properly means adding a new ingest source — a CJK IDS
+database (CHISE IDS, or the Unicode IDS data) — and teaching `build.py` to walk it
+to depth 1. That is real pipeline work, not a regeneration of existing inputs.
+
+**This is a decision for Sam, and it is bigger than the card first implied:**
+1. Add an IDS source to the ingest pipeline (the correct fix, more work), or
+2. A narrower KRADFILE-only patch: remap 化→亻 for the ~109 person-radical kanji
+   (fixes defect 1, the most damaging one) and accept the flat list for defect 2.
+   Cheaper, dishonest about structure, but 休 = 亻 + 木 is at least correct.
+
+I did NOT dispatch either, because option 1 needs Sam to accept a new data
+dependency and option 2 needs Sam to accept a partial fix. The original
+recommendation below assumed the source existed; it does not.
+
+---
+
+## Original recommendation (assumed an IDS source that is not in the repo)
 
 **This is factually incorrect, not a copy problem.** 休 is not made of 化. So the
 fix is to the data, and one change addresses both defects at once.
