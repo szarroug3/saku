@@ -1,10 +1,20 @@
 # P0 · Nothing is saved until a session completes
 
-**Status: not started**
+**Status: done** — fix/persist.
 
-## Open questions
+## Settled
 
-- Commit unit: **per completed round** (my recommendation, and what this file assumes) or per answer? Per answer loses nothing but multiplies the corruption window on a write path that is currently non-atomic.
+- Commit unit: **per completed round**. Per answer loses nothing extra but
+  multiplies the corruption window on a write path that was non-atomic. The
+  write is now atomic too, which weakens that argument — but a round is still
+  the natural unit of work and the retry queue makes the difference small.
+  ONE HOLE REMAINS, and it is named rather than hidden: the round-complete
+  fork. A round is committed when it CLOSES, and closing happens at "Complete
+  round" or "Done for now". A learner who finishes a round's drill, lands on
+  the fork, and walks away from there still has nothing durable. Committing per
+  LEG (at `finishQuiz`) would close it, costs nothing extra, and needs no
+  subtraction — each leg's stats are its own and disjoint. Left for whoever
+  picks this up next.
 
 ## What happened
 

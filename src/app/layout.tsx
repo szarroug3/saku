@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { SaveStatus } from "@/components/save-status";
 import { Sidebar } from "@/components/sidebar";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -113,7 +114,14 @@ export default function RootLayout({
                 <ConfirmProvider>
                   <div className="mx-auto flex max-w-[1080px] gap-3.5 px-3 pb-15 pt-6">
                     <Sidebar />
-                    <main className="min-w-0 flex-1">{children}</main>
+                    <main className="min-w-0 flex-1">
+                      {/* Above the page, on every page: the screens that
+                          would otherwise show a learner's work as missing
+                          are exactly the ones this has to appear on. Renders
+                          nothing when there is nothing unsaved. */}
+                      <SaveStatus />
+                      {children}
+                    </main>
                   </div>
                 </ConfirmProvider>
               </TooltipProvider>
