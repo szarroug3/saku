@@ -35,7 +35,7 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 
 | # | Status | Task | Impact | Effort | Note |
 |---|---|---|---|---|---|
-| 07 | **needs review** | Copy changes **?** | high | **trivial** | Rewrites written and mostly approved. Approve-and-apply. |
+| 07 | **approved** | Copy changes | high | **trivial** | Approved. 24 items ready to apply; stroke-order paras done `3c83895`. |
 | 02 | **done** | Romaji graded wrong | high | **trivial** | Merged `9467e10`. Romaji graded; conversion keyed on answer language. |
 | 19 | **done** | en2jp kana answers itself | high | **trivial** | Merged `379e519`. Now a six-option board. **Same root as 01.** |
 | 17 | **done** | Shipped-data problems | medium-high | **trivial** | Merged `ffbc40d`. 0 dashes; vulgar words now outside the first 120. |

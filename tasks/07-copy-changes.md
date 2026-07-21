@@ -1,14 +1,32 @@
-# Copy changes — awaiting Sam's approval
+# Copy changes — approved, not yet applied
 
-**Status: needs review**
+**Status: approved — ready to apply**
 
-## Open questions
+## Approval
 
-- Everything below is approved except the final go-ahead to apply it. Say when.
-- One item still open: `WHY_STROKE_ORDER`'s first paragraph duplicates the one you hand-wrote in `WHY_WRITING_EARLY`. **I recommend cutting it entirely** rather than trimming, since that panel's other two paragraphs stand alone.
+**Sam approved all of this** (their words: *"for anything i didn't comment on, i
+approve. for everything i mentioned above, if you're good with my change, then
+assume it's approved"*), plus the per-item rulings recorded against A2, A5, A6,
+A7, E2, E3 and E8 below.
+
+## The paragraph question — RESOLVED and APPLIED
+
+The old open question here was whether `WHY_STROKE_ORDER`'s first paragraph
+duplicated the one Sam hand-wrote in `WHY_WRITING_EARLY`. It did.
+
+**Settled and shipped as `3c83895`.** The rationale is now one shared
+`STROKE_ORDER_RATIONALE` constant in `src/data/why.ts`, using Sam's hand-written
+version. The Library panel's third paragraph was cut — Sam: *"i didn't handwrite
+that. cut it."* The two panels still differ where they should: the Library's lede
+is encouraging (it is a reference), the lesson's discourages drilling handwriting
+early, and only the shared argument for why stroke order matters is common.
+
+**This is the only item from this card that is applied.** The other 24 are
+approved and still waiting.
 
 Every item: the exact current text, what it is and where it appears, what is wrong
-with it, and a proposed replacement. **Nothing here is applied yet.**
+with it, and a proposed replacement. **Nothing here is applied yet** except the
+stroke-order paragraph work described above.
 
 Voice target, from Sam: *"i don't want the app to feel like AI is teaching you. i
 want it to feel like you're reading from someone who has gone through this."*
