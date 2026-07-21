@@ -104,7 +104,7 @@ export function retryHint(open: number, back: number): string {
   if (open) {
     return `Your ${open} miss${open === 1 ? "" : "es"} ${
       open === 1 ? "is" : "are"
-    } picked. Add or drop any character.`;
+    } picked. Add or drop anything.`;
   }
   return "Nothing missed. Pick anything you want another look at.";
 }

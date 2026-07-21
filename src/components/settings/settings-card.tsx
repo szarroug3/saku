@@ -174,7 +174,7 @@ function ResetProgress() {
 
   const handleReset = async () => {
     const ok = await confirm({
-      title: "Clear your entire knowledge base?",
+      title: "Clear everything?",
       body: (
         <>
           Every quiz you have done, everything you have marked as already known,
@@ -216,7 +216,7 @@ function ResetProgress() {
       setDone(true);
     } catch {
       // Same failure surface the sessions list uses for /api/delete.
-      alert("Couldn't clear your knowledge base. Try again.");
+      alert("Couldn't clear everything. Try again.");
     } finally {
       setBusy(false);
     }
@@ -225,7 +225,7 @@ function ResetProgress() {
   return (
     <div className="kq-material mb-3.5 rounded-xl border border-danger bg-card p-[18px]">
       <p className="mb-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-danger">
-        Clear knowledge base
+        Start over
       </p>
       <p className="mb-2.5 text-[13px] leading-snug text-text-muted">
         Wipes everything the app has learned about you: every quiz you have done,
@@ -238,12 +238,12 @@ function ResetProgress() {
       </p>
       {done ? (
         <Hint>
-          Knowledge base cleared. The app is back to its first lesson. Open the
+          Cleared. The app is back to its first lesson. Open the
           home page to start over.
         </Hint>
       ) : (
         <Btn danger onClick={handleReset} disabled={busy}>
-          {busy ? "Clearing…" : "Clear knowledge base"}
+          {busy ? "Clearing…" : "Start over"}
         </Btn>
       )}
     </div>

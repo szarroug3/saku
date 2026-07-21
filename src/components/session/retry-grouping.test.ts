@@ -102,11 +102,11 @@ test("retryHint names what the retry got back, and what is left", () => {
 test("retryHint is unchanged where nothing has been recovered yet", () => {
   assert.equal(
     retryHint(2, 0),
-    "Your 2 misses are picked. Add or drop any character.",
+    "Your 2 misses are picked. Add or drop anything.",
   );
   assert.equal(
     retryHint(1, 0),
-    "Your 1 miss is picked. Add or drop any character.",
+    "Your 1 miss is picked. Add or drop anything.",
   );
   assert.equal(
     retryHint(0, 0),

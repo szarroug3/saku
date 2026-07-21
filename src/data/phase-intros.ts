@@ -244,7 +244,7 @@ export const COMBO_H: PhaseIntro = {
   title: "A small や, ゆ or よ fuses onto the kana in front of it.",
   body: [
     {
-      text: "Only the い-column kana take these: き, し, ち, に, ひ, み, り and their voiced partners. き with a small ゃ is one sound in one beat, kya, not two.",
+      text: "Only the い-row kana take these: き, し, ち, に, ひ, み, り and their voiced partners. き with a small ゃ is one sound in one beat, kya, not two.",
     },
     {
       lead: "The size is the whole tell.",
@@ -267,11 +267,11 @@ export const COMBO_K: PhaseIntro = {
   title: "A small ャ, ュ or ョ fuses onto the kana in front of it.",
   body: [
     {
-      text: "A full-size kana followed by a small ャ, ュ or ョ is one syllable, not two. The two are said together, in a single beat, not as two separate kana.",
+      text: "Only the イ-row kana take these: キ, シ, チ, ニ, ヒ, ミ, リ and their voiced partners. キ with a small ャ is one sound in one beat, kya, not two.",
     },
     {
       lead: "The size is the whole tell.",
-      text: "キャ, with the small ャ, is “kya”. キヤ, with a full-size ヤ, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height.",
+      text: "キャ, with the small ャ, is “kya”. キヤ, with a full-size ヤ, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height. You will misread a few at first. That is normal, and it stops once you have seen enough of them.",
     },
     {
       text: "Same rule as the hiragana combos, on shapes you already know. Nothing new to draw.",
@@ -641,7 +641,6 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
       text: "Japanese often has two verbs for the same happening: one for when it happens on its own, and one for when someone makes it happen. English reuses one word for both: 'The door opened' and 'I opened the door' are both 'open'. Japanese uses 開く and 開ける.",
     },
     {
-      lead: "The sentence already tells you which.",
       text: "You will get these backwards for a while. English gives you no help here, because 'open' does both jobs. Expect to mix them up, and expect that to sort itself out with time.",
     },
     {
