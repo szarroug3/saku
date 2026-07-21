@@ -76,6 +76,7 @@ function stat(over: Partial<FactSessionDetail> = {}): FactSessionDetail {
     misses: 0,
     everCorrect: true,
     firstTryCorrect: true,
+    firstTryCount: 1,
     correct: 1,
     slow: 0,
     confused: {},

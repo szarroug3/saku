@@ -1185,6 +1185,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
           misses: 0,
           everCorrect: false,
           firstTryCorrect: null,
+          firstTryCount: 0,
           correct: 0,
           slow: 0,
           confused: {},
@@ -1203,6 +1204,9 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
             misses: a.missed,
             everCorrect: a.missed === 0 && record.forgivingPct === 100,
             firstTryCorrect: null,
+            // The aggregate DOES carry the strict numerator, same as `correct`
+            // below — no need to synthesize this one either.
+            firstTryCount: a.firstTry ?? 0,
             correct: a.correct ?? 0,
             slow: a.slow,
             confused: {},

@@ -272,6 +272,9 @@ export function newFactStat(): FactSessionDetail {
     misses: 0,
     everCorrect: false,
     firstTryCorrect: null,
+    // The countable twin of the flag above: showings that earned the first-try
+    // credit. The strict numerator, and the only one in `seen`'s unit.
+    firstTryCount: 0,
     // Showings answered right. everCorrect asks "did you EVER get it" (a
     // yes/no over the run); this counts how many of the showings you landed,
     // and is the forgiving numerator — see src/lib/accuracy.ts.
