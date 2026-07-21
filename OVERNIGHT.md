@@ -650,3 +650,50 @@ showings means a round with more retry legs accrues more first-try showings — 
 the sentence would start praising retrying rather than improving. That is a
 decision about what the app values. It is the first thing I would put in front of
 you in the morning.
+
+## Voice consistency fixes · merged `bc5104d`
+
+**1202 unit tests, 69/69 e2e, tsc clean.** Test count unchanged from baseline,
+which is right for a copy pass. Zero em dashes added to learner-facing strings.
+
+**Fixed by applying rules you had already stated:** both banned "met" instances
+(now "learned" — "encountered" read stiffer), the knowledge-base sweep across all
+six remaining strings, and the katakana combo card's parity, restored by
+transposing its hiragana twin's existing wording rather than writing new.
+
+**Fixed by deletion:** the transitivity card's stale lead, the whole retracted
+"good news" paragraph in `why.ts`, and the hiragana lede's over-promise. All three
+left valid states — `Why.lede.rest` is documented as optional, and body items
+already appear without a lead elsewhere in the same file. Nothing had to stop for
+a hole.
+
+**Fixed as code bugs:** `/results` hardcoded "characters" in both the headline and
+the subtitle, and the retry hint said "Add or drop any character" in grammar
+rounds. It used **"things"**, which is not an invention: `selection.ts:377` already
+records that as the settled answer ("Characters was a lie the moment a selection
+could hold 生's nine readings").
+
+**One correction it made to the audit, and it was right:** the auditor proposed
+standardising on "column"; I had told it "row" is the established term per
+`marks.ts:248`, so it made both say **"い-row"** — the opposite direction. Good
+instinct to follow the codebase over the audit.
+
+### It flagged three judgement calls rather than making them
+
+- **Straight apostrophes** (`'open'`) on the transitivity card where everything
+  else is curly. `why.ts`'s own header says curly is deliberate, so this is
+  arguably mechanical — but it was not in the four things I enumerated, so it
+  stopped. Two-character fix if you want it.
+- **The shouted `ONE` and `VOWEL`** on the small-ya rule. The audit read them as a
+  different writer; the agent noted your code comments shout constantly and this
+  may be you. Left.
+- **A redundancy it introduced and did not chase:** Settings now reads heading
+  "Start over", button "Start over", and an existing done line ending "…Open the
+  home page to start over." Three of them. Trimming the pre-existing approved tail
+  would be writing, so it left it. **Worth your eye.**
+
+### Still listed for you, because no bucket covered them
+
+The claim-explainer lede, unifying the four vocabularies for "you got it wrong",
+"made up of kanji and radicals" (also a factual question), the "not X, it's Y" tic,
+the stroke-order paragraph, and all the jargon items. These need your wording.
