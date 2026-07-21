@@ -359,7 +359,26 @@ export interface FactSessionDetail {
    * the results boards ask ("never got it"). Not the same question as
    * `correct`, which counts how many of the showings you landed. */
   everCorrect: boolean;
+  /**
+   * Did you nail the FIRST showing — a yes/no over the whole run, asked by the
+   * results boards ("did you ever get it cold"). At most 1 per fact per
+   * session, ever, so it is NOT a count and must never be pooled against
+   * `seen`: doing that divided a per-fact flag by a per-showing count and made
+   * a perfect learner's accuracy fall to 50%, 33%, 25% as a fact repeated.
+   * `firstTryCount` is the countable form; this stays the flag.
+   */
   firstTryCorrect: boolean | null;
+  /**
+   * SHOWINGS answered right on the first attempt, with no hint — the strict
+   * numerator, and the only one that shares `seen`'s unit. Incremented once per
+   * qualifying showing (see engine.firstTryCredit), so it can exceed 1 and is
+   * bounded above by `seen`.
+   *
+   * Absent on stats restored from a snapshot written before this field existed;
+   * read it through `firstTryShowings()` in src/lib/session-accuracy.ts rather
+   * than directly, which derives the old value from `firstTryCorrect`.
+   */
+  firstTryCount: number;
   /**
    * SHOWINGS answered correctly this session — folds into FactAggregate.correct
    * and so into forgiving accuracy. Not the same question as `everCorrect`.

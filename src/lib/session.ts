@@ -39,6 +39,8 @@
 // From the data-free module, not facts.ts: session.ts is on the always-mounted
 // QuizSessionProvider's import path, and factKeys needs no fact registry.
 import { factKeys } from "@/lib/fact-keys";
+// Also from a data-free module, and for the same bundle reason as factKeys.
+import { firstTryShowings } from "@/lib/first-try";
 import type { FactId, FactSessionDetail, SessionStats } from "@/types";
 
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
@@ -182,6 +184,7 @@ function emptyStat(): FactSessionDetail {
     misses: 0,
     everCorrect: false,
     firstTryCorrect: null,
+    firstTryCount: 0,
     correct: 0,
     slow: 0,
     confused: {},
@@ -198,17 +201,31 @@ function emptyStat(): FactSessionDetail {
  * number in the app that has to stay honest.
  *
  * Everything else sums, because everything else is a count of events and the
- * events all really happened.
+ * events all really happened. `firstTryCount` is one of those: it is the FLAG's
+ * countable twin — first-try-correct SHOWINGS — and it sums precisely because
+ * it is not asking the flag's question. The two are merged by different rules
+ * on purpose, and that pair is what src/lib/session.test.ts pins.
  */
 export function mergeStats(into: SessionStats, from: SessionStats): SessionStats {
   const out: SessionStats = {};
-  for (const f of factKeys(into)) out[f] = { ...into[f], confused: { ...into[f].confused } };
+  for (const f of factKeys(into)) {
+    out[f] = {
+      ...into[f],
+      // Normalised on the way in, not defaulted at every `+=`: a stat restored
+      // from a pre-`firstTryCount` snapshot has no such field, and
+      // `undefined + n` is NaN — which would spread from here into the live
+      // pill and every merge after it. See firstTryShowings().
+      firstTryCount: firstTryShowings(into[f]),
+      confused: { ...into[f].confused },
+    };
+  }
   for (const f of factKeys(from)) {
     const src = from[f];
     const dst = out[f] ?? (out[f] = emptyStat());
     dst.seen += src.seen;
     dst.misses += src.misses;
     dst.correct += src.correct;
+    dst.firstTryCount += firstTryShowings(src);
     dst.slow += src.slow;
     dst.everCorrect = dst.everCorrect || src.everCorrect;
     // First time asked wins, forever. See above.

@@ -120,7 +120,13 @@ function checkCard(g: GridRuntime, f: FactId, cfg: QuizConfig): CheckOutcome {
   // A grid cell shows the thing and asks for its answer, which is jp2en by
   // construction — there is no direction control on this screen.
   const ok = checkTyped(f, card.value, "jp2en");
-  if (st.firstTryCorrect === null) st.firstTryCorrect = ok;
+  // As in pairs: a grid cell is dealt once (`seen++` once, at init), so the
+  // count can only ever reach 1 here. Kept so `firstTryCount` carries the same
+  // meaning on every screen that writes stats.
+  if (st.firstTryCorrect === null) {
+    st.firstTryCorrect = ok;
+    if (ok) st.firstTryCount = (st.firstTryCount ?? 0) + 1;
+  }
   if (ok) {
     // Only a clean first try extends the streak — a miss below has already
     // zeroed it, so getting there on the retry doesn't restore it.

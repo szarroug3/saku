@@ -38,9 +38,10 @@ import {
 
 import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { SmallBtn } from "@/components/ui";
-import { EMPTY_COUNTS, accuracyOf, formatAccuracy } from "@/lib/accuracy";
+import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { loadLatencies, pushLatency } from "@/lib/latency-store";
+import { sessionAccuracy } from "@/lib/session-accuracy";
 import { isSlow, type LatencyStyle, type LatencyWindow } from "@/lib/slow";
 import {
   buildDeck,
@@ -317,21 +318,11 @@ function Pill({
   );
 }
 
-/** Live session accuracy, on exactly the terms src/lib/accuracy.ts defines:
- * strict = first-try-correct showings / showings, forgiving = correct showings
- * / showings. Characters that have never been answered are left out, so the
- * card currently on screen can't drag the number down before it's been
- * attempted. */
+/** Live session accuracy. The arithmetic is src/lib/session-accuracy.ts — it
+ * moved out of this file because it was wrong (a per-fact flag over a
+ * per-showing count) and a .tsx cannot be unit-tested here. */
 function liveAccuracy(stats: SessionStats, metric: AccuracyMetric): number | null {
-  const agg = { ...EMPTY_COUNTS };
-  for (const st of Object.values(stats)) {
-    if (st.firstTryCorrect === null) continue; // still in flight
-    agg.seen += st.seen;
-    agg.missed += st.misses;
-    agg.firstTry += st.firstTryCorrect === true ? 1 : 0;
-    agg.correct += st.correct ?? 0;
-  }
-  return accuracyOf(agg, metric);
+  return sessionAccuracy(stats, metric);
 }
 
 export function DrillScreen() {
@@ -594,9 +585,14 @@ export function DrillScreen() {
     // with a hint is the third outcome: seen, correct, not first-try — which is
     // an existing shape, not a new one (it is what a second-try success already
     // records), so nothing about the persisted file or the standings changes.
-    if (st.firstTryCorrect === null) {
-      st.firstTryCorrect = firstTryCredit(ok, q.tries, q.hinted);
-    }
+    const credit = firstTryCredit(ok, q.tries, q.hinted);
+    // The FLAG: the first showing's verdict, never overwritten. The COUNT: once
+    // per showing that earned the credit, so the strict numerator is in the
+    // same unit as `seen` and repetition stops deflating the pill. `?? 0`
+    // because a runtime resumed from a snapshot written before the field
+    // existed won't have it — same reason as `correct` below.
+    if (st.firstTryCorrect === null) st.firstTryCorrect = credit;
+    if (credit) st.firstTryCount = (st.firstTryCount ?? 0) + 1;
     if (ok) {
       // Only a clean first try extends the streak — a miss below has already
       // zeroed it, so getting there on the retry doesn't restore it.
