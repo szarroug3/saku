@@ -19,6 +19,7 @@ export {
   en2jpTypeable,
   mcOnlyIn,
   questionsFor,
+  revealFor,
   grammarVehicleFor,
   grammarSelectionFor,
   type Prompt,

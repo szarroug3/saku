@@ -59,6 +59,7 @@ import {
   questionsFor,
   requeueGap,
   retriesAllowed,
+  revealFor,
   shuffle,
   type GrammarSelection,
   type GrammarVehicle,
@@ -1248,11 +1249,10 @@ export function DrillScreen() {
                 ) : null}{" "}
                 <span className="text-text-muted">=</span>{" "}
                 <span className="font-semibold text-danger">
-                  {/* The answer on THIS showing's vehicle when the subject has
-                      one (grammar's 食べてから), else the fact's baked answer. */}
-                  {questionsFor(q.f).answerReveal?.(q.f, q.dir, ctx) ??
-                    factInfo(q.f)?.answers[0] ??
-                    ""}
+                  {/* One call, no fallback composed here. The `?? answers[0]`
+                      this replaced was the "a = a" bug: in en2jp a fact's first
+                      baked answer IS the prompt. See revealFor. */}
+                  {revealFor(q.f, q.dir, ctx)}
                 </span>
               </span>
               {q.mc ? null : (
