@@ -697,3 +697,67 @@ instinct to follow the codebase over the audit.
 The claim-explainer lede, unifying the four vocabularies for "you got it wrong",
 "made up of kanji and radicals" (also a factual question), the "not X, it's Y" tic,
 the stroke-order paragraph, and all the jargon items. These need your wording.
+
+---
+
+# NEW P0 FOUND OVERNIGHT — the kanji "Made of" row is wrong
+
+**New card: `tasks/23-p0-kanji-components-wrong.md`. Not fixed. I think this is the
+most important thing on the board now.**
+
+It started as a low-confidence aside in the Japanese audit (§F, one page, 前). The
+auditor wrote *"if other kanji show the same shape it is systemic."* I checked, and
+it is systemic and worse than the page they saw.
+
+## Two separate defects
+
+**1. The person radical 亻 is shown as 化 — 109 kanji.**
+
+```
+休 -> 化 + 木     should be 亻 + 木   (a person beside a tree = rest)
+仁 -> 化 + 二     should be 亻 + 二
+```
+
+休 is one of the first kanji taught and its entire story is a person resting
+against a tree. The app currently tells a beginner it is "change" plus "tree".
+
+**I nearly proposed a blanket substitution and checking stopped me.** 花, 貨, 靴,
+貸, 袋, 褒 genuinely contain 化 and must keep it. Sweeping the character would have
+replaced one wrong answer with another.
+
+**2. The decomposition is a flattened recursive walk**, so the meaningful component
+is listed alongside its own children and lost among them:
+
+| kanji | shows | should be | lost |
+|---|---|---|---|
+| 時 | 寸 + 土 + 日 | 日 + 寺 | **寺, the phonetic** |
+| 語 | 言 + 口 + 五 | 言 + 吾 | 吾 |
+| 校 | 父 + 木 + 亠 | 木 + 交 | 交 |
+| 貨 | 化 + 貝 + 目 + ハ + 匕 | 化 + 貝 | 目/ハ are inside 貝 |
+
+寺 is the most valuable fact about 時 — it is the phonetic it shares with 持, 待,
+詩, 侍. Flattening it to 土 + 寸 throws away exactly the transfer the kanji track
+exists to create.
+
+## Why it matters more than its size suggests
+
+`why.ts` states the kanji track's premise in your words: *"kanji are how words are
+built, and knowing the pieces means new words aren't fully new."* The "Made of" row
+IS that promise. A wrong component is not a cosmetic error — it is a false building
+block a learner will then reason with everywhere that shape appears.
+
+## Why I did not fix it
+
+`comps` is baked into `src/data/generated/kanji.json`; the app code is fine and the
+**data** is wrong. Fixing it needs the KanjiVG source, a regeneration, and
+validation across 2,062 entries — and getting it wrong swaps one set of false
+components for another in a place the app states as fact.
+
+**The blocking question is yours and it is a teaching decision, not a technical
+one: what depth should it stop at?** 時 should show 日 + 寺, not 日 + 土 + 寸. "Stop
+at the first meaningful level" needs a definition the generator can apply.
+
+One measurement caveat, so you do not chase a phantom: 736 of 2,062 (36%) list
+parts that omit their own classical radical, but that number is inflated by
+codepoint variants (｜ vs 丨, ノ vs 丿) which are the same radical and not a bug.
+**The 109 figure is exact; the 36% is a soft signal.**
