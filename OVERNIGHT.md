@@ -323,3 +323,52 @@ The 1Password SSH signing agent (`commit.gpgsign=true`) returns "agent returned 
 error" in a non-interactive session because it wants your biometric confirmation.
 **All overnight commits are therefore unsigned** (`--no-gpg-sign`). If you want
 them signed, they will need re-signing.
+
+---
+
+## Task 01 — the reveal shows the answer, not your own question · merged `22c2aa5`
+
+**1172 unit tests, 67/67 e2e, tsc clean.** This was the highest-impact bug on the
+board: it fired on every wrong answer, in four of five subjects.
+
+| card | dir | prompt | reveal |
+|---|---|---|---|
+| kana あ | en2jp | a | **あ** (was `a`) |
+| kanji 生 meaning | en2jp | life | **生** (was `life`) |
+| kanji 生 reading | en2jp | い | **生** (was `い`) |
+| word 先生 meaning | en2jp | teacher | **先生** (was `teacher`) |
+| grammar 〜てから | en2jp | after doing X | 〜てから (was already right) |
+
+I verified this myself against the merged tree, not just from the report.
+
+### Why it is structural rather than five patches
+
+The old default came off the **question axis** — `answers[0]`, which in en2jp *is*
+the prompt. The new one comes off the **answer axis** (`en2jpTarget` for en2jp,
+`answerOf` for jp2en), so each direction reveals what the other displays and the
+reveal cannot echo the prompt by construction. **A subject added tomorrow with no
+`answerReveal` is correct for free.**
+
+Worth noting: the transitivity card was already correct, but only *by accident* —
+its `answers[0]` happened to be the Japanese verb. That accident is exactly the
+trap, and it is now correct by construction like the rest.
+
+### Task 16's confusion note is now cheap
+
+`revealFor` is a pure function returning the answer string, and `confusedWith` is
+already imported in `drill-screen.tsx`. The note is a third `<span>` gated on
+`revealing`. No restructuring needed.
+
+One thing task 16 will have to decide: **the 1600ms MC auto-advance is a tight
+budget for a second line of prose**, so it will probably need extending when a note
+is present.
+
+### Pinned, pre-existing, not fixed
+
+**Six grammar patterns reveal a label their own grader rejects** — `〜られる (可能)`,
+`〜から (理由)`, `〜そうだ (伝聞)` and three more. `patternLabel` appends the sense so
+an MC board cannot show two identical buttons, but the grader wants the bare form.
+Pinned by SHAPE ("the accepted answer plus a parenthesised suffix") rather than by
+count, so a seventh ambiguous pattern passes and a genuinely wrong reveal fails.
+
+**Whether the reveal should print that suffix at all is a copy question for you.**

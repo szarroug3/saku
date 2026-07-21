@@ -1,6 +1,9 @@
 # P0 · The wrong-answer reveal shows the prompt back
 
-**Status: not started**
+**Status: done** — merged `22c2aa5`. Fixed structurally: the reveal's default now
+comes off the answer axis, so it cannot echo the prompt for any subject, including
+ones added later. 67/67 e2e. Six grammar sense-suffix labels pinned as a separate
+pre-existing copy question.
 
 Found independently by three agents. Reproduced directly.
 
