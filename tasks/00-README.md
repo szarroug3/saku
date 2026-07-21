@@ -44,7 +44,7 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 | 01 | not started | Reveal shows the prompt back | **highest** | small | Every wrong answer, 4 of 5 subjects. **Do with 19.** |
 | 03 | **done** | Accuracy pill mixes units | high | small | Merged `0d8c36b`. Aggregate split dispatched separately. |
 | 04 | **needs review** | Corpus tagger **?** | high | small | Filter the data first; the check is already written. |
-| 16 | unreviewed | Quiz tells you nothing | high | small | Three small additions. Day-one impact. |
+| 16 | not started | Quiz tells you nothing | high | small | Reviewed. Reveal already works; per-kind instructions + confusion note + pill. |
 
 ### Worth doing, more work or less reach
 
