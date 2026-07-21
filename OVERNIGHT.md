@@ -255,3 +255,71 @@ guess:
   見てある are grammatical but unidiomatic (you would say 食べておいた). 食べてある
   currently appears as the v1 representative. Narrowing that is per-verb data
   authoring, so it was left alone.
+
+---
+
+## Task 04 — corpus filtering · merged `a729b5f`
+
+**1156 tests, tsc clean.** 「ログアウトするんじゃなかったよ」 is gone from the corpus
+entirely (verified by searching the shipped file, not just the API).
+
+### The open question you left has an answer: filtering was enough
+
+This was the one that could have gone the other way. It did not.
+
+| pattern | wrong | before | **after** |
+|---|---|---|---|
+| `ba` | 302 (54%) | 559 | **257** |
+| `node` | 125 (58%) | 214 | **89** |
+| `ta-tokoro` | 21 (13%) | 160 | **139** |
+| `made-ni` | 27 (24%) | 112 | **85** |
+| `nikui` | 18 (22%) | 81 | **63** |
+| `kara-reason` | 13 (6%) | 226 | **213** |
+
+**Every survivor clears the 20-example scarcity floor. Nothing was padded to look
+healthy.** Corpus went 8,689 → 8,547 sentences; 506 pattern claims removed, 142
+sentences left entirely. 14 vocabulary words lost their only Library example
+(2,692 → 2,678).
+
+The agent's measurement matched the card on five of six patterns exactly, and
+differed by one on `nikui` for a stated reason (難 in kanji reads がたい).
+
+### Every dropped sentence is kept
+
+`grammar-corpus-dropped.json` holds each removed sentence with its span and the
+rule that dropped it. The commit message's reasoning is right: *"125 dropped" is a
+number; you need to be able to read the sentences and disagree with the rule.*
+
+### Recommendation for you: fix the `node` signature, leave the other five
+
+89 examples is enough so it is not urgent, but the ので signature is still wrong,
+and a future re-cut only recovers those ~125 real ので sentences if it is fixed
+first. `ba` looks alarming at 54% but those 302 are genuinely
+`nakereba-naranai`'s, which the corpus already tags separately, so nothing is lost.
+
+### Judgement calls the agent flagged rather than buried
+
+- **`meta.perPattern` changed meaning.** It held `min(owned, cap)` — reading 200
+  for 33 patterns while the file actually held 2,029 `wo` examples. It now holds
+  the true count. This is a semantic change to a shipped field that nobody asked
+  for; it was made because `SCARCE` reads it and the coverage question needs it.
+  **Worth your eye.**
+- **`ta-tokoro`'s rule is the bluntest of the six** and also catches ~2 arguably
+  legitimate uses like 「見たところとても熱そうだ」. It erred toward dropping.
+- **`んで` (11 of the 125 `node` drops) is a real colloquial contraction of ので.**
+  Dropped because it shows the learner no ので, which is the example's whole job,
+  but it is the least clear-cut of the five confounded surfaces.
+
+### Re-cut safety
+
+The corpus comes from a Python script that cannot run in CI, so nothing stopped a
+laptop re-cut landing raw output. `grammar.py` now prints "NOT DONE" plus the
+follow-up commands, and a test fails when `meta.audit` is missing — which is
+exactly what a naive re-cut produces.
+
+### Note on signing
+
+The 1Password SSH signing agent (`commit.gpgsign=true`) returns "agent returned an
+error" in a non-interactive session because it wants your biometric confirmation.
+**All overnight commits are therefore unsigned** (`--no-gpg-sign`). If you want
+them signed, they will need re-signing.
