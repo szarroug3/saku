@@ -873,8 +873,17 @@ const grammarQuestions: QuestionType = {
       if (v) {
         const built = builtOn(prod.recipe, v);
         if (built) {
-          const g = given.trim();
-          return g === built.form || g === built.kanaForm;
+          // Through checkProduces, exactly as the baked path below does, and NOT
+          // raw string equality. Equality here meant the one branch the drill
+          // actually takes was the one branch with no romaji forgiveness: a
+          // learner with no IME typed `tabetekudasai` for 食べてください and was
+          // told she was wrong. checkProduces is unchanged and still refuses to
+          // let romaji reach a kanji-bearing target, so `form` (食べてください)
+          // stays exact-match and only `kanaForm` (たべてください) forgives a
+          // spelling — the same asymmetry every other subject already has.
+          return (
+            checkProduces(built.form, given) || checkProduces(built.kanaForm, given)
+          );
         }
       }
     }
