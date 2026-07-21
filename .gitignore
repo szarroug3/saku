@@ -42,3 +42,6 @@ next-env.d.ts
 
 # python legacy
 __pycache__/
+
+# Local learner data, not shipped
+lists.json
