@@ -29,7 +29,7 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 | # | Status | Task | Impact | Effort | Why here |
 |---|---|---|---|---|---|
 | 14 | **done** | Session bricks | total | medium | Merged `abc454c`. Cross-tab loop, not a component loop. |
-| 15 | not started | Nothing saved until a session completes **?** | total | medium | What made 14 catastrophic instead of annoying. Next up. |
+| 15 | **done** | Nothing saved until session completes **?** | total | medium | Merged `4fb35f9`. Per round. Fork hole left, needs a ruling. |
 
 ### Best ratio — high impact, small change
 

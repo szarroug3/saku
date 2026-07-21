@@ -372,3 +372,62 @@ Pinned by SHAPE ("the accepted answer plus a parenthesised suffix") rather than 
 count, so a seventh ambiguous pattern passes and a genuinely wrong reveal fails.
 
 **Whether the reveal should print that suffix at all is a copy question for you.**
+
+---
+
+## Task 15 — progress persists per round · merged `4fb35f9`
+
+**1202 unit tests, 69/69 e2e, tsc clean.** The most invasive change of the night.
+
+### The rest-screen sentence is now true, and says which part
+
+It read *"Reloading or closing the page will not lose your progress"* — true of the
+localStorage snapshot, false of anything durable. It now reads **"Your finished
+rounds are saved. Reloading or closing the page will not lose your progress."**
+The first clause is the fix: "your progress" alone was the word doing the lying.
+
+### Double counting — the risk I flagged, and how it was disproved
+
+A round committed partway and then completed must not count twice. Proved three
+ways, and the negative control is what makes the rest mean anything: a test adds
+back the write `finishSession` no longer makes and asserts あ goes from `seen: 3`
+to `seen: 6`, so the equality test cannot be passing against zeroes. Plus an e2e
+that plays two real rounds and asserts **10 showings on disk, not 15**.
+
+### A corrupt history.json is no longer destroyed
+
+`loadHistory` answered "corrupt" and "absent" identically, and every mutator
+read-modify-writes on that answer. One truncated write and the recoverable file
+was gone. Now it throws, no mutator gets a base object, **the damaged bytes are
+never written over**, writes are temp + fsync + rename, and the API returns 503
+rather than a lying `{ok: true}`. Clear knowledge base copies the file to
+`history.corrupt-<ts>.json` before resetting, so the escape hatch preserves the
+evidence.
+
+### Failed saves are no longer silently dropped
+
+`fetch(...).catch(() => {})` is gone. Records go to a localStorage outbox before
+posting and leave only on 2xx, retried on mount, on later commits, and on
+`online`. Server-side dedupe on a new record id means a retry cannot double-append.
+
+### THE HOLE I CHOSE TO LEAVE — your call in the morning
+
+**A learner who finishes a round's drill, lands on the "Complete round / Done for
+now" fork, and walks away from THERE still has nothing durable.** Committing per
+*leg* instead would close it, and the agent says it is not harder.
+
+I left it at per-round deliberately, and the reason is a cost the card does not
+mention: `deleteSessions` rebuilds the aggregate from the surviving 200 sessions
+and loses what the capped-off ones taught it. **Per-round records already make
+sessions accumulate ~3× faster, so that 200-session cap now arrives ~3× sooner.**
+Per-leg would be faster still. Trading one data-loss mode for another needs your
+ruling, not mine.
+
+### Also pinned
+
+- `discardSession` is now narrower than its name: it cannot un-record a completed
+  round. "Discard" as a label may want revisiting.
+- One honest behaviour change, stated in a test rather than left to be found:
+  **counts are identical between per-round and per-session, stability is not.**
+  Three rounds are three `review()` calls where a session was one. Rounds are
+  minutes apart and genuinely are separate occasions, so I take it as correct.
