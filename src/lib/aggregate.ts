@@ -31,12 +31,23 @@
 // observed once and then re-observed under massed conditions. The requeue is
 // the app teaching you; it is not three independent tests.
 //
-// `hit` is therefore the session's first-try verdict, which the app already
-// records and already treats as the strict numerator: quiz-session.finishQuiz
-// writes `firstTry` as 0 or 1 PER SESSION (`stats[c].firstTryCorrect === true ?
-// 1 : 0`). So the model's notion of a hit is exactly the app's notion of "you
-// nailed it", and there is not a second, private definition of correctness in
-// here to drift from the one on screen.
+// `hit` is therefore the session's first-try verdict — did the FIRST showing
+// land cold — carried in its own field, `firstTryHit`, which quiz-session
+// writes from the same `firstTryCorrect` flag the results boards read. So the
+// model's notion of a hit is exactly the app's notion of "you nailed it", and
+// there is not a second, private definition of correctness in here to drift
+// from the one on screen.
+//
+// It used to share a field with the accuracy numerator, back when `firstTry`
+// was written as `firstTryCorrect ? 1 : 0` and one 0-or-1 served both readers.
+// That collapsed the moment the numerator had to start counting SHOWINGS to be
+// divisible by `seen` — the pill it fed was reading 50%, 33%, 25% for a learner
+// who never missed. The two readings are now separate fields because they are
+// separate questions, and the tempting economy of asking `firstTry > 0` for the
+// hit is precisely the regression to avoid: nailing a fact only on the requeue
+// makes the count 1 and the verdict false, and the model must hear false.
+
+
 //
 // Massed repetition across two SESSIONS is a real case and is left to the
 // arithmetic: finish a drill, press "Redrill the misses", answer thirty seconds
@@ -49,6 +60,7 @@ import type {
   FactCounts,
   FactId,
   QuizSessionRecord,
+  SessionFactCounts,
 } from "@/types";
 
 /** A fact with no evidence: nothing done, nothing believed. */
@@ -78,7 +90,7 @@ function addCounts(agg: FactCounts, s: Partial<FactCounts>): void {
  */
 export function foldSession(
   agg: FactAggregate,
-  s: Partial<FactCounts>,
+  s: Partial<SessionFactCounts>,
   ts: number,
 ): void {
   addCounts(agg, s);
@@ -86,7 +98,11 @@ export function foldSession(
   // test occasion, so not evidence, so the model's clock must not move: writing
   // lastTested here would tell the model you were tested when you weren't.
   if (!(s.seen ?? 0)) return;
-  const next = review(agg, (s.firstTry ?? 0) > 0, ts);
+  // Absent `firstTryHit` means a record written when `firstTry` WAS the flag,
+  // so `> 0` is not an approximation of the old verdict — it is the old verdict,
+  // read back out of the field it was stored in. Replaying such a file lands on
+  // the stability it landed on before this change, exactly.
+  const next = review(agg, s.firstTryHit ?? (s.firstTry ?? 0) > 0, ts);
   agg.stability = next.stability;
   agg.lastTested = next.lastTested;
 }

@@ -10,6 +10,7 @@ import { foldSessions } from "@/lib/aggregate";
 import { BEHAVIOR } from "@/lib/config";
 import { DECKS } from "@/lib/decks";
 import { computeResults } from "@/lib/engine";
+import { firstTryShowings } from "@/lib/first-try";
 import {
   entryOf,
   factInfo,
@@ -154,14 +155,21 @@ export function readableStats(results: ResultsPayload): SessionStats {
  * the ring, the drill HUD pill you just watched, and the numbers Home shows
  * tomorrow are the same measurement. Counts and not a FactAggregate: this is a
  * pool across every fact in the run, and a pool has no scoring state (see
- * accuracy.totalFor). */
+ * accuracy.totalFor).
+ *
+ * "Exactly as" is load-bearing and was for a while merely aspirational: this
+ * read `firstTryCorrect === true ? 1 : 0` — a per-run flag — while `seen` next
+ * to it counted showings, so the ring disagreed with the pill it sat under by
+ * more the harder you had practised. The numerator is `firstTryShowings`, the
+ * same reader the pill and the writer both use, because three copies of the
+ * same measurement agree by sharing the arithmetic or they do not agree. */
 function runAggregate(stats: SessionStats): FactCounts {
   const agg = { ...EMPTY_COUNTS };
   for (const st of Object.values(stats)) {
     agg.seen += st.seen;
     agg.missed += st.misses;
     agg.slow += st.slow;
-    agg.firstTry += st.firstTryCorrect === true ? 1 : 0;
+    agg.firstTry += firstTryShowings(st);
   }
   return agg;
 }
