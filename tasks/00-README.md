@@ -45,13 +45,13 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 | 01 | **done** | Reveal shows the prompt back | **highest** | small | Merged `22c2aa5`. Structural fix; new subjects correct for free. |
 | 03 | **done** | Accuracy pill mixes units | high | small | Merged `0d8c36b`. Aggregate split dispatched separately. |
 | 04 | **done** | Corpus tagger | high | small | Merged `a729b5f`. Filtered; all survivors clear the floor. |
-| 16 | **in progress** | Quiz tells you nothing | high | small | Dispatched. Per-kind instructions, confusion note, progress pill. |
+| 16 | **done** | Quiz tells you nothing | high | small | Merged `36e421f`. Per-kind instructions, mix-up note, prominent x/y pill. |
 
 ### Worth doing, more work or less reach
 
 | # | Status | Task | Impact | Effort | Note |
 |---|---|---|---|---|---|
-| 21 | **in progress** | Jargon never explained **?** | medium-high | small | Dispatched. Track-opening intro card per Sam's ruling. |
+| 21 | **done (copy draft)** | Jargon never explained **?** | medium-high | small | Merged `348b671`. Track-open intro card, reused phase-intros. Copy is DRAFT. |
 | 09 | **ready to build** | Particle reading rule **?** | medium-high | small | Answered: は/へ teach the rule; を's card is just WRONG and needs changing. |
 | 18 | **done** | Retry leaves no trace | medium | small | Merged `a53a94e`. Summary sums correctly; retry visible. |
 | 20 | unreviewed | Data quality **?** | medium | medium | Several sub-items, some need a sweep first. |
