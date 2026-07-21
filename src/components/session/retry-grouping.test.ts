@@ -16,6 +16,7 @@ import {
   RETRY_STANDING_ORDER,
   groupByStanding,
   initialPicked,
+  retryHint,
 } from "./retry-grouping";
 
 const f = (s: string): FactId => s as FactId;
@@ -73,4 +74,48 @@ test("initialPicked ticks exactly the misses, nothing else", () => {
 
 test("initialPicked on a clean round selects nothing", () => {
   assert.deepEqual(initialPicked([]), {});
+});
+
+// ---------- retryHint ----------
+//
+// The four states of the line above the picker. Two of them are new, and they
+// exist because a tester finished a perfect retry and was handed back a screen
+// that said nothing about it: "My perfect retry round left no trace."
+
+test("retryHint names what the retry got back, and what is left", () => {
+  // Two missed, both recovered on the retry: nothing left to offer, and the
+  // line says the retry went clean.
+  assert.equal(
+    retryHint(0, 2),
+    "You got all 2 back. Nothing left over, but pick anything you want another look at.",
+  );
+  // One missed, recovered.
+  assert.equal(
+    retryHint(0, 1),
+    "You got it back. Nothing left over, but pick anything you want another look at.",
+  );
+  // Partial: credit for what landed, the rest still ticked.
+  assert.equal(retryHint(1, 2), "You got all 2 back. The other 1 is picked.");
+  assert.equal(retryHint(3, 1), "You got it back. The other 3 are picked.");
+});
+
+test("retryHint is unchanged where nothing has been recovered yet", () => {
+  assert.equal(
+    retryHint(2, 0),
+    "Your 2 misses are picked. Add or drop any character.",
+  );
+  assert.equal(
+    retryHint(1, 0),
+    "Your 1 miss is picked. Add or drop any character.",
+  );
+  assert.equal(
+    retryHint(0, 0),
+    "Nothing missed. Pick anything you want another look at.",
+  );
+});
+
+test("retryHint before and after a perfect retry are different sentences", () => {
+  // The requirement, stated as an assertion: a perfect retry must not leave
+  // the screen saying what it said before.
+  assert.notEqual(retryHint(2, 0), retryHint(0, 2));
 });

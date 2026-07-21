@@ -53,6 +53,7 @@ import { useQuizConfig } from "@/lib/quiz-config";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import {
   mergeStats,
+  recoveredAfterLeg,
   restMinutes,
   SESSION_ROUND_TARGET,
   summariseRound,
@@ -795,6 +796,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         phase: teaching ? "teaching" : "drilling",
         restUntil: null,
         roundStats: {},
+        recovered: [],
         rounds: [],
         totalStats: {},
         lastActiveAt: now,
@@ -898,6 +900,9 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       rounds: [...s.rounds, summariseRound(s.round, s.roundStats)],
       totalStats: mergeStats(s.totalStats, s.roundStats),
       roundStats: {},
+      // Recovered travels with roundStats and dies with it: it is a claim about
+      // THIS round's misses.
+      recovered: [],
       lastActiveAt: now,
     };
   }, []);
@@ -939,6 +944,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       phase: "drilling",
       restUntil: null,
       roundStats: {},
+      recovered: [],
       lastActiveAt: Date.now(),
     });
     // THE SAME WHOLE SESSION — not the retried bits. This is the line the
@@ -1147,6 +1153,11 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         setSession({
           ...session,
           roundStats: mergeStats(session.roundStats, stats),
+          // The leg boundary is the only place that can see a leg BY ITSELF —
+          // one merge later and "missed cold, nailed on the retry" is
+          // indistinguishable from "missed cold, never re-asked". See
+          // StudySession.recovered.
+          recovered: recoveredAfterLeg(session.recovered ?? [], stats),
           phase: "round-complete",
           lastActiveAt: Date.now(),
         });

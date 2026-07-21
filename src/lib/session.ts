@@ -111,6 +111,25 @@ export interface StudySession {
   restUntil: number | null;
   /** The current round's stats, merged across its retry legs. */
   roundStats: SessionStats;
+  /**
+   * Facts this round MISSED and then got back on a later leg.
+   *
+   * The round's stats cannot answer this on their own. `roundStats` is a merge
+   * across the legs, and the merge is deliberately lossy about WHEN: a fact you
+   * missed cold and then nailed on the retry looks, afterwards, exactly like a
+   * fact you missed cold and never re-asked (`misses > 0`, `everCorrect`,
+   * `firstTryCorrect: false`). That is the whole of finding 1 — the retry left
+   * no trace because there was nowhere for the trace to live.
+   *
+   * So the leg boundary writes it down, once, in `recoveredAfterLeg`. Optional
+   * because a session snapshotted before this field existed comes back without
+   * it; read it as `?? []`, which is what a resumed session honestly knows.
+   *
+   * Reset at every round start, alongside `roundStats`, for the same reason:
+   * "you got it back" is a claim about THIS round's misses, and a stale entry
+   * would suppress a retry offer you had not yet earned.
+   */
+  recovered?: FactId[];
   /** Every round so far. */
   rounds: RoundSummary[];
   /** Every round's stats merged — what gets written to history at the end. */
@@ -246,6 +265,41 @@ export function missedInRound(stats: SessionStats): FactId[] {
     .sort((a, b) => stats[b].misses - stats[a].misses);
 }
 
+/**
+ * The round's recovered set after one leg finishes: what you had already got
+ * back, minus anything this leg put back in doubt, plus what this leg landed
+ * clean.
+ *
+ * Three rules, and the middle one is the reason this is a fold over `prev`
+ * rather than a look at the last leg alone:
+ *
+ *   - a fact this leg ASKED is dropped from `prev` first, so clearing it in
+ *     leg 2 and fumbling it again in leg 3 leaves it outstanding. The latest
+ *     leg is the one that gets to speak about a fact it asked.
+ *   - a fact this leg did NOT ask keeps whatever it earned earlier. Retry two
+ *     misses, clear both, then retry only one of them: the other is still back.
+ *   - clean means clean: landed with no miss in this leg. Getting there on the
+ *     second attempt of the retry is not "you got it back", and pretending
+ *     otherwise would take the offer away from the fact that most wants it.
+ *
+ * Leg 1 needs no special case. It asks everything, so every clean fact enters
+ * the set — and none of them are in the round's miss list, which is the only
+ * place this set is ever read against.
+ */
+export function recoveredAfterLeg(
+  prev: readonly FactId[],
+  legStats: SessionStats,
+): FactId[] {
+  const asked = factKeys(legStats);
+  const askedSet = new Set<FactId>(asked);
+  const out = prev.filter((f) => !askedSet.has(f));
+  for (const f of asked) {
+    const st = legStats[f];
+    if (st.misses === 0 && st.everCorrect) out.push(f);
+  }
+  return out;
+}
+
 // heldAtRoundEnd() WAS HERE. It listed the facts you walked away holding, to
 // feed the round-complete stability floor. Both are gone: the floor is already
 // applied, unconditionally, inside scoring.review() — see the long note on
@@ -262,30 +316,69 @@ export function missedInRound(stats: SessionStats): FactId[] {
  *   See the field doc on `StudySession.facts`: retry legs narrow the leg, never
  *   the session, so this is the full selection in every leg.
  *
- * - `answered`, `total`, and `firstTry` describe the round you actually PLAYED:
- *   the facts in `roundStats`. The header counts these because they are honest
- *   about what happened — the items you never reached were not "missed," and
- *   inflating the header to the full selection would claim a round you didn't
- *   run.
+ * - `answered`, `total`, `firstTry` and `needAnother` describe the round you
+ *   actually PLAYED: the facts in `roundStats`. The header counts these because
+ *   they are honest about what happened — the items you never reached were not
+ *   "missed," and inflating the header to the full selection would claim a
+ *   round you didn't run.
  *
- * `missed` is the misses of the answered round (`missedInRound`), unchanged —
- * that is what "Retry the misses" re-asks.
+ * THE HEADER COUNTS SHOWINGS, AND THAT IS WHY IT ADDS UP
+ * ======================================================
+ * It used to count FACTS, all three of them, and still printed a line that read
+ * as arithmetic: "5 questions · 4 right first try · 2 missed". Six from five.
+ * `total` was unique facts, `firstTry` was the per-round FLAG (`firstTryCorrect`
+ * — one fact, one vote) and `missed` was `missedInRound`, which counts a fact
+ * that was fine cold and fumbled on a later leg. Three different questions, one
+ * sentence, no denominator any of them shared.
+ *
+ * All three are now SHOWINGS, the unit task 03 settled on:
+ *
+ *     total       = Σ seen              every question the round asked
+ *     firstTry    = Σ firstTryShowings  the ones you landed cold, via first-try.ts
+ *     needAnother = total - firstTry    by construction, so the line sums
+ *
+ * `needAnother` is a subtraction and not its own tally on purpose: a third
+ * independent count is exactly how the first line stopped adding up. It is also
+ * why it is not called "missed" — a hint-assisted answer and a second-attempt
+ * answer both land in it, and neither is a miss. It says what it counts.
+ *
+ * A leg adds showings to the round, so retrying moves these numbers. That is
+ * finding 1's fix in its cheapest form: a perfect retry raises `total` and
+ * `firstTry` together and the header cannot look identical afterwards.
+ *
+ * `missed` is the misses of the answered round (`missedInRound`), unchanged and
+ * still historical: you did miss these, and a later leg does not get to edit
+ * that. `recovered` and `outstanding` split it by what is still TRUE NOW, and
+ * `outstanding` is what the picker offers.
  */
 export function roundCompleteView(session: StudySession): {
   selection: FactId[];
   answered: FactId[];
   missed: FactId[];
+  /** Missed this round, then got back on a later leg. Historical fact kept,
+   * actionable offer withdrawn. */
+  recovered: FactId[];
+  /** Missed this round and not yet got back — what the picker pre-ticks. */
+  outstanding: FactId[];
   total: number;
   firstTry: number;
+  needAnother: number;
 } {
   const stats = session.roundStats;
   const answered = factKeys(stats);
+  const missed = missedInRound(stats);
+  const back = new Set(session.recovered ?? []);
+  const total = answered.reduce((n, f) => n + stats[f].seen, 0);
+  const firstTry = answered.reduce((n, f) => n + firstTryShowings(stats[f]), 0);
   return {
     selection: session.facts,
     answered,
-    missed: missedInRound(stats),
-    total: answered.length,
-    firstTry: answered.filter((f) => stats[f].firstTryCorrect === true).length,
+    missed,
+    recovered: missed.filter((f) => back.has(f)),
+    outstanding: missed.filter((f) => !back.has(f)),
+    total,
+    firstTry,
+    needAnother: total - firstTry,
   };
 }
 

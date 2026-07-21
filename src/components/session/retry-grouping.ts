@@ -62,13 +62,49 @@ export function groupByStanding(
 }
 
 /**
- * The picker opens with your misses already ticked. This turns the round's
- * miss list into the `picked` record the toggles read — nothing more is
- * checked, so opening the picker and pressing "Retry N" re-asks exactly the
- * misses, and every other fact is one tap away.
+ * The picker opens with your OUTSTANDING misses already ticked. This turns
+ * that list into the `picked` record the toggles read — nothing more is
+ * checked, so opening the picker and pressing "Retry N" re-asks exactly what
+ * is still open, and every other fact is one tap away.
+ *
+ * It used to be handed the round's whole miss list, recovered ones included,
+ * which is why a clean retry came back offering the same retry.
  */
-export function initialPicked(misses: readonly FactId[]): Record<string, boolean> {
+export function initialPicked(
+  outstanding: readonly FactId[],
+): Record<string, boolean> {
   const picked: Record<string, boolean> = {};
-  for (const f of misses) picked[f] = true;
+  for (const f of outstanding) picked[f] = true;
   return picked;
+}
+
+/**
+ * The line above the picker, in the four states the round can be in.
+ *
+ * A function, and here rather than in the JSX, because it is the only place
+ * the screen ACKNOWLEDGES a retry — the sentence a tester went looking for and
+ * did not find. Pure and in a `.ts`, so all four states are pinned by test
+ * rather than by reading the component.
+ *
+ * The two counts are misses, split by whether they are still true: `back` were
+ * missed this round and landed clean on a later leg, `open` were not. The
+ * round's history is not edited by either (see roundCompleteView) — this line
+ * only ever describes what is left to do, and says what the retry earned.
+ */
+export function retryHint(open: number, back: number): string {
+  const them = back === 1 ? "it" : "all " + back;
+  if (open && back) {
+    return `You got ${them} back. The other ${open} ${
+      open === 1 ? "is" : "are"
+    } picked.`;
+  }
+  if (back) {
+    return `You got ${them} back. Nothing left over, but pick anything you want another look at.`;
+  }
+  if (open) {
+    return `Your ${open} miss${open === 1 ? "" : "es"} ${
+      open === 1 ? "is" : "are"
+    } picked. Add or drop any character.`;
+  }
+  return "Nothing missed. Pick anything you want another look at.";
 }

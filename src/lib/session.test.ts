@@ -18,13 +18,24 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { mergeStats, roundCompleteView, type StudySession } from "@/lib/session";
+import {
+  mergeStats,
+  recoveredAfterLeg,
+  roundCompleteView,
+  type StudySession,
+} from "@/lib/session";
 import type { FactId, FactSessionDetail, SessionStats } from "@/types";
 
 const f = (s: string): FactId => s as FactId;
 
-/** A FactSessionDetail with the two fields these tests care about set, the
- * rest at their empty defaults. */
+/** A FactSessionDetail with the fields a test cares about set, the rest at
+ * their empty defaults.
+ *
+ * `firstTryCount` is passed explicitly wherever it matters. It is the header's
+ * numerator now (showings, not the flag), so a fixture that sets
+ * `firstTryCorrect: true` and leaves the count at 0 describes a fact that was
+ * right first try and yet has no first-try showing — which cannot happen, and
+ * which quietly made the old header's units look fine. */
 function detail(over: Partial<FactSessionDetail> = {}): FactSessionDetail {
   return {
     seen: 1,
@@ -49,11 +60,21 @@ function sessionWith(
   return { facts, roundStats } as unknown as StudySession;
 }
 
+/** A SessionStats literal keyed by the short names these tests use. The real
+ * type is keyed by the branded FactId, which a plain object literal will not
+ * widen into; `sessionWith` already takes the loose shape, this is for the
+ * calls that hand a leg straight to mergeStats/recoveredAfterLeg. */
+function stats(o: Record<string, FactSessionDetail>): SessionStats {
+  return o as unknown as SessionStats;
+}
+
 test("picker offers the FULL selection even when almost nothing was answered", () => {
   // A 9-word lesson; the round was ended after answering exactly one.
   const nine = ["a", "b", "c", "d", "e", "f", "g", "h", "i"].map(f);
   const view = roundCompleteView(
-    sessionWith(nine, { a: detail({ firstTryCorrect: true, correct: 1 }) }),
+    sessionWith(nine, {
+      a: detail({ firstTryCorrect: true, firstTryCount: 1, correct: 1 }),
+    }),
   );
 
   // The bug: this used to be `["a"]`. The picker must offer all nine.
@@ -66,7 +87,9 @@ test("picker offers the FULL selection even when almost nothing was answered", (
 test("header counts derive from what was ANSWERED, not the full selection", () => {
   const nine = ["a", "b", "c", "d", "e", "f", "g", "h", "i"].map(f);
   const view = roundCompleteView(
-    sessionWith(nine, { a: detail({ firstTryCorrect: true, correct: 1 }) }),
+    sessionWith(nine, {
+      a: detail({ firstTryCorrect: true, firstTryCount: 1, correct: 1 }),
+    }),
   );
 
   // "1 question · 1 right first try · 0 missed" — honest about the round played,
@@ -82,7 +105,7 @@ test("the two sources are independent: full selection, partial answered, real mi
   const view = roundCompleteView(
     sessionWith(three, {
       x: detail({ firstTryCorrect: false, misses: 2, everCorrect: true }),
-      y: detail({ firstTryCorrect: true, correct: 1 }),
+      y: detail({ firstTryCorrect: true, firstTryCount: 1, correct: 1 }),
     }),
   );
 
@@ -199,4 +222,181 @@ test("mergeStats does not mutate its inputs", () => {
   assert.equal(a[f("a")].firstTryCount, 1);
   assert.equal(a[f("a")].seen, 1);
   assert.equal(b[f("a")].firstTryCount, 2);
+});
+
+// ---------- the header arithmetic ----------
+//
+// The line read "5 questions · 4 right first try · 2 missed" after a five-card
+// lesson. Six from five, because the three numbers answered three different
+// questions: unique facts, the per-round first-try FLAG, and missedInRound.
+// They are all SHOWINGS now (task 03's ruling), and the third is a subtraction
+// of the first two so the sentence cannot stop adding up.
+
+/** The header's contract, asserted the way a reader does it: left to right. */
+function assertSums(view: { total: number; firstTry: number; needAnother: number }) {
+  assert.equal(
+    view.firstTry + view.needAnother,
+    view.total,
+    `${view.total} questions · ${view.firstTry} right first try · ${view.needAnother} needed another look`,
+  );
+}
+
+test("header counts SHOWINGS and sums to the stated total", () => {
+  const five = ["a", "b", "c", "d", "e"].map(f);
+  // Three landed cold. Two were missed and requeued, and landed on the requeue:
+  // 7 showings, 5 of them first-try-correct, 2 that needed another look.
+  const view = roundCompleteView(
+    sessionWith(five, {
+      a: detail({ seen: 1, firstTryCount: 1, firstTryCorrect: true, correct: 1 }),
+      b: detail({ seen: 1, firstTryCount: 1, firstTryCorrect: true, correct: 1 }),
+      c: detail({ seen: 1, firstTryCount: 1, firstTryCorrect: true, correct: 1 }),
+      d: detail({ seen: 2, misses: 1, firstTryCount: 1, firstTryCorrect: false, correct: 1 }),
+      e: detail({ seen: 2, misses: 1, firstTryCount: 1, firstTryCorrect: false, correct: 1 }),
+    }),
+  );
+
+  assert.equal(view.total, 7);
+  assert.equal(view.firstTry, 5);
+  assert.equal(view.needAnother, 2);
+  assertSums(view);
+  // The historical record is untouched: those two really were missed.
+  assert.deepEqual([...view.missed].sort(), [f("d"), f("e")]);
+});
+
+test("the arithmetic holds across the shapes a round can take", () => {
+  const three = ["x", "y", "z"].map(f);
+  const shapes: Array<Record<string, ReturnType<typeof detail>>> = [
+    // Nothing answered at all.
+    {},
+    // A clean sweep.
+    {
+      x: detail({ seen: 1, firstTryCount: 1, firstTryCorrect: true, correct: 1 }),
+      y: detail({ seen: 1, firstTryCount: 1, firstTryCorrect: true, correct: 1 }),
+    },
+    // Never landed: shown four times, missed every time.
+    { x: detail({ seen: 4, misses: 4, firstTryCount: 0, everCorrect: false }) },
+    // Missed then RECOVERED on a retry leg — the shape finding 2 was born in.
+    { x: detail({ seen: 3, misses: 1, firstTryCount: 2, firstTryCorrect: false, correct: 2 }) },
+    // Right, but only with a hint: seen and correct, no first-try credit.
+    { y: detail({ seen: 1, misses: 0, firstTryCount: 0, correct: 1 }) },
+    // A partially-played round: one of three reached.
+    { z: detail({ seen: 2, misses: 1, firstTryCount: 1, correct: 1 }) },
+  ];
+
+  for (const stats of shapes) {
+    const view = roundCompleteView(sessionWith(three, stats));
+    assertSums(view);
+    assert.ok(view.needAnother >= 0, "a count is never negative");
+    assert.ok(view.firstTry <= view.total, "numerator never exceeds the total");
+  }
+});
+
+test("header reads a pre-firstTryCount snapshot without inventing anything", () => {
+  // A session resumed across the upgrade has no firstTryCount; firstTryShowings
+  // derives it from the flag rather than defaulting to 0 and showing the round
+  // at zero right. See src/lib/first-try.ts.
+  const legacy = detail({ seen: 1, firstTryCorrect: true }) as Partial<FactSessionDetail>;
+  delete legacy.firstTryCount;
+  const view = roundCompleteView(
+    sessionWith([f("a")], { a: legacy as FactSessionDetail }),
+  );
+  assert.equal(view.firstTry, 1);
+  assertSums(view);
+});
+
+// ---------- a retry has to leave a trace ----------
+//
+// "My perfect retry round left no trace." Two misses, both retried, both right,
+// and the identical screen came back: still 2 missed, still both ticked, still
+// "Retry 2". The round's history is kept (you did miss them), but the OFFER now
+// reflects what is still true.
+
+test("a perfect retry changes the summary", () => {
+  const two = ["d", "e"].map(f);
+  const afterLeg1 = stats({
+    d: detail({ seen: 1, misses: 1, firstTryCount: 0, firstTryCorrect: false, everCorrect: false }),
+    e: detail({ seen: 1, misses: 1, firstTryCount: 0, firstTryCorrect: false, everCorrect: false }),
+  });
+  const before = roundCompleteView(sessionWith(two, afterLeg1));
+
+  // The retry leg: both asked again, both landed clean.
+  const leg2 = stats({
+    d: detail({ seen: 1, misses: 0, firstTryCount: 1, everCorrect: true, correct: 1 }),
+    e: detail({ seen: 1, misses: 0, firstTryCount: 1, everCorrect: true, correct: 1 }),
+  });
+  const session = sessionWith(two, mergeStats(afterLeg1, leg2));
+  session.recovered = recoveredAfterLeg(before.recovered, leg2);
+  const after = roundCompleteView(session);
+
+  // THE REQUIREMENT: the two screens are not the same screen.
+  assert.notDeepEqual(
+    { t: before.total, ft: before.firstTry, out: before.outstanding },
+    { t: after.total, ft: after.firstTry, out: after.outstanding },
+  );
+  // Nothing is offered for retry any more...
+  assert.deepEqual(before.outstanding, [f("d"), f("e")]);
+  assert.deepEqual(after.outstanding, []);
+  // ...and the recovery is named rather than the misses being erased.
+  assert.deepEqual([...after.recovered].sort(), [f("d"), f("e")]);
+  assert.deepEqual([...after.missed].sort(), [f("d"), f("e")], "history is kept");
+  // The counts moved too: two more questions, two more landed cold.
+  assert.equal(before.total, 2);
+  assert.equal(after.total, 4);
+  assert.equal(before.firstTry, 0);
+  assert.equal(after.firstTry, 2);
+  assertSums(before);
+  assertSums(after);
+});
+
+test("a retry that misses again stays outstanding", () => {
+  const two = ["d", "e"].map(f);
+  const leg1 = stats({
+    d: detail({ seen: 1, misses: 1, firstTryCount: 0, everCorrect: false }),
+    e: detail({ seen: 1, misses: 1, firstTryCount: 0, everCorrect: false }),
+  });
+  const leg2 = stats({
+    d: detail({ seen: 1, misses: 0, firstTryCount: 1, everCorrect: true, correct: 1 }),
+    e: detail({ seen: 2, misses: 1, firstTryCount: 0, everCorrect: true, correct: 1 }),
+  });
+  const session = sessionWith(two, mergeStats(leg1, leg2));
+  session.recovered = recoveredAfterLeg([], leg2);
+  const view = roundCompleteView(session);
+
+  // e landed, but not cleanly. "You got it back" is a claim about a clean
+  // showing, so e is still on offer.
+  assert.deepEqual(view.recovered, [f("d")]);
+  assert.deepEqual(view.outstanding, [f("e")]);
+});
+
+test("recoveredAfterLeg carries facts a later leg did not re-ask", () => {
+  const [d, e] = ["d", "e"].map(f);
+  const clean = detail({ seen: 1, misses: 0, firstTryCount: 1, everCorrect: true, correct: 1 });
+  // Leg 2 clears both; leg 3 re-asks only d.
+  const after2 = recoveredAfterLeg([], stats({ d: clean, e: clean }));
+  assert.deepEqual([...after2].sort(), [d, e]);
+  const after3 = recoveredAfterLeg(after2, stats({ d: clean }));
+  assert.deepEqual([...after3].sort(), [d, e], "e keeps what it earned in leg 2");
+
+  // But a leg that re-asks and re-misses takes it back.
+  const after4 = recoveredAfterLeg(
+    after3,
+    stats({ d: detail({ seen: 1, misses: 1, firstTryCount: 0, everCorrect: false }) }),
+  );
+  assert.deepEqual(after4, [e]);
+});
+
+test("recoveredAfterLeg on the first leg cannot claim a recovery", () => {
+  const three = ["x", "y", "z"].map(f);
+  const leg1 = stats({
+    x: detail({ seen: 1, misses: 0, firstTryCount: 1, everCorrect: true, correct: 1 }),
+    y: detail({ seen: 2, misses: 1, firstTryCount: 1, firstTryCorrect: false, correct: 1 }),
+  });
+  const session = sessionWith(three, leg1);
+  session.recovered = recoveredAfterLeg([], leg1);
+  const view = roundCompleteView(session);
+
+  // x is in the raw recovered set (it was clean), but it was never missed, so
+  // the screen never calls it a recovery: recovered is read against `missed`.
+  assert.deepEqual(view.recovered, []);
+  assert.deepEqual(view.outstanding, [f("y")]);
 });
