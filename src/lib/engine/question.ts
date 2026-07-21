@@ -44,7 +44,12 @@ import { BLANK as SELECTION_BLANK } from "@/lib/grammar/questions";
 import { readerFor, wordKnown } from "@/lib/grammar/readable";
 import { BEHAVIOR } from "@/lib/config";
 import { apply, hostOfClass } from "@/lib/grammar/apply";
-import { pickVehicle, type Rng, type Vehicle } from "@/lib/grammar/vehicles";
+import {
+  pickVehicle,
+  transitivityAllows,
+  type Rng,
+  type Vehicle,
+} from "@/lib/grammar/vehicles";
 import type { WordClass } from "@/lib/conjugate";
 import {
   KANJI_SUBJECT,
@@ -715,6 +720,12 @@ function variedVehicle(
 ): GrammarVehicle | null {
   const v = ctx?.grammarVehicle;
   if (!v || !apply(r, v.surface, v.cls).ok) return null;
+  // A VEHICLE THE RECIPE DOES NOT TAKE IS AN ILLEGAL ONE, even though it builds.
+  // apply() is happy to conjugate 行く into 行ってある — the 音便 is right and the
+  // sentence is not Japanese — so the recipe's own restriction has to be asked
+  // here as well as at the deal. Without it this branch graded the ungrammatical
+  // answer CORRECT for any intransitive vehicle a stale runtime carried in.
+  if (!transitivityAllows(r, v.surface)) return null;
   // A vehicle of the WRONG HOST is treated exactly like an illegal one: dropped,
   // and the showing falls back to the fact's own baked example. A stale ctx (a
   // remount, a serialized runtime written before the host split) could otherwise

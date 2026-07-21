@@ -185,7 +185,12 @@ function FormulaLine({ f }: { f: Formula }) {
  * evidence for it — one per conjugation class, so the reader watches the same
  * ending survive three different stems. If the engine is wrong these are wrong,
  * which is the same bet the cluster page makes and the reason neither page
- * hardcodes a single character of Japanese. */
+ * hardcodes a single character of Japanese.
+ *
+ * The lead-in arrives ready-made (`workedLead`) rather than being cut out of the
+ * slot here. Where a recipe takes only some verbs the claim is narrower, and the
+ * evidence beside it is drawn from the same narrowed pool — so the sentence and
+ * the examples cannot come apart. */
 function WorkedLine({ f }: { f: Formula }) {
   if (f.worked.length === 0) return null;
   return (
@@ -194,7 +199,7 @@ function WorkedLine({ f }: { f: Formula }) {
           holds two words and only one of them is the noun. The pattern's own
           line at the top of the page already says it wraps around a phrase, so
           the example just presents itself. */}
-      {f.wraps ? "Worked out: " : `Any ${f.slot.replace("any ", "")} you know: `}
+      {f.wraps ? "Worked out: " : `${f.workedLead}: `}
       {f.worked.map((w, i) => (
         // The separator is its OWN element, outside the nowrap span, so a line
         // that runs out of room breaks BETWEEN examples. Kept inside, the "·"

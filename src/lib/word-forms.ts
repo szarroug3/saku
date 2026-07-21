@@ -295,3 +295,19 @@ export const INTRANSITIVE_NOTE = "it happens, rather than being done to somethin
 export function isIntransitive(w: VocabRow): boolean {
   return w.pos.includes(INTRANSITIVE_POS);
 }
+
+/**
+ * Whether somebody does the word TO something — JMdict's `vt`, the other half
+ * of the pair above.
+ *
+ * NOT `!isIntransitive`, and the difference is the reason this is a function.
+ * JMdict tags plenty of verbs BOTH ways (待つ, する, 開く in one of its
+ * readings), so the two predicates are both true at once for them. A caller
+ * asking "can somebody do this to something" wants a yes there — a transitive
+ * reading exists — and negating the intransitive test would have said no.
+ */
+export const TRANSITIVE_POS = "transitive verb";
+
+export function isTransitive(w: VocabRow): boolean {
+  return w.pos.includes(TRANSITIVE_POS);
+}

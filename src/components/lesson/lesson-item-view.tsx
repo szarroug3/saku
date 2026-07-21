@@ -161,16 +161,18 @@ function FormulaLine({
 function WorkedLine({
   examples,
   wraps,
-  slot,
+  lead,
 }: {
   examples: readonly { from: string; to: string }[];
   wraps: boolean;
-  slot: string;
+  /** The claim the examples are evidence for, ready-made. See `workedLead` in
+   * lib/grammar/formula.ts for why it is not cut out of the slot here. */
+  lead: string;
 }) {
   if (!examples.length) return null;
   return (
     <p className="mt-2 text-[12px] text-text-muted">
-      {wraps ? "Worked out: " : `Any ${slot.replace("any ", "")} you know: `}
+      {wraps ? "Worked out: " : `${lead}: `}
       {examples.map((w, i) => (
         <span key={w.from}>
           {i > 0 ? <span> · </span> : null}
@@ -251,7 +253,7 @@ function GrammarBuildPanel({ item }: { item: LessonItem }) {
               trim={f.trim}
               add={f.add}
             />
-            <WorkedLine examples={f.worked} wraps={f.wraps} slot={f.slot} />
+            <WorkedLine examples={f.worked} wraps={f.wraps} lead={f.workedLead} />
           </div>
         ))}
       </div>

@@ -32,7 +32,12 @@
 // do not. See vehicles.ts and the grammar QuestionType.
 
 import { apply } from "./apply.ts";
-import { isTrivialAttachment, type Host, type Recipe } from "../../data/grammar/recipes.ts";
+import {
+  isTrivialAttachment,
+  type Host,
+  type Recipe,
+  type Transitivity,
+} from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
 
 /** A representative word for a host: its surface form, its kana reading, and
@@ -51,6 +56,25 @@ const HOST_EXAMPLE: Record<Host, HostExample> = {
   "adj-i": { surface: "高い", kana: "たかい", cls: "adj-i" },
   "adj-na": { surface: "静か", kana: "しずか", cls: "adj-na" },
   noun: { surface: "本", kana: "ほん", cls: null },
+};
+
+/**
+ * The verb a recipe gets when 行く is not one it takes.
+ *
+ * A recipe may restrict which verbs it accepts (`transitivity` in recipes.ts),
+ * and 行く is intransitive — so 〜てある baked its fact on 行ってある, which is not
+ * Japanese, and then the drill graded that answer correct. The fixed vehicle has
+ * to satisfy the restriction like any other.
+ *
+ * 書く is the transitive stand-in and it is chosen the way 行く was: it is v5k,
+ * so its て-form is 書いて and the built fact is 書いてある, which is the sentence
+ * everybody meets this pattern on. The intransitive row is 行く itself, so a
+ * future restriction the other way lands on the word the rest of the app
+ * already uses.
+ */
+const VERB_EXAMPLE: Record<Transitivity, HostExample> = {
+  transitive: { surface: "書く", kana: "かく", cls: "v5k" },
+  intransitive: { surface: "行く", kana: "いく", cls: "v5k-s" },
 };
 
 /** The order hosts are tried in when a recipe accepts several — verb first,
@@ -129,7 +153,8 @@ function compute(r: Recipe, host: Host): BuiltExample | null {
   // only bites a caller reaching past the gate.
   if (r.wrap) return null;
   if (!r.attach.some((a) => a.host === host)) return null;
-  const ex = HOST_EXAMPLE[host];
+  const ex =
+    host === "verb" && r.transitivity ? VERB_EXAMPLE[r.transitivity] : HOST_EXAMPLE[host];
   const surface = apply(r, ex.surface, ex.cls);
   if (!surface.ok) return null;
   // A form that leaves the word untouched (the vacuous rows) is typing, not a

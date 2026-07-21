@@ -158,9 +158,37 @@ export interface Recipe {
    * does carry a fact for every host this row is handing off.
    */
   readonly sharedProductionWith?: string;
+  /**
+   * Which verbs this pattern will take, when the host is not the whole story.
+   *
+   * `host: "verb"` says the pattern hangs off a verb. For almost every row that
+   * is the entire rule. 〜てある is not one of them: it means somebody did this
+   * and it is still done, so it needs a verb somebody does TO something, and
+   * 行ってある / 死んである / 来てある are not Japanese. Left unset, a recipe takes
+   * any verb — the common case, and the honest default.
+   *
+   * The value is checked against JMdict's own vt/vi tags (see `transitivityOf`
+   * in lib/grammar/vehicles.ts), not against a second hand-written list. The
+   * dictionary already knows which verbs are which; this field is the recipe
+   * saying which kind it wants, and it is the ONLY new fact here.
+   *
+   * A verb JMdict tags both ways (待つ, する) counts as transitive: a transitive
+   * reading exists, which is what the pattern needs.
+   */
+  readonly transitivity?: Transitivity;
   /** Why this row is interesting/awkward. Engineering notes, not lessons. */
   readonly note?: string;
 }
+
+/**
+ * Whether a verb is done TO something, or just happens.
+ *
+ * Named the way JMdict names it because it is JMdict's tag being carried, not a
+ * new judgement. On screen it is never this word — see `TRANSITIVE_SLOT` in
+ * lib/grammar/formula.ts and `INTRANSITIVE_NOTE` in lib/word-forms.ts, which
+ * both say it in the words a learner has.
+ */
+export type Transitivity = "transitive" | "intransitive";
 
 export interface RecipeException {
   /** Match the host's dictionary form exactly. */
@@ -389,6 +417,14 @@ export const RECIPES: readonly Recipe[] = [
     gloss: "has been done (and stays done)",
     level: "N4",
     attach: [{ host: "verb", form: "te", add: "ある" }],
+    transitivity: "transitive",
+    note:
+      "The only row in the table that restricts its verb. 〜てある is somebody " +
+      "did it and it is still done, so it needs a verb somebody does to " +
+      "something: 書いてある, not 行ってある. Its sibling 〜ている takes both kinds " +
+      "(食べている, 開いている) and is deliberately left unrestricted — the " +
+      "contrast between them is the thing worth seeing, and restricting both " +
+      "would erase it.",
   },
   {
     id: "te-iku",

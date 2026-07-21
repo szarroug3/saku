@@ -20,7 +20,7 @@
 // A column built on 行く is a column that proves the engine did the hard case.
 
 import { apply, applyWrap } from "./apply.ts";
-import type { Attachment, Host, Recipe } from "../../data/grammar/recipes.ts";
+import type { Attachment, Host, Recipe, Transitivity } from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
 
 interface Example {
@@ -57,6 +57,22 @@ const CLOSING_EXAMPLE: Record<Host, Example> = {
   "adj-i": { word: "安い", cls: "adj-i" },
   "adj-na": { word: "便利", cls: "adj-na" },
   noun: { word: "車", cls: null },
+};
+
+/**
+ * The verb a recipe gets when it does not take 行く.
+ *
+ * A recipe may restrict which verbs it accepts (`transitivity` in recipes.ts),
+ * and 行く is intransitive: a 〜てある row built on it reads 行ってある, which is
+ * not a sentence anybody says. The column's promise is that it cannot be wrong,
+ * and a cell that conjugates correctly into Japanese nobody speaks breaks that
+ * promise exactly as a bad 音便 would. 書く for the transitive case (v5k → 書いて),
+ * 行く for the intransitive one, so the restriction that already exists picks
+ * the word instead of a second hardcoded choice per pattern.
+ */
+const RESTRICTED_VERB: Record<Transitivity, Example> = {
+  transitive: { word: "書く", cls: "v5k" },
+  intransitive: { word: "行く", cls: "v5k-s" },
 };
 
 export interface BuiltRow {
@@ -187,7 +203,10 @@ function buildHalf(
 export function buildRow(r: Recipe, host?: Host): BuiltRow | null {
   const at = host ? r.attach.find((a) => a.host === host) : r.attach[0];
   if (!at) return null;
-  const ex = EXAMPLE[at.host];
+  const ex =
+    at.host === "verb" && r.transitivity
+      ? RESTRICTED_VERB[r.transitivity]
+      : EXAMPLE[at.host];
   // Only the named host's attachment goes in, or apply() would resolve the
   // recipe by the WORD's class and hand back the first-listed host's build for
   // free — which is precisely how one row came to stand for three.
