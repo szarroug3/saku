@@ -290,54 +290,118 @@ test("reveal after a wrong jp2en answer names the reading that was asked for", a
 });
 
 /**
- * KNOWN BUG — these three are `test.fail()`, meaning Playwright EXPECTS them to
- * fail and will report a failure if they ever start passing. They are the
- * historical bug "a wrong-answer reveal printed the half it had displayed
- * instead of the half it had asked", alive in the app today.
+ * THE en2jp SIDE — the bug these three were written for, now fixed.
  *
- * Asked English-to-Japanese, the drill shows the English/romaji side and asks
- * the learner to produce the Japanese. On a miss it prints:
- *
- *     a = a                 (kana:あ/reading   — should be "a = あ")
- *     one = one             (kanji:一/meaning  — should be "one = 一")
- *     there in japanese = there
- *                           (word:あそこ/meaning — should be "... = あそこ")
- *
- * so the learner who could not produce the answer is shown the prompt again and
- * never told what it was.
- *
- * ROOT CAUSE. The reveal is
+ * They were `test.fail()`: the drill composed its reveal as
  *     questionsFor(q.f).answerReveal?.(q.f, q.dir, ctx) ?? factInfo(q.f)?.answers[0]
- * in src/components/quiz/drill-screen.tsx, and `answerReveal` is implemented by
- * `grammarQuestions` ALONE in src/lib/engine/question.ts. Kana, kanji, word and
- * transitivity questions have no override, so every one of them falls through to
- * `answers[0]` — which is the English/romaji face, i.e. the prompt, in the en2jp
- * direction. The grammar override exists because this exact fault was found and
- * fixed there; its own comment names it ("printed 'decide to X pattern = decide
- * to X'"). The fix was never generalised to the other four subjects.
+ * and `answerReveal` was implemented by `grammarQuestions` ALONE. Kana, kanji,
+ * word and transitivity all fell through to `answers[0]` — the English/romaji
+ * face, which in en2jp is exactly what the prompt displayed. On a miss:
+ *
+ *     a = a                     (kana:あ/reading   — should be "a = あ")
+ *     one = one                 (kanji:一/meaning  — should be "one = 一")
+ *     there in japanese = there (word:あそこ/meaning — should be "... = あそこ")
+ *
+ * The fix is structural: `revealFor` in src/lib/engine/question.ts owns the
+ * whole composition and derives its default from the ANSWER axis, so each
+ * direction reveals what the other one displays. The exhaustive claim — every
+ * fact, both directions, reveal never equals prompt — is asserted in
+ * src/lib/engine/reveal-not-prompt.test.ts, where it can walk all 21.7k facts.
+ * What these tests add is the WIRING: that the drill screen actually renders
+ * that function's output, on the card shapes a learner meets.
  *
  * jp2en is unaffected and is asserted above: "明白 reading = めいはく" is right.
  */
-const revealBugCases: Array<{ fact: string; shouldReveal: string; actually: string }> = [
-  { fact: "kana:あ/reading", shouldReveal: "あ", actually: "a" },
-  { fact: "kanji:一/meaning", shouldReveal: "一", actually: "one" },
-  { fact: "word:あそこ/meaning", shouldReveal: "あそこ", actually: "there" },
-];
 
-for (const c of revealBugCases) {
-  test.fail(
-    `reveal after a wrong en2jp answer names what was asked for (${c.fact})`,
-    async ({ page, seed }) => {
-      await seed({ seen: [c.fact], cfg: PRODUCE_CFG });
-      await startPractice(page);
-      await typeAnswer(page, "ぬ");
-
-      const r = reveal(page);
-      await expect(r.box).toBeVisible();
-      // Shown the English/romaji, asked to produce the Japanese. The revealed
-      // answer must be the Japanese. Today it echoes the prompt instead.
-      await expect(r.answer).toHaveText(c.shouldReveal);
-      await expect(r.answer).not.toHaveText(c.actually);
-    },
-  );
+/**
+ * A wrong answer on a BOARD card, by clicking.
+ *
+ * The kana case below has no answer box to type into: `kanaQuestions.mcOnly`
+ * is `"en2jp"`, because the en2jp prompt for a kana fact IS its romaji (see
+ * kana-en2jp-mc.spec.ts). It originally called `typeAnswer`, which now times out
+ * on an absent box — so the test died before reaching its reveal assertion and
+ * "passed" as `test.fail()` for entirely the wrong reason. Driving the board is
+ * what makes the assertion real, and it is the only one of the three that needs
+ * to: the other two render a box for their own reasons and keep typing.
+ *
+ * Clicks the first option that is NOT the expected answer. Reading the wrong
+ * option off the rendered board rather than naming one keeps the test
+ * independent of which distractors `buildMcOptions` chose this run.
+ */
+async function missTheBoard(page: Page, correct: string) {
+  const options = optionButtons(page);
+  await expect(options.first()).toBeVisible();
+  const labels = await optionLabels(page);
+  const wrongAt = labels.findIndex((l) => l !== correct);
+  expect(wrongAt, `the board offered nothing but "${correct}"`).toBeGreaterThan(-1);
+  await options.nth(wrongAt).click();
 }
+
+/**
+ * How long the reveal is on screen after a multiple-choice miss.
+ *
+ * `MC_MISS_ADVANCE_MS` in drill-screen.tsx is 1600: a board card has no
+ * keystroke in hand to press Enter with, so it auto-advances instead of waiting.
+ * The assertions below must therefore land INSIDE that window, and Playwright's
+ * 5s default would sail past it and report "element not found" for a reveal that
+ * was there and correct. Budgeting it explicitly means a failure here reads as
+ * what it is. Typed cards have no such window — they wait for Enter forever —
+ * and deliberately do not use this.
+ */
+const REVEAL_WINDOW = { timeout: 1400 };
+
+test("reveal after a wrong en2jp answer names the kana that was asked for", async ({
+  page,
+  seed,
+}) => {
+  // "a = a" — the headline case of the report.
+  await seed({ seen: ["kana:あ/reading"], cfg: PRODUCE_CFG });
+  await startPractice(page);
+  await missTheBoard(page, "あ");
+
+  const r = reveal(page);
+  // Shown the romaji, asked to produce the kana. The revealed answer is the kana.
+  await expect(r.answer).toHaveText("あ", REVEAL_WINDOW);
+  await expect(r.prompt).toHaveText("a", REVEAL_WINDOW);
+});
+
+test("reveal after a wrong en2jp answer names the kanji that was asked for", async ({
+  page,
+  seed,
+}) => {
+  // "one = one".
+  //
+  // A typed card, and not because the answer is typeable — 一 is not kana, so
+  // `en2jpTypeable` is false and this card asks to be multiple choice. But 一 has
+  // no confusables, so `buildMcOptions` returns a single option and the drill
+  // falls back to a box rather than show a one-option board (a free point).
+  //
+  // Which is a real card a learner meets, so the reveal is asserted on it as it
+  // renders. The reveal is the whole value of the card in that state: there is
+  // no romaji that produces 一, so the miss is guaranteed and being TOLD the
+  // answer is the only thing the showing can offer.
+  await seed({ seen: ["kanji:一/meaning"], cfg: PRODUCE_CFG });
+  await startPractice(page);
+  await typeAnswer(page, "ぬ");
+
+  const r = reveal(page);
+  await expect(r.box).toBeVisible();
+  await expect(r.answer).toHaveText("一");
+  await expect(r.prompt).toHaveText("one");
+});
+
+test("reveal after a wrong en2jp answer names the word that was asked for", async ({
+  page,
+  seed,
+}) => {
+  // "there in japanese = there". あそこ is all kana, so this one IS typed — and
+  // a typed card holds its reveal until Enter, so nothing here races a timer.
+  await seed({ seen: ["word:あそこ/meaning"], cfg: PRODUCE_CFG });
+  await startPractice(page);
+  await typeAnswer(page, "ぬ");
+
+  const r = reveal(page);
+  await expect(r.box).toBeVisible();
+  await expect(r.answer).toHaveText("あそこ");
+  await expect(r.prompt).toHaveText("there");
+});
