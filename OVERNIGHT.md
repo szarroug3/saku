@@ -574,3 +574,79 @@ learner-shaped vocabulary gaps.
 That is a more precise answer to task 22 than the first audit gave, and it says the
 gap is not mainly *content volume* but *sentence-level production and particles* —
 which is task 11.
+
+---
+
+# AUDIT WAVE 2 — voice and copy
+
+Full detail in `AUDIT-2-voice.md`, 17 findings each with URL, verbatim quote and a
+proposed rewrite.
+
+**The diagnosis, and it is a fair criticism of how I ran the copy pass:** the 24
+approved changes fixed statements one file at a time and left their partners
+behind. The app now says several things twice, differently, and two of those pairs
+are outright contradictions. A card-by-card copy pass cannot see pairs.
+
+## The worst of it
+
+1. **The transitivity card contradicts itself in consecutive sentences.** Lead:
+   *"The sentence already tells you which."* Next sentence: *"English gives you no
+   help here."* The paragraph was rewritten and approved; the lead above it was not.
+2. **`why.ts` still makes the retracted claim, in the worst register available** —
+   *"The good news is that English already tells you which to use… and this track
+   drills exactly that."* That is the contradiction, plus calling a hard thing
+   easy, plus narrating the app, in one paragraph.
+3. **"kanji you have not met"** — the banned verb, verbatim, on the words lock card.
+   Also "marks you will meet shortly" in the hiragana why.
+4. **"Knowledge base" was swept from one screen and left on five others** — the
+   Progress heading, the Settings heading, a button, a dialog, and the success and
+   error strings. B5's sweep was incomplete.
+5. **Four different vocabularies for "you got it wrong"**, two of them an inch apart
+   on the same card: "3 needed another look" sitting above "Your 3 misses are
+   picked". That is partly my doing — I approved "needed another look" for the
+   header on your behalf without checking its neighbours.
+6. **"i-row" and "い-column" name the same thing four lines apart** on
+   `/library/writing-rule/small-ya`.
+
+Both suspects I asked it to check were real: the katakana combo card never got its
+twin's "You will misread a few at first", and the hiragana lede still promises
+"read and write anything" above the paragraph rewritten to stop promising that.
+
+**Em dashes: clean.** One learner-facing instance (`— {row.answer}` on Library
+entry pages) which the auditor advises leaving.
+
+## What I am fixing now (branch `fix/voice-consistency`)
+
+Strictly three buckets, because your voice is the product and I will not write new
+prose in it:
+
+- **Applying rules you have already stated** — the banned "met", finishing the
+  "knowledge base" sweep, row-vs-column consistency, and restoring the katakana
+  combo card's parity by reusing its twin's existing wording verbatim.
+- **Deleting text that contradicts already-approved text.** Removing a now-false
+  sentence is not inventing voice; leaving a live contradiction is worse. If a
+  deletion would leave a hole needing new prose, the agent stops and reports.
+- **Code bugs the audit surfaced** — `/results` hardcodes "characters" even for
+  word and grammar rounds.
+
+Anything needing genuinely new wording is listed for you, untouched. I also told it
+to leave the audit's own "leave alone" section alone: the Settings tooltips, the
+kanji/radical answers, the mix-up empty state. Polishing those would be the worst
+outcome of this work.
+
+## THE COUNTING BUG IS WORSE THAN I TOLD YOU
+
+I flagged this earlier as "two screens disagree". The auditor puts it correctly:
+
+> **Any round with a retry leg shows two different numbers one tap apart.**
+
+The round header counts showings (`roundCompleteView`); the session summary counts
+facts (`summariseRound`) and prints the *identical phrase* "right first try". It is
+a visible contradiction, not a latent inconsistency.
+
+**I still did not fix it**, and I want to be clear that is a deliberate choice
+rather than an oversight. Making them agree requires choosing a unit, and choosing
+showings means a round with more retry legs accrues more first-try showings — so
+the sentence would start praising retrying rather than improving. That is a
+decision about what the app values. It is the first thing I would put in front of
+you in the morning.
