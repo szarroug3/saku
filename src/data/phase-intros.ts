@@ -157,6 +157,17 @@ export interface PhaseIntro {
   id: string;
   /** Which script's run this copy belongs to. */
   setId: string;
+  /**
+   * The kicker above the title, saying what KIND of step this is.
+   *
+   * Defaults to "Before you go on", which is the honest label for every card in
+   * this file: they interrupt a run of characters to explain the rule the next
+   * ones follow. A TRACK intro (src/data/track-intros.ts) is not an interruption
+   * — it is the first thing in the track, with nothing yet to go on from — so
+   * those cards name their subject instead ("What hiragana is"). Optional so the
+   * fourteen cards below are untouched.
+   */
+  eyebrow?: string;
   /** One line, the whole point of the card. */
   title: string;
   body: IntroPara[];

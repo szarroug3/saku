@@ -53,10 +53,23 @@ test("a new learner can take the first lesson through to its quiz", async ({
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
 
-  // Step through all five characters. The counter is the contract: the lesson
-  // must present exactly as many cards as the group has.
+  // THE FIRST SCREEN IS THE TRACK INTRO, NOT あ.
+  //
+  // Day one now opens on the card that introduces hiragana, and it is the whole
+  // reason this walk is six steps rather than five (src/data/track-intros.ts).
+  // Asserted by what it TEACHES rather than by its heading, because the heading
+  // is draft copy waiting to be rewritten while the two words are the point: a
+  // beginner used to be asked to type romaji, on a page that called the
+  // characters kana, having been told neither word.
+  await expect(page.getByText(/^\d+ of \d+$/)).toHaveText("1 of 6");
+  await expect(page.locator("body")).toContainText("kana");
+  await expect(page.locator("body")).toContainText("romaji");
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+
+  // Then all five characters. The counter is the contract: the lesson must
+  // present exactly as many cards as the group has, plus the one opening card.
   for (let i = 1; i <= VOWELS.length; i++) {
-    await expect(page.getByText(/^\d+ of \d+$/)).toHaveText(`${i} of 5`);
+    await expect(page.getByText(/^\d+ of \d+$/)).toHaveText(`${i + 1} of 6`);
     // Each teach card shows the character it is teaching.
     await expect(page.locator("body")).toContainText(VOWELS[i - 1]);
 

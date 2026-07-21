@@ -55,10 +55,16 @@ export default function SessionPage() {
   // the walk's own units (facts collapsed per glyph, plus any phase intro that
   // opens or closes the lesson), so we derive them from the same helper it
   // uses — one count, one source, no chance of "1 of 5" over a six-step walk.
+  //
+  // History is read here too, because a TRACK intro is a function of what the
+  // learner has already met and not of the teach set alone (see
+  // src/lib/track-open.ts). It joins the memo key so the count re-derives when
+  // history does — the walk below reads the same two inputs, so the two cannot
+  // disagree about how many steps there are.
   const teachKey = session ? session.teach.join(",") : "";
   const teachItems = useMemo(
-    () => (session ? lessonSteps(session.teach) : []),
-    [teachKey], // eslint-disable-line react-hooks/exhaustive-deps
+    () => (session ? lessonSteps(session.teach, history) : []),
+    [teachKey, history], // eslint-disable-line react-hooks/exhaustive-deps
   );
   // Reset to the first item whenever the teach set changes (a new session, or a
   // new round's material). Done by adjusting state during render off a stored
@@ -194,6 +200,7 @@ export default function SessionPage() {
         <div className="mt-2">
           <TeachWalk
             facts={session.teach}
+            history={history}
             // "Seen before" vs never met is a PRESENTATION difference and only
             // that — the budget put both here for the same reason and neither
             // is treated differently. History is the only thing that can tell

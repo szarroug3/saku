@@ -52,10 +52,12 @@ import {
   TRANSITIVITY_INTRO,
   type PhaseIntro,
 } from "@/data/phase-intros";
+import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow } from "@/data/vocab";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
+import { startedTracks, trackOfItem } from "@/lib/track-open";
 import { wordClassOf } from "@/lib/word-forms";
-import type { FactId } from "@/types";
+import type { FactId, HistoryFile } from "@/types";
 
 /** One step of the walk — a character to learn, a conversion to learn, or a
  * concept to read. */
@@ -164,9 +166,21 @@ export function hasRendaku(word: string): boolean {
  * the first word with a kana tail (intro), the first whose tail moves (moving),
  * and the first whose tail is fixed (fixed).
  */
-export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
+export function lessonSteps(
+  facts: readonly FactId[],
+  history?: HistoryFile,
+): LessonStep[] {
   const items = itemsFromFacts(facts);
   const steps: LessonStep[] = [];
+  // Which tracks are OPENING here — the ones the learner has no record of
+  // outside this very lesson. Each owes its intro card ahead of its first item.
+  // Optional, and absent means "no track cards": a caller with no history to
+  // read (a test naming a teach set, and nothing else today) gets exactly the
+  // walk this function produced before track intros existed.
+  const started = history ? startedTracks(history, new Set(facts)) : null;
+  // Fired at most once each, so a lesson that opens a track and then teaches
+  // twenty of its items shows the card once, at the top.
+  const trackCardDone = new Set<TrackId>();
   // A converted kana is not taught on its own card. Its whole row is one
   // lesson — "voice the k and it becomes g" — so the first character of a row
   // to come past emits that row's card, at the position it would have had, and
@@ -191,6 +205,19 @@ export function lessonSteps(facts: readonly FactId[]): LessonStep[] {
   // the same word-gated shape the rules above use. See phase-intros.ts.
   let markedTransitivity = false;
   for (const item of items) {
+    // The track card goes FIRST, ahead of everything else this item might owe —
+    // ahead of its conversion row, ahead of any rule card. A learner meeting the
+    // words track has to be told what a word track is before being told what
+    // okurigana is, and the rule cards below all assume the track's own
+    // vocabulary. Placed at the top of the loop rather than after the `continue`
+    // a repeated conversion row takes, so a track whose first item happens to be
+    // a converted kana still gets its card.
+    const track = started ? trackOfItem(item) : null;
+    if (track && !started!.has(track) && !trackCardDone.has(track)) {
+      trackCardDone.add(track);
+      const intro = TRACK_INTROS[track];
+      steps.push({ type: "intro", key: intro.id, intro });
+    }
     const row = item.kind === "kana" ? dakutenRowFor(item.glyph) : null;
     if (row) {
       if (rowsSeen.has(row.id)) continue;
