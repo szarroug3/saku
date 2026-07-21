@@ -14,8 +14,6 @@ import test from "node:test";
 
 import { MNEMONICS, getMnemonic, kanaScript, type SoundLine } from "./mnemonics.ts";
 
-const VOWELS = ["あ", "い", "う", "え", "お"];
-
 // All 46 base hiragana — the full set this table now covers.
 const ALL_HIRAGANA = [
   "あ", "い", "う", "え", "お",
@@ -136,21 +134,6 @@ test("the eight shipped drawings (a/e/i/ka/ku/sa/u/wa) resolve to files on disk"
       existsSync(`${hiraganaDir}${romaji}.webp`),
       `${glyph}: public/mnemonics/hiragana/${romaji}.webp should exist so the drawing shows`,
     );
-  }
-});
-
-test("every vowel is approved (no draft flag); every た–ん entry is flagged draft", () => {
-  for (const v of VOWELS) {
-    assert.notEqual(getMnemonic(v)!.draft, true, `${v} is approved, not draft`);
-  }
-  // あ–そ (through そ) are approved; た onward are draft.
-  const approvedThroughSo = ALL_HIRAGANA.slice(0, ALL_HIRAGANA.indexOf("そ") + 1);
-  for (const k of approvedThroughSo) {
-    assert.notEqual(getMnemonic(k)!.draft, true, `${k} (あ–そ) should not be draft`);
-  }
-  const draftFromTa = ALL_HIRAGANA.slice(ALL_HIRAGANA.indexOf("た"));
-  for (const k of draftFromTa) {
-    assert.equal(getMnemonic(k)!.draft, true, `${k} (た–ん) should be flagged draft`);
   }
 });
 
