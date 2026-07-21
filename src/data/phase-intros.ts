@@ -204,7 +204,7 @@ export const DAKUTEN_H: PhaseIntro = {
     {
       mark: "゛",
       lead: "(dakuten): two dashes.",
-      text: "It voices the consonant, meaning your vocal cords buzz, turning the sound into its harder-edged partner.",
+      text: "It voices the consonant: your vocal cords buzz. か becomes が, さ becomes ざ, た becomes だ, は becomes ば. Put a finger on your throat and say ka, then ga. The second one hums.",
     },
     {
       mark: "゜",
@@ -212,7 +212,7 @@ export const DAKUTEN_H: PhaseIntro = {
       text: "and it only ever lands on the は row.",
     },
     {
-      text: "You already know every shape here. か and が are the same character with a mark, so this is 25 more sounds without a single new drawing to learn.",
+      text: "You already know every shape here. か and が are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
     },
   ],
 };
@@ -233,7 +233,7 @@ export const DAKUTEN_K: PhaseIntro = {
       text: "and it only ever lands on the ハ row: ハ ha → パ pa.",
     },
     {
-      text: "The marks work exactly as they did in hiragana, on shapes you already know. カ and ガ are the same character with a mark, so this is 25 more sounds without a single new drawing to learn.",
+      text: "The marks work exactly as they did in hiragana, on shapes you already know. カ and ガ are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
     },
   ],
 };
@@ -244,11 +244,11 @@ export const COMBO_H: PhaseIntro = {
   title: "A small や, ゆ or よ fuses onto the kana in front of it.",
   body: [
     {
-      text: "A full-size kana followed by a small や, ゆ or よ is one syllable, not two. The two are said together, in a single beat, not as two separate kana.",
+      text: "Only the い-column kana take these: き, し, ち, に, ひ, み, り and their voiced partners. き with a small ゃ is one sound in one beat, kya, not two.",
     },
     {
       lead: "The size is the whole tell.",
-      text: "きゃ, with the small ゃ, is “kya”. きや, with a full-size や, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height.",
+      text: "きゃ, with the small ゃ, is “kya”. きや, with a full-size や, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height. You will misread a few at first. That is normal, and it stops once you have seen enough of them.",
     },
     {
       text: "No new shapes again. Every combo is two characters you already know, one of them shrunk.",
@@ -315,7 +315,7 @@ export const LONG_K: PhaseIntro = {
   title: "Katakana holds a vowel with one long dash.",
   body: [
     {
-      text: "The same rule you saw in hiragana, a held vowel is a different word, written a different way. Katakana uses a single dash, ー, whatever the vowel is.",
+      text: "Same rule as hiragana: a held vowel makes a different word. Katakana just writes it differently, with a single dash, ー, whatever the vowel is.",
     },
     {
       lead: "One mark covers all five vowels,",
@@ -437,10 +437,10 @@ export const SOKUON_K: PhaseIntro = {
 export const PUNCTUATION: PhaseIntro = {
   id: "intro-punctuation",
   setId: NO_SCRIPT,
-  title: "Japanese points its sentences differently.",
+  title: "Japanese punctuates its sentences differently.",
   body: [
     {
-      lead: "And the thing that is missing.",
+      lead: "And the thing that isn’t there: spaces.",
       text: "Japanese leaves no spaces between words. The switches between kanji, hiragana and katakana do the work an English space does, so you learn to see where one word ends by the change in script rather than by a gap.",
     },
   ],
@@ -473,8 +473,8 @@ export const ITERATION_MARK: PhaseIntro = {
       text: "It stands in for the kanji just before it, so you write the character once and 々 says “again”.",
     },
     {
-      lead: "It repeats the character, not the reading.",
-      text: "The copy is read like the second half of a compound, which often uses rendaku so that 人々 is “hito-bito”, not “hito-hito”.",
+      lead: "It stands in for the character before it.",
+      text: "人々 is 人 written twice, and you read it as though it were written out. The second half usually picks up the same voicing as dakuten, so it is ひとびと, hito-bito, not hito-hito.",
     },
     {
       lead: "It shows up in compounds.",
@@ -516,7 +516,7 @@ export const RENDAKU: PhaseIntro = {
     },
     {
       lead: "The kanji does not change, only the sound.",
-      text: "The second half reads as it always does, one consonant softer. You will see it constantly in compounds from here on.",
+      text: "The second half takes the same voicing you know from dakuten. You will see it constantly in compounds from here on.",
     },
     {
       lead: "It is a tendency, not a requirement.",
@@ -570,7 +570,7 @@ export const OKURIGANA_INTRO: PhaseIntro = {
     },
     {
       lead: "The tail even settles the reading.",
-      text: "生 on its own can be read several ways, and the kana after it decides which. 生きる takes い, 生まれる takes う: same character, different tail, different sound.",
+      text: "生 on its own can be read several ways, and the kana after it decide which. In 生きる the tail is きる and 生 is read い. In 生まれる the tail is まれる and 生 is read う. Same character, different tail, different sound.",
     },
   ],
   examples: [
@@ -590,7 +590,7 @@ export const OKURIGANA_MOVING: PhaseIntro = {
     },
     {
       lead: "How it changes is grammar.",
-      text: "For now, just notice that the tail is the moving part. Which form to use, and when, is taught in the grammar track.",
+      text: "For now, just notice that the tail is the moving part. Which form to use, and when, comes later with grammar.",
     },
   ],
   examples: [
@@ -638,40 +638,40 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
   body: [
     {
       lead: "Two verbs, one event.",
-      text: "Japanese often has two verbs for the same happening: one for when it happens on its own, and one for when someone makes it happen. 'The door opened' and 'I opened the door' use different verbs.",
+      text: "Japanese often has two verbs for the same happening: one for when it happens on its own, and one for when someone makes it happen. English reuses one word for both: 'The door opened' and 'I opened the door' are both 'open'. Japanese uses 開く and 開ける.",
     },
     {
       lead: "The sentence already tells you which.",
-      text: "In English you can always hear the difference: whether something acts on its own, or someone acts on it.",
+      text: "You will get these backwards for a while. English gives you no help here, because 'open' does both jobs. Expect to mix them up, and expect that to sort itself out with time.",
     },
     {
       lead: "The endings often shift in familiar ways.",
-      text: "Most pairs share a kanji and only swap a kana tail, and the swap is usually one of a few: -ある to -える, -る to -す, or -う to -える cover most of them. Naming the shift helps you remember the pair, but it never tells you which verb is which, and a handful of pairs follow no rule at all. You still learn each pair as a pair; every card marks which shift it uses, or flags it as an exception.",
+      text: "Most pairs share a kanji and swap only the kana on the end. The usual shifts are まる→める, る→す, and く→ける. Naming the shift helps you remember a pair, but it never tells you which verb is which, and some pairs follow no rule at all.",
     },
   ],
   examples: [
-    { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "-ある → -える (The class started. → I started the class.)" },
-    { from: "直る (なおる)", op: "→", to: "直す (なおす)", gloss: "-る → -す (It got fixed. → I fixed it.)" },
-    { from: "開く (あく)", op: "→", to: "開ける (あける)", gloss: "-う → -える (The door opened. → I opened the door.)" },
+    { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "まる → める (The class started. → I started the class.)" },
+    { from: "直る (なおる)", op: "→", to: "直す (なおす)", gloss: "る → す (It got fixed. → I fixed it.)" },
+    { from: "開く (あく)", op: "→", to: "開ける (あける)", gloss: "く → ける (The door opened. → I opened the door.)" },
   ],
   transitivityPairs: [
     {
       happens: "始まる (はじまる)",
       doIt: "始める (はじめる)",
-      happensTail: "-ある",
-      doItTail: "-える",
+      happensTail: "まる",
+      doItTail: "める",
     },
     {
       happens: "直る (なおる)",
       doIt: "直す (なおす)",
-      happensTail: "-る",
-      doItTail: "-す",
+      happensTail: "る",
+      doItTail: "す",
     },
     {
       happens: "開く (あく)",
       doIt: "開ける (あける)",
-      happensTail: "-う",
-      doItTail: "-える",
+      happensTail: "く",
+      doItTail: "ける",
     },
   ],
 };

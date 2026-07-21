@@ -322,7 +322,7 @@ export const MARKS: readonly Mark[] = [
     // a lone 。 here would name a rule the glyph does not stand for.
     name: "Punctuation",
     glyph: "",
-    summary: "How a Japanese sentence is pointed: 。 、 「 」 ・ 〜, and no spaces.",
+    summary: "How a Japanese sentence is punctuated: 。 、 「 」 ・ 〜, and no spaces.",
     searchAlso: [
       "。",
       "、",

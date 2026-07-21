@@ -67,7 +67,7 @@ export const WHY_SCRIPT: Record<string, Why> = {
     },
     paras: [
       "Japanese isn’t written with the letters you already know. There’s no way to sound あ out with A, B, C: it’s a separate system, and you can’t step around it to get to the “real” Japanese later. Hiragana is where that system starts.",
-      "Each hiragana stands for a sound: か is “ka”, き is “ki”. There are about forty-six of them, and together they can spell any Japanese word out loud. That’s why a beginner’s book opens assuming you have them already: lesson one is printed in hiragana, with nothing telling you so.",
+      "Each hiragana stands for a sound: か is “ka”, き is “ki”. There are about forty-six of them. Those plus a couple of marks you will meet shortly can spell any Japanese word out loud. That’s why a beginner’s book opens assuming you have them already: lesson one is printed in hiragana, with nothing telling you so.",
       "There are two other writing systems, and hiragana goes ahead of both on purpose. Katakana is a second set of shapes for these same sounds, and you’ll want it soon. Kanji are a much bigger job that comes later. Hiragana is the small set that unlocks the most, so it’s the door in.",
     ],
   },
@@ -190,7 +190,7 @@ export const WHY_WRITING_EARLY: Why = {
   },
   paras: [
     STROKE_ORDER_RATIONALE,
-    "People don’t do much handwriting these days with so much technology around. Japanese is a difficult language to learn coming from a western language that doesn’t use the same writing system. We think your time is better spent learning how to read, speak, and understanding what you hear.",
+    "People don’t do much handwriting these days with so much technology around. Japanese is a difficult language to learn coming from a western language that doesn’t use the same writing system. We think your time is better spent learning how to read, speak, and understand what you hear.",
   ],
 };
 
@@ -229,12 +229,12 @@ export const WHY_TRACK: Record<string, Why> = {
   kanji: {
     lede: {
       strong: "Kanji are used as both words and as building blocks for other words.",
-      rest: "Once you've learned all the kanji required for a set of words, the word set will be unlocked as a separate Word track. Because of this, it may be a while before you unlock the next set of words. By default, we use commonality for ordering but this can be updated in the settings.",
+      rest: "A word is only taught once you know every kanji in it, so words arrive in bursts: nothing for a while, then several at once.",
     },
     paras: [
-      "Kanji carry meaning and are reused across many words, so learning one kanji can unlock several words at once. This makes the word track inconsistent. Sometimes it will have a lot of content while other times, it will be locked for a long time.",
+      "Kanji are reused across many words, so learning one can open up several at once. That makes the pace uneven. Some days you will have a pile of new words, some days none, because you are still collecting the kanji they need.",
       "Each kanji can have multiple readings, and words are what pin down which reading is used. Learning kanji first gives you the pieces, and learning words gives those pieces real pronunciation and context.",
-      "The words track waits for complete sets so new word lessons open with material you can actually understand. By default, we use commonality ordering, so the most common useful material is prioritized first. You can change this in the settings menu.",
+      "Words wait for their full set of kanji, so when one arrives you can actually read it. The most common ones come first.",
     ],
   },
   words: {
@@ -267,7 +267,7 @@ export const WHY_TRACK: Record<string, Why> = {
     paras: [
       "Japanese often has two verbs for the same event: one for when something happens on its own, and one for when someone makes it happen. 開く is “the door opened”, 開ける is “I opened the door”. It is the same door and the same event, but the two sentences use different verbs, and picking the wrong one sounds wrong the way “the door was opened by itself on purpose” would in English.",
       "The good news is that English already tells you which to use. Whenever you can say whether something acted on its own or someone acted on it, you have chosen the verb. That is the whole skill, and this track drills exactly that: you read the English and pick the verb that fits.",
-      "A pair is taught only once you have learned both of its verbs as vocabulary, because the choice between them means nothing until you know both. There is no rule that builds one verb from the other, so each pair is worth learning as a pair rather than guessing.",
+      "A pair is taught only once you have learned both of its verbs as vocabulary, because the choice between them means nothing until you know both. The endings shift in familiar ways, but the shift never tells you which verb is which, and some pairs follow no pattern at all. So each pair is learned as a pair.",
     ],
   },
 };

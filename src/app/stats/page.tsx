@@ -71,7 +71,7 @@ export default function StatsPage() {
 
   return (
     <>
-      <PageTitle title="Progress" sub="Where you are. Not how you're doing." />
+      <PageTitle title="Progress" sub="How much you have covered so far." />
 
       <KnowledgeBase tally={tally} />
 

@@ -44,10 +44,10 @@ import type { FactId } from "@/types";
 const WORD_LOCK_WHY: Why = {
   lede: {
     strong: "Words are made up of kanji and radicals.",
-    rest: "We wait until the complete set of kanji are learned for the word set before unlocking it.",
+    rest: "A word waits until you know every kanji in it.",
   },
   paras: [
-    "In English, you cannot learn words until you first learn the alphabet. This follows the same idea: learn the pieces first, then the words built from them.",
+    "A word written with kanji you have not met is just shapes. So a word waits until you know the kanji inside it, and then it arrives ready to read.",
     "By default, we use commonality for ordering but this can be updated in the settings.",
   ],
 };
