@@ -196,3 +196,62 @@ Converting it to showings has a real design question attached: **a round with mo
 retry legs accrues more first-try showings, so "up from 4" would reward retrying
 rather than improving.** That is a product decision about what the sentence is
 praising, so I left it. It is the last surviving piece of the units confusion.
+
+---
+
+## Task 05 — 〜てある restricted to verbs somebody does to something · merged `ea522c8`
+
+**1137 tests, tsc clean.**
+
+### The thing you should know about first
+
+**An existing test was asserting the bug.** `grammar-vehicle-romaji.test.ts` built
+its cases from the whole vehicle pool crossed with every producible recipe, so it
+had minted `te-aru × 行く` as a case and its property was asserting that
+**行ってある graded TRUE**. The property itself was fine; the case builder was
+generating a card the drill should never deal. The fix adds legality to the
+builder and leaves the property untouched, with a comment explaining what it hid.
+
+I checked this diff line by line rather than trusting the summary, because
+"I changed an existing test" is exactly where a fix quietly becomes a cover-up.
+It is a strengthening: all 7 original assertions still run.
+
+### What changed
+
+`Recipe` gained an optional `transitivity` field — unset means "any verb", which
+is 80 of the 81 rows. The value is **not new data**: it reads off the dictionary
+via `isTransitive` beside the existing `isIntransitive`. Notably it is not
+`!isIntransitive`, because JMdict tags 待つ and する both ways and what the pattern
+needs is that a transitive reading EXISTS.
+
+One predicate, `transitivityAllows`, at four call sites: the drill pool, the baked
+example, the cluster column, and the grader's backstop — so a stale runtime
+carrying 行く now falls back to the baked answer instead of grading 行ってある
+correct.
+
+The worked example is now **書く → 書いてある**, not 行ってある. Copy says "any verb
+that somebody does to something" and never the word "transitive" — matching the
+call already made in `INTRANSITIVE_NOTE`.
+
+〜てある has **9 vehicles left of 16**, across 5 conjugation classes. The count is
+asserted so a future re-cut that starves the pattern fails loudly.
+
+### Deliberately NOT restricted
+
+〜ている, its sibling, takes both kinds (食べている, 開いている). Restricting it would
+invent a rule Japanese does not have and erase the exact contrast this card is
+about. A test pins that it stays unrestricted.
+
+### Left for you — real constraints on a different axis
+
+These need a different mechanism than transitivity, so the agent correctly did not
+guess:
+
+- **Volitionality:** `te-oku`, `tai`, `mashou`, `masen-ka`, `mashou-ka`,
+  `you-to-omou`, `tsumori`. 死にたい is fine grammar; 死のうと思う is a sentence
+  nobody wants on a card.
+- **Animacy of the subject:** `causative`, `passive`, `te-ageru/kureru/morau`.
+- **Idiomaticity, which transitivity cannot decide:** 食べてある, 飲んである and
+  見てある are grammatical but unidiomatic (you would say 食べておいた). 食べてある
+  currently appears as the v1 representative. Narrowing that is per-verb data
+  authoring, so it was left alone.

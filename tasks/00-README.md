@@ -54,7 +54,7 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 | 09 | **needs review** | Particle reading rule **?** | medium-high | small | Draft copy written. 私は is day one. |
 | 18 | **done** | Retry leaves no trace | medium | small | Merged `a53a94e`. Summary sums correctly; retry visible. |
 | 20 | unreviewed | Data quality **?** | medium | medium | Several sub-items, some need a sweep first. |
-| 05 | not started | 〜てある any verb | medium | medium-large | Needs transitivity on the vehicle model. |
+| 05 | **done** | 〜てある any verb | medium | medium-large | Merged `ea522c8`. A test had been asserting the bug. |
 | 08 | not started | Test-suite gaps | high (durable) | large | Its first two items **are** tasks 01 and 02. |
 
 ### Decisions and big builds — not queue work

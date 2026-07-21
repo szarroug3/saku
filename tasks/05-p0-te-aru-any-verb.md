@@ -1,6 +1,8 @@
 # P0 · 〜てある is taught as attaching to "any verb"
 
-**Status: not started**
+**Status: done** — merged `ea522c8`. 9 of 16 vehicles left. An existing test
+was asserting 行ってある graded true; the case builder now filters it. 〜ている
+deliberately left unrestricted. Volitionality and animacy constraints left for Sam.
 
 Sam asked: what does this mean?
 
