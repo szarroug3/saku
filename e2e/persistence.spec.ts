@@ -72,7 +72,10 @@ async function playRound(page: Page, size: number) {
 }
 
 async function teachThenQuiz(page: Page) {
-  for (let i = 1; i < VOWELS.length; i++) {
+  // Day one opens on the hiragana track intro, so the walk is the five vowels
+  // plus that one card: VOWELS Next clicks step past the card and the first four
+  // vowels. See src/data/track-intros.ts.
+  for (let i = 0; i < VOWELS.length; i++) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }
   await page.getByRole("button", { name: "Quiz me", exact: true }).click();

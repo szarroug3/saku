@@ -30,8 +30,11 @@ import type {
 export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
   return (
     <div>
+      {/* What kind of step this is. "Before you go on" for a rule that
+          interrupts a run of characters; a track intro overrides it, because
+          nothing has gone on yet for it to come before. */}
       <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-accent">
-        Before you go on
+        {intro.eyebrow ?? "Before you go on"}
       </p>
 
       {/* The claim, at hero size. One sentence; everything below it is the

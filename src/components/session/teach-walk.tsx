@@ -40,10 +40,11 @@ import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { AttributionLink } from "@/components/library/attribution-link";
 import { Btn } from "@/components/ui";
 import { lessonSteps } from "@/lib/lesson-steps";
-import type { FactId } from "@/types";
+import type { FactId, HistoryFile } from "@/types";
 
 export function TeachWalk({
   facts,
+  history,
   familiar,
   onStart,
   wider,
@@ -52,6 +53,11 @@ export function TeachWalk({
 }: {
   /** The teach set — what the budget put in front of you before the drill. */
   facts: FactId[];
+  /** What the learner has already met. Read for ONE thing: whether this lesson
+   * opens a track, which decides whether the walk leads with that track's intro
+   * card (src/lib/track-open.ts). The session page derives its "N of M" from the
+   * same two inputs, so the count and the content stay in step. */
+  history: HistoryFile;
   /** Which of these you've met before — shown before and forgotten, rather than
    * never met. Presentation only, exactly as the tile wall used it. */
   familiar: (f: FactId) => boolean;
@@ -77,7 +83,7 @@ export function TeachWalk({
   // lesson with no card produces exactly the item list this used to hold, so
   // everything below — Back/Next, the last-card "Quiz me", the HUD's count —
   // works unchanged for the phases that have none.
-  const steps = useMemo(() => lessonSteps(facts), [facts]);
+  const steps = useMemo(() => lessonSteps(facts, history), [facts, history]);
   const at = Math.min(step, steps.length - 1);
   const current = steps[at];
   const last = at === steps.length - 1;

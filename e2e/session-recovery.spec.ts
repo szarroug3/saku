@@ -19,7 +19,10 @@ async function intoTheDrill(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
-  for (let i = 1; i < VOWELS.length; i++) {
+  // Day one opens on the hiragana track intro, so the walk is the five vowels
+  // plus that one card: step past the card AND the first four vowels (VOWELS
+  // Next clicks in all), then quiz. See src/data/track-intros.ts.
+  for (let i = 0; i < VOWELS.length; i++) {
     await page.getByRole("button", { name: "Next", exact: true }).click();
   }
   await page.getByRole("button", { name: "Quiz me", exact: true }).click();
