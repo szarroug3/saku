@@ -15,7 +15,13 @@
 //      resetAll makes — targets a scratch history.json and never the repo's.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 // registerHooks is a Node 22+ runtime API (present at test time) not yet in
 // this @types/node — the runtime has it, tsc's types don't.
 // @ts-expect-error -- see above
@@ -23,7 +29,6 @@ import { registerHooks } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { pathToFileURL } from "node:url";
 
 import type { FactId, QuizSessionRecord } from "@/types";
 
@@ -44,10 +49,19 @@ registerHooks({
   },
 });
 
-const { loadHistory, saveClaims, saveSeen, saveSession, resetAll } =
-  await import("@/lib/history");
+const {
+  loadHistory,
+  saveClaims,
+  saveSeen,
+  saveSession,
+  deleteSessions,
+  resetAll,
+  HistoryUnreadableError,
+} = await import("@/lib/history");
 
 const fid = (s: string) => s as unknown as FactId;
+
+const HISTORY_FILE = join(process.cwd(), "history.json");
 
 function seedSession(ts: number): QuizSessionRecord {
   return {
@@ -97,4 +111,134 @@ test("resetAll writes the day-one shell a fresh install starts with", () => {
   // never-touched install.
   const raw = readFileSync(join(process.cwd(), "history.json"), "utf-8");
   assert.equal(raw, '{\n "sessions": [],\n "facts": {}\n}');
+});
+
+// ---------- a damaged file is not an empty one ----------
+//
+// The failure this pins is the one that turns recoverable damage into total
+// loss: loadHistory used to answer "corrupt" and "absent" with the same empty
+// object, and every mutator is a read-modify-write on that answer. One truncated
+// write, one more answer, and the real file was gone.
+
+/** Every shape of "there is a file and it is not a history". */
+const DAMAGED: Array<[label: string, bytes: string]> = [
+  ["truncated mid-write", '{\n "sessions": [{"ts": 1, "mo'],
+  ["zero length", ""],
+  ["whitespace only", "\n  \n"],
+  ["valid JSON, not an object", '"hello"'],
+  ["valid JSON null", "null"],
+  ["sessions is not an array", '{"sessions": {}, "facts": {}}'],
+  ["facts is not an object", '{"sessions": [], "facts": []}'],
+];
+
+for (const [label, bytes] of DAMAGED) {
+  test(`a history.json that is ${label} is refused, not read as empty`, () => {
+    resetAll();
+    writeFileSync(HISTORY_FILE, bytes);
+    assert.throws(() => loadHistory(), HistoryUnreadableError);
+  });
+}
+
+test("no mutator overwrites a damaged history.json", () => {
+  resetAll();
+  const damaged = '{\n "sessions": [{"ts": 1, "mode": "dri';
+  writeFileSync(HISTORY_FILE, damaged);
+
+  // Every read-modify-write path refuses, and refuses by throwing rather than
+  // by writing something safe-looking over the top.
+  assert.throws(() => saveSession(seedSession(9_000)), HistoryUnreadableError);
+  assert.throws(() => saveClaims([fid("hira-a")], 9_000), HistoryUnreadableError);
+  assert.throws(() => saveSeen([fid("hira-a")], 9_000), HistoryUnreadableError);
+  assert.throws(() => deleteSessions(null, true), HistoryUnreadableError);
+
+  // The evidence is still on disk, byte for byte.
+  assert.equal(readFileSync(HISTORY_FILE, "utf-8"), damaged);
+});
+
+test("resetAll is the way out, and preserves the damaged file first", () => {
+  resetAll();
+  for (const f of readdirSync(process.cwd())) {
+    if (f.startsWith("history.corrupt-")) {
+      // Leftovers from an earlier test in this file would make the count below
+      // meaningless.
+      writeFileSync(join(process.cwd(), f), "");
+    }
+  }
+  const before = readdirSync(process.cwd()).filter((f) =>
+    f.startsWith("history.corrupt-"),
+  ).length;
+
+  const damaged = '{"sessions": [{"ts": 1, "mode": "dri';
+  writeFileSync(HISTORY_FILE, damaged);
+  resetAll();
+
+  // The app is usable again…
+  assert.deepEqual(loadHistory().sessions, []);
+  // …and the bytes that could not be parsed were copied aside rather than
+  // destroyed, because a JSON file with a truncated tail is often recoverable
+  // by hand and this is the only copy of it.
+  const quarantined = readdirSync(process.cwd()).filter((f) =>
+    f.startsWith("history.corrupt-"),
+  );
+  assert.equal(quarantined.length, before + 1, "one file quarantined");
+  assert.ok(
+    quarantined.some(
+      (f) => readFileSync(join(process.cwd(), f), "utf-8") === damaged,
+    ),
+    "the quarantined copy holds the damaged bytes",
+  );
+});
+
+test("a healthy history.json is NOT quarantined by resetAll", () => {
+  resetAll();
+  saveSession(seedSession(11_000));
+  const before = readdirSync(process.cwd()).filter((f) =>
+    f.startsWith("history.corrupt-"),
+  ).length;
+  resetAll();
+  const after = readdirSync(process.cwd()).filter((f) =>
+    f.startsWith("history.corrupt-"),
+  ).length;
+  assert.equal(after, before, "nothing to preserve, so nothing copied");
+});
+
+test("a missing history.json is a fresh install, not damage", () => {
+  resetAll();
+  rmSync(HISTORY_FILE);
+  assert.deepEqual(loadHistory(), {
+    sessions: [],
+    facts: {},
+    claims: {},
+    seen: {},
+  });
+});
+
+test("a write leaves no temp file behind", () => {
+  resetAll();
+  saveSession(seedSession(12_000));
+  const litter = readdirSync(process.cwd()).filter((f) =>
+    f.startsWith("history.json."),
+  );
+  assert.deepEqual(litter, [], "the temp file was renamed, not left");
+});
+
+// ---------- posting the same record twice is not doing it twice ----------
+
+test("saveSession is idempotent on `id`", () => {
+  resetAll();
+  const record = { ...seedSession(13_000), id: "round-1" };
+  saveSession(record);
+  // A retry after a lost RESPONSE: same bytes, sent again.
+  const hist = saveSession(record);
+
+  assert.equal(hist.sessions.length, 1, "appended once");
+  assert.equal(hist.facts[fid("hira-a")].seen, 1, "counted once");
+});
+
+test("saveSession still appends two records that have no id", () => {
+  resetAll();
+  saveSession(seedSession(14_000));
+  const hist = saveSession(seedSession(14_001));
+  assert.equal(hist.sessions.length, 2, "no id means nothing to be sure about");
+  assert.equal(hist.facts[fid("hira-a")].seen, 2);
 });

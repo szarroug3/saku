@@ -29,6 +29,27 @@
 // because every answer is already on disk before you could leave: the mode
 // screens call `saveNow()` the moment they mutate the runtime. See the note on
 // `saveNow` for the bug this closed.
+//
+// TWO DIFFERENT SENSES OF "SAVED", AND THEY ARE NOT INTERCHANGEABLE
+// =================================================================
+// `saveNow` writes the SNAPSHOT: where you are in the loop, which card is up,
+// what the deck looks like. It goes to localStorage, it is per-device, and it is
+// thrown away when the session ends. It is what makes Continue work.
+//
+// The other sense is the one a learner means — "my answers are recorded" — and
+// that is history.json, on the server, folded into the aggregate that every
+// accuracy number in the app is computed from. Those two used to be miles apart
+// in time: the snapshot was current to the last keystroke, and the durable copy
+// was written ONCE, at the end of a whole session, from `totalStats`. A session
+// you never finished left nothing behind at all. The reported failure was
+// eighteen correct answers, a Progress page reading "Nothing yet", and a
+// 33-byte history.json.
+//
+// A COMPLETED ROUND IS NOW THE COMMIT UNIT. `closeRound` builds a record from
+// that round's stats and hands it to `commitRecord`; `finishSession` writes
+// nothing. See the long note on closeRound for why that cannot double-count,
+// and src/lib/pending-records.ts for what happens when the POST fails — which,
+// unlike before, is neither silent nor fatal.
 
 import { useRouter } from "next/navigation";
 import {
@@ -48,8 +69,13 @@ import {
 // bundle everywhere. computeResults + factKeys need no registry.
 import { computeResults } from "@/lib/engine/results";
 import { factKeys } from "@/lib/fact-keys";
-import { firstTryShowings } from "@/lib/first-try";
+import {
+  acknowledgePending,
+  enqueuePending,
+  readPending,
+} from "@/lib/pending-records";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import {
   mergeStats,
@@ -165,6 +191,19 @@ interface QuizSessionContextValue {
   /** Live progress for the sidebar chip; screens keep it updated. */
   progress: QuizProgress | null;
   setProgress(p: QuizProgress | null): void;
+  /**
+   * What to say about work that has not reached the server, or null when
+   * everything is saved.
+   *
+   * A FAILED SAVE CANNOT BE SILENT. It used to be: the one call that made a
+   * learner's work durable was `.catch(() => {})`, and local state advanced as
+   * though it had succeeded. It does not need a dialog — the work is not lost,
+   * it is queued and retried — but the learner has to be able to find out that
+   * the number on Progress is behind what they did.
+   */
+  saveError: string | null;
+  /** Try the outbox again now. The banner's button. */
+  retrySave(): void;
   /**
    * Write the snapshot to disk NOW, without waiting for a state change.
    *
@@ -434,6 +473,17 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const [results, setResults] = useState<ResultsPayload | null>(null);
   const [progress, setProgress] = useState<QuizProgress | null>(null);
   const [restored, setRestored] = useState(false);
+  /**
+   * What to tell the learner about the durable copy of their work, or null when
+   * there is nothing to say.
+   *
+   * DELIBERATELY NOT PART OF THE SNAPSHOT. It is not state about the quiz, it is
+   * state about this device's conversation with the server, and it must stay out
+   * of `canonical()` and out of the save effect's deps — a field that changed on
+   * every failed retry and got published to localStorage would be a new pump for
+   * exactly the cross-tab write storm task 14 closed.
+   */
+  const [saveError, setSaveError] = useState<string | null>(null);
   // Runs set aside to start another. See PARKING: startQuiz/startSession no
   // longer clear what's running — they park it here and open the new one, so
   // several runs can be in progress at once and the Current sessions page lists
@@ -705,67 +755,103 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
 
   // ---------- history ----------
 
-  const writeRecord = useCallback(
-    (stats: SessionStats, mode: QuizMode, redrill: boolean, extra: {
-      planned?: FactId[];
-      rounds?: number;
-    }) => {
-      const s = computeResults(stats);
-      if (!s.total) return null;
-      const ts = Date.now();
-      // Per-fact aggregates for history.json; fire-and-forget.
-      const facts: QuizSessionRecord["facts"] = {};
-      for (const c of s.facts) {
-        facts[c] = {
-          seen: stats[c].seen,
-          missed: stats[c].misses,
-          slow: stats[c].slow,
-          // Folded into the aggregate so strict accuracy survives without
-          // having to re-read every session's detail. A COUNT of showings, in
-          // `seen`'s unit — the durable number and the pill the learner just
-          // watched are then the same measurement rather than two.
-          firstTry: firstTryShowings(stats[c]),
-          // The scheduler's hit, written separately and read only by
-          // aggregate.foldSession. One verdict per session, from the flag the
-          // results boards use; see SessionFactCounts.firstTryHit for why it is
-          // not `firstTry > 0`.
-          firstTryHit: stats[c].firstTryCorrect === true,
-          // Showings that ended right — the forgiving numerator. A showing
-          // nobody answered contributes 0, which is the point: it is not a pass.
-          //
-          // TEMPORARY BRIDGE: grid and pairs don't increment detail.correct
-          // yet, so a landed fact arrives here as correct: 0. Fall back to
-          // everCorrect, which collapses a session to at most one correct
-          // showing — coarse, but it never calls an unanswered fact right.
-          //
-          // `||`, NOT `??`: newFactStat initialises correct to 0, so the
-          // nullish operator would never fire and every grid/pairs fact
-          // would score 0% forgiving. The only case `||` gets wrong is a real
-          // 0 with everCorrect true, which can't happen — landing a card
-          // increments both. Delete this once both screens keep the counter.
-          correct: stats[c].correct || (stats[c].everCorrect ? 1 : 0),
-        };
+  /**
+   * Post everything in the outbox, oldest first, and stop at the first refusal.
+   *
+   * IN ORDER, AND STOPPING. The aggregate fold is order-dependent (see
+   * aggregate.ts), so records must reach the server in the order they were
+   * made. Skipping a stuck one to post a later one would land them out of
+   * order; posting them in parallel would too.
+   *
+   * A record leaves the queue on ONE signal — a 2xx — and on nothing else. A
+   * 503 (history.json is unreadable) keeps it, a network failure keeps it, a
+   * closed tab keeps it. That is the whole difference from the `.catch(() =>
+   * {})` this replaced, where every one of those threw the record away.
+   *
+   * `flushingRef` makes it single-flight: mount, "back online", and a freshly
+   * committed round can all fire this within a tick of each other, and two
+   * concurrent flushes would post the same record twice. That is survivable —
+   * the server deduplicates on the record's id — but it is noise, and the
+   * ordering guarantee above would be gone.
+   */
+  const flushingRef = useRef(false);
+  const flushPending = useCallback(async () => {
+    if (flushingRef.current) return;
+    flushingRef.current = true;
+    try {
+      let list = readPending(window.localStorage);
+      while (list.length) {
+        const record = list[0];
+        let ok = false;
+        try {
+          const res = await fetch("/api/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(record),
+          });
+          ok = res.ok;
+        } catch {
+          ok = false; // offline, or the server is not there
+        }
+        if (!ok) {
+          setSaveError(
+            "Some of your finished rounds have not been saved yet. They are " +
+              "kept on this device and will be retried.",
+          );
+          return;
+        }
+        const next = acknowledgePending(window.localStorage, record.id);
+        // A record with no id cannot be acknowledged and would spin here
+        // forever. Nothing this app writes lacks one (buildSessionRecord always
+        // mints it), so this is a guard against a future writer, not a case.
+        if (next.length >= list.length) return;
+        list = next;
       }
-      const record: QuizSessionRecord = {
-        ts,
-        mode,
-        redrill,
-        total: s.total,
-        forgivingPct: s.total ? Math.round((100 * s.forg) / s.total) : 0,
-        strictPct: s.total ? Math.round((100 * s.strict) / s.total) : 0,
-        facts,
-        detail: stats,
-        ...extra,
-      };
-      fetch("/api/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(record),
-      }).catch(() => {});
-      return { ts, record };
+      setSaveError(null);
+    } finally {
+      flushingRef.current = false;
+    }
+  }, []);
+
+  /** The banner's button. The same path as every automatic retry — there is no
+   * second, manual code path that could behave differently from the one the app
+   * is already using on your behalf. */
+  const retrySave = useCallback(() => void flushPending(), [flushPending]);
+
+  /**
+   * Make a piece of work durable: put it in the outbox FIRST, then try to send.
+   *
+   * The order is the point. Until this returns, the only copy of a finished
+   * round is in React state, which a closed tab takes with it. Once the record
+   * is in localStorage it survives a reload, a crash and a week offline, and
+   * the POST becomes an optimisation rather than the mechanism.
+   */
+  const commitRecord = useCallback(
+    (record: QuizSessionRecord | null) => {
+      if (!record) return;
+      if (enqueuePending(window.localStorage, record) === null) {
+        // Storage refused it. This is the one failure with nowhere to fall back
+        // to, so it is the one that has to be said loudest.
+        setSaveError(
+          "This device would not store your finished round, so it may be lost. " +
+            "Free up browser storage and finish the session again.",
+        );
+        return;
+      }
+      void flushPending();
     },
-    [],
+    [flushPending],
   );
+
+  // Retry on mount (a queue left by a previous visit) and whenever the browser
+  // says the network is back. Neither writes provider state unless the outcome
+  // changed, so neither can feed the save loop — see the storm note on saveNow.
+  useEffect(() => {
+    void flushPending();
+    const onOnline = () => void flushPending();
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [flushPending]);
 
   // ---------- the loop ----------
 
@@ -895,6 +981,32 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
    * that is the honest end state rather than a gap.
    */
   const closeRound = useCallback((s: StudySession, now: number): StudySession => {
+    // THE COMMIT POINT. A completed round is a real unit of work and this is
+    // the moment it is finished with: `roundStats` is about to be folded into
+    // the totals and reset, so it is complete, it is this round's and nothing
+    // else's, and it will never be offered again.
+    //
+    // That last clause is the whole no-double-counting argument, and it is
+    // structural rather than arithmetic. Rounds partition a session —
+    // `totalStats` is exactly the merge of the rounds — so committing each one
+    // once and committing nothing at the end covers the session precisely. There
+    // is no subtraction anywhere and nothing is ever offered twice, which is why
+    // finishSession no longer writes `totalStats`: doing both would count every
+    // round of the session a second time.
+    //
+    // `redrill: false` because a ROUND is not a redrill even when it contained
+    // retry legs; a redrill is a one-off quiz you started over the misses.
+    // `rounds: 1` because that is what this record covers — one round of the
+    // loop — not how many the session eventually ran.
+    commitRecord(
+      buildSessionRecord(s.roundStats, {
+        mode: s.snapshot.mode,
+        redrill: false,
+        ts: now,
+        planned: s.facts,
+        rounds: 1,
+      }),
+    );
     return {
       ...s,
       rounds: [...s.rounds, summariseRound(s.round, s.roundStats)],
@@ -905,7 +1017,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       recovered: [],
       lastActiveAt: now,
     };
-  }, []);
+  }, [commitRecord]);
 
   const completeRound = useCallback(() => {
     if (!session) return;
@@ -982,16 +1094,31 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ facts: session.teach, known: true }),
       }).catch(() => {});
     }
-    writeRecord(session.totalStats, session.snapshot.mode, false, {
-      planned: session.facts,
-      rounds: session.rounds.length,
-    });
+    // NOTHING IS WRITTEN HERE, AND THAT IS THE FIX.
+    //
+    // This used to be the session's only write: one record, from `totalStats`,
+    // at the very end. Everything before it lived in localStorage alone, so a
+    // session you never pressed Done on left nothing behind — the reported bug
+    // was eighteen correct answers and a 33-byte history.json. Every round is
+    // now committed as it closes (see closeRound), and `totalStats` is exactly
+    // the merge of those rounds, so writing it again here would count the whole
+    // session twice.
     setSession(null);
     setActive(null);
     setProgress(null);
     router.push("/");
-  }, [session, writeRecord, router]);
+  }, [session, router]);
 
+  /**
+   * Throw away what has NOT been recorded yet.
+   *
+   * Narrower than it used to be, necessarily: rounds are durable the moment
+   * they close, so discarding cannot un-record a round you completed. What it
+   * drops is the run — the round in progress, the loop, the fork you were
+   * sitting at. That is the honest cost of the work being safe at all, and it
+   * is the right side of the trade: "I finished three rounds and then discarded"
+   * should not erase three rounds of evidence.
+   */
   const discardSession = useCallback(() => {
     setSession(null);
     setActive(null);
@@ -1173,18 +1300,25 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         router.push("/");
         return;
       }
-      const out = writeRecord(stats, quiz.snapshot.mode, quiz.redrill, {
+      // A one-off quiz has no rounds, so it commits once, here — the same
+      // queue-then-post path a round takes, so it gets the same retries and the
+      // same visible failure.
+      const record = buildSessionRecord(stats, {
+        mode: quiz.snapshot.mode,
+        redrill: quiz.redrill,
+        ts: Date.now(),
         planned: quiz.facts,
       });
+      commitRecord(record);
       setResults({
         mode: quiz.snapshot.mode,
         redrill: quiz.redrill,
-        ts: out?.ts ?? Date.now(),
+        ts: record?.ts ?? Date.now(),
         stats,
       });
       router.push("/results");
     },
-    [active, session, writeRecord, router],
+    [active, session, commitRecord, router],
   );
 
   const abandonQuiz = useCallback(() => {
@@ -1256,6 +1390,8 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       results,
       progress,
       setProgress,
+      saveError,
+      retrySave,
       saveNow,
       startQuiz,
       startFirstRound,
@@ -1285,6 +1421,8 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       session,
       results,
       progress,
+      saveError,
+      retrySave,
       saveNow,
       startQuiz,
       startFirstRound,

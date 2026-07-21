@@ -115,8 +115,21 @@ export function RestScreen({
           Spacing works best when you do the rests, but you can complete early if
           you need to.
         </Hint>
+        {/* THIS SENTENCE IS NOW TRUE, AND IT WAS NOT.
+            It used to describe the localStorage snapshot only: the session
+            resumed, so "progress" in the sense of "where you are in the loop"
+            survived — but nothing you had ANSWERED existed anywhere durable
+            until you completed the whole session, and a learner reads this as
+            "my answers are safe". A session that never completed took every
+            answer in it with it.
+            Reaching this screen means the round just closed, and closing a
+            round writes it (see closeRound in quiz-session.tsx). So by the time
+            anyone can read this, the work it is talking about is on disk. The
+            first clause says which part is saved, because "your progress" on
+            its own is the word that did the lying. */}
         <Hint>
-          Reloading or closing the page will not lose your progress.
+          Your finished rounds are saved. Reloading or closing the page will not
+          lose your progress.
         </Hint>
       </Card>
     </>

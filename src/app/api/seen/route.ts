@@ -8,6 +8,7 @@
 // route only records the intent, so an abandoned drill still leaves the group
 // seen rather than fresh.
 
+import { historyErrorResponse } from "@/lib/api-error";
 import { saveSeen } from "@/lib/history";
 import type { FactId } from "@/types";
 
@@ -38,9 +39,15 @@ export async function POST(request: Request) {
   // The server's clock — the timestamp the model reads as "when you asked",
   // same discipline as /api/claim: history.json is written here, at the moment
   // of the request, not from a time the client chose.
-  const hist = saveSeen(facts, Date.now());
-  return Response.json(
-    { ok: true, seen: Object.keys(hist.seen ?? {}).length },
-    { headers: NO_STORE },
-  );
+  try {
+    const hist = saveSeen(facts, Date.now());
+    return Response.json(
+      { ok: true, seen: Object.keys(hist.seen ?? {}).length },
+      { headers: NO_STORE },
+    );
+  } catch (e) {
+    const res = historyErrorResponse(e);
+    if (res) return res;
+    throw e;
+  }
 }
