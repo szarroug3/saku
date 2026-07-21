@@ -898,6 +898,27 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     draft: true,
   },
 
+  ツ: {
+    glyph: "ツ",
+    romaji: "tsu",
+    sound: "tsu",
+    object: "two tuna and a tsunami",
+    analogy: [
+      { text: "Say “" },
+      { text: "tsu", accent: true },
+      { text: "” as in the Japanese word " },
+      { text: "tsu", accent: true },
+      { text: "na, meaning tuna." },
+    ],
+    mnemonic: [
+      { text: "Two tuna are flung from a " },
+      { text: "tsu", accent: true },
+      { text: "nami and twist through the spray." },
+    ],
+    example: { word: "ツナ", reading: "tsuna", gloss: "tuna", hitIndex: 0 },
+    approximate: "One sound: t and s pressed together, not “t” then “sue.”",
+  },
+
   て: {
     glyph: "て",
     romaji: "te",
@@ -917,6 +938,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "てがみ", reading: "tegami", gloss: "letter", hitIndex: 0 },
     draft: true,
+  },
+
+  テ: {
+    glyph: "テ",
+    romaji: "te",
+    sound: "teh",
+    object: "telephone pole",
+    analogy: [
+      { text: "Say “" },
+      { text: "teh", accent: true },
+      { text: "” as in " },
+      { text: "te", accent: true },
+      { text: "lephone." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "te", accent: true },
+      { text: "lephone pole has two crossbars stacked up, wires humming in the wind, and one crow refusing to move." },
+    ],
+    example: { word: "テレビ", reading: "terebi", gloss: "television", hitIndex: 0 },
   },
 
   と: {
