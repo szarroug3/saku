@@ -500,3 +500,77 @@ clean.**
 
 Plus the smaller ones above: E8's two lines, E3's parenthetical, C3's lead, the
 `meta.perPattern` semantic change, and the six grammar sense-suffix labels.
+
+---
+
+# AUDIT WAVE 2 — first report in: Japanese accuracy
+
+Full detail in `AUDIT-2-japanese.md`. **Eight things the app teaches that are
+flatly wrong.** This is the most valuable report of the night and it is worth your
+time in full.
+
+## Confirmed good news first
+
+- **〜てある's restriction is correct**, 書いてある is right, and 〜ている was
+  **correctly** left unrestricted. Task 05 holds up under expert review.
+- **All thirteen protected verbs kept full paradigms** — 用いる, 率いる, 強いる,
+  射る, 鋳る, 陥る, 入る. The `gatesCompounds` decision on いる is confirmed right.
+- The dakuten page's ぢ/づ explanation is called "excellent and accurate".
+
+## What I am fixing now (branch `fix/japanese-errors`)
+
+Only errors correctable with machinery and data that already exist:
+
+1. **`/library/grammar/ni-iku` leads with 行きに行く** — not Japanese.
+2. **`/library/grammar/passive` leads with 行く → 行かれる** under "is X-ed" — that
+   is the adversative passive, not the direct one.
+3. **Adjectives are given a ます-form.** sugiru and sou-appearance both state
+   な/い-adjectives go "→ stem (the ます-form minus ます)". Adjectives have no
+   ます-form. The output is right; the rule statement is false.
+4. **Defectiveness gaps** — the policy gates potential/passive/causative/imperative
+   but not volitional or たい, so できたい, ことができたい, ことができよう, 見えたい,
+   見えろ, 聞こえろ, わかられる all render.
+5. **陥る's potential renders as 陥れる**, a different verb (おとしいれる, to entrap).
+   This is precisely the 分かる/分かれる trap `DEFECTIVE_WORDS` exists to prevent.
+6. **The handakuten Library page shows the dakuten intro** (`marks.ts:223` reuses
+   it), so it claims "25 more characters" — true of both marks together, false of
+   handakuten alone, which yields 5 — and uses か → が, a dakuten example.
+   **Pre-existing; I checked, it is not damage from tonight's copy pass.**
+
+## Left for you — these need authoring, not fixing
+
+- **を is taught as "wo"** on `/library/hiragana/wo`, on the same page that says it
+  "sounds exactly like お". Self-contradicting, and the pronunciation line is the
+  one a learner obeys. This is mnemonic content you are reviewing as a set.
+- **The existential/animate いる (居る) does not exist in the vocab data at all.**
+  `/library/word/いる` teaches 要る ("to be needed"), and its example sentence
+  「はい知っています。」 contains no 要る — it matched on the ている auxiliary. This is
+  the single most learner-shaped gap in the audit: 鋳る has a page, "to be
+  (animate)" does not.
+- **入る** is taught with reading いる and gloss "to enter"; that sense is はいる.
+  The app's own transitivity page gets it right.
+- **前 = ぜん** paired with 行く前に電話します, where it is まえ.
+- **〜てある's verbs are grammatical but not always idiomatic** — the page displays
+  食べてある, and the pool can build 見てある, 飲んである, 待ってある. Needs a curated
+  allowlist, not a JMdict filter. Also missing: the を→が object re-marking, which
+  the auditor calls the pattern's most distinctive fact.
+- **〜ている leads with 行っている** under "is doing X" — the classic trap, unannotated.
+- は and へ get no particle note while を does.
+
+## A contradiction between two experts — your call
+
+**でありたい.** Task 05's agent found こうでありたい attested and ordinary if formal,
+and deliberately left it generating. This auditor says `policy.ts` itself calls it
+"simply not a word". I told the fix agent **not** to gate it and to report the
+disagreement instead. Two competent reads, opposite conclusions, and it is your
+language call.
+
+## The ceiling, per this auditor
+
+**Solid N5, N4 for recognition, short of N4 for production.** Blockers named: no
+example sentences on any grammar page, no は/が or に/で, no register axis, and
+learner-shaped vocabulary gaps.
+
+That is a more precise answer to task 22 than the first audit gave, and it says the
+gap is not mainly *content volume* but *sentence-level production and particles* —
+which is task 11.
