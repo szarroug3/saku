@@ -45,3 +45,9 @@ __pycache__/
 
 # Local learner data, not shipped
 lists.json
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
