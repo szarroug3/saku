@@ -220,28 +220,91 @@ export const DEFECTIVE_WORDS: DefectiveRule[] = [
   },
   {
     words: ["できる", "出来る"],
-    forms: ["potential", "passive", "causative", "causativePassive", "imperative"],
+    forms: [
+      "potential",
+      "passive",
+      "causative",
+      "causativePassive",
+      "imperative",
+      "volitional",
+      "tai",
+    ],
     gatesCompounds: true,
     reason:
       "Already a potential. 出来られる is not a word, and neither is ことができろ. " +
+      "Nor is できたい: 'want to be able to' is できるようになりたい, and no たい goes " +
+      "on the ability itself. できよう is not proposed either — you cannot suggest " +
+      "being able to do something. Both reach the compound too (ことができたい, " +
+      "ことができよう). " +
       "(Kept: ている — できている 'is finished / is made of' is ordinary Japanese.)",
   },
   {
+    // THE PERCEPTION PAIR. 見える and 聞こえる are states that happen to you, so
+    // every form that needs somebody choosing them is out: you cannot order,
+    // want, propose or make someone be visible. The potential/passive gate was
+    // here already and the rest came out the other door — 見えろ, 見えたい,
+    // 見えよう, 見えさせる all shipped.
+    //
+    // 見せる and 聞かせる are the words for the causative sense, which is why
+    // 見えさせる is not merely rare but taken.
     words: ["見える"],
-    forms: ["potential", "passive", "causativePassive"],
-    reason: "Already a potential ('be visible'). 見えられる is not a word.",
+    forms: [
+      "potential",
+      "passive",
+      "causative",
+      "causativePassive",
+      "imperative",
+      "volitional",
+      "tai",
+    ],
+    reason:
+      "Already a potential ('be visible'). 見えられる is not a word, and neither are " +
+      "見えろ, 見えたい, 見えよう or 見えさせる — being visible is not something anybody " +
+      "does, so it cannot be ordered, wanted, proposed or caused. 見せる is the verb " +
+      "for causing it.",
   },
   {
     words: ["聞こえる"],
-    forms: ["potential", "passive", "causativePassive"],
-    reason: "Already a potential ('be audible'). 聞こえられる is not a word.",
+    forms: [
+      "potential",
+      "passive",
+      "causative",
+      "causativePassive",
+      "imperative",
+      "volitional",
+      "tai",
+    ],
+    reason:
+      "Already a potential ('be audible'). 聞こえられる is not a word, and neither are " +
+      "聞こえろ, 聞こえたい, 聞こえよう or 聞こえさせる. 聞かせる is the verb for causing it.",
   },
   {
     words: ["わかる", "分かる", "解る", "判る"],
-    forms: ["potential", "imperative"],
+    forms: ["potential", "imperative", "passive"],
     reason:
       "Already carries potential sense. 分かれる is a real word but it's 別れる ('to part') — " +
-      "exactly the plausible-and-false output this list exists to stop.",
+      "exactly the plausible-and-false output this list exists to stop. わかられる is not " +
+      "used either: understanding is not done TO the thing understood. " +
+      "(Kept: わからせる and わからせられる, which are real, and わかりたい, which is strained " +
+      "but attested.)",
+  },
+  {
+    // 陥る IS おちいる, AND 陥れる IS A DIFFERENT VERB.
+    //
+    // Its potential is おちいれる, and 陥れる is the standard written form of
+    // おとしいれる, 'to entrap / to plunge someone into'. So the generated cell
+    // reads as a real word with the wrong meaning AND the wrong reading, which
+    // is the 分かる → 分かれる trap one entry up, arrived at the same way.
+    //
+    // POTENTIAL ONLY. 陥る is one of the ordinary verbs that merely END in いる
+    // (see the いる rule below for the full list and why it does not gate
+    // compounds); everything else in its paradigm is correct and useful, and
+    // stripping more would be the exact over-reach that note argues against.
+    words: ["陥る", "おちいる"],
+    forms: ["potential"],
+    reason:
+      "陥れる is a different verb — おとしいれる, 'to entrap'. Same plausible-and-false " +
+      "shape as 分かる → 分かれる. Everything else 陥る builds is correct and stays.",
   },
   {
     // NO `gatesCompounds` HERE, AND IT MUST STAY THAT WAY.

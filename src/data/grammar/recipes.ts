@@ -176,6 +176,26 @@ export interface Recipe {
    * reading exists, which is what the pattern needs.
    */
   readonly transitivity?: Transitivity;
+  /**
+   * Verbs this pattern refuses, named one at a time.
+   *
+   * `transitivity` narrows by a KIND of verb and lets the dictionary settle
+   * which verbs are in it — one field, thousands of words, no hand-kept list.
+   * That is the right shape whenever a tag exists. This field is for the
+   * restriction no tag encodes.
+   *
+   * 〜に行く is the one that needed it. It says where you are going and why, so
+   * the why cannot be the going: 行きに行く and 来に行く are not Japanese, while
+   * 遊びに行く and 泳ぎに行く are the most ordinary sentences in the pattern —
+   * and those two are intransitive, so the axis is not transitivity and no
+   * JMdict field separates them. Two verbs, named.
+   *
+   * KEEP IT SHORT. A long list here means the recipe wants a category the data
+   * does not carry, and inventing categories in a hand-kept list is how the two
+   * halves of the app come to disagree about what a pattern takes. Name the
+   * exceptions; do not build a taxonomy.
+   */
+  readonly notOn?: readonly string[];
   /** Why this row is interesting/awkward. Engineering notes, not lessons. */
   readonly note?: string;
 }
@@ -683,6 +703,14 @@ export const RECIPES: readonly Recipe[] = [
     gloss: "go in order to X",
     level: "N5",
     attach: [{ host: "verb", form: "stem", add: "に行く" }],
+    notOn: ["行く", "来る"],
+    note:
+      "The pattern's slot is the ERRAND, and going is not an errand you go on. " +
+      "行く leads the vehicle pool everywhere else, so this row led with " +
+      "行きに行く — not strained, not Japanese. 来に行く the same. Both named in " +
+      "`notOn` rather than filtered by a tag, because 遊びに行く and 泳ぎに行く are " +
+      "the pattern at its most ordinary and both verbs are intransitive: there is " +
+      "no dictionary field that separates a motion verb from the rest.",
   },
   {
     id: "sou-appearance",
@@ -838,7 +866,16 @@ export const RECIPES: readonly Recipe[] = [
     gloss: "is X-ed (by someone)",
     level: "N4",
     attach: [{ host: "verb", form: "passive", add: "" }],
-    note: "See potential.",
+    transitivity: "transitive",
+    note:
+      "See potential. The restriction is what the GLOSS already says: 'is X-ed " +
+      "(by someone)' needs something for it to be done to. 行く has nothing, so " +
+      "行かれる is not 'is gone' — it is the OTHER passive, the one that says " +
+      "somebody went and it put you out (友達に行かれた), plus a light honorific. " +
+      "Leading a page glossed 'is X-ed' with 行かれる taught that first passive as " +
+      "if it were this one. 書かれる is the model and now leads. The adversative is " +
+      "a real pattern and a real gap; it needs its own row and its own gloss, not " +
+      "a shared line with this one.",
   },
   {
     id: "causative",

@@ -477,9 +477,32 @@ describe("REGRESSION: verbs that merely END in いる are untouched", () => {
     "volitional",
   ];
 
+  /**
+   * 陥る's POTENTIAL, AND ONLY ITS POTENTIAL, IS DENIED — FOR A DIFFERENT REASON.
+   *
+   * This test used to assert 陥る → 陥れる outright, and that assertion was
+   * wrong: 陥る is おちいる, so its potential is おちいれる, and 陥れる is the
+   * standard written form of おとしいれる, "to entrap". The cell printed a real
+   * word with the wrong reading and the wrong meaning — the 分かる → 分かれる trap
+   * that DEFECTIVE_WORDS exists to stop, sitting one entry over and pinned by a
+   * test. 陥る now has its own rule.
+   *
+   * THE TEST'S POINT SURVIVES INTACT, and this pair is why it is spelled out
+   * rather than dropped from the list. What this describe block defends is that
+   * いる's rule does not reach thirteen ordinary verbs that merely end in its
+   * characters. 陥る's potential is denied on a completely different axis — a
+   * homograph collision, named in its own entry — so the two must be told apart
+   * or the next reader will take this exemption as いる's rule leaking after all.
+   * Every other form 陥る has is still asserted below, one by one.
+   */
+  const OWN_RULE: [word: string, form: Form][] = [["陥る", "potential"]];
+  const hasOwnRule = (word: string, form: Form) =>
+    OWN_RULE.some(([w, f]) => w === word && f === form);
+
   test("all six forms いる is denied still generate for all thirteen", () => {
     for (const [word, cls, gloss] of NOT_COMPOUNDS_OF_IRU) {
       for (const form of IRU_FORMS) {
+        if (hasOwnRule(word, form)) continue;
         const got = conjugate(word, cls, form);
         assert.ok(
           got.ok,
@@ -493,9 +516,35 @@ describe("REGRESSION: verbs that merely END in いる are untouched", () => {
     eq("用いる", "v1", "passive", "用いられる");
     eq("率いる", "v1", "passive", "率いられる");
     eq("用いる", "v1", "volitional", "用いよう");
-    eq("陥る", "v5r", "potential", "陥れる");
     eq("強いる", "v1", "causative", "強いさせる");
     eq("気に入る", "v5r", "imperative", "気に入れ");
+  });
+
+  test("陥る keeps every form but the one its OWN rule denies", () => {
+    // Five of the six, so the exemption above cannot quietly widen into いる's
+    // rule reaching 陥る after all — which is the thing this block exists to
+    // catch. Spelled out rather than looped, the way this file spells out every
+    // exception.
+    eq("陥る", "v5r", "passive", "陥られる");
+    eq("陥る", "v5r", "causative", "陥らせる");
+    eq("陥る", "v5r", "causativePassive", "陥らせられる");
+    eq("陥る", "v5r", "imperative", "陥れ");
+    eq("陥る", "v5r", "volitional", "陥ろう");
+    // And the everyday paradigm, untouched.
+    eq("陥る", "v5r", "te", "陥って");
+    eq("陥る", "v5r", "masu", "陥ります");
+    eq("陥る", "v5r", "nai", "陥らない");
+    eq("陥る", "v5r", "tai", "陥りたい");
+
+    // The one that is denied, and it is denied for 陥れる, not for いる.
+    refused("陥る", "v5r", "potential", "defective");
+    const got = conjugate("陥る", "v5r", "potential");
+    assert.ok(!got.ok);
+    assert.match(
+      got.detail,
+      /陥れる/,
+      "陥る's potential must be refused for the 陥れる collision, not as a compound of いる",
+    );
   });
 
   test("要る itself is still fully gated — the rule still works", () => {

@@ -126,11 +126,45 @@ export const FORM_LABEL: Record<Form, string> = {
   // Named by what it IS rather than by 連用形, which is the word for someone who
   // already knows it. The parenthetical is the whole definition and it is short
   // enough to carry: every reader has met ます by the time they meet 〜すぎる.
+  //
+  // A VERB DEFINITION, AND IT IS ONLY TRUE OF VERBS. See FORM_LABEL_BY_HOST.
   stem: "stem (the ます-form minus ます)",
   adverb: "adverb form",
   prenominal: "the form it takes before a noun",
   polite: "polite form",
 };
+
+/**
+ * Where a host needs a DIFFERENT name for the same form. One entry today, and
+ * it was a false statement on two pages.
+ *
+ * 〜すぎる and 〜そう both attach to the stem of a verb, of an い-adjective and of
+ * a な-adjective, and FORM_LABEL had exactly one definition of "stem" — the verb
+ * one. So 〜すぎる's い-adjective row read "any い-adjective → stem (the ます-form
+ * minus ます) + すぎる", and 高い has no ます-form. Neither does 静か. The built
+ * forms were right the whole time (高すぎる, よすぎる, 静かすぎる); it was the RULE
+ * that was false, stated about a category it is not true of.
+ *
+ * Three hosts, three definitions, because there genuinely are three: a verb's
+ * stem is its ます-form minus ます, an い-adjective's is the word without its い,
+ * and a な-adjective's is the word. The な row reuses the dictionary form's own
+ * words rather than inventing a second way to say "nothing happens" — and the
+ * hint that reads this drops the step for the same reason it drops it there.
+ *
+ * A LOOKUP AND NOT A REWRITE OF FORM_LABEL. Every other form means the same
+ * thing on every host it reaches, and a per-host table for all of them would be
+ * twenty rows of the same string three times, free to drift apart.
+ */
+const FORM_LABEL_BY_HOST: Partial<Record<Host, Partial<Record<Form, string>>>> = {
+  "adj-i": { stem: "stem (the word without its final い)" },
+  "adj-na": { stem: FORM_LABEL.dictionary },
+};
+
+/** What to call a form ON A GIVEN HOST. FORM_LABEL is the answer for all but
+ * the adjective stems; see FORM_LABEL_BY_HOST for why those two are not it. */
+export function formLabel(host: Host, form: Form): string {
+  return FORM_LABEL_BY_HOST[host]?.[form] ?? FORM_LABEL[form];
+}
 
 /** One worked instance of a formula: the word you start from and what it becomes. */
 export interface Worked {
@@ -240,7 +274,7 @@ function formulaFor(r: Recipe, a: Attachment, closing: boolean): Formula {
     host: a.host,
     slot: `any ${HOST_LABEL[a.host]}${only}`,
     workedLead: `Any ${HOST_LABEL[a.host]} you know${only}`,
-    formLabel: a.form === null ? null : FORM_LABEL[a.form],
+    formLabel: a.form === null ? null : formLabel(a.host, a.form),
     trim: a.trim ?? null,
     // "" is a real and common value — for 〜ば, 〜たら, the potential and bare
     // 〜て the pattern IS a form the engine already produces and there is no

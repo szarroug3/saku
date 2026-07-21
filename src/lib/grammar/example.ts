@@ -32,12 +32,8 @@
 // do not. See vehicles.ts and the grammar QuestionType.
 
 import { apply } from "./apply.ts";
-import {
-  isTrivialAttachment,
-  type Host,
-  type Recipe,
-  type Transitivity,
-} from "../../data/grammar/recipes.ts";
+import { exampleVerb } from "./vehicles.ts";
+import { isTrivialAttachment, type Host, type Recipe } from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
 
 /** A representative word for a host: its surface form, its kana reading, and
@@ -48,33 +44,28 @@ interface HostExample {
   readonly cls: WordClass | null;
 }
 
-/** One per host. The kana reading rides along so the built form can be accepted
+/** A vehicle as this file's HostExample. Same three fields under two names —
+ * one shape for the pool, one for the fixed word — and this is the seam. */
+function asHostExample(v: { surface: string; kana: string; cls: WordClass | null }): HostExample {
+  return { surface: v.surface, kana: v.kana, cls: v.cls };
+}
+
+/**
+ * One per host. The kana reading rides along so the built form can be accepted
  * in kana too (行ってから AND いってから) — an IME user types the first, a
- * romaji typist the second, and both are right. */
-const HOST_EXAMPLE: Record<Host, HostExample> = {
-  verb: { surface: "行く", kana: "いく", cls: "v5k-s" },
+ * romaji typist the second, and both are right.
+ *
+ * THE VERB ROW IS NOT HERE, and its absence is a fix. A recipe may refuse 行く:
+ * 〜てある wants a verb somebody does to something and baked its fact on
+ * 行ってある, which is not Japanese, and then the drill graded that answer
+ * correct; 〜に行く refuses going as its own errand. The fixed vehicle has to
+ * satisfy the recipe like any other, so it is `exampleVerb`'s answer — the same
+ * one the cluster page and the worked line get. See vehicles.ts.
+ */
+const HOST_EXAMPLE: Record<Exclude<Host, "verb">, HostExample> = {
   "adj-i": { surface: "高い", kana: "たかい", cls: "adj-i" },
   "adj-na": { surface: "静か", kana: "しずか", cls: "adj-na" },
   noun: { surface: "本", kana: "ほん", cls: null },
-};
-
-/**
- * The verb a recipe gets when 行く is not one it takes.
- *
- * A recipe may restrict which verbs it accepts (`transitivity` in recipes.ts),
- * and 行く is intransitive — so 〜てある baked its fact on 行ってある, which is not
- * Japanese, and then the drill graded that answer correct. The fixed vehicle has
- * to satisfy the restriction like any other.
- *
- * 書く is the transitive stand-in and it is chosen the way 行く was: it is v5k,
- * so its て-form is 書いて and the built fact is 書いてある, which is the sentence
- * everybody meets this pattern on. The intransitive row is 行く itself, so a
- * future restriction the other way lands on the word the rest of the app
- * already uses.
- */
-const VERB_EXAMPLE: Record<Transitivity, HostExample> = {
-  transitive: { surface: "書く", kana: "かく", cls: "v5k" },
-  intransitive: { surface: "行く", kana: "いく", cls: "v5k-s" },
 };
 
 /** The order hosts are tried in when a recipe accepts several — verb first,
@@ -153,8 +144,7 @@ function compute(r: Recipe, host: Host): BuiltExample | null {
   // only bites a caller reaching past the gate.
   if (r.wrap) return null;
   if (!r.attach.some((a) => a.host === host)) return null;
-  const ex =
-    host === "verb" && r.transitivity ? VERB_EXAMPLE[r.transitivity] : HOST_EXAMPLE[host];
+  const ex = host === "verb" ? asHostExample(exampleVerb(r)) : HOST_EXAMPLE[host];
   const surface = apply(r, ex.surface, ex.cls);
   if (!surface.ok) return null;
   // A form that leaves the word untouched (the vacuous rows) is typing, not a

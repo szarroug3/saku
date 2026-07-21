@@ -34,7 +34,7 @@ import {
   ADJ_NA_VEHICLES,
   NOUN_VEHICLES,
   VERB_VEHICLES,
-  transitivityAllows,
+  recipeAllows,
   type Vehicle,
 } from "@/lib/grammar/vehicles";
 import { isKanaOnly, toHiragana, toKana } from "@/lib/romaji";
@@ -120,16 +120,23 @@ interface Case {
  *
  * Legality is decided by the same three things the drill's own path uses — the
  * recipe applies to the vehicle, the production fact for the vehicle's HOST
- * exists, and the recipe accepts that KIND of verb — so a case here is a card
- * the drill can actually deal.
+ * exists, and THE RECIPE WILL TAKE THAT VERB — so a case here is a card the
+ * drill can actually deal.
  *
- * The third one arrived later, and this file is where its absence showed. A
- * recipe can restrict its verbs (`transitivity` in recipes.ts) and 〜てある does:
- * it needs a verb somebody does to something, so 行ってある is not Japanese. The
- * builder had no notion of that, so it minted te-aru × 行く as a case and the
- * property below then asserted the ungrammatical answer graded TRUE. The
- * property is unchanged and still holds for every card the drill can deal; what
- * changed is that this is no longer one of them.
+ * The third one arrived later, and this file is where its absence showed —
+ * twice, the same way. A recipe can refuse a verb, and when it does, a builder
+ * that has no notion of the refusal mints the refused pair as a case and the
+ * property below then asserts THE UNGRAMMATICAL ANSWER GRADES TRUE. First it was
+ * te-aru × 行く (行ってある is not Japanese); then, once ni-iku gained its own
+ * refusal, ni-iku × 行く and ni-iku × 来る (行きに行く, 来に行く) came straight back
+ * through the same hole, because this line asked only about the FIRST of the two
+ * restrictions by name.
+ *
+ * So it asks `recipeAllows`, which is the one predicate that asks about all of
+ * them and the one the drill's own picker and grader call. Naming a specific
+ * restriction here is what let this happen twice. The property itself is
+ * unchanged and still holds for every card the drill can deal; what changed is
+ * which pairs are cards.
  */
 const CASES: Case[] = (() => {
   const out: Case[] = [];
@@ -139,7 +146,7 @@ const CASES: Case[] = (() => {
       const host = v.cls === null ? "noun" : hostOfClass(v.cls);
       const fact = patternProductionFactId(r.id, host);
       if (!factInfo(fact)) continue;
-      if (!transitivityAllows(r, v.surface)) continue;
+      if (!recipeAllows(r, v.surface)) continue;
       const surface = apply(r, v.surface, v.cls);
       if (!surface.ok || surface.value === v.surface) continue;
       const kana = apply(r, v.kana, v.cls);

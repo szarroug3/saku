@@ -31,6 +31,7 @@ import { describe, test } from "node:test";
 import {
   COMBO_H,
   DAKUTEN_H,
+  DAKUTEN_K,
   INTRO_AFTER,
   INTRO_BEFORE,
   ITERATION_MARK,
@@ -311,6 +312,43 @@ describe("the Library shows the LESSON's explanation, not a copy of it", () => {
     const shared = DAKUTEN_H.body.filter((p) => p.mark === undefined);
     assert.equal(shared.length, 1);
     assert.ok(dak.includes(shared[0]!) && han.includes(shared[0]!));
+  });
+
+  test("the ゜ page makes no claim that is only true of ゛", () => {
+    // THE COUNT AND THE WORKED PAIR BELONG TO THE DASHES. か → が is dakuten,
+    // and 25 is dakuten AND handakuten together — the circle on its own makes
+    // five, ぱぴぷぺぽ, which the ゜ page says two lines earlier when it states
+    // the circle "only ever lands on the は row". Untagged, that sentence went
+    // to both pages and the handakuten page contradicted itself.
+    //
+    // Asserted on the RENDERED page copy rather than on the tag, because the tag
+    // is the mechanism and this is the claim: any future re-split has to keep
+    // the ゜ page free of these whatever machinery it uses.
+    for (const intro of [DAKUTEN_H, DAKUTEN_K]) {
+      const han = bodyFor(intro, "゜")
+        .map((p) => `${p.lead ?? ""} ${p.text}`)
+        .join(" ");
+      assert.ok(!han.includes("25"), `the ゜ page claims 25 characters: ${han}`);
+      assert.ok(!han.includes("が"), `the ゜ page uses a dakuten example: ${han}`);
+      assert.ok(!han.includes("ガ"), `the ゜ page uses a dakuten example: ${han}`);
+      // And it still says the reassuring thing, which is true of ゜ too. Losing
+      // that would be trading one wrong page for one empty one.
+      assert.ok(han.includes("already know"), `the ゜ page lost its shapes line: ${han}`);
+    }
+  });
+
+  test("the ゛ page and the lesson card keep every word they had", () => {
+    // The fix is a SPLIT, not a cut. The sentence is true where it was written
+    // and the lesson card teaches both marks at once, so both must still carry
+    // it whole.
+    for (const intro of [DAKUTEN_H, DAKUTEN_K]) {
+      const whole = intro.body.map((p) => p.text).join(" ");
+      const dak = bodyFor(intro, "゛").map((p) => p.text).join(" ");
+      for (const text of [whole, dak]) {
+        assert.match(text, /25 more characters/);
+        assert.match(text, /same character with a mark/);
+      }
+    }
   });
 
   test("a mark whose copy has no tagged paragraphs keeps all of it", () => {
