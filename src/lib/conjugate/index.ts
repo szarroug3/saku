@@ -32,6 +32,7 @@ import {
   DEFECTIVE_WORDS,
   FORMS_BY_CLASS,
   NOT_A_CONJUGATION_CLASS,
+  type DefectiveRule,
 } from "./policy";
 import type { ConjugateResult, Form, RefusalReason, StemKey, WordClass } from "./types";
 
@@ -101,13 +102,32 @@ export function classFromTags(tags: readonly string[]): WordClass | null {
 // Defectiveness — the guard that no data source gives us.
 // ---------------------------------------------------------------------------
 
+/**
+ * Does this rule cover this word?
+ *
+ * Exact spelling always. Compounds ONLY when the rule opts in with
+ * `gatesCompounds` — see the long note on `DefectiveRule` in policy.ts for why
+ * that is per-rule data and not a heuristic applied to the whole table. The
+ * suffix test is what makes である inherit ある's restrictions; the opt-in is
+ * what stops it reaching 用いる and 率いる, whose rule (いる) does not set the
+ * flag and therefore still matches by exact spelling only.
+ *
+ * `word.length > w.length` keeps the two branches disjoint, so a compound is
+ * never also counted as the bare verb.
+ */
+function ruleCovers(rule: DefectiveRule, word: string): boolean {
+  if (rule.words.includes(word)) return true;
+  if (!rule.gatesCompounds) return false;
+  return rule.words.some((w) => word.length > w.length && word.endsWith(w));
+}
+
 function defectiveReason(word: string, cls: WordClass, form: Form): string | null {
   const byClass = DEFECTIVE_BY_CLASS[cls];
   if (byClass?.includes(form)) {
     return `${cls} verbs have no ${form}.`;
   }
   for (const rule of DEFECTIVE_WORDS) {
-    if (rule.words.includes(word) && rule.forms.includes(form)) {
+    if (ruleCovers(rule, word) && rule.forms.includes(form)) {
       return `${word} has no ${form}: ${rule.reason}`;
     }
   }

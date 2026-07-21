@@ -364,6 +364,144 @@ describe("defectiveness: ある has no potential", () => {
     }
   });
 
+  test("ある has no ている — あっている is not a word", () => {
+    refused("ある", "v5r-i", "teiru", "defective");
+  });
+});
+
+// ===========================================================================
+// COMPOUNDS — a word BUILT ON a defective verb inherits its restrictions
+//
+// The bug this replaces: the lookup was `rule.words.includes(word)`, an exact
+// match, so ある was gated and である was not. The Library printed であれる,
+// であられる, であれ and であっている beside ある's correctly-empty block.
+//
+// The fix is an explicit per-rule opt-in (`gatesCompounds`), NOT a blanket
+// suffix match — see the second describe block below, which is the whole
+// reason the flag exists.
+// ===========================================================================
+
+describe("defectiveness reaches compounds, but only where a rule opts in", () => {
+  /** Every ある/できる compound in the vocabulary, with its JMdict class. */
+  const COMPOUNDS: [word: string, cls: string][] = [
+    ["である", "v5r-i"],
+    ["ことがある", "v5r-i"],
+    ["でもある", "v5r-i"],
+    ["ことができる", "v1"],
+  ];
+
+  test("no compound emits any form its base verb is denied", () => {
+    for (const [word, cls] of COMPOUNDS) {
+      const rule = DEFECTIVE_WORDS.find((r) => r.gatesCompounds && word.endsWith(r.words[0]));
+      assert.ok(rule, `${word} should be covered by a compound-gating rule`);
+      const { forms, refused: no } = conjugateAll(word, cls);
+      for (const form of rule.forms) {
+        assert.equal(forms[form], undefined, `${word} must not generate a ${form}`);
+        assert.equal(
+          no.find((r) => r.form === form)?.reason,
+          "defective",
+          `${word} ${form} must be refused AS defective, not as malformed`,
+        );
+      }
+    }
+  });
+
+  test("the exact forms the Library was printing are gone", () => {
+    // Named individually: these are the strings a learner actually saw.
+    refused("である", "v5r-i", "potential", "defective"); // であれる
+    refused("である", "v5r-i", "passive", "defective"); // であられる
+    refused("である", "v5r-i", "imperative", "defective"); // であれ
+    refused("である", "v5r-i", "teiru", "defective"); // であっている
+    refused("ことができる", "v1", "imperative", "defective"); // ことができろ
+  });
+
+  test("gating である's imperative hides a form that EXISTS, and says so", () => {
+    // であれ is genuinely attested as a literary imperative (民主的であれ).
+    // It is gated for register, not for nonexistence, and the user-facing
+    // reason must not claim otherwise — the rest of this table is careful
+    // about exactly that (see わかる's note about 分かれる).
+    const got = conjugate("である", "v5r-i", "imperative");
+    assert.ok(!got.ok);
+    assert.match(got.detail, /attested/, "the reason must admit であれ is a real form");
+  });
+
+  test("compounds keep every form their base verb keeps", () => {
+    eq("である", "v5r-i", "te", "であって");
+    eq("である", "v5r-i", "nai", "でない"); // suppletive, via ある
+    eq("ことができる", "v1", "te", "ことができて");
+    eq("ことができる", "v1", "teiru", "ことができている"); // できている is ordinary
+    eq("ことがある", "v5r-i", "ta", "ことがあった");
+  });
+
+  test("the bare verbs are still gated by exact match", () => {
+    refused("ある", "v5r-i", "imperative", "defective");
+    refused("できる", "v1", "imperative", "defective");
+  });
+});
+
+describe("REGRESSION: verbs that merely END in いる are untouched", () => {
+  // THIS IS THE TEST THAT MATTERS MOST IN THIS FILE.
+  //
+  // いる's rule is the harshest in the table — six forms, including volitional.
+  // A naive `endsWith` over the whole DEFECTIVE_WORDS table would strip all six
+  // from every verb below. 用いる (to use) and 率いる (to lead) are independent
+  // verbs; 用いられる and 率いられる are common and correct. Teaching a learner
+  // that they do not exist is worse than the bug that motivated this change.
+  //
+  // So いる deliberately does NOT set `gatesCompounds`, and these verbs must
+  // keep every form they have. Named one by one, on purpose.
+  const NOT_COMPOUNDS_OF_IRU: [word: string, cls: string, gloss: string][] = [
+    ["用いる", "v1", "to use"],
+    ["率いる", "v1", "to lead"],
+    ["陥る", "v5r", "to fall into"],
+    ["強いる", "v1", "to force"],
+    ["悔いる", "v1", "to regret"],
+    ["報いる", "v1", "to reward"],
+    ["老いる", "v1", "to age"],
+    ["まいる", "v5r", "to go (humble)"],
+    ["気に入る", "v5r", "to like"],
+    ["手に入る", "v5r", "to obtain"],
+    // Reading is EXACTLY いる. Safe only because the engine matches the WRITTEN
+    // form — a matcher that looked at readings would gate these outright.
+    ["射る", "v1", "to shoot"],
+    ["鋳る", "v1", "to cast metal"],
+    ["入る", "v5r", "to enter"],
+  ];
+
+  const IRU_FORMS: Form[] = [
+    "potential",
+    "passive",
+    "causative",
+    "causativePassive",
+    "imperative",
+    "volitional",
+  ];
+
+  test("all six forms いる is denied still generate for all thirteen", () => {
+    for (const [word, cls, gloss] of NOT_COMPOUNDS_OF_IRU) {
+      for (const form of IRU_FORMS) {
+        const got = conjugate(word, cls, form);
+        assert.ok(
+          got.ok,
+          `${word} (${gloss}) lost its ${form} — it is not a compound of いる`,
+        );
+      }
+    }
+  });
+
+  test("the forms are the right ones, not merely present", () => {
+    eq("用いる", "v1", "passive", "用いられる");
+    eq("率いる", "v1", "passive", "率いられる");
+    eq("用いる", "v1", "volitional", "用いよう");
+    eq("陥る", "v5r", "potential", "陥れる");
+    eq("強いる", "v1", "causative", "強いさせる");
+    eq("気に入る", "v5r", "imperative", "気に入れ");
+  });
+
+  test("要る itself is still fully gated — the rule still works", () => {
+    for (const form of IRU_FORMS) refused("要る", "v5r", form, "defective");
+  });
+
   test("the guard is narrow — normal potentials still generate", () => {
     eq("読む", "v5m", "potential", "読める");
     eq("食べる", "v1", "potential", "食べられる");
