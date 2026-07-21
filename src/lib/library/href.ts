@@ -26,10 +26,39 @@
 // still resolves.
 
 import type { EntryId } from "@/types";
+import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
+import { ALL_ENTRIES } from "@/lib/facts";
+import { type Kind, libEntry } from "@/lib/library/entries";
+
+const ENTRY_PATH = new Map<EntryId, string>();
+const SLUG_TO_ENTRY = new Map<string, EntryId>();
+
+buildEntryPathIndex();
 
 /** Where an entry's page lives. */
 export function entryHref(id: EntryId): string {
-  return `/library/${encodeURIComponent(id)}`;
+  return ENTRY_PATH.get(id) ?? `/library/${encodeURIComponent(id)}`;
+}
+
+/**
+ * The entry id for a kind/slug Library route, or null.
+ *
+ * `slug` is read as the raw path segment Next passes through. For non-kana
+ * entries this is often an encoded id-key segment.
+ */
+export function entryFromSlug(kind: string, slug: string): EntryId | null {
+  const direct = SLUG_TO_ENTRY.get(`${kind}/${slug}`);
+  if (direct) return direct;
+
+  // Be tolerant if a caller handed us a decoded slug.
+  const encoded = encodeURIComponent(glyphFromParam(slug));
+  const byEncoded = SLUG_TO_ENTRY.get(`${kind}/${encoded}`);
+  if (byEncoded) return byEncoded;
+
+  const maybeId = glyphFromParam(slug) as EntryId;
+  const entry = libEntry(maybeId);
+  if (entry?.kind === kind) return maybeId;
+  return null;
 }
 
 /**
@@ -88,4 +117,46 @@ export function glyphFromParam(param: string): string {
   } catch {
     return param;
   }
+}
+
+function buildEntryPathIndex(): void {
+  for (const id of ALL_ENTRIES) {
+    const entry = libEntry(id);
+    if (!entry) continue;
+    const kind = entry.kind;
+    const base = baseSlug(id, kind);
+    const slug = uniqueSlug(kind, base, id);
+    const path = `/library/${kind}/${slug}`;
+    ENTRY_PATH.set(id, path);
+    SLUG_TO_ENTRY.set(`${kind}/${slug}`, id);
+  }
+}
+
+function baseSlug(id: EntryId, kind: Kind): string {
+  if (kind === KANA_SUBJECT) {
+    const info = CHAR_INDEX[libEntry(id)?.glyph ?? ""];
+    if (info?.r?.[0]) {
+      const romaji = slugify(info.r[0]);
+      if (romaji) return `${info.set}-${romaji}`;
+    }
+  }
+  return encodeURIComponent(id);
+}
+
+function uniqueSlug(kind: Kind, base: string, id: EntryId): string {
+  let slug = base;
+  let n = 2;
+  while (true) {
+    const key = `${kind}/${slug}`;
+    const existing = SLUG_TO_ENTRY.get(key);
+    if (!existing || existing === id) return slug;
+    slug = `${base}-${n++}`;
+  }
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
