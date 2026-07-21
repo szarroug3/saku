@@ -63,11 +63,10 @@ export const WHY_SCRIPT: Record<string, Why> = {
   hiragana: {
     lede: {
       strong: "New to Japanese? Hiragana comes first.",
-      rest: "It’s the smallest set of characters that lets you read and write anything.",
     },
     paras: [
       "Japanese isn’t written with the letters you already know. There’s no way to sound あ out with A, B, C: it’s a separate system, and you can’t step around it to get to the “real” Japanese later. Hiragana is where that system starts.",
-      "Each hiragana stands for a sound: か is “ka”, き is “ki”. There are about forty-six of them. Those plus a couple of marks you will meet shortly can spell any Japanese word out loud. That’s why a beginner’s book opens assuming you have them already: lesson one is printed in hiragana, with nothing telling you so.",
+      "Each hiragana stands for a sound: か is “ka”, き is “ki”. There are about forty-six of them. Those plus a couple of marks you will learn shortly can spell any Japanese word out loud. That’s why a beginner’s book opens assuming you have them already: lesson one is printed in hiragana, with nothing telling you so.",
       "There are two other writing systems, and hiragana goes ahead of both on purpose. Katakana is a second set of shapes for these same sounds, and you’ll want it soon. Kanji are a much bigger job that comes later. Hiragana is the small set that unlocks the most, so it’s the door in.",
     ],
   },
@@ -266,7 +265,6 @@ export const WHY_TRACK: Record<string, Why> = {
     },
     paras: [
       "Japanese often has two verbs for the same event: one for when something happens on its own, and one for when someone makes it happen. 開く is “the door opened”, 開ける is “I opened the door”. It is the same door and the same event, but the two sentences use different verbs, and picking the wrong one sounds wrong the way “the door was opened by itself on purpose” would in English.",
-      "The good news is that English already tells you which to use. Whenever you can say whether something acted on its own or someone acted on it, you have chosen the verb. That is the whole skill, and this track drills exactly that: you read the English and pick the verb that fits.",
       "A pair is taught only once you have learned both of its verbs as vocabulary, because the choice between them means nothing until you know both. The endings shift in familiar ways, but the shift never tells you which verb is which, and some pairs follow no pattern at all. So each pair is learned as a pair.",
     ],
   },

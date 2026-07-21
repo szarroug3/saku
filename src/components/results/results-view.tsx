@@ -216,7 +216,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         title="Results"
         sub={`${modeName(results.mode)}${results.redrill ? " (redrill)" : ""} · ${
           facts.total
-        } characters · ${when}${summaryOnly ? " · Older session, summary only" : ""}`}
+        } things · ${when}${summaryOnly ? " · Older session, summary only" : ""}`}
       />
 
       <Card className="flex items-center gap-3.5">

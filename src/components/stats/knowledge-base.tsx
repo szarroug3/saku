@@ -31,7 +31,7 @@ export function KnowledgeBase({ tally }: { tally: Tally }) {
 
   return (
     <Card>
-      <Lbl>Your knowledge base</Lbl>
+      <Lbl>What you know</Lbl>
 
       {total === 0 ? (
         <p className="py-2 text-[13px] text-text-muted">

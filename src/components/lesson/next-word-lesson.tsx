@@ -47,7 +47,7 @@ const WORD_LOCK_WHY: Why = {
     rest: "A word waits until you know every kanji in it.",
   },
   paras: [
-    "A word written with kanji you have not met is just shapes. So a word waits until you know the kanji inside it, and then it arrives ready to read.",
+    "A word written with kanji you have not learned is just shapes. So a word waits until you know the kanji inside it, and then it arrives ready to read.",
     "By default, we use commonality for ordering but this can be updated in the settings.",
   ],
 };

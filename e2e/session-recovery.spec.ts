@@ -246,12 +246,12 @@ test("Clear knowledge base clears the session in progress", async ({
 
   await page.goto("/settings");
   await page
-    .getByRole("button", { name: "Clear knowledge base", exact: true })
+    .getByRole("button", { name: "Start over", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Clear everything", exact: true })
     .click();
-  await expect(page.getByText(/Knowledge base cleared/)).toBeVisible();
+  await expect(page.getByText(/Cleared\. The app is back to its first lesson/)).toBeVisible();
 
   // The run in progress is gone, not merely hidden.
   const raw = await storedSession(page);
@@ -321,12 +321,12 @@ test("clearing in one tab drops the session in the other", async ({
   // Tab A pulls the lever.
   await page.goto("/settings");
   await page
-    .getByRole("button", { name: "Clear knowledge base", exact: true })
+    .getByRole("button", { name: "Start over", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Clear everything", exact: true })
     .click();
-  await expect(page.getByText(/Knowledge base cleared/)).toBeVisible();
+  await expect(page.getByText(/Cleared\. The app is back to its first lesson/)).toBeVisible();
 
   // Tab B lets go on its own, without being reloaded.
   await expect(tabB.getByText("Nothing in progress")).toBeVisible({

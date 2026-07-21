@@ -451,7 +451,10 @@ export function summarize(
     const n = run.needsWork.length;
     return {
       state: "misses",
-      headline: `${n} character${s(n)} need${n === 1 ? "s" : ""} another pass`,
+      // "things", not "characters": a run can hold 生's readings, a word or a
+      // grammar pattern, and the old wording called all of them characters.
+      // Same word selection.whatSentence settled on, for the same reason.
+      headline: `${n} thing${s(n)} need${n === 1 ? "s" : ""} another pass`,
       detail: worst ? worstBits(worst, stats) : null,
       counts,
     };
