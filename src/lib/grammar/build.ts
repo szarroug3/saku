@@ -20,7 +20,8 @@
 // A column built on 行く is a column that proves the engine did the hard case.
 
 import { apply, applyWrap } from "./apply.ts";
-import type { Attachment, Host, Recipe, Transitivity } from "../../data/grammar/recipes.ts";
+import { exampleVerb, type Vehicle } from "./vehicles.ts";
+import type { Attachment, Host, Recipe } from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
 
 interface Example {
@@ -28,9 +29,23 @@ interface Example {
   readonly cls: WordClass | null;
 }
 
-/** The word each host is demonstrated on, and its class. Noun class is null. */
-const EXAMPLE: Record<Host, Example> = {
-  verb: { word: "行く", cls: "v5k-s" },
+/** A vehicle as this file's Example. The kana reading rides along on a Vehicle
+ * because the DRILL needs it to accept a kana answer; a printed row does not. */
+function asExample(v: Vehicle): Example {
+  return { word: v.surface, cls: v.cls };
+}
+
+/**
+ * The word each host is demonstrated on, and its class. Noun class is null.
+ *
+ * THE VERB ROW IS NOT HERE. A recipe may refuse 行く — 〜てある wants a verb
+ * somebody does to something, 〜に行く refuses going as its own errand — and a
+ * cell that conjugates correctly into Japanese nobody says breaks this column's
+ * promise exactly as a bad 音便 would. So the verb is `exampleVerb`'s answer,
+ * asked per recipe, and it is the SAME answer the baked production fact and the
+ * entry page's worked line get. See vehicles.ts.
+ */
+const EXAMPLE: Record<Exclude<Host, "verb">, Example> = {
   "adj-i": { word: "高い", cls: "adj-i" },
   "adj-na": { word: "静か", cls: "adj-na" },
   noun: { word: "本", cls: null },
@@ -57,22 +72,6 @@ const CLOSING_EXAMPLE: Record<Host, Example> = {
   "adj-i": { word: "安い", cls: "adj-i" },
   "adj-na": { word: "便利", cls: "adj-na" },
   noun: { word: "車", cls: null },
-};
-
-/**
- * The verb a recipe gets when it does not take 行く.
- *
- * A recipe may restrict which verbs it accepts (`transitivity` in recipes.ts),
- * and 行く is intransitive: a 〜てある row built on it reads 行ってある, which is
- * not a sentence anybody says. The column's promise is that it cannot be wrong,
- * and a cell that conjugates correctly into Japanese nobody speaks breaks that
- * promise exactly as a bad 音便 would. 書く for the transitive case (v5k → 書いて),
- * 行く for the intransitive one, so the restriction that already exists picks
- * the word instead of a second hardcoded choice per pattern.
- */
-const RESTRICTED_VERB: Record<Transitivity, Example> = {
-  transitive: { word: "書く", cls: "v5k" },
-  intransitive: { word: "行く", cls: "v5k-s" },
 };
 
 export interface BuiltRow {
@@ -203,10 +202,7 @@ function buildHalf(
 export function buildRow(r: Recipe, host?: Host): BuiltRow | null {
   const at = host ? r.attach.find((a) => a.host === host) : r.attach[0];
   if (!at) return null;
-  const ex =
-    at.host === "verb" && r.transitivity
-      ? RESTRICTED_VERB[r.transitivity]
-      : EXAMPLE[at.host];
+  const ex = at.host === "verb" ? asExample(exampleVerb(r)) : EXAMPLE[at.host];
   // Only the named host's attachment goes in, or apply() would resolve the
   // recipe by the WORD's class and hand back the first-listed host's build for
   // free — which is precisely how one row came to stand for three.

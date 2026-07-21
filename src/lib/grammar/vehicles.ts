@@ -101,6 +101,23 @@ export function transitivityAllows(r: Recipe, surface: string): boolean {
   return transitivityOf(surface) === r.transitivity;
 }
 
+/**
+ * Will this recipe take this word at all?
+ *
+ * The two verb restrictions behind ONE predicate, and they are behind one on
+ * purpose: a caller that remembered `transitivity` and forgot `notOn` would
+ * deal exactly the item `notOn` exists to stop, and it would do it silently.
+ * Every gate in the app — the pool, the worked line, the cluster row, the baked
+ * fact, the grader — goes through here.
+ *
+ * Takes a SURFACE FORM for the reason `transitivityAllows` does: the grader
+ * receives a vehicle as three plain strings and has to be able to refuse one.
+ */
+export function recipeAllows(r: Recipe, surface: string): boolean {
+  if (!transitivityAllows(r, surface)) return false;
+  return !r.notOn?.includes(surface);
+}
+
 /** One verb pool row. The transitivity comes from the dictionary rather than
  * from the argument list, which is what keeps this table a table. */
 function verb(surface: string, kana: string, cls: WordClass): Vehicle {
@@ -131,6 +148,47 @@ export const VERB_VEHICLES: readonly Vehicle[] = [
   verb("する", "する", "vs-i"),
   verb("来る", "くる", "vk"),
 ];
+
+/** The verb every pattern is DEMONSTRATED on when it takes 行く: the cluster
+ * page's column, the worked line's lead, and the word the production fact bakes
+ * its answer on. v5k-s, so its て-form is the irregular 行って and a form built on
+ * it proves the engine did the hard case. */
+const DEFAULT_VERB: Vehicle = verb("行く", "いく", "v5k-s");
+
+/**
+ * The verb a recipe gets when it narrows by KIND. 〜てある wants a verb somebody
+ * does to something, and 書いてある is the sentence everybody meets the pattern
+ * on, so the transitive row is 書く (v5k → 書いて) and the intransitive one is
+ * 行く itself.
+ */
+const RESTRICTED_VERB: Record<Transitivity, Vehicle> = {
+  transitive: verb("書く", "かく", "v5k"),
+  intransitive: DEFAULT_VERB,
+};
+
+/**
+ * The one verb a recipe is demonstrated on, everywhere it is demonstrated.
+ *
+ * THREE PLACES USED TO ANSWER THIS SEPARATELY — build.ts for the cluster row,
+ * example.ts for the baked fact, and formula.ts by reading example.ts's answer
+ * back — off two identical hand-kept tables. Two copies of a table is two
+ * chances for the page to lead with one verb while the fact under it is built on
+ * another, which is the exact confusion formula.ts's own lead-ordering note was
+ * written to prevent. One function, one answer.
+ *
+ * The pick is the recipe's own restriction, and then the recipe is asked whether
+ * it will actually take it. 〜に行く refuses 行く outright (see `notOn`), so the
+ * default is not available to it and the answer falls to the first verb in the
+ * POOL the recipe does accept — 食べる, giving 食べに行く, which is the sentence
+ * this pattern is for. Falling to the pool rather than to a third hand-kept
+ * table is what keeps this a function instead of a per-recipe list: the pool is
+ * already ordered by how early a beginner meets the word.
+ */
+export function exampleVerb(r: Recipe): Vehicle {
+  const pick = r.transitivity ? RESTRICTED_VERB[r.transitivity] : DEFAULT_VERB;
+  if (recipeAllows(r, pick.surface)) return pick;
+  return VERB_VEHICLES.find((v) => recipeAllows(r, v.surface)) ?? pick;
+}
 
 /**
  * い-adjective vehicles, for a recipe that attaches to adj-i (〜そう, 〜て…).
@@ -232,7 +290,7 @@ export function vehiclesFor(
       // on 行く BUILDS: the engine produces 行ってある happily, because the
       // conjugation is fine and it is the sentence that is not Japanese. So the
       // recipe has to say it, and this is where it is heard.
-      if (!transitivityAllows(r, v.surface)) continue;
+      if (!recipeAllows(r, v.surface)) continue;
       if (known && !known(v.surface)) continue;
       const built = apply(r, v.surface, v.cls);
       if (!built.ok || built.value === v.surface) continue;

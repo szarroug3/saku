@@ -233,9 +233,13 @@ function grammarHint(fact: FactId): Hint | null {
     //
     // "just as it is" is dropped too, and not for grammar: it is the label for
     // the dictionary form, so "uses the just as it is" is not a sentence, and a
-    // pattern that asks nothing of the word has told you nothing anyway. No
-    // producible recipe is vacuous today (isVacuous refuses them a production
-    // fact), so this is a guard rather than a live case.
+    // pattern that asks nothing of the word has told you nothing anyway.
+    //
+    // LIVE, on the な-adjective half of 〜すぎる and 〜そう. A な-adjective's stem
+    // IS the adjective (静か → 静か), so its label is the dictionary form's own
+    // words — see FORM_LABEL_BY_HOST — and there is no step to name. The fact is
+    // still producible and still scored: 静かすぎる is a real thing to build. It
+    // is the HINT that has nothing to add, which is what this branch is for.
     const label = f?.formLabel;
     if (!label || label === FORM_LABEL.dictionary) return null;
     return { kind: "text", text: `uses the ${label}` };

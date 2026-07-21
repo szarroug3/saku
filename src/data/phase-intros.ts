@@ -212,7 +212,19 @@ export const DAKUTEN_H: PhaseIntro = {
       text: "and it only ever lands on the は row.",
     },
     {
-      text: "You already know every shape here. か and が are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
+      text: "You already know every shape here.",
+    },
+    // TAGGED ゛, AND THE TAG IS THE FIX. The count and the worked pair are both
+    // about the two dashes: か → が is dakuten, and 25 is dakuten plus handakuten
+    // together. Untagged, this sentence went to BOTH Library pages (see
+    // `bodyFor` in data/marks.ts), so the ゜ page said "this is 25 more
+    // characters" two lines under its own "it only ever lands on the は row" —
+    // the circle makes five. The lesson card is unchanged: it teaches both marks
+    // at once and the sentence is true of the pair. Only the split needed to know
+    // which mark it belongs to.
+    {
+      mark: "゛",
+      text: "か and が are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
     },
   ],
 };
@@ -233,7 +245,13 @@ export const DAKUTEN_K: PhaseIntro = {
       text: "and it only ever lands on the ハ row: ハ ha → パ pa.",
     },
     {
-      text: "The marks work exactly as they did in hiragana, on shapes you already know. カ and ガ are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
+      text: "The marks work exactly as they did in hiragana, on shapes you already know.",
+    },
+    // Tagged ゛ for the reason the hiragana card's closing line is. Same
+    // sentence, same split, same page it was wrong on.
+    {
+      mark: "゛",
+      text: "カ and ガ are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
     },
   ],
 };

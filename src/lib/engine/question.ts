@@ -46,7 +46,7 @@ import { BEHAVIOR } from "@/lib/config";
 import { apply, hostOfClass } from "@/lib/grammar/apply";
 import {
   pickVehicle,
-  transitivityAllows,
+  recipeAllows,
   type Rng,
   type Vehicle,
 } from "@/lib/grammar/vehicles";
@@ -762,7 +762,12 @@ function variedVehicle(
   // sentence is not Japanese — so the recipe's own restriction has to be asked
   // here as well as at the deal. Without it this branch graded the ungrammatical
   // answer CORRECT for any intransitive vehicle a stale runtime carried in.
-  if (!transitivityAllows(r, v.surface)) return null;
+  //
+  // BOTH restrictions, through the one predicate that asks both. This line used
+  // to name `transitivityAllows` and it was the exact miss `recipeAllows`'s doc
+  // warns about: when 〜に行く gained its `notOn`, the pool stopped dealing 行く
+  // and this backstop went on grading 行きに行く correct.
+  if (!recipeAllows(r, v.surface)) return null;
   // A vehicle of the WRONG HOST is treated exactly like an illegal one: dropped,
   // and the showing falls back to the fact's own baked example. A stale ctx (a
   // remount, a serialized runtime written before the host split) could otherwise
