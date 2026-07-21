@@ -1720,6 +1720,27 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     approximate: "A single soft tap of the tongue, not a hard English “r.”",
   },
 
+  リ: {
+    glyph: "リ",
+    romaji: "ri",
+    sound: "ree",
+    object: "reeds",
+    analogy: [
+      { text: "Say “" },
+      { text: "ree", accent: true },
+      { text: "” as in " },
+      { text: "ree", accent: true },
+      { text: "ds." },
+    ],
+    mnemonic: [
+      { text: "Two " },
+      { text: "ree", accent: true },
+      { text: "ds bend inward, one shorter and one taller." },
+    ],
+    example: { word: "リス", reading: "risu", gloss: "squirrel", hitIndex: 0 },
+    approximate: "A single soft tap of the tongue, not a hard English “r.”",
+  },
+
   る: {
     glyph: "る",
     romaji: "ru",
