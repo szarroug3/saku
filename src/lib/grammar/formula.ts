@@ -29,8 +29,14 @@
 
 import { apply } from "./apply.ts";
 import { buildRow } from "./build.ts";
+import { buildExample } from "./example.ts";
 import { vehiclesFor } from "./vehicles.ts";
-import type { Attachment, Host, Recipe } from "../../data/grammar/recipes.ts";
+import type {
+  Attachment,
+  Host,
+  Recipe,
+  Transitivity,
+} from "../../data/grammar/recipes.ts";
 import type { Form } from "../conjugate/index.ts";
 
 /**
@@ -60,6 +66,26 @@ export const HOST_ARTICLE: Record<Host, string> = {
   "adj-i": "an い-adjective",
   "adj-na": "a な-adjective",
   noun: "a noun",
+};
+
+/**
+ * How a restricted verb slot is said on screen, per restriction.
+ *
+ * Never "transitive". The word is the grammar term for it and it is the term
+ * you look up AFTER you already understand the idea; lib/word-forms.ts made the
+ * same call for the same reason and its `INTRANSITIVE_NOTE` is the sibling of
+ * these strings. What the reader needs to know about 〜てある is that somebody
+ * has to be doing it to something, which is what these say.
+ *
+ * Phrased as a relative clause so ONE string serves both places the slot is
+ * named: the formula's dashed hole ("any verb that somebody does to something")
+ * and its worked line ("Any verb you know that somebody does to something").
+ * Two strings would be two chances for the card to describe its own slot two
+ * different ways.
+ */
+const TRANSITIVE_SLOT: Record<Transitivity, string> = {
+  transitive: "that somebody does to something",
+  intransitive: "that just happens",
 };
 
 /**
@@ -124,8 +150,21 @@ export interface Worked {
  */
 export interface Formula {
   readonly host: Host;
-  /** The dashed slot's text. "any verb" */
+  /** The dashed slot's text. "any verb", or "any verb that somebody does to
+   * something" where the recipe takes only some of them. */
   readonly slot: string;
+  /**
+   * The worked line's lead-in. "Any verb you know"
+   *
+   * A field rather than the component's old `\`Any ${slot.replace("any ", "")}
+   * you know\`` for two reasons, and the second is why it is a field and not a
+   * tidier string edit. String surgery on display text to recover a structural
+   * fact is the mistake build.ts records making with its old `complete` flag.
+   * And the surgery produced "Any verb that somebody does to something you
+   * know" the moment a slot carried a restriction — a sentence, but not one
+   * anybody would write.
+   */
+  readonly workedLead: string;
   /**
    * The form the word goes into, or null when the word is taken as it is.
    *
@@ -193,9 +232,14 @@ export function recipeFormula(r: Recipe): RecipeFormula {
 }
 
 function formulaFor(r: Recipe, a: Attachment, closing: boolean): Formula {
+  // The restriction is a VERB one, so it qualifies the verb row and nothing
+  // else: a recipe that took a verb and a noun would still say "any noun" on
+  // the noun row, because the noun row is not the one being narrowed.
+  const only = a.host === "verb" && r.transitivity ? ` ${TRANSITIVE_SLOT[r.transitivity]}` : "";
   return {
     host: a.host,
-    slot: `any ${HOST_LABEL[a.host]}`,
+    slot: `any ${HOST_LABEL[a.host]}${only}`,
+    workedLead: `Any ${HOST_LABEL[a.host]} you know${only}`,
     formLabel: a.form === null ? null : FORM_LABEL[a.form],
     trim: a.trim ?? null,
     // "" is a real and common value — for 〜ば, 〜たら, the potential and bare
@@ -232,9 +276,20 @@ function workedFor(r: Recipe, host: Host): Worked[] {
     const row = buildRow(r, host);
     return row ? [{ from: row.on.join(" + "), to: row.built }] : [];
   }
+  // THE LEAD IS THE WORD THE FACT IS BAKED ON. That used to be true by luck:
+  // the pool leads with 行く and so did every baked example, so the first worked
+  // example and the answer the drill scores were the same word. A recipe that
+  // refuses 行く breaks the coincidence — 〜てある bakes on 書く and the pool's
+  // first survivor is 食べる — and the page would then lead with one word while
+  // the fact underneath was built on another. Cheap to keep, confusing to lose.
+  const lead = buildExample(r, host)?.lemma;
+  const pool = vehiclesFor(r, host);
+  const ordered = lead
+    ? [...pool.filter((v) => v.surface === lead), ...pool.filter((v) => v.surface !== lead)]
+    : pool;
   const out: Worked[] = [];
   const seen = new Set<string>();
-  for (const v of vehiclesFor(r, host)) {
+  for (const v of ordered) {
     // A noun has no class; keying every noun on the same null would let exactly
     // one through. The surface word is the fallback key, which for nouns means
     // "all of them are distinct" — correct, since a noun's build is the word
@@ -266,7 +321,7 @@ function workedFor(r: Recipe, host: Host): Worked[] {
  * only about the noun has been given half the pattern.
  */
 export function attachesTo(r: Recipe): string {
-  const open = listHosts(r.attach);
+  const open = listHosts(r.attach, r.transitivity);
   const close = listHosts(r.wrap?.close ?? []);
   if (!open) return "";
   if (!close) return `attaches to ${open}`;
@@ -275,9 +330,15 @@ export function attachesTo(r: Recipe): string {
 
 /** "a verb, an い-adjective or a な-adjective" — distinct hosts, in order, with
  * an Oxford-free "or" before the last. Empty string for no hosts, which the
- * caller drops rather than printing a sentence with a hole in it. */
-function listHosts(as: readonly Attachment[]): string {
-  const hosts = [...new Set(as.map((a) => a.host))].map((h) => HOST_ARTICLE[h]);
+ * caller drops rather than printing a sentence with a hole in it.
+ *
+ * `only` narrows the VERB host where the recipe narrows it: "attaches to a verb"
+ * is a true sentence about 〜てある in the same way "any verb" was, which is to
+ * say it is the sentence that let 行ってある onto the page. */
+function listHosts(as: readonly Attachment[], only?: Transitivity): string {
+  const hosts = [...new Set(as.map((a) => a.host))].map((h) =>
+    h === "verb" && only ? `${HOST_ARTICLE[h]} ${TRANSITIVE_SLOT[only]}` : HOST_ARTICLE[h],
+  );
   if (hosts.length === 0) return "";
   if (hosts.length === 1) return hosts[0] as string;
   return `${hosts.slice(0, -1).join(", ")} or ${hosts[hosts.length - 1]}`;
