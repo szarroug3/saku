@@ -761,3 +761,81 @@ One measurement caveat, so you do not chase a phantom: 736 of 2,062 (36%) list
 parts that omit their own classical radical, but that number is inflated by
 codepoint variants (｜ vs 丨, ノ vs 丿) which are the same radical and not a bug.
 **The 109 figure is exact; the 36% is a soft signal.**
+
+---
+
+# AUDIT WAVE 2 — the beginner, and it found regressions in tonight's work
+
+Full report in `AUDIT-2-beginner.md`. A zero-knowledge tester drove the app for a
+full session: group 1 lesson, all three rounds, a retry, completion, then every
+other screen.
+
+## Two findings say tonight's fixes are incomplete. I am treating them as urgent.
+
+**A correct answer still lowers your accuracy.** Five right in a row, unbroken
+streak of five, badge goes **100% → 83%**. That is 5/6 — **a sixth showing in the
+denominator that the learner never answered.** Reproduced identically in rounds 2
+and 3.
+
+**The round summary contradicts itself**: "Nothing missed" printed directly under
+"1 needed another look", again in both rounds.
+
+These are almost certainly one bug — a phantom showing created at round start —
+and it is in code that merged tonight. Task 03 deliberately excludes facts still in
+flight (`firstTryCorrect === null`); if something resolves a fact without anyone
+answering it, that guard is bypassed and this is exactly what you would see.
+
+**So task 03 is fixed in the arithmetic and still wrong on screen.** I reported it
+to you as done. It is not, and I would rather say so plainly than have you find it.
+A fix agent is on it with instructions to find the true cause and **not** to patch
+the display.
+
+## The other severe one — and task 19 made it worse
+
+**Multiple choice never shows the correct answer on failure.** Two wrong picks and
+the card silently advances, with "Show the answer when you run out of goes" set to
+On. The typed drill correctly shows `い = i`.
+
+This matters more than it did yesterday: **task 19 turned kana en2jp into a
+six-option board**, so this is now the first and most common card a beginner meets,
+and it is the one that teaches nothing when you get it wrong. Task 01 fixed what
+the reveal *says*; this is about whether it is ever *shown*.
+
+My suspicion is `MC_MISS_ADVANCE_MS = 1600` destroying it before it can be read —
+I flagged that risk when task 19 landed and did not act on it. The agent is
+determining whether it never renders or is merely destroyed, because the fix
+differs.
+
+## Findings queued rather than fixed (they need you)
+
+- **The lesson and the Library contradict each other on writing**, one click apart:
+  "We don't recommend learning to write early" vs "Stroke order is worth learning
+  with each character." That is the two-panel split you designed deliberately —
+  but the tester met both within a minute and read it as the app disagreeing with
+  itself. Worth knowing the design reads that way from cold.
+- **The app claims you know a character you have never seen.** あ's page says
+  katakana ア is "all 1 solid, nothing to ask"; ア's own page says "not seen".
+- **~25 terms used with no introduction**, most damagingly **romaji** (the format of
+  every answer you type) and **N5/N4** (on every grammar entry). Task 21.
+- **The `Writing rules` shelf has excellent definitions** of dakuten, rendaku,
+  okurigana — and nothing in the lesson flow ever links to it. Cheap win.
+- **All audio is OS text-to-speech, and "Auto" picks macOS's novelty voice `Eddy`**
+  (alphabetically first `ja-JP`) over Kyoko or Otoya. Nobody in either audit round
+  had heard the audio before; this is the first time anyone has.
+
+## On fluency, from cold
+
+Reading **partly** — recognition only. Their sharpest line: they finished group 1
+**unable to read a single word**, despite being shown five real ones and quizzed on
+none. Hearing, speaking, writing: **no**.
+
+## On voice
+
+They singled out the `Why?` explainer, the `Writing rules` entries, and the retry
+screen's "You got it back. Nothing left over" as genuinely reading like someone who
+learned this. Everything numeric reads like the engine describing itself:
+`1 re-queued`, `Retry pips`, `Fade controls — they wake on mouse move`.
+
+Also: a missing space in "if you need to.Your finished rounds", `Practice` and
+`PRACTISE` on one page, and **the full conjugation table rendering twice** on
+`/library/word/食べる` (verified in the DOM, 7,900px tall).
