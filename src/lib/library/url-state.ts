@@ -10,7 +10,7 @@
 //   2. Coming back to the Library always landed on Kana, whatever you were
 //      looking at.
 //   3. THE ENTRY PAGE ALREADY LINKED HERE WITH A KIND. Its breadcrumb has
-//      always pointed at `/library?kind=kanji` (see library/[entry]/page.tsx),
+//      always pointed at `/library?kind=kanji` (see library/[...entry]/page.tsx),
 //      and the page ignored it — click "Kanji" above a kanji and you landed on
 //      Kana. That link was generated and dropped on the floor.
 //

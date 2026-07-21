@@ -61,7 +61,7 @@ test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => 
 });
 
 test("Library-entry / teach-flow gate: authored kana resolve, a non-authored glyph does not", () => {
-  // Exactly what app/library/[entry]/page.tsx and
+  // Exactly what app/library/[...entry]/page.tsx and
   // components/lesson/lesson-item-view.tsx branch on. Authored kana mount the
   // MnemonicView; a glyph without a row mounts nothing.
   assert.notEqual(getMnemonic("あ"), null);

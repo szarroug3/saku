@@ -102,7 +102,7 @@ import {
   type LibEntry,
 } from "@/lib/library/entries";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
-import { entryFromParam, entryHref, radicalHref } from "@/lib/library/href";
+import { entryFromParam, entryFromSlug, entryHref, radicalHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
 import { piecesOf } from "@/lib/library/word-pieces";
@@ -115,16 +115,37 @@ import { formsOfWord, isIntransitive, INTRANSITIVE_NOTE } from "@/lib/word-forms
 import { readingAnchors } from "@/lib/word-unlock";
 import type { FactId } from "@/types";
 
+/**
+ * ONE CATCH-ALL ROUTE FOR TWO URL SHAPES, and it is a catch-all for a reason
+ * that is not "it was easier".
+ *
+ * An entry has a readable two-segment URL — `/library/kanji/生` — and every link
+ * made before that existed says `/library/kanji%3A%E7%94%9F`, one segment, the
+ * opaque id. Both have to keep working: the second is what bookmarks and any
+ * stored link contain, and a URL is a promise.
+ *
+ * TWO SIBLING ROUTES CANNOT DO THIS. `[entry]` and `[kind]/[slug]` are two
+ * different names for the same first segment, and Next refuses the app at boot:
+ * "You cannot use different slug names for the same dynamic path". It is a
+ * startup crash, not a bad render, so nothing that stops at `tsc` and a test run
+ * ever sees it. `[...entry]` is one name for the position and reads the shape
+ * off the length.
+ *
+ * NEITHER BRANCH VALIDATES ANYTHING, because both end at a Map lookup that
+ * answers undefined for a stranger. A URL outlives the data it names: re-cut the
+ * dictionaries and yesterday's link points at nothing. 404 rather than an empty
+ * page — this is genuinely not a thing, and the router already knows how to say
+ * that.
+ */
 export default function EntryPage({
   params,
 }: {
-  params: Promise<{ entry: string }>;
+  params: Promise<{ entry: string[] }>;
 }) {
-  const { entry: param } = use(params);
-  const entry = libEntry(entryFromParam(param));
-  // A URL outlives the data it names: re-cut the dictionaries and yesterday's
-  // link points at nothing. 404 rather than an empty page — this is genuinely
-  // not a thing, and the router already knows how to say that.
+  const { entry: path } = use(params);
+  const id =
+    path.length === 2 ? entryFromSlug(path[0], path[1]) : entryFromParam(path[0] ?? "");
+  const entry = id ? libEntry(id) : undefined;
   if (!entry) notFound();
   return <EntryView entry={entry} />;
 }

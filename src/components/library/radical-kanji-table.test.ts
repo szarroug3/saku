@@ -50,7 +50,7 @@ describe("one table, shared by both callers with different caps", () => {
   const table = read("./radical-kanji-table.tsx");
   const uses = read("./component-uses.tsx");
   const lesson = read("../lesson/lesson-item-view.tsx");
-  const entry = read("../../app/library/[entry]/page.tsx");
+  const entry = read("../../app/library/[...entry]/page.tsx");
 
   test("the table sorts on the curriculum index", () => {
     assert.match(table, /orderRow\(/);
