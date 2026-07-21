@@ -1,11 +1,40 @@
 # P0 · The corpus tagger matches text instead of understanding it
 
-**Status: needs review**
+**Status: filtered on `fix/corpus`; the tagger question is still open and is Sam's**
 
-## Open questions
+## Open questions — answered by the filtering pass
 
-- Filter the existing data only, or also fix the tagger's matching rules? **Start with filtering**, since the check is already written, then measure what survives before deciding whether the tagger needs work.
-- Filtering will shrink `node` and `ba` a lot. If too little survives to teach from, that changes the answer.
+- **Filter only, or also fix the tagger?** Filtered only, on the reasoning in
+  the card: it is the reversible half, and a re-tuned signature can invent new
+  wrong examples that we would then have to find. The rules are
+  `src/data/grammar/corpus-audit.ts`; the pass is `scripts/audit-corpus.ts`.
+- **Did enough survive?** Yes, everywhere. Measured, before → after:
+
+  | pattern | before | dropped | after |
+  |---|---|---|---|
+  | `ba` | 559 | 302 (54%) | **257** |
+  | `node` | 214 | 125 (58%) | **89** |
+  | `ta-tokoro` | 160 | 21 (13%) | **139** |
+  | `made-ni` | 112 | 27 (24%) | **85** |
+  | `nikui` | 81 | 18 (22%) | **63** |
+  | `kara-reason` | 226 | 13 (6%) | **213** |
+
+  Nothing fell near the 20-example scarcity floor. The corpus went 8,689 →
+  8,547 sentences (142 had no surviving claim); `SCARCE` is unchanged
+  (`ta-ato-de` 0, `zurai` 9). The knock-on cost is 14 vocabulary words that
+  lost their only Library example sentence: 2,692 → 2,678.
+
+  The measurement reproduces this card's table exactly except `nikui`, where
+  the audit finds 18 and the card says 17 — the rule is "the blank span does
+  not contain にく", and 難 spelled in kanji is read がたい here.
+
+## Still open, and Sam's to decide
+
+`node` losing 58% of its supply is the argument for fix 2 (the negative
+lookarounds in `grammar.py`). 89 examples is enough to teach from, so it is not
+urgent — but the signature is still wrong, and re-cutting the corpus recovers
+~125 real ので sentences only if it is fixed. The invariant is now asserted, so
+a re-cut that skips the audit fails loudly rather than shipping the confounds.
 
 Sam asked: what is the corpus tagger?
 
