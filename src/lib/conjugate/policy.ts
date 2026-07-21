@@ -178,20 +178,53 @@ export interface DefectiveRule {
   words: string[];
   forms: Form[];
   reason: string;
+  /**
+   * OPT-IN: also gate words BUILT ON this verb — である inherits ある's rule.
+   *
+   * Off by default, and it must stay that way. Turning it on means "a word
+   * ending in these characters is a compound of this verb", which is true for
+   * some stems and catastrophically false for others. The failure mode is not
+   * a missing form; it is teaching a learner that a form of an ordinary verb
+   * does not exist. So this is an explicit per-rule opt-in with a written
+   * justification, not a general heuristic applied to the whole table.
+   *
+   * SAFE FOR ある. A Japanese verb ending in the -aru sound is written with a
+   * consonant+あ kana: 始まる is ま+る, 終わる is わ+る, 分かる is か+る. A BARE
+   * あ+る ending can essentially only be the verb ある standing on its own.
+   * Verified against all 12,553 vocab rows: the only entries longer than ある
+   * that end in ある are ことがある, である, でもある and 人気のある — every one
+   * a genuine ある compound, zero false positives.
+   *
+   * SAFE FOR できる. One hit in the whole vocabulary, ことができる, which is a
+   * genuine compound.
+   *
+   * NOT SAFE FOR いる — see the いる rule below, which deliberately omits this.
+   */
+  gatesCompounds?: boolean;
 }
 
 export const DEFECTIVE_WORDS: DefectiveRule[] = [
   {
     words: ["ある", "有る", "在る"],
-    forms: ["potential", "passive", "causative", "causativePassive", "imperative"],
+    forms: ["potential", "passive", "causative", "causativePassive", "imperative", "teiru"],
+    gatesCompounds: true,
     reason:
       "Existential verb. 有れる / 有られる do not exist — JMdict will generate them anyway. " +
-      "(Kept: volitional あろう, which is literary but genuinely attested — あろうことか.)",
+      "No ている either: ある already states an ongoing state, so あっている is not used. " +
+      "(Kept: volitional あろう, which is literary but genuinely attested — あろうことか.) " +
+      "Applies to compounds too — である, ことがある, でもある. One honest caveat there: " +
+      "the imperative であれ IS attested as a literary imperative (民主的であれ, 'be " +
+      "democratic!'). It is gated not because it does not exist but because it is a " +
+      "register a beginner cannot place, and shown unlabelled beside everyday forms it " +
+      "teaches the wrong Japanese. であれる / であられる / でありたい are simply not words.",
   },
   {
     words: ["できる", "出来る"],
     forms: ["potential", "passive", "causative", "causativePassive", "imperative"],
-    reason: "Already a potential. 出来られる is not a word.",
+    gatesCompounds: true,
+    reason:
+      "Already a potential. 出来られる is not a word, and neither is ことができろ. " +
+      "(Kept: ている — できている 'is finished / is made of' is ordinary Japanese.)",
   },
   {
     words: ["見える"],
@@ -211,6 +244,25 @@ export const DEFECTIVE_WORDS: DefectiveRule[] = [
       "exactly the plausible-and-false output this list exists to stop.",
   },
   {
+    // NO `gatesCompounds` HERE, AND IT MUST STAY THAT WAY.
+    //
+    // いる is the trap in this table. It has the harshest form list of any rule
+    // — six forms, including volitional — and a pile of ordinary verbs merely
+    // END in its characters without being built on it. In this vocabulary:
+    //
+    //   by written form: 悔いる 強いる 報いる 用いる 率いる 老いる まいる
+    //   by reading only: 陥る(おちいる) 気に入る(きにいる) 手に入る(てにはいる)
+    //                    射る(いる) 鋳る(いる) 入る(いる)
+    //
+    // 用いる (to use), 率いる (to lead), 陥る (to fall into), 強いる (to force)
+    // are independent verbs. 用いられる and 率いられる are common, correct, and
+    // useful. Switching this rule on would strip six forms from thirteen normal
+    // verbs and teach a learner those forms do not exist — worse than the bug
+    // that motivated compound matching in the first place.
+    //
+    // The last three are worse still: their READING is exactly いる, so any
+    // future matcher that looks at readings rather than written forms would hit
+    // them as EXACT matches, not even as suffixes. Match on the written form.
     words: ["いる", "要る"],
     forms: ["potential", "passive", "causative", "causativePassive", "imperative", "volitional"],
     reason: "要る ('to need'). 要れる does not exist.",
