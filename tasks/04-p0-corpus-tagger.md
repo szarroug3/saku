@@ -1,6 +1,7 @@
 # P0 · The corpus tagger matches text instead of understanding it
 
-**Status: filtered on `fix/corpus`; the tagger question is still open and is Sam's**
+**Status: done** — merged `a729b5f`. Filtered; every survivor clears the
+20-example floor. Whether to fix the `node` tagger signature is still Sam's call.
 
 ## Open questions — answered by the filtering pass
 

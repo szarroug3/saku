@@ -69,32 +69,59 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 
 ### If you only do six
 
-14 (done), 15, then 07, 02, 19 + 01 together, and 03. That clears every blocker,
-both "marks you wrong when you're right" bugs, and the number that made the tester
-stop trusting the app.
+**All six are done.** 14, 15, 07, 02, 19 + 01 together, and 03 all merged between
+19 and 21 July. That cleared every blocker, both "marks you wrong when you're
+right" bugs, and the number that made the tester stop trusting the app.
+
+**The next six**, in the same spirit: **23** (kanji components are wrong — the
+biggest correctness problem left), **16** (the quiz still tells you nothing on a
+miss), **the `Eddy` voice fix** (a prerequisite for 22's listening work, and cheap),
+**21** (jargon used before it is taught), **20** (data quality), **10** (numbers
+and counters, once the gating is approved).
 
 ## Coverage
 
-Every finding in `../TEST-FINDINGS.md` now maps to a task. Cross-checked heading by
-heading. The only things deliberately without one are the mnemonic-content items
-below.
+Every finding in `../TEST-FINDINGS.md` maps to a task. The second audit round
+(21 July) produced four more reports, and their findings are folded in too:
+
+- `../AUDIT-2-beginner.md` — zero-knowledge learner, browser only
+- `../AUDIT-2-regression.md` — verified 10 of 11 fixes in the browser
+- `../AUDIT-2-japanese.md` — expert correctness review, 8 things taught wrong
+- `../AUDIT-2-voice.md` — 17 copy findings after the 24-item pass
+
+`../OVERNIGHT.md` is the narrative of the 20–21 July run, including the decisions
+made on Sam's behalf and the things I got wrong.
 
 ## Not in here
 
 **Mnemonic content.** ま, と, サ, を, ア, め and the katakana gaps are Sam's
-in-progress authoring, to be reviewed as a set when finished. を's wrong
-pronunciation is recorded in `TEST-FINDINGS.md` and deliberately left out of the
-queue.
+in-progress authoring, to be reviewed as a set when finished.
 
 **Note on を:** Sam asked whether "the o in woah" works. It does not — the app
 already warns against exactly that glide on お's own card ("Short and pure, no
 oh-w glide"), and を is pronounced identically to お. Bolding only the o would
-still teach the wrong vowel.
+still teach the wrong vowel. **The second audit found the app still teaches を as
+"wo" on `/library/hiragana/wo`, on the same page that says it sounds exactly like
+お.** Still deliberately out of the queue as mnemonic content, but it is now a
+self-contradiction on one page rather than just a wrong hint.
+
+**Speaking and pronunciation testing.** Ruled out by Sam on 21 July (task 22). The
+app teaches how to pronounce; it does not grade it. Same for handwriting.
 
 ## Done
 
-- **`feat/e2e-tests` MERGED** into main at `d972902`. 57 tests, verified green
-  before merging. Run with `npx playwright test`. Three are `test.fail()`: they
-  assert task 01 and will flip to failures when it is fixed.
-- **`lists.json` untracked and gitignored** (`bd80912`). The local copy still
-  holds the "test" list; delete it from the UI if you want it gone.
+- **Task 07's copy pass** — 22 of 24 items, `e784135`. Two need Sam's wording.
+- **`feat/e2e-tests` MERGED** into main at `d972902`. The suite is now **70 specs**,
+  all passing. Run with `pnpm exec playwright test`. It runs against
+  `next build && next start`, never `next dev` — Turbopack's HMR websocket does not
+  complete its handshake against Playwright-driven Chromium and the page never
+  hydrates.
+- The three former `test.fail()` specs asserting task 01 **now pass**; task 01 was
+  fixed structurally in `22c2aa5`.
+- **`lists.json` untracked and gitignored** (`bd80912`). The local copy still holds
+  the "test" list; delete it from the UI if you want it gone.
+- Unit suite: **1223 tests**, tsc clean, as of `d4ef7e9`.
+
+**Every commit from the 20–21 July overnight run is unsigned.** 1Password's SSH
+signing agent needs interactive biometric confirmation and errors in a
+non-interactive session. Re-sign if you want them signed.

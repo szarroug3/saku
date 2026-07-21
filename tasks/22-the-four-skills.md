@@ -1,6 +1,6 @@
 # The four skills — SCOPE RULED
 
-**Status: ruled by Sam 21 July — narrowed. Listening is now the only build.**
+**Status: ruled** — narrowed by Sam 21 July. Listening is the only build.
 
 ## Sam's ruling, verbatim in effect
 
