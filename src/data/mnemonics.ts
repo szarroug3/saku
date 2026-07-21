@@ -876,6 +876,28 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     draft: true,
   },
 
+  チ: {
+    glyph: "チ",
+    romaji: "chi",
+    sound: "chee",
+    object: "cheerleader",
+    analogy: [
+      { text: "Say “" },
+      { text: "chee", accent: true },
+      { text: "” as in " },
+      { text: "chee", accent: true },
+      { text: "rleader." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "chee", accent: true },
+      { text: "rleader stands beneath a GO TEAM banner, stretches her arms wide, and kicks one leg out as she " },
+      { text: "chee", accent: true },
+      { text: "rs." },
+    ],
+    example: { word: "チーム", reading: "chiimu", gloss: "team", hitIndex: 0 },
+  },
+
   つ: {
     glyph: "つ",
     romaji: "tsu",
