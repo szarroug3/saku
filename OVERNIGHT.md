@@ -431,3 +431,72 @@ ruling, not mine.
   **counts are identical between per-round and per-session, stability is not.**
   Three rounds are three `review()` calls where a session was one. Rounds are
   minutes apart and genuinely are separate occasions, so I take it as correct.
+
+---
+
+# Audit wave 2 — running
+
+Four independent auditors, same anti-bias design as the first round: **each in its
+own worktree with its own empty `history.json`**, so they cannot overwrite each
+other's progress, and each on its own port. Two of them are forbidden from reading
+the source at all.
+
+That last rule is the important one. This codebase's comments *argue for its own
+design*, so any tester who reads them is persuaded before opening the app. In the
+first round, convergence between blind testers was the strongest signal we got —
+three found the reveal bug independently, two found を independently.
+
+| tester | port | brief |
+|---|---|---|
+| **beginner** | 3361 | Complete novice, browser only, source forbidden. Knows no Japanese and none of our vocabulary. Where did they get lost, what was never taught, would this make them fluent |
+| **regression** | 3362 | Verifies all 11 fixed behaviours **in the browser**, not in tests. Explicitly told "tests passing is not the claim under examination". Also hunts for what the fixes BROKE |
+| **Japanese** | 3363 | Expert. Is anything taught actually WRONG? Concentrates on the freshly-changed grammar pages, the 〜てある restriction, the conjugation tables, and the kana rules |
+| **voice** | 3364 | Does the app read as one human voice after 24 copy changes? Hunts inconsistency the pass introduced, em dashes, jargon-before-teaching |
+
+Reports land as `AUDIT-2-beginner.md`, `AUDIT-2-regression.md`, `AUDIT-2-japanese.md`
+and `AUDIT-2-voice.md` in the repo root. **They write to files rather than replying,
+so nothing is lost.**
+
+I told the voice auditor explicitly not to "improve" writing that is already yours,
+and to say so when it cannot tell a flaw from a choice. Polishing your own voice out
+of the app would be the worst outcome of that audit.
+
+---
+
+# Where the board stands
+
+**12 of 22 tasks done.** Main is at `4fb35f9`: **1202 unit tests, 69/69 e2e, tsc
+clean.**
+
+| done tonight | |
+|---|---|
+| 01 reveal shows the answer | `22c2aa5` |
+| 04 corpus filtered | `a729b5f` |
+| 05 〜てある restricted | `ea522c8` |
+| 15 progress persists per round | `4fb35f9` |
+| 18 retry visible, summary adds up | `a53a94e` |
+| 07 copy (22 of 24 items) | `e784135` |
+
+**Left, and why:**
+
+- **10, 11, 12, 22** — yours. Content and scope, not bugs.
+- **16** — quiz instructions, confusion note, progress pill. Now cheap: task 01
+  left the reveal shaped to take the note, and `confusedWith` is already imported.
+- **08** — test-suite gaps. Partly overtaken; tonight added a lot of coverage.
+- **09, 20, 21** — particle rule, data quality, jargon. Unreviewed by you.
+- **17** — done, but `前` still shows ぜん where a beginner expects まえ.
+
+## The three rulings waiting for you
+
+1. **The persistence fork hole** (task 15) — per-leg would close it but reaches the
+   200-session cap ~3× sooner. One data-loss mode traded for another.
+2. **`session-complete.tsx` "You finished on N right first try"** (task 18) — still
+   counts facts where the round header counts showings. Cannot be mechanically
+   converted: more retry legs would accrue more first-try showings, so it would
+   reward retrying rather than improving.
+3. **Whether to fix the `node` tagger signature** (task 04) — 89 examples is enough
+   so it is not urgent, but a future re-cut only recovers the ~125 real ので
+   sentences if the signature is fixed first.
+
+Plus the smaller ones above: E8's two lines, E3's parenthetical, C3's lead, the
+`meta.perPattern` semantic change, and the six grammar sense-suffix labels.
