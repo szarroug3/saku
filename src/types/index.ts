@@ -531,6 +531,25 @@ export interface FactState {
 export interface FactAggregate extends FactCounts, FactState {}
 
 export interface QuizSessionRecord {
+  /**
+   * A unique id minted with the record, and the reason a lost response cannot
+   * cost you a round.
+   *
+   * The client no longer posts a record and hopes. It queues it, posts it, and
+   * keeps posting until the server says yes — which means a record whose
+   * request arrived but whose RESPONSE did not will be sent again. Without an
+   * identity the server has no way to tell that retry from a second, real round
+   * with identical numbers, and would append both: every count in it doubled,
+   * permanently, in the one file that is supposed to be the durable copy.
+   *
+   * `ts` cannot do this job. It is a wall-clock reading, two records made in the
+   * same millisecond share one, and it is not what a retry is keyed on anywhere
+   * else. So the identity is its own field and is opaque.
+   *
+   * Optional because every record written before this existed has none.
+   * saveSession deduplicates only on a present id — see the note there.
+   */
+  id?: string;
   ts: number;
   mode: QuizMode;
   redrill: boolean;
