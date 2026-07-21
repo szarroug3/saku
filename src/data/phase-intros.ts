@@ -212,7 +212,7 @@ export const DAKUTEN_H: PhaseIntro = {
       text: "and it only ever lands on the は row.",
     },
     {
-      text: "You already know every shape here. か and が are the same character with a mark, so this is 25 more sounds without a single new drawing to learn.",
+      text: "You already know every shape here. か and が are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
     },
   ],
 };
@@ -233,7 +233,7 @@ export const DAKUTEN_K: PhaseIntro = {
       text: "and it only ever lands on the ハ row: ハ ha → パ pa.",
     },
     {
-      text: "The marks work exactly as they did in hiragana, on shapes you already know. カ and ガ are the same character with a mark, so this is 25 more sounds without a single new drawing to learn.",
+      text: "The marks work exactly as they did in hiragana, on shapes you already know. カ and ガ are the same character with a mark, so this is 25 more characters without a single new drawing to learn.",
     },
   ],
 };
@@ -248,7 +248,7 @@ export const COMBO_H: PhaseIntro = {
     },
     {
       lead: "The size is the whole tell.",
-      text: "きゃ, with the small ゃ, is “kya”. きや, with a full-size や, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height.",
+      text: "きゃ, with the small ゃ, is “kya”. きや, with a full-size や, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height. You will misread a few at first. That is normal, and it stops once you have seen enough of them.",
     },
     {
       text: "No new shapes again. Every combo is two characters you already know, one of them shrunk.",
@@ -315,7 +315,7 @@ export const LONG_K: PhaseIntro = {
   title: "Katakana holds a vowel with one long dash.",
   body: [
     {
-      text: "The same rule you saw in hiragana, a held vowel is a different word, written a different way. Katakana uses a single dash, ー, whatever the vowel is.",
+      text: "Same rule as hiragana: a held vowel makes a different word. Katakana just writes it differently, with a single dash, ー, whatever the vowel is.",
     },
     {
       lead: "One mark covers all five vowels,",
@@ -437,10 +437,10 @@ export const SOKUON_K: PhaseIntro = {
 export const PUNCTUATION: PhaseIntro = {
   id: "intro-punctuation",
   setId: NO_SCRIPT,
-  title: "Japanese points its sentences differently.",
+  title: "Japanese punctuates its sentences differently.",
   body: [
     {
-      lead: "And the thing that is missing.",
+      lead: "And the thing that isn’t there: spaces.",
       text: "Japanese leaves no spaces between words. The switches between kanji, hiragana and katakana do the work an English space does, so you learn to see where one word ends by the change in script rather than by a gap.",
     },
   ],
@@ -642,7 +642,7 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
     },
     {
       lead: "The sentence already tells you which.",
-      text: "In English you can always hear the difference: whether something acts on its own, or someone acts on it.",
+      text: "You will get these backwards for a while. English gives you no help here, because 'open' does both jobs. Expect to mix them up, and expect that to sort itself out with time.",
     },
     {
       lead: "The endings often shift in familiar ways.",
