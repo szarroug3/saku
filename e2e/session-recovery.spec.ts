@@ -54,6 +54,92 @@ async function storedSession(page: Page) {
 }
 
 /**
+ * A session whose phase says "drilling" but which has no leg. This is the
+ * state the cross-tab storm could interleave its way into, and on its own it
+ * was fatal — see the test below.
+ */
+function wedgedSnapshot(): string {
+  const facts = ["kana:あ/reading", "kana:い/reading"];
+  const now = Date.now();
+  return JSON.stringify({
+    active: null,
+    session: {
+      facts,
+      teach: facts,
+      what: "2 things",
+      snapshot: {
+        mode: "drill",
+        dirs: { jp2en: true, en2jp: false },
+        styleJp2en: "typed",
+        styleEn2jp: "mc",
+        length: "endless",
+        limType: "cov",
+        limCount: 50,
+      },
+      startedAt: now,
+      round: 1,
+      phase: "drilling",
+      restUntil: null,
+      roundStats: {},
+      rounds: [],
+      totalStats: {},
+      lastActiveAt: now,
+      origin: "lesson",
+    },
+    results: null,
+    progress: null,
+    parked: [],
+    owner: "seed",
+  });
+}
+
+/**
+ * THE DEADLOCK, AND WHY IT IS THE WHOLE FINDING.
+ *
+ * /quiz sends you to /session when there is no leg to draw. /session sends you
+ * to /quiz when the phase says drilling. Both guards are individually correct
+ * and together, in this one state, they replace between each other forever —
+ * measured at ~1,400 navigations in 4 seconds. The router never settles, so
+ * nothing paints and NO control can be clicked: not End quiz, not Discard, not
+ * Clear knowledge base. That is the difference between a session that is broken
+ * and a session that cannot be escaped, and it is why all three hatches failed
+ * at once.
+ *
+ * The assertion is on the navigation count rather than on any visible symptom,
+ * because the oscillation is the bug and everything else is downstream of it.
+ */
+test("a session that lost its leg recovers instead of deadlocking", async ({
+  page,
+  seed,
+}) => {
+  await seed({ seen: [], cfg: {} });
+  await page.addInitScript((payload: string) => {
+    localStorage.setItem("kanaquiz-session", payload);
+  }, wedgedSnapshot());
+
+  const navigations: string[] = [];
+  page.on("framenavigated", (f) => {
+    if (f === page.mainFrame()) navigations.push(f.url());
+  });
+
+  await page.goto("/quiz");
+  await page.waitForTimeout(3000);
+
+  // A handful of redirects is a redirect. Hundreds is the deadlock.
+  expect(navigations.length).toBeLessThan(10);
+
+  // And the learner lands somewhere with controls on it — the round's fork,
+  // reporting whatever the round actually banked.
+  await expect(page.locator("body")).toContainText("round 1 of 3 · done");
+
+  // Most importantly: they can now get OUT.
+  await page.getByRole("button", { name: "Done for now", exact: true }).click();
+  await page.goto("/current");
+  await page.getByRole("button", { name: "Discard ✕" }).first().click();
+  await expect(page.getByText("Nothing in progress")).toBeVisible();
+});
+
+/**
  * TWO OPEN TABS MUST NOT WRITE TO EACH OTHER FOREVER.
  *
  * The brick was a feedback loop: adopting the other tab's snapshot remounted

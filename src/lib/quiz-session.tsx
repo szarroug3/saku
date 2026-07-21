@@ -238,6 +238,10 @@ interface QuizSessionContextValue {
   clearAllRuns(): void;
   /** Continue a session you left: back to whatever it was doing. */
   continueSession(): void;
+  /** Repair a session whose phase says "drilling" but which has no leg. See
+   * the implementation: that state deadlocks /quiz and /session against each
+   * other and freezes the whole app, escape hatches included. */
+  recoverLostLeg(): void;
 
   // ---------- many runs at once (see PARKING) ----------
   /** Every run in progress right now — the focused one plus every parked one.
@@ -1017,6 +1021,37 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     setParked([]);
   }, []);
 
+  /**
+   * A session that says it is DRILLING but has no leg has lost its leg. Put it
+   * back at its fork, which is the one place it can be steered from.
+   *
+   * THIS IS A DEADLOCK BREAKER, AND THE DEADLOCK IS TOTAL.
+   * ======================================================
+   * The two route guards are each individually right and mutually fatal in this
+   * one state: /quiz sends you to /session when there is no leg to draw, and
+   * /session sends you to /quiz when the phase says drilling. With both true
+   * the app replaces between the two routes forever — measured at ~1,400
+   * navigations in 4 seconds — and because the router never settles, nothing
+   * renders and NO control can be clicked. Not End quiz, not Discard, not
+   * Clear knowledge base. It is the one failure that takes the escape hatches
+   * with it, which is exactly what made the session unrecoverable from inside
+   * the app rather than merely broken.
+   *
+   * The cure has to be at the state, not at either guard: whichever guard you
+   * relax, the state is still lying, and the next screen to trust it breaks in
+   * its own way. So the lie is corrected. Nothing is invented in doing it — the
+   * round's answers are already in `roundStats` and the fork reads them, so a
+   * recovered round reports exactly what it banked, which may honestly be
+   * nothing. What the learner gets back is a screen with buttons on it.
+   */
+  const recoverLostLeg = useCallback(() => {
+    setSession((s) =>
+      s && s.phase === "drilling"
+        ? { ...s, phase: "round-complete", lastActiveAt: Date.now() }
+        : s,
+    );
+  }, []);
+
   const continueSession = useCallback(() => {
     if (!session) return;
     router.push(session.phase === "drilling" && active ? "/quiz" : "/session");
@@ -1215,6 +1250,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       finishSession,
       discardSession,
       clearAllRuns,
+      recoverLostLeg,
       continueSession,
       runs,
       continueRun,
@@ -1243,6 +1279,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       finishSession,
       discardSession,
       clearAllRuns,
+      recoverLostLeg,
       continueSession,
       runs,
       continueRun,
