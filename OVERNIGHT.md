@@ -911,3 +911,84 @@ swallowing clicks, and `key: "Return"` not reaching the page where `"Enter"` doe
 **Anyone repeating this should not trust the tool-reported URL.** That is a real
 risk to the credibility of parallel browser testing, and it nearly invalidated a
 whole report.
+
+---
+
+# THE ACCURACY BUG — actually fixed · merged `d4ef7e9`
+
+**1223 unit tests, 70/70 e2e, tsc clean.**
+
+## Both hypotheses were wrong, including mine
+
+I told you it was a phantom showing created at round start. The regression auditor
+said it was a slow-but-correct answer being deducted. **Neither. The agent refuted
+both in code rather than accepting the brief**, and I verified the refutation
+myself: `firstTryCredit(ok, tries, hinted)` is `ok && tries === 0 && !hinted` —
+slowness is not a term in it, and no numerator anywhere reads `st.slow`.
+
+## The real cause
+
+**`seen` was incremented when a card went ON SCREEN. Every numerator is incremented
+when a showing RESOLVES.** Two moments, so two units in one ratio — the same shape
+as the original task 03 bug, one level down.
+
+`session-accuracy.ts` did guard the in-flight card with `firstTryCorrect === null`,
+but **that guard is per-FACT while the thing in flight is a SHOWING**, so it only
+ever covered a fact's first appearance. Once a card came round again the fact
+already had a non-null flag, and its unanswered showing was pooled against a
+numerator that could not yet include it.
+
+Five facts answered perfectly with a repeat on screen as card six is 5/6 = 83%,
+then 86%, 88% — the beginner's series exactly. The auditor's
+`10 answered · 91% · 🔥 10` is **10/11**, the eleventh being the card on screen,
+and their "HUD says 10, summary says 11" is the same off-by-one from the other
+side. Not two bugs; one, corroborated twice.
+
+**Which of tonight's merges introduced it: none.** `st.seen++` at show time dates
+to the original UI wave (`f9ffe32`). Task 03 made it visible by putting `seen` in
+the denominator; task 18 propagated it to the summary. Both were correct changes
+that exposed an older fault.
+
+**No semantics decision is needed after all** — the label and the measurement do
+agree. The "what should % first try mean" question I raised is withdrawn.
+
+## The part of this I want you to see
+
+The agent's first draft of the headline test **passed on the broken code**, because
+a test driver that shows-and-immediately-resolves keeps the two counters in step.
+It noticed, and rewrote the test to leave a card on screen — the learner's actual
+vantage point — at which point it reproduced `100, 100, 100, 100, 83, 86, 88`
+exactly.
+
+**A test that had shipped in that first form would have been decoration.** That is
+the third time tonight a test turned out to be asserting or accommodating a bug.
+
+I mutation-checked it: removing the resolution-time increment fails all 7.
+
+## Bug B — multiple choice now shows the answer
+
+**Rendered all along, then destroyed.** The reveal renders and the correct tile
+even lights green; `MC_MISS_ADVANCE_MS = 1600` killed it 1.6 seconds later.
+
+Removed the auto-advance for misses rather than enlarging it. Its justification was
+that a board card has no keystroke to press Enter with — and the honest answer to
+"a mouse user has nothing to click" is **a button, not a deadline**. Misses now
+wait for Enter or a Continue button in every mode; correct answers still advance at
+650ms.
+
+**The e2e suite had a `REVEAL_WINDOW = 1400ms` budget written around the bug** — the
+test was accommodating it. Replaced with a spec that waits 2600ms, asserts the
+reveal is still there, and dismisses it by click.
+
+## Two things it declined to "fix", correctly
+
+- **`Practice` / `PRACTISE` is not a bug and I mis-scoped it.** The codebase is
+  deliberately British English (`colour`, `behaviour`), where *practice* is the noun
+  and *practise* the verb. "Practice" as a heading and "What to practise" as a verb
+  are both right. Fixing it would have broken a consistent convention across 24
+  occurrences.
+- **The duplicate conjugation table is a product call, not a bug.** They are two
+  different components from `bdd840a` two days ago, and neither is a superset: the
+  fan owns the stem/tail colour split and the anti-chain caption, the table owns
+  per-row audio, and the fan is also mounted in the lesson track. Deleting either
+  loses a feature. **Your call.**

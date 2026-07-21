@@ -1,6 +1,12 @@
 # P0 · The accuracy pill punishes you for practising
 
-**Status: done** — merged to main as `0d8c36b`
+**Status: done** — merged `0d8c36b`, completed by `d4ef7e9`
+
+**REOPENED AND RE-FIXED OVERNIGHT.** The arithmetic fix was correct but the pill
+still never read 100% on a clean run, because `seen` was counted when a card went
+on screen while every numerator counts at resolution. The in-flight guard was
+per-FACT while the thing in flight is a SHOWING, so it only covered a fact's first
+appearance. Fixed in `src/lib/drill-stats.ts`; older than all of tonight's work.
 
 ## Outcome
 
