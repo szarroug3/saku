@@ -54,6 +54,7 @@ import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
 import { detectPlatform, type Platform } from "@/lib/platform";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { useQuizSession } from "@/lib/quiz-session";
 import { jaVoices, onVoicesChanged, speak } from "@/lib/speech";
 
 /** Kana shown on every font chip in place of the font's name. あ and き are
@@ -167,6 +168,7 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
  */
 function ResetProgress() {
   const confirm = useConfirm();
+  const { clearAllRuns } = useQuizSession();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -203,6 +205,14 @@ function ResetProgress() {
       clearAllDismissedHints(
         typeof window === "undefined" ? null : window.localStorage,
       );
+      // AND THE RUNS IN PROGRESS. This card promises the app "starts over from
+      // its first lesson, as if you had just installed it", and until now it
+      // wiped the knowledge base on the server and left every session, quiz and
+      // parked run sitting in localStorage — so a learner whose session had
+      // stopped responding pressed the app's own nuclear option and watched the
+      // broken session survive it. A fresh install has nothing in progress, so
+      // neither does this.
+      clearAllRuns();
       setDone(true);
     } catch {
       // Same failure surface the sessions list uses for /api/delete.

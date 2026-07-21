@@ -41,6 +41,7 @@ export default function SessionPage() {
     startSession,
     startFirstRound,
     resumeRound,
+    recoverLostLeg,
   } = useQuizSession();
   const { history } = useHistory();
 
@@ -78,9 +79,27 @@ export default function SessionPage() {
 
   // Drilling belongs to /quiz. This is the other half of that same guard:
   // landing here mid-round sends you back to the round.
+  //
+  // ONLY WHEN THERE IS A ROUND TO GO BACK TO. Sending you to /quiz with no leg
+  // is not a redirect, it is half of a deadlock: /quiz reads "no leg" and sends
+  // you straight back here, this guard sends you there again, and the two
+  // replace between each other about 350 times a second. The router never
+  // settles, so nothing paints and no control can be clicked — the session
+  // becomes unrecoverable from inside the app rather than merely broken, which
+  // is what took Discard, End quiz and Clear knowledge base down with it.
+  //
+  // A phase of "drilling" with no leg is a lie about the state, so it is the
+  // state that gets corrected rather than the guard that gets loosened; see
+  // recoverLostLeg, which puts the session back at its fork with its answers
+  // intact and, above all, with buttons on the screen.
   useEffect(() => {
-    if (session?.phase === "drilling") router.replace("/quiz");
-  }, [session?.phase, router]);
+    if (session?.phase !== "drilling") return;
+    if (active) {
+      router.replace("/quiz");
+      return;
+    }
+    if (restored) recoverLostLeg();
+  }, [session?.phase, active, restored, recoverLostLeg, router]);
 
   if (!session || session.phase === "drilling") return null;
 
