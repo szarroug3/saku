@@ -101,7 +101,10 @@ test("a new learner can take the first lesson through to its quiz", async ({
   await expect(page.locator("body")).toContainText("round 1 of 3 · done");
   await expect(page.locator("body")).toContainText("5 questions");
   await expect(page.locator("body")).toContainText("5 right first try");
-  await expect(page.locator("body")).toContainText("0 missed");
+  // The third number is `total - firstTry`, in the same unit (showings) as the
+  // other two, so the line adds up. It used to be a third independent count and
+  // read "5 questions · 4 right first try · 2 missed".
+  await expect(page.locator("body")).toContainText("0 needed another look");
 });
 
 /**

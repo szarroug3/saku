@@ -37,7 +37,7 @@ import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
 import type { FactId } from "@/types";
 
-import { groupByStanding, initialPicked } from "./retry-grouping";
+import { groupByStanding, initialPicked, retryHint } from "./retry-grouping";
 
 /** A missed fact as a chip — the glyph, and nothing else. Not the answer:
  * you are about to be asked these again, and printing "し = shi" here would
@@ -59,8 +59,21 @@ export function RoundComplete({
   // header counts describe the round you PLAYED (`answered` / `missed`); the
   // picker offers the WHOLE drill (`selection`), so ending a round early still
   // lets you retry anything that was in it, not just the ones you reached.
-  const { selection, answered, missed, total, firstTry } =
-    roundCompleteView(session);
+  //
+  // `missed` stays HISTORICAL — you did miss these, and no later leg gets to
+  // edit that. `recovered` and `outstanding` split it by what is still true
+  // now, and only `outstanding` reaches the picker. That split is the whole of
+  // the "my perfect retry left no trace" fix: the round keeps its record, the
+  // OFFER stops re-offering work you have already done.
+  const {
+    selection,
+    answered,
+    recovered,
+    outstanding,
+    total,
+    firstTry,
+    needAnother,
+  } = roundCompleteView(session);
 
   // Standing is a query over history, so it is read here — the same history,
   // claims and metric the Library and Progress screens paint from, so a
@@ -80,11 +93,14 @@ export function RoundComplete({
   // still: no glyph here is paired with its answer.
   const wasAnswered = new Set(answered);
 
-  // The misses open pre-ticked. So the default "Retry N" IS "retry the misses"
-  // — the same one tap the old dedicated button gave, now folded into the
-  // picker instead of sitting beside it as a second, redundant control.
+  // The OUTSTANDING misses open pre-ticked. So the default "Retry N" IS "retry
+  // what's still open" — the same one tap the old dedicated button gave, now
+  // folded into the picker instead of sitting beside it as a second, redundant
+  // control. Pre-ticking `missed` was the bug: clear both misses on a retry and
+  // the screen came back offering to retry them again, which is why the tester
+  // could not tell a perfect retry from no retry at all.
   const [picked, setPicked] = useState<Record<string, boolean>>(() =>
-    initialPicked(missed),
+    initialPicked(outstanding),
   );
 
   const pickedList = selection.filter((f) => picked[f]);
@@ -95,9 +111,13 @@ export function RoundComplete({
         <h1 className="text-[22px] font-light tracking-[-0.3px]">
           Round {session.round}
         </h1>
+        {/* Three numbers in ONE unit (showings), and the third is the first
+            two subtracted, so the line adds up by construction. It used to be
+            three different questions in one sentence and read "5 questions · 4
+            right first try · 2 missed". See roundCompleteView. */}
         <p className="mb-3 mt-0.5 text-[13px] text-text-muted">
           {total} question{total === 1 ? "" : "s"} · {firstTry} right first try ·{" "}
-          {missed.length} missed
+          {needAnother} needed another look
         </p>
 
         {/* One bar, two facts. No percentage: you can count the chips. */}
@@ -105,26 +125,28 @@ export function RoundComplete({
           {firstTry > 0 ? (
             <span className="block h-full bg-success" style={{ flex: firstTry }} />
           ) : null}
-          {total - firstTry > 0 ? (
+          {needAnother > 0 ? (
             <span
               className="block h-full bg-danger"
-              style={{ flex: total - firstTry }}
+              style={{ flex: needAnother }}
             />
           ) : null}
         </div>
+
+        {/* What the retry earned, named. Glyphs only, same rule as the chips:
+            you may be about to be asked these again. */}
+        {recovered.length ? (
+          <p className="mb-3.5 text-[13px] text-success">
+            Back on the retry: {recovered.map(factGlyph).join(" ")}
+          </p>
+        ) : null}
 
         <div className="border-t border-border pt-3">
           <p className="text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
             Pick what to retry
           </p>
           <p className="mb-3 mt-0.5">
-            <Hint>
-              {missed.length
-                ? `Your ${missed.length} miss${missed.length === 1 ? "" : "es"} ${
-                    missed.length === 1 ? "is" : "are"
-                  } picked. Add or drop any character.`
-                : "Nothing missed. Pick anything you want another look at."}
-            </Hint>
+            <Hint>{retryHint(outstanding.length, recovered.length)}</Hint>
           </p>
 
           <div className="flex flex-col gap-3">
