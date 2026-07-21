@@ -1299,6 +1299,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "へや", reading: "heya", gloss: "room", hitIndex: 0 },
   },
 
+  ヘ: {
+    glyph: "ヘ",
+    romaji: "he",
+    sound: "heh",
+    object: "Mount St. Helens",
+    analogy: [
+      { text: "Say “" },
+      { text: "heh", accent: true },
+      { text: "” as in Mount St. " },
+      { text: "He", accent: true },
+      { text: "lens." },
+    ],
+    mnemonic: [
+      { text: "Mount St. " },
+      { text: "He", accent: true },
+      { text: "lens rises through the clouds, the same peak you met in へ." },
+    ],
+    example: { word: "ヘア", reading: "hea", gloss: "hair", hitIndex: 0 },
+  },
+
   ほ: {
     glyph: "ほ",
     romaji: "ho",
@@ -1401,6 +1421,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "め", reading: "me", gloss: "eye", hitIndex: 0 },
   },
 
+  メ: {
+    glyph: "メ",
+    romaji: "me",
+    sound: "meh",
+    object: "medal",
+    analogy: [
+      { text: "Say “" },
+      { text: "meh", accent: true },
+      { text: "” as in " },
+      { text: "me", accent: true },
+      { text: "dal." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "me", accent: true },
+      { text: "dal hangs from two crossed ribbons." },
+    ],
+    example: { word: "メモ", reading: "memo", gloss: "memo", hitIndex: 0 },
+  },
+
   も: {
     glyph: "も",
     romaji: "mo",
@@ -1442,6 +1482,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "cht, mast up and sail full, swaying in the wind." },
     ],
     example: { word: "やま", reading: "yama", gloss: "mountain", hitIndex: 0 },
+  },
+
+  ヤ: {
+    glyph: "ヤ",
+    romaji: "ya",
+    sound: "ya",
+    object: "yacht",
+    analogy: [
+      { text: "Say " },
+      { text: "ya", accent: true },
+      { text: " as in " },
+      { text: "ya", accent: true },
+      { text: "cht." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "ya", accent: true },
+      { text: "cht leans into the wind, its mast, boom, and hull tracing ヤ." },
+    ],
+    example: { word: "ヤギ", reading: "yagi", gloss: "goat", hitIndex: 0 },
   },
 
   ゆ: {
@@ -1619,6 +1679,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "nd waving around swishing magical spells in the air." },
     ],
     example: { word: "わたし", reading: "watashi", gloss: "I / me", hitIndex: 0 },
+  },
+
+  ワ: {
+    glyph: "ワ",
+    romaji: "wa",
+    sound: "wa",
+    object: "what?",
+    analogy: [
+      { text: "Say “" },
+      { text: "wa", accent: true },
+      { text: "” like the start of “" },
+      { text: "wha", accent: true },
+      { text: "t?”" },
+    ],
+    mnemonic: [
+      { text: "Someone stares at a giant question mark, throws up their hands, and asks, “" },
+      { text: "Wha", accent: true },
+      { text: "t?”" },
+    ],
+    example: { word: "ワイン", reading: "wain", gloss: "wine", hitIndex: 0 },
   },
 
   を: {
