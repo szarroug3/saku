@@ -112,6 +112,20 @@ describe("the seven card kinds", () => {
 
 describe("no card can be answered by typing its own prompt", () => {
   /**
+   * Whether the subject refuses a typed answer in THIS direction.
+   *
+   * `mcOnly` is a plain boolean on this branch. fix/kana-en2jp-mc widens it to
+   * `boolean | Direction` so a subject can refuse typing in one direction only,
+   * and its own note says to never truthiness-test the result — a Direction is
+   * truthy, so `if (qt.mcOnly)` would silently drop every direction of every
+   * such subject out of the set below and quietly shrink what this file
+   * asserts. Written as an explicit comparison, it is right under both shapes.
+   */
+  function mcOnlyHere(mcOnly: unknown, dir: Direction): boolean {
+    return mcOnly === true || mcOnly === dir;
+  }
+
+  /**
    * Every (fact, direction) that the drill would show as a TYPED box, paired
    * with whether that box converts.
    *
@@ -124,8 +138,8 @@ describe("no card can be answered by typing its own prompt", () => {
     const out: { fact: FactId; dir: Direction; converts: boolean }[] = [];
     for (const fact of ALL_FACTS) {
       const qt = questionsFor(fact);
-      if (qt.mcOnly) continue;
       for (const dir of DIRS) {
+        if (mcOnlyHere(qt.mcOnly, dir)) continue;
         if (qt.fixedDir && qt.fixedDir !== dir) continue;
         if (dir === "en2jp" && !en2jpTypeable(fact)) continue;
         out.push({ fact, dir, converts: answerIsJapanese(fact, dir) });
