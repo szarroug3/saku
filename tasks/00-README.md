@@ -51,8 +51,8 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 
 | # | Status | Task | Impact | Effort | Note |
 |---|---|---|---|---|---|
-| 21 | **done (copy draft)** | Jargon never explained **?** | medium-high | small | Merged `348b671`. Track-open intro card, reused phase-intros. Copy is DRAFT. |
-| 09 | **ready to build** | Particle reading rule **?** | medium-high | small | Answered: は/へ teach the rule; を's card is just WRONG and needs changing. |
+| 21 | **done** | Jargon never explained **?** | medium-high | small | Merged `348b671`. Track-open intro card, reused phase-intros. Copy is DRAFT. |
+| 09 | **answered, ready to build** | Particle reading rule **?** | medium-high | small | Answered: は/へ teach the rule; を's card is just WRONG and needs changing. |
 | 18 | **done** | Retry leaves no trace | medium | small | Merged `a53a94e`. Summary sums correctly; retry visible. |
 | 20 | unreviewed | Data quality **?** | medium | medium | Several sub-items, some need a sweep first. |
 | 05 | **done** | 〜てある any verb | medium | medium-large | Merged `ea522c8`. A test had been asserting the bug. |

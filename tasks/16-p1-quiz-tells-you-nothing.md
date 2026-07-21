@@ -1,6 +1,6 @@
 # P1 · The quiz does not say what to type, name a confusion, or show how long it is
 
-**Status: not started** — reviewed by Sam, scope corrected below
+**Status: done** — merged `36e421f`. Per-kind answer guidance, a confusion note at the reveal, and a prominent x/y (or "endless").
 
 Three gaps from the beginner probe. **Sam's review cut one of them and reframed
 another**, because the probe reported absences that are really settings and

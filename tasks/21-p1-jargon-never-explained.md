@@ -1,6 +1,6 @@
 # P1 · Words the app uses without ever teaching them
 
-**Status: unreviewed**
+**Status: done — COPY IS DRAFT** — merged `348b671`. Track-open intro cards built on phase-intros. The sentences are placeholders for Sam's voice pass.
 
 ## Open questions
 
