@@ -839,3 +839,75 @@ learned this. Everything numeric reads like the engine describing itself:
 Also: a missing space in "if you need to.Your finished rounds", `Practice` and
 `PRACTISE` on one page, and **the full conjugation table rendering twice** on
 `/library/word/食べる` (verified in the DOM, 7,900px tall).
+
+---
+
+# AUDIT WAVE 2 — regression prober: 10 of 11 fixes confirmed in the browser
+
+Full report in `AUDIT-2-regression.md`. This tester was told explicitly that
+passing tests are not the claim under examination, and to confirm everything by
+driving the app.
+
+**Confirmed working: 1, 2, 4, 5, 6, 7, 8, 9, 10, 11.** The headline fix is solid —
+retries exhausted on all four subjects, every reveal showed the answer:
+`ke = ケ`, `winter = 冬`, `ぜん read this way in 修繕 = 繕`,
+`breaking off a relationship in japanese = 絶交`.
+
+**Corpus filtering starved nothing**, checked deliberately: the six audited
+patterns retain 63–257 examples. The two patterns at zero (`ta-ato-de`, `te-aru`)
+were already zero beforehand, and they degrade cleanly. Console and network clean.
+
+## Still broken: #3, and this auditor found the real mechanism
+
+I had this wrong. I told you the beginner's 5/6 = 83% was a **phantom showing
+created at round start**. It is not.
+
+> Quiz HUD, verbatim, on a clean run: `10 answered   91% first try   🔥 10`
+
+A streak of 10 means ten consecutive correct. The Results screen for that same run
+then showed `91%` beside **"Clean run, nothing missed"** and
+**"5 / 5 first try · 1 slow but right"**. Three mutually contradictory numbers on
+one screen.
+
+**The mechanism: a slow-but-correct answer is deducted from a counter labelled
+"% first try".** A slow answer *is* a first-try answer. Nothing was missed. The
+percentage drops anyway.
+
+So the specific regression task 03 targeted IS fixed — repeating a fact correctly
+no longer halves the pill; it climbed 83→86→88→90→91% instead of falling
+100→50→33. **But the pill still never reads 100% on a clean run**, which is what
+that card's "done when" actually promised.
+
+I have redirected the fix agent off my wrong hypothesis and onto this one.
+
+### The decision underneath it is yours
+
+What should **"% first try"** mean?
+
+- **Answered correctly on the first attempt** — a slow answer still counts. The
+  label is then honest and the streak, the pill and "nothing missed" agree.
+- **First attempt, unaided, inside the timer** — a slow answer does not count. Then
+  the label is wrong, not the arithmetic, and it needs different words.
+
+Both are defensible and it is a question about what the app values. **I told the
+agent not to pick one.** Task 03's agent had deliberately routed the increment
+through `firstTryCredit` so the hint rule lived in one place; that decision is
+where the two meanings got welded together.
+
+**Related, possibly the same off-by-one:** the HUD said `10 answered` for the same
+leg the round summary calls `11 questions`. The summary sums correctly (8+3=11) but
+counts a question the HUD never acknowledged.
+
+## A methodology warning worth keeping
+
+Running four audit servers at once, **the shared browser pane silently switched from
+one agent's dev server to another's while the tool still displayed the original
+URL.** That auditor caught it through unexpected localStorage and re-verified every
+finding with an in-page `location.href` assertion.
+
+Two more traps it documented: screenshot/viewport coordinate mismatch silently
+swallowing clicks, and `key: "Return"` not reaching the page where `"Enter"` does.
+
+**Anyone repeating this should not trust the tool-reported URL.** That is a real
+risk to the credibility of parallel browser testing, and it nearly invalidated a
+whole report.
