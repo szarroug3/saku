@@ -1,91 +1,78 @@
-# The four skills — the strategic finding, needs a decision not a fix
+# The four skills — SCOPE RULED
 
-**Status: needs review**
+**Status: ruled by Sam 21 July — narrowed. Listening is now the only build.**
 
-## Open questions
+## Sam's ruling, verbatim in effect
 
-- **This is a scope decision, not a fix.** Narrow the claim to reading and recognition, add listening, or add speaking? Nothing gets built until you rule.
-- If nothing else changes, option 1 (narrow the claim) is cheap and honest, and the Resources page already does this for other gaps.
+- **Speaking: OUT.** Not "later", not "a smaller version" — out. The app teaches
+  you how to pronounce things; it does not test your pronunciation. The
+  pronunciation notes stay exactly as they are and remain good.
+- **Writing: OUT as a test.** Same shape. Stroke order is taught and stays taught.
+  Nothing tests whether your handwriting matches.
+- **Hearing: IN**, as new quiz types. Hear it, type what you heard in romaji; and
+  hear it, give the definition.
+- **Optional everywhere.** A setup option, never a requirement, never a gate.
+- Otherwise the scope narrows.
 
-Sam's brief for the audit set the goal as **fluency in reading, hearing, speaking
-and writing**. Both the beginner probe and the Japanese auditor answered that
-question independently, and they agreed.
+So the honest claim becomes: **a reading, recognition and listening trainer that
+teaches pronunciation without grading it.** That is defensible and it is close to
+what the app already is. The Resources page continues to point elsewhere for the
+rest.
 
-> **No. This app alone could not make me fluent, and it isn't close.**
+## Sam asked: does this work for sentences?
 
-This is not a bug list. It is a scope decision, and it is the largest open
-question in the project.
+**Your instinct is right, and for three reasons — words yes, sentences no.**
 
-## Where each skill actually stands
+1. **Grading would break the app's own rule.** "Never mark correct Japanese wrong"
+   is the standing constraint. Romaji transcription of a sentence is ambiguous in
+   ways a single word is not: は as *wa*, へ as *e*, long vowels (ō / ou / oo),
+   word spacing that Japanese does not have, and っ. Every one of those is a way to
+   be right and be marked wrong.
+2. **We do not have sentence audio.** The corpus is Tatoeba TEXT. A sentence read
+   by text to speech gets the pitch accent and the phrasing wrong, and wrong
+   prosody taught as a listening model is worse than no listening exercise.
+3. **It is the wrong level.** Sentence dictation is an N3-ish exercise. Word-level
+   listening is exactly N5.
 
-### Reading — plausibly, up to a point
-The strongest of the four. 214 kana, 2,136 jōyō kanji with 3,496 reading facts,
-12,553 words, 81 grammar patterns. The Japanese auditor put the ceiling at
-**roughly JLPT N4, edging N3 on kanji and vocabulary breadth**.
+**A sentence-level variant that WOULD work later**, if you want it: hear a
+sentence, choose its meaning from options. That is recognition, not transcription,
+so none of the three problems apply. Not proposed now.
 
-Could read: graded readers, manga with furigana, menus, signage, train
-announcements, simple email. Unusually, could *decode* almost any kanji met, since
-the set is full jōyō rather than an N5/N4 subset.
+## BLOCKER — fix this before building any of it
 
-Could not read: newspapers, novels, business Japanese. See task 12 for the grammar
-and keigo gaps that cap this.
+**All audio is OS text to speech, and "Auto" selects macOS's novelty voice `Eddy`**
+(alphabetically first among `ja-JP`) over Kyoko or Otoya. The beginner auditor was
+the first person in either audit round to actually listen.
 
-### Hearing — no
-Operating-system text to speech, one character or one word at a time. **No
-connected speech, no natural audio, no listening exercises, no dictation.**
+Today that is embarrassing. **The moment listening is a graded quiz type it becomes
+harmful** — the app would be teaching pronunciation from a joke voice and then
+testing you on it.
 
-The beginner probe: *"You could learn roughly what a syllable sounds like. You
-could not learn to understand spoken Japanese."*
+Fix the voice selection first. It is cheap, it is independent of everything else
+here, and it should land before a single listening question ships.
 
-It also could not tell whether the audio was working: no waveform, no visual
-confirmation, and on a machine without a Japanese voice installed there is no
-signal at all. **Nobody in this audit round could hear a clip**, so audio quality
-is entirely unverified. That matters for を specifically (see `TEST-FINDINGS.md`).
+## The build, narrowed
 
-### Speaking — nothing at all
-**No microphone, no recording, no pronunciation feedback, no prompt to say
-anything aloud.** The single largest gap.
+Two new question types over EXISTING word facts. No new content authoring:
 
-Sharpest detail: the pronunciation notes are genuinely good coaching — *"Japanese
-う is flatter than English 'oo'. Don't purse your lips"*, *"No glide. It's 'eh,'
-not 'ay.'"* — and there is **no way to check yourself against any of it**. The app
-tells you how to make the sound and then never listens.
+| type | prompt | answer | grading |
+|---|---|---|---|
+| hear → romaji | audio only | romaji of the word | the existing romaji path, which already forgives spellings |
+| hear → meaning | audio only | the English gloss | same as the existing meaning check |
 
-The Resources page lists eight other tools and **suggests nothing for speaking or
-listening.**
+Both are word-only. Both are opt-in in setup. Neither gates anything.
 
-### Writing — taught, then discouraged, with no feedback
-Stroke order sits behind a collapsed panel headed *"We don't recommend learning to
-write early."* Expanded, it is good: numbered strokes, real animation, now covering
-all 2,136 kanji.
+**Reuses rather than invents:** the audio already exists on every word, the romaji
+grading path was fixed in task 02, and `mcOnly` (widened in task 19) already
+supports forcing a direction to multiple choice if typing proves too hard.
 
-But there is **no way to write anything and get feedback** — no canvas, no
-tracing, no handwriting recognition. You can watch the correct stroke order and
-never find out whether yours matches.
-
-## The decision, and it is Sam's
-
-Three honest positions:
-
-1. **Narrow the claim.** Be explicit that this is a reading-and-recognition
-   trainer, and point elsewhere for the rest. The Resources page already does this
-   for grammar and kanji, and the beginner probe called that page *"the most
-   trustworthy thing in the product"*. Cheapest, and defensible.
-2. **Add listening.** The most tractable of the three gaps, because the corpus and
-   the audio pipeline both already exist. Dictation from a sentence is a real
-   exercise and it is gradeable, which speaking is not.
-3. **Add speaking.** Hardest. Needs microphone capture and pronunciation scoring,
-   and the app's own rule is that it must never mark correct Japanese wrong — a
-   standard that is very hard to meet on pronunciation.
-
-**If nothing else changes, do 1.** The gap between what the goal implies and what
-the app does is currently invisible to a learner until they have spent weeks in it.
-
-## Related
-
-Task 11 (sentence-level production) is the reading-side version of this same
-problem: recognition ceiling well above composition ceiling.
+**One real design question left:** with audio as the prompt there is no glyph on
+screen, so the reveal has nothing to show but the answer. Task 01's `revealFor`
+handles that fine, but check the card does not look empty while the audio plays.
 
 ## Done when
 
-Sam has ruled on scope. Nothing to build until then.
+- The default voice is a real Japanese voice, not `Eddy`.
+- Two listening question types exist for words, off by default.
+- The app's stated scope says reading, recognition and listening, and does not
+  imply it will teach you to speak.

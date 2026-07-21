@@ -35,7 +35,7 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 
 | # | Status | Task | Impact | Effort | Note |
 |---|---|---|---|---|---|
-| 07 | **approved** | Copy changes | high | **trivial** | Approved. 24 items ready to apply; stroke-order paras done `3c83895`. |
+| 07 | **mostly done** | Copy changes | high | **trivial** | 22 of 24 merged `e784135`. 2 stopped: they need Sam's wording. |
 | 02 | **done** | Romaji graded wrong | high | **trivial** | Merged `9467e10`. Romaji graded; conversion keyed on answer language. |
 | 19 | **done** | en2jp kana answers itself | high | **trivial** | Merged `379e519`. Now a six-option board. **Same root as 01.** |
 | 17 | **done** | Shipped-data problems | medium-high | **trivial** | Merged `ffbc40d`. 0 dashes; vulgar words now outside the first 120. |
@@ -62,8 +62,8 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 
 | # | Status | Task | Impact | Effort | Note |
 |---|---|---|---|---|---|
-| 22 | **needs review** | The four skills **?** | **strategic** | free to decide | Deciding costs nothing; acting is the largest thing here. |
-| 10 | **needs review** | Counters and numbers **?** | medium-high | large | New content plus a placement decision. |
+| 22 | **ruled** | The four skills | **strategic** | free to decide | Speaking/writing OUT. Listening IN, words only, opt-in. Fix the voice first. |
+| 10 | **needs review** | Numbers and counters **?** | medium-high | large | Proposal written. 〜つ and 〜人 already in data; 〜本 needs authoring. |
 | 11 | **needs review** | Sentence-level production **?** | high | large | **Plan only. Do not build from the file.** |
 | 12 | **needs review** | Grammar coverage, keigo **?** | high | large | Authoring recipes, not importing. |
 

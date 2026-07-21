@@ -1,6 +1,21 @@
 # Copy changes — approved, not yet applied
 
-**Status: approved — ready to apply**
+**Status: mostly done** — 22 of 24 applied, merged `e784135`
+
+**Bookkeeping note:** the README row said "24 ready to apply" until 21 July because
+I updated it before the pass ran and never corrected it afterwards. Sam reasonably
+read the card as unstarted. It was not.
+
+## Still outstanding — all three need Sam's wording
+
+- **E8 bullets 1 and 2** — `phase-intros.ts:290`/`:293` (straw-man duplicate) and
+  `:569` ("not a separate thing tacked on"). No rewrite was ever proposed.
+- **E3's parenthetical** — *(Two of them, ぢ and づ, sound the same as じ and ず.)*
+  sat outside the quotation marks, so it was read as an editorial note rather than
+  copy. If it was meant as copy it still needs adding.
+- **C3's lead** — the paragraph landed; the lead above it still asserted the claim
+  C3 removes. **This one was since fixed by deletion** in `bc5104d`, along with the
+  `why.ts` twin. Re-check whether you want anything in its place.
 
 ## Approval
 
