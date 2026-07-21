@@ -131,6 +131,18 @@ test("jp2en typed: a kana reading is accepted in romaji", async ({
  * live-converts romaji to kana in this box, so both spellings must land — and
  * the kana leg must work for someone typing with a real IME, who never sends
  * romaji at all.
+ *
+ * The vehicle is the WORD これ, not the character あ. These three cases used to
+ * ride on `kana:あ/reading`, and that stopped being an honest home for them: a
+ * kana CHARACTER asked en2jp is prompted with its own romaji ("a"), so the
+ * romaji case below was literally "type the prompt back and be marked right",
+ * which is the bug this direction was fixed for. Kana characters are no longer
+ * typed en2jp at all (see kana-en2jp-mc.spec.ts).
+ *
+ * これ keeps every claim intact and makes the romaji one true instead of
+ * circular: it is prompted "this", it is answered これ, and "kore" is the
+ * IME-less spelling of the ANSWER rather than a copy of the question. That is
+ * exactly the forgiveness checkProduces exists to give, tested where it is real.
  */
 const PRODUCE_CFG = {
   ...STEADY_CFG,
@@ -138,13 +150,15 @@ const PRODUCE_CFG = {
   ...style("en2jp", "typed"),
 };
 
+const PRODUCE_FACT = "word:これ/meaning";
+
 test("en2jp typed: the kana typed directly is accepted", async ({
   page,
   seed,
 }) => {
-  await seed({ seen: ["kana:あ/reading"], cfg: PRODUCE_CFG });
+  await seed({ seen: [PRODUCE_FACT], cfg: PRODUCE_CFG });
   await startPractice(page);
-  await typeAnswer(page, "あ");
+  await typeAnswer(page, "これ");
   await expectAccepted(page);
 });
 
@@ -152,16 +166,16 @@ test("en2jp typed: the same answer typed in romaji is accepted", async ({
   page,
   seed,
 }) => {
-  await seed({ seen: ["kana:あ/reading"], cfg: PRODUCE_CFG });
+  await seed({ seen: [PRODUCE_FACT], cfg: PRODUCE_CFG });
   await startPractice(page);
-  await typeAnswer(page, "a");
+  await typeAnswer(page, "kore");
   await expectAccepted(page);
 });
 
 test("en2jp typed: a wrong kana is rejected", async ({ page, seed }) => {
-  await seed({ seen: ["kana:あ/reading"], cfg: PRODUCE_CFG });
+  await seed({ seen: [PRODUCE_FACT], cfg: PRODUCE_CFG });
   await startPractice(page);
-  await typeAnswer(page, "ぬ");
+  await typeAnswer(page, "それ");
   await expectRejected(page);
 });
 
