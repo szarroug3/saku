@@ -61,12 +61,6 @@
 // carries no accent span at all — a shape word is never a consolation highlight.
 // mnemonics.test.ts holds the line: every analogy has at least one accent span
 // whose text contains the entry's own accented sound token.
-//
-// APPROVED vs DRAFT
-// =================
-// あ–そ (the vowels, K row, S row) are owner-approved. た–ん carry `draft: true`
-// — same voice, first-draft hooks that lean harder on the sound where the shape
-// is busy. The 🔊 clip in-app is always the source of truth for the exact sound.
 
 /** The glyph a mnemonic teaches. A string, so kanji slot in later unchanged. */
 export type MnemonicKey = string;
@@ -173,22 +167,14 @@ export interface Mnemonic {
    * Rendered muted; omitted when there's nothing to caveat.
    */
   approximate?: string;
-  /**
-   * First-draft content flag. `true` on た–ん, whose hooks are first-draft and
-   * lean harder on the sound where the shape is busy. Absent (approved) on
-   * あ–そ. Purely advisory metadata; the card renders draft and approved rows
-   * identically.
-   */
-  draft?: boolean;
 }
 
 /**
  * The table. Keyed by glyph — appending an entry is the whole of authoring a
- * mnemonic. All 46 base hiragana. あ–そ are owner-approved; た–ん carry
- * `draft: true`. No entry carries an `image` — `getMnemonic` derives the
- * candidate /mnemonics/<script>/<romaji>.webp path, and the renderers fall back
- * to the glyph when that file is absent, so the character shows until one is
- * drawn.
+ * mnemonic. All 46 base hiragana. No entry carries an `image` — `getMnemonic`
+ * derives the candidate /mnemonics/<script>/<romaji>.webp path, and the
+ * renderers fall back to the glyph when that file is absent, so the character
+ * shows until one is drawn.
  */
 export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
   // ---- Vowels — あ い う え お (APPROVED) --------------------------------
@@ -854,7 +840,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "-da!”" },
     ],
     example: { word: "たまご", reading: "tamago", gloss: "egg", hitIndex: 0 },
-    draft: true,
   },
 
   ち: {
@@ -873,7 +858,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "se with a wedge cut out: ち." },
     ],
     example: { word: "ちず", reading: "chizu", gloss: "map", hitIndex: 0 },
-    draft: true,
   },
 
   チ: {
@@ -917,7 +901,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "つき", reading: "tsuki", gloss: "moon", hitIndex: 0 },
     approximate: "One sound: t and s pressed together, not “t” then “sue.”",
-    draft: true,
   },
 
   ツ: {
@@ -959,7 +942,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "lephone pole with one crossbar hums in the wind." },
     ],
     example: { word: "てがみ", reading: "tegami", gloss: "letter", hitIndex: 0 },
-    draft: true,
   },
 
   テ: {
@@ -1000,7 +982,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: " one long foot, one sharp splinter crossing it." },
     ],
     example: { word: "とり", reading: "tori", gloss: "bird", hitIndex: 0 },
-    draft: true,
   },
 
   ト: {
@@ -1048,7 +1029,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: ", I can’t eat anymore” but then you do anyway." },
     ],
     example: { word: "なつ", reading: "natsu", gloss: "summer", hitIndex: 0 },
-    draft: true,
   },
 
   ナ: {
@@ -1091,7 +1071,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "t stitches sewn in beside it." },
     ],
     example: { word: "にく", reading: "niku", gloss: "meat", hitIndex: 0 },
-    draft: true,
   },
 
   ニ: {
@@ -1134,7 +1113,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "dles up off the bowl, one big looping slurp." },
     ],
     example: { word: "ぬの", reading: "nuno", gloss: "cloth", hitIndex: 0 },
-    draft: true,
   },
 
   ヌ: {
@@ -1174,7 +1152,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "lly the cat stretching her back up high." },
     ],
     example: { word: "ねこ", reading: "neko", gloss: "cat", hitIndex: 0 },
-    draft: true,
   },
 
   ネ: {
@@ -1215,7 +1192,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "se with some mud on it after it had a nice afternoon outside." },
     ],
     example: { word: "のり", reading: "nori", gloss: "seaweed", hitIndex: 0 },
-    draft: true,
   },
 
   ノ: {
@@ -1260,7 +1236,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "." },
     ],
     example: { word: "はな", reading: "hana", gloss: "flower", hitIndex: 0 },
-    draft: true,
   },
 
   ひ: {
@@ -1281,7 +1256,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "l juts out at the bottom." },
     ],
     example: { word: "ひと", reading: "hito", gloss: "person", hitIndex: 0 },
-    draft: true,
   },
 
   ふ: {
@@ -1303,7 +1277,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "ふね", reading: "fune", gloss: "boat", hitIndex: 0 },
     approximate: "Not a hard English “f”, but a soft breath between f and h.",
-    draft: true,
   },
 
   へ: {
@@ -1324,7 +1297,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "lens, high in the sky covered in clouds." },
     ],
     example: { word: "へや", reading: "heya", gloss: "room", hitIndex: 0 },
-    draft: true,
   },
 
   ほ: {
@@ -1345,7 +1317,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "me with a wall and a chimney." },
     ],
     example: { word: "ほし", reading: "hoshi", gloss: "star", hitIndex: 0 },
-    draft: true,
   },
 
   // ---- M row — ま み む め も (DRAFT) -----------------------------------
@@ -1368,7 +1339,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "’s arms." },
     ],
     example: { word: "まど", reading: "mado", gloss: "window", hitIndex: 0 },
-    draft: true,
   },
 
   み: {
@@ -1389,7 +1359,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: " in do-re-mi." },
     ],
     example: { word: "みみ", reading: "mimi", gloss: "ear", hitIndex: 0 },
-    draft: true,
   },
 
   む: {
@@ -1410,7 +1379,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "!”" },
     ],
     example: { word: "むし", reading: "mushi", gloss: "insect", hitIndex: 0 },
-    draft: true,
   },
 
   め: {
@@ -1431,7 +1399,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "lon-round eye winks up at you, lid and lashes heavy with make-up. め even means “eye”!" },
     ],
     example: { word: "め", reading: "me", gloss: "eye", hitIndex: 0 },
-    draft: true,
   },
 
   も: {
@@ -1454,7 +1421,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "re fish!" },
     ],
     example: { word: "もり", reading: "mori", gloss: "forest", hitIndex: 0 },
-    draft: true,
   },
 
   // ---- Y row — や ゆ よ (DRAFT) -----------------------------------------
@@ -1476,7 +1442,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "cht, mast up and sail full, swaying in the wind." },
     ],
     example: { word: "やま", reading: "yama", gloss: "mountain", hitIndex: 0 },
-    draft: true,
   },
 
   ゆ: {
@@ -1501,7 +1466,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "ni, its long tail swaying in the water." },
     ],
     example: { word: "ゆき", reading: "yuki", gloss: "snow", hitIndex: 0 },
-    draft: true,
   },
 
   よ: {
@@ -1524,7 +1488,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "." },
     ],
     example: { word: "よる", reading: "yoru", gloss: "night", hitIndex: 0 },
-    draft: true,
   },
 
   // ---- R row — ら り る れ ろ (DRAFT — a single soft TAP, between r/l/d) --
@@ -1547,7 +1510,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "さくら", reading: "sakura", gloss: "cherry blossom", hitIndex: 2 },
     approximate: "A single soft tap of the tongue, not a hard English “r.”",
-    draft: true,
   },
 
   り: {
@@ -1573,7 +1535,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "りんご", reading: "ringo", gloss: "apple", hitIndex: 0 },
     approximate: "A single soft tap of the tongue, not a hard English “r.”",
-    draft: true,
   },
 
   る: {
@@ -1595,7 +1556,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "くるま", reading: "kuruma", gloss: "car", hitIndex: 1 },
     approximate: "A single soft tap of the tongue, not a hard English “r.”",
-    draft: true,
   },
 
   れ: {
@@ -1617,7 +1577,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "きれい", reading: "kirei", gloss: "pretty", hitIndex: 1 },
     approximate: "A single soft tap of the tongue, not a hard English “r.”",
-    draft: true,
   },
 
   ろ: {
@@ -1639,7 +1598,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "ろく", reading: "roku", gloss: "six", hitIndex: 0 },
     approximate: "A single soft tap of the tongue, not a hard English “r.”",
-    draft: true,
   },
 
   // ---- W row + ん — わ を ん (DRAFT) ------------------------------------
@@ -1661,7 +1619,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "nd waving around swishing magical spells in the air." },
     ],
     example: { word: "わたし", reading: "watashi", gloss: "I / me", hitIndex: 0 },
-    draft: true,
   },
 
   を: {
@@ -1683,7 +1640,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "パンを", reading: "pan o", gloss: "bread [object]", hitIndex: 2 },
     approximate: "This is the object particle. It attaches to a noun (パンを食べる, “eat bread”) and sounds exactly like お.",
-    draft: true,
   },
 
   ん: {
@@ -1703,7 +1659,6 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "ほん", reading: "hon", gloss: "book", hitIndex: 1 },
     approximate: "One held beat of nasal. Its exact colour (m / n / ng) bends to what follows.",
-    draft: true,
   },
 };
 
