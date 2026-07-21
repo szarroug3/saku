@@ -104,6 +104,21 @@ export interface ActiveQuiz {
   redrill: boolean;
   /** Forces limited/full-coverage regardless of the snapshot (redrill). */
   forceCoverage: boolean;
+  /**
+   * This LEG's identity, minted once in beginLeg.
+   *
+   * Screens use it to answer "am I looking at the same leg I was looking at a
+   * moment ago". They cannot use the object identity of `active` for that: the
+   * snapshot round-trips through JSON every time another tab writes it, so an
+   * adopted leg is a brand-new object describing the very same quiz. A screen
+   * that re-initialises on object identity therefore tears itself down and
+   * rebuilds on every adoption — which is exactly the loop that bricked the
+   * session (see the storm note on saveNow).
+   *
+   * Optional because a leg snapshotted before this field existed restores
+   * without one; readers fall back to `startedAt`.
+   */
+  legId?: string;
   /** Builder settings frozen at start — render the quiz from these. */
   snapshot: QuizSnapshot;
   /** When Start was pressed, so Home's resume card can say "started 4 minutes
@@ -216,6 +231,11 @@ interface QuizSessionContextValue {
   finishSession(): void;
   /** Throw the session away unscored. */
   discardSession(): void;
+  /** Drop EVERY run, focused and parked, and remove the snapshot outright.
+   * The reset behind "Clear knowledge base", and the way out of a session that
+   * will not let you out. See the implementation for why it writes rather than
+   * waiting for the save effect. */
+  clearAllRuns(): void;
   /** Continue a session you left: back to whatever it was doing. */
   continueSession(): void;
 
@@ -367,6 +387,27 @@ function countWhat(facts: FactId[]): string {
   return `${facts.length.toLocaleString()} thing${facts.length === 1 ? "" : "s"}`;
 }
 
+/**
+ * The comparable form of a snapshot: every persisted field, in a fixed order,
+ * and WITHOUT `owner`.
+ *
+ * Order is stated explicitly rather than relying on JSON.stringify's key order,
+ * because one side of the comparison is an object we built and the other came
+ * back through JSON.parse — and this is the value a skipped write is decided
+ * on, so "usually the same order" is not good enough. `owner` is excluded on
+ * purpose: it is who wrote, not what was written, and including it would make
+ * every save differ from every other and defeat the whole guard.
+ */
+function canonical(s: StoredSession): string {
+  return JSON.stringify({
+    active: s.active ?? null,
+    session: s.session ?? null,
+    results: s.results ?? null,
+    progress: s.progress ?? null,
+    parked: s.parked ?? [],
+  });
+}
+
 function snapshotOf(cfg: QuizConfig): QuizSnapshot {
   return {
     mode: cfg.mode,
@@ -433,6 +474,14 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     parked: [],
   });
   const restoredRef = useRef(false);
+  /** What we believe storage currently holds: the canonical body, and the exact
+   * raw string. Two refs rather than one because they answer different
+   * questions — the body says "our state matches storage", the raw string
+   * catches storage having moved under us since we last looked, so a skipped
+   * write can never lose an answer. Updated on every write we make and on every
+   * adoption we apply. */
+  const lastBodyRef = useRef<string | null>(null);
+  const lastRawRef = useRef<string | null>(null);
   useEffect(() => {
     latest.current = { active, session, results, progress, parked };
     restoredRef.current = restored;
@@ -467,10 +516,47 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const saveNow = useCallback(() => {
     if (!restoredRef.current) return;
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ ...latest.current, owner: TAB_ID } satisfies StoredSession),
-      );
+      const body = canonical(latest.current);
+      // NOTHING CHANGED, SO NOTHING IS PUBLISHED — and this is the guard that
+      // keeps two open tabs from destroying each other.
+      //
+      // THE STORM, AND WHY THE OLD GUARD DID NOT STOP IT
+      // ================================================
+      // `adoptedRef` below suppresses exactly one save: the state update that
+      // applies another tab's write. That is not enough, because adopting has
+      // CONSEQUENCES that land afterwards. Adopting replaces `active` with a
+      // fresh object parsed out of JSON, which used to remount the drill
+      // screen, whose onMount calls syncProgress() → setProgress({…}). That is
+      // a brand-new state update arriving a tick later, by which time
+      // `adoptedRef` has already been consumed — so it published, the other tab
+      // adopted OURS, its drill remounted, it published back, and so on.
+      // Measured here at ~14,000 writes in 3 seconds with two idle tabs open,
+      // both pinned at 100% of the main thread and neither able to finish a
+      // click. That is the session brick: it survives a reload and a server
+      // restart because the other tab is still writing, and it survives
+      // clearing localStorage by hand for the same reason — the other tab puts
+      // it straight back.
+      //
+      // Suppressing "the update that adopted" was the wrong shape of guard,
+      // because it has to know which later updates were CAUSED by adopting.
+      // Comparing the payload needs to know nothing: a tab that would write
+      // what is already there simply does not write, so the cycle cannot start
+      // however many effects fire downstream of an adoption. The drill also no
+      // longer remounts on adoption (see ActiveQuiz.legId), which removes the
+      // pump; this removes the loop, and the two are deliberately independent.
+      if (
+        body === lastBodyRef.current &&
+        localStorage.getItem(STORAGE_KEY) === lastRawRef.current
+      ) {
+        return;
+      }
+      const raw = JSON.stringify({
+        ...latest.current,
+        owner: TAB_ID,
+      } satisfies StoredSession);
+      localStorage.setItem(STORAGE_KEY, raw);
+      lastBodyRef.current = body;
+      lastRawRef.current = raw;
     } catch {
       // storage full/unavailable — resume degrades gracefully to not-offered
     }
@@ -503,12 +589,34 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!restored) return;
     const onStorage = (e: StorageEvent) => {
-      if (e.key !== STORAGE_KEY || !e.newValue) return;
+      if (e.key !== STORAGE_KEY) return;
+      // SOMEONE CLEARED IT. A removed key is a decision, not an absence, and
+      // ignoring it was how "Clear knowledge base" and Discard appeared to do
+      // nothing: the tab that cleared dropped its session, the other tab still
+      // held one, and the next thing that tab wrote put the session straight
+      // back. An escape hatch that one surviving tab can undo is not an escape
+      // hatch, so a clear is adopted exactly like any other write.
+      if (!e.newValue) {
+        adoptedRef.current = true;
+        lastBodyRef.current = null;
+        lastRawRef.current = null;
+        setActive(null);
+        setSession(null);
+        setResults(null);
+        setProgress(null);
+        setParked([]);
+        return;
+      }
       try {
         const next: StoredSession = JSON.parse(e.newValue);
         if (!next.owner || next.owner === TAB_ID) return;
         // Tell the save effect this state is theirs, not ours — see the guard.
         adoptedRef.current = true;
+        // Storage now holds exactly this, and our state is about to. Recording
+        // both is what lets saveNow recognise the echo of an adoption and stay
+        // quiet instead of publishing it back — see the storm note there.
+        lastBodyRef.current = canonical(next);
+        lastRawRef.current = e.newValue;
         setActive(next.active);
         setSession(next.session);
         setResults(next.results);
@@ -568,6 +676,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
         what,
         redrill,
         forceCoverage: redrill,
+        legId: genRunId(),
         startedAt: Date.now(),
         snapshot,
         runtime: {},
@@ -871,6 +980,43 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     setProgress(null);
   }, []);
 
+  /**
+   * THE LAST LINE OF DEFENCE: drop every run there is, and make it stick.
+   *
+   * Everything else that ends a run ends ONE run and leaves the rest — which is
+   * right for Discard on a single row, and wrong for the two callers here:
+   * "Clear knowledge base", which promises the app "starts over from its first
+   * lesson, as if you had just installed it", and any learner who has to get
+   * out of a session that will not let them out.
+   *
+   * Three things, in this order, and all three are load-bearing:
+   *
+   *  1. Remove the key OUTRIGHT rather than waiting for the save effect. A
+   *     learner reaching for this has an app that may not be re-rendering; a
+   *     reset that only happens if React gets another turn is no reset at all.
+   *     This is a plain synchronous write and it cannot be starved.
+   *  2. Forget what we thought storage held, so the idempotence guard in
+   *     saveNow cannot decide the clear was a no-op and skip re-publishing.
+   *  3. Clear the React state too, so this tab's screens let go as well. Other
+   *     tabs are told by the removal itself — `storage` fires in every other
+   *     tab and the listener above treats a removed key as a clear, which is
+   *     what stops a surviving tab from writing the session back.
+   */
+  const clearAllRuns = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // storage unavailable — the state reset below still frees this tab
+    }
+    lastBodyRef.current = null;
+    lastRawRef.current = null;
+    setActive(null);
+    setSession(null);
+    setResults(null);
+    setProgress(null);
+    setParked([]);
+  }, []);
+
   const continueSession = useCallback(() => {
     if (!session) return;
     router.push(session.phase === "drilling" && active ? "/quiz" : "/session");
@@ -1068,6 +1214,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       endSession,
       finishSession,
       discardSession,
+      clearAllRuns,
       continueSession,
       runs,
       continueRun,
@@ -1095,6 +1242,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       endSession,
       finishSession,
       discardSession,
+      clearAllRuns,
       continueSession,
       runs,
       continueRun,

@@ -839,11 +839,31 @@ export function DrillScreen() {
 
   // Mount / unmount lifecycle. Waits for cfg hydration (`ready`) so a fresh
   // deck and a resumed countdown see the real settings, not the defaults.
+  //
+  // KEYED ON THE LEG, NOT ON THE OBJECT, and that distinction is the session
+  // brick. `active` is replaced with a freshly parsed object every time another
+  // open tab writes the snapshot and this one adopts it — same quiz, same card,
+  // new object. Keyed on `active`, this effect therefore ran its teardown and
+  // its setup on every adoption, and onMount ends in syncProgress() →
+  // setProgress({…}), a state change that published the snapshot straight back
+  // to the tab we adopted it from. Two tabs pumped each other at ~14,000 writes
+  // in 3 seconds and neither could finish a click.
+  //
+  // `legId` is what actually decides whether this is a different quiz. A new
+  // round, a retry leg or a new one-off mints one (beginLeg); adopting the leg
+  // you are already drilling does not. So a real change still re-initialises,
+  // and an echo is ignored. Falls back to `startedAt` for a leg snapshotted
+  // before legId existed, and to "" for no leg at all — the body early-returns
+  // there anyway.
+  const legKey = active ? (active.legId ?? `t${active.startedAt ?? 0}`) : "";
   useEffect(() => {
     if (!active || !ready) return;
     handlersRef.current?.onMount();
     return () => handlersRef.current?.onUnmount();
-  }, [active, ready]);
+    // `active` is read through handlersRef, which every render refreshes, so
+    // the effect never runs against a stale leg despite not depending on it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legKey, ready]);
 
   // React live to timer settings edits (drawer or Settings tab). Value-diffed
   // so mount/hydration echoes don't clobber a resumed remainder.
