@@ -95,6 +95,60 @@ The depth question is the real one and it is Sam's: 時 should show 日 + 寺, n
 日 + 土 + 寸, but "stop at the first meaningful level" needs a definition the
 generator can apply.
 
+## RECOMMENDED FIX — for Sam's approval
+
+**This is factually incorrect, not a copy problem.** 休 is not made of 化. So the
+fix is to the data, and one change addresses both defects at once.
+
+### Regenerate `comps` from IDS, taking only the top level
+
+Ideographic Description Sequences model a kanji's structure as a tree with
+composition operators:
+
+```
+休 = ⿰亻木          top level -> 亻 + 木          (fixes the 化 bug)
+時 = ⿰日寺          top level -> 日 + 寺          (keeps the phonetic)
+語 = ⿰言吾          top level -> 言 + 吾
+校 = ⿰木交          top level -> 木 + 交
+貨 = ⿱化貝          top level -> 化 + 貝          (keeps legitimate 化)
+明 = ⿰日月          top level -> 日 + 月          (already correct, stays correct)
+```
+
+**Taking only the top level is the whole fix.** The current data is a full
+recursive walk flattened into one list, which is why 貨 shows 化 + 貝 + 目 + ハ + 匕
+— 目 and ハ are inside 貝, and 匕 is inside 化. Stopping at depth 1 removes them.
+
+And because IDS describes 休 as ⿰亻木, the 亻/化 confusion cannot survive the
+regeneration. It is not a substitution table; the wrong answer simply stops being
+produced.
+
+### Why this answers the depth question
+
+The card asks what depth to stop at, and calls it a teaching decision. **IDS turns
+it into a mechanical one: depth 1.** That gives 日 + 寺 rather than 日 + 土 + 寸,
+which is what a learner needs, because 寺 is the phonetic shared with 持, 待, 詩
+and 侍.
+
+It also fails safe. Where a top-level part is not itself a taught character, the
+learner sees a component they have not met rather than a wrong one — worth
+checking the count of those before shipping, but a much smaller problem than
+teaching 休 as "change plus tree".
+
+### What still needs a ruling from Sam
+
+- **Components that are not themselves kanji you teach** (蔵-style parts, and
+  bound forms like 亻 which is a variant of 人). Show them plain, link them to the
+  parent character, or suppress the row for that kanji? I lean on showing them, since
+  a component you have not met is still true.
+- **Whether 亻 should display as 亻 or as 人.** They are the same character
+  historically and 人 is the one that gets taught. Showing 亻 is accurate; showing
+  人 is more useful on day one. My preference is 亻 with 人 linked.
+
+### Not recommended
+
+A targeted correction table for the 109. It fixes the visible symptom and leaves
+the flattening, which is the defect that costs more teaching value.
+
 ## Done when
 
 - 休 shows 亻 + 木.

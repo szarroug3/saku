@@ -10,9 +10,8 @@ read the card as unstarted. It was not.
 
 - **E8 bullets 1 and 2** — `phase-intros.ts:290`/`:293` (straw-man duplicate) and
   `:569` ("not a separate thing tacked on"). No rewrite was ever proposed.
-- **E3's parenthetical** — *(Two of them, ぢ and づ, sound the same as じ and ず.)*
-  sat outside the quotation marks, so it was read as an editorial note rather than
-  copy. If it was meant as copy it still needs adding.
+- ~~**E3's parenthetical**~~ — **CLOSED.** Sam confirmed it was an editorial note,
+  not copy to insert. The agent read it correctly. Nothing to do.
 - **C3's lead** — the paragraph landed; the lead above it still asserted the claim
   C3 removes. **This one was since fixed by deletion** in `bc5104d`, along with the
   `why.ts` twin. Re-check whether you want anything in its place.
@@ -352,7 +351,51 @@ Three clauses, two commas, no signposting.
 > **Proposed:** "...learning how to read, speak, and understand what you hear."
 
 ### E8 · Straw-man negations, and a duplicate
-Reported, no rewrite proposed yet, listed for a decision:
+
+**Sam asked for recommendations on bullets 1 and 2. Here they are, for approval.**
+
+#### Bullet 1 — `phase-intros.ts:308` and the body line under it
+
+The title and the first sentence are the same sentence, and both end on the same
+straw man:
+
+> **Title:** "A held vowel is a different word, not a decoration."
+> **Body:** "Hold a vowel a beat longer and you have said a different word, so
+> length is part of the word, not decoration."
+
+**Recommendation: drop the straw man from the title, and make the body do work
+instead of repeating.** Nobody arrived thinking vowel length was decorative, so
+denying it twice spends two sentences on a point nobody held. The body should
+prove the claim rather than restate it, and the proof is a minimal pair the card
+already has material for.
+
+> **Title:** "A held vowel is a different word."
+> **Body:** "おばさん is your aunt. おばあさん, with the vowel held one beat longer,
+> is your grandmother. That extra beat is the whole difference."
+
+This also matches the rule stated in `why.ts`'s own header: an example over a
+definition.
+
+#### Bullet 2 — `phase-intros.ts:587`
+
+> "The kana written after a kanji is part of the word, not a separate thing tacked
+> on. One character can start several words, and the tail is what tells them
+> apart."
+
+**Recommendation: delete four words and change nothing else.** The sentence after
+it already earns the point, so the negation is doing no work.
+
+> "The kana written after a kanji is part of the word. One character can start
+> several words, and the tail is what tells them apart."
+
+#### Bullet 3 — already done
+
+`WHY_STROKE_ORDER` / `WHY_WRITING_EARLY` were merged into one shared constant in
+`3c83895`.
+
+---
+
+Original report, for reference:
 
 - **`phase-intros.ts:290` + `:293`** — title and first sentence are the same
   sentence, both landing on "not a decoration". Nobody arrived thinking vowel

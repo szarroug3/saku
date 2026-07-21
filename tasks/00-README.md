@@ -41,18 +41,18 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 | 17 | **done** | Shipped-data problems | medium-high | **trivial** | Merged `ffbc40d`. 0 dashes; vulgar words now outside the first 120. |
 | 13 | **done** | Remove the `draft` flag **?** | low | **trivial** | Merged `db993e0`. 31 entries, not 33. |
 | 06 | **done** | Conjugation policy too narrow | medium | small | Merged `f84952a`. いる excluded (13 false positives, not 10). |
-| 23 | **needs review** | Kanji "Made of" is wrong **?** | **highest** | large | 109 kanji say 化 for 亻; 時 loses 寺. Bad generated data. |
+| 23 | **needs review** | Kanji "Made of" is wrong **?** | **highest** | large | Fix recommended: regenerate comps from IDS, depth 1. Fixes both defects. |
 | 01 | **done** | Reveal shows the prompt back | **highest** | small | Merged `22c2aa5`. Structural fix; new subjects correct for free. |
 | 03 | **done** | Accuracy pill mixes units | high | small | Merged `0d8c36b`. Aggregate split dispatched separately. |
 | 04 | **done** | Corpus tagger | high | small | Merged `a729b5f`. Filtered; all survivors clear the floor. |
-| 16 | not started | Quiz tells you nothing | high | small | Reviewed. Reveal already works; per-kind instructions + confusion note + pill. |
+| 16 | **in progress** | Quiz tells you nothing | high | small | Dispatched. Per-kind instructions, confusion note, progress pill. |
 
 ### Worth doing, more work or less reach
 
 | # | Status | Task | Impact | Effort | Note |
 |---|---|---|---|---|---|
-| 21 | unreviewed | Jargon never explained **?** | medium-high | small | Plus an intro card per track. |
-| 09 | **needs review** | Particle reading rule **?** | medium-high | small | Draft copy written. 私は is day one. |
+| 21 | **in progress** | Jargon never explained **?** | medium-high | small | Dispatched. Track-opening intro card per Sam's ruling. |
+| 09 | **ready to build** | Particle reading rule **?** | medium-high | small | Answered: は/へ teach the rule; を's card is just WRONG and needs changing. |
 | 18 | **done** | Retry leaves no trace | medium | small | Merged `a53a94e`. Summary sums correctly; retry visible. |
 | 20 | unreviewed | Data quality **?** | medium | medium | Several sub-items, some need a sweep first. |
 | 05 | **done** | 〜てある any verb | medium | medium-large | Merged `ea522c8`. A test had been asserting the bug. |

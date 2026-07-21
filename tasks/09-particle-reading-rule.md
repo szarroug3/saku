@@ -1,10 +1,47 @@
 # P1 · Three kana are read differently when used as particles
 
-**Status: needs review**
+**Status: answered, ready to build**
 
-## Open questions
+## Sam asked: is it always wa, or sometimes ha and sometimes wa?
 
-- Approve the draft card copy in this file before it is built.
+**Both, and which one depends on the character. That split is the answer, and it
+settles the を question at the same time.**
+
+### は and へ — sometimes one, sometimes the other
+
+These keep their normal sound everywhere except when they are doing the particle
+job:
+
+- は is **ha** in はな (flower), はし (bridge), あさ**は**ん (breakfast).
+- は is **wa** in 私**は** (as for me).
+- へ is **he** in へや (room). It is **e** in 学校**へ** (to school).
+
+So for these two, Sam's second case applies: **teach the rule in one place, then
+reinforce it on the cards when they come up.** A learner needs to know both sounds
+and needs to know which situation picks which.
+
+### を — effectively ALWAYS the particle
+
+This is the important difference. **を is not a character you meet in ordinary
+words.** In modern Japanese it appears essentially only as the object particle, so
+it is pronounced /o/ virtually always. There is no "sometimes" to teach.
+
+That means Sam's FIRST case applies to を: **the card itself is teaching the wrong
+pronunciation and should be changed.** `/library/hiragana/wo` currently says
+*Say "wo" as in **wo**ah!* on the same page that says it "sounds exactly like お".
+The pronunciation line is the one a learner obeys, so it wins, and it is wrong.
+
+This also covers **ヲ**, whose mnemonic in `Kana.md` is a stack of bowls and the
+sound cue *"woah!"* — same defect, same fix.
+
+## What to build
+
+1. **One rule card** covering all three, taught early. 私は is day one.
+2. **Reinforcement on は and へ's own cards**: both sounds, and which job picks
+   which.
+3. **Change を's card** to teach /o/ rather than "wo", and change ヲ's sound cue.
+   This is a correction, not a reinforcement, and it is the piece that has been
+   sitting in `TEST-FINDINGS.md` unresolved.
 
 Sam asked: *"i know the kana for ha. i didn't know you can read it as wa. is that
 something we should be teaching as a rule somewhere or is it specific to this
