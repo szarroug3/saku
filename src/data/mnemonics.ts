@@ -1279,6 +1279,27 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     approximate: "Not a hard English “f”, but a soft breath between f and h.",
   },
 
+  フ: {
+    glyph: "フ",
+    romaji: "fu",
+    sound: "fu",
+    object: "Mount Fuji slope",
+    analogy: [
+      { text: "A soft " },
+      { text: "fu", accent: true },
+      { text: " as in Mount " },
+      { text: "Fu", accent: true },
+      { text: "ji." },
+    ],
+    mnemonic: [
+      { text: "A hiker trudges down one long slope of Mount " },
+      { text: "Fu", accent: true },
+      { text: "ji beneath a bar of clouds." },
+    ],
+    example: { word: "フルーツ", reading: "furuutsu", gloss: "fruit", hitIndex: 0 },
+    approximate: "Not a hard English “f”, but a soft breath between f and h.",
+  },
+
   へ: {
     glyph: "へ",
     romaji: "he",
@@ -1339,6 +1360,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "ほし", reading: "hoshi", gloss: "star", hitIndex: 0 },
   },
 
+  ホ: {
+    glyph: "ホ",
+    romaji: "ho",
+    sound: "ho",
+    object: "holy cross",
+    analogy: [
+      { text: "Say “" },
+      { text: "ho", accent: true },
+      { text: "” as in " },
+      { text: "ho", accent: true },
+      { text: "ly." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "ho", accent: true },
+      { text: "ly cross radiates strong beams of sunlight and hope." },
+    ],
+    example: { word: "ホテル", reading: "hoteru", gloss: "hotel", hitIndex: 0 },
+  },
+
   // ---- M row — ま み む め も (DRAFT) -----------------------------------
   ま: {
     glyph: "ま",
@@ -1379,6 +1420,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: " in do-re-mi." },
     ],
     example: { word: "みみ", reading: "mimi", gloss: "ear", hitIndex: 0 },
+  },
+
+  ミ: {
+    glyph: "ミ",
+    romaji: "mi",
+    sound: "mee",
+    object: "three meat strips",
+    analogy: [
+      { text: "Say “" },
+      { text: "mee", accent: true },
+      { text: "” as in " },
+      { text: "mea", accent: true },
+      { text: "t." },
+    ],
+    mnemonic: [
+      { text: "Three grilled strips of " },
+      { text: "mea", accent: true },
+      { text: "t lie in parallel." },
+    ],
+    example: { word: "ミルク", reading: "miruku", gloss: "milk", hitIndex: 0 },
   },
 
   む: {
@@ -1463,6 +1524,28 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "もり", reading: "mori", gloss: "forest", hitIndex: 0 },
   },
 
+  モ: {
+    glyph: "モ",
+    romaji: "mo",
+    sound: "mo",
+    object: "fishhook with worms",
+    analogy: [
+      { text: "Say “" },
+      { text: "mo", accent: true },
+      { text: "” as in " },
+      { text: "mo", accent: true },
+      { text: "re." },
+    ],
+    mnemonic: [
+      { text: "Two worms sit high on a fishhook; the " },
+      { text: "mo", accent: true },
+      { text: "re worms, the " },
+      { text: "mo", accent: true },
+      { text: "re fish." },
+    ],
+    example: { word: "モデル", reading: "moderu", gloss: "model", hitIndex: 0 },
+  },
+
   // ---- Y row — や ゆ よ (DRAFT) -----------------------------------------
   や: {
     glyph: "や",
@@ -1528,6 +1611,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "ゆき", reading: "yuki", gloss: "snow", hitIndex: 0 },
   },
 
+  ユ: {
+    glyph: "ユ",
+    romaji: "yu",
+    sound: "yoo",
+    object: "sideways U in an icy bath",
+    analogy: [
+      { text: "Say “" },
+      { text: "yoo", accent: true },
+      { text: "” like the letter " },
+      { text: "U", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "A sideways " },
+      { text: "U", accent: true },
+      { text: " shivers in an icy bath and splashes a puddle to the right." },
+    ],
+    example: { word: "ユニーク", reading: "yuniiku", gloss: "unique", hitIndex: 0 },
+  },
+
   よ: {
     glyph: "よ",
     romaji: "yo",
@@ -1548,6 +1651,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "." },
     ],
     example: { word: "よる", reading: "yoru", gloss: "night", hitIndex: 0 },
+  },
+
+  ヨ: {
+    glyph: "ヨ",
+    romaji: "yo",
+    sound: "yo",
+    object: "yo-yos on a rack",
+    analogy: [
+      { text: "Say “" },
+      { text: "yo", accent: true },
+      { text: "” as in " },
+      { text: "yo-yo", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "Three " },
+      { text: "yo-yo", accent: true },
+      { text: "s hang in a row from one wooden rack." },
+    ],
+    example: { word: "ヨガ", reading: "yoga", gloss: "yoga", hitIndex: 0 },
   },
 
   // ---- R row — ら り る れ ろ (DRAFT — a single soft TAP, between r/l/d) --
@@ -1660,6 +1783,27 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     approximate: "A single soft tap of the tongue, not a hard English “r.”",
   },
 
+  ロ: {
+    glyph: "ロ",
+    romaji: "ro",
+    sound: "roh",
+    object: "robot",
+    analogy: [
+      { text: "Say “" },
+      { text: "roh", accent: true },
+      { text: "” as in " },
+      { text: "ro", accent: true },
+      { text: "bot." },
+    ],
+    mnemonic: [
+      { text: "A friendly " },
+      { text: "ro", accent: true },
+      { text: "bot smiles from its glowing square screen." },
+    ],
+    example: { word: "ロボット", reading: "robotto", gloss: "robot", hitIndex: 0 },
+    approximate: "A single soft tap of the tongue, not a hard English “r.”",
+  },
+
   // ---- W row + ん — わ を ん (DRAFT) ------------------------------------
   わ: {
     glyph: "わ",
@@ -1720,6 +1864,27 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     ],
     example: { word: "パンを", reading: "pan o", gloss: "bread [object]", hitIndex: 2 },
     approximate: "This is the object particle. It attaches to a noun (パンを食べる, “eat bread”) and sounds exactly like お.",
+  },
+
+  ヲ: {
+    glyph: "ヲ",
+    romaji: "wo",
+    sound: "o",
+    object: "toppling bowls",
+    analogy: [
+      { text: "Say “" },
+      { text: "o", accent: true },
+      { text: "” like the start of “" },
+      { text: "oh", accent: true },
+      { text: "!”" },
+    ],
+    mnemonic: [
+      { text: "Two bowls topple as broth pours out and you cry, “" },
+      { text: "Whoa", accent: true },
+      { text: "!”" },
+    ],
+    example: { word: "ヲタク", reading: "otaku", gloss: "otaku", hitIndex: 0 },
+    approximate: "Written wo in romanization, but pronounced exactly like オ in modern Japanese.",
   },
 
   ん: {
