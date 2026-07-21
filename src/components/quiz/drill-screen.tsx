@@ -43,6 +43,7 @@ import { BEHAVIOR, pickFont } from "@/lib/config";
 import { loadLatencies, pushLatency } from "@/lib/latency-store";
 import { isSlow, type LatencyStyle, type LatencyWindow } from "@/lib/slow";
 import {
+  answerIsJapanese,
   buildDeck,
   buildMcOptions,
   checkTyped,
@@ -959,9 +960,14 @@ export function DrillScreen() {
   // with what was built (e.g. an MC-style card that fell back for want of
   // distractors).
   const typedMode = !q.mc;
-  // Live romaji→kana only for typing the JAPANESE side. jp2en typed answers are
-  // romaji themselves (the reading) and must stay latin.
-  const romajiInput = typedMode && q.dir === "en2jp";
+  // Live romaji→kana exactly when the ANSWER is Japanese, which is not the same
+  // question as which direction the card faces. Keyed on direction alone this
+  // was wrong both ways: a jp2en kanji reading wants せい and got a latin box,
+  // unanswerable without an IME; and turning it on for every typed card would
+  // convert "life" on a kanji meaning card into らいふ and mark it wrong. The
+  // subject owns the answer, so the subject owns the question — see
+  // `answerIsJapanese`, the one place this is decided.
+  const romajiInput = typedMode && answerIsJapanese(q.f, q.dir);
   // Two different lines, and only one of them is a preference. `context` is
   // part of the question — "in 人生" is what makes 生 gradeable — so the
   // setting cannot touch it. `hint` is kana's script tag, which is decoration.
