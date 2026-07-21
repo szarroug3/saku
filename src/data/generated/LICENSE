@@ -51,6 +51,11 @@ WHAT CAME FROM WHERE
   kanji-radicals.json      KANJIDIC2 (each jouyou kanji's classical radical)
   grammar-corpus.json      Tatoeba (see carve-out)
   grammar-corpus-meta.json Tatoeba (build parameters and counts)
+  grammar-corpus-dropped.json
+                           Tatoeba (see carve-out) — the sentences the confound
+                           audit removed from grammar-corpus.json, kept so the
+                           removal can be reviewed rather than taken on trust.
+                           Not shipped to the browser; nothing imports it.
   strokes/hiragana.json    KanjiVG (ordered stroke paths + stroke-number
   strokes/katakana.json    positions) — the 46 base hiragana, the 46 base
   strokes/kanji-NN.json    katakana, and the 2,136 jouyou kanji split across 48
@@ -140,8 +145,8 @@ Tatoeba
 TATOEBA CARVE-OUT
 -----------------
 
-grammar-corpus.json and grammar-corpus-meta.json derive from Tatoeba only. No
-EDRDG material is in them.
+grammar-corpus.json, grammar-corpus-meta.json and grammar-corpus-dropped.json
+derive from Tatoeba only. No EDRDG material is in them.
 
 Tatoeba is CC BY 2.0 FR: attribution, no ShareAlike. Nothing here can add a
 ShareAlike condition to Tatoeba's sentences, and this licence does not try to.
