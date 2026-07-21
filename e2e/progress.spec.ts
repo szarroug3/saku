@@ -7,6 +7,7 @@ import {
   startPractice,
   answerBox,
   answeredPill,
+  answeredText,
   drillReady,
   type Page,
 } from "./helpers/app";
@@ -53,7 +54,7 @@ async function answerCorrectly(page: Page, expectedTotal: number) {
   await box.fill(answerForGlyph(glyph));
   await box.press("Enter");
 
-  await expect(answeredPill(page)).toHaveText(`${expectedTotal} answered`);
+  await expect(answeredPill(page)).toHaveText(answeredText(expectedTotal));
   await page.waitForFunction((el) => !el?.isConnected, glyphNode);
   await glyphNode?.dispose();
 }
@@ -68,7 +69,7 @@ test("a mid-quiz refresh resumes the quiz instead of losing it", async ({
   await answerCorrectly(page, 1);
   await answerCorrectly(page, 2);
   await answerCorrectly(page, 3);
-  await expect(answeredPill(page)).toHaveText("3 answered");
+  await expect(answeredPill(page)).toHaveText(answeredText(3));
 
   await page.reload();
 
@@ -77,7 +78,7 @@ test("a mid-quiz refresh resumes the quiz instead of losing it", async ({
   await expect(page).toHaveURL(/\/quiz$/);
   await drillReady(page);
   // ...and the three answers are still counted.
-  await expect(answeredPill(page)).toHaveText("3 answered");
+  await expect(answeredPill(page)).toHaveText(answeredText(3));
 });
 
 test("navigating away mid-quiz and coming back keeps the progress", async ({
@@ -97,7 +98,7 @@ test("navigating away mid-quiz and coming back keeps the progress", async ({
   await page.goto("/quiz");
   await expect(page).toHaveURL(/\/quiz$/);
   await drillReady(page);
-  await expect(answeredPill(page)).toHaveText("2 answered");
+  await expect(answeredPill(page)).toHaveText(answeredText(2));
 });
 
 test("a wrong answer is still counted after a refresh", async ({
@@ -110,7 +111,7 @@ test("a wrong answer is still counted after a refresh", async ({
   const box = answerBox(page);
   await box.fill("definitely-not-a-reading");
   await box.press("Enter");
-  await expect(answeredPill(page)).toHaveText("1 answered");
+  await expect(answeredPill(page)).toHaveText(answeredText(1));
 
   await page.reload();
   await drillReady(page);
@@ -118,6 +119,6 @@ test("a wrong answer is still counted after a refresh", async ({
   // The miss survives too. This is the case the app's own comments call out as
   // the one that used to be lost, so it is worth asserting separately from the
   // right-answer path.
-  await expect(answeredPill(page)).toHaveText("1 answered");
+  await expect(answeredPill(page)).toHaveText(answeredText(1));
   await expect(page.getByText(/^\d+ re-queued$/)).toHaveText("1 re-queued");
 });

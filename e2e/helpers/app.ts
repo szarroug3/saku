@@ -152,7 +152,10 @@ export async function drillReady(page: Page) {
 /** The drill's typed answer box, whichever direction produced it. */
 export function answerBox(page: Page) {
   return page.locator(
-    'input[placeholder="Type romaji, Enter to submit"], input[placeholder="Type answer, Enter to submit"]',
+    // The two placeholders lib/drill-guidance.ts hands out — one per kind of
+    // answer. "Type answer" was the single old wording, replaced by "Type
+    // English" when the box started saying which language it wants.
+    'input[placeholder="Type romaji, Enter to submit"], input[placeholder="Type English, Enter to submit"]',
   );
 }
 
@@ -170,17 +173,30 @@ export function optionButtons(page: Page) {
  * retries, which with `retries: "none"` means exactly "was wrong".
  */
 export function answeredPill(page: Page) {
-  return page.getByText(/^\d+ answered$/);
+  return page.getByText(ANSWERED_RE);
 }
 
 /**
+ * The endless pill's text: the count, and then the fact that there is no end.
+ *
+ * The bare "3 answered" this replaced was a count with a missing second half —
+ * it looked like an x-of-y whose y had gone astray rather than a quiz that does
+ * not have one. Kept here so the tests assert the copy in one place.
+ */
+export function answeredText(n: number): string {
+  return `${n} answered · endless`;
+}
+
+const ANSWERED_RE = /^\d+ answered · endless$/;
+
+/**
  * The resolved-count pill, in EITHER of the two shapes the drill uses: an
- * endless run says "3 answered", a length-limited one says "3 / 5". Tests that
+ * endless run says "3 answered · endless", a limited one says "3 / 5". Tests that
  * only care how many cards are done should use this rather than assuming a
  * shape, because the shape is a config choice.
  */
 export function progressPill(page: Page) {
-  return page.getByText(/^(\d+ answered|\d+ \/ \d+)$/);
+  return page.getByText(/^(\d+ answered · endless|\d+ \/ \d+)$/);
 }
 
 export function requeuedPill(page: Page) {
@@ -236,9 +252,9 @@ export async function answerTypedCorrectly(
   await box.fill(answer);
   await box.press("Enter");
 
-  // Matches both pill shapes: "3 answered" and "3 / 5".
+  // Matches both pill shapes: "3 answered · endless" and "3 / 5".
   await expect(progressPill(page)).toHaveText(
-    new RegExp(`^${expectedTotal} (answered|/ \\d+)$`),
+    new RegExp(`^${expectedTotal} (answered · endless|/ \\d+)$`),
   );
   await page.waitForFunction((el) => !el?.isConnected, glyphNode);
   await glyphNode?.dispose();

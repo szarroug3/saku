@@ -40,6 +40,7 @@ import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { SmallBtn } from "@/components/ui";
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
+import { answerGuide, confusionNote } from "@/lib/drill-guidance";
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
 import { loadLatencies, pushLatency } from "@/lib/latency-store";
 import { sessionAccuracy } from "@/lib/session-accuracy";
@@ -73,7 +74,13 @@ import { useHistory } from "@/lib/use-history";
 import { anchorForFact } from "@/lib/word-unlock";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
-import type { AccuracyMetric, Direction, FactId, SessionStats } from "@/types";
+import type {
+  AccuracyMetric,
+  Direction,
+  EntryId,
+  FactId,
+  SessionStats,
+} from "@/types";
 
 import { DrillDrawer } from "./drill-drawer";
 import { DrillHalo, GLYPH_PX, type HaloState } from "./drill-halo";
@@ -132,6 +139,22 @@ interface DrillQuestion {
    * is, which is already what "did not nail it" means everywhere in this app.
    */
   hinted: boolean;
+  /**
+   * The ENTRY a wrong answer on this showing named — what they said INSTEAD.
+   * Null until a miss resolves one, and null for most misses (see
+   * `confusedWith`: it claims an entry only when exactly one in the deck
+   * answers to what was typed).
+   *
+   * Held per SHOWING, not per attempt, and deliberately not cleared by a later
+   * attempt that resolves nothing. Answering あ on try one and gibberish on try
+   * two still mixed あ up with お, and the reveal is the only moment left to say
+   * so. Written flat at construction like `hinted`, so the next card starts
+   * clean and a remount cannot carry a stale one across.
+   *
+   * Scored nowhere. `st.confused` is the record; this is only what the reveal
+   * reads to decide whether it has a mix-up to name.
+   */
+  confused: EntryId | null;
 }
 
 /** The per-showing presentation context for a card: the anchor word for a kanji
@@ -551,6 +574,8 @@ export function DrillScreen() {
       // A new showing has not been hinted. Written here rather than backfilled,
       // so there is exactly one place a showing's hint state begins.
       hinted: false,
+      // Nothing has been said instead of this card's answer yet. Same rule.
+      confused: null,
     };
     // Creates the stat, and deliberately advances NOTHING. `seen` used to tick
     // here, which put it in the same unit as `asked` while every numerator was
@@ -637,11 +662,15 @@ export function DrillScreen() {
         // so this distinction has somewhere to live.
         if (said !== entryOf(q.f)) {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
+          // Same fact, remembered for the reveal rather than only counted. See
+          // DrillQuestion.confused for why it is not cleared by a later try.
+          q.confused = said;
         }
       } else if (given && given !== "(time)") {
         const said = confusedWith(q.f, given, rt.deck);
         if (said && said !== entryOf(q.f)) {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
+          q.confused = said;
         }
       }
       q.tries++;
@@ -762,6 +791,10 @@ export function DrillScreen() {
     // `undefined` as "not hinted" is also what the flat `!q.hinted` test in
     // submit does, so this is belt and braces rather than the load-bearing part.
     if (rt.q && typeof rt.q.hinted !== "boolean") rt.q.hinted = false;
+    // A showing in flight from before the reveal named mix-ups has no record of
+    // what was said. Null, not undefined: `confusionNote` is only reached
+    // through a truthiness test, so this is tidiness rather than load-bearing.
+    if (rt.q && rt.q.confused === undefined) rt.q.confused = null;
     // A quiz mid-flight before this field existed: best-effort backfill so the
     // count doesn't jump. asked minus the card currently on screen (unresolved).
     if (typeof rt.resolved !== "number") {
@@ -972,6 +1005,10 @@ export function DrillScreen() {
   // subject owns the answer, so the subject owns the question — see
   // `answerIsJapanese`, the one place this is decided.
   const romajiInput = typedMode && answerIsJapanese(q.f, q.dir);
+  // What the box wants, in words. Same predicate as `romajiInput` above, via
+  // one module — see lib/drill-guidance.ts for why it must not be a second
+  // list. Null on multiple choice, which has no box to explain.
+  const guide = typedMode ? answerGuide(q.f, q.dir) : null;
   // Two different lines, and only one of them is a preference. `context` is
   // part of the question — "in 人生" is what makes 生 gradeable — so the
   // setting cannot touch it. `hint` is kana's script tag, which is decoration.
@@ -1003,6 +1040,11 @@ export function DrillScreen() {
   // Out of retries and waiting for the next card, with the setting on: show the
   // answer in the answer slot (the reveal that used to be a sentence).
   const revealing = cfg.showAnswer && rt.waiting && rt.feedback?.kind === "bad";
+  // The mix-up, named at the reveal and nowhere else. Not on a miss with goes
+  // left — you are still answering, and the app telling you what you nearly
+  // confused it with would be handing you the answer mid-question.
+  const mixup =
+    revealing && q.confused ? confusionNote(entryOf(q.f), q.confused) : null;
 
   const accuracy = cfg.showAccuracy
     ? liveAccuracy(rt.stats, cfg.accuracyMetric)
@@ -1023,9 +1065,24 @@ export function DrillScreen() {
               something true to say. An empty pill is worse than no pill: "—
               first try" and "🔥 0" both report an absence as if it were data. */}
           <span className="flex flex-wrap items-center gap-1.5">
-            <Pill>
-              {total ? `${rt.resolved} / ${total}` : `${rt.resolved} answered`}
-            </Pill>
+            {/* HOW LONG THIS IS, and it is the one HUD chip that is not quiet.
+                A limited quiz has an end and the learner is entitled to see how
+                far off it is without opening the sidebar, so the count is
+                bigger and carries the accent — louder than everything beside
+                it, and louder than the sidebar chip that used to be the only
+                place it appeared.
+
+                An endless quiz says so in words. `total` is null there, which
+                used to print a bare "18 answered": a number with no second half
+                reads like a total that went missing rather than a quiz that
+                does not have one. */}
+            {total ? (
+              <span className="kq-material rounded-full border border-accent/40 bg-accent-bg px-3 py-1 text-[13px] font-semibold tabular-nums text-accent">
+                {rt.resolved} / {total}
+              </span>
+            ) : (
+              <Pill>{rt.resolved} answered · endless</Pill>
+            )}
             {rt.requeued ? <Pill>{rt.requeued} re-queued</Pill> : null}
             {cfg.showAccuracy && accuracy !== null ? (
               <Pill tone="accent">
@@ -1062,15 +1119,24 @@ export function DrillScreen() {
             </SmallBtn>
           </span>
         </div>
-        {/* 2px hairline: the progress bar reduced to the one thing it says. */}
+        {/* 2px hairline: the progress bar reduced to the one thing it says.
+            EMPTY WHEN THERE IS NO END. It used to run to 100% on an endless
+            quiz — `pct === null ? 100` — so the one graphic that means "how far
+            through" sat permanently full while the chip beside it said the quiz
+            never finishes. The track stays (nothing moves) and the fill is
+            simply absent, because absent is what "no fraction of this is done"
+            actually looks like. */}
         <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">
-          <div
-            className="h-full rounded-full bg-accent transition-[width] duration-200"
-            style={{
-              width: `${pct === null ? 100 : Math.min(100, pct)}%`,
-              boxShadow: "0 0 8px color-mix(in srgb, var(--accent) 55%, transparent)",
-            }}
-          />
+          {pct === null ? null : (
+            <div
+              className="h-full rounded-full bg-accent transition-[width] duration-200"
+              style={{
+                width: `${Math.min(100, pct)}%`,
+                boxShadow:
+                  "0 0 8px color-mix(in srgb, var(--accent) 55%, transparent)",
+              }}
+            />
+          )}
         </div>
       </div>
 
@@ -1167,47 +1233,54 @@ export function DrillScreen() {
         </span>
 
         {typedMode ? (
-          <input
-            key={rt.asked}
-            ref={inputRef}
-            autoFocus
-            autoComplete="off"
-            spellCheck={false}
-            placeholder={
-              romajiInput
-                ? "Type romaji, Enter to submit"
-                : "Type answer, Enter to submit"
-            }
-            value={typed}
-            readOnly={revealing}
-            // Latency is stamped on a real keypress, NOT in onChange: React
-            // fires change when it syncs a controlled input on mount, which
-            // stamped every card at ~1ms and made every answer look instant.
-            // A printable keydown is unambiguously "they started answering" —
-            // and it ignores Enter, Tab and modifiers, which aren't answers.
-            onKeyDown={(e) => {
-              if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-                markFirstKey();
+          // Box and the line that says what goes in it, as one unit: a tight
+          // gap between them rather than the stage's gap-4, so the sentence
+          // reads as belonging to the field and not as another piece of the
+          // question.
+            <span className="flex flex-col items-center gap-1.5">
+            <input
+              key={rt.asked}
+              ref={inputRef}
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={guide?.placeholder}
+              value={typed}
+              readOnly={revealing}
+              // Latency is stamped on a real keypress, NOT in onChange: React
+              // fires change when it syncs a controlled input on mount, which
+              // stamped every card at ~1ms and made every answer look instant.
+              // A printable keydown is unambiguously "they started answering" —
+              // and it ignores Enter, Tab and modifiers, which aren't answers.
+              onKeyDown={(e) => {
+                if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                  markFirstKey();
+                }
+              }}
+              // Convert-as-you-type for the Japanese side: the user sees これ /
+              // せんせい form in the box (live mode leaves an incomplete trailing
+              // run — "sens" → せんs — as latin). The value stays kana, so the
+              // grader receives kana and an IME user who typed it directly is
+              // unaffected. Idempotent on kana, so re-running on the field's own
+              // value only reconverts the latin tail.
+              onChange={(e) =>
+                setTyped(
+                  romajiInput
+                    ? toKana(e.target.value, { live: true })
+                    : e.target.value,
+                )
               }
-            }}
-            // Convert-as-you-type for the Japanese side: the user sees これ /
-            // せんせい form in the box (live mode leaves an incomplete trailing
-            // run — "sens" → せんs — as latin). The value stays kana, so the
-            // grader receives kana and an IME user who typed it directly is
-            // unaffected. Idempotent on kana, so re-running on the field's own
-            // value only reconverts the latin tail.
-            onChange={(e) =>
-              setTyped(
-                romajiInput
-                  ? toKana(e.target.value, { live: true })
-                  : e.target.value,
-              )
-            }
-            // Wide enough for the placeholder to read in full — the old card
-            // clipped it at 230px.
-            className="kq-material w-[270px] rounded-lg border border-border bg-card px-3 py-2 text-center text-lg text-text outline-none focus:border-accent"
-          />
-        ) : (
+              // Wide enough for the placeholder to read in full — the old card
+              // clipped it at 230px.
+              className="kq-material w-[270px] rounded-lg border border-border bg-card px-3 py-2 text-center text-lg text-text outline-none focus:border-accent"
+            />
+            {/* Says what kind of answer this card wants, and keeps saying it —
+                the placeholder above is gone from the first keystroke, which is
+                exactly when the romaji line starts mattering. Quiet: it is
+                standing instruction, not part of the question. */}
+            <span className="text-[11px] text-text-muted">{guide?.note}</span>
+            </span>
+          ) : (
           // Capped so the six options sit as two rows of three under the
           // halo, rather than a five-plus-one straggle as wide as the stage.
           <div className="flex max-w-[250px] flex-wrap justify-center gap-2">
@@ -1255,6 +1328,17 @@ export function DrillScreen() {
                   {revealFor(q.f, q.dir, ctx)}
                 </span>
               </span>
+              {/* THE MIX-UP, when the app already knows this pair is one. A
+                  third line in the column, not a change to `revealFor` — that
+                  function returns the ANSWER, and folding pedagogy into it
+                  would re-tangle the seam task 01 untangled. Rendered only when
+                  `confusionNote` claims the pair, so most reveals are the two
+                  lines they were before. */}
+              {mixup ? (
+                <span className="max-w-[320px] text-center text-[11px] text-text-muted">
+                  {mixup}
+                </span>
+              ) : null}
               {/* The way on. A typed card has hands on the keyboard, so the
                   Enter hint is enough. Multiple choice is answered entirely by
                   clicking and has no keystroke in hand, so it gets a real

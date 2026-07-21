@@ -8,6 +8,7 @@ import {
   answerBox,
   optionButtons,
   answeredPill,
+  answeredText,
 } from "./helpers/app";
 
 /**
@@ -75,7 +76,7 @@ test("kana jp→en still renders a typed box and still accepts romaji", async ({
   };
   await box.fill(romaji[shown]);
   await box.press("Enter");
-  await expect(answeredPill(page)).toHaveText("1 answered");
+  await expect(answeredPill(page)).toHaveText(answeredText(1));
 });
 
 test("the kana en→jp board never offers the romaji prompt as an option", async ({
