@@ -40,6 +40,7 @@ import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { SmallBtn } from "@/components/ui";
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
+import { resolveShowing, statForShowing } from "@/lib/drill-stats";
 import { loadLatencies, pushLatency } from "@/lib/latency-store";
 import { sessionAccuracy } from "@/lib/session-accuracy";
 import { isSlow, type LatencyStyle, type LatencyWindow } from "@/lib/slow";
@@ -54,7 +55,6 @@ import {
   grammarSelectionFor,
   grammarVehicleFor,
   mcOnlyIn,
-  newFactStat,
   pickDir,
   questionsFor,
   requeueGap,
@@ -228,12 +228,15 @@ interface DrillHandlers {
 const DRAIN_WINDOW_S = 5;
 /** How long the controls stay lit after the mouse stops. */
 const CONTROLS_IDLE_MS = 2000;
-/** How long a resolved multiple-choice MISS holds on screen before advancing on
- * its own. Longer than the 650ms a correct answer waits, because a miss shows a
- * reveal (the answer you should have picked) that wants reading. Multiple choice
- * has no keystroke to advance with, so it advances itself rather than stranding
- * a mouse user on the reveal. */
-const MC_MISS_ADVANCE_MS = 1600;
+// MC_MISS_ADVANCE_MS (1600) WAS HERE: how long a resolved multiple-choice MISS
+// held on screen before advancing itself, so a mouse user was not stranded on
+// the reveal with no keystroke to leave it by. It is gone, and no number
+// replaces it. The reveal is the only place the app tells you the answer you
+// just failed to give, and a deadline on reading it made the app score the
+// learner and then withhold the lesson — the beginner audit's worst finding,
+// and the one it said would make them quit. A miss now waits for Enter or the
+// Continue button, in every mode. Only a CORRECT answer still auto-advances
+// (650ms), which is what that mechanism was for.
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -549,8 +552,10 @@ export function DrillScreen() {
       // so there is exactly one place a showing's hint state begins.
       hinted: false,
     };
-    const st = rt.stats[f] ?? (rt.stats[f] = newFactStat());
-    st.seen++;
+    // Creates the stat, and deliberately advances NOTHING. `seen` used to tick
+    // here, which put it in the same unit as `asked` while every numerator was
+    // in the unit of `resolved` — see src/lib/drill-stats.ts for what that cost.
+    statForShowing(rt.stats, f);
     rt.elapsedMs = 0;
     rt.firstKeyMs = null;
     elapsedBaseRef.current = 0;
@@ -582,28 +587,24 @@ export function DrillScreen() {
       picked !== undefined
         ? picked === q.f
         : checkTyped(q.f, given, q.dir, ctxFor(q));
-    const st = rt.stats[q.f] ?? (rt.stats[q.f] = newFactStat());
+    const st = statForShowing(rt.stats, q.f);
     // A HINT FORFEITS "NAILED IT", and that is the whole of what it costs. Right
     // with a hint is the third outcome: seen, correct, not first-try — which is
     // an existing shape, not a new one (it is what a second-try success already
     // records), so nothing about the persisted file or the standings changes.
+    //
+    // Slowness is NOT a term here and must not become one: `st.slow` is its own
+    // counter that no numerator reads. A slow answer is a first-try answer.
     const credit = firstTryCredit(ok, q.tries, q.hinted);
-    // The FLAG: the first showing's verdict, never overwritten. The COUNT: once
-    // per showing that earned the credit, so the strict numerator is in the
-    // same unit as `seen` and repetition stops deflating the pill. `?? 0`
-    // because a runtime resumed from a snapshot written before the field
-    // existed won't have it — same reason as `correct` below.
-    if (st.firstTryCorrect === null) st.firstTryCorrect = credit;
-    if (credit) st.firstTryCount = (st.firstTryCount ?? 0) + 1;
     if (ok) {
+      // The showing RESOLVED. `seen`, the flag, the first-try count and the
+      // forgiving numerator all advance in one call so they cannot drift into
+      // different units — which is exactly what they had done. See
+      // src/lib/drill-stats.ts.
+      resolveShowing(st, credit, true);
       // Only a clean first try extends the streak — a miss below has already
       // zeroed it, so getting there on the retry doesn't restore it.
       if (q.tries === 0) rt.streak = (rt.streak ?? 0) + 1;
-      st.everCorrect = true;
-      // This showing ended right — the forgiving numerator. `?? 0` because
-      // engine.newFactStat() doesn't initialise the field yet, and because a
-      // runtime resumed from before it existed won't have it either.
-      st.correct = (st.correct ?? 0) + 1;
       // "Slow" is a hesitation relative to YOUR OWN recent latencies, judged
       // only on a clean first try: fumbling a retry says you didn't know it,
       // which the miss already records — it isn't a speed fact. A timeout is
@@ -653,26 +654,29 @@ export function DrillScreen() {
         if (cfg.timer) startCountdown(cfg.timerSec);
       } else {
         // Out of retries: the card is done with (re-queued for later), so it
-        // counts as resolved even though you didn't get it.
+        // counts as resolved even though you didn't get it. `credit` is
+        // necessarily false here; passing it keeps the one rule in one place.
+        resolveShowing(st, credit, false);
         rt.resolved++;
         rt.feedback = { kind: "bad" };
         rt.deck.splice(Math.min(rt.deck.length, rt.pos + requeueGap()), 0, q.f);
         rt.requeued++;
         rt.waiting = true;
         stopCountdown();
-        // Multiple choice is answered entirely by clicking — there is no
-        // keystroke in hand to press Enter with, and a mouse user has nothing to
-        // click to move on. So once the retries are gone, advance the card the
-        // same way a correct answer advances, holding the reveal a beat longer so
-        // the right answer can be read. Typed cards keep waiting for Enter: the
-        // hands are already on the keyboard there.
-        if (q.mc) {
-          clearAdvance();
-          advanceRef.current = setTimeout(
-            () => handlersRef.current?.nextQuestion(),
-            MC_MISS_ADVANCE_MS,
-          );
-        }
+        // NOTHING IS ARMED HERE, and that is the fix for the audit's worst
+        // finding. Multiple choice used to auto-advance after MC_MISS_ADVANCE_MS
+        // (1600ms) because it is answered entirely by clicking, so a mouse user
+        // had nothing to press Enter with. But the reveal — the one screen that
+        // tells you the answer you just failed to give — renders exactly here,
+        // and a timer that takes it away 1.6s later means the app scores you and
+        // hides the answer. A beginner reported never once learning that `u` is
+        // う, twice, and named it the thing that would make them quit.
+        //
+        // The auto-advance exists to keep a CORRECT answer flowing. It has no
+        // business skipping a lesson. So a miss now waits for the user exactly
+        // as a typed card does, and the mouse user gets a Continue button in the
+        // reveal instead of a deadline. See the reveal block below.
+        clearAdvance();
         syncProgress(); // requeue grew the limited total
       }
     }
@@ -773,18 +777,14 @@ export function DrillScreen() {
     elapsedBaseRef.current = rt.elapsedMs ?? 0;
     qStartRef.current = Date.now();
     if (rt.waiting) {
-      // A correct answer was mid auto-advance when we unmounted — re-arm it. A
-      // multiple-choice miss auto-advances too (see submit), so re-arm that as
-      // well; without it a card resolved just before a remount would sit forever.
+      // A correct answer was mid auto-advance when we unmounted — re-arm it.
+      // Only a correct one: a MISS now waits for Enter or the Continue button
+      // in every mode, so there is no timer to restore and re-arming one would
+      // put the 1.6s reveal-eater back through the remount path. See submit.
       if (rt.feedback?.kind === "good") {
         advanceRef.current = setTimeout(
           () => handlersRef.current?.nextQuestion(),
           650,
-        );
-      } else if (rt.feedback?.kind === "bad" && rt.q?.mc) {
-        advanceRef.current = setTimeout(
-          () => handlersRef.current?.nextQuestion(),
-          MC_MISS_ADVANCE_MS,
         );
       }
     } else if (cfg.timer) {
@@ -1255,7 +1255,17 @@ export function DrillScreen() {
                   {revealFor(q.f, q.dir, ctx)}
                 </span>
               </span>
-              {q.mc ? null : (
+              {/* The way on. A typed card has hands on the keyboard, so the
+                  Enter hint is enough. Multiple choice is answered entirely by
+                  clicking and has no keystroke in hand, so it gets a real
+                  button — that, and not a 1.6s timer, is the honest answer to
+                  "the mouse user has nothing to click". Either way the learner
+                  decides when they have finished reading the answer. */}
+              {q.mc ? (
+                <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
+                  Continue
+                </SmallBtn>
+              ) : (
                 <span className="text-[10px] text-text-muted">
                   Press Enter to continue
                 </span>

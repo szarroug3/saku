@@ -111,10 +111,18 @@ export function RestScreen({
       </Card>
 
       <Card className="px-[15px] py-[13px]">
-        <Hint>
-          Spacing works best when you do the rests, but you can complete early if
-          you need to.
-        </Hint>
+        {/* Each hint gets its own block. Hint is a <span> (see ui.tsx), so two
+            of them side by side ran together into "…if you need to.Your
+            finished rounds are saved." — reported in the beginner audit at both
+            the round-1→2 and round-2→3 breaks. Wrapped here rather than turning
+            Hint into a block, because Hint sits inline inside sentences
+            elsewhere and this card is the only place two of them stack. */}
+        <p>
+          <Hint>
+            Spacing works best when you do the rests, but you can complete early
+            if you need to.
+          </Hint>
+        </p>
         {/* THIS SENTENCE IS NOW TRUE, AND IT WAS NOT.
             It used to describe the localStorage snapshot only: the session
             resumed, so "progress" in the sense of "where you are in the loop"
@@ -127,10 +135,12 @@ export function RestScreen({
             anyone can read this, the work it is talking about is on disk. The
             first clause says which part is saved, because "your progress" on
             its own is the word that did the lying. */}
-        <Hint>
-          Your finished rounds are saved. Reloading or closing the page will not
-          lose your progress.
-        </Hint>
+        <p className="mt-1.5">
+          <Hint>
+            Your finished rounds are saved. Reloading or closing the page will
+            not lose your progress.
+          </Hint>
+        </p>
       </Card>
     </>
   );

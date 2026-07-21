@@ -337,18 +337,19 @@ async function missTheBoard(page: Page, correct: string) {
   await options.nth(wrongAt).click();
 }
 
-/**
- * How long the reveal is on screen after a multiple-choice miss.
- *
- * `MC_MISS_ADVANCE_MS` in drill-screen.tsx is 1600: a board card has no
- * keystroke in hand to press Enter with, so it auto-advances instead of waiting.
- * The assertions below must therefore land INSIDE that window, and Playwright's
- * 5s default would sail past it and report "element not found" for a reveal that
- * was there and correct. Budgeting it explicitly means a failure here reads as
- * what it is. Typed cards have no such window — they wait for Enter forever —
- * and deliberately do not use this.
- */
-const REVEAL_WINDOW = { timeout: 1400 };
+// REVEAL_WINDOW (a 1400ms budget) WAS HERE, and its removal is the point.
+//
+// It existed because `MC_MISS_ADVANCE_MS` in drill-screen.tsx auto-advanced a
+// resolved board miss after 1600ms, so these assertions had to land inside that
+// window or Playwright's 5s default would sail past a reveal that was there and
+// correct. The test was accommodating the bug: a beginner audit found that a
+// board card told you nothing on failure, and the reason was that the reveal
+// rendered and was then taken away before it could be read.
+//
+// The auto-advance is gone. A miss waits for Enter or the Continue button in
+// every mode, so the reveal is simply there until the learner leaves it, and
+// these assertions need no timing budget at all. The test below pins that
+// directly, so the window cannot come back unnoticed.
 
 test("reveal after a wrong en2jp answer names the kana that was asked for", async ({
   page,
@@ -361,8 +362,51 @@ test("reveal after a wrong en2jp answer names the kana that was asked for", asyn
 
   const r = reveal(page);
   // Shown the romaji, asked to produce the kana. The revealed answer is the kana.
-  await expect(r.answer).toHaveText("あ", REVEAL_WINDOW);
-  await expect(r.prompt).toHaveText("a", REVEAL_WINDOW);
+  await expect(r.answer).toHaveText("あ");
+  await expect(r.prompt).toHaveText("a");
+});
+
+/**
+ * THE AUDIT'S WORST FINDING, as a test: "A quiz that lets you fail and then
+ * hides the answer is not teaching, it is scoring."
+ *
+ * A beginner clicked two wrong tiles on `u`, the card advanced, and they were
+ * never shown that `u` is う. They reproduced it on the next card and named it
+ * the thing that would make them close the tab. Settings said "Show the answer
+ * when you run out of goes: On" the whole time.
+ *
+ * The reveal was never the problem — it rendered, and the correct tile even lit
+ * green beside it. A 1600ms timer then destroyed it. So the assertion that
+ * matters is not "the reveal appears" (the test above already has that) but
+ * "the reveal is STILL THERE after long enough to read it, and goes away only
+ * when the learner says so".
+ *
+ * The wait is deliberately longer than the old 1600ms window. It is the one
+ * place a fixed sleep is the honest instrument: the claim is precisely that
+ * nothing happens on a timer.
+ */
+test("a multiple-choice miss holds its reveal until the learner dismisses it", async ({
+  page,
+  seed,
+}) => {
+  await seed({ seen: ["kana:あ/reading"], cfg: PRODUCE_CFG });
+  await startPractice(page);
+  await missTheBoard(page, "あ");
+
+  const r = reveal(page);
+  await expect(r.answer).toHaveText("あ");
+
+  // Well past the old MC_MISS_ADVANCE_MS. Nothing may have moved.
+  await page.waitForTimeout(2600);
+  await expect(r.answer).toHaveText("あ", { timeout: 0 });
+
+  // A board card is answered entirely by clicking, so the way on has to be
+  // clickable — that, and not a deadline, is the answer to "a mouse user has
+  // nothing to press Enter with".
+  const onward = page.getByRole("button", { name: "Continue" });
+  await expect(onward).toBeVisible();
+  await onward.click();
+  await expect(r.answer).toHaveCount(0);
 });
 
 test("reveal after a wrong en2jp answer names the kanji that was asked for", async ({

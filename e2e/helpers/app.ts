@@ -214,8 +214,9 @@ export function reveal(page: Page) {
  * The wait is on the old glyph node detaching. The drill keys the halo on
  * `${rt.asked}-${q.tries}`, and a CORRECT answer never bumps `tries`, so a
  * remount can only mean the next question was drawn. That makes this exact
- * rather than a sleep, which matters because the app's auto-advance delays
- * differ by outcome (650ms right, 1600ms for a resolved multiple-choice miss).
+ * rather than a sleep, which matters because the app auto-advances a CORRECT
+ * answer after 650ms. Nothing else auto-advances any more: a miss waits for
+ * Enter or the Continue button in every mode, board cards included.
  */
 export async function answerTypedCorrectly(
   page: Page,
