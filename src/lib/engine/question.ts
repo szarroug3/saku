@@ -225,14 +225,19 @@ export interface QuestionType {
    */
   optionLabel?(fact: FactId, dir: Direction, ctx?: PromptContext): string | null;
   /**
-   * The answer to REVEAL, when it is not the fact's first baked answer — the
-   * grammar production answer on this showing's vehicle. Absent → the drill
-   * reveals `factInfo(fact).answers[0]`, right for everyone else.
+   * The answer to REVEAL when the FACT does not know it — the grammar pattern
+   * built on this showing's vehicle (食べてから, where the fact bakes 行ってから),
+   * the pattern that fills this selection's blank. A per-SHOWING answer, which
+   * is the only thing that cannot be derived from the fact and the direction.
    *
-   * `dir` because the answer is not always the same string both ways round: an
-   * en2jp grammar meaning card asks for the PATTERN, so revealing the fact's
-   * first baked answer would reprint the English that was the prompt — "decide
-   * to X pattern = decide to X", which tells you nothing you were not shown.
+   * NOT the way a subject avoids revealing the prompt. `revealFor` owns the
+   * default and derives it from the answer axis, so absent this override the
+   * reveal is already the Japanese in en2jp and the gloss/reading in jp2en. A
+   * subject that returns null or nothing here gets a correct reveal; this is
+   * only for when it can do BETTER than correct-for-the-fact.
+   *
+   * Read through `revealFor`, never called directly — a caller that composes its
+   * own fallback around it is how "a = a" shipped.
    */
   answerReveal?(fact: FactId, dir: Direction, ctx?: PromptContext): string | null;
   /**
@@ -285,6 +290,34 @@ function glyphOfFact(fact: FactId): string {
 }
 
 /**
+ * THE JAPANESE AN en2jp CARD ASKS YOU TO PRODUCE.
+ *
+ * Every en2jp card in the app has the same shape — shown a meaning or a reading,
+ * produce the Japanese — so there is exactly one string that is "the answer", and
+ * this is the single place that names it. Three separate questions read it and
+ * they must not be allowed to disagree:
+ *
+ *   - `checkEn2jp`   — what a typed answer is graded against.
+ *   - `en2jpTypeable`— whether that answer is spellable in romaji, i.e. whether
+ *                      the card gets a box or a board.
+ *   - `revealFor`    — what a miss prints.
+ *
+ * They used to answer it three times over, and the reveal answered it WRONG: it
+ * read the fact's first baked answer, which in en2jp is the English/romaji face
+ * — the prompt. See revealFor.
+ *
+ * For almost every fact the target is the glyph. The exception is a WORD asked
+ * by its reading: shown "teacher", the answer is せんせい, not 先生. That single
+ * `if` is why this is a function and not `info.glyph` inlined at three sites.
+ */
+function en2jpTarget(fact: FactId): string {
+  const info = factInfo(fact);
+  if (!info) return "";
+  if (info.subject === VOCAB_SUBJECT && isWordReading(fact)) return answerOf(fact);
+  return info.glyph;
+}
+
+/**
  * The en2jp answer check, shared by every subject: you are shown a meaning or a
  * reading and must produce the Japanese GLYPH.
  *
@@ -296,7 +329,7 @@ function glyphOfFact(fact: FactId): string {
  * choice instead — see DrillScreen.nextQuestion).
  */
 function checkEn2jp(fact: FactId, given: string): boolean {
-  return checkProduces(glyphOfFact(fact), given);
+  return checkProduces(en2jpTarget(fact), given);
 }
 
 /**
@@ -542,9 +575,10 @@ const wordQuestions: QuestionType = {
   },
   check(fact, dir, given) {
     if (dir === "jp2en") return checkJp2en(fact, given);
-    // The reading fact's en→jp answer is its kana READING, not its glyph. Accept
-    // it typed (romaji or kana) exactly the way every other kana target is.
-    if (isWordReading(fact)) return checkProduces(answerOf(fact), given);
+    // The reading fact's en→jp answer is its kana READING, not its glyph — which
+    // `en2jpTarget` already knows, so checkEn2jp grades it with no special case
+    // here. Accepted typed (romaji or kana) exactly the way every other kana
+    // target is.
     return checkEn2jp(fact, given);
   },
   distractors(fact, n) {
@@ -606,12 +640,15 @@ export function mcOnlyIn(fact: FactId, dir: Direction): boolean {
  * its kana reading, which is typeable even though the written word has kanji.
  * A word asked by its meaning still produces the written glyph, so it follows
  * the same all-kana test as everyone else.
+ *
+ * Which is not a subject list here any more — it is one all-kana test applied to
+ * `en2jpTarget`, the one place that knows what the card wants. A word reading's
+ * target IS its kana reading, so it passes the general test rather than needing
+ * to be excused from it.
  */
 export function en2jpTypeable(fact: FactId): boolean {
-  const info = factInfo(fact);
-  if (!info) return false;
-  if (info.subject === VOCAB_SUBJECT && isWordReading(fact)) return true;
-  return isKanaOnly(info.glyph);
+  if (!factInfo(fact)) return false;
+  return isKanaOnly(en2jpTarget(fact));
 }
 
 function isWordReading(fact: FactId): boolean {
@@ -1168,6 +1205,55 @@ const BY_SUBJECT: Record<string, QuestionType> = {
 export function questionsFor(fact: FactId): QuestionType {
   const subject = factInfo(fact)?.subject ?? "";
   return BY_SUBJECT[subject] ?? kanaQuestions;
+}
+
+/**
+ * WHAT THE DRILL PRINTS WHEN A CARD IS MISSED — the whole reveal, in one call.
+ *
+ * THE BUG THIS EXISTS FOR. The drill used to compose the reveal inline:
+ *
+ *     questionsFor(f).answerReveal?.(f, dir, ctx) ?? factInfo(f)?.answers[0]
+ *
+ * and `answerReveal` was implemented by grammar ALONE, so kana, kanji, word and
+ * transitivity all landed on `answers[0]`. In en2jp `answers[0]` is the
+ * English/romaji face of the fact — which is precisely what the prompt showed.
+ * The learner who could not produce あ was told "a = a"; 生 was "life = life".
+ * This is the one moment the app exists for and it printed the question back.
+ *
+ * WHY THIS IS A FUNCTION AND NOT A FIFTH `answerReveal`. Adding the override to
+ * four more subjects fixes four subjects and leaves the fifth one — the next one
+ * — sitting on the same defaulted-to-the-prompt fallback, with nothing to say it
+ * is wrong until a learner finds it. The fault was never that four subjects
+ * forgot an override; it was that the DEFAULT was drawn from the question axis.
+ *
+ * So the default is drawn from the ANSWER axis instead, and the two axes swap
+ * with the direction, which is the same asymmetry `prompt` and `labelOf` already
+ * have:
+ *
+ *   jp2en   shows Japanese, wants a reading or a gloss → `answerOf`
+ *   en2jp   shows a reading or a gloss, wants Japanese → `en2jpTarget`
+ *
+ * Each direction reveals exactly what the OTHER one displays, so the reveal
+ * cannot echo the prompt by construction rather than by four subjects each
+ * remembering not to. A subject registered tomorrow with no `answerReveal` gets
+ * a correct reveal, and reveal-not-prompt.test.ts asserts that over every fact
+ * in both directions so it stays true of whatever is registered next.
+ *
+ * `answerReveal` survives for what it was actually for: a per-SHOWING answer the
+ * fact cannot know — grammar's pattern built on this card's vehicle (食べてから,
+ * where the baked fact says 行ってから), the pattern that fills this selection's
+ * blank. It is an override, not the mechanism.
+ */
+export function revealFor(
+  fact: FactId,
+  dir: Direction,
+  ctx?: PromptContext,
+): string {
+  // A subject may know the answer for THIS showing when the fact does not. Empty
+  // is treated as absent: a blank reveal is the same silence as the bug.
+  const shown = questionsFor(fact).answerReveal?.(fact, dir, ctx);
+  if (shown) return shown;
+  return dir === "en2jp" ? en2jpTarget(fact) : answerOf(fact);
 }
 
 function shuffled<T>(arr: T[]): T[] {
