@@ -33,6 +33,21 @@ import type { AccuracyMetric, FactCounts, SessionStats } from "@/types";
  * answered yet would otherwise drag the number down before it was attempted.
  * "In flight" is `firstTryCorrect === null`, which is the one field that is
  * written the instant a showing resolves and never before.
+ *
+ * THAT GUARD IS NO LONGER LOAD-BEARING FOR THE DRILL, and this note is here so
+ * nobody restores the hole by trusting it. It is per-FACT, but the thing in
+ * flight is a SHOWING, so it only ever covered a fact's FIRST showing — the
+ * moment a card came round again the fact had a non-null flag and its
+ * on-screen, unanswered showing was pooled anyway. A learner reading an
+ * unbroken streak of 5 saw 83%.
+ *
+ * The fix was not to strengthen the guard but to remove what it was guarding
+ * against: src/lib/drill-stats.ts now advances `seen` at RESOLUTION, so a card
+ * on screen has contributed to no counter and there is nothing to exclude. The
+ * guard stays because the grid and pairs screens still write `seen` at deal
+ * time (each fact exactly once there, so it is sound for them), and because a
+ * fact whose first showing was abandoned mid-retry legitimately has 0 for
+ * everything and should stay out.
  */
 export function poolSessionCounts(stats: SessionStats): FactCounts {
   const agg = { ...EMPTY_COUNTS };

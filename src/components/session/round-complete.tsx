@@ -191,9 +191,23 @@ export function RoundComplete({
       </Card>
 
       <Card className="px-[15px] py-[13px]">
+        {/* The second sentence has to name the button that is actually on
+            screen, and say what that button actually does. On the last round it
+            reads "Complete session", and there is no break after it — the
+            session ends. The old line said "Complete round starts the break"
+            unconditionally, which on the final round named a button that wasn't
+            there and promised a rest that wasn't coming. */}
         <Hint>
-          Retries bring you back to this screen. <b>Complete round</b> starts the
-          break.
+          Retries bring you back to this screen.{" "}
+          {session.round >= SESSION_ROUND_TARGET ? (
+            <>
+              <b>Complete session</b> finishes for good.
+            </>
+          ) : (
+            <>
+              <b>Complete round</b> starts the break.
+            </>
+          )}
         </Hint>
       </Card>
     </>
