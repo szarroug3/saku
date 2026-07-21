@@ -48,6 +48,7 @@ import {
 // bundle everywhere. computeResults + factKeys need no registry.
 import { computeResults } from "@/lib/engine/results";
 import { factKeys } from "@/lib/fact-keys";
+import { firstTryShowings } from "@/lib/first-try";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import {
@@ -719,8 +720,15 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
           missed: stats[c].misses,
           slow: stats[c].slow,
           // Folded into the aggregate so strict accuracy survives without
-          // having to re-read every session's detail.
-          firstTry: stats[c].firstTryCorrect === true ? 1 : 0,
+          // having to re-read every session's detail. A COUNT of showings, in
+          // `seen`'s unit — the durable number and the pill the learner just
+          // watched are then the same measurement rather than two.
+          firstTry: firstTryShowings(stats[c]),
+          // The scheduler's hit, written separately and read only by
+          // aggregate.foldSession. One verdict per session, from the flag the
+          // results boards use; see SessionFactCounts.firstTryHit for why it is
+          // not `firstTry > 0`.
+          firstTryHit: stats[c].firstTryCorrect === true,
           // Showings that ended right — the forgiving numerator. A showing
           // nobody answered contributes 0, which is the point: it is not a pass.
           //

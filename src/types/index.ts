@@ -375,8 +375,8 @@ export interface FactSessionDetail {
    * bounded above by `seen`.
    *
    * Absent on stats restored from a snapshot written before this field existed;
-   * read it through `firstTryShowings()` in src/lib/session-accuracy.ts rather
-   * than directly, which derives the old value from `firstTryCorrect`.
+   * read it through `firstTryShowings()` in src/lib/first-try.ts rather than
+   * directly, which derives the old value from `firstTryCorrect`.
    */
   firstTryCount: number;
   /**
@@ -427,7 +427,15 @@ export interface FactCounts {
   /** Wrong ATTEMPTS — can exceed `seen`, since one showing allows retries. */
   missed: number;
   slow: number;
-  /** SHOWINGS answered correctly on the first attempt — the strict numerator. */
+  /**
+   * SHOWINGS answered correctly on the first attempt — the strict numerator,
+   * and in `seen`'s unit so the two can be divided. A fact shown three times
+   * and nailed three times contributes 3, not 1.
+   *
+   * Records written before this was a count carry 0 or 1 here: the old writer
+   * stored `firstTryCorrect ? 1 : 0`. Those are undercounts, not wrong units —
+   * a 1 really was one first-try showing — so they pool without a migration.
+   */
   firstTry: number;
   /**
    * SHOWINGS that ended in a correct answer, first try or after retries — the
@@ -437,6 +445,38 @@ export interface FactCounts {
    * to be `seen / (seen + missed)`, which scored an unanswered showing 100%.
    */
   correct: number;
+}
+
+/**
+ * One SESSION's counts for one fact — poolable counts, plus the one thing a
+ * session knows that a pool cannot represent.
+ *
+ * `firstTry` answers "how many showings did you nail", which is a quantity and
+ * survives being added to another session's. `firstTryHit` answers "did this
+ * test occasion go well", which is a verdict on an occasion: add two of them
+ * and the answer is not a bigger verdict, it is nothing. That is why it lives
+ * here and not in FactCounts, whose whole claim is that every field is a count
+ * (see the comment there) — the scheduler's input is the one thing about a
+ * session that does not pool, so it is typed where it cannot be pooled.
+ */
+export interface SessionFactCounts extends FactCounts {
+  /**
+   * Did the session's FIRST showing of this fact land cold — the scheduler's
+   * hit, and nothing else's. One session is one test occasion (see the header
+   * of src/lib/aggregate.ts for why), so the model gets one verdict per session
+   * however many times the requeue brought the fact back.
+   *
+   * Deliberately NOT derived from `firstTry > 0`, and the difference is real:
+   * fluff the first showing, nail the requeue, and the count is 1 while the
+   * verdict is false. Deriving would hand the model a pass for a fact you only
+   * got right after being shown the answer — the exact leniency this field
+   * exists to keep out of the schedule.
+   *
+   * Optional because records predate it. Absent means read `firstTry > 0`,
+   * which on those records is the old flag and so is the old answer exactly;
+   * see foldSession().
+   */
+  firstTryHit?: boolean;
 }
 
 /**
@@ -510,7 +550,7 @@ export interface QuizSessionRecord {
    * the replay in deleteSessions then disagreeing with the incremental fold in
    * saveSession about what the same file means.
    */
-  facts: Record<FactId, FactCounts>;
+  facts: Record<FactId, SessionFactCounts>;
   /** Full per-fact detail; absent on summary-only sessions. */
   detail?: SessionStats;
   /**
