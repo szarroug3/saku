@@ -16,6 +16,7 @@ import type {
 
 export {
   en2jpTypeable,
+  mcOnlyIn,
   questionsFor,
   grammarVehicleFor,
   grammarSelectionFor,

@@ -231,14 +231,25 @@ export interface QuestionType {
    */
   answerReveal?(fact: FactId, dir: Direction, ctx?: PromptContext): string | null;
   /**
-   * When true, this fact is ONLY ever asked as multiple choice — never typed,
-   * whatever the session's answer style. Transitivity sets it: the question is
-   * "pick the verb for this English cue", and typing a verb from an English
-   * sentence is a different, harder task than the one being taught (and there is
-   * no romaji prompt to type against). The drill reads this instead of deciding
-   * typeability from the fact's script.
+   * When set, this fact is ONLY ever asked as multiple choice — never typed,
+   * whatever the session's answer style. The drill reads this instead of
+   * deciding typeability from the fact's script.
+   *
+   * `true` means both directions. Transitivity sets it: the question is "pick
+   * the verb for this English cue", and typing a verb from an English sentence
+   * is a different, harder task than the one being taught (and there is no
+   * romaji prompt to type against).
+   *
+   * A Direction means that direction only, and the other side stays typed.
+   * Kana sets `"en2jp"`: there the prompt IS the romaji, so a typed box grades
+   * the prompt retyped as correct and the card tests nothing. Picking あ off a
+   * board is a real recall test; jp2en (show あ, type "a") is untouched and
+   * stays typed.
+   *
+   * Read it through `mcOnlyIn`, never directly — a bare truthiness test on a
+   * Direction value is true in both directions and silently loses the scoping.
    */
-  mcOnly?: boolean;
+  mcOnly?: boolean | Direction;
   /**
    * When set, this fact is ALWAYS asked in this one direction, whatever the
    * session enables. Transitivity sets `en2jp`: the cue is English and the
@@ -355,10 +366,20 @@ const kanaQuestions: QuestionType = {
           hint: script && `give the ${script}`,
         };
   },
+  // en2jp is multiple choice ONLY. The en2jp prompt for a kana fact is its
+  // romaji — "a" for あ — so a typed box graded through checkEn2jp accepted the
+  // prompt typed straight back and the card tested nothing, across all 214 kana.
+  // The romaji forgiveness in checkProduces is right everywhere else (これ must
+  // be answerable "kore" with no IME) and is left alone; kana en2jp opts out of
+  // typing entirely instead, which also keeps the card answerable without an IME.
+  mcOnly: "en2jp",
   check(fact, dir, given) {
+    // en2jp wants the GLYPH and nothing else. No romaji forgiveness here: the
+    // romaji is the prompt, so forgiving it grades the prompt as the answer.
+    // MC options carry the glyph, so exact match is all the board ever needs.
     return dir === "jp2en"
       ? checkJp2en(fact, given)
-      : checkEn2jp(fact, given);
+      : given.trim() === glyphOfFact(fact);
   },
   distractors(fact, n) {
     const c = glyphOfFact(fact);
@@ -559,6 +580,18 @@ const wordQuestions: QuestionType = {
     return out;
   },
 };
+
+/**
+ * Whether `fact` may only be asked as multiple choice in `dir`.
+ *
+ * The one reader of `QuestionType.mcOnly`, because that field is a boolean OR a
+ * Direction and `!qt.mcOnly` on the Direction form is wrong in the direction it
+ * was meant to leave alone. Everything that needs the answer asks here.
+ */
+export function mcOnlyIn(fact: FactId, dir: Direction): boolean {
+  const flag = questionsFor(fact).mcOnly;
+  return flag === true || flag === dir;
+}
 
 /**
  * Whether an en2jp card for `fact` can be answered by TYPING romaji — the

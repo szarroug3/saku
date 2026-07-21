@@ -1,9 +1,13 @@
 // Run: node --import ../conjugate/test-hooks.mjs --test src/lib/engine/romaji-check.test.ts
 //
-// The grader's en2jp path, end to end: does checkTyped accept a ROMAJI answer
-// for a kana glyph, keep accepting the raw kana an IME user types, and still
-// refuse romaji for a kanji answer (which has no romaji)? These are claims
-// about checkEn2jp reached through the same public seam the drill uses.
+// The grader's en2jp path, end to end: where does checkTyped accept a ROMAJI
+// answer, where does it insist on the kana, and does it still refuse romaji for
+// a kanji answer (which has no romaji)? These are claims about checkEn2jp
+// reached through the same public seam the drill uses.
+//
+// The romaji forgiveness holds everywhere EXCEPT a kana character asked en2jp,
+// where the prompt is that romaji and accepting it graded the prompt retyped as
+// correct. See the first case below.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -13,11 +17,16 @@ import { wordMeaningFactId, wordReadingFactId } from "../../data/vocab.ts";
 import { meaningFactId, readingFactId } from "../../data/kanji.ts";
 import { checkTyped } from "./index.ts";
 
-describe("en2jp check — kana glyphs accept romaji", () => {
-  test("a kana character accepts its romaji and its kana", () => {
+describe("en2jp check — a kana CHARACTER wants the kana, not the romaji", () => {
+  // This assertion used to read `checkTyped(ka, "ka", "en2jp") === true`, and
+  // that was the P0: the en2jp prompt for か IS "ka", so accepting "ka" meant
+  // the card graded its own prompt as the answer, for all 214 kana. The card is
+  // no longer typed in this direction at all (kanaQuestions.mcOnly === "en2jp");
+  // its MC options carry the glyph, which is what still grades.
+  test("a kana character rejects its romaji and accepts its kana", () => {
     const ka = kanaFact("か");
-    assert.equal(checkTyped(ka, "ka", "en2jp"), true); // romaji
-    assert.equal(checkTyped(ka, "か", "en2jp"), true); // raw kana (IME)
+    assert.equal(checkTyped(ka, "ka", "en2jp"), false); // the PROMPT, retyped
+    assert.equal(checkTyped(ka, "か", "en2jp"), true); // the glyph — the MC option
     assert.equal(checkTyped(ka, "ki", "en2jp"), false); // wrong
   });
 
