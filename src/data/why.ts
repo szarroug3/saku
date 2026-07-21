@@ -131,6 +131,19 @@ export const WHY_KANJI: readonly (Why & { id: string })[] = [
 ];
 
 /**
+ * The stroke-order rationale, in the owner's own words.
+ *
+ * ONE COPY, TWO PANELS, and they disagree about what to DO with it. The
+ * Library's panel is encouraging (a reference you looked something up in);
+ * the lesson's is discouraging (do not drill handwriting yet). Those are the
+ * ledes and the paragraphs that follow. But WHY stroke order matters is the
+ * same argument in both places, so it lives here once and must not drift into
+ * two slightly different versions again.
+ */
+const STROKE_ORDER_RATIONALE =
+  "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary. In addition to being the traditional way of writing, stroke order is worth learning because when you follow it, the shape comes out balanced and legible almost by itself. The rules (top to bottom, left to right) are what the shapes were designed around. When you write it a different way, even the same strokes tend to land lopsided. Learning the order is the fastest way to write characters that actually look right. This is especially important when writing by hand.";
+
+/**
  * Why stroke order matters — and why it's worth learning.
  *
  * Shown on the "how it's written" section. This is the fuller answer for the
@@ -140,20 +153,19 @@ export const WHY_KANJI: readonly (Why & { id: string })[] = [
  *
  * NO `rest`, DELIBERATELY. The lede used to carry a second sentence — that stroke
  * order makes shapes come out even and is what handwriting input and paper
- * dictionaries expect — which is precisely the claim the first two paragraphs
- * below already make, at length and with the reason attached. On screen that read
- * as the answer being given twice: once as an unsupported assertion nobody asked
- * for, then again properly behind the "why?". So the claim now lives only where
- * it is actually argued, and the line on the page is the bare, honest one.
+ * dictionaries expect — which is precisely the claim the paragraphs below already
+ * make, at length and with the reason attached. On screen that read as the answer
+ * being given twice: once as an unsupported assertion nobody asked for, then again
+ * properly behind the "why?". So the claim now lives only where it is actually
+ * argued, and the line on the page is the bare, honest one.
  */
 export const WHY_STROKE_ORDER: Why = {
   lede: {
     strong: "Stroke order is worth learning with each character.",
   },
   paras: [
-    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary: follow it and the shape comes out balanced and legible almost by itself, because the rules (top to bottom, left to right) are what the shapes were designed around. Fight it and even the same strokes tend to land lopsided, so learning the order is the fastest way to characters that actually look right.",
+    STROKE_ORDER_RATIONALE,
     "It pays off the moment you write anything by hand. Handwriting-recognition input (the way you’ll look up a character you can’t yet type) and paper kanji dictionaries both assume the standard order: draw a character the usual way and they follow along; draw it your own way and they lose you. Learn the order now and that door is already open when you need it.",
-    "It’s also a small thing to pick up, and it sticks best learned alongside the character rather than bolted on later. You’re seeing the diagram the same day you meet the shape, so the order comes for free with recognising it: a few strokes, in order, and you’ve got both.",
   ],
 };
 
@@ -177,7 +189,7 @@ export const WHY_WRITING_EARLY: Why = {
     strong: "We don’t recommend learning to write early.",
   },
   paras: [
-    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary. In addition to being the traditional way of writing, stroke order is worth learning because when you follow it, the shape comes out balanced and legible almost by itself. The rules (top to bottom, left to right) are what the shapes were designed around. When you write it a different way, even the same strokes tend to land lopsided. Learning the order is the fastest way to write characters that actually look right. This is especially important when writing by hand.",
+    STROKE_ORDER_RATIONALE,
     "People don’t do much handwriting these days with so much technology around. Japanese is a difficult language to learn coming from a western language that doesn’t use the same writing system. We think your time is better spent learning how to read, speak, and understanding what you hear.",
   ],
 };
