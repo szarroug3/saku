@@ -614,6 +614,55 @@ function isWordReading(fact: FactId): boolean {
   return !!info && wordReadingFactId(info.glyph) === fact;
 }
 
+/** Kana, kanji, or the citation mark 〜 — and no latin letter anywhere. Both
+ * halves matter: "sushi" has no Japanese in it, and a gloss like "OK" that
+ * happened to carry a 〜 is still English and still typed as latin. */
+function isJapaneseText(str: string): boolean {
+  const s = str.trim();
+  if (!s || /[A-Za-z]/.test(s)) return false;
+  return /[぀-ヿ㐀-䶿一-鿿々〜～]/.test(s);
+}
+
+/**
+ * Whether the answer to `fact` in `dir` is written in JAPANESE — the single
+ * question that decides whether a typed card gets live romaji→kana conversion.
+ *
+ * THE AXIS IS (FACT, DIRECTION), NOT DIRECTION. The drill used to convert
+ * whenever `dir === "en2jp"`, which is half right and half backwards. It left a
+ * jp2en typed card — a kanji reading, a word reading, a grammar production —
+ * with a latin box and no way for a learner without an IME to answer at all.
+ * But flipping it on for every typed card converts the four cards whose answer
+ * is ENGLISH: type "life" on a kanji meaning card and the box turns it into
+ * kana and marks it wrong, which is the same shape of failure as grading a
+ * correct romaji answer wrong.
+ *
+ *   kanji READING jp2en   せい          → convert
+ *   word  READING jp2en   せんせい       → convert
+ *   grammar PRODUCTION    行ってから      → convert
+ *   kana          jp2en   "a"           → do NOT
+ *   kanji MEANING jp2en   "life"        → do NOT
+ *   word  MEANING jp2en   "teacher"     → do NOT
+ *   grammar MEANING jp2en "after doing X" → do NOT
+ *
+ * en2jp is Japanese-by-construction for every subject: the direction's whole
+ * definition is "you are shown a meaning or a reading and must produce the
+ * Japanese". jp2en is the side that splits, and it splits on what the fact's
+ * own baked answers are made of — a reading is kana, a meaning is English —
+ * so the data answers the question and no subject list has to be maintained
+ * here. EVERY answer must be Japanese, not merely one: a fact that would accept
+ * a latin spelling must keep a latin box, or conversion takes that answer away.
+ *
+ * Lives here, next to the check helpers, because it is the same kind of claim
+ * they make about a fact and it must agree with them; and it is exported so the
+ * drill has exactly ONE place that decides this.
+ */
+export function answerIsJapanese(fact: FactId, dir: Direction): boolean {
+  const info = factInfo(fact);
+  if (!info) return false;
+  if (dir === "en2jp") return true;
+  return info.answers.length > 0 && info.answers.every(isJapaneseText);
+}
+
 // ---------- grammar ----------
 //
 // Two aspects. PRODUCTION is direction-insensitive — "build 〜てから on 行く" has
@@ -906,8 +955,17 @@ const grammarQuestions: QuestionType = {
       if (v) {
         const built = builtOn(prod.recipe, v);
         if (built) {
-          const g = given.trim();
-          return g === built.form || g === built.kanaForm;
+          // Through checkProduces, exactly as the baked path below does, and NOT
+          // raw string equality. Equality here meant the one branch the drill
+          // actually takes was the one branch with no romaji forgiveness: a
+          // learner with no IME typed `tabetekudasai` for 食べてください and was
+          // told she was wrong. checkProduces is unchanged and still refuses to
+          // let romaji reach a kanji-bearing target, so `form` (食べてください)
+          // stays exact-match and only `kanaForm` (たべてください) forgives a
+          // spelling — the same asymmetry every other subject already has.
+          return (
+            checkProduces(built.form, given) || checkProduces(built.kanaForm, given)
+          );
         }
       }
     }

@@ -15,6 +15,7 @@ import type {
 } from "@/types";
 
 export {
+  answerIsJapanese,
   en2jpTypeable,
   mcOnlyIn,
   questionsFor,
