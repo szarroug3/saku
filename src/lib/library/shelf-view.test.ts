@@ -16,23 +16,27 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { KANJI_SUBJECT } from "../../data/kanji.ts";
-import { VOCAB_SUBJECT } from "../../data/vocab.ts";
+import { VOCAB_SUBJECT, vocabRow } from "../../data/vocab.ts";
 import { KANA_SUBJECT } from "../../data/characters.ts";
 import { KANJI_SECTIONS_SHOWN } from "./kanji-shelf.ts";
 import {
   filterSections,
   sectionCapFor,
   shownSectionsOf,
+  shownWordsOf,
   visibleShelfIds,
   WORD_TILES,
   type ShelfSection,
 } from "./shelf-view.ts";
-import type { LibEntry } from "./entries.ts";
+import { LIB_ENTRIES, type LibEntry } from "./entries.ts";
 import type { EntryId } from "../../types/index.ts";
 
-/** A stand-in entry. The view math only ever reads `.id`, so the rest is filler
- * to satisfy the type; the `known` flag is what the test's `keep` predicate
- * looks at through the id. */
+/** A stand-in entry. The view math reads `.id` everywhere and `.glyph` on the
+ * words shelf (to look up `beginnerRank`), so the rest is filler to satisfy the
+ * type; the `known` flag is what the test's `keep` predicate looks at through
+ * the id. A stand-in's glyph is its id, which is not a real word — that is
+ * deliberate in the cap test below, where every entry ranks UNRANKED and the
+ * input order therefore survives. */
 function entry(id: string): LibEntry {
   return {
     id: id as EntryId,
@@ -184,5 +188,92 @@ describe("filterSections drops emptied sections and copies when unfiltered", () 
       ["s1"],
     );
     assert.notEqual(out, sections, "a copy, so a later slice cannot mutate the input");
+  });
+});
+
+// THE WORDS SHELF IS ORDERED BY `beginnerRank`
+// ============================================
+// The shelf is headed "Common everyday words" and used to paint the raw vocab
+// order, which opened with あべこべ (topsy-turvy), あやふや (vague) and いざこざ
+// (trouble) and reached うんこ / おっぱい inside the first 120 — on a grid that
+// shows no English to warn you. These pin the ORDER, not just that a sort call
+// exists: the first tile must be the lowest-ranked word in the data, and an
+// unranked word must sort LAST. Rank 0 for the unranked is exactly how a word
+// nobody ranked would land at the front of a beginner's first screen, which is
+// the bug in its original form.
+describe("the words shelf is painted in beginnerRank order", () => {
+  /** Real words, deliberately handed over in the WRONG order, so a function
+   * that merely passed its input through would fail. */
+  function realWords(kebs: readonly string[]): LibEntry[] {
+    return kebs.map((keb) => ({ ...entry(`w:${keb}`), glyph: keb }));
+  }
+
+  test("ascending by beginnerRank, whatever order they arrive in", () => {
+    const kebs = ["電話", "何", "行く", "言う", "あなた"];
+    const shuffled = realWords(kebs);
+    const ranked = shuffled.map((e) => vocabRow(e.glyph)?.beginnerRank);
+    assert.ok(
+      ranked.every((r) => typeof r === "number"),
+      "the fixture must be real vocab, or this pins nothing",
+    );
+
+    const out = shownWordsOf(shuffled);
+    const outRanks = out.map((e) => vocabRow(e.glyph)!.beginnerRank);
+    assert.deepEqual(
+      outRanks,
+      [...outRanks].sort((a, b) => a - b),
+      "ascending",
+    );
+    assert.deepEqual([...ranked].sort((a, b) => a! - b!), outRanks, "same words, reordered");
+  });
+
+  test("the whole shelf leads with the lowest rank in the data", () => {
+    const all = LIB_ENTRIES.filter((e) => e.kind === VOCAB_SUBJECT);
+    const first = shownWordsOf(all)[0];
+    const lowest = Math.min(...all.map((e) => vocabRow(e.glyph)!.beginnerRank));
+    assert.equal(vocabRow(first.glyph)!.beginnerRank, lowest);
+  });
+
+  test("an unranked word sorts LAST, never first", () => {
+    // 何 is rank 1 — the very front. The made-up glyph has no row at all, so if
+    // "no rank" were read as 0 it would displace 何 and open the shelf.
+    const mixed = [...realWords(["何"]), { ...entry("w:none"), glyph: "＊not-a-word＊" }];
+    const out = shownWordsOf(mixed);
+    assert.equal(out[0].glyph, "何");
+    assert.equal(out[out.length - 1].glyph, "＊not-a-word＊");
+  });
+
+  test("the filter still runs over the whole list, before the order and the cap", () => {
+    const all = LIB_ENTRIES.filter((e) => e.kind === VOCAB_SUBJECT);
+    const top = shownWordsOf(all)[0];
+    known.clear();
+    known.add(top.id);
+    const out = shownWordsOf(all, notKnown);
+    assert.ok(
+      !out.some((e) => e.id === top.id),
+      "a filtered-out word does not come back through the sort",
+    );
+  });
+
+  test("visibleShelfIds paints the same words in the same order as the grid", () => {
+    const all = LIB_ENTRIES.filter((e) => e.kind === VOCAB_SUBJECT);
+    known.clear();
+    assert.deepEqual(
+      visibleShelfIds(VOCAB_SUBJECT, [], all),
+      shownWordsOf(all)
+        .slice(0, WORD_TILES)
+        .map((e) => e.id),
+      "the Shift-range mirror and the render must agree, or a range sweeps a stretch nobody saw",
+    );
+  });
+
+  test("shownWordsOf does not mutate its input", () => {
+    const given = realWords(["電話", "何"]);
+    const before = given.map((e) => e.glyph);
+    shownWordsOf(given);
+    assert.deepEqual(
+      given.map((e) => e.glyph),
+      before,
+    );
   });
 });
