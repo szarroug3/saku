@@ -1,6 +1,6 @@
 # P1 · Words the app uses without ever teaching them
 
-**Status: done — COPY IS DRAFT** — merged `348b671`. Track-open intro cards built on phase-intros. The sentences are placeholders for Sam's voice pass.
+**Status: merged, AWAITING YOUR VOICE PASS** — `348b671`. The six track-open intro cards ship and work; their copy is placeholder draft (laid out in this file for you to rewrite).
 
 ---
 

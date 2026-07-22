@@ -1,6 +1,6 @@
 # The four skills — SCOPE RULED
 
-**Status: done — listening copy is DRAFT** — merged `fc35d1b`. Eddy voice fixed (Kyoko/Otoya preferred). Two opt-in word listening types, off by default, non-gating.
+**Status: merged, listening COPY IS DRAFT** — `fc35d1b`. Eddy voice fixed and two opt-in word listening types live. The labels are draft; LISTEN_SHARE and the direction-coupling are my calls, flagged for you.
 
 ## Sam's ruling, verbatim in effect
 

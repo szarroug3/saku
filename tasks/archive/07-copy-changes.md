@@ -6,10 +6,10 @@
 I updated it before the pass ran and never corrected it afterwards. Sam reasonably
 read the card as unstarted. It was not.
 
-## Still outstanding — all three need Sam's wording
+## Resolved — nothing outstanding
 
-- **E8 bullets 1 and 2** — `phase-intros.ts:290`/`:293` (straw-man duplicate) and
-  `:569` ("not a separate thing tacked on"). No rewrite was ever proposed.
+- **E8 bullets 1 and 2** — APPLIED in `52b6259` with Sam's wording (title lost its
+  straw man, obasan/obaasan proves the point; the okurigana negation deleted).
 - ~~**E3's parenthetical**~~ — **CLOSED.** Sam confirmed it was an editorial note,
   not copy to insert. The agent read it correctly. Nothing to do.
 - **C3's lead** — the paragraph landed; the lead above it still asserted the claim

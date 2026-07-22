@@ -18,7 +18,7 @@ enumerated approach that #6's hand-list failed at. **Dispatched on `fix/kanji-co
 
 # P0 · The "Made of" row teaches wrong kanji components
 
-**Status: needs review** — found overnight, measured, NOT fixed
+**Status: done** — merged `09cd236`. Regenerated `comps` from KanjiVG at depth 1: 休 = 亻 + 木, 時 = 日 + 寺, 1876 kanji corrected, no new data dependency.
 
 Surfaced as a low-confidence flag in `AUDIT-2-japanese.md` (§F, on `/library/kanji/前`).
 The auditor wrote: *"if other kanji show the same shape it is systemic."* I checked.
