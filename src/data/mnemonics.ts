@@ -1238,6 +1238,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "はな", reading: "hana", gloss: "flower", hitIndex: 0 },
   },
 
+  ハ: {
+    glyph: "ハ",
+    romaji: "ha",
+    sound: "ha",
+    object: "hammers",
+    analogy: [
+      { text: "Say “" },
+      { text: "ha", accent: true },
+      { text: "” as in " },
+      { text: "ha", accent: true },
+      { text: "mmers." },
+    ],
+    mnemonic: [
+      { text: "Two " },
+      { text: "ha", accent: true },
+      { text: "mmers angle away from each other." },
+    ],
+    example: { word: "ハム", reading: "hamu", gloss: "ham", hitIndex: 0 },
+  },
+
   ひ: {
     glyph: "ひ",
     romaji: "hi",
