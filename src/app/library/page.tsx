@@ -9,7 +9,7 @@
 // thing you do. It has a search box, because that is the front door OF THIS TAB
 // and nothing else on it matters as much.
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Suspense,
   useCallback,
@@ -87,8 +87,41 @@ function LibraryBody() {
   // THE URL IS THE STATE, for both the tab and the box. See url-state.ts for
   // why (short version: the entry-page breadcrumb has always linked here with a
   // ?kind= that this page ignored, and Back used to leave the Library).
-  const router = useRouter();
   const searchParams = useSearchParams();
+
+  // THE KIND, FILTER AND QUERY MOVE THROUGH THE NATIVE History API, NOT
+  // router.push/replace — and that is a root-cause fix, not a stylistic one.
+  //
+  // These controls only ever change the QUERY STRING of the page you are
+  // already on (`/library?kind=…&q=…&state=…`); the route segment never moves.
+  // For that, `window.history.pushState`/`replaceState` is the tool the App
+  // Router docs themselves reach for (see "Native History API" in
+  // node_modules/next/dist/docs/.../linking-and-navigating.md — the worked
+  // example is a sort param), and it syncs `usePathname`/`useSearchParams` just
+  // like the router does.
+  //
+  // router.push, by contrast, is for ROUTE navigations, and on Next 16 it has a
+  // bfcache hazard this page reproduced: after the App Router preserves and then
+  // restores this page's tree in an <Activity> boundary (which happens on a
+  // back→forward→back through a detail page), a subsequent SAME-SEGMENT,
+  // search-params-only push/replace is silently dropped — the reducer no-ops it,
+  // no URL change, no re-render. Segment-changing navigations (a detail tile, a
+  // sidebar link) still work, which is why only the chips and the search box went
+  // dead until a full reload. The History API takes a different path through the
+  // router and is unaffected, so the chips keep working across any history dance.
+  //
+  // pushState/replaceState also give us the two behaviours we relied on
+  // router's options for, for free: they add NO scroll (the `scroll: false` the
+  // chip nav wanted), and pushState still writes one history entry so Back
+  // undoes a kind/filter choice exactly as before.
+  const pushUrl = useCallback(
+    (url: string) => window.history.pushState(null, "", url),
+    [],
+  );
+  const replaceUrl = useCallback(
+    (url: string) => window.history.replaceState(null, "", url),
+    [],
+  );
   // ONE kind is shown at a time — there is no "All" view. Stacking every kind's
   // shelf at once (kana 214 + kanji + words + grammar ≈ thousands of tiles) was
   // genuinely laggy, and its value is already covered: SEARCH spans every kind,
@@ -145,12 +178,10 @@ function LibraryBody() {
       if (debounce.current) clearTimeout(debounce.current);
       debounce.current = setTimeout(() => {
         ownQuery.current = value;
-        router.replace(libraryUrl({ kind, query: value, state: stateFilter }), {
-          scroll: false,
-        });
+        replaceUrl(libraryUrl({ kind, query: value, state: stateFilter }));
       }, 250);
     },
-    [kind, stateFilter, router],
+    [kind, stateFilter, replaceUrl],
   );
 
   const selectKind = useCallback(
@@ -160,11 +191,9 @@ function LibraryBody() {
       // writing, or the new history entry would disagree with the screen.
       if (debounce.current) clearTimeout(debounce.current);
       ownQuery.current = query;
-      router.push(libraryUrl({ kind: next, query, state: stateFilter }), {
-        scroll: false,
-      });
+      pushUrl(libraryUrl({ kind: next, query, state: stateFilter }));
     },
-    [query, stateFilter, router],
+    [query, stateFilter, pushUrl],
   );
 
   // The knowledge filter is a navigation like the kind chips: choosing "Known"
@@ -174,9 +203,9 @@ function LibraryBody() {
     (next: KnowledgeFilter) => {
       if (debounce.current) clearTimeout(debounce.current);
       ownQuery.current = query;
-      router.push(libraryUrl({ kind, query, state: next }), { scroll: false });
+      pushUrl(libraryUrl({ kind, query, state: next }));
     },
-    [kind, query, router],
+    [kind, query, pushUrl],
   );
 
   // The search runs over 9,761 entries per keystroke. That is ~1–2ms and would
