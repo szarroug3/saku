@@ -78,7 +78,7 @@ export const WHY_SCRIPT: Record<string, Why> = {
     paras: [
       "Katakana spells the exact same sounds hiragana does. カ is “ka”, just like か. You already know how all of it sounds; you’re only learning to recognize a second way of writing it.",
       "It’s used for words borrowed from other languages (コーヒー is “coffee”) and for names and sound effects. You run into it constantly, so it’s worth having in hand before you spend real time on words.",
-      "It’s about the same size as hiragana and reuses sounds you already have, which is why it’s a quick second step rather than a whole new climb.",
+      "It’s about the same size as hiragana and reuses sounds you already have, which is why it’s a quick second step rather than something completely new.",
     ],
   },
 };
@@ -283,7 +283,7 @@ export const WHY_TRACK: Record<string, Why> = {
     },
     paras: [
       "Japanese has more than one word for the same action, and which one you use depends on who is doing it. For what a person you respect does, you use the HONORIFIC form, to raise them: 食べる becomes 召し上がる. For what you do yourself, you use the HUMBLE form, to step back: 食べる becomes いただく. It is the same eating either way, but using the wrong one is like bowing to yourself, and it is heard immediately.",
-      "A set opens as soon as you know the plain verb it replaces, so keigo starts early, on words you already have. For now you are only asked to RECOGNIZE these forms. Shown 召し上がる, you say what it means and which of the two it is. Choosing the right one to say yourself is a harder skill that comes later.",
+      "A set opens as soon as you know the plain verb it replaces, so keigo starts early, on words you already have. For now, you just need to recognize these, not produce them yourself. That’ll come later.",
     ],
   },
   transitivity: {

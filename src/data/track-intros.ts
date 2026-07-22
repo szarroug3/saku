@@ -231,7 +231,7 @@ export const COUNTERS_TRACK: PhaseIntro = {
       text: "Prices, ages, how many people, ordering food. Those are numbers and counters, so a little of this track goes a long way early on.",
     },
     {
-      lead: "It comes now because it needs only kana to begin.",
+      lead: "It’s taught now because it needs only kana to begin.",
       text: "The counting words are sounds before they are characters, so you can start them right after hiragana. The counters that lean on kanji wait until those kanji are learned.",
     },
   ],
