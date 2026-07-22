@@ -16,7 +16,7 @@ interactive biometric confirmation); re-sign if wanted.
 | 10 | **DONE** | Numbers and counters track | Merged. Library shelf at `/library/counter/一本` + scheduler wired (kana-gated phase 1, kanji-gated phase 2). Copy draft. |
 | 21 | **DONE (copy draft)** | Track intros + meta terms | Merged. Your six edits applied; Library `Terms` shelf (JLPT, kana, romaji, …) added; combo→yōon done. All copy draft. |
 | 22 | **DONE** | Listening | Merged. Word types + new SENTENCE recognition type (hear → pick the meaning), unambiguous-board guaranteed. Labels draft. |
-| 12 | **pitch + grammar DONE; keigo building** | Grammar depth, keigo, pitch | Pitch + 15 verified N3/N4 grammar patterns merged (12 recognition, 3 production). Keigo building; I verify the pairings before merge. |
+| 12 | **DONE** | Grammar depth, keigo, pitch | All merged. Pitch (Kanjium), 15 N3/N4 grammar patterns, keigo track (9 sets, every pairing hand-verified). |
 | 20 | **DONE** | Data quality | Merged. Items 1,2,5,7 fixed; item 3 worst spot-fixed. 66 kanji cleaned of metadata; 1384 reading anchors improved. |
 
 ## What's needed from you — 5 items
