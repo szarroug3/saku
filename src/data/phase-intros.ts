@@ -750,6 +750,44 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
   ],
 };
 
+// COUNTER SOUND CHANGE — the h→p/b shift, presented the way the Writing rules
+// shelf presents dakuten: a rule with worked forms, not six memorised words. It
+// opens no track (that is track-counters, in track-intros.ts); it is the rule
+// card the counters track's phase 2 rides in on, word-gated in lesson-steps.ts
+// ahead of the first counted form whose reading shifts (本 or 匹). Script-neutral
+// (NO_SCRIPT): the shift is a sound, not a spelling of one script.
+//
+// DRAFT copy for the owner's voice pass, the same as the track intros and the
+// task-22 listening copy. The FORMS in `examples` are FACTUAL DATA, verified
+// against a reference (see src/data/counters.ts); the prose is scaffolding. Every
+// draft string is quoted in the task report.
+export const COUNTER_SOUND_CHANGE: PhaseIntro = {
+  id: "intro-counter-sound-change",
+  setId: NO_SCRIPT,
+  title: "Some counters change their sound after certain numbers.",
+  body: [
+    {
+      lead: "After 1, 6, 8 and 10, an h-sound counter hardens.",
+      text: "本 is ほん on its own, but 一本 is いっぽん and 六本 is ろっぽん. The same shift lands on 匹: 一匹 is いっぴき, 六匹 is ろっぴき.",
+    },
+    {
+      lead: "After 3, it voices instead.",
+      text: "三本 is さんぼん and 三匹 is さんびき. That is the dakuten sound you already know, arriving at the seam between the number and the counter.",
+    },
+    {
+      lead: "Not every counter does this.",
+      text: "枚 begins with ま, so it never shifts: 一枚 is いちまい, 三枚 is さんまい. When a counter starts with an h-sound, expect the change; otherwise read it straight.",
+    },
+  ],
+  examples: [
+    { from: "一 + 本", to: "一本", reading: "いっぽん", gloss: "one long thing (p)", say: "一本" },
+    { from: "三 + 本", to: "三本", reading: "さんぼん", gloss: "three long things (b)", say: "三本" },
+    { from: "六 + 本", to: "六本", reading: "ろっぽん", gloss: "six long things (p)", say: "六本" },
+    { from: "三 + 匹", to: "三匹", reading: "さんびき", gloss: "three small animals (b)", say: "三匹" },
+    { from: "三 + 枚", to: "三枚", reading: "さんまい", gloss: "three flat things (no shift)", say: "三枚" },
+  ],
+};
+
 /**
  * Section id → the card shown BEFORE that section's characters.
  *
@@ -822,6 +860,7 @@ export const PHASE_INTROS: PhaseIntro[] = [
   OKURIGANA_MOVING,
   OKURIGANA_FIXED,
   TRANSITIVITY_INTRO,
+  COUNTER_SOUND_CHANGE,
 ];
 
 // NOT BUILT, AND SAY SO

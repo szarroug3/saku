@@ -37,6 +37,7 @@
 // into hiragana with the word "romaji" undefined.
 
 import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
+import { COUNTER_ENTRIES } from "@/data/counters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { RADICAL_SUBJECT } from "@/data/radicals";
@@ -76,16 +77,22 @@ export function trackOf(subject: string | undefined, glyph: string): TrackId | n
   return subject ? (TRACK_OF_SUBJECT[subject] ?? null) : null;
 }
 
-/** The track a walk item belongs to. */
+/** The track a walk item belongs to. A counters-track entry is routed by its
+ * ENTRY, not its subject: a counter is a `word` fact carrying a track label (see
+ * COUNTER_ENTRIES in src/data/counters.ts), so it must be told apart from the
+ * general words track by the one thing that distinguishes it. */
 export function trackOfItem(item: LessonItem): TrackId | null {
+  if (COUNTER_ENTRIES.has(item.entry)) return "counters";
   return trackOf(item.kind, item.glyph);
 }
 
-/** The track a fact belongs to — its subject through the registry, never a parse
- * of the id. */
+/** The track a fact belongs to — by its entry's label first (counters), then its
+ * subject through the registry, never a parse of the id. */
 function trackOfFact(fact: FactId): TrackId | null {
   const info = factInfo(fact);
-  return info ? trackOf(info.subject, info.glyph) : null;
+  if (!info) return null;
+  if (COUNTER_ENTRIES.has(info.entry)) return "counters";
+  return trackOf(info.subject, info.glyph);
 }
 
 /** Has the app any record of this fact — answered, claimed, or "quiz me"'d? The
