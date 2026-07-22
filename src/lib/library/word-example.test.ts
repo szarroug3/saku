@@ -109,8 +109,10 @@ describe("the generated artifact", () => {
     const expected = VOCAB.filter((w) => index.has(w.keb)).length;
     // Was 2,692 before the confound audit (see data/grammar/corpus-audit.ts)
     // removed 142 sentences from the corpus. 14 words lost their only example
-    // with them; the cost is recorded here rather than absorbed silently.
-    assert.equal(expected, 2678, "corpus coverage moved; remeasure before editing this");
+    // with them; the cost is recorded here rather than absorbed silently. Then
+    // +1 when いらっしゃる was added to the vocabulary (src/data/vocab.ts
+    // SUPPLEMENT): the corpus already had a sentence for it, so it gained a row.
+    assert.equal(expected, 2679, "corpus coverage moved; remeasure before editing this");
     assert.equal(EXAMPLE_COUNT, expected);
   });
 
