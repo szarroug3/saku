@@ -4,7 +4,7 @@
 // That refusal is about JAPANESE and it stands. This file still publishes a
 // GRAMMAR_CURRICULUM_TOTAL, because "how many patterns does this track teach"
 // is a question about the app rather than the subject — the distinction, and
-// why the answer is the 53 drillable recipes and not the 81 authored ones, is
+// why the answer is the 56 drillable recipes and not the 96 authored ones, is
 // argued at that constant.
 //
 // WHY THIS IS word-lesson.ts, NOT kanji-lesson.ts
@@ -81,10 +81,14 @@ export function clampGrammarPerLesson(n: number): number {
   return Math.min(20, Math.max(1, v));
 }
 
-/** N5 before N4. The one axis the teaching order sorts on; everything else is
- * left to the authored (stable) order. */
+/** N5 before N4 before N3 (the depth tier). The one axis the teaching order
+ * sorts on; everything else is left to the authored (stable) order. N3 is the
+ * structural set a learner meets AFTER the N4 core, so it sorts last — and it is
+ * almost all recognition-only (see the N3 block in recipes.ts), so today no N3
+ * row reaches DRILLABLE and this branch orders the aspectual N4 producers among
+ * their kin. The rank is ready for the day an N3 pattern becomes producible. */
 function levelRank(level: Level): number {
-  return level === "N5" ? 0 : 1;
+  return level === "N5" ? 0 : level === "N4" ? 1 : 2;
 }
 
 /**
@@ -102,17 +106,17 @@ export const CURRICULUM_PATTERNS: readonly Recipe[] = [...DRILLABLE].sort(
 
 /**
  * How many patterns the track teaches — the denominator on the lesson card.
- * 53 (DRILLABLE), out of 81 authored RECIPES.
+ * 56 (DRILLABLE), out of 96 authored RECIPES.
  *
  * WHY THE DRILLABLE COUNT AND NOT THE WHOLE TABLE
  * ===============================================
- * The 28 non-drillable recipes are real grammar and are really shown — the
+ * The 40 non-drillable recipes are real grammar and are really shown — the
  * cluster map prints them, and a learner will read them. They are still not the
  * denominator, because a denominator is a promise about the TRACK: "keep going
- * and you will have met all of these". This track never teaches those 28 and,
+ * and you will have met all of these". This track never teaches those 40 and,
  * by construction, never can — data/grammar/index.ts mints no production fact
  * for them, so a lesson card holding one would be a lesson the drill would
- * forever refuse to quiz. 81 would promise 28 lessons that cannot exist. It is
+ * forever refuse to quiz. 96 would promise 40 lessons that cannot exist. It is
  * the same error as counting the 6,340 advanced words the words track declines
  * to push: material the app HAS is not material the app TEACHES.
  *
@@ -123,9 +127,9 @@ export const CURRICULUM_PATTERNS: readonly Recipe[] = [...DRILLABLE].sort(
  * own list. All true, and it is a question about JAPANESE. This is a different
  * question with a different subject: how many patterns does THIS app's grammar
  * track teach? That one has an answer, because we authored the table and we
- * decide what is drillable. Printing 53 claims nothing about the language; it
+ * decide what is drillable. Printing 56 claims nothing about the language; it
  * claims something about the app, which is exactly the kind of claim a progress
- * counter is allowed to make. Counting the authored 81 would blur the two back
+ * counter is allowed to make. Counting the authored 96 would blur the two back
  * together by implying the table is a census of the subject.
  */
 export const GRAMMAR_CURRICULUM_TOTAL = CURRICULUM_PATTERNS.length;
@@ -172,13 +176,13 @@ export interface GrammarLesson {
   cards: GrammarCard[];
   facts: FactId[];
   /**
-   * Where you are, in PATTERNS — "3–7 of 53".
+   * Where you are, in PATTERNS — "3–7 of 56".
    *
    * The card used to say "lesson 3" and stop there, and the comment that stood
    * here defended it: the curriculum's length is fixed but a total "would read
    * as a promise". It reads as a promise because it IS one — the mistake was
    * making the promise about lessons, which the app cannot keep, rather than
-   * about patterns, which it can. 53 is the whole of what this track will ever
+   * about patterns, which it can. 56 is the whole of what this track will ever
    * teach and it does not move; see GRAMMAR_CURRICULUM_TOTAL.
    *
    * ITEMS ARE PATTERNS. Not lessons, and not sentences either — a pattern is

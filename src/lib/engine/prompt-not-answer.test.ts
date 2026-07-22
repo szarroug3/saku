@@ -134,6 +134,6 @@ describe("the two shapes that do NOT hold it yet", () => {
     // asks for the pattern, but grammarQuestions.check falls through to
     // `accepts`, which matches the fact's baked answers — the gloss. Structural,
     // like the kana one, and the same fix shape would serve it.
-    assert.equal(inSubject(GRAMMAR_SUBJECT).length, 81);
+    assert.equal(inSubject(GRAMMAR_SUBJECT).length, 96);
   });
 });

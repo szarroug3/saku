@@ -94,13 +94,19 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
     assert.equal(CURRICULUM_PATTERNS.length, DRILLABLE.length);
   });
 
-  test("all N5 patterns come before all N4 patterns", () => {
+  test("levels are monotone: every N5 before every N4 before every N3", () => {
+    // The teaching order sorts on level (N5 → N4 → N3, the depth tier) and is
+    // otherwise stable. So the level sequence down the curriculum must never go
+    // backwards: rank(prev) <= rank(next), everywhere. Today no N3 row is
+    // producible so the N3 tail is empty, but the invariant is the one that will
+    // still hold the day one is.
+    const rank = { N5: 0, N4: 1, N3: 2 } as const;
     const levels = CURRICULUM_PATTERNS.map((r) => r.level);
-    const firstN4 = levels.indexOf("N4");
-    if (firstN4 !== -1) {
-      for (let i = firstN4; i < levels.length; i++) {
-        assert.equal(levels[i], "N4", "an N5 pattern appears after an N4 one");
-      }
+    for (let i = 1; i < levels.length; i++) {
+      assert.ok(
+        rank[levels[i - 1]!] <= rank[levels[i]!],
+        `${levels[i - 1]} appears before ${levels[i]}`,
+      );
     }
     assert.ok(levels.includes("N5") && levels.includes("N4"));
   });
@@ -109,7 +115,7 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
     // The N5 slice of the curriculum is the N5 drillable recipes in RECIPES order;
     // likewise N4. That is what "stable" buys, and it keeps the て/ない/must
     // groupings intact inside each level.
-    for (const level of ["N5", "N4"] as const) {
+    for (const level of ["N5", "N4", "N3"] as const) {
       const fromCurriculum = CURRICULUM_PATTERNS.filter((r) => r.level === level).map(
         (r) => r.id,
       );
@@ -261,14 +267,16 @@ describe("lesson sizing is a count, clamped", () => {
 // The card counts PATTERNS — "3–7 of 53" — where it used to say "lesson 3" and
 // deliberately withhold a total.
 describe("the position counts PATTERNS, and the total is the drillable set", () => {
-  test("the total is the 53 drillable recipes, not the 81 authored ones", () => {
-    // The 28 reference-only recipes are shown on cluster pages and never
-    // taught, so counting them would promise 28 lessons that cannot exist —
-    // data/grammar/index.ts mints no production fact for them.
+  test("the total is the 56 drillable recipes, not the 96 authored ones", () => {
+    // The 40 reference-only recipes are shown on cluster/pattern pages and never
+    // taught by the production track, so counting them would promise 40 lessons
+    // that cannot exist — data/grammar/index.ts mints no production fact for
+    // them. 40 = 28 original + the 12 N3 recognition patterns, which are
+    // vacuous by construction (they attach to a clause, not a vehicle).
     assert.equal(GRAMMAR_CURRICULUM_TOTAL, CURRICULUM_PATTERNS.length);
     assert.equal(GRAMMAR_CURRICULUM_TOTAL, DRILLABLE.length);
-    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 53);
-    assert.equal(RECIPES.length, 81);
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 56);
+    assert.equal(RECIPES.length, 96);
     assert.ok(GRAMMAR_CURRICULUM_TOTAL < RECIPES.length);
   });
 

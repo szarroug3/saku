@@ -12,10 +12,12 @@
 //   meaning      "what does 〜てから mean?"  -> "after doing X"
 //   production   "build the 〜てから form"    -> only where that is a question
 //
-// The production aspect exists ONLY for non-vacuous recipes. 27 of the 81 have
+// The production aspect exists ONLY for non-vacuous recipes. 40 of the 96 have
 // no production fact at all, because "give me the は form of 私" is typing, and
 // a fact you cannot grade is worse than a fact you do not have — the same rule
 // that keeps jukujikun out of the kanji reading facts (see src/data/vocab.ts).
+// The 40 is 28 original + the 12 N3 recognition patterns, which attach to a
+// clause rather than a vehicle and so are vacuous by construction.
 //
 // WHY PRODUCTION IS KEYED ON THE PATTERN AND NOT ON (PATTERN, WORD)
 // ================================================================
@@ -157,14 +159,15 @@ export function sharedRuleOwner(r: Recipe, host: Host): Recipe | undefined {
 }
 
 /**
- * Every grammar fact: 81 meanings + 62 productions.
+ * Every grammar fact: 96 meanings + 65 productions.
  *
  * The asymmetry is the model working, not an inconsistency — exactly as a word
  * having one reading fact while a kanji never does. Every pattern means
- * something; only 53 of them are something you can be asked to BUILD, and 5 of
- * those 53 are more than one thing to build — see `productionHosts`. 53 patterns
- * carry 62 production facts, and the 9 extra are adjective rules that were in
- * the table all along with nowhere to be asked.
+ * something; only 56 of them are something you can be asked to BUILD, and 5 of
+ * those 56 are more than one thing to build — see `productionHosts`. 56 patterns
+ * carry 65 production facts, and the 9 extra are adjective rules that were in
+ * the table all along with nowhere to be asked. The 3 newest producers are the
+ * aspectual/desiderative compounds 〜たがる / 〜始める / 〜続ける (each verb-only).
  *
  * It was 54 until 〜たり〜たり lost its production fact. That fact was reachable:
  * the scheduler could serve it, and the generator answered it with 行ったり —
