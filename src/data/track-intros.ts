@@ -133,7 +133,7 @@ export const RADICAL_TRACK: PhaseIntro = {
     },
     {
       lead: "Knowing one gives you a head start on a kanji you have never seen.",
-      text: "The radical often hints at what the kanji means. It is a hint rather than a promise, since some radicals are only structural. A radical is usually a component rather than a word you would say out loud, so this track asks you only for its meaning.",
+      text: "The radical often hints at what a kanji means, though it is only a hint. Many radicals are also characters you learn on their own, like 火 for fire, and a few are only ever building blocks. Here you learn it as a building block, so this track asks you only for its meaning.",
     },
     {
       lead: "Each one is taught just before the first kanji that uses it.",
