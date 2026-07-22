@@ -31,6 +31,8 @@ import {
   KANJI_ORDER,
   PREREQUISITE_ONLY,
   RADICAL_INDEX_MEANING,
+  COUNTER_MEANING,
+  ZODIAC_MEANING,
   READINGS,
   kanjiRow,
   variantTaughtKanji,
@@ -300,6 +302,44 @@ test("radical-index metadata is stripped from meanings, real 'radical' meanings 
   // No kanji was emptied by the filter — a meaning fact with no answers is
   // ungradeable, and 22 rows losing their ONLY meaning would be a silent
   // regression rather than a fix.
+  assert.equal(KANJI.filter((k) => k.meanings.length === 0).length, 0);
+});
+
+test("counter and zodiac/branch metadata is stripped from meanings, real meanings are not", () => {
+  // KANJIDIC2 files a character's COUNTER role and its ZODIAC/terrestrial-branch
+  // role as if they were English meanings. They reach the learner exactly as the
+  // radical index did — as the taught meaning, an accepted answer and a
+  // distractor for a MEANING question. Same structural fix, extended.
+  //
+  // 子 shipped ["child", "sign of the rat", "11PM-1AM", "first sign of Chinese
+  // zodiac"] and 子 means "child". 張 LED with "counter for bows & stringed
+  // instruments" — a grammatical classifier, not what 張 means.
+  assert.deepEqual(kanjiRow("子")?.meanings, ["child"]);
+  assert.deepEqual(kanjiRow("張")?.meanings, ["stretch", "spread", "put up (tent)"]);
+  assert.deepEqual(kanjiRow("午")?.meanings, ["noon"]);
+  assert.deepEqual(kanjiRow("申")?.meanings, ["have the honor to"]);
+
+  // THE FILTER IS THE PATTERN, NOT THE WORD. "counterfeit" and "encounter" both
+  // contain "counter" and are real meanings; the anchored "counter for" spares
+  // them. 基's "radical (chem)" already proved the same point for radicals.
+  assert.ok(kanjiRow("基")?.meanings.includes("radical (chem)"));
+  assert.ok(!COUNTER_MEANING.test("counterfeit"));
+  assert.ok(!COUNTER_MEANING.test("encounter"));
+
+  // Nothing still ships a counter or zodiac/branch gloss, EXCEPT a row whose
+  // only KANJIDIC2 sense is metadata (the zero-guard keeps it — see below). This
+  // catches a re-cut done with the filter dropped.
+  for (const k of KANJI) {
+    if (k.meanings.length === 1) continue; // zero-guard survivor
+    for (const m of k.meanings) {
+      assert.ok(!COUNTER_MEANING.test(m), `${k.c} still ships counter "${m}"`);
+      assert.ok(!ZODIAC_MEANING.test(m), `${k.c} still ships zodiac "${m}"`);
+    }
+  }
+
+  // The zero-guard: 箇's ONLY KANJIDIC2 sense is "counter for articles". A blind
+  // filter would empty it — an ungradeable meaning fact — so its sense is kept.
+  assert.deepEqual(kanjiRow("箇")?.meanings, ["counter for articles"]);
   assert.equal(KANJI.filter((k) => k.meanings.length === 0).length, 0);
 });
 

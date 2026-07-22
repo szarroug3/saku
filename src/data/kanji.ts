@@ -175,6 +175,47 @@ export interface OrderRow {
  */
 export const RADICAL_INDEX_MEANING = /\bradical\s*\(no\.\s*\d+\s*\)/i;
 
+/**
+ * KANJIDIC2 also files a character's role as a COUNTER (助数詞) as an English
+ * meaning: 張 ships as `["counter for bows & stringed instruments", "stretch",
+ * ...]` and 杯 leads with `"counter for cupfuls"`. A counter is a grammatical
+ * classifier, not what the character means to a learner meeting it, and it
+ * reaches the quiz exactly as the radical-index metadata did — an accepted
+ * answer and a distractor for a MEANING question, and the Library page title.
+ *
+ * Same argument, same shape of fix: filter by the STRUCTURAL PATTERN, not a
+ * hand-picked list. Every counter sense in KANJIDIC2 opens with "counter for",
+ * so the anchored form catches all 47 of them and cannot catch a real meaning
+ * ("counterfeit", "encounter" don't start with "counter for").
+ */
+export const COUNTER_MEANING = /^counter for\b/i;
+
+/**
+ * And the ZODIAC / terrestrial-branch metadata: 子 ships as `["child", "sign of
+ * the rat", "11PM-1AM", "first sign of Chinese zodiac"]`. The rat/clock-hour/
+ * branch senses are the character's role in the sexagenary calendar, not what
+ * 子 means (child). Three shipped rows carry these (子 午 申); the pattern also
+ * covers the terrestrial-branch / celestial-stem phrasings KANJIDIC2 uses for
+ * others, so a future re-cut stays clean without an enumerated list.
+ *
+ * The three shapes, all anchored or specific enough not to touch a real
+ * meaning: "sign of the <animal>", the "<ordinal> sign of Chinese zodiac"
+ * gloss, the terrestrial-branch / celestial-stem gloss, and the clock-hour
+ * range ("11PM-1AM", "3-5PM") the branch carries.
+ */
+export const ZODIAC_MEANING =
+  /^sign of the |chinese zodiac|\bterrestrial branch\b|\bcelestial stem\b|^\d{1,2}(?::\d{2})?\s*(?:[AP]M)?\s*[-–]\s*\d{1,2}(?::\d{2})?\s*[AP]M$/i;
+
+/**
+ * A KANJIDIC2 meaning that is catalogue metadata rather than a meaning: a
+ * radical index, a counter role, or a zodiac/branch/clock sense. All three are
+ * filtered at load (below) so no consumer sees them.
+ */
+export const METADATA_MEANING = (m: string): boolean =>
+  RADICAL_INDEX_MEANING.test(m) ||
+  COUNTER_MEANING.test(m) ||
+  ZODIAC_MEANING.test(m);
+
 /** kanji.json carries the KRADFILE decomposition under `comps`; it becomes
  * `costParts` here. The learner-facing depth-1 decomposition lives in its own
  * generated artifact, kanji-components.json (exactly as the classical radical
@@ -197,8 +238,15 @@ const VARIANT_ORIGINAL: Readonly<Record<string, string>> = (
 export const KANJI: readonly KanjiRow[] = (kanjiJson as readonly RawKanji[]).map(
   (k) => ({
     ...k,
-    meanings: k.meanings.some((m) => RADICAL_INDEX_MEANING.test(m))
-      ? k.meanings.filter((m) => !RADICAL_INDEX_MEANING.test(m))
+    // Strip catalogue metadata (radical index, counter role, zodiac/branch) so
+    // no consumer quizzes it as a meaning. The zero-guard matters: 箇's ONLY
+    // KANJIDIC2 sense is "counter for articles", so filtering it blindly would
+    // leave an ungradeable empty meaning fact — there we keep the sense.
+    meanings: k.meanings.some(METADATA_MEANING)
+      ? (() => {
+          const kept = k.meanings.filter((m) => !METADATA_MEANING(m));
+          return kept.length > 0 ? kept : k.meanings;
+        })()
       : k.meanings,
     // KanjiVG depth-1 is the "Made of" truth; the KRADFILE list becomes the
     // cost-only `costParts`. `comps` last so it wins over the spread.
