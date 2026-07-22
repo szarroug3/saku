@@ -1,6 +1,6 @@
 # P1 · Words the app uses without ever teaching them
 
-**Status: merged, AWAITING YOUR VOICE PASS** — `348b671`. The six track-open intro cards ship and work; their copy is placeholder draft (laid out in this file for you to rewrite).
+**Status: engineering merged; the COPY is the open work.** Track-intro cards and the Terms glossary shipped; your six edits are in; combo→yōon done. Open: (1) the voice pass on all the new draft copy — see `../AUDIT-3-voice.md`; (2) extending the glossary (in progress); (3) cross-linking the jargon to its Terms page (a follow-up).
 
 ---
 

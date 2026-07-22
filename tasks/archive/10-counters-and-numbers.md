@@ -1,6 +1,6 @@
 # Numbers and counters — a separate track
 
-**Status: APPROVED — ready to build (prose as draft)**
+**Status: done** — merged. Counters Library shelf (`/library/counter/一本`) + scheduler wired (kana-gated phase 1, kanji-gated phase 2). All readings verified. Draft copy folds into the voice pass (task 21).
 
 ## Sam's rulings, 21 July
 

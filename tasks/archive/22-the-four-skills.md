@@ -1,6 +1,6 @@
 # The four skills — SCOPE RULED
 
-**Status: merged, listening COPY IS DRAFT** — `fc35d1b`. Eddy voice fixed and two opt-in word listening types live. The labels are draft; LISTEN_SHARE and the direction-coupling are my calls, flagged for you.
+**Status: done** — merged. Word listening + sentence-recognition listening live; the Eddy voice bug is fixed. Two behaviour-tuning decisions (LISTEN_SHARE frequency, direction coupling) are noted in the README's open-decisions list; the labels are draft (voice pass).
 
 ## Sam's ruling, verbatim in effect
 

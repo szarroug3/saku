@@ -1,6 +1,6 @@
 # P2 · Grammar coverage, keigo, and pitch accent
 
-**Status: DECIDED by Claude on Sam's delegation — keigo queued, pitch building, grammar held**
+**Status: keigo + pitch DONE; grammar has an open follow-up.** Keigo track and pitch display merged and verified. The N3 grammar batch shipped 15 patterns, but the 12 clause-level RECOGNITION patterns only show in the Library — they are not DRILLED until the grammar corpus is re-tagged (`scripts/ingest/grammar.py`). That re-tag, and any further N3 depth, is the open work.
 
 ## The three calls (Sam: "do whatever you think is best for both")
 

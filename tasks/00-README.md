@@ -3,38 +3,45 @@
 Findings from the audit rounds, turned into tracked work. Done cards live in
 [`archive/`](archive/); this file's Active board is only what is still open.
 
-As of the last update: **main is green — 1288 unit tests, 78 e2e, tsc clean.**
-Every overnight/day commit is unsigned (1Password's signing agent needs
-interactive biometric confirmation); re-sign if wanted.
+As of the last update: **main is green — 1515 unit tests, 80 e2e, tsc clean.**
+Every commit is unsigned (1Password's signing agent needs interactive biometric
+confirmation); re-sign if wanted.
 
 ---
 
-## Active
+## Active — genuinely open work only
 
-| # | Status | Task | What it needs |
+Two cards. Everything whose engineering is merged has moved to the archive; what
+is left here is work that is not finished.
+
+| # | Status | Task | What is actually open |
 |---|---|---|---|
-| 10 | **DONE** | Numbers and counters track | Merged. Library shelf at `/library/counter/一本` + scheduler wired (kana-gated phase 1, kanji-gated phase 2). Copy draft. |
-| 21 | **DONE (copy draft)** | Track intros + meta terms | Merged. Your six edits applied; Library `Terms` shelf (JLPT, kana, romaji, …) added; combo→yōon done. All copy draft. |
-| 22 | **DONE** | Listening | Merged. Word types + new SENTENCE recognition type (hear → pick the meaning), unambiguous-board guaranteed. Labels draft. |
-| 12 | **DONE** | Grammar depth, keigo, pitch | All merged. Pitch (Kanjium), 15 N3/N4 grammar patterns, keigo track (9 sets, every pairing hand-verified). |
-| 20 | **DONE** | Data quality | Merged. Items 1,2,5,7 fixed; item 3 worst spot-fixed. 66 kanji cleaned of metadata; 1384 reading anchors improved. |
+| 21 | **copy is open** | The new copy + the glossary | Every new feature shipped with DRAFT copy. The open work is a **voice pass** across the track intros, keigo, counters, pitch explainer, grammar glosses, terms, and listening labels — `../AUDIT-3-voice.md` ranks it. Plus: the glossary is being extended now, and cross-linking jargon to its Terms page is a follow-up. **Yours to pace.** |
+| 12 | **grammar follow-up open** | Grammar depth | Keigo and pitch are done. The N3 grammar shipped 15 patterns, but the **12 clause-level recognition patterns only show in the Library — they are not drilled** until `scripts/ingest/grammar.py` is re-run to tag them. That re-tag, and any further N3 depth, is the open work. Correctness-sensitive, so paced and reviewed. |
 
-## What's needed from you — 5 items
+## Small open decisions (loose ends, none blocking)
 
-1. **10 · counters** — verify the built track, and rule on wiring it live.
-2. **12 · keigo + pitch** — approve the recommended shapes (keigo track after
-   transitivity; pitch display-only via Kanjium).
-3. **20 · data quality** — rule on which items to fix vs accept.
-4. **21 · track intros** — voice pass on the six draft cards.
-5. **22 · listening** — voice pass on the labels; confirm the two calls I made.
+From the audits and my own flags — quick calls when you get to them:
 
-**Ready to test in the running app:** the **sentence drills** (task 11, just
-merged — Practice → mode "Build sentences") and the **kanji components** fix
-(task 23 — Library → any kanji → "Made of" now shows 亻 not 化).
+- **Counters wording:** the graded answer says "one long **object**" but the
+  teaching card says "one long **thing**" — pick one (voice audit).
+- **Radical contradiction:** `why.ts` says most radicals *are* words; the track
+  intro says a radical is "usually not a word you speak." Reconcile (voice audit).
+- **Name pitch accent:** the app draws a pitch mark but never says "pitch accent"
+  or what it is (beginner audit). A Terms entry is being added; decide if the mark
+  itself should link to it.
+- **Listening tuning:** `LISTEN_SHARE` (how often listening cards appear when on)
+  and whether "hear it, type the romaji" should be gated behind the jp→en direction
+  rather than forcing it. Both my calls, both easy to change.
+- **The "taught now because…" repetition** across three track-intro cards, and the
+  "X rather than Y" tic — structural voice tells (voice audit), fold into the pass.
 
-Lighter, non-blocking verify items (from the running server): the confusion-note
-wording, the "needed another look" summary label, the per-card answer instructions,
-and the particle rule card. All merged; spot-check when convenient.
+## Voice pass — the biggest open thing
+
+Nearly every string added this session is draft. The single most useful next
+session is a voice pass, and `../AUDIT-3-voice.md` is the map: it ranks what most
+breaks the "written by someone who went through it" voice, quotes each piece, and
+proposes rewrites. Task 21 holds the track-intro drafts inline for marking.
 
 ---
 
@@ -53,6 +60,7 @@ Each links to its card in [`archive/`](archive/) with the merge commit.
 | 07 | [Copy changes (24 items)](archive/07-copy-changes.md) | `e784135` + `52b6259` + `bc5104d` |
 | 08 | [Test-suite hardening](archive/08-test-suite-gaps.md) | `cb50d74` |
 | 09 | [Particle reading rule (は/へ/を)](archive/09-particle-reading-rule.md) | `3ed951f` |
+| 10 | [Numbers and counters track](archive/10-counters-and-numbers.md) | `81023bd` |
 | 11 | [Sentence production (assembly + substitution)](archive/11-sentence-production.md) | `ae03adf` |
 | 13 | [Remove the draft flag](archive/13-remove-draft-flag.md) | `db993e0` |
 | 14 | [Session bricks](archive/14-p0-session-bricks.md) | `abc454c` |
@@ -61,11 +69,20 @@ Each links to its card in [`archive/`](archive/) with the merge commit.
 | 17 | [Shipped-data problems](archive/17-p1-shipped-data-problems.md) | `ffbc40d` |
 | 18 | [Retry left no trace; summary math](archive/18-p1-retry-and-summary.md) | `a53a94e` |
 | 19 | [en2jp kana answered itself](archive/19-p0-en2jp-kana-self-answering.md) | `379e519` |
+| 20 | [Data quality (kanji meanings, non-words, anchors)](archive/20-p1-data-quality.md) | `0442e75` |
+| 22 | [The four skills → listening built, speaking/writing ruled out](archive/22-the-four-skills.md) | `fc35d1b` + `517cc52` |
 | 23 | [Kanji "Made of" was wrong](archive/23-p0-kanji-components-wrong.md) | `09cd236` |
 
+**Bigger features merged this session (engineering done, some copy still draft — see task 21):**
+sentence recognition listening, the **keigo track** (`517cc52`), the **N3 grammar
+batch** (`dd5c677`), **pitch accent display** (`5e6a985`), and the **Terms
+glossary + combo→yōon** (`59852b4`).
+
 Plus, not carded: the **aggregate split** (`d603d4d`), the **voice-consistency
-pass** (`bc5104d`), the **Japanese-accuracy fixes** (`a81f2fe`), and the
-**katakana mnemonic images** (`fec4eab`, `2cb9949`, `eb85a9c`).
+pass** (`bc5104d`), the **Japanese-accuracy fixes** (`a81f2fe`), the **katakana
+mnemonic images** (`fec4eab`, `2cb9949`, `eb85a9c`), and two audit-3 bug fixes —
+the **intransitive note on nouns** (`3d1e7e3`) and the **dead Library filter
+chips** (`b084935`).
 
 ---
 

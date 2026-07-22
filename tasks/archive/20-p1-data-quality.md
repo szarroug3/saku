@@ -1,4 +1,4 @@
-**Status: RECOMMENDATION for a tired Sam — say yes and I run it**
+**Status: done** — merged. Items 1, 2, 5, 7 fixed and item 3's worst mistranslations spot-fixed; the rest of the Tatoeba drift accepted as the cost of free corpus data (recorded in the card).
 
 Sam asked for a single recommendation. Here it is, per item:
 
