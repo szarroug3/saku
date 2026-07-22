@@ -48,7 +48,9 @@ function modeName(m: QuizMode): string {
         ? "Build sentences"
         : m === "substitution"
           ? "Substitution"
-          : "Drill";
+          : m === "listen-sentence"
+            ? "Listen to sentences"
+            : "Drill";
 }
 
 /**
