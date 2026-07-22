@@ -842,6 +842,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "たまご", reading: "tamago", gloss: "egg", hitIndex: 0 },
   },
 
+  タ: {
+    glyph: "タ",
+    romaji: "ta",
+    sound: "tah",
+    object: "swinging tomahawk",
+    analogy: [
+      { text: "Say “" },
+      { text: "tah", accent: true },
+      { text: "” like the start of " },
+      { text: "to", accent: true },
+      { text: "mahawk." },
+    ],
+    mnemonic: [
+      { text: "A " },
+      { text: "to", accent: true },
+      { text: "mahawk swings through the air, leaving one long sweep below it." },
+    ],
+    example: { word: "タコ", reading: "tako", gloss: "octopus", hitIndex: 0 },
+  },
+
   ち: {
     glyph: "ち",
     romaji: "chi",
