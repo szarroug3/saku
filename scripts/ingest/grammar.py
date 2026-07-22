@@ -423,11 +423,130 @@ SIGNATURES = {
         "seq": [{"lemma": "まで", "pos1": "助詞"}, {"lemma": "に", "pos1": "助詞"}],
     },
     "dake": {"host": NOUNISH, "seq": [{"lemma": "だけ", "pos1": "助詞"}]},
+    # --- N3 clause-level RECOGNITION patterns ------------------------------
+    # Added so the 12 recognition recipes in recipes.ts gain example sentences.
+    # Merged into the shipped corpus by scripts/ingest/grammar_augment.py, NOT by
+    # a full re-cut (see that file). Each was validated against real Tatoeba
+    # sentences before shipping — the counts and 2 samples per pattern are in the
+    # retag report. The twelfth, `wake-da`, is in NO_SIGNATURE: its 訳 token is
+    # inseparable from 言い訳 / どういうわけ / わけがない / わけではない.
+    "ni-chigainai": {
+        # に違いない — strong conviction. 違い (名詞) + 無い is the fixed frame;
+        # 間違い (lemma 間違い) does NOT match, so this is not 間違いない.
+        "host": None,
+        "seq": [
+            {"lemma": "に", "pos1": "助詞"},
+            {"lemma": "違い", "pos1": "名詞"},
+            {"lemma": "無い", "pos1": "形容詞"},
+        ],
+    },
+    "hazu-ga-nai": {
+        # はず + (が|は) + ない. 連体形 host covers verb (来るはずがない), adjective
+        # (高いはずがない) and な-copula. A separate recipe from plain `hazu`
+        # (はずだ); in this pass their sentences never overlap because the augment
+        # tags new sentences against the N3 signatures only.
+        "host": {"cForm_prefix": "連体形"},
+        "seq": [
+            {"lemma": "筈", "pos1": "名詞"},
+            {"lemma_in": ("が", "は"), "pos1": "助詞"},
+            {"lemma": "無い", "pos1": "形容詞"},
+        ],
+    },
+    "tame-ni": {
+        # PURPOSE ために only. A 動詞 連体形 host excludes both cause senses: the
+        # noun-cause 雨のため has の before ため, and the clause-cause 疲れたため has
+        # 助動詞 た before ため — neither is a verb. Verified: 20/20 sampled are
+        # purpose ("to buy / study / win"), zero cause leakage.
+        "host": VERB_RENTAI,
+        "seq": [{"lemma": "為", "pos1": "名詞"}, {"lemma": "に", "pos1": "助詞"}],
+    },
+    "okage-de": {
+        # 御陰 (おかげ) + で(助詞) — positive cause. lemma 御陰 is unambiguous.
+        "host": None,
+        "seq": [{"lemma": "御陰", "pos1": "名詞"}, {"lemma": "で", "pos1": "助詞"}],
+    },
+    "sei-de": {
+        # 所為 (せい) + で(助詞) — blame. lemma 所為 is not the height せい (背).
+        "host": None,
+        "seq": [{"lemma": "所為", "pos1": "名詞"}, {"lemma": "で", "pos1": "助詞"}],
+    },
+    "you-ni-naru": {
+        # 様 + に + 成る, change of state. The に here is the copula auxiliary
+        # (lemma だ, cForm 連用形-ニ), not the 助詞 に — requiring 成る right after
+        # keeps this off the purpose ように (which takes 言う/する/祈る, not なる).
+        "host": VERB_RENTAI,
+        "seq": [
+            {"lemma": "様", "pos1": "形状詞"},
+            {"lemma": "だ", "pos1": "助動詞", "cForm": "連用形-ニ"},
+            {"lemma": "成る", "pos1": "動詞"},
+        ],
+    },
+    "you-ni-suru": {
+        # 様 + に + 為る, deliberate effort. Verb host excludes そのようにする
+        # (そのように is 連体詞 + adverbial に).
+        "host": VERB_RENTAI,
+        "seq": [
+            {"lemma": "様", "pos1": "形状詞"},
+            {"lemma": "だ", "pos1": "助動詞", "cForm": "連用形-ニ"},
+            {"lemma": "為る", "pos1": "動詞"},
+        ],
+    },
+    "ni-tsuite": {
+        # TOPIC について ("about X"), noun host. The token run に+つく+て is shared
+        # with 付いてくる / ていく / ている ("follow / be attached"); `not_after`
+        # rejects the match when the following verb is 来る/行く/居る, which is the
+        # only place the two senses diverge. Verified: 386 survivors all "about".
+        "host": NOUNISH,
+        "seq": [
+            {"lemma": "に", "pos1": "助詞"},
+            {"lemma": "つく", "pos1": "動詞"},
+            {"lemma": "て", "pos1": "助詞"},
+        ],
+        "not_after": {"lemma_in": ("来る", "行く", "居る")},
+    },
+    "to-shite": {
+        # ROLE として ("as / in the capacity of"), noun host. The volitional
+        # として (行こうとして "trying to") has a 動詞 意志推量形 host, which NOUNISH
+        # excludes — that is the whole disambiguation.
+        "host": NOUNISH,
+        "seq": [
+            {"lemma": "と", "pos1": "助詞"},
+            {"lemma": "為る", "pos1": "動詞", "cForm_prefix": "連用形"},
+            {"lemma": "て", "pos1": "助詞"},
+        ],
+    },
+    "beki-da": {
+        # べし(連体形 = べき) + だ. Verb-終止形 host. Requiring だ excludes the
+        # prenominal 「行くべき道」(no copula); 「べきではない」keeps だ (連用形) so
+        # it still matches.
+        "host": VERB_SHUUSHI,
+        "seq": [{"lemma": "べし", "pos1": "助動詞"}, {"lemma": "だ", "pos1": "助動詞"}],
+    },
+    "wake-ni-wa-ikanai": {
+        # 訳 + に + は + 行く(未然) + ない. A 動詞 連体形 host EXCLUDES the
+        # negative-host double negative 「〜ないわけにはいかない」("have to"), whose
+        # ない(助動詞) sits before 訳 — a separate fact per the recipe note.
+        # CORPUS-SCARCE: only 7 survive the <=14-token filter, so it ships correct
+        # examples but stays below the drill threshold; needs hand-authoring.
+        "host": VERB_RENTAI,
+        "seq": [
+            {"lemma": "訳", "pos1": "名詞"},
+            {"lemma": "に", "pos1": "助詞"},
+            {"lemma": "は", "pos1": "助詞"},
+            {"lemma": "行く", "pos1": "動詞"},
+            {"lemma": "ない", "pos1": "助動詞"},
+        ],
+    },
 }
 
 # Recipes that deliberately get NO signature, and why. Stated once, here,
 # rather than left as an unexplained zero in the output.
 NO_SIGNATURE = {
+    "wake-da": "〜わけだ ('that's why') is rare in Tatoeba and its 訳 token is shared by "
+    "言い訳だ ('it's an excuse'), the interrogative どういうわけだ, and the DIFFERENT patterns "
+    "わけがない / わけではない / わけにはいかない. Only 10 raw matches, and the one that passed the "
+    "filters was どういう訳だ — the wrong sense. No safe contiguous signature; needs "
+    "hand-authored examples.",
     "potential": "Morphologically identical to `passive` — 彼は食べられる and 彼に食べられた "
     "tokenise the same. Cannot be labelled from the sentence.",
     "passive": "See `potential`.",
@@ -473,6 +592,14 @@ def match_all(toks, sig):
     """
     seq = sig["seq"]
     host = sig.get("host")
+    # An optional NEGATIVE anchor on the token that FOLLOWS the run. Some
+    # patterns are told apart from a confound only by what comes next, which a
+    # contiguous positive signature cannot express: 〜について ("about") and
+    # 付いてくる/ていく/ている ("follow / be stuck to") are the identical token run
+    # に + つく + て and split solely on the following verb — 来る/行く/居る is the
+    # motion/existence sense, everything else is the topic sense. A match is
+    # rejected when the next token satisfies `not_after`.
+    not_after = sig.get("not_after")
     n = len(seq)
     out = []
     for i in range(len(toks) - n + 1):
@@ -484,7 +611,10 @@ def match_all(toks, sig):
                 continue
             start = i - 1
         if all(pred(toks[i + j], seq[j]) for j in range(n)):
-            out.append((start, i + n))
+            end = i + n
+            if not_after is not None and end < len(toks) and pred(toks[end], not_after):
+                continue
+            out.append((start, end))
     return out
 
 

@@ -5,7 +5,7 @@
 // ===============
 // scripts/ingest/grammar.py matches morphologically, not by regex, and its
 // docstring is right that this is the only defensible way to tag 8,689
-// sentences. But a UniDic token run is not a MEANING. Six signatures match a
+// sentences. But a UniDic token run is not a MEANING. Seven signatures match a
 // token run that a different, real pattern also produces, and the tagger has no
 // way to tell them apart from the tokens alone:
 //
@@ -17,6 +17,12 @@
 //   ta-tokoro   た + 所 is "just did" — and ALSO ところ meaning a PLACE.
 //   kara-reason 終止形 + から is a reason — and sentence-initial だから is a
 //               CONNECTIVE ("so"), not X-から-Y.
+//   ni-tsuite   に + つく + て is IDENTICAL for the topic 〜について ("about") and
+//               physical につく — 席につく (take a seat), 位置について (on your
+//               marks), "repeat/read after me" (follow). The tokens do not
+//               differ AT ALL: like passive vs potential, the ambiguity is in
+//               Japanese, so the ONLY evidence is the linked human translation,
+//               which this one confound reads instead of the token span.
 //
 // The damage is not cosmetic. A learner shown 「ログアウトするんじゃなかったよ」
 // as an example of 〜ので has no other source for what ので means, and the
@@ -94,6 +100,20 @@ const CONFOUNDS: Readonly<Record<string, Confound>> = {
   "kara-reason": {
     why: "sentence-initial だから — a connective, not X から Y",
     holds: (ex) => ex.jp.startsWith("だから"),
+  },
+
+  // 〜について ("about X") vs physical につく. The signature's not_after already
+  // drops the 来る/行く/居る follow cases, but 席につく (take a seat), 位置について
+  // (on your marks), テーブルについて (sit at the table) and "repeat/read after me"
+  // (follow) tokenise IDENTICALLY to the topic sense — see the header. The human
+  // translation is the only signal, so this confound reads ex.en (and a couple of
+  // fixed JP position idioms). Blunt and erring toward dropping, per this file.
+  "ni-tsuite": {
+    why: "physical につく — take a seat/position or follow/repeat-after — not the topic 〜について",
+    holds: (ex) =>
+      /\b(after (me|him|her|us|them|you)|repeat after|follow me|come with me|sit down|sit at|take your (mark|position|seat)|on your marks?|tag along)\b/i.test(
+        ex.en,
+      ) || /(位置につい|席につい|テーブルについ|の後につい)/.test(ex.jp),
   },
 };
 

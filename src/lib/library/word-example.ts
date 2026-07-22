@@ -60,7 +60,9 @@ export type RankOf = (lemma: string) => number | undefined;
  * matches where the intended sense is simply not attested in the corpus, so the
  * word loses its example rather than keep a false one:
  *   - タイ  is 'sea bream'; its only sentence is タイ語 (the Thai language).
- *   - ビル  is 'building'; all four sentences are the name Bill.
+ *   - ビル  is 'building'; the four BANNED sentences are the name Bill. (The
+ *           N3 retag added あのビルが燃えてるに違いない, a correct 'building'
+ *           sentence, so ビル now DOES get an example — these four stay banned.)
  *   - パー  is 'paper' (rock-paper-scissors); matched inside クリーパー (creeper).
  *   - ホーム is 'platform'; matched inside ホームページ (homepage).
  * These are named, not filtered by a rule: sense drift is a human judgement, and
