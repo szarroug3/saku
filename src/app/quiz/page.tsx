@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { AssemblyScreen } from "@/components/quiz/assembly-screen";
 import { DrillScreen } from "@/components/quiz/drill-screen";
 import { GridScreen } from "@/components/quiz/grid-screen";
 import { PairsScreen } from "@/components/quiz/pairs-screen";
+import { SubstitutionScreen } from "@/components/quiz/substitution-screen";
 import { useQuizSession } from "@/lib/quiz-session";
 
 // The active-quiz route: renders the screen for the quiz's SNAPSHOT mode
@@ -40,5 +42,9 @@ export default function QuizPage() {
       return <PairsScreen />;
     case "grid":
       return <GridScreen />;
+    case "assembly":
+      return <AssemblyScreen />;
+    case "substitution":
+      return <SubstitutionScreen />;
   }
 }

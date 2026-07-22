@@ -40,7 +40,15 @@ import type { AccuracyMetric, FactId, QuizMode } from "@/types";
 const EMPTY_ANALYSIS = { patterns: [], progress: [] };
 
 function modeName(m: QuizMode): string {
-  return m === "pairs" ? "Match pairs" : m === "grid" ? "Grid" : "Drill";
+  return m === "pairs"
+    ? "Match pairs"
+    : m === "grid"
+      ? "Grid"
+      : m === "assembly"
+        ? "Build sentences"
+        : m === "substitution"
+          ? "Substitution"
+          : "Drill";
 }
 
 /**

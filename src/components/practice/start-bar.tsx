@@ -40,10 +40,20 @@ function cx(...parts: Array<string | false | null | undefined>): string {
 /** "Drill · Endless · Type romaji" — the HOW half, read off the live setup. */
 export function howSentence(cfg: QuizConfig): string {
   const parts: string[] = [
-    cfg.mode === "pairs" ? "Match pairs" : cfg.mode === "grid" ? "Grid" : "Drill",
+    cfg.mode === "pairs"
+      ? "Match pairs"
+      : cfg.mode === "grid"
+        ? "Grid"
+        : cfg.mode === "assembly"
+          ? "Build sentences"
+          : cfg.mode === "substitution"
+            ? "Substitution"
+            : "Drill",
   ];
-  // Grid deals every card once: it has no length and no direction to state.
-  if (cfg.mode === "grid") return parts.join(" · ");
+  // Grid deals every card once, and the sentence-production modes run their own
+  // corpus-driven queue: none of them has a length or direction to state.
+  if (cfg.mode === "grid" || cfg.mode === "assembly" || cfg.mode === "substitution")
+    return parts.join(" · ");
 
   parts.push(
     cfg.length === "endless"
