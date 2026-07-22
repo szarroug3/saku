@@ -382,3 +382,21 @@ const BY_ENTRY: ReadonlyMap<EntryId, Mark> = new Map(
 export function markRow(id: string): Mark | undefined {
   return BY_ID.get(id);
 }
+
+/**
+ * "hiragana" → "In hiragana". A mark's intro already carries which script it
+ * belongs to; this only puts a word on it. A SCRIPT-NEUTRAL card (setId "", the
+ * NO_SCRIPT the four reading-rule marks carry) belongs to no script and gets NO
+ * label — returns `null`, NOT the empty string, so the view draws no pill at all
+ * rather than a stray empty one. Anything else is a set id we do not ship,
+ * returned as-is rather than mapped to a guess.
+ *
+ * Extracted from mark-view.tsx so the mapping is a testable pure function; the
+ * view renders `<Lbl>` only when this is truthy.
+ */
+export function scriptLabel(setId: string): string | null {
+  if (setId === "hiragana") return "In hiragana";
+  if (setId === "katakana") return "In katakana";
+  if (setId === "") return null;
+  return setId;
+}

@@ -43,19 +43,7 @@ import {
   PunctuationTable,
 } from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
-import { bodyFor, type Mark } from "@/data/marks";
-
-/** "hiragana" → "In hiragana". The intro already carries which script it belongs
- * to; this only puts a word on it. A script-neutral card (setId "") belongs to no
- * script and gets NO label at all rather than an empty pill — see NO_SCRIPT in
- * src/data/phase-intros.ts. Anything else is a set id we do not ship, printed
- * as-is rather than mapped to a guess. */
-function scriptLabel(setId: string): string | null {
-  if (setId === "hiragana") return "In hiragana";
-  if (setId === "katakana") return "In katakana";
-  if (setId === "") return null;
-  return setId;
-}
+import { bodyFor, scriptLabel, type Mark } from "@/data/marks";
 
 export function MarkView({ mark }: { mark: Mark }) {
   return (

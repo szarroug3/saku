@@ -43,6 +43,25 @@ function asKind(subject: string | undefined): LessonKind {
   return KINDS.includes(subject as LessonKind) ? (subject as LessonKind) : "kana";
 }
 
+/**
+ * Whether a lesson step shows the "How it's written" section (stroke order /
+ * count).
+ *
+ * A kana has a real stroke-order diagram; a KANJI has no diagram ingested yet
+ * but its stroke COUNT is real data worth showing; a RADICAL is drawn the same
+ * way. A WORD is several glyphs with no single stroke order, and a GRAMMAR
+ * pattern (〜てから) has none and never will — for both, the section printed a
+ * misleading "learned as a whole shape" line, so they are excluded.
+ * `transitivity` is a pattern too and gets nothing.
+ *
+ * Extracted from the lesson-item-view.tsx call site so the rule is a testable
+ * pure function rather than a regex over the component source; the view calls
+ * straight through.
+ */
+export function showsHowItsWritten(kind: LessonKind): boolean {
+  return kind === "kana" || kind === "kanji" || kind === "radical";
+}
+
 /** One step of the walk-through: a glyph, its subject, and the facts learning it
  * covers. */
 export interface LessonItem {
