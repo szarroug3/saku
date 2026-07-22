@@ -449,6 +449,52 @@ export const SOKUON_K: PhaseIntro = {
   ],
 };
 
+// PARTICLE READING — three base kana that change sound when they do a job.
+// ========================================================================
+// は, へ and を are read one way as ordinary kana and another way when they act
+// as a particle: は ha/wa, へ he/e, を always o. This is a READING rule about
+// three characters a learner meets in the base hiragana run, not a phase that
+// starts (dakuten, combos) nor a rule that lands once every shape is known
+// (long vowels, small っ). So it is not word-gated like 々 or rendaku — those
+// have no kana section to hang on, and this one does: は is the first glyph of
+// the h-h row (はひふへほ).
+//
+// ANCHORED BEFORE h-h, the row where は is taught. 私は is one of the very first
+// things anyone learns to say, so the rule has to land during the kana run,
+// right as は appears, rather than waiting for the words track — a learner who
+// meets は as "ha" and only hears about "wa" weeks later reads 私は wrong for
+// weeks and has to unlearn it. BEFORE, not AFTER: は opens the h-h row, so the
+// before-anchor puts the rule immediately ahead of は itself, the earliest and
+// closest point to where it is taught, which is the "here is what is about to
+// change" the before-run is for. へ rides the same row; を is met later in h-w,
+// and the card names it forward, which is honest for a rule worth knowing early.
+//
+// The sounds are set off in curly quotes, the same way every other card in this
+// file marks a sound in prose (“kya”, “kitte”): IntroBody has no italic
+// primitive, and inventing one for this card alone is exactly the drift this
+// file exists to prevent. Reinforcement lives on は and へ's own cards (the NOTES
+// table in src/data/characters.ts); を's own card teaches its particle role and
+// its /o/ reading (src/data/mnemonics.ts).
+export const PARTICLE_RULE: PhaseIntro = {
+  id: "intro-particle-reading",
+  setId: "hiragana",
+  title: "Three kana change their sound when they do a job.",
+  body: [
+    {
+      text: "は is normally “ha”, but when it marks the topic of a sentence it is read “wa”: 私は is “watashi wa”.",
+    },
+    {
+      text: "へ is normally “he”, but when it points somewhere it is read “e”: 学校へ is “gakkou e”.",
+    },
+    {
+      text: "を is only ever used for this job, and it is always read “o”.",
+    },
+    {
+      text: "Everywhere else, they keep their usual sound. You will learn 私は on your first day, so this one is worth knowing early.",
+    },
+  ],
+};
+
 // PUNCTUATION — the sentence-level card, anchored to the end of hiragana.
 // =====================================================================
 // It is script-neutral (see NO_SCRIPT) and taught ONCE, not once per script,
@@ -708,9 +754,12 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
  * Section id → the card shown BEFORE that section's characters.
  *
  * Keyed on the FIRST group of each phase, so the concept lands the moment the
- * phase starts and never again.
+ * phase starts and never again. The one base-row key is h-h: the particle
+ * reading rule rides the は row rather than a phase opening, because は is where
+ * it first matters (see the PARTICLE_RULE note above).
  */
 export const INTRO_BEFORE: Record<string, PhaseIntro> = {
+  "h-h": PARTICLE_RULE,
   "h-g": DAKUTEN_H,
   "k-g": DAKUTEN_K,
   "h-kya": COMBO_H,
@@ -757,6 +806,7 @@ export const INTRO_AFTER: Record<string, PhaseIntro[]> = {
  * three okurigana cards from the word-gated seams in lesson-steps.ts, so every
  * card here has a lesson home. */
 export const PHASE_INTROS: PhaseIntro[] = [
+  PARTICLE_RULE,
   DAKUTEN_H,
   COMBO_H,
   LONG_H,

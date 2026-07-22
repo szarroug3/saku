@@ -196,6 +196,51 @@ describe("a phase intro opens the phase it introduces", () => {
   });
 });
 
+describe("the particle reading rule — は/へ/を change sound as particles", () => {
+  test("the rule card opens the は row, ahead of は itself", () => {
+    const g = group("h-h");
+    const steps = lessonSteps(g.facts);
+    assert.equal(steps[0].type, "intro");
+    assert.equal(
+      steps[0].type === "intro" && steps[0].intro.id,
+      "intro-particle-reading",
+    );
+    // It ADDS a step; は and the rest of the row follow untouched.
+    assert.notEqual(steps[1].type, "intro");
+    assert.deepEqual(
+      steps.slice(1).map((s) => (s.type === "item" ? s.item.glyph : null)),
+      g.chars,
+    );
+  });
+
+  test("the rule card names all three readings and the day-one word", () => {
+    const g = group("h-h");
+    const steps = lessonSteps(g.facts);
+    const card = steps[0].type === "intro" ? steps[0].intro : null;
+    const prose = (card?.body ?? []).map((p) => p.text).join(" ");
+    assert.match(prose, /は is normally “ha”.*read “wa”/);
+    assert.match(prose, /へ is normally “he”.*read “e”/);
+    assert.match(prose, /を is only ever used for this job.*read “o”/);
+    assert.match(prose, /私は/);
+    // The reading rule is not an em-dash sentence, and never teaches "wo".
+    assert.ok(!prose.includes("—"), "no em dashes in learner copy");
+    assert.ok(!/\bwo\b/i.test(prose), "を is /o/, never wo");
+  });
+
+  test("は and へ carry both readings on their own cards; を is untouched", () => {
+    // Reinforcement, so a learner who meets は later reads the same rule the
+    // opening card taught. を already teaches its particle role on its mnemonic
+    // card (mnemonics.ts), so it gets no NOTES entry here.
+    const ha = noteFor("は") ?? "";
+    assert.match(ha, /"ha"/);
+    assert.match(ha, /"wa"/);
+    const he = noteFor("へ") ?? "";
+    assert.match(he, /"he"/);
+    assert.match(he, /"e"/);
+    assert.equal(noteFor("を"), null);
+  });
+});
+
 describe("the drill's wider scope is cumulative, and script-separate", () => {
   test("'all hiragana so far' is everything up to and including this group", () => {
     const zRow = group("h-conv-z");
@@ -388,7 +433,10 @@ describe("the irregular sounds are called out where they are met", () => {
   });
 
   test("the regular majority say nothing", () => {
-    for (const c of "あかさたなはまやらわがざだばぱアカサタナハマ") {
+    // は and へ are deliberately absent: they now carry the particle-reading
+    // note (は ha/wa, へ he/e), so they are no longer in the silent majority.
+    // See the particle-reading describe block above.
+    for (const c of "あかさたなまやらわがざだばぱアカサタナハマ") {
       assert.equal(noteFor(c), null, `${c} should have no call-out`);
     }
   });

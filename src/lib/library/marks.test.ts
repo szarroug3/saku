@@ -380,15 +380,16 @@ describe("the small-tsu copy, which is the one thing authored for this shelf", (
     assert.equal(after[after.length - 1], SOKUON_H);
     // And every other card is still anchored exactly once, so this cannot pass
     // by the anchor tables having grown duplicates or emptied out. PUNCTUATION
-    // now rides the front of the hiragana after-run, so the count is nine (eight
-    // kana anchors plus it); 々 and rendaku are word-gated, not anchored, so they
-    // are deliberately absent here.
+    // now rides the front of the hiragana after-run, and the particle reading
+    // rule rides the front of the h-h row, so the count is ten (nine kana
+    // anchors plus the particle rule); 々 and rendaku are word-gated, not
+    // anchored, so they are deliberately absent here.
     const anchored = [
       ...Object.values(INTRO_BEFORE),
       ...Object.values(INTRO_AFTER).flat(),
     ];
-    assert.equal(anchored.length, 9);
-    assert.equal(new Set(anchored).size, 9);
+    assert.equal(anchored.length, 10);
+    assert.equal(new Set(anchored).size, 10);
   });
 });
 
