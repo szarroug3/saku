@@ -343,6 +343,64 @@ test("counter and zodiac/branch metadata is stripped from meanings, real meaning
   assert.equal(KANJI.filter((k) => k.meanings.length === 0).length, 0);
 });
 
+test("a reading is anchored to the everyday word that attests it earliest", () => {
+  // A learner meets the ANCHOR word before the reading, so an obscure anchor
+  // makes a common reading feel rare: 出's しゅつ shipped anchored to 供出
+  // (beginnerRank 8388) when 出発 (696) attests it too, and 名's みょう to 功名
+  // (8337) over 本名 (4567). The anchor must be the attesting word with the
+  // LOWEST beginnerRank — the first one the learner will actually meet.
+  const shutsu = READINGS.find((r) => r.k === "出" && r.base === "しゅつ");
+  assert.equal(shutsu?.anchor, "出発");
+  const myou = READINGS.find((r) => r.k === "名" && r.base === "みょう");
+  assert.equal(myou?.anchor, "本名");
+
+  // The property, everywhere: no reading is anchored to a word when a
+  // lower-beginnerRank word in its own evidence list attests the same reading —
+  // EXCEPT an ambiguous word where the kanji reads more than one base (時々 has
+  // 時 as both とき and どき), which cannot anchor either reading and is skipped.
+  const ambiguous = (word: string, k: string): boolean => {
+    const bases = new Set(
+      (vocabRow(word)?.align ?? []).filter(([kk]) => kk === k).map(([, , bb]) => bb),
+    );
+    return bases.size > 1;
+  };
+  for (const r of READINGS) {
+    const anchorRank = vocabRow(r.anchor)?.beginnerRank ?? Number.MAX_SAFE_INTEGER;
+    for (const w of r.words) {
+      if (ambiguous(w, r.k)) continue;
+      const wr = vocabRow(w)?.beginnerRank ?? Number.MAX_SAFE_INTEGER;
+      assert.ok(
+        wr >= anchorRank,
+        `${r.k}/${r.base} anchored to ${r.anchor} (rank ${anchorRank}) over ${w} (rank ${wr})`,
+      );
+    }
+  }
+
+  // An anchor is ambiguous only when the reading has NO unambiguous attestation
+  // (共's ども appears solely in 共々, where 共 is both とも and ども) — there the
+  // ambiguous word is the only evidence and must stand, exactly as the raw data
+  // had it. Every reading with any unambiguous option must take one.
+  for (const r of READINGS) {
+    if (ambiguous(r.anchor, r.k)) {
+      assert.ok(
+        r.words.every((w) => ambiguous(w, r.k)),
+        `${r.k}/${r.base} anchored on ambiguous ${r.anchor} when an unambiguous word exists`,
+      );
+    }
+  }
+
+  // The uniqueness the fact id depends on: within a kanji, no two readings share
+  // an anchor (that would mint one id for two facts and drop one). The
+  // ambiguity exclusion is what makes this hold after re-anchoring by rank.
+  const perKanji = new Map<string, Set<string>>();
+  for (const r of READINGS) {
+    const seen = perKanji.get(r.k) ?? new Set<string>();
+    assert.ok(!seen.has(r.anchor), `${r.k} has two readings anchored on ${r.anchor}`);
+    seen.add(r.anchor);
+    perKanji.set(r.k, seen);
+  }
+});
+
 test("every reading knows whether it came from Chinese or is native Japanese", () => {
   // KANJIDIC2's r_type is the only thing in the data that can answer "why do
   // 一's いち and ひと sound nothing alike". Without it the entry page's table

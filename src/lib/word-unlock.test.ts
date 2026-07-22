@@ -43,11 +43,13 @@ function claiming(facts: readonly FactId[]): HistoryFile {
   return history({ claims: claims as HistoryFile["claims"] });
 }
 
-// 生's せい reading is anchored by the ingest on 人生 (the evidence-richest
-// word), but a beginner meets 先生 (rank 74) long before 人生 (rank 1187). This
-// is the exact mismatch the unlock exists to fix.
-const SEI_FACT: FactId = readingFactId("生", "人生");
-const SEN_FACT: FactId = readingFactId("先", "優先");
+// 生's せい reading is anchored by the ingest on 先生 (rank 74) — the earliest
+// word a beginner meets that attests it (task-20 item 5: the anchor is the
+// lowest-beginnerRank attesting word, not an obscure one like 人生 rank 1187).
+// The unlock still frames the question on a word the user ACTUALLY learned; when
+// the ingest anchor is not yet known, it falls back to the earliest word that is.
+const SEI_FACT: FactId = readingFactId("生", "先生");
+const SEN_FACT: FactId = readingFactId("先", "先生");
 
 describe("a reading is askable iff a TAUGHT word attests it", () => {
   test("empty history unlocks nothing", () => {
@@ -71,26 +73,30 @@ describe("a reading is askable iff a TAUGHT word attests it", () => {
 });
 
 describe("the question anchors on a word the user actually learned", () => {
-  test("先生 known, 人生 not → 生's reading anchors on 先生, not 人生", () => {
+  test("the ingest anchor wins when it IS known", () => {
+    // Learn 先生 — the ingest anchor and the earliest word — and the reading
+    // frames on it, because there is no reason to move off it once it's fair.
     const h = claiming([wordMeaningFactId("先生")]);
     assert.equal(anchorForFact(SEI_FACT, h), "先生");
     assert.equal(readingAnchors(h).get(SEI_FACT), "先生");
   });
 
-  test("the ingest anchor wins when it IS known", () => {
-    // Learn 人生 itself — the evidence-richest word — and the reading frames on
-    // it, because there is no reason to move off it once it's fair.
-    const h = claiming([wordMeaningFactId("人生")]);
-    assert.equal(anchorForFact(SEI_FACT, h), "人生");
+  test("ingest anchor not yet known → frames on a word that IS", () => {
+    // 先生 (the ingest anchor) is not learned, but 学生 attests せい and is. The
+    // question must frame on 学生 rather than an unmet word — the whole point of
+    // the unlock is to ask in a word the user has actually met.
+    const h = claiming([wordMeaningFactId("学生")]);
+    assert.equal(anchorForFact(SEI_FACT, h), "学生");
   });
 
   test("among several known words, the earliest (lowest rank) is chosen", () => {
-    // Know both 先生 (rank 74) and 学生 — the anchor is the more familiar one.
+    // Ingest anchor 先生 is NOT known; among the known attesting words 学生
+    // (rank 187) and 生活 (rank 653), the anchor is the more familiar 学生.
     const h = claiming([
-      wordMeaningFactId("先生"),
       wordMeaningFactId("学生"),
+      wordMeaningFactId("生活"),
     ]);
-    assert.equal(anchorForFact(SEI_FACT, h), "先生");
+    assert.equal(anchorForFact(SEI_FACT, h), "学生");
   });
 
   test("a non-reading fact has no anchor", () => {

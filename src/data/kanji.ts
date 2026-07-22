@@ -36,6 +36,7 @@ import kanjiJson from "./generated/kanji.json" with { type: "json" };
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import orderJson from "./generated/order.json" with { type: "json" };
 import readingsJson from "./generated/readings.json" with { type: "json" };
+import { vocabRow } from "./vocab.ts";
 import { entryId, factId, readingAspect } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo, NewKanjiOrder } from "../types/index.ts";
 
@@ -254,7 +255,70 @@ export const KANJI: readonly KanjiRow[] = (kanjiJson as readonly RawKanji[]).map
     comps: COMPS[k.c] ?? [],
   }),
 );
-export const READINGS: readonly ReadingRow[] = readingsJson as readonly ReadingRow[];
+/**
+ * Re-anchor a reading to the everyday word that attests it with the LOWEST
+ * `beginnerRank` — the first one a learner will actually meet.
+ *
+ * A learner meets the anchor word BEFORE the reading, so an obscure anchor makes
+ * a common reading feel rare: 出's しゅつ shipped anchored to 供出 (beginnerRank
+ * 8388) when 出発 (696) attests it just as well, and 名's みょう to 功名 over 本名.
+ * The evidence to fix it was already in the row — `words` lists every attesting
+ * word and vocab.json ranks them — so this is a re-pick, not new data.
+ *
+ * Same shape as the meaning filter above and RADICAL_INDEX before it: the
+ * generated JSON is transformed HERE, at load, so every consumer benefits, while
+ * build.py's `anchor pick` carries the same key for a clean full re-cut. Ranked
+ * first; the old keys (unvoiced surface, then shorter, then stable) break the
+ * rare rank tie, matching build.py exactly. `surface` (how the base sounds in
+ * the new anchor, e.g. 出→しゅっ in 出発) is read back from that word's own
+ * alignment so a re-anchor never carries the old word's surface.
+ */
+const RANK_UNKNOWN = Number.MAX_SAFE_INTEGER;
+function surfaceOf(word: string, k: string, base: string): string | undefined {
+  return vocabRow(word)?.align?.find(([kk, , bb]) => kk === k && bb === base)?.[1];
+}
+/**
+ * A word where `k` reads MORE THAN ONE base is an ambiguous anchor and cannot be
+ * used: 時々 has 時 as both とき and どき, so "what does 時 read in 時々?" has two
+ * answers — and were it picked for both, the two facts would share an id. The
+ * original keys dodged this by accident (unvoiced-first split とき from どき); we
+ * exclude it on purpose, so a re-anchor keeps each reading's fact single-answer.
+ */
+function unambiguousFor(word: string, k: string): boolean {
+  const bases = new Set(
+    (vocabRow(word)?.align ?? []).filter(([kk]) => kk === k).map(([, , bb]) => bb),
+  );
+  return bases.size <= 1;
+}
+function reanchor(r: ReadingRow): ReadingRow {
+  let best: { anchor: string; surface: string; key: [number, number, number, string] } | null =
+    null;
+  const eligible = r.words.filter((w) => unambiguousFor(w, r.k));
+  for (const w of eligible.length > 0 ? eligible : r.words) {
+    const surface = surfaceOf(w, r.k, r.base) ?? r.base;
+    const key: [number, number, number, string] = [
+      vocabRow(w)?.beginnerRank ?? RANK_UNKNOWN,
+      surface !== r.base ? 1 : 0,
+      w.length,
+      w,
+    ];
+    if (
+      !best ||
+      key[0] < best.key[0] ||
+      (key[0] === best.key[0] &&
+        (key[1] < best.key[1] ||
+          (key[1] === best.key[1] &&
+            (key[2] < best.key[2] || (key[2] === best.key[2] && key[3] < best.key[3])))))
+    ) {
+      best = { anchor: w, surface, key };
+    }
+  }
+  return best ? { ...r, anchor: best.anchor, surface: best.surface } : r;
+}
+
+export const READINGS: readonly ReadingRow[] = (readingsJson as readonly ReadingRow[]).map(
+  reanchor,
+);
 
 /**
  * The default teaching order: `ramp B`.

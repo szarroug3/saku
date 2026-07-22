@@ -401,12 +401,21 @@ def main():
           f"{br['sub_stem']}/{br['total']} ({100*br['sub_stem']/br['total']:.1f}%)")
     dump("vocab.json", vocab_rows)
 
-    # anchor pick: prefer a word where the reading is UNVOICED (surface==base),
-    # then the shortest, then the alphabetically stable one -- so the fact reads
-    # `kanji:生/reading@学生`, not `@小学生`.
+    # anchor pick: prefer the everyday word that attests the reading with the
+    # LOWEST beginnerRank -- the first one a learner will actually meet, so 出's
+    # しゅつ anchors to 出発 (rank 696) and not 供出 (8388), and 名's みょう to 本名
+    # over 功名. An obscure anchor makes a common reading feel rare. The old keys
+    # -- UNVOICED reading (surface==base), then shortest, then alphabetically
+    # stable -- break the (rare) rank tie. src/data/kanji.ts re-anchors at load
+    # with the same key, so this and a full re-cut agree.
+    rank_of = {w["keb"]: w["beginnerRank"] for w in vocab_rows}
+    HUGE = 1 << 62
     reading_rows = []
     for (kanji, base), ws in sorted(pairs.items()):
-        best = sorted(ws, key=lambda kw: (kw[1] != base, len(kw[0]), kw[0]))[0]
+        best = sorted(
+            ws,
+            key=lambda kw: (rank_of.get(kw[0], HUGE), kw[1] != base, len(kw[0]), kw[0]),
+        )[0]
         row = dict(k=kanji, base=base, anchor=best[0], surface=best[1],
                    nWords=len(ws), words=[w for w, _ in ws])
         t = types_for(K[kanji]["kinds"], base)
