@@ -608,8 +608,12 @@ function EntryView({ entry }: { entry: LibEntry }) {
         {/* "It happens, rather than being done to something" — JMdict's `vi`,
             said without the word "object". Both "object" and "intransitive" are
             grammar jargon; what the learner is actually choosing between is 開く
-            and 開ける, which is what transitivity.ts names its own fields for. */}
-        {wordRow && isIntransitive(wordRow) ? (
+            and 開ける, which is what transitivity.ts names its own fields for.
+            GATED ON `forms`: this is a claim about a VERB, and JMdict tags ~300
+            NOUNS (電話, which is a noun that also takes する) with a bare `vi`.
+            `forms` is null for anything that does not conjugate, so the note
+            only shows on words that are actually verbs. */}
+        {wordRow && forms && isIntransitive(wordRow) ? (
           <p className="mt-2 text-xs text-text-muted">{INTRANSITIVE_NOTE}</p>
         ) : null}
       </Card>
