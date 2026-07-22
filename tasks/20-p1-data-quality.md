@@ -1,3 +1,24 @@
+**Status: RECOMMENDATION for a tired Sam — say yes and I run it**
+
+Sam asked for a single recommendation. Here it is, per item:
+
+| item | what it is | my call |
+|---|---|---|
+| 1 | kanji meanings show metadata (子 = "11PM-1AM", counter/zodiac senses) | **FIX** — pattern-filter (counters, zodiac, radical-index senses). Robust, no per-kanji list. |
+| 2 | engine generates non-words (し方, 来方) and grades them right | **FIX** — small per-recipe deny-list. |
+| 3 | Tatoeba translation drift ~4-5% | **SPOT-FIX the worst only** — the subset where the translation teaches the wrong sense of the keyed word (グラス = drinking glass, not "glass"). Accept the rest as the cost of free corpus data. |
+| 4 | 〜られる potential name | done (`a81f2fe`) |
+| 5 | obscure reading anchors (出's しゅつ anchored to 供出) | **FIX** — prefer the lowest-beginnerRank anchor. Data already exists. |
+| 6 | adjective ます-form rule | done (`a81f2fe`) |
+| 7 | two authored glosses (詰まる, 生む/産む) | **FIX** — one-line edits each. |
+
+**My recommendation: do 1, 2, 5, 7 (clear correctness wins, no judgement needed),
+and spot-fix 3's worst subset.** All safe, all reversible. If Sam says "go" I
+dispatch one agent for the lot.
+
+---
+
+## (original card below)
 # P1 · Data-quality problems Sam has not ruled on
 
 **Status: partly done, partly answered — Sam's data-source question answered below

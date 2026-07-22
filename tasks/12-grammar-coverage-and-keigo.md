@@ -27,7 +27,29 @@ the transitivity TRACK is what teaches they are a pair. Keigo is the same shape.
 It is arguably THE core keigo verb — いらっしゃいませ derives from it — so it needs
 adding.
 
-## Where keigo goes — recommendation
+## Where keigo goes — REVISED after Sam's point (open it early)
+
+Sam: *"if keigo is something you use every day, shouldn't it be used earlier?
+should we open it up after a few words similar to grammar?"* **Agreed, and it
+changes my earlier answer.**
+
+The split that makes this work is recognition vs production:
+- **Recognition comes immediately** — いらっしゃいませ is the first thing said to you
+  in a shop, and 召し上がる / いただく are everyday. A learner should MEET these early,
+  exactly as Sam says, so they are not baffled by the most common polite speech.
+- **Production is the harder half** — choosing 召し上がる vs いただら correctly is
+  N4-N3, and needs the plain verbs solid first.
+
+So: **open a keigo track EARLY, after a handful of words, the same way grammar
+opens on known words** — taught recognition-first (here is what いらっしゃいませ and
+召し上がる mean, and that they are the polite form of a verb you know). The
+production side (pick the right one) rides in later on the same track once the base
+verbs are learned. Still modeled on the verb-pairs machinery; just gated early like
+grammar rather than held to the end.
+
+Fill the one gap: **いらっしゃる is missing from vocab** and is the core keigo verb.
+
+## (earlier recommendation, now superseded) Where keigo goes
 
 **A separate relationship track, modeled on the transitivity verb-pairs machinery,
 placed AFTER transitivity.** Not before verb pairs. Reasons:
