@@ -60,6 +60,7 @@ import { patternEntry } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { pairEntry } from "@/data/transitivity-facts";
+import { KEIGO_SETS, keigoSetEntry } from "@/data/keigo";
 import { LIB_ENTRIES, type LibEntry } from "@/lib/library/entries";
 
 const ENTRY_PATH = new Map<EntryId, string>();
@@ -233,6 +234,10 @@ function buildSlugKeys(): Map<EntryId, string> {
   for (const p of VERB_PAIRS) {
     map.set(pairEntry(p), `${p.happens.word}-${p.doIt.word}`);
   }
+  // A keigo set has no glyph either (its LibEntry.glyph is the empty string), so
+  // its URL is its own stable set id — /library/keigo/eat — the same treatment a
+  // verb pair gets.
+  for (const s of KEIGO_SETS) map.set(keigoSetEntry(s), s.id);
   return map;
 }
 

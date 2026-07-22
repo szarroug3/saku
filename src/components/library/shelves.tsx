@@ -72,7 +72,9 @@ import {
   type Kind,
   type LibEntry,
 } from "@/lib/library/entries";
+import { KEIGO_SUBJECT } from "@/data/keigo";
 import { counterShelfSections } from "@/lib/library/counter-shelf";
+import { keigoShelfSections } from "@/lib/library/keigo-shelf";
 import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import {
   filterSections,
@@ -197,6 +199,11 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
     // so every section shows whole — no cap, like radicals.
     case COUNTER_KIND:
       return counterShelfSections();
+    // Keigo, cut into verb sets and set phrases (see keigo-shelf.ts). Rendered as
+    // ROWS like verb pairs, not tiles: a set has no glyph, it is a plain verb and
+    // its politeness forms read across the line. A small subject, shown whole.
+    case KEIGO_SUBJECT:
+      return keigoShelfSections();
     // All 214, in canonical Kangxi order, cut by traditional stroke count — the
     // way every radical chart is printed, and a real cut the data carries (each
     // radical knows its strokes). Not one card of 214 (unbrowsable) and not a
@@ -354,6 +361,7 @@ export function Shelf({
     kind === GRAMMAR_SUBJECT ||
     kind === MARK_SUBJECT ||
     kind === TRANSITIVITY_SUBJECT ||
+    kind === KEIGO_SUBJECT ||
     kind === TERM_SUBJECT;
 
   // The knowledge filter applied to the cut, then the shelf's section cap. FILTER
