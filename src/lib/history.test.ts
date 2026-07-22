@@ -242,3 +242,70 @@ test("saveSession still appends two records that have no id", () => {
   assert.equal(hist.sessions.length, 2, "no id means nothing to be sure about");
   assert.equal(hist.facts[fid("hira-a")].seen, 2);
 });
+
+// ---------- deleteSessions: a no-op must not silently shrink the aggregate ----------
+//
+// hist.facts is folded INCREMENTALLY by saveSession and can hold contributions
+// from sessions the 200-cap has since evicted from hist.sessions. deleteSessions
+// rebuilds hist.facts from the survivors — correct when you actually delete
+// something, but an EMPTY delete (empty POST body → deleteSessions(null, false))
+// deletes nothing yet still rebuilds, discarding every evicted contribution.
+
+test("deleteSessions with nothing selected is a true no-op (does not rebuild-and-shrink the aggregate)", () => {
+  resetAll();
+  // Fill past the 200-cap so hist.facts carries evicted contributions that a
+  // rebuild-from-survivors would drop. Each session contributes seen:1.
+  for (let i = 0; i < 250; i++) saveSession(seedSession(20_000 + i));
+
+  const before = loadHistory();
+  assert.equal(before.sessions.length, 200, "the cap held");
+  const seenBefore = before.facts[fid("hira-a")].seen;
+  assert.equal(seenBefore, 250, "the aggregate counts all 250, not just the 200 kept");
+
+  // The empty-POST path: no ids, not deleteAll. This must change nothing.
+  const after = deleteSessions(null, false);
+  assert.equal(
+    after.facts[fid("hira-a")].seen,
+    250,
+    "an empty delete must not discard evicted-session contributions",
+  );
+  // And on disk, too.
+  assert.equal(loadHistory().facts[fid("hira-a")].seen, 250);
+});
+
+test("deleteSessions([], false) is likewise a no-op", () => {
+  resetAll();
+  for (let i = 0; i < 250; i++) saveSession(seedSession(30_000 + i));
+  const after = deleteSessions([], false);
+  assert.equal(after.facts[fid("hira-a")].seen, 250);
+});
+
+// ---------- deleteSessions keys on a STABLE identity, not the wall clock ----------
+//
+// Two records made in the same millisecond share a `ts`. Keying deletion on `ts`
+// deletes both when the user asked to drop one. The record `id` (task 15) is the
+// stable identity, and deletion must use it.
+
+test("deleting one of two same-ms sessions by id leaves the other", () => {
+  resetAll();
+  const keep = { ...seedSession(40_000), id: "keep" };
+  const drop = { ...seedSession(40_000), id: "drop" }; // SAME ts
+  saveSession(keep);
+  saveSession(drop);
+  assert.equal(loadHistory().sessions.length, 2, "both stored");
+
+  const after = deleteSessions(["drop"], false);
+  assert.equal(after.sessions.length, 1, "only the targeted record went");
+  assert.equal(after.sessions[0].id, "keep", "the other same-ms record survived");
+  // The aggregate is rebuilt from the one survivor: seen counted once, not twice.
+  assert.equal(after.facts[fid("hira-a")].seen, 1);
+});
+
+test("deleteSessions still deletes legacy (id-less) records by ts", () => {
+  resetAll();
+  saveSession(seedSession(41_000)); // no id
+  saveSession(seedSession(42_000)); // no id
+  const after = deleteSessions([41_000], false);
+  assert.equal(after.sessions.length, 1);
+  assert.equal(after.sessions[0].ts, 42_000);
+});

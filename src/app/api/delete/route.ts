@@ -12,7 +12,10 @@ import { deleteSessions, resetAll } from "@/lib/history";
 const NO_STORE = { "Cache-Control": "no-store" };
 
 interface DeleteBody {
-  ids?: number[];
+  // Stable per-record identities to drop: a record's `id` when it has one, else
+  // its `ts` for legacy records. See history.deleteSessions — keying on `ts`
+  // alone deleted two same-millisecond sessions together.
+  ids?: (number | string)[];
   all?: boolean;
   reset?: boolean;
 }

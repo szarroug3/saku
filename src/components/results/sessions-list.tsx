@@ -162,25 +162,33 @@ function NoSessions() {
   );
 }
 
+/** The stable identity a delete request is keyed on: a record's `id` when it
+ * has one, else its `ts` for legacy records. Matches history.deleteSessions —
+ * keying on `ts` alone collides for two sessions made in the same millisecond
+ * and would select/delete both together. */
+function rowKey(s: QuizSessionRecord): string | number {
+  return s.id ?? s.ts;
+}
+
 export function SessionsList() {
   const confirm = useConfirm();
   const { history, loaded, refresh } = useHistory();
   const { viewStoredSession } = useQuizSession();
-  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const [picked, setPicked] = useState<Set<string | number>>(new Set());
 
   // Newest first: the run you just did is the one you want to reopen.
   const sessions = history.sessions.slice().sort((a, b) => b.ts - a.ts);
 
-  const togglePicked = (ts: number) => {
+  const togglePicked = (key: string | number) => {
     setPicked((prev) => {
       const next = new Set(prev);
-      if (next.has(ts)) next.delete(ts);
-      else next.add(ts);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
 
-  const deleteSessions = async (ids: number[], all: boolean) => {
+  const deleteSessions = async (ids: (string | number)[], all: boolean) => {
     try {
       const res = await fetch("/api/delete", {
         method: "POST",
@@ -203,12 +211,12 @@ export function SessionsList() {
       <div className="mb-3.5 flex flex-col gap-2">
         {sessions.map((s) => (
           <SessionRow
-            key={s.ts}
+            key={rowKey(s)}
             record={s}
-            selected={picked.has(s.ts)}
-            onToggle={() => togglePicked(s.ts)}
+            selected={picked.has(rowKey(s))}
+            onToggle={() => togglePicked(rowKey(s))}
             onOpen={() => viewStoredSession(s)}
-            onDelete={() => void deleteSessions([s.ts], false)}
+            onDelete={() => void deleteSessions([rowKey(s)], false)}
           />
         ))}
       </div>
