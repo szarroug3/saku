@@ -13,11 +13,11 @@ interactive biometric confirmation); re-sign if wanted.
 
 | # | Status | Task | What it needs |
 |---|---|---|---|
-| 10 | **built, needs a decision** | Numbers and counters track | Built on `feat/counters`. **Needs you:** verify, and decide whether to wire it into a lesson scheduler (it is registered but not yet fed into sessions). |
-| 21 | **merged, needs your voice** | Track-intro cards | Ship and work. **Needs you:** rewrite the six draft cards (laid out in the file). |
-| 22 | **merged, needs your voice** | Listening + Eddy voice fix | Live and opt-in. **Needs you:** the draft labels, and two calls I made (LISTEN_SHARE, direction coupling). |
-| 12 | **answered, needs your go** | Grammar depth, keigo, pitch | **Needs you:** approve keigo-as-a-track-after-transitivity, and pitch = display via Kanjium (don't quiz). Grammar-depth authoring is a scope call. |
-| 20 | **partly done, needs your ruling** | Data quality | Items 4 & 6 done. **Needs you:** which of the rest to action (Tatoeba drift: accept or spot-fix; pattern-filter kanji meanings; reading anchors; two glosses). |
+| 10 | **wiring, building** | Numbers and counters track | Agent adding a Library shelf AND wiring the scheduler so it is viewable + live. |
+| 21 | **your edits applied, building extras** | Track intros + meta terms | Six cards updated to your voice pass. Agent adding Library definition items (JLPT, kana, romaji, …) and the combo→yōon relabel. |
+| 22 | **extending** | Listening | Word types live. Agent adding a SENTENCE recognition listening type (hear → pick the meaning). |
+| 12 | **answered, needs your go** | Grammar depth, keigo, pitch | Keigo revised to open EARLY (recognition-first). **Needs you:** final go + grammar-depth scope. |
+| 20 | **building** | Data quality | Agent fixing items 1,2,5,7 + spot-fixing the worst of 3 (your recommendation, approved). |
 
 ## What's needed from you — 5 items
 
