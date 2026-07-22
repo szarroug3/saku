@@ -780,9 +780,9 @@ export const COUNTER_SOUND_CHANGE: PhaseIntro = {
     },
   ],
   examples: [
-    { from: "一 + 本", to: "一本", reading: "いっぽん", gloss: "one long thing (p)", say: "一本" },
-    { from: "三 + 本", to: "三本", reading: "さんぼん", gloss: "three long things (b)", say: "三本" },
-    { from: "六 + 本", to: "六本", reading: "ろっぽん", gloss: "six long things (p)", say: "六本" },
+    { from: "一 + 本", to: "一本", reading: "いっぽん", gloss: "one long thin object (p)", say: "一本" },
+    { from: "三 + 本", to: "三本", reading: "さんぼん", gloss: "three long thin objects (b)", say: "三本" },
+    { from: "六 + 本", to: "六本", reading: "ろっぽん", gloss: "six long thin objects (p)", say: "六本" },
     { from: "三 + 匹", to: "三匹", reading: "さんびき", gloss: "three small animals (b)", say: "三匹" },
     { from: "三 + 枚", to: "三枚", reading: "さんまい", gloss: "three flat things (no shift)", say: "三枚" },
   ],

@@ -188,16 +188,16 @@ const TENS_AND_UP: readonly CounterForm[] = [
 // The canonical teacher of the shift: 1/6/8/10 → っ + ぽん (p), 3 → ぼん (b),
 // everything else stays ほん (h). Every reading verified against a reference.
 const HON: readonly CounterForm[] = [
-  counted("counter:hon:1", "一本", "いっぽん", "one long thing", "本", "一", 2),
-  counted("counter:hon:2", "二本", "にほん", "two long things", "本", "二", 2),
-  counted("counter:hon:3", "三本", "さんぼん", "three long things", "本", "三", 2),
-  counted("counter:hon:4", "四本", "よんほん", "four long things", "本", "四", 2),
-  counted("counter:hon:5", "五本", "ごほん", "five long things", "本", "五", 2),
-  counted("counter:hon:6", "六本", "ろっぽん", "six long things", "本", "六", 2),
-  counted("counter:hon:7", "七本", "ななほん", "seven long things", "本", "七", 2),
-  counted("counter:hon:8", "八本", "はっぽん", "eight long things", "本", "八", 2),
-  counted("counter:hon:9", "九本", "きゅうほん", "nine long things", "本", "九", 2),
-  counted("counter:hon:10", "十本", "じゅっぽん", "ten long things, also じっぽん", "本", "十", 2),
+  counted("counter:hon:1", "一本", "いっぽん", "one long thin object", "本", "一", 2),
+  counted("counter:hon:2", "二本", "にほん", "two long thin objects", "本", "二", 2),
+  counted("counter:hon:3", "三本", "さんぼん", "three long thin objects", "本", "三", 2),
+  counted("counter:hon:4", "四本", "よんほん", "four long thin objects", "本", "四", 2),
+  counted("counter:hon:5", "五本", "ごほん", "five long thin objects", "本", "五", 2),
+  counted("counter:hon:6", "六本", "ろっぽん", "six long thin objects", "本", "六", 2),
+  counted("counter:hon:7", "七本", "ななほん", "seven long thin objects", "本", "七", 2),
+  counted("counter:hon:8", "八本", "はっぽん", "eight long thin objects", "本", "八", 2),
+  counted("counter:hon:9", "九本", "きゅうほん", "nine long thin objects", "本", "九", 2),
+  counted("counter:hon:10", "十本", "じゅっぽん", "ten long thin objects, also じっぽん", "本", "十", 2),
 ];
 
 // ─── Phase 2 · 〜匹, the same shift on small animals ────────────────────────

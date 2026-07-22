@@ -220,7 +220,7 @@ export const COUNTERS_TRACK: PhaseIntro = {
   body: [
     {
       lead: "This track teaches numbers and counters.",
-      text: "A counter is a short word you add to a number to count a kind of thing: 本 for long things, 人 for people. The number and the counter are said together as one word.",
+      text: "A counter is a short word you add to a number to count a kind of thing: 本 for long thin objects, 人 for people. The number and the counter are said together as one word.",
     },
     {
       lead: "〜つ is taught first, because it works when nothing else does.",
