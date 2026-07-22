@@ -63,7 +63,15 @@ import {
 } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
 import type { Claims } from "@/lib/claims";
-import { entryForGlyph, knownFactsOf, libEntry, type Kind, type LibEntry } from "@/lib/library/entries";
+import {
+  COUNTER_KIND,
+  entryForGlyph,
+  knownFactsOf,
+  libEntry,
+  type Kind,
+  type LibEntry,
+} from "@/lib/library/entries";
+import { counterShelfSections } from "@/lib/library/counter-shelf";
 import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import {
   filterSections,
@@ -169,6 +177,13 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
       ];
     case VOCAB_SUBJECT:
       return [];
+    // Numbers and counters, cut into the groups the track teaches (see
+    // counter-shelf.ts). Rendered as TILES like kana and kanji, not rows: a
+    // counter is a glyph (一本, ひとつ) with a reading under it, which is what a
+    // tile is for. The whole subject is 87 entries across seven small sections,
+    // so every section shows whole — no cap, like radicals.
+    case COUNTER_KIND:
+      return counterShelfSections();
     // All 214, in canonical Kangxi order, cut by traditional stroke count — the
     // way every radical chart is printed, and a real cut the data carries (each
     // radical knows its strokes). Not one card of 214 (unbrowsable) and not a

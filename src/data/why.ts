@@ -258,6 +258,21 @@ export const WHY_TRACK: Record<string, Why> = {
       "Patterns are taught starting with the easiest ones first so early grammar leans on the simple verbs and words you’re already learning in the other tracks.",
     ],
   },
+  // DRAFT COPY, to be rewritten in the owner's voice — the same status as the
+  // counters track intro (track-intros.ts) and its sound-change rule card
+  // (phase-intros.ts). It does the two jobs the others do: what the track gives
+  // you, and how its gate reads.
+  counters: {
+    lede: {
+      strong: "Counting in Japanese uses a small word that changes with what you count.",
+      rest: "A counter is a short word you add to a number, and the number and counter are said together as one word.",
+    },
+    paras: [
+      "To count things you pair a number with a counter: 本 for long things, 人 for people, 枚 for flat things. 三本 is three long things, 三人 is three people. The counter depends on the shape or kind of what you are counting, and a few of them change sound as the number in front of them changes.",
+      "〜つ is taught first because it is the one you can reach for when you do not know the right counter. ひとつ, ふたつ, みっつ count almost anything up to ten, and you will still be understood.",
+      "The counting words are sounds before they are characters, so the first counters need only kana and open right after hiragana. The ones written with a number kanji wait until that kanji is learned, the same way a word waits for its kanji.",
+    ],
+  },
   transitivity: {
     lede: {
       strong: "Some verbs come in twos: one for when it happens, one for when you do it.",

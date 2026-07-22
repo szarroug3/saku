@@ -86,7 +86,9 @@ test("every kind is indexed — no entry falls back to the legacy one-segment UR
   }
   assert.deepEqual(
     [...kinds].sort(),
-    ["grammar", "hiragana", "kanji", "katakana", "radical", "transitivity", "word", "writing-rule"],
+    // "counter" is the numbers-and-counters shelf — its own kind segment even
+    // though the facts under it are `word` (see COUNTER_KIND in entries.ts).
+    ["counter", "grammar", "hiragana", "kanji", "katakana", "radical", "transitivity", "word", "writing-rule"],
   );
 });
 

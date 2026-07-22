@@ -62,6 +62,14 @@ import {
 } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import {
+  COUNTER_CURRICULUM,
+  counterEntry,
+  counterForm,
+  counterMeaningFactId,
+  counterReadingFactId,
+  isKanaForm as isKanaCounterForm,
+} from "@/data/counters";
+import {
   RADICAL_SUBJECT,
   RADICALS,
   radicalEntry,
@@ -84,15 +92,33 @@ import { HOST_LABEL } from "@/lib/grammar/formula";
 import { factsOf } from "@/lib/facts";
 import type { EntryId, FactId, FactInfo } from "@/types";
 
+/**
+ * The counters shelf's kind — and the ONE Kind that is not a fact subject.
+ *
+ * Every other Kind is a subject constant, because a shelf is usually one
+ * subject. The counters track breaks that on purpose: the owner ruled it "vocab
+ * with a track label", so its facts carry subject `word` (COUNTERS_SUBJECT) and
+ * are indistinguishable from any other word downstream — but on the Library it
+ * wants a shelf of its own, "Numbers and counters", not to be dropped into the
+ * general Words shelf. So the SHELF label and the FACT subject are decoupled
+ * here for the counters alone: their LibEntry.kind is this string, while their
+ * facts stay `word`. Nothing reads it as a subject (the registry never sees it;
+ * subjectLabel is driven by FactInfo.subject, which is `word`); it is a
+ * browse-only label, exactly the "track label" the ruling asked for.
+ */
+export const COUNTER_KIND = "counter";
+
 /** Which shelf an entry lives on. The subject id, re-stated as a union so a
- * screen can switch on it — the values come from each subject's own constant,
- * so this cannot drift from what the facts carry. */
+ * screen can switch on it — the values come from each subject's own constant
+ * (so this cannot drift from what the facts carry), with the one exception of
+ * COUNTER_KIND, a browse-only label (see above). */
 export type Kind =
   | typeof KANA_SUBJECT
   | typeof MARK_SUBJECT
   | typeof RADICAL_SUBJECT
   | typeof KANJI_SUBJECT
   | typeof VOCAB_SUBJECT
+  | typeof COUNTER_KIND
   | typeof GRAMMAR_SUBJECT
   | typeof TRANSITIVITY_SUBJECT;
 
@@ -110,6 +136,11 @@ export const KINDS: readonly Kind[] = [
   RADICAL_SUBJECT,
   KANJI_SUBJECT,
   VOCAB_SUBJECT,
+  // Numbers and counters sit right after words: they ARE words (subject `word`),
+  // and a learner reaches for them alongside vocabulary. They get their own shelf
+  // rather than mixing into Words because the track teaches them as a system with
+  // its own order — see COUNTER_KIND.
+  COUNTER_KIND,
   GRAMMAR_SUBJECT,
   TRANSITIVITY_SUBJECT,
   MARK_SUBJECT,
@@ -122,6 +153,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   [RADICAL_SUBJECT]: "Radicals",
   [KANJI_SUBJECT]: "Kanji",
   [VOCAB_SUBJECT]: "Words",
+  [COUNTER_KIND]: "Numbers and counters",
   [GRAMMAR_SUBJECT]: "Grammar",
   [TRANSITIVITY_SUBJECT]: "Verb pairs",
 };
@@ -528,6 +560,39 @@ function build(): LibEntry[] {
     });
   });
 
+  // Numbers and counters — the track's words, given browse pages of their own.
+  //
+  // These are `word` facts (COUNTERS_SUBJECT), so they are indistinguishable
+  // from vocabulary in the registry and the drill — but here they carry
+  // COUNTER_KIND so they shelve as "Numbers and counters" rather than vanishing
+  // into 12,553 everyday words. The whole point of the page is to VIEW the
+  // counted form beside its reading (一本 · いっぽん), which is exactly what a
+  // counter's factRows below print.
+  //
+  // A KANA FORM CARRIES NO READING and a COUNTED FORM CARRIES ONE. A kana form's
+  // reading IS its glyph (ひとつ), so listing it under the glyph would print
+  // ひとつ twice; its `readings` is empty and the tile falls back to the meaning
+  // ("one thing"). A counted form (一本) shows its reading (いっぽん), the sound
+  // the shelf exists to teach — findable in search and printed under the glyph.
+  COUNTER_CURRICULUM.forEach((f, i) => {
+    const kana = isKanaCounterForm(f);
+    out.push({
+      id: counterEntry(f),
+      kind: COUNTER_KIND,
+      glyph: f.glyph,
+      readings: kana ? [] : [f.reading],
+      meanings: [f.meaning],
+      // What it is, in one word, for the search-row note. A bare number says so;
+      // everything else is a counter (the specific counter is the shelf section).
+      sub: f.counter === "" ? "Number" : "Counter",
+      // Below everyday words (10,000+): a bare number like に collides on glyph
+      // with the particle に, and the word should lead — a counter is the
+      // specialist answer, surfaced but not ahead of the vocabulary. Curriculum
+      // order breaks ties among counters.
+      weight: 9_000 + i,
+    });
+  });
+
   return out;
 }
 
@@ -654,6 +719,13 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
       return radicalByGlyph(glyph) ? radicalEntry(glyph) : null;
     case VOCAB_SUBJECT:
       return vocabRow(glyph) ? wordEntry(glyph) : null;
+    // A counter is NOT resolved by its glyph, and for the same reason a bare
+    // number gets a low weight above: に the number and に the particle share a
+    // glyph, and 一本 is not a vocab keb at all. Counter links are minted from the
+    // form's own namespaced id (counterEntry), never from a glyph, so nothing
+    // asks this — but the answer would be ambiguous if it did.
+    case COUNTER_KIND:
+      return null;
     // A mark is not resolved by its glyph either, and for a stronger reason than
     // grammar's: っ IS a kana glyph as well as a mark, ゃゅょ is three glyphs in
     // one entry, and long vowels has none. Mark links are minted from the mark's
@@ -747,6 +819,12 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
       return rows.length === 1 ? "Reading" : "Readings";
     case VOCAB_SUBJECT:
       return "Reading and meaning";
+    // A counter is a word, so its table is a word's — reading AND meaning for a
+    // counted form (一本 · いっぽん), meaning alone for a kana form whose reading is
+    // the glyph itself (ひとつ). Read off the row count, like grammar below, so a
+    // one-row kana counter is not promised a reading it does not test.
+    case COUNTER_KIND:
+      return rows.length > 1 ? "Reading and meaning" : "Meaning";
     // A radical has one fact and it is its meaning, so the table is headed by
     // what it holds.
     case RADICAL_SUBJECT:
@@ -837,6 +915,13 @@ export function factRows(entry: LibEntry): FactRow[] {
       ];
     case GRAMMAR_SUBJECT:
       return grammarFactRows(entry);
+    // A counter is a word, so it prints a word's rows — but keyed on the form's
+    // OWN facts (counterReadingFactId / counterMeaningFactId), not the vocab-keb
+    // minters the word branch uses: 一本 is no keb and に would collide with the
+    // particle. A counted form has both rows, its reading spoken (いっぽん, not the
+    // synthesiser's guess at 一本); a kana form has the meaning row alone.
+    case COUNTER_KIND:
+      return counterFactRows(entry);
     // A radical's one fact is its meaning — the same meaning-recall row a kanji
     // carries, and the fact that unlocks the kanji filed under it. No reading:
     // a radical is a shape and an idea, never a sound.
@@ -896,6 +981,44 @@ function transitivityFactRows(entry: LibEntry): FactRow[] {
       speak: info.reading,
     });
   }
+  return rows;
+}
+
+/**
+ * A counter's facts as table rows — its reading (for a counted form) and its
+ * meaning, the two things the entry page exists to show side by side.
+ *
+ * The reading row is present only for a counted form: a kana form (ひとつ) IS its
+ * reading, so there is nothing to test and buildCounterFacts mints no reading
+ * fact — the same rule the word branch follows for kana words. The reading is
+ * SPOKEN off the row's own kana (いっぽん), because handing a synthesiser 一本
+ * gets a reading at random, which is precisely the mistake this shelf teaches
+ * against. Empty when the id names no form this track minted.
+ */
+function counterFactRows(entry: LibEntry): FactRow[] {
+  const form = counterForm(entry.id);
+  if (!form) return [];
+  const rows: FactRow[] = [];
+  if (!isKanaCounterForm(form)) {
+    rows.push({
+      id: counterReadingFactId(form),
+      label: "Reading",
+      answer: form.reading,
+      askedIn: [],
+      unattested: false,
+      origin: null,
+      speak: form.reading,
+    });
+  }
+  rows.push({
+    id: counterMeaningFactId(form),
+    label: "Meaning",
+    answer: form.meaning,
+    askedIn: [],
+    unattested: false,
+    origin: null,
+    speak: null,
+  });
   return rows;
 }
 

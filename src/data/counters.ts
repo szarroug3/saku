@@ -346,6 +346,20 @@ export function counterMeaningFactId(form: CounterForm): FactId {
   return factId(counterEntry(form), "meaning");
 }
 
+/** The reading fact of a counted form — 三本 → さんぼん. A kana form has none (it
+ * IS its reading), the same rule buildCounterFacts follows; callers guard with
+ * isKanaForm. */
+export function counterReadingFactId(form: CounterForm): FactId {
+  return factId(counterEntry(form), "reading");
+}
+
+/** The form an entry names, or undefined for an entry this track did not mint.
+ * A lookup, never a parse — the join the Library uses to render a counter's page
+ * (its counted form and its reading) without reaching into the id. */
+export function counterForm(entry: EntryId): CounterForm | undefined {
+  return BY_ENTRY.get(entry);
+}
+
 /** Does this entry carry the h→p/b sound change — a phase-2 form of a counter
  * whose reading shifts (本, 匹)? The gate for the sound-change rule card, fired
  * ahead of the first such form in the teach walk (see src/lib/lesson-steps.ts).
