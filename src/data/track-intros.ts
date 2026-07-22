@@ -85,7 +85,7 @@ export const HIRAGANA_TRACK: PhaseIntro = {
     },
     {
       lead: "Hiragana is the set you are starting with.",
-      text: "It spells native Japanese words and the endings that hold a sentence together, so it is on every page of a beginner's book. Most books open assuming you have it already and never say so.",
+      text: "It spells native Japanese words and the endings that hold a sentence together, so it is on every page of a beginner's book. Books like Minna no Nihongo introduce it but never teach it in a way that sticks.",
     },
     {
       lead: "Japanese written in the letters you already know is called romaji.",
@@ -152,7 +152,7 @@ export const KANJI_TRACK: PhaseIntro = {
     },
     {
       lead: "Every kanji you learn helped you with words you have not seen yet.",
-      text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can guess it: a volcano, and nobody had to teach you the word. Learn a few hundred radicals and thousands of words become easier to learn.",
+      text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can guess it: a volcano, and nobody had to teach you the word. Learn a few hundred kanji and thousands of words become easier to learn.",
     },
     {
       lead: "They also show you where a word ends.",
