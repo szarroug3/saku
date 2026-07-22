@@ -1695,6 +1695,27 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     approximate: "A single soft tap of the tongue, not a hard English “r.”",
   },
 
+  ラ: {
+    glyph: "ラ",
+    romaji: "ra",
+    sound: "ra",
+    object: "skateboard ramp",
+    analogy: [
+      { text: "Say “" },
+      { text: "ra", accent: true },
+      { text: "” as in " },
+      { text: "ra", accent: true },
+      { text: "mp." },
+    ],
+    mnemonic: [
+      { text: "A skateboard hangs above a steep " },
+      { text: "ra", accent: true },
+      { text: "mp." },
+    ],
+    example: { word: "ラーメン", reading: "rāmen", gloss: "ramen", hitIndex: 0 },
+    approximate: "A single soft tap of the tongue, not a hard English “r.”",
+  },
+
   り: {
     glyph: "り",
     romaji: "ri",
@@ -1759,6 +1780,27 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "te drops down and curls into a loop." },
     ],
     example: { word: "くるま", reading: "kuruma", gloss: "car", hitIndex: 1 },
+    approximate: "A single soft tap of the tongue, not a hard English “r.”",
+  },
+
+  ル: {
+    glyph: "ル",
+    romaji: "ru",
+    sound: "roo",
+    object: "kangaroo by a tree",
+    analogy: [
+      { text: "Say “" },
+      { text: "roo", accent: true },
+      { text: "” as in kanga" },
+      { text: "roo", accent: true },
+      { text: "." },
+    ],
+    mnemonic: [
+      { text: "A kanga" },
+      { text: "roo", accent: true },
+      { text: " leans toward the tree, ready to take a nibble." },
+    ],
+    example: { word: "ルール", reading: "rūru", gloss: "rule", hitIndex: 0 },
     approximate: "A single soft tap of the tongue, not a hard English “r.”",
   },
 
