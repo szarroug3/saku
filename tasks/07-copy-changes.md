@@ -1,6 +1,6 @@
 # Copy changes — approved, not yet applied
 
-**Status: mostly done** — 22 of 24 applied, merged `e784135`
+**Status: done** — merged across `e784135` (22 items), `52b6259` (E8, with Sam's fluff cut), and `bc5104d` (C3 lead deleted). E3 was editorial, not copy.
 
 **Bookkeeping note:** the README row said "24 ready to apply" until 21 July because
 I updated it before the pass ran and never corrected it afterwards. Sam reasonably

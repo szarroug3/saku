@@ -1,6 +1,54 @@
-# Numbers and counters — a separate track · PROPOSAL, awaiting Sam's approval
+# Numbers and counters — a separate track
 
-**Status: needs review** — Sam ruled 21 July that this becomes its own track and
+**Status: APPROVED — ready to build (prose as draft)**
+
+## Sam's rulings, 21 July
+
+- **Option B approved:** separate track, phase 1 gated on kana only, phase 2 gated
+  on the number kanji.
+- **〜つ is the escape hatch, taught FIRST — before the numbers.** Sam: "teach it at
+  the beginning of the track before the numbers even."
+- **Vocab with a track label**, not a seventh subject.
+- **Count:** see below. ~5 counters taught as a system; the rest as plain vocab.
+
+### One wrinkle on "〜つ before the numbers", confirmed workable
+
+〜つ (ひとつ〜ここのつ) IS the native counting system for 1 to 10, so teaching it
+first doubles as teaching the learner to count. It works, with one caveat the build
+must respect: **〜つ only reaches 10.** It is the escape hatch and it covers small
+counts of almost anything, but 11+ and every other counter need the Sino-Japanese
+numbers (いち に さん …). So the sequence is:
+
+1. **〜つ first** — ひとつ〜とお. Immediately useful, the "when you don't know the
+   right counter, use this" tool.
+2. **Then the Sino numbers** いち〜じゅう, which everything else is built on.
+3. Then 〜人, then 11-99, 百 千 万, then phase 2.
+
+### How many counters — the real answer
+
+**Japanese has 100+ counters; perhaps 20-30 see daily use.** The repo already
+carries **20** of the common ones as vocab rows (人 本 枚 個 匹 台 冊 杯 回 歳 …),
+though as nouns rather than as counters.
+
+**Recommendation for the track: 5 taught as a system, ~6 more as plain vocab.**
+- Taught properly (they carry the sound-change rule or a key irregular):
+  **〜つ, 〜人, 〜本, 〜枚, 〜匹.**
+- Plain vocab, no new machinery: **〜個 〜台 〜冊 〜杯 〜回 〜歳.**
+That is ~11 counters plus the number words. More than ~5 taught-as-a-system becomes
+a memorisation slog for a beginner, which is the thing this track is meant to avoid.
+
+## Build note
+
+Numbers and counted-form readings are FACTUAL data (ひとり, ふたり, いっぽん,
+さんぼん, ろっぽん) and should be got exactly right. The prose — the track intro, the
+sound-change rule card — is Sam's voice and must be written as clearly-marked DRAFT
+for her pass, the same as tasks 21 and 22. Reuse the track-intro mechanism
+(`src/data/track-intros.ts`) for the opening card and the phase-intro pattern for
+the sound-change rule.
+
+---
+
+## Original proposal (approved above)
 asked for a gating proposal to approve.
 
 ## What is already in the data (measured, not assumed)
