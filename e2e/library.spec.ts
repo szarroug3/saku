@@ -116,3 +116,54 @@ test("the library shelf renders and links into entries", async ({ page }) => {
   await page.goto(entryHref(first.id));
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
 });
+
+/**
+ * THE FILTER CHIPS SURVIVE A TRIP THROUGH A DETAIL PAGE — including a
+ * back → forward → back dance.
+ *
+ * The chips and the knowledge filter drive the page by changing ONLY the
+ * query string of `/library` (kind/state/q). They used to do that with
+ * `router.push`, and on Next 16 that has a bfcache hazard: once the App Router
+ * preserves and restores this page's tree in an <Activity> boundary — which a
+ * back → forward → back through a detail page does — a subsequent same-segment,
+ * search-params-only push is silently dropped. The chips went dead until a full
+ * reload, while segment-changing links (a tile, the sidebar) kept working.
+ *
+ * The fix routes those query-only updates through the native History API
+ * (window.history.pushState/replaceState), which the App Router docs recommend
+ * for exactly this and which is unaffected by the bfcache path. This test is
+ * the regression: it drives the failing sequence with REAL clicks and asserts a
+ * chip still changes the shelf afterwards.
+ */
+test("filter chips still work after a back/forward/back through a detail page", async ({
+  page,
+}) => {
+  const chip = (name: string) =>
+    page.getByRole("button", { name, exact: true });
+
+  await page.goto("/library?kind=kanji");
+  await expect(page.getByText("生")).toBeVisible();
+
+  // Into a kanji detail, then the back → forward → back cycle that arms the bug.
+  await page.locator('a[href="/library/kanji/生"]').first().click();
+  await expect(page).toHaveURL(/\/library\/kanji\//);
+  await page.goBack();
+  await expect(page).toHaveURL(/\?kind=kanji$/);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/library\/kanji\//);
+  await page.goBack();
+  await expect(page).toHaveURL(/\?kind=kanji$/);
+
+  // The kind chip must still move the shelf.
+  await chip("Words").click();
+  await expect(page).toHaveURL(/\?kind=word$/);
+  await expect(page.getByText("Everyday words", { exact: true })).toBeVisible();
+
+  // And so must the knowledge filter (the other search-params-only control).
+  await chip("Known").click();
+  await expect(page).toHaveURL(/state=known/);
+
+  // Back still steps through the choices the chips pushed.
+  await page.goBack();
+  await expect(page).toHaveURL(/\?kind=word$/);
+});
