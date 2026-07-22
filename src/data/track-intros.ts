@@ -115,7 +115,7 @@ export const KATAKANA_TRACK: PhaseIntro = {
       text: "Borrowed words are written in it: コーヒー is “coffee”, パン is “bread”. So are names and sound effects. You'll run into it constantly.",
     },
     {
-      lead: "We teach it now because you already know the sounds and you'll need it soon.",
+      lead: "It’s taught now because you already know the sounds and you'll need it soon.",
       text: "It is about the same size as hiragana. With both sets in hand you can read any Japanese word out loud.",
     },
   ],
@@ -153,7 +153,7 @@ export const KANJI_TRACK: PhaseIntro = {
       text: "山 means mountain and is read “yama”. Sometimes a kanji is a whole word by itself. Sometimes it is one piece of a longer word, like the 火 inside 火山. The same character does both, depending on the word it is in.",
     },
     {
-      lead: "Every kanji you learn helped you with words you have not seen yet.",
+      lead: "Every kanji you learn helps you with words you have not seen yet.",
       text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can guess it: a volcano, and nobody had to teach you the word. Learn a few hundred kanji and thousands of words become easier to learn.",
     },
     {
@@ -179,7 +179,7 @@ export const WORD_TRACK: PhaseIntro = {
     },
     {
       lead: "A word is taught here once you know every kanji in it.",
-      text: "電車 isn’t taught until you have learned both 電 and 車, so when you learn it, you can put it together rather than memorize it. Words with no kanji at all, like これ and もう, have nothing blocking them.",
+      text: "電車 isn’t taught until you have learned both 電 and 車, so when you learn it, you can put it together instead of memorizing it. Words with no kanji at all, like これ and もう, have nothing blocking them.",
     },
     {
       lead: "Expect it to come in bursts.",
