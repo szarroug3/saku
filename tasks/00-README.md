@@ -16,7 +16,7 @@ interactive biometric confirmation); re-sign if wanted.
 | 10 | **wiring, building** | Numbers and counters track | Agent adding a Library shelf AND wiring the scheduler so it is viewable + live. |
 | 21 | **your edits applied, building extras** | Track intros + meta terms | Six cards updated to your voice pass. Agent adding Library definition items (JLPT, kana, romaji, …) and the combo→yōon relabel. |
 | 22 | **extending** | Listening | Word types live. Agent adding a SENTENCE recognition listening type (hear → pick the meaning). |
-| 12 | **answered, needs your go** | Grammar depth, keigo, pitch | Keigo revised to open EARLY (recognition-first). **Needs you:** final go + grammar-depth scope. |
+| 12 | **building all three** | Grammar depth, keigo, pitch | Pitch + grammar-depth (N3) dispatched; keigo queued behind counters. All verified before merge. |
 | 20 | **building** | Data quality | Agent fixing items 1,2,5,7 + spot-fixing the worst of 3 (your recommendation, approved). |
 
 ## What's needed from you — 5 items

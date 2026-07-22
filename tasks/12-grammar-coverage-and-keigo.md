@@ -14,7 +14,16 @@
   it (grading pitch needs the ruled-out audio capture). Hard guardrail: if the data
   cannot be obtained and sample-verified cleanly, the agent STOPS rather than ship a
   wrong downstep as fact.
-- **Grammar depth — HOLD, deliberately.** Adding patterns is AUTHORING recipes, each
+- **Grammar depth — REVERSED to BUILD.** Sam pushed back: *"not necessarily the
+  easiest. do what is actually best for the student."* Correct — the audit says
+  grammar depth (not vocabulary) is what walls a learner at N4, so the student needs
+  it. The answer to "this could teach wrong grammar" is not *don't*, it is *verify
+  every pattern* to the same bar the conjugation engine already meets. Dispatched
+  (`feat/grammar-depth`): author the highest-value N3 patterns, classify each as
+  production-fits vs clause-level-recognition, ship only what is certainly correct,
+  and I verify the grammar myself before merging. ~~HOLD~~.
+
+- **Grammar depth — (superseded hold):** Adding patterns is AUTHORING recipes, each
   a build rule the engine executes; bulk-dispatching risks teaching incorrect grammar
   at scale, the one thing this whole effort fights. The 81 N5+N4 patterns are correct
   and coherent. Expansion should be incremental and reviewed; Resources points onward
