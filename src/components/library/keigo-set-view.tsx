@@ -102,7 +102,7 @@ export function KeigoSetView({
         <span className="font-kana text-text">
           {set.plain.map((p) => p.keb).join(" / ")}
         </span>{" "}
-        <span className="text-text-muted">({set.meaning})</span> — the everyday
+        <span className="text-text-muted">({set.meaning})</span>, the everyday
         word you already know.
       </p>
       <div className="grid gap-4 md:grid-cols-2">
