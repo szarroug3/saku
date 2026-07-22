@@ -13,10 +13,10 @@ interactive biometric confirmation); re-sign if wanted.
 
 | # | Status | Task | What it needs |
 |---|---|---|---|
-| 10 | **wiring, building** | Numbers and counters track | Agent adding a Library shelf AND wiring the scheduler so it is viewable + live. |
-| 21 | **your edits applied, building extras** | Track intros + meta terms | Six cards updated to your voice pass. Agent adding Library definition items (JLPT, kana, romaji, …) and the combo→yōon relabel. |
-| 22 | **extending** | Listening | Word types live. Agent adding a SENTENCE recognition listening type (hear → pick the meaning). |
-| 12 | **building all three** | Grammar depth, keigo, pitch | Pitch + grammar-depth (N3) dispatched; keigo queued behind counters. All verified before merge. |
+| 10 | **DONE** | Numbers and counters track | Merged. Library shelf at `/library/counter/一本` + scheduler wired (kana-gated phase 1, kanji-gated phase 2). Copy draft. |
+| 21 | **DONE (copy draft)** | Track intros + meta terms | Merged. Your six edits applied; Library `Terms` shelf (JLPT, kana, romaji, …) added; combo→yōon done. All copy draft. |
+| 22 | **DONE** | Listening | Merged. Word types + new SENTENCE recognition type (hear → pick the meaning), unambiguous-board guaranteed. Labels draft. |
+| 12 | **pitch DONE; grammar + keigo building** | Grammar depth, keigo, pitch | Pitch merged (Kanjium, 69% coverage, verified). N3 grammar + keigo building; I verify the Japanese before merging. |
 | 20 | **building** | Data quality | Agent fixing items 1,2,5,7 + spot-fixing the worst of 3 (your recommendation, approved). |
 
 ## What's needed from you — 5 items
