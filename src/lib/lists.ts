@@ -24,7 +24,7 @@ import "server-only";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 
-import { withEntriesRemoved, withName } from "@/lib/list-ops";
+import { withEntriesAdded, withEntriesRemoved, withName } from "@/lib/list-ops";
 import type { EntryId, ListsFile, SavedList } from "@/types";
 
 const LISTS_PATH = path.join(process.cwd(), "lists.json");
@@ -72,15 +72,12 @@ export function saveList(list: SavedList): ListsFile {
  */
 export function addToList(id: string, entries: EntryId[]): ListsFile {
   const file = loadLists();
-  const list = file.lists.find((l) => l.id === id);
-  if (!list || list.kind !== "fixed") return file;
-  const have = new Set(list.entries);
-  for (const e of entries) {
-    if (!have.has(e)) {
-      list.entries.push(e);
-      have.add(e);
-    }
-  }
+  // Delegate to the tested pure op rather than re-implementing the dedupe here:
+  // list-ops.ts owns "what an add DOES to a list" and its tests guard it, so the
+  // fs half must call straight through or the two silently diverge (which they
+  // once did). The fixed/derived guard lives in withEntriesAdded too.
+  const i = file.lists.findIndex((l) => l.id === id);
+  if (i !== -1) file.lists[i] = withEntriesAdded(file.lists[i], entries);
   write(file);
   return file;
 }

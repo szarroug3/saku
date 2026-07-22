@@ -313,15 +313,28 @@ export function saveSession(session: QuizSessionRecord): HistoryFile {
  * the app you know, and what you asked to be quizzed on, are separate assertions
  * and are still true. */
 export function deleteSessions(
-  ids: number[] | null,
+  ids: (number | string)[] | null,
   deleteAll: boolean,
 ): HistoryFile {
   const hist = loadHistory();
+  // A delete that selects NOTHING must change nothing. The rebuild below folds
+  // hist.facts from the SURVIVING sessions, but hist.facts is grown
+  // incrementally by saveSession and legitimately carries contributions from
+  // sessions the 200-cap has already evicted from hist.sessions. Rebuilding on
+  // an empty request (the empty-POST path: deleteSessions(null, false)) would
+  // silently discard every one of those, shrinking the durable aggregate for a
+  // request that asked to delete nothing. So bail before touching the file.
+  if (!deleteAll && (!ids || ids.length === 0)) return hist;
   if (deleteAll) {
     hist.sessions = [];
   } else {
-    const drop = new Set(ids ?? []);
-    hist.sessions = hist.sessions.filter((s) => !drop.has(s.ts));
+    // Key on the STABLE identity, not the wall clock: two records made in the
+    // same millisecond share a `ts`, so keying on `ts` deletes both when the
+    // user asked to drop one. `id` (minted with the record — see saveSession)
+    // is that identity; records written before it existed fall back to `ts`,
+    // which is the best available and matches how they were selected.
+    const drop = new Set(ids);
+    hist.sessions = hist.sessions.filter((s) => !drop.has(s.id ?? s.ts));
   }
   hist.facts = foldSessions(hist.sessions);
   writeHistory(hist);

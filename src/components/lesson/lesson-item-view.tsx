@@ -62,6 +62,7 @@ import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { knownLookalikes } from "@/lib/kanji-lookalikes";
+import { showsHowItsWritten } from "@/lib/lesson-items";
 import type { LessonItem } from "@/lib/lesson-items";
 import { formsOfWord } from "@/lib/word-forms";
 import { libEntry, recipeOf } from "@/lib/library/entries";
@@ -560,7 +561,7 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           />
         ) : null}
         {item.kind === "grammar" ? <GrammarFamilyPanel item={item} /> : null}
-        {item.kind === "kana" || item.kind === "kanji" || item.kind === "radical" ? <HowItsWritten item={item} /> : null}
+        {showsHowItsWritten(item.kind) ? <HowItsWritten item={item} /> : null}
         {/* A radical's kanji, in learning order: the shape's whole payoff is the
             meaning it lends the kanji built on it, so the teach card ends on the
             first few of them, each with its meaning and the reader's score. */}
