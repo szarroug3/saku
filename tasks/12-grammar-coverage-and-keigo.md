@@ -1,6 +1,6 @@
 # P2 · Grammar coverage, keigo, and pitch accent
 
-**Status: keigo + pitch DONE; grammar has an open follow-up.** Keigo track and pitch display merged and verified. The N3 grammar batch shipped 15 patterns, but the 12 clause-level RECOGNITION patterns only show in the Library — they are not DRILLED until the grammar corpus is re-tagged (`scripts/ingest/grammar.py`). That re-tag, and any further N3 depth, is the open work.
+**Status: keigo + pitch DONE; all 12 N3 recognition patterns now DRILLED.** Keigo track and pitch display merged and verified. The N3 grammar batch shipped 15 patterns. The re-tag (`feat/retag`, merged `b9ab4e4`) drilled 11 of the 12 clause-level RECOGNITION patterns with hand-verified Tatoeba examples. The について 58%-trap (席につく / 位置について tokenize identically to topic について) was handled with a `not_after` signature + a translation-audit drop of 9 confounds. The twelfth, `wake-da`, has no safe automatic signature (its 訳 token is shared by 言い訳だ / どういうわけだ / わけがない / わけにはいかない) so it sits in `NO_SIGNATURE` — now filled by a **hand-authored example lane** (`src/data/grammar/authored.ts`): 5 human-verified 〜わけだ sentences, one per host shape, that flow into `examplesFor` and drill exactly like a tagged sentence while staying out of the Tatoeba `CORPUS` array (so every corpus-count invariant still measures the ingest alone). The noun host (…というわけだ) is deliberately left out — blanking it swallows the という. Any further N3 depth is optional/paced.
 
 ## The three calls (Sam: "do whatever you think is best for both")
 

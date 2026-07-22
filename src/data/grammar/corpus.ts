@@ -28,6 +28,7 @@
 
 import corpusJson from "../generated/grammar-corpus.json" with { type: "json" };
 import metaJson from "../generated/grammar-corpus-meta.json" with { type: "json" };
+import { AUTHORED } from "./authored";
 
 /** One example sentence. Field names are short because 8,689 of these ship. */
 export interface Example {
@@ -111,7 +112,12 @@ const BY_PATTERN: ReadonlyMap<string, Example[]> = groupByPattern();
 
 function groupByPattern(): Map<string, Example[]> {
   const map = new Map<string, Example[]>();
-  for (const ex of CORPUS) {
+  // The corpus, then the hand-authored lane (authored.ts) — the few recipes
+  // Tatoeba cannot supply. Both group the same way, so examplesFor treats an
+  // authored わけだ sentence exactly like a tagged one and it DRILLS. Only this
+  // grouping sees AUTHORED; the CORPUS array stays pure so every count invariant
+  // measures the ingest alone.
+  for (const ex of [...CORPUS, ...AUTHORED]) {
     for (const p of ex.p) {
       const list = map.get(p);
       if (list) list.push(ex);
