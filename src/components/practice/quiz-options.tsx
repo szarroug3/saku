@@ -115,11 +115,14 @@ export function QuizOptionsFields() {
             </Row>
           ) : null}
           {/* Listening — OPT-IN and independent of the direction toggles above.
-              Each chip adds an audio-prompt question type over words: turned on,
-              some of a word's showings play it instead of showing it. Off by
-              default, and neither gates anything — see src/lib/listen.ts.
+              The two WORD chips add an audio-prompt question type over words:
+              turned on, some of a word's showings play it instead of showing it
+              (src/lib/listen.ts). The SENTENCE chip switches to a corpus-driven
+              recognition mode — hear a sentence, pick its meaning
+              (src/lib/listen-sentence.ts) — the way assembly and substitution
+              are their own modes. All three are off by default and gate nothing.
               DRAFT COPY (labels + hint): flagged for the owner's voice pass. */}
-          <Row label="Listening" hint="words only">
+          <Row label="Listening" hint="opt-in">
             <Chip
               on={cfg.listenRomaji}
               onClick={() => update({ listenRomaji: !cfg.listenRomaji })}
@@ -132,7 +135,30 @@ export function QuizOptionsFields() {
             >
               Hear it, give the meaning
             </Chip>
+            <Chip
+              on={false}
+              onClick={() => update({ mode: "listen-sentence" })}
+            >
+              Hear a sentence, pick the meaning
+            </Chip>
           </Row>
+        </>
+      ) : null}
+      {cfg.mode === "listen-sentence" ? (
+        // The sentence recognition mode's home in the Listening row. Its chip is
+        // ON here (this IS the mode); clicking it returns to the ordinary drill.
+        // The statement mirrors grid's one-liner: this mode reads none of the
+        // direction/answer rows, so it states what it does instead of showing
+        // dead controls. DRAFT COPY.
+        <>
+          <Row label="Listening" hint="opt-in">
+            <Chip on onClick={() => update({ mode: "drill" })}>
+              Hear a sentence, pick the meaning
+            </Chip>
+          </Row>
+          <div className="flex items-center border-t border-border py-2 text-[13px] text-text-muted first:border-t-0">
+            Plays a sentence, you pick its meaning. Known words only.
+          </div>
         </>
       ) : null}
       {cfg.mode === "grid" ? (

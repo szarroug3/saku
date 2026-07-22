@@ -7,6 +7,7 @@ import { AssemblyScreen } from "@/components/quiz/assembly-screen";
 import { DrillScreen } from "@/components/quiz/drill-screen";
 import { GridScreen } from "@/components/quiz/grid-screen";
 import { PairsScreen } from "@/components/quiz/pairs-screen";
+import { SentenceListenScreen } from "@/components/quiz/sentence-listen-screen";
 import { SubstitutionScreen } from "@/components/quiz/substitution-screen";
 import { useQuizSession } from "@/lib/quiz-session";
 
@@ -46,5 +47,7 @@ export default function QuizPage() {
       return <AssemblyScreen />;
     case "substitution":
       return <SubstitutionScreen />;
+    case "listen-sentence":
+      return <SentenceListenScreen />;
   }
 }

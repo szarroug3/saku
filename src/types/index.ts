@@ -120,7 +120,13 @@ export interface CharInfo {
 
 // ---------- quiz config (localStorage "kanaquiz-cfg") ----------
 
-export type QuizMode = "drill" | "pairs" | "grid" | "assembly" | "substitution";
+export type QuizMode =
+  | "drill"
+  | "pairs"
+  | "grid"
+  | "assembly"
+  | "substitution"
+  | "listen-sentence";
 export type Direction = "jp2en" | "en2jp";
 export type AnswerStyle = "typed" | "mc";
 
