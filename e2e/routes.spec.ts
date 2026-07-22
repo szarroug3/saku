@@ -78,9 +78,13 @@ const dynamicSamples: Array<{ route: string; url: string; expect: string }> = [
   // Cluster ids come from src/data/grammar/clusters; "obligation" is the first.
   { route: "/grammar/[cluster]", url: "/grammar/obligation", expect: "" },
   { route: "/library/[...entry]", url: "/library/hiragana/a", expect: "あ" },
-  // /radical only serves the 82 PRIMITIVE_STROKES shapes; the 155 components
-  // that are also jouyou kanji 404 here on purpose, so 一 is NOT a valid value.
-  { route: "/radical/[radical]", url: "/radical/ノ", expect: "ノ" },
+  // /radical serves the components that are used as a part but are NOT themselves
+  // a taught kanji (氵, 亻, 艹, ...). A component that is also a jouyou kanji 404s
+  // here on purpose and routes to /library/kanji instead, so 一 is NOT valid.
+  // Since task 23 rebuilt components from KanjiVG, the set is the meaningful
+  // semantic radicals (氵 sits inside 115 kanji), not the old stroke primitives
+  // like ノ, which no direct decomposition lists.
+  { route: "/radical/[radical]", url: "/radical/氵", expect: "氵" },
 ];
 
 for (const sample of dynamicSamples) {
