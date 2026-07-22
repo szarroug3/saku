@@ -119,7 +119,7 @@ export function QuizOptionsFields() {
               some of a word's showings play it instead of showing it. Off by
               default, and neither gates anything — see src/lib/listen.ts.
               DRAFT COPY (labels + hint): flagged for the owner's voice pass. */}
-          <Row label="Listening" hint="words only, optional">
+          <Row label="Listening" hint="words only">
             <Chip
               on={cfg.listenRomaji}
               onClick={() => update({ listenRomaji: !cfg.listenRomaji })}

@@ -93,7 +93,7 @@ export const HIRAGANA_TRACK: PhaseIntro = {
     },
     {
       lead: "Katakana comes after this, and kanji after that.",
-      text: "Hiragana is the small set that unlocks the most, so it is the door in.",
+      text: "Hiragana comes first because it is the smallest set that lets you read anything.",
     },
   ],
 };
@@ -110,11 +110,11 @@ export const KATAKANA_TRACK: PhaseIntro = {
     },
     {
       lead: "It marks a word as coming from somewhere else.",
-      text: "Borrowed words are written in it: コーヒー is “coffee”, パン is “bread”. So are names and sound effects. You run into it constantly.",
+      text: "Borrowed words are written in it: コーヒー is “coffee”, パン is “bread”. So are names and sound effects. You'll run into it constantly.",
     },
     {
-      lead: "It comes now because it is cheap and you need it soon.",
-      text: "It is about the same size as hiragana and reuses sounds you already have. With both sets in hand you can read any Japanese word out loud.",
+      lead: "We teach it now because you already know the sounds and you'll need it soon.",
+      text: "It is about the same size as hiragana. With both sets in hand you can read any Japanese word out loud.",
     },
   ],
 };
@@ -127,14 +127,14 @@ export const RADICAL_TRACK: PhaseIntro = {
   body: [
     {
       lead: "A radical is a small shape that recurs inside many kanji.",
-      text: "Kanji are the characters Japanese uses to write most of its words, and they are drawn out of a fixed stock of pieces. 氵 means water, and it sits inside 海 (sea), 泳 (swim) and 湖 (lake). 木 means tree, and it sits inside 林 (woods) and 森 (forest).",
+      text: "Kanji are the characters Japanese uses to write most of its words, and they are drawn out of a fixed stock of pieces. 氵 means water, and it’s used in 海 (sea), 泳 (swim) and 湖 (lake). 木 means tree, and it’s used in 林 (woods) and 森 (forest).",
     },
     {
       lead: "Knowing one gives you a head start on a kanji you have never seen.",
       text: "The radical often hints at what the kanji means. It is a hint rather than a promise, since some radicals are only structural. A radical is usually a component rather than a word you would say out loud, so this track asks you only for its meaning.",
     },
     {
-      lead: "Each one arrives just before the first kanji that uses it.",
+      lead: "Each one is taught just before the first kanji that uses it.",
       text: "That way a kanji is never taken apart into a piece you have not learned yet.",
     },
   ],
@@ -151,16 +151,16 @@ export const KANJI_TRACK: PhaseIntro = {
       text: "山 means mountain and is read “yama”. Sometimes a kanji is a whole word by itself. Sometimes it is one piece of a longer word, like the 火 inside 火山. The same character does both, depending on the word it is in.",
     },
     {
-      lead: "Every kanji you learn is a discount on words you have not seen yet.",
-      text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can guess it: a volcano, and nobody had to teach you the word. Learn a few hundred and thousands of words stop arriving as strangers.",
+      lead: "Every kanji you learn helped you with words you have not seen yet.",
+      text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can guess it: a volcano, and nobody had to teach you the word. Learn a few hundred radicals and thousands of words become easier to learn.",
     },
     {
-      lead: "They also show you where one word ends.",
-      text: "Japanese leaves no spaces between words. The switch between kanji and kana is a large part of how your eye finds the breaks in a solid row of characters.",
+      lead: "They also show you where a word ends.",
+      text: "Japanese doesn’t use spaces between words. The switch between kanji and kana is a large part of how you find the breaks in a solid row of characters.",
     },
     {
-      lead: "It comes now because you can read every sound already.",
-      text: "Kana got you the sounds. Kanji is what carries the meaning, and it is the larger job, so it starts once the small one is done.",
+      lead: "It’s taught now because you can read every sound already.",
+      text: "Kana taught you the sounds. Kanji is what teaches you the meaning, and it is the larger job, so it starts once the small one is done.",
     },
   ],
 };
@@ -177,7 +177,7 @@ export const WORD_TRACK: PhaseIntro = {
     },
     {
       lead: "A word is taught here once you know every kanji in it.",
-      text: "電車 waits until you have learned both 電 and 車, so when it arrives you can read it rather than take its shape on trust. Words with no kanji at all, like これ and もう, have nothing to wait for.",
+      text: "電車 isn’t taught until you have learned both 電 and 車, so when you learn it, you can put it together rather than memorize it. Words with no kanji at all, like これ and もう, have nothing blocking them.",
     },
     {
       lead: "Expect it to come in bursts.",
@@ -198,7 +198,7 @@ export const GRAMMAR_TRACK: PhaseIntro = {
     },
     {
       lead: "Knowing words is not the same as knowing how to join them.",
-      text: "A sentence needs the pattern as much as it needs the vocabulary, and this is where Japanese sits furthest from English. Word order, and the small words that mark who did what, both work differently.",
+      text: "A sentence needs the pattern as much as it needs the vocabulary. This is where Japanese and English differ the most. Word order, and the small words that mark who did what, both work differently.",
     },
     {
       lead: "You do not need a large vocabulary to start.",

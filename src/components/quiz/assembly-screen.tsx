@@ -276,9 +276,11 @@ export function AssemblyScreen() {
         {/* The tray: the answer, in order. A drop target. */}
         <ul
           className={`mt-6 flex min-h-[68px] flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
-            trayFilled
+            card.state === "right"
               ? "border-success bg-success-bg"
-              : "border-dashed border-border bg-panel"
+              : trayFilled
+                ? "border-accent bg-accent-bg"
+                : "border-dashed border-border bg-panel"
           } ${shake ? "animate-gshake" : ""}`}
           aria-label="Sentence being built"
           onDragOver={(e) => {
