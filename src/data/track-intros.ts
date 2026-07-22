@@ -232,7 +232,7 @@ export const COUNTERS_TRACK: PhaseIntro = {
     },
     {
       lead: "It’s taught now because it needs only kana to begin.",
-      text: "The counting words are sounds before they are characters, so you can start them right after hiragana. The counters that lean on kanji wait until those kanji are learned.",
+      text: "The first counters are just kana, so they start right after hiragana. The counters that lean on kanji wait until those kanji are learned.",
     },
   ],
 };
