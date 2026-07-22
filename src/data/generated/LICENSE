@@ -38,6 +38,8 @@ WHAT CAME FROM WHERE
                            two JLPT lists (tanos.co.uk, open-anki-jlpt-decks)
                            and OpenSubtitles frequency (hermitdave/
                            FrequencyWords) — see their attribution below.
+  pitch.json               Kanjium pitch-accent database (the downstep position
+                           of each word). See its attribution below.
   readings.json            KANJIDIC2 + JMdict (kanji readings aligned to the
                            words that anchor them)
   order.json               KANJIDIC2 + KRADFILE + JMdict (teaching order and
@@ -73,6 +75,18 @@ JMdict
   Copyright (c) Electronic Dictionary Research and Development Group (EDRDG)
   Licence:  CC BY-SA 4.0
   Source:   https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project
+
+Kanjium pitch-accent database
+  The pitch.json downstep positions: for each word, the mora after which the
+  voice falls (0 = heiban, no fall). Only rows the database records one way are
+  kept; ambiguous ones are dropped rather than guessed.
+  The pitch-accent notation and other additions to EDICT/KANJIDIC/KRADFILE were
+  provided by Uros O. through his free database.
+  Licence:  CC BY-SA 4.0
+  Source:   https://github.com/mifunetoshiro/kanjium
+            data/source_files/raw/accents.txt
+  Being CC BY-SA 4.0, ShareAlike carries through to pitch.json, which is already
+  under that licence.
 
 KANJIDIC2
   Kanji meanings, on/kun readings, stroke counts, school grades, and newspaper

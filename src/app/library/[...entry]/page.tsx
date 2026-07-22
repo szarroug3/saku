@@ -85,6 +85,7 @@ import {
   wordMeaningFactId,
   wordReadingFactId,
 } from "@/data/vocab";
+import { wordPitch } from "@/data/pitch";
 import { factsOf } from "@/lib/facts";
 import {
   appearsIn,
@@ -381,7 +382,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
     entry.kind === GRAMMAR_SUBJECT || mark || !entry.glyph
       ? null
       : isWord && wordRow
-        ? { text: wordRow.reb, speak: wordRow.reb }
+        ? { text: wordRow.reb, speak: wordRow.reb, pitch: wordPitch(wordRow.keb) }
         : isKana
           ? { text: entry.readings.join(" · "), speak: entry.glyph }
           : // A kanji has no ONE pronunciation — that is the entire thesis of the
