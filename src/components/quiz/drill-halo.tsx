@@ -29,6 +29,8 @@
 // and the inline --kq-sweep (always set to the state's resting value) stands,
 // so the drain steps once a second and the answer states appear instantly.
 
+import { SoundIcon } from "@/components/ui";
+
 /** resting = still · draining = final seconds · right/wrong = answered.
  * "wrong-flash" is a wrong answer with retries still left: it pulses out and
  * hands the ring back, where plain "wrong" holds until the next card. */
@@ -157,6 +159,12 @@ export interface DrillHaloProps {
   /** Cross-fade the glyph in — true on a new card, false on a retry of the
    * same one, where re-fading the unchanged glyph would just be noise. */
   crossFade: boolean;
+  /** A LISTENING card: the audio is the prompt, so the centre holds a speaker
+   * the learner can press to replay rather than the glyph (which would be the
+   * answer). `glyph` is ignored while this is set. */
+  listen?: boolean;
+  /** Replay the word. Called by the centre speaker on a listening card. */
+  onListen?: () => void;
 }
 
 export function DrillHalo({
@@ -168,6 +176,8 @@ export function DrillHalo({
   font,
   fontSize,
   crossFade,
+  listen = false,
+  onListen,
 }: DrillHaloProps) {
   const ring = ringSpec(state, cardKey, timerLeft, drainWindow);
   const wrong = state === "wrong" || state === "wrong-flash";
@@ -205,19 +215,34 @@ export function DrillHalo({
           }}
         />
       ) : null}
-      <span
-        // leading-[1.15] is the drill glyph's theme hook (see globals.css).
-        // whitespace-nowrap so a multi-char word stays on ONE line — the parent
-        // has already sized the glyph (see fitGlyphSize) to fit the hole across.
-        className="kq-glyph relative block whitespace-nowrap leading-[1.15]"
-        style={{
-          fontSize,
-          fontFamily: font,
-          animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined,
-        }}
-      >
-        {glyph}
-      </span>
+      {listen ? (
+        // The audio IS the question, so the centre is a speaker, not the glyph.
+        // Pressing it replays the word; the crossFade keeps it arriving like the
+        // glyph it stands in for.
+        <button
+          type="button"
+          onClick={onListen}
+          aria-label="Play the word again"
+          className="kq-glyph relative flex size-[104px] cursor-pointer items-center justify-center rounded-full text-text-muted transition-colors hover:text-text"
+          style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
+        >
+          <SoundIcon className="size-12" />
+        </button>
+      ) : (
+        <span
+          // leading-[1.15] is the drill glyph's theme hook (see globals.css).
+          // whitespace-nowrap so a multi-char word stays on ONE line — the parent
+          // has already sized the glyph (see fitGlyphSize) to fit the hole across.
+          className="kq-glyph relative block whitespace-nowrap leading-[1.15]"
+          style={{
+            fontSize,
+            fontFamily: font,
+            animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined,
+          }}
+        >
+          {glyph}
+        </span>
+      )}
     </div>
   );
 }

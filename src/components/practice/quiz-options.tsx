@@ -99,6 +99,25 @@ export function QuizOptionsFields() {
               </Chip>
             </Row>
           ) : null}
+          {/* Listening — OPT-IN and independent of the direction toggles above.
+              Each chip adds an audio-prompt question type over words: turned on,
+              some of a word's showings play it instead of showing it. Off by
+              default, and neither gates anything — see src/lib/listen.ts.
+              DRAFT COPY (labels + hint): flagged for the owner's voice pass. */}
+          <Row label="Listening" hint="words only, optional">
+            <Chip
+              on={cfg.listenRomaji}
+              onClick={() => update({ listenRomaji: !cfg.listenRomaji })}
+            >
+              Hear it, type the romaji
+            </Chip>
+            <Chip
+              on={cfg.listenMeaning}
+              onClick={() => update({ listenMeaning: !cfg.listenMeaning })}
+            >
+              Hear it, give the meaning
+            </Chip>
+          </Row>
         </>
       ) : null}
       {cfg.mode === "grid" ? (
