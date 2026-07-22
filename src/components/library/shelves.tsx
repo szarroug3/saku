@@ -50,6 +50,7 @@ import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
+import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
@@ -173,6 +174,18 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
           id: "verb-pairs",
           label: "Verb pairs",
           entries: VERB_PAIRS.flatMap((p) => resolve(pairEntry(p))),
+        },
+      ];
+    // ONE SECTION, holding every definition — marks' argument again. The whole
+    // subject is a short glossary that fits on a shelf, and it offers no cut
+    // worth inventing. Rendered as rows (see asRows) because a term has no glyph
+    // to tile — its name and its one-line summary read across a line.
+    case TERM_SUBJECT:
+      return [
+        {
+          id: "terms",
+          label: "Terms",
+          entries: TERMS.flatMap((t) => resolve(termEntry(t.id))),
         },
       ];
     case VOCAB_SUBJECT:
@@ -340,7 +353,8 @@ export function Shelf({
   const asRows =
     kind === GRAMMAR_SUBJECT ||
     kind === MARK_SUBJECT ||
-    kind === TRANSITIVITY_SUBJECT;
+    kind === TRANSITIVITY_SUBJECT ||
+    kind === TERM_SUBJECT;
 
   // The knowledge filter applied to the cut, then the shelf's section cap. FILTER
   // FIRST, CAP SECOND: each section keeps only the entries that pass and an

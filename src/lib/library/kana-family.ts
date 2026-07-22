@@ -110,7 +110,7 @@ export function kanaFamily(glyph: string): readonly FamilyCell[] {
     cell("Katakana", twin ? [twin] : []),
     cell("Voiced", markedForms(glyph, DAKUTEN)),
     cell("Half-voiced", markedForms(glyph, HANDAKUTEN)),
-    cell("Combos", combosOf(glyph)),
+    cell("Yōon", combosOf(glyph)),
   ];
   return cells.filter((c): c is FamilyCell => c !== null);
 }

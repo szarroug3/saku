@@ -196,18 +196,18 @@ const HIRAGANA_ROWS: Row[] = [
   ["h-d", "Dakuten D だ", "だぢづでど", R.d],
   // ONE row, two marks — see the note above KATAKANA_ROWS' twin of this line.
   ["h-bp", "Dakuten B ば + Handakuten P ぱ", "ばびぶべぼぱぴぷぺぽ", [...R.b, ...R.p]],
-  ["h-kya", "Combo き", ["きゃ", "きゅ", "きょ"], R.ky],
-  ["h-sha", "Combo し", ["しゃ", "しゅ", "しょ"], R.sh],
-  ["h-cha", "Combo ち", ["ちゃ", "ちゅ", "ちょ"], R.ch],
-  ["h-nya", "Combo に", ["にゃ", "にゅ", "にょ"], R.ny],
-  ["h-hya", "Combo ひ", ["ひゃ", "ひゅ", "ひょ"], R.hy],
-  ["h-mya", "Combo み", ["みゃ", "みゅ", "みょ"], R.my],
-  ["h-rya", "Combo り", ["りゃ", "りゅ", "りょ"], R.ry],
-  ["h-gya", "Combo ぎ", ["ぎゃ", "ぎゅ", "ぎょ"], R.gy],
-  ["h-ja", "Combo じ", ["じゃ", "じゅ", "じょ"], R.j],
-  ["h-dja", "Combo ぢ", ["ぢゃ", "ぢゅ", "ぢょ"], R.dj],
-  ["h-bya", "Combo び", ["びゃ", "びゅ", "びょ"], R.by],
-  ["h-pya", "Combo ぴ", ["ぴゃ", "ぴゅ", "ぴょ"], R.py],
+  ["h-kya", "Yōon き", ["きゃ", "きゅ", "きょ"], R.ky],
+  ["h-sha", "Yōon し", ["しゃ", "しゅ", "しょ"], R.sh],
+  ["h-cha", "Yōon ち", ["ちゃ", "ちゅ", "ちょ"], R.ch],
+  ["h-nya", "Yōon に", ["にゃ", "にゅ", "にょ"], R.ny],
+  ["h-hya", "Yōon ひ", ["ひゃ", "ひゅ", "ひょ"], R.hy],
+  ["h-mya", "Yōon み", ["みゃ", "みゅ", "みょ"], R.my],
+  ["h-rya", "Yōon り", ["りゃ", "りゅ", "りょ"], R.ry],
+  ["h-gya", "Yōon ぎ", ["ぎゃ", "ぎゅ", "ぎょ"], R.gy],
+  ["h-ja", "Yōon じ", ["じゃ", "じゅ", "じょ"], R.j],
+  ["h-dja", "Yōon ぢ", ["ぢゃ", "ぢゅ", "ぢょ"], R.dj],
+  ["h-bya", "Yōon び", ["びゃ", "びゅ", "びょ"], R.by],
+  ["h-pya", "Yōon ぴ", ["ぴゃ", "ぴゅ", "ぴょ"], R.py],
 ];
 
 const KATAKANA_ROWS: Row[] = [
@@ -230,18 +230,18 @@ const KATAKANA_ROWS: Row[] = [
   // the one fact that makes ぱ make sense. They are one base row, so they are
   // one group. (Tofugu presents them together for the same reason.)
   ["k-bp", "Dakuten B バ + Handakuten P パ", "バビブベボパピプペポ", [...R.b, ...R.p]],
-  ["k-kya", "Combo キ", ["キャ", "キュ", "キョ"], R.ky],
-  ["k-sha", "Combo シ", ["シャ", "シュ", "ショ"], R.sh],
-  ["k-cha", "Combo チ", ["チャ", "チュ", "チョ"], R.ch],
-  ["k-nya", "Combo ニ", ["ニャ", "ニュ", "ニョ"], R.ny],
-  ["k-hya", "Combo ヒ", ["ヒャ", "ヒュ", "ヒョ"], R.hy],
-  ["k-mya", "Combo ミ", ["ミャ", "ミュ", "ミョ"], R.my],
-  ["k-rya", "Combo リ", ["リャ", "リュ", "リョ"], R.ry],
-  ["k-gya", "Combo ギ", ["ギャ", "ギュ", "ギョ"], R.gy],
-  ["k-ja", "Combo ジ", ["ジャ", "ジュ", "ジョ"], R.j],
-  ["k-dja", "Combo ヂ", ["ヂャ", "ヂュ", "ヂョ"], R.dj],
-  ["k-bya", "Combo ビ", ["ビャ", "ビュ", "ビョ"], R.by],
-  ["k-pya", "Combo ピ", ["ピャ", "ピュ", "ピョ"], R.py],
+  ["k-kya", "Yōon キ", ["キャ", "キュ", "キョ"], R.ky],
+  ["k-sha", "Yōon シ", ["シャ", "シュ", "ショ"], R.sh],
+  ["k-cha", "Yōon チ", ["チャ", "チュ", "チョ"], R.ch],
+  ["k-nya", "Yōon ニ", ["ニャ", "ニュ", "ニョ"], R.ny],
+  ["k-hya", "Yōon ヒ", ["ヒャ", "ヒュ", "ヒョ"], R.hy],
+  ["k-mya", "Yōon ミ", ["ミャ", "ミュ", "ミョ"], R.my],
+  ["k-rya", "Yōon リ", ["リャ", "リュ", "リョ"], R.ry],
+  ["k-gya", "Yōon ギ", ["ギャ", "ギュ", "ギョ"], R.gy],
+  ["k-ja", "Yōon ジ", ["ジャ", "ジュ", "ジョ"], R.j],
+  ["k-dja", "Yōon ヂ", ["ヂャ", "ヂュ", "ヂョ"], R.dj],
+  ["k-bya", "Yōon ビ", ["ビャ", "ビュ", "ビョ"], R.by],
+  ["k-pya", "Yōon ピ", ["ピャ", "ピュ", "ピョ"], R.py],
 ];
 
 export const SETS: CharSet[] = [
@@ -376,5 +376,5 @@ function buildLookGroup(): Record<string, string[]> {
 
 /** Basic vs Extended grouping used by the character picker. */
 export function isExtendedSection(label: string): boolean {
-  return /^(Dakuten|Handakuten|Combo)/.test(label);
+  return /^(Dakuten|Handakuten|Yōon)/.test(label);
 }
