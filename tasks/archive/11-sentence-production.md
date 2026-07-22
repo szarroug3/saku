@@ -1,6 +1,6 @@
 # P2 · Sentence-level production
 
-**Status: approved — both Assembly and Guided Substitution. Visuals drawn; build after Sam reviews the plates.**
+**Status: done** — merged `ae03adf`. Assembly (drag, corpus-wired, 601 single-order items) + guided substitution. Never-mark-wrong verified: canonical order true, every swap false.
 
 ## Sam's ruling, 21 July
 

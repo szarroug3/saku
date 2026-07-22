@@ -13,23 +13,24 @@ interactive biometric confirmation); re-sign if wanted.
 
 | # | Status | Task | What it needs |
 |---|---|---|---|
-| 11 | **building** | Sentence production (assembly + substitution) | Agent running: drag, corpus-wired. Review when it lands. |
-| 08 | **building** | Test-suite hardening | Agent running: 2 data-loss bugs, vacuous tests, coverage, CI. Pre-approved. |
 | 10 | **built, needs a decision** | Numbers and counters track | Built on `feat/counters`. **Needs you:** verify, and decide whether to wire it into a lesson scheduler (it is registered but not yet fed into sessions). |
 | 21 | **merged, needs your voice** | Track-intro cards | Ship and work. **Needs you:** rewrite the six draft cards (laid out in the file). |
 | 22 | **merged, needs your voice** | Listening + Eddy voice fix | Live and opt-in. **Needs you:** the draft labels, and two calls I made (LISTEN_SHARE, direction coupling). |
 | 12 | **answered, needs your go** | Grammar depth, keigo, pitch | **Needs you:** approve keigo-as-a-track-after-transitivity, and pitch = display via Kanjium (don't quiz). Grammar-depth authoring is a scope call. |
 | 20 | **partly done, needs your ruling** | Data quality | Items 4 & 6 done. **Needs you:** which of the rest to action (Tatoeba drift: accept or spot-fix; pattern-filter kanji meanings; reading anchors; two glosses). |
 
-## What's needed from you — 6 items
+## What's needed from you — 5 items
 
 1. **10 · counters** — verify the built track, and rule on wiring it live.
-2. **11 · sentence drills** — review when the agent lands (building now).
-3. **12 · keigo + pitch** — approve the recommended shapes (keigo track after
+2. **12 · keigo + pitch** — approve the recommended shapes (keigo track after
    transitivity; pitch display-only via Kanjium).
-4. **20 · data quality** — rule on which items to fix vs accept.
-5. **21 · track intros** — voice pass on the six draft cards.
-6. **22 · listening** — voice pass on the labels; confirm the two calls I made.
+3. **20 · data quality** — rule on which items to fix vs accept.
+4. **21 · track intros** — voice pass on the six draft cards.
+5. **22 · listening** — voice pass on the labels; confirm the two calls I made.
+
+**Ready to test in the running app:** the **sentence drills** (task 11, just
+merged — Practice → mode "Build sentences") and the **kanji components** fix
+(task 23 — Library → any kanji → "Made of" now shows 亻 not 化).
 
 Lighter, non-blocking verify items (from the running server): the confusion-note
 wording, the "needed another look" summary label, the per-card answer instructions,
@@ -50,7 +51,9 @@ Each links to its card in [`archive/`](archive/) with the merge commit.
 | 05 | [〜てある on any verb](archive/05-p0-te-aru-any-verb.md) | `ea522c8` |
 | 06 | [Conjugation policy too narrow](archive/06-p1-conjugation-policy.md) | `f84952a` |
 | 07 | [Copy changes (24 items)](archive/07-copy-changes.md) | `e784135` + `52b6259` + `bc5104d` |
+| 08 | [Test-suite hardening](archive/08-test-suite-gaps.md) | `cb50d74` |
 | 09 | [Particle reading rule (は/へ/を)](archive/09-particle-reading-rule.md) | `3ed951f` |
+| 11 | [Sentence production (assembly + substitution)](archive/11-sentence-production.md) | `ae03adf` |
 | 13 | [Remove the draft flag](archive/13-remove-draft-flag.md) | `db993e0` |
 | 14 | [Session bricks](archive/14-p0-session-bricks.md) | `abc454c` |
 | 15 | [Nothing saved until session completes](archive/15-p0-progress-not-saved.md) | `4fb35f9` |

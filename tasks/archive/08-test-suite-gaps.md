@@ -1,6 +1,6 @@
 # P1 · Test-suite gaps
 
-**Status: not started**
+**Status: done** — merged `cb50d74`. 2 data-loss bugs fixed, vacuous tests killed, +61 coverage tests (all mutation-verified), CI added.
 
 Sam: "fix all of these as you see fit." Approved, no further sign-off needed.
 
