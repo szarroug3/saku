@@ -62,6 +62,7 @@ import {
   productionHosts,
 } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
+import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   RADICAL_SUBJECT,
   RADICALS,
@@ -95,7 +96,8 @@ export type Kind =
   | typeof KANJI_SUBJECT
   | typeof VOCAB_SUBJECT
   | typeof GRAMMAR_SUBJECT
-  | typeof TRANSITIVITY_SUBJECT;
+  | typeof TRANSITIVITY_SUBJECT
+  | typeof TERM_SUBJECT;
 
 /** Browse order, and it is teaching order: kana, then radicals, then the kanji
  * built around them, then the words kanji spell, then grammar, then the verb
@@ -114,6 +116,10 @@ export const KINDS: readonly Kind[] = [
   GRAMMAR_SUBJECT,
   TRANSITIVITY_SUBJECT,
   MARK_SUBJECT,
+  // Reference definitions, LAST — the same argument that parks Writing rules at
+  // the end. A term is a word you look up, not a first stop, and like a mark it
+  // has no facts the scheduler ever asks about.
+  TERM_SUBJECT,
 ];
 
 /** What a shelf is called on screen. */
@@ -125,6 +131,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   [VOCAB_SUBJECT]: "Words",
   [GRAMMAR_SUBJECT]: "Grammar",
   [TRANSITIVITY_SUBJECT]: "Verb pairs",
+  [TERM_SUBJECT]: "Terms",
 };
 
 /**
@@ -416,6 +423,28 @@ function build(): LibEntry[] {
     });
   }
 
+  // Terms — the reference definitions. Built exactly like a mark: no glyph (the
+  // title IS the name, so `meanings` carries it and `sub` the one-line summary,
+  // which is what EntryRow and PageTitle print), no readings (nothing here is a
+  // sound to speak or to exact-match), and search finds a term by its name or an
+  // alias. No facts, minted below by no one — a term is read, never asked.
+  for (const t of TERMS) {
+    out.push({
+      id: termEntry(t.id),
+      kind: TERM_SUBJECT,
+      glyph: "",
+      name: t.name,
+      readings: [],
+      meanings: [t.name],
+      searchAlso: t.searchAlso,
+      sub: t.summary,
+      // Beside marks (1), for the same reason: a handful of reference entries
+      // that answer "what is this word", worth leading with when a query hits
+      // one, and never numerous enough to bury anything.
+      weight: 1,
+    });
+  }
+
   // Radicals — the shapes kanji are built around and filed under, right before
   // the kanji that gate on them. The glyph is the radical, `meanings` its one
   // sense (so search finds 氵 by "water" and the tile prints it), and `sub`
@@ -672,6 +701,11 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
     // resolves one this way. Its links are minted from the pair id (pairEntry).
     case TRANSITIVITY_SUBJECT:
       return null;
+    // A term has no glyph either, and nothing links to one by glyph — a term is
+    // reached from the shelf or search, and its links are minted from its own id
+    // (termEntry). So this is never asked.
+    case TERM_SUBJECT:
+      return null;
   }
 }
 
@@ -769,6 +803,11 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
     // shown. Present for exhaustiveness, and named for what the rows would ask.
     case TRANSITIVITY_SUBJECT:
       return "Which verb";
+    // A term never has rows (see factRows), for the same reason a mark does not:
+    // "what is JLPT" has no gradeable answer. The page's `rows.length > 0` guard
+    // drops the whole section, so this string never reaches a screen.
+    case TERM_SUBJECT:
+      return "Nothing to test";
   }
 }
 
@@ -871,6 +910,11 @@ export function factRows(entry: LibEntry): FactRow[] {
     // caller: see transitivityFactRows.
     case TRANSITIVITY_SUBJECT:
       return transitivityFactRows(entry);
+    // A TERM HAS NO FACTS AT ALL — like a mark. "What is a radical" is a thing to
+    // read, not a question to mark, so the empty array is the shape of that and
+    // the entry page's `rows.length > 0` guard drops the facts box entirely.
+    case TERM_SUBJECT:
+      return [];
   }
 }
 

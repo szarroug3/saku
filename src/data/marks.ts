@@ -254,7 +254,7 @@ export const MARKS: readonly Mark[] = [
       "ュ",
       "ョ",
       "yoon",
-      "combos",
+      "yōon",
       "contracted sounds",
       "small ya",
     ],

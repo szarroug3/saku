@@ -53,6 +53,7 @@ import { EntryLinks, GlyphLink, LinkRow } from "@/components/library/entry-links
 import { KanaFamilyView } from "@/components/library/kana-family-view";
 import { KanjiReadings } from "@/components/library/kanji-readings";
 import { MarkView } from "@/components/library/mark-view";
+import { TermView } from "@/components/library/term-view";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternRecipe } from "@/components/library/pattern-recipe";
 import { SliceBar } from "@/components/library/slice-bar";
@@ -75,6 +76,7 @@ import {
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
+import { termFor } from "@/data/terms";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { exampleFor } from "@/data/word-examples";
 import { getMnemonic } from "@/data/mnemonics";
@@ -165,6 +167,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const parts = madeOf(entry);
   const mine = lists.filter((l) => l.kind === "fixed" && l.entries.includes(entry.id));
   const mark = markFor(entry.id);
+  const term = termFor(entry.id);
   const mnemonic = getMnemonic(entry.glyph);
 
   // The two confusion lines. Both come out of here, and the history one is built
@@ -836,6 +839,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
           mnemonic and stroke diagram (a rule has no drawing) and of the facts
           table (a rule has no gradeable question). */}
       {mark ? <MarkView mark={mark} /> : null}
+      {term ? <TermView term={term} /> : null}
 
       {/* The pair itself — the shared card the teach walk draws, so the Library
           and the lesson cannot show a pair two different ways. It stands in for

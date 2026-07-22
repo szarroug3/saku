@@ -14,7 +14,7 @@ import { entryHref } from "@/lib/library/href";
  */
 
 /**
- * One readable URL per URL SEGMENT. Note there are eight segments for seven
+ * One readable URL per URL SEGMENT. Note there are nine segments for eight
  * kinds: `kana` splits into `hiragana` and `katakana` in the URL, because a
  * kana entry's slug is its romaji and あ and ア would otherwise collide.
  *
@@ -31,6 +31,7 @@ const READABLE: Array<{ url: string; heading: string; crumb: string }> = [
   { url: "/library/grammar/te-request", heading: "please do X", crumb: "Grammar" },
   { url: "/library/transitivity/開く-開ける", heading: "open", crumb: "Verb pairs" },
   { url: "/library/writing-rule/dakuten", heading: "", crumb: "Writing rules" },
+  { url: "/library/term/jlpt", heading: "JLPT", crumb: "Terms" },
 ];
 
 for (const entry of READABLE) {

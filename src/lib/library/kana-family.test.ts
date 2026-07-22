@@ -14,7 +14,7 @@ function members(glyph: string, title: string) {
 test("き has a twin, a voiced form and its combos", () => {
   assert.deepEqual(members("き", "Katakana"), ["キ"]);
   assert.deepEqual(members("き", "Voiced"), ["ぎ"]);
-  assert.deepEqual(members("き", "Combos").sort(), ["きゃ", "きゅ", "きょ"]);
+  assert.deepEqual(members("き", "Yōon").sort(), ["きゃ", "きゅ", "きょ"]);
 });
 
 test("は needs a fifth cell — it takes both marks", () => {

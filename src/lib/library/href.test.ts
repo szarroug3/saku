@@ -86,7 +86,7 @@ test("every kind is indexed — no entry falls back to the legacy one-segment UR
   }
   assert.deepEqual(
     [...kinds].sort(),
-    ["grammar", "hiragana", "kanji", "katakana", "radical", "transitivity", "word", "writing-rule"],
+    ["grammar", "hiragana", "kanji", "katakana", "radical", "term", "transitivity", "word", "writing-rule"],
   );
 });
 

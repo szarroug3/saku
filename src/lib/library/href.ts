@@ -55,6 +55,7 @@
 import type { EntryId } from "@/types";
 import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
 import { MARKS, markEntry } from "@/data/marks";
+import { TERMS, termEntry } from "@/data/terms";
 import { patternEntry } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
 import { VERB_PAIRS } from "@/data/transitivity";
@@ -227,6 +228,7 @@ const SLUG_KEY: ReadonlyMap<EntryId, string> = buildSlugKeys();
 function buildSlugKeys(): Map<EntryId, string> {
   const map = new Map<EntryId, string>();
   for (const m of MARKS) map.set(markEntry(m.id), m.id);
+  for (const t of TERMS) map.set(termEntry(t.id), t.id);
   for (const r of RECIPES) map.set(patternEntry(r.id), r.id);
   for (const p of VERB_PAIRS) {
     map.set(pairEntry(p), `${p.happens.word}-${p.doIt.word}`);
