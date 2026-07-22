@@ -64,7 +64,7 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 |---|---|---|---|---|---|
 | 22 | **done** | The four skills | **strategic** | free to decide | Merged `fc35d1b`. Eddy fixed; two opt-in listening types. Copy draft; LISTEN_SHARE tunable. |
 | 10 | **needs review** | Numbers and counters **?** | medium-high | large | Proposal written. 〜つ and 〜人 already in data; 〜本 needs authoring. |
-| 11 | **needs review** | Sentence-level production **?** | high | large | **Plan only. Do not build from the file.** |
+| 11 | **visuals ready** | Sentence-level production | high | large | Both shapes approved. Plates drawn for review, then build. |
 | 12 | **needs review** | Grammar coverage, keigo **?** | high | large | Authoring recipes, not importing. |
 
 ### If you only do six
