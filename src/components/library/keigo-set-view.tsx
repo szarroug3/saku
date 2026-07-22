@@ -11,7 +11,19 @@
 // knows how to draw a keigo set, and both screens mount it.
 
 import { HearButton } from "@/components/lesson/hear-button";
+import { TermLink } from "@/components/library/term-link";
 import type { KeigoSet, KeigoWord } from "@/data/keigo";
+
+/** The one quiet way out of the word "keigo" itself, which this card leans on
+ * (honorific, humble, register) but never defines. Placed once, above the set,
+ * so both the Library page and the teach walk carry it and neither doubles it. */
+function KeigoTermLink() {
+  return (
+    <p className="mb-3 text-[12px]">
+      <TermLink id="keigo">What is keigo?</TermLink>
+    </p>
+  );
+}
 
 /** One keigo verb: its written form big, a speaker with its reading, and the
  * plain-language note of when it is used. */
@@ -62,6 +74,7 @@ export function KeigoSetView({
     const phrase = set.words[0];
     return (
       <div>
+        <KeigoTermLink />
         <p className="mb-3 text-[13px] text-text-muted">
           <span className="font-medium text-text">Set phrase.</span>{" "}
           {set.meaning}.
@@ -97,6 +110,7 @@ export function KeigoSetView({
 
   return (
     <div>
+      <KeigoTermLink />
       <p className="mb-3 text-[13px] text-text-muted">
         <span className="font-medium text-text">Plain verb:</span>{" "}
         <span className="font-kana text-text">

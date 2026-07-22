@@ -60,6 +60,7 @@ import { SliceBar } from "@/components/library/slice-bar";
 import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
 import { StandingChip } from "@/components/library/standing-chip";
+import { TermLink } from "@/components/library/term-link";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
 import { WordExampleView } from "@/components/library/word-example-view";
 import { WordFormsView } from "@/components/library/word-forms-view";
@@ -93,6 +94,7 @@ import { wordPitch } from "@/data/pitch";
 import { factsOf } from "@/lib/facts";
 import {
   appearsIn,
+  COUNTER_KIND,
   entryForGlyph,
   entryName,
   factRows,
@@ -165,6 +167,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const facts = factsOf(entry.id);
   const isTransitivity = entry.kind === TRANSITIVITY_SUBJECT;
   const isKeigo = entry.kind === KEIGO_SUBJECT;
+  const isCounter = entry.kind === COUNTER_KIND;
   const standingFacts = isTransitivity ? knownFactsOf(entry) : facts;
   const standing = entryStanding(standingFacts, history.facts, claims, cfg.accuracyMetric, now);
   const words = appearsIn(entry);
@@ -600,7 +603,17 @@ function EntryView({ entry }: { entry: LibEntry }) {
           // one nothing else on the page carries: knowing 〜すぎる means "too
           // much" and not knowing it takes adjectives means never writing
           // 高すぎる.
-          sub={isGrammar && pattern ? attachesTo(pattern) : entry.sub}
+          // A counter page's sub is the bare word "Counter" — the one place the
+          // term is named on the page, so it is the term itself made the link.
+          // "Number" forms are left plain: a page titled "Counter" is a poor
+          // destination for the word "Number".
+          sub={
+            isGrammar && pattern
+              ? attachesTo(pattern)
+              : isCounter && entry.sub === "Counter"
+                ? <TermLink id="counter">Counter</TermLink>
+                : entry.sub
+          }
           chips={chips}
           sound={sound}
           onSpeak={say}
