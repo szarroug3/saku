@@ -167,6 +167,24 @@ export interface QuizConfig {
   blurSubmit: boolean;
   voiceName: string;
 
+  // ---------- listening (opt-in, word-only, never a gate) ----------
+  /**
+   * Hear a word, type its romaji — a new question type over the EXISTING word
+   * reading facts. The prompt is audio only (no glyph), the answer is the
+   * reading, graded on the forgiving romaji path. OFF by default: it appears
+   * only when the learner turns it on here, and never blocks progression. See
+   * src/lib/listen.ts for how a showing is chosen.
+   */
+  listenRomaji: boolean;
+  /**
+   * Hear a word, give its meaning — the same shape over the EXISTING word
+   * meaning facts, graded like any meaning check. OFF by default, opt-in, and
+   * non-gating, exactly like `listenRomaji`. Word-only: the owner ruled
+   * sentence dictation out (romaji of a sentence is ambiguous, and there is no
+   * sentence audio) — see tasks/22-the-four-skills.md.
+   */
+  listenMeaning: boolean;
+
   // ---------- what the numbers mean (used everywhere) ----------
   /** Drives the drill HUD pill, the Home deck rings, and the picker circles. */
   accuracyMetric: AccuracyMetric;

@@ -48,6 +48,9 @@ export function defaultConfig(): QuizConfig {
     fonts: [...JP_FONTS],
     blurSubmit: false,
     voiceName: "",
+    // Listening is opt-in and never a gate — both off until the learner asks.
+    listenRomaji: false,
+    listenMeaning: false,
     accuracyMetric: "firstTry",
     showVolume: true,
     graduateRuns: 10,

@@ -68,8 +68,11 @@ import {
 } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
 import { entryOf, factInfo } from "@/lib/facts";
+import { speechForFact } from "@/lib/fact-speech";
 import { fitGlyphSize } from "@/lib/glyph-fit";
+import { pickListen } from "@/lib/listen";
 import { toKana } from "@/lib/romaji";
+import { speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
 import { anchorForFact } from "@/lib/word-unlock";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -102,6 +105,15 @@ interface DrillQuestion {
   mc: FactId[] | null;
   /** Per-option fonts for en2jp MC labels. */
   mcFonts: string[] | null;
+  /**
+   * An AUDIO-PROMPT (listening) showing: the word is played, its glyph is NOT
+   * shown, and the learner answers the romaji reading or the meaning on the
+   * same jp2en path as the visual card. Rolled once at ask time (like `font`
+   * and `mc`) so a remount neither re-decides it nor re-plays it. false for
+   * every card until the learner opts in — see src/lib/listen.ts. Plain data,
+   * so it rides the serialized runtime.
+   */
+  listen: boolean;
   /**
    * The verb this grammar PRODUCTION showing is built on — rolled once at ask
    * time so a remount doesn't re-pick it, exactly like `font` and `mc`. null
@@ -493,7 +505,17 @@ export function DrillScreen() {
     // question type before choosing a direction or a typed mode, so those
     // choices honor the subject rather than override it.
     const qt = questionsFor(f);
-    const dir = qt.fixedDir ?? pickDir({ ...cfg, dirs: active.snapshot.dirs });
+    // A listening showing plays the word and hides its glyph — which is the
+    // jp2en question (hear it, give the reading or the meaning) with the prompt
+    // taken away. So it forces jp2en, over any picked direction and even a
+    // subject's fixedDir, because it IS a jp2en answer. Opt-in and word-only:
+    // pickListen returns false for every fact until the learner turns the type
+    // on, so this never fires unasked and never gates. Rolled once here, frozen
+    // on the runtime.
+    const listen = pickListen(f, cfg);
+    const dir = listen
+      ? "jp2en"
+      : (qt.fixedDir ?? pickDir({ ...cfg, dirs: active.snapshot.dirs }));
     const styleTyped =
       dir === "jp2en"
         ? active.snapshot.styleJp2en === "typed"
@@ -571,6 +593,7 @@ export function DrillScreen() {
       mcFonts: mc && dir === "en2jp" ? mc.map(() => pickFont(cfg.fonts)) : null,
       grammarVehicle,
       grammarSelection,
+      listen,
       // A new showing has not been hinted. Written here rather than backfilled,
       // so there is exactly one place a showing's hint state begins.
       hinted: false,
@@ -921,6 +944,25 @@ export function DrillScreen() {
     return () => document.removeEventListener("keydown", h);
   }, []);
 
+  // Play a listening card's word when it appears. Keyed on `asked`, which ticks
+  // once per card and NOT per retry (see nextQuestion / the halo cardKey), so
+  // the word is spoken as the card arrives and is not re-played on every
+  // wrong-answer remount. `speechForFact` is the same "what does this sound
+  // like" the teach screens use — a word speaks its own glyph — and the voice is
+  // the learner's configured one, which "Auto" now resolves away from Eddy. The
+  // halo's speaker is the only other way to hear it again.
+  const listenPlayKey = rt?.q?.listen ? rt.asked : null;
+  const listenPlayFact = rt?.q?.listen ? rt.q.f : null;
+  useEffect(() => {
+    if (listenPlayKey == null || !listenPlayFact) return;
+    const info = factInfo(listenPlayFact);
+    const text = info && speechForFact(info);
+    if (text) speak(text, cfg.voiceName);
+    // Fires only when a NEW listening card appears. The fact and voice are
+    // stable for one `asked`, so keying on the card is the whole intent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listenPlayKey]);
+
   // Interaction fades: End quiz and the gear sit at 22% and wake on any mouse
   // movement, then go back to sleep once the mouse settles. `awake` is
   // mirrored in a local so a moving mouse doesn't re-render 60 times a second.
@@ -970,8 +1012,12 @@ export function DrillScreen() {
   // the same way a card with nothing honest to say is treated — no button at
   // all, not a disabled one, and the "?" key inert, both of which fall out of
   // hintReady being false. Typed cards are untouched.
+  // No hint on a listening card: a word's hint is its mnemonic picture or its
+  // kanji parts, both of which would put the answer on screen — the one thing an
+  // audio prompt exists to withhold. Treated like an mc showing, which is
+  // hintless for the same "the hint would be the answer" reason.
   const hint =
-    active && rt?.q && !rt.q.mc
+    active && rt?.q && !rt.q.mc && !rt.q.listen
       ? hintFor(rt.q.f, rt.q.dir, ctxFor(rt.q, anchorForFact(rt.q.f, history)))
       : null;
   const hintDrawn = useDrawnImage(hint?.kind === "image" ? hint.src : null);
@@ -1161,6 +1207,16 @@ export function DrillScreen() {
             prompt.jp ? GLYPH_PX : Math.round(GLYPH_PX * 0.6),
           )}
           crossFade={q.tries === 0}
+          // A listening card hides the glyph and plays the word instead; the
+          // speaker replays it. `glyph` above is still passed (harmless — the
+          // halo ignores it while listening) so the reveal slot below can show
+          // the written word the learner just heard.
+          listen={q.listen}
+          onListen={() => {
+            const info = factInfo(q.f);
+            const text = info && speechForFact(info);
+            if (text) speak(text, cfg.voiceName);
+          }}
         />
         {/* Part of the question, not decoration: without "in 人生" the glyph
             above has nine right answers. Always rendered when the subject
