@@ -50,8 +50,10 @@ import {
   OKURIGANA_MOVING,
   RENDAKU,
   TRANSITIVITY_INTRO,
+  COUNTER_SOUND_CHANGE,
   type PhaseIntro,
 } from "@/data/phase-intros";
+import { isSoundChangeEntry } from "@/data/counters";
 import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow } from "@/data/vocab";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
@@ -204,6 +206,12 @@ export function lessonSteps(
   // pair contrast is in play — so its intro lands once, ahead of the first pair,
   // the same word-gated shape the rules above use. See phase-intros.ts.
   let markedTransitivity = false;
+  // The counter sound-change rule rides the first phase-2 counted form whose
+  // reading shifts (本 or 匹), the same word-gated shape the rules above use: the
+  // moment the h→p/b change is first in play is the moment to explain it. 枚 is
+  // phase 2 but does not shift, so it never fires this — it is the contrast, not
+  // the rule. See isSoundChangeEntry in src/data/counters.ts.
+  let markedSoundChange = false;
   for (const item of items) {
     // The track card goes FIRST, ahead of everything else this item might owe —
     // ahead of its conversion row, ahead of any rule card. A learner meeting the
@@ -253,6 +261,10 @@ export function lessonSteps(
     if (!markedTransitivity && item.kind === "transitivity") {
       markedTransitivity = true;
       steps.push({ type: "intro", key: TRANSITIVITY_INTRO.id, intro: TRANSITIVITY_INTRO });
+    }
+    if (!markedSoundChange && isSoundChangeEntry(item.entry)) {
+      markedSoundChange = true;
+      steps.push({ type: "intro", key: COUNTER_SOUND_CHANGE.id, intro: COUNTER_SOUND_CHANGE });
     }
     steps.push({ type: "item", key: item.entry, item });
   }

@@ -18,6 +18,7 @@
 // place. src/lib/fact-id.ts mints them; nothing reads them.
 
 import { KANA_FACTS } from "@/data/characters";
+import { COUNTER_FACTS } from "@/data/counters";
 import { GRAMMAR_FACTS } from "@/data/grammar";
 import { KANJI_FACTS } from "@/data/kanji";
 import { RADICAL_FACTS } from "@/data/radicals";
@@ -33,6 +34,11 @@ const SUBJECTS: FactInfo[][] = [
   VOCAB_FACTS,
   GRAMMAR_FACTS,
   TRANSITIVITY_FACTS,
+  // The counters track's words. Subject `word` (vocab with a track label), so
+  // they are indistinguishable from other word facts here; the label that routes
+  // them to the counters track lives in src/data/counters.ts. Appended last so
+  // ALL_FACTS' existing order and offsets are unchanged.
+  COUNTER_FACTS,
 ];
 
 /** Every fact in the app, in data order. */

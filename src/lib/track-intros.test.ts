@@ -22,6 +22,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { CHAR_INDEX, kanaFact } from "../data/characters.ts";
+import { COUNTER_CURRICULUM, counterMeaningFactId } from "../data/counters.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { meaningFactId } from "../data/kanji.ts";
 import { PHASE_INTROS } from "../data/phase-intros.ts";
@@ -63,6 +64,9 @@ const SAMPLE: Readonly<Record<TrackId, FactId[]>> = {
   kanji: [meaningFactId("人")],
   word: [wordMeaningFactId(CURRICULUM_WORDS[0].keb)],
   grammar: [patternMeaningFactId(CURRICULUM_PATTERNS[0].id)],
+  // The first item of the counters track is 〜つ (ひとつ), the escape hatch it
+  // opens on — see COUNTER_CURRICULUM.
+  counters: [counterMeaningFactId(COUNTER_CURRICULUM[0])],
 };
 
 /**
@@ -79,6 +83,7 @@ const SECOND: Readonly<Record<TrackId, FactId[]>> = {
   kanji: [meaningFactId("大")],
   word: [wordMeaningFactId(CURRICULUM_WORDS[1].keb)],
   grammar: [patternMeaningFactId(CURRICULUM_PATTERNS[1].id)],
+  counters: [counterMeaningFactId(COUNTER_CURRICULUM[1])],
 };
 
 describe("every track that can unlock has exactly one intro", () => {

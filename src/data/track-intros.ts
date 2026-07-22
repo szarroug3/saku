@@ -69,7 +69,8 @@ export type TrackId =
   | "radical"
   | "kanji"
   | "word"
-  | "grammar";
+  | "grammar"
+  | "counters";
 
 // DRAFT COPY — see the header. Rewrite freely; keep the three jobs.
 
@@ -207,6 +208,34 @@ export const GRAMMAR_TRACK: PhaseIntro = {
   ],
 };
 
+// COUNTERS — the numbers-and-counters track (task 10). DRAFT copy, same as the
+// rest of this file: four plain sentences doing the three jobs, for the owner to
+// rewrite in her voice. Every string here is quoted in the task report.
+export const COUNTERS_TRACK: PhaseIntro = {
+  id: "track-counters",
+  setId: "",
+  eyebrow: "What this track teaches",
+  title: "Counting in Japanese uses a small word that changes with what you count.",
+  body: [
+    {
+      lead: "This track teaches numbers and counters.",
+      text: "A counter is a short word you add to a number to count a kind of thing: 本 for long things, 人 for people. The number and the counter are said together as one word.",
+    },
+    {
+      lead: "〜つ is taught first, because it works when nothing else does.",
+      text: "ひとつ, ふたつ, みっつ count almost anything up to ten. When you do not know the right counter, this is the one to reach for, and you will still be understood.",
+    },
+    {
+      lead: "It buys you the first useful sentences.",
+      text: "Prices, ages, how many people, ordering food. Those are numbers and counters, so a little of this track goes a long way early on.",
+    },
+    {
+      lead: "It comes now because it needs only kana to begin.",
+      text: "The counting words are sounds before they are characters, so you can start them right after hiragana. The counters that lean on kanji wait until those kanji are learned.",
+    },
+  ],
+};
+
 /**
  * Every track that opens with a card, and the card it opens with.
  *
@@ -229,6 +258,7 @@ export const TRACK_INTROS: Readonly<Record<TrackId, PhaseIntro>> = {
   kanji: KANJI_TRACK,
   word: WORD_TRACK,
   grammar: GRAMMAR_TRACK,
+  counters: COUNTERS_TRACK,
 };
 
 /** The track ids, in the order a learner reaches them. */
@@ -239,4 +269,5 @@ export const TRACK_ORDER: readonly TrackId[] = [
   "kanji",
   "word",
   "grammar",
+  "counters",
 ];

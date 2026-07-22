@@ -36,6 +36,7 @@ import { useMemo } from "react";
 
 import { CurriculumComplete } from "@/components/home/curriculum-complete";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
+import { NextCounterLesson } from "@/components/lesson/next-counter-lesson";
 import { NextGrammarLesson } from "@/components/lesson/next-grammar-lesson";
 import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
@@ -56,6 +57,7 @@ import {
   nextRadicalLesson,
 } from "@/lib/radical-lesson";
 import { hasStartedWordTrack, nextWordLesson, nextWordLock } from "@/lib/word-lesson";
+import { COUNTERS_PER_LESSON_DEFAULT, nextCounterLesson } from "@/lib/counter-lesson";
 import {
   TRANSITIVITY_PER_LESSON_DEFAULT,
   nextTransitivityLesson,
@@ -160,6 +162,18 @@ export default function HomePage() {
     [lesson, history, cfg.wordsPerLesson, cfg.newKanjiOrder],
   );
   const wordsTrackStarted = useMemo(() => hasStartedWordTrack(history), [history]);
+
+  // The numbers-and-counters track, opened after kana like the other post-kana
+  // tracks (`lesson === null`). Its phase 1 is kana-only, so it has ready forms
+  // the moment it opens; its phase 2/tail forms interleave in as their number
+  // kanji are learned. No lock card — a gated form is skipped, not blocked (see
+  // counter-lesson.ts) — so this is a lesson or nothing, like transitivity. Pure
+  // of the words track: a counter is a `word` fact but not in VOCAB, so the two
+  // schedulers never see each other's material.
+  const counterLesson = useMemo(
+    () => (lesson ? null : nextCounterLesson(history, COUNTERS_PER_LESSON_DEFAULT)),
+    [lesson, history],
+  );
 
   // The grammar track opens after kana is done, and each grammar lesson waits
   // on a word of the type its patterns attach to: 〜てから needs a learned verb,
@@ -326,6 +340,7 @@ export default function HomePage() {
   const wordRun = runForFacts(wordLesson?.facts);
   const grammarRun = runForFacts(grammarLesson?.facts);
   const transitivityRun = runForFacts(transitivityLesson?.facts);
+  const counterRun = runForFacts(counterLesson?.facts);
 
   // The curriculum is finished only when EVERY track's card would render
   // nothing — the exact negation of the render conditions below, so this is
@@ -342,7 +357,8 @@ export default function HomePage() {
     !(wordLock && wordsTrackStarted) &&
     !grammarLesson &&
     !(grammarLock && grammarTrackStarted) &&
-    !transitivityLesson;
+    !transitivityLesson &&
+    !counterLesson;
 
   return (
     <>
@@ -407,6 +423,24 @@ export default function HomePage() {
           onClaim={claimWordLesson}
           inSession={!!wordRun}
           onContinue={() => wordRun && continueRun(wordRun.id)}
+        />
+      ) : null}
+
+      {/* The numbers-and-counters track's next lesson, below words — a counter
+          is a word, and a learner reaches for it alongside vocabulary. Its facts
+          ARE the session, taught teach-then-drill through the same generic
+          handlers the kanji and grammar cards use: a counter needs no
+          word-unlock (it proves no kanji reading), so it wants startLesson, not
+          the words card's startWordLesson. No lock card — a form gated on a
+          number kanji is skipped, so this is present only when there are ready
+          counters to teach. */}
+      {counterLesson ? (
+        <NextCounterLesson
+          lesson={counterLesson}
+          onStart={startLesson}
+          onClaim={claim}
+          inSession={!!counterRun}
+          onContinue={() => counterRun && continueRun(counterRun.id)}
         />
       ) : null}
 
