@@ -273,6 +273,19 @@ export const WHY_TRACK: Record<string, Why> = {
       "The counting words are sounds before they are characters, so the first counters need only kana and open right after hiragana. The ones written with a number kanji wait until that kanji is learned, the same way a word waits for its kanji.",
     ],
   },
+  // DRAFT COPY, to be rewritten in the owner's voice — same status as the keigo
+  // track intro (track-intros.ts). It does the two jobs: what the track gives
+  // you, and how its gate reads (it opens on a plain verb you already know).
+  keigo: {
+    lede: {
+      strong: "Keigo is politeness: the same verb changes shape by whose action it is.",
+      rest: "You already know the plain verb; this teaches the honorific form (for what someone else does) and the humble form (for what you do).",
+    },
+    paras: [
+      "Japanese has more than one word for the same action, and which one you use depends on who is doing it. For what a person you respect does, you use the HONORIFIC form, to raise them: 食べる becomes 召し上がる. For what you do yourself, you use the HUMBLE form, to step back: 食べる becomes いただく. It is the same eating either way, but using the wrong one is like bowing to yourself, and it is heard immediately.",
+      "A set opens as soon as you know the plain verb it replaces, so keigo starts early, on words you already have. For now you are only asked to RECOGNIZE these forms — shown 召し上がる, you say what it means and which of the two it is. Choosing the right one to say yourself is a harder skill that comes later.",
+    ],
+  },
   transitivity: {
     lede: {
       strong: "Some verbs come in twos: one for when it happens, one for when you do it.",

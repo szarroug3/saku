@@ -38,6 +38,7 @@
 
 import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
 import { COUNTER_ENTRIES } from "@/data/counters";
+import { KEIGO_ENTRIES } from "@/data/keigo";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { RADICAL_SUBJECT } from "@/data/radicals";
@@ -83,6 +84,7 @@ export function trackOf(subject: string | undefined, glyph: string): TrackId | n
  * general words track by the one thing that distinguishes it. */
 export function trackOfItem(item: LessonItem): TrackId | null {
   if (COUNTER_ENTRIES.has(item.entry)) return "counters";
+  if (KEIGO_ENTRIES.has(item.entry)) return "keigo";
   return trackOf(item.kind, item.glyph);
 }
 
@@ -92,6 +94,7 @@ function trackOfFact(fact: FactId): TrackId | null {
   const info = factInfo(fact);
   if (!info) return null;
   if (COUNTER_ENTRIES.has(info.entry)) return "counters";
+  if (KEIGO_ENTRIES.has(info.entry)) return "keigo";
   return trackOf(info.subject, info.glyph);
 }
 
