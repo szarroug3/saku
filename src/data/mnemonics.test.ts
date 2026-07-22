@@ -237,3 +237,41 @@ test("an href span renders as a safe anchor, and links don't weaken the accent r
     }
   }
 });
+
+// を IS ALWAYS /o/, NEVER "wo".
+//
+// を is essentially only ever the object particle, so it is read /o/ — it sounds
+// exactly like お. Its card used to teach "wo" ("Say wo as in woah!"), which is
+// the pronunciation line a learner obeys, and it was wrong. The romanization
+// identifier stays "wo" (the image path and every other resource use it), but
+// the SOUND the card teaches must be o.
+test("hiragana を teaches /o/, and its prominent pronunciation never says wo", () => {
+  const m = getMnemonic("を")!;
+  assert.equal(m.sound, "o", "を's sound is o, not wo");
+  // The identifier is untouched — the path and romaji layer still say wo.
+  assert.equal(m.romaji, "wo");
+  assert.equal(m.image, "/mnemonics/hiragana/wo.webp");
+  // The analogy cues the /o/ sound (the accent invariant above enforces this for
+  // every card, and here specifically it must be o).
+  assert.ok(
+    m.analogy.some((s) => s.accent && s.text.toLowerCase().includes("o")),
+    "the analogy must cue the o sound",
+  );
+  // No ACCENT span — the spans painted as the sound — carries "wo". The shape
+  // word "wok" is allowed to survive as an UNACCENTED story word (it names the
+  // arc of を, not its sound), so this checks the accented spans, not the prose.
+  for (const span of [...m.analogy, ...m.mnemonic]) {
+    if (span.accent) {
+      assert.ok(
+        !/wo/i.test(span.text),
+        `を's card accents "wo" as its sound: ${span.text}`,
+      );
+    }
+  }
+  // The old "woah!" cue is gone entirely, accented or not.
+  const prose = [...m.analogy, ...m.mnemonic].map((s) => s.text).join(" ");
+  assert.ok(!/woah/i.test(prose), "the woah! cue is gone");
+  // The particle role is still explained, and still says it sounds like お.
+  assert.match(m.approximate ?? "", /object particle/);
+  assert.match(m.approximate ?? "", /お/);
+});

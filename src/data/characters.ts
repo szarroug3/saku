@@ -79,6 +79,8 @@ function sec(
 // ぢ. That is the standard IME behaviour, and it is only surprising if nobody
 // tells you the two characters genuinely sound the same.
 const NOTES: Record<string, string> = {
+  は: 'Normally "ha", but read "wa" when it marks the topic of a sentence: 私は is "watashi wa".',
+  へ: 'Normally "he", but read "e" when it points somewhere: 学校へ is "gakkou e".',
   し: 'This is said "shi", not "si". This is the one odd sound in the s row.',
   シ: 'This is said "shi", not "si". This is the one odd sound in the s row.',
   ち: 'Said "chi", not "ti".',
