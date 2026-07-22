@@ -1,6 +1,6 @@
 # The four skills — SCOPE RULED
 
-**Status: ruled** — narrowed by Sam 21 July. Listening is the only build.
+**Status: done — listening copy is DRAFT** — merged `fc35d1b`. Eddy voice fixed (Kyoko/Otoya preferred). Two opt-in word listening types, off by default, non-gating.
 
 ## Sam's ruling, verbatim in effect
 

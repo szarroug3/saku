@@ -1,6 +1,6 @@
 # P1 · Three kana are read differently when used as particles
 
-**Status: answered, ready to build**
+**Status: done** — merged `3ed951f`. Rule card added ahead of は; は/へ carry both readings; を's card teaches /o/ not "wo". ヲ was fixed in parallel by the mnemonic deploy.
 
 ## Sam asked: is it always wa, or sometimes ha and sometimes wa?
 
