@@ -20,6 +20,7 @@
 import Link from "next/link";
 
 import { Card, Lbl } from "@/components/ui";
+import { TermLink } from "@/components/library/term-link";
 import { entryHref } from "@/lib/library/href";
 import { compoundNote, type WordPiece } from "@/lib/library/word-pieces";
 
@@ -76,9 +77,12 @@ export function WordBuiltFrom({ pieces }: { pieces: readonly WordPiece[] }) {
       <div className="mt-auto">
         {tail ? (
           <p className="mt-2.5 text-xs text-text-muted">
-            The dashed piece is <b className="text-text">okurigana</b>, the part
-            that changes. The kanji stays put and the tail decides which word it
-            is.
+            The dashed piece is{" "}
+            <TermLink id="okurigana" className="font-semibold text-accent no-underline hover:underline">
+              okurigana
+            </TermLink>
+            , the part that changes. The kanji stays put and the tail decides
+            which word it is.
           </p>
         ) : null}
 

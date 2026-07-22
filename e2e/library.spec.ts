@@ -1,5 +1,5 @@
 import { test, expect } from "./helpers/app";
-import { LIB_ENTRIES, KINDS, libEntry } from "@/lib/library/entries";
+import { COUNTER_KIND, LIB_ENTRIES, KINDS, libEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 
 /**
@@ -78,6 +78,23 @@ test("every library kind mints a working href", async ({ page }) => {
       `kind ${kind} at ${href} rendered no heading`,
     ).toHaveCount(1);
   }
+});
+
+/**
+ * A jargon word links to its glossary definition. A counter page names its kind
+ * "Counter" under the title and nowhere defines the word; that word is now the
+ * link to /library/term/counter. This clicks it, the one end-to-end proof that
+ * termHref mints a URL the route actually serves.
+ */
+test("the word 'Counter' on a counter page opens its glossary term", async ({ page }) => {
+  const counter = LIB_ENTRIES.find((e) => e.kind === COUNTER_KIND && e.sub === "Counter");
+  expect(counter, "no counter entry with a 'Counter' sub in this build").toBeTruthy();
+
+  await page.goto(entryHref(counter!.id));
+  await page.getByRole("link", { name: "Counter", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/library\/term\/counter$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Counter");
 });
 
 /**

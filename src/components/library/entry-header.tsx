@@ -18,6 +18,7 @@ import type { ReactNode } from "react";
 
 import { PageTitle, SoundIcon } from "@/components/ui";
 import { PitchReading } from "@/components/library/pitch-mark";
+import { TermLink } from "@/components/library/term-link";
 
 export function EntryHeader({
   glyph,
@@ -44,8 +45,10 @@ export function EntryHeader({
    */
   glyphClass?: string;
   title: string;
-  /** The line under the title — "Hiragana · Vowels", "5 strokes". */
-  sub?: string;
+  /** The line under the title — "Hiragana · Vowels", "5 strokes". A node, not
+   * only a string, so a caller can make one jargon word in it a link to its
+   * glossary page (the counter page's "Counter") without rewriting the line. */
+  sub?: ReactNode;
   /** Standing chips, in a row. Built by the caller because what an entry is
    * allowed to claim about itself differs per kind — see standing.ts, which
    * refuses to average a kanji's facts into one adjective. */
@@ -116,7 +119,15 @@ export function EntryHeader({
               {sound.pitch == null ? (
                 <span>{sound.text}</span>
               ) : (
-                <PitchReading reading={sound.text} downstep={sound.pitch} />
+                <>
+                  <PitchReading reading={sound.text} downstep={sound.pitch} />
+                  {/* The line over the reading is drawn but never named on the
+                      page; this is the one way to the page that says what it is.
+                      Only ever rendered where a pitch mark actually is. */}
+                  <TermLink id="pitch-accent" className="text-[11px] text-accent no-underline hover:underline">
+                    pitch accent
+                  </TermLink>
+                </>
               )}
             </p>
           ) : null}
