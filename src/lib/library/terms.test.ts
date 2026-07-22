@@ -25,6 +25,16 @@ const EXPECTED = [
   "radical",
   "furigana",
   "jlpt",
+  "dakuten",
+  "handakuten",
+  "yoon",
+  "okurigana",
+  "rendaku",
+  "counter",
+  "particle",
+  "keigo",
+  "pitch-accent",
+  "mora",
 ];
 
 describe("the reference terms are a real shelf", () => {
