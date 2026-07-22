@@ -1,0 +1,58 @@
+# CI for kana-quiz.
+#
+# `next build` is the point of this file. tsc and the unit suite have shipped a
+# green, type-clean tree that still would not boot — a route conflict is a build
+# error, not a type error, and no unit test mounts a route. So the build is the
+# only gate on the boot class, and it runs on every push and PR alongside the
+# checks that were already green when that conflict shipped.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch/PR cancels the older run — the latest commit
+# is the only one whose result matters.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          # 24, from .nvmrc — the unit harness needs Node's TS type-stripping and
+          # test runner, which the repo's default node (v14) does not have.
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm run type-check
+
+      # `eslint src`, not the bare `lint` script: the script lints the repo root,
+      # which trips react-hooks/rules-of-hooks on Playwright's page.use() in
+      # e2e/helpers (a false positive, and out of scope for this app's lint gate).
+      # `src` is the tree that is kept error-clean.
+      - name: Lint
+        run: pnpm exec eslint src
+
+      - name: Unit tests
+        run: pnpm test
+
+      # The gate the other three cannot be: a route conflict, a bad import, an
+      # invalid config — none is a type or lint or unit-test failure, and all of
+      # them are a failed build.
+      - name: Build
+        run: pnpm run build
