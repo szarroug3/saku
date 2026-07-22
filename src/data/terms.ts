@@ -150,6 +150,115 @@ export const TERMS: readonly Term[] = [
     ],
     searchAlso: ["jlpt", "proficiency test", "n5", "n4", "n3", "n2", "n1"],
   },
+
+  // ⚠️ DRAFT — OWNER VOICE PASS PENDING (second batch) ⚠️
+  // ====================================================
+  // The ten entries below fill the rest of the jargon the app puts on screen
+  // before it defines it: the writing marks (dakuten, handakuten, yōon), the two
+  // ways kana attach to words (okurigana, rendaku), and the grammar words the
+  // later tracks lean on (counter, particle, keigo, pitch accent, mora). Same
+  // rules as the block above: every summary and body is a DRAFT in the owner's
+  // plain register, facts kept minimal and uncontroversial, nothing invented.
+  {
+    id: "dakuten",
+    name: "Dakuten",
+    summary: "The two small strokes that voice a kana, turning か into が.",
+    body: [
+      "A dakuten is the pair of short strokes added at a kana's top right. It switches the sound to its voiced partner, so か “ka” becomes が “ga” and さ “sa” becomes ざ “za”.",
+      "The same mark works across the k, s, t and h rows.",
+    ],
+    searchAlso: ["dakuten", "voicing mark", "ten ten", "tenten"],
+  },
+  {
+    id: "handakuten",
+    name: "Handakuten",
+    summary: "The small circle that turns the は row into p sounds.",
+    body: [
+      "A handakuten is the little circle added at a kana's top right. It only goes on the は row, and it makes a p sound, so は “ha” becomes ぱ “pa”.",
+      "It is the mark that gives you ぱ, ぴ, ぷ, ぺ and ぽ.",
+    ],
+    searchAlso: ["handakuten", "maru", "circle mark", "p sound"],
+  },
+  {
+    id: "yoon",
+    name: "Yōon",
+    summary: "A small や, ゆ or よ joined to an i row kana, like きゃ.",
+    body: [
+      "A yōon is a small や, ゆ or よ written after a kana from the i row, such as き, so the two form one blended sound. き plus a small ゃ gives きゃ “kya”, said as a single beat.",
+      "The small kana is written at half size, which is what tells you to blend the two rather than say them one after the other.",
+    ],
+    searchAlso: ["yoon", "youon", "yōon", "combo", "combination", "contracted sound", "small ya yu yo"],
+  },
+  {
+    id: "okurigana",
+    name: "Okurigana",
+    summary: "The kana tail written after a kanji, like the る in 見る.",
+    body: [
+      "Okurigana are the kana written after a kanji to finish a word and show its ending. In 見る “to see”, the kanji 見 carries the meaning and the okurigana る is the part that changes when the word does.",
+      "They are how a verb or adjective shows its grammar while the kanji stays fixed.",
+    ],
+    searchAlso: ["okurigana", "kana tail", "kana ending"],
+  },
+  {
+    id: "rendaku",
+    name: "Rendaku",
+    summary: "Voicing that appears when two words join, like て plus かみ giving てがみ.",
+    body: [
+      "Rendaku is the way the start of a second word often turns voiced when two words join into one. て plus かみ “paper” becomes てがみ “letter”, with the か “ka” shifting to が “ga”.",
+      "It does not happen every time, but it is common enough that a joined word sounding voiced is usually this.",
+    ],
+    searchAlso: ["rendaku", "sequential voicing"],
+  },
+  {
+    id: "counter",
+    name: "Counter",
+    summary: "A word added to a number to count a kind of thing, like 本 or 人.",
+    body: [
+      "A counter is a small word placed after a number to say what is being counted. Japanese picks the counter to match the thing, so 本 counts long thin objects and 人 counts people.",
+      "Which counter to use depends on the kind of thing, and a few of them change the number's sound as well.",
+    ],
+    searchAlso: ["counter", "counters", "counter word", "measure word", "josuushi"],
+  },
+  {
+    id: "particle",
+    name: "Particle",
+    summary: "A small word that marks another word's job in the sentence, like は, を or へ.",
+    body: [
+      "A particle is a short word placed after another word to show what job it is doing. は marks the topic, を marks the object, and へ points toward a direction.",
+      "They are how Japanese keeps track of who did what, in place of relying on word order.",
+    ],
+    searchAlso: ["particle", "particles", "joshi"],
+  },
+  {
+    id: "keigo",
+    name: "Keigo",
+    summary: "Polite Japanese, split into honorific language and humble language.",
+    body: [
+      "Keigo is the polite speech used to show respect. It comes in two registers: honorific language, which raises the person you are speaking about, and humble language, which lowers yourself to the same effect.",
+      "Choosing between them turns on who is doing the action, you or the other person.",
+    ],
+    searchAlso: ["keigo", "honorific", "humble", "sonkeigo", "kenjougo", "kenjogo", "polite speech", "politeness"],
+  },
+  {
+    id: "pitch-accent",
+    name: "Pitch accent",
+    summary: "The rise and fall in a word that can tell two look-alike words apart.",
+    body: [
+      "Pitch accent is the pattern of higher and lower sound across a word. Some words are told apart by it alone: 箸 “chopsticks” and 橋 “bridge” are both “hashi”, and only the pitch says which one is meant.",
+      "The line drawn over a reading shows where the voice stays high and where it drops.",
+    ],
+    searchAlso: ["pitch accent", "pitch", "accent", "downstep", "heiban", "atamadaka"],
+  },
+  {
+    id: "mora",
+    name: "Mora",
+    summary: "A unit of timing, the single beat that most kana take.",
+    body: [
+      "A mora is the beat of sound each kana takes, so a word's length is counted in these beats rather than in syllables. Most kana are one mora, and ん and a small っ each count as a mora of their own even though they are not full syllables.",
+      "It is the even timing of these beats that gives spoken Japanese its steady pace.",
+    ],
+    searchAlso: ["mora", "morae", "beat", "timing unit"],
+  },
 ];
 
 const BY_ID: ReadonlyMap<string, Term> = new Map(TERMS.map((t) => [t.id, t]));
