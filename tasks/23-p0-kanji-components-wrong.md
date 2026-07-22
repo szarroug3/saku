@@ -1,3 +1,21 @@
+## APPROACH CHANGED — no new dependency needed (better than approved)
+
+Sam approved adding an IDS data source. **We do not need one.** KanjiVG — which the
+repo ALREADY fetches for stroke order (`scripts/ingest/kanjivg.mjs`) — carries the
+component hierarchy in `kvg:element` groups in the very same SVG files. Verified:
+
+- 休 (`04f11.svg`): root 休 → direct children 亻 (left) + 木 (right). **KanjiVG gives
+  亻, never 化.** Defect 1 cannot occur in this source.
+- 時 (`06642.svg`): tree is 時 → {日, 寺 → {土, 寸}}. **Direct children = 日 + 寺.**
+  土/寸 are nested under 寺. Depth-1 keeps the phonetic. Defect 2 fixed.
+
+So the fix is: regenerate `comps` as the DIRECT CHILDREN (depth 1) of the root
+`kvg:element`. No new data source, no exception list, and strokes + components come
+from one file so they can never disagree. This is exactly the structural-over-
+enumerated approach that #6's hand-list failed at. **Dispatched on `fix/kanji-comps`.**
+
+---
+
 # P0 · The "Made of" row teaches wrong kanji components
 
 **Status: needs review** — found overnight, measured, NOT fixed
