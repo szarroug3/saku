@@ -1,0 +1,19 @@
+{
+  "generated": "scripts/ingest/assembly.py",
+  "source": "src/data/generated/grammar-corpus.json (re-tokenized with fugashi + unidic-lite)",
+  "minPieces": 3,
+  "maxPieces": 7,
+  "counts": {
+    "input": 8547,
+    "kept": 601
+  },
+  "dropped": {
+    "clause-with-scrambleable-modifiers": 3237,
+    "too-few-pieces": 2335,
+    "coordinate-or-continuative-join": 2029,
+    "does-not-end-on-a-predicate": 272,
+    "too-many-pieces": 51,
+    "ungroupable": 20,
+    "reassembly-mismatch": 2
+  }
+}
