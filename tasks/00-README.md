@@ -54,7 +54,7 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 | 21 | **done** | Jargon never explained **?** | medium-high | small | Merged `348b671`. Track-open intro card, reused phase-intros. Copy is DRAFT. |
 | 09 | **done** | Particle reading rule **?** | medium-high | small | Merged `3ed951f`. Rule card + は/へ notes + を fixed. ヲ already fixed by deploy. |
 | 18 | **done** | Retry leaves no trace | medium | small | Merged `a53a94e`. Summary sums correctly; retry visible. |
-| 20 | unreviewed | Data quality **?** | medium | medium | Several sub-items, some need a sweep first. |
+| 20 | **needs review** | Data quality **?** | medium | medium | Data-source Q answered: keep KANJIDIC, filter by pattern not by list. Items 4/6 done. |
 | 05 | **done** | 〜てある any verb | medium | medium-large | Merged `ea522c8`. A test had been asserting the bug. |
 | 08 | not started | Test-suite gaps | high (durable) | large | Its first two items **are** tasks 01 and 02. |
 
@@ -65,7 +65,7 @@ are marked, because doing one without the other leaves the behaviour incoherent.
 | 22 | **done** | The four skills | **strategic** | free to decide | Merged `fc35d1b`. Eddy fixed; two opt-in listening types. Copy draft; LISTEN_SHARE tunable. |
 | 10 | **needs review** | Numbers and counters **?** | medium-high | large | Proposal written. 〜つ and 〜人 already in data; 〜本 needs authoring. |
 | 11 | **visuals ready** | Sentence-level production | high | large | Both shapes approved. Plates drawn for review, then build. |
-| 12 | **needs review** | Grammar coverage, keigo **?** | high | large | Authoring recipes, not importing. |
+| 12 | **needs review** | Grammar coverage, keigo **?** | high | large | Keigo: separate track after transitivity. Pitch: display via Kanjium, don't quiz. |
 
 ### If you only do six
 

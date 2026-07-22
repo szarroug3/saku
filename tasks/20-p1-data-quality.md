@@ -1,6 +1,59 @@
 # P1 · Data-quality problems Sam has not ruled on
 
-**Status: unreviewed**
+**Status: partly done, partly answered — Sam's data-source question answered below
+
+## Sam asked: is there a better source than KANJIDIC, and can we stop coding exceptions?
+
+**Short answer: keep KANJIDIC2 — it is the best free structured source for kanji
+meanings, there is no cleaner one to switch to. But the FIX is not a per-kanji
+exception list. It is pattern-based sense filtering, which is exhaustive by
+construction and is the opposite of the brittle enumerated lists that have bitten
+us.**
+
+The metadata senses Sam objects to are STRUCTURALLY PATTERNED, not arbitrary:
+
+| kind | example sense text | how to catch it |
+|---|---|---|
+| radical index | "radical (no. 47)" | already filtered (`RADICAL_INDEX_MEANING`) |
+| counter | "counter for bows & stringed instruments" | senses matching /^counter for/ |
+| zodiac / branch | "sign of the rat", "1st terrestrial branch" | a known finite set of 12+10 |
+| clock hours | "11PM-1AM" | the branch senses carry these |
+
+So the fix extends the EXISTING pattern-based filter (`RADICAL_INDEX_MEANING`
+already works this way) to counters and zodiac senses. A regex/known-set filter
+catches ALL counters and ALL zodiac senses, not a hand-picked 40. **That is what
+makes it robust against "we missed things"** — the failure mode Sam is worried about
+came from enumerating cases (the いる compound list missed 3 verbs; the old comps
+missed 亻). Filtering by structural pattern cannot miss a case it was not told about,
+because it is not told about cases at all.
+
+Optional strengthening: cross-reference **Unihan's `kDefinition`** (one curated
+primary definition per CJK character) as a signal for which sense is primary when
+KANJIDIC's flat list is ambiguous. It is a helper, not a replacement — Unihan
+occasionally includes the branch sense too.
+
+## The through-line, since Sam raised the principle
+
+This is the same lesson as tasks 6 and 23. **Prefer structural/authoritative rules
+over enumerated exception lists everywhere:**
+- Task 6: a hand-listed `gatesCompounds` exclusion missed 射る/鋳る/入る.
+- Task 23: KRADFILE's flat list + a proposed 化→亻 remap → replaced with KanjiVG's
+  structural hierarchy (depth 1), which cannot produce the wrong answer.
+- Task 20 item 1: extend PATTERN filtering, do not enumerate 40 kanji.
+
+Where a case genuinely is a one-off (item 7's two authored glosses), a direct edit
+is right. The rule is: enumerate only what is genuinely irregular; filter by pattern
+everything that follows a pattern.
+
+## Status of this card's items after other work
+
+- **Item 4** (〜られる potential name) and **item 6** (adjective ます-form rule) were
+  FIXED in `a81f2fe`. Verify and close them.
+- **Item 2's** 〜に行く lead was fixed (`notOn` in `a81f2fe`), but the deeper
+  non-word generation (し方, 来方 graded correct) is NOT fixed.
+- Items 1, 3, 5, 7 remain.
+
+(original status: unreviewed)**
 
 ## Open questions
 
