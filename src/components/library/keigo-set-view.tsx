@@ -134,19 +134,16 @@ export function KeigoSetView({
             key={w.key}
             word={w}
             role="Humble · for what you do"
-            note="You lower yourself with this. Use it for your own action, to step back from the person you are speaking to, never for what they do."
+            note="You humble yourself with this. Use it for your own action, to defer to the person you are speaking to, never for what they do."
             voiceName={voiceName}
           />
         ))}
       </div>
       <div className="mt-9 border-t border-border pt-7">
         <p className="text-[14px] leading-relaxed text-text-muted">
-          Same action, three ways to say it. The plain verb is neutral. The{" "}
-          <span className="font-medium text-text">honorific</span> form raises the
-          other person and is only ever used for what they do. The{" "}
-          <span className="font-medium text-text">humble</span> form lowers you and
-          is only ever used for what you do. Which one is right is decided entirely
-          by whose action it is.
+          Same action, three ways to say it. The plain verb is neutral, and which
+          one of the keigo forms is right is decided entirely by whose action it
+          is.
         </p>
       </div>
     </div>
