@@ -56,6 +56,21 @@ export function QuizOptionsFields() {
         <Chip on={cfg.mode === "grid"} onClick={() => update({ mode: "grid" })}>
           Grid
         </Chip>
+        {/* Sentence-production modes (task 11). Opt-in, corpus-driven, and gated
+            on known words — they ignore the selected material and pull readable
+            sentences / known verbs from the learner's history. */}
+        <Chip
+          on={cfg.mode === "assembly"}
+          onClick={() => update({ mode: "assembly" })}
+        >
+          Build sentences
+        </Chip>
+        <Chip
+          on={cfg.mode === "substitution"}
+          onClick={() => update({ mode: "substitution" })}
+        >
+          Substitution
+        </Chip>
       </Row>
       {cfg.mode === "drill" ? (
         <>
