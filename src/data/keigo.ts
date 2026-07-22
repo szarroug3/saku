@@ -83,6 +83,14 @@ export interface KeigoWord {
   readonly reading: string;
   /** Which register it is. */
   readonly register: Register;
+  /**
+   * A short label that tells this form apart from another in the SAME register,
+   * set only when a set carries more than one (言う has two humbles, 参る/おる
+   * split by meaning, not politeness). Reads as a suffix on the box role —
+   * "Humble · going or coming" — and feeds the set's closing note. Absent when a
+   * register has just one form, where "for what you do" already says it all.
+   */
+  readonly use?: string;
 }
 
 /**
@@ -128,8 +136,8 @@ function honorific(key: string, word: string, reading: string): KeigoWord {
   return { key, word, reading, register: "honorific" };
 }
 
-function humble(key: string, word: string, reading: string): KeigoWord {
-  return { key, word, reading, register: "humble" };
+function humble(key: string, word: string, reading: string, use?: string): KeigoWord {
+  return { key, word, reading, register: "humble", ...(use ? { use } : {}) };
 }
 
 /**
@@ -158,8 +166,8 @@ export const KEIGO_SETS: readonly KeigoSet[] = [
     plain: [plain("言う", "いう")],
     words: [
       honorific("ossharu", "おっしゃる", "おっしゃる"),
-      humble("mousu", "申す", "もうす"),
-      humble("moushiageru", "申し上げる", "もうしあげる"),
+      humble("mousu", "申す", "もうす", "everyday"),
+      humble("moushiageru", "申し上げる", "もうしあげる", "more deferential"),
     ],
     gate: ["言う"],
   },
@@ -179,8 +187,8 @@ export const KEIGO_SETS: readonly KeigoSet[] = [
     plain: [plain("行く", "いく"), plain("来る", "くる"), plain("いる", "いる")],
     words: [
       honorific("irassharu", "いらっしゃる", "いらっしゃる"),
-      humble("mairu", "参る", "まいる"),
-      humble("oru", "おる", "おる"),
+      humble("mairu", "参る", "まいる", "going or coming"),
+      humble("oru", "おる", "おる", "being somewhere"),
     ],
     gate: ["行く", "来る", "いる"],
   },
@@ -214,8 +222,8 @@ export const KEIGO_SETS: readonly KeigoSet[] = [
     plain: [plain("知る", "しる")],
     words: [
       honorific("gozonji", "ご存知だ", "ごぞんじだ"),
-      humble("zonjiru", "存じる", "ぞんじる"),
-      humble("zonjiageru", "存じ上げる", "ぞんじあげる"),
+      humble("zonjiru", "存じる", "ぞんじる", "for a fact"),
+      humble("zonjiageru", "存じ上げる", "ぞんじあげる", "for a person"),
     ],
     gate: ["知る"],
   },

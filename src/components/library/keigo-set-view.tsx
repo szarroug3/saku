@@ -108,6 +108,23 @@ export function KeigoSetView({
     );
   }
 
+  // The closing note names only the forms this set actually has — some have no
+  // humble (くれる) or no honorific (もらう) — and, when a register carries more
+  // than one form, spells out which is which from their `use` labels.
+  const ways = ["neutral"];
+  if (honorific.length) ways.push("honorific (for what they do)");
+  if (humble.length) ways.push("humble (for what you do)");
+  const waysText =
+    ways.length <= 2
+      ? ways.join(" and ")
+      : `${ways.slice(0, -1).join(", ")} and ${ways[ways.length - 1]}`;
+  const humbleTail =
+    humble.length > 1 && humble.every((w) => w.use)
+      ? ` Here the humble side has more than one form: ${humble
+          .map((w) => `${w.word} (${w.use})`)
+          .join(" and ")}.`
+      : "";
+
   return (
     <div>
       <KeigoTermLink />
@@ -133,7 +150,7 @@ export function KeigoSetView({
           <KeigoSide
             key={w.key}
             word={w}
-            role="Humble · for what you do"
+            role={w.use ? `Humble · ${w.use}` : "Humble · for what you do"}
             note="You humble yourself with this. Use it for your own action, to defer to the person you are speaking to, never for what they do."
             voiceName={voiceName}
           />
@@ -141,9 +158,8 @@ export function KeigoSetView({
       </div>
       <div className="mt-9 border-t border-border pt-7">
         <p className="text-[14px] leading-relaxed text-text-muted">
-          Same action, three ways to say it. The plain verb is neutral, and which
-          one of the keigo forms is right is decided entirely by whose action it
-          is.
+          It’s the same action but has multiple ways to say it: {waysText}.
+          {humbleTail}
         </p>
       </div>
     </div>
