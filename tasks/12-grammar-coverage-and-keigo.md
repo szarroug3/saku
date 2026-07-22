@@ -1,6 +1,27 @@
 # P2 · Grammar coverage, keigo, and pitch accent
 
-**Status: Sam engaged — keigo and pitch directions below, awaiting final go**
+**Status: DECIDED by Claude on Sam's delegation — keigo queued, pitch building, grammar held**
+
+## The three calls (Sam: "do whatever you think is best for both")
+
+- **Keigo — BUILD.** Recognition-first, opens early like grammar, verb-pairs model,
+  fill the いらっしゃる gap. Japanese facts are well-established and verifiable, so
+  safe to build. **Queued to launch after the counters agent merges** — both touch
+  `lesson-steps`, `track-intros`, `facts`, so running them together only makes merge
+  conflicts. Not dropped, just sequenced.
+- **Pitch — BUILD, display-only, feasibility-gated. Dispatched (`feat/pitch`).**
+  Ingest a free source (Kanjium), show the pitch pattern on word cards, never quiz
+  it (grading pitch needs the ruled-out audio capture). Hard guardrail: if the data
+  cannot be obtained and sample-verified cleanly, the agent STOPS rather than ship a
+  wrong downstep as fact.
+- **Grammar depth — HOLD, deliberately.** Adding patterns is AUTHORING recipes, each
+  a build rule the engine executes; bulk-dispatching risks teaching incorrect grammar
+  at scale, the one thing this whole effort fights. The 81 N5+N4 patterns are correct
+  and coherent. Expansion should be incremental and reviewed; Resources points onward
+  for now (task 22's honest-scope ruling). Not a fatigue call — a correctness call.
+
+---
+
 
 ## Sam's confusion resolved: "we have the words but aren't teaching them"
 
