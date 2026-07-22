@@ -95,8 +95,14 @@ describe("the seven card kinds", () => {
       // Kana is the one non-meaning card here, and for the same reason: its
       // jp2en answer is the romaji itself, so converting the box would take the
       // answer away.
+      //
+      // Keigo is a MEANING card by nature: a recognition item's answer is the
+      // English gloss with its register ("eat / drink (honorific)"), so it does
+      // not convert, exactly like the other meaning cards. Its fact-id side is
+      // the keigo word's own key rather than the literal "meaning" (a set carries
+      // several words under one entry), so it is registered here by subject.
       assert.ok(
-        /meaning/.test(k) || k === "kana/reading",
+        /meaning/.test(k) || k === "kana/reading" || k.startsWith("keigo/"),
         `${k} does not convert but is neither a meaning nor kana`,
       );
     }

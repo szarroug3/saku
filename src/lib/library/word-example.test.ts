@@ -115,8 +115,11 @@ describe("the generated artifact", () => {
     const covered = VOCAB.filter((w) => index.has(w.keb)).length;
     // Was 2,692 before the confound audit (see data/grammar/corpus-audit.ts)
     // removed 142 sentences from the corpus. 14 words lost their only example
-    // with them; the cost is recorded here rather than absorbed silently.
-    assert.equal(covered, 2678, "corpus coverage moved; remeasure before editing this");
+    // with them; the cost is recorded here rather than absorbed silently. Then
+    // +1 when いらっしゃる was added to the vocabulary (src/data/vocab.ts
+    // SUPPLEMENT, for the keigo track): the corpus already had a sentence for
+    // it, so it gained a row — 2678 becomes 2679.
+    assert.equal(covered, 2679, "corpus coverage moved; remeasure before editing this");
     // Four of those words (タイ, ビル, パー, ホーム) have a corpus sentence but
     // EVERY one teaches the wrong sense of the word, so the wrong-sense filter
     // leaves them without an example — better than a false one (task-20 item 3).
@@ -126,7 +129,7 @@ describe("the generated artifact", () => {
     }).length;
     assert.equal(fullyExcluded, 4);
     assert.equal(EXAMPLE_COUNT, covered - fullyExcluded);
-    assert.equal(EXAMPLE_COUNT, 2674);
+    assert.equal(EXAMPLE_COUNT, 2675);
   });
 
   test("covers most of the words a beginner meets first", () => {

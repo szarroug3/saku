@@ -23,6 +23,7 @@ import { describe, test } from "node:test";
 
 import { CHAR_INDEX, kanaFact } from "../data/characters.ts";
 import { COUNTER_CURRICULUM, counterMeaningFactId } from "../data/counters.ts";
+import { KEIGO_SETS, keigoWordFactId } from "../data/keigo.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { meaningFactId } from "../data/kanji.ts";
 import { PHASE_INTROS } from "../data/phase-intros.ts";
@@ -67,6 +68,9 @@ const SAMPLE: Readonly<Record<TrackId, FactId[]>> = {
   // The first item of the counters track is 〜つ (ひとつ), the escape hatch it
   // opens on — see COUNTER_CURRICULUM.
   counters: [counterMeaningFactId(COUNTER_CURRICULUM[0])],
+  // The first set of the keigo track is the eat / drink pair (召し上がる /
+  // いただく), the canonical honorific-vs-humble contrast — see KEIGO_SETS.
+  keigo: KEIGO_SETS[0].words.map((w) => keigoWordFactId(KEIGO_SETS[0], w)),
 };
 
 /**
@@ -84,6 +88,9 @@ const SECOND: Readonly<Record<TrackId, FactId[]>> = {
   word: [wordMeaningFactId(CURRICULUM_WORDS[1].keb)],
   grammar: [patternMeaningFactId(CURRICULUM_PATTERNS[1].id)],
   counters: [counterMeaningFactId(COUNTER_CURRICULUM[1])],
+  // A different set (the say group) — re-teaching the first would show its card
+  // again on purpose, which is the opposite rule.
+  keigo: KEIGO_SETS[1].words.map((w) => keigoWordFactId(KEIGO_SETS[1], w)),
 };
 
 describe("every track that can unlock has exactly one intro", () => {

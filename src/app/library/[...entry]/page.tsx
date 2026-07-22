@@ -58,6 +58,7 @@ import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternRecipe } from "@/components/library/pattern-recipe";
 import { SliceBar } from "@/components/library/slice-bar";
 import { VerbPairView } from "@/components/library/verb-pair-view";
+import { KeigoSetView } from "@/components/library/keigo-set-view";
 import { StandingChip } from "@/components/library/standing-chip";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
 import { WordExampleView } from "@/components/library/word-example-view";
@@ -81,6 +82,7 @@ import { RADICAL_SUBJECT } from "@/data/radicals";
 import { exampleFor } from "@/data/word-examples";
 import { getMnemonic } from "@/data/mnemonics";
 import { TRANSITIVITY_SUBJECT, pairForEntry } from "@/data/transitivity-facts";
+import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
 import {
   VOCAB_SUBJECT,
   vocabRow,
@@ -162,6 +164,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const claims = history.claims ?? {};
   const facts = factsOf(entry.id);
   const isTransitivity = entry.kind === TRANSITIVITY_SUBJECT;
+  const isKeigo = entry.kind === KEIGO_SUBJECT;
   const standingFacts = isTransitivity ? knownFactsOf(entry) : facts;
   const standing = entryStanding(standingFacts, history.facts, claims, cfg.accuracyMetric, now);
   const words = appearsIn(entry);
@@ -201,6 +204,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // the one event behind this entry's id; null only if the id names no pair the
   // build knows, which the branches below treat as "render nothing".
   const pair = isTransitivity ? pairForEntry(entry.id) : null;
+  // A keigo set is neither a glyph nor a single fact either — its own layout,
+  // shared with the teach walk (KeigoSetView), draws it. Null only if the id
+  // names no set the build knows.
+  const keigoSet = isKeigo ? keigoSetForEntry(entry.id) : null;
 
   // ---- grammar-only material ----
 
@@ -278,7 +285,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
           ) : null}
         </>
       ) : null}
-      {isTransitivity && standing.total > 1 ? (
+      {(isTransitivity || isKeigo) && standing.total > 1 ? (
         <>
           {standing.needWork - (standing.total - standing.seen) > 0 ? (
             <span className="rounded-full border border-warning px-2 py-0.5 text-[11px] text-warning">
@@ -437,7 +444,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // radical arm for the same reason it keeps grammar's — other callers still
   // enumerate what is scored — this page just no longer prints it.
   const genericRows =
-    isKana || isKanji || isWord || isGrammar || isRadical || isTransitivity
+    isKana || isKanji || isWord || isGrammar || isRadical || isTransitivity || isKeigo
       ? []
       : factRows(entry);
 
@@ -854,6 +861,16 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </Card>
       ) : null}
 
+      {/* The keigo set itself — the shared card the teach walk draws, so the
+          Library and the lesson cannot show a set two different ways. It stands
+          in for the facts table (keigo is excluded from genericRows) the way the
+          verb pair does. */}
+      {isKeigo && keigoSet ? (
+        <Card>
+          <KeigoSetView set={keigoSet} voiceName={cfg.voiceName} />
+        </Card>
+      ) : null}
+
       {/* The generic table, now serving grammar and anything new. No rows, no
           section: a headed box containing a header row and nothing else reads as
           broken. */}
@@ -908,7 +925,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
           mark, and anything new. A verb pair is excluded: it has no parts, no
           words that contain it, and no glyph to confuse with another, so its
           links row would be an empty card. */}
-      {!isKana && !isKanji && !isWord && !isGrammar && !isTransitivity ? (
+      {!isKana && !isKanji && !isWord && !isGrammar && !isTransitivity && !isKeigo ? (
         <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
       ) : null}
 

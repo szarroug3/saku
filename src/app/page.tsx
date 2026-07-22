@@ -42,6 +42,7 @@ import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
 import { NextRadicalLesson } from "@/components/lesson/next-radical-lesson";
 import { NextTransitivityLesson } from "@/components/lesson/next-transitivity-lesson";
+import { NextKeigoLesson } from "@/components/lesson/next-keigo-lesson";
 import { NextWordLesson } from "@/components/lesson/next-word-lesson";
 import { PageTitle } from "@/components/ui";
 import { kanjiTeachOrder } from "@/data/kanji";
@@ -62,6 +63,7 @@ import {
   TRANSITIVITY_PER_LESSON_DEFAULT,
   nextTransitivityLesson,
 } from "@/lib/transitivity-lesson";
+import { KEIGO_PER_LESSON_DEFAULT, nextKeigoLesson } from "@/lib/keigo-lesson";
 
 import { readingsProvedBy } from "@/lib/word-unlock";
 import { nextLesson } from "@/lib/lesson";
@@ -208,6 +210,17 @@ export default function HomePage() {
     [lesson, history],
   );
 
+  // The keigo (politeness) track, opened EARLY like grammar: a set unlocks the
+  // moment the plain verb it replaces is learned vocabulary, so it starts on a
+  // handful of known words rather than waiting on any later track (see
+  // nextKeigoLesson). It interleaves rather than blocking — a set whose plain
+  // verb is unmet is skipped — so this is a lesson or nothing. Gated on
+  // `lesson === null` (kana done) like every post-kana track.
+  const keigoLesson = useMemo(
+    () => (lesson ? null : nextKeigoLesson(history, KEIGO_PER_LESSON_DEFAULT)),
+    [lesson, history],
+  );
+
   // "These are in my knowledge base now" — the one seen write, in one place.
   //
   // Every route that puts material into a drill WITHOUT walking it first has to
@@ -341,6 +354,7 @@ export default function HomePage() {
   const grammarRun = runForFacts(grammarLesson?.facts);
   const transitivityRun = runForFacts(transitivityLesson?.facts);
   const counterRun = runForFacts(counterLesson?.facts);
+  const keigoRun = runForFacts(keigoLesson?.facts);
 
   // The curriculum is finished only when EVERY track's card would render
   // nothing — the exact negation of the render conditions below, so this is
@@ -358,7 +372,8 @@ export default function HomePage() {
     !grammarLesson &&
     !(grammarLock && grammarTrackStarted) &&
     !transitivityLesson &&
-    !counterLesson;
+    !counterLesson &&
+    !keigoLesson;
 
   return (
     <>
@@ -472,6 +487,21 @@ export default function HomePage() {
           onClaim={claim}
           inSession={!!transitivityRun}
           onContinue={() => transitivityRun && continueRun(transitivityRun.id)}
+        />
+      ) : null}
+
+      {/* The keigo track's next lesson — opened early, once kana is done and the
+          plain verb behind a set is learned. Each set is taught teach-then-drill
+          (its facts ARE the session, like the others). No lock card: an unready
+          set is skipped rather than blocking, so this is present only when there
+          are ready sets to teach. */}
+      {keigoLesson ? (
+        <NextKeigoLesson
+          lesson={keigoLesson}
+          onStart={startLesson}
+          onClaim={claim}
+          inSession={!!keigoRun}
+          onContinue={() => keigoRun && continueRun(keigoRun.id)}
         />
       ) : null}
 

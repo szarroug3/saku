@@ -70,7 +70,8 @@ export type TrackId =
   | "kanji"
   | "word"
   | "grammar"
-  | "counters";
+  | "counters"
+  | "keigo";
 
 // DRAFT COPY — see the header. Rewrite freely; keep the three jobs.
 
@@ -236,6 +237,36 @@ export const COUNTERS_TRACK: PhaseIntro = {
   ],
 };
 
+// KEIGO — the politeness track (task 12). DRAFT copy, same status as the rest of
+// this file: plain sentences doing the three jobs, for the owner to rewrite in
+// her voice. The extra weight here is that it must INTRODUCE the two register
+// words ("honorific", "humble") the recognition questions then use — a learner is
+// not assumed to know them. Every string is quoted in the task report.
+export const KEIGO_TRACK: PhaseIntro = {
+  id: "track-keigo",
+  setId: "",
+  eyebrow: "What keigo is",
+  title: "Japanese changes a verb by who you are speaking to, and about whom.",
+  body: [
+    {
+      lead: "Keigo is the politeness system.",
+      text: "The same action has more than one verb, and which one you use depends on whose action it is. 食べる (to eat) becomes 召し上がる when it is the other person eating, and いただく when it is you.",
+    },
+    {
+      lead: "Raising the other person is called honorific.",
+      text: "You use an honorific verb for what someone you respect does, to lift them up. 召し上がる is the honorific of 食べる, so “please eat” to a guest uses it. It is never used for yourself.",
+    },
+    {
+      lead: "Lowering yourself is called humble.",
+      text: "You use a humble verb for your own actions, to step back from the person you are speaking to. いただく is the humble of 食べる, so “I will eat” at someone's table uses it. It is only ever used for yourself.",
+    },
+    {
+      lead: "For now you only have to recognize these, not produce them.",
+      text: "いらっしゃいませ is the first thing said in any shop, and 召し上がる and いただく turn up early too. So this track opens as soon as you know the plain verb behind a set, and asks you what a keigo verb means and which of the two it is. Choosing the right one to say yourself comes later.",
+    },
+  ],
+};
+
 /**
  * Every track that opens with a card, and the card it opens with.
  *
@@ -259,6 +290,7 @@ export const TRACK_INTROS: Readonly<Record<TrackId, PhaseIntro>> = {
   word: WORD_TRACK,
   grammar: GRAMMAR_TRACK,
   counters: COUNTERS_TRACK,
+  keigo: KEIGO_TRACK,
 };
 
 /** The track ids, in the order a learner reaches them. */
@@ -270,4 +302,5 @@ export const TRACK_ORDER: readonly TrackId[] = [
   "word",
   "grammar",
   "counters",
+  "keigo",
 ];

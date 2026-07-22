@@ -71,6 +71,7 @@ import {
   transitivitySide,
 } from "@/data/transitivity-facts";
 import { PROMPT as TRANSITIVITY_PROMPT } from "@/lib/transitivity";
+import { KEIGO_SUBJECT, keigoDistractors, keigoWordInfo } from "@/data/keigo";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
 import type { Direction, FactId, HistoryFile } from "@/types";
 
@@ -1193,12 +1194,75 @@ const transitivityQuestions: QuestionType = {
   },
 };
 
+/**
+ * Keigo: RECOGNISE a politeness form — shown the honorific or humble verb, pick
+ * what it means and which register it is.
+ *
+ * RECOGNITION, NOT PRODUCTION, and that is the whole shape. The prompt is the
+ * Japanese verb (召し上がる); the answer is its recognition gloss ("eat / drink
+ * (honorific)"). The direction is fixed to jp→en and the card is multiple choice
+ * only: the learner is never shown a situation and asked to TYPE the keigo form
+ * (that is production, which the track adds later — see the owner's ruling in
+ * src/data/keigo.ts). The sharp distractor is the same set's opposite register,
+ * so the board reads as the same action twice with honorific vs humble, and
+ * passing requires knowing which one this verb is.
+ */
+const keigoQuestions: QuestionType = {
+  id: KEIGO_SUBJECT,
+  mcOnly: true,
+  fixedDir: "jp2en",
+  prompt(fact, dir) {
+    const info = keigoWordInfo(fact);
+    // jp→en (the only direction the drill ever asks, via fixedDir): the Japanese
+    // keigo verb is the glyph, and the answer carries the register, so "meaning"
+    // is the honest label — the same call the word subject makes. The en→jp arm
+    // is never rendered, but it is kept symmetric (glyph = the gloss, not the
+    // verb) so a reveal can never echo the prompt in either direction, the
+    // property reveal-not-prompt.test.ts asserts over every fact.
+    if (dir === "en2jp") {
+      return {
+        glyph: info?.gloss ?? answerOf(fact),
+        jp: false,
+        context: "which keigo verb",
+        hint: null,
+      };
+    }
+    return {
+      glyph: info?.word.word ?? glyphOfFact(fact),
+      jp: true,
+      context: "meaning",
+      hint: null,
+    };
+  },
+  check(fact, dir, given) {
+    // jp→en (the direction the drill uses): the answer is the recognition gloss,
+    // so exact-match forgiveness is all it needs — the same `accepts` the meaning
+    // side of every subject uses. The card is MC, so `given` is an option's gloss.
+    if (dir === "jp2en") return accepts(fact, given);
+    // en→jp is never rendered (fixedDir jp2en), but the grader stays symmetric
+    // so a reveal is always a string this grader would accept and never echoes
+    // the prompt — the two properties reveal-not-prompt.test.ts asserts. Here the
+    // Japanese to produce is the keigo verb itself.
+    const info = keigoWordInfo(fact);
+    if (!info) return false;
+    const g = given.trim();
+    return g === info.word.word || g === info.word.reading;
+  },
+  distractors(fact, n) {
+    if (n <= 0) return [];
+    return keigoDistractors(fact)
+      .filter((f) => factInfo(f))
+      .slice(0, n);
+  },
+};
+
 const BY_SUBJECT: Record<string, QuestionType> = {
   [KANA_SUBJECT]: kanaQuestions,
   [KANJI_SUBJECT]: kanjiQuestions,
   [VOCAB_SUBJECT]: wordQuestions,
   [GRAMMAR_SUBJECT]: grammarQuestions,
   [TRANSITIVITY_SUBJECT]: transitivityQuestions,
+  [KEIGO_SUBJECT]: keigoQuestions,
 };
 
 /**

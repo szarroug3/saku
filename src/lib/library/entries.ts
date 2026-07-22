@@ -89,6 +89,14 @@ import {
   transitivitySide,
 } from "@/data/transitivity-facts";
 import { pairPattern, shiftLabel } from "@/lib/transitivity-pattern";
+import {
+  KEIGO_SETS,
+  KEIGO_SUBJECT,
+  keigoSetEntry,
+  keigoSetForEntry,
+  keigoWordFactId,
+  recognitionGloss,
+} from "@/data/keigo";
 import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
 import { factsOf } from "@/lib/facts";
@@ -123,6 +131,7 @@ export type Kind =
   | typeof COUNTER_KIND
   | typeof GRAMMAR_SUBJECT
   | typeof TRANSITIVITY_SUBJECT
+  | typeof KEIGO_SUBJECT
   | typeof TERM_SUBJECT;
 
 /** Browse order, and it is teaching order: kana, then radicals, then the kanji
@@ -146,6 +155,9 @@ export const KINDS: readonly Kind[] = [
   COUNTER_KIND,
   GRAMMAR_SUBJECT,
   TRANSITIVITY_SUBJECT,
+  // Keigo sits after verb pairs: it is a politeness layer over verbs the learner
+  // already knows, so it browses after the plain-verb tracks it builds on.
+  KEIGO_SUBJECT,
   MARK_SUBJECT,
   // Reference definitions, LAST — the same argument that parks Writing rules at
   // the end. A term is a word you look up, not a first stop, and like a mark it
@@ -163,6 +175,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   [COUNTER_KIND]: "Numbers and counters",
   [GRAMMAR_SUBJECT]: "Grammar",
   [TRANSITIVITY_SUBJECT]: "Verb pairs",
+  [KEIGO_SUBJECT]: "Keigo",
   [TERM_SUBJECT]: "Terms",
 };
 
@@ -190,6 +203,9 @@ export function subjectLabel(info: FactInfo | undefined): string | undefined {
   // wants the singular lesson-type name for a teach set, like "Word" and
   // "Radical" below — and it is "Verb pair", not the shelf's plural.
   if (info.subject === TRANSITIVITY_SUBJECT) return "Verb pair";
+  // Keigo's shelf is "Keigo" (plural-less already), but a teach set is one set of
+  // politeness forms, so the session header says "Keigo set".
+  if (info.subject === KEIGO_SUBJECT) return "Keigo set";
   const kind = info.subject as Kind;
   if (kind === KANA_SUBJECT) {
     return CHAR_INDEX[info.glyph]?.setLabel ?? KIND_LABEL[kind];
@@ -623,6 +639,36 @@ function build(): LibEntry[] {
     });
   });
 
+  // Keigo sets — the politeness track, browsed after verb pairs (see KINDS). A
+  // set is a plain verb and its honorific/humble forms, not a single character:
+  // like a verb pair it has no glyph, so `glyph` is the empty string (search-
+  // inert) and `name` carries the keigo forms — "召し上がる / いただく". The
+  // recognition glosses are the `meanings`, so a search for "eat honorific" lands
+  // here; the plain verbs and the register words ride in `searchAlso`, so the set
+  // is also findable by the everyday verb it replaces.
+  KEIGO_SETS.forEach((set, i) => {
+    out.push({
+      id: keigoSetEntry(set),
+      kind: KEIGO_SUBJECT,
+      glyph: "",
+      name: set.words.map((w) => w.word).join(" / "),
+      readings: set.words.map((w) => w.reading),
+      meanings: set.words.map((w) => recognitionGloss(set, w)),
+      searchAlso: [
+        ...set.plain.map((p) => p.keb),
+        ...set.words.map((w) => w.register),
+        "keigo",
+        set.meaning,
+      ],
+      sub: set.formulaic ? "Keigo · set phrase" : `Keigo · ${set.meaning}`,
+      // Above verb pairs (700+) and below kanji (1000+): a keigo verb's glyph can
+      // collide with its own vocabulary entry (召し上がる is also a word), and the
+      // set should lead for someone reaching for the politeness relationship.
+      // Data order breaks ties among sets.
+      weight: 800 + i,
+    });
+  });
+
   return out;
 }
 
@@ -773,6 +819,11 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
     // resolves one this way. Its links are minted from the pair id (pairEntry).
     case TRANSITIVITY_SUBJECT:
       return null;
+    // A keigo set has no glyph either — `glyph` is the empty string — and its
+    // verbs' glyphs belong to their own vocabulary entries. Keigo links are
+    // minted from the set id (keigoSetEntry), so this is never asked.
+    case KEIGO_SUBJECT:
+      return null;
     // A term has no glyph either, and nothing links to one by glyph — a term is
     // reached from the shelf or search, and its links are minted from its own id
     // (termEntry). So this is never asked.
@@ -881,6 +932,12 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
     // shown. Present for exhaustiveness, and named for what the rows would ask.
     case TRANSITIVITY_SUBJECT:
       return "Which verb";
+    // A keigo set's facts are shown on its own page (the set view, not this
+    // generic table — the entry page excludes keigo from genericRows), so this
+    // heading is not shown. Present for exhaustiveness, named for what the rows
+    // would ask.
+    case KEIGO_SUBJECT:
+      return "Which register";
     // A term never has rows (see factRows), for the same reason a mark does not:
     // "what is JLPT" has no gradeable answer. The page's `rows.length > 0` guard
     // drops the whole section, so this string never reaches a screen.
@@ -995,6 +1052,11 @@ export function factRows(entry: LibEntry): FactRow[] {
     // caller: see transitivityFactRows.
     case TRANSITIVITY_SUBJECT:
       return transitivityFactRows(entry);
+    // A keigo set's gradeable facts, one row per keigo word. Not rendered by the
+    // entry page (which draws the set itself), but kept honest for any generic
+    // caller: see keigoFactRows.
+    case KEIGO_SUBJECT:
+      return keigoFactRows(entry);
     // A TERM HAS NO FACTS AT ALL — like a mark. "What is a radical" is a thing to
     // read, not a question to mark, so the empty array is the shape of that and
     // the entry page's `rows.length > 0` guard drops the facts box entirely.
@@ -1029,6 +1091,25 @@ function transitivityFactRows(entry: LibEntry): FactRow[] {
     });
   }
   return rows;
+}
+
+/** A keigo set's facts as table rows: one per keigo word — the word as the label,
+ * its recognition gloss (register and action) as the answer, its reading to
+ * speak. Empty when the entry names no set the build knows. */
+function keigoFactRows(entry: LibEntry): FactRow[] {
+  const set = keigoSetForEntry(entry.id);
+  if (!set) return [];
+  return set.words.map((w) => ({
+    id: keigoWordFactId(set, w),
+    label: w.word,
+    answer: recognitionGloss(set, w),
+    askedIn: [],
+    unattested: false,
+    origin: null,
+    // The reading, spoken off the word's own kana — a synthesiser handed
+    // 召し上がる may guess a reading, めしあがる is unambiguous.
+    speak: w.reading,
+  }));
 }
 
 /**

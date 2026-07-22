@@ -121,7 +121,42 @@ export interface VocabRow {
   readonly beginnerRank: number;
 }
 
-export const VOCAB: readonly VocabRow[] = vocabJson as readonly VocabRow[];
+/**
+ * Words the app teaches that JMdict's curated commonness tags do not carry, added
+ * by hand because the ingest cannot reach them.
+ *
+ * いらっしゃる is the one that matters and the reason this array exists: it is the
+ * honorific of the three most common verbs in the language (行く / 来る / いる),
+ * the first word said in any shop, and the core of the keigo track — and it is
+ * simply absent from the `ichi1`/`spec1`/`spec2` cut (verified: zero hits in
+ * vocab.json). A generated file cannot be hand-edited, so the word is supplied
+ * here instead, in the same VocabRow shape everything downstream already reads.
+ *
+ * It is a KANA word (keb === reb): いらっしゃる is written in kana far more often
+ * than 居らっしゃる, so it follows the same `uk` rule as これ and もう and carries
+ * no reading fact. Its class is the -aru special godan (v5aru — いらっしゃいます,
+ * not いらっしゃります), pinned through the descriptive pos string POS_TO_CLASS
+ * reads, so the form fan conjugates it correctly. Its beginnerRank sits at the
+ * very end of the tail (VOCAB.length): the dense-permutation invariant
+ * (ingest.test.ts) requires 1..N with no gaps, and appending one word past the
+ * old max keeps that true without renumbering 12,553 rows.
+ */
+const SUPPLEMENT: readonly VocabRow[] = [
+  {
+    keb: "いらっしゃる",
+    reb: "いらっしゃる",
+    glosses: ["to come", "to go", "to be (honorific)"],
+    pos: ["Godan verb - -aru special class", "intransitive verb"],
+    newspaperBand: null,
+    align: null,
+    beginnerRank: (vocabJson as readonly VocabRow[]).length + 1,
+  },
+];
+
+export const VOCAB: readonly VocabRow[] = [
+  ...(vocabJson as readonly VocabRow[]),
+  ...SUPPLEMENT,
+];
 
 const BY_KEB: ReadonlyMap<string, VocabRow> = new Map(VOCAB.map((w) => [w.keb, w]));
 

@@ -88,8 +88,9 @@ test("every kind is indexed — no entry falls back to the legacy one-segment UR
     [...kinds].sort(),
     // "counter" is the numbers-and-counters shelf — its own kind segment even
     // though the facts under it are `word` (see COUNTER_KIND in entries.ts).
-    // "term" is the glossary shelf (JLPT, kana, romaji, ...) — see TERM_KIND.
-    ["counter", "grammar", "hiragana", "kanji", "katakana", "radical", "term", "transitivity", "word", "writing-rule"],
+    // "keigo" is the politeness shelf, a real subject of its own. "term" is the
+    // glossary shelf (JLPT, kana, romaji, ...) — see TERM_KIND.
+    ["counter", "grammar", "hiragana", "kanji", "katakana", "keigo", "radical", "term", "transitivity", "word", "writing-rule"],
   );
 });
 

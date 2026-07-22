@@ -50,6 +50,7 @@ import { LessonReadings } from "@/components/lesson/lesson-readings";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { RadicalKanjiTable } from "@/components/library/radical-kanji-table";
 import { VerbPairView } from "@/components/library/verb-pair-view";
+import { KeigoSetView } from "@/components/library/keigo-set-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor, glyphVariantFor } from "@/data/characters";
 import { cluster, membersOf } from "@/data/grammar/clusters";
@@ -58,6 +59,7 @@ import { getMnemonic } from "@/data/mnemonics";
 import { exampleFor } from "@/data/word-examples";
 import { vocabRow, type VocabRow } from "@/data/vocab";
 import { pairForEntry } from "@/data/transitivity-facts";
+import { keigoSetForEntry } from "@/data/keigo";
 import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
@@ -90,6 +92,10 @@ function subtitleOf(item: LessonItem): string {
     case "transitivity":
       // Transitivity items never reach here — they get their own card in
       // LessonItemView before the shared hero — but the switch is exhaustive.
+      return "";
+    case "keigo":
+      // Keigo sets never reach here either — like transitivity, they get their
+      // own card before the shared hero. Present for exhaustiveness.
       return "";
   }
 }
@@ -434,6 +440,22 @@ function TransitivityTeachView({
   return <VerbPairView pair={pair} voiceName={voiceName} />;
 }
 
+/** The keigo set teach card — the shared set view, fed the set the lesson item
+ * names. Like a transitivity pair, a set is neither a glyph nor a single fact, so
+ * it never used the single-glyph hero and the Library entry page shows the
+ * identical card. */
+function KeigoTeachView({
+  item,
+  voiceName,
+}: {
+  item: LessonItem;
+  voiceName: string;
+}) {
+  const set = keigoSetForEntry(item.entry);
+  if (!set) return null;
+  return <KeigoSetView set={set} voiceName={voiceName} />;
+}
+
 export function LessonItemView({ item }: { item: LessonItem }) {
   const { cfg } = useQuizConfig();
   const { history } = useHistory();
@@ -482,6 +504,9 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // the rules-of-hooks hold.
   if (item.kind === "transitivity") {
     return <TransitivityTeachView item={item} voiceName={cfg.voiceName} />;
+  }
+  if (item.kind === "keigo") {
+    return <KeigoTeachView item={item} voiceName={cfg.voiceName} />;
   }
 
   return (
