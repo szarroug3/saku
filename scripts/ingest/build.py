@@ -371,6 +371,15 @@ def main():
     # ---- emit
     os.makedirs(OUT, exist_ok=True)
 
+    # `comps` here is the KRADFILE flat decomposition. It is NO LONGER the
+    # "Made of" row the learner sees — that was factually wrong (KRADFILE encodes
+    # the person radical 亻 as 化, so 休 read 化+木, and it flattens 時 to 寸+土+日,
+    # losing the phonetic 寺). The learner-facing decomposition is now KanjiVG's
+    # depth-1 hierarchy, in kanji-components.json (scripts/ingest/kanjivg.mjs),
+    # married in by src/data/kanji.ts. This KRADFILE list survives only as the
+    # input to kanjiCost's draw-and-assembly HEURISTIC (src/lib/kanji-lesson.ts),
+    # where it is exposed as KanjiRow.costParts and calibrated against the owner's
+    # hand-worked numbers — a stroke-level cost estimate, not a fact shown as one.
     kanji_rows = []
     for k in joyo_list:
         v = K[k]
@@ -438,10 +447,14 @@ def main():
     dump("confusable-derived.json", derived)
     print(f"KRADFILE-derived confusable groups: {len(derived)}")
 
-    prim = {c: (K[c]["strokes"] if c in K and K[c]["strokes"] else PRIM_STROKES.get(c, 1))
-            for k in joyo_list for c in KR.get(k, []) if c != k and c not in JOYO}
-    dump("components.json", dict(primitiveStrokes=prim))
-    print(f"non-jouyou components: {len(prim)}")
+    # The primitive stroke map is NO LONGER emitted here. It must cover exactly
+    # the non-jōyō components the "Made of" decomposition uses, and that
+    # decomposition is now KanjiVG's depth-1 hierarchy, not KRADFILE (see the
+    # `comps` note below). scripts/ingest/kanjivg.mjs writes primitiveStrokes into
+    # kanji-components.json from that same source, so the two cannot disagree; a
+    # KRADFILE-derived map here would list primitives the index never shows and
+    # miss ones it does. The PRIM_STROKES table above is still used by
+    # novel_strokes(), which is KRADFILE-based on purpose (see order.json).
 
 
 def KRD_of(K):

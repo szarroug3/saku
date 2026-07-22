@@ -12,8 +12,8 @@
 // The other three are the claims the radical pages make on screen:
 //   - a primitive has no meaning ANYWHERE, so a page may never print one;
 //   - "words you know" means the app's one definition of known, claims included;
-//   - the cap on a huge list reports the right remainder — 口's 381 must not
-//     become "356 more" because the visible slice was counted wrong.
+//   - the cap on a huge list reports the right remainder — 口's 104 must not
+//     become "79 more" because the visible slice was counted wrong.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -41,17 +41,17 @@ function claiming(facts: readonly FactId[]): HistoryFile {
   return history({ claims: claims as HistoryFile["claims"] });
 }
 
-describe("the index covers every component KRADFILE attests", () => {
-  test("237 distinct components across the 2,136 jōyō kanji", () => {
+describe("the index covers every component the depth-1 decomposition attests", () => {
+  test("844 distinct components across the 2,136 jōyō kanji", () => {
     assert.equal(KANJI.length, 2136);
-    assert.equal(allComponents().length, 237);
+    assert.equal(allComponents().length, 844);
   });
 
-  test("155 are kanji, 82 are primitives, and that is the whole set", () => {
+  test("482 are kanji, 362 are primitives, and that is the whole set", () => {
     const prim = allComponents().filter((c) => !kanjiRow(c));
-    assert.equal(prim.length, 82);
-    assert.equal(allComponents().length - prim.length, 155);
-    // The primitive set and the stroke map are the SAME 82. A component with no
+    assert.equal(prim.length, 362);
+    assert.equal(allComponents().length - prim.length, 482);
+    // The primitive set and the stroke map are the SAME 362. A component with no
     // stroke count would render "? strokes"; a stroke count for a non-component
     // would be a page reachable from nowhere.
     assert.deepEqual(new Set(prim), new Set(PRIMITIVE_STROKES.keys()));
@@ -69,11 +69,17 @@ describe("the index covers every component KRADFILE attests", () => {
   });
 
   test("the big ones, by name", () => {
-    assert.equal(usedAsPartIn("一").length, 400);
-    assert.equal(usedAsPartIn("口").length, 381);
-    assert.equal(usedAsPartIn("ノ").length, 246);
-    assert.equal(usedAsPartIn("｜").length, 229);
-    assert.equal(usedAsPartIn("日").length, 210);
+    // Direct-component counts, so much smaller than the old flat KRADFILE index:
+    // 口 is a DIRECT part of 104 kanji, not the 381 it was nested inside. And the
+    // stroke-artefacts ノ and ｜ are gone — KanjiVG does not cut a lone stroke out
+    // as a component, so they are no longer in the index at all.
+    assert.equal(usedAsPartIn("氵").length, 115);
+    assert.equal(usedAsPartIn("口").length, 104);
+    assert.equal(usedAsPartIn("木").length, 101);
+    assert.equal(usedAsPartIn("亻").length, 95);
+    assert.equal(usedAsPartIn("日").length, 61);
+    assert.equal(usedAsPartIn("ノ").length, 0);
+    assert.equal(usedAsPartIn("｜").length, 0);
   });
 
   test("a kanji is never listed as a part of itself", () => {
@@ -82,10 +88,10 @@ describe("the index covers every component KRADFILE attests", () => {
     }
   });
 
-  test("nothing is built from a stranger, or from an atomic kanji", () => {
+  test("nothing is built from a stranger, or from an unused kanji", () => {
     assert.deepEqual(usedAsPartIn("Z"), []);
-    // 生 is atomic to KRADFILE and is a part of nothing else either — the page
-    // drops the section rather than printing an empty heading.
+    // 鬱 is a direct part of no other jōyō kanji — the page drops the section
+    // rather than printing an empty heading.
     assert.equal(usedAsPartIn("鬱").length, 0);
   });
 
@@ -96,7 +102,7 @@ describe("the index covers every component KRADFILE attests", () => {
 });
 
 describe("a primitive has no meaning, anywhere", () => {
-  test("none of the 82 has a KANJIDIC2 row to take a meaning from", () => {
+  test("none of the 362 has a KANJIDIC2 row to take a meaning from", () => {
     for (const c of PRIMITIVE_STROKES.keys()) {
       assert.equal(kanjiRow(c), undefined, c);
     }
@@ -107,7 +113,7 @@ describe("a primitive has no meaning, anywhere", () => {
       const n = primitiveStrokes(c);
       assert.ok(typeof n === "number" && n > 0, c);
     }
-    assert.equal(primitiveStrokes("ノ"), 1);
+    assert.equal(primitiveStrokes("亻"), 2);
     assert.equal(primitiveStrokes("匕"), 2);
   });
 
@@ -117,9 +123,9 @@ describe("a primitive has no meaning, anywhere", () => {
     assert.equal(primitiveStrokes("木"), undefined);
   });
 
-  test("the 155 that ARE kanji do have meanings — the other half of the split", () => {
+  test("the 482 that ARE kanji do have meanings — the other half of the split", () => {
     const kanjiComponents = allComponents().filter((c) => kanjiRow(c));
-    assert.equal(kanjiComponents.length, 155);
+    assert.equal(kanjiComponents.length, 482);
     for (const c of kanjiComponents) {
       assert.ok((kanjiRow(c)?.meanings.length ?? 0) > 0, c);
     }
@@ -169,15 +175,15 @@ describe("words you know that use a component", () => {
 });
 
 describe("the cap on a huge list reports the right remainder", () => {
-  test("口: 24 painted, 357 named", () => {
+  test("口: 24 painted, 80 named", () => {
     const uses = usedAsPartIn("口");
     assert.equal(COMPONENT_USE_CAP, 24);
     assert.equal(uses.slice(0, COMPONENT_USE_CAP).length, 24);
-    assert.equal(uses.length - COMPONENT_USE_CAP, 357);
+    assert.equal(uses.length - COMPONENT_USE_CAP, 80);
   });
 
-  test("一: 400, so 376 more", () => {
-    assert.equal(usedAsPartIn("一").length - COMPONENT_USE_CAP, 376);
+  test("氵: 115, so 91 more", () => {
+    assert.equal(usedAsPartIn("氵").length - COMPONENT_USE_CAP, 91);
   });
 
   test("a short list is painted whole and reports no remainder", () => {

@@ -33,6 +33,7 @@ import {
   RADICAL_INDEX_MEANING,
   READINGS,
   kanjiRow,
+  variantTaughtKanji,
 } from "./kanji.ts";
 import {
   VOCAB,
@@ -250,10 +251,15 @@ test("every component is charged, jōyō or not", () => {
   // 無 = ｜ノ一杰乞. 杰 is an 8-stroke NON-jōyō primitive, so it is never an
   // item — but something must have paid for it before 無 is taught, or the
   // "novel strokes" number is the old lie in new clothes.
+  //
+  // Read off `costParts` (KRADFILE), not `comps`: novelStrokes is a KRADFILE
+  // stroke-cost figure, so the decomposition that explains it is the same one it
+  // was computed from. `comps` is now KanjiVG's depth-1 hierarchy and would not
+  // surface a deep primitive like 杰 at all.
   const mu = KANJI_ORDER.find((o) => o.c === "無");
   assert.ok(mu);
   const payer = KANJI_ORDER.find(
-    (o) => (kanjiRow(o.c)?.comps ?? []).includes("杰") && o.i < mu.i,
+    (o) => (kanjiRow(o.c)?.costParts ?? []).includes("杰") && o.i < mu.i,
   );
   assert.ok(payer, "無 is taught before anything charged for 杰");
   assert.ok(payer.novelStrokes >= 8, `${payer.c} got 杰 for free`);
@@ -317,4 +323,47 @@ test("every reading knows whether it came from Chinese or is native Japanese", (
     READINGS.some((r) => r.type === "both"),
     "the both-types case vanished; check the normalisation still collapses イチ→いち",
   );
+});
+
+test("the 'Made of' components are KanjiVG depth-1, not the KRADFILE flat walk", () => {
+  // This is the P0 fix, pinned so a regeneration cannot silently reintroduce it
+  // (tasks/23-p0-kanji-components-wrong.md). Each `should` is the depth-1 child
+  // list of the KanjiVG element hierarchy; the `wasBug` note is what the old
+  // KRADFILE-derived comps produced.
+  const comps = (c: string): readonly string[] => kanjiRow(c)?.comps ?? [];
+
+  // 亻 (person), NOT 化 (change): KRADFILE encoded the person radical as 化.
+  assert.deepEqual(comps("休"), ["亻", "木"], "休 is a person beside a tree");
+  assert.ok(!comps("休").includes("化"), "休 must never list 化");
+  assert.deepEqual(comps("仁"), ["亻", "二"]);
+
+  // 寺 kept whole — the phonetic shared with 持 待 詩 侍 — not flattened to 土+寸.
+  assert.deepEqual(comps("時"), ["日", "寺"], "時 keeps its phonetic 寺");
+
+  // 化 is preserved where it is GENUINELY present (艹 + 化, 化 + 貝).
+  assert.ok(comps("花").includes("化"), "花 really does contain 化");
+  assert.deepEqual(comps("花"), ["艹", "化"]);
+  assert.deepEqual(comps("貨"), ["化", "貝"], "no more 化+貝+目+ハ+匕");
+
+  // Already-correct cases stay correct; nested parts are dropped (言+吾, not 言+口+五).
+  assert.deepEqual(comps("明"), ["日", "月"]);
+  assert.deepEqual(comps("語"), ["言", "吾"]);
+  assert.deepEqual(comps("校"), ["木", "交"]);
+  assert.deepEqual(comps("男"), ["田", "力"]);
+
+  // A pictograph atomic to KanjiVG has no "Made of" row at all.
+  assert.deepEqual(comps("生"), []);
+});
+
+test("a variant component displays its own shape but links to the taught character", () => {
+  // 亻 is written as 亻, never 人 — but it is a form of 人, which the learner DOES
+  // meet, so the "Made of" row lets them tap through. variantTaughtKanji is that
+  // resolution; the display char (亻) is unchanged, only the link target.
+  assert.equal(variantTaughtKanji("亻"), "人", "亻 links to 人");
+  assert.equal(variantTaughtKanji("氵"), "水", "氵 links to 水");
+  assert.equal(variantTaughtKanji("刂"), "刀", "刂 links to 刀");
+  // A variant of a character we do NOT teach stays an unlinked plain shape.
+  assert.equal(variantTaughtKanji("艹"), undefined, "艸 is not a taught kanji");
+  // A real taught kanji is not a variant of anything — it links to itself.
+  assert.equal(variantTaughtKanji("木"), undefined);
 });

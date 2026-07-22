@@ -94,7 +94,13 @@ export function kanjiCost(c: string): number {
   // A known radical = a component that is itself a jōyō kanji, so it has a card
   // the learner has (or will have) met. Exclude the kanji itself, which some
   // decompositions list among their own parts.
-  const radicals = k.comps.filter((x) => x !== c && kanjiRow(x) !== undefined);
+  //
+  // COST USES `costParts` (KRADFILE), NOT `comps` (KanjiVG). This is a stroke-
+  // level draw-and-assembly estimate the owner calibrated by hand against
+  // KRADFILE's decomposition — 不 = radical 一 plus ｜ノ丶 drawn from scratch. The
+  // learner-facing `comps` stops at meaningful components and would change every
+  // one of those numbers; see KanjiRow.costParts.
+  const radicals = k.costParts.filter((x) => x !== c && kanjiRow(x) !== undefined);
   const covered = radicals.reduce((n, r) => n + (kanjiRow(r)?.strokes ?? 0), 0);
   const extra = Math.max(0, k.strokes - covered);
   return radicals.length + extra;

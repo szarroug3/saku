@@ -29,12 +29,15 @@ import { entryHref } from "@/lib/library/href";
 import type { Mixups } from "@/lib/library/mixups";
 import type { EntryId } from "@/types";
 
-export function GlyphLink({ id }: { id: EntryId }) {
+export function GlyphLink({ id, glyph }: { id: EntryId; glyph?: string }) {
   const e = libEntry(id);
   if (!e) return null;
+  // `glyph` overrides the shown character for a variant component: the "Made of"
+  // row displays the form actually written (亻) while the link resolves to the
+  // taught character it is a form of (人). Defaults to the entry's own glyph.
   return (
     <Link href={entryHref(e.id)} className="text-[17px] text-text no-underline">
-      {e.glyph}
+      {glyph ?? e.glyph}
     </Link>
   );
 }

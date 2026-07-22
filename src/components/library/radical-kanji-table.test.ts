@@ -39,10 +39,10 @@ describe("a radical's kanji are ordered by curriculum, not raw index", () => {
       assert.ok(idx[i - 1] <= idx[i], `out of order at ${i}: ${idx.join(",")}`);
     }
 
-    // 乞 (very early) leads; 電 (much later) is not first even though it is a
+    // 乞 (very early) leads; 七 (much later) is not first even though it is a
     // common kanji — a frequency or raw sort would not guarantee this.
     assert.equal(sorted[0], "乞");
-    assert.ok(sorted.indexOf("乞") < sorted.indexOf("電"));
+    assert.ok(sorted.indexOf("乞") < sorted.indexOf("七"));
   });
 });
 

@@ -1,22 +1,29 @@
 // The component relation, read the other way round.
 //
 // `madeOf` in entries.ts answers "what is 明 built from" — 日 + 月. This file
-// answers the INVERSE, "what is 日 a part of", and the inverse is the one that
-// carries teaching weight: 日 turns up inside 210 of the 2,136 jōyō kanji, so
-// learning the shape once pays 210 times, and a page that can say so is making
-// the argument for learning it at all.
+// answers the INVERSE, "what is 日 a DIRECT part of", and the inverse is the one
+// that carries teaching weight: 日 is a direct component of 61 of the 2,136 jōyō
+// kanji, so learning the shape once pays back across all of them, and a page
+// that can say so is making the argument for learning it at all.
+//
+// DIRECT, NOT TRANSITIVE. Because the decomposition is KanjiVG at depth 1 (see
+// data/components.ts), this counts kanji that use 日 at their TOP level, not
+// every kanji 日 is buried somewhere inside. That is the same relation the
+// "Made of" row shows, and the counts are correspondingly smaller and truer than
+// the old flat KRADFILE index (which over-counted by charging every nested and
+// stroke-artefact occurrence).
 //
 // ONE INDEX, TWO PAGES
 // ====================
-// The 237 components split 155 kanji / 82 primitives (see data/components.ts),
+// The 844 components split 482 kanji / 362 primitives (see data/components.ts),
 // and the two halves get their sections in different places — a kanji's on its
 // existing entry page, a primitive's on /radical/[radical]. Both call the same
 // three functions here, because "used as a part in" means exactly one thing and
 // must not be computed twice with two different sorts.
 //
-// THE COUNTS ARE BIG AT THE TOP AND TINY IN THE TAIL: 一 is in 400 kanji, 口 in
-// 381, ノ in 246; the median component is in 3. Anything painting a list from
-// here must cap it — see COMPONENT_USE_CAP.
+// THE COUNTS ARE BIG AT THE TOP AND TINY IN THE TAIL: 氵 is a direct part of
+// 115 kanji, 口 of 104, 木 of 101; the median component is in a handful.
+// Anything painting a list from here must cap it — see COMPONENT_USE_CAP.
 //
 // A KANJI IS NEVER ITS OWN COMPONENT in this data (measured: 0 of 2,136), so no
 // row here has to filter itself out. `how-its-written.tsx` filters `!== glyph`
@@ -45,8 +52,8 @@ const USED_IN: ReadonlyMap<string, readonly string[]> = buildUsedIn();
 function buildUsedIn(): ReadonlyMap<string, string[]> {
   const map = new Map<string, string[]>();
   for (const k of KANJI) {
-    // Deduped per kanji: KRADFILE lists a repeated shape once per occurrence in
-    // some rows, and 品 must count as ONE of 口's 381, not three.
+    // Deduped per kanji: a kanji can list a shape twice (林 is 木 + 木), and 林
+    // must count as ONE of 木's users, not two.
     for (const c of new Set(k.comps)) {
       const list = map.get(c);
       if (list) list.push(k.c);
@@ -69,7 +76,8 @@ function buildUsedIn(): ReadonlyMap<string, string[]> {
   return map;
 }
 
-/** Every component KRADFILE attests, kanji and primitive alike — all 237. */
+/** Every component the depth-1 decomposition attests, kanji and primitive alike
+ * — all 844. */
 export function allComponents(): readonly string[] {
   return [...USED_IN.keys()];
 }
@@ -77,10 +85,9 @@ export function allComponents(): readonly string[] {
 /**
  * The kanji written with this component, in teaching order.
  *
- * Empty for anything that is not a component — a stranger, or one of the 74
- * kanji that KRADFILE never uses as a part of another. Empty is the honest
- * answer and the caller drops the section rather than printing a heading over
- * nothing.
+ * Empty for anything that is not a component — a stranger, or a kanji that is
+ * never a direct part of another. Empty is the honest answer and the caller
+ * drops the section rather than printing a heading over nothing.
  */
 export function usedAsPartIn(c: string): readonly string[] {
   return USED_IN.get(c) ?? [];
