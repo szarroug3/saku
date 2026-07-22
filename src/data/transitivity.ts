@@ -326,7 +326,7 @@ export const VERB_PAIRS: readonly VerbPair[] = [
   },
   {
     happens: { word: "生まれる", reading: "うまれる", cls: "v1", en: "A baby was born.", jmdict: "vi" },
-    doIt: { word: "生む", reading: "うむ", cls: "v5m", en: "She had a baby.", jmdict: "vt" },
+    doIt: { word: "産む", reading: "うむ", cls: "v5m", en: "She had a baby.", jmdict: "vt" },
   },
   {
     happens: { word: "助かる", reading: "たすかる", cls: "v5r", en: "The cat was saved.", jmdict: "vi" },
@@ -361,8 +361,8 @@ export const VERB_PAIRS: readonly VerbPair[] = [
     doIt: { word: "掛ける", reading: "かける", cls: "v1", en: "I hung the picture.", jmdict: "vt" },
   },
   {
-    happens: { word: "詰まる", reading: "つまる", cls: "v5r", en: "The box filled up.", jmdict: "vi" },
-    doIt: { word: "詰める", reading: "つめる", cls: "v1", en: "I filled the box.", jmdict: "ambi" },
+    happens: { word: "詰まる", reading: "つまる", cls: "v5r", en: "The pipe got clogged.", jmdict: "vi" },
+    doIt: { word: "詰める", reading: "つめる", cls: "v1", en: "I stuffed the pipe.", jmdict: "ambi" },
   },
   {
     happens: { word: "飛ぶ", reading: "とぶ", cls: "v5b", en: "The hat flew off.", jmdict: "vi" },
