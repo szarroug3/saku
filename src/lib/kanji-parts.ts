@@ -19,9 +19,11 @@ export interface KanjiPart {
  * radical". Null otherwise, which every caller reads as "there is nothing
  * teachable to say here".
  *
- * Raw KRADFILE comps (｜ ノ マ ユ ヨ ハ) are never returned: they are unreliable
- * for teaching and half of them have no page to link. An all-or-nothing test
- * rather than a filter, because "made of 日" is a false statement about 明.
+ * Components that are not themselves taught kanji (亻, 氵, 艹 — variant and bound
+ * forms) are never returned: an all-or-nothing test rather than a filter,
+ * because "made of 日" is a false statement about 明 when the other half is a
+ * shape with no card. `comps` is now KanjiVG's depth-1 decomposition, so this no
+ * longer has to defend against KRADFILE's 亻-as-化 and stroke-artefact parts.
  */
 export function teachableParts(glyph: string): KanjiPart[] | null {
   const row = kanjiRow(glyph);

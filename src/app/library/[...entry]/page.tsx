@@ -445,7 +445,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
             <span key={`${p.c}-${i}`} className="flex items-center gap-2">
               {i > 0 ? <span className="text-text-muted">+</span> : null}
               {p.id ? (
-                <GlyphLink id={p.id} />
+                <GlyphLink id={p.id} glyph={p.c} />
               ) : (
                 // A radical primitive with no KANJIDIC2 entry — ｜, ノ, マ. It
                 // USED TO BE DEAD GREY TEXT, on the reasoning that there was no

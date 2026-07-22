@@ -44,6 +44,7 @@ import {
   READINGS,
   readingFactId,
   type ReadingRow,
+  variantTaughtKanji,
 } from "@/data/kanji";
 import {
   VOCAB,
@@ -592,20 +593,22 @@ export function appearsIn(entry: LibEntry): readonly string[] {
 }
 
 /**
- * The KRADFILE components a kanji is written with — 生 = 丿 + 土.
+ * The DIRECT components a kanji is written with — 休 = 亻 + 木, 時 = 日 + 寺.
+ * From KanjiVG's depth-1 element hierarchy (see KanjiRow.comps).
  *
- * NOT ALL COMPONENTS ARE ENTRIES. ｜, ノ, ハ, マ, ユ, ヨ are radical primitives
- * with no KANJIDIC2 row at all (see KanjiRow.comps), so each comes back with its
- * entry id or null and the screen renders a link or plain text. Minting an entry
- * for ノ so the link always works would put a page in the Library with nothing
- * on it.
+ * NOT ALL COMPONENTS ARE ENTRIES. Variant and bound forms — 亻, 氵, 艹 — have no
+ * KANJIDIC2 row, so each comes back with an entry id or null and the screen
+ * renders a link or plain text. `c` is always the ACTUAL component to DISPLAY;
+ * `id` is where tapping it goes. Where a component is a variant of a taught
+ * character (亻 of 人, 刂 of 刀), `id` points at that character so the learner
+ * can meet it — the shape shown is still 亻, only the link resolves to 人.
  */
 export function madeOf(entry: LibEntry): Array<{ c: string; id: EntryId | null }> {
   if (entry.kind !== KANJI_SUBJECT) return [];
-  return (kanjiRow(entry.glyph)?.comps ?? []).map((c) => ({
-    c,
-    id: kanjiRow(c) ? kanjiEntry(c) : null,
-  }));
+  return (kanjiRow(entry.glyph)?.comps ?? []).map((c) => {
+    const link = kanjiRow(c) ? c : variantTaughtKanji(c);
+    return { c, id: link ? kanjiEntry(link) : null };
+  });
 }
 
 /**

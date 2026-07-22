@@ -33,6 +33,7 @@
 // the sense that they publish two arrays.
 
 import kanjiJson from "./generated/kanji.json" with { type: "json" };
+import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import orderJson from "./generated/order.json" with { type: "json" };
 import readingsJson from "./generated/readings.json" with { type: "json" };
 import { entryId, factId, readingAspect } from "../lib/fact-id.ts";
@@ -60,9 +61,22 @@ export interface KanjiRow {
    * the band on VocabRow, and the two do not compare.
    */
   readonly newspaperFreq: number | null;
-  /** KRADFILE decomposition. Components are not all kanji: ｜, ノ, ハ, マ, ユ,
-   * ヨ are radical primitives with no KANJIDIC2 entry at all. */
+  /** The DIRECT (depth-1) components — the "Made of" truth a learner is shown:
+   * 休 = 亻 + 木, 時 = 日 + 寺. From KanjiVG's `kvg:element` hierarchy, NOT the old
+   * KRADFILE flat radical index, which mislabelled 亻 as 化 and flattened 時 to 寸
+   * + 土 + 日. Sourced from generated/kanji-components.json
+   * (scripts/ingest/kanjivg.mjs), merged in below. Not all components are kanji:
+   * 亻, 氵, 艹 are variant/bound forms with no KANJIDIC2 entry — see
+   * data/components.ts and `variantTaughtKanji`. Read by everything that STATES
+   * what a kanji is made of: `madeOf`, `teachableParts`, the component index. */
   readonly comps: readonly string[];
+  /** The KRADFILE flat decomposition — every radical anywhere in the glyph, down
+   * to stroke-level primitives (｜ ノ 丶). NOT a fact shown to the learner: it is
+   * wrong about 亻/化 and over-decomposes. It survives ONLY as the input to
+   * `kanjiCost`'s draw-and-assembly heuristic (src/lib/kanji-lesson.ts), whose
+   * numbers the owner calibrated by hand against exactly this decomposition. Use
+   * `comps` for anything a learner reads; `costParts` only for sizing a lesson. */
+  readonly costParts: readonly string[];
 }
 
 /** One reading of one kanji, and the everyday word that proves it. */
@@ -161,11 +175,36 @@ export interface OrderRow {
  */
 export const RADICAL_INDEX_MEANING = /\bradical\s*\(no\.\s*\d+\s*\)/i;
 
-export const KANJI: readonly KanjiRow[] = (kanjiJson as readonly KanjiRow[]).map(
-  (k) =>
-    k.meanings.some((m) => RADICAL_INDEX_MEANING.test(m))
-      ? { ...k, meanings: k.meanings.filter((m) => !RADICAL_INDEX_MEANING.test(m)) }
-      : k,
+/** kanji.json carries the KRADFILE decomposition under `comps`; it becomes
+ * `costParts` here. The learner-facing depth-1 decomposition lives in its own
+ * generated artifact, kanji-components.json (exactly as the classical radical
+ * lives in kanji-radicals.json), and is married in as `comps` below. */
+type RawKanji = Omit<KanjiRow, "comps" | "costParts"> & {
+  readonly comps: readonly string[];
+};
+
+/** depth-1 component decomposition, keyed by kanji — the "Made of" data. */
+const COMPS: Readonly<Record<string, readonly string[]>> = (
+  kanjiComponentsJson as { comps: Record<string, readonly string[]> }
+).comps;
+
+/** A variant/bound component form → the character KanjiVG records it as a form
+ * of (kvg:original): 亻→人, 氵→水, 刂→刀. */
+const VARIANT_ORIGINAL: Readonly<Record<string, string>> = (
+  kanjiComponentsJson as { variants: Record<string, string> }
+).variants;
+
+export const KANJI: readonly KanjiRow[] = (kanjiJson as readonly RawKanji[]).map(
+  (k) => ({
+    ...k,
+    meanings: k.meanings.some((m) => RADICAL_INDEX_MEANING.test(m))
+      ? k.meanings.filter((m) => !RADICAL_INDEX_MEANING.test(m))
+      : k.meanings,
+    // KanjiVG depth-1 is the "Made of" truth; the KRADFILE list becomes the
+    // cost-only `costParts`. `comps` last so it wins over the spread.
+    costParts: k.comps,
+    comps: COMPS[k.c] ?? [],
+  }),
 );
 export const READINGS: readonly ReadingRow[] = readingsJson as readonly ReadingRow[];
 
@@ -192,6 +231,22 @@ const ORDER_BY_CHAR: ReadonlyMap<string, OrderRow> = new Map(
 /** A kanji's KANJIDIC2 row. */
 export function kanjiRow(c: string): KanjiRow | undefined {
   return BY_CHAR.get(c);
+}
+
+/**
+ * If `c` is a variant component form (亻, 氵, 刂) whose original character (人,
+ * 水, 刀) is itself a taught jōyō kanji, that original; otherwise undefined.
+ *
+ * The "Made of" row shows the ACTUAL component a learner sees written — 亻, not
+ * 人 — but a component they cannot tap through to is a dead end, so where the
+ * variant is a form of a character they DO meet, the link goes there. A variant
+ * of a non-taught character (艹 of 艸, 辶 of 辵) returns undefined and stays a
+ * plain, unlinked shape. To turn this mapping off entirely, empty the `variants`
+ * map in kanji-components.json — the component then renders as its own shape.
+ */
+export function variantTaughtKanji(c: string): string | undefined {
+  const orig = VARIANT_ORIGINAL[c];
+  return orig && BY_CHAR.has(orig) ? orig : undefined;
 }
 
 /** Where a kanji sits in the default order, and why. */

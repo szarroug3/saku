@@ -72,6 +72,7 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
 const OUTDIR = resolve(REPO, "src/data/generated/strokes");
+const GENDIR = resolve(REPO, "src/data/generated");
 
 /** How many files the kanji output is split across. 48 puts ~45 kanji and ~55KB
  * in each — small enough that opening one character is a normal-sized fetch,
@@ -114,6 +115,70 @@ function parseStrokes(svg) {
   return strokes.map((s) => s.d);
 }
 
+/** The kanji's DIRECT (depth-1) components, from KanjiVG's `kvg:element` group
+ * hierarchy — NOT KRADFILE's flat radical index, which mislabels the person
+ * radical 亻 as 化 and flattens 時 to 寸+土+日 instead of 日+寺. See the
+ * COMPONENTS header block below for the full rationale.
+ *
+ * KanjiVG nests one `<g kvg:element="…">` per meaningful component, so 休 is
+ *   <g 休> <g 亻 original=人> <g 木> — direct children 亻 + 木
+ * and 時 is
+ *   <g 時> <g 日> <g 寺> <g 土> <g 寸> — direct children 日 + 寺, with 土/寸
+ * nested UNDER 寺. Taking the root group's direct element-bearing children is
+ * exactly "stop at the first meaningful level": it keeps the phonetic (寺) and
+ * cannot reproduce the 亻→化 confusion, because this source never writes 化.
+ *
+ * We must know NESTING DEPTH, so a flat regex over `<g>` is not enough — we walk
+ * the open/close structure with a stack and record each element group's nearest
+ * element-bearing ancestor. Stroke counts come free: every `<path>` charges each
+ * open element group, so a component's path total IS its stroke count (寺 = 6,
+ * 亻 = 2), which is how a non-jōyō component that has no KANJIDIC2 row still
+ * gets a measured stroke count.
+ *
+ * Returns { self, comps: [{ element, original, strokes }] } where `comps` are
+ * the depth-1 children in drawing order (duplicates kept: 林 is 木 + 木), or null
+ * if the SVG carries no element hierarchy at all. */
+function parseComponents(svg) {
+  const tokenRe = /<g\b([^>]*)>|<\/g>|<path\b/g;
+  const stack = []; // one frame per open <g>, { nodeIdx: number | null }
+  const nodes = []; // { element, original, parentIdx, strokes }
+  let m;
+  while ((m = tokenRe.exec(svg))) {
+    if (m[0] === "</g>") {
+      stack.pop();
+    } else if (m[0] === "<path") {
+      // Charge this stroke to every enclosing element group, so a component's
+      // stroke count is the number of paths anywhere beneath it.
+      for (const f of stack) if (f.nodeIdx != null) nodes[f.nodeIdx].strokes++;
+    } else {
+      const attrs = m[1];
+      const element = /kvg:element="([^"]*)"/.exec(attrs)?.[1] ?? null;
+      let nodeIdx = null;
+      if (element != null) {
+        const original = /kvg:original="([^"]*)"/.exec(attrs)?.[1] ?? null;
+        // Parent in the ELEMENT tree = nearest open group that bears an element,
+        // so intermediate non-element <g> wrappers do not shift the depth.
+        let parentIdx = null;
+        for (let i = stack.length - 1; i >= 0; i--) {
+          if (stack[i].nodeIdx != null) {
+            parentIdx = stack[i].nodeIdx;
+            break;
+          }
+        }
+        nodeIdx = nodes.length;
+        nodes.push({ element, original, parentIdx, strokes: 0 });
+      }
+      stack.push({ nodeIdx });
+    }
+  }
+  const rootIdx = nodes.findIndex((n) => n.parentIdx === null);
+  if (rootIdx < 0) return null;
+  const comps = nodes
+    .filter((n) => n.parentIdx === rootIdx)
+    .map((n) => ({ element: n.element, original: n.original, strokes: n.strokes }));
+  return { self: nodes[rootIdx].element, comps };
+}
+
 /** Stroke-number label positions, one per stroke, from the StrokeNumbers group.
  * Returned in stroke order so numbers[i] labels strokes[i]. */
 function parseNumbers(svg) {
@@ -145,7 +210,10 @@ async function ingestGlyph(g) {
   if (numbers.length !== strokes.length) {
     throw new Error(`${numbers.length} number labels for ${strokes.length} strokes`);
   }
-  return { strokes, numbers };
+  // `tree` is the component hierarchy (kanji only; kana callers ignore it). It
+  // rides on the same fetch as the strokes so the two can never disagree about a
+  // character — they come from one file.
+  return { strokes, numbers, tree: parseComponents(svg) };
 }
 
 /** Run `task` over `items` with at most CONCURRENCY in flight. A plain pool: N
@@ -234,7 +302,12 @@ async function main() {
   await mkdir(OUTDIR, { recursive: true });
   for (const { name, glyphs } of SETS) {
     const out = {};
-    for (const g of glyphs) out[g] = await ingestGlyph(g);
+    for (const g of glyphs) {
+      // Kana carry no component hierarchy worth keeping; drop `tree` so the kana
+      // asset stays exactly {strokes, numbers}.
+      const { strokes, numbers } = await ingestGlyph(g);
+      out[g] = { strokes, numbers };
+    }
     // Keys in gojūon order for a stable diff; the data is the payload.
     const json = JSON.stringify(out) + "\n";
     const file = resolve(OUTDIR, `${name}.json`);
@@ -269,10 +342,14 @@ async function ingestKanji() {
     if (++done % 200 === 0) console.log(`  …${done}/${glyphs.length}`);
   });
 
-  // Sort by codepoint so a re-run diffs cleanly, then bucket.
+  // Sort by codepoint so a re-run diffs cleanly, then bucket. The stroke chunks
+  // keep only {strokes, numbers} — the component `tree` is written separately.
   const kept = [...got.keys()].sort((a, b) => a.codePointAt(0) - b.codePointAt(0));
   const buckets = Array.from({ length: KANJI_CHUNKS }, () => ({}));
-  for (const g of kept) buckets[chunkOf(g)][g] = got.get(g);
+  for (const g of kept) {
+    const { strokes, numbers } = got.get(g);
+    buckets[chunkOf(g)][g] = { strokes, numbers };
+  }
 
   let total = 0;
   let largest = 0;
@@ -290,12 +367,99 @@ async function ingestKanji() {
     `wrote ${KANJI_CHUNKS} kanji chunks — ${kept.length}/${glyphs.length} glyphs, ` +
       `${(total / 1024).toFixed(0)}KB total, largest ${(largest / 1024).toFixed(1)}KB`,
   );
+
+  await writeComponents(kept, got, new Set(glyphs));
   if (failed.length) {
     console.log(`SKIPPED ${failed.length}:`);
     for (const { g, reason } of failed) {
       console.log(`  ${g} (${g.codePointAt(0).toString(16)}): ${reason}`);
     }
   }
+}
+
+// COMPONENTS: src/data/generated/kanji-components.json
+// ====================================================
+// The "Made of" row's data. Written from the SAME fetch as the stroke chunks,
+// from KanjiVG's `kvg:element` hierarchy (see parseComponents). It replaces the
+// KRADFILE-derived `comps` build.py used to bake into kanji.json, which had two
+// factual defects the KanjiVG hierarchy structurally cannot reproduce:
+//   1. KRADFILE encodes the person radical 亻 as 化, so 休 read 化+木 not 亻+木.
+//   2. KRADFILE is a FLAT radical index, so 時 flattened to 寸+土+日, throwing
+//      away 寺 — the phonetic shared with 持 待 詩 侍. Depth-1 keeps 日+寺.
+//
+// build.py reads THIS file for the kanji.json `comps` field and the
+// components.json primitive stroke map (see scripts/ingest/build.py). Because
+// build.py's glyph list is the jōyō set (invariant), and this script's only
+// input from kanji.json is that same list, the two do not form a real cycle:
+// run this script, then build.py.
+//
+// SHAPE
+//   comps            { "休": ["亻","木"], … }  depth-1 children, self excluded,
+//                    duplicates kept (林 → 木 + 木).
+//   variants         { "亻":"人", "艹":"艸", … }  a component's kvg:original, so a
+//                    learner meeting the variant form 亻 can tap through to the
+//                    taught character 人. Only emitted where KanjiVG gives one.
+//   primitiveStrokes { "亻":2, "匕":2, … }  stroke count for every component that
+//                    is NOT itself a jōyō kanji — its only measurable fact, since
+//                    no KANJIDIC2 row exists for it. From the path count under the
+//                    component's group in the SVG.
+
+async function writeComponents(kept, got, jset) {
+  const comps = {};
+  const variants = {};
+  // element -> stroke count. KanjiVG's granularity for a shape varies between
+  // host characters — in some kanji a component's group holds every stroke, in
+  // others a stroke is hoisted to a sibling — so we take the MAX seen, which is
+  // the fully-articulated form (亠 as 2, not the 1 some hosts draw).
+  const strokeMax = new Map();
+
+  for (const g of kept) {
+    const tree = got.get(g).tree;
+    if (!tree) continue;
+    // Depth-1 children, excluding the character itself (a pictograph whose only
+    // element is itself yields no row — matching the old behaviour).
+    const list = tree.comps.map((c) => c.element).filter((e) => e !== g);
+    if (list.length) comps[g] = list;
+    for (const c of tree.comps) {
+      if (c.element === g) continue;
+      if (c.original) variants[c.element] = c.original;
+      strokeMax.set(c.element, Math.max(strokeMax.get(c.element) ?? 0, c.strokes));
+    }
+  }
+  // Every component that is NOT itself a jōyō kanji gets a stroke count — its
+  // only measurable fact, since no KANJIDIC2 row exists for it.
+  const primitiveStrokes = {};
+  for (const [element, strokes] of strokeMax) {
+    if (!jset.has(element)) primitiveStrokes[element] = strokes;
+  }
+
+  // Stable key order for a clean diff.
+  const sortObj = (o) =>
+    Object.fromEntries(Object.keys(o).sort((a, b) => a.codePointAt(0) - b.codePointAt(0)).map((k) => [k, o[k]]));
+  const out = {
+    comps: Object.fromEntries(kept.filter((g) => comps[g]).map((g) => [g, comps[g]])),
+    variants: sortObj(variants),
+    primitiveStrokes: sortObj(primitiveStrokes),
+  };
+  const file = resolve(GENDIR, "kanji-components.json");
+  await writeFile(file, JSON.stringify(out) + "\n");
+
+  // Component-type census, for the report: (a) taught jōyō kanji, (b) a variant
+  // of a taught kanji, (c) neither.
+  const distinct = new Set();
+  for (const g of kept) for (const e of comps[g] ?? []) distinct.add(e);
+  let a = 0, b = 0, c = 0;
+  for (const e of distinct) {
+    if (jset.has(e)) a++;
+    else if (variants[e] && jset.has(variants[e])) b++;
+    else c++;
+  }
+  console.log(
+    `wrote ${file} — ${Object.keys(out.comps).length} kanji with comps, ` +
+      `${distinct.size} distinct components: (a) ${a} taught kanji, ` +
+      `(b) ${b} variant-of-taught, (c) ${c} neither. ` +
+      `${Object.keys(primitiveStrokes).length} primitive stroke counts.`,
+  );
 }
 
 main().catch((e) => {

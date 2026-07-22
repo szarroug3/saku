@@ -46,9 +46,11 @@ test("a kanji reading hints with what the word's OTHER kanji reads", () => {
 });
 
 test("a kanji meaning hints with its teachable components", () => {
+  // KanjiVG depth-1 order: 日 (left) then 月 (right), the reading order — not the
+  // old KRADFILE 月+日. Both are taught, so both name their meaning.
   assert.equal(
     textOf(hintFor(meaningFactId("明"), "jp2en"), "明's meaning"),
-    "made of 月 (month) + 日 (day)",
+    "made of 日 (day) + 月 (month)",
   );
 });
 
