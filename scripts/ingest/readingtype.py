@@ -57,10 +57,33 @@ OUT = os.path.join(
 # numbered index form `radical (no. N)` is metadata.
 RADICAL_INDEX = re.compile(r"\bradical\s*\(no\.\s*\d+\s*\)", re.IGNORECASE)
 
+# KANJIDIC2 also files a character's COUNTER role (張 -> "counter for bows &
+# stringed instruments") and its ZODIAC / terrestrial-branch role (子 -> "sign
+# of the rat", "11PM-1AM", "first sign of Chinese zodiac") as English meanings.
+# Same catalogue-metadata bug as the radical index, same structural fix. Every
+# counter sense opens with "counter for" (spares "counterfeit"/"encounter");
+# the zodiac shapes are "sign of the ...", "... Chinese zodiac", the
+# terrestrial-branch / celestial-stem gloss, and the clock-hour range it carries.
+# THE FILTER IS THE PATTERN, NOT A HAND-PICKED LIST. Mirrors src/data/kanji.ts.
+COUNTER = re.compile(r"^counter for\b", re.IGNORECASE)
+ZODIAC = re.compile(
+    r"^sign of the |chinese zodiac|\bterrestrial branch\b|\bcelestial stem\b"
+    r"|^\d{1,2}(?::\d{2})?\s*(?:[AP]M)?\s*[-–]\s*\d{1,2}(?::\d{2})?\s*[AP]M$",
+    re.IGNORECASE,
+)
+
+
+def _is_metadata(m):
+    return RADICAL_INDEX.search(m) or COUNTER.search(m) or ZODIAC.search(m)
+
 
 def clean_meanings(meanings):
-    """Drop KANJIDIC2 radical-index entries, keep every real meaning."""
-    return [m for m in meanings if m and not RADICAL_INDEX.search(m)]
+    """Drop KANJIDIC2 catalogue metadata (radical index, counter role,
+    zodiac/branch senses), keep every real meaning. If a character's ONLY sense
+    is metadata (箇 -> "counter for articles"), keep it rather than empty the row
+    into an ungradeable meaning fact -- mirrors the zero-guard in kanji.ts."""
+    kept = [m for m in meanings if m and not _is_metadata(m)]
+    return kept if kept else [m for m in meanings if m]
 
 
 def kinds_of(ch):

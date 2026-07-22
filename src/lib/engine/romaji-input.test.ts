@@ -41,7 +41,7 @@ describe("the seven card kinds", () => {
   // One row per line of the ruling. Each names a real fact, so a re-cut of the
   // data that removes the fact fails here rather than silently testing nothing.
   const ROWS: [string, FactId, Direction, boolean][] = [
-    ["kanji reading (せい)", readingFactId("生", "人生"), "jp2en", true],
+    ["kanji reading (せい)", readingFactId("生", "先生"), "jp2en", true],
     ["word reading (せんせい)", wordReadingFactId("先生"), "jp2en", true],
     ["grammar production (行ってから)", patternProductionFactId("te-kara"), "jp2en", true],
     ["kana (a)", kanaFact("あ"), "jp2en", false],

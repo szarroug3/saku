@@ -55,7 +55,7 @@ describe("en2jp check — a word reading is answered by its kana", () => {
 
 describe("en2jp check — kanji glyphs never accept romaji", () => {
   test("a single-kanji reading fact is exact-match only", () => {
-    const sei = readingFactId("生", "人生");
+    const sei = readingFactId("生", "先生");
     assert.equal(checkTyped(sei, "sei", "en2jp"), false);
     assert.equal(checkTyped(sei, "生", "en2jp"), true);
   });
@@ -75,7 +75,7 @@ describe("jp2en check — an all-kana ANSWER accepts romaji too", () => {
   // shows the kanji and wants its reading; the reading is all kana, so the
   // learner with no IME can only type romaji, and it has to grade.
   test("a kanji reading fact accepts the romaji spelling of its reading", () => {
-    const sei = readingFactId("生", "人生");
+    const sei = readingFactId("生", "先生");
     assert.equal(checkTyped(sei, "sei", "jp2en"), true); // romaji, no IME
     assert.equal(checkTyped(sei, "せい", "jp2en"), true); // the kana itself
     assert.equal(checkTyped(sei, "shou", "jp2en"), false); // another reading of 生

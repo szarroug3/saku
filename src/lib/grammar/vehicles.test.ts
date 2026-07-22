@@ -67,6 +67,27 @@ describe("vehiclesFor offers only LEGAL vehicles", () => {
     assert.deepEqual(vehiclesFor(shika as Recipe), []);
   });
 
+  test("〜方 refuses the verbs whose stem+方 is a non-word", () => {
+    // 〜方 (way of X-ing) forms a COMPOUND NOUN off the masu-stem: 食べ方, 読み方.
+    // That is productive for regular verbs, but the two irregulars produce a
+    // string that is not the word: する's is 仕方 (しかた), which this recipe can
+    // only ever spell as し方 off the phonetic stem, and 来る's 来方 (きかた) is
+    // rare-to-nonstandard. Both BUILD (the conjugation is fine) so apply() keeps
+    // them — the lexical fact is the one apply() cannot see — and both were dealt
+    // as drill answers and graded correct. The pool must refuse them.
+    const kata = recipe("kata")!;
+    const offered = vehiclesFor(kata).map((v) => v.surface);
+    assert.ok(!offered.includes("する"), "〜方 still offers する → し方 (real word is 仕方)");
+    assert.ok(!offered.includes("来る"), "〜方 still offers 来る → 来方");
+    // and it still offers the ordinary regular verbs
+    assert.ok(offered.includes("食べる") && offered.includes("読む"), "〜方 lost its real vehicles");
+    // nothing the pool offers builds a string outside standard orthography
+    for (const v of vehiclesFor(kata)) {
+      const built = apply(kata, v.surface, v.cls);
+      assert.ok(built.ok && built.value !== "し方" && built.value !== "来方");
+    }
+  });
+
   test("a producible verb pattern offers several vehicles, not one", () => {
     // The whole point: てから is not stuck on 行く.
     const n = vehiclesFor(recipe("te-kara")!).length;

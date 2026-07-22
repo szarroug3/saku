@@ -38,10 +38,10 @@ test("a kana asked for its romaji hints with the drawn picture, and nothing else
 });
 
 test("a kanji reading hints with what the word's OTHER kanji reads", () => {
-  // The case the whole feature was described by: 生 in 人生 → ?
+  // The case the whole feature was described by: 生 in 先生 → ?
   assert.equal(
-    textOf(hintFor(readingFactId("生", "人生"), "jp2en"), "生 in 人生"),
-    "人 is じん here",
+    textOf(hintFor(readingFactId("生", "先生"), "jp2en"), "生 in 先生"),
+    "先 is せん here",
   );
 });
 
@@ -134,8 +134,8 @@ test("hints that name something OTHER than the asked item are offered both ways"
   // A sibling kanji's reading is not 生's reading, and a pattern's host is not
   // its gloss — neither can be the answer whichever way the card is turned.
   assert.equal(
-    textOf(hintFor(readingFactId("生", "人生"), "en2jp"), "生 in 人生, en2jp"),
-    "人 is じん here",
+    textOf(hintFor(readingFactId("生", "先生"), "en2jp"), "生 in 先生, en2jp"),
+    "先 is せん here",
   );
   assert.equal(
     textOf(hintFor(patternMeaningFactId("te-kara"), "en2jp"), "〜てから, en2jp"),
@@ -146,11 +146,11 @@ test("hints that name something OTHER than the asked item are offered both ways"
 test("a kanji reading is hinted on the word the SHOWING framed it on", () => {
   // word-unlock may move the question onto a word the learner has actually met.
   // Hinting the fact's own anchor would name kanji that are not on screen.
-  const onOwnAnchor = hintFor(readingFactId("生", "人生"), "jp2en");
-  const onAnother = hintFor(readingFactId("生", "人生"), "jp2en", {
+  const onOwnAnchor = hintFor(readingFactId("生", "先生"), "jp2en");
+  const onAnother = hintFor(readingFactId("生", "先生"), "jp2en", {
     anchor: "学生",
   });
-  assert.equal(textOf(onOwnAnchor, "生 in 人生"), "人 is じん here");
+  assert.equal(textOf(onOwnAnchor, "生 in 先生"), "先 is せん here");
   assert.equal(textOf(onAnother, "生 in 学生"), "学 is がく here");
 });
 

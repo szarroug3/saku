@@ -48,6 +48,33 @@ export const UNRANKED = 1_000_000;
 export type RankOf = (lemma: string) => number | undefined;
 
 /**
+ * Tatoeba sentences that teach the WRONG SENSE of the word they are keyed to —
+ * the actively-false subset of the corpus's ~4-5% translation drift (task-20
+ * item 3). Free-corpus data is accepted as-is elsewhere; these are excluded
+ * because the example contradicts the very word it illustrates.
+ *
+ * Keyed by written form, because a sentence banned for one word is a fine
+ * example for another: 9776863 mistranslates グラス (a drinking glass) as the
+ * material "Glass is breakable", but it is a perfectly good 〜やすい sentence in
+ * the grammar corpus, which is untouched. The rest are homograph / substring
+ * matches where the intended sense is simply not attested in the corpus, so the
+ * word loses its example rather than keep a false one:
+ *   - タイ  is 'sea bream'; its only sentence is タイ語 (the Thai language).
+ *   - ビル  is 'building'; all four sentences are the name Bill.
+ *   - パー  is 'paper' (rock-paper-scissors); matched inside クリーパー (creeper).
+ *   - ホーム is 'platform'; matched inside ホームページ (homepage).
+ * These are named, not filtered by a rule: sense drift is a human judgement, and
+ * a short authored list is the honest tool. See task-20 item 3 for what is left.
+ */
+export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> = {
+  グラス: [9776863],
+  タイ: [115589],
+  ビル: [197307, 197380, 197393, 197406],
+  パー: [10061602, 10061603],
+  ホーム: [10828627],
+};
+
+/**
  * How hard this sentence is, as the rank of the hardest word in it.
  *
  * THE TARGET WORD IS EXCLUDED. It is in `v` for every candidate by
@@ -81,7 +108,12 @@ export function chooseExample(
 ): Example | null {
   let best: Example | null = null;
   let bestScore = Infinity;
+  const banned = WRONG_SENSE_EXAMPLES[target];
   for (const ex of candidates) {
+    // Never pick a sentence whose translation teaches the wrong sense of the
+    // very word it is keyed to (task-20 item 3). A word all of whose candidates
+    // are banned gets no example, which is better than a false one.
+    if (banned?.includes(ex.id)) continue;
     const score = hardestRank(ex, target, rankOf);
     if (best === null || score < bestScore) {
       best = ex;

@@ -102,3 +102,33 @@ describe("every side has a real partner and a correct askable flag", () => {
     }
   });
 });
+
+describe("authored glosses teach the standard word and sense (task-20 item 7)", () => {
+  const byDoIt = (w: string) => VERB_PAIRS.find((p) => p.doIt.word === w);
+  const byHappens = (w: string) => VERB_PAIRS.find((p) => p.happens.word === w);
+
+  test("childbirth is 産む — the standard spelling — not 生む", () => {
+    // 生む is 'produce / give rise to' (an idea, a profit); 産む is the standard
+    // verb for bearing a child, and this pair's own sentence is 'She had a baby'.
+    // The intransitive stays 生まれる, which is the standard 'be born'.
+    const baby = byHappens("生まれる");
+    assert.ok(baby, "the childbirth pair (生まれる) is gone");
+    assert.equal(baby!.doIt.word, "産む", `childbirth transitive is ${baby!.doIt.word}, want 産む`);
+    assert.equal(baby!.doIt.reading, "うむ");
+    assert.equal(byDoIt("生む"), undefined, "生む must not be the childbirth transitive");
+  });
+
+  test("詰まる teaches clogged/jammed, not '(the box) filled up'", () => {
+    // 詰まる is overwhelmingly 'clogged / jammed'; 箱が詰まる is unnatural.
+    const p = byHappens("詰まる");
+    assert.ok(p, "the 詰まる pair is gone");
+    assert.ok(
+      !/box|filled up/i.test(p!.happens.en),
+      `詰まる still glossed '${p!.happens.en}'`,
+    );
+    assert.ok(
+      /clog|jam|block|stuck/i.test(p!.happens.en),
+      `詰まる should read as clogged/jammed, got '${p!.happens.en}'`,
+    );
+  });
+});

@@ -704,6 +704,17 @@ export const RECIPES: readonly Recipe[] = [
     gloss: "how to X / way of doing X",
     level: "N4",
     attach: [{ host: "verb", form: "stem", add: "方" }],
+    notOn: ["する", "来る"],
+    note:
+      "〜方 builds a COMPOUND NOUN off the masu-stem — 食べ方, 読み方 — and off a " +
+      "regular verb that is a real word. The two irregulars are not: this recipe " +
+      "can only spell する's way-of-doing as し方 off the phonetic stem, but the " +
+      "word is 仕方 (しかた, in VOCAB), and 来る's 来方 (きかた) is rare-to-nonstandard. " +
+      "Both BUILD — the conjugation is fine, it is the lexeme that is wrong, which " +
+      "is the one thing apply() cannot see — so without naming them the drill dealt " +
+      "し方 and 来方 and graded them correct. Named here rather than checked against " +
+      "VOCAB because 食べ方/行き方 are real words that VOCAB does not carry, so " +
+      "membership cannot tell a real 方-word from a non-word. Same shape as 〜に行く.",
   },
   {
     id: "ni-iku",

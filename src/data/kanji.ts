@@ -36,6 +36,7 @@ import kanjiJson from "./generated/kanji.json" with { type: "json" };
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import orderJson from "./generated/order.json" with { type: "json" };
 import readingsJson from "./generated/readings.json" with { type: "json" };
+import { vocabRow } from "./vocab.ts";
 import { entryId, factId, readingAspect } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo, NewKanjiOrder } from "../types/index.ts";
 
@@ -175,6 +176,47 @@ export interface OrderRow {
  */
 export const RADICAL_INDEX_MEANING = /\bradical\s*\(no\.\s*\d+\s*\)/i;
 
+/**
+ * KANJIDIC2 also files a character's role as a COUNTER (助数詞) as an English
+ * meaning: 張 ships as `["counter for bows & stringed instruments", "stretch",
+ * ...]` and 杯 leads with `"counter for cupfuls"`. A counter is a grammatical
+ * classifier, not what the character means to a learner meeting it, and it
+ * reaches the quiz exactly as the radical-index metadata did — an accepted
+ * answer and a distractor for a MEANING question, and the Library page title.
+ *
+ * Same argument, same shape of fix: filter by the STRUCTURAL PATTERN, not a
+ * hand-picked list. Every counter sense in KANJIDIC2 opens with "counter for",
+ * so the anchored form catches all 47 of them and cannot catch a real meaning
+ * ("counterfeit", "encounter" don't start with "counter for").
+ */
+export const COUNTER_MEANING = /^counter for\b/i;
+
+/**
+ * And the ZODIAC / terrestrial-branch metadata: 子 ships as `["child", "sign of
+ * the rat", "11PM-1AM", "first sign of Chinese zodiac"]`. The rat/clock-hour/
+ * branch senses are the character's role in the sexagenary calendar, not what
+ * 子 means (child). Three shipped rows carry these (子 午 申); the pattern also
+ * covers the terrestrial-branch / celestial-stem phrasings KANJIDIC2 uses for
+ * others, so a future re-cut stays clean without an enumerated list.
+ *
+ * The three shapes, all anchored or specific enough not to touch a real
+ * meaning: "sign of the <animal>", the "<ordinal> sign of Chinese zodiac"
+ * gloss, the terrestrial-branch / celestial-stem gloss, and the clock-hour
+ * range ("11PM-1AM", "3-5PM") the branch carries.
+ */
+export const ZODIAC_MEANING =
+  /^sign of the |chinese zodiac|\bterrestrial branch\b|\bcelestial stem\b|^\d{1,2}(?::\d{2})?\s*(?:[AP]M)?\s*[-–]\s*\d{1,2}(?::\d{2})?\s*[AP]M$/i;
+
+/**
+ * A KANJIDIC2 meaning that is catalogue metadata rather than a meaning: a
+ * radical index, a counter role, or a zodiac/branch/clock sense. All three are
+ * filtered at load (below) so no consumer sees them.
+ */
+export const METADATA_MEANING = (m: string): boolean =>
+  RADICAL_INDEX_MEANING.test(m) ||
+  COUNTER_MEANING.test(m) ||
+  ZODIAC_MEANING.test(m);
+
 /** kanji.json carries the KRADFILE decomposition under `comps`; it becomes
  * `costParts` here. The learner-facing depth-1 decomposition lives in its own
  * generated artifact, kanji-components.json (exactly as the classical radical
@@ -197,8 +239,15 @@ const VARIANT_ORIGINAL: Readonly<Record<string, string>> = (
 export const KANJI: readonly KanjiRow[] = (kanjiJson as readonly RawKanji[]).map(
   (k) => ({
     ...k,
-    meanings: k.meanings.some((m) => RADICAL_INDEX_MEANING.test(m))
-      ? k.meanings.filter((m) => !RADICAL_INDEX_MEANING.test(m))
+    // Strip catalogue metadata (radical index, counter role, zodiac/branch) so
+    // no consumer quizzes it as a meaning. The zero-guard matters: 箇's ONLY
+    // KANJIDIC2 sense is "counter for articles", so filtering it blindly would
+    // leave an ungradeable empty meaning fact — there we keep the sense.
+    meanings: k.meanings.some(METADATA_MEANING)
+      ? (() => {
+          const kept = k.meanings.filter((m) => !METADATA_MEANING(m));
+          return kept.length > 0 ? kept : k.meanings;
+        })()
       : k.meanings,
     // KanjiVG depth-1 is the "Made of" truth; the KRADFILE list becomes the
     // cost-only `costParts`. `comps` last so it wins over the spread.
@@ -206,7 +255,70 @@ export const KANJI: readonly KanjiRow[] = (kanjiJson as readonly RawKanji[]).map
     comps: COMPS[k.c] ?? [],
   }),
 );
-export const READINGS: readonly ReadingRow[] = readingsJson as readonly ReadingRow[];
+/**
+ * Re-anchor a reading to the everyday word that attests it with the LOWEST
+ * `beginnerRank` — the first one a learner will actually meet.
+ *
+ * A learner meets the anchor word BEFORE the reading, so an obscure anchor makes
+ * a common reading feel rare: 出's しゅつ shipped anchored to 供出 (beginnerRank
+ * 8388) when 出発 (696) attests it just as well, and 名's みょう to 功名 over 本名.
+ * The evidence to fix it was already in the row — `words` lists every attesting
+ * word and vocab.json ranks them — so this is a re-pick, not new data.
+ *
+ * Same shape as the meaning filter above and RADICAL_INDEX before it: the
+ * generated JSON is transformed HERE, at load, so every consumer benefits, while
+ * build.py's `anchor pick` carries the same key for a clean full re-cut. Ranked
+ * first; the old keys (unvoiced surface, then shorter, then stable) break the
+ * rare rank tie, matching build.py exactly. `surface` (how the base sounds in
+ * the new anchor, e.g. 出→しゅっ in 出発) is read back from that word's own
+ * alignment so a re-anchor never carries the old word's surface.
+ */
+const RANK_UNKNOWN = Number.MAX_SAFE_INTEGER;
+function surfaceOf(word: string, k: string, base: string): string | undefined {
+  return vocabRow(word)?.align?.find(([kk, , bb]) => kk === k && bb === base)?.[1];
+}
+/**
+ * A word where `k` reads MORE THAN ONE base is an ambiguous anchor and cannot be
+ * used: 時々 has 時 as both とき and どき, so "what does 時 read in 時々?" has two
+ * answers — and were it picked for both, the two facts would share an id. The
+ * original keys dodged this by accident (unvoiced-first split とき from どき); we
+ * exclude it on purpose, so a re-anchor keeps each reading's fact single-answer.
+ */
+function unambiguousFor(word: string, k: string): boolean {
+  const bases = new Set(
+    (vocabRow(word)?.align ?? []).filter(([kk]) => kk === k).map(([, , bb]) => bb),
+  );
+  return bases.size <= 1;
+}
+function reanchor(r: ReadingRow): ReadingRow {
+  let best: { anchor: string; surface: string; key: [number, number, number, string] } | null =
+    null;
+  const eligible = r.words.filter((w) => unambiguousFor(w, r.k));
+  for (const w of eligible.length > 0 ? eligible : r.words) {
+    const surface = surfaceOf(w, r.k, r.base) ?? r.base;
+    const key: [number, number, number, string] = [
+      vocabRow(w)?.beginnerRank ?? RANK_UNKNOWN,
+      surface !== r.base ? 1 : 0,
+      w.length,
+      w,
+    ];
+    if (
+      !best ||
+      key[0] < best.key[0] ||
+      (key[0] === best.key[0] &&
+        (key[1] < best.key[1] ||
+          (key[1] === best.key[1] &&
+            (key[2] < best.key[2] || (key[2] === best.key[2] && key[3] < best.key[3])))))
+    ) {
+      best = { anchor: w, surface, key };
+    }
+  }
+  return best ? { ...r, anchor: best.anchor, surface: best.surface } : r;
+}
+
+export const READINGS: readonly ReadingRow[] = (readingsJson as readonly ReadingRow[]).map(
+  reanchor,
+);
 
 /**
  * The default teaching order: `ramp B`.

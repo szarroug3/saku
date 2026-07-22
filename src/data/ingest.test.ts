@@ -31,6 +31,8 @@ import {
   KANJI_ORDER,
   PREREQUISITE_ONLY,
   RADICAL_INDEX_MEANING,
+  COUNTER_MEANING,
+  ZODIAC_MEANING,
   READINGS,
   kanjiRow,
   variantTaughtKanji,
@@ -301,6 +303,102 @@ test("radical-index metadata is stripped from meanings, real 'radical' meanings 
   // ungradeable, and 22 rows losing their ONLY meaning would be a silent
   // regression rather than a fix.
   assert.equal(KANJI.filter((k) => k.meanings.length === 0).length, 0);
+});
+
+test("counter and zodiac/branch metadata is stripped from meanings, real meanings are not", () => {
+  // KANJIDIC2 files a character's COUNTER role and its ZODIAC/terrestrial-branch
+  // role as if they were English meanings. They reach the learner exactly as the
+  // radical index did — as the taught meaning, an accepted answer and a
+  // distractor for a MEANING question. Same structural fix, extended.
+  //
+  // 子 shipped ["child", "sign of the rat", "11PM-1AM", "first sign of Chinese
+  // zodiac"] and 子 means "child". 張 LED with "counter for bows & stringed
+  // instruments" — a grammatical classifier, not what 張 means.
+  assert.deepEqual(kanjiRow("子")?.meanings, ["child"]);
+  assert.deepEqual(kanjiRow("張")?.meanings, ["stretch", "spread", "put up (tent)"]);
+  assert.deepEqual(kanjiRow("午")?.meanings, ["noon"]);
+  assert.deepEqual(kanjiRow("申")?.meanings, ["have the honor to"]);
+
+  // THE FILTER IS THE PATTERN, NOT THE WORD. "counterfeit" and "encounter" both
+  // contain "counter" and are real meanings; the anchored "counter for" spares
+  // them. 基's "radical (chem)" already proved the same point for radicals.
+  assert.ok(kanjiRow("基")?.meanings.includes("radical (chem)"));
+  assert.ok(!COUNTER_MEANING.test("counterfeit"));
+  assert.ok(!COUNTER_MEANING.test("encounter"));
+
+  // Nothing still ships a counter or zodiac/branch gloss, EXCEPT a row whose
+  // only KANJIDIC2 sense is metadata (the zero-guard keeps it — see below). This
+  // catches a re-cut done with the filter dropped.
+  for (const k of KANJI) {
+    if (k.meanings.length === 1) continue; // zero-guard survivor
+    for (const m of k.meanings) {
+      assert.ok(!COUNTER_MEANING.test(m), `${k.c} still ships counter "${m}"`);
+      assert.ok(!ZODIAC_MEANING.test(m), `${k.c} still ships zodiac "${m}"`);
+    }
+  }
+
+  // The zero-guard: 箇's ONLY KANJIDIC2 sense is "counter for articles". A blind
+  // filter would empty it — an ungradeable meaning fact — so its sense is kept.
+  assert.deepEqual(kanjiRow("箇")?.meanings, ["counter for articles"]);
+  assert.equal(KANJI.filter((k) => k.meanings.length === 0).length, 0);
+});
+
+test("a reading is anchored to the everyday word that attests it earliest", () => {
+  // A learner meets the ANCHOR word before the reading, so an obscure anchor
+  // makes a common reading feel rare: 出's しゅつ shipped anchored to 供出
+  // (beginnerRank 8388) when 出発 (696) attests it too, and 名's みょう to 功名
+  // (8337) over 本名 (4567). The anchor must be the attesting word with the
+  // LOWEST beginnerRank — the first one the learner will actually meet.
+  const shutsu = READINGS.find((r) => r.k === "出" && r.base === "しゅつ");
+  assert.equal(shutsu?.anchor, "出発");
+  const myou = READINGS.find((r) => r.k === "名" && r.base === "みょう");
+  assert.equal(myou?.anchor, "本名");
+
+  // The property, everywhere: no reading is anchored to a word when a
+  // lower-beginnerRank word in its own evidence list attests the same reading —
+  // EXCEPT an ambiguous word where the kanji reads more than one base (時々 has
+  // 時 as both とき and どき), which cannot anchor either reading and is skipped.
+  const ambiguous = (word: string, k: string): boolean => {
+    const bases = new Set(
+      (vocabRow(word)?.align ?? []).filter(([kk]) => kk === k).map(([, , bb]) => bb),
+    );
+    return bases.size > 1;
+  };
+  for (const r of READINGS) {
+    const anchorRank = vocabRow(r.anchor)?.beginnerRank ?? Number.MAX_SAFE_INTEGER;
+    for (const w of r.words) {
+      if (ambiguous(w, r.k)) continue;
+      const wr = vocabRow(w)?.beginnerRank ?? Number.MAX_SAFE_INTEGER;
+      assert.ok(
+        wr >= anchorRank,
+        `${r.k}/${r.base} anchored to ${r.anchor} (rank ${anchorRank}) over ${w} (rank ${wr})`,
+      );
+    }
+  }
+
+  // An anchor is ambiguous only when the reading has NO unambiguous attestation
+  // (共's ども appears solely in 共々, where 共 is both とも and ども) — there the
+  // ambiguous word is the only evidence and must stand, exactly as the raw data
+  // had it. Every reading with any unambiguous option must take one.
+  for (const r of READINGS) {
+    if (ambiguous(r.anchor, r.k)) {
+      assert.ok(
+        r.words.every((w) => ambiguous(w, r.k)),
+        `${r.k}/${r.base} anchored on ambiguous ${r.anchor} when an unambiguous word exists`,
+      );
+    }
+  }
+
+  // The uniqueness the fact id depends on: within a kanji, no two readings share
+  // an anchor (that would mint one id for two facts and drop one). The
+  // ambiguity exclusion is what makes this hold after re-anchoring by rank.
+  const perKanji = new Map<string, Set<string>>();
+  for (const r of READINGS) {
+    const seen = perKanji.get(r.k) ?? new Set<string>();
+    assert.ok(!seen.has(r.anchor), `${r.k} has two readings anchored on ${r.anchor}`);
+    seen.add(r.anchor);
+    perKanji.set(r.k, seen);
+  }
 });
 
 test("every reading knows whether it came from Chinese or is native Japanese", () => {
