@@ -1,6 +1,80 @@
-# P2 · Grammar coverage, keigo, and pitch accent — Sam's questions answered
+# P2 · Grammar coverage, keigo, and pitch accent
 
-**Status: needs review**
+**Status: Sam engaged — keigo and pitch directions below, awaiting final go**
+
+## Sam's confusion resolved: "we have the words but aren't teaching them"
+
+**We ARE teaching the words. We are not teaching the SYSTEM that connects them.**
+Measured — the keigo verbs are all in vocab and taught as ordinary words:
+
+| verb | plain equivalent | beginnerRank | in vocab? |
+|---|---|---|---|
+| 召し上がる | 食べる (honorific) | 824 | yes |
+| いただく | 食べる/もらう (humble) | 863 | yes |
+| おっしゃる | 言う (honorific) | 868 | yes |
+| なさる | する (honorific) | 914 | yes |
+| くださる | くれる (honorific) | 879 | yes |
+| 申し上げる | 言う (humble) | 768 | yes |
+| 伺う | 行く/聞く (humble) | 1229 | yes |
+
+So a learner DOES meet 召し上がる and learns it means "eat". What they never learn:
+that it is the honorific of 食べる, that いただく is the humble twin, and the RULE
+for which to use when. It is isolated vocabulary with the relationships stripped
+out — **exactly like transitivity**: 開く and 開ける are both in vocab as words, and
+the transitivity TRACK is what teaches they are a pair. Keigo is the same shape.
+
+**One real vocab gap:** いらっしゃる (the honorific be/come/go) is ABSENT from vocab.
+It is arguably THE core keigo verb — いらっしゃいませ derives from it — so it needs
+adding.
+
+## Where keigo goes — recommendation
+
+**A separate relationship track, modeled on the transitivity verb-pairs machinery,
+placed AFTER transitivity.** Not before verb pairs. Reasons:
+- Keigo is variants of verbs you must already know (食べる → 召し上がる), so it has to
+  come after the plain verbs are solid.
+- It is the same DATA SHAPE as transitivity: sets of related verbs plus a rule for
+  which applies. The pairs machinery is the closest existing model, as this card
+  already noted.
+- Recognition comes free and early (the words are already taught); the SYSTEM is the
+  track, and it is N4-ish, so it belongs late.
+
+Scope: the 4-5 core honorific/humble sets (eat, say, do, go/come, give), plus the
+です/ます polite layer if not already covered, plus filling いらっしゃる.
+
+## Pitch accent — recommendation: DISPLAY, do not quiz (yet)
+
+**We have zero pitch data.** Vocab fields are keb/reb/glosses/pos/newspaperBand/
+align/beginnerRank — no pitch anywhere. Teaching it needs a NEW data source, same
+shape as the KanjiVG/IDS ingests:
+- **Kanjium pitch-accent database** is the standard free source (derived from the
+  NHK発音アクセント辞典 + 大辞林, ~150k entries, the one Yomichan/Migaku use). Attach a
+  pitch pattern to each vocab row.
+
+**How to teach it, and the honest limit:** Sam is right that pitch is very hard to
+unlearn, so early exposure matters. But the app has ruled speaking OUT (task 22) —
+it does not grade the learner's voice. So:
+- **DISPLAY pitch on every word card** — the standard notation (a line over the kana
+  with the downstep mark: はし\ vs は\し). Low cost once the data is in, and it
+  prevents the bad habit by showing the right pattern every time the word appears.
+- **Do NOT quiz pitch production** — grading whether the learner SAID it right needs
+  audio capture, which is the speaking feature that was ruled out. A "where does the
+  pitch drop?" recognition question is possible later, but display-first is the
+  honest, cheap start.
+
+This matches how the app already handles pronunciation notes: it tells you the right
+sound and trusts you, rather than grading your mouth.
+
+## Grammar depth (the other half of this card)
+
+Adding more grammar patterns means AUTHORING recipes (there is no dictionary of them
+to import, unlike kanji/words). Ordering is already solved — JLPT level is on every
+recipe. So the work is authoring, not ingest. Separate, larger, and Sam's call on
+scope.
+
+---
+
+## Original answers (for reference)
 
 ## Open questions
 
