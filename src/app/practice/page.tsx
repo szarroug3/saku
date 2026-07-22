@@ -134,7 +134,7 @@ export default function PracticePage() {
         </>
       ) : null}
 
-      <Lbl>What to practise</Lbl>
+      <Lbl>What to practice</Lbl>
       <PracticeSelector
         sel={cfg.selection}
         lists={lists}

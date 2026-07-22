@@ -605,7 +605,7 @@ export function SettingsCard() {
         </Row>
 
         <Row
-          label="Show how much you've practised"
+          label="Show how much you've practiced"
           info="A 90% from three cards isn't really 90%. This shows the count next to the percentage."
         >
           <Toggle

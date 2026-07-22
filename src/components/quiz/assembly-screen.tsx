@@ -185,7 +185,7 @@ export function AssemblyScreen() {
     // DRAFT copy.
     return (
       <div className="mx-auto mt-16 max-w-md text-center text-text-muted">
-        Learn a few more words first. Sentence building opens up once you know
+        Learn a few more words first. Sentence building will unlock once you know
         every word in a sentence.
       </div>
     );
@@ -396,16 +396,16 @@ export function AssemblyScreen() {
               Word meanings
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {item.pieces.map((p) => (
-                <span key={p.t}>
-                  <span lang="ja" className="font-medium">
-                    {p.t}
-                  </span>{" "}
-                  <span className="text-text-muted">
-                    {hintBySurface.get(p.t) ?? "—"}
+              {item.pieces
+                .filter((p) => hintBySurface.get(p.t))
+                .map((p) => (
+                  <span key={p.t}>
+                    <span lang="ja" className="font-medium">
+                      {p.t}
+                    </span>{" "}
+                    <span className="text-text-muted">{hintBySurface.get(p.t)}</span>
                   </span>
-                </span>
-              ))}
+                ))}
             </div>
           </div>
         ) : null}

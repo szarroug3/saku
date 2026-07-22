@@ -157,7 +157,7 @@ export function QuizOptionsFields() {
             </Chip>
           </Row>
           <div className="flex items-center border-t border-border py-2 text-[13px] text-text-muted first:border-t-0">
-            Plays a sentence, you pick its meaning. Known words only.
+            Plays a sentence, you pick its meaning.
           </div>
         </>
       ) : null}

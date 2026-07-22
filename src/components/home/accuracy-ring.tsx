@@ -62,7 +62,7 @@ export function AccuracyRing({
     if (unpractised === "hidden") return null;
     return (
       <span
-        title="not practised yet"
+        title="not practiced yet"
         // `block`: these spans sit inside a <button>, and an inline span
         // ignores width/height outright.
         className="kq-material block flex-none rounded-full border border-dashed border-border bg-panel"

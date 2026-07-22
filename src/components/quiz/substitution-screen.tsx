@@ -149,8 +149,8 @@ export function SubstitutionScreen() {
     // DRAFT copy.
     return (
       <div className="mx-auto mt-16 max-w-md text-center text-text-muted">
-        Learn a few verbs first, then come back to practise saying a form you
-        know about a new one.
+        Learn a few verbs first. This drill takes a form you already know and
+        has you put it on a new verb.
       </div>
     );
   }

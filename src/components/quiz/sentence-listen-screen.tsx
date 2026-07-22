@@ -159,7 +159,7 @@ export function SentenceListenScreen() {
     // DRAFT copy.
     return (
       <div className="mx-auto mt-16 max-w-md text-center text-text-muted">
-        Learn a few more words first. Listening to sentences opens up once you
+        Learn a few more words first. Listening to sentences will unlock once you
         know every word in a sentence.
       </div>
     );
