@@ -19,6 +19,7 @@
 
 import { KANA_FACTS } from "@/data/characters";
 import { COUNTER_FACTS } from "@/data/counters";
+import { KEIGO_FACTS } from "@/data/keigo";
 import { GRAMMAR_FACTS } from "@/data/grammar";
 import { KANJI_FACTS } from "@/data/kanji";
 import { RADICAL_FACTS } from "@/data/radicals";
@@ -39,6 +40,10 @@ const SUBJECTS: FactInfo[][] = [
   // them to the counters track lives in src/data/counters.ts. Appended last so
   // ALL_FACTS' existing order and offsets are unchanged.
   COUNTER_FACTS,
+  // The keigo track's honorific/humble recognition facts. A real subject of its
+  // own (`keigo`), not `word`: it asks a relationship, not a meaning. Appended
+  // after counters, the same offset-preserving reason.
+  KEIGO_FACTS,
 ];
 
 /** Every fact in the app, in data order. */
