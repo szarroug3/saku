@@ -1422,6 +1422,28 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "まど", reading: "mado", gloss: "window", hitIndex: 0 },
   },
 
+  マ: {
+    glyph: "マ",
+    romaji: "ma",
+    sound: "ma",
+    object: "math angles",
+    analogy: [
+      { text: "Say “" },
+      { text: "ma", accent: true },
+      { text: "” as in " },
+      { text: "ma", accent: true },
+      { text: "th." },
+    ],
+    mnemonic: [
+      { text: "So " },
+      { text: "ma", accent: true },
+      { text: "ny angles fill one " },
+      { text: "ma", accent: true },
+      { text: "th diagram, including one short line across the lower joint." },
+    ],
+    example: { word: "マップ", reading: "mappu", gloss: "map", hitIndex: 0 },
+  },
+
   み: {
     glyph: "み",
     romaji: "mi",
