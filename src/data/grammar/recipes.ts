@@ -56,8 +56,16 @@
 
 import type { Form, WordClass } from "../../lib/conjugate/index.ts";
 
-/** JLPT level, as vendors reckon it. See the header: this is opinion, not fact. */
-export type Level = "N5" | "N4";
+/** JLPT level, as vendors reckon it. See the header: this is opinion, not fact.
+ *
+ * N3 is the DEPTH TIER. A learner who finishes N5+N4 recognises enormously and
+ * then hits the N3 wall — the structural grammar that real Japanese leans on
+ * (〜わけだ, 〜に違いない, 〜において, the clause-level set). Most of it does NOT
+ * fit the conjugate-a-vehicle production machinery: it hangs off a whole CLAUSE,
+ * not one word, so it is taught as RECOGNITION (what does this mean) and is
+ * vacuous by construction — see isVacuous. The app never SHOWS the level; it
+ * only sequences on it (N5 → N4 → N3), so this stays opinion the header disowns. */
+export type Level = "N5" | "N4" | "N3";
 
 /**
  * What kind of word a recipe attaches to.
@@ -756,6 +764,40 @@ export const RECIPES: readonly Recipe[] = [
     attach: [{ host: "verb", form: "stem", add: "たい" }],
     note: "Also exposed as the engine's `tai` form; the two agree by construction.",
   },
+  {
+    id: "tagaru",
+    pattern: "〜たがる",
+    gloss: "wants to X (someone else)",
+    level: "N4",
+    attach: [{ host: "verb", form: "stem", add: "たがる" }],
+    note:
+      "The third-person of 〜たい: 私は行きたい, 彼は行きたがる. Same attachment as " +
+      "tai ([V-stem] + suffix), same combination freedom, so it is producible on " +
+      "the same pool — 行きたがる, 食べたがる, したがる, き(来)たがる.",
+  },
+  {
+    id: "hajimeru",
+    pattern: "〜始める",
+    gloss: "begin to X",
+    level: "N4",
+    attach: [{ host: "verb", form: "stem", add: "始める" }],
+    note:
+      "Aspectual compound verb: [V-stem] + 始める, the same stem slot 〜すぎる / " +
+      "〜やすい hang off. Combines as freely as those — 行き始める, 食べ始める, " +
+      "書き始める, 話し始める — and 始める itself is an ordinary v1 the engine " +
+      "conjugates onward (始めた, 始めない).",
+  },
+  {
+    id: "tsuzukeru",
+    pattern: "〜続ける",
+    gloss: "keep X-ing",
+    level: "N4",
+    attach: [{ host: "verb", form: "stem", add: "続ける" }],
+    note:
+      "Aspectual compound verb, sibling of 〜始める: [V-stem] + 続ける. 降り続ける, " +
+      "待ち続ける, 死に続ける (人が死に続ける is ordinary). 続ける is a v1, so the " +
+      "whole thing conjugates on (続けた, 続けている).",
+  },
 
   // --- ます-form ----------------------------------------------------------
   {
@@ -1158,6 +1200,182 @@ export const RECIPES: readonly Recipe[] = [
       "is the sentence. Picking the pair needs to know what the verb takes, " +
       "which is a fact this app does not hold. Give it that fact and this row " +
       "becomes askable by deleting `notProduced` — nothing else.",
+  },
+
+  // =========================================================================
+  // N3 — PAST THE N4 WALL.
+  //
+  // A learner who finishes N5+N4 recognises enormously and then cannot read
+  // real Japanese, and the wall is the N3 STRUCTURAL SET. Almost all of it is
+  // RECOGNITION, not production, and the reason is structural, not editorial:
+  // these patterns attach to a whole CLAUSE (行く + わけだ, 高い + に違いない),
+  // not to one conjugating vehicle, so "now build it" is not a question — the
+  // learner would retype the clause plus a fixed string. isVacuous computes
+  // that from the table, so every row below is meaning-only by construction,
+  // exactly as 〜ことができる and 〜はず already are. They ship as MEANINGS (what
+  // does this mean) and as selection distractors; the drill asks recognition.
+  //
+  // WHY NO CORPUS EXAMPLES YET. The Tatoeba corpus (grammar-corpus.json) was
+  // ingested against the OLD table; it carries no tags for these ids, so
+  // examplesFor() returns [] and each is SCARCE until scripts/ingest/grammar.py
+  // is re-run with these signatures. That is the same state 〜たあとで shipped in
+  // (0 examples, hand-authored ones owed) — a recipe ahead of its corpus, not a
+  // broken one. Verified example sentences for each are in the build report for
+  // the owner's voice pass; wiring them in is the corpus follow-up.
+  //
+  // Every built form below is real Japanese on its example word (行く / 高い /
+  // 本) — that is the bar, and it is why 〜において (formal, wants a field noun)
+  // and 〜によると (wants an information source) are NOT here: the generic noun
+  // vehicles 本/車/水 make 水において / 水によると, grammatical but stilted, and
+  // the Library prints those. They wait on a place/source noun vehicle. See the
+  // report's gap map for the full ranking and the held patterns.
+
+  // --- conjecture: how sure, and はず's negative --------------------------
+  {
+    id: "wake-da",
+    pattern: "〜わけだ",
+    gloss: "that's why X",
+    level: "N3",
+    attach: [{ host: "verb", form: "dictionary", add: "わけだ" }],
+    note:
+      "The conclusion-from-reasoning わけだ (道理で: 'so THAT'S why'). Verb-only " +
+      "on purpose: adjectives take it too (高いわけだ) but the lead adj vehicle " +
+      "いい gives いいわけだ, a homophone of 言い訳だ ('it's an excuse'), and a " +
+      "printed worked line should not read as a pun. わけではない (partial " +
+      "denial) and わけがない (impossibility) are SEPARATE facts — see the gap map.",
+  },
+  {
+    id: "ni-chigainai",
+    pattern: "〜に違いない",
+    gloss: "must be X (I'm sure)",
+    level: "N3",
+    attach: [
+      { host: "verb", form: "dictionary", add: "に違いない" },
+      { host: "adj-i", form: "dictionary", add: "に違いない" },
+      { host: "noun", form: null, add: "に違いない" },
+    ],
+    note:
+      "Speaker's strong conviction. Plain form + に違いない for verb/adj (行くに違い" +
+      "ない, 高いに違いない), bare noun for the noun host (学生に違いない — no だ). " +
+      "Higher certainty than かもしれない, the far end of the guessing scale.",
+  },
+  {
+    id: "hazu-ga-nai",
+    pattern: "〜はずがない",
+    gloss: "couldn't possibly be X",
+    level: "N3",
+    attach: [
+      { host: "verb", form: "dictionary", add: "はずがない" },
+      { host: "adj-i", form: "dictionary", add: "はずがない" },
+    ],
+    note:
+      "The negative of 〜はず ('is supposed to X'): there is no reason to expect X, " +
+      "so X is unthinkable. 行くはずがない, 高いはずがない. isValidDistractor already " +
+      "keeps this and 〜はず apart in a frame — はずがない contains はず — which is " +
+      "the right call, not a clash.",
+  },
+
+  // --- purpose / cause: why something happens ----------------------------
+  {
+    id: "tame-ni",
+    pattern: "〜ために",
+    gloss: "in order to X",
+    level: "N3",
+    attach: [
+      { host: "verb", form: "dictionary", add: "ために" },
+      { host: "noun", form: null, add: "のために" },
+    ],
+    note:
+      "Purpose/benefit: verb plain + ために (合格するために勉強する), noun + の + ため" +
+      "に (子供のために). The CAUSE sense (雨のため, 'due to rain') is held — it is " +
+      "the same string のため on a noun and cannot be told apart from benefit by a " +
+      "gloss, the られる problem; see the gap map.",
+  },
+  {
+    id: "okage-de",
+    pattern: "〜おかげで",
+    gloss: "thanks to X",
+    level: "N3",
+    attach: [{ host: "noun", form: null, add: "のおかげで" }],
+    note:
+      "Positive cause — the outcome was good and X gets the credit. Noun + の + " +
+      "おかげで (先生のおかげで). Its mirror is せいで (blame). Verb-host おかげで " +
+      "exists (勉強したおかげで) but wants the past form; the noun host is the clean, " +
+      "high-frequency one and keeps the worked line honest.",
+  },
+  {
+    id: "sei-de",
+    pattern: "〜せいで",
+    gloss: "because of X (blame)",
+    level: "N3",
+    attach: [{ host: "noun", form: null, add: "のせいで" }],
+    note: "Negative cause — X is at fault for a bad outcome (雨のせいで). Mirror of おかげで.",
+  },
+
+  // --- change of state / effort ------------------------------------------
+  {
+    id: "you-ni-naru",
+    pattern: "〜ようになる",
+    gloss: "come to X / reach the point of X",
+    level: "N3",
+    attach: [{ host: "verb", form: "dictionary", add: "ようになる" }],
+    note:
+      "A gradual change reaching a new state or ability: 泳げるようになる ('came to " +
+      "be able to swim'). Verb plain + ようになる. Pairs with ようにする (effort).",
+  },
+  {
+    id: "you-ni-suru",
+    pattern: "〜ようにする",
+    gloss: "make a point of X-ing",
+    level: "N3",
+    attach: [{ host: "verb", form: "dictionary", add: "ようにする" }],
+    note:
+      "A deliberate effort to bring X about or keep it up: 毎日歩くようにする. Verb " +
+      "plain + ようにする. Contrast ようになる, which is the change happening TO you.",
+  },
+
+  // --- relational: framing a noun ----------------------------------------
+  {
+    id: "ni-tsuite",
+    pattern: "〜について",
+    gloss: "about X / concerning X",
+    level: "N3",
+    attach: [{ host: "noun", form: null, add: "について" }],
+    note: "Noun + について — the topic something is said or thought about (日本について話す).",
+  },
+  {
+    id: "to-shite",
+    pattern: "〜として",
+    gloss: "as X (in the role of)",
+    level: "N3",
+    attach: [{ host: "noun", form: null, add: "として" }],
+    note: "Noun + として — in the capacity or role of X (先生として, 留学生として).",
+  },
+
+  // --- modality: obligation / impossibility ------------------------------
+  {
+    id: "beki-da",
+    pattern: "〜べきだ",
+    gloss: "ought to X",
+    level: "N3",
+    attach: [{ host: "verb", form: "dictionary", add: "べきだ" }],
+    note:
+      "Moral 'should' — the right thing to do, stronger and more principled than " +
+      "〜ほうがいい (advice). Verb plain + べきだ. する takes both するべき and the " +
+      "classical すべき; the pool's する gives するべきだ, which is standard, so no " +
+      "exception is needed. Register leans written/formal.",
+  },
+  {
+    id: "wake-ni-wa-ikanai",
+    pattern: "〜わけにはいかない",
+    gloss: "can't afford to X",
+    level: "N3",
+    attach: [{ host: "verb", form: "dictionary", add: "わけにはいかない" }],
+    note:
+      "Cannot do X for social, moral or circumstantial reasons — not inability " +
+      "(that is 〜られない) but 'I mustn't / I can't very well': 今日は休むわけには" +
+      "いかない. Verb plain + わけにはいかない. The negative-host reading (〜ない" +
+      "わけにはいかない = 'have to') is a separate fact; see the gap map.",
   },
 ];
 
