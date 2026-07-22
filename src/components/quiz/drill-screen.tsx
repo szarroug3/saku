@@ -37,7 +37,10 @@ import {
 } from "react";
 
 import { MnemonicImage } from "@/components/lesson/mnemonic-image";
+import { PitchReading } from "@/components/library/pitch-mark";
 import { SmallBtn } from "@/components/ui";
+import { wordPitch } from "@/data/pitch";
+import { VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { answerGuide, confusionNote } from "@/lib/drill-guidance";
@@ -1091,6 +1094,23 @@ export function DrillScreen() {
   // confused it with would be handing you the answer mid-question.
   const mixup =
     revealing && q.confused ? confusionNote(entryOf(q.f), q.confused) : null;
+  // The reveal that shows a word's READING is the moment the app confirms how
+  // the word sounds — exactly where a wrong pitch habit would set. So when the
+  // revealed answer is a word's reb and that word has a verified pitch, draw the
+  // reb in the overline notation instead of plain. Guarded to the reading fact
+  // (revealed text === the row's reb) and to words with pitch; everything else,
+  // including en2jp where the reveal is the kanji, falls through untouched. See
+  // src/data/pitch.ts and pitch-mark.tsx. DISPLAY only — never graded.
+  const revealPitch = (() => {
+    if (!revealing) return null;
+    const info = factInfo(q.f);
+    if (!info || info.subject !== VOCAB_SUBJECT) return null;
+    const row = vocabRow(info.glyph);
+    if (!row) return null;
+    if (revealFor(q.f, q.dir, ctx) !== row.reb) return null;
+    const downstep = wordPitch(row.keb);
+    return downstep == null ? null : { reading: row.reb, downstep };
+  })();
 
   const accuracy = cfg.showAccuracy
     ? liveAccuracy(rt.stats, cfg.accuracyMetric)
@@ -1377,12 +1397,23 @@ export function DrillScreen() {
                   <span className="text-text-muted"> {prompt.context}</span>
                 ) : null}{" "}
                 <span className="text-text-muted">=</span>{" "}
-                <span className="font-semibold text-danger">
-                  {/* One call, no fallback composed here. The `?? answers[0]`
-                      this replaced was the "a = a" bug: in en2jp a fact's first
-                      baked answer IS the prompt. See revealFor. */}
-                  {revealFor(q.f, q.dir, ctx)}
-                </span>
+                {revealPitch ? (
+                  // Same answer text, drawn with its pitch-accent overline. See
+                  // revealPitch above: only ever a word reading that has a
+                  // verified pitch, DISPLAY only.
+                  <PitchReading
+                    reading={revealPitch.reading}
+                    downstep={revealPitch.downstep}
+                    className="font-semibold text-danger"
+                  />
+                ) : (
+                  <span className="font-semibold text-danger">
+                    {/* One call, no fallback composed here. The `?? answers[0]`
+                        this replaced was the "a = a" bug: in en2jp a fact's first
+                        baked answer IS the prompt. See revealFor. */}
+                    {revealFor(q.f, q.dir, ctx)}
+                  </span>
+                )}
               </span>
               {/* THE MIX-UP, when the app already knows this pair is one. A
                   third line in the column, not a change to `revealFor` — that

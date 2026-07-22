@@ -17,6 +17,7 @@
 import type { ReactNode } from "react";
 
 import { PageTitle, SoundIcon } from "@/components/ui";
+import { PitchReading } from "@/components/library/pitch-mark";
 
 export function EntryHeader({
   glyph,
@@ -51,8 +52,17 @@ export function EntryHeader({
   chips?: ReactNode;
   /** The reading to print under the chips, with a speaker to its left. Null
    * wherever there is nothing to say: a grammar pattern is a shape rather than a
-   * sound, and a diacritic has no pronunciation at all. */
-  sound?: { readonly text: string; readonly speak: string } | null;
+   * sound, and a diacritic has no pronunciation at all.
+   *
+   * `pitch` is the word's downstep position (see src/lib/pitch.ts). When set,
+   * the reading is drawn in the standard pitch-accent overline notation instead
+   * of plain — DISPLAY only, so a learner does not fix a wrong habit. Left
+   * undefined wherever there is no verified pitch, which is a third of words and
+   * every kana/kanji page; the reading then prints plainly, never with a guessed
+   * mark. */
+  sound?:
+    | { readonly text: string; readonly speak: string; readonly pitch?: number | null }
+    | null;
   onSpeak?: (text: string) => void;
 }) {
   return (
@@ -103,7 +113,11 @@ export function EntryHeader({
               >
                 <SoundIcon />
               </button>
-              <span>{sound.text}</span>
+              {sound.pitch == null ? (
+                <span>{sound.text}</span>
+              ) : (
+                <PitchReading reading={sound.text} downstep={sound.pitch} />
+              )}
             </p>
           ) : null}
         </div>
