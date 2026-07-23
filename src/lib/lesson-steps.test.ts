@@ -28,7 +28,6 @@ import { kanjiTeachOrder } from "../data/kanji.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { wordReadingFactId } from "../data/vocab.ts";
-import type { HistoryFile } from "../types/index.ts";
 import { LESSON_RANGE_DEFAULT, packLessons } from "./kanji-lesson.ts";
 import { KANA_GROUPS, groupOfFact, scriptSoFar, widerScope } from "./lesson.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
@@ -597,81 +596,11 @@ describe("a mixed radical/kanji set steps the radical ahead of its kanji", () =>
   });
 });
 
-// The "What a radical is" concept card (RADICAL_TRACK, id "track-radical"). It
-// rides in ahead of the FIRST character that plays a radical role at all — a
-// both-role character that is also a kanji (人, 大) or a radical-only shape (气).
-// The first of those is a both-role character at the very first kanji set, so
-// that set opens with BOTH concept cards, the kanji one then this: the owner's
-// "I should see both intros". It is history-gated to fire once across the whole
-// progression (hasMetRadicalRole), so it does NOT come back at the first radical-
-// only shape or any later radical set. See character-role.ts / the RoleBadge for
-// the role label the card explains, which for 人 reads "Radical · Kanji · Word".
-describe("the radical concept card opens the first radical-role set", () => {
-  const ORDER = kanjiTeachOrder("everyday");
-  const GROUPS = packLessons(ORDER, LESSON_RANGE_DEFAULT);
-  const RADICAL_CARD = "track-radical";
-  const KANJI_CARD = "track-kanji";
-  const BLANK: HistoryFile = { sessions: [], facts: {} };
-
-  /** A learner who has met (by the weakest record, "seen") every fact of the
-   * given sets — the state they are in when the next set is taught. */
-  function seen(sets: typeof GROUPS): HistoryFile {
-    const facts = sets.flatMap((g) => g.facts);
-    return { sessions: [], facts: {}, seen: Object.fromEntries(facts.map((f) => [f, 1])) };
-  }
-
-  test("set #1 (人 大 日 一) opens with the kanji card, then the radical card", () => {
-    // Both intros, in this order: the kanji track is opening, so "What kanji are"
-    // leads; then "What a radical is", because 人 is a both-role character and the
-    // badge is about to call it "Radical · Kanji · Word". Then the four characters.
-    const set = GROUPS[0];
-    assert.deepEqual(set.chars, ["人", "大", "日", "一"]);
-    const steps = lessonSteps(set.facts, BLANK);
-    const seq = steps.map((s) =>
-      s.type === "item" ? `${s.item.kind}:${s.item.glyph}` : `intro:${s.key}`,
-    );
-    assert.deepEqual(seq, [
-      `intro:${KANJI_CARD}`,
-      `intro:${RADICAL_CARD}`,
-      "kanji:人",
-      "kanji:大",
-      "kanji:日",
-      "kanji:一",
-    ]);
-  });
-
-  test("the radical card appears exactly once in that walk", () => {
-    const steps = lessonSteps(GROUPS[0].facts, BLANK);
-    const n = steps.filter((s) => s.type === "intro" && s.key === RADICAL_CARD).length;
-    assert.equal(n, 1);
-  });
-
-  test("it does not come back at the first radical-only shape (气, set #3)", () => {
-    // By the time the first building-block-only shape is woven in, the learner met
-    // a radical-role character long ago (人, set #1), so the card has done its one
-    // job. The set still teaches 气 before 気; it just does not re-explain radicals.
-    const idx = GROUPS.findIndex((g) => g.items.some((it) => it.kind === "radical"));
-    const steps = lessonSteps(GROUPS[idx].facts, seen(GROUPS.slice(0, idx)));
-    const intros = steps.filter((s) => s.type === "intro").map((s) => s.key);
-    assert.ok(!intros.includes(RADICAL_CARD), "the radical card fires only once, ever");
-    const items = steps.filter((s) => s.type === "item");
-    const seq = items.map((s) => (s.type === "item" ? `${s.item.kind}:${s.item.glyph}` : ""));
-    const radAt = seq.indexOf("radical:气");
-    const kanjiAt = seq.indexOf("kanji:気");
-    assert.ok(radAt >= 0 && kanjiAt > radAt, "气 is still taught before 気");
-  });
-
-  test("it does not fire again on a later set that also weaves in a radical", () => {
-    const first = GROUPS.findIndex((g) => g.items.some((it) => it.kind === "radical"));
-    const later = GROUPS.findIndex(
-      (g, i) => i > first && g.items.some((it) => it.kind === "radical"),
-    );
-    assert.ok(later > first, "some later set also weaves in a radical");
-    const steps = lessonSteps(GROUPS[later].facts, seen(GROUPS.slice(0, later)));
-    const intros = steps.filter((s) => s.type === "intro").map((s) => s.key);
-    assert.ok(!intros.includes(RADICAL_CARD));
-  });
-});
+// THE THREE CONCEPT CARDS MOVED OUT. "What a radical is", "What kanji are" and
+// "What this track teaches" used to be gated here on a subject nobody had
+// touched. On one ordered curriculum they are anchored to the first item that
+// plays each role instead, and the whole story of when they fire is pinned in
+// src/lib/spine-intros.test.ts, against the lessons the app actually ships.
 
 describe("hasRendaku reads voicing off a word's align", () => {
   test("flags a word whose non-first element voices at the seam", () => {

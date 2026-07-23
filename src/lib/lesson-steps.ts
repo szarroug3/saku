@@ -54,13 +54,18 @@ import {
   type PhaseIntro,
 } from "@/data/phase-intros";
 import { isSoundChangeEntry } from "@/data/counters";
-import { RADICAL_TRACK, TRACK_INTROS, type TrackId } from "@/data/track-intros";
+import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow } from "@/data/vocab";
-import { playsRadicalRole } from "@/lib/character-role";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
-import { hasMetRadicalRole, startedTracks, trackOfItem } from "@/lib/track-open";
+import { spineIntrosFor } from "@/lib/spine-intros";
+import { startedTracks, trackOfItem } from "@/lib/track-open";
 import { wordClassOf } from "@/lib/word-forms";
 import type { FactId, HistoryFile } from "@/types";
+
+/** The tracks whose cards are anchored to a curriculum item instead of opened by
+ * a subject. They are the three roles of the one spine, and spine-intros.ts owns
+ * when each fires. */
+const SPINE_TRACKS: ReadonlySet<TrackId> = new Set<TrackId>(["radical", "kanji", "word"]);
 
 /** One step of the walk — a character to learn, a conversion to learn, or a
  * concept to read. */
@@ -182,26 +187,21 @@ export function lessonSteps(
   // walk this function produced before track intros existed.
   const teachSet = new Set(facts);
   const started = history ? startedTracks(history, teachSet) : null;
-  // Whether the learner has already met a character that plays a radical role
-  // (a both-role kanji or a radical-only shape). The once-ever gate for the
-  // "What a radical is" card below: met before, and the card has done its job and
-  // stays quiet. Role-based where `started` is subject-based, so meeting the
-  // both-role kanji 人 counts. See hasMetRadicalRole / character-role.ts.
-  const radicalRoleMet = history ? hasMetRadicalRole(history, teachSet) : false;
   // Fired at most once each, so a lesson that opens a track and then teaches
   // twenty of its items shows the card once, at the top.
   const trackCardDone = new Set<TrackId>();
+  // The three spine cards (radical, kanji, word) are ANCHORED to items instead
+  // of gated on a subject, so they are fired from `spineIntrosFor` below and
+  // skipped here. See spine-intros.ts: on one ordered curriculum a subject is no
+  // longer a track, and the subject gate was reading a reading-unlock as proof
+  // the kanji track had already opened.
+  const spineDone = new Set<string>();
   // A converted kana is not taught on its own card. Its whole row is one
   // lesson — "voice the k and it becomes g" — so the first character of a row
   // to come past emits that row's card, at the position it would have had, and
   // its other four fold into the same card rather than adding four steps. See
   // src/data/dakuten-rows.ts.
   const rowsSeen = new Set<string>();
-  // The radical CONCEPT card rides in ahead of the first character that plays a
-  // radical role — a both-role character (人, 大) or a radical-only shape (气) —
-  // so the first kanji set opens with it as well as the kanji card. Fired at most
-  // once per walk here, and at most once EVER via radicalRoleMet above.
-  let markedRadicalConcept = false;
   // The iteration mark rides the first word whose spelling uses 々, and only the
   // first one, so a teach set full of 々 words teaches it once.
   let markedIteration = false;
@@ -226,32 +226,37 @@ export function lessonSteps(
   // the rule. See isSoundChangeEntry in src/data/counters.ts.
   let markedSoundChange = false;
   for (const item of items) {
-    // The track card goes FIRST, ahead of everything else this item might owe —
-    // ahead of its conversion row, ahead of any rule card. A learner meeting the
-    // words track has to be told what a word track is before being told what
-    // okurigana is, and the rule cards below all assume the track's own
-    // vocabulary. Placed at the top of the loop rather than after the `continue`
-    // a repeated conversion row takes, so a track whose first item happens to be
-    // a converted kana still gets its card.
-    // The "radical" track is skipped HERE and handled just below, because its
-    // card no longer rides a radical-SUBJECT item. It rides the first radical-
-    // ROLE character, which is usually a both-role kanji (人) whose item is a
-    // kanji item — so the subject-based track gate would miss it. Every other
-    // track still opens on its own first item, ahead of everything the item owes.
+    // THE CONCEPT CARDS GO FIRST, ahead of everything else this item might owe:
+    // ahead of its conversion row, ahead of any rule card. A learner meeting
+    // words has to be told what a word is before being told what okurigana is,
+    // and the rule cards below all assume that vocabulary. Placed at the top of
+    // the loop and not after the `continue` a repeated conversion row takes, so
+    // a track whose first item happens to be a converted kana still gets its
+    // card.
+    //
+    // The SPINE cards lead. Radicals, kanji and words are one curriculum now, so
+    // their cards are anchored to the first item that plays each role instead of
+    // being gated on a subject nobody has touched (see spine-intros.ts). All
+    // three can come due at the same item: the sequence opens on 人, which is a
+    // radical, a kanji and a word at once. They are emitted radical, kanji, word,
+    // the order the material is built in and the order the lesson card's own
+    // label prints.
+    if (history) {
+      for (const intro of spineIntrosFor(item.glyph, history, teachSet)) {
+        if (spineDone.has(intro.id)) continue;
+        spineDone.add(intro.id);
+        steps.push({ type: "intro", key: intro.id, intro });
+      }
+    }
+    // Then the remaining TRACK cards, still opened by subject: kana's two
+    // scripts, grammar, counters and keigo are each their own track with their
+    // own first lesson, and nothing about the spine changed that. The three spine
+    // tracks are skipped here, because the block above owns them.
     const track = started ? trackOfItem(item) : null;
-    if (track && track !== "radical" && !started!.has(track) && !trackCardDone.has(track)) {
+    if (track && !SPINE_TRACKS.has(track) && !started!.has(track) && !trackCardDone.has(track)) {
       trackCardDone.add(track);
       const intro = TRACK_INTROS[track];
       steps.push({ type: "intro", key: intro.id, intro });
-    }
-    // The radical concept card FOLLOWS the track card, so a set that opens the
-    // kanji track shows "What kanji are" first and then "What a radical is",
-    // ahead of the first radical-role character. Gated on history (no concept
-    // cards without it, the same as the track cards) and on radicalRoleMet, so it
-    // is a once-ever card even though its trigger is a role and not a subject.
-    if (history && !markedRadicalConcept && !radicalRoleMet && playsRadicalRole(item.glyph)) {
-      markedRadicalConcept = true;
-      steps.push({ type: "intro", key: RADICAL_TRACK.id, intro: RADICAL_TRACK });
     }
     const row = item.kind === "kana" ? dakutenRowFor(item.glyph) : null;
     if (row) {

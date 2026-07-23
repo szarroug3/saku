@@ -1,24 +1,29 @@
 // Which track a lesson item belongs to, and whether that track is OPENING right
-// now — the gate the track intro cards ride in on.
+// now: the gate the track intro cards ride in on.
 //
 // NO NEW PROGRESSION SYSTEM, AND THERE WAS NO NEED FOR ONE
 // =======================================================
-// The app already answers "has this track been opened" several times over —
-// hasStartedWordTrack, hasStartedGrammarTrack, hasStartedTransitivityTrack —
-// each of them the same shape: is any curriculum item of this track non-fresh in
-// history. There is no cursor and no flag on disk anywhere in this app; history
-// IS the cursor. This module generalises that existing answer to all the tracks
-// rather than adding another thing to keep in step. (Radicals no longer have a
-// SCHEDULING track of their own — they are woven into the kanji sets, see
-// kanji-lesson.ts — but "radical" is still a TrackId with an intro card, so the
-// first woven radical still opens with an explanation of what a radical is.)
+// The app already answers "has this track been opened" several times over,
+// hasStartedGrammarTrack, hasStartedTransitivityTrack and the rest, each of them
+// the same shape: is any curriculum item of this track non-fresh in history.
+// There is no cursor and no flag on disk anywhere in this app; history IS the
+// cursor. This module generalises that existing answer to all the tracks rather
+// than adding another thing to keep in step.
+//
+// IT NO LONGER SPEAKS FOR RADICALS, KANJI OR WORDS. Those three are one ordered
+// curriculum now, taught from one card, so a subject is not a track and "has the
+// kanji subject been touched" is not the question to ask. Their concept cards are
+// anchored to curriculum items instead; see src/lib/spine-intros.ts, which also
+// records how the subject gate came to suppress them. They keep their TrackId and
+// their entry in TRACK_INTROS, because the CARDS still exist and are still one
+// per role.
 //
 // It reads history the other way round from those, though, and the difference is
 // the point. They walk the CURRICULUM asking history about each item (6,213
 // words). This walks HISTORY asking which track each
 // fact belongs to, because the question here is "which tracks has this learner
 // touched at all", and history is the smaller of the two by orders of magnitude
-// on the run that matters — the first lesson, where history is nearly empty and
+// on the run that matters, the first lesson, where history is nearly empty and
 // the answer is "none of them".
 //
 // WHY THE TEACH SET IS EXCLUDED
@@ -46,7 +51,6 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import type { TrackId } from "@/data/track-intros";
-import { playsRadicalRole } from "@/lib/character-role";
 import { effectiveState } from "@/lib/claims";
 import { factInfo } from "@/lib/facts";
 import type { LessonItem } from "@/lib/lesson-items";
@@ -91,7 +95,7 @@ export function trackOfItem(item: LessonItem): TrackId | null {
   return trackOf(item.kind, item.glyph);
 }
 
-/** The track a fact belongs to — by its entry's label first (counters), then its
+/** The track a fact belongs to, by its entry's label first (counters), then its
  * subject through the registry, never a parse of the id. */
 function trackOfFact(fact: FactId): TrackId | null {
   const info = factInfo(fact);
@@ -101,7 +105,7 @@ function trackOfFact(fact: FactId): TrackId | null {
   return trackOf(info.subject, info.glyph);
 }
 
-/** Has the app any record of this fact — answered, claimed, or "quiz me"'d? The
+/** Has the app any record of this fact: answered, claimed, or "quiz me"'d? The
  * one definition of "new", the same `lastTested === 0` rule the four
  * hasStarted*Track predicates use. */
 function met(fact: FactId, history: HistoryFile): boolean {
@@ -118,7 +122,7 @@ function met(fact: FactId, history: HistoryFile): boolean {
  * they are about to be taught.
  *
  * A track is absent from the result exactly when its first lesson is the one in
- * hand — which is when its intro card is due.
+ * hand, which is when its intro card is due.
  */
 export function startedTracks(
   history: HistoryFile,
@@ -140,43 +144,4 @@ export function startedTracks(
     if (track) started.add(track);
   }
   return started;
-}
-
-/**
- * Has the learner already met a character that plays a radical role — a radical-
- * only shape OR a both-role character that is also a kanji — outside the lesson
- * in hand?
- *
- * The once-ever gate for the "What a radical is" concept card. That card is no
- * longer a subject-based track intro: it rides in ahead of the FIRST character
- * with a radical role, and the first of those is a both-role character (人) at
- * the very first kanji set, whose fact is a KANJI fact. `startedTracks` keys off
- * the subject, so it would never see 人 as radical material and the card would
- * wait until the first radical-ONLY shape. This reads the ROLE off each met
- * character's glyph instead (playsRadicalRole), so meeting 人 counts and the card
- * lands where the badge first says "Radical" as part of its label (人 reads
- * "Radical · Kanji · Word").
- *
- * Same three records and the same teach-set exclusion as `startedTracks`, and
- * for the same reason: the decision is about what the learner knew BEFORE this
- * lesson, and the lesson's own facts may already be in history by the time the
- * walk renders. Short-circuits on the first match.
- */
-export function hasMetRadicalRole(
-  history: HistoryFile,
-  exclude: ReadonlySet<FactId>,
-): boolean {
-  const seen = new Set<string>([
-    ...Object.keys(history.facts ?? {}),
-    ...Object.keys(history.claims ?? {}),
-    ...Object.keys(history.seen ?? {}),
-  ]);
-  for (const key of seen) {
-    const fact = key as FactId;
-    if (exclude.has(fact)) continue;
-    if (!met(fact, history)) continue;
-    const info = factInfo(fact);
-    if (info && playsRadicalRole(info.glyph)) return true;
-  }
-  return false;
 }

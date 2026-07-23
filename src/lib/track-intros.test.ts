@@ -25,16 +25,11 @@ import { CHAR_INDEX, kanaFact } from "../data/characters.ts";
 import { COUNTER_CURRICULUM, counterMeaningFactId } from "../data/counters.ts";
 import { KEIGO_SETS, keigoWordFactId } from "../data/keigo.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
-import { meaningFactId } from "../data/kanji.ts";
 import { PHASE_INTROS } from "../data/phase-intros.ts";
-import { radicalMeaningFactId } from "../data/radicals.ts";
 import { TRACK_INTROS, TRACK_ORDER, type TrackId } from "../data/track-intros.ts";
-import { wordMeaningFactId } from "../data/vocab.ts";
 import { CURRICULUM_PATTERNS } from "./grammar-lesson.ts";
 import { lessonSteps } from "./lesson-steps.ts";
-import { RADICAL_TEACHING_ORDER } from "./radical-order.ts";
 import { startedTracks, trackOf } from "./track-open.ts";
-import { CURRICULUM_WORDS } from "./word-lesson.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 /** A learner who has done nothing at all. */
@@ -51,19 +46,29 @@ function met(facts: readonly FactId[]): HistoryFile {
 }
 
 /**
- * One representative teach set per track, and the card it must open with.
+ * THE SUBJECT-OPENED TRACKS: the ones this gate still speaks for.
+ *
+ * Radicals, kanji and words are absent on purpose. They are one ordered
+ * curriculum now, taught from one card, so their concept cards are anchored to
+ * curriculum items and not opened by a subject; spine-intros.test.ts owns them.
+ * Everything below is a track that genuinely has a first lesson of its own.
+ */
+const SUBJECT_TRACKS: readonly TrackId[] = TRACK_ORDER.filter(
+  (t) => t !== "radical" && t !== "kanji" && t !== "word",
+);
+
+/**
+ * One representative teach set per subject-opened track, and the card it must
+ * open with.
  *
  * The kana entries are the literal first lesson of each script (its vowel row).
- * The other four are the first item of that track's own teaching order, which is
+ * The others are the first item of that track's own teaching order, which is
  * what its first lesson is built from.
  */
-const SAMPLE: Readonly<Record<TrackId, FactId[]>> = {
+const SAMPLE: Readonly<Record<string, FactId[]>> = {
   hiragana: [...
     "あいうえお"].map(kanaFact),
   katakana: [..."アイウエオ"].map(kanaFact),
-  radical: [radicalMeaningFactId(RADICAL_TEACHING_ORDER[0].glyph)],
-  kanji: [meaningFactId("人")],
-  word: [wordMeaningFactId(CURRICULUM_WORDS[0].keb)],
   grammar: [patternMeaningFactId(CURRICULUM_PATTERNS[0].id)],
   // The first item of the counters track is 〜つ (ひとつ), the escape hatch it
   // opens on — see COUNTER_CURRICULUM.
@@ -80,12 +85,9 @@ const SAMPLE: Readonly<Record<TrackId, FactId[]>> = {
  * a track's first lesson DOES show its card again, on purpose (see the header of
  * track-open.ts), so re-running SAMPLE would be testing the opposite rule.
  */
-const SECOND: Readonly<Record<TrackId, FactId[]>> = {
+const SECOND: Readonly<Record<string, FactId[]>> = {
   hiragana: [..."かきくけこ"].map(kanaFact),
   katakana: [..."カキクケコ"].map(kanaFact),
-  radical: [radicalMeaningFactId(RADICAL_TEACHING_ORDER[1].glyph)],
-  kanji: [meaningFactId("大")],
-  word: [wordMeaningFactId(CURRICULUM_WORDS[1].keb)],
   grammar: [patternMeaningFactId(CURRICULUM_PATTERNS[1].id)],
   counters: [counterMeaningFactId(COUNTER_CURRICULUM[1])],
   // A different set (the say group) — re-teaching the first would show its card
@@ -138,7 +140,7 @@ describe("every track that can unlock has exactly one intro", () => {
 });
 
 describe("a track intro comes before that track's first lesson", () => {
-  for (const track of TRACK_ORDER) {
+  for (const track of SUBJECT_TRACKS) {
     test(`${track}: the card is step ONE of the opening lesson`, () => {
       const steps = lessonSteps(SAMPLE[track], BLANK);
       assert.ok(steps.length > 0, `${track} produced no steps`);
@@ -164,7 +166,7 @@ describe("a track intro comes before that track's first lesson", () => {
 });
 
 describe("a track intro shows once and does not come back", () => {
-  for (const track of TRACK_ORDER) {
+  for (const track of SUBJECT_TRACKS) {
     test(`${track}: the second lesson of the track has no card`, () => {
       // The learner met the opening lesson. Anything taught after it in the same
       // track is past the introduction.
@@ -212,14 +214,15 @@ describe("the gate reads history, and only history", () => {
   });
 
   test("the lesson's own facts do not count as having started its track", () => {
-    // The words track marks its facts seen on Start (see startWordLesson in
-    // app/page.tsx), so by the time the walk renders they are already in
-    // history. Counting them would make the track "already started" at the exact
-    // moment it started, and the card would never fire.
-    const facts = SAMPLE.word;
+    // A lesson's facts can already be in history by the time the walk renders it
+    // (the curriculum card marks them seen on Start, so that starting a lesson
+    // unlocks the readings its words prove whichever button was pressed).
+    // Counting them would make the track "already started" at the exact moment it
+    // started, and the card would never fire.
+    const facts = SAMPLE.grammar;
     const history = met(facts);
-    assert.ok(!startedTracks(history, new Set(facts)).has("word"));
-    assert.ok(startedTracks(history, new Set()).has("word"));
+    assert.ok(!startedTracks(history, new Set(facts)).has("grammar"));
+    assert.ok(startedTracks(history, new Set()).has("grammar"));
   });
 
   test("the two kana scripts are told apart by the data file, not by the id", () => {
