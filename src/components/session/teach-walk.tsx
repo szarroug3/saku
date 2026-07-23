@@ -152,7 +152,13 @@ export function TeachWalk({
           directly above the button that starts the drill, so the settings that
           drill will use are visible and changeable before it begins. */}
       {last ? (
-        <div className="mt-4">
+        // A single recessed row, owned here rather than drawn by ConfigPreview
+        // (it went container-neutral so the rest screen's Card stopped
+        // double-boxing it). One quiet bg-panel strip, NOT a Card: this page is
+        // deliberately card-free so the lesson reads as one surface, and the
+        // config is a small settings row above the start button, not a second
+        // page-within-a-page. bg-panel is the recessed tone (see ui.tsx).
+        <div className="mt-4 rounded-lg border border-border bg-panel px-3 py-2">
           <ConfigPreview />
         </div>
       ) : null}

@@ -29,12 +29,16 @@ export function ConfigPreview() {
   const [open, setOpen] = useState(false);
 
   return (
-    // Its own recessed panel so the summary and the editor it expands read as
-    // one quiet unit distinct from the buttons around them, in both the modal
-    // and on the rest screen. bg-panel is the RECESSED tone (see Metric's note
-    // in ui.tsx) — right for a thing nested inside a card, which is where both
-    // call sites put it.
-    <div className="rounded-lg border border-border bg-panel px-3 py-2">
+    // Container-NEUTRAL: this draws no border or fill of its own. It used to
+    // wrap itself in a recessed bg-panel box, which read as one quiet unit on
+    // its own but stacked into a box-inside-a-box the moment a call site put it
+    // inside a Card — the rest screen's `<Card><ConfigPreview/></Card>` drew two
+    // near-concentric borders. So the surrounding container is now each call
+    // site's job (the rest screen's Card is the box; the Library dialog and the
+    // teach walk wrap it in their own recessed row), and this renders only the
+    // summary line plus the editor it expands. A bare Fragment, so whatever
+    // padding and material the call site chose is the only one in play.
+    <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         {/* The line the drill will actually run with. Muted, because it is a
             read-out and not a control — the one control here is "Change". */}
@@ -54,13 +58,13 @@ export function ConfigPreview() {
       </div>
       {open ? (
         // A hairline rule sets the editor off from the summary, the same way
-        // QuizOptionsFields' own Rows separate from each other. The negative
-        // margin lets the rule run the full width of the panel while the fields
-        // keep the panel's horizontal padding.
+        // QuizOptionsFields' own Rows separate from each other. It spans the
+        // width the call site's container gives us, so the rule lines up with
+        // that container's padding rather than owning padding of its own.
         <div className="mt-2 border-t border-border pt-1">
           <QuizOptionsFields />
         </div>
       ) : null}
-    </div>
+    </>
   );
 }

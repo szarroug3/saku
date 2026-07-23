@@ -281,7 +281,13 @@ function QuizPreStart({
               lets this shrink and scroll inside the flex column instead of
               overflowing it. */}
           <AlertDialogPrimitive.Description asChild>
-            <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
+            {/* The recessed row that holds the config, now owned here rather
+                than drawn by ConfigPreview itself (it went container-neutral so
+                the rest screen's Card stopped double-boxing it). bg-panel is the
+                RECESSED tone (see Metric's note in ui.tsx) — right for a thing
+                nested inside this dialog's card. This wrapper reproduces the box
+                ConfigPreview used to draw, so the look here is unchanged. */}
+            <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border bg-panel px-3 py-2">
               <ConfigPreview />
             </div>
           </AlertDialogPrimitive.Description>

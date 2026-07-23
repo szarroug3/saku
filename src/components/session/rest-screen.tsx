@@ -119,7 +119,13 @@ export function RestScreen({
           study off. Putting it here is what makes the config visible at a launch
           point that otherwise just resumes drilling with settings you can't see.
           The re-snapshot per round already lands any change on the next round,
-          so editing during the break is the natural time to do it. */}
+          so editing during the break is the natural time to do it.
+
+          This Card is the ONLY box around the config. ConfigPreview is
+          container-neutral (it draws no border or fill of its own), which is
+          what stopped it double-boxing here — the Card and ConfigPreview's own
+          recessed panel used to draw two near-concentric borders. The config
+          now reads as one clean Card, sibling to the hints Card below. */}
       <Card className="px-[15px] py-[13px]">
         <ConfigPreview />
       </Card>
