@@ -58,7 +58,7 @@ export async function generateMetadata({
   params: Promise<{ cluster: string }>;
 }) {
   const c = cluster((await params).cluster);
-  return { title: c ? `${c.title} · Kana quiz` : "Kana quiz" };
+  return { title: c ? `${c.title} · Saku` : "Saku" };
 }
 
 export default async function ClusterPage({

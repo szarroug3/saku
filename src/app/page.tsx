@@ -377,7 +377,7 @@ export default function HomePage() {
 
   return (
     <>
-      <PageTitle title="Kana quiz" />
+      <PageTitle title="Saku" />
 
       {/* What "I already know this" means, said once for the whole page rather
           than under each lesson card in that card's own words. The rule is the

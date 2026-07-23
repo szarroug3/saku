@@ -16,7 +16,7 @@ import Link from "next/link";
 import { Card, Lbl, PageTitle } from "@/components/ui";
 import { CLUSTERS, membersOf } from "@/data/grammar/clusters";
 
-export const metadata = { title: "Grammar · Kana quiz" };
+export const metadata = { title: "Grammar · Saku" };
 
 export default function GrammarPage() {
   return (

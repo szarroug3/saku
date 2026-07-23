@@ -12,7 +12,7 @@ import type * as Theme from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Kana quiz",
+  title: "Saku",
   description: "Hiragana and katakana drill, match, and grid quizzes",
 };
 

@@ -99,6 +99,18 @@ export function Sidebar() {
 
   return (
     <nav className="sticky top-6 flex w-[148px] flex-none flex-col gap-0.5 self-start">
+      {/* The brand sits above the nav, linking home like a logo should. The
+          wordmark is a transparent PNG, so it takes the sidebar's own width and
+          the theme background shows through. */}
+      <Link href="/" className="mb-2 block px-3 py-1">
+        <img
+          src="/brand/saku-wordmark.png"
+          alt="Saku"
+          width={96}
+          height={96}
+          className="h-auto w-24"
+        />
+      </Link>
       {items.map(({ href, label }) => {
         // An entry page is IN the Library, so /library/kanji%3A%E7%94%9F has to
         // light the Library item — an exact match would leave the whole nav
