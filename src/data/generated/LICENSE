@@ -38,6 +38,11 @@ WHAT CAME FROM WHERE
                            two JLPT lists (tanos.co.uk, open-anki-jlpt-decks)
                            and OpenSubtitles frequency (hermitdave/
                            FrequencyWords) — see their attribution below.
+  word-senses.json         JMdict (every reading a written form has, with the
+                           glosses and part-of-speech tags of each). Same source
+                           and same cut as vocab.json; it holds the forms JMdict
+                           files under more than one reading, such as 人 as ひと,
+                           じん and にん.
   pitch.json               Kanjium pitch-accent database (the downstep position
                            of each word). See its attribution below.
   readings.json            KANJIDIC2 + JMdict (kanji readings aligned to the

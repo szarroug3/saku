@@ -28,7 +28,7 @@ from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from aligner import align, is_kanji  # noqa: E402
-from beginnerrank import compute_beginner_ranks  # noqa: E402
+from beginnerrank import SOURCES, compute_beginner_ranks, load_anki, load_tanos  # noqa: E402
 from readingtype import clean_meanings, kinds_of, types_for  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "data", "generated")
@@ -161,6 +161,39 @@ def load_jmdict(path):
     return W
 
 
+# ---------------------------------------------------------------- senses
+
+def sense_order(keb, cands, tanos, anki_pair):
+    """The candidate entries for one written form, the beginner's reading first.
+
+    WHICH READING IS PRIMARY is decided by the two JLPT lists beginnerrank.py
+    already ships, read on the EXACT (form, reading) pair. They are keyed that
+    way on purpose, so they answer this question directly: 人/ひと is N5 on both
+    lists while 人/じん is N1 on one and absent from the other, and 前/まえ is N5
+    while 前/ぜん appears on neither. A reading no list attests sorts after every
+    reading one does, then the newspaper band and JMdict's own entry order settle
+    what is left, so the pick is stable across re-cuts.
+
+    The reading-blind fallbacks in beginnerrank (tanos_level dropping back to the
+    whole headword, anki_level dropping back to `kb`) are deliberately NOT used
+    here. They hand every reading of a form the same level, which is a tie where
+    the whole question is which reading wins.
+    """
+    def key(i, c):
+        e = tanos.get(keb) or []
+        ls = [lv for r, lv in e if r == c["reb"]]
+        levels = [x for x in (max(ls) if ls else None,
+                              anki_pair.get((keb, c["reb"]))) if x is not None]
+        # N5 is level 5 and is the FIRST band a beginner meets, so the mean is
+        # negated to sort the easiest reading first.
+        return (0 if levels else 1,
+                -(sum(levels) / len(levels)) if levels else 0.0,
+                c["nf"] if c["nf"] is not None else 99,
+                i)
+    return [c for _, c in sorted(((key(i, c), c) for i, c in enumerate(cands)),
+                                 key=lambda p: p[0])]
+
+
 # ---------------------------------------------------------------- ordering
 # Reproduces the settled `ramp B` from the research scripts (ceiling2.py /
 # final2.py). Verified to reproduce FINAL_ORDER.pkl byte-for-byte.
@@ -286,16 +319,32 @@ def main():
             continue
         if all(k in JOYO for k in ks):
             TGT.append(w)
-    # Deduplicate on the written form; JMdict lists some words (生, 通す) under
-    # several entries, one per sense group.
-    seen_keb = set(); VOCAB = []
+    # MERGE on the written form. JMdict files one written form under several
+    # entries, one per reading and sense group: 人 is three (ひと a person, じん
+    # the -ian suffix, にん the counter), 前 is two (まえ in front, ぜん previous).
+    #
+    # This used to keep the FIRST entry and drop the rest, which is how 人 came
+    # to be taught as a suffix and 前 as "previous". 117 of the shipped forms had
+    # a second entry, and 85 of those lost a whole reading with it. So every
+    # candidate survives, ordered beginner-first by `sense_order`, and the word
+    # is the group: entry[0] supplies what the quiz asks, and the whole list is
+    # what the lesson shows.
+    tanos = load_tanos(os.path.join(SOURCES, "jlpt-tanos.json"))
+    anki_pair, _ = load_anki(os.path.join(SOURCES, "jlpt-anki-n*.csv"))
+    groups = {}
     for w in TGT:
-        if w["keb"] in seen_keb:
-            continue
-        seen_keb.add(w["keb"]); VOCAB.append(w)
+        groups.setdefault(w["keb"], []).append(w)
+    VOCAB = []
+    for keb, cands in groups.items():
+        cands = sense_order(keb, cands, tanos, anki_pair)
+        w = dict(cands[0])
+        w["senses"] = cands
+        VOCAB.append(w)
+    merged_n = sum(1 for w in VOCAB if len(w["senses"]) > 1)
     kana_n = sum(1 for w in VOCAB if w["kana"])
     print(f"everyday vocab (ichi1|spec1|spec2, all-jouyou): {len(VOCAB)} "
-          f"of {len(TGT)} pre-dedup  ({kana_n} kana-form)")
+          f"of {len(TGT)} candidates  ({kana_n} kana-form, "
+          f"{merged_n} carrying more than one reading)")
 
     # TWO utility counts, deliberately. They are not interchangeable:
     #
@@ -401,6 +450,29 @@ def main():
           f"{br['sub_stem']}/{br['total']} ({100*br['sub_stem']/br['total']:.1f}%)")
     dump("vocab.json", vocab_rows)
 
+    # Every reading a written form has, and what each one means. Keyed on the
+    # form, primary first, and emitted ONLY for the forms that have more than one
+    # reading, because for the other 12,400 the vocab row already is the whole
+    # story and a second copy of it would just be a second copy.
+    #
+    # A file of its own rather than a `senses` field on the vocab row: vocab.json
+    # is joined by beginnerRank on the way into the curriculum, and the merge has
+    # to be able to reach the app without that join being re-cut. src/data/vocab.ts
+    # marries the two at load and takes the primary from HERE, so the reading the
+    # quiz asks and the readings the lesson shows come from one list.
+    krd = KRD_of(K)
+    sense_rows = {}
+    for w in VOCAB:
+        if len(w["senses"]) < 2:
+            continue
+        out = []
+        for c in w["senses"]:
+            a = None if c["kana"] else align(c["keb"], c["reb"], krd)
+            out.append(dict(reb=c["reb"], glosses=c["glosses"], pos=c["pos"],
+                            align=[[k, s, b] for k, s, b in a] if a else None))
+        sense_rows[w["keb"]] = out
+    dump("word-senses.json", sense_rows, sort_keys=True)
+
     # anchor pick: prefer the everyday word that attests the reading with the
     # LOWEST beginnerRank -- the first one a learner will actually meet, so 出's
     # しゅつ anchors to 出発 (rank 696) and not 供出 (8388), and 名's みょう to 本名
@@ -470,10 +542,10 @@ def KRD_of(K):
     return {k: dict(on=v["on"], kun=v["kun"], nanori=[]) for k, v in K.items()}
 
 
-def dump(name, obj):
+def dump(name, obj, sort_keys=False):
     p = os.path.join(OUT, name)
     with open(p, "w", encoding="utf-8") as fh:
-        json.dump(obj, fh, ensure_ascii=False, separators=(",", ":"))
+        json.dump(obj, fh, ensure_ascii=False, separators=(",", ":"), sort_keys=sort_keys)
     print(f"  wrote {name:<26} {os.path.getsize(p)/1024:>8.0f} KB")
 
 
