@@ -2,12 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { SignOut } from "@/components/auth/sign-out";
 
 import { useHistory } from "@/lib/use-history";
 import { useQuizSession } from "@/lib/quiz-session";
+
+// Persisted across reloads so a collapsed bar stays collapsed. New keys use the
+// `saku-` prefix (the older `kanaquiz-` keys are a separate rename still pending).
+const COLLAPSE_KEY = "saku-sidebar-collapsed";
+
+/** A bare chevron for the collapse/expand toggle — inline so the nav pulls in no
+ * icon dependency for its one glyph. */
+function Chevron({ dir }: { dir: "left" | "right" }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points={dir === "left" ? "15 18 9 12 15 6" : "9 18 15 12 9 6"} />
+    </svg>
+  );
+}
 
 // ONE nav item for the reference, and it is not the first one. The user, on
 // scope: "the reference should exist as an easy way to look things up, not as
@@ -88,6 +113,28 @@ export function Sidebar({
   const hasRecent = history.sessions.length > 0;
   const runCount = runs.length;
 
+  // Collapsed shrinks the bar to a thin rail so the page gets the width back.
+  // Restored AFTER mount, not in the initializer: localStorage is client-only,
+  // and reading it up front would disagree with the server's expanded render and
+  // warn on hydration. A user who left it collapsed sees one expanded frame on a
+  // hard reload before this lands, which is fine for a chrome toggle.
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
+  }, []);
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      } catch {
+        // Private mode / disabled storage: the toggle still works this session,
+        // it just won't be remembered. Nothing to do.
+      }
+      return next;
+    });
+  }
+
   // The nav, assembled top-down: Home, Learn, then Recent sessions when there is
   // any history to open, then Practice, then Current sessions when at least one
   // run is in progress, then the rest of the static list.
@@ -121,24 +168,55 @@ export function Sidebar({
   // hooks above so their call order stays unconditional.
   if (pathname.startsWith("/auth")) return null;
 
+  // Collapsed: a thin rail that is nothing but the way back out. Main content
+  // (flex-1 in the layout) takes the freed width automatically.
+  if (collapsed) {
+    return (
+      <nav className="sticky top-6 flex w-7 flex-none flex-col items-center self-start">
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label="Expand sidebar"
+          aria-expanded={false}
+          title="Expand"
+          className="rounded-lg p-1.5 text-text-muted hover:bg-panel hover:text-text"
+        >
+          <Chevron dir="right" />
+        </button>
+      </nav>
+    );
+  }
+
   return (
     <nav className="sticky top-6 flex w-[148px] flex-none flex-col gap-0.5 self-start">
-      {/* The brand sits above the nav, linking home like a logo should. The
-          wordmark is a transparent PNG, so it takes the sidebar's own width and
-          the theme background shows through. */}
+      {/* The brand sits above the nav, linking home like a logo should, with the
+          collapse toggle beside it. The wordmark is a transparent PNG, so it
+          takes the sidebar's own width and the theme background shows through. */}
       {/* alt="" is deliberate: an <img> paints its alt TEXT while the PNG is
           still decoding, so a non-empty alt flashes the word "Saku" on every hard
           reload before the wordmark arrives. The link carries the accessible name
           instead, and the image is decorative. */}
-      <Link href="/" aria-label="Saku — home" className="mb-2 block px-3 py-1">
-        <img
-          src="/brand/saku-wordmark.png"
-          alt=""
-          width={96}
-          height={96}
-          className="h-auto w-24"
-        />
-      </Link>
+      <div className="mb-2 flex items-center justify-between pr-1">
+        <Link href="/" aria-label="Saku — home" className="block px-3 py-1">
+          <img
+            src="/brand/saku-wordmark.png"
+            alt=""
+            width={96}
+            height={96}
+            className="h-auto w-20"
+          />
+        </Link>
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label="Collapse sidebar"
+          aria-expanded={true}
+          title="Collapse"
+          className="flex-none rounded-lg p-1.5 text-text-muted hover:bg-panel hover:text-text"
+        >
+          <Chevron dir="left" />
+        </button>
+      </div>
       {items.map(({ href, label }) => {
         // An entry page is IN the Library, so /library/kanji%3A%E7%94%9F has to
         // light the Library item — an exact match would leave the whole nav
