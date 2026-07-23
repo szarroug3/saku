@@ -1059,19 +1059,25 @@ body {
  *                  It is a token and not a literal because it has THREE readers
  *                  — --card-frost below, and the two opaque rebuilds — and the
  *                  entire STICKY TABLE HEADER bug was two of them disagreeing.
- * --card-frost     the whole backdrop-filter, and THE one place the material is
- *                  defined. Everything that is glass reads this and nothing else.
+ * --card-frost     the whole backdrop-filter FOR A .kq-band — the sticky HUD,
+ *                  where the blur smears cards passing under and is real work.
+ * --material-frost what a .kq-material (a CARD) filters with. It USED to be the
+ *                  same value as --card-frost, but kiri splits them: a card's
+ *                  backdrop is the mesh, where the blur is a 0.20 dE no-op, and
+ *                  the Library paints one card per shelf — so at N scrolling
+ *                  backdrop-filter roots the blur is pure jank (p95 33.4→17.6ms).
+ *                  kiri's --material-frost is saturate-only; --card-frost keeps
+ *                  the blur for the band. The three opaque themes leave both at
+ *                  `none`, so this split is invisible to them.
  *
  * AIZOME EXPRESSES "MY MATERIAL IS NOTHING" HERE, and it costs nothing to say:
  * the default is `none`, `none` is a valid backdrop-filter, and a theme with no
  * glass simply never overrides it. `.kq-material` on an aizome surface is not a
  * special case to be excluded — it resolves, correctly, to no filter at all.
  *
- * --card-frost COMPOSES --card-frost-sat rather than restating it. That is what
- * makes the blur a ONE-WORD change: delete `blur(18px)` from the line below and
- * every glass surface in the app loses it at once, while both opaque rebuilds
- * keep the saturate they still need. The two cannot drift apart, because there
- * is only one saturate in the file.
+ * BOTH frosts COMPOSE --card-frost-sat rather than restating it, so the one
+ * saturate in the file cannot drift: the band is `blur(18px) sat`, the material
+ * is `sat` alone, and both opaque rebuilds keep the same `sat` they need.
  *
  * A NESTED backdrop-filter IS A NO-OP. An element with one becomes a BACKDROP
  * ROOT, so a `.kq-material` INSIDE a `.kq-material` (e.g. anything inside a
@@ -1087,6 +1093,12 @@ body {
   --card-fill: var(--card);
   --card-frost-sat: none;
   --card-frost: none;
+  /* What a .kq-material surface filters its backdrop with — a CARD, and every
+   * button/chip/tile that wears the card's substance. Defaults to the full frost;
+   * kiri splits it OFF --card-frost (the BAND's frost) so the many scrolling cards
+   * can drop the blur the one sticky HUD still needs. `none` in the three opaque
+   * themes, exactly like --card-frost, so nothing about them changes. */
+  --material-frost: var(--card-frost);
   /* What a .kq-band lays down under itself. The three opaque themes occlude
    * with the page's own ground; kiri occludes with the blur instead, so a flat
    * --bg here would punch an opaque rectangle through its mesh. */
@@ -1110,10 +1122,30 @@ body {
 [data-theme="kiri"] {
   --ground-mesh: var(--page-mesh);
   --card-frost-sat: saturate(150%);
-  /* THE MATERIAL. Drop `blur(18px)` here and every glass surface in the app
-   * un-blurs together — it is a measured 0.20 dE no-op on this mesh, so that is
-   * a free change if the scroll profiler asks for it. */
+  /* THE BAND's frost, and it KEEPS the blur — because a .kq-band is the sticky
+   * quiz/drill HUD and its blur is REAL WORK: it smears the CARDS SCROLLING UNDER
+   * it, not the mesh (the GRID QUIZ SHEET note says it exactly — "the scrim blurs
+   * CARDS passing under it, not the mesh"). A band is ONE sticky element, so its
+   * blur is not a per-scroll-frame multiplier the way a page full of cards is. */
   --card-frost: blur(18px) var(--card-frost-sat);
+  /* THE CARD's frost: saturate ONLY, no blur — this is the scroll-perf fix.
+   *
+   * A .kq-material's backdrop is the PAGE MESH, and an 18px gaussian on gradients
+   * that broad is a measured 0.20 dE no-op (see --card-frost's old note here and
+   * the GRID QUIZ SHEET section). But a backdrop-filter makes the element a
+   * BACKDROP ROOT that re-snapshots and re-blurs its backdrop EVERY scroll frame,
+   * and the Library paints one .kq-material per shelf Card (plus every button,
+   * chip and Metric tile). At N of them the blur is the jank: measured p95 33.4ms
+   * with 31 dropped frames WITH the per-element blur, vs 17.6ms and 0 dropped
+   * WITHOUT it. kiri is the only theme that janks because it is the only one whose
+   * --card-frost is not `none` — the other three carry no backdrop-filter at all.
+   *
+   * The SATURATE stays: it is a cheap per-pixel colour matrix, not a radius-wide
+   * convolution, and it is the half of the frost that actually richens the mesh
+   * seen through the translucent card. Dropping it too would read as a duller
+   * rectangle against the real cards (the STICKY TABLE HEADER note measures this:
+   * dE 3.52 without the saturate). So: keep the colour, drop the blur. */
+  --material-frost: var(--card-frost-sat);
   --band-fill: transparent;
 }
 
@@ -1123,8 +1155,8 @@ body {
  * Requires a backdrop that is the PAGE. Inside a Card, see --card-frost's note
  * on backdrop roots and reach for .kq-surface instead. */
 .kq-material {
-  -webkit-backdrop-filter: var(--card-frost);
-  backdrop-filter: var(--card-frost);
+  -webkit-backdrop-filter: var(--material-frost);
+  backdrop-filter: var(--material-frost);
 }
 
 /* "I am a sticky band over the page's ground, and I must occlude."
