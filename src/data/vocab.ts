@@ -40,10 +40,30 @@
 // not a feature.
 
 import vocabJson from "./generated/vocab.json" with { type: "json" };
+import wordSensesJson from "./generated/word-senses.json" with { type: "json" };
 import { entryId, factId } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
 
 export const VOCAB_SUBJECT = "word";
+
+/**
+ * One reading a written form has, and what it means when it is read that way.
+ *
+ * 人 has three: ひと a person, じん the -ian suffix, にん the counter for people.
+ * They are the same four fields the word row carries, because they are the same
+ * kind of thing — a reading with a meaning, a word class and a per-kanji
+ * breakdown. The word row IS its first sense; see `SENSES`.
+ */
+export interface WordSense {
+  /** The reading, in kana. */
+  readonly reb: string;
+  /** English glosses for this reading, best first. */
+  readonly glosses: readonly string[];
+  /** JMdict part-of-speech tags for this reading. See `VocabRow.pos`. */
+  readonly pos: readonly string[];
+  /** Per-kanji breakdown of THIS reading. See `VocabRow.align`. */
+  readonly align: readonly (readonly [string, string, string])[] | null;
+}
 
 /** One everyday word. */
 export interface VocabRow {
@@ -119,6 +139,20 @@ export interface VocabRow {
    * "not part of the beginner core", never "unknown".
    */
   readonly beginnerRank: number;
+  /**
+   * Every reading this written form has, primary first, with what each means.
+   *
+   * Never empty: a word with one reading has one sense, and `reb`, `glosses`,
+   * `pos` and `align` above are a copy of `senses[0]`. So the lesson can print
+   * the whole list without asking whether there is a list, and the quiz can go
+   * on asking the word's own fields without knowing there are others.
+   *
+   * SHOWN IN FULL, DRILLED ON THE PRIMARY. 人 shows ひと, じん and にん and is
+   * only ever asked ひと. That is the rule the kanji readings table already
+   * follows, one level up: it lists all five of 人's readings and asks a reading
+   * only inside a word that proves it.
+   */
+  readonly senses: readonly WordSense[];
 }
 
 /**
@@ -141,7 +175,7 @@ export interface VocabRow {
  * (ingest.test.ts) requires 1..N with no gaps, and appending one word past the
  * old max keeps that true without renumbering 12,553 rows.
  */
-const SUPPLEMENT: readonly VocabRow[] = [
+const SUPPLEMENT: readonly JsonVocabRow[] = [
   {
     keb: "いらっしゃる",
     reb: "いらっしゃる",
@@ -149,14 +183,61 @@ const SUPPLEMENT: readonly VocabRow[] = [
     pos: ["Godan verb - -aru special class", "intransitive verb"],
     newspaperBand: null,
     align: null,
-    beginnerRank: (vocabJson as readonly VocabRow[]).length + 1,
+    beginnerRank: (vocabJson as readonly JsonVocabRow[]).length + 1,
   },
 ];
 
+/** A row as vocab.json ships it: one reading, no sense list. */
+type JsonVocabRow = Omit<VocabRow, "senses">;
+
+/**
+ * The forms JMdict files under more than one reading, cut by the same ingest
+ * (scripts/ingest/build.py, the `dump("word-senses.json", …)` block) and joined
+ * on here.
+ *
+ * WHY THE JOIN HAPPENS AT LOAD AND NOT IN vocab.json
+ * ==================================================
+ * The merge belongs to the ingest and now lives there, but vocab.json cannot be
+ * re-cut to carry its result. Its `beginnerRank` was computed from JMdict as it
+ * stood when the file was cut, and that number orders the ENTIRE curriculum
+ * (curriculum-order.ts). Rebuilding it from today's dictionary would move ranks
+ * for reasons that have nothing to do with senses — the dictionary has drifted,
+ * and 37 of the shipped forms are no longer in the cut at all. So the sense
+ * lists ship beside the ranks instead of inside them, and every word keeps the
+ * position it has.
+ *
+ * A form listed here takes its primary from `senses[0]`, which is how 人 stops
+ * being taught as a suffix. The rank stays whatever vocab.json says. When
+ * vocab.json is next re-cut the two agree by construction, and ranks for these
+ * 117 forms will move once, deliberately, because a rank computed from ひと is
+ * not the rank of じん.
+ */
+// Through `unknown` because the JSON import types each `align` row as string[]
+// and `WordSense` says what it really is, a 3-tuple. Same widening vocab.json's
+// own rows carry; the ingest is what guarantees the arity.
+const SENSES = wordSensesJson as unknown as Readonly<Record<string, readonly WordSense[]>>;
+
+function withSenses(row: JsonVocabRow): VocabRow {
+  const senses = SENSES[row.keb];
+  if (!senses?.length) {
+    const { reb, glosses, pos, align } = row;
+    return { ...row, senses: [{ reb, glosses, pos, align }] };
+  }
+  const primary = senses[0];
+  return {
+    ...row,
+    reb: primary.reb,
+    glosses: primary.glosses,
+    pos: primary.pos,
+    align: primary.align,
+    senses,
+  };
+}
+
 export const VOCAB: readonly VocabRow[] = [
-  ...(vocabJson as readonly VocabRow[]),
+  ...(vocabJson as readonly JsonVocabRow[]),
   ...SUPPLEMENT,
-];
+].map(withSenses);
 
 const BY_KEB: ReadonlyMap<string, VocabRow> = new Map(VOCAB.map((w) => [w.keb, w]));
 
@@ -188,6 +269,13 @@ export function isKanaWord(w: VocabRow): boolean {
  * That asymmetry is the model working, not an inconsistency: "what is 先生
  * read as" has exactly one answer, so it can be graded, while "what is 生 read
  * as" has nine and cannot.
+ *
+ * A word with several readings still has ONE reading fact, on its primary. 人 is
+ * asked ひと; じん and にん are shown on the lesson and never graded. Accepting
+ * all three would grade "what is 人 read as" as though it had one answer when it
+ * has three, and asking for a specific one of them needs a question that says
+ * which, which is a question about a word 人 appears in. That question is the
+ * kanji reading fact, and it already exists.
  *
  * A KANA WORD HAS NO READING FACT, which is why the two counts differ. "What
  * is これ read as?" has the answer これ printed in the question — it is not a

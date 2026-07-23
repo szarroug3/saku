@@ -179,8 +179,21 @@ describe("headwordSubtitle — one honest line for a character that is several t
 });
 
 describe("wordTypeOf — the tail cases the vocabulary really holds", () => {
-  test("人's only vocabulary row is a suffix, and says so", () => {
-    assert.equal(wordTypeOf(vocabRow("人")!), "suffix");
+  test("人 is a noun, a suffix and a counter, and each sense says which", () => {
+    const senses = vocabRow("人")!.senses;
+    assert.deepEqual(
+      senses.map((s) => [s.reb, wordTypeOf(s)]),
+      [
+        ["ひと", "noun"],
+        ["じん", "suffix"],
+        ["にん", "counter"],
+      ],
+    );
+  });
+
+  test("a counter tag under a noun is still a noun: 山 counts heaps and is a mountain", () => {
+    assert.equal(vocabRow("山")!.pos[0], "counter");
+    assert.equal(wordTypeOf(vocabRow("山")!), "noun");
   });
 
   test("the everyday four are untouched", () => {

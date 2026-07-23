@@ -173,11 +173,14 @@ export function roleHasSections(
  *
  * JMdict's tags are written for a lexicographer ("noun (common) (futsuumeishi)",
  * "Godan verb - -aru special class"), so they are read down to the one word a
- * learner needs. The tail cases earn their line: 人's only vocabulary row is the
- * じん SUFFIX, and an unmatched tag used to come out as "noun", which told a
- * reader that 人 stands alone in a sentence the way 山 does.
+ * learner needs. The tail cases earn their line: 人 read じん is a SUFFIX, and an
+ * unmatched tag used to come out as "noun", which told a reader that 人 in that
+ * reading stands alone in a sentence the way 山 does.
+ *
+ * Takes anything carrying `pos`, so the sense table can label each of 人's three
+ * readings — noun, suffix, counter — from the one implementation.
  */
-export function wordTypeOf(word: VocabRow): string {
+export function wordTypeOf(word: Pick<VocabRow, "pos">): string {
   const pos = word.pos[0]?.toLowerCase() ?? "";
   // ADVERB BEFORE VERB, because "adverb" ends in "verb" and 何's lead tag is
   // "adverb (fukushi)". Testing for the verb first called 何 a verb.
@@ -190,9 +193,14 @@ export function wordTypeOf(word: VocabRow): string {
   if (pos.includes("prefix")) return "prefix";
   if (pos.includes("pronoun")) return "pronoun";
   if (pos.includes("conjunction")) return "conjunction";
-  // "counter" is deliberately not on the list. 山's first tag is `ctr` and 山 is
-  // a mountain long before it is a way of counting heaps, so a word whose lead
-  // tag is a counter falls through to the noun it also is.
+  // "counter" is deliberately not tested on the LEAD tag. 山's first tag is
+  // `ctr` and 山 is a mountain long before it is a way of counting heaps, so a
+  // word whose lead tag is a counter falls through to the noun it also is. A
+  // sense that is nothing BUT a counter is a different case and says so: 人 read
+  // にん counts people and is not a word you can put in a sentence alone.
+  if (word.pos.length && word.pos.every((p) => p.toLowerCase().includes("counter"))) {
+    return "counter";
+  }
   return "noun";
 }
 
