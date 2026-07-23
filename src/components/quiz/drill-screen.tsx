@@ -1086,9 +1086,15 @@ export function DrillScreen() {
           : rt.feedback?.kind === "bad"
             ? "wrong-flash"
             : "resting";
+  // A finished miss — out of retries, waiting for the learner to move on. This is
+  // the state that needs a way FORWARD. `revealing` (the answer text) is this AND
+  // the show-answer setting; the Continue affordance keys on `missWaiting` alone,
+  // so it is present even with reveal off. A CORRECT answer auto-advances, so its
+  // `rt.waiting` is excluded here by the `bad` check.
+  const missWaiting = rt.waiting && rt.feedback?.kind === "bad";
   // Out of retries and waiting for the next card, with the setting on: show the
   // answer in the answer slot (the reveal that used to be a sentence).
-  const revealing = cfg.showAnswer && rt.waiting && rt.feedback?.kind === "bad";
+  const revealing = cfg.showAnswer && missWaiting;
   // The mix-up, named at the reveal and nowhere else. Not on a miss with goes
   // left — you are still answering, and the app telling you what you nearly
   // confused it with would be handing you the answer mid-question.
@@ -1426,22 +1432,22 @@ export function DrillScreen() {
                   {mixup}
                 </span>
               ) : null}
-              {/* The way on. A typed card has hands on the keyboard, so the
-                  Enter hint is enough. Multiple choice is answered entirely by
-                  clicking and has no keystroke in hand, so it gets a real
-                  button — that, and not a 1.6s timer, is the honest answer to
-                  "the mouse user has nothing to click". Either way the learner
-                  decides when they have finished reading the answer. */}
-              {q.mc ? (
-                <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
-                  Continue
-                </SmallBtn>
-              ) : (
-                <span className="text-[10px] text-text-muted">
-                  Press Enter to continue
-                </span>
-              )}
             </>
+          ) : null}
+          {/* The way on, for EVERY finished miss — typed or multiple choice,
+              reveal on or off. It used to be a real button for MC only, with a
+              "press Enter" hint for typed cards, on the reasoning that a typed
+              card has hands on the keyboard. That breaks on mobile: the input
+              goes readOnly at the reveal, so the on-screen keyboard closes, and a
+              typed card was then left with no keyboard to press Enter AND no
+              button to tap — genuinely stuck, no way to the next card. So a real,
+              tappable Continue shows on any finished miss; a desktop user can
+              still just press Enter (the title says so, and the document keydown
+              handler advances on it). */}
+          {missWaiting ? (
+            <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
+              Continue
+            </SmallBtn>
           ) : null}
         </p>
 
