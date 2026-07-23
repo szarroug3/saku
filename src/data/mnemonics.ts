@@ -1320,6 +1320,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "ひと", reading: "hito", gloss: "person", hitIndex: 0 },
   },
 
+  ヒ: {
+    glyph: "ヒ",
+    romaji: "hi",
+    sound: "hee",
+    object: "helium balloons",
+    analogy: [
+      { text: "Say “" },
+      { text: "hee", accent: true },
+      { text: "” as in " },
+      { text: "he", accent: true },
+      { text: "lium." },
+    ],
+    mnemonic: [
+      { text: "Three " },
+      { text: "he", accent: true },
+      { text: "lium balloons tug upward while their golden strings knot together and curl away." },
+    ],
+    example: { word: "ヒーロー", reading: "hīrō", gloss: "hero", hitIndex: 0 },
+  },
+
   ふ: {
     glyph: "ふ",
     romaji: "fu",

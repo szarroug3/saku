@@ -32,8 +32,8 @@ const ALL_HIRAGANA = [
 test("getMnemonic returns null for a glyph with no entry (hide-when-absent)", () => {
   // The hide-when-absent case the Library page and the teach flow render as
   // NOTHING. No base hiragana hits this any more (all 46 are authored), so the
-  // stand-ins are an un-authored katakana and a kanji glyph.
-  assert.equal(getMnemonic("ヒ"), null);
+  // stand-ins are an unsupported obsolete katakana and a kanji glyph.
+  assert.equal(getMnemonic("ヰ"), null);
   assert.equal(getMnemonic("生"), null); // a kanji glyph is a valid key with no row
   assert.equal(getMnemonic(""), null);
 });
@@ -55,17 +55,17 @@ test("all 46 base hiragana resolve to an entry keyed by their own glyph", () => 
     // And that code point is the kana this entry teaches.
     assert.equal(chars[m.example.hitIndex], k, `${k} example hitIndex should land on ${k}`);
   }
-  assert.equal(Object.keys(MNEMONICS).length, 91, "the 46 base hiragana and forty-five approved katakana are authored");
+  assert.equal(Object.keys(MNEMONICS).length, 92, "all 46 base hiragana and all 46 base katakana are authored");
 });
 
-test("Library-entry / teach-flow gate: authored kana resolve, a non-authored glyph does not", () => {
+test("Library-entry / teach-flow gate: authored kana resolve, an unsupported glyph does not", () => {
   // Exactly what app/library/[...entry]/page.tsx and
   // components/lesson/lesson-item-view.tsx branch on. Authored kana mount the
   // MnemonicView; a glyph without a row mounts nothing.
   assert.notEqual(getMnemonic("あ"), null);
   assert.notEqual(getMnemonic("か"), null);
   assert.notEqual(getMnemonic("カ"), null);
-  assert.equal(getMnemonic("ヒ"), null);
+  assert.equal(getMnemonic("ヰ"), null);
 });
 
 // EVERY kana now gets a CANDIDATE image path, derived from its own romaji. It's
@@ -112,7 +112,7 @@ test("kanaScript classifies script by Unicode block, and katakana derives the ka
     ["サ", "sa"], ["シ", "shi"], ["ス", "su"], ["セ", "se"], ["ソ", "so"],
     ["タ", "ta"], ["チ", "chi"], ["ツ", "tsu"], ["テ", "te"], ["ト", "to"],
     ["ナ", "na"], ["ニ", "ni"], ["ネ", "ne"],
-    ["ヌ", "nu"], ["ノ", "no"], ["ハ", "ha"],
+    ["ヌ", "nu"], ["ノ", "no"], ["ハ", "ha"], ["ヒ", "hi"],
     ["ヘ", "he"], ["メ", "me"], ["ヤ", "ya"], ["ワ", "wa"],
     ["フ", "fu"], ["ホ", "ho"], ["マ", "ma"], ["ミ", "mi"], ["ム", "mu"], ["モ", "mo"],
     ["ユ", "yu"], ["ヨ", "yo"], ["ラ", "ra"], ["リ", "ri"], ["ル", "ru"], ["レ", "re"],
