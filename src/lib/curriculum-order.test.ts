@@ -45,6 +45,46 @@ const has = (glyph: string, role: CurriculumRole): boolean =>
  * the only radicals this sequence teaches as radicals of their own. */
 const RADICAL_ONLY = RADICALS.filter((r) => kanjiRow(r.glyph) === undefined);
 
+/** The component kanji of a character, classified the way the module classifies
+ * them and derived here from the raw tables so the test is not just reading the
+ * module's own answer back. KRADFILE's decomposition plus the filed-under
+ * radical; anything that is not a jōyō kanji belongs to the radical or stroke
+ * half and is checked elsewhere. */
+function componentKanji(c: string): string[] {
+  const parts = new Set<string>();
+  for (const part of kanjiRow(c)?.costParts ?? []) {
+    if (part !== c && kanjiRow(part) !== undefined) parts.add(part);
+  }
+  const filed = radicalOfKanji(c);
+  // 王/玉 is the one pair where filing and drawing disagree about which contains
+  // which; the module drops the filing edge there, so this does too. Everything
+  // else in the join is a plain requirement.
+  if (
+    filed &&
+    filed.glyph !== c &&
+    kanjiRow(filed.glyph) !== undefined &&
+    !kanjiRow(filed.glyph)!.costParts.includes(c)
+  ) {
+    parts.add(filed.glyph);
+  }
+  return [...parts];
+}
+
+/** The radical-only components of a character, same two sources. These are the
+ * welded ones. */
+function componentRadicals(c: string): number[] {
+  const nums = new Set<number>();
+  const add = (glyph: string) => {
+    if (kanjiRow(glyph) !== undefined) return;
+    const rad = radicalByGlyph(glyph);
+    if (rad) nums.add(rad.num);
+  };
+  for (const part of kanjiRow(c)?.costParts ?? []) add(part);
+  const filed = radicalOfKanji(c);
+  if (filed) add(filed.glyph);
+  return [...nums];
+}
+
 /** Every kanji the curriculum's words are written with, so "orphan" can be
  * recomputed here rather than trusted. */
 const KANJI_IN_WORDS: ReadonlySet<string> = new Set(
@@ -121,18 +161,45 @@ describe("prerequisite invariants", () => {
     }
   });
 
-  test("an unmerged both-role radical precedes the kanji filed under it", () => {
-    // 火 is not its own first consumer (点 needs it earlier), so it is pulled
-    // forward as a kanji. It must still land before every kanji filed under it.
+  test("a both-role radical precedes the kanji filed under it", () => {
+    // 人 (merged) and 火 (not) are alike here: both are kanji, so both are kanji
+    // prerequisites of everything filed under them, ordered before and not tied.
     for (const k of KANJI) {
       const rad = radicalOfKanji(k.c);
-      if (!rad || isRadicalTaughtAsKanji(rad.num)) continue;
-      if (kanjiRow(rad.glyph) === undefined || rad.glyph === k.c) continue;
+      if (!rad || kanjiRow(rad.glyph) === undefined || rad.glyph === k.c) continue;
+      // Except 王, whose filed-under radical 玉 is drawn from 王 itself. The
+      // drawing wins; componentKanji is where that is decided.
+      if (!componentKanji(k.c).includes(rad.glyph)) continue;
       assert.ok(
         AT.get(rad.glyph)! < AT.get(k.c)!,
         `${rad.glyph} must come before kanji ${k.c}`,
       );
     }
+    // 王 owes nothing: KRADFILE gives it no parts, and its filing under 玉 is the
+    // edge the drawing overrules.
+    assert.deepEqual(componentKanji("王"), []);
+    assert.ok(AT.get("王")! < AT.get("玉")!, "王 must come before 玉");
+  });
+
+  test("every component kanji precedes the kanji built from it", () => {
+    // The owner's rule: any requirement of a kanji is taught before it, and a
+    // requirement that is itself a kanji is still a requirement. Recursive by
+    // construction, since this holds for every kanji including the components.
+    for (const k of KANJI) {
+      for (const part of componentKanji(k.c)) {
+        assert.ok(
+          AT.get(part)! < AT.get(k.c)!,
+          `component ${part} must come before ${k.c}`,
+        );
+      }
+    }
+  });
+
+  test("人 precedes 何", () => {
+    // The case that caught the old rule out: 何 is filed under 人, 人 is a kanji,
+    // so under "only radical-only shapes are prerequisites" 何 opened the whole
+    // curriculum with its own component nowhere in it.
+    assert.ok(AT.get("人")! < AT.get("何")!);
   });
 
   test("every kanji of a word precedes the word", () => {
@@ -159,6 +226,74 @@ describe("prerequisite invariants", () => {
     for (const it of CURRICULUM_SEQUENCE) {
       if (!it.roles.includes("word")) continue;
       assert.ok(kebs.has(it.glyph), `${it.glyph} claims the word role`);
+    }
+  });
+});
+
+describe("the tie", () => {
+  test("a tied item is a radical-only shape, and only a radical", () => {
+    for (const it of CURRICULUM_SEQUENCE) {
+      if (it.tiedTo === null) continue;
+      assert.deepEqual(it.roles, ["radical"], `${it.glyph} is tied`);
+      assert.ok(kanjiRow(it.glyph) === undefined, `${it.glyph} is a kanji`);
+    }
+  });
+
+  test("a tied radical sits immediately before the kanji it is welded to", () => {
+    for (let i = 0; i < CURRICULUM_SEQUENCE.length; i++) {
+      const it = CURRICULUM_SEQUENCE[i]!;
+      if (it.tiedTo === null) continue;
+      const target = AT.get(it.tiedTo);
+      assert.ok(target !== undefined, `${it.glyph} is tied to nothing taught`);
+      assert.ok(target! > i, `${it.glyph} comes after ${it.tiedTo}`);
+      // Everything between is another radical welded to the same kanji, so the
+      // whole run travels as one lesson.
+      for (let j = i + 1; j < target!; j++) {
+        assert.equal(
+          CURRICULUM_SEQUENCE[j]!.tiedTo,
+          it.tiedTo,
+          `${CURRICULUM_SEQUENCE[j]!.glyph} sits between ${it.glyph} and ${it.tiedTo}`,
+        );
+      }
+    }
+  });
+
+  test("a kanji prerequisite is ordered, never tied", () => {
+    // The half of the rule that gives the packer its freedom: 人 comes before 何
+    // and may sit any number of lessons earlier.
+    for (const k of KANJI) {
+      const item = CURRICULUM_SEQUENCE[AT.get(k.c)!]!;
+      assert.equal(item.tiedTo, null, `kanji ${k.c} is welded to something`);
+    }
+    // 人 is a component of 何 and is nowhere near welded to it.
+    assert.equal(CURRICULUM_SEQUENCE[AT.get("人")!]!.tiedTo, null);
+  });
+
+  test("a word is never tied", () => {
+    for (const w of CURRICULUM_WORDS) {
+      assert.equal(CURRICULUM_SEQUENCE[AT.get(w.keb)!]!.tiedTo, null, w.keb);
+    }
+  });
+
+  test("every radical-only component is welded to the kanji that first needs it", () => {
+    // The weld target must be a character the radical is genuinely part of, and
+    // it must be the FIRST such character in the sequence: welding it to a later
+    // consumer would teach the shape early, with nothing to use it on.
+    const firstConsumer = new Map<number, string>();
+    for (const it of CURRICULUM_SEQUENCE) {
+      if (kanjiRow(it.glyph) === undefined) continue;
+      for (const num of componentRadicals(it.glyph)) {
+        if (!firstConsumer.has(num)) firstConsumer.set(num, it.glyph);
+      }
+    }
+    for (const r of RADICAL_ONLY) {
+      const item = CURRICULUM_SEQUENCE[AT.get(r.glyph)!]!;
+      const first = firstConsumer.get(r.num);
+      if (first === undefined) {
+        assert.equal(item.tiedTo, null, `${r.glyph} is in nothing yet tied`);
+        continue;
+      }
+      assert.equal(item.tiedTo, first, `${r.glyph} welded to the wrong kanji`);
     }
   });
 });
@@ -219,20 +354,26 @@ describe("the tail", () => {
   const orphanKanji = KANJI.filter((k) => !KANJI_IN_WORDS.has(k.c)).map((k) => k.c);
   const lastWord = Math.max(...CURRICULUM_WORDS.map((w) => AT.get(w.keb)!));
 
-  /** A both-role character that is not its own first consumer (阜, of 院, 階 …).
-   * No word contains it, so it counts as an orphan kanji, and it still rides in
-   * early because a kanji it indexes needs it. Excluded wherever the test is
-   * about the ORDER of the tail. */
-  const pulledAsRadical = (c: string): boolean => {
-    const rad = radicalOfKanji(c);
-    return rad !== undefined && rad.glyph === c && !isRadicalTaughtAsKanji(rad.num);
-  };
+  /** Pulled in as a COMPONENT of something a word needed, so it rides in with
+   * its consumer no matter what the tail would have done with it. 乙 is in no
+   * curriculum word and is still item 6-ish, because 気 is built from it. These
+   * are excluded wherever a test is about the ORDER of the tail; they are not
+   * sequenced by it. */
+  const pulledAsComponent = (c: string): boolean => AT.get(c)! < lastWord;
 
   test("the orphan kanji are the 388 the data says, and follow every word", () => {
     assert.equal(orphanKanji.length, 388);
-    for (const c of orphanKanji) {
-      if (pulledAsRadical(c)) continue;
+    // The ones no earlier character reached for. Everything else is a component
+    // debt that was paid at the point it was owed.
+    const tail = orphanKanji.filter((c) => !pulledAsComponent(c));
+    assert.ok(tail.length > 0, "the tail is empty");
+    for (const c of tail) {
       assert.ok(AT.get(c)! > lastWord, `orphan kanji ${c} lands among the words`);
+    }
+    // And nothing that IS in a word waits for the tail.
+    for (const k of KANJI) {
+      if (!KANJI_IN_WORDS.has(k.c)) continue;
+      assert.ok(AT.get(k.c)! < lastWord, `${k.c} is in a word but taught after`);
     }
   });
 
@@ -240,9 +381,11 @@ describe("the tail", () => {
     const order = kanjiTeachOrder("everyday");
     const rank = new Map(order.map((c, i) => [c, i]));
     const tail = orphanKanji
-      .filter((c) => !pulledAsRadical(c))
+      .filter((c) => !pulledAsComponent(c))
       .sort((a, b) => AT.get(a)! - AT.get(b)!);
     for (let i = 1; i < tail.length; i++) {
+      // Only the kanji ITEMS compare: a tail kanji that drags a component in
+      // arrives with it, and the component was ordered by need, not by rank.
       assert.ok(
         rank.get(tail[i - 1]!)! < rank.get(tail[i]!)!,
         `${tail[i - 1]} and ${tail[i]} are out of everyday order`,
@@ -250,25 +393,34 @@ describe("the tail", () => {
     }
   });
 
-  test("the orphan radicals follow the orphan kanji", () => {
+  test("the orphan radicals follow every kanji", () => {
     const lastKanji = Math.max(...KANJI.map((k) => AT.get(k.c)!));
-    const orphanRadicals = RADICAL_ONLY.filter(
-      (r) => AT.get(r.glyph)! > lastKanji,
-    );
-    // Radicals no jōyō kanji is filed under: nothing pulls them in, so they are
-    // the tail of the tail.
-    const filed = new Set(
-      KANJI.map((k) => radicalOfKanji(k.c)?.num).filter((n) => n !== undefined),
-    );
-    const unused = RADICAL_ONLY.filter((r) => !filed.has(r.num));
-    assert.equal(orphanRadicals.length, unused.length);
+    const orphanRadicals = RADICAL_ONLY.filter((r) => AT.get(r.glyph)! > lastKanji);
+    // A radical-only shape reaches the tail only when it is in NOTHING: no kanji
+    // is filed under it and no decomposition names it. Anything else was welded
+    // to its first consumer long before.
+    const inSomething = new Set<number>();
+    for (const k of KANJI) {
+      const filed = radicalOfKanji(k.c);
+      if (filed) inSomething.add(filed.num);
+      for (const part of k.costParts) {
+        const rad = radicalByGlyph(part);
+        if (rad && kanjiRow(part) === undefined) inSomething.add(rad.num);
+      }
+    }
+    const unused = RADICAL_ONLY.filter((r) => !inSomething.has(r.num));
     assert.deepEqual(
       orphanRadicals.map((r) => r.num),
       unused.map((r) => r.num),
-      "orphan radicals are not in Kangxi number order",
+      "the orphan radical tail is not the unused radicals in Kangxi order",
     );
     for (const r of orphanRadicals) {
       assert.deepEqual(CURRICULUM_SEQUENCE[AT.get(r.glyph)!]!.roles, ["radical"]);
+      assert.equal(
+        CURRICULUM_SEQUENCE[AT.get(r.glyph)!]!.tiedTo,
+        null,
+        `${r.glyph} is welded to a kanji it is not in`,
+      );
     }
   });
 

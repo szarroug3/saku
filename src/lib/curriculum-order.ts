@@ -18,19 +18,76 @@
 // =========================
 // Words lead, because a word is the only item here a learner has a reason to
 // want. CURRICULUM_WORDS is already the teaching order (beginnerRank, the
-// JLPT-joined core), and each word is preceded by exactly what it owes: the
-// kanji it is written with, and, ahead of each of those, the radical-only shape
-// the kanji is built around. Nothing arrives early and nothing arrives for its
-// own sake. 電車 pulls 電 and 車 with it, and 雨 rides in ahead of 電 because 電 is
-// filed under it.
+// JLPT-joined core), and each word is preceded by everything it owes: the kanji
+// it is written with, and ahead of each of those, recursively, everything THOSE
+// are built from. 電車 pulls 電 and 車; 電 pulls 雨 and 田, and 雨 pulls what 雨 is
+// built from, all the way down to shapes that are nothing but strokes.
 //
 // Then the tail, which is completeness and not curriculum:
 //
-//   1. The 388 jōyō kanji that appear in NO curriculum word. They owe nothing to
-//      any word, so they follow all of them, in the everyday teaching order
-//      (kanjiTeachOrder) so the tail is a ramp and not an accident of the table.
+//   1. The jōyō kanji that appear in NO curriculum word and that nothing pulled
+//      in as a component. They owe nothing to any word, so they follow all of
+//      them, in the everyday teaching order (kanjiTeachOrder) so the tail is a
+//      ramp and not an accident of the table.
 //   2. The radical-only shapes no taught kanji ever pulled in. Those index no
 //      jōyō kanji at all, so there is no first consumer to ride in with.
+//
+// THE PREREQUISITE RULE: ORDER EVERYTHING, TIE ONLY RADICALS
+// ==========================================================
+// The owner's rule, and it is two rules wearing one sentence:
+//
+//   "any requirements for the kanji should be taught before the kanji. if the
+//    prerequisite is a kanji, it doesn't need to be in the same lesson as the
+//    kanji. if the prerequisite is a radical, they should be in the same lesson."
+//
+// So ORDER applies to every component, and the TIE applies only to radicals:
+//
+//   - ORDER. A kanji is never taught before something it is built from, whether
+//     that something is a radical-only shape or a jōyō kanji in its own right.
+//     This is recursive: 何 owes 人, and whatever 人 owes comes before 人. That
+//     is what makes 人 item 1 and 何 item 2, where an earlier cut of this module
+//     opened on 何 with 人 nowhere in sight.
+//   - TIE. A radical-only shape is not a lesson a learner would sit through on
+//     its own: it is the piece the very next character is made of, and it means
+//     nothing until that character shows up. So it is WELDED to the kanji that
+//     first needs it, immediately before it, and phase 3's packer must not split
+//     the pair across a lesson boundary. That is the same weld `packUnits`
+//     already builds in kanji-lesson.ts, carried here as data.
+//     A kanji prerequisite gets no weld. 人 is a whole lesson by itself, and 何
+//     is happy to meet it a week earlier, so the packer is free to put the two
+//     wherever the cost fits.
+//
+// The weld is `tiedTo` on the item, and the packing itself is NOT done here. This
+// module says what must be true; the packer decides where the cuts fall.
+//
+// WHAT COUNTS AS A COMPONENT
+// ==========================
+// `costParts` (KRADFILE, via KanjiRow) plus the character's filed-under radical
+// (`radicalOfKanji`), and each component classified by what it IS:
+//
+//   - a jōyō kanji (kanjiRow) is a KANJI prerequisite: ordered before, resolved
+//     recursively, not tied.
+//   - a Kangxi radical that is no kanji (气, 宀) is a RADICAL prerequisite:
+//     ordered immediately before, and tied.
+//   - anything else (｜ ノ 丶 and the other bare strokes) is NOT a prerequisite.
+//     There is no card for a stroke and nothing to know about one; it is simply
+//     drawn when the character is drawn.
+//
+// `costParts` and not `comps` because it is the decomposition that goes all the
+// way down: `comps` stops at the meaningful depth-1 parts a learner is SHOWN
+// ("made of"), which is the right answer for a card and the wrong one for a debt
+// (it would let a character in owing a shape nobody had met). kanjiCost already
+// reads costParts for exactly this reason. It over-decomposes and it is wrong
+// about 亻/化, which costs a little accuracy in what gets pulled forward and
+// never costs correctness: everything it names is genuinely in the glyph.
+//
+// CYCLES. Joining a drawing decomposition to a filing table can close a loop:
+// 王 is filed under 玉 while 玉 is drawn as 王 plus a dot, and over the whole
+// 2,136 that is the only one. It is resolved where it is made, in `componentsOf`
+// (the drawing wins), so the walk itself sees a DAG. The walk still marks a
+// character taught before walking its components, as a backstop that turns any
+// future loop into an arbitrary break instead of a stack overflow, and as the
+// guard for self-reference (a radical filed under itself: 八 小 己 火 玉 示 肉 阜).
 //
 // ONE ITEM PER GLYPH, AND ROLES INSTEAD OF KINDS
 // ==============================================
@@ -43,13 +100,9 @@
 //
 // Two consequences the rest of this file exists to honour:
 //
-//   - A both-role character is taught AS ITS KANJI, never as a separate radical
-//     item. `isRadicalTaughtAsKanji` already merges the 116 that are their own
-//     first consumer; the 8 that are not (八 小 己 火 玉 示 肉 阜) keep an early
-//     radical card in the kanji track, and here they instead have their KANJI
-//     pulled forward to the point of first need. Same early arrival, one item,
-//     and the item honestly says radical AND kanji. Each of the 8 is filed under
-//     itself, so the pull-forward has nothing to recurse into.
+//   - A both-role character (人, 大, 乙, 火) is taught AS ITS KANJI, never as a
+//     separate radical item. It is a kanji, so it is a kanji prerequisite, and
+//     its item honestly says radical AND kanji.
 //   - A word whose written form is exactly one kanji is FOLDED into that kanji's
 //     item. Teaching 山 at the moment 火山 first needs it delivers the word 山 as
 //     well, so 山 is not emitted a second time when its own beginnerRank comes
@@ -60,12 +113,7 @@
 // shape, and every curriculum word appears exactly once in CURRICULUM_SEQUENCE.
 
 import { kanjiRow, kanjiTeachOrder } from "@/data/kanji";
-import {
-  isRadicalTaughtAsKanji,
-  radicalByGlyph,
-  radicalOfKanji,
-  type RadicalRow,
-} from "@/data/radicals";
+import { radicalByGlyph, radicalOfKanji, type RadicalRow } from "@/data/radicals";
 import { RADICAL_TEACHING_ORDER } from "@/lib/radical-order";
 import { CURRICULUM_WORDS, wordKanji } from "@/lib/word-lesson";
 
@@ -75,9 +123,8 @@ import { CURRICULUM_WORDS, wordKanji } from "@/lib/word-lesson";
  */
 export type CurriculumRole = "radical" | "kanji" | "word";
 
-/** One item of the spine: a character or a written form, and every role it
- * plays. The roles are what a screen labels it with; this module deliberately
- * stops short of the label itself. */
+/** One item of the spine: a character or a written form, every role it plays,
+ * and the weld, if any, to the item after it. */
 export interface CurriculumItem {
   /** The glyph to teach: 气, 山, 電車, あなた. */
   readonly glyph: string;
@@ -85,11 +132,24 @@ export interface CurriculumItem {
    * two items with the same roles compare equal element by element. Never
    * empty. */
   readonly roles: readonly CurriculumRole[];
+  /**
+   * The kanji this item is WELDED to, for a radical-only shape pulled in as a
+   * component; null for everything else.
+   *
+   * A promise to the packer, in two parts: the tied item sits in the same lesson
+   * as that kanji, and it sits immediately before it. A kanji needing two
+   * radical-only shapes yields two tied items in a row, then the kanji, and the
+   * whole run travels together.
+   *
+   * Only a radical is ever tied. A kanji prerequisite is ordered earlier and
+   * nothing more, so it carries null and the packer may put a hundred items
+   * between it and the character that wanted it.
+   */
+  readonly tiedTo: string | null;
 }
 
-/** The curriculum words by written form, for the two membership questions this
- * module asks 6,213 times each: is this glyph a word, and which row is it. Keys
- * are unique across CURRICULUM_WORDS. */
+/** The curriculum words by written form, for the membership question this module
+ * asks of every item. Keys are unique across CURRICULUM_WORDS. */
 const WORD_KEBS: ReadonlySet<string> = new Set(CURRICULUM_WORDS.map((w) => w.keb));
 
 /**
@@ -112,23 +172,71 @@ function rolesOf(glyph: string): CurriculumRole[] {
   return roles;
 }
 
+/** What one kanji owes, split by how the debt is paid. See the header: kanji
+ * parts are ordered before and resolved recursively, radical parts are ordered
+ * immediately before and welded, bare strokes are owed nothing. */
+interface Components {
+  readonly kanji: readonly string[];
+  readonly radicals: readonly RadicalRow[];
+}
+
 /**
- * The radical-only shape a kanji must meet first, or null when there is nothing
- * separate to teach.
+ * The components of one kanji, classified and deduped, in a stable order.
  *
- * This is `radicalPrereqOf` from kanji-lesson.ts with the both-role case moved
- * one step further along the same argument. That function drops the 116 merged
- * radicals, which ARE their own kanji and are taught there; this one also drops
- * the 8 unmerged both-role characters, for the reason the header gives: they are
- * kanji too, so they are taught as kanji here and pulled forward to the point of
- * first need instead of arriving as a second, thinner card. What is left is
- * exactly the radical-only shapes, the 90 that are no kanji at all.
+ * Two sources, and the second is not redundant. `costParts` is KRADFILE's
+ * decomposition, which is what the glyph is drawn from; `radicalOfKanji` is the
+ * one classical radical the character is FILED under, which the decomposition
+ * does not always name (and which is the debt the radical track has always
+ * collected). 何 is filed under 人 and that is why 人 comes first, whatever
+ * KRADFILE calls the left-hand stroke.
+ *
+ * Computed once per kanji and cached: the walk asks for the same character's
+ * components every time another one is built from it.
  */
-function radicalOnlyPrereq(c: string): RadicalRow | null {
-  const rad = radicalOfKanji(c);
-  if (!rad || isRadicalTaughtAsKanji(rad.num)) return null;
-  if (kanjiRow(rad.glyph) !== undefined) return null;
-  return rad;
+const COMPONENTS = new Map<string, Components>();
+
+function componentsOf(c: string): Components {
+  const cached = COMPONENTS.get(c);
+  if (cached) return cached;
+
+  const kanji: string[] = [];
+  const radicals: RadicalRow[] = [];
+  const seenKanji = new Set<string>();
+  const seenRadicals = new Set<number>();
+
+  const classify = (part: string) => {
+    // A character is not its own prerequisite, and some decompositions list it
+    // among its own parts.
+    if (part === c) return;
+    if (kanjiRow(part) !== undefined) {
+      if (seenKanji.has(part)) return;
+      seenKanji.add(part);
+      kanji.push(part);
+      return;
+    }
+    const rad = radicalByGlyph(part);
+    if (!rad) return; // A bare stroke: drawn, never taught.
+    if (seenRadicals.has(rad.num)) return;
+    seenRadicals.add(rad.num);
+    radicals.push(rad);
+  };
+
+  for (const part of kanjiRow(c)?.costParts ?? []) classify(part);
+  const filed = radicalOfKanji(c);
+  // THE ONE PLACE THE TWO SOURCES CONTRADICT EACH OTHER: 王 is FILED under 玉,
+  // and 玉 is DRAWN as 王 plus a dot, so each is the other's prerequisite and
+  // whichever is reached first would teach the other one late. The drawing wins:
+  // 玉 visibly contains 王, and filing is a catalogue fact about where the
+  // character sits in the Kangxi table. So the filed-under edge is dropped when
+  // the radical is itself built from this character. src/data/radicals.ts has
+  // the same pair on file as the reason 玉 cannot merge into one kanji lesson.
+  if (filed && !kanjiRow(filed.glyph)?.costParts.includes(c)) {
+    classify(filed.glyph);
+  }
+
+  const out: Components = { kanji, radicals };
+  COMPONENTS.set(c, out);
+  return out;
 }
 
 /** The whole spine, built once. */
@@ -138,38 +246,30 @@ function buildSequence(): CurriculumItem[] {
   const taughtRadicals = new Set<number>();
   const deliveredWords = new Set<string>();
 
-  const push = (glyph: string) => {
-    items.push({ glyph, roles: rolesOf(glyph) });
-  };
-
-  const teachRadical = (rad: RadicalRow) => {
-    if (taughtRadicals.has(rad.num)) return;
-    taughtRadicals.add(rad.num);
-    push(rad.glyph);
+  const push = (glyph: string, tiedTo: string | null) => {
+    items.push({ glyph, roles: rolesOf(glyph), tiedTo });
   };
 
   const teachKanji = (c: string) => {
     if (taughtKanji.has(c)) return;
-    // Marked taught BEFORE the prerequisite walk, so a character filed under its
-    // own radical (all 8 of the pulled-forward both-role ones are) cannot ask
-    // for itself and spin. It is still emitted after its prerequisite, because
-    // the push below is what puts it in the sequence.
+    // Marked taught BEFORE the component walk, so a decomposition that loops
+    // back on itself resolves instead of recursing forever. See CYCLES in the
+    // header. It is still emitted after its components, because the push below
+    // is what puts it in the sequence.
     taughtKanji.add(c);
-    const rad = radicalOnlyPrereq(c);
-    if (rad) teachRadical(rad);
-    else {
-      // No radical-only shape to teach, but the character may still be filed
-      // under an unmerged both-role radical (点 under 火). That one is a kanji,
-      // so it comes forward as a kanji item, carrying its own roles.
-      const both = radicalOfKanji(c);
-      if (both && !isRadicalTaughtAsKanji(both.num) && both.glyph !== c) {
-        teachKanji(both.glyph);
-      }
+    const parts = componentsOf(c);
+    // Kanji first, radicals second, so the welded radicals end up in the run
+    // immediately before this character with nothing between.
+    for (const k of parts.kanji) teachKanji(k);
+    for (const rad of parts.radicals) {
+      if (taughtRadicals.has(rad.num)) continue;
+      taughtRadicals.add(rad.num);
+      push(rad.glyph, c);
     }
     // THE FOLD. If the character is itself a curriculum word, this item delivers
     // the word as well, and the word's own turn later will find it already paid.
     if (WORD_KEBS.has(c)) deliveredWords.add(c);
-    push(c);
+    push(c, null);
   };
 
   for (const w of CURRICULUM_WORDS) {
@@ -182,21 +282,24 @@ function buildSequence(): CurriculumItem[] {
     // reached before anything else needs it, one line above).
     if (deliveredWords.has(w.keb)) continue;
     deliveredWords.add(w.keb);
-    push(w.keb);
+    push(w.keb, null);
   }
 
-  // THE ORPHAN KANJI. 388 jōyō kanji appear in no curriculum word, so no word
-  // pulled them in. They follow every word, in the everyday order, which is the
-  // ramp the kanji track already teaches by.
+  // THE ORPHAN KANJI. The jōyō kanji no curriculum word is written with and no
+  // taught character is built from. They follow every word, in the everyday
+  // order, which is the ramp the kanji track already teaches by.
   for (const c of kanjiTeachOrder("everyday")) teachKanji(c);
 
   // THE ORPHAN RADICALS. Every kanji is taught by now, so any radical-only shape
-  // still missing indexes no jōyō kanji at all (爿 瓜 韭 …) and has no first
-  // consumer to ride in with. RADICAL_TEACHING_ORDER already sorts those last
-  // among themselves, in Kangxi number order.
+  // still missing is in nothing at all (爿 瓜 韭 …) and has no first consumer to
+  // ride in with. Untied, for the same reason: there is no kanji to weld it to.
+  // RADICAL_TEACHING_ORDER already sorts those last among themselves, in Kangxi
+  // number order.
   for (const r of RADICAL_TEACHING_ORDER) {
     if (kanjiRow(r.glyph) !== undefined) continue;
-    teachRadical(r);
+    if (taughtRadicals.has(r.num)) continue;
+    taughtRadicals.add(r.num);
+    push(r.glyph, null);
   }
 
   return items;
