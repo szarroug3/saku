@@ -209,7 +209,14 @@
   --bar-h: 2px;
 
   --bg: #eef2fa;
-  --card: rgba(255, 255, 255, 0.62);
+  /* OPAQUE, not translucent. A translucent card over the fixed page mesh has to
+   * re-blend against the mesh on every scroll frame — cheap for one card, the
+   * Library's scroll cost at a hundred tiles (see the .kq-material note). So the
+   * card is solid now and the mesh is BAKED IN as a faint wash instead (the kiri
+   * .kq-material rule below), which is part of the card's own paint and costs
+   * nothing to scroll. This value is ~what the old rgba(255,255,255,0.62) card
+   * composited to over --bg. */
+  --card: #f8fafe;
   --panel: rgba(13, 27, 42, 0.06);
   --text: #0d1b2a;
   --text-muted: rgba(13, 27, 42, 0.55);
@@ -235,7 +242,10 @@
     radial-gradient(40% 60% at 60% 20%, rgba(236, 72, 153, 0.06), transparent 70%);
 
   --dark-bg: #070a14;
-  --dark-card: rgba(255, 255, 255, 0.055);
+  /* Opaque, same reason as the light --card above: no per-frame re-blend over the
+   * fixed mesh. ~what rgba(255,255,255,0.055) sat over --dark-bg, nudged a hair
+   * cooler so the solid panel still reads as lit glass rather than flat ink. */
+  --dark-card: #171b28;
   --dark-panel: rgba(255, 255, 255, 0.07);
   --dark-text: #eef1fb;
   --dark-text-muted: rgba(238, 241, 251, 0.5);
@@ -1167,6 +1177,21 @@ body {
 .kq-material {
   -webkit-backdrop-filter: var(--material-frost);
   backdrop-filter: var(--material-frost);
+}
+
+/* THE MESH, BAKED INTO THE CARD (kiri only). The cards are opaque now (--card),
+ * so they no longer show the live page mesh through themselves — which is exactly
+ * what stopped the per-frame re-blend that janked the Library. To keep them from
+ * reading as flat ink, a faint wash in the mesh's own violet→teal hues is painted
+ * as the card's OWN background-image: it rides with the element, so scrolling it
+ * is free (a background-image is not a backdrop-filter and not a fixed layer).
+ * Anchored to each card rather than the viewport, so there is no fixed-attachment
+ * repaint either; on a mesh this soft, per-card vs one-field is imperceptible.
+ * Scoped to kiri; the three opaque themes never had a mesh to bake. */
+[data-theme="kiri"] .kq-material {
+  background-image:
+    radial-gradient(120% 130% at 0% 0%, rgba(124, 92, 255, 0.06), transparent 55%),
+    radial-gradient(120% 130% at 100% 100%, rgba(45, 212, 191, 0.055), transparent 55%);
 }
 
 /* "Skip me entirely while I'm scrolled offscreen." The Library stacks many Cards,
