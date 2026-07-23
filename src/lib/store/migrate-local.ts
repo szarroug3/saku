@@ -130,11 +130,16 @@ async function replayLists(): Promise<boolean> {
  * Best-effort and self-healing: each local key is cleared only after its uploads
  * succeed, and any failure leaves that key for the next load. Safe to call on
  * every authed mount — with nothing local, it returns immediately.
+ *
+ * Returns whether anything was actually replayed, which is the caller's cue to
+ * re-read the history: the account it seeded the page with was read BEFORE these
+ * uploads landed, so without a re-read the learner watches their merged work
+ * arrive one navigation late.
  */
-export async function migrateLocalProgress(signedIn: boolean): Promise<void> {
-  if (!signedIn || runningOrDone) return;
-  if (typeof window === "undefined") return;
-  if (!hasLocalProgress()) return;
+export async function migrateLocalProgress(signedIn: boolean): Promise<boolean> {
+  if (!signedIn || runningOrDone) return false;
+  if (typeof window === "undefined") return false;
+  if (!hasLocalProgress()) return false;
   runningOrDone = true;
   try {
     // Confirm a real account is actually present in this browser. The app never
@@ -146,20 +151,23 @@ export async function migrateLocalProgress(signedIn: boolean): Promise<void> {
     } = await supabase.auth.getUser();
     if (!user || user.is_anonymous) {
       runningOrDone = false; // not actually signed in — let a later load retry
-      return;
+      return false;
     }
 
     // Two independent keys, two independent clears: history succeeding must not
     // wait on lists, and neither is cleared until its own uploads land.
-    if (await replayHistory()) clearLocalHistory();
+    const historyMerged = await replayHistory();
+    if (historyMerged) clearLocalHistory();
     if (await replayLists()) clearLocalLists();
 
     // If anything failed, leave the flag DOWN so the next load retries the
     // leftovers (the succeeded keys are already gone, so the retry is small).
     if (hasLocalProgress()) runningOrDone = false;
+    return historyMerged;
   } catch {
     // Unexpected failure — surface nothing to the learner (their local copy is
     // intact and the account still works), and allow a retry next load.
     runningOrDone = false;
+    return false;
   }
 }

@@ -32,6 +32,7 @@
 // the caller decides "what to do once it's saved", and neither reaches into the
 // other.
 
+import { notifyHistoryWrite } from "@/lib/history-events";
 import {
   localAddToList,
   localClaim,
@@ -88,20 +89,34 @@ async function postWithLocalFallback(
   }
 }
 
+/**
+ * Announce a saved history write, so the app's one copy of the history knows to
+ * re-read it (see history-events.ts). Wrapped around the four history wrappers
+ * below and not around the list ones, which change a different file.
+ *
+ * Only on `ok`: a refused or dropped write changed nothing, and refetching after
+ * one would just replace the screen with what it already shows.
+ */
+async function announcing(write: Promise<ProgressResult>): Promise<ProgressResult> {
+  const result = await write;
+  if (result.ok) notifyHistoryWrite();
+  return result;
+}
+
 /** "I know these" / "actually, I don't". Mirrors POST /api/claim. On 401 the
  * claim (or its withdrawal) is recorded in this browser instead. */
 export function postClaim(facts: FactId[], known: boolean): Promise<ProgressResult> {
-  return postWithLocalFallback(
-    "/api/claim",
-    { facts, known },
-    () => (known ? localClaim(facts, Date.now()) : localDropClaim(facts)),
+  return announcing(
+    postWithLocalFallback("/api/claim", { facts, known }, () =>
+      known ? localClaim(facts, Date.now()) : localDropClaim(facts),
+    ),
   );
 }
 
 /** "Quiz me". Mirrors POST /api/seen. On 401 the seen record goes local. */
 export function postSeen(facts: FactId[]): Promise<ProgressResult> {
-  return postWithLocalFallback("/api/seen", { facts }, () =>
-    localSeen(facts, Date.now()),
+  return announcing(
+    postWithLocalFallback("/api/seen", { facts }, () => localSeen(facts, Date.now())),
   );
 }
 
@@ -117,7 +132,9 @@ export function postSeen(facts: FactId[]): Promise<ProgressResult> {
  * (after sign-in) replayed to the server cannot be counted twice.
  */
 export function postSession(record: QuizSessionRecord): Promise<ProgressResult> {
-  return postWithLocalFallback("/api/session", record, () => localSession(record));
+  return announcing(
+    postWithLocalFallback("/api/session", record, () => localSession(record)),
+  );
 }
 
 /**
@@ -131,10 +148,12 @@ export function postDelete(body: {
   all?: boolean;
   reset?: boolean;
 }): Promise<ProgressResult> {
-  return postWithLocalFallback("/api/delete", body, () => {
-    if (body.reset) localResetHistory();
-    else localDeleteSessions(body.ids ?? null, body.all ?? false);
-  });
+  return announcing(
+    postWithLocalFallback("/api/delete", body, () => {
+      if (body.reset) localResetHistory();
+      else localDeleteSessions(body.ids ?? null, body.all ?? false);
+    }),
+  );
 }
 
 // ---------- lists ----------

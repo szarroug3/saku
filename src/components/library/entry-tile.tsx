@@ -33,6 +33,7 @@ import { StandingChip } from "@/components/library/standing-chip";
 import { SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { MARK_SUBJECT } from "@/data/marks";
+import { TERM_SUBJECT } from "@/data/terms";
 import { entryName, type LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import type { EntryStanding } from "@/lib/library/standing";
@@ -50,9 +51,18 @@ import { pairPattern } from "@/lib/transitivity-pattern";
  * (it is a diacritic; the sound it makes is the sound of the kana under it), and
  * long vowels has no glyph for a synthesiser to be handed at all. Both omit the
  * speaker rather than render one that reads out a placeholder — or, for a mark,
- * one that reads out silence and looks broken. */
+ * one that reads out silence and looks broken.
+ *
+ * A TERM is the same case arriving from the other direction. "Kana", "Hiragana",
+ * "Romaji" are the English names we use to talk ABOUT Japanese, so a term's glyph
+ * is an English string. Handing that to a Japanese synthesiser produced a button
+ * that visibly did nothing, which is worse than no button at all. */
 function speakable(entry: LibEntry): boolean {
-  return entry.kind !== GRAMMAR_SUBJECT && entry.kind !== MARK_SUBJECT;
+  return (
+    entry.kind !== GRAMMAR_SUBJECT &&
+    entry.kind !== MARK_SUBJECT &&
+    entry.kind !== TERM_SUBJECT
+  );
 }
 
 /** The border a tile wears when it is NOT selected, so a shelf reads at a glance

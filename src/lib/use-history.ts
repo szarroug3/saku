@@ -1,43 +1,28 @@
 "use client";
 
-// Client-side access to /api/history with a refresh hook. Pages that show
-// history-derived data (picker accuracy, sessions, stats) share this.
+// Read access to the learner's history, for any screen that shows something
+// derived from it (picker accuracy, sessions, stats, the feed).
+//
+// The state itself lives in HistoryProvider, mounted once in the root layout —
+// see src/lib/history-provider.tsx for why, and for how the first paint gets its
+// data without a client fetch. The shape here is unchanged from when this hook
+// owned the state, so the eighteen screens that call it did not have to change:
+// `{ history, loaded, refresh }`, with `refresh()` still forcing a real
+// revalidation against the server.
 
-import { useCallback, useEffect, useState } from "react";
+import { useContext } from "react";
 
-import { loadLocalHistory } from "@/lib/store/local-progress";
-import type { HistoryFile } from "@/types";
+import { HistoryContext, type HistoryContextValue } from "@/lib/history-provider";
 
-const EMPTY: HistoryFile = { sessions: [], facts: {} };
-
-export function useHistory() {
-  const [history, setHistory] = useState<HistoryFile>(EMPTY);
-  const [loaded, setLoaded] = useState(false);
-
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch("/api/history", { cache: "no-store" });
-      if (res.ok) setHistory(await res.json());
-      // 401 = signed out (Supabase mode). The account has no history yet, but
-      // this browser might: signed-out writes fall back to localStorage (see
-      // progress-fetch.ts / local-progress.ts), and this is where they are read
-      // back so the screens show them. Without this, every signed-out write
-      // would look lost the instant the UI refetched.
-      else if (res.status === 401) setHistory(loadLocalHistory());
-    } catch {
-      // server unreachable — keep whatever we have
-    } finally {
-      setLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Fetch-on-mount; state updates land after the awaited response.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refresh();
-  }, [refresh]);
-
-  return { history, loaded, refresh };
+export function useHistory(): HistoryContextValue {
+  const ctx = useContext(HistoryContext);
+  // Loud, because the quiet alternative is worse: falling back to a private
+  // fetch here would give that screen its own copy of the history, drifting from
+  // everyone else's after the next write, and it would do it invisibly.
+  if (!ctx) {
+    throw new Error("useHistory must be used inside <HistoryProvider> (see the root layout)");
+  }
+  return ctx;
 }
 
 /** Accuracy % over a group of FACTS under `metric`, or null if unseen.
