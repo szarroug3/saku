@@ -469,6 +469,16 @@ function snapshotOf(cfg: QuizConfig): QuizSnapshot {
 export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { cfg } = useQuizConfig();
+  // Warm the two destinations a run navigates to, so a Start / Quiz me click
+  // routes without a cold RSC fetch. On Start the button's own state commits and
+  // paints at once (it flips to "Continue session"); without this the route
+  // change trailed behind that paint, because a non-prefetched App Router
+  // transition waits on the network for the target segment. One-time and
+  // app-wide, since a run can begin from Home, the Library, or a rest screen.
+  useEffect(() => {
+    router.prefetch("/session");
+    router.prefetch("/quiz");
+  }, [router]);
   const [active, setActive] = useState<ActiveQuiz | null>(null);
   const [session, setSession] = useState<StudySession | null>(null);
   const [results, setResults] = useState<ResultsPayload | null>(null);

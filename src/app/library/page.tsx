@@ -364,7 +364,7 @@ function LibraryBody() {
         <div className="px-3">
           <PageTitle
             title="Library"
-            sub="Every character, reading and word the app knows. Search it, or open a shelf."
+            sub="Every character, reading and word the app knows."
           />
 
       <StickySearch

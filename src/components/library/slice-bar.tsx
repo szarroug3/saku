@@ -82,8 +82,23 @@ export function SliceBar({
 
   const plan = drillPlan(slice, facts, claims, now, includeSolid);
   // Teach first, then probe — the order the session should MEET them, which is
-  // budget.planFacts's rule and not this bar's to invent.
+  // budget.planFacts's rule and not this bar's to invent. This is what "Teach me"
+  // runs: the new material, taught, then the met material probed.
   const order = [...plan.teach, ...plan.probe];
+  // WHAT "QUIZ ME" ASKS — only what you have already MET. Quiz me drops straight
+  // to questions with no teach screen, so asking a `teach` (never-seen) fact is
+  // asking something you were never shown: the reported "it quizzed me on things
+  // I don't know". So Quiz me runs the MET facts only — everything you have seen,
+  // solid included (a Library "quiz me on Kana" reads as "test me on the kana I
+  // know", solid ones and all), and never the unseen. `drillPlan(..., true).probe`
+  // IS that set: probe is the met facts, solid folded in, teach excluded.
+  //
+  // The one exception is a hand-picked selection (includeSolid): you toggled
+  // exactly those items and pressed on, so it drills exactly what you picked,
+  // unseen included — the explicit intent overrides the review default.
+  const quizOrder = includeSolid
+    ? order
+    : [...drillPlan(slice, facts, claims, now, true).probe];
   // Claim only ever touches NOT-solid facts: claiming what the model already
   // calls solid is a documented no-op. So even when Drill is force-including
   // solid facts, claim runs off the default plan and is disabled once every
@@ -193,19 +208,24 @@ export function SliceBar({
               already says "all N solid, nothing to ask"), so both buttons are
               HIDDEN, not shown disabled. `sliceIsDrillable` hides them on
               single-fact slices; `order.length` hides them on empty ones. */}
+          {/* Quiz me — review what you KNOW. Gated on quizOrder (the met facts),
+              so it is GONE, not shown empty, when you have met nothing here yet:
+              a fresh shelf has nothing to quiz, only to teach. */}
+          {canDrill && quizOrder.length > 0 ? (
+            <Btn sel onClick={() => setQuizzing(true)}>
+              Quiz me {quizOrder.length}
+            </Btn>
+          ) : null}
+          {/* Teach me — learn the new, then probe. Gated on the full order, so it
+              stays while there is anything at all to teach or review. */}
           {canDrill && order.length > 0 ? (
-            <>
-              <Btn sel onClick={() => setQuizzing(true)}>
-                Quiz me {order.length}
-              </Btn>
-              <Btn
-                onClick={() =>
-                  startSession(order, [...plan.teach], slice.label, "library")
-                }
-              >
-                Teach me {order.length}
-              </Btn>
-            </>
+            <Btn
+              onClick={() =>
+                startSession(order, [...plan.teach], slice.label, "library")
+              }
+            >
+              Teach me {order.length}
+            </Btn>
           ) : null}
         </div>
       </div>
@@ -217,8 +237,8 @@ export function SliceBar({
         open={quizzing}
         onOpenChange={setQuizzing}
         label={slice.label}
-        count={order.length}
-        onStart={() => startQuiz(order, { what: slice.label })}
+        count={quizOrder.length}
+        onStart={() => startQuiz(quizOrder, { what: slice.label })}
       />
     </>
   );
