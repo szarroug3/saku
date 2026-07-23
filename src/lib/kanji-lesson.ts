@@ -283,9 +283,14 @@ export interface KanjiLessonGroup {
   spine: "kanji" | "radical";
 }
 
+/** The kanji that carry no everyday word of their own — pulled into the order
+ * only to build a later kanji. These are the parts that must ride with their
+ * consumer; everything else anchors its own bundle. */
+const WORDLESS: ReadonlySet<string> = new Set(PREREQUISITE_ONLY);
+
 /**
- * THE PIECE A LESSON IS BUILT FROM: a kanji, and everything dragged in to serve
- * it.
+ * THE PIECE A LESSON IS BUILT FROM: a kanji, and the wordless parts dragged in to
+ * serve it.
  *
  * `order.json` sequences kanji one at a time, and a packer that walks it one at
  * a time can cut between a kanji and the part that only exists to build it. 又
@@ -294,61 +299,66 @@ export interface KanjiLessonGroup {
  * on. src/data/kanji.ts has argued this in its own comment for as long as it has
  * existed — "presenting a part as a lesson is a small lie the user will notice".
  *
- * So the atom is not the kanji, it is the BUNDLE: follow `pulledFor` to its root
- * (a `merit` kanji, one that earned its place on its own everyday-word utility)
- * and group by that root. Take all of it or don't start it.
+ * SO THE ATOM IS A BUNDLE, BUT ONLY A WORDLESS PART IS WELDED IN. The thing that
+ * cannot survive on a card of its own is a WORDLESS part — a kanji pulled into
+ * the order only to build a later one, carrying no everyday word to spend the
+ * sitting on. A kanji that DOES prove its own words is a lesson in its own right
+ * even when it also happens to be a part: 乙 (the latter, 1 word) and 乞 (beg, 2
+ * words) came into the order for 気, but each stands alone, so each is its own
+ * bundle rather than three-plus-a-radical welded into one 12-cost block that
+ * strands its neighbour below what a lesson could hold.
+ *
+ * SO THE CUT RULE IS: a bundle boundary may fall in any gap of the order EXCEPT
+ * one sealed by a wordless part still reaching forward to its consumer. Each
+ * wordless part seals every gap between itself and the kanji it was pulled for,
+ * so the two always share a bundle. A worded kanji is its own bundle unless it is
+ * trapped inside such a span — 斤 (wordless, for 所) with 戸 (worded, also for 所)
+ * sitting between them welds all three, because splitting 戸 out would strand 斤 a
+ * lesson away from 所. Walking the order and cutting only at unsealed gaps keeps
+ * every bundle a contiguous run, so this never reorders the curriculum.
  *
  * WHY THIS AND NOT A RULE ABOUT PARTS. The obvious version is a special case —
  * "never separate a PREREQUISITE_ONLY kanji from its `pulledFor`" — and it
  * works. It is also a second rule to keep in step with a set that MOVES: it is
  * derived (`enteredVia` + `everydayWords`), and the vocab ingest already took it
- * from 9 to 6. Bundling makes the wordless case fall out for free — a part is in
- * its consumer's bundle BY CONSTRUCTION — so there is nothing to keep in step.
+ * from 9 to 6. Sealing on `WORDLESS` makes the wordless case fall out for free —
+ * a part is in its consumer's bundle by construction — so there is nothing to
+ * keep in step.
  *
  * IT NEVER REORDERS, and that is checked rather than hoped: every bundle is a
- * contiguous run of the order, so grouping by root only ever brackets
+ * contiguous run of the order, so cutting at unsealed gaps only ever brackets
  * neighbours. If that stopped being true this would be reordering the
  * curriculum, which is the one thing it may not do — hence the test.
  */
 function bundles(order: readonly string[]): string[][] {
   const at = new Map(order.map((c, i) => [c, i]));
-  const byRoot = new Map<string, string[]>();
 
-  for (const c of order) {
-    const root = rootOf(c, at);
-    const group = byRoot.get(root);
-    if (group) group.push(c);
-    else byRoot.set(root, [c]);
-  }
+  // sealed[g] === true means "no bundle boundary may fall before order[g]": a
+  // wordless part at some earlier index still reaches forward to its consumer at
+  // g or beyond, so order[g] must stay welded to what precedes it.
+  const sealed = new Array<boolean>(order.length).fill(false);
+  order.forEach((c, i) => {
+    if (!WORDLESS.has(c)) return;
+    const consumer = orderRow(c)?.pulledFor;
+    // A wordless part whose consumer is absent from THIS order (a subset, or a
+    // consumer that sorts earlier) seals nothing — it roots as an ordinary kanji.
+    const q = consumer ? at.get(consumer) : undefined;
+    if (q === undefined || q <= i) return;
+    for (let g = i + 1; g <= q; g++) sealed[g] = true;
+  });
 
-  return [...byRoot.values()].sort((a, b) => at.get(a[0])! - at.get(b[0])!);
+  const groups: string[][] = [];
+  let cur: string[] = [];
+  order.forEach((c, i) => {
+    if (i > 0 && !sealed[i] && cur.length) {
+      groups.push(cur);
+      cur = [];
+    }
+    cur.push(c);
+  });
+  if (cur.length) groups.push(cur);
+  return groups;
 }
-
-/**
- * The kanji a bundle is named for: follow `pulledFor` until something earned its
- * own place.
- *
- * `seen` is not defensive programming, it is the honest answer to a cycle: if
- * the ingest ever emits one, stopping is right and hanging is not. Anything not
- * in THIS order roots at itself — `pulledFor` is a property of how the everyday
- * order was built, and `packLessons` takes any order, so under grade or
- * newspaper order a consumer may simply not be present. Rooting at itself packs
- * it as an ordinary kanji, the truthful answer rather than a reach into a
- * sequence this order isn't.
- */
-function rootOf(c: string, at: ReadonlyMap<string, number>): string {
-  const seen = new Set<string>();
-  let cur = c;
-  while (!seen.has(cur)) {
-    seen.add(cur);
-    const next = orderRow(cur)?.pulledFor;
-    if (!next || !at.has(next)) return cur;
-    cur = next;
-  }
-  return cur;
-}
-
-const WORDLESS: ReadonlySet<string> = new Set(PREREQUISITE_ONLY);
 
 /** One kanji as a lesson item. */
 function kanjiItem(c: string): LessonItem {

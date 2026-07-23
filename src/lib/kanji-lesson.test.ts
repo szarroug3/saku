@@ -163,6 +163,62 @@ describe("day one", () => {
   });
 });
 
+describe("only a wordless part rides with its consumer, not a worded kanji", () => {
+  // The owner saw "kanji 5 of 2,136" — 不, negative — taught alone, with 乙 乞 気
+  // as the next lesson, and asked why 不 wasn't packed with them. The cause was a
+  // bundling bug: 乙 (1 everyday word) and 乞 (2) entered the order via prereq for
+  // 気, and `bundles` welded every prereq into its consumer's bundle regardless
+  // of whether it carried its own words. That built ONE indivisible unit 乙 乞 气
+  // 気 of cost 12 (exactly max), which forced 不 into a lesson by itself. Only the
+  // genuinely wordless parts, and radical-only shapes, must ride along; a worded
+  // kanji anchors its own bundle.
+  test("乙 and 乞 are their own units; only 气 stays woven into 気", () => {
+    const units = packUnits(ORDER);
+    // Units 4-7 are now the four the owner expected, not one glued block.
+    assert.deepEqual(
+      units.slice(4, 8).map((u) => ({
+        items: u.items.map((it) => `${it.kind}:${it.glyph}`),
+        cost: u.cost,
+      })),
+      [
+        { items: ["kanji:不"], cost: 4 },
+        { items: ["kanji:乙"], cost: 1 },
+        { items: ["kanji:乞"], cost: 3 },
+        // 气 is a radical-only shape (not its own kanji), so it alone must stay
+        // in the same unit as, and before, its first-using kanji 気.
+        { items: ["radical:气", "kanji:気"], cost: 8 },
+      ],
+    );
+  });
+
+  test("不 now packs with 乙 乞 into a filled lesson, not alone", () => {
+    // Greedy fill: lesson 1 fills to 10 (人 大 日 一); 不 (4) would overflow it, so
+    // 不 opens lesson 2 and pulls 乙 (1) and 乞 (3) in for a cost of 8, inside
+    // [6,12]. The 气 気 unit (8) would overflow (8 + 8 = 16), so it starts lesson
+    // 3. 不 is no longer stranded below min.
+    const l1 = GROUPS[0];
+    const l2 = GROUPS[1];
+    assert.deepEqual(l1.chars, ["人", "大", "日", "一"]);
+    assert.equal(l1.cost, 10);
+    assert.deepEqual(l2.chars, ["不", "乙", "乞"]);
+    assert.equal(l2.cost, 8);
+    assert.ok(l2.cost >= RANGE.min && l2.cost <= RANGE.max);
+    // The kanji spine still counts 不 乙 乞 as positions 5-7.
+    assert.equal(l2.from, 5);
+    assert.equal(l2.to, 7);
+    assert.equal(l2.over, false);
+  });
+
+  test("气 rides in the same lesson as 気, and before it — the hard invariant", () => {
+    const group = GROUPS.find((g) => g.chars.includes("気"))!;
+    const glyphs = group.items.map((it) => `${it.kind}:${it.glyph}`);
+    const radAt = glyphs.indexOf("radical:气");
+    const kanjiAt = glyphs.indexOf("kanji:気");
+    assert.ok(radAt >= 0, "气 is not in 気's lesson");
+    assert.ok(radAt < kanjiAt, "气 must come before 気");
+  });
+});
+
 describe("the curriculum is sane end to end, not just at the start", () => {
   test("every kanji in the order is in exactly one lesson, in order", () => {
     assert.deepEqual(

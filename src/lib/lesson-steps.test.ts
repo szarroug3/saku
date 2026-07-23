@@ -537,9 +537,11 @@ describe("a mixed radical/kanji set steps the radical ahead of its kanji", () =>
 
   test("the first woven-radical set walks 气 before 気 (everyday, default range)", () => {
     // The earliest set that carries a radical-only shape. Under the everyday
-    // order and the default range that is 乙 乞 气 気: 气 (steam) is the radical
-    // 気 (spirit) is built around, and it has no card of its own anywhere else,
-    // so the walk is where the learner meets it — immediately before 気.
+    // order and the default range that set opens 气 気 山: 气 (steam) is the
+    // radical 気 (spirit) is built around, and it has no card of its own anywhere
+    // else, so the walk is where the learner meets it — immediately before 気.
+    // (乙 乞 are worded kanji in their own right and pack a set earlier, with 不;
+    // only the radical-only 气 is welded to 気.)
     const target = GROUPS.find((g) => g.items.some((it) => it.kind === "radical"));
     assert.ok(target, "some everyday set weaves in a radical-only shape");
     const steps = lessonSteps(target.facts);
@@ -547,7 +549,7 @@ describe("a mixed radical/kanji set steps the radical ahead of its kanji", () =>
       steps.map((s) =>
         s.type === "item" ? `${s.item.kind}:${s.item.glyph}` : `${s.type}:${s.key}`,
       ),
-      ["kanji:乙", "kanji:乞", "radical:气", "kanji:気"],
+      ["radical:气", "kanji:気", "kanji:山"],
     );
   });
 
