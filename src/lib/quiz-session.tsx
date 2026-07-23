@@ -903,16 +903,20 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       const widen = !!scope?.length;
       const facts = widen ? scope! : session.facts;
       const what = widen ? countWhat(facts) : session.what;
+      // Re-read the current settings (see startNextRound): a change made while
+      // the new material was being read should take effect on the first round.
+      const snapshot = snapshotOf(cfg);
       setSession({
         ...session,
         facts,
         what,
+        snapshot,
         phase: "drilling",
         lastActiveAt: Date.now(),
       });
-      beginLeg(facts, what, session.snapshot, false);
+      beginLeg(facts, what, snapshot, false);
     },
-    [session, beginLeg],
+    [session, cfg, beginLeg],
   );
 
   const retryLeg = useCallback(
@@ -1049,8 +1053,17 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const startNextRound = useCallback(() => {
     if (!session) return;
     if (session.round >= SESSION_ROUND_TARGET) return;
+    // Re-read the CURRENT settings so a change made between rounds (endless →
+    // limited, a new direction, retries) takes effect on this round. The session
+    // froze its snapshot at Start; without this a session that outlives a
+    // settings change keeps running the old ones — exactly the surprise the user
+    // hit ending a round, switching to Limited, and getting Endless again.
+    // Stored back on the session so its record, its HUD and a redrill (retryLeg,
+    // which reads session.snapshot) all name the settings this round ran under.
+    const snapshot = snapshotOf(cfg);
     setSession({
       ...session,
+      snapshot,
       round: session.round + 1,
       phase: "drilling",
       restUntil: null,
@@ -1060,8 +1073,8 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     });
     // THE SAME WHOLE SESSION — not the retried bits. This is the line the
     // whole design turns on.
-    beginLeg(session.facts, session.what, session.snapshot, false);
-  }, [session, beginLeg]);
+    beginLeg(session.facts, session.what, snapshot, false);
+  }, [session, cfg, beginLeg]);
 
   const pauseSession = useCallback(() => {
     if (!session) return;
