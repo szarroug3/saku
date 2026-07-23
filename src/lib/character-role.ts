@@ -56,3 +56,19 @@ export function characterRoleTitle(glyph: string): string | null {
   const role = characterRole(glyph);
   return role ? ROLE_TITLE[role] : null;
 }
+
+/**
+ * Does this glyph play the radical role at all — a radical-only shape (气) OR a
+ * both-role character that is also a kanji (人, 大, 火)?
+ *
+ * True exactly when the character is a radical, whether or not it is also a
+ * kanji; false for a kanji that is no radical (乞) and for anything that is
+ * neither (a kana). This is the trigger the "What a radical is" concept card
+ * rides in on: it lands ahead of the FIRST character that plays a radical role,
+ * which is a both-role character at the very first kanji set, not the first
+ * building-block-only shape. Membership only, the same pure glyph question
+ * `characterRole` answers.
+ */
+export function playsRadicalRole(glyph: string): boolean {
+  return radicalByGlyph(glyph) !== undefined;
+}

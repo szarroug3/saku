@@ -125,19 +125,23 @@ export const RADICAL_TRACK: PhaseIntro = {
   id: "track-radical",
   setId: "",
   eyebrow: "What a radical is",
-  title: "Radicals are the parts a kanji is built from.",
+  title: "Radicals are the building blocks kanji are made of.",
   body: [
     {
-      lead: "A radical is a small shape that recurs inside many kanji.",
-      text: "Kanji are the characters Japanese uses to write most of its words, and they are drawn out of a fixed stock of pieces. 氵 means water, and it’s used in 海 (sea), 泳 (swim) and 湖 (lake). 木 means tree, and it’s used in 林 (woods) and 森 (forest).",
+      lead: "A radical is a shape that turns up inside many kanji.",
+      text: "Kanji are the characters Japanese writes most of its words with, and each one is drawn from a set stock of smaller pieces. 氵 stands for water, and you can see it in 海 (sea), 泳 (swim) and 湖 (lake). 木 is tree, and it is there in 林 (woods) and 森 (forest).",
     },
     {
-      lead: "Knowing one gives you a head start on a kanji you have never seen.",
-      text: "The radical often hints at what a kanji means, though it is only a hint. Many radicals are also characters you learn on their own, like 火 for fire, and a few are only ever building blocks. Here you learn it as a building block, so this track asks you only for its meaning.",
+      lead: "Some are whole characters too; some are only ever pieces.",
+      text: "人 and 大 are radicals you also learn as kanji in their own right, so you meet each once and its card tells you it plays both parts. 気 is built around 气, a shape that is only ever a building block, so you meet 气 on its own just for what it looks like and means. Both kinds are pieces you will keep seeing inside other characters.",
     },
     {
-      lead: "Each one is taught just before the first kanji that uses it.",
-      text: "That way a kanji is never taken apart into a piece you have not learned yet.",
+      lead: "Knowing one gives you a head start on a kanji you have not seen.",
+      text: "The radical often hints at what a kanji is about, though it is only a hint. Once you know the piece, the characters built on it are quicker to place and easier to tell apart.",
+    },
+    {
+      lead: "You meet each one right where it counts.",
+      text: "A radical comes up with the kanji it belongs to, so a character is never broken into a part you have not learned yet. When a radical is also a kanji, learning that kanji is where you meet the shape.",
     },
   ],
 };

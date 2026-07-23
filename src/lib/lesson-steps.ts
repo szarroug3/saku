@@ -54,10 +54,11 @@ import {
   type PhaseIntro,
 } from "@/data/phase-intros";
 import { isSoundChangeEntry } from "@/data/counters";
-import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
+import { RADICAL_TRACK, TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow } from "@/data/vocab";
+import { playsRadicalRole } from "@/lib/character-role";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
-import { startedTracks, trackOfItem } from "@/lib/track-open";
+import { hasMetRadicalRole, startedTracks, trackOfItem } from "@/lib/track-open";
 import { wordClassOf } from "@/lib/word-forms";
 import type { FactId, HistoryFile } from "@/types";
 
@@ -179,7 +180,14 @@ export function lessonSteps(
   // Optional, and absent means "no track cards": a caller with no history to
   // read (a test naming a teach set, and nothing else today) gets exactly the
   // walk this function produced before track intros existed.
-  const started = history ? startedTracks(history, new Set(facts)) : null;
+  const teachSet = new Set(facts);
+  const started = history ? startedTracks(history, teachSet) : null;
+  // Whether the learner has already met a character that plays a radical role
+  // (a both-role kanji or a radical-only shape). The once-ever gate for the
+  // "What a radical is" card below: met before, and the card has done its job and
+  // stays quiet. Role-based where `started` is subject-based, so meeting the
+  // both-role kanji 人 counts. See hasMetRadicalRole / character-role.ts.
+  const radicalRoleMet = history ? hasMetRadicalRole(history, teachSet) : false;
   // Fired at most once each, so a lesson that opens a track and then teaches
   // twenty of its items shows the card once, at the top.
   const trackCardDone = new Set<TrackId>();
@@ -189,6 +197,11 @@ export function lessonSteps(
   // its other four fold into the same card rather than adding four steps. See
   // src/data/dakuten-rows.ts.
   const rowsSeen = new Set<string>();
+  // The radical CONCEPT card rides in ahead of the first character that plays a
+  // radical role — a both-role character (人, 大) or a radical-only shape (气) —
+  // so the first kanji set opens with it as well as the kanji card. Fired at most
+  // once per walk here, and at most once EVER via radicalRoleMet above.
+  let markedRadicalConcept = false;
   // The iteration mark rides the first word whose spelling uses 々, and only the
   // first one, so a teach set full of 々 words teaches it once.
   let markedIteration = false;
@@ -220,11 +233,25 @@ export function lessonSteps(
     // vocabulary. Placed at the top of the loop rather than after the `continue`
     // a repeated conversion row takes, so a track whose first item happens to be
     // a converted kana still gets its card.
+    // The "radical" track is skipped HERE and handled just below, because its
+    // card no longer rides a radical-SUBJECT item. It rides the first radical-
+    // ROLE character, which is usually a both-role kanji (人) whose item is a
+    // kanji item — so the subject-based track gate would miss it. Every other
+    // track still opens on its own first item, ahead of everything the item owes.
     const track = started ? trackOfItem(item) : null;
-    if (track && !started!.has(track) && !trackCardDone.has(track)) {
+    if (track && track !== "radical" && !started!.has(track) && !trackCardDone.has(track)) {
       trackCardDone.add(track);
       const intro = TRACK_INTROS[track];
       steps.push({ type: "intro", key: intro.id, intro });
+    }
+    // The radical concept card FOLLOWS the track card, so a set that opens the
+    // kanji track shows "What kanji are" first and then "What a radical is",
+    // ahead of the first radical-role character. Gated on history (no concept
+    // cards without it, the same as the track cards) and on radicalRoleMet, so it
+    // is a once-ever card even though its trigger is a role and not a subject.
+    if (history && !markedRadicalConcept && !radicalRoleMet && playsRadicalRole(item.glyph)) {
+      markedRadicalConcept = true;
+      steps.push({ type: "intro", key: RADICAL_TRACK.id, intro: RADICAL_TRACK });
     }
     const row = item.kind === "kana" ? dakutenRowFor(item.glyph) : null;
     if (row) {

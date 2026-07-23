@@ -46,6 +46,7 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import type { TrackId } from "@/data/track-intros";
+import { playsRadicalRole } from "@/lib/character-role";
 import { effectiveState } from "@/lib/claims";
 import { factInfo } from "@/lib/facts";
 import type { LessonItem } from "@/lib/lesson-items";
@@ -139,4 +140,42 @@ export function startedTracks(
     if (track) started.add(track);
   }
   return started;
+}
+
+/**
+ * Has the learner already met a character that plays a radical role — a radical-
+ * only shape OR a both-role character that is also a kanji — outside the lesson
+ * in hand?
+ *
+ * The once-ever gate for the "What a radical is" concept card. That card is no
+ * longer a subject-based track intro: it rides in ahead of the FIRST character
+ * with a radical role, and the first of those is a both-role character (人) at
+ * the very first kanji set, whose fact is a KANJI fact. `startedTracks` keys off
+ * the subject, so it would never see 人 as radical material and the card would
+ * wait until the first radical-ONLY shape. This reads the ROLE off each met
+ * character's glyph instead (playsRadicalRole), so meeting 人 counts and the card
+ * lands where the badge first says "Radical · Kanji".
+ *
+ * Same three records and the same teach-set exclusion as `startedTracks`, and
+ * for the same reason: the decision is about what the learner knew BEFORE this
+ * lesson, and the lesson's own facts may already be in history by the time the
+ * walk renders. Short-circuits on the first match.
+ */
+export function hasMetRadicalRole(
+  history: HistoryFile,
+  exclude: ReadonlySet<FactId>,
+): boolean {
+  const seen = new Set<string>([
+    ...Object.keys(history.facts ?? {}),
+    ...Object.keys(history.claims ?? {}),
+    ...Object.keys(history.seen ?? {}),
+  ]);
+  for (const key of seen) {
+    const fact = key as FactId;
+    if (exclude.has(fact)) continue;
+    if (!met(fact, history)) continue;
+    const info = factInfo(fact);
+    if (info && playsRadicalRole(info.glyph)) return true;
+  }
+  return false;
 }
