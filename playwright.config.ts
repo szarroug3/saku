@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { E2E_DATA_DIR } from "./e2e/helpers/data-dir";
+
 /**
  * E2E config.
  *
@@ -13,6 +15,10 @@ const PORT = 3249;
 
 export default defineConfig({
   testDir: "./e2e",
+  // Create the isolated e2e/.tmp data directory (from the committed fixtures)
+  // before anything runs, and remove it after. See e2e/helpers/global-setup.ts.
+  globalSetup: "./e2e/helpers/global-setup.ts",
+  globalTeardown: "./e2e/helpers/global-teardown.ts",
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
@@ -53,5 +59,21 @@ export default defineConfig({
     timeout: 600_000,
     stdout: "ignore",
     stderr: "pipe",
+    // The suite speaks to the FILE backend, so the server must run in file mode
+    // no matter what .env.local says. The maintainer's .env.local sets
+    // STORAGE_BACKEND=supabase for her own hosted testing, and next start would
+    // otherwise inherit it and boot the app into a backend these specs cannot
+    // drive (it needs auth and a database). Next's env loader does NOT override a
+    // variable already present in the process environment, so setting it here
+    // wins over .env.local without touching that file.
+    //
+    // SAKU_DATA_DIR redirects the file store off the repo root and into the
+    // throwaway e2e/.tmp directory, so a run never opens the maintainer's real
+    // history.json / lists.json. Passed to the whole `build && start` command,
+    // which is fine: only runtime reads it.
+    env: {
+      STORAGE_BACKEND: "file",
+      SAKU_DATA_DIR: E2E_DATA_DIR,
+    },
   },
 });

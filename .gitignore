@@ -49,6 +49,9 @@ lists.json
 history.json
 
 # playwright
+# The e2e suite's isolated, throwaway data directory (created per run from the
+# committed fixtures in e2e/fixtures, so the app never writes to the repo root).
+/e2e/.tmp/
 /test-results/
 /playwright-report/
 /blob-report/

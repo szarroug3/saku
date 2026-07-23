@@ -21,7 +21,15 @@ import { isSupabaseStore } from "@/lib/store/mode";
 import { readListsRow, writeListsRow } from "@/lib/store/supabase-store";
 import type { EntryId, ListsFile, SavedList } from "@/types";
 
-const LISTS_PATH = path.join(process.cwd(), "lists.json");
+// WHERE the local file lives — the repo root by default, unchanged from the bare
+// `path.join(process.cwd(), "lists.json")` this replaced. SAKU_DATA_DIR is the
+// same opt-in directory override history.ts documents in full: the e2e suite sets
+// it to a throwaway directory so a run never touches the maintainer's real
+// lists.json, and it is unset (so behavior is identical) in every normal run.
+const DATA_DIR = process.env.SAKU_DATA_DIR
+  ? path.resolve(process.env.SAKU_DATA_DIR)
+  : process.cwd();
+const LISTS_PATH = path.join(DATA_DIR, "lists.json");
 
 /** Indent 1, no trailing newline — legible under `git diff`, which is the only
  * reason the formatting is specified at all. Same rule as history.ts. */

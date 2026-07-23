@@ -56,7 +56,19 @@ import { isSupabaseStore } from "@/lib/store/mode";
 import { readHistoryRow, writeHistoryRow } from "@/lib/store/supabase-store";
 import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
 
-const HISTORY_PATH = path.join(process.cwd(), "history.json");
+// WHERE the local file lives. Normally the repo root (process.cwd()), unchanged
+// from when this was a bare `path.join(process.cwd(), "history.json")`.
+//
+// SAKU_DATA_DIR is an opt-in override of the directory only, and it exists for
+// one reason: the e2e suite points the file store at a throwaway directory so a
+// test run never opens the maintainer's real history.json. It is unset in every
+// normal run — local dev and the hosted Supabase deploy both leave it blank — so
+// the default behavior here is byte-for-byte what it always was. File mode only;
+// Supabase mode ignores it (there is no file to place).
+const DATA_DIR = process.env.SAKU_DATA_DIR
+  ? path.resolve(process.env.SAKU_DATA_DIR)
+  : process.cwd();
+const HISTORY_PATH = path.join(DATA_DIR, "history.json");
 
 /**
  * The file is there and we cannot make sense of it.

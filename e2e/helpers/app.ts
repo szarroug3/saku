@@ -1,9 +1,14 @@
 import { test as base, expect, type Page } from "@playwright/test";
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { copyFileSync, writeFileSync } from "node:fs";
 
 import { factInfo } from "@/lib/facts";
 import type { FactId } from "@/types";
+import {
+  E2E_HISTORY_FIXTURE,
+  E2E_HISTORY_PATH,
+  E2E_LISTS_FIXTURE,
+  E2E_LISTS_PATH,
+} from "./data-dir";
 
 /**
  * Test fixtures for the app.
@@ -27,16 +32,15 @@ import type { FactId } from "@/types";
  * with `Math.random()`, so the fixture removes the randomness at the source by
  * pinning a single direction, a single answer style and a tiny fact pool.
  *
- * `history.json` is a TRACKED file in this repo, so every test restores the
- * pristine bytes afterwards. The app also writes it itself (a finished quiz
- * POSTs to /api/session), which is exactly why the restore is unconditional
- * rather than only-if-we-wrote-it.
+ * ISOLATION: every path below is under e2e/.tmp, NOT the repo root. The suite
+ * seeds and the app writes to a throwaway directory the server was pointed at via
+ * SAKU_DATA_DIR (see e2e/helpers/data-dir.ts and playwright.config.ts), so the
+ * maintainer's real history.json / lists.json are never opened by a run. Each
+ * test still restores the isolated files to the pristine fixture afterwards,
+ * because the app writes history itself (a finished quiz POSTs to /api/session),
+ * so the reset is unconditional rather than only-if-we-wrote-it — it keeps one
+ * spec's leftovers from leaking into the next.
  */
-
-const HISTORY_PATH = join(process.cwd(), "history.json");
-
-/** The pristine on-disk history, captured once before anything mutates it. */
-const PRISTINE_HISTORY = readFileSync(HISTORY_PATH, "utf-8");
 
 /** The subset of QuizConfig the e2e tests ever pin. Loosely typed on purpose:
  * the app merges over its own defaults, so this is a patch, not a whole shape. */
@@ -106,9 +110,12 @@ function historyWith(seen: string[]): string {
   return JSON.stringify({ sessions: [], facts: {}, seen: seenRecord }, null, 1);
 }
 
-/** Put the tracked history.json back exactly as the repo has it. */
+/** Put the ISOLATED history and lists back to their pristine fixtures. Only ever
+ * touches e2e/.tmp — the repo-root files are not in play. Lists are reset too, so
+ * a spec that files something into a list cannot bleed into the next one. */
 export function restoreHistory(): void {
-  writeFileSync(HISTORY_PATH, PRISTINE_HISTORY);
+  copyFileSync(E2E_HISTORY_FIXTURE, E2E_HISTORY_PATH);
+  copyFileSync(E2E_LISTS_FIXTURE, E2E_LISTS_PATH);
 }
 
 export const test = base.extend<{
@@ -117,7 +124,7 @@ export const test = base.extend<{
 }>({
   seed: async ({ page }, use) => {
     await use(async ({ seen = [], cfg = {} }: SeedOptions) => {
-      writeFileSync(HISTORY_PATH, historyWith(seen));
+      writeFileSync(E2E_HISTORY_PATH, historyWith(seen));
       // addInitScript runs before any page script on every navigation, so the
       // config is in place before QuizConfigProvider's hydration effect reads
       // it. Setting it after a goto would race that effect.

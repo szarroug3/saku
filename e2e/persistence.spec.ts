@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import {
   test,
@@ -13,6 +12,7 @@ import {
   answerTypedCorrectly,
   type Page,
 } from "./helpers/app";
+import { E2E_HISTORY_PATH } from "./helpers/data-dir";
 import { factInfo } from "@/lib/facts";
 import type { FactId, HistoryFile } from "@/types";
 
@@ -40,10 +40,11 @@ const CFG = {
   limType: "cov",
 };
 
-const HISTORY_PATH = join(process.cwd(), "history.json");
-
+// The ISOLATED history under e2e/.tmp, the same file the seed writes and the app
+// (pointed there by SAKU_DATA_DIR) reads and writes. NOT the maintainer's
+// repo-root history.json, which a run never opens.
 function history(): HistoryFile {
-  return JSON.parse(readFileSync(HISTORY_PATH, "utf-8")) as HistoryFile;
+  return JSON.parse(readFileSync(E2E_HISTORY_PATH, "utf-8")) as HistoryFile;
 }
 
 /** Total showings recorded across the whole file, for the five seeded facts. */
