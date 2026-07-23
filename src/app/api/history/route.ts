@@ -1,6 +1,7 @@
 // GET /api/history — the full history file. Port of the legacy Python
 // handler's /api/history branch.
 
+import { getUserId } from "@/lib/auth";
 import { historyErrorResponse } from "@/lib/api-error";
 import { loadHistory } from "@/lib/history";
 
@@ -13,7 +14,8 @@ export async function GET() {
   // everything in it is the app telling you your work is gone. A 503 lets the
   // client say the true thing instead.
   try {
-    return Response.json(loadHistory(), { headers: NO_STORE });
+    const userId = await getUserId();
+    return Response.json(await loadHistory(userId), { headers: NO_STORE });
   } catch (e) {
     const res = historyErrorResponse(e);
     if (res) return res;

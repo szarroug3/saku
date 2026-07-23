@@ -6,6 +6,7 @@
 // deliberately keeps claims/seen (see history.ts); resetAll deliberately does
 // not. The reset takes precedence over ids/all if both are somehow sent.
 
+import { getUserId } from "@/lib/auth";
 import { historyErrorResponse } from "@/lib/api-error";
 import { deleteSessions, resetAll } from "@/lib/history";
 
@@ -36,9 +37,10 @@ export async function POST(request: Request) {
   // the way out of that state, and it copies the damaged file aside before it
   // writes. Only `deleteSessions` can throw here, because only it reads first.
   try {
+    const userId = await getUserId();
     const hist = body.reset
-      ? resetAll()
-      : deleteSessions(body.ids ?? null, body.all ?? false);
+      ? await resetAll(userId)
+      : await deleteSessions(userId, body.ids ?? null, body.all ?? false);
     return Response.json(
       { ok: true, sessions: hist.sessions.length },
       { headers: NO_STORE },

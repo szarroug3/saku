@@ -1,6 +1,7 @@
 // POST /api/session — append a quiz session record and fold its per-char
 // stats into the aggregate. Port of the legacy Python /api/session branch.
 
+import { getUserId } from "@/lib/auth";
 import { historyErrorResponse } from "@/lib/api-error";
 import { saveSession } from "@/lib/history";
 import type { QuizSessionRecord } from "@/types";
@@ -24,7 +25,8 @@ export async function POST(request: Request) {
   // history the server refused to touch — the client drops a record from its
   // retry queue on exactly one signal, and this is it.
   try {
-    const hist = saveSession(body);
+    const userId = await getUserId();
+    const hist = await saveSession(userId, body);
     return Response.json(
       { ok: true, sessions: hist.sessions.length },
       { headers: NO_STORE },

@@ -38,6 +38,12 @@ const serverOnlyStub = new URL(
   "../../node_modules/server-only/empty.js",
   import.meta.url,
 );
+// history.ts now reaches the Supabase server client (through the store layer and
+// @/lib/auth), which statically imports `next/headers` — a Next runtime module
+// the plain-Node harness cannot resolve. In FILE mode that client is imported
+// but never CALLED, so we hand `next/headers` a synthetic stub that just names
+// the `cookies` export the graph links against. Nothing under test changes.
+const NEXT_HEADERS_STUB = "kq-stub:next/headers";
 registerHooks({
   resolve(
     specifier: string,
@@ -45,7 +51,22 @@ registerHooks({
     next: (s: string, c: unknown) => unknown,
   ) {
     if (specifier === "server-only") return next(serverOnlyStub.href, context);
+    if (specifier === "next/headers")
+      return { url: NEXT_HEADERS_STUB, shortCircuit: true };
     return next(specifier, context);
+  },
+  load(
+    url: string,
+    context: unknown,
+    next: (u: string, c: unknown) => unknown,
+  ) {
+    if (url === NEXT_HEADERS_STUB)
+      return {
+        format: "module",
+        shortCircuit: true,
+        source: "export const cookies = async () => ({});",
+      };
+    return next(url, context);
   },
 });
 
@@ -58,6 +79,15 @@ const {
   resetAll,
   HistoryUnreadableError,
 } = await import("@/lib/history");
+
+// @/lib/auth is imported dynamically, below the resolve hook, for the same
+// reason history.ts is: it reaches the Supabase server client, whose static
+// `next/headers` import the hook above stubs out. A top-level static import
+// would be resolved before the hook runs and fail. In FILE mode LOCAL_USER is
+// the one implicit user; the file backend ignores it, so it is just a
+// placeholder that satisfies the (userId-first) signatures.
+const { LOCAL_USER } = await import("@/lib/auth");
+const USER = LOCAL_USER;
 
 const fid = (s: string) => s as unknown as FactId;
 
@@ -77,23 +107,23 @@ function seedSession(ts: number): QuizSessionRecord {
   };
 }
 
-test("resetAll wipes sessions AND claims AND seen AND facts", () => {
+test("resetAll wipes sessions AND claims AND seen AND facts", async () => {
   // Build a non-trivial knowledge base: a session (so `facts` is non-empty via
   // the fold), a claim, and a seen record.
-  saveSession(seedSession(1_000));
-  saveClaims([fid("kata-ka"), fid("kata-ki")], 2_000);
-  saveSeen([fid("hira-sa")], 3_000);
+  await saveSession(USER, seedSession(1_000));
+  await saveClaims(USER, [fid("kata-ka"), fid("kata-ki")], 2_000);
+  await saveSeen(USER, [fid("hira-sa")], 3_000);
 
-  const before = loadHistory();
+  const before = await loadHistory(USER);
   assert.ok(before.sessions.length > 0, "seed left sessions");
   assert.ok(Object.keys(before.facts).length > 0, "seed left derived facts");
   assert.ok(Object.keys(before.claims ?? {}).length > 0, "seed left claims");
   assert.ok(Object.keys(before.seen ?? {}).length > 0, "seed left seen");
 
-  const returned = resetAll();
+  const returned = await resetAll(USER);
 
   // Everything the model uses to call a fact "known" is gone — not just sessions.
-  for (const hist of [returned, loadHistory()]) {
+  for (const hist of [returned, await loadHistory(USER)]) {
     assert.deepEqual(hist.sessions, [], "sessions cleared");
     assert.deepEqual(hist.facts, {}, "derived facts cleared");
     assert.deepEqual(hist.claims ?? {}, {}, "claims cleared");
@@ -101,10 +131,10 @@ test("resetAll wipes sessions AND claims AND seen AND facts", () => {
   }
 });
 
-test("resetAll writes the day-one shell a fresh install starts with", () => {
-  saveClaims([fid("hira-na")], 5_000);
-  saveSeen([fid("hira-ni")], 6_000);
-  resetAll();
+test("resetAll writes the day-one shell a fresh install starts with", async () => {
+  await saveClaims(USER, [fid("hira-na")], 5_000);
+  await saveSeen(USER, [fid("hira-ni")], 6_000);
+  await resetAll(USER);
 
   // Byte-for-byte the empty shell (`{ sessions: [], facts: {} }`) — claims and
   // seen are dropped from the FILE, not just emptied, so on-disk shape matches a
@@ -132,31 +162,43 @@ const DAMAGED: Array<[label: string, bytes: string]> = [
 ];
 
 for (const [label, bytes] of DAMAGED) {
-  test(`a history.json that is ${label} is refused, not read as empty`, () => {
-    resetAll();
+  test(`a history.json that is ${label} is refused, not read as empty`, async () => {
+    await resetAll(USER);
     writeFileSync(HISTORY_FILE, bytes);
-    assert.throws(() => loadHistory(), HistoryUnreadableError);
+    await assert.rejects(() => loadHistory(USER), HistoryUnreadableError);
   });
 }
 
-test("no mutator overwrites a damaged history.json", () => {
-  resetAll();
+test("no mutator overwrites a damaged history.json", async () => {
+  await resetAll(USER);
   const damaged = '{\n "sessions": [{"ts": 1, "mode": "dri';
   writeFileSync(HISTORY_FILE, damaged);
 
   // Every read-modify-write path refuses, and refuses by throwing rather than
   // by writing something safe-looking over the top.
-  assert.throws(() => saveSession(seedSession(9_000)), HistoryUnreadableError);
-  assert.throws(() => saveClaims([fid("hira-a")], 9_000), HistoryUnreadableError);
-  assert.throws(() => saveSeen([fid("hira-a")], 9_000), HistoryUnreadableError);
-  assert.throws(() => deleteSessions(null, true), HistoryUnreadableError);
+  await assert.rejects(
+    () => saveSession(USER, seedSession(9_000)),
+    HistoryUnreadableError,
+  );
+  await assert.rejects(
+    () => saveClaims(USER, [fid("hira-a")], 9_000),
+    HistoryUnreadableError,
+  );
+  await assert.rejects(
+    () => saveSeen(USER, [fid("hira-a")], 9_000),
+    HistoryUnreadableError,
+  );
+  await assert.rejects(
+    () => deleteSessions(USER, null, true),
+    HistoryUnreadableError,
+  );
 
   // The evidence is still on disk, byte for byte.
   assert.equal(readFileSync(HISTORY_FILE, "utf-8"), damaged);
 });
 
-test("resetAll is the way out, and preserves the damaged file first", () => {
-  resetAll();
+test("resetAll is the way out, and preserves the damaged file first", async () => {
+  await resetAll(USER);
   for (const f of readdirSync(process.cwd())) {
     if (f.startsWith("history.corrupt-")) {
       // Leftovers from an earlier test in this file would make the count below
@@ -170,10 +212,10 @@ test("resetAll is the way out, and preserves the damaged file first", () => {
 
   const damaged = '{"sessions": [{"ts": 1, "mode": "dri';
   writeFileSync(HISTORY_FILE, damaged);
-  resetAll();
+  await resetAll(USER);
 
   // The app is usable again…
-  assert.deepEqual(loadHistory().sessions, []);
+  assert.deepEqual((await loadHistory(USER)).sessions, []);
   // …and the bytes that could not be parsed were copied aside rather than
   // destroyed, because a JSON file with a truncated tail is often recoverable
   // by hand and this is the only copy of it.
@@ -189,23 +231,23 @@ test("resetAll is the way out, and preserves the damaged file first", () => {
   );
 });
 
-test("a healthy history.json is NOT quarantined by resetAll", () => {
-  resetAll();
-  saveSession(seedSession(11_000));
+test("a healthy history.json is NOT quarantined by resetAll", async () => {
+  await resetAll(USER);
+  await saveSession(USER, seedSession(11_000));
   const before = readdirSync(process.cwd()).filter((f) =>
     f.startsWith("history.corrupt-"),
   ).length;
-  resetAll();
+  await resetAll(USER);
   const after = readdirSync(process.cwd()).filter((f) =>
     f.startsWith("history.corrupt-"),
   ).length;
   assert.equal(after, before, "nothing to preserve, so nothing copied");
 });
 
-test("a missing history.json is a fresh install, not damage", () => {
-  resetAll();
+test("a missing history.json is a fresh install, not damage", async () => {
+  await resetAll(USER);
   rmSync(HISTORY_FILE);
-  assert.deepEqual(loadHistory(), {
+  assert.deepEqual(await loadHistory(USER), {
     sessions: [],
     facts: {},
     claims: {},
@@ -213,9 +255,9 @@ test("a missing history.json is a fresh install, not damage", () => {
   });
 });
 
-test("a write leaves no temp file behind", () => {
-  resetAll();
-  saveSession(seedSession(12_000));
+test("a write leaves no temp file behind", async () => {
+  await resetAll(USER);
+  await saveSession(USER, seedSession(12_000));
   const litter = readdirSync(process.cwd()).filter((f) =>
     f.startsWith("history.json."),
   );
@@ -224,21 +266,21 @@ test("a write leaves no temp file behind", () => {
 
 // ---------- posting the same record twice is not doing it twice ----------
 
-test("saveSession is idempotent on `id`", () => {
-  resetAll();
+test("saveSession is idempotent on `id`", async () => {
+  await resetAll(USER);
   const record = { ...seedSession(13_000), id: "round-1" };
-  saveSession(record);
+  await saveSession(USER, record);
   // A retry after a lost RESPONSE: same bytes, sent again.
-  const hist = saveSession(record);
+  const hist = await saveSession(USER, record);
 
   assert.equal(hist.sessions.length, 1, "appended once");
   assert.equal(hist.facts[fid("hira-a")].seen, 1, "counted once");
 });
 
-test("saveSession still appends two records that have no id", () => {
-  resetAll();
-  saveSession(seedSession(14_000));
-  const hist = saveSession(seedSession(14_001));
+test("saveSession still appends two records that have no id", async () => {
+  await resetAll(USER);
+  await saveSession(USER, seedSession(14_000));
+  const hist = await saveSession(USER, seedSession(14_001));
   assert.equal(hist.sessions.length, 2, "no id means nothing to be sure about");
   assert.equal(hist.facts[fid("hira-a")].seen, 2);
 });
@@ -251,32 +293,32 @@ test("saveSession still appends two records that have no id", () => {
 // something, but an EMPTY delete (empty POST body → deleteSessions(null, false))
 // deletes nothing yet still rebuilds, discarding every evicted contribution.
 
-test("deleteSessions with nothing selected is a true no-op (does not rebuild-and-shrink the aggregate)", () => {
-  resetAll();
+test("deleteSessions with nothing selected is a true no-op (does not rebuild-and-shrink the aggregate)", async () => {
+  await resetAll(USER);
   // Fill past the 200-cap so hist.facts carries evicted contributions that a
   // rebuild-from-survivors would drop. Each session contributes seen:1.
-  for (let i = 0; i < 250; i++) saveSession(seedSession(20_000 + i));
+  for (let i = 0; i < 250; i++) await saveSession(USER, seedSession(20_000 + i));
 
-  const before = loadHistory();
+  const before = await loadHistory(USER);
   assert.equal(before.sessions.length, 200, "the cap held");
   const seenBefore = before.facts[fid("hira-a")].seen;
   assert.equal(seenBefore, 250, "the aggregate counts all 250, not just the 200 kept");
 
   // The empty-POST path: no ids, not deleteAll. This must change nothing.
-  const after = deleteSessions(null, false);
+  const after = await deleteSessions(USER, null, false);
   assert.equal(
     after.facts[fid("hira-a")].seen,
     250,
     "an empty delete must not discard evicted-session contributions",
   );
   // And on disk, too.
-  assert.equal(loadHistory().facts[fid("hira-a")].seen, 250);
+  assert.equal((await loadHistory(USER)).facts[fid("hira-a")].seen, 250);
 });
 
-test("deleteSessions([], false) is likewise a no-op", () => {
-  resetAll();
-  for (let i = 0; i < 250; i++) saveSession(seedSession(30_000 + i));
-  const after = deleteSessions([], false);
+test("deleteSessions([], false) is likewise a no-op", async () => {
+  await resetAll(USER);
+  for (let i = 0; i < 250; i++) await saveSession(USER, seedSession(30_000 + i));
+  const after = await deleteSessions(USER, [], false);
   assert.equal(after.facts[fid("hira-a")].seen, 250);
 });
 
@@ -286,26 +328,26 @@ test("deleteSessions([], false) is likewise a no-op", () => {
 // deletes both when the user asked to drop one. The record `id` (task 15) is the
 // stable identity, and deletion must use it.
 
-test("deleting one of two same-ms sessions by id leaves the other", () => {
-  resetAll();
+test("deleting one of two same-ms sessions by id leaves the other", async () => {
+  await resetAll(USER);
   const keep = { ...seedSession(40_000), id: "keep" };
   const drop = { ...seedSession(40_000), id: "drop" }; // SAME ts
-  saveSession(keep);
-  saveSession(drop);
-  assert.equal(loadHistory().sessions.length, 2, "both stored");
+  await saveSession(USER, keep);
+  await saveSession(USER, drop);
+  assert.equal((await loadHistory(USER)).sessions.length, 2, "both stored");
 
-  const after = deleteSessions(["drop"], false);
+  const after = await deleteSessions(USER, ["drop"], false);
   assert.equal(after.sessions.length, 1, "only the targeted record went");
   assert.equal(after.sessions[0].id, "keep", "the other same-ms record survived");
   // The aggregate is rebuilt from the one survivor: seen counted once, not twice.
   assert.equal(after.facts[fid("hira-a")].seen, 1);
 });
 
-test("deleteSessions still deletes legacy (id-less) records by ts", () => {
-  resetAll();
-  saveSession(seedSession(41_000)); // no id
-  saveSession(seedSession(42_000)); // no id
-  const after = deleteSessions([41_000], false);
+test("deleteSessions still deletes legacy (id-less) records by ts", async () => {
+  await resetAll(USER);
+  await saveSession(USER, seedSession(41_000)); // no id
+  await saveSession(USER, seedSession(42_000)); // no id
+  const after = await deleteSessions(USER, [41_000], false);
   assert.equal(after.sessions.length, 1);
   assert.equal(after.sessions[0].ts, 42_000);
 });

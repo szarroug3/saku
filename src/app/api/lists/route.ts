@@ -1,6 +1,8 @@
 // GET/POST/DELETE /api/lists — the saved lists file. Same shape of handler as
 // /api/history and /api/session, over lists.json instead of history.json.
 
+import { historyErrorResponse } from "@/lib/api-error";
+import { getUserId } from "@/lib/auth";
 import {
   addToList,
   deleteList,
@@ -14,7 +16,14 @@ import type { EntryId, SavedList } from "@/types";
 const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET() {
-  return Response.json(loadLists(), { headers: NO_STORE });
+  try {
+    const userId = await getUserId();
+    return Response.json(await loadLists(userId), { headers: NO_STORE });
+  } catch (e) {
+    const res = historyErrorResponse(e);
+    if (res) return res;
+    throw e;
+  }
 }
 
 /**
@@ -45,15 +54,22 @@ export async function POST(request: Request) {
   // Each helper refuses what it must itself (a derived list rejects addTo /
   // removeFrom — see the docs there). This route does not re-check, because two
   // places deciding the same rule is how they drift.
-  const file =
-    "addTo" in body && body.addTo !== undefined
-      ? addToList(body.addTo, body.entries)
-      : "removeFrom" in body && body.removeFrom !== undefined
-        ? removeFromList(body.removeFrom, body.entries)
-        : "rename" in body && body.rename !== undefined
-          ? renameList(body.rename, body.name)
-          : saveList(body);
-  return Response.json(file, { headers: NO_STORE });
+  try {
+    const userId = await getUserId();
+    const file =
+      "addTo" in body && body.addTo !== undefined
+        ? await addToList(userId, body.addTo, body.entries)
+        : "removeFrom" in body && body.removeFrom !== undefined
+          ? await removeFromList(userId, body.removeFrom, body.entries)
+          : "rename" in body && body.rename !== undefined
+            ? await renameList(userId, body.rename, body.name)
+            : await saveList(userId, body);
+    return Response.json(file, { headers: NO_STORE });
+  } catch (e) {
+    const res = historyErrorResponse(e);
+    if (res) return res;
+    throw e;
+  }
 }
 
 export async function DELETE(request: Request) {
@@ -61,5 +77,12 @@ export async function DELETE(request: Request) {
   if (!id) {
     return Response.json({ error: "id required" }, { status: 400, headers: NO_STORE });
   }
-  return Response.json(deleteList(id), { headers: NO_STORE });
+  try {
+    const userId = await getUserId();
+    return Response.json(await deleteList(userId, id), { headers: NO_STORE });
+  } catch (e) {
+    const res = historyErrorResponse(e);
+    if (res) return res;
+    throw e;
+  }
 }

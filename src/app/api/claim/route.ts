@@ -5,6 +5,7 @@
 // session is what you did and a claim is what you said, and the moment they
 // travel together someone folds one as the other.
 
+import { getUserId } from "@/lib/auth";
 import { historyErrorResponse } from "@/lib/api-error";
 import { dropClaims, saveClaims } from "@/lib/history";
 import type { FactId } from "@/types";
@@ -41,8 +42,11 @@ export async function POST(request: Request) {
   // carry their own ts because they are a record of a past occasion; a claim
   // happens at the moment of the request.
   try {
+    const userId = await getUserId();
     const hist =
-      body.known === false ? dropClaims(facts) : saveClaims(facts, Date.now());
+      body.known === false
+        ? await dropClaims(userId, facts)
+        : await saveClaims(userId, facts, Date.now());
     return Response.json(
       { ok: true, claims: Object.keys(hist.claims ?? {}).length },
       { headers: NO_STORE },

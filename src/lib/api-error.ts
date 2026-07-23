@@ -17,6 +17,7 @@
 
 import "server-only";
 
+import { AuthRequiredError } from "@/lib/auth";
 import { HistoryUnreadableError } from "@/lib/history";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -30,6 +31,14 @@ const NO_STORE = { "Cache-Control": "no-store" };
  * is, not be flattened into a tidy JSON body that hides it.
  */
 export function historyErrorResponse(e: unknown): Response | null {
+  // Not signed in (Supabase mode, no session). 401 so the client redirects to
+  // /login rather than treating it as data loss.
+  if (e instanceof AuthRequiredError) {
+    return Response.json(
+      { error: e.message, code: "auth-required" },
+      { status: 401, headers: NO_STORE },
+    );
+  }
   if (!(e instanceof HistoryUnreadableError)) return null;
   return Response.json(
     {

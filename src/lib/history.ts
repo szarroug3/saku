@@ -45,6 +45,8 @@ import {
 import path from "node:path";
 
 import { emptyAggregate, foldSession, foldSessions } from "@/lib/aggregate";
+import { isSupabaseStore } from "@/lib/store/mode";
+import { readHistoryRow, writeHistoryRow } from "@/lib/store/supabase-store";
 import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
 
 const HISTORY_PATH = path.join(process.cwd(), "history.json");
@@ -94,7 +96,7 @@ export class HistoryUnreadableError extends Error {
  * named, zero-length history.json — the one shape that looks like a fresh
  * install and is not.
  */
-function writeHistory(hist: HistoryFile): void {
+function writeHistoryFile(hist: HistoryFile): void {
   const body = JSON.stringify(hist, null, 1);
   const tmp = `${HISTORY_PATH}.${process.pid}.tmp`;
   try {
@@ -137,7 +139,7 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
  * aggregate.ts are for). The point is to catch a file that is no longer a
  * history, not to validate every session ever written.
  */
-export function loadHistory(): HistoryFile {
+function readHistoryFile(): HistoryFile {
   if (!existsSync(HISTORY_PATH)) {
     return { sessions: [], facts: {}, claims: {}, seen: {} };
   }
@@ -177,6 +179,22 @@ export function loadHistory(): HistoryFile {
 }
 
 /**
+ * The current backend's history for `userId`. Supabase in hosted mode; the local
+ * file otherwise, where the id is ignored — there is one history.json and one
+ * implicit user. This is the read half every mutator below builds on.
+ */
+export async function loadHistory(userId: string): Promise<HistoryFile> {
+  return isSupabaseStore() ? readHistoryRow(userId) : readHistoryFile();
+}
+
+/** The write half — the same backend split. File mode keeps the atomic temp-file
+ * + fsync + rename discipline (see writeHistoryFile); Supabase upserts the row. */
+async function writeHistory(userId: string, hist: HistoryFile): Promise<void> {
+  if (isSupabaseStore()) await writeHistoryRow(userId, hist);
+  else writeHistoryFile(hist);
+}
+
+/**
  * Copy an unreadable history.json aside, once, before something overwrites it.
  *
  * Only `resetAll` overwrites without reading first, and it is the deliberate
@@ -192,7 +210,7 @@ export function loadHistory(): HistoryFile {
 function quarantineUnreadable(): string | null {
   if (!existsSync(HISTORY_PATH)) return null;
   try {
-    loadHistory();
+    readHistoryFile();
     return null;
   } catch {
     // unreadable — that is the case this function exists for
@@ -223,11 +241,15 @@ function quarantineUnreadable(): string | null {
  * time, and that asymmetry is the point — the belief decays, so re-asserting it
  * has to be able to refresh it.
  */
-export function saveClaims(facts: FactId[], ts: number): HistoryFile {
-  const hist = loadHistory();
+export async function saveClaims(
+  userId: string,
+  facts: FactId[],
+  ts: number,
+): Promise<HistoryFile> {
+  const hist = await loadHistory(userId);
   hist.claims ??= {};
   for (const f of facts) hist.claims[f] = ts;
-  writeHistory(hist);
+  await writeHistory(userId, hist);
   return hist;
 }
 
@@ -242,11 +264,15 @@ export function saveClaims(facts: FactId[], ts: number): HistoryFile {
  * claims.seenState. Kept a separate function rather than a flag on saveClaims so
  * the two writes read as the two intents they are.
  */
-export function saveSeen(facts: FactId[], ts: number): HistoryFile {
-  const hist = loadHistory();
+export async function saveSeen(
+  userId: string,
+  facts: FactId[],
+  ts: number,
+): Promise<HistoryFile> {
+  const hist = await loadHistory(userId);
   hist.seen ??= {};
   for (const f of facts) hist.seen[f] = ts;
-  writeHistory(hist);
+  await writeHistory(userId, hist);
   return hist;
 }
 
@@ -254,10 +280,10 @@ export function saveSeen(facts: FactId[], ts: number): HistoryFile {
  * writing a zero: a fact with no claim is the state the app starts in and the
  * one every reader already handles, and an absent key says "never claimed"
  * where `0` would have to be special-cased into meaning it. */
-export function dropClaims(facts: FactId[]): HistoryFile {
-  const hist = loadHistory();
+export async function dropClaims(userId: string, facts: FactId[]): Promise<HistoryFile> {
+  const hist = await loadHistory(userId);
   if (hist.claims) for (const f of facts) delete hist.claims[f];
-  writeHistory(hist);
+  await writeHistory(userId, hist);
   return hist;
 }
 
@@ -279,8 +305,11 @@ export function dropClaims(facts: FactId[]): HistoryFile {
  * have disagreed since the file was written, and reconciling them is its own
  * change.
  */
-export function saveSession(session: QuizSessionRecord): HistoryFile {
-  const hist = loadHistory();
+export async function saveSession(
+  userId: string,
+  session: QuizSessionRecord,
+): Promise<HistoryFile> {
+  const hist = await loadHistory(userId);
   // IDEMPOTENT ON `id`. The client now queues records and retries them until the
   // server acknowledges one, and a retry whose original DID land (the response
   // was lost, not the request) would otherwise append the same round twice and
@@ -299,7 +328,7 @@ export function saveSession(session: QuizSessionRecord): HistoryFile {
     const key = f as keyof typeof hist.facts;
     foldSession((hist.facts[key] ??= emptyAggregate()), s, session.ts);
   }
-  writeHistory(hist);
+  await writeHistory(userId, hist);
   return hist;
 }
 
@@ -312,11 +341,12 @@ export function saveSession(session: QuizSessionRecord): HistoryFile {
  * to say about them. Deleting your history discards what you DID. What you told
  * the app you know, and what you asked to be quizzed on, are separate assertions
  * and are still true. */
-export function deleteSessions(
+export async function deleteSessions(
+  userId: string,
   ids: (number | string)[] | null,
   deleteAll: boolean,
-): HistoryFile {
-  const hist = loadHistory();
+): Promise<HistoryFile> {
+  const hist = await loadHistory(userId);
   // A delete that selects NOTHING must change nothing. The rebuild below folds
   // hist.facts from the SURVIVING sessions, but hist.facts is grown
   // incrementally by saveSession and legitimately carries contributions from
@@ -337,7 +367,7 @@ export function deleteSessions(
     hist.sessions = hist.sessions.filter((s) => !drop.has(s.id ?? s.ts));
   }
   hist.facts = foldSessions(hist.sessions);
-  writeHistory(hist);
+  await writeHistory(userId, hist);
   return hist;
 }
 
@@ -355,12 +385,13 @@ export function deleteSessions(
  * than clearing keys on the loaded one) also drops `claims`/`seen` from the file
  * entirely, so the on-disk shape matches a never-touched install exactly.
  */
-export function resetAll(): HistoryFile {
+export async function resetAll(userId: string): Promise<HistoryFile> {
   // The ONE writer that does not read first, which makes it the one way out of
   // a history.json nothing else will touch — and therefore the one place the
   // damaged bytes have to be preserved before they go. See quarantineUnreadable.
-  quarantineUnreadable();
+  // File-only: Postgres has no half-written-row failure to quarantine against.
+  if (!isSupabaseStore()) quarantineUnreadable();
   const empty: HistoryFile = { sessions: [], facts: {} };
-  writeHistory(empty);
+  await writeHistory(userId, empty);
   return empty;
 }
