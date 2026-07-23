@@ -74,6 +74,7 @@ import {
 import {
   RADICAL_SUBJECT,
   RADICALS,
+  isRadicalTaughtAsKanji,
   radicalEntry,
   radicalByGlyph,
   radicalMeaningFactId,
@@ -373,6 +374,17 @@ export function readingRowsOf(entry: LibEntry): readonly ReadingRow[] {
  */
 export function knownFactsOf(entry: LibEntry): readonly FactId[] {
   if (entry.kind === KANJI_SUBJECT) return [meaningFactId(entry.glyph)];
+  // A MERGED radical is learned on its kanji card, not a radical card, so its
+  // own meaning fact is never taught — its knowledge lives on the identical
+  // kanji glyph (radical:乙 has no lesson, kanji:乙 does). Read the kanji's
+  // meaning fact so the shelf's Known filter matches what the learner actually
+  // did, instead of stranding 116 radicals as forever-unknown. The 90
+  // radical-only shapes and the 8 that keep a radical card fall through to their
+  // own fact below. See isRadicalTaughtAsKanji in src/data/radicals.ts.
+  if (entry.kind === RADICAL_SUBJECT) {
+    const rad = radicalByGlyph(entry.glyph);
+    if (rad && isRadicalTaughtAsKanji(rad.num)) return [meaningFactId(entry.glyph)];
+  }
   // A pair mints a fact per side but SCHEDULES only the askable ones — the
   // unaskable side rides along solely as a distractor and is never quizzed, so
   // it can never be "known". Counting it would leave every pair permanently

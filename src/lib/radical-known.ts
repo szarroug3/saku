@@ -13,7 +13,11 @@
 // does. Every kanji maps to exactly one classical radical, so the gate is a
 // single predicate, not an all-parts closure like a word's.
 
-import { radicalMeaningFactId, radicalOfKanji } from "@/data/radicals";
+import {
+  isRadicalTaughtAsKanji,
+  radicalMeaningFactId,
+  radicalOfKanji,
+} from "@/data/radicals";
 import { effectiveState } from "@/lib/claims";
 import type { HistoryFile } from "@/types";
 
@@ -41,9 +45,18 @@ export function radicalKnown(glyph: string, history: HistoryFile): boolean {
  * True for a kanji with no mapped radical, which cannot happen for a jōyō kanji
  * (the ingest fails rather than ship one) but is the safe answer: a kanji the
  * radical data does not cover is not blocked by a radical it does not have.
+ *
+ * Also true when the radical is a MERGED one — a both-roles character taught as
+ * its own kanji rather than as a separate radical card (乙, 一, 人 …). There is
+ * no radical card to wait on: the radical IS a kanji, taught in the kanji order
+ * at the exact point it is first needed (it is its own first consumer). So it is
+ * never a separate prerequisite and never gates. The character teaches itself,
+ * and later kanji filed under the same radical are unblocked the moment it lands
+ * in the order ahead of them. See `isRadicalTaughtAsKanji` in data/radicals.ts.
  */
 export function kanjiRadicalKnown(c: string, history: HistoryFile): boolean {
   const rad = radicalOfKanji(c);
   if (!rad) return true;
+  if (isRadicalTaughtAsKanji(rad.num)) return true;
   return radicalKnown(rad.glyph, history);
 }

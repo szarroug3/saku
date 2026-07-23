@@ -23,10 +23,27 @@
 // number order (see shelves.tsx). This module is only the study queue.
 
 import { KANJI_ORDER } from "@/data/kanji";
-import { RADICALS, radicalOfKanji, type RadicalRow } from "@/data/radicals";
+import {
+  RADICALS,
+  isRadicalTaughtAsKanji,
+  radicalOfKanji,
+  type RadicalRow,
+} from "@/data/radicals";
 
-/** Every radical, in the order it is taught: by first consumer kanji, orphans
- * last in Kangxi number order. All 214 appear exactly once. */
+/**
+ * Every radical the radical TRACK teaches, in the order it teaches them: by
+ * first consumer kanji, orphans last in Kangxi number order.
+ *
+ * 98 of the 214, not all of them. The 116 radicals that are also their own
+ * first-consumer kanji (乙, 一, 人, 水 …) are taught ONCE, on the kanji card, so
+ * they are dropped here — see `isRadicalTaughtAsKanji` in src/data/radicals.ts
+ * for why teaching them twice was the redundancy this removes. What remains is
+ * the 90 radical-only shapes (亠 亅 冂 …, not kanji) plus the 8 both-roles
+ * characters that are needed as a component before their own kanji is reached
+ * (火 玉 …) and so still earn an early radical card. The "of N" a radical lesson
+ * shows counts off this list, so the denominator is the 98 the track actually
+ * teaches and never double-counts a merged one against the kanji track.
+ */
 export const RADICAL_TEACHING_ORDER: readonly RadicalRow[] = (() => {
   // The earliest kanji-order position that gates on each radical number. A
   // radical with no entry here has no jōyō consumer — an orphan.
@@ -41,6 +58,9 @@ export const RADICAL_TEACHING_ORDER: readonly RadicalRow[] = (() => {
   const needed: RadicalRow[] = [];
   const orphans: RadicalRow[] = [];
   for (const r of RADICALS) {
+    // Merged radicals are taught on the kanji card, never here — skip them so
+    // the track, its order, and its "of N" total are the 98 it really teaches.
+    if (isRadicalTaughtAsKanji(r.num)) continue;
     (firstConsumer.has(r.num) ? needed : orphans).push(r);
   }
 

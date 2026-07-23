@@ -1,8 +1,8 @@
 // The radical track's curriculum — what to teach, and when, so that no kanji is
 // ever shown before the radical it is filed under.
 //
-// JUST IN TIME, NOT ALL AT ONCE. The 214 radicals are not front-loaded before
-// kanji begins; that would be 214 meaning cards between kana and the first kanji.
+// JUST IN TIME, NOT ALL AT ONCE. The radicals are not front-loaded before kanji
+// begins; that would be a wall of meaning cards between kana and the first kanji.
 // Instead a radical is taught right before the kanji that needs it: the next
 // radical lesson is the radicals of the NEXT kanji lesson group that the learner
 // does not yet know. Learn those, the kanji group unlocks (kanji-lesson.ts gates
@@ -90,8 +90,11 @@ export interface RadicalCard {
 export interface RadicalLesson {
   cards: RadicalCard[];
   facts: FactId[];
-  /** Where you are, in RADICALS — "3-6 of 214", counted off the teaching order
-   * so a learner sees the whole 214 as the denominator. */
+  /** Where you are, in RADICALS — "3-6 of 98", counted off the teaching order.
+   * The denominator is the 98 radicals the TRACK teaches, not the full 214: the
+   * 116 that are also their own kanji are taught on the kanji card and counted
+   * there, so counting them here too would double-count them. See
+   * RADICAL_TEACHING_ORDER in radical-order.ts. */
   position: LessonPosition;
 }
 
@@ -126,7 +129,8 @@ export function nextRadicalLesson(
   const batch = due.slice(0, size);
 
   // Position is counted off how many radicals are already known, so the card
-  // reads as progress through the 214 rather than through the due sublist.
+  // reads as progress through the 98 the track teaches rather than through the
+  // due sublist.
   const knownCount = RADICAL_TEACHING_ORDER.filter((r) =>
     radicalKnown(r.glyph, history),
   ).length;

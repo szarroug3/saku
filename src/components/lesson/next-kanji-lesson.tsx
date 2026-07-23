@@ -89,6 +89,14 @@ export function NextKanjiLesson({
               <span className="mt-1 block text-[13px] text-text-muted">
                 {card.meaning}
               </span>
+              {/* Both roles on one card: this kanji is also a Kangxi radical, so
+                  it earns no separate radical lesson — the line says the second
+                  role the dropped card would have. */}
+              {card.alsoRadical ? (
+                <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
+                  Also radical {card.alsoRadical}
+                </span>
+              ) : null}
               {/* A wordless part is in the lesson because something else on the
                   SAME card needs it — never because it is worth knowing on its
                   own — and the kanji it names is always right there. */}
@@ -96,9 +104,9 @@ export function NextKanjiLesson({
                 <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
                   You need this for {card.neededFor}
                 </span>
-              ) : (
+              ) : !card.alsoRadical ? (
                 <span className="mt-1 block min-h-[12px]" />
-              )}
+              ) : null}
             </Link>
           ))}
         </div>

@@ -4,7 +4,7 @@
 // before the kanji that is filed under it.
 //
 // It is the kanji card's twin: a lesson with no name, a meaning per item, a
-// position counted in items ("radicals 3–6 of 214"), and the same two routes
+// position counted in items ("radicals 3–6 of 98"), and the same two routes
 // in (Start walks then drills, "Quiz me" drills now). What it does NOT share is
 // the reason it exists — a radical is taught so that when its kanji is broken
 // into parts, none of those parts is a shape the learner has never met. The
@@ -14,7 +14,8 @@
 // WHAT IT MAY SAY
 // ===============
 // Every word is read off src/data/radicals.ts or counted from it: the radical,
-// its meaning, and which RADICAL of 214. The "in N kanji" count is
+// its meaning, and which RADICAL of the 98 this track teaches (the other 116 are
+// their own kanji and are taught on the kanji card). The "in N kanji" count is
 // radicalConsumerCount — how many jōyō kanji file under this radical — and it is
 // omitted for the orphans (radicals no common kanji uses), which are taught at
 // the tail for completeness and have nothing to point forward to.

@@ -49,6 +49,25 @@ const KANJI_READY: HistoryFile = {
     RADICALS.map((r) => [radicalMeaningFactId(r.glyph), Date.UTC(2026, 0, 1)]),
   ) as HistoryFile["claims"],
 };
+/**
+ * A learner who has cleared the very first kanji lesson — so the NEXT kanji group
+ * is blocked by a real (non-merged) radical and the radical track has a first
+ * lesson to hand out.
+ *
+ * Day one is no longer a radical lesson: the opening kanji (人 大 日 一) ARE their
+ * own radicals and are taught as kanji, so a fresh learner has nothing due on the
+ * radical track. The first genuine radical card is the one gating the second
+ * group. Claim the first kanji lesson's facts and that gate appears.
+ */
+const RADICAL_READY: HistoryFile = {
+  sessions: [],
+  facts: {},
+  claims: Object.fromEntries(
+    nextKanjiLesson(FRESH, kanjiTeachOrder("everyday"), LESSON_RANGE_DEFAULT)!.facts.map(
+      (f) => [f, Date.UTC(2026, 0, 1)],
+    ),
+  ) as HistoryFile["claims"],
+};
 const WORD_READY: HistoryFile = {
   sessions: [],
   facts: {},
@@ -77,7 +96,7 @@ const GRAMMAR_READY: HistoryFile = {
 const TEACH_SETS: Record<string, FactId[]> = {
   kana: nextLesson(FRESH)!.facts,
   radical: nextRadicalLesson(
-    FRESH,
+    RADICAL_READY,
     kanjiTeachOrder("everyday"),
     LESSON_RANGE_DEFAULT,
     6,

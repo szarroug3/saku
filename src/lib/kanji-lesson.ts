@@ -56,6 +56,7 @@ import {
   meaningFactId,
   orderRow,
 } from "@/data/kanji";
+import { radicalByGlyph } from "@/data/radicals";
 import type { FactId, HistoryFile } from "@/types";
 
 /**
@@ -309,6 +310,19 @@ export interface KanjiCard {
    * the copy can point at it rather than promise a payoff in some later sitting.
    */
   neededFor: string | null;
+  /**
+   * The Kangxi number when this kanji is ALSO a radical — 乙 is radical 5, 水 is
+   * 85 — so the card can say the character plays both roles. Null for the ~2,012
+   * kanji that are not radicals.
+   *
+   * This is the visible half of the dedup: a both-roles character used to get a
+   * radical card AND a kanji card, and now the 116 whose kanji is their radical's
+   * first consumer are taught once, here, with this line standing in for the
+   * radical card they no longer need (see isRadicalTaughtAsKanji). The 8 that
+   * still keep an early radical card also carry the number — it is simply true
+   * that they are radicals, and the line reads the same either way.
+   */
+  alsoRadical: number | null;
 }
 
 /** The next kanji lesson, narrowed to what you have not seen. */
@@ -404,6 +418,7 @@ function toCard(c: string): KanjiCard {
     meaning: kanjiRow(c)?.meanings[0] ?? "",
     cost: kanjiCost(c),
     neededFor: WORDLESS.has(c) ? (orderRow(c)?.pulledFor ?? null) : null,
+    alsoRadical: radicalByGlyph(c)?.num ?? null,
   };
 }
 

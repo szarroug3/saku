@@ -15,10 +15,15 @@ import { describe, test } from "node:test";
 
 import { KANA_GROUP_FACTS } from "./lesson.ts";
 import { LESSON_RANGE_DEFAULT, kanjiCurriculum, nextKanjiLesson } from "./kanji-lesson.ts";
+import { freshFacts, nextGroup } from "./budget.ts";
 import { kanjiTeachOrder, meaningFactId } from "../data/kanji.ts";
-import { radicalMeaningFactId, radicalOfKanji } from "../data/radicals.ts";
+import {
+  isRadicalTaughtAsKanji,
+  radicalMeaningFactId,
+  radicalOfKanji,
+} from "../data/radicals.ts";
 import { RADICAL_TEACHING_ORDER } from "./radical-order.ts";
-import { radicalKnown } from "./radical-known.ts";
+import { kanjiRadicalKnown, radicalKnown } from "./radical-known.ts";
 import {
   dueRadicals,
   hasStartedRadicalTrack,
@@ -59,26 +64,107 @@ function firstKanjiGroupChars(): string[] {
   return kanjiCurriculum(ORDER, RANGE)[0].chars.slice();
 }
 
+/** The kanji of the NEXT fresh kanji group for a given history — the group the
+ * radical track reads to decide what is due. Mirrors radical-lesson's own
+ * internal `nextKanjiGroupChars`. */
+function nextKanjiGroupChars(h: HistoryFile): string[] {
+  const groups = kanjiCurriculum(ORDER, RANGE);
+  const fresh = freshFacts(
+    groups.flatMap((g) => g.facts),
+    h,
+  );
+  const facts = nextGroup(
+    groups.map((g) => g.facts),
+    fresh,
+  );
+  if (!facts.length) return [];
+  const group = groups.find((g) => g.facts.includes(facts[0]));
+  return group ? [...group.chars] : [];
+}
+
+/** Walk the curriculum lesson by lesson from a fresh (kana-done) history until
+ * the first NON-merged radical blocks a kanji group — the gate the radical
+ * track exists to open. Returns that blocked-state history. */
+function firstRadicalGate(): HistoryFile {
+  let h = history();
+  for (let step = 0; step < 4000; step++) {
+    const kanji = nextKanjiLesson(h, ORDER, RANGE);
+    const due = dueRadicals(h, ORDER, RANGE);
+    if (!kanji && due.length) return h;
+    if (kanji) {
+      h = claiming(kanji.facts, h);
+      continue;
+    }
+    if (due.length) {
+      h = claiming(
+        due.map((r) => radicalMeaningFactId(r.glyph)),
+        h,
+      );
+      continue;
+    }
+    break;
+  }
+  throw new Error("no radical gate was ever reached");
+}
+
 describe("kanji gate on radicals", () => {
-  test("with no radicals known, the first kanji lesson is blocked", () => {
+  test("day one is kanji, not radicals — the first group's radicals are all merged", () => {
+    // 人 大 日 一 are each their own radical's first consumer, so they are taught
+    // as kanji (labelled "also a radical"), with no radical pre-card. The kanji
+    // lesson is available at once and the radical track has nothing due — the old
+    // behaviour taught 人 the radical and then 人 the kanji, which was the
+    // duplication this removes.
     const h = history();
-    assert.equal(nextKanjiLesson(h, ORDER, RANGE), null);
+    assert.ok(
+      nextKanjiLesson(h, ORDER, RANGE),
+      "the first kanji lesson is unblocked with no radicals learned",
+    );
+    assert.equal(
+      dueRadicals(h, ORDER, RANGE).length,
+      0,
+      "no radical is due on day one",
+    );
+    for (const c of firstKanjiGroupChars()) {
+      const rad = radicalOfKanji(c);
+      assert.ok(rad && isRadicalTaughtAsKanji(rad.num), `${c} is a merged radical`);
+    }
   });
 
-  test("the due radicals are exactly the unknown radicals of that blocked group", () => {
-    const h = history();
-    const chars = firstKanjiGroupChars();
+  test("the due radicals are exactly the blocked group's unknown, non-merged radicals", () => {
+    const h = firstRadicalGate();
+    assert.equal(
+      nextKanjiLesson(h, ORDER, RANGE),
+      null,
+      "the group is blocked by a radical",
+    );
+    const chars = nextKanjiGroupChars(h);
     const expected = new Set<number>();
     for (const c of chars) {
       const rad = radicalOfKanji(c);
-      if (rad) expected.add(rad.num);
+      // A merged radical never blocks (it is the kanji); only unknown non-merged
+      // radicals are due.
+      if (rad && !isRadicalTaughtAsKanji(rad.num) && !radicalKnown(rad.glyph, h)) {
+        expected.add(rad.num);
+      }
     }
     const due = new Set(dueRadicals(h, ORDER, RANGE).map((r) => r.num));
     assert.deepEqual(due, expected);
+    assert.ok(due.size > 0, "something is actually due at the gate");
+  });
+
+  test("no merged radical is ever due — the radical track never re-teaches a kanji", () => {
+    const h = firstRadicalGate();
+    for (const r of dueRadicals(h, ORDER, RANGE)) {
+      assert.equal(
+        isRadicalTaughtAsKanji(r.num),
+        false,
+        `${r.glyph} is taught as a radical card, not a kanji`,
+      );
+    }
   });
 
   test("nextRadicalLesson teaches those radicals, and claiming them unlocks the kanji", () => {
-    const h = history();
+    const h = firstRadicalGate();
     const lesson = nextRadicalLesson(h, ORDER, RANGE, PER);
     assert.ok(lesson, "a radical lesson is due while a kanji group is blocked");
     assert.ok(lesson.cards.length > 0);
@@ -91,21 +177,24 @@ describe("kanji gate on radicals", () => {
     const after = claiming(allDue, h);
     assert.ok(
       nextKanjiLesson(after, ORDER, RANGE),
-      "the first kanji lesson unlocks once its radicals are known",
+      "the blocked kanji lesson unlocks once its radicals are known",
     );
   });
 
-  test("every kanji in the unlocked group now has a known radical", () => {
-    const chars = firstKanjiGroupChars();
+  test("every kanji in the unlocked group now passes the radical gate", () => {
+    const h = firstRadicalGate();
+    const chars = nextKanjiGroupChars(h);
     const rads = new Set<FactId>();
     for (const c of chars) {
       const rad = radicalOfKanji(c);
-      if (rad) rads.add(radicalMeaningFactId(rad.glyph));
+      // Only the non-merged radicals need claiming; merged ones already pass.
+      if (rad && !isRadicalTaughtAsKanji(rad.num)) {
+        rads.add(radicalMeaningFactId(rad.glyph));
+      }
     }
-    const after = claiming([...rads], history());
+    const after = claiming([...rads], h);
     for (const c of chars) {
-      const rad = radicalOfKanji(c);
-      if (rad) assert.ok(radicalKnown(rad.glyph, after));
+      assert.ok(kanjiRadicalKnown(c, after), `${c} passes the radical gate`);
     }
   });
 });
