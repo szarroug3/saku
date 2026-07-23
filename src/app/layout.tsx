@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
 import { SignedOutNotice } from "@/components/auth/signed-out-notice";
 import { SaveStatus } from "@/components/save-status";
@@ -95,6 +96,10 @@ export default async function RootLayout({
   // pages. `authEnabled` (Supabase mode) is what puts a Sign out in it — in file
   // mode there is no session to end.
   const [signedIn, authEnabled] = [await isSignedIn(), isSupabaseStore()];
+  // Read the sidebar's collapsed state server-side so it renders at the right
+  // width on the first paint instead of loading expanded and snapping closed.
+  const sidebarCollapsed =
+    (await cookies()).get("saku-sidebar-collapsed")?.value === "1";
   return (
     // suppressHydrationWarning: the script below rewrites these two attributes
     // before React hydrates, so the client <html> legitimately differs from
@@ -127,7 +132,11 @@ export default async function RootLayout({
                     ("discard the quiz in progress?") is their state. */}
                 <ConfirmProvider>
                   <div className="mx-auto flex max-w-[1080px] gap-3.5 px-3 pb-15 pt-6">
-                    <Sidebar signedIn={signedIn} authEnabled={authEnabled} />
+                    <Sidebar
+                      signedIn={signedIn}
+                      authEnabled={authEnabled}
+                      initialCollapsed={sidebarCollapsed}
+                    />
                     <main className="min-w-0 flex-1">
                       {/* Above the page, on every page: the screens that
                           would otherwise show a learner's work as missing

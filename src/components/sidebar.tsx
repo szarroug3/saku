@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 
 import { SignOut } from "@/components/auth/sign-out";
@@ -10,8 +10,11 @@ import { SignOut } from "@/components/auth/sign-out";
 import { useHistory } from "@/lib/use-history";
 import { useQuizSession } from "@/lib/quiz-session";
 
-// Persisted across reloads so a collapsed bar stays collapsed. New keys use the
-// `saku-` prefix (the older `kanaquiz-` keys are a separate rename still pending).
+// Persisted as a COOKIE, not localStorage, so the SERVER can read it (see
+// layout.tsx) and render the bar at the right width on the very first paint.
+// localStorage is client-only, so it would render expanded and then visibly snap
+// closed after hydration. New keys use the `saku-` prefix (the older `kanaquiz-`
+// keys are a separate rename still pending).
 const COLLAPSE_KEY = "saku-sidebar-collapsed";
 
 /** A bare chevron for the collapse/expand toggle — inline so the nav pulls in no
@@ -90,6 +93,7 @@ const NAV: Array<{ href: string; label: ReactNode }> = [
 export function Sidebar({
   signedIn,
   authEnabled,
+  initialCollapsed,
 }: {
   /** Whether there is a session (always true in file mode). Decides Sign in vs
    * Sign out, and hides the nav on the signed-out landing at /. */
@@ -97,6 +101,9 @@ export function Sidebar({
   /** Whether auth is on at all (Supabase mode). In file mode there's no session
    * to end, so no auth control shows. */
   authEnabled: boolean;
+  /** The collapsed state the server read from the cookie, so the first render is
+   * already the right width — no expanded-then-snap-closed flash. */
+  initialCollapsed: boolean;
 }) {
   const pathname = usePathname();
   // Finished quizzes, for the "Recent sessions" entry. It rides directly under
@@ -114,23 +121,14 @@ export function Sidebar({
   const runCount = runs.length;
 
   // Collapsed shrinks the bar to a thin rail so the page gets the width back.
-  // Restored AFTER mount, not in the initializer: localStorage is client-only,
-  // and reading it up front would disagree with the server's expanded render and
-  // warn on hydration. A user who left it collapsed sees one expanded frame on a
-  // hard reload before this lands, which is fine for a chrome toggle.
-  const [collapsed, setCollapsed] = useState(false);
-  useEffect(() => {
-    setCollapsed(localStorage.getItem(COLLAPSE_KEY) === "1");
-  }, []);
+  // Seeded from the server's cookie read, so the first paint is already correct.
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   function toggleCollapsed() {
     setCollapsed((c) => {
       const next = !c;
-      try {
-        localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
-      } catch {
-        // Private mode / disabled storage: the toggle still works this session,
-        // it just won't be remembered. Nothing to do.
-      }
+      // Write the cookie the server reads next load. One year, lax; path=/ so it
+      // covers every route.
+      document.cookie = `${COLLAPSE_KEY}=${next ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
       return next;
     });
   }
