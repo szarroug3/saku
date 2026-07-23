@@ -236,6 +236,22 @@ export const WHY_TRACK: Record<string, Why> = {
       "Each kanji can also have multiple readings, and words are what pin down which reading is used. Learning kanji first gives you the pieces, and learning words gives those pieces real pronunciation and context. The most common kanji come first.",
     ],
   },
+  // THE ONE CURRICULUM CARD. Radicals, kanji and words are taught in a single
+  // order now (src/lib/curriculum-order.ts), so the card that teaches all three
+  // needs one explanation instead of the kanji one stacked on the words one. The
+  // `kanji`, `radical` and `words` entries below are kept: the Library shelves
+  // and the track intros still speak about one kind of thing at a time.
+  curriculum: {
+    lede: {
+      strong: "Radicals, kanji and words are one climb, so they arrive in one order.",
+      rest: "Each lesson teaches whatever comes next, and nothing arrives before the pieces it is built from.",
+    },
+    paras: [
+      "A word is what you actually speak and read, and most words are written with kanji. A kanji is built around smaller shapes called radicals. So the three are a chain, and we teach them in the order that chain runs: the shapes a kanji is made of, then the kanji, then the words those kanji spell.",
+      "That is why a lesson can look mixed. Some sittings are two kanji and the shape they share; some are a handful of words your last few kanji just paid for. The pace is uneven on purpose, because kanji are reused across many words and learning one can open several at once.",
+      "A few shapes are only ever building blocks and never a character you would study by itself, like the steam shape 气 inside 気. Those get their own tile, marked as a radical, and they always sit just before the kanji that needs them. Words written with no kanji at all (これ, もう, とても) have nothing to wait for, so they turn up early.",
+    ],
+  },
   words: {
     lede: {
       strong: "Words are the part you actually speak and read.",

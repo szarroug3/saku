@@ -1,37 +1,33 @@
-// The words track: the third curriculum, and the first one whose boundary
-// MOVES WITH THE USER.
+// The words the curriculum teaches: WHICH words, in WHAT order, and what each
+// one owes.
 //
-// WHY THIS IS NOT kanji-lesson.ts WITH A DIFFERENT COST
-// ====================================================
-// Kanji's lessons are a pure function of (order, range): `packLessons` cuts the
-// 2,136 into groups once and history only decides WHERE in that fixed cut you
-// are. A word cannot be cut that way, because a word has a PREREQUISITE that is
-// itself learned material:
+// WHAT THIS FILE STOPPED BEING
+// ============================
+// It used to be a scheduler as well. It walked beginnerRank, asked of every word
+// whether all its kanji were known yet, stepped over the ones that were not, and
+// handed the next few teachable ones to a card of its own, with a lock card for
+// the very common case where the best word to teach was behind kanji the learner
+// did not have. That was a second scheduler running beside kanji's over the same
+// climb, and the lock was it apologising for the other one.
 //
-//   電車 is only teachable once you know 電 AND 車. Knowing the parts is not
-//   knowing the compound — the word must still be taught — but it cannot be
-//   taught until its kanji are known.
+// curriculum-order.ts folded both into ONE order: a word is placed after every
+// kanji it is written with, so "is this teachable yet" is answered by the
+// sequence rather than asked of history. curriculum-lesson.ts cuts that sequence
+// into lessons and is the only scheduler now. What is left here is the source of
+// truth that order is built from: the word list, its cut, and the prerequisite
+// rule.
 //
-// So the words curriculum is not a static packing. The set of TEACHABLE words
-// grows as the kanji track advances, and the next word lesson is a function of
-// (beginnerRank order, which kanji you know, which words you've met) — three
-// reads of history, not one. There is still no cursor: the same history names
-// the same next lesson, exactly as kana and kanji manage it.
+// THE ORDER
+// =========
+// The teaching order is `beginnerRank` (see VocabRow). Rank 1 is the first word
+// a beginner meets, and the ranking already front-loads the common words. The
+// spine walks it in that order, weaving each word's prerequisites in ahead of it.
 //
-// THE ORDER, AND WHAT "KANA-ONLY FIRST" ACTUALLY MEANS
-// ====================================================
-// The teaching order is `beginnerRank` (see VocabRow) — 1 is the first word a
-// beginner meets, and it already front-loads the common words. We walk it in
-// that order and hand out the next few TEACHABLE, not-yet-met words.
-//
-// "Kana-only words come first" is a property of the GATE, not a re-sort. A word
-// written with no kanji (これ, もう, とても) has no kanji prerequisite, so it is
-// teachable the moment the words track opens — right after kana. A kanji word
-// of a LOWER rank (何 is rank 1) waits until its kanji are known. So on day one
-// of the track the teachable frontier is all kana-only words plus the handful of
-// kanji words whose kanji you already learned; the kanji words fill in behind
-// them as the kanji track pays for them. beginnerRank order is preserved; the
-// gate is what makes kana-only lead.
+// Kana-only words still lead, and for the same reason they always did: a word
+// written with no kanji (これ, もう, とても) owes nothing, so it arrives with no
+// run-up, while a kanji word of a LOWER rank (何 is rank 1) arrives behind its
+// kanji. beginnerRank order is preserved; what a word owes is what spaces them
+// out.
 //
 // WHERE THE CURRICULUM ENDS
 // =========================
@@ -44,18 +40,9 @@
 // scripts/ingest/beginnerrank.py — the boundary is its `gated_max_rank`, and
 // `--check` reprints it if the ingest is ever re-cut.
 
-import { effectiveState } from "@/lib/claims";
-import type { LessonPosition } from "@/lib/lesson-position";
-import { kanjiTeachOrder } from "@/data/kanji";
 import { kanjiKnown } from "@/lib/kanji-known";
-import {
-  VOCAB,
-  VOCAB_SUBJECT,
-  wordMeaningFactId,
-  wordReadingFactId,
-  type VocabRow,
-} from "@/data/vocab";
-import type { FactId, HistoryFile } from "@/types";
+import { VOCAB, VOCAB_SUBJECT, type VocabRow } from "@/data/vocab";
+import type { HistoryFile } from "@/types";
 
 // The words-per-lesson default and clamp live in the DATA-FREE
 // src/lib/lesson-sizing.ts so the always-mounted QuizConfigProvider can seed a
@@ -88,11 +75,11 @@ const HAN = /\p{Script=Han}/u;
  * the kanji track. lesson-steps.ts already excludes it from its own KANJI test
  * for this reason; this is the same call, one file over.
  *
- * Left in the prerequisite list it becomes a gate nothing can satisfy — there is
- * no kanji lesson for 々, so `kanjiKnown("々")` is always false — and every 々
- * word (時々, 様々, 少々, …) locks forever showing "1 kanji away" with no lesson
- * to clear it. Excluded here so a 々 word gates on the kanji it repeats, which is
- * already in the list, and learns the mark itself inline when it is taught. */
+ * Left in the prerequisite list it becomes a debt nothing can pay: there is no
+ * kanji lesson for 々, so `kanjiKnown("々")` is always false, and every 々 word
+ * (時々, 様々, 少々, …) would owe a shape the curriculum never teaches. Excluded
+ * here so a 々 word owes the kanji it repeats, which is already in the list, and
+ * learns the mark itself inline when it is taught. */
 const ITERATION_MARK = "々";
 
 /**
@@ -140,203 +127,27 @@ export const CURRICULUM_WORDS: readonly VocabRow[] = [...VOCAB]
  */
 export const WORDS_CURRICULUM_TOTAL = CURRICULUM_WORDS.length;
 
-/** The facts a word teaches: its meaning always, its reading unless it is kana
- * (a kana word IS its own reading, so there is no reading fact — see
- * buildVocabFacts). */
-function wordFacts(w: VocabRow): FactId[] {
-  const facts: FactId[] = [wordMeaningFactId(w.keb)];
-  if (!isKanaOnlyWord(w)) facts.push(wordReadingFactId(w.keb));
-  return facts;
-}
-
-/** A fact the app has no record of — never answered, never claimed, never
- * "quiz me"'d. The one definition of "new", the same `lastTested === 0` rule
- * budget.freshFacts uses, read here per fact. */
-function isFresh(fact: FactId, history: HistoryFile): boolean {
-  const state = effectiveState(
-    history.facts[fact],
-    history.claims?.[fact],
-    history.seen?.[fact],
-  );
-  return state.lastTested === 0;
-}
-
-// A kanji is KNOWN once its meaning has been learned — seen, claimed, or
-// tested. The same "not fresh" signal that advances the kanji curriculum, read
-// for the gate. Knowing a kanji's meaning is exactly the prerequisite a word's
-// kanji must satisfy before the word can be taught.
-//
-// LIFTED OUT, because the lesson's "Look out for" row asks the identical
-// question of a lookalike kanji and two copies would be two chances to disagree
-// about what "known" means (and the second copy is always the one that forgets
-// `claims`). See src/lib/kanji-known.ts.
-
 /**
  * Is this word teachable right now? Kana-only words always are; a kanji word is
- * teachable only once EVERY one of its kanji is known. This is the gate the
- * whole track turns on — 電車 is not teachable until both 電 and 車 are learned,
- * because presenting a compound built from parts you don't have is teaching a
- * shape with nothing under it.
+ * teachable only once EVERY one of its kanji is known. 電車 is not teachable
+ * until both 電 and 車 are learned, because presenting a compound built from
+ * parts you don't have is teaching a shape with nothing under it.
+ *
+ * NO LONGER A FILTER, AND THAT IS THE POINT. The words scheduler used to call
+ * this on every candidate and step over the ones that failed. The spine places a
+ * word after every kanji it is written with, so teaching the sequence in order
+ * satisfies this by construction. It survives as the STATEMENT of the rule, and
+ * curriculum-lesson.test.ts holds the packing to it: walk the lessons in order,
+ * and every word is teachable by the time it arrives. A rule the scheduler no
+ * longer has to enforce is exactly the rule worth checking.
+ *
+ * "Known" is `kanjiKnown`: seen, claimed, or tested, read through the one
+ * definition in src/lib/kanji-known.ts. A second copy here would drift, and a
+ * second copy always forgets `claims`.
  */
 export function wordTeachable(w: VocabRow, history: HistoryFile): boolean {
   if (isKanaOnlyWord(w)) return true;
   return wordKanji(w.keb).every((c) => kanjiKnown(c, history));
-}
-
-/** One word, ready to render on a lesson card. */
-export interface WordCard {
-  keb: string;
-  /** The reading, or null for a kana word (whose reading is the word itself). */
-  reb: string | null;
-  /** The first gloss — "teacher". */
-  meaning: string;
-  /** Written with no kanji: taught for its meaning alone, no reading to drill. */
-  kana: boolean;
-}
-
-/** The next word lesson: the words to teach, their facts, and where you are. */
-export interface WordLesson {
-  cards: WordCard[];
-  facts: FactId[];
-  /**
-   * Where you are, in WORDS — "12–17 of 6,213".
-   *
-   * This card used to show "lesson N" with no total, and the comment that stood
-   * here defended the omission: the teachable set grows as the kanji track
-   * advances, so a "lesson N of M" promises an M that moves. That was right
-   * about lessons and wrong about the conclusion. The number of LESSONS is
-   * unknowable — the gate decides how many teachable words a sitting can find —
-   * but the number of WORDS is not. CURRICULUM_WORDS is a fixed 6,213, decided
-   * by the ingest and by WORDS_CURRICULUM_MAX, and no amount of studying moves
-   * it. Counting items instead of lessons is what makes the total sayable.
-   *
-   * `from` is "words met + 1", so it is a count of what you have learned rather
-   * than a position in the order. That matters here and nowhere else: the gate
-   * steps OVER kanji-locked words, so the lesson's words are not a contiguous
-   * run of beginnerRank the way a kanji lesson is a run of its order. "These
-   * are your 12th through 17th words" stays true under the skipping; "you are
-   * at rank 12 of 6,213" would not be.
-   */
-  position: LessonPosition;
-}
-
-function toCard(w: VocabRow): WordCard {
-  const kana = isKanaOnlyWord(w);
-  return {
-    keb: w.keb,
-    reb: kana ? null : w.reb,
-    meaning: w.glosses[0] ?? "",
-    kana,
-  };
-}
-
-/**
- * The next word lesson, or null when nothing is teachable yet.
- *
- * Walk the curriculum in beginnerRank order and take the next `perLesson` words
- * that are (a) new — meaning not yet met — and (b) teachable now (kana-only, or
- * every kanji known). A word already met is skipped and counted; a kanji word
- * whose kanji you don't have is stepped over silently and picked up later, when
- * the kanji track has paid for it.
- *
- * Null is a real state, not an error, and it means two different things the card
- * needn't tell apart: the curriculum is finished, or the next words are all
- * still gated behind kanji you have not learned. Either way there is nothing to
- * teach here right now, so nothing is shown — the same rule the kana and kanji
- * cards follow.
- */
-export function nextWordLesson(
-  history: HistoryFile,
-  perLesson: number,
-): WordLesson | null {
-  const rows = nextWordSet(history, perLesson);
-  if (!rows.length) return null;
-  if (rows.some((w) => !wordTeachable(w, history))) return null;
-
-  const cards: WordCard[] = rows.map(toCard);
-  const facts: FactId[] = rows.flatMap(wordFacts);
-  let met = 0;
-
-  for (const w of CURRICULUM_WORDS) {
-    // Met already? Skip and count. "Met" is the meaning fact being non-fresh —
-    // the word has been introduced, so it is no longer new material even if its
-    // reading is still shaky (that is the drill's job, not the lesson's).
-    if (!isFresh(wordMeaningFactId(w.keb), history)) {
-      met++;
-      continue;
-    }
-    break;
-  }
-
-  return {
-    cards,
-    facts,
-    position: { from: met + 1, to: met + cards.length, total: WORDS_CURRICULUM_TOTAL },
-  };
-}
-
-/** One kanji a word still needs — the glyph and its first meaning, everything
- * the words card wants to name and link the missing prerequisite without
- * reaching back into the kanji data itself. */
-export interface WordLock {
-  /** How many kanji remain before the furthest kanji needed by the next lesson
-   * set is reached in the current kanji teaching order. */
-  away: number;
-}
-
-function kanjiAway(
-  history: HistoryFile,
-  missing: readonly string[],
-  order: readonly string[],
-): number {
-  if (!missing.length) return 0;
-  const index = new Map(order.map((c, i) => [c, i]));
-  let furthest = -1;
-  for (const c of missing) {
-    furthest = Math.max(furthest, index.get(c) ?? -1);
-  }
-  if (furthest < 0) return missing.length;
-  let away = 0;
-  for (let i = 0; i <= furthest; i++) {
-    if (!kanjiKnown(order[i], history)) away++;
-  }
-  return away;
-}
-
-function nextWordSet(history: HistoryFile, perLesson: number): VocabRow[] {
-  const size = clampWordsPerLesson(perLesson);
-  const rows: VocabRow[] = [];
-  for (const w of CURRICULUM_WORDS) {
-    if (!isFresh(wordMeaningFactId(w.keb), history)) continue;
-    rows.push(w);
-    if (rows.length >= size) break;
-  }
-  return rows;
-}
-
-export function nextWordLock(
-  history: HistoryFile,
-  perLesson: number,
-  kanjiOrder: readonly string[] = kanjiTeachOrder("everyday"),
-): WordLock | null {
-  const rows = nextWordSet(history, perLesson);
-  if (!rows.length) return null;
-  let away = 0;
-  let locked = false;
-  for (const w of rows) {
-    const missing = wordKanji(w.keb).filter((c) => !kanjiKnown(c, history));
-    if (!missing.length) continue;
-    locked = true;
-    away = Math.max(away, kanjiAway(history, missing, kanjiOrder));
-  }
-  return locked ? { away } : null;
-}
-
-export function hasStartedWordTrack(history: HistoryFile): boolean {
-  for (const w of CURRICULUM_WORDS) {
-    if (!isFresh(wordMeaningFactId(w.keb), history)) return true;
-  }
-  return false;
 }
 
 /** The subject these lessons belong to. Re-exported so a caller holding a

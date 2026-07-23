@@ -53,8 +53,8 @@
 //     is a promise about the BUTTONS, not the model, and it is the reason every
 //     lesson card now carries two routes into the material beside the claim:
 //     "I already know these" (skip both) and "Quiz me" (skip the teach walk,
-//     drill now). Kana always had that fork; next-kanji-lesson.tsx,
-//     next-word-lesson.tsx and next-grammar-lesson.tsx grew it so this sentence
+//     drill now). Kana always had that fork; next-curriculum-lesson.tsx and
+//     next-grammar-lesson.tsx grew it so this sentence
 //     is true on every card the explainer sits above rather than on one of four.
 //     If a track ever loses its skip-the-lesson route, this sentence is a lie
 //     and has to go with it.

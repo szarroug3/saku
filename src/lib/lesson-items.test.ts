@@ -10,55 +10,35 @@
 // steps twice, or a fact the drill is about to ask never gets shown. So these
 // tests count.
 //
-// The fixtures are real lessons (nextLesson, nextKanjiLesson, nextGrammarLesson)
-// against a fresh learner, so the grouping is exercised on the actual material
-// the teach phase will hand it — including grammar, whose producible patterns
-// carry two facts per entry, the multi-fact-per-entry case the one-fact
-// kana/kanji lessons can't reach.
+// The fixtures are real lessons (nextLesson, nextCurriculumLesson,
+// nextGrammarLesson) against a fresh learner, so the grouping is exercised on
+// the actual material the teach phase will hand it — including grammar, whose
+// producible patterns carry two facts per entry, and the curriculum spine, whose
+// single-kanji words carry three, the multi-fact-per-entry cases a one-fact kana
+// lesson can't reach.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { kanjiTeachOrder } from "../data/kanji.ts";
 import { entryOf, factInfo } from "./facts.ts";
 import {
   GRAMMAR_PER_LESSON_DEFAULT,
   nextGrammarLesson,
   wordHost,
 } from "./grammar-lesson.ts";
-import { LESSON_RANGE_DEFAULT, nextKanjiLesson } from "./kanji-lesson.ts";
+import { nextCurriculumLesson } from "./curriculum-lesson.ts";
+import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import { RADICAL_TEACHING_ORDER } from "./radical-order.ts";
-import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
+import { radicalMeaningFactId } from "../data/radicals.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { nextLesson } from "./lesson.ts";
-import { CURRICULUM_WORDS, nextWordLesson, wordKanji } from "./word-lesson.ts";
-import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
+import { CURRICULUM_WORDS } from "./word-lesson.ts";
 import { wordMeaningFactId } from "../data/vocab.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 /** A learner who has done nothing — so every track's FIRST lesson is what the
  * curriculum modules return. */
 const FRESH: HistoryFile = { sessions: [], facts: {} };
-/** A learner who knows every radical — the kanji track now gates on a kanji's
- * radical being learned (radical-lesson.ts), so its first lesson only appears
- * once the radicals are met. */
-const KANJI_READY: HistoryFile = {
-  sessions: [],
-  facts: {},
-  claims: Object.fromEntries(
-    RADICALS.map((r) => [radicalMeaningFactId(r.glyph), Date.UTC(2026, 0, 1)]),
-  ) as HistoryFile["claims"],
-};
-const WORD_READY: HistoryFile = {
-  sessions: [],
-  facts: {},
-  claims: Object.fromEntries(
-    [...new Set(CURRICULUM_WORDS.flatMap((w) => wordKanji(w.keb)))].map((c) => [
-      kanjiMeaningFactId(c),
-      Date.UTC(2026, 0, 1),
-    ]),
-  ) as HistoryFile["claims"],
-};
 
 /** A learner who has learned one verb — the host the head of the grammar
  * curriculum attaches to, so nextGrammarLesson has a teachable lesson to hand
@@ -81,12 +61,9 @@ const TEACH_SETS: Record<string, FactId[]> = {
   // so exercise it on a teach set built straight from the radical teaching order:
   // the itemsFromFacts grouping is what these tests are about, not the scheduler.
   radical: RADICAL_TEACHING_ORDER.slice(0, 6).map((r) => radicalMeaningFactId(r.glyph)),
-  kanji: nextKanjiLesson(
-    KANJI_READY,
-    kanjiTeachOrder("everyday"),
-    LESSON_RANGE_DEFAULT,
-  )!.facts,
-  word: nextWordLesson(WORD_READY, 6)!.facts,
+  // Radicals, kanji and words come off one spine now, so one fixture covers all
+  // three: the head of the curriculum is whatever mix the packer cut first.
+  curriculum: nextCurriculumLesson(FRESH, LESSON_RANGE_DEFAULT)!.facts,
   grammar: nextGrammarLesson(GRAMMAR_READY, GRAMMAR_PER_LESSON_DEFAULT)!.facts,
 };
 

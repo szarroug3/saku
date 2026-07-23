@@ -2,9 +2,10 @@
 
 // Home — the curriculum, top to bottom: what to learn next.
 //
-//   1. lessons       the next lesson in each track (kana, radicals, kanji,
-//                    words, grammar), each card rendered only when it has
-//                    something to teach
+//   1. lessons       the next lesson in each track (kana, the curriculum spine
+//                    of radicals/kanji/words, counters, grammar, transitivity,
+//                    keigo), each card rendered only when it has something to
+//                    teach
 //
 // THE RULE, and every line below serves it: a card is shown only when it has
 // real work to offer. A card that would teach or continue nothing is not
@@ -28,8 +29,8 @@
 // progress is the Current sessions page. So a lesson is always resumable where
 // it makes sense, and Home does not carry a second, generic door to it.
 //
-// Home reads history and the curriculum settings (kanji order, lesson cost,
-// words per lesson) to decide the next lesson in each track. It does not resolve
+// Home reads history and the curriculum settings (the lesson cost range, the
+// Library's kanji order) to decide the next lesson in each track. It does not resolve
 // selections, plan sessions, or start a drill of its own; the lesson cards start
 // their own sessions from their own facts.
 
@@ -39,26 +40,19 @@ import { CurriculumComplete } from "@/components/home/curriculum-complete";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
 import { NextCounterLesson } from "@/components/lesson/next-counter-lesson";
 import { NextGrammarLesson } from "@/components/lesson/next-grammar-lesson";
-import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
+import { NextCurriculumLesson } from "@/components/lesson/next-curriculum-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
 import { NextTransitivityLesson } from "@/components/lesson/next-transitivity-lesson";
 import { NextKeigoLesson } from "@/components/lesson/next-keigo-lesson";
-import { NextWordLesson } from "@/components/lesson/next-word-lesson";
 import { PageTitle } from "@/components/ui";
-import { kanjiTeachOrder } from "@/data/kanji";
-import { nextKanjiLesson } from "@/lib/kanji-lesson";
+import { lessonWords, nextCurriculumLesson } from "@/lib/curriculum-lesson";
 import {
   GRAMMAR_PER_LESSON_DEFAULT,
   hasStartedGrammarTrack,
   nextGrammarLesson,
   nextGrammarLock,
 } from "@/lib/grammar-lesson";
-import {
-  hasStartedWordTrack,
-  nextWordLesson,
-  nextWordLock,
-  VOCAB_SUBJECT,
-} from "@/lib/word-lesson";
+import { VOCAB_SUBJECT } from "@/data/vocab";
 import { COUNTERS_PER_LESSON_DEFAULT, nextCounterLesson } from "@/lib/counter-lesson";
 import {
   TRANSITIVITY_PER_LESSON_DEFAULT,
@@ -161,55 +155,28 @@ export function HomeFeed() {
   // Finish or claim the last katakana group and kanji appears; nothing advances
   // a pointer, because there is no pointer.
   //
-  // The order and the lesson length are the two curriculum settings the lesson
-  // reads. They are config, not state, so the lesson is still a pure function of
-  // history for a given setup — change either and the whole curriculum re-cuts,
-  // which is why they are deps here.
-  // ONE combined track: kanji, with the radical-only building blocks each set
-  // needs woven in before the kanji that use them (nextKanjiLesson / packUnits).
-  // There is no separate radical card and no radical gate anymore — a radical
-  // rides in on the same set as its first-using kanji, so the one card teaches
-  // both, each tile labelled radical, kanji, or both.
-  const kanjiLesson = useMemo(
+  // The lesson length is the one curriculum setting the spine reads. It is
+  // config, not state, so the lesson is still a pure function of history for a
+  // given setup. Change it and the whole curriculum re-cuts, which is why it is
+  // a dep here.
+  //
+  // ONE TRACK, ONE CARD. Radicals, kanji and words are a single ordered spine
+  // (curriculum-order.ts), cut into lessons by cost (curriculum-lesson.ts), so
+  // this replaces what used to be a kanji card and a words card running separate
+  // schedulers over the same climb. There is no radical gate and no word gate:
+  // a radical rides in welded to the kanji that first needs it, and a word is
+  // ordered after every kanji it is written with, so teaching the sequence in
+  // order IS both gates.
+  const curriculumLesson = useMemo(
     () =>
       lesson
         ? null
-        : nextKanjiLesson(history, kanjiTeachOrder(cfg.newKanjiOrder), {
+        : nextCurriculumLesson(history, {
             min: cfg.lessonMinCost,
             max: cfg.lessonMaxCost,
           }),
-    [lesson, history, cfg.newKanjiOrder, cfg.lessonMinCost, cfg.lessonMaxCost],
+    [lesson, history, cfg.lessonMinCost, cfg.lessonMaxCost],
   );
-
-  // reinforce each other: learning a word opens up its kanji's readings (see
-  // word-unlock.ts). Gated the same way kanji is on kana — `lesson === null` —
-  // so a beginner is never handed a third front before finishing the first. A
-  // pure function of history and one setting (how many words a lesson teaches),
-  // like every other card here; null when nothing is teachable yet, and then it
-  // renders nothing.
-  const wordLesson = useMemo(
-    () => (lesson ? null : nextWordLesson(history, cfg.wordsPerLesson)),
-    [lesson, history, cfg.wordsPerLesson],
-  );
-
-  // The words card LEADS with the top-ranked unlearned word and its gate: if the
-  // best word to teach next is locked behind kanji you don't know, the card names
-  // the word and those kanji rather than silently teaching a lesser available one
-  // (which is what wordLesson, above, still supplies as the secondary offer). A
-  // pure function of history — null only when the whole curriculum is finished,
-  // the same finished state wordLesson returns null for.
-  const wordLock = useMemo(
-    () =>
-      lesson
-        ? null
-        : nextWordLock(
-            history,
-            cfg.wordsPerLesson,
-            kanjiTeachOrder(cfg.newKanjiOrder),
-          ),
-    [lesson, history, cfg.wordsPerLesson, cfg.newKanjiOrder],
-  );
-  const wordsTrackStarted = useMemo(() => hasStartedWordTrack(history), [history]);
 
   // The numbers-and-counters track, opened after kana like the other post-kana
   // tracks (`lesson === null`). Its phase 1 is kana-only, so it has ready forms
@@ -337,29 +304,32 @@ export function HomeFeed() {
     await refresh();
   };
 
-  // Teaching a word is also what UNLOCKS its kanji's readings — the payoff (see
-  // word-unlock.ts). So the words track's Start marks seen not only the word's
-  // own facts (like kana's "Quiz me": pressing Start is the statement that
-  // you've met them) but every kanji reading those words prove. The readings
-  // then enter the drill anchored on the word you just learned, via the same
-  // seen record everything else uses. Then straight into the drill of the words.
+  // Teaching a word is also what UNLOCKS its kanji's readings, the payoff (see
+  // word-unlock.ts). So the curriculum card's Start marks seen not only the
+  // lesson's own facts (like kana's "Quiz me": pressing Start is the statement
+  // that you've met them) but every kanji reading the lesson's WORDS prove. The
+  // readings then enter the drill anchored on the word you just learned, via the
+  // same seen record everything else uses.
   //
-  // Both routes into the words drill come through here — Start (walk, then
-  // drill) and "Quiz me" (drill now) — so the unlock cannot depend on which
-  // button you pressed. Teaching a word unlocks its kanji's readings because you
-  // met the word, not because you paged through a screen about it.
-  const startWordLesson = async (facts: FactId[], { teach = true } = {}) => {
-    const kebs = wordLesson?.cards.map((c) => c.keb) ?? [];
+  // Both routes into the drill come through here, Start (walk, then drill) and
+  // "Quiz me" (drill now), so the unlock cannot depend on which button you
+  // pressed. Teaching a word unlocks its kanji's readings because you met the
+  // word, not because you paged through a screen about it.
+  //
+  // A lesson with no word on it is the ordinary case early on, and then
+  // `lessonWords` is empty and this is exactly `startLesson`. One handler covers
+  // both, because a mixed card cannot know in advance which it will be.
+  const startCurriculumLesson = async (facts: FactId[], { teach = true } = {}) => {
+    const kebs = lessonWords(curriculumLessonShown?.cards ?? []);
     await markSeen([...facts, ...readingsProvedBy(kebs)]);
     startSession(facts, teach ? facts : []);
   };
 
-  // "I already know these words" — claim the words (skip the drill), but still
-  // unlock the kanji readings they prove: knowing the word is what makes the
+  // "I already know these": claim the lesson (skip the drill), but still unlock
+  // the kanji readings its words prove. Knowing the word is what makes the
   // reading fair, however you came to know it.
-  const claimWordLesson = async (facts: FactId[]) => {
-    const kebs = wordLesson?.cards.map((c) => c.keb) ?? [];
-    const readings = readingsProvedBy(kebs);
+  const claimCurriculumLesson = async (facts: FactId[]) => {
+    const readings = readingsProvedBy(lessonWords(curriculumLessonShown?.cards ?? []));
     await postClaim(facts, true);
     if (readings.length) await markSeen(readings);
     await refresh();
@@ -403,13 +373,14 @@ export function HomeFeed() {
   const runForTrack = (track: TrackKey) =>
     lessonRuns.find((r) => trackOfRun(r) === track);
   const lessonRun = runForTrack("kana");
-  // Kanji and radicals are one track now, so a run that opened on a radical fact
-  // (a combined set can lead with a radical) belongs to the kanji card too.
-  const kanjiRun = lessonRuns.find((r) => {
+  // Radicals, kanji and words are one track now, so a run that opened on any of
+  // the three belongs to the curriculum card. A mixed lesson can lead with a
+  // radical, a kanji or a word, and which it led with is an accident of where
+  // the cut fell — it must not decide which card lights up.
+  const curriculumRun = lessonRuns.find((r) => {
     const t = trackOfRun(r);
-    return t === "kanji" || t === "radical";
+    return t === "kanji" || t === "radical" || t === "word";
   });
-  const wordRun = runForTrack("word");
   const grammarRun = runForTrack("grammar");
   const transitivityRun = runForTrack("transitivity");
   const counterRun = runForTrack("counter");
@@ -444,18 +415,14 @@ export function HomeFeed() {
     run: RunInfo | undefined,
     rebuild: (h: HistoryFile) => T | null,
   ): T | null => (frontier ? frontier : run ? rebuild(withoutFacts(history, run.facts)) : null);
-  const order = kanjiTeachOrder(cfg.newKanjiOrder);
   const range = { min: cfg.lessonMinCost, max: cfg.lessonMaxCost };
   const lessonShown = resumeLesson(lesson, lessonRun, (h) => nextLesson(h));
-  // No radical track any more — radicals are woven into the kanji lesson (see
-  // kanji-lesson.ts), so the combined kanji card carries the resume fallback for
-  // both. That is why a resting radical-only set still resurfaces here: it lives
-  // in a kanji lesson, and kanjiLessonShown rebuilds it.
-  const kanjiLessonShown = resumeLesson(kanjiLesson, kanjiRun, (h) =>
-    nextKanjiLesson(h, order, range),
-  );
-  const wordLessonShown = resumeLesson(wordLesson, wordRun, (h) =>
-    nextWordLesson(h, cfg.wordsPerLesson),
+  // One card for the whole spine, so it carries the resume fallback for all
+  // three kinds. A resting lesson that happened to be all radicals, or all
+  // words, resurfaces here for the same reason a mixed one does: it is a
+  // curriculum lesson, and this rebuilds it.
+  const curriculumLessonShown = resumeLesson(curriculumLesson, curriculumRun, (h) =>
+    nextCurriculumLesson(h, range),
   );
   const counterLessonShown = resumeLesson(counterLesson, counterRun, (h) =>
     nextCounterLesson(h, COUNTERS_PER_LESSON_DEFAULT),
@@ -472,20 +439,20 @@ export function HomeFeed() {
 
   // The curriculum is finished only when EVERY track's card would render
   // nothing — the exact negation of the render conditions below, so this is
-  // true precisely when the lesson feed would otherwise be empty. The word and
-  // grammar tracks each render on a lock (not just a lesson) once started, so a
+  // true precisely when the lesson feed would otherwise be empty. The grammar
+  // track renders on a lock (not just a lesson) once started, so a
   // locked-but-started track still counts as unfinished here. Transitivity has
   // no lock card (an unready pair is skipped), so it counts as unfinished
-  // exactly while it still has a ready lesson to teach.
+  // exactly while it still has a ready lesson to teach. The spine has no lock at
+  // all now: a word waits for its kanji by being ORDERED after them, so there is
+  // never a next lesson the learner is blocked from taking.
   // The `...Shown` forms, not the raw frontier: a track resting inside an open
   // session still has a card (resumeLesson rebuilds it), so the feed is not
   // empty and the curriculum is not "complete" until that session is finished
   // or discarded.
   const curriculumComplete =
     !lessonShown &&
-    !kanjiLessonShown &&
-    !wordLessonShown &&
-    !(wordLock && wordsTrackStarted) &&
+    !curriculumLessonShown &&
     !grammarLessonShown &&
     !(grammarLock && grammarTrackStarted) &&
     !transitivityLessonShown &&
@@ -520,47 +487,31 @@ export function HomeFeed() {
         />
       ) : null}
 
-      {/* The combined kanji-and-radicals lesson: its facts, all new, all taught —
-          the same onStart the kana card takes, now that the runtime speaks facts.
-          One card teaches the radical-only building blocks a set needs alongside
-          the kanji that use them. A kanji's meaning facts (and a radical's) are
-          drillable the moment they're learned; the reading facts a word later
-          proves are the words track's business, not this card's. There is no
-          separate radical card any more, so this one also carries the resume
-          fallback (kanjiLessonShown) for a resting radical-only set. */}
-      {kanjiLessonShown ? (
-        <NextKanjiLesson
-          lesson={kanjiLessonShown}
-          onStart={startLesson}
-          onClaim={claim}
-          inSession={!!kanjiRun}
-          onContinue={() => kanjiRun && continueRun(kanjiRun.id)}
+      {/* The curriculum spine's next lesson: its facts, all new, all taught,
+          taken by the same onStart the kana card takes. ONE card for radicals, kanji and
+          words, because they are one ordered climb (curriculum-order.ts). It
+          carries the resume fallback for all three, so a resting lesson that
+          happened to be all radicals, or all words, still resurfaces here.
+          Start and "Quiz me" both go through startCurriculumLesson, which also
+          unlocks the kanji readings the lesson's words prove. */}
+      {curriculumLessonShown ? (
+        <NextCurriculumLesson
+          lesson={curriculumLessonShown}
+          onStart={startCurriculumLesson}
+          onClaim={claimCurriculumLesson}
+          inSession={!!curriculumRun}
+          onContinue={() => curriculumRun && continueRun(curriculumRun.id)}
         />
       ) : null}
 
-      {/* The words track's next lesson, below kanji's — two tracks running in
-          parallel once kana is done. The word lesson IS its facts (meaning, and
-          reading for a kanji word), all new, all taught: the same onStart the
-          kanji card takes. Learning them is what unlocks the kanji readings. */}
-      {wordLessonShown || (wordLock && wordsTrackStarted) ? (
-        <NextWordLesson
-          lesson={wordLessonShown}
-          lock={wordLock}
-          onStart={startWordLesson}
-          onClaim={claimWordLesson}
-          inSession={!!wordRun}
-          onContinue={() => wordRun && continueRun(wordRun.id)}
-        />
-      ) : null}
-
-      {/* The numbers-and-counters track's next lesson, below words — a counter
-          is a word, and a learner reaches for it alongside vocabulary. Its facts
-          ARE the session, taught teach-then-drill through the same generic
-          handlers the kanji and grammar cards use: a counter needs no
-          word-unlock (it proves no kanji reading), so it wants startLesson, not
-          the words card's startWordLesson. No lock card — a form gated on a
-          number kanji is skipped, so this is present only when there are ready
-          counters to teach. */}
+      {/* The numbers-and-counters track's next lesson, below the spine. A
+          counter is a word, and a learner reaches for it alongside vocabulary.
+          Its facts ARE the session, taught teach-then-drill through the same
+          generic handlers the grammar card uses: a counter needs no word-unlock
+          (it proves no kanji reading), so it wants startLesson, not the spine's
+          startCurriculumLesson. No lock card — a form gated on a number kanji is
+          skipped, so this is present only when there are ready counters to
+          teach. */}
       {counterLessonShown ? (
         <NextCounterLesson
           lesson={counterLessonShown}

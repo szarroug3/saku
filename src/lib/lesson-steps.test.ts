@@ -565,7 +565,7 @@ describe("a mixed radical/kanji set steps the radical ahead of its kanji", () =>
       const firstKanji = steps.map((s) => s.type === "item" && s.item.kind).indexOf("kanji");
       assert.ok(
         firstKanji === -1 || lastRadical < steps.length - 1,
-        `set ${g.from}-${g.to} ends on a radical step with no kanji after it`,
+        `set ${g.index} ends on a radical step with no kanji after it`,
       );
     }
   });

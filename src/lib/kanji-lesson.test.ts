@@ -21,6 +21,13 @@
 // track no longer has a test file of its own is that its one remaining rule is a
 // property of THIS packer.
 //
+// THE SCHEDULER MOVED OUT. `nextKanjiLesson` and its "kanji 5–8 of 2,136"
+// position are gone: radicals, kanji and words are one spine now, and the
+// frontier and the label belong to curriculum-lesson.test.ts. What stays here is
+// what stayed in the module — the cost arithmetic, the weld, and the packing —
+// checked against the kanji-only cut over the whole 2,136, which is the material
+// the cost model was calibrated on.
+//
 // The numbers are counted off the data, with the exceptions typed in on purpose:
 // the seven cost examples (the owner verified them by hand — if they move, the
 // cost function moved) and day one being 人 大 日 一 (the published head of the
@@ -47,32 +54,16 @@ import {
   kanjiCost,
   kanjiCurriculum,
   LESSON_RANGE_DEFAULT,
-  nextKanjiLesson,
   packLessons,
   packUnits,
 } from "./kanji-lesson.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
+import type { FactId } from "../types/index.ts";
 
 const ORDER: readonly string[] = KANJI_ORDER.map((o) => o.c);
 const RANGE = LESSON_RANGE_DEFAULT;
 const GROUPS = kanjiCurriculum(ORDER, RANGE);
-/** The groups that teach kanji — every group but the kanji-less orphan tail. The
- * spans and the "of 2,136" position are about these. */
-const KANJI_GROUPS = GROUPS.filter((g) => g.spine === "kanji");
-
-function history(over: Partial<HistoryFile> = {}): HistoryFile {
-  return { sessions: [], facts: {}, ...over };
-}
-
-/** Claim these facts as known — the cheap way to move history forward without
- * inventing a session. Mirrors what /api/claim writes. There is no radical gate
- * to satisfy anymore, so nothing is pre-claimed: radicals are woven into the
- * groups and ride along in their own facts. */
-function claiming(facts: readonly FactId[]): HistoryFile {
-  const claims: Record<string, number> = {};
-  for (const f of facts) claims[f] = Date.UTC(2026, 0, 1);
-  return history({ claims: claims as HistoryFile["claims"] });
-}
+/** The groups that teach kanji — every group but the kanji-less orphan tail. */
+const KANJI_GROUPS = GROUPS.filter((g) => g.chars.length > 0);
 
 /** Which lesson a kanji is in, at the default range. */
 function lessonOf(c: string): number {
@@ -142,24 +133,22 @@ describe("the range is made safe, and max can never fall below min", () => {
   });
 });
 
-describe("day one", () => {
+describe("day one of the kanji-only cut", () => {
   test("is 人 大 日 一 — cheap, and no radical pre-cards", () => {
-    const lesson = nextKanjiLesson(history(), ORDER, RANGE);
-    assert.ok(lesson);
+    const first = GROUPS[0];
     assert.deepEqual(
-      lesson.cards.map((c) => c.glyph),
+      first.items.map((it) => it.glyph),
       ["人", "大", "日", "一"],
     );
     // Every day-one kanji is its own radical's first consumer, so it is taught as
     // a kanji (labelled "also radical N"), never as a separate radical tile: day
     // one is kanji, not a wall of radical meanings.
-    for (const card of lesson.cards) assert.equal(card.kind, "kanji");
+    for (const it of first.items) assert.equal(it.kind, "kanji");
     // 2 + 3 + 4 + 1 = 10, inside [6,12]. Gentle for the right reason: no
     // readings anywhere in this number.
-    assert.equal(lesson.cost, 10);
-    assert.equal(lesson.group.index, 1);
-    assert.equal(lesson.over, false);
-    assert.equal(lesson.spine, "kanji");
+    assert.equal(first.cost, 10);
+    assert.equal(first.index, 1);
+    assert.equal(first.over, false);
   });
 });
 
@@ -203,9 +192,6 @@ describe("only a wordless part rides with its consumer, not a worded kanji", () 
     assert.deepEqual(l2.chars, ["不", "乙", "乞"]);
     assert.equal(l2.cost, 8);
     assert.ok(l2.cost >= RANGE.min && l2.cost <= RANGE.max);
-    // The kanji spine still counts 不 乙 乞 as positions 5-7.
-    assert.equal(l2.from, 5);
-    assert.equal(l2.to, 7);
     assert.equal(l2.over, false);
   });
 
@@ -304,18 +290,17 @@ describe("a wordless part never leaves the kanji that justifies it", () => {
     }
   });
 
-  test("the card says what a part is for, and names it", () => {
+  test("the item says what a part is for, and names it", () => {
     const consumer = orderRow("又")?.pulledFor;
     assert.ok(consumer);
-    const lesson = nextKanjiLesson(claiming(lessonsBefore("又")), ORDER, RANGE);
-    assert.ok(lesson);
-    const mata = lesson.cards.find((c) => c.glyph === "又");
-    assert.ok(mata, "又 is not in its own lesson");
+    const group = GROUPS.find((g) => g.chars.includes("又"))!;
+    const mata = group.items.find((it) => it.glyph === "又");
+    assert.ok(mata, "又 is not in a lesson");
     assert.equal(mata.kind, "kanji");
     assert.equal(mata.neededFor, consumer);
-    // The thing it names is on the same card, which is what lets the copy point
+    // The thing it names is in the same lesson, which is what lets the copy point
     // at it rather than promise a payoff in some later sitting.
-    assert.ok(lesson.cards.some((c) => c.glyph === consumer));
+    assert.ok(group.items.some((it) => it.glyph === consumer));
   });
 
   test("a part with no reading is a card with a meaning, not a broken one", () => {
@@ -426,27 +411,22 @@ describe("the ordering invariant: a radical rides in with its first-using kanji"
   }
 });
 
-describe("the combined card shows radicals, labelled, before their kanji", () => {
-  test("the first set that needs a radical teaches it as a radical tile", () => {
-    // The first group that carries a radical tile. Claim everything before it,
-    // so nextKanjiLesson hands exactly that set back — the surfacing path the card
-    // takes. The radical must be a radical-kind item, and its first-using kanji
-    // must be on the same card, after it.
-    const targetIndex = GROUPS.findIndex((g) =>
-      g.items.some((it) => it.kind === "radical"),
-    );
-    assert.ok(targetIndex > 0, "some set weaves in a radical");
-    const before = GROUPS.slice(0, targetIndex).flatMap((g) => g.facts);
-    const lesson = nextKanjiLesson(claiming(before), ORDER, RANGE);
-    assert.ok(lesson);
-    const rad = lesson.cards.find((c) => c.kind === "radical");
-    assert.ok(rad, "the surfaced set carries the woven radical");
+describe("the combined set shows radicals, labelled, before their kanji", () => {
+  test("the first set that needs a radical teaches it as a radical item", () => {
+    // The first group that carries a radical item. It must be a radical-kind
+    // item, and its first-using kanji must be in the same group, after it.
+    const group = GROUPS.find((g) => g.items.some((it) => it.kind === "radical"))!;
+    const rad = group.items.find((it) => it.kind === "radical")!;
     const consumer = ORDER.find((c) => radPrereqGlyph(c) === rad.glyph)!;
-    const radIdx = lesson.cards.findIndex((c) => c.kind === "radical" && c.glyph === rad.glyph);
-    const kanjiIdx = lesson.cards.findIndex((c) => c.kind === "kanji" && c.glyph === consumer);
-    assert.ok(kanjiIdx >= 0, `${consumer} (uses ${rad.glyph}) is not on the same card`);
-    assert.ok(radIdx < kanjiIdx, `${rad.glyph} is not before ${consumer} on the card`);
-    assert.ok(rad.meaning.length > 0, "a radical tile has a meaning to show");
+    const radIdx = group.items.findIndex(
+      (it) => it.kind === "radical" && it.glyph === rad.glyph,
+    );
+    const kanjiIdx = group.items.findIndex(
+      (it) => it.kind === "kanji" && it.glyph === consumer,
+    );
+    assert.ok(kanjiIdx >= 0, `${consumer} (uses ${rad.glyph}) is not in the same set`);
+    assert.ok(radIdx < kanjiIdx, `${rad.glyph} is not before ${consumer} in the set`);
+    assert.ok(rad.meaning.length > 0, "a radical item has a meaning to show");
   });
 });
 
@@ -457,55 +437,12 @@ describe("the lesson length is a setting, and the packing follows it", () => {
     for (const g of tight) assert.equal(g.over, g.cost > 6);
   });
 
-  test("鬱 warns at any max below 21, and is never silently oversized", () => {
-    const lesson = nextKanjiLesson(claiming(lessonsBefore("鬱")), ORDER, {
-      min: 6,
-      max: 8,
-    });
-    assert.ok(lesson);
-    assert.ok(lesson.cards.some((c) => c.glyph === "鬱"));
-    assert.equal(lesson.over, true);
-    assert.ok(lesson.cost > 8);
-  });
-});
-
-// The card says "kanji 5–8 of 2,136" and not "lesson 1 of 1068", and the span
-// is only meaningful if it lines up exactly with the order it indexes into. The
-// radicals woven in are NOT counted here: the kanji are the numbered spine, the
-// radicals are building blocks shown alongside.
-describe("the position counts KANJI, and the spans tile the order exactly", () => {
-  test("the spans are contiguous, 1-based, and end at the order's length", () => {
-    assert.equal(KANJI_GROUPS[0].from, 1);
-    assert.equal(KANJI_GROUPS[KANJI_GROUPS.length - 1].to, ORDER.length);
-    for (let i = 0; i < KANJI_GROUPS.length; i++) {
-      const g = KANJI_GROUPS[i];
-      assert.equal(g.to - g.from + 1, g.chars.length, `lesson ${g.index} span`);
-      if (i > 0)
-        assert.equal(g.from, KANJI_GROUPS[i - 1].to + 1, `gap before ${g.index}`);
-    }
-  });
-
-  test("a span names the lesson's own kanji, not its neighbours'", () => {
-    for (const g of KANJI_GROUPS) {
-      assert.deepEqual(ORDER.slice(g.from - 1, g.to), g.chars, `lesson ${g.index}`);
-    }
-  });
-
-  test("day one is kanji 1–4 of 2,136 — an item count, not a lesson count", () => {
-    const lesson = nextKanjiLesson(history(), ORDER, RANGE);
-    assert.ok(lesson);
-    assert.deepEqual(lesson.position, { from: 1, to: 4, total: 2136 });
-  });
-
-  test("the total is the material and does not move when lesson length does", () => {
-    const tight = kanjiCurriculum(ORDER, { min: 3, max: 6 });
-    const tightKanji = tight.filter((g) => g.spine === "kanji");
-    assert.notEqual(tight.length, GROUPS.length);
-    assert.equal(tightKanji[tightKanji.length - 1].to, ORDER.length);
-    assert.equal(
-      nextKanjiLesson(history(), ORDER, { min: 3, max: 6 })!.position.total,
-      nextKanjiLesson(history(), ORDER, RANGE)!.position.total,
-    );
+  test("鬱 is flagged over at any max below 21, never silently oversized", () => {
+    const tight = kanjiCurriculum(ORDER, { min: 6, max: 8 });
+    const group = tight.find((g) => g.chars.includes("鬱"))!;
+    assert.deepEqual(group.chars, ["鬱"]);
+    assert.equal(group.over, true);
+    assert.ok(group.cost > 8);
   });
 });
 
@@ -514,61 +451,14 @@ describe("the position counts KANJI, and the spans tile the order exactly", () =
 // one place a set is all radicals.
 describe("orphan radicals are taught at the very end, for completeness", () => {
   test("the tail is kanji-less radical sets, after every kanji", () => {
-    const tail = GROUPS.filter((g) => g.spine === "radical");
+    const tail = GROUPS.filter((g) => g.chars.length === 0);
     assert.ok(tail.length > 0, "there is an orphan tail");
     // Every orphan-tail set comes after every kanji set.
-    const lastKanji = GROUPS.findIndex(
-      (g) => g === KANJI_GROUPS[KANJI_GROUPS.length - 1],
-    );
+    const lastKanji = GROUPS.indexOf(KANJI_GROUPS[KANJI_GROUPS.length - 1]);
     for (const g of tail) {
       assert.ok(GROUPS.indexOf(g) > lastKanji, "an orphan set precedes a kanji set");
-      assert.equal(g.chars.length, 0);
       for (const it of g.items) assert.equal(it.kind, "radical");
     }
-  });
-
-  test("an orphan set's position counts radicals with no invented total", () => {
-    // Claim the whole kanji spine, so the next lesson is the orphan tail. Its
-    // header must not print a stale 'of 98' or a kanji count — it counts radicals
-    // and promises no denominator.
-    const spine = KANJI_GROUPS.flatMap((g) => g.facts);
-    const lesson = nextKanjiLesson(claiming(spine), ORDER, RANGE);
-    assert.ok(lesson, "the orphan tail is a real lesson");
-    assert.equal(lesson.spine, "radical");
-    assert.equal(lesson.position.total, null);
-    for (const c of lesson.cards) assert.equal(c.kind, "radical");
-  });
-});
-
-describe("the next lesson is a function of history, and there is no cursor", () => {
-  test("claiming day one advances to lesson 2", () => {
-    const first = nextKanjiLesson(history(), ORDER, RANGE);
-    assert.ok(first);
-    const second = nextKanjiLesson(claiming(first.facts), ORDER, RANGE);
-    assert.ok(second);
-    assert.equal(second.group.index, 2);
-  });
-
-  test("a half-claimed lesson yields its other half, not the whole thing again", () => {
-    const first = nextKanjiLesson(history(), ORDER, RANGE);
-    assert.ok(first);
-    // Claim every fact but the last card's — day one is all kanji, so the last
-    // card's fact is its meaning fact.
-    const keptBack = first.cards[first.cards.length - 1];
-    const keptFact = keptBack.fact;
-    const claimedFacts = first.facts.filter((f) => f !== keptFact);
-    const rest = nextKanjiLesson(claiming(claimedFacts), ORDER, RANGE);
-    assert.ok(rest);
-    assert.equal(rest.group.index, 1);
-    assert.deepEqual(
-      rest.cards.map((c) => c.glyph),
-      [keptBack.glyph],
-    );
-  });
-
-  test("claiming the lot is null — done is a real state, not an empty lesson", () => {
-    const all = GROUPS.flatMap((g) => g.facts);
-    assert.equal(nextKanjiLesson(claiming(all), ORDER, RANGE), null);
   });
 });
 
@@ -610,10 +500,4 @@ function firstUnitCostPerGroup(
     }
     return first;
   });
-}
-
-/** Every fact in the lessons before `c`'s — the cheap way to stand at a given
- * lesson without inventing a history for each one. */
-function lessonsBefore(c: string): FactId[] {
-  return GROUPS.filter((g) => g.index < lessonOf(c)).flatMap((g) => g.facts);
 }

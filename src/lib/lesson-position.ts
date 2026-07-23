@@ -90,3 +90,58 @@ export function positionLabel(noun: string, pos: LessonPosition): string {
   const of = pos.total === null ? "" : ` of ${pos.total.toLocaleString()}`;
   return `${noun} ${span}${of}`;
 }
+
+// ONE LESSON, SEVERAL KINDS OF THING, SO SEVERAL SEGMENTS
+// =======================================================
+// The curriculum is one spine now (src/lib/curriculum-order.ts), and a single
+// lesson can teach a radical-only shape, the kanji it is welded to, and a word
+// written with kanji already learned. "Kanji 5 of 2,136" over a card holding all
+// three is the small lie this file was written to stop: it names one of the
+// numbers and silently drops the other two, so the learner counts three tiles
+// against a span of one.
+//
+// So the label carries ONE SEGMENT PER KIND THE LESSON ACTUALLY TEACHES:
+//
+//   Radical 3–4 of 90 · Kanji 5–8 of 2,136 · Word 12 of 6,213
+//
+// Every segment is the same item count against the same immovable denominator
+// positionLabel already prints, so nothing about the rule above changes. Only
+// the kinds present appear: a words-only lesson reads "Word 12 of 6,213" and
+// says nothing about kanji it is not teaching, which is the same instinct as
+// declining to print a total the track cannot derive.
+//
+// The order is fixed at radical, kanji, word: it is the order the material
+// arrives in inside the lesson (a component before what it builds, a kanji
+// before the word written with it), so the label reads the way the card does.
+
+/**
+ * Where a mixed lesson sits: a span per role, or null for a role it does not
+ * teach. Never all three null, because a lesson always teaches something.
+ */
+export interface CompositePosition {
+  radical: LessonPosition | null;
+  kanji: LessonPosition | null;
+  word: LessonPosition | null;
+}
+
+/** The nouns, singular and capitalised: a segment names a KIND of item, and the
+ * count beside it says how many. "Kanji 5–8" reads the same for one or four. */
+const COMPOSITE_NOUNS: readonly (readonly [keyof CompositePosition, string])[] = [
+  ["radical", "Radical"],
+  ["kanji", "Kanji"],
+  ["word", "Word"],
+];
+
+/**
+ * Render a mixed lesson's position: "Radical 3–4 of 90 · Kanji 5–8 of 2,136".
+ *
+ * Each present segment goes through `positionLabel`, so a single item is one
+ * number and a several-item span uses the en dash, exactly as every other card
+ * has printed them. The separator is the middot the app already uses to join
+ * peers on one line (the role label "Radical · Kanji", the Library breadcrumb).
+ */
+export function compositePositionLabel(pos: CompositePosition): string {
+  return COMPOSITE_NOUNS.filter(([role]) => pos[role] !== null)
+    .map(([role, noun]) => positionLabel(noun, pos[role]!))
+    .join(" · ");
+}

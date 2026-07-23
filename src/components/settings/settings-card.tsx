@@ -394,34 +394,14 @@ export function SettingsCard() {
         </Row>
       </Card>
 
-      {/* The words track's lesson size, in words. One stepper, not two: a word
-          adds no new kanji, so there is no draw+assembly cost to bound with a
-          range — a lesson is just the next N teachable words. The same clamp
-          runs on config load (clampWordsPerLesson) for a value that never came
-          through this button. */}
-      <Card>
-        <Lbl>How many new words per lesson</Lbl>
-        <Row
-          label="Words per lesson"
-          info="A word lesson teaches this many new words. A word only shows up once you know the kanji it's written with, so they arrive as you learn those. This is how many at a time."
-        >
-          <SmallBtn
-            disabled={cfg.wordsPerLesson <= 1}
-            onClick={() =>
-              update({ wordsPerLesson: Math.max(1, cfg.wordsPerLesson - 1) })
-            }
-          >
-            −
-          </SmallBtn>
-          <span className="tabular-nums">{cfg.wordsPerLesson}</span>
-          <SmallBtn
-            disabled={cfg.wordsPerLesson >= 20}
-            onClick={() => update({ wordsPerLesson: cfg.wordsPerLesson + 1 })}
-          >
-            +
-          </SmallBtn>
-        </Row>
-      </Card>
+      {/* THE WORDS-PER-LESSON STEPPER IS GONE. There is one lesson size now,
+          because there is one track: radicals, kanji and words come off a single
+          ordered spine and a lesson is cut by the cost above (see
+          curriculum-lesson.ts). A word is priced into that same budget at a flat
+          rate, taken from what these two sliders' DEFAULTS already agreed a
+          sitting was worth, so a second control would have been a second answer
+          to a question the first one already answers. The stored value and its
+          clamp stay on QuizConfig, where WORD_COST reads the default. */}
 
       <Card>
         <Lbl>The drill</Lbl>
