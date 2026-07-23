@@ -1551,6 +1551,26 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     example: { word: "むし", reading: "mushi", gloss: "insect", hitIndex: 0 },
   },
 
+  ム: {
+    glyph: "ム",
+    romaji: "mu",
+    sound: "moo",
+    object: "moon",
+    analogy: [
+      { text: "Say “" },
+      { text: "moo", accent: true },
+      { text: "” as in " },
+      { text: "moo", accent: true },
+      { text: "n." },
+    ],
+    mnemonic: [
+      { text: "A smiling " },
+      { text: "moo", accent: true },
+      { text: "n sweeps low while a shooting star streaks down beside it." },
+    ],
+    example: { word: "ムード", reading: "mūdo", gloss: "mood", hitIndex: 0 },
+  },
+
   め: {
     glyph: "め",
     romaji: "me",
