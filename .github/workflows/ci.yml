@@ -51,6 +51,16 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      # The corpus is a COMMITTED artifact, so a bad example ships the moment it
+      # lands. This is the confound audit in report-only mode: it exits 1 if
+      # grammar-corpus.json holds a sentence that does not demonstrate the pattern
+      # it is filed under (see src/data/grammar/corpus-audit.ts for the seven
+      # signatures that collide). Nothing else in CI reads the data for meaning,
+      # so without this a regenerate or a hand-edit reintroduces examples that
+      # teach the wrong thing and no gate notices.
+      - name: Corpus audit
+        run: pnpm run audit-corpus:check
+
       # The gate the other three cannot be: a route conflict, a bad import, an
       # invalid config — none is a type or lint or unit-test failure, and all of
       # them are a failed build.
