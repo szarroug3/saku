@@ -1128,24 +1128,34 @@ body {
    * CARDS passing under it, not the mesh"). A band is ONE sticky element, so its
    * blur is not a per-scroll-frame multiplier the way a page full of cards is. */
   --card-frost: blur(18px) var(--card-frost-sat);
-  /* THE CARD's frost: saturate ONLY, no blur — this is the scroll-perf fix.
+  /* THE CARD's frost: NONE. No backdrop-filter at all on a .kq-material — this is
+   * the scroll-perf fix, and it goes further than the first attempt did.
    *
-   * A .kq-material's backdrop is the PAGE MESH, and an 18px gaussian on gradients
-   * that broad is a measured 0.20 dE no-op (see --card-frost's old note here and
-   * the GRID QUIZ SHEET section). But a backdrop-filter makes the element a
-   * BACKDROP ROOT that re-snapshots and re-blurs its backdrop EVERY scroll frame,
-   * and the Library paints one .kq-material per shelf Card (plus every button,
-   * chip and Metric tile). At N of them the blur is the jank: measured p95 33.4ms
-   * with 31 dropped frames WITH the per-element blur, vs 17.6ms and 0 dropped
-   * WITHOUT it. kiri is the only theme that janks because it is the only one whose
-   * --card-frost is not `none` — the other three carry no backdrop-filter at all.
+   * A backdrop-filter — ANY backdrop-filter, blur OR saturate — makes the element
+   * a BACKDROP ROOT that re-snapshots its backdrop EVERY scroll frame, and the
+   * Library paints one .kq-material per shelf Card (plus every button, chip and
+   * Metric tile). The first pass dropped the 18px BLUR but kept a `saturate(150%)`
+   * backdrop-filter, on the theory that a colour matrix is cheap next to a
+   * radius-wide convolution. It measured 0 dropped frames and looked solved — but
+   * that measurement was taken in an embedded/headless Chromium, which composites
+   * backdrop snapshots very differently from a real browser. In actual Chrome and
+   * Firefox the per-card saturate STILL janks (the user's report: fine in the
+   * in-app webview, laggy in both real browsers). The cost was never the blur
+   * radius; it was N backdrop roots re-snapshotting per frame. So the whole frost
+   * comes off the scrolling cards. kiri was the only theme that janked because it
+   * was the only one whose --material-frost was not `none`.
    *
-   * The SATURATE stays: it is a cheap per-pixel colour matrix, not a radius-wide
-   * convolution, and it is the half of the frost that actually richens the mesh
-   * seen through the translucent card. Dropping it too would read as a duller
-   * rectangle against the real cards (the STICKY TABLE HEADER note measures this:
-   * dE 3.52 without the saturate). So: keep the colour, drop the blur. */
-  --material-frost: var(--card-frost-sat);
+   * WHERE DID THE SATURATE GO? It survives only where it is CHEAP: as a REGULAR
+   * `filter` on the opaque card rebuilds (.kq-table-head th::before, .kq-surface
+   * ::before) — a regular filter touches only the pseudo's own painted pixels, it
+   * does NOT snapshot the page backdrop — and inside --card-frost on the ONE
+   * sticky band. So a bare .kq-material card now shows the mesh at its native
+   * saturation rather than 150%; against a rebuilt surface that is a measured
+   * ~dE 3.5 duller (STICKY TABLE HEADER note). That difference is the accepted
+   * cost of a jank-free scroll; if it ever reads wrong, the fix is to give the
+   * cards the same opaque-rebuild treatment (.kq-surface) so the colour comes
+   * from a regular filter too — NOT to put a backdrop-filter back here. */
+  --material-frost: none;
   --band-fill: transparent;
 }
 
