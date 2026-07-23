@@ -18,6 +18,7 @@ is left here is work that is not finished.
 |---|---|---|---|
 | 21 | **copy is open** | The new copy + the glossary | Every new feature shipped with DRAFT copy. The open work is a **voice pass** across the track intros, keigo, counters, pitch explainer, grammar glosses, terms, and listening labels — `../AUDIT-3-voice.md` ranks it. Plus: the glossary is being extended now, and cross-linking jargon to its Terms page is a follow-up. **Yours to pace.** |
 | 12 | **grammar follow-up open** | Grammar depth | Keigo and pitch are done. The N3 grammar shipped 15 patterns, but the **12 clause-level recognition patterns only show in the Library — they are not drilled** until `scripts/ingest/grammar.py` is re-run to tag them. That re-tag, and any further N3 depth, is the open work. Correctness-sensitive, so paced and reviewed. |
+| 23 | **art pass, not urgent** | [Mnemonic image tweaks](23-mnemonic-image-tweaks.md) | A full image-vs-story review of every kana drawing is done; the story/tag fixes it found are merged. What's left is a handful of **drawings** that read a little off (は, ん, よ, katakana イ/ワ, soft ナ/ル/ユ/サ) — redraw candidates for a later art pass. None blocking. |
 
 ## Small open decisions (loose ends, none blocking)
 
