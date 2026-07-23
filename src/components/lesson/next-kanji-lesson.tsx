@@ -27,10 +27,11 @@
 // printed as a raw number, because "cost 10" means nothing to the person doing
 // it. The card shows the characters and lets them count.
 //
-// EACH TILE SAYS WHICH IT IS: a radical-only building block ("Radical · in N
-// kanji"), a plain kanji, or a kanji that is also a radical ("Kanji · also
-// radical N"). A radical is always ordered before the first kanji that uses it,
-// because the set was built that way — component-first.
+// EACH TILE SAYS WHICH IT IS, in the same three words the entry page uses:
+// "radical · kanji" (both roles), "radical" (a building block only), or "kanji"
+// — no number, no count (see src/lib/character-role.ts). A radical is always
+// ordered before the first kanji that uses it, because the set was built that
+// way — component-first.
 //
 // It does NOT print readings. Not the busy-ness rule, the retrieval one: the
 // reading is the answer to what a later word will ask, and a card that shows the
@@ -45,6 +46,7 @@ import { WhyDisclosure } from "@/components/lesson/why";
 import { kanjiEntry } from "@/data/kanji";
 import { radicalEntry } from "@/data/radicals";
 import { WHY_TRACK } from "@/data/why";
+import { characterRole } from "@/lib/character-role";
 import type { KanjiLesson, LessonItem } from "@/lib/kanji-lesson";
 import { positionLabel } from "@/lib/lesson-position";
 import { entryHref } from "@/lib/library/href";
@@ -113,37 +115,19 @@ export function NextKanjiLesson({
               <span className="mt-1 block text-[13px] text-text-muted">
                 {card.meaning}
               </span>
-              {/* The role line, one per tile so a mixed set reads honestly:
-                  - a radical-only shape says "Radical" and how many kanji it
-                    turns up in (the "why learn it now" — this piece is coming
-                    back), or nothing when it is an orphan in no common kanji;
-                  - a kanji that is also a radical says both roles;
-                  - a plain kanji says nothing, and keeps the row height so the
-                    tiles line up. */}
-              {card.kind === "radical" ? (
-                card.appearsIn && card.appearsIn > 0 ? (
-                  <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
-                    Radical · in {card.appearsIn} kanji
-                  </span>
-                ) : (
-                  <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
-                    Radical
-                  </span>
-                )
-              ) : card.alsoRadical ? (
-                <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
-                  Kanji · also radical {card.alsoRadical}
-                </span>
-              ) : card.neededFor ? (
-                /* A wordless part is in the set because a kanji on the SAME card
-                   needs it — never because it is worth knowing on its own — and
-                   the kanji it names is always right there. */
-                <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
+              {/* The role line, the same three labels the entry page uses:
+                  "radical · kanji", "radical", or "kanji" — no number, no count,
+                  just which of the three this character is. A wordless part keeps
+                  its "you need this for X" note underneath, because that is a
+                  reason it is here, not a role. */}
+              <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
+                {characterRole(card.glyph)}
+              </span>
+              {card.neededFor ? (
+                <span className="mt-0.5 block text-[10px] leading-tight text-text-muted/80">
                   You need this for {card.neededFor}
                 </span>
-              ) : (
-                <span className="mt-1 block min-h-[12px]" />
-              )}
+              ) : null}
             </Link>
           ))}
         </div>

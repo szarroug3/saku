@@ -99,7 +99,6 @@ import {
 } from "@/data/kanji";
 import {
   isRadicalTaughtAsKanji,
-  radicalByGlyph,
   radicalMeaningFactId,
   radicalOfKanji,
   radicalRow,
@@ -202,7 +201,8 @@ function radicalPrereqOf(c: string): RadicalRow | null {
  */
 export interface LessonItem {
   /** "radical" for a radical-only shape pulled in as a component; "kanji" for a
-   * kanji from the order (which may ITSELF be a radical — see `alsoRadical`). */
+   * kanji from the order (which may ITSELF also be a radical — the card labels it
+   * "radical · kanji", read off the glyph, see src/lib/character-role.ts). */
   kind: "radical" | "kanji";
   /** The glyph to show — 气, 気. Radical:气 and kanji:気 are different entries. */
   glyph: string;
@@ -214,21 +214,10 @@ export interface LessonItem {
   fact: FactId;
   /**
    * The kanji this one is here FOR, when it is here for nothing else — 取, for
-   * 又. Null for a radical and for the ~2,130 kanji that are their own reason.
-   * See the KanjiCard note this replaces.
+   * 又. Null for a radical and for the ~2,130 kanji that are their own reason. A
+   * reason it is on the card, not a role — the role is read off the glyph.
    */
   neededFor: string | null;
-  /**
-   * The Kangxi number when this KANJI is also a radical (乙 is 5, 水 is 85), so
-   * the card can label it "both". Null for a radical-only item (it already reads
-   * as a radical) and for the ~2,012 kanji that are not radicals.
-   */
-  alsoRadical: number | null;
-  /**
-   * How many jōyō kanji file under this RADICAL — the "why learn it" number a
-   * radical tile shows. Null for a kanji item (which is counted, not counted-in).
-   */
-  appearsIn: number | null;
 }
 
 /** One kanji lesson: the material, the cost, and the flag. */
@@ -370,8 +359,6 @@ function kanjiItem(c: string): LessonItem {
     cost: kanjiCost(c),
     fact: meaningFactId(c),
     neededFor: WORDLESS.has(c) ? (orderRow(c)?.pulledFor ?? null) : null,
-    alsoRadical: radicalByGlyph(c)?.num ?? null,
-    appearsIn: null,
   };
 }
 
@@ -385,8 +372,6 @@ function radicalItem(r: RadicalRow): LessonItem {
     cost: radicalCost(r.num),
     fact: radicalMeaningFactId(r.glyph),
     neededFor: null,
-    alsoRadical: null,
-    appearsIn: radicalConsumerCount(r.num),
   };
 }
 

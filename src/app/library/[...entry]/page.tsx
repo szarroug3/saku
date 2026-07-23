@@ -76,10 +76,10 @@ import {
   patternMeaningFactId,
 } from "@/data/grammar";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
-import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
+import { KANJI_SUBJECT, kanjiRow, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
 import { termFor } from "@/data/terms";
-import { RADICAL_SUBJECT } from "@/data/radicals";
+import { RADICAL_SUBJECT, radicalByGlyph } from "@/data/radicals";
 import { exampleFor } from "@/data/word-examples";
 import { getMnemonic } from "@/data/mnemonics";
 import { TRANSITIVITY_SUBJECT, pairForEntry } from "@/data/transitivity-facts";
@@ -108,6 +108,7 @@ import {
   recipeOf,
   type LibEntry,
 } from "@/lib/library/entries";
+import { characterRole } from "@/lib/character-role";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { entryFromParam, entryFromSlug, entryHref, radicalHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
@@ -244,6 +245,26 @@ function EntryView({ entry }: { entry: LibEntry }) {
         now,
       ).standing
     : null;
+
+  // THE ROLE TAG — radical, kanji, or both — shown at the top of a character's
+  // page so the reader knows whether to expect it inside a word (kanji), only as
+  // a building block (radical-only), or both. The same three labels the combined
+  // lesson card prints (src/lib/character-role.ts), read off the glyph. It stands
+  // in for the strokes line the header used to show alone: "radical · kanji · 5
+  // strokes" for a both-role 乙, "kanji · 3 strokes" for 乞, "radical · 6 strokes"
+  // for a radical-only 气 — the Kangxi NUMBER a radical page used to carry ("Radical
+  // 84") is dropped, being catalogue trivia rather than the role. Only kanji and
+  // radical entries have a role; every other kind keeps its own sub line.
+  const role = isKanji || isRadical ? characterRole(entry.glyph) : null;
+  const roleStrokes = isKanji
+    ? kanjiRow(entry.glyph)?.strokes
+    : isRadical
+      ? radicalByGlyph(entry.glyph)?.strokes
+      : undefined;
+  const roleSub =
+    role && roleStrokes != null
+      ? `${role} · ${roleStrokes} stroke${roleStrokes === 1 ? "" : "s"}`
+      : null;
 
   const wordRow = isWord ? vocabRow(entry.glyph) : undefined;
   // null for four words in five, and the word branch renders nothing at all in
@@ -609,9 +630,14 @@ function EntryView({ entry }: { entry: LibEntry }) {
           sub={
             isGrammar && pattern
               ? attachesTo(pattern)
-              : isCounter && entry.sub === "Counter"
-                ? <TermLink id="counter">Counter</TermLink>
-                : entry.sub
+              : // A kanji or radical leads with its ROLE (radical · kanji · N
+                // strokes), replacing the bare strokes line and the radical's
+                // Kangxi number — see roleSub.
+                roleSub
+                ? roleSub
+                : isCounter && entry.sub === "Counter"
+                  ? <TermLink id="counter">Counter</TermLink>
+                  : entry.sub
           }
           chips={chips}
           sound={sound}
