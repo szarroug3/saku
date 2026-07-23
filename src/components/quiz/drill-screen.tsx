@@ -255,6 +255,7 @@ interface DrillRuntime {
 interface DrillHandlers {
   tick(): void;
   nextQuestion(): void;
+  skipQuestion(): void;
   onKeyDown(e: KeyboardEvent): void;
   onMount(): void;
   onUnmount(): void;
@@ -745,6 +746,44 @@ export function DrillScreen() {
     force();
   }
 
+  /**
+   * Set the current card aside and ask it again later — the "not now, come back
+   * to it" the user asked for, available at any point in answering a card.
+   *
+   * A card you HAVEN'T tried yet (`q.tries === 0`) is re-queued clean: nothing is
+   * scored, so it costs no points, exactly as if you had never seen it — you just
+   * meet it again in turn. A card you HAVE tried (a wrong attempt with retries
+   * still left) keeps that attempt: the submission already happened, so it
+   * resolves as the miss it was — the same `resolveShowing(…, false, false)` the
+   * out-of-retries path makes — and then goes back for another showing. Either
+   * way the card lands at the END of the deck (a new question to reach in turn,
+   * not the small gap a forced requeue uses), and we advance to the next card.
+   *
+   * Not offered while `waiting`: once a card is out of retries it is already
+   * resolved and requeued, and the Continue button is the only thing left to do.
+   */
+  function skipQuestion() {
+    if (!active || !rt || !rt.q || rt.waiting || finishedRef.current) return;
+    const q = rt.q;
+    if (q.tries > 0) {
+      // The attempt stands. `credit` is necessarily false after a wrong try, so
+      // this records a first-try miss and marks the showing resolved, same as
+      // running out of retries — see submit's out-of-retries branch.
+      const st = statForShowing(rt.stats, q.f);
+      resolveShowing(st, false, false);
+      rt.resolved++;
+    }
+    // The back of the deck, not `pos + requeueGap()`: a skip is a deferral to the
+    // end, not the near-future nudge a missed card gets.
+    rt.deck.push(q.f);
+    rt.requeued++;
+    stopCountdown();
+    clearAdvance();
+    syncProgress(); // the requeue grew a limited run's total
+    saveNow();
+    nextQuestion();
+  }
+
   /** Legacy bindDrill document keydown: Enter advances while waiting, Enter
    * in the answer box submits, digits 1–9 click MC options. */
   function onKeyDown(e: KeyboardEvent) {
@@ -894,6 +933,7 @@ export function DrillScreen() {
     handlersRef.current = {
       tick,
       nextQuestion,
+      skipQuestion,
       onKeyDown,
       onMount,
       onUnmount,
@@ -1448,6 +1488,22 @@ export function DrillScreen() {
             <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
               Continue
             </SmallBtn>
+          ) : !rt.waiting ? (
+            // Skip lives in the same slot as Continue, and they never overlap: a
+            // miss sets `waiting`, so Continue owns the slot then, and every other
+            // moment you are actively on the card, which is exactly when skipping
+            // makes sense. Persistent through retries too, so "not now, later" is
+            // always one tap away — a real target on mobile, not a keystroke. See
+            // skipQuestion for what it does to the score (nothing if untried; the
+            // attempt stands if you tried).
+            <button
+              type="button"
+              onClick={skipQuestion}
+              title="Skip — ask this again later"
+              className="rounded px-2 py-0.5 text-[11px] text-text-muted hover:text-text"
+            >
+              Skip
+            </button>
           ) : null}
         </p>
 
