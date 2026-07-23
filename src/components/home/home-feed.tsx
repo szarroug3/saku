@@ -21,11 +21,12 @@
 // lesson feed.
 //
 // There is NO generic "where you left off" card here either. A lesson left
-// mid-session is resumed from that lesson's own card (it shows Continue when a
-// run in progress matches its facts); the most recent run of any kind is on the
-// Practice card, and the full list of everything in progress is the Current
-// sessions page. So a lesson is always resumable where it makes sense, and Home
-// does not carry a second, generic door to it.
+// mid-session is resumed from that lesson's own card: it shows Continue when an
+// in-progress session belongs to that TRACK, and runForTrack below says why the
+// signal is the track and not the frontier's exact facts. The most recent run
+// of any kind is on the Practice card, and the full list of everything in
+// progress is the Current sessions page. So a lesson is always resumable where
+// it makes sense, and Home does not carry a second, generic door to it.
 //
 // Home reads history and the curriculum settings (kanji order, lesson cost,
 // words per lesson) to decide the next lesson in each track. It does not resolve
@@ -57,7 +58,12 @@ import {
   RADICALS_PER_LESSON_DEFAULT,
   nextRadicalLesson,
 } from "@/lib/radical-lesson";
-import { hasStartedWordTrack, nextWordLesson, nextWordLock } from "@/lib/word-lesson";
+import {
+  hasStartedWordTrack,
+  nextWordLesson,
+  nextWordLock,
+  VOCAB_SUBJECT,
+} from "@/lib/word-lesson";
 import { COUNTERS_PER_LESSON_DEFAULT, nextCounterLesson } from "@/lib/counter-lesson";
 import {
   TRANSITIVITY_PER_LESSON_DEFAULT,
@@ -68,16 +74,47 @@ import { KEIGO_PER_LESSON_DEFAULT, nextKeigoLesson } from "@/lib/keigo-lesson";
 import { readingsProvedBy } from "@/lib/word-unlock";
 import { nextLesson } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
-import { useQuizSession } from "@/lib/quiz-session";
+import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
+import { entryOf, factInfo } from "@/lib/facts";
+import { COUNTER_ENTRIES } from "@/data/counters";
 import { postClaim, postSeen } from "@/lib/progress-fetch";
 import { useHistory } from "@/lib/use-history";
 import type { FactId } from "@/types";
 
-function sameFactSet(a: readonly FactId[], b: readonly FactId[]): boolean {
-  if (a.length !== b.length) return false;
-  const set = new Set(a);
-  for (const f of b) if (!set.has(f)) return false;
-  return true;
+// The eight track keys a run can belong to. For every track but the two vocab
+// ones this IS the fact's subject string; counters and words share the `word`
+// subject (a counter is vocab with a track label, see counters.ts), so they get
+// their own keys and are told apart on COUNTER_ENTRIES in trackOfRun.
+type TrackKey =
+  | "kana"
+  | "kanji"
+  | "radical"
+  | "word"
+  | "counter"
+  | "grammar"
+  | "transitivity"
+  | "keigo";
+
+// Which track an in-progress run belongs to, read from its FACTS rather than
+// re-derived from a cursor. A curriculum lesson is single-subject, so the first
+// fact's subject names the track; factInfo is the sanctioned resolver (fact ids
+// are opaque (see fact-id.ts), so this does not parse the string. Returns null
+// for a run whose fact isn't in the registry, which then matches no track and
+// falls through to a plain Start, the safe default.
+function trackOfRun(run: RunInfo): TrackKey | null {
+  const fact = run.facts[0];
+  if (!fact) return null;
+  const subject = factInfo(fact)?.subject;
+  if (subject === undefined) return null;
+  if (subject === VOCAB_SUBJECT) {
+    // The entry set is the only thing that separates the two vocab tracks: both
+    // mint `word:…` facts, and a counter run must light up the counters card,
+    // not the words card, and vice versa.
+    return COUNTER_ENTRIES.has(entryOf(fact)) ? "counter" : "word";
+  }
+  // kana · kanji · radical · grammar · transitivity · keigo all key on their
+  // own subject, which is exactly the track key.
+  return subject as TrackKey;
 }
 
 export function HomeFeed() {
@@ -320,29 +357,51 @@ export function HomeFeed() {
     await refresh();
   };
 
-  // Which run, if any, IS this lesson — matched across EVERY run in progress,
-  // not just the focused one. Several sessions can be parked at once now (see
-  // PARKING), so a lesson you left to start something else still has to light up
-  // its own card. A run counts as "this lesson" when it's a session (not a
-  // one-off quiz), not finished, and drills exactly this lesson's facts. Its id
-  // is what Continue routes back to.
-  const runForFacts = (facts: readonly FactId[] | undefined) =>
-    facts
-      ? runs.find(
-          (r) =>
-            r.kind === "session" &&
-            r.phase !== "complete" &&
-            sameFactSet(r.facts, facts),
-        )
-      : undefined;
-  const lessonRun = runForFacts(lesson?.facts);
-  const kanjiRun = runForFacts(kanjiLesson?.facts);
-  const radicalRun = runForFacts(radicalLesson?.facts);
-  const wordRun = runForFacts(wordLesson?.facts);
-  const grammarRun = runForFacts(grammarLesson?.facts);
-  const transitivityRun = runForFacts(transitivityLesson?.facts);
-  const counterRun = runForFacts(counterLesson?.facts);
-  const keigoRun = runForFacts(keigoLesson?.facts);
+  // Which in-progress run, if any, belongs to each track: the signal that lets
+  // a track card offer Continue instead of only a fresh Start.
+  //
+  // WHY THIS IS THE TRACK AND NOT sameFactSet AGAINST THE NEXT LESSON
+  // ================================================================
+  // The old match asked "is a run drilling EXACTLY this card's next-lesson
+  // facts?". That held only while the run and the frontier named the same set,
+  // and they stop naming it the instant you start: the words card marks its
+  // lesson SEEN before the teach walk (startWordLesson), and every track commits
+  // its facts to history as each round closes, both of which advance the
+  // next-lesson computation to the FOLLOWING set. So a lesson you had open in
+  // the teaching phase, still parked on the Current sessions page as "Teaching",
+  // no longer matched the frontier it came from, and its card fell back to a
+  // fresh Start.
+  // That was the reported bug: the session was continuable from /current but not
+  // from its own track.
+  //
+  // The run has not moved; the frontier has. So match the run to the TRACK, not
+  // to the frontier's shifting facts. This is the same "session, not finished,
+  // origin lesson" signal /current groups its Curriculum lessons by (Library
+  // runs live in the other group and must not hijack a curriculum card),
+  // partitioned per track by trackOfRun. Continue then routes back through
+  // continueRun, exactly as the /current row does.
+  //
+  // A run whose facts have advanced past the frontier means the card shows the
+  // NEXT set's material while Continue resumes the earlier, still-open one. The
+  // card keeps "Quiz me" and "I already know these" for the fresh set, so
+  // nothing is lost, and Continue is the one obvious way back into what is
+  // already going.
+  const lessonRuns = runs.filter(
+    (r) =>
+      r.kind === "session" &&
+      r.phase !== "complete" &&
+      (r.origin ?? "lesson") === "lesson",
+  );
+  const runForTrack = (track: TrackKey) =>
+    lessonRuns.find((r) => trackOfRun(r) === track);
+  const lessonRun = runForTrack("kana");
+  const kanjiRun = runForTrack("kanji");
+  const radicalRun = runForTrack("radical");
+  const wordRun = runForTrack("word");
+  const grammarRun = runForTrack("grammar");
+  const transitivityRun = runForTrack("transitivity");
+  const counterRun = runForTrack("counter");
+  const keigoRun = runForTrack("keigo");
 
   // The curriculum is finished only when EVERY track's card would render
   // nothing — the exact negation of the render conditions below, so this is
