@@ -23,6 +23,19 @@
 // its own component and decides its own emptiness, so this file reads as "what
 // a lesson item is made of" and nothing more.
 //
+// A SECTION PER ROLE, NOT PER KIND
+// ================================
+// A `LessonItem` carries ONE kind, and the unified spine teaches characters that
+// play several roles at once: 人 is a word, a kanji and a shape other kanji are
+// built around. Branching on the kind gave that character one role's material
+// and a badge promising three, so 人 showed the readings it takes inside longer
+// words and never said that on its own it is a word you can pronounce. The
+// sections now come from `lessonSections` (src/lib/lesson-roles.ts), which reads
+// the role set and returns exactly what this step has to show; the kind is left
+// to the tracks that really are one thing, kana and grammar and the pattern
+// cards. The affordances follow the same rule: a character that is a word is
+// pronounceable whichever track it arrived on.
+//
 // THE PICTURE IS THE HERO — AND THE LIBRARY SHOWS THE SAME ONE
 // ============================================================
 // For a kana we author a mnemonic, the drawn image is the memory hook, so it is
@@ -48,16 +61,18 @@ import { KanjiPartsRow } from "@/components/lesson/kanji-parts-row";
 import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
 import { LessonReadings } from "@/components/lesson/lesson-readings";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
+import { RoleBlock } from "@/components/lesson/role-block";
+import { WordSensePanel } from "@/components/lesson/word-sense-panel";
 import { RadicalKanjiTable } from "@/components/library/radical-kanji-table";
 import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor, glyphVariantFor } from "@/data/characters";
 import { cluster, membersOf } from "@/data/grammar/clusters";
-import { kanjiRow } from "@/data/kanji";
+import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
 import { exampleFor } from "@/data/word-examples";
-import { vocabRow, type VocabRow } from "@/data/vocab";
+import { type VocabRow } from "@/data/vocab";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { keigoSetForEntry } from "@/data/keigo";
 import { buildRow } from "@/lib/grammar/build";
@@ -66,41 +81,21 @@ import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { knownLookalikes } from "@/lib/kanji-lookalikes";
 import type { CharacterRole } from "@/lib/character-role";
 import { characterRole, characterRoleTitle } from "@/lib/character-role";
-import { showsHowItsWritten } from "@/lib/lesson-items";
 import type { LessonItem } from "@/lib/lesson-items";
+import {
+  canHearItem,
+  headwordSubtitle,
+  lessonRoles,
+  lessonSections,
+  lessonWord,
+  roleHasSections,
+  wordTypeOf,
+} from "@/lib/lesson-roles";
 import { formsOfWord } from "@/lib/word-forms";
 import { libEntry, recipeOf } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
-
-/** The one-line reading/meaning under the headword, per track. Read off the
- * Library entry so it matches the reference exactly. */
-function subtitleOf(item: LessonItem): string {
-  const entry = libEntry(item.entry);
-  if (!entry) return "";
-  switch (item.kind) {
-    case "kana":
-      return entry.readings.join(" · ");
-    case "kanji":
-    case "radical":
-      return entry.meanings.slice(0, 4).join(" · ");
-    case "word":
-      return [entry.readings[0], entry.meanings.slice(0, 3).join(", ")]
-        .filter(Boolean)
-        .join(": ");
-    case "grammar":
-      return entry.meanings[0] ?? "";
-    case "transitivity":
-      // Transitivity items never reach here — they get their own card in
-      // LessonItemView before the shared hero — but the switch is exhaustive.
-      return "";
-    case "keigo":
-      // Keigo sets never reach here either — like transitivity, they get their
-      // own card before the shared hero. Present for exhaustiveness.
-      return "";
-  }
-}
 
 type GrammarExample = {
   jp: string;
@@ -352,6 +347,7 @@ function PlainHeadword({
   pronunciation,
   sub,
   canHear,
+  hearGlyph,
   kanaGlyph,
   right,
   voiceName,
@@ -361,6 +357,10 @@ function PlainHeadword({
   pronunciation?: string;
   sub?: string;
   canHear: boolean;
+  /** What the speaker says. The written form for a word or a kana, and the
+   * READING for a character that arrived on another track: 人 alone can be said
+   * four ways, and the header prints the one the word takes. */
+  hearGlyph: string;
   kanaGlyph: boolean;
   right?: ReactNode;
   voiceName: string;
@@ -382,7 +382,7 @@ function PlainHeadword({
           {sub ? <p className="mt-0.5 text-[12px] text-text-muted">{sub}</p> : null}
           {canHear || pronunciation ? (
             <div className="mt-2 flex items-center gap-2">
-              {canHear ? <HearButton glyph={item.glyph} voiceName={voiceName} /> : null}
+              {canHear ? <HearButton glyph={hearGlyph} voiceName={voiceName} /> : null}
               {pronunciation ? (
                 <span className="font-kana text-[15px] text-text-muted">{pronunciation}</span>
               ) : null}
@@ -393,16 +393,6 @@ function PlainHeadword({
       {right}
     </div>
   );
-}
-
-function wordTypeOf(word: VocabRow): string {
-  const pos = word.pos[0]?.toLowerCase() ?? "";
-  if (pos.includes("verb")) return "verb";
-  if (pos.includes("adjective")) return "adjective";
-  if (pos.includes("adverb")) return "adverb";
-  if (pos.includes("particle")) return "particle";
-  if (pos.includes("expression")) return "expression";
-  return "noun";
 }
 
 /** What each role set means for how you'll actually meet the character. The badge
@@ -507,11 +497,19 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   const claims = history.claims ?? {};
   const [now] = useState(() => Date.now());
 
-  const subtitle = subtitleOf(item);
-  // Pronounceable surfaces only: a kana and a word have one sound, a bare kanji
-  // (a meaning) and a grammar pattern do not — the same split the entry page
-  // and the teach screen make.
-  const canHear = item.kind === "kana" || item.kind === "word";
+  const subtitle = headwordSubtitle(item);
+  // The roles this character plays and the sections they earn, both read off the
+  // role set. Everything below asks these two rather than the item's single
+  // kind, which is what left a folded character showing one role in three.
+  const roles = lessonRoles(item);
+  const sectionList = lessonSections(item);
+  const sections = new Set(sectionList);
+  // The role headings only make sense when there is more than one role to tell
+  // apart; a plain kanji keeps the unlabelled stack it has always had.
+  const labelRoles = roles.length > 1;
+  // Pronounceable surfaces only: a kana has one sound, and so does a character
+  // that stands alone as a word, whichever track it arrived on.
+  const canHear = canHearItem(item);
   const kanaGlyph = item.kind === "kana" || item.kind === "grammar";
   // The app's own hook for this kana, when one is authored. When present it
   // drives the hero (big image, or the glyph as the hero when nothing's drawn);
@@ -531,18 +529,23 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   const glyphVariant = item.kind === "kana" ? glyphVariantFor(item.glyph) : null;
   const entry = libEntry(item.entry);
   const pattern = entry ? recipeOf(entry) : null;
-  const word = item.kind === "word" ? vocabRow(item.glyph) : undefined;
+  // The word's own row, looked up by GLYPH: a folded character carries the kanji
+  // entry, and the word it also is lives under an entry of its own.
+  const word = lessonWord(item);
   const forms = word ? formsOfWord(word) : null;
   const grammarSub = item.kind === "grammar" && pattern ? attachesTo(pattern) : undefined;
   const grammarExample = useGrammarExample(
     item.kind === "grammar" && pattern ? pattern.id : null,
   );
-  const wordExample = word ? exampleFor(word.keb) : null;
   const wordAlign = word?.align && word.align.length > 0 ? word : null;
-  const wordHeader = word
-    ? `${wordTypeOf(word)} · ${(entry?.meanings?.[0] ?? "").trim()}`
-    : subtitle;
-  const wordPronunciation = word?.reb;
+  // A word that is only a word says what it is up top: "noun · student". A
+  // character that is also a kanji spends its header on the character's meaning
+  // and teaches its word sense in the word section, which is the same condition
+  // the word-sense section is chosen by, asked once.
+  const headline =
+    word && !sections.has("word-sense")
+      ? `${wordTypeOf(word)} · ${(entry?.meanings?.[0] ?? "").trim()}`
+      : subtitle;
 
   // A transitivity pair is neither a glyph nor a single fact, so it gets its own
   // card rather than the shared hero. This return is after every hook above, so
@@ -570,19 +573,28 @@ export function LessonItemView({ item }: { item: LessonItem }) {
       ) : (
         <PlainHeadword
           item={item}
-          titleRow={item.kind === "word" ? wordHeader : subtitle}
-          pronunciation={item.kind === "word" ? wordPronunciation : undefined}
+          titleRow={headline}
+          // The reading of the word it is, printed by the speaker on every
+          // character that has one. A folded 人 used to show neither.
+          pronunciation={word?.reb}
           sub={grammarSub}
           canHear={canHear}
+          hearGlyph={word && sections.has("word-sense") ? word.reb : item.glyph}
           kanaGlyph={kanaGlyph}
           right={
-            item.kind === "kanji" ? (
+            // The badge speaks for a CHARACTER, so it is asked the same pure
+            // question it prints: 学生 plays the word role and is still two
+            // characters, with no badge to show.
+            characterRole(item.glyph) ? (
               <div className="space-y-3 md:justify-self-end">
                 <RoleBadge glyph={item.glyph} />
-                <KanjiConfusables glyph={item.glyph} />
+                {/* Lookalikes are a kanji's problem: they are the characters
+                    this one is confused WITH on a page, which only arises once
+                    it has a card of its own. */}
+                {roles.includes("kanji") ? (
+                  <KanjiConfusables glyph={item.glyph} />
+                ) : null}
               </div>
-            ) : item.kind === "radical" ? (
-              <RoleBadge glyph={item.glyph} />
             ) : null
           }
           voiceName={cfg.voiceName}
@@ -612,24 +624,63 @@ export function LessonItemView({ item }: { item: LessonItem }) {
 
       {/* The reference sections, full-width below the hero, off a single light
           divider — no card around them, the flattening the owner asked for.
-          Each is collapsed by default on a persisted preference and decides its
-          own emptiness, so a kana shows only "how it's written" and a kanji adds
-          its readings and the words it shows up in. */}
+          Each decides its own emptiness, and which of them appear is the role
+          set's decision: a kana shows only "how it's written", a plain kanji
+          adds its parts and its readings, and a character that is also a word
+          teaches the word too, under a heading of its own.
+
+          The roles run word, kanji, building block, the order the badge's own
+          sentence puts them in for a character that plays all three. */}
       <div className="mt-9 space-y-3 border-t border-border pt-7">
-        {item.kind === "kanji" ? <KanjiPartsRow glyph={item.glyph} /> : null}
-        {item.kind === "kanji" ? (
-          <LessonReadings item={item} voiceName={cfg.voiceName} />
-        ) : null}
-        {item.kind === "word" && word && forms ? (
-          <WordFormFan dictionary={word.keb} groups={forms} />
-        ) : null}
-        {item.kind === "word" && word ? (
-          <PairedRow
-            wide={wordAlign ? <WordReadingsPanel word={wordAlign} voiceName={cfg.voiceName} /> : null}
-            narrow={wordExample ? <WordSentencePanel keb={word.keb} /> : null}
-            even
-          />
-        ) : null}
+        <RoleBlock role="word" labelled={labelRoles && roleHasSections("word", sectionList)}>
+          {sections.has("word-sense") && word ? (
+            <WordSensePanel word={word} voiceName={cfg.voiceName} />
+          ) : null}
+          {sections.has("word-forms") && word && forms ? (
+            <WordFormFan dictionary={word.keb} groups={forms} />
+          ) : null}
+          {word ? (
+            <PairedRow
+              wide={
+                sections.has("word-readings") && wordAlign ? (
+                  <WordReadingsPanel word={wordAlign} voiceName={cfg.voiceName} />
+                ) : null
+              }
+              narrow={
+                sections.has("word-example") ? <WordSentencePanel keb={word.keb} /> : null
+              }
+              even
+            />
+          ) : null}
+        </RoleBlock>
+        <RoleBlock role="kanji" labelled={labelRoles && roleHasSections("kanji", sectionList)}>
+          {sections.has("kanji-parts") ? <KanjiPartsRow glyph={item.glyph} /> : null}
+          {/* Pointed at the KANJI entry, which is where the readings live. For a
+              step that arrived on the kanji track that is the entry it already
+              carries; for one that reached this character from the radical or
+              words track it is the fold, and the same table either way. */}
+          {sections.has("kanji-readings") ? (
+            <LessonReadings
+              item={{ ...item, entry: kanjiEntry(item.glyph) }}
+              voiceName={cfg.voiceName}
+            />
+          ) : null}
+        </RoleBlock>
+        {/* A radical's kanji, in learning order: the shape's whole payoff is the
+            meaning it lends the kanji built on it, so this shows the first few of
+            them, each with its meaning and the reader's score. */}
+        <RoleBlock role="radical" labelled={labelRoles && roleHasSections("radical", sectionList)}>
+          {sections.has("radical-kanji") ? (
+            <RadicalKanjiTable
+              component={item.glyph}
+              cap={5}
+              facts={history.facts}
+              claims={claims}
+              metric={cfg.accuracyMetric}
+              now={now}
+            />
+          ) : null}
+        </RoleBlock>
         {item.kind === "grammar" ? (
           <PairedRow
             wide={<GrammarBuildPanel item={item} />}
@@ -641,20 +692,9 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           />
         ) : null}
         {item.kind === "grammar" ? <GrammarFamilyPanel item={item} /> : null}
-        {showsHowItsWritten(item.kind) ? <HowItsWritten item={item} /> : null}
-        {/* A radical's kanji, in learning order: the shape's whole payoff is the
-            meaning it lends the kanji built on it, so the teach card ends on the
-            first few of them, each with its meaning and the reader's score. */}
-        {item.kind === "radical" ? (
-          <RadicalKanjiTable
-            component={item.glyph}
-            cap={5}
-            facts={history.facts}
-            claims={claims}
-            metric={cfg.accuracyMetric}
-            now={now}
-          />
-        ) : null}
+        {/* Last, and under no role heading: how the shape is drawn is one answer
+            however many roles the character plays. */}
+        {sections.has("how-its-written") ? <HowItsWritten item={item} /> : null}
       </div>
     </div>
   );

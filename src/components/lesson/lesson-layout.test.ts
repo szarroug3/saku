@@ -20,9 +20,13 @@ describe("lesson layout wiring", () => {
 
   test("the two paired rows use full-width fallback helper", () => {
     assert.match(KANJI_ROW, /return\s*\(\s*<LessonPanel title="Built from">/);
+    // The word's readings and its example sentence still share one PairedRow,
+    // so either can be absent without leaving a hole. Which of them is present
+    // is now the section set's answer (`sections.has(…)`), not a second reading
+    // of the word row, so the match is on the row and its two halves.
     assert.match(
       LESSON,
-      /<PairedRow[\s\S]*wide=\{wordAlign \? <WordReadingsPanel[\s\S]*narrow=\{wordExample \? <WordSentencePanel[\s\S]*\/>/,
+      /<PairedRow[\s\S]*wide=\{[\s\S]*<WordReadingsPanel[\s\S]*narrow=\{[\s\S]*<WordSentencePanel[\s\S]*\/>/,
     );
   });
 
