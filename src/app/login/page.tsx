@@ -17,11 +17,19 @@ export default function LoginPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    // Guard the empty submit (e.g. Enter in an empty field, which slips past the
+    // disabled button) so Supabase never gets a blank email — its raw "one of
+    // email or phone must be set" is confusing where a nudge is what's wanted.
+    const address = email.trim();
+    if (!address) {
+      setError("Enter your email first.");
+      return;
+    }
     setBusy(true);
     setError(null);
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
+      email: address,
       options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     setBusy(false);
@@ -61,7 +69,7 @@ export default function LoginPage() {
             Sign in to Saku
           </h1>
           <p className="mt-2 text-center text-[14px] leading-relaxed text-text-muted">
-            Enter your email and we&rsquo;ll send you a sign-in link — no password
+            Enter your email and we&rsquo;ll send you a sign-in link, no password
             needed.
           </p>
           <input

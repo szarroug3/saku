@@ -97,6 +97,12 @@ export function Sidebar() {
     ...NAV.slice(2),
   ];
 
+  // The auth pages (sign-in and the magic-link callback) are shown to a
+  // signed-out visitor and carry their own centered layout with the logo — no
+  // nav belongs there, and a second wordmark reads as a mistake. Render nothing.
+  // Placed after the hooks above so their call order stays unconditional.
+  if (pathname.startsWith("/login") || pathname.startsWith("/auth")) return null;
+
   return (
     <nav className="sticky top-6 flex w-[148px] flex-none flex-col gap-0.5 self-start">
       {/* The brand sits above the nav, linking home like a logo should. The
