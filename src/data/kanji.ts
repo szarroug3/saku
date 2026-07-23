@@ -361,6 +361,23 @@ export function variantTaughtKanji(c: string): string | undefined {
   return orig && BY_CHAR.has(orig) ? orig : undefined;
 }
 
+/**
+ * The character KanjiVG records `c` as a variant form of, taught or not: 亻→人,
+ * 艹→艸, 辶→辵. Undefined for anything the map does not name.
+ *
+ * `variantTaughtKanji` above is this with a filter, and the filter is right for
+ * a LINK (a page that does not exist is not worth linking to) and wrong for a
+ * PREREQUISITE. 艹 is a form of 艸, which is no kanji but IS Kangxi radical 140,
+ * with a meaning and a card of its own; a caller deciding what a learner owes
+ * needs to reach it, and gets undefined from the filtered form. So the raw
+ * mapping is published too, and the caller decides what a non-kanji original is
+ * worth. One hop, never chased: the map contains a mutual pair (戌/戍) and
+ * following it transitively would not terminate.
+ */
+export function variantOriginal(c: string): string | undefined {
+  return VARIANT_ORIGINAL[c];
+}
+
 /** Where a kanji sits in the default order, and why. */
 export function orderRow(c: string): OrderRow | undefined {
   return ORDER_BY_CHAR.get(c);

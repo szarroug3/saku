@@ -18,7 +18,12 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { KANJI, kanjiRow, kanjiTeachOrder } from "../data/kanji.ts";
+import {
+  KANJI,
+  kanjiRow,
+  kanjiTeachOrder,
+  variantOriginal,
+} from "../data/kanji.ts";
 import {
   RADICALS,
   isRadicalTaughtAsKanji,
@@ -45,44 +50,53 @@ const has = (glyph: string, role: CurriculumRole): boolean =>
  * the only radicals this sequence teaches as radicals of their own. */
 const RADICAL_ONLY = RADICALS.filter((r) => kanjiRow(r.glyph) === undefined);
 
-/** The component kanji of a character, classified the way the module classifies
- * them and derived here from the raw tables so the test is not just reading the
- * module's own answer back. KRADFILE's decomposition plus the filed-under
- * radical; anything that is not a jōyō kanji belongs to the radical or stroke
- * half and is checked elsewhere. */
-function componentKanji(c: string): string[] {
-  const parts = new Set<string>();
-  for (const part of kanjiRow(c)?.costParts ?? []) {
-    if (part !== c && kanjiRow(part) !== undefined) parts.add(part);
-  }
+/**
+ * What one character owes, classified the way the module classifies it and
+ * derived here from the raw tables so the tests are not just reading the
+ * module's own answer back: KanjiVG's `comps` plus the filed-under radical, each
+ * part taught as itself if it has a card, resolved through the variant map if it
+ * has none, and dropped if there is nothing behind it either.
+ */
+function componentsOf(c: string): { kanji: string[]; radicals: number[] } {
+  const kanji = new Set<string>();
+  const radicals = new Set<number>();
+  const classify = (part: string) => {
+    if (part === c) return;
+    if (kanjiRow(part) !== undefined) return void kanji.add(part);
+    const own = radicalByGlyph(part);
+    if (own) return void radicals.add(own.num);
+    const orig = variantOriginal(part);
+    // 耂 resolves to 老, which is how 老 itself is drawn: not its own debt.
+    if (orig === undefined || orig === c) return;
+    if (kanjiRow(orig) !== undefined) return void kanji.add(orig);
+    const rad = radicalByGlyph(orig);
+    if (rad) radicals.add(rad.num);
+  };
+  for (const part of kanjiRow(c)?.comps ?? []) classify(part);
   const filed = radicalOfKanji(c);
   // 王/玉 is the one pair where filing and drawing disagree about which contains
   // which; the module drops the filing edge there, so this does too. Everything
   // else in the join is a plain requirement.
-  if (
-    filed &&
-    filed.glyph !== c &&
-    kanjiRow(filed.glyph) !== undefined &&
-    !kanjiRow(filed.glyph)!.costParts.includes(c)
-  ) {
-    parts.add(filed.glyph);
-  }
-  return [...parts];
+  if (filed && !kanjiRow(filed.glyph)?.comps.includes(c)) classify(filed.glyph);
+  return { kanji: [...kanji], radicals: [...radicals] };
 }
 
-/** The radical-only components of a character, same two sources. These are the
- * welded ones. */
-function componentRadicals(c: string): number[] {
-  const nums = new Set<number>();
-  const add = (glyph: string) => {
-    if (kanjiRow(glyph) !== undefined) return;
-    const rad = radicalByGlyph(glyph);
-    if (rad) nums.add(rad.num);
+const componentKanji = (c: string): string[] => componentsOf(c).kanji;
+const componentRadicals = (c: string): number[] => componentsOf(c).radicals;
+
+/** Everything a character owes, all the way down. Used to tell a tail kanji that
+ * was dragged in early from one that is simply out of order. */
+function componentClosure(c: string): Set<string> {
+  const out = new Set<string>();
+  const walk = (x: string) => {
+    for (const part of componentKanji(x)) {
+      if (out.has(part)) continue;
+      out.add(part);
+      walk(part);
+    }
   };
-  for (const part of kanjiRow(c)?.costParts ?? []) add(part);
-  const filed = radicalOfKanji(c);
-  if (filed) add(filed.glyph);
-  return [...nums];
+  walk(c);
+  return out;
 }
 
 /** Every kanji the curriculum's words are written with, so "orphan" can be
@@ -195,6 +209,28 @@ describe("prerequisite invariants", () => {
     }
   });
 
+  test("何 arrives owing nothing, and the curriculum opens with its run-up", () => {
+    // The first word a beginner meets is 何, so its run-up IS the opening of the
+    // curriculum. 何 is 亻 + 可: 亻 has no card of its own and resolves to 人, 可
+    // is 丁 + 口, and 丁 is 一 + 亅. Only 亅 is a radical, so only 亅 is welded.
+    assert.deepEqual(
+      CURRICULUM_SEQUENCE.slice(0, AT.get("何")! + 1).map((it) => it.glyph),
+      ["人", "一", "亅", "丁", "口", "可", "何"],
+    );
+    assert.deepEqual(
+      CURRICULUM_SEQUENCE.slice(0, AT.get("何")! + 1).map((it) => it.tiedTo),
+      [null, null, "丁", null, null, null, null],
+    );
+  });
+
+  test("a repeated component is emitted once", () => {
+    // 可 decomposes as 丁 口 丁, and the duplicate must not become a second item
+    // or a second weld.
+    assert.deepEqual(kanjiRow("可")!.comps, ["丁", "口", "丁"]);
+    assert.deepEqual(componentKanji("可"), ["丁", "口"]);
+    assert.equal(CURRICULUM_SEQUENCE.filter((it) => it.glyph === "丁").length, 1);
+  });
+
   test("人 precedes 何", () => {
     // The case that caught the old rule out: 何 is filed under 人, 人 is a kanji,
     // so under "only radical-only shapes are prerequisites" 何 opened the whole
@@ -298,6 +334,77 @@ describe("the tie", () => {
   });
 });
 
+describe("variant forms", () => {
+  test("a bound form is never an item of its own", () => {
+    // 亻 氵 扌 艹 have no kanji row and no radical row: there is no card for them
+    // anywhere in the app, so a sequence containing one would be a lesson with
+    // no meaning, no reading and no page.
+    for (const v of ["亻", "氵", "扌", "艹", "刂", "忄", "礻", "衤", "⻖", "灬"]) {
+      assert.equal(curriculumPosition(v), -1, `${v} is taught as itself`);
+    }
+  });
+
+  test("a bound form whose original is a kanji owes that kanji, untied", () => {
+    // 亻 of 人, 氵 of 水, 扌 of 手. The debt is the character, ordered before and
+    // free to sit in an earlier lesson.
+    assert.ok(componentKanji("何").includes("人"), "何 owes 人 through 亻");
+    assert.ok(AT.get("人")! < AT.get("何")!);
+    assert.ok(componentKanji("海").includes("水"), "海 owes 水 through 氵");
+    assert.ok(AT.get("水")! < AT.get("海")!);
+    assert.equal(CURRICULUM_SEQUENCE[AT.get("水")!]!.tiedTo, null);
+  });
+
+  test("a bound form whose original is a radical owes that radical, welded", () => {
+    // 艹 is a form of 艸, which is no kanji but IS Kangxi radical 140, with a
+    // meaning and a card. 葉 is the first character drawn with it.
+    assert.equal(variantOriginal("艹"), "艸");
+    assert.equal(kanjiRow("艸"), undefined);
+    assert.ok(radicalByGlyph("艸") !== undefined);
+    assert.ok(componentRadicals("葉").includes(radicalByGlyph("艸")!.num));
+    assert.equal(CURRICULUM_SEQUENCE[AT.get("艸")!]!.tiedTo, "葉");
+    assert.equal(AT.get("艸")! + 1, AT.get("葉")!);
+  });
+
+  test("a variant that is itself a character is taught as itself", () => {
+    // The map calls 日 a form of 曰 and 月 a form of 肉. That is etymology, and
+    // following it would teach a beginner 曰 in place of the fourth-commonest
+    // kanji there is. Both are jōyō, so both stay themselves.
+    assert.equal(variantOriginal("日"), "曰");
+    assert.equal(variantOriginal("月"), "肉");
+    assert.ok(componentKanji("明").includes("日"), "明 owes 日, not 曰");
+    assert.ok(!componentKanji("明").includes("曰"));
+    assert.ok(AT.get("日")! < AT.get("明")!);
+    // And 儿, which the map sends to 八, is Kangxi radical 10 in its own right.
+    assert.equal(variantOriginal("儿"), "八");
+    assert.ok(radicalByGlyph("儿") !== undefined);
+    assert.ok(componentRadicals("元").includes(radicalByGlyph("儿")!.num));
+  });
+
+  test("a bound form with nothing behind it is drawn, not taught", () => {
+    // ⻌ is a form of 辶, which is no kanji, and radical 162 is filed in the
+    // table under 辵, so the chain stops with nothing to owe. 52 characters are
+    // drawn with it and none of them owes anything for it. This is a gap in the
+    // data, pinned so a re-cut that closes it shows up here.
+    assert.equal(variantOriginal("⻌"), "辶");
+    assert.equal(kanjiRow("辶"), undefined);
+    assert.equal(radicalByGlyph("辶"), undefined);
+    assert.equal(curriculumPosition("辶"), -1);
+    assert.equal(curriculumPosition("⻌"), -1);
+    assert.ok(kanjiRow("道")!.comps.includes("⻌"));
+    assert.deepEqual(componentKanji("道"), ["首"]);
+  });
+
+  test("the variant map is followed one hop, never chased", () => {
+    // 戌 and 戍 name each other, so a transitive walk would not terminate.
+    assert.equal(variantOriginal("戌"), "戍");
+    assert.equal(variantOriginal("戍"), "戌");
+    // 耂 names 老, which is drawn with 耂: a character is not its own debt.
+    assert.equal(variantOriginal("耂"), "老");
+    assert.ok(kanjiRow("老")!.comps.includes("耂"));
+    assert.ok(!componentKanji("老").includes("老"));
+  });
+});
+
 describe("the single-kanji fold", () => {
   test("a single-kanji word is one item carrying word and kanji", () => {
     const single = CURRICULUM_WORDS.filter(
@@ -383,12 +490,22 @@ describe("the tail", () => {
     const tail = orphanKanji
       .filter((c) => !pulledAsComponent(c))
       .sort((a, b) => AT.get(a)! - AT.get(b)!);
-    for (let i = 1; i < tail.length; i++) {
-      // Only the kanji ITEMS compare: a tail kanji that drags a component in
-      // arrives with it, and the component was ordered by need, not by rank.
+    // The ramp holds for every kanji that arrives on its OWN turn. A kanji that
+    // some later tail kanji is built from arrives early instead, welded into
+    // that character's run-up: 伐 is taught out of rank because 閥 needs it.
+    const closure = new Map(tail.map((c) => [c, componentClosure(c)]));
+    const pulled = new Set<string>();
+    for (let i = 0; i < tail.length; i++) {
+      for (let j = i + 1; j < tail.length; j++) {
+        if (closure.get(tail[j]!)!.has(tail[i]!)) pulled.add(tail[i]!);
+      }
+    }
+    const ownTurn = tail.filter((c) => !pulled.has(c));
+    assert.ok(ownTurn.length > 300, "almost the whole tail arrives on its turn");
+    for (let i = 1; i < ownTurn.length; i++) {
       assert.ok(
-        rank.get(tail[i - 1]!)! < rank.get(tail[i]!)!,
-        `${tail[i - 1]} and ${tail[i]} are out of everyday order`,
+        rank.get(ownTurn[i - 1]!)! < rank.get(ownTurn[i]!)!,
+        `${ownTurn[i - 1]} and ${ownTurn[i]} are out of everyday order`,
       );
     }
   });
@@ -401,12 +518,7 @@ describe("the tail", () => {
     // to its first consumer long before.
     const inSomething = new Set<number>();
     for (const k of KANJI) {
-      const filed = radicalOfKanji(k.c);
-      if (filed) inSomething.add(filed.num);
-      for (const part of k.costParts) {
-        const rad = radicalByGlyph(part);
-        if (rad && kanjiRow(part) === undefined) inSomething.add(rad.num);
-      }
+      for (const num of componentRadicals(k.c)) inSomething.add(num);
     }
     const unused = RADICAL_ONLY.filter((r) => !inSomething.has(r.num));
     assert.deepEqual(

@@ -62,24 +62,55 @@
 //
 // WHAT COUNTS AS A COMPONENT
 // ==========================
-// `costParts` (KRADFILE, via KanjiRow) plus the character's filed-under radical
-// (`radicalOfKanji`), and each component classified by what it IS:
+// `comps` (KanjiVG, via KanjiRow) plus the character's filed-under radical
+// (`radicalOfKanji`), deduped, and each component classified by what it IS:
 //
 //   - a jōyō kanji (kanjiRow) is a KANJI prerequisite: ordered before, resolved
 //     recursively, not tied.
 //   - a Kangxi radical that is no kanji (气, 宀) is a RADICAL prerequisite:
 //     ordered immediately before, and tied.
-//   - anything else (｜ ノ 丶 and the other bare strokes) is NOT a prerequisite.
-//     There is no card for a stroke and nothing to know about one; it is simply
-//     drawn when the character is drawn.
+//   - a bound form with no card of its own (亻, 氵, 扌, 艹) is the debt of the
+//     character it is a FORM OF, resolved through the variant map. See below.
+//   - anything else (丶 and the other bare shapes) is NOT a prerequisite. There
+//     is no card for it, and no meaning or reading exists for it anywhere in the
+//     data; it is simply drawn when the character is drawn.
 //
-// `costParts` and not `comps` because it is the decomposition that goes all the
-// way down: `comps` stops at the meaningful depth-1 parts a learner is SHOWN
-// ("made of"), which is the right answer for a card and the wrong one for a debt
-// (it would let a character in owing a shape nobody had met). kanjiCost already
-// reads costParts for exactly this reason. It over-decomposes and it is wrong
-// about 亻/化, which costs a little accuracy in what gets pulled forward and
-// never costs correctness: everything it names is genuinely in the glyph.
+// `comps` and NOT `costParts`. The two decompositions disagree, and the argument
+// is not depth, it is truth: costParts is KRADFILE, which files 亻 under 化 and
+// so claims 何 is built from 化, a character that has nothing to do with it. Read
+// as a debt that puts 化 (and 匕, which 化 needs) at the head of the entire
+// curriculum, ahead of 何, which is the first word a beginner meets. `comps` is
+// KanjiVG's actual glyph hierarchy: 何 is 亻 + 可, which is what is on the page.
+// It is the same data the "Made of" row already shows a learner, so what the
+// curriculum makes you pay for and what the card says the character is made of
+// are now the same claim. `kanjiCost` keeps reading costParts, deliberately: its
+// numbers are a stroke-level draw-and-assembly estimate the owner calibrated by
+// hand against exactly that decomposition, and cost is not prerequisite.
+//
+// VARIANT FORMS
+// =============
+// KanjiVG names 58 bound forms as variants of another character (`kvg:original`,
+// published as `variantOriginal`), and every one of them turns up in `comps`. A
+// variant is resolved to its original ONLY when it has no card of its own, so
+// nothing ever teaches 亻 and 人 as two separate items:
+//
+//   - 亻→人, 氵→水, 扌→手, 刂→刀, 忄→心 … the original is a jōyō kanji, so the
+//     debt is that KANJI: ordered, untied.
+//   - 艹→艸, ⻏→邑, 攵→攴, 罒→网, 𠂊→勹 … the original is a radical-only shape,
+//     so the debt is that RADICAL: welded.
+//   - 日→曰, 月→肉, 王→玉, 士→土, 川→巛, 斉 竜 麦 黒 歯 … THE MAP IS NOT FOLLOWED.
+//     Each of these is a jōyō kanji in its own right with its own meaning,
+//     readings and page, and the mapping is etymology (月 in 服 descends from
+//     肉). A learner meeting 明 is meeting 日. Same for 儿, 冫, 匸, 厶, 毋, which
+//     are Kangxi radicals with cards of their own.
+//   - ⻌→辶, ⺍→つ, ⺕→彑, 戌→戍 … the original has no card either, so there is
+//     still nothing to owe and the shape is drawn, not taught. 辶 is the biggest
+//     of these (52 characters): radical 162 is filed in the table under 辵, and
+//     KanjiVG's chain stops at 辶, so the two never meet. That is a gap in the
+//     DATA, named here rather than papered over with a hand-written mapping.
+//
+// The map is followed for ONE hop and never chased, because it contains a mutual
+// pair (戌→戍 and 戍→戌) that a transitive walk would not get out of.
 //
 // CYCLES. Joining a drawing decomposition to a filing table can close a loop:
 // 王 is filed under 玉 while 玉 is drawn as 王 plus a dot, and over the whole
@@ -112,7 +143,7 @@
 // Nothing is emitted twice. Every one of the 2,136 kanji, every radical-only
 // shape, and every curriculum word appears exactly once in CURRICULUM_SEQUENCE.
 
-import { kanjiRow, kanjiTeachOrder } from "@/data/kanji";
+import { kanjiRow, kanjiTeachOrder, variantOriginal } from "@/data/kanji";
 import { radicalByGlyph, radicalOfKanji, type RadicalRow } from "@/data/radicals";
 import { RADICAL_TEACHING_ORDER } from "@/lib/radical-order";
 import { CURRICULUM_WORDS, wordKanji } from "@/lib/word-lesson";
@@ -183,12 +214,12 @@ interface Components {
 /**
  * The components of one kanji, classified and deduped, in a stable order.
  *
- * Two sources, and the second is not redundant. `costParts` is KRADFILE's
- * decomposition, which is what the glyph is drawn from; `radicalOfKanji` is the
- * one classical radical the character is FILED under, which the decomposition
- * does not always name (and which is the debt the radical track has always
- * collected). 何 is filed under 人 and that is why 人 comes first, whatever
- * KRADFILE calls the left-hand stroke.
+ * Two sources, and the second is not redundant. `comps` is KanjiVG's depth-1
+ * hierarchy, which is what the glyph is drawn from; `radicalOfKanji` is the one
+ * classical radical the character is FILED under, which the decomposition does
+ * not always name (and which is the debt the radical track has always
+ * collected). 気 is drawn from 气 and 㐅, and it is filed under 气 as well; 到 is
+ * drawn from 至 and 刂, and filed under 刀, which the drawing only implies.
  *
  * Computed once per kanji and cached: the walk asks for the same character's
  * components every time another one is built from it.
@@ -204,24 +235,49 @@ function componentsOf(c: string): Components {
   const seenKanji = new Set<string>();
   const seenRadicals = new Set<number>();
 
-  const classify = (part: string) => {
-    // A character is not its own prerequisite, and some decompositions list it
-    // among its own parts.
-    if (part === c) return;
-    if (kanjiRow(part) !== undefined) {
-      if (seenKanji.has(part)) return;
-      seenKanji.add(part);
-      kanji.push(part);
-      return;
-    }
-    const rad = radicalByGlyph(part);
-    if (!rad) return; // A bare stroke: drawn, never taught.
+  const addKanji = (part: string) => {
+    if (seenKanji.has(part)) return;
+    seenKanji.add(part);
+    kanji.push(part);
+  };
+  const addRadical = (rad: RadicalRow) => {
     if (seenRadicals.has(rad.num)) return;
     seenRadicals.add(rad.num);
     radicals.push(rad);
   };
 
-  for (const part of kanjiRow(c)?.costParts ?? []) classify(part);
+  const classify = (part: string) => {
+    // A character is not its own prerequisite, and some decompositions list it
+    // among its own parts. Repeats are dropped by the two `seen` sets, which
+    // matters straight away: 可 decomposes as 丁 口 丁.
+    if (part === c) return;
+    // A COMPONENT WITH A CARD OF ITS OWN IS TAUGHT AS ITSELF, and the variant map
+    // is not consulted. It names 日 a form of 曰 and 月 a form of 肉, which is
+    // etymology; the learner meeting 明 is meeting 日, a jōyō kanji with its own
+    // meaning, readings and page. Same for the shapes that are radicals in their
+    // own right (儿 is Kangxi 10, whatever it descends from).
+    if (kanjiRow(part) !== undefined) return addKanji(part);
+    const own = radicalByGlyph(part);
+    if (own) return addRadical(own);
+    // NO CARD OF ITS OWN: a bound form (亻, 氵, 扌, 艹) that exists only inside
+    // other characters. The debt is the character it is a form of, so nothing
+    // ever teaches 亻 and 人 as two separate items.
+    const orig = variantOriginal(part);
+    // 耂 is a form of 老, and it is how 老 itself is drawn, so resolving the
+    // variant can land back on the character asking the question. Not a debt: a
+    // character is not built from itself.
+    if (orig !== undefined && orig !== c) {
+      if (kanjiRow(orig) !== undefined) return addKanji(orig);
+      const rad = radicalByGlyph(orig);
+      if (rad) return addRadical(rad);
+    }
+    // A primitive with nothing behind it: ｜, 丶, ⻌ (a form of 辶, which is no
+    // kanji and not the glyph radical 162 is drawn with either). There is no
+    // card, no meaning and no reading anywhere in the data for these, so there
+    // is nothing to owe. It is drawn when the character is drawn.
+  };
+
+  for (const part of kanjiRow(c)?.comps ?? []) classify(part);
   const filed = radicalOfKanji(c);
   // THE ONE PLACE THE TWO SOURCES CONTRADICT EACH OTHER: 王 is FILED under 玉,
   // and 玉 is DRAWN as 王 plus a dot, so each is the other's prerequisite and
@@ -230,7 +286,7 @@ function componentsOf(c: string): Components {
   // character sits in the Kangxi table. So the filed-under edge is dropped when
   // the radical is itself built from this character. src/data/radicals.ts has
   // the same pair on file as the reason 玉 cannot merge into one kanji lesson.
-  if (filed && !kanjiRow(filed.glyph)?.costParts.includes(c)) {
+  if (filed && !kanjiRow(filed.glyph)?.comps.includes(c)) {
     classify(filed.glyph);
   }
 
