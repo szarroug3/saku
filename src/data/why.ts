@@ -228,12 +228,12 @@ export const WHY_TRACK: Record<string, Why> = {
   kanji: {
     lede: {
       strong: "Kanji are used as both words and as building blocks for other words.",
-      rest: "A word is only taught once you know every kanji in it, so words arrive in bursts: nothing for a while, then several at once.",
+      rest: "Radicals, the smaller shapes kanji are built from, are taught right here too, each one just before the first kanji that uses it.",
     },
     paras: [
       "Kanji are reused across many words, so learning one can open up several at once. That makes the pace uneven. Some days you will have a pile of new words, some days none, because you are still collecting the kanji they need.",
-      "Each kanji can have multiple readings, and words are what pin down which reading is used. Learning kanji first gives you the pieces, and learning words gives those pieces real pronunciation and context.",
-      "Words wait for their full set of kanji, so when one arrives you can actually read it. The most common ones come first.",
+      "Each kanji is built around a smaller shape called a radical, and the radical often hints at the meaning: the water shape 氵 shows up in 海 (sea) and 泳 (swim). Most radicals are themselves kanji you learn on their own. A handful are only ever building blocks and never a character you would study by itself, like the steam shape 气 inside 気. Those get their own tile here, marked as a radical, taught just before the kanji that needs them, so a kanji is never broken into a piece you have not seen.",
+      "Each kanji can also have multiple readings, and words are what pin down which reading is used. Learning kanji first gives you the pieces, and learning words gives those pieces real pronunciation and context. The most common kanji come first.",
     ],
   },
   words: {

@@ -41,7 +41,6 @@ import { NextCounterLesson } from "@/components/lesson/next-counter-lesson";
 import { NextGrammarLesson } from "@/components/lesson/next-grammar-lesson";
 import { NextKanjiLesson } from "@/components/lesson/next-kanji-lesson";
 import { NextLesson } from "@/components/lesson/next-lesson";
-import { NextRadicalLesson } from "@/components/lesson/next-radical-lesson";
 import { NextTransitivityLesson } from "@/components/lesson/next-transitivity-lesson";
 import { NextKeigoLesson } from "@/components/lesson/next-keigo-lesson";
 import { NextWordLesson } from "@/components/lesson/next-word-lesson";
@@ -54,10 +53,6 @@ import {
   nextGrammarLesson,
   nextGrammarLock,
 } from "@/lib/grammar-lesson";
-import {
-  RADICALS_PER_LESSON_DEFAULT,
-  nextRadicalLesson,
-} from "@/lib/radical-lesson";
 import {
   hasStartedWordTrack,
   nextWordLesson,
@@ -170,6 +165,11 @@ export function HomeFeed() {
   // reads. They are config, not state, so the lesson is still a pure function of
   // history for a given setup — change either and the whole curriculum re-cuts,
   // which is why they are deps here.
+  // ONE combined track: kanji, with the radical-only building blocks each set
+  // needs woven in before the kanji that use them (nextKanjiLesson / packUnits).
+  // There is no separate radical card and no radical gate anymore — a radical
+  // rides in on the same set as its first-using kanji, so the one card teaches
+  // both, each tile labelled radical, kanji, or both.
   const kanjiLesson = useMemo(
     () =>
       lesson
@@ -178,28 +178,6 @@ export function HomeFeed() {
             min: cfg.lessonMinCost,
             max: cfg.lessonMaxCost,
           }),
-    [lesson, history, cfg.newKanjiOrder, cfg.lessonMinCost, cfg.lessonMaxCost],
-  );
-
-  // The radical track runs a step AHEAD of kanji: a kanji is gated on its
-  // radical (kanji-lesson.ts), so when the next kanji group is blocked by an
-  // unlearned radical, nextKanjiLesson returns null and this card supplies the
-  // radicals to learn first. It reads the SAME kanji order and range, because
-  // the radical order is derived from the kanji order — teach the radical of the
-  // next kanji group, that group unlocks, the next group's radicals become due.
-  // Orphans (no kanji needs them) surface only after the whole kanji track is
-  // done. A pure function of history and the kanji-curriculum settings, gated on
-  // `lesson === null` like every post-kana track.
-  const radicalLesson = useMemo(
-    () =>
-      lesson
-        ? null
-        : nextRadicalLesson(
-            history,
-            kanjiTeachOrder(cfg.newKanjiOrder),
-            { min: cfg.lessonMinCost, max: cfg.lessonMaxCost },
-            RADICALS_PER_LESSON_DEFAULT,
-          ),
     [lesson, history, cfg.newKanjiOrder, cfg.lessonMinCost, cfg.lessonMaxCost],
   );
 
@@ -425,8 +403,12 @@ export function HomeFeed() {
   const runForTrack = (track: TrackKey) =>
     lessonRuns.find((r) => trackOfRun(r) === track);
   const lessonRun = runForTrack("kana");
-  const kanjiRun = runForTrack("kanji");
-  const radicalRun = runForTrack("radical");
+  // Kanji and radicals are one track now, so a run that opened on a radical fact
+  // (a combined set can lead with a radical) belongs to the kanji card too.
+  const kanjiRun = lessonRuns.find((r) => {
+    const t = trackOfRun(r);
+    return t === "kanji" || t === "radical";
+  });
   const wordRun = runForTrack("word");
   const grammarRun = runForTrack("grammar");
   const transitivityRun = runForTrack("transitivity");
@@ -440,13 +422,13 @@ export function HomeFeed() {
   // A curriculum session drills a round and, on completing it, commits that
   // round to history; for a step-ahead track that commit does not nudge the
   // card to the next group, it removes the card outright. Finish round 1 of a
-  // radical lesson and that radical unlocks its kanji, so nextRadicalLesson
-  // returns null the instant the session pauses to rest: the radical card is
-  // gone, the kanji card takes its place with a fresh Start, and the resting
-  // radical session is reachable only from /current. Kana at its last group,
-  // and any track whose next lesson is momentarily unavailable, orphan the same
-  // way. This is the reported bug, and trackOfRun could never reach it: there
-  // was no card left to light.
+  // set whose radical-only shapes unlock the kanji that follow them, and
+  // nextKanjiLesson can return the NEXT set the instant the session pauses to
+  // rest: the set you were resting in is gone, a fresh Start takes its place,
+  // and the resting session is reachable only from /current. Kana at its last
+  // group, and any track whose next lesson is momentarily unavailable, orphan
+  // the same way. This is the reported bug, and trackOfRun could never reach it:
+  // there was no card left to light.
   //
   // So when the live frontier offers NO card for a track that still has an open
   // session, rebuild the lesson that session is resting inside: recompute the
@@ -465,9 +447,10 @@ export function HomeFeed() {
   const order = kanjiTeachOrder(cfg.newKanjiOrder);
   const range = { min: cfg.lessonMinCost, max: cfg.lessonMaxCost };
   const lessonShown = resumeLesson(lesson, lessonRun, (h) => nextLesson(h));
-  const radicalLessonShown = resumeLesson(radicalLesson, radicalRun, (h) =>
-    nextRadicalLesson(h, order, range, RADICALS_PER_LESSON_DEFAULT),
-  );
+  // No radical track any more — radicals are woven into the kanji lesson (see
+  // kanji-lesson.ts), so the combined kanji card carries the resume fallback for
+  // both. That is why a resting radical-only set still resurfaces here: it lives
+  // in a kanji lesson, and kanjiLessonShown rebuilds it.
   const kanjiLessonShown = resumeLesson(kanjiLesson, kanjiRun, (h) =>
     nextKanjiLesson(h, order, range),
   );
@@ -500,7 +483,6 @@ export function HomeFeed() {
   // or discarded.
   const curriculumComplete =
     !lessonShown &&
-    !radicalLessonShown &&
     !kanjiLessonShown &&
     !wordLessonShown &&
     !(wordLock && wordsTrackStarted) &&
@@ -538,26 +520,14 @@ export function HomeFeed() {
         />
       ) : null}
 
-      {/* The radical track's next lesson, ABOVE kanji's — it runs a step ahead,
-          because a kanji is gated on its radical. When the next kanji group is
-          blocked by an unlearned radical, the kanji card below falls silent and
-          this one names the radicals to learn first. Same onStart as kanji: the
-          lesson IS its facts, all new, all taught. */}
-      {radicalLessonShown ? (
-        <NextRadicalLesson
-          lesson={radicalLessonShown}
-          onStart={startLesson}
-          onClaim={claim}
-          inSession={!!radicalRun}
-          onContinue={() => radicalRun && continueRun(radicalRun.id)}
-        />
-      ) : null}
-
-      {/* The lesson IS the session: its facts, all new, all taught — the same
-          onStart the kana card takes, now that the runtime speaks facts. A kanji
-          lesson's meaning facts are drillable the moment it's learned; the
-          reading facts a word later proves are the words track's business, not
-          this card's. */}
+      {/* The combined kanji-and-radicals lesson: its facts, all new, all taught —
+          the same onStart the kana card takes, now that the runtime speaks facts.
+          One card teaches the radical-only building blocks a set needs alongside
+          the kanji that use them. A kanji's meaning facts (and a radical's) are
+          drillable the moment they're learned; the reading facts a word later
+          proves are the words track's business, not this card's. There is no
+          separate radical card any more, so this one also carries the resume
+          fallback (kanjiLessonShown) for a resting radical-only set. */}
       {kanjiLessonShown ? (
         <NextKanjiLesson
           lesson={kanjiLessonShown}

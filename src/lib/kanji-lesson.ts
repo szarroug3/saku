@@ -45,10 +45,51 @@
 // 320-kanji lesson. Not reading load: readings are the words track's, and under
 // meaning-only they collapse the size back to a plain count. Draw+assembly is
 // the axis that actually varies per kanji AND is about this screen's work.
+//
+// RADICALS ARE WOVEN IN — ONE TRACK, NOT TWO
+// ==========================================
+// A kanji is built around a radical, and some radicals are ONLY ever building
+// blocks: 气 (steam) is the shape 気 is written around but is not itself a kanji
+// you would study on its own. The dedup (src/data/radicals.ts) already taught the
+// 116 radicals that ARE their own kanji once, on the kanji card ("Also radical
+// N"). What is left is the 98 radical-ONLY shapes, and they used to be a separate
+// "Radicals" track that led and gated the kanji track. They are no longer a
+// separate track: a radical-only component is pulled INTO THE SAME LESSON SET as
+// the first kanji that uses it, taught just before that kanji, so the learner
+// meets one track that mixes radicals and kanji rather than two that alternate.
+//
+// THE ORDERING INVARIANT, AND HOW THE PACKING KEEPS IT
+// ====================================================
+// A radical must never be taught after a kanji that uses it, and never wastefully
+// early either. Both fall out of ONE construction: the atom the packer greedily
+// fills a lesson with is not a bundle of kanji, it is a UNIT — a kanji bundle
+// with each of its not-yet-taught radical-only components placed immediately
+// before the kanji that first needs it (see `packUnits`). A unit is indivisible,
+// exactly as a bundle was, so:
+//
+//   - the radical rides in the SAME set as its first-using kanji, because they
+//     are the same unit and a unit is never split across a set boundary. If 気
+//     does not fit in a candidate set, 气 does not go there either — the whole
+//     unit moves to the set where 気 fits, so 气 is never stranded a set ahead of
+//     the kanji that reveals it.
+//   - the radical is ordered BEFORE that kanji within the set, because that is
+//     where `packUnits` puts it — component-first, so a kanji is never broken
+//     into a piece the learner has not seen.
+//
+// A radical is emitted ONCE, at its first consumer; later kanji filed under the
+// same radical find it already met. Radicals no kanji uses (the orphans, and any
+// left unconsumed by a non-default order) have no first consumer to ride in with,
+// so they are appended after the last kanji, for completeness — see `packUnits`.
+//
+// WHAT THE COUNT COUNTS. The card's position counts KANJI ("kanji 5–8 of 2,136"):
+// that number is a fact about Japanese and does not move. The woven radicals are
+// support the learner meets alongside the kanji, labelled as radicals on their
+// own tiles, not a second numbered progression — so there is no stale "of 98" and
+// nothing is double-counted. The orphan tail, being kanji-less, counts itself as
+// radicals with no invented total (see nextKanjiLesson).
 
 import { freshFacts, nextGroup } from "@/lib/budget";
 import type { LessonPosition } from "@/lib/lesson-position";
-import { kanjiRadicalKnown } from "@/lib/radical-known";
 import {
   KANJI_SUBJECT,
   PREREQUISITE_ONLY,
@@ -56,7 +97,18 @@ import {
   meaningFactId,
   orderRow,
 } from "@/data/kanji";
-import { radicalByGlyph } from "@/data/radicals";
+import {
+  isRadicalTaughtAsKanji,
+  radicalByGlyph,
+  radicalMeaningFactId,
+  radicalOfKanji,
+  radicalRow,
+  type RadicalRow,
+} from "@/data/radicals";
+import {
+  RADICAL_TEACHING_ORDER,
+  radicalConsumerCount,
+} from "@/lib/radical-order";
 import type { FactId, HistoryFile } from "@/types";
 
 /**
@@ -107,14 +159,95 @@ export function kanjiCost(c: string): number {
   return radicals.length + extra;
 }
 
+/**
+ * The draw+assembly cost of one radical-only shape.
+ *
+ * Same axis as `kanjiCost`, one rung down: a radical-only shape (气, 宀, ノ) is a
+ * shape to learn to draw and recognise, and it has no sub-component that is
+ * itself a taught kanji or radical to discount — so every stroke is drawn from
+ * scratch and the cost IS the stroke count. Small by nature (the 98 average ~4
+ * strokes), so weaving one into a lesson nudges the budget rather than blowing
+ * it. 0 for a number that names no radical, which packs as nothing.
+ */
+export function radicalCost(num: number): number {
+  return radicalRow(num)?.strokes ?? 0;
+}
+
+/**
+ * The radical-only component a kanji must meet before it — or null when there is
+ * none to teach separately.
+ *
+ * A kanji is filed under exactly one classical radical (radicalOfKanji). That
+ * radical is a separate prerequisite ONLY when it is a radical-only shape: a
+ * MERGED radical (一, 人, 水 …) IS its own kanji, taught in the order at the point
+ * it is first needed, so it never rides in as a component — it is already a
+ * kanji on some card. So this returns the filed-under radical exactly for the 98
+ * non-merged shapes (气 for 気, and the 8 both-role early ones like 火 for 点),
+ * and null otherwise. See isRadicalTaughtAsKanji in src/data/radicals.ts.
+ */
+function radicalPrereqOf(c: string): RadicalRow | null {
+  const rad = radicalOfKanji(c);
+  if (!rad || isRadicalTaughtAsKanji(rad.num)) return null;
+  return rad;
+}
+
+/**
+ * One item on a combined lesson card: a radical-only shape woven in, or a kanji.
+ *
+ * A single shape carries both roles' fields (the union is small and the card
+ * switches on `kind`), rather than two item types the card would branch on
+ * everywhere. `fact` is the one meaning fact learning it teaches — a radical's
+ * meaning, a kanji's meaning — and the order of items in a group is the order
+ * they are taught, each radical before the kanji that first needs it.
+ */
+export interface LessonItem {
+  /** "radical" for a radical-only shape pulled in as a component; "kanji" for a
+   * kanji from the order (which may ITSELF be a radical — see `alsoRadical`). */
+  kind: "radical" | "kanji";
+  /** The glyph to show — 气, 気. Radical:气 and kanji:気 are different entries. */
+  glyph: string;
+  /** The primary meaning, ready to print. */
+  meaning: string;
+  /** Draw+assembly cost of this one item — kanjiCost or radicalCost. */
+  cost: number;
+  /** The meaning fact this item teaches and is drilled on. */
+  fact: FactId;
+  /**
+   * The kanji this one is here FOR, when it is here for nothing else — 取, for
+   * 又. Null for a radical and for the ~2,130 kanji that are their own reason.
+   * See the KanjiCard note this replaces.
+   */
+  neededFor: string | null;
+  /**
+   * The Kangxi number when this KANJI is also a radical (乙 is 5, 水 is 85), so
+   * the card can label it "both". Null for a radical-only item (it already reads
+   * as a radical) and for the ~2,012 kanji that are not radicals.
+   */
+  alsoRadical: number | null;
+  /**
+   * How many jōyō kanji file under this RADICAL — the "why learn it" number a
+   * radical tile shows. Null for a kanji item (which is counted, not counted-in).
+   */
+  appearsIn: number | null;
+}
+
 /** One kanji lesson: the material, the cost, and the flag. */
 export interface KanjiLessonGroup {
+  /** The KANJI taught, in order — the spine the position counts. Radicals woven
+   * in are support and are not in here; see `items` for the full teach sequence. */
   chars: string[];
-  /** Meaning facts — what a kanji is DRILLABLE on the day it is taught. Its
-   * readings are learned later, in the words that prove them, so they are not
-   * in the lesson and do not size it. */
+  /**
+   * Every item taught, radicals and kanji interleaved in teach order: each
+   * radical-only component immediately before the first kanji that uses it. This
+   * is what the card renders and what the teach walk steps.
+   */
+  items: LessonItem[];
+  /** Meaning facts — what each item is DRILLABLE on the day it is taught, in
+   * teach order (a radical's meaning before the kanji that needs it). A kanji's
+   * readings are learned later, in the words that prove them, so they are not in
+   * the lesson and do not size it. */
   facts: FactId[];
-  /** Draw+assembly cost, summed over the lesson's kanji. */
+  /** Draw+assembly cost, summed over the lesson's items (radicals AND kanji). */
   cost: number;
   /**
    * The lesson is a single indivisible bundle that costs more than `max`. It is
@@ -144,9 +277,21 @@ export interface KanjiLessonGroup {
    * claim removes kanji from the middle of a run, which would make the span
    * describe material that isn't on the card; the group's span is the stable
    * answer to "where in the 2,136 am I", and the card prints the kanji anyway.
+   *
+   * For a KANJI-less orphan-tail group (radicals no kanji uses, taught after the
+   * whole order for completeness), `from`/`to` count that group among the tail's
+   * radicals instead — see `spine`.
    */
   from: number;
   to: number;
+  /**
+   * What `from`/`to` count. "kanji" for every ordinary group (radicals woven in
+   * are not counted; the kanji are the numbered spine, "of 2,136"). "radical" for
+   * the orphan tail, which has no kanji to count and so counts its own radicals
+   * with no invented total. The card reads this to choose the header noun and
+   * whether to print a denominator.
+   */
+  spine: "kanji" | "radical";
 }
 
 /**
@@ -214,17 +359,130 @@ function rootOf(c: string, at: ReadonlyMap<string, number>): string {
   return cur;
 }
 
+const WORDLESS: ReadonlySet<string> = new Set(PREREQUISITE_ONLY);
+
+/** One kanji as a lesson item. */
+function kanjiItem(c: string): LessonItem {
+  return {
+    kind: "kanji",
+    glyph: c,
+    meaning: kanjiRow(c)?.meanings[0] ?? "",
+    cost: kanjiCost(c),
+    fact: meaningFactId(c),
+    neededFor: WORDLESS.has(c) ? (orderRow(c)?.pulledFor ?? null) : null,
+    alsoRadical: radicalByGlyph(c)?.num ?? null,
+    appearsIn: null,
+  };
+}
+
+/** One radical-only shape as a lesson item — a component woven in before the
+ * kanji that needs it. */
+function radicalItem(r: RadicalRow): LessonItem {
+  return {
+    kind: "radical",
+    glyph: r.glyph,
+    meaning: r.meaning,
+    cost: radicalCost(r.num),
+    fact: radicalMeaningFactId(r.glyph),
+    neededFor: null,
+    alsoRadical: null,
+    appearsIn: radicalConsumerCount(r.num),
+  };
+}
+
 /**
- * Cut an order into lessons: greedy, fill toward `max`, never reorder.
+ * The indivisible ATOM the packer fills a lesson with: a kanji bundle, with each
+ * of its not-yet-taught radical-only components placed immediately before the
+ * kanji that first needs it. This is the whole of how the ordering invariant is
+ * kept — see the file header.
  *
- * The whole algorithm is one line of policy: add each bundle unless it would
- * push the current lesson over `max`, in which case close the lesson and start
- * the next one with it. That single rule already delivers the `min` guarantee —
- * a lesson only ends below `min` when the next bundle will not fit or the
- * material has run out, which are exactly the two exceptions the range promises.
- * So `min` is honoured by construction and needs no code of its own; it is the
- * floor the user is told about, and `clampLessonRange` is what keeps it coherent
- * with `max`.
+ * A radical is emitted ONCE, at its first consumer (tracked in `emitted` across
+ * the whole walk), so a later kanji filed under the same radical finds it already
+ * met and adds nothing. Because the component sits in the SAME unit as its
+ * first-using kanji, and a unit is never split by `packLessons`, the two always
+ * share a set and the component is never a set early — if the kanji does not fit
+ * a set, its component does not go there either.
+ *
+ * ORPHANS LAST. A radical no kanji in `order` consumes (the 16 orphans, plus any
+ * a non-default order leaves unconsumed) has no first-using kanji to ride in
+ * with. Those are appended after the last kanji, one per unit, in teaching order,
+ * so the shelf can still be completed and nothing is taught before its user.
+ *
+ * Exported for the packing tests, which assert the invariant against these atoms
+ * directly rather than trying to recover them from a packed lesson.
+ */
+export interface CurriculumUnit {
+  items: LessonItem[];
+  cost: number;
+}
+
+export function packUnits(order: readonly string[]): CurriculumUnit[] {
+  const units: CurriculumUnit[] = [];
+  // Radical numbers already placed — a radical rides in with its FIRST consumer
+  // and never again.
+  const emitted = new Set<number>();
+
+  for (const bundle of bundles(order)) {
+    const items: LessonItem[] = [];
+    for (const c of bundle) {
+      const rad = radicalPrereqOf(c);
+      if (rad && !emitted.has(rad.num)) {
+        emitted.add(rad.num);
+        items.push(radicalItem(rad));
+      }
+      items.push(kanjiItem(c));
+    }
+    units.push({ items, cost: items.reduce((n, it) => n + it.cost, 0) });
+  }
+
+  // THE ORPHAN TAIL — and only when the order is complete enough to have earned
+  // it. A TRUE orphan is a radical no jōyō kanji uses at all (radicalConsumerCount
+  // 0): the 16 shapes like 爿 瓜 韭 that index nothing. Those have no first-using
+  // kanji to ride in with, so they are taught after the whole order, for
+  // completeness, in teaching order (RADICAL_TEACHING_ORDER already puts them last
+  // in Kangxi number order).
+  //
+  // A radical that DOES have a jōyō consumer but whose consumer is absent from
+  // THIS order (a subset — or a one-kanji test pack) is NOT an orphan: nothing in
+  // this order uses it, so teaching it here would be teaching a component before
+  // any kanji that needs it, the very thing the weave avoids. So the tail is
+  // appended only once every consumed radical has been emitted — i.e. the order
+  // is the full jōyō, not a subset that happens to be missing most kanji. On a
+  // subset order the tail is simply empty, and the pack is just its kanji plus
+  // their woven components.
+  const allConsumedEmitted = RADICAL_TEACHING_ORDER.every(
+    (r) => radicalConsumerCount(r.num) === 0 || emitted.has(r.num),
+  );
+  if (allConsumedEmitted) {
+    for (const r of RADICAL_TEACHING_ORDER) {
+      if (radicalConsumerCount(r.num) !== 0 || emitted.has(r.num)) continue;
+      const it = radicalItem(r);
+      units.push({ items: [it], cost: it.cost });
+    }
+  }
+
+  return units;
+}
+
+/**
+ * Cut an order into lessons: greedy, fill toward `max`, never reorder, never
+ * split a unit.
+ *
+ * The whole algorithm is one line of policy: add each UNIT unless it would push
+ * the current lesson over `max`, in which case close the lesson and start the
+ * next one with it. That single rule already delivers the `min` guarantee — a
+ * lesson only ends below `min` when the next unit will not fit or the material
+ * has run out, which are exactly the two exceptions the range promises. So `min`
+ * is honoured by construction and needs no code of its own; it is the floor the
+ * user is told about, and `clampLessonRange` is what keeps it coherent with
+ * `max`.
+ *
+ * A unit is a kanji bundle plus its woven radicals (see `packUnits`), and it is
+ * the atom for the same reason the bundle was: splitting it would either separate
+ * a wordless part from its consumer or strand a radical a set ahead of the kanji
+ * that reveals it. So the "indivisible thing bigger than max becomes its own
+ * over-limit lesson" rule now protects the radical-plus-kanji unit, not just the
+ * bundle.
  *
  * Greedy and not optimal, on purpose. The order is load-bearing — parts before
  * wholes, everyday words first — and any packing clever enough to beat greedy
@@ -240,46 +498,62 @@ export function packLessons(
   range: LessonRange,
 ): KanjiLessonGroup[] {
   const { max } = range;
-  const packed: Array<{ chars: string[]; cost: number }> = [];
-  let chars: string[] = [];
+  const packed: Array<{ items: LessonItem[]; cost: number }> = [];
+  let items: LessonItem[] = [];
   let cost = 0;
 
-  for (const bundle of bundles(order)) {
-    const bundleCost = bundle.reduce((n, c) => n + kanjiCost(c), 0);
-    // `chars.length &&` is what makes a bundle indivisible: the first bundle of
-    // a lesson is always taken, whatever it costs, so one that is bigger than
-    // `max` on its own becomes its own over-limit lesson rather than being
-    // skipped forever. That is the ONLY way `max` is ever exceeded.
-    if (chars.length && cost + bundleCost > max) {
-      packed.push({ chars, cost });
-      chars = [];
+  for (const unit of packUnits(order)) {
+    // `items.length &&` is what makes a unit indivisible: the first unit of a
+    // lesson is always taken, whatever it costs, so one bigger than `max` on its
+    // own becomes its own over-limit lesson rather than being skipped forever.
+    // That is the ONLY way `max` is ever exceeded.
+    if (items.length && cost + unit.cost > max) {
+      packed.push({ items, cost });
+      items = [];
       cost = 0;
     }
-    chars = chars.concat(bundle);
-    cost += bundleCost;
+    items = items.concat(unit.items);
+    cost += unit.cost;
   }
-  if (chars.length) packed.push({ chars, cost });
+  if (items.length) packed.push({ items, cost });
 
-  // The span is a running sum rather than a lookup of each lesson's first kanji
-  // in `order`: the packer consumes the order front to back and every lesson is
-  // a contiguous run of it, so "how many kanji came before this lesson" IS the
-  // 0-based position of its first kanji. Counting is the cheaper statement of
-  // the same fact, and it cannot disagree with the packing it was counted from.
-  let seen = 0;
+  // The span is a running sum rather than a lookup: the packer consumes the order
+  // front to back and every lesson's kanji are a contiguous run of it, so "how
+  // many kanji came before this lesson" IS the 0-based position of its first
+  // kanji. The orphan tail has no kanji, so it counts its own radicals instead
+  // (spine "radical"), with no total to promise.
+  let seenKanji = 0;
+  let seenTailRadical = 0;
   return packed.map((p, i) => {
-    const from = seen + 1;
-    seen += p.chars.length;
+    const chars = p.items.filter((it) => it.kind === "kanji").map((it) => it.glyph);
+    let from: number;
+    let to: number;
+    let spine: "kanji" | "radical";
+    if (chars.length) {
+      from = seenKanji + 1;
+      seenKanji += chars.length;
+      to = seenKanji;
+      spine = "kanji";
+    } else {
+      // Orphan-tail lesson: all radicals, counted among the tail.
+      from = seenTailRadical + 1;
+      seenTailRadical += p.items.length;
+      to = seenTailRadical;
+      spine = "radical";
+    }
     return {
-      chars: p.chars,
-      facts: p.chars.map(meaningFactId),
+      chars,
+      items: p.items,
+      facts: p.items.map((it) => it.fact),
       cost: p.cost,
-      // Over only ever means "one bundle, too big to split". A multi-bundle
-      // lesson can't exceed `max`, because the bundle that would have taken it
-      // over was pushed to the next lesson instead.
+      // Over only ever means "one unit, too big to split". A multi-unit lesson
+      // can't exceed `max`, because the unit that would have taken it over was
+      // pushed to the next lesson instead.
       over: p.cost > max,
       index: i + 1,
       from,
-      to: seen,
+      to,
+      spine,
     };
   });
 }
@@ -293,81 +567,54 @@ export function kanjiCurriculum(
   return packLessons(order, range);
 }
 
-/** One kanji, ready to render. */
-export interface KanjiCard {
-  c: string;
-  /** The primary meaning. The kanji's own row, not a restatement of it. */
-  meaning: string;
-  /** Draw+assembly cost of this one kanji. */
-  cost: number;
-  /**
-   * The kanji this one is here FOR, when it is here for nothing else — 取, for
-   * 又. Null for nearly all of them, which are their own reason.
-   *
-   * A screen may say so and should: this kanji appears in no word the app ships,
-   * so presenting it as a lesson like any other is a small lie. Because bundling
-   * keeps the two together, the kanji named here is always ON THE SAME CARD — so
-   * the copy can point at it rather than promise a payoff in some later sitting.
-   */
-  neededFor: string | null;
-  /**
-   * The Kangxi number when this kanji is ALSO a radical — 乙 is radical 5, 水 is
-   * 85 — so the card can say the character plays both roles. Null for the ~2,012
-   * kanji that are not radicals.
-   *
-   * This is the visible half of the dedup: a both-roles character used to get a
-   * radical card AND a kanji card, and now the 116 whose kanji is their radical's
-   * first consumer are taught once, here, with this line standing in for the
-   * radical card they no longer need (see isRadicalTaughtAsKanji). The 8 that
-   * still keep an early radical card also carry the number — it is simply true
-   * that they are radicals, and the line reads the same either way.
-   */
-  alsoRadical: number | null;
-}
-
-/** The next kanji lesson, narrowed to what you have not seen. */
+/** The next lesson, narrowed to what you have not seen — a mix of radicals and
+ * kanji, one combined track. */
 export interface KanjiLesson {
   group: KanjiLessonGroup;
   /**
-   * Where you are, in KANJI — "5–8 of 2,136". See lesson-position.ts for why
-   * the card counts kanji and not lessons.
+   * Where you are — "kanji 5–8 of 2,136". The card counts KANJI and not lessons
+   * (see lesson-position.ts) and not the radicals woven in: those are building
+   * blocks the learner meets alongside the kanji, labelled as radicals on their
+   * own tiles, not a second numbered progression. That keeps the number a fact
+   * about Japanese (the 2,136 does not move and is not padded to 2,234), avoids a
+   * stale "of 98", and double-counts nothing.
    *
-   * DOES THE 2,136 INCLUDE RADICALS TAUGHT ALONG THE WAY? Yes, and there is
-   * nothing extra to add, because this track has no radical pre-cards. A
-   * "radical" appears in exactly two places and neither mints a lesson item:
-   *
-   *   - `kanjiCost` treats a component that is itself a jōyō kanji as costing 1
-   *     instead of its strokes. That component is a kanji with its own card,
-   *     already in the 2,136, and the order teaches it before the kanji that
-   *     leans on it. It is a cost term, not a card.
-   *   - `PREREQUISITE_ONLY` — 6 kanji pulled forward only because a later kanji
-   *     needs them (又, for 取). Still jōyō, still in the 2,136, and bundling
-   *     keeps them on their consumer's card rather than giving them one.
-   *
-   * Bare strokes (｜ ノ 丶) are not kanji, have no KANJIDIC2 entry and are never
-   * taught or drilled; they are drawn, and `kanjiCost` counts them as strokes.
-   * So the order's length is the whole of what the track ever teaches, and a
-   * separate radical count would have nothing to count.
+   * DOES THE 2,136 SWALLOW THE RADICALS? It doesn't count them, and it doesn't
+   * need to. A radical woven in is its own tile with its own "radical" label; the
+   * position speaks for the kanji spine, and `spine` says so. The orphan tail
+   * (radicals no kanji uses) has no kanji to count, so there `spine` is "radical"
+   * and `total` is null — a position with no invented denominator.
    */
   position: LessonPosition;
-  /** The group's kanji, minus any already seen or claimed — so a half-claimed
-   * lesson yields its remaining half rather than being re-taught whole. */
-  cards: KanjiCard[];
+  /** What the position counts, so the card can pick the header noun ("kanji" vs
+   * "radicals") and whether to print a total. Mirrors `group.spine`. */
+  spine: "kanji" | "radical";
+  /** The group's items, minus any already seen or claimed — so a half-claimed
+   * lesson yields its remaining half rather than being re-taught whole. Radicals
+   * and kanji, in teach order (each radical before the kanji that needs it). */
+  cards: LessonItem[];
   facts: FactId[];
-  /** Draw+assembly cost, summed over `cards` (the remaining kanji), not the
+  /** Draw+assembly cost, summed over `cards` (the remaining items), not the
    * whole group. */
   cost: number;
-  /** The group is a single indivisible bundle bigger than the user's max. */
+  /** The group is a single indivisible unit bigger than the user's max. */
   over: boolean;
 }
 
 /**
- * The next kanji lesson, or null when the curriculum is done.
+ * The next lesson, or null when the curriculum is done.
  *
  * A function of history and the two curriculum settings — no cursor, here or on
  * disk, exactly as src/lib/lesson.ts does it for kana. `order` and `range` are
  * config, not state: the same history and the same settings always name the
  * same lesson, so the card and any session that starts it cannot disagree.
+ *
+ * NO RADICAL GATE ANYMORE. A radical is woven into the group before the kanji it
+ * serves (see packUnits), so there is nothing to wait on: the group's facts carry
+ * the radical's meaning ahead of the kanji's, and freshFacts/nextGroup select the
+ * first group with anything left exactly as they do for a pure-kanji group. A
+ * radical the learner already knows is simply not fresh, so it drops off the card
+ * while its kanji stay — the same half-claimed behaviour a kanji gets.
  */
 export function nextKanjiLesson(
   history: HistoryFile,
@@ -385,40 +632,24 @@ export function nextKanjiLesson(
   const group = groups.find((g) => g.facts.includes(facts[0]));
   if (!group) return null;
 
-  // THE RADICAL GATE. A kanji is not taught until the radical it is filed under
-  // is known, exactly as a word is not taught until its kanji are (word-lesson.ts
-  // returns null the same way). If any kanji in the next group is still waiting on
-  // its radical, the kanji track shows nothing new: the radical track leads,
-  // teaches those radicals (radical-lesson.ts dueRadicals reads this same group),
-  // and the group unlocks on the next pass. Order is preserved because the gate
-  // blocks the FIRST fresh group rather than skipping to a later teachable one.
-  if (group.chars.some((c) => !kanjiRadicalKnown(c, history))) return null;
-
   const left = new Set(facts);
-  const cards = group.chars.filter((c) => left.has(meaningFactId(c))).map(toCard);
+  const cards = group.items.filter((it) => left.has(it.fact));
 
   return {
     group,
-    // The denominator is READ OFF the order rather than written down as 2,136,
-    // so an order that ever ships a subset (or a 2,137th jōyō revision) counts
-    // itself instead of contradicting a constant.
-    position: { from: group.from, to: group.to, total: order.length },
+    // The kanji spine reads its denominator off the order (so a subset order, or
+    // a 2,137th jōyō revision, counts itself); the orphan tail has no honest
+    // total to give and prints none.
+    position: {
+      from: group.from,
+      to: group.to,
+      total: group.spine === "kanji" ? order.length : null,
+    },
+    spine: group.spine,
     cards,
     facts,
     cost: cards.reduce((n, card) => n + card.cost, 0),
     over: group.over,
-  };
-}
-
-const WORDLESS: ReadonlySet<string> = new Set(PREREQUISITE_ONLY);
-
-function toCard(c: string): KanjiCard {
-  return {
-    c,
-    meaning: kanjiRow(c)?.meanings[0] ?? "",
-    cost: kanjiCost(c),
-    neededFor: WORDLESS.has(c) ? (orderRow(c)?.pulledFor ?? null) : null,
-    alsoRadical: radicalByGlyph(c)?.num ?? null,
   };
 }
 

@@ -27,7 +27,7 @@ import {
   wordHost,
 } from "./grammar-lesson.ts";
 import { LESSON_RANGE_DEFAULT, nextKanjiLesson } from "./kanji-lesson.ts";
-import { nextRadicalLesson } from "./radical-lesson.ts";
+import { RADICAL_TEACHING_ORDER } from "./radical-order.ts";
 import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { nextLesson } from "./lesson.ts";
@@ -47,25 +47,6 @@ const KANJI_READY: HistoryFile = {
   facts: {},
   claims: Object.fromEntries(
     RADICALS.map((r) => [radicalMeaningFactId(r.glyph), Date.UTC(2026, 0, 1)]),
-  ) as HistoryFile["claims"],
-};
-/**
- * A learner who has cleared the very first kanji lesson — so the NEXT kanji group
- * is blocked by a real (non-merged) radical and the radical track has a first
- * lesson to hand out.
- *
- * Day one is no longer a radical lesson: the opening kanji (人 大 日 一) ARE their
- * own radicals and are taught as kanji, so a fresh learner has nothing due on the
- * radical track. The first genuine radical card is the one gating the second
- * group. Claim the first kanji lesson's facts and that gate appears.
- */
-const RADICAL_READY: HistoryFile = {
-  sessions: [],
-  facts: {},
-  claims: Object.fromEntries(
-    nextKanjiLesson(FRESH, kanjiTeachOrder("everyday"), LESSON_RANGE_DEFAULT)!.facts.map(
-      (f) => [f, Date.UTC(2026, 0, 1)],
-    ),
   ) as HistoryFile["claims"],
 };
 const WORD_READY: HistoryFile = {
@@ -95,12 +76,11 @@ const GRAMMAR_READY: HistoryFile = {
  * them. */
 const TEACH_SETS: Record<string, FactId[]> = {
   kana: nextLesson(FRESH)!.facts,
-  radical: nextRadicalLesson(
-    RADICAL_READY,
-    kanjiTeachOrder("everyday"),
-    LESSON_RANGE_DEFAULT,
-    6,
-  )!.facts,
+  // Radicals no longer have a track of their own — they are woven into the kanji
+  // sets (see kanji-lesson.ts). The step model still has to render a radical item,
+  // so exercise it on a teach set built straight from the radical teaching order:
+  // the itemsFromFacts grouping is what these tests are about, not the scheduler.
+  radical: RADICAL_TEACHING_ORDER.slice(0, 6).map((r) => radicalMeaningFactId(r.glyph)),
   kanji: nextKanjiLesson(
     KANJI_READY,
     kanjiTeachOrder("everyday"),

@@ -3,17 +3,19 @@
 //
 // NO NEW PROGRESSION SYSTEM, AND THERE WAS NO NEED FOR ONE
 // =======================================================
-// The app already answers "has this track been opened" four times over —
-// hasStartedRadicalTrack, hasStartedWordTrack, hasStartedGrammarTrack,
-// hasStartedTransitivityTrack — each of them the same shape: is any curriculum
-// item of this track non-fresh in history. There is no cursor and no flag on
-// disk anywhere in this app; history IS the cursor. This module generalises that
-// existing answer to all six tracks rather than adding a seventh thing to keep in
-// step.
+// The app already answers "has this track been opened" several times over —
+// hasStartedWordTrack, hasStartedGrammarTrack, hasStartedTransitivityTrack —
+// each of them the same shape: is any curriculum item of this track non-fresh in
+// history. There is no cursor and no flag on disk anywhere in this app; history
+// IS the cursor. This module generalises that existing answer to all the tracks
+// rather than adding another thing to keep in step. (Radicals no longer have a
+// SCHEDULING track of their own — they are woven into the kanji sets, see
+// kanji-lesson.ts — but "radical" is still a TrackId with an intro card, so the
+// first woven radical still opens with an explanation of what a radical is.)
 //
-// It reads history the other way round from those four, though, and the
-// difference is the point. They walk the CURRICULUM asking history about each
-// item (6,213 words, 214 radicals). This walks HISTORY asking which track each
+// It reads history the other way round from those, though, and the difference is
+// the point. They walk the CURRICULUM asking history about each item (6,213
+// words). This walks HISTORY asking which track each
 // fact belongs to, because the question here is "which tracks has this learner
 // touched at all", and history is the smaller of the two by orders of magnitude
 // on the run that matters — the first lesson, where history is nearly empty and

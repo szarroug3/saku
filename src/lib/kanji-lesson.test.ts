@@ -14,6 +14,13 @@
 // So these tests pin the cost arithmetic to the numbers the owner verified by
 // hand, then assert SIZE and BOUNDARY over the whole order.
 //
+// RADICALS ARE WOVEN IN NOW, so this file also owns the combined track's ONE
+// hard promise: a radical-only component is taught in the SAME set as the first
+// kanji that uses it, ordered before that kanji, and never in a set that kanji
+// is not also in. See "the ordering invariant" below — the reason the radical
+// track no longer has a test file of its own is that its one remaining rule is a
+// property of THIS packer.
+//
 // The numbers are counted off the data, with the exceptions typed in on purpose:
 // the seven cost examples (the owner verified them by hand — if they move, the
 // cost function moved) and day one being 人 大 日 一 (the published head of the
@@ -23,8 +30,18 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { KANJI_ORDER, PREREQUISITE_ONLY, kanjiRow, orderRow } from "../data/kanji.ts";
-import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
+import {
+  KANJI_ORDER,
+  PREREQUISITE_ONLY,
+  kanjiRow,
+  meaningFactId,
+  orderRow,
+} from "../data/kanji.ts";
+import {
+  isRadicalTaughtAsKanji,
+  radicalMeaningFactId,
+  radicalOfKanji,
+} from "../data/radicals.ts";
 import {
   clampLessonRange,
   kanjiCost,
@@ -32,36 +49,25 @@ import {
   LESSON_RANGE_DEFAULT,
   nextKanjiLesson,
   packLessons,
+  packUnits,
 } from "./kanji-lesson.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 const ORDER: readonly string[] = KANJI_ORDER.map((o) => o.c);
 const RANGE = LESSON_RANGE_DEFAULT;
 const GROUPS = kanjiCurriculum(ORDER, RANGE);
-
-// RADICALS KNOWN BY DEFAULT. This file tests the kanji PACKING — cost, boundary,
-// order — and a kanji now waits on its radical (the radical gate in
-// nextKanjiLesson), so without this every lesson would be blocked and every
-// packing assertion would read null. The gate itself is tested in
-// radical-lesson.test.ts; here it is satisfied so the packing shows through.
-const RADICAL_CLAIMS: Record<string, number> = Object.fromEntries(
-  RADICALS.map((r) => [radicalMeaningFactId(r.glyph), Date.UTC(2026, 0, 1)]),
-);
+/** The groups that teach kanji — every group but the kanji-less orphan tail. The
+ * spans and the "of 2,136" position are about these. */
+const KANJI_GROUPS = GROUPS.filter((g) => g.spine === "kanji");
 
 function history(over: Partial<HistoryFile> = {}): HistoryFile {
-  return {
-    sessions: [],
-    facts: {},
-    ...over,
-    claims: {
-      ...RADICAL_CLAIMS,
-      ...(over.claims ?? {}),
-    } as HistoryFile["claims"],
-  };
+  return { sessions: [], facts: {}, ...over };
 }
 
 /** Claim these facts as known — the cheap way to move history forward without
- * inventing a session. Mirrors what /api/claim writes. */
+ * inventing a session. Mirrors what /api/claim writes. There is no radical gate
+ * to satisfy anymore, so nothing is pre-claimed: radicals are woven into the
+ * groups and ride along in their own facts. */
 function claiming(facts: readonly FactId[]): HistoryFile {
   const claims: Record<string, number> = {};
   for (const f of facts) claims[f] = Date.UTC(2026, 0, 1);
@@ -71,6 +77,14 @@ function claiming(facts: readonly FactId[]): HistoryFile {
 /** Which lesson a kanji is in, at the default range. */
 function lessonOf(c: string): number {
   return GROUPS.find((g) => g.chars.includes(c))!.index;
+}
+
+/** The radical-only component a kanji must meet first, or null. A merged radical
+ * IS its own kanji and is never a separate prerequisite (see radicalPrereqOf in
+ * kanji-lesson.ts, which this mirrors for the tests). */
+function radPrereqGlyph(c: string): string | null {
+  const rad = radicalOfKanji(c);
+  return rad && !isRadicalTaughtAsKanji(rad.num) ? rad.glyph : null;
 }
 
 describe("cost is draw + assembly, and it matches the owner's own numbers", () => {
@@ -129,24 +143,27 @@ describe("the range is made safe, and max can never fall below min", () => {
 });
 
 describe("day one", () => {
-  test("is 人 大 日 一 — cheap because they're built from little", () => {
+  test("is 人 大 日 一 — cheap, and no radical pre-cards", () => {
     const lesson = nextKanjiLesson(history(), ORDER, RANGE);
     assert.ok(lesson);
     assert.deepEqual(
-      lesson.cards.map((c) => c.c),
+      lesson.cards.map((c) => c.glyph),
       ["人", "大", "日", "一"],
     );
+    // Every day-one kanji is its own radical's first consumer, so it is taught as
+    // a kanji (labelled "also radical N"), never as a separate radical tile: day
+    // one is kanji, not a wall of radical meanings.
+    for (const card of lesson.cards) assert.equal(card.kind, "kanji");
     // 2 + 3 + 4 + 1 = 10, inside [6,12]. Gentle for the right reason: no
     // readings anywhere in this number.
     assert.equal(lesson.cost, 10);
     assert.equal(lesson.group.index, 1);
     assert.equal(lesson.over, false);
+    assert.equal(lesson.spine, "kanji");
   });
 });
 
 describe("the curriculum is sane end to end, not just at the start", () => {
-  const costs = GROUPS.map((g) => g.cost);
-
   test("every kanji in the order is in exactly one lesson, in order", () => {
     assert.deepEqual(
       GROUPS.flatMap((g) => g.chars),
@@ -154,37 +171,39 @@ describe("the curriculum is sane end to end, not just at the start", () => {
     );
   });
 
-  test("the only lessons over max are single indivisible bundles", () => {
-    const over = GROUPS.filter((g) => g.cost > RANGE.max);
+  test("the only lessons over max are single indivisible units", () => {
     // Every over-max lesson is flagged, and flagged only for that reason.
     for (const g of GROUPS) assert.equal(g.over, g.cost > RANGE.max);
-    // 鬱 (21) is the worst, and it is one kanji. Named so a packing change that
-    // quietly lets a normal lesson run to 21 has to come through this line.
-    assert.equal(Math.max(...costs), 21);
-    assert.ok(over.some((g) => g.chars.length === 1 && g.chars[0] === "鬱"));
+    // And an over-max lesson is always ONE unit — a kanji bundle with its woven
+    // radicals, too big to split — never a lesson the packer let grow past max.
+    const counts = unitsPerGroup(GROUPS, packUnits(ORDER));
+    GROUPS.forEach((g, i) => {
+      if (g.over) assert.equal(counts[i], 1, `over lesson ${g.index} is >1 unit`);
+    });
   });
 
   test("a lesson only ends below min when forced", () => {
     // Greedy-to-max gives the min guarantee for free: a sub-min lesson exists
-    // only because the next bundle wouldn't fit, or the material ran out. So a
-    // sub-min lesson must be immediately followed by a bundle that would have
-    // taken it over max — or be the very last lesson.
+    // only because the next unit wouldn't fit, or the material ran out. So a
+    // sub-min lesson must be immediately followed by a unit that would have taken
+    // it over max — or be the very last lesson.
+    const firstUnitCost = firstUnitCostPerGroup(GROUPS, packUnits(ORDER));
     for (let i = 0; i < GROUPS.length; i++) {
       const g = GROUPS[i];
       if (g.cost >= RANGE.min) continue;
       const next = GROUPS[i + 1];
       assert.ok(
-        !next || g.cost + firstBundleCost(next) > RANGE.max,
+        !next || g.cost + firstUnitCost[i + 1] > RANGE.max,
         `lesson ${g.index} is under min for no reason`,
       );
     }
   });
 });
 
-describe("a bundle is the atom, and it is never split", () => {
-  test("bundles are contiguous runs, so bundling cannot reorder", () => {
+describe("a unit is the atom, and it is never split", () => {
+  test("kanji are contiguous runs, so bundling cannot reorder", () => {
     const at = new Map(ORDER.map((c, i) => [c, i]));
-    for (const g of GROUPS) {
+    for (const g of KANJI_GROUPS) {
       const seats = g.chars.map((c) => at.get(c)!);
       assert.deepEqual(
         seats,
@@ -194,13 +213,21 @@ describe("a bundle is the atom, and it is never split", () => {
     }
   });
 
-  test("nothing is left over: every kanji is in exactly one lesson", () => {
-    const seen = new Set(GROUPS.flatMap((g) => g.chars));
-    assert.equal(seen.size, ORDER.length);
+  test("packing loses no unit and reorders none", () => {
+    // The lessons' items, concatenated, ARE the units' items concatenated — same
+    // members, same order. A group is always a whole number of units (the helper
+    // asserts it), which is what "never split a unit" means.
+    const units = packUnits(ORDER);
+    assert.deepEqual(
+      GROUPS.flatMap((g) => g.items.map((it) => `${it.kind}:${it.glyph}`)),
+      units.flatMap((u) => u.items.map((it) => `${it.kind}:${it.glyph}`)),
+    );
   });
 
-  test("a bundle bigger than max is its own lesson, never dropped", () => {
-    // 鬱 alone is 21 > 12. It must be a lesson, not skipped for not fitting.
+  test("a unit bigger than max is its own lesson, never dropped", () => {
+    // 鬱 alone is 21 > 12. It must be a lesson, not skipped for not fitting. A
+    // one-kanji order teaches no orphan tail (its other radicals' kanji aren't
+    // present), so this is exactly one lesson.
     const solo = packLessons(["鬱"], RANGE);
     assert.equal(solo.length, 1);
     assert.deepEqual(solo[0].chars, ["鬱"]);
@@ -221,40 +248,27 @@ describe("a wordless part never leaves the kanji that justifies it", () => {
     }
   });
 
-  test("a consumer that needs two parts keeps both", () => {
-    // 取 needs 又 (and 耳): all in one lesson.
-    const l = GROUPS[lessonOf("又") - 1];
-    assert.ok(l.chars.includes("又"));
-    assert.ok(l.chars.includes("取"));
-  });
-
   test("the card says what a part is for, and names it", () => {
     const consumer = orderRow("又")?.pulledFor;
     assert.ok(consumer);
     const lesson = nextKanjiLesson(claiming(lessonsBefore("又")), ORDER, RANGE);
     assert.ok(lesson);
-    const mata = lesson.cards.find((c) => c.c === "又");
+    const mata = lesson.cards.find((c) => c.glyph === "又");
     assert.ok(mata, "又 is not in its own lesson");
+    assert.equal(mata.kind, "kanji");
     assert.equal(mata.neededFor, consumer);
     // The thing it names is on the same card, which is what lets the copy point
     // at it rather than promise a payoff in some later sitting.
-    assert.ok(lesson.cards.some((c) => c.c === consumer));
+    assert.ok(lesson.cards.some((c) => c.glyph === consumer));
   });
 
   test("a part with no reading is a card with a meaning, not a broken one", () => {
-    // Every wordless part has a meaning to render. If one ever doesn't, the card
-    // is a bare glyph, and this is the line that says so.
     for (const c of PREREQUISITE_ONLY) {
       assert.ok(kanjiRow(c)?.meanings[0], `${c} has no meaning to render`);
     }
   });
 
   test("KANJIDIC2's radical metadata never reaches the card", () => {
-    // 18 kanji carry a "fishhook radical (no. 5)" style gloss in `meanings` —
-    // catalogue metadata, not a definition. It is never FIRST, which is the only
-    // reason the card is safe: it shows meanings[0]. Asserted over the whole
-    // subject, because the day it stops being true the card prints a catalogue
-    // number as a meaning.
     const junk = /radical \(no\. \d+\)/;
     for (const c of ORDER) {
       const first = kanjiRow(c)?.meanings[0];
@@ -263,11 +277,127 @@ describe("a wordless part never leaves the kanji that justifies it", () => {
   });
 });
 
+// THE ORDERING INVARIANT — the one hard promise of the combined track.
+// ====================================================================
+// A radical-only component is introduced in the SAME set as the first kanji that
+// uses it, ordered before that kanji, and never in a set that kanji is not also
+// in. These are the lines that prove it, over the real curriculum at several
+// lesson lengths (a tighter max splits harder and is where a stranded radical
+// would show).
+describe("the ordering invariant: a radical rides in with its first-using kanji", () => {
+  const RANGES = [RANGE, { min: 3, max: 6 }, { min: 1, max: 2 }];
+
+  for (const r of RANGES) {
+    describe(`at range {min:${r.min}, max:${r.max}}`, () => {
+      const groups = kanjiCurriculum(ORDER, r);
+      // Where each item sits: group index and position within the group.
+      const loc = new Map<string, { g: number; i: number }>();
+      groups.forEach((g, gi) =>
+        g.items.forEach((it, ii) => loc.set(`${it.kind}:${it.glyph}`, { g: gi, i: ii })),
+      );
+      // Each non-merged radical's FIRST consumer: the earliest kanji in the order
+      // filed under it.
+      const firstConsumer = new Map<string, string>();
+      for (const c of ORDER) {
+        const g = radPrereqGlyph(c);
+        if (g && !firstConsumer.has(g)) firstConsumer.set(g, c);
+      }
+
+      test("no radical is ever taught after a kanji that uses it", () => {
+        for (const c of ORDER) {
+          const rg = radPrereqGlyph(c);
+          if (!rg) continue;
+          const radLoc = loc.get(`radical:${rg}`);
+          const kanjiLoc = loc.get(`kanji:${c}`)!;
+          assert.ok(radLoc, `radical ${rg} (needed by ${c}) was never taught`);
+          // Earlier set, or same set but an earlier tile — never later.
+          assert.ok(
+            radLoc.g < kanjiLoc.g || (radLoc.g === kanjiLoc.g && radLoc.i < kanjiLoc.i),
+            `radical ${rg} is taught after ${c}, which uses it`,
+          );
+        }
+      });
+
+      test("a radical is in the SAME set as its first-using kanji, before it", () => {
+        // The coordinator's explicit ask: never strand a radical in a set that
+        // lacks the kanji that first uses it. 气 does not go into a set unless 気
+        // is in that same set.
+        for (const [rg, consumer] of firstConsumer) {
+          const radLoc = loc.get(`radical:${rg}`)!;
+          const consumerLoc = loc.get(`kanji:${consumer}`)!;
+          assert.equal(
+            radLoc.g,
+            consumerLoc.g,
+            `radical ${rg} is in a different set from its first user ${consumer}`,
+          );
+          assert.ok(
+            radLoc.i < consumerLoc.i,
+            `radical ${rg} is not ordered before its first user ${consumer}`,
+          );
+        }
+      });
+
+      test("every radical-only shape is taught exactly once", () => {
+        const counts = new Map<string, number>();
+        for (const g of groups)
+          for (const it of g.items)
+            if (it.kind === "radical")
+              counts.set(it.glyph, (counts.get(it.glyph) ?? 0) + 1);
+        for (const [glyph, n] of counts)
+          assert.equal(n, 1, `radical ${glyph} taught ${n} times`);
+      });
+
+      test("group facts are in teach order: a radical's fact precedes its kanji's", () => {
+        // The teach walk steps facts in order, so a radical's meaning fact must
+        // come before the fact of any kanji in the same group that uses it.
+        for (const g of groups) {
+          const factPos = new Map<FactId, number>();
+          g.facts.forEach((f, i) => factPos.set(f, i));
+          for (const it of g.items) {
+            if (it.kind !== "kanji") continue;
+            const rg = radPrereqGlyph(it.glyph);
+            if (!rg) continue;
+            const radFact = radicalMeaningFactId(rg);
+            if (!factPos.has(radFact)) continue; // taught in an earlier set
+            assert.ok(
+              factPos.get(radFact)! < factPos.get(meaningFactId(it.glyph))!,
+              `radical ${rg}'s fact is after ${it.glyph}'s in its group`,
+            );
+          }
+        }
+      });
+    });
+  }
+});
+
+describe("the combined card shows radicals, labelled, before their kanji", () => {
+  test("the first set that needs a radical teaches it as a radical tile", () => {
+    // The first group that carries a radical tile. Claim everything before it,
+    // so nextKanjiLesson hands exactly that set back — the surfacing path the card
+    // takes. The radical must be a radical-kind item, and its first-using kanji
+    // must be on the same card, after it.
+    const targetIndex = GROUPS.findIndex((g) =>
+      g.items.some((it) => it.kind === "radical"),
+    );
+    assert.ok(targetIndex > 0, "some set weaves in a radical");
+    const before = GROUPS.slice(0, targetIndex).flatMap((g) => g.facts);
+    const lesson = nextKanjiLesson(claiming(before), ORDER, RANGE);
+    assert.ok(lesson);
+    const rad = lesson.cards.find((c) => c.kind === "radical");
+    assert.ok(rad, "the surfaced set carries the woven radical");
+    const consumer = ORDER.find((c) => radPrereqGlyph(c) === rad.glyph)!;
+    const radIdx = lesson.cards.findIndex((c) => c.kind === "radical" && c.glyph === rad.glyph);
+    const kanjiIdx = lesson.cards.findIndex((c) => c.kind === "kanji" && c.glyph === consumer);
+    assert.ok(kanjiIdx >= 0, `${consumer} (uses ${rad.glyph}) is not on the same card`);
+    assert.ok(radIdx < kanjiIdx, `${rad.glyph} is not before ${consumer} on the card`);
+    assert.ok(rad.meaning.length > 0, "a radical tile has a meaning to show");
+  });
+});
+
 describe("the lesson length is a setting, and the packing follows it", () => {
   test("a tighter max makes more, smaller lessons", () => {
     const tight = kanjiCurriculum(ORDER, { min: 3, max: 6 });
     assert.ok(tight.length > GROUPS.length);
-    // Nothing over 6 except an indivisible bundle, and those are flagged.
     for (const g of tight) assert.equal(g.over, g.cost > 6);
   });
 
@@ -277,35 +407,30 @@ describe("the lesson length is a setting, and the packing follows it", () => {
       max: 8,
     });
     assert.ok(lesson);
-    assert.ok(lesson.cards.some((c) => c.c === "鬱"));
+    assert.ok(lesson.cards.some((c) => c.glyph === "鬱"));
     assert.equal(lesson.over, true);
     assert.ok(lesson.cost > 8);
   });
 });
 
 // The card says "kanji 5–8 of 2,136" and not "lesson 1 of 1068", and the span
-// is only meaningful if it lines up exactly with the order it indexes into.
-// These are the assertions that keep it honest: a span that drifted by one, or
-// that described a lesson's neighbours, would still type-check and would still
-// render a plausible-looking number.
+// is only meaningful if it lines up exactly with the order it indexes into. The
+// radicals woven in are NOT counted here: the kanji are the numbered spine, the
+// radicals are building blocks shown alongside.
 describe("the position counts KANJI, and the spans tile the order exactly", () => {
   test("the spans are contiguous, 1-based, and end at the order's length", () => {
-    assert.equal(GROUPS[0].from, 1);
-    assert.equal(GROUPS[GROUPS.length - 1].to, ORDER.length);
-    for (let i = 0; i < GROUPS.length; i++) {
-      const g = GROUPS[i];
-      // The span is exactly as wide as the lesson is — this is what makes it a
-      // count of kanji rather than of anything else.
+    assert.equal(KANJI_GROUPS[0].from, 1);
+    assert.equal(KANJI_GROUPS[KANJI_GROUPS.length - 1].to, ORDER.length);
+    for (let i = 0; i < KANJI_GROUPS.length; i++) {
+      const g = KANJI_GROUPS[i];
       assert.equal(g.to - g.from + 1, g.chars.length, `lesson ${g.index} span`);
-      if (i > 0) assert.equal(g.from, GROUPS[i - 1].to + 1, `gap before ${g.index}`);
+      if (i > 0)
+        assert.equal(g.from, KANJI_GROUPS[i - 1].to + 1, `gap before ${g.index}`);
     }
   });
 
   test("a span names the lesson's own kanji, not its neighbours'", () => {
-    // The span is computed by counting, and the order is indexed separately.
-    // If bundling ever reordered (the one thing the packer may not do), these
-    // two ways of naming the same kanji would stop agreeing.
-    for (const g of GROUPS) {
+    for (const g of KANJI_GROUPS) {
       assert.deepEqual(ORDER.slice(g.from - 1, g.to), g.chars, `lesson ${g.index}`);
     }
   });
@@ -317,25 +442,45 @@ describe("the position counts KANJI, and the spans tile the order exactly", () =
   });
 
   test("the total is the material and does not move when lesson length does", () => {
-    // The whole point. 1068 lessons at max 12 and 1793 at max 6 are both true
-    // and neither is sayable; 2,136 kanji is true under either.
     const tight = kanjiCurriculum(ORDER, { min: 3, max: 6 });
+    const tightKanji = tight.filter((g) => g.spine === "kanji");
     assert.notEqual(tight.length, GROUPS.length);
-    assert.equal(tight[tight.length - 1].to, GROUPS[GROUPS.length - 1].to);
+    assert.equal(tightKanji[tightKanji.length - 1].to, ORDER.length);
     assert.equal(
       nextKanjiLesson(history(), ORDER, { min: 3, max: 6 })!.position.total,
       nextKanjiLesson(history(), ORDER, RANGE)!.position.total,
     );
   });
+});
 
-  test("2,136 covers the radicals too — the track has no radical pre-cards", () => {
-    // PREREQUISITE_ONLY kanji (又, for 取) are pulled forward to serve a later
-    // kanji, and they are ordinary jōyō kanji inside the order rather than an
-    // extra class of card. So the denominator has nothing to add for them, and
-    // no separate radical count is owed.
-    assert.ok(PREREQUISITE_ONLY.length > 0);
-    for (const c of PREREQUISITE_ONLY) assert.ok(ORDER.includes(c), c);
-    assert.equal(ORDER.length, 2136);
+// Orphan radicals — the ones no kanji uses — have no first-using kanji to ride in
+// with, so they are taught after the whole order, for completeness. This is the
+// one place a set is all radicals.
+describe("orphan radicals are taught at the very end, for completeness", () => {
+  test("the tail is kanji-less radical sets, after every kanji", () => {
+    const tail = GROUPS.filter((g) => g.spine === "radical");
+    assert.ok(tail.length > 0, "there is an orphan tail");
+    // Every orphan-tail set comes after every kanji set.
+    const lastKanji = GROUPS.findIndex(
+      (g) => g === KANJI_GROUPS[KANJI_GROUPS.length - 1],
+    );
+    for (const g of tail) {
+      assert.ok(GROUPS.indexOf(g) > lastKanji, "an orphan set precedes a kanji set");
+      assert.equal(g.chars.length, 0);
+      for (const it of g.items) assert.equal(it.kind, "radical");
+    }
+  });
+
+  test("an orphan set's position counts radicals with no invented total", () => {
+    // Claim the whole kanji spine, so the next lesson is the orphan tail. Its
+    // header must not print a stale 'of 98' or a kanji count — it counts radicals
+    // and promises no denominator.
+    const spine = KANJI_GROUPS.flatMap((g) => g.facts);
+    const lesson = nextKanjiLesson(claiming(spine), ORDER, RANGE);
+    assert.ok(lesson, "the orphan tail is a real lesson");
+    assert.equal(lesson.spine, "radical");
+    assert.equal(lesson.position.total, null);
+    for (const c of lesson.cards) assert.equal(c.kind, "radical");
   });
 });
 
@@ -351,17 +496,17 @@ describe("the next lesson is a function of history, and there is no cursor", () 
   test("a half-claimed lesson yields its other half, not the whole thing again", () => {
     const first = nextKanjiLesson(history(), ORDER, RANGE);
     assert.ok(first);
-    // Claim all but the last card of lesson 1.
-    const keptBack = first.cards[first.cards.length - 1].c;
-    const claimedFacts = first.facts.filter(
-      (f) => f !== packLessons([keptBack], RANGE)[0].facts[0],
-    );
+    // Claim every fact but the last card's — day one is all kanji, so the last
+    // card's fact is its meaning fact.
+    const keptBack = first.cards[first.cards.length - 1];
+    const keptFact = keptBack.fact;
+    const claimedFacts = first.facts.filter((f) => f !== keptFact);
     const rest = nextKanjiLesson(claiming(claimedFacts), ORDER, RANGE);
     assert.ok(rest);
     assert.equal(rest.group.index, 1);
     assert.deepEqual(
-      rest.cards.map((c) => c.c),
-      [keptBack],
+      rest.cards.map((c) => c.glyph),
+      [keptBack.glyph],
     );
   });
 
@@ -371,12 +516,44 @@ describe("the next lesson is a function of history, and there is no cursor", () 
   });
 });
 
-/** The cost of a lesson's first bundle — for the min-guarantee proof. A lesson's
- * leading run up to (and including) the first kanji that is some other kanji's
- * root boundary is fiddly to recover, so this leans on the packer: re-pack the
- * lesson's own chars and take the first result's cost. */
-function firstBundleCost(g: { chars: string[] }): number {
-  return packLessons(g.chars, { min: 1, max: 1 })[0].cost;
+/** Split the packed groups back into their units: how many units each group is,
+ * asserting every group is a WHOLE number of units (the packer never splits one).
+ * The oracle for the over/min tests, computed independently of the packing. */
+function unitsPerGroup(
+  groups: readonly { items: readonly unknown[] }[],
+  units: readonly { items: readonly unknown[] }[],
+): number[] {
+  let ui = 0;
+  return groups.map((g) => {
+    let consumed = 0;
+    let count = 0;
+    while (consumed < g.items.length) {
+      consumed += units[ui].items.length;
+      ui++;
+      count++;
+    }
+    assert.equal(consumed, g.items.length, "a group is not a whole number of units");
+    return count;
+  });
+}
+
+/** The cost of each group's FIRST unit — what the next unit would add if it led
+ * a lesson. Used to prove the min floor: a sub-min lesson is only ever followed
+ * by a unit too big to have joined it. */
+function firstUnitCostPerGroup(
+  groups: readonly { items: readonly unknown[] }[],
+  units: readonly { items: readonly unknown[]; cost: number }[],
+): number[] {
+  let ui = 0;
+  return groups.map((g) => {
+    const first = units[ui].cost;
+    let consumed = 0;
+    while (consumed < g.items.length) {
+      consumed += units[ui].items.length;
+      ui++;
+    }
+    return first;
+  });
 }
 
 /** Every fact in the lessons before `c`'s — the cheap way to stand at a given
