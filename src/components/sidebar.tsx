@@ -137,7 +137,9 @@ export function Sidebar({
   // any history to open, then Practice, then Current sessions when at least one
   // run is in progress, then the rest of the static list.
   const items: Array<{ href: string; label: ReactNode }> = [
-    NAV[0],
+    // Home is the signed-out landing; once you're in, "/" just redirects to
+    // /learn, so the nav item is a dead loop. Hidden when signed in.
+    ...(signedIn ? [] : [NAV[0]]),
     NAV[1],
     ...(hasRecent ? [{ href: "/sessions", label: "Recent sessions" }] : []),
     NAV[2],
