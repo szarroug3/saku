@@ -64,6 +64,7 @@ import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { knownLookalikes } from "@/lib/kanji-lookalikes";
+import { characterRole, characterRoleTitle } from "@/lib/character-role";
 import { showsHowItsWritten } from "@/lib/lesson-items";
 import type { LessonItem } from "@/lib/lesson-items";
 import { formsOfWord } from "@/lib/word-forms";
@@ -403,6 +404,31 @@ function wordTypeOf(word: VocabRow): string {
   return "noun";
 }
 
+/** The role blob in the top-right of a kanji/radical header: which of the three
+ * this character is, and what that means for how you'll meet it. A learner in the
+ * combined track has to know whether a shape is a word, a building block, or both
+ * — so the badge says the role (Title Cased, the same three the tiles print) and
+ * one plain line of what it implies. Null for anything that is neither. */
+function RoleBadge({ glyph }: { glyph: string }) {
+  const role = characterRole(glyph);
+  const label = characterRoleTitle(glyph);
+  if (!role || !label) return null;
+  const note =
+    role === "radical"
+      ? "A building block, not a word on its own. You'll see it inside other kanji."
+      : role === "radical · kanji"
+        ? "It works on its own as a word, and it also builds other kanji."
+        : "A character that stands on its own in words.";
+  return (
+    <div className="rounded-lg border border-border bg-panel px-3 py-2 md:max-w-[240px] md:justify-self-end">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-accent">
+        {label}
+      </span>
+      <p className="mt-1 text-[12px] leading-snug text-text-muted">{note}</p>
+    </div>
+  );
+}
+
 function KanjiConfusables({ glyph }: { glyph: string }) {
   const { history } = useHistory();
   const lookalikes = knownLookalikes(glyph, history);
@@ -530,7 +556,16 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           sub={grammarSub}
           canHear={canHear}
           kanaGlyph={kanaGlyph}
-          right={item.kind === "kanji" ? <KanjiConfusables glyph={item.glyph} /> : null}
+          right={
+            item.kind === "kanji" ? (
+              <div className="space-y-3 md:justify-self-end">
+                <RoleBadge glyph={item.glyph} />
+                <KanjiConfusables glyph={item.glyph} />
+              </div>
+            ) : item.kind === "radical" ? (
+              <RoleBadge glyph={item.glyph} />
+            ) : null
+          }
           voiceName={cfg.voiceName}
         />
       )}

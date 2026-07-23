@@ -42,3 +42,17 @@ export function characterRole(glyph: string): CharacterRole | null {
   if (isKanji) return "kanji";
   return null;
 }
+
+/** The same role, Title Cased for a heading or a tile label: "Radical · Kanji",
+ * "Radical", "Kanji". The lowercase form reads well mid-sentence; a label wants
+ * the capital. Both spell the identical three roles, so they stay one source. */
+const ROLE_TITLE: Record<CharacterRole, string> = {
+  "radical · kanji": "Radical · Kanji",
+  radical: "Radical",
+  kanji: "Kanji",
+};
+
+export function characterRoleTitle(glyph: string): string | null {
+  const role = characterRole(glyph);
+  return role ? ROLE_TITLE[role] : null;
+}

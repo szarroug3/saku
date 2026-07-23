@@ -46,7 +46,7 @@ import { WhyDisclosure } from "@/components/lesson/why";
 import { kanjiEntry } from "@/data/kanji";
 import { radicalEntry } from "@/data/radicals";
 import { WHY_TRACK } from "@/data/why";
-import { characterRole } from "@/lib/character-role";
+import { characterRoleTitle } from "@/lib/character-role";
 import type { KanjiLesson, LessonItem } from "@/lib/kanji-lesson";
 import { positionLabel } from "@/lib/lesson-position";
 import { entryHref } from "@/lib/library/href";
@@ -121,7 +121,7 @@ export function NextKanjiLesson({
                   its "you need this for X" note underneath, because that is a
                   reason it is here, not a role. */}
               <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
-                {characterRole(card.glyph)}
+                {characterRoleTitle(card.glyph)}
               </span>
               {card.neededFor ? (
                 <span className="mt-0.5 block text-[10px] leading-tight text-text-muted/80">
