@@ -235,8 +235,16 @@
    * the mesh reads as a different colour at every point of the circle. */
   --arc: #096b87;
   --arc-track: #dfe3ec;
+  /* A TIGHT shadow, not the wide one it used to be (0 10px 34px). kiri is the
+   * only theme with a blurred drop shadow on its cards, and a wide-blur
+   * box-shadow is re-rasterised every scroll frame on every card that carries it
+   * — which, via the [rounded-xl][bg-card] rule, is EVERY Card on EVERY page.
+   * That is the kiri-only scroll cost the frost work kept missing (the frost was
+   * never the whole of it). 34px of gaussian per card is ~8x the raster area of
+   * this 10px, so the float survives at a fraction of the per-frame cost. The
+   * inset highlight is free (it does not blur outside the box) and stays. */
   --shadow-card:
-    0 10px 34px rgba(20, 40, 80, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    0 4px 10px rgba(20, 40, 80, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --shadow-btn: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   --page-mesh:
     radial-gradient(60% 80% at 12% 8%, rgba(124, 92, 255, 0.13), transparent 60%),
@@ -265,8 +273,12 @@
    * Deepened until the arc is a solid object again. */
   --dark-arc: #2aa8cf;
   --dark-arc-track: #212429;
+  /* Tightened from 0 8px 40px for the scroll cost — see --shadow-card above. The
+   * 40px blur was the widest of any theme, on every card, re-rasterised every
+   * scroll frame; 10px keeps the lift on the dark ground at ~6% of the raster
+   * area. Inset highlight (free) stays. */
   --dark-shadow-card:
-    0 8px 40px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.13);
+    0 3px 10px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.13);
   --dark-shadow-btn: inset 0 1px 0 rgba(255, 255, 255, 0.1);
   --dark-page-mesh:
     radial-gradient(60% 80% at 12% 8%, rgba(120, 86, 255, 0.3), transparent 60%),
