@@ -209,14 +209,16 @@
   --bar-h: 2px;
 
   --bg: #eef2fa;
-  /* OPAQUE, not translucent. A translucent card over the fixed page mesh has to
-   * re-blend against the mesh on every scroll frame — cheap for one card, the
-   * Library's scroll cost at a hundred tiles (see the .kq-material note). So the
-   * card is solid now and the mesh is BAKED IN as a faint wash instead (the kiri
-   * .kq-material rule below), which is part of the card's own paint and costs
-   * nothing to scroll. This value is ~what the old rgba(255,255,255,0.62) card
-   * composited to over --bg. */
-  --card: #f8fafe;
+  /* TRANSLUCENT — the live glass. The card is a white veil the fixed page mesh
+   * reads through, which is the whole of the kiri look. It is ALSO the thing that
+   * janks a naive scroll: a translucent element over a fixed backdrop re-blends
+   * against the backdrop every frame the two move apart. That is NOT solved by
+   * going opaque (which flattened the theme); it is solved by giving the card its
+   * own GPU layer, so scrolling re-COMPOSITES it instead of re-PAINTING it — see
+   * the `.kq-material` transform below. The richness that used to come from a
+   * per-card `backdrop-filter: saturate` now comes from saturating the ONE mesh
+   * element instead (body::before), so no card needs a filter at all. */
+  --card: rgba(255, 255, 255, 0.62);
   --panel: rgba(13, 27, 42, 0.06);
   --text: #0d1b2a;
   --text-muted: rgba(13, 27, 42, 0.55);
@@ -242,10 +244,10 @@
     radial-gradient(40% 60% at 60% 20%, rgba(236, 72, 153, 0.06), transparent 70%);
 
   --dark-bg: #070a14;
-  /* Opaque, same reason as the light --card above: no per-frame re-blend over the
-   * fixed mesh. ~what rgba(255,255,255,0.055) sat over --dark-bg, nudged a hair
-   * cooler so the solid panel still reads as lit glass rather than flat ink. */
-  --dark-card: #171b28;
+  /* Translucent, same as the light --card: the dark glass is a faint white veil
+   * the mesh reads through. Smoothness comes from the GPU layer on .kq-material,
+   * richness from the saturated mesh — not from making this opaque. */
+  --dark-card: rgba(255, 255, 255, 0.055);
   --dark-panel: rgba(255, 255, 255, 0.07);
   --dark-text: #eef1fb;
   --dark-text-muted: rgba(238, 241, 251, 0.5);
@@ -803,13 +805,24 @@ body {
 
 /* The mesh. Fixed + z-index:-1 so it neither scrolls nor repaints: body's
  * own background propagates to the canvas and paints behind this layer,
- * which in turn sits behind all content. */
+ * which in turn sits behind all content.
+ *
+ * SATURATED HERE, ONCE. The theme's richness used to come from every card
+ * carrying `backdrop-filter: saturate(150%)`, which re-snapshots its backdrop
+ * per scroll frame — N cards, N snapshots, the jank. The saturation is a
+ * property of the MESH, not of each card, so it belongs on the mesh: one fixed,
+ * never-scrolling, never-repainting element filtered exactly once. The
+ * translucent cards then read the already-rich mesh straight through, no filter
+ * of their own. --card-frost-sat is the same token the opaque rebuilds use, so
+ * the mesh, a .kq-surface and a sticky header all saturate by the identical
+ * amount and cannot drift. */
 [data-theme="kiri"] body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   background: var(--page-mesh);
+  filter: var(--card-frost-sat);
   pointer-events: none;
 }
 
@@ -1138,33 +1151,30 @@ body {
    * CARDS passing under it, not the mesh"). A band is ONE sticky element, so its
    * blur is not a per-scroll-frame multiplier the way a page full of cards is. */
   --card-frost: blur(18px) var(--card-frost-sat);
-  /* THE CARD's frost: NONE. No backdrop-filter at all on a .kq-material — this is
-   * the scroll-perf fix, and it goes further than the first attempt did.
+  /* THE CARD's frost: NONE. No backdrop-filter on a .kq-material — and this time
+   * the cards stay TRANSLUCENT (the live glass) instead of going opaque to earn
+   * it. The two facts fit together like this:
    *
    * A backdrop-filter — ANY backdrop-filter, blur OR saturate — makes the element
    * a BACKDROP ROOT that re-snapshots its backdrop EVERY scroll frame, and the
    * Library paints one .kq-material per shelf Card (plus every button, chip and
-   * Metric tile). The first pass dropped the 18px BLUR but kept a `saturate(150%)`
-   * backdrop-filter, on the theory that a colour matrix is cheap next to a
-   * radius-wide convolution. It measured 0 dropped frames and looked solved — but
-   * that measurement was taken in an embedded/headless Chromium, which composites
-   * backdrop snapshots very differently from a real browser. In actual Chrome and
-   * Firefox the per-card saturate STILL janks (the user's report: fine in the
-   * in-app webview, laggy in both real browsers). The cost was never the blur
-   * radius; it was N backdrop roots re-snapshotting per frame. So the whole frost
-   * comes off the scrolling cards. kiri was the only theme that janked because it
-   * was the only one whose --material-frost was not `none`.
+   * Metric tile). At N cards that per-card snapshot IS the jank (fine in the
+   * in-app webview, laggy in real Chrome/Firefox, which composite backdrops
+   * differently). So the frost comes off the cards entirely.
    *
-   * WHERE DID THE SATURATE GO? It survives only where it is CHEAP: as a REGULAR
-   * `filter` on the opaque card rebuilds (.kq-table-head th::before, .kq-surface
-   * ::before) — a regular filter touches only the pseudo's own painted pixels, it
-   * does NOT snapshot the page backdrop — and inside --card-frost on the ONE
-   * sticky band. So a bare .kq-material card now shows the mesh at its native
-   * saturation rather than 150%; against a rebuilt surface that is a measured
-   * ~dE 3.5 duller (STICKY TABLE HEADER note). That difference is the accepted
-   * cost of a jank-free scroll; if it ever reads wrong, the fix is to give the
-   * cards the same opaque-rebuild treatment (.kq-surface) so the colour comes
-   * from a regular filter too — NOT to put a backdrop-filter back here. */
+   * The blur was doing almost nothing anyway — an 18px gaussian on a mesh this
+   * soft is a measured ~0.2 dE no-op. The RICHNESS was the saturate, and that is
+   * a property of the mesh, so it now lives on the mesh: body::before is filtered
+   * `saturate(150%)` ONCE (it is fixed and never repaints), and the translucent
+   * cards read that already-rich mesh straight through. No per-card filter, full
+   * richness.
+   *
+   * That leaves one cost: a translucent card over the FIXED mesh still re-blends
+   * as it scrolls. The fix is not to remove the translucency (that flattened the
+   * theme) but to give each card its own GPU layer — see the transform on
+   * `.kq-material` below — so the scroll re-COMPOSITES the card over the mesh on
+   * the GPU rather than re-PAINTING it on the CPU. Do NOT put a backdrop-filter
+   * back here; the layer is what makes the translucency free. */
   --material-frost: none;
   --band-fill: transparent;
 }
@@ -1179,19 +1189,28 @@ body {
   backdrop-filter: var(--material-frost);
 }
 
-/* THE MESH, BAKED INTO THE CARD (kiri only). The cards are opaque now (--card),
- * so they no longer show the live page mesh through themselves — which is exactly
- * what stopped the per-frame re-blend that janked the Library. To keep them from
- * reading as flat ink, a faint wash in the mesh's own violet→teal hues is painted
- * as the card's OWN background-image: it rides with the element, so scrolling it
- * is free (a background-image is not a backdrop-filter and not a fixed layer).
- * Anchored to each card rather than the viewport, so there is no fixed-attachment
- * repaint either; on a mesh this soft, per-card vs one-field is imperceptible.
- * Scoped to kiri; the three opaque themes never had a mesh to bake. */
-[data-theme="kiri"] .kq-material {
-  background-image:
-    radial-gradient(120% 130% at 0% 0%, rgba(124, 92, 255, 0.06), transparent 55%),
-    radial-gradient(120% 130% at 100% 100%, rgba(45, 212, 191, 0.055), transparent 55%);
+/* THE SCROLLING SHELF ON ITS OWN GPU LAYER (kiri only). This is what lets the
+ * cards stay translucent without janking the scroll. `translateZ(0)` promotes
+ * each shelf SECTION to a composited layer: the section and every translucent
+ * tile inside it are rasterised once, and while scrolling the GPU just
+ * re-composites that layer (alpha and all) over the fixed mesh at the new offset
+ * — no CPU repaint, which is the whole cost that made translucent-over-fixed-mesh
+ * lag. Without a layer the tiles share a surface with the mesh behind them and
+ * the browser re-paints them every frame the mesh shifts underneath.
+ *
+ * WHY .kq-defer AND NOT .kq-material: .kq-material is on hundreds of chips, pills,
+ * inputs and swatches too, and a layer on every one is its own perf problem
+ * (layer explosion) and collides with the transform some of them animate on hover.
+ * .kq-defer is exactly the Library's scrolling shelf sections — the one place a
+ * page is a WALL of translucent cards over the mesh — and it is already the
+ * content-visibility hook, so offscreen sections are not even rendered, let alone
+ * layered. One bounded layer per visible shelf, which is the whole fix.
+ *
+ * Scoped to kiri (the only theme with translucent glass over a mesh) and only
+ * reproducible in a real browser, so this is verified on Chrome/Firefox, not in
+ * the in-app webview that never showed the jank. */
+[data-theme="kiri"] .kq-defer {
+  transform: translateZ(0);
 }
 
 /* "Skip me entirely while I'm scrolled offscreen." The Library stacks many Cards,
