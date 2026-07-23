@@ -1,148 +1,160 @@
-# Kana quiz
+# Saku
 
-A hiragana and katakana trainer. The goal isn't to *know* the 214 characters —
-it's to **recognise them instantly**, and to find and repair the specific
-confusions that keep costing you (シ↔ツ, ソ↔ン).
+Saku is a free web app for learning Japanese from the ground up. It starts where
+most beginners actually start — not knowing the writing system exists — and walks
+forward one prerequisite at a time: read the kana, then the pieces kanji are built
+from, then kanji, then words, then the grammar that holds a sentence together.
 
-Originally a Python-stdlib server serving one HTML file; now Next.js +
-TypeScript + Tailwind. The original is preserved in [`legacy/`](legacy/) and in
-the first commit.
+It's named for its mascot, a red panda holding a sakura blossom
+(`public/brand/saku-mark.png`, `public/brand/saku-wordmark.png`).
 
-## Run it
+The app is opinionated about order. A track doesn't open until the one before it
+is solid, so you never meet a word before you can read it or a kanji before you
+know its radicals. The progression is:
+
+**hiragana → katakana → radicals → kanji → vocabulary → grammar → counters → keigo**
+
+(defined in `TRACK_ORDER`, `src/data/track-intros.ts`). Pitch accent rides along
+the vocabulary: verified downstep marks are drawn on words throughout the app and
+in the Library, sourced from the Kanjium database (`src/data/pitch.ts`).
+
+## Features
+
+- **A curriculum feed, not a builder.** Home (`/`) is the low-decision screen:
+  the next lesson in each track, each card shown only when it actually has
+  something to teach.
+- **Hand-authored mnemonics with drawings.** Every kana has a story and an
+  illustration keyed to it (`src/data/mnemonics.ts`, images under
+  `public/mnemonics/`).
+- **A Library reference** (`/library`). One searchable place for kana families,
+  radicals, kanji and their readings, words and what they're built from, grammar
+  patterns, keigo sets, counters, and pitch marks. It replaced the old kana chart
+  and folded grammar in as a section rather than a separate tab.
+- **Several drill types**, each its own screen under `src/components/quiz/`:
+  - multiple choice and typed answers (`drill-screen.tsx`)
+  - a full-sheet grid (`grid-screen.tsx`)
+  - match-the-pairs boards (`pairs-screen.tsx`)
+  - listening drills (`sentence-listen-screen.tsx`)
+  - sentence building / assembly (`assembly-screen.tsx`)
+  - guided substitution (`substitution-screen.tsx`)
+- **Practice** (`/practice`) is the open builder for a one-off drill: pick a pool
+  and how it should ask, then start. It's separate from the lesson flow, which
+  runs a teach → drill → rest → repeat session.
+- **A spaced-progress model.** The app tracks what you've seen, what you miss, and
+  which characters you confuse for each other, and uses that to pick what's worth
+  drilling next. Confusions expire once you get them right enough times in a row.
+- **Lists** (`/lists`) for hand-picked collections, and **Progress** (`/stats`)
+  for accuracy trends and per-track standing.
+- **Multiple themes**, each with a light and dark palette. Everything is styled
+  through CSS tokens, so a theme is mostly a token swap — no hardcoded colors.
+
+## Tech stack
+
+- **Next.js 16** (App Router) with **React 19**
+- **TypeScript**
+- **Tailwind CSS v4**
+- **Supabase** JS + SSR clients, for the hosted-storage migration described below
+- **Node's built-in test runner** for unit tests, **Playwright** for end-to-end
+
+## Running locally
+
+Requires **Node 24** (pinned in `.nvmrc`) and **pnpm**.
 
 ```bash
-nvm use          # Node 24, pinned in .nvmrc
+nvm use          # Node 24
 pnpm install
-pnpm dev         # http://localhost:3000
 ```
 
-| | |
+### Heads up: `next dev` doesn't work here
+
+On the author's machine `next dev` is broken. Turbopack spawns a PostCSS worker
+that picks up an old system Node without the `node:` builtins, and the dev server
+crashes. **The working loop is a production build followed by a start**, on port
+3000:
+
+```bash
+pnpm build
+pnpm start        # http://localhost:3000
+```
+
+Rebuild after changes and restart. `pnpm dev` (`next dev`) is left in
+`package.json` but should not be relied on until the toolchain issue is resolved.
+
+Other scripts:
+
+| Script | What it does |
 |---|---|
-| `pnpm dev` | dev server |
-| `pnpm build` | production build |
-| `pnpm type-check` | `tsc --noEmit` |
+| `pnpm build` | production build (`next build`) |
+| `pnpm start` | serve the build (`next start`) |
 | `pnpm lint` | eslint |
+| `pnpm type-check` | `tsc --noEmit` |
 
-Your practice history lives in `history.json` at the repo root — the same file
-and the same shape the Python app used, so it stays git-syncable with the vault.
+## Testing
 
-## The screens
+Unit tests use Node's test runner. The `--import` hook wires up the TypeScript
+and module setup the tests expect, so run them through the script rather than
+`node --test` directly:
 
-**Home** is a launcher, not a builder. The hero owns *how* you drill (mode,
-direction, length) as an editable sentence; every card owns *what* — so a card
-is one click from your first character. Three shelves in priority order:
-resume · target a weakness (Weakest 20, Confusions, Last misses — computed from
-your history) · decks.
-
-**Drill** — information stays, interaction fades. The halo around the character
-is the whole feedback surface: still by default, waking only in the timer's last
-five seconds, sweeping accent when you're right, pulsing when you're not. Four
-toggles in the gear drawer dial it from zen (all off) to instrumented (all on).
-
-**Grid** is the Tofugu sheet; **Match pairs** is boards of eight. Both inherit
-the drill's language.
-
-**Results** leads with a diagnosis, not a score — then a board of characters
-that *is* the redrill selection.
-
-**Statistics** remembers: the accuracy trend, your weakest characters, per-deck
-rings. **Kana chart** is the reference, with Tofugu links and click-to-hear.
-
-## Things worth knowing
-
-**Accuracy has one definition** ([`src/lib/accuracy.ts`](src/lib/accuracy.ts)).
-Two denominators exist and must never be mixed — `seen` counts showings, `missed`
-counts wrong *attempts*, so one showing can produce several misses. The legacy
-formula `(seen - missed) / seen` mixed them and could go negative. Now:
-
-```
-strict    = firstTry / seen          "nailed it immediately"
-forgiving = seen / (seen + missed)   "share of attempts correct"
+```bash
+pnpm test         # node --import ./src/lib/conjugate/test-hooks.mjs --test "src/**/*.test.ts"
 ```
 
-Settings picks which one the whole app shows. Percentages always render with a
-`%` so a ring can't read as a count.
+There are unit tests throughout `src/lib/` and `src/data/` (`*.test.ts`).
 
-**"Slow" adapts to you** ([`src/lib/slow.ts`](src/lib/slow.ts)). Not a fixed
-threshold — a fixed 5s flags nothing for a fast reader and half the run for a
-new one. It's `max(floor, median + 3·MAD)` over your recent latencies, per
-answer style, measured to your **first keystroke** (everything after that is
-typing, which is motor skill, not recognition). MAD is robust, so a few slow
-cards can't raise the bar meant to catch them — and unlike a percentile, it can
-return *zero*, which is what makes a clean run earnable.
+End-to-end tests run against a real build with Playwright. The config builds and
+starts the app itself (on port 3249, so it won't collide with a manual server on
+3000):
 
-**Confusions expire.** A mix-up is a weakness only if it happened *this* run and
-keeps happening. Get it right `graduateRuns` times in a row (Settings, default
-10) and it's cleared: its old misses stop feeding Patterns, Home's Confusions
-card, and Weakest 20. Only Statistics keeps remembering. The denominator counts
-only runs that actually contained those characters — a hiragana-only week can't
-dilute a katakana pair that never had a chance to appear.
-
-**A quiz outlives its tab.** State lives in `localStorage`, so closing the
-browser and coming back still offers Resume. An owner stamp settles multi-tab:
-newest wins.
-
-## Themes
-
-Four, each with a light and a dark palette: **aizome** (washi, sumi ink, indigo),
-**graphite** (precision dark), **momentum** (tactile), **kiri** (atmospheric
-glass, the default). `data-theme` + `data-appearance` on `<html>`; an explicit
-appearance beats the system preference both ways.
-
-Everything is styled through tokens (`--bg`, `--text-muted`, `--accent`,
-`--gcard-right`, `--font-kana`, `--radius`…), which is why a theme is mostly a
-token swap. **Never hardcode a hex** — it will look broken in three themes.
-
-## Adding character sets
-
-Data-only. Append a `CharSet` to `SETS` in
-[`src/data/characters.ts`](src/data/characters.ts):
-
-```ts
-{
-  id: "minna-l1",
-  label: "Minna Lesson 1",
-  labelJa: "みんなの日本語 L1",
-  sections: [
-    { id: "l1-vocab", label: "Vocabulary", chars: [
-      { c: "先生", r: ["sensei"], meaning: "teacher",
-        m: "the one who was born (生) before (先) you" },
-    ]},
-  ],
-}
+```bash
+pnpm test:e2e     # playwright test
 ```
 
-Every entry needs `c` (the Japanese) and `r` (accepted answers). Optional: `m`
-(mnemonic, shown in the chart), `meaning`, and the reserved `strokes` / `audio`
-for the roadmap below. [`src/lib/decks.ts`](src/lib/decks.ts) derives decks from
-`SETS`, so a new set grows its own basic/extended pair for free.
+## Data and persistence
 
-## Architecture
+By default, everything a learner has done lives in two JSON files at the repo
+root:
+
+- `history.json` — practice history and progress (`src/lib/history.ts`)
+- `lists.json` — saved lists (`src/lib/lists.ts`)
+
+Both are gitignored local learner data. This is the **file** backend: no auth, a
+single implicit local user, and no database to stand up.
+
+### Hosting (in progress)
+
+A migration to hosted, per-user storage on **Supabase + Vercel** is underway. The
+schema lives in `supabase/schema.sql` (a `progress` table, one row per user,
+gated by Row-Level Security), the client/server helpers are in
+`src/lib/supabase/`, and `.env.example` documents the environment variables.
+
+The backend is chosen by an explicit switch, `STORAGE_BACKEND=supabase`
+(`src/lib/store/mode.ts`) — deliberately separate from whether the Supabase keys
+are present, so you can wire up and test auth locally while still reading and
+writing the local files. Leave it unset for local development and the app keeps
+using `history.json` / `lists.json`. **Auth is not fully wired up yet**; this
+whole path is in progress, not done.
+
+## Project structure
 
 ```
-src/app/          routes (Home, quiz, results, sessions, stats, chart, settings)
-                  + api/{history,session,delete}
-src/components/   home/ quiz/ results/ stats/ settings/ · ui.tsx (the kit)
-src/lib/          accuracy · slow · confusions · decks · engine/ · theme · quiz-config
-                  quiz-session (the live-quiz contract) · history (server-side fs)
-src/data/         characters.ts
+src/app/          routes: Home, Practice, Library, Lists, Progress, Settings,
+                  Resources, quiz/results/sessions, and api/*
+src/components/   screen components by area: home/ practice/ quiz/ library/
+                  lesson/ results/ stats/ settings/ · the ui/ kit
+src/lib/          the engine and logic: engine/ (pure TS: decks, distractors,
+                  question types, scoring), accuracy · slow · confusions ·
+                  lesson/track flow, history/lists persistence, supabase/ · store/
+src/data/         the curriculum and corpus: characters, mnemonics, radicals,
+                  kanji, vocab, grammar/, keigo, counters, pitch, resources
+                  (generated/ holds ingested dictionary data)
+public/           brand/ mascot art, mnemonics/ drawings, and static assets
+supabase/         schema.sql for the hosted backend
+e2e/              Playwright tests
 ```
 
-`src/lib/engine/` is pure TypeScript with no React: deck building, requeue,
-distractors, stats. Question types are pluggable via `QuestionType` — the
-extension point for the roadmap.
-
-Quiz screens follow one contract, documented at the top of
-[`quiz-session.tsx`](src/lib/quiz-session.tsx): builder settings are **frozen**
-into the quiz at start; Settings values are read **live**; all mutable state
-lives in `active.runtime` (JSON-serializable, written as it changes) so tab
-switches and refreshes resume mid-question.
-
-## Roadmap
-
-- **v2** — write-a-word / write-text modes (word sets as data), listen mode
-  (`speechSynthesis`)
-- **v3** — stroke order + draw (KanjiVG, Japanese-only)
+`src/lib/engine/` is pure TypeScript with no React — deck building, requeue,
+distractors, scoring, and the pluggable `QuestionType` that each drill type
+implements.
 
 ## Licence
 
@@ -150,12 +162,9 @@ Two licences, split at one directory:
 
 - **Code** — MIT. Everything except `src/data/generated/`. See [`LICENSE`](LICENSE).
 - **Generated dictionary data** — CC BY-SA 4.0. `src/data/generated/`, adapted
-  from EDRDG's dictionaries, so ShareAlike reaches it. See
-  [`src/data/generated/LICENSE`](src/data/generated/LICENSE) for the full
-  attribution and the Tatoeba carve-out (CC BY 2.0 FR, no ShareAlike).
+  from EDRDG's dictionaries. See `src/data/generated/LICENSE` for the full
+  attribution and the Tatoeba carve-out.
 
-[`NOTICE`](NOTICE) states the boundary: the code reads the data, it isn't
-derived from it, so the two ship as a collection and ShareAlike doesn't reach
-the code.
-
-In the app, the same acknowledgement is at **[/about/data](src/app/about/data/page.tsx)**.
+[`NOTICE`](NOTICE) states the boundary: the code reads the data, it isn't derived
+from it, so the two ship as a collection and ShareAlike doesn't reach the code.
+The same acknowledgement is in the app at `/about/data`.
