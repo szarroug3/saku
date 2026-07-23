@@ -36,7 +36,7 @@ export function defaultConfig(): QuizConfig {
     dirs: { jp2en: true, en2jp: false },
     styleJp2en: "typed",
     styleEn2jp: "mc",
-    length: "endless",
+    length: "limited",
     limType: "cov",
     limCount: 50,
     retries: "lim",
