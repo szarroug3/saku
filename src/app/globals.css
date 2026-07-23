@@ -1268,6 +1268,13 @@ body {
    * their own outlines, which is what "the header and the pieces under it" is. */
   border-color: transparent;
   box-shadow: none;
+  /* Tighter shelves. With no box around a section, the Card's 18px vertical
+   * padding plus its 14px margin left ~50px of dead space between one shelf's
+   * last row and the next shelf's header. Halved: 9px padding top and bottom
+   * (horizontal stays 18px, so the tiles keep their inset) and a 7px margin,
+   * for ~25px between shelves. Unlayered, so it beats the Tailwind p-/mb- pair. */
+  padding-block: 9px;
+  margin-bottom: 7px;
 }
 
 /* "Skip me entirely while I'm scrolled offscreen." The Library stacks many Cards,
