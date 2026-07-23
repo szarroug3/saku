@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { SignOut } from "@/components/auth/sign-out";
+
 import { useHistory } from "@/lib/use-history";
 import { useQuizSession } from "@/lib/quiz-session";
 
@@ -22,23 +24,27 @@ import { useQuizSession } from "@/lib/quiz-session";
 // with two front doors starts competing with the drill for the top of the page,
 // which is the same argument that keeps Library itself down here.
 const NAV: Array<{ href: string; label: ReactNode }> = [
+  // Home is the landing — the intro at /. Learn is the curriculum feed (/learn),
+  // its own screen so a signed-out visitor can work through it too (nothing they
+  // do there is saved, which the banner says). Signed in, / redirects to /learn.
   { href: "/", label: "Home" },
+  { href: "/learn", label: "Learn" },
   // Practice owns the open-ended drill builder that used to live on Home: pick a
-  // pool and how to ask, then start. Home stays the curriculum feed; Practice is
-  // where you drill what you choose. It sits right under Home because building a
-  // drill is a top-level verb, not a corner of the reference.
+  // pool and how to ask, then start. Learn is the curriculum feed; Practice is
+  // where you drill what you choose. It sits up top because building a drill is a
+  // top-level verb, not a corner of the reference.
   { href: "/practice", label: "Practice" },
-  { href: "/library", label: "Library" },
-  { href: "/lists", label: "Lists" },
-  // "Recent sessions" is NOT in this static list. It rides directly under Home
-  // (see the assembly in Sidebar), shown only when there is finished history to
-  // open — a permanent nav slot pointing at "No sessions yet" is a door onto an
-  // empty room.
   // "Progress", not "Statistics" — the page stopped being statistics. Nothing
   // on it is a rate, an average or a trend any more; it is three counts of
   // things you own. The route is still /stats and deliberately so: renaming it
   // would break every link anyone has, to buy a tidier URL nobody reads.
   { href: "/stats", label: "Progress" },
+  { href: "/library", label: "Library" },
+  { href: "/lists", label: "Lists" },
+  // "Recent sessions" is NOT in this static list. It rides directly under Learn
+  // (see the assembly in Sidebar), shown only when there is finished history to
+  // open — a permanent nav slot pointing at "No sessions yet" is a door onto an
+  // empty room.
   { href: "/settings", label: "Settings" },
   // The credits/attributions page — where the data, the stroke-order glyphs,
   // and the guides the app learned from are named. A courtesy list, not a
@@ -56,7 +62,17 @@ const NAV: Array<{ href: string; label: ReactNode }> = [
   { href: "/about/data", label: "About the data" },
 ];
 
-export function Sidebar() {
+export function Sidebar({
+  signedIn,
+  authEnabled,
+}: {
+  /** Whether there is a session (always true in file mode). Decides Sign in vs
+   * Sign out, and hides the nav on the signed-out landing at /. */
+  signedIn: boolean;
+  /** Whether auth is on at all (Supabase mode). In file mode there's no session
+   * to end, so no auth control shows. */
+  authEnabled: boolean;
+}) {
   const pathname = usePathname();
   // Finished quizzes, for the "Recent sessions" entry. It rides directly under
   // Home and appears ONLY when there is history to open — starts empty (matching
@@ -72,13 +88,14 @@ export function Sidebar() {
   const hasRecent = history.sessions.length > 0;
   const runCount = runs.length;
 
-  // The nav, assembled top-down: Home, then Recent sessions when there is any
-  // history to open, then Practice, then Current sessions when at least one run
-  // is in progress, then the rest of the static list.
+  // The nav, assembled top-down: Home, Learn, then Recent sessions when there is
+  // any history to open, then Practice, then Current sessions when at least one
+  // run is in progress, then the rest of the static list.
   const items: Array<{ href: string; label: ReactNode }> = [
     NAV[0],
-    ...(hasRecent ? [{ href: "/sessions", label: "Recent sessions" }] : []),
     NAV[1],
+    ...(hasRecent ? [{ href: "/sessions", label: "Recent sessions" }] : []),
+    NAV[2],
     ...(runCount > 0
       ? [
           {
@@ -94,24 +111,29 @@ export function Sidebar() {
           },
         ]
       : []),
-    ...NAV.slice(2),
+    ...NAV.slice(3),
   ];
 
-  // The auth pages (sign-in and the magic-link callback) are shown to a
-  // signed-out visitor and carry their own centered layout with the logo — no
-  // nav belongs there, and a second wordmark reads as a mistake. Render nothing.
-  // Placed after the hooks above so their call order stays unconditional.
-  if (pathname.startsWith("/login") || pathname.startsWith("/auth")) return null;
+  // Only the OAuth callback (/auth) hides the nav — it's a redirect route with no
+  // real UI. Everywhere else the nav shows, including the landing and the sign-in
+  // page: the app is browsable signed out, so a visitor reading the Library, or
+  // sitting on the login screen, still needs to get around. Placed after the
+  // hooks above so their call order stays unconditional.
+  if (pathname.startsWith("/auth")) return null;
 
   return (
     <nav className="sticky top-6 flex w-[148px] flex-none flex-col gap-0.5 self-start">
       {/* The brand sits above the nav, linking home like a logo should. The
           wordmark is a transparent PNG, so it takes the sidebar's own width and
           the theme background shows through. */}
-      <Link href="/" className="mb-2 block px-3 py-1">
+      {/* alt="" is deliberate: an <img> paints its alt TEXT while the PNG is
+          still decoding, so a non-empty alt flashes the word "Saku" on every hard
+          reload before the wordmark arrives. The link carries the accessible name
+          instead, and the image is decorative. */}
+      <Link href="/" aria-label="Saku — home" className="mb-2 block px-3 py-1">
         <img
           src="/brand/saku-wordmark.png"
-          alt="Saku"
+          alt=""
           width={96}
           height={96}
           className="h-auto w-24"
@@ -140,6 +162,22 @@ export function Sidebar() {
           </Link>
         );
       })}
+      {/* Sign in / out, only when auth is on (Supabase mode). Below the nav, off
+          a divider — it belongs to the account, not the curriculum. */}
+      {authEnabled ? (
+        <div className="mt-2 border-t border-border pt-2">
+          {signedIn ? (
+            <SignOut />
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-baseline whitespace-nowrap rounded-lg px-3 py-[9px] text-left text-sm text-text-muted hover:bg-panel"
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
+      ) : null}
     </nav>
   );
 }

@@ -3,17 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { isSupabaseStore } from "@/lib/store/mode";
 
-// Runs on every matched request (see middleware.ts). Two jobs, and only in
-// Supabase mode:
-//   1. Refresh the auth session — the access token is short-lived, and calling
-//      supabase.auth.getUser() here is what renews it and writes the rolled
-//      cookies onto the response. Without this the session silently expires.
-//   2. Gate the app — a signed-out visitor asking for a page is sent to /login.
-//      API routes are NOT redirected (they answer 401 themselves, which the
-//      client can act on), and neither is /login or the /auth callback.
+// Runs on every matched request (see middleware.ts). Its ONE job, and only in
+// Supabase mode: refresh the auth session. The access token is short-lived, and
+// calling supabase.auth.getUser() here is what renews it and writes the rolled
+// cookies onto the response. Without this the session silently expires.
 //
-// In file mode there is no auth and this is a pass-through, so local dev never
-// sees a login wall.
+// It does NOT gate the app. Saku is browsable signed out — the Library and every
+// reference page work without an account, and the data hooks treat a 401 as an
+// empty history rather than an error. Login is only needed to SAVE, and that is
+// enforced where the saving happens (the write API routes answer 401) and shown
+// where it helps (the home page is a landing when signed out; the sidebar offers
+// Sign in). In file mode there is no auth and this is a pass-through.
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -39,20 +39,9 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Do NOT run code between createServerClient and getUser — a slow call here is
-  // a chance for the session to be seen as expired. This refreshes it.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const path = request.nextUrl.pathname;
-  const isAuthPath =
-    path.startsWith("/login") || path.startsWith("/auth") || path.startsWith("/api");
-  if (!user && !isAuthPath) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
+  // Refreshes the session (and rolls the cookies via setAll above). Do not run
+  // code between createServerClient and getUser.
+  await supabase.auth.getUser();
 
   return response;
 }

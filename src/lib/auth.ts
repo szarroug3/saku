@@ -36,3 +36,16 @@ export async function getUserId(): Promise<string> {
   if (!user) throw new AuthRequiredError();
   return user.id;
 }
+
+/** Whether the current request has an app user — true always in file mode (the
+ * single local user), and in Supabase mode only when signed in. Unlike
+ * getUserId this never throws: it is the "show the app or the landing?" question
+ * the home page asks, where "not signed in" is an answer, not an error. */
+export async function isSignedIn(): Promise<boolean> {
+  if (!isSupabaseStore()) return true;
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return !!user;
+}

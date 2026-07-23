@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 
+import { SignedOutNotice } from "@/components/auth/signed-out-notice";
 import { SaveStatus } from "@/components/save-status";
 import { Sidebar } from "@/components/sidebar";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { isSignedIn } from "@/lib/auth";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { QuizSessionProvider } from "@/lib/quiz-session";
+import { isSupabaseStore } from "@/lib/store/mode";
 import { ThemeProvider } from "@/lib/theme";
 import type * as Theme from "@/lib/theme";
 
@@ -13,7 +16,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Saku",
-  description: "Hiragana and katakana drill, match, and grid quizzes",
+  description:
+    "Learn Japanese from the ground up: kana, kanji, vocabulary, grammar, and more.",
 };
 
 /* These are re-declared instead of imported, and that is load-bearing.
@@ -83,9 +87,14 @@ if(c!==${JSON.stringify(DEFAULT_ACCENT)}&&${JSON.stringify(
 )}.indexOf(c)>=0)d.setAttribute("data-accent",c);
 }catch(e){}})()`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // The sidebar is the app's nav, so it only belongs to someone who's in the
+  // app: hidden for a signed-out visitor (who sees the landing) and on the auth
+  // pages. `authEnabled` (Supabase mode) is what puts a Sign out in it — in file
+  // mode there is no session to end.
+  const [signedIn, authEnabled] = [await isSignedIn(), isSupabaseStore()];
   return (
     // suppressHydrationWarning: the script below rewrites these two attributes
     // before React hydrates, so the client <html> legitimately differs from
@@ -98,6 +107,11 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
+        {/* Preload the brand art so it's decoded before first paint — otherwise
+            the <img> alt ("Saku") flashes as text on the landing and in the
+            sidebar until the PNG arrives. */}
+        <link rel="preload" as="image" href="/brand/saku-mark.png" />
+        <link rel="preload" as="image" href="/brand/saku-wordmark.png" />
       </head>
       <body>
         <ThemeProvider>
@@ -113,13 +127,14 @@ export default function RootLayout({
                     ("discard the quiz in progress?") is their state. */}
                 <ConfirmProvider>
                   <div className="mx-auto flex max-w-[1080px] gap-3.5 px-3 pb-15 pt-6">
-                    <Sidebar />
+                    <Sidebar signedIn={signedIn} authEnabled={authEnabled} />
                     <main className="min-w-0 flex-1">
                       {/* Above the page, on every page: the screens that
                           would otherwise show a learner's work as missing
                           are exactly the ones this has to appear on. Renders
                           nothing when there is nothing unsaved. */}
                       <SaveStatus />
+                      <SignedOutNotice show={authEnabled && !signedIn} />
                       {children}
                     </main>
                   </div>
