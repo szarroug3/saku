@@ -79,7 +79,7 @@ import { entryOf, factInfo } from "@/lib/facts";
 import { COUNTER_ENTRIES } from "@/data/counters";
 import { postClaim, postSeen } from "@/lib/progress-fetch";
 import { useHistory } from "@/lib/use-history";
-import type { FactId } from "@/types";
+import type { FactId, HistoryFile } from "@/types";
 
 // The eight track keys a run can belong to. For every track but the two vocab
 // ones this IS the fact's subject string; counters and words share the `word`
@@ -115,6 +115,36 @@ function trackOfRun(run: RunInfo): TrackKey | null {
   // kana · kanji · radical · grammar · transitivity · keigo all key on their
   // own subject, which is exactly the track key.
   return subject as TrackKey;
+}
+
+// History with a set of facts masked back out: every trace the frontier reads
+// to call a fact "met" (its aggregate, a claim, a "quiz me"), gone. See the
+// resumeLesson note for why: it hands the next-lesson functions the history as
+// it stood BEFORE an in-progress session committed its first round, so the
+// exact lesson that session is resting inside can be rebuilt and shown again.
+//
+// A shallow rebuild of the three fact-keyed maps, not a deep clone: the values
+// are left alone, only the keys in `drop` are omitted, and `sessions` is passed
+// through untouched (freshFacts reads the derived `facts`/`claims`/`seen`, never
+// the raw session list). Returns the SAME object when there is nothing to mask,
+// so the common no-open-session render allocates nothing.
+function withoutFacts(history: HistoryFile, facts: readonly FactId[]): HistoryFile {
+  if (!facts.length) return history;
+  const drop = new Set(facts);
+  const strip = <V,>(rec: Record<FactId, V> | undefined): Record<FactId, V> | undefined => {
+    if (!rec) return rec;
+    const out: Record<FactId, V> = {};
+    for (const key in rec) {
+      if (!drop.has(key as FactId)) out[key as FactId] = rec[key as FactId];
+    }
+    return out;
+  };
+  return {
+    ...history,
+    facts: strip(history.facts) ?? {},
+    claims: strip(history.claims),
+    seen: strip(history.seen),
+  };
 }
 
 export function HomeFeed() {
@@ -403,6 +433,60 @@ export function HomeFeed() {
   const counterRun = runForTrack("counter");
   const keigoRun = runForTrack("keigo");
 
+  // WHEN THE FRONTIER MOVES PAST A SESSION THAT IS STILL OPEN
+  // ========================================================
+  // runForTrack above matches a run to its track's CARD, but that only helps
+  // while the card is on screen, and completing one round can take it off.
+  // A curriculum session drills a round and, on completing it, commits that
+  // round to history; for a step-ahead track that commit does not nudge the
+  // card to the next group, it removes the card outright. Finish round 1 of a
+  // radical lesson and that radical unlocks its kanji, so nextRadicalLesson
+  // returns null the instant the session pauses to rest: the radical card is
+  // gone, the kanji card takes its place with a fresh Start, and the resting
+  // radical session is reachable only from /current. Kana at its last group,
+  // and any track whose next lesson is momentarily unavailable, orphan the same
+  // way. This is the reported bug, and trackOfRun could never reach it: there
+  // was no card left to light.
+  //
+  // So when the live frontier offers NO card for a track that still has an open
+  // session, rebuild the lesson that session is resting inside: recompute the
+  // track's next lesson against a history with the run's OWN facts masked back
+  // out (withoutFacts), which is exactly the frontier as it stood when the
+  // session began. The card returns, with its Continue, and nothing else
+  // shifts: the fallback fires only when the card would otherwise be absent, so
+  // a track whose frontier is still non-null keeps showing the next set (the
+  // deliberate behavior runForTrack's note describes). It cannot double-light
+  // either, because it adds a card precisely where there was none.
+  const resumeLesson = <T,>(
+    frontier: T | null,
+    run: RunInfo | undefined,
+    rebuild: (h: HistoryFile) => T | null,
+  ): T | null => (frontier ? frontier : run ? rebuild(withoutFacts(history, run.facts)) : null);
+  const order = kanjiTeachOrder(cfg.newKanjiOrder);
+  const range = { min: cfg.lessonMinCost, max: cfg.lessonMaxCost };
+  const lessonShown = resumeLesson(lesson, lessonRun, (h) => nextLesson(h));
+  const radicalLessonShown = resumeLesson(radicalLesson, radicalRun, (h) =>
+    nextRadicalLesson(h, order, range, RADICALS_PER_LESSON_DEFAULT),
+  );
+  const kanjiLessonShown = resumeLesson(kanjiLesson, kanjiRun, (h) =>
+    nextKanjiLesson(h, order, range),
+  );
+  const wordLessonShown = resumeLesson(wordLesson, wordRun, (h) =>
+    nextWordLesson(h, cfg.wordsPerLesson),
+  );
+  const counterLessonShown = resumeLesson(counterLesson, counterRun, (h) =>
+    nextCounterLesson(h, COUNTERS_PER_LESSON_DEFAULT),
+  );
+  const grammarLessonShown = resumeLesson(grammarLesson, grammarRun, (h) =>
+    nextGrammarLesson(h, GRAMMAR_PER_LESSON_DEFAULT),
+  );
+  const transitivityLessonShown = resumeLesson(transitivityLesson, transitivityRun, (h) =>
+    nextTransitivityLesson(h, TRANSITIVITY_PER_LESSON_DEFAULT),
+  );
+  const keigoLessonShown = resumeLesson(keigoLesson, keigoRun, (h) =>
+    nextKeigoLesson(h, KEIGO_PER_LESSON_DEFAULT),
+  );
+
   // The curriculum is finished only when EVERY track's card would render
   // nothing — the exact negation of the render conditions below, so this is
   // true precisely when the lesson feed would otherwise be empty. The word and
@@ -410,17 +494,21 @@ export function HomeFeed() {
   // locked-but-started track still counts as unfinished here. Transitivity has
   // no lock card (an unready pair is skipped), so it counts as unfinished
   // exactly while it still has a ready lesson to teach.
+  // The `...Shown` forms, not the raw frontier: a track resting inside an open
+  // session still has a card (resumeLesson rebuilds it), so the feed is not
+  // empty and the curriculum is not "complete" until that session is finished
+  // or discarded.
   const curriculumComplete =
-    !lesson &&
-    !radicalLesson &&
-    !kanjiLesson &&
-    !wordLesson &&
+    !lessonShown &&
+    !radicalLessonShown &&
+    !kanjiLessonShown &&
+    !wordLessonShown &&
     !(wordLock && wordsTrackStarted) &&
-    !grammarLesson &&
+    !grammarLessonShown &&
     !(grammarLock && grammarTrackStarted) &&
-    !transitivityLesson &&
-    !counterLesson &&
-    !keigoLesson;
+    !transitivityLessonShown &&
+    !counterLessonShown &&
+    !keigoLessonShown;
 
   // Until history has loaded, the lessons above are computed from an EMPTY
   // history — which is the day-one curriculum (Vowels あいうえお). Rendering that
@@ -439,9 +527,9 @@ export function HomeFeed() {
           the top, and dismissed for good on the first "Got it". */}
       <ClaimExplainer />
 
-      {lesson ? (
+      {lessonShown ? (
         <NextLesson
-          lesson={lesson}
+          lesson={lessonShown}
           onTeach={teachLesson}
           onQuizMe={quizMe}
           onClaim={claim}
@@ -455,9 +543,9 @@ export function HomeFeed() {
           blocked by an unlearned radical, the kanji card below falls silent and
           this one names the radicals to learn first. Same onStart as kanji: the
           lesson IS its facts, all new, all taught. */}
-      {radicalLesson ? (
+      {radicalLessonShown ? (
         <NextRadicalLesson
-          lesson={radicalLesson}
+          lesson={radicalLessonShown}
           onStart={startLesson}
           onClaim={claim}
           inSession={!!radicalRun}
@@ -470,9 +558,9 @@ export function HomeFeed() {
           lesson's meaning facts are drillable the moment it's learned; the
           reading facts a word later proves are the words track's business, not
           this card's. */}
-      {kanjiLesson ? (
+      {kanjiLessonShown ? (
         <NextKanjiLesson
-          lesson={kanjiLesson}
+          lesson={kanjiLessonShown}
           onStart={startLesson}
           onClaim={claim}
           inSession={!!kanjiRun}
@@ -484,9 +572,9 @@ export function HomeFeed() {
           parallel once kana is done. The word lesson IS its facts (meaning, and
           reading for a kanji word), all new, all taught: the same onStart the
           kanji card takes. Learning them is what unlocks the kanji readings. */}
-      {wordLesson || (wordLock && wordsTrackStarted) ? (
+      {wordLessonShown || (wordLock && wordsTrackStarted) ? (
         <NextWordLesson
-          lesson={wordLesson}
+          lesson={wordLessonShown}
           lock={wordLock}
           onStart={startWordLesson}
           onClaim={claimWordLesson}
@@ -503,9 +591,9 @@ export function HomeFeed() {
           the words card's startWordLesson. No lock card — a form gated on a
           number kanji is skipped, so this is present only when there are ready
           counters to teach. */}
-      {counterLesson ? (
+      {counterLessonShown ? (
         <NextCounterLesson
-          lesson={counterLesson}
+          lesson={counterLessonShown}
           onStart={startLesson}
           onClaim={claim}
           inSession={!!counterRun}
@@ -518,9 +606,9 @@ export function HomeFeed() {
           like kanji's). When the next patterns need a word type the learner
           hasn't met, the card locks (naming the type) instead of disappearing,
           but only after the track has opened — like the words track. */}
-      {grammarLesson || (grammarLock && grammarTrackStarted) ? (
+      {grammarLessonShown || (grammarLock && grammarTrackStarted) ? (
         <NextGrammarLesson
-          lesson={grammarLesson}
+          lesson={grammarLessonShown}
           lock={grammarTrackStarted ? grammarLock : null}
           onStart={startLesson}
           onClaim={claim}
@@ -534,9 +622,9 @@ export function HomeFeed() {
           teach-then-drill (its facts ARE the session, like the others). No lock
           card: an unready pair is skipped rather than blocking, so this is
           present only when there are ready pairs to teach. */}
-      {transitivityLesson ? (
+      {transitivityLessonShown ? (
         <NextTransitivityLesson
-          lesson={transitivityLesson}
+          lesson={transitivityLessonShown}
           onStart={startLesson}
           onClaim={claim}
           inSession={!!transitivityRun}
@@ -549,9 +637,9 @@ export function HomeFeed() {
           (its facts ARE the session, like the others). No lock card: an unready
           set is skipped rather than blocking, so this is present only when there
           are ready sets to teach. */}
-      {keigoLesson ? (
+      {keigoLessonShown ? (
         <NextKeigoLesson
-          lesson={keigoLesson}
+          lesson={keigoLessonShown}
           onStart={startLesson}
           onClaim={claim}
           inSession={!!keigoRun}
