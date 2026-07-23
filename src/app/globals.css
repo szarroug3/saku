@@ -1244,6 +1244,22 @@ body {
   backdrop-filter: var(--card-frost);
 }
 
+/* A PORTALLED OVERLAY PANEL keeps the frost the scrolling cards gave up. When
+ * kiri's .kq-material stopped carrying a backdrop-filter (the scroll-perf fix,
+ * see --material-frost), the dialogs went with it — and a dialog RELIED on that
+ * blur to lift itself off the page (confirm-dialog portals to <body> precisely
+ * so its backdrop is the page). Without it a translucent panel let the page read
+ * straight through, worst of all in dark kiri where --card is barely opaque. So
+ * the frost comes back HERE, for dialogs only: a dialog is ONE element over the
+ * page, not a wall of scrolling cards, so the backdrop-filter that janks the
+ * Library costs nothing on a panel that never scrolls. Add `kq-overlay` beside
+ * `kq-material` on any portalled dialog surface. kiri only; the opaque themes
+ * occlude by their solid --card already. */
+[data-theme="kiri"] .kq-overlay {
+  -webkit-backdrop-filter: var(--card-frost);
+  backdrop-filter: var(--card-frost);
+}
+
 /* THE CARD'S SURFACE, REBUILT OPAQUELY — the shared recipe, and the answer to
  * "what is this sitting on?" whenever the answer is "a card, and I cannot use
  * backdrop-filter to see it".

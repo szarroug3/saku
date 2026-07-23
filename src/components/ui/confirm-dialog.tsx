@@ -162,11 +162,14 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               // a thing in the page flow and wrong for a panel over text — a
               // dialog must occlude what it covers, aizome included.
               "rounded-(--radius) border border-border bg-card p-[18px] shadow-card",
-              // The frost, asked for BY NAME. Resolves to kiri's
-              // blur(18px) saturate(150%) and to `none` in the three opaque
-              // themes — aizome's "my material is nothing" included, which is
-              // why there is no aizome special case here.
-              "kq-material",
+              // The frost, asked for BY NAME. kq-material alone no longer carries
+              // one in kiri (the scrolling cards gave the backdrop-filter up for
+              // scroll perf — see globals --material-frost), so a portalled dialog
+              // adds kq-overlay to get it back: kiri's blur(18px) saturate(150%),
+              // `none` in the three opaque themes (aizome's "my material is
+              // nothing" included, which is why there is no aizome special case).
+              // Without it a dialog goes see-through and the page reads through it.
+              "kq-material kq-overlay",
               "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
             ].join(" ")}
           >

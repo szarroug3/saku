@@ -38,6 +38,7 @@ import { ConversionCard } from "@/components/lesson/conversion-card";
 import { LessonItemView } from "@/components/lesson/lesson-item-view";
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { AttributionLink } from "@/components/library/attribution-link";
+import { ConfigPreview } from "@/components/quiz/config-preview";
 import { Btn } from "@/components/ui";
 import { lessonSteps } from "@/lib/lesson-steps";
 import type { FactId, HistoryFile } from "@/types";
@@ -143,6 +144,18 @@ export function TeachWalk({
           it reads as the escape hatch it always was instead of the screen's
           loudest element. The bar hides it on the last card so the two never say
           "Quiz me" at once (see session/page.tsx). */}
+      {/* The config the round is about to run with, shown ONLY on the last card
+          — the moment the forward button becomes "Quiz me" and the drill is one
+          click away, which the scope-fork note below calls out as exactly when
+          "how hard do I want this" is live. On earlier steps the screen is
+          teaching material and this would be noise beside it; here it sits
+          directly above the button that starts the drill, so the settings that
+          drill will use are visible and changeable before it begins. */}
+      {last ? (
+        <div className="mt-4">
+          <ConfigPreview />
+        </div>
+      ) : null}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <Btn
           onClick={() => onStep(at - 1)}

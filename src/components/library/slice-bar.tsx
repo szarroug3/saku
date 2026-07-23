@@ -23,8 +23,10 @@
 // you already know it and just want to be tested — the same run Practice starts.
 
 import { useState } from "react";
+import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 
 import { AddToList } from "@/components/library/add-to-list";
+import { ConfigPreview } from "@/components/quiz/config-preview";
 import { Btn, Hint } from "@/components/ui";
 import {
   drillPlan,
@@ -72,6 +74,11 @@ export function SliceBar({
 }) {
   const { startSession, startQuiz } = useQuizSession();
   const [adding, setAdding] = useState(false);
+  // "Quiz me" no longer drops straight into the drill. It opens a pre-start step
+  // so the config that WILL run is visible and changeable first — the same gap
+  // Practice already closes by showing the editor inline, closed here for the
+  // launch points that used to bypass it. See QuizPreStart below.
+  const [quizzing, setQuizzing] = useState(false);
 
   const plan = drillPlan(slice, facts, claims, now, includeSolid);
   // Teach first, then probe — the order the session should MEET them, which is
@@ -184,7 +191,7 @@ export function SliceBar({
               single-fact slices; `order.length` hides them on empty ones. */}
           {canDrill && order.length > 0 ? (
             <>
-              <Btn sel onClick={() => startQuiz(order, { what: slice.label })}>
+              <Btn sel onClick={() => setQuizzing(true)}>
                 Quiz me {order.length}
               </Btn>
               <Btn
@@ -198,6 +205,102 @@ export function SliceBar({
           ) : null}
         </div>
       </div>
+      {/* The pre-start step for "Quiz me". Mounted (and portalled) only while
+          open, and Start runs the exact call the button used to run inline —
+          startQuiz(order, { what: slice.label }) — so nothing about which facts
+          get drilled changes, only that you see and can edit the config first. */}
+      <QuizPreStart
+        open={quizzing}
+        onOpenChange={setQuizzing}
+        label={slice.label}
+        count={order.length}
+        onStart={() => startQuiz(order, { what: slice.label })}
+      />
     </>
+  );
+}
+
+// The "Quiz me" pre-start modal. Built on the same Radix AlertDialog pieces as
+// ui/confirm-dialog.tsx and for the same reasons documented there in full: a
+// native dialog is invisible to anything driving the app over CDP, and the
+// portal-to-body + flat scrim + frosted panel arrangement is what lets a
+// .kq-material panel actually frost (an overlay carrying its own backdrop-filter
+// would blur the blur, and a .kq-material nested inside a Card frosts nothing).
+// This one is not a yes/no confirm, so it renders its own body — the pool line,
+// the ConfigPreview, and a Start — rather than going through useConfirm.
+function QuizPreStart({
+  open,
+  onOpenChange,
+  label,
+  count,
+  onStart,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** The pool being quizzed — slice.label, e.g. "Kana". */
+  label: string;
+  /** How many questions the run holds — order.length, the same number the
+   * button showed. */
+  count: number;
+  /** Runs the quiz. Navigates away, so the dialog need not close itself. */
+  onStart: () => void;
+}) {
+  return (
+    <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <AlertDialogPrimitive.Portal>
+        <AlertDialogPrimitive.Overlay
+          className="fixed inset-0 z-50 bg-(--scrim) data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        />
+        <AlertDialogPrimitive.Content
+          data-testid="quiz-prestart-dialog"
+          className={[
+            // Flex column, bounded to the viewport: the config editor can expand
+            // to six rows when "Change" is open, which is taller than a phone. So
+            // the panel caps its height and the MIDDLE scrolls, keeping the title
+            // and the Start/Cancel footer on screen — Start must never be pushed
+            // off where it can't be reached.
+            "fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-32px)] w-[calc(100vw-24px)] max-w-[460px] -translate-x-1/2 -translate-y-1/2 flex-col",
+            // A Card over the page — the same four tokens and the same
+            // rounded-(--radius) reasoning confirm-dialog.tsx spells out: it
+            // must occlude what it covers, so it takes the panel radius, not the
+            // Card/Btn class pairs that trigger the aizome dissolve. kq-overlay
+            // gives it back the frost the scrolling cards gave up (see globals):
+            // a dialog is one portalled element, not a wall, so the blur that
+            // janks the Library is free here and is what lifts it off the page.
+            "rounded-(--radius) border border-border bg-card p-[18px] shadow-card",
+            "kq-material kq-overlay",
+            "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+          ].join(" ")}
+        >
+          <AlertDialogPrimitive.Title className="flex-none text-[15px] font-semibold text-text">
+            {label} · {count} question{count === 1 ? "" : "s"}
+          </AlertDialogPrimitive.Title>
+          {/* Radix wants a description for a11y; the config line is it. Pointed
+              at by aria wiring via the Description wrapper so a screen reader
+              hears what the run will do, not just its size. The min-h-0 is what
+              lets this shrink and scroll inside the flex column instead of
+              overflowing it. */}
+          <AlertDialogPrimitive.Description asChild>
+            <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
+              <ConfigPreview />
+            </div>
+          </AlertDialogPrimitive.Description>
+          <div className="mt-4 flex flex-none justify-end gap-2">
+            {/* Cancel first in the DOM: it holds initial focus, so an Enter
+                that arrives before the dialog is read closes it rather than
+                starting a quiz — the same harmless-default rule confirm-dialog
+                keeps. */}
+            <AlertDialogPrimitive.Cancel asChild>
+              <Btn data-testid="quiz-prestart-cancel">Cancel</Btn>
+            </AlertDialogPrimitive.Cancel>
+            <AlertDialogPrimitive.Action asChild>
+              <Btn go data-testid="quiz-prestart-start" onClick={onStart}>
+                Start
+              </Btn>
+            </AlertDialogPrimitive.Action>
+          </div>
+        </AlertDialogPrimitive.Content>
+      </AlertDialogPrimitive.Portal>
+    </AlertDialogPrimitive.Root>
   );
 }

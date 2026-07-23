@@ -34,6 +34,7 @@
 // one cannot have it: leaving during a rest is free, because nothing is in
 // flight.
 
+import { ConfigPreview } from "@/components/quiz/config-preview";
 import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
 import {
   formatCountdown,
@@ -108,6 +109,19 @@ export function RestScreen({
             </div>
           </>
         )}
+      </Card>
+
+      {/* How the NEXT round will run, and one tap to change it. This does not
+          break the rule at the top of this file: the rule bars anything you
+          could REHEARSE with — the items, the answers, a preview of what's
+          coming. Config is none of that. It is mode / direction / style /
+          length, a statement of how you'll be asked, not of what — nothing to
+          study off. Putting it here is what makes the config visible at a launch
+          point that otherwise just resumes drilling with settings you can't see.
+          The re-snapshot per round already lands any change on the next round,
+          so editing during the break is the natural time to do it. */}
+      <Card className="px-[15px] py-[13px]">
+        <ConfigPreview />
       </Card>
 
       <Card className="px-[15px] py-[13px]">
