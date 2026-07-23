@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
+import { LocalMigration } from "@/components/auth/local-migration";
 import { SignedOutNotice } from "@/components/auth/signed-out-notice";
 import { SaveStatus } from "@/components/save-status";
 import { Sidebar } from "@/components/sidebar";
@@ -143,6 +144,12 @@ export default async function RootLayout({
                           are exactly the ones this has to appear on. Renders
                           nothing when there is nothing unsaved. */}
                       <SaveStatus />
+                      {/* When a signed-out learner signs in, their local
+                          progress is replayed into the account and the local
+                          copy cleared — once, best effort. Only in Supabase mode
+                          with a session; file mode never has a local copy to
+                          merge. Renders nothing. */}
+                      <LocalMigration signedIn={authEnabled && signedIn} />
                       <SignedOutNotice show={authEnabled && !signedIn} />
                       {children}
                     </main>

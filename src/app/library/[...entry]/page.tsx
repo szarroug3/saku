@@ -115,6 +115,7 @@ import { mixupsOf } from "@/lib/library/mixups";
 import { piecesOf } from "@/lib/library/word-pieces";
 import { entryStanding, standingOf } from "@/lib/library/standing";
 import { speak } from "@/lib/speech";
+import { postClaim } from "@/lib/progress-fetch";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -185,11 +186,9 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const say = (text: string) => speak(text, cfg.voiceName);
 
   const claim = async (ids: FactId[]) => {
-    await fetch("/api/claim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ facts: ids, known: true }),
-    }).catch(() => {});
+    // postClaim routes a signed-out claim (401) into this browser's local
+    // history; refresh() then re-reads whichever store answered.
+    await postClaim(ids, true);
     await refresh();
   };
 

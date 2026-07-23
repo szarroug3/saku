@@ -6,6 +6,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { deleteList as deleteListWrite, postList } from "@/lib/progress-fetch";
+import { loadLocalLists } from "@/lib/store/local-progress";
 import type { EntryId, SavedList } from "@/types";
 
 /**
@@ -32,6 +34,10 @@ export function useLists() {
     try {
       const res = await fetch("/api/lists", { cache: "no-store" });
       if (res.ok) setLists((await res.json()).lists ?? []);
+      // 401 = signed out: read this browser's local lists, the mirror of what
+      // useHistory does. Signed-out list edits fall back to localStorage (see
+      // progress-fetch.ts), and this is where they come back into view.
+      else if (res.status === 401) setLists(loadLocalLists());
     } catch {
       // server unreachable — keep whatever we have
     } finally {
@@ -45,13 +51,14 @@ export function useLists() {
     void refresh();
   }, [refresh]);
 
+  // Every write below goes through progress-fetch, so a signed-out edit that the
+  // server answers with 401 is applied to this browser's local lists instead of
+  // vanishing, and the refresh() that follows re-reads whichever store answered
+  // (server when signed in, local on 401). One reroute, at the hook every list
+  // mutation already funnels through.
   const save = useCallback(
     async (list: SavedList) => {
-      await fetch("/api/lists", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(list),
-      }).catch(() => {});
+      await postList(list);
       await refresh();
     },
     [refresh],
@@ -62,11 +69,7 @@ export function useLists() {
    * quirk. */
   const addTo = useCallback(
     async (id: string, entries: EntryId[]) => {
-      await fetch("/api/lists", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ addTo: id, entries }),
-      }).catch(() => {});
+      await postList({ addTo: id, entries });
       await refresh();
     },
     [refresh],
@@ -77,11 +80,7 @@ export function useLists() {
    * removeFromList); the UI only ever calls this for writable ones. */
   const removeFrom = useCallback(
     async (id: string, entries: EntryId[]) => {
-      await fetch("/api/lists", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ removeFrom: id, entries }),
-      }).catch(() => {});
+      await postList({ removeFrom: id, entries });
       await refresh();
     },
     [refresh],
@@ -92,11 +91,7 @@ export function useLists() {
    * expects to be able to rename. */
   const rename = useCallback(
     async (id: string, name: string) => {
-      await fetch("/api/lists", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rename: id, name }),
-      }).catch(() => {});
+      await postList({ rename: id, name });
       await refresh();
     },
     [refresh],
@@ -106,9 +101,7 @@ export function useLists() {
    * itself, entries and all. */
   const remove = useCallback(
     async (id: string) => {
-      await fetch(`/api/lists?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      }).catch(() => {});
+      await deleteListWrite(id);
       await refresh();
     },
     [refresh],

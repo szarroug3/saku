@@ -55,6 +55,7 @@ import {
 } from "@/lib/library/url-state";
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { postClaim } from "@/lib/progress-fetch";
 import { useHistory } from "@/lib/use-history";
 import type { EntryId, FactId } from "@/types";
 
@@ -344,11 +345,9 @@ function LibraryBody() {
     entryStanding(factsOf(entry.id), history.facts, claims, cfg.accuracyMetric, now);
 
   const claim = async (facts: FactId[]) => {
-    await fetch("/api/claim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ facts, known: true }),
-    }).catch(() => {});
+    // postClaim, not a raw fetch: a signed-out claim (401) is saved to this
+    // browser instead of vanishing, and the refresh() below reads it back.
+    await postClaim(facts, true);
     await refresh();
   };
 

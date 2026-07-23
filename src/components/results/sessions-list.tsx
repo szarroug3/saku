@@ -21,6 +21,7 @@ import { plural } from "@/lib/words";
 import { Hint, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatAccuracy } from "@/lib/accuracy";
+import { postDelete } from "@/lib/progress-fetch";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
 import type { QuizSessionRecord } from "@/types";
@@ -190,11 +191,10 @@ export function SessionsList() {
 
   const deleteSessions = async (ids: (string | number)[], all: boolean) => {
     try {
-      const res = await fetch("/api/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(all ? { all: true } : { ids }),
-      });
+      // postDelete: signed out (401), the delete happens in this browser's local
+      // history and refresh() re-reads it, so removing a signed-out session works
+      // the same as a signed-in one.
+      const res = await postDelete(all ? { all: true } : { ids });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await refresh();
       setPicked(new Set());

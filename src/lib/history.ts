@@ -44,7 +44,14 @@ import {
 } from "node:fs";
 import path from "node:path";
 
-import { emptyAggregate, foldSession, foldSessions } from "@/lib/aggregate";
+import {
+  applyClaims,
+  applyDeleteSessions,
+  applyDropClaims,
+  applySeen,
+  applySession,
+  emptyHistory,
+} from "@/lib/history-ops";
 import { isSupabaseStore } from "@/lib/store/mode";
 import { readHistoryRow, writeHistoryRow } from "@/lib/store/supabase-store";
 import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
@@ -246,11 +253,9 @@ export async function saveClaims(
   facts: FactId[],
   ts: number,
 ): Promise<HistoryFile> {
-  const hist = await loadHistory(userId);
-  hist.claims ??= {};
-  for (const f of facts) hist.claims[f] = ts;
-  await writeHistory(userId, hist);
-  return hist;
+  const next = applyClaims(await loadHistory(userId), facts, ts);
+  await writeHistory(userId, next);
+  return next;
 }
 
 /**
@@ -269,11 +274,9 @@ export async function saveSeen(
   facts: FactId[],
   ts: number,
 ): Promise<HistoryFile> {
-  const hist = await loadHistory(userId);
-  hist.seen ??= {};
-  for (const f of facts) hist.seen[f] = ts;
-  await writeHistory(userId, hist);
-  return hist;
+  const next = applySeen(await loadHistory(userId), facts, ts);
+  await writeHistory(userId, next);
+  return next;
 }
 
 /** Withdraw claims — "actually, I don't". Deletes the record rather than
@@ -281,10 +284,9 @@ export async function saveSeen(
  * one every reader already handles, and an absent key says "never claimed"
  * where `0` would have to be special-cased into meaning it. */
 export async function dropClaims(userId: string, facts: FactId[]): Promise<HistoryFile> {
-  const hist = await loadHistory(userId);
-  if (hist.claims) for (const f of facts) delete hist.claims[f];
-  await writeHistory(userId, hist);
-  return hist;
+  const next = applyDropClaims(await loadHistory(userId), facts);
+  await writeHistory(userId, next);
+  return next;
 }
 
 /**
@@ -309,27 +311,17 @@ export async function saveSession(
   userId: string,
   session: QuizSessionRecord,
 ): Promise<HistoryFile> {
+  // IDEMPOTENT ON `id`, and the dedup path must NOT write. The client queues
+  // records and retries them until the server acknowledges one, and a retry
+  // whose original DID land (the response was lost, not the request) would
+  // otherwise append the same round twice and double every count in it. The
+  // fold, the 200-cap and the id-dedup all live in applySession now (see
+  // history-ops.ts); when it returns the SAME object it was given, the record
+  // was already stored, so writing again is pointless churn on the durable file.
   const hist = await loadHistory(userId);
-  // IDEMPOTENT ON `id`. The client now queues records and retries them until the
-  // server acknowledges one, and a retry whose original DID land (the response
-  // was lost, not the request) would otherwise append the same round twice and
-  // double every count in it. The id is minted once, with the record, and
-  // travels with it through every retry — so "have I already got this one" is a
-  // lookup rather than a guess. Records written before ids existed have no id
-  // and are never deduplicated, which is correct: without one there is nothing
-  // to be sure about, and silently collapsing two genuinely distinct sessions
-  // would be the worse error.
-  if (session.id && hist.sessions.some((s) => s.id === session.id)) {
-    return hist;
-  }
-  hist.sessions.push(session);
-  hist.sessions = hist.sessions.slice(-200);
-  for (const [f, s] of Object.entries(session.facts ?? {})) {
-    const key = f as keyof typeof hist.facts;
-    foldSession((hist.facts[key] ??= emptyAggregate()), s, session.ts);
-  }
-  await writeHistory(userId, hist);
-  return hist;
+  const next = applySession(hist, session);
+  if (next !== hist) await writeHistory(userId, next);
+  return next;
 }
 
 /** Remove sessions (by ts) or everything, then rebuild the per-fact aggregate
@@ -346,29 +338,19 @@ export async function deleteSessions(
   ids: (number | string)[] | null,
   deleteAll: boolean,
 ): Promise<HistoryFile> {
+  // A delete that selects NOTHING must change nothing AND must not touch the
+  // file. The rebuild folds hist.facts from the SURVIVING sessions, but
+  // hist.facts is grown incrementally by saveSession and legitimately carries
+  // contributions from sessions the 200-cap has already evicted from
+  // hist.sessions — so rebuilding on an empty request would silently shrink the
+  // durable aggregate for a request that asked to delete nothing. applyDeleteSessions
+  // owns the guard, the id-vs-ts keying and the rebuild (see history-ops.ts) and
+  // returns the SAME object on the no-op, so `next !== hist` is exactly "did
+  // anything change": bail before touching the file when it did not.
   const hist = await loadHistory(userId);
-  // A delete that selects NOTHING must change nothing. The rebuild below folds
-  // hist.facts from the SURVIVING sessions, but hist.facts is grown
-  // incrementally by saveSession and legitimately carries contributions from
-  // sessions the 200-cap has already evicted from hist.sessions. Rebuilding on
-  // an empty request (the empty-POST path: deleteSessions(null, false)) would
-  // silently discard every one of those, shrinking the durable aggregate for a
-  // request that asked to delete nothing. So bail before touching the file.
-  if (!deleteAll && (!ids || ids.length === 0)) return hist;
-  if (deleteAll) {
-    hist.sessions = [];
-  } else {
-    // Key on the STABLE identity, not the wall clock: two records made in the
-    // same millisecond share a `ts`, so keying on `ts` deletes both when the
-    // user asked to drop one. `id` (minted with the record — see saveSession)
-    // is that identity; records written before it existed fall back to `ts`,
-    // which is the best available and matches how they were selected.
-    const drop = new Set(ids);
-    hist.sessions = hist.sessions.filter((s) => !drop.has(s.id ?? s.ts));
-  }
-  hist.facts = foldSessions(hist.sessions);
-  await writeHistory(userId, hist);
-  return hist;
+  const next = applyDeleteSessions(hist, ids, deleteAll);
+  if (next !== hist) await writeHistory(userId, next);
+  return next;
 }
 
 /**
@@ -391,7 +373,7 @@ export async function resetAll(userId: string): Promise<HistoryFile> {
   // damaged bytes have to be preserved before they go. See quarantineUnreadable.
   // File-only: Postgres has no half-written-row failure to quarantine against.
   if (!isSupabaseStore()) quarantineUnreadable();
-  const empty: HistoryFile = { sessions: [], facts: {} };
+  const empty = emptyHistory();
   await writeHistory(userId, empty);
   return empty;
 }

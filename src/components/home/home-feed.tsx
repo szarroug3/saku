@@ -69,6 +69,7 @@ import { readingsProvedBy } from "@/lib/word-unlock";
 import { nextLesson } from "@/lib/lesson";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
+import { postClaim, postSeen } from "@/lib/progress-fetch";
 import { useHistory } from "@/lib/use-history";
 import type { FactId } from "@/types";
 
@@ -236,12 +237,7 @@ export function HomeFeed() {
   // Errors are swallowed on purpose, as they were at each of the call sites this
   // replaced: failing to record the intent must not cost you the drill you asked
   // for.
-  const markSeen = (facts: FactId[]) =>
-    fetch("/api/seen", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ facts }),
-    }).catch(() => {});
+  const markSeen = (facts: FactId[]) => postSeen(facts);
 
   // The lesson IS the session: its group, all of it new, all of it taught. It
   // does not go through the budget, because the budget's job is deciding how
@@ -290,11 +286,7 @@ export function HomeFeed() {
   };
 
   const claim = async (facts: FactId[]) => {
-    await fetch("/api/claim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ facts, known: true }),
-    }).catch(() => {});
+    await postClaim(facts, true);
     // The card is a function of history, so re-reading history IS how the next
     // lesson advances. Nothing tells it which group to show next.
     await refresh();
@@ -323,11 +315,7 @@ export function HomeFeed() {
   const claimWordLesson = async (facts: FactId[]) => {
     const kebs = wordLesson?.cards.map((c) => c.keb) ?? [];
     const readings = readingsProvedBy(kebs);
-    await fetch("/api/claim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ facts, known: true }),
-    }).catch(() => {});
+    await postClaim(facts, true);
     if (readings.length) await markSeen(readings);
     await refresh();
   };

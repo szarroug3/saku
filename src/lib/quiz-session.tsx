@@ -74,6 +74,7 @@ import {
   enqueuePending,
   readPending,
 } from "@/lib/pending-records";
+import { postClaim, postSession } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
@@ -763,10 +764,12 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
    * made. Skipping a stuck one to post a later one would land them out of
    * order; posting them in parallel would too.
    *
-   * A record leaves the queue on ONE signal — a 2xx — and on nothing else. A
-   * 503 (history.json is unreadable) keeps it, a network failure keeps it, a
-   * closed tab keeps it. That is the whole difference from the `.catch(() =>
-   * {})` this replaced, where every one of those threw the record away.
+   * A record leaves the queue when it is durably saved SOMEWHERE — a 2xx (the
+   * server has it) or a signed-out 401 that lands it in this browser's local
+   * history (see postSession). It stays on everything else: a 503 (history.json
+   * is unreadable) keeps it, a network failure keeps it, a closed tab keeps it.
+   * That is the whole difference from the `.catch(() => {})` this replaced,
+   * where every one of those threw the record away.
    *
    * `flushingRef` makes it single-flight: mount, "back online", and a freshly
    * committed round can all fire this within a tick of each other, and two
@@ -782,17 +785,13 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       let list = readPending(window.localStorage);
       while (list.length) {
         const record = list[0];
-        let ok = false;
-        try {
-          const res = await fetch("/api/session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(record),
-          });
-          ok = res.ok;
-        } catch {
-          ok = false; // offline, or the server is not there
-        }
+        // postSession folds in the signed-out case: a 401 means there is no
+        // account to POST to, so the round is written to THIS browser's local
+        // history and reported ok — which is correct, because it IS durably
+        // saved now (in localStorage), and a record that will 401 forever must
+        // not spin in the outbox. A 503 (unreadable file) or a network failure
+        // still comes back not-ok and keeps the record queued, exactly as before.
+        const { ok } = await postSession(record);
         if (!ok) {
           setSaveError(
             "Some of your finished rounds have not been saved yet. They are " +
@@ -1088,11 +1087,10 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   const finishSession = useCallback(async () => {
     if (!session) return;
     if (session.teach.length) {
-      await fetch("/api/claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ facts: session.teach, known: true }),
-      }).catch(() => {});
+      // postClaim routes a signed-out claim into local history (401 fallback),
+      // so finishing a taught session marks its material known the same whether
+      // or not you're signed in.
+      await postClaim(session.teach, true);
     }
     // NOTHING IS WRITTEN HERE, AND THAT IS THE FIX.
     //

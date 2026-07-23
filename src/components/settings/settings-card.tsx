@@ -53,6 +53,7 @@ import { clearAllDismissedHints } from "@/lib/claim-hint";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
 import { detectPlatform, type Platform } from "@/lib/platform";
+import { postDelete } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { jaVoices, onVoicesChanged, speak } from "@/lib/speech";
@@ -191,11 +192,11 @@ function ResetProgress() {
     if (!ok) return;
     setBusy(true);
     try {
-      const res = await fetch("/api/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reset: true }),
-      });
+      // postDelete, not a raw fetch: signed out (401) the wipe happens in this
+      // browser's local history instead of erroring, so "Start over" works the
+      // same before and after sign-in. ok covers both "server wiped it" and "we
+      // wiped the local copy".
+      const res = await postDelete({ reset: true });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       // The server wiped history; now wipe the CLIENT-side "I dismissed this
       // intro" flags too, so a restarting user gets the day-one introductions
