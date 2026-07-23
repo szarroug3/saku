@@ -390,14 +390,13 @@ export function Shelf({
         shownSections.reduce((n, s) => n + s.entries.length, 0)
       : 0;
 
-  // Everything on the shelf fell outside the filter. The clusters/Tofugu cards
-  // still render above (they are references, not filtered content), but the
-  // shelf itself needs to say why it is empty rather than show nothing.
+  // Everything on the shelf fell outside the filter. The clusters card still
+  // renders above (it is a reference, not filtered content), but the shelf itself
+  // needs to say why it is empty rather than show nothing.
   const shelfEmpty = shownSections.length === 0;
 
   return (
     <>
-      {kind === KANA_SUBJECT ? <TofuguCard /> : null}
       {kind === GRAMMAR_SUBJECT ? <GrammarClustersCard /> : null}
       {shelfEmpty ? (
         <Card>
@@ -542,59 +541,6 @@ function GrammarClustersCard() {
         </Link>
       </p>
     </Card>
-  );
-}
-
-/** The kana chart's outbound links, carried over from /chart when it became this
- * shelf. They are the one thing on that page that was not a tile, and they are
- * the reason a beginner opened it — the app teaches you to recognise kana and
- * Tofugu teaches you to learn them, which is a different job this app has never
- * claimed to do. */
-function TofuguCard() {
-  return (
-    <Card>
-      <p className="mb-1.5 text-[13px]">
-        <span className="text-text-muted">Tofugu guides:</span>
-        <TofuguLink href="https://www.tofugu.com/japanese/learn-hiragana/">
-          Hiragana ↗
-        </TofuguLink>{" "}
-        ·
-        <TofuguLink href="https://www.tofugu.com/japanese/learn-katakana/">
-          Katakana ↗
-        </TofuguLink>
-      </p>
-      <p className="text-[13px]">
-        <span className="text-text-muted">Charts:</span>
-        <TofuguLink href="https://files.tofugu.com/articles/japanese/2014-06-30-learn-hiragana/hiragana-chart-by-tofugu.jpg">
-          Hiragana chart ↗
-        </TofuguLink>{" "}
-        ·
-        <TofuguLink href="https://files.tofugu.com/articles/japanese/2016-03-07-hiragana-mnemonics-chart/hiragana-mnemonic-chart-by-tofugu.jpg">
-          Hiragana mnemonics ↗
-        </TofuguLink>{" "}
-        ·
-        <TofuguLink href="https://files.tofugu.com/articles/japanese/2014-09-03-learn-katakana/tofugu-katakana-chart.jpg">
-          Katakana chart ↗
-        </TofuguLink>{" "}
-        ·
-        <TofuguLink href="https://files.tofugu.com/articles/japanese/2014-09-03-learn-katakana/tofugu-katakana-mnemonic-chart.jpg">
-          Katakana mnemonics ↗
-        </TofuguLink>
-      </p>
-    </Card>
-  );
-}
-
-function TofuguLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener"
-      className="ml-2.5 whitespace-nowrap text-xs text-accent no-underline"
-    >
-      {children}
-    </a>
   );
 }
 
