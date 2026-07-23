@@ -27,9 +27,11 @@
 // printed as a raw number, because "cost 10" means nothing to the person doing
 // it. The card shows the characters and lets them count.
 //
-// EACH TILE SAYS WHICH IT IS, in the same three words the entry page uses:
-// "radical · kanji" (both roles), "radical" (a building block only), or "kanji"
-// — no number, no count (see src/lib/character-role.ts). A radical is always
+// EACH TILE SAYS WHAT IT IS FOR, in the same words the entry page uses: every
+// role the character plays, in one order — "Radical · Kanji · Word", "Kanji ·
+// Word", "Radical" — no number, no count (see src/lib/character-role.ts). A
+// character can be doing all three jobs at once, and the tile shows every one of
+// them. A radical is always
 // ordered before the first kanji that uses it, because the set was built that
 // way — component-first.
 //
@@ -98,8 +100,8 @@ export function NextKanjiLesson({
         <Lbl>Up next · {positionLabel(spine === "kanji" ? "kanji" : "radicals", position)}</Lbl>
 
         {/* The characters ARE the links, radicals and kanji together — one track.
-            Each tile says which it is: a radical-only building block, a kanji, or
-            a kanji that is also a radical. A separate "learn it first" block would
+            Each tile says what it is: a building block, a kanji, a word you can
+            already say, or any mix of those. A separate "learn it first" block would
             be a second thing to read saying what the tiles already do, and the
             app's own entry page is the guide here. */}
         <div className="mt-4 flex flex-wrap gap-2">
@@ -115,11 +117,12 @@ export function NextKanjiLesson({
               <span className="mt-1 block text-[13px] text-text-muted">
                 {card.meaning}
               </span>
-              {/* The role line, the same three labels the entry page uses:
-                  "radical · kanji", "radical", or "kanji" — no number, no count,
-                  just which of the three this character is. A wordless part keeps
-                  its "you need this for X" note underneath, because that is a
-                  reason it is here, not a role. */}
+              {/* The role line, the same label the entry page uses: every role
+                  this character plays, in one order — "Radical · Kanji · Word"
+                  for 山, "Kanji · Word" for 何, "Radical" for a shape that is
+                  only ever a part. No number, no count, just what it is for. A
+                  wordless part keeps its "you need this for X" note underneath,
+                  because that is a reason it is here, not a role. */}
               <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
                 {characterRoleTitle(card.glyph)}
               </span>

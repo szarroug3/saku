@@ -154,7 +154,8 @@ export function startedTracks(
  * the subject, so it would never see 人 as radical material and the card would
  * wait until the first radical-ONLY shape. This reads the ROLE off each met
  * character's glyph instead (playsRadicalRole), so meeting 人 counts and the card
- * lands where the badge first says "Radical · Kanji".
+ * lands where the badge first says "Radical" as part of its label (人 reads
+ * "Radical · Kanji · Word").
  *
  * Same three records and the same teach-set exclusion as `startedTracks`, and
  * for the same reason: the decision is about what the learner knew BEFORE this

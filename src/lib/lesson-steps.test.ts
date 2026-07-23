@@ -605,7 +605,7 @@ describe("a mixed radical/kanji set steps the radical ahead of its kanji", () =>
 // "I should see both intros". It is history-gated to fire once across the whole
 // progression (hasMetRadicalRole), so it does NOT come back at the first radical-
 // only shape or any later radical set. See character-role.ts / the RoleBadge for
-// the "Radical · Kanji" role label the card explains.
+// the role label the card explains, which for 人 reads "Radical · Kanji · Word".
 describe("the radical concept card opens the first radical-role set", () => {
   const ORDER = kanjiTeachOrder("everyday");
   const GROUPS = packLessons(ORDER, LESSON_RANGE_DEFAULT);
@@ -623,7 +623,7 @@ describe("the radical concept card opens the first radical-role set", () => {
   test("set #1 (人 大 日 一) opens with the kanji card, then the radical card", () => {
     // Both intros, in this order: the kanji track is opening, so "What kanji are"
     // leads; then "What a radical is", because 人 is a both-role character and the
-    // badge is about to call it "Radical · Kanji". Then the four characters.
+    // badge is about to call it "Radical · Kanji · Word". Then the four characters.
     const set = GROUPS[0];
     assert.deepEqual(set.chars, ["人", "大", "日", "一"]);
     const steps = lessonSteps(set.facts, BLANK);

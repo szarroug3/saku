@@ -64,6 +64,7 @@ import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { knownLookalikes } from "@/lib/kanji-lookalikes";
+import type { CharacterRole } from "@/lib/character-role";
 import { characterRole, characterRoleTitle } from "@/lib/character-role";
 import { showsHowItsWritten } from "@/lib/lesson-items";
 import type { LessonItem } from "@/lib/lesson-items";
@@ -404,21 +405,39 @@ function wordTypeOf(word: VocabRow): string {
   return "noun";
 }
 
-/** The role blob in the top-right of a kanji/radical header: which of the three
- * this character is, and what that means for how you'll meet it. A learner in the
- * combined track has to know whether a shape is a word, a building block, or both
- * — so the badge says the role (Title Cased, the same three the tiles print) and
- * one plain line of what it implies. Null for anything that is neither. */
+/** What each role set means for how you'll actually meet the character. The badge
+ * says the roles (Title Cased, the same label the tiles print) and one plain line
+ * underneath, because "Radical · Kanji" tells a beginner nothing on its own.
+ *
+ * THE WORD ROLE IS THE ONE THAT DECIDES "is it a word?". A radical that is also a
+ * kanji is not thereby a word you can say by itself — 攵 has a kanji card and
+ * still never stands alone — so only the sets carrying `word` promise that. The
+ * two sets without a kanji card (word-only, radical + word) cannot happen off
+ * today's tables, where every curriculum word is written in jōyō kanji; they are
+ * written out anyway so the badge stays truthful if the word list ever reaches
+ * past the jōyō set. */
+const ROLE_NOTE: Record<CharacterRole, string> = {
+  radical: "A building block, not a word on its own. You'll see it inside other kanji.",
+  kanji: "It stands on its own as a character, but you'll meet it paired up inside words.",
+  word: "You'll meet this one as a word and nothing else. Nothing in the kanji track is built from it.",
+  "radical · kanji":
+    "Other kanji are built around it. By itself it isn't a word yet, so expect it in company.",
+  "radical · word":
+    "It works as a word by itself, and its shape lives inside other kanji, though it never gets a kanji card of its own.",
+  "kanji · word":
+    "Say it alone and it's already a word. It also pairs with other kanji to make longer ones.",
+  "radical · kanji · word":
+    "A word by itself, a character in longer words, and a shape other kanji are built around.",
+};
+
+/** The role blob in the top-right of a kanji/radical header: which roles this
+ * character plays, and what that means for how you'll meet it. Null for anything
+ * that plays none. */
 function RoleBadge({ glyph }: { glyph: string }) {
   const role = characterRole(glyph);
   const label = characterRoleTitle(glyph);
   if (!role || !label) return null;
-  const note =
-    role === "radical"
-      ? "A building block, not a word on its own. You'll see it inside other kanji."
-      : role === "radical · kanji"
-        ? "It works on its own as a word, and it also builds other kanji."
-        : "A character that stands on its own in words.";
+  const note = ROLE_NOTE[role];
   return (
     <div className="rounded-lg border border-border bg-panel px-3 py-2 md:max-w-[240px] md:justify-self-end">
       <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-accent">

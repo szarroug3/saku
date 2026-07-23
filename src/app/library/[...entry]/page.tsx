@@ -246,15 +246,17 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ).standing
     : null;
 
-  // THE ROLE TAG — radical, kanji, or both — shown at the top of a character's
-  // page so the reader knows whether to expect it inside a word (kanji), only as
-  // a building block (radical-only), or both. The same three labels the combined
-  // lesson card prints (src/lib/character-role.ts), read off the glyph. It stands
-  // in for the strokes line the header used to show alone: "radical · kanji · 5
-  // strokes" for a both-role 乙, "kanji · 3 strokes" for 乞, "radical · 6 strokes"
-  // for a radical-only 气 — the Kangxi NUMBER a radical page used to carry ("Radical
-  // 84") is dropped, being catalogue trivia rather than the role. Only kanji and
-  // radical entries have a role; every other kind keeps its own sub line.
+  // THE ROLE TAG — every role the character plays, radical and/or kanji and/or
+  // word — shown at the top of its page so the reader knows whether to expect it
+  // only as a building block, inside words as a kanji, or already as a word they
+  // can say. The same label the combined lesson card prints
+  // (src/lib/character-role.ts), read off the glyph. It stands in for the strokes
+  // line the header used to show alone: "radical · kanji · word · 3 strokes" for
+  // 山, "kanji · word · 7 strokes" for 何, "kanji · 3 strokes" for 乞 (a kanji you
+  // only meet inside words), "radical · 6 strokes" for 气 — the Kangxi NUMBER a
+  // radical page used to carry ("Radical 84") is dropped, being catalogue trivia
+  // rather than the role. Only kanji and radical entries have a role; every other
+  // kind keeps its own sub line.
   const role = isKanji || isRadical ? characterRole(entry.glyph) : null;
   const roleStrokes = isKanji
     ? kanjiRow(entry.glyph)?.strokes
