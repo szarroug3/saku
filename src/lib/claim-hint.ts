@@ -15,6 +15,8 @@
 // It speaks for every track at once — kana, kanji, words, grammar — so one flag
 // is the whole of its memory.
 
+import { INTRO_SHOWN_KEYS } from "@/lib/intro-shown";
+
 /** The localStorage key. Its own namespace, beside "kanaquiz-cfg". */
 export const CLAIM_HINT_KEY = "kanaquiz-claim-hint";
 
@@ -43,7 +45,13 @@ type Remover = Pick<Storage, "removeItem">;
  * key here, and `clearAllDismissedHints` removes exactly these and nothing else.
  * Adding a new intro is one line in this list — the reset picks it up for free.
  */
-export const DISMISSIBLE_HINT_KEYS: readonly string[] = [CLAIM_HINT_KEY];
+export const DISMISSIBLE_HINT_KEYS: readonly string[] = [
+  CLAIM_HINT_KEY,
+  // The curriculum's three concept cards ("What kanji are", "What a radical is",
+  // "What words add"), which remember that they have run. Same species of flag,
+  // so the same sweep clears them. See src/lib/intro-shown.ts.
+  ...INTRO_SHOWN_KEYS,
+];
 
 /**
  * Has the claim explainer been dismissed?

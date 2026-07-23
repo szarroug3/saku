@@ -1,55 +1,59 @@
 // The three concept cards the curriculum spine owes, and when each is due.
 //
-// WHAT BROKE, AND WHY THE OLD GATE COULD NOT SURVIVE THE SPINE
+// WHAT THIS HAS TAKEN THREE GOES TO GET RIGHT
+// ===========================================
+// "What kanji are", "What a radical is" and "What words add" are once-ever
+// introductions, so two questions have to be answered: WHERE does each one fire,
+// and HAS it fired already. Each earlier cut got one of them wrong.
+//
+//   1. Subject gate. track-open.ts read each met fact's SUBJECT, and a subject
+//      nowhere in history was a track about to open. On one spine a subject is
+//      not a track, and worse, the first lesson teaches a word whose kanji
+//      READINGS are unlocked and written to history before the walk renders. So
+//      "the kanji subject has been touched" was true at the exact moment the
+//      kanji card was due, and two cards vanished on day one.
+//   2. Anchor character gate. Each card was pinned to one item and asked whether
+//      that item had been learned. For a learner starting from zero that is the
+//      same question as "have you been shown this card". For anyone with prior
+//      progress it is a different question, and only the wrong one was being
+//      asked. A learner who did the old separate radical track has met 亅, so
+//      the radical card was treated as outgrown by someone nobody had ever told
+//      what a radical is. It was worse than a mis-gate: an item already learned
+//      is filtered out of the lesson entirely (see nextCurriculumLesson), so the
+//      anchor was not even in the walk and there was nothing to fire against.
+//
+// So the two questions are now answered by two different things, which is what
+// they always needed.
+//
+// HAS IT FIRED: THE CARD'S OWN RECORD
+// ===================================
+// src/lib/intro-shown.ts remembers, per card id, that the card has been through
+// a walk. That is the only thing that actually means "shown", and a card the
+// learner never read is not a card they have outgrown. History is not consulted
+// for this and cannot be: it records what a learner LEARNED, and these cards are
+// about what they were TOLD.
+//
+// WHERE IT FIRES: THE SHARPEST ITEM THE WALK HAS
+// ==============================================
+// Each card names the shape of item it is ABOUT (ANCHOR_RULE), and fires ahead of
+// the first such item in the walk. That is the doctrine the rest of the walk's
+// cards already follow: okurigana waits for the first kana tail, rendaku for the
+// first voiced seam. The alternative, firing at the first item that merely
+// CARRIES the role, put all three explainers ahead of the first four characters
+// and landed each where its own copy was only half true.
+//
+// AND THE FALLBACK, WHICH IS THE WHOLE FIX FOR PRIOR PROGRESS
 // ===========================================================
-// "What a radical is", "What kanji are" and "What this track teaches" used to be
-// TRACK intros: track-open.ts walked history, read each met fact's SUBJECT, and
-// a track whose subject appeared nowhere was a track about to open. That worked
-// while the three were separate tracks that opened at separate moments.
+// A learner who already met the sharp item will never be shown it again, so a
+// card that insists on it waits for a lesson that can never come. When the sharp
+// item has gone past, the card rides the first item in the walk that carries the
+// role at all. For the learner who met 亅 in the old radical track, that is 人,
+// which her first lesson labels "Radical · Kanji · Word" and which is the exact
+// character that made her ask how something can be both.
 //
-// On one spine they are not tracks any more, and the subject gate fails twice
-// over:
-//
-//   1. A subject is no longer a track. Radicals, kanji and words arrive in the
-//      same lesson, so "the kanji subject has never been touched" stops being
-//      the question. What a learner needs explained is the ROLE the thing in
-//      front of them plays.
-//   2. It was poisoned on day one. The very first lesson teaches 人, which is a
-//      word, and starting it unlocks the kanji READINGS that word proves (see
-//      word-unlock.ts and startCurriculumLesson in home-feed.tsx). Those are
-//      `kanji` facts, they are marked seen BEFORE the walk renders, and they are
-//      not part of the teach set the gate excludes. So the gate read the kanji
-//      subject as already touched at the exact moment the kanji card was due,
-//      and both the kanji and the radical card went missing for good. That is
-//      the reported regression.
-//
-// AN ANCHOR, NOT A SUBJECT SCAN
-// =============================
-// CURRICULUM_SEQUENCE already carries the answer: each item says which roles it
-// plays. So each card is ANCHORED to one item, the FIRST in the whole sequence
-// carrying that role, exactly the way a phase intro is anchored to the first
-// word that puts its rule in play. The anchor is a property of the shipped data
-// and is computed once here.
-//
-// A card fires when the walk reaches its anchor and nowhere else. That alone
-// gives "exactly once, in the first lesson that introduces the role, before the
-// item", with nothing to keep in step and nothing a stray fact can poison: no
-// other lesson contains the anchor, so no other lesson can show the card.
-//
-// HISTORY IS THE RE-TEACH GATE, AND IT READS ONE ITEM
-// ===================================================
-// The anchor pins WHERE. History answers whether the learner has already been
-// there: if the anchor item has been learned outside the lesson in hand, the
-// card has done its job and stays quiet. That is the same once-ever guarantee
-// the track gate gave, and it keeps the same deliberate exception the rest of
-// the app's concept cards keep: a learner who resets and re-walks the opening
-// lesson sees the cards again, because the alternative is dropping someone into
-// 人 亅 丁 with the word "radical" undefined (see the head of track-open.ts).
-//
-// The gate reads the anchor's own MEANING facts, and only those. Not "any fact
-// whose glyph is the anchor", which is what would let an unlocked reading like
-// `kanji:人/reading@外国人` stand in for having been taught 人. Being taught an
-// item is its meaning being met; a reading is something a later word proves.
+// The fallback is deliberately narrow. It opens ONLY when the sharp item is
+// already learned, so a learner starting from zero still gets each card where it
+// reads best and never three at once.
 
 import { meaningFactId } from "@/data/kanji";
 import { radicalMeaningFactId } from "@/data/radicals";
@@ -181,28 +185,72 @@ function met(fact: FactId, history: HistoryFile): boolean {
   return state.lastTested !== 0;
 }
 
+/** The walk-step kinds this file speaks for: the three roles of the spine, whose
+ * subject ids are the role names themselves. A keigo or counter step is neither,
+ * even when its written form is also a curriculum word. */
+const SPINE_KINDS: ReadonlySet<string> = new Set(ROLE_ORDER);
+
+/** Every curriculum item by glyph, so the walk's glyphs can be asked what roles
+ * they play. Built once; the sequence is shipped data. */
+const ITEM_OF: ReadonlyMap<string, (typeof CURRICULUM_SEQUENCE)[number]> = new Map(
+  CURRICULUM_SEQUENCE.map((it) => [it.glyph, it]),
+);
+
 /**
- * The cards owed ahead of this glyph, in ROLE_ORDER, or empty for the glyph that
- * anchors none.
+ * WHERE EACH DUE CARD GOES IN ONE WALK: item index to the cards owed ahead of it.
  *
- * `exclude` is the teach set of the lesson being walked, and it is why the card
- * survives its own lesson: the app marks a lesson's facts seen before the walk
- * renders (so that starting it unlocks the readings its words prove, whichever
- * button was pressed), and counting those would suppress the card at the exact
- * moment it is due. The same exclusion `startedTracks` makes, for the same
- * reason.
+ * Planned over the whole walk at once, because choosing a card's position needs
+ * to know what else the walk contains. A card fires ahead of the sharpest item
+ * present (ANCHOR_RULE), and falls back to the first item carrying its role only
+ * when the sharp item has already been learned and so can never appear again. See
+ * the header.
+ *
+ * `glyphs` are the walk's items in order, `shown` the cards already read (see
+ * intro-shown.ts), and `exclude` the teach set of the lesson being walked. The
+ * exclusion matters for the fallback test alone: the app marks a lesson's facts
+ * seen before the walk renders, so that starting it unlocks the readings its
+ * words prove, and without the exclusion every sharp item would read as already
+ * learned the instant its own lesson opened.
  */
-export function spineIntrosFor(
-  glyph: string,
+export function spineIntroPlan(
+  walk: readonly { kind: string; glyph: string }[],
   history: HistoryFile,
   exclude: ReadonlySet<FactId>,
-): PhaseIntro[] {
-  const due: PhaseIntro[] = [];
+  shown: ReadonlySet<string>,
+): Map<number, PhaseIntro[]> {
+  const plan = new Map<number, PhaseIntro[]>();
+  /** The curriculum item behind a walk step, for the steps this file speaks for.
+   * A step of any other subject resolves to nothing, however its glyph reads: a
+   * keigo verb and a counter can share a written form with a curriculum word, and
+   * a keigo lesson is not where the app explains what a word is. */
+  const itemAt = (i: number) => {
+    const step = walk[i];
+    return SPINE_KINDS.has(step.kind) ? ITEM_OF.get(step.glyph) : undefined;
+  };
+  // CARD_ORDER, so two cards landing on one item read down the hierarchy.
   for (const anchor of SPINE_ANCHORS) {
-    if (anchor.glyph !== glyph) continue;
-    const learned = anchor.facts.some((f) => !exclude.has(f) && met(f, history));
-    if (learned) continue;
-    due.push(anchor.intro);
+    if (shown.has(anchor.intro.id)) continue;
+    // The sharp item, and it has to be showing IN that role: 人 steps twice, once
+    // as a kanji and once as a word, and only the kanji step is the kanji card's.
+    let at = walk.findIndex((step, i) => {
+      const item = itemAt(i);
+      return step.kind === anchor.role && item !== undefined && ANCHOR_RULE[anchor.role](item);
+    });
+    if (at < 0) {
+      // No sharp item here. Wait for the lesson that has one, UNLESS it has
+      // already gone past, in which case ride whatever carries the role.
+      const learned = anchor.facts.some((f) => !exclude.has(f) && met(f, history));
+      if (!learned) continue;
+      // Anything on this card that PLAYS the role, whichever role it is stepping
+      // in. For the radical card that is the point: a learner whose 亅 was
+      // filtered out still has 人 in front of her, labelled "Radical · Kanji ·
+      // Word", which is the label the card exists to explain.
+      at = walk.findIndex((_, i) => itemAt(i)?.roles.includes(anchor.role));
+    }
+    if (at < 0) continue;
+    const due = plan.get(at);
+    if (due) due.push(anchor.intro);
+    else plan.set(at, [anchor.intro]);
   }
-  return due;
+  return plan;
 }

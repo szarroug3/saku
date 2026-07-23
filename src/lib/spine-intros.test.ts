@@ -28,13 +28,23 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { kanaFact } from "../data/characters.ts";
+import { kanjiTeachOrder, meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
+import { radicalMeaningFactId } from "../data/radicals.ts";
 import { TRACK_INTROS } from "../data/track-intros.ts";
 import { ROLE_ORDER } from "./character-role.ts";
 import { CURRICULUM_SEQUENCE } from "./curriculum-order.ts";
-import { curriculum, lessonWords } from "./curriculum-lesson.ts";
+import { characterRoles } from "./character-role.ts";
+import {
+  curriculum,
+  lessonWords,
+  nextCurriculumLesson,
+  type CurriculumLessonItem,
+} from "./curriculum-lesson.ts";
+import { RADICAL_TEACHING_ORDER } from "./radical-order.ts";
 import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import { lessonSteps } from "./lesson-steps.ts";
-import { SPINE_ANCHORS, spineIntrosFor } from "./spine-intros.ts";
+import { CONCEPT_CARD_IDS } from "./intro-shown.ts";
+import { SPINE_ANCHORS, spineIntroPlan } from "./spine-intros.ts";
 import { readingsProvedBy } from "./word-unlock.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
@@ -75,9 +85,14 @@ function anchorFor(role: "radical" | "kanji" | "word") {
   return anchor;
 }
 
-/** The intro ids a walk of this lesson emits, in order. */
-function introsOf(facts: readonly FactId[], history: HistoryFile): string[] {
-  return lessonSteps(facts, history)
+/** The intro ids a walk of this lesson emits, in order. `shown` is the record of
+ * cards already read, which is what the once-ever guarantee now rests on. */
+function introsOf(
+  facts: readonly FactId[],
+  history: HistoryFile,
+  shown: ReadonlySet<string> = new Set(),
+): string[] {
+  return lessonSteps(facts, history, shown)
     .filter((s) => s.type === "intro")
     .map((s) => s.key);
 }
@@ -92,7 +107,16 @@ function introsOf(facts: readonly FactId[], history: HistoryFile): string[] {
  * a history that already contains kanji facts nobody was taught.
  */
 function factsWrittenOnStart(group: (typeof GROUPS)[number]): FactId[] {
-  return [...group.facts, ...readingsProvedBy(lessonWords(group.items))];
+  return startFacts(group.facts, group.items);
+}
+
+/** The same write, for a lesson narrowed to what is still fresh: what
+ * startCurriculumLesson puts in history before the walk renders. */
+function startFacts(
+  facts: readonly FactId[],
+  cards: readonly CurriculumLessonItem[],
+): FactId[] {
+  return [...facts, ...readingsProvedBy(lessonWords(cards))];
 }
 
 describe("every role is anchored where its card has something to point at", () => {
@@ -165,8 +189,40 @@ describe("every role is anchored where its card has something to point at", () =
     }
   });
 
-  test("a glyph that anchors nothing owes no card", () => {
-    assert.deepEqual(spineIntrosFor("あ", BLANK, new Set()), []);
+  test("a walk of material that plays no role owes no card", () => {
+    const kana = [
+      { kind: "kana", glyph: "あ" },
+      { kind: "kana", glyph: "い" },
+    ];
+    assert.equal(spineIntroPlan(kana, BLANK, new Set(), new Set()).size, 0);
+  });
+
+  test("a step of another subject never triggers a card, whatever its glyph", () => {
+    // A keigo verb and a counter can be written exactly like a curriculum word.
+    // A keigo lesson is not where the app explains what a word is, so the plan
+    // looks at the step's KIND and not only at its spelling.
+    const wordGlyph = anchorFor("word").glyph;
+    const asKeigo = [{ kind: "keigo", glyph: wordGlyph }];
+    assert.equal(spineIntroPlan(asKeigo, BLANK, new Set(), new Set()).size, 0);
+    // The identical glyph, stepping as the word it is, does owe the card.
+    const asWord = [{ kind: "word", glyph: wordGlyph }];
+    assert.equal(spineIntroPlan(asWord, BLANK, new Set(), new Set()).size, 1);
+  });
+
+  test("a card already shown is never planned again", () => {
+    const walk = GROUPS[0].items.map((it) => ({ kind: "kanji", glyph: it.glyph }));
+    const all = new Set(SPINE_ANCHORS.map((a) => a.intro.id));
+    assert.equal(spineIntroPlan(walk, BLANK, new Set(), all).size, 0);
+  });
+
+  test("the ids intro-shown.ts remembers are exactly the cards' own", () => {
+    // intro-shown.ts spells the ids out rather than importing the card data, so
+    // that the Settings reset path does not drag the phase-intro table into its
+    // bundle. This is the line that stops the two drifting.
+    assert.deepEqual(
+      [...CONCEPT_CARD_IDS].sort(),
+      SPINE_ANCHORS.map((a) => a.intro.id).sort(),
+    );
   });
 });
 
@@ -288,27 +344,24 @@ describe("a reading unlocked by the lesson itself does not suppress its cards", 
   });
 });
 
+// ONCE EVER IS THE CARD'S OWN RECORD, NOT A READING OF THE CURRICULUM.
+// =====================================================================
+// So these walk the progression the way the app runs it: the learner reads the
+// cards a lesson shows, that is written down (markConceptCardsShown, on the way
+// out of the walk), and the next lesson is planned against it.
 describe("a card does not come back", () => {
-  test("no later lesson can even own one, because no later lesson holds the anchor", () => {
-    for (const anchor of SPINE_ANCHORS) {
-      const holders = GROUPS.filter((g) =>
-        g.items.some((it) => it.glyph === anchor.glyph),
-      );
-      assert.equal(holders.length, 1, `${anchor.glyph} is in ${holders.length} lessons`);
-    }
-  });
-
   test("walking the progression fires each card exactly once", () => {
-    // The real thing: walk lessons in order, writing to history what Start
-    // writes, and count. Bounded to a long prefix rather than all 2,000-odd
-    // lessons, because the gate re-reads the whole of history on every step. The
-    // test above covers the rest, by showing no later lesson can fire one.
+    // Bounded to a long prefix, because the gate re-reads the whole of history on
+    // every step. The stretch covers every anchor several times over.
     const fired = new Map<string, number>();
+    const shown = new Set<string>();
     const seen = new Set<FactId>();
     for (const g of GROUPS.slice(0, 300)) {
       const history = met([...seen, ...factsWrittenOnStart(g)]);
-      for (const id of introsOf(g.facts, history)) {
-        if (CARD_IDS.has(id)) fired.set(id, (fired.get(id) ?? 0) + 1);
+      for (const id of introsOf(g.facts, history, shown)) {
+        if (!CARD_IDS.has(id)) continue;
+        fired.set(id, (fired.get(id) ?? 0) + 1);
+        shown.add(id);
       }
       for (const f of factsWrittenOnStart(g)) seen.add(f);
     }
@@ -317,30 +370,156 @@ describe("a card does not come back", () => {
     }
   });
 
+  test("re-walking the very lesson that showed a card does not show it again", () => {
+    // The old gate excluded the teach set, so re-teaching an opening lesson
+    // replayed its cards. Reading the card is what is remembered now, and a
+    // lesson taken twice is still one reading.
+    const first = GROUPS[0];
+    const history = met(factsWrittenOnStart(first));
+    const shown = new Set(introsOf(first.facts, history).filter((id) => CARD_IDS.has(id)));
+    assert.ok(shown.size > 0, "the first lesson shows no card");
+    assert.deepEqual(
+      introsOf(first.facts, history, shown).filter((id) => CARD_IDS.has(id)),
+      [],
+    );
+  });
+
   test("a later lesson that teaches the same role shows nothing", () => {
+    const shown = new Set(CARD_IDS);
     for (const anchor of SPINE_ANCHORS) {
-      const at = GROUPS.findIndex((g) =>
+      const later = GROUPS.findLastIndex((g) =>
         g.items.some((it) => it.roles.includes(anchor.role)),
       );
-      const later = GROUPS.findIndex(
-        (g, i) => i > at && g.items.some((it) => it.roles.includes(anchor.role)),
-      );
-      assert.ok(later > at, `only one lesson ever teaches ${anchor.role}`);
-      const before = GROUPS.slice(0, later).flatMap(factsWrittenOnStart);
-      const history = met([...before, ...factsWrittenOnStart(GROUPS[later])]);
+      const history = met(GROUPS.slice(0, later + 1).flatMap(factsWrittenOnStart));
       assert.ok(
-        !introsOf(GROUPS[later].facts, history).includes(anchor.intro.id),
+        !introsOf(GROUPS[later].facts, history, shown).includes(anchor.intro.id),
         `${anchor.role} introduced itself twice`,
       );
     }
   });
 });
 
+// THE BUG THE OWNER HIT, AND THE ONE THESE TESTS COULD NOT SEE BEFORE.
+// ====================================================================
+// She has been using the app throughout the redesign, so her account carries
+// progress from the OLD separate radical track. 亅 is the seventh shape that
+// track taught. An item already learned is filtered out of its lesson
+// (nextCurriculumLesson hands back only what is still fresh), so her first lesson
+// is 人 一 丁 with no 亅 in it at all, and a card pinned to 亅 had nothing to fire
+// against. Every earlier test here started from an empty or synthetic history and
+// so could never reach that state.
+describe("a learner carrying progress from the old separate tracks", () => {
+  /** The old radical track, as far as its first twenty shapes. Exactly the shape
+   * of history the app used to write, and enough to cover 亅. */
+  const OLD_RADICALS = RADICAL_TEACHING_ORDER.slice(0, 20).map((r) =>
+    radicalMeaningFactId(r.glyph),
+  );
+  const priorProgress = met(OLD_RADICALS);
+
+  test("her first lesson really has lost the radical anchor", () => {
+    // Asserted, not assumed: if the packing ever stops dropping it, the test
+    // below still passes and stops proving anything.
+    const radical = anchorFor("radical");
+    const lesson = nextCurriculumLesson(priorProgress, LESSON_RANGE_DEFAULT)!;
+    assert.ok(
+      lesson.group.items.some((it) => it.glyph === radical.glyph),
+      "the lesson does not contain the radical anchor",
+    );
+    assert.ok(
+      !lesson.cards.some((it) => it.glyph === radical.glyph),
+      "the anchor was not filtered out, so this pins nothing",
+    );
+  });
+
+  test("the radical card still fires, on the character that carries the role", () => {
+    const lesson = nextCurriculumLesson(priorProgress, LESSON_RANGE_DEFAULT)!;
+    const history = met([...OLD_RADICALS, ...startFacts(lesson.facts, lesson.cards)]);
+    const steps = lessonSteps(lesson.facts, history, new Set());
+    const ids = steps.filter((s) => s.type === "intro").map((s) => s.key);
+    assert.ok(ids.includes("track-radical"), "the radical card is still missing");
+    // And ahead of an item that plays the radical role, so the label the card
+    // explains is on the screen right after it.
+    const cardAt = ids.indexOf("track-radical");
+    const stepAt = steps.findIndex((s) => s.type === "intro" && s.key === "track-radical");
+    assert.ok(cardAt >= 0 && stepAt >= 0);
+    const after = steps.slice(stepAt + 1).find((s) => s.type === "item");
+    assert.ok(after && after.type === "item");
+    assert.ok(
+      characterRoles(after.item.glyph).includes("radical"),
+      `${after.item.glyph} plays no radical role`,
+    );
+  });
+
+  test("the kanji card fires too, and before the radical card", () => {
+    const lesson = nextCurriculumLesson(priorProgress, LESSON_RANGE_DEFAULT)!;
+    const history = met([...OLD_RADICALS, ...startFacts(lesson.facts, lesson.cards)]);
+    const ids = introsOf(lesson.facts, history).filter((id) => CARD_IDS.has(id));
+    assert.deepEqual(ids, ["track-kanji", "track-radical"]);
+  });
+
+  test("having read them once, they do not come back", () => {
+    const lesson = nextCurriculumLesson(priorProgress, LESSON_RANGE_DEFAULT)!;
+    const history = met([...OLD_RADICALS, ...startFacts(lesson.facts, lesson.cards)]);
+    const shown = new Set(introsOf(lesson.facts, history).filter((id) => CARD_IDS.has(id)));
+    assert.deepEqual(
+      introsOf(lesson.facts, history, shown).filter((id) => CARD_IDS.has(id)),
+      [],
+    );
+  });
+
+  test("why the kanji card survived where the radical card did not", () => {
+    // The asymmetry the owner saw. Her first lesson kept its kanji anchor and
+    // lost its radical one, and the fold is the reason: 人 carries a word fact as
+    // well as a kanji fact, and a lesson keeps any item with anything left in it.
+    // Prior kanji progress alone does not take the item away.
+    const kanji = anchorFor("kanji");
+    const radical = anchorFor("radical");
+    const prior = met([
+      ...OLD_RADICALS,
+      ...kanjiTeachOrder("everyday").slice(0, 30).map(kanjiMeaningFactId),
+    ]);
+    const lesson = nextCurriculumLesson(prior, LESSON_RANGE_DEFAULT)!;
+    assert.ok(
+      lesson.cards.some((it) => it.glyph === kanji.glyph),
+      "the kanji anchor survives, because its word fact is still fresh",
+    );
+    assert.ok(
+      !lesson.cards.some((it) => it.glyph === radical.glyph),
+      "the radical anchor is gone, having only the one fact",
+    );
+  });
+
+  test("and every card fires even once its anchor is well past", () => {
+    // The general case, and the one a learner reaches by any route: someone who
+    // got several lessons in without the cards ever running. Each anchor is
+    // behind them, so each card has to ride whatever carries its role next.
+    const done = GROUPS.slice(0, 6).flatMap(factsWrittenOnStart);
+    const lesson = nextCurriculumLesson(met(done), LESSON_RANGE_DEFAULT)!;
+    for (const anchor of SPINE_ANCHORS) {
+      assert.ok(
+        !lesson.cards.some((it) => it.glyph === anchor.glyph),
+        `${anchor.role}'s anchor is still here, so this pins nothing`,
+      );
+    }
+    const history = met([...done, ...startFacts(lesson.facts, lesson.cards)]);
+    const fired = introsOf(lesson.facts, history).filter((id) => CARD_IDS.has(id));
+    // Every card whose role this lesson teaches at all, and nothing else.
+    const owed = SPINE_ANCHORS.filter((a) =>
+      lesson.cards.some((it) => it.roles.includes(a.role)),
+    ).map((a) => a.intro.id);
+    // As a set: WHICH cards fire is the point here, and their order follows the
+    // items they landed on, which the tests above pin.
+    assert.deepEqual([...fired].sort(), [...owed].sort());
+    assert.ok(owed.length > 0, "this lesson teaches no role at all");
+  });
+});
+
 // The sequence ends on two tails: the jouyou kanji no curriculum word is written
 // with, then the radical-only shapes nothing at all is built from. A learner who
-// gets there has walked every lesson before it, so every card fired long ago.
+// gets there has read every card long ago.
 describe("the orphan tails introduce nothing", () => {
   const tail = GROUPS.slice(-40);
+  const shown = new Set(CARD_IDS);
 
   test("the tails are past every anchor", () => {
     for (const anchor of SPINE_ANCHORS) {
@@ -356,11 +535,23 @@ describe("the orphan tails introduce nothing", () => {
       g.items.every((it) => it.roles.length === 1 && it.roles[0] === "radical"),
     );
     assert.ok(orphan, "the tail has a radical-only lesson");
-    const before = GROUPS.slice(0, GROUPS.indexOf(orphan)).flatMap(factsWrittenOnStart);
-    const history = met([...before, ...factsWrittenOnStart(orphan)]);
+    const before = GROUPS.slice(0, GROUPS.indexOf(orphan) + 1).flatMap(factsWrittenOnStart);
     assert.deepEqual(
-      introsOf(orphan.facts, history).filter((id) => CARD_IDS.has(id)),
+      introsOf(orphan.facts, met(before), shown).filter((id) => CARD_IDS.has(id)),
       [],
+    );
+  });
+
+  test("but a learner who never read the radical card gets it there", () => {
+    // The once-ever gate is the card's own record, so someone who reached the
+    // orphan tail without ever seeing the explanation still gets it, ahead of a
+    // shape that is nothing but a radical. A card never read is not outgrown.
+    const orphan = tail.find((g) =>
+      g.items.every((it) => it.roles.length === 1 && it.roles[0] === "radical"),
+    )!;
+    const before = GROUPS.slice(0, GROUPS.indexOf(orphan) + 1).flatMap(factsWrittenOnStart);
+    assert.ok(
+      introsOf(orphan.facts, met(before), new Set()).includes("track-radical"),
     );
   });
 });

@@ -46,6 +46,7 @@ import type { FactId, HistoryFile } from "@/types";
 export function TeachWalk({
   facts,
   history,
+  shownIntros,
   familiar,
   onStart,
   wider,
@@ -59,6 +60,10 @@ export function TeachWalk({
    * card (src/lib/track-open.ts). The session page derives its "N of M" from the
    * same two inputs, so the count and the content stay in step. */
   history: HistoryFile;
+  /** The concept cards this learner has already been shown, by intro id. Passed
+   * in from the session page so the walk and the HUD's "N of M" are derived from
+   * the identical inputs and cannot disagree about how many steps there are. */
+  shownIntros?: ReadonlySet<string>;
   /** Which of these you've met before — shown before and forgotten, rather than
    * never met. Presentation only, exactly as the tile wall used it. */
   familiar: (f: FactId) => boolean;
@@ -84,7 +89,10 @@ export function TeachWalk({
   // lesson with no card produces exactly the item list this used to hold, so
   // everything below — Back/Next, the last-card "Quiz me", the HUD's count —
   // works unchanged for the phases that have none.
-  const steps = useMemo(() => lessonSteps(facts, history), [facts, history]);
+  const steps = useMemo(
+    () => lessonSteps(facts, history, shownIntros),
+    [facts, history, shownIntros],
+  );
   const at = Math.min(step, steps.length - 1);
   const current = steps[at];
   const last = at === steps.length - 1;

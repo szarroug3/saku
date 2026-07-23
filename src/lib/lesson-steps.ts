@@ -57,7 +57,7 @@ import { isSoundChangeEntry } from "@/data/counters";
 import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow } from "@/data/vocab";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
-import { spineIntrosFor } from "@/lib/spine-intros";
+import { spineIntroPlan } from "@/lib/spine-intros";
 import { startedTracks, trackOfItem } from "@/lib/track-open";
 import { wordClassOf } from "@/lib/word-forms";
 import type { FactId, HistoryFile } from "@/types";
@@ -177,6 +177,12 @@ export function hasRendaku(word: string): boolean {
 export function lessonSteps(
   facts: readonly FactId[],
   history?: HistoryFile,
+  // The concept cards this learner has already been shown, by intro id. Absent
+  // means none, which is the right default for a caller with no store to read
+  // (SSR, a test naming a teach set) and the safe error either way: a card seen
+  // twice costs ten seconds, a card never seen costs the learner the word. See
+  // src/lib/intro-shown.ts.
+  shownIntros: ReadonlySet<string> = new Set(),
 ): LessonStep[] {
   const items = itemsFromFacts(facts);
   const steps: LessonStep[] = [];
@@ -190,12 +196,13 @@ export function lessonSteps(
   // Fired at most once each, so a lesson that opens a track and then teaches
   // twenty of its items shows the card once, at the top.
   const trackCardDone = new Set<TrackId>();
-  // The three spine cards (radical, kanji, word) are ANCHORED to items instead
-  // of gated on a subject, so they are fired from `spineIntrosFor` below and
-  // skipped here. See spine-intros.ts: on one ordered curriculum a subject is no
-  // longer a track, and the subject gate was reading a reading-unlock as proof
-  // the kanji track had already opened.
-  const spineDone = new Set<string>();
+  // The three spine cards (radical, kanji, word) are planned over the whole walk
+  // and skipped in the per-item track block below. See spine-intros.ts: on one
+  // ordered curriculum a subject is not a track, and where a card goes depends on
+  // what else the walk contains.
+  const spinePlan = history
+    ? spineIntroPlan(items, history, teachSet, shownIntros)
+    : new Map<number, PhaseIntro[]>();
   // A converted kana is not taught on its own card. Its whole row is one
   // lesson — "voice the k and it becomes g" — so the first character of a row
   // to come past emits that row's card, at the position it would have had, and
@@ -225,7 +232,7 @@ export function lessonSteps(
   // phase 2 but does not shift, so it never fires this — it is the contrast, not
   // the rule. See isSoundChangeEntry in src/data/counters.ts.
   let markedSoundChange = false;
-  for (const item of items) {
+  items.forEach((item, index) => {
     // THE CONCEPT CARDS GO FIRST, ahead of everything else this item might owe:
     // ahead of its conversion row, ahead of any rule card. A learner meeting
     // words has to be told what a word is before being told what okurigana is,
@@ -234,19 +241,12 @@ export function lessonSteps(
     // a track whose first item happens to be a converted kana still gets its
     // card.
     //
-    // The SPINE cards lead. Radicals, kanji and words are one curriculum now, so
-    // their cards are anchored to the first item that plays each role instead of
-    // being gated on a subject nobody has touched (see spine-intros.ts). All
-    // three can come due at the same item: the sequence opens on 人, which is a
-    // radical, a kanji and a word at once. They are emitted radical, kanji, word,
-    // the order the material is built in and the order the lesson card's own
-    // label prints.
-    if (history) {
-      for (const intro of spineIntrosFor(item.glyph, history, teachSet)) {
-        if (spineDone.has(intro.id)) continue;
-        spineDone.add(intro.id);
-        steps.push({ type: "intro", key: intro.id, intro });
-      }
+    // The SPINE cards lead, at the positions the plan chose. More than one can
+    // land on the same item, and they arrive down the hierarchy (kanji, then
+    // radical), so the second reads as one level deeper and not as an unrelated
+    // second announcement.
+    for (const intro of spinePlan.get(index) ?? []) {
+      steps.push({ type: "intro", key: intro.id, intro });
     }
     // Then the remaining TRACK cards, still opened by subject: kana's two
     // scripts, grammar, counters and keigo are each their own track with their
@@ -260,10 +260,12 @@ export function lessonSteps(
     }
     const row = item.kind === "kana" ? dakutenRowFor(item.glyph) : null;
     if (row) {
-      if (rowsSeen.has(row.id)) continue;
+      // `return` and not `continue`: the walk is planned per index now, so the
+      // loop is a forEach. Same skip either way.
+      if (rowsSeen.has(row.id)) return;
       rowsSeen.add(row.id);
       steps.push({ type: "conversion", key: row.id, row });
-      continue;
+      return;
     }
     if (!markedIteration && item.glyph.includes(ITERATION_GLYPH)) {
       markedIteration = true;
@@ -299,7 +301,7 @@ export function lessonSteps(
       steps.push({ type: "intro", key: COUNTER_SOUND_CHANGE.id, intro: COUNTER_SOUND_CHANGE });
     }
     steps.push({ type: "item", key: item.entry, item });
-  }
+  });
   if (!items.length) return steps;
 
   const opensOn = sectionOf(items[0]);

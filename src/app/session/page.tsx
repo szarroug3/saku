@@ -19,6 +19,7 @@ import { TeachWalk } from "@/components/session/teach-walk";
 import { SmallBtn } from "@/components/ui";
 import { useHistory } from "@/lib/use-history";
 import { factInfo } from "@/lib/facts";
+import { browserStore, markConceptCardsShown, shownIntros } from "@/lib/intro-shown";
 import { subjectLabel as teachSubjectLabel } from "@/lib/library/entries";
 import { groupOfFact, widerScope } from "@/lib/lesson";
 import { lessonSteps } from "@/lib/lesson-steps";
@@ -62,9 +63,21 @@ export default function SessionPage() {
   // history does — the walk below reads the same two inputs, so the two cannot
   // disagree about how many steps there are.
   const teachKey = session ? session.teach.join(",") : "";
+  // Which concept cards this learner has already been shown. Read per lesson and
+  // held still for the whole walk: the steps are derived from it, so a value that
+  // moved mid-walk would take a card off the screen the learner was reading and
+  // shift every step behind it. It is written only on the way OUT (see toDrill).
+  //
+  // Safe to read during render even though it touches localStorage: the teaching
+  // UI renders only once a session has been restored, which happens after mount,
+  // so the server and the first client paint both see no walk at all.
+  const shownCards = useMemo(
+    () => shownIntros(browserStore()),
+    [teachKey], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const teachItems = useMemo(
-    () => (session ? lessonSteps(session.teach, history) : []),
-    [teachKey, history], // eslint-disable-line react-hooks/exhaustive-deps
+    () => (session ? lessonSteps(session.teach, history, shownCards) : []),
+    [teachKey, history, shownCards], // eslint-disable-line react-hooks/exhaustive-deps
   );
   // Reset to the first item whenever the teach set changes (a new session, or a
   // new round's material). Done by adjusting state during render off a stored
@@ -131,7 +144,17 @@ export default function SessionPage() {
     // Leave the lesson for the drill. Named here because two controls fire it:
     // the bar's "Quiz me" below, and the walk's forward button once it reaches
     // the last item.
-    const toDrill = reviewing ? resumeRound : () => startFirstRound();
+    // Leaving the walk is what "shown" means, so the concept cards in it are
+    // recorded here and nowhere else. Every route out of the teach phase goes
+    // through this wrapper, so a card cannot be read and then forgotten.
+    const leavingWalk = (go: () => void) => () => {
+      markConceptCardsShown(
+        browserStore(),
+        teachItems.filter((s) => s.type === "intro").map((s) => s.key),
+      );
+      go();
+    };
+    const toDrill = leavingWalk(reviewing ? resumeRound : () => startFirstRound());
     // The wider of the two scopes the lesson's drill offers: everything in this
     // script up to and including the group being taught. Derived from the teach
     // set's first fact — a lesson is one group, so any of its facts names it —
@@ -154,7 +177,7 @@ export default function SessionPage() {
       teachGroup && soFar
         ? {
             label: `Quiz me on all ${teachGroup.setLabel.toLowerCase()} so far`,
-            onStart: () => startFirstRound(soFar),
+            onStart: leavingWalk(() => startFirstRound(soFar)),
           }
         : null;
     // On the last item the walk's own forward button already says "Quiz me", so
@@ -207,6 +230,7 @@ export default function SessionPage() {
             // them apart, and it's read here rather than stored on the session
             // so it can't go stale against a deleted session.
             familiar={(f) => !!history.facts[f]?.seen}
+            shownIntros={shownCards}
             onStart={toDrill}
             wider={wider}
             step={at}
