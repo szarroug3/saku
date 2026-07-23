@@ -50,6 +50,31 @@ function met(facts: Iterable<FactId>): HistoryFile {
   return { sessions: [], facts: {}, seen: seen as HistoryFile["seen"] };
 }
 
+/**
+ * What each card is ABOUT, written out here rather than read off the module, so
+ * these tests check the rule instead of echoing it back.
+ *
+ * The kanji card is about a character taught as a kanji; the radical card about a
+ * shape that is only ever a piece; the word card about a written form built out
+ * of characters, which a one-character word is not.
+ */
+const ANCHOR_SHAPE: Record<
+  "radical" | "kanji" | "word",
+  (roles: readonly string[], glyph: string) => boolean
+> = {
+  kanji: (roles) => roles.includes("kanji"),
+  radical: (roles) => roles.length === 1 && roles[0] === "radical",
+  word: (roles, glyph) =>
+    roles.includes("word") && !roles.includes("kanji") && /\p{Script=Han}/u.test(glyph),
+};
+
+/** The anchor for one role, by name. */
+function anchorFor(role: "radical" | "kanji" | "word") {
+  const anchor = SPINE_ANCHORS.find((a) => a.role === role);
+  assert.ok(anchor, `${role} has no anchor`);
+  return anchor;
+}
+
 /** The intro ids a walk of this lesson emits, in order. */
 function introsOf(facts: readonly FactId[], history: HistoryFile): string[] {
   return lessonSteps(facts, history)
@@ -70,24 +95,62 @@ function factsWrittenOnStart(group: (typeof GROUPS)[number]): FactId[] {
   return [...group.facts, ...readingsProvedBy(lessonWords(group.items))];
 }
 
-describe("every role is anchored to the first item that plays it", () => {
-  test("all three roles have a card, in radical, kanji, word order", () => {
+describe("every role is anchored where its card has something to point at", () => {
+  test("all three roles have a card, listed down the hierarchy", () => {
+    // Words are what a learner is here for, kanji spell words, radicals build
+    // kanji. The reverse of the label order, and a different job: see CARD_ORDER.
     assert.deepEqual(
       SPINE_ANCHORS.map((a) => a.role),
-      [...ROLE_ORDER],
+      [...ROLE_ORDER].reverse(),
     );
     assert.deepEqual(
       SPINE_ANCHORS.map((a) => a.intro.id),
-      ROLE_ORDER.map((r) => TRACK_INTROS[r].id),
+      [...ROLE_ORDER].reverse().map((r) => TRACK_INTROS[r].id),
     );
   });
 
-  test("an anchor IS the first item of the sequence carrying its role", () => {
-    for (const anchor of SPINE_ANCHORS) {
-      const first = CURRICULUM_SEQUENCE.find((it) => it.roles.includes(anchor.role));
-      assert.ok(first, `nothing plays ${anchor.role}`);
-      assert.equal(anchor.glyph, first.glyph, anchor.role);
-    }
+  test("the kanji card is the first item taught as a kanji", () => {
+    const anchor = anchorFor("kanji");
+    const first = CURRICULUM_SEQUENCE.find((it) => it.roles.includes("kanji"))!;
+    assert.equal(anchor.glyph, first.glyph);
+  });
+
+  test("the radical card is the first shape that is ONLY a radical", () => {
+    // The card's job is that "radical" describes what other kanji are built from
+    // and says nothing about standing alone. On a character that is also a kanji
+    // that point is invisible; on a shape that is only ever a part it is the
+    // thing on screen.
+    const anchor = anchorFor("radical");
+    const item = CURRICULUM_SEQUENCE.find((it) => it.glyph === anchor.glyph)!;
+    assert.deepEqual([...item.roles], ["radical"]);
+    const first = CURRICULUM_SEQUENCE.find(
+      (it) => it.roles.length === 1 && it.roles[0] === "radical",
+    )!;
+    assert.equal(anchor.glyph, first.glyph);
+  });
+
+  test("the word card is the first word spelled out of characters, not a fold", () => {
+    // A one-character word is the kanji you were just taught wearing a second
+    // label, and nothing has waited on anything yet. The card is about a word
+    // waiting for its kanji, so it fires at the first written form built from
+    // characters already in hand.
+    const anchor = anchorFor("word");
+    const item = CURRICULUM_SEQUENCE.find((it) => it.glyph === anchor.glyph)!;
+    assert.ok(item.roles.includes("word"));
+    assert.ok(!item.roles.includes("kanji"), "the word anchor is a folded kanji");
+    assert.match(anchor.glyph, /\p{Script=Han}/u);
+    const first = CURRICULUM_SEQUENCE.find(
+      (it) =>
+        it.roles.includes("word") &&
+        !it.roles.includes("kanji") &&
+        /\p{Script=Han}/u.test(it.glyph),
+    )!;
+    assert.equal(anchor.glyph, first.glyph);
+  });
+
+  test("no two cards share an anchor, so each lands on its own item", () => {
+    const glyphs = SPINE_ANCHORS.map((a) => a.glyph);
+    assert.equal(new Set(glyphs).size, glyphs.length);
   });
 
   test("an anchor's gate facts are the meaning facts of the roles it plays", () => {
@@ -107,32 +170,50 @@ describe("every role is anchored to the first item that plays it", () => {
   });
 });
 
-describe("each card lands in the first lesson that teaches its role, before the item", () => {
+describe("each card lands in its anchor's lesson, ahead of the anchor", () => {
   for (const anchor of SPINE_ANCHORS) {
     describe(anchor.role, () => {
-      /** The first lesson holding an item that plays this role. */
-      const at = GROUPS.findIndex((g) =>
-        g.items.some((it) => it.roles.includes(anchor.role)),
-      );
+      /** The one lesson holding the anchor, and the history a learner has when
+       * they open it: everything Start wrote for every lesson up to and including
+       * this one. */
+      const at = GROUPS.findIndex((g) => g.items.some((it) => it.glyph === anchor.glyph));
+      const historyAt = () =>
+        met(GROUPS.slice(0, at + 1).flatMap(factsWrittenOnStart));
 
-      test("that lesson is the one holding the anchor", () => {
-        assert.ok(at >= 0, `no lesson teaches ${anchor.role}`);
+      test("exactly one lesson holds the anchor", () => {
+        assert.ok(at >= 0, `no lesson holds ${anchor.role}'s anchor`);
+        const holders = GROUPS.filter((g) =>
+          g.items.some((it) => it.glyph === anchor.glyph),
+        );
+        assert.equal(holders.length, 1);
+      });
+
+      test("no earlier lesson teaches the role, so the card is not late", () => {
+        // The anchor may sit behind items that carry the role incidentally (a
+        // kanji that happens to also be a radical), but nothing before its lesson
+        // may be the kind of thing the card is ABOUT.
+        const earlier = GROUPS.slice(0, at).flatMap((g) => g.items);
         assert.ok(
-          GROUPS[at].items.some((it) => it.glyph === anchor.glyph),
-          `the first ${anchor.role} lesson does not hold the anchor`,
+          !earlier.some((it) => ANCHOR_SHAPE[anchor.role](it.roles, it.glyph)),
+          `${anchor.role}'s card is late`,
         );
       });
 
-      test("the card fires there, ahead of every item", () => {
-        const before = GROUPS.slice(0, at).flatMap(factsWrittenOnStart);
-        const history = met([...before, ...factsWrittenOnStart(GROUPS[at])]);
-        const steps = lessonSteps(GROUPS[at].facts, history);
+      test("the card fires in that lesson, immediately ahead of the anchor item", () => {
+        const steps = lessonSteps(GROUPS[at].facts, historyAt());
         const cardAt = steps.findIndex(
           (s) => s.type === "intro" && s.key === anchor.intro.id,
         );
         assert.ok(cardAt >= 0, `${anchor.role} card never fired`);
-        const firstItem = steps.findIndex((s) => s.type === "item");
-        assert.ok(cardAt < firstItem, `${anchor.role} card lands after an item`);
+        const itemAt = steps.findIndex(
+          (s) => s.type === "item" && s.item.glyph === anchor.glyph,
+        );
+        assert.ok(itemAt > cardAt, `${anchor.role} card lands after its anchor`);
+        // Nothing but another card sits between the two: the explanation runs
+        // straight into the thing it explains.
+        for (let i = cardAt + 1; i < itemAt; i++) {
+          assert.equal(steps[i].type, "intro", `an item splits ${anchor.role}'s card off`);
+        }
       });
 
       test("it fires once in that walk, not once per item that plays the role", () => {
@@ -143,6 +224,41 @@ describe("each card lands in the first lesson that teaches its role, before the 
       });
     });
   }
+});
+
+// THE HIERARCHY, AND THE ORDER IT READS IN.
+// =========================================
+// Words are what a learner is here for, kanji are what words are written with,
+// radicals are what kanji are drawn from. Each card introduces what the thing
+// above it is built from, so the two that share the first lesson must read kanji
+// first and radical second. That order falls out of where the anchors sit, which
+// is exactly why it is pinned here: an anchor moved later must not silently
+// invert them and leave a learner told about pieces of a thing nobody has named.
+describe("the kanji card comes before the radical card", () => {
+  const kanji = anchorFor("kanji");
+  const radical = anchorFor("radical");
+
+  test("the kanji anchor precedes the radical anchor in the sequence", () => {
+    const at = (glyph: string) => CURRICULUM_SEQUENCE.findIndex((it) => it.glyph === glyph);
+    assert.ok(at(kanji.glyph) < at(radical.glyph), "a radical is introduced first");
+  });
+
+  test("both are in the first lesson, kanji card first", () => {
+    const lessonOf = (glyph: string) =>
+      GROUPS.findIndex((g) => g.items.some((it) => it.glyph === glyph));
+    assert.equal(lessonOf(kanji.glyph), lessonOf(radical.glyph));
+    const g = GROUPS[lessonOf(kanji.glyph)];
+    const ids = introsOf(g.facts, met(factsWrittenOnStart(g))).filter((id) =>
+      CARD_IDS.has(id),
+    );
+    assert.deepEqual(ids, [kanji.intro.id, radical.intro.id]);
+  });
+
+  test("the kanji card is the very first thing in that lesson", () => {
+    const at = GROUPS.findIndex((g) => g.items.some((it) => it.glyph === kanji.glyph));
+    const steps = lessonSteps(GROUPS[at].facts, met(factsWrittenOnStart(GROUPS[at])));
+    assert.equal(steps[0].type === "intro" ? steps[0].key : "", kanji.intro.id);
+  });
 });
 
 // THE REGRESSION ITSELF, pinned at the exact shape it had. Starting the first
@@ -165,23 +281,10 @@ describe("a reading unlocked by the lesson itself does not suppress its cards", 
     const withReadings = met(factsWrittenOnStart(first));
     const fired = introsOf(first.facts, withReadings).filter((id) => CARD_IDS.has(id));
     const owed = SPINE_ANCHORS.filter((a) =>
-      first.items.some((it) => it.roles.includes(a.role)),
+      first.items.some((it) => it.glyph === a.glyph),
     ).map((a) => a.intro.id);
     assert.deepEqual(fired, owed);
-  });
-
-  test("and the order is radical, kanji, word, ahead of the material", () => {
-    const steps = lessonSteps(first.facts, met(factsWrittenOnStart(first)));
-    const kinds = steps.map((s) => (s.type === "intro" ? "intro" : "item"));
-    const lastIntro = kinds.lastIndexOf("intro");
-    const firstItem = kinds.indexOf("item");
-    assert.ok(lastIntro < firstItem, "an item comes before a card");
-    assert.deepEqual(
-      steps.slice(0, lastIntro + 1).map((s) => s.key),
-      SPINE_ANCHORS.filter((a) =>
-        first.items.some((it) => it.roles.includes(a.role)),
-      ).map((a) => a.intro.id),
-    );
+    assert.ok(owed.length > 0, "the first lesson owes no card at all");
   });
 });
 

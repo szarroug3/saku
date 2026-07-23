@@ -121,27 +121,42 @@ export const KATAKANA_TRACK: PhaseIntro = {
   ],
 };
 
+// THE THREE SPINE CARDS ARE ONE LADDER, AND THEY READ TOP DOWN.
+// =============================================================
+// Words are what a learner is here for. Words are written with kanji. Kanji are
+// drawn from radicals. That is one ladder, and the cards say so out loud now,
+// each opening on the rung above it, because they used to be three unrelated
+// track introductions that never mentioned each other.
+//
+// They fire descending: the kanji card at the first kanji, the radical card at
+// the first shape that is only ever a part, the word card at the first word
+// written out of characters already learned. See ANCHOR_RULE in
+// src/lib/spine-intros.ts.
+//
+// THE RADICAL CARD HAS THE HARDEST JOB. The owner hit the confusion herself while
+// testing: 口 is labelled "Radical · Kanji · Word", and she asked how something
+// can be both a radical and a kanji. The answer the card has to land is that
+// "radical" describes what other kanji are built from and says nothing whatever
+// about whether the shape can stand alone. Some radicals are whole kanji (人, 大,
+// 口); some are only ever parts (气, 亅). Both are radicals, for the same reason.
+
 export const RADICAL_TRACK: PhaseIntro = {
   id: "track-radical",
   setId: "",
   eyebrow: "What a radical is",
-  title: "Radicals are the building blocks kanji are made of.",
+  title: "A radical is one of the pieces a kanji is drawn from.",
   body: [
     {
-      lead: "A radical is a shape that turns up inside many kanji.",
-      text: "Kanji are the characters Japanese writes most of its words with, and each one is drawn from a set stock of smaller pieces. 氵 stands for water, and you can see it in 海 (sea), 泳 (swim) and 湖 (lake). 木 is tree, and it is there in 林 (woods) and 森 (forest).",
+      lead: "One step below kanji.",
+      text: "Words are written with kanji, and kanji are drawn from a small stock of these shapes. 氵 is the water piece, and it is inside 海 (sea), 泳 (swim) and 湖 (lake). Recognizing a piece gives you a head start on a character you have never seen, though it is a hint and not a promise.",
     },
     {
-      lead: "Some are whole characters too; some are only ever pieces.",
-      text: "人 and 大 are radicals you also learn as kanji in their own right, so you meet each once and its card tells you it plays both parts. 気 is built around 气, a shape that is only ever a building block, so you meet 气 on its own just for what it looks like and means. Both kinds are pieces you will keep seeing inside other characters.",
+      lead: "Calling a shape a radical says nothing about whether it stands alone.",
+      text: "It answers one question: do other kanji get built out of this? 人, 大 and 口 are radicals, and each is also a whole kanji you learn and use by itself. 气 and 亅 are radicals and nothing else, so you will only ever see them inside another character. Both kinds get the label, because both are pieces.",
     },
     {
-      lead: "Knowing one gives you a head start on a kanji you have not seen.",
-      text: "The radical often hints at what a kanji is about, though it is only a hint. Once you know the piece, the characters built on it are quicker to place and easier to tell apart.",
-    },
-    {
-      lead: "You meet each one right where it counts.",
-      text: "A radical comes up with the kanji it belongs to, so a character is never broken into a part you have not learned yet. When a radical is also a kanji, learning that kanji is where you meet the shape.",
+      lead: "Each piece turns up just before the character that needs it.",
+      text: "So a kanji is never broken into a shape you have not seen. When a piece is a kanji too, learning that kanji is where you get the shape, and its card tells you it plays both parts.",
     },
   ],
 };
@@ -150,23 +165,19 @@ export const KANJI_TRACK: PhaseIntro = {
   id: "track-kanji",
   setId: "",
   eyebrow: "What kanji are",
-  title: "A kanji carries a meaning, not only a sound.",
+  title: "Kanji are the characters Japanese words are written with.",
   body: [
     {
-      lead: "One character, one meaning, and usually a sound.",
-      text: "山 means mountain and is read “yama”. Sometimes a kanji is a whole word by itself. Sometimes it is one piece of a longer word, like the 火 inside 火山. The same character does both, depending on the word it is in.",
+      lead: "A kanji carries a meaning, not only a sound.",
+      text: "Kana spells sounds. A kanji stands for an idea and usually has a sound too: 山 means mountain and is read やま. Japanese also puts no spaces between words, and the switch between kanji and kana is much of how you find the breaks.",
     },
     {
-      lead: "Every kanji you learn helps you with words you have not seen yet.",
-      text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can guess it: a volcano, and nobody had to teach you the word. Learn a few hundred kanji and thousands of words become easier to learn.",
+      lead: "This is why the characters come before the words.",
+      text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can work it out: a volcano, and nobody had to teach you the word. Learn a few hundred kanji and thousands of words open up behind them.",
     },
     {
-      lead: "They also show you where a word ends.",
-      text: "Japanese doesn’t use spaces between words. The switch between kanji and kana is a large part of how you find the breaks in a solid row of characters.",
-    },
-    {
-      lead: "It’s taught now because you can read every sound already.",
-      text: "Kana taught you the sounds. Kanji is what teaches you the meaning, and it is the larger job, so it starts once the small one is done.",
+      lead: "And a kanji is not one shape to memorize.",
+      text: "Each one is assembled from smaller pieces called radicals, which is the next thing you will see. Kana taught you every sound already, so this is the larger job starting now that the small one is done.",
     },
   ],
 };
@@ -174,20 +185,20 @@ export const KANJI_TRACK: PhaseIntro = {
 export const WORD_TRACK: PhaseIntro = {
   id: "track-word",
   setId: "",
-  eyebrow: "What this track teaches",
+  eyebrow: "What words add",
   title: "Words are the part you actually speak and read.",
   body: [
     {
-      lead: "This is what the scripts were for.",
-      text: "先生 (teacher), 電車 (train), たべる (to eat). Kanji are the characters a word is written with, and grammar is how you join words into a sentence. The word is the thing in the middle that you say.",
+      lead: "This is what the characters were for.",
+      text: "先生 (teacher), 電車 (train), たべる (to eat). Radicals build kanji, kanji spell words, and the word is the thing you say. Grammar is how you join them into a sentence.",
     },
     {
-      lead: "A word is taught here once you know every kanji in it.",
-      text: "電車 isn’t taught until you have learned both 電 and 車, so when you learn it, you can put it together instead of memorizing it. Words with no kanji at all, like これ and もう, have nothing blocking them.",
+      lead: "A word arrives once you know the kanji it is written with.",
+      text: "電車 waits until both 電 and 車 are learned, so when it turns up you can assemble it instead of memorizing it whole. Words with no kanji in them, like これ and もう, have nothing to wait for.",
     },
     {
-      lead: "Expect it to come in bursts.",
-      text: "Nothing for a while, then several at once, as the kanji they need come in. Learning a word is also what settles which reading its kanji take, so this track is what gives those characters their real pronunciation.",
+      lead: "Expect these in bursts.",
+      text: "Nothing for a stretch, then several at once, as the kanji they need come in. Learning a word is also what settles which reading its kanji take, so this is where those characters get their real pronunciation.",
     },
   ],
 };

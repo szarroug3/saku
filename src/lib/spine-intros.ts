@@ -65,7 +65,7 @@ import type { FactId, HistoryFile } from "@/types";
 export interface SpineAnchor {
   /** The role this card explains. */
   role: CurriculumRole;
-  /** The first glyph in the sequence that plays the role. */
+  /** The glyph the card fires ahead of. See ANCHOR_RULE. */
   glyph: string;
   /**
    * The facts that mean "this item has been taught": the meaning fact of every
@@ -87,23 +87,77 @@ function meaningFacts(glyph: string, roles: readonly CurriculumRole[]): FactId[]
   return facts;
 }
 
+/** A written form containing at least one kanji. */
+const HAS_KANJI = /\p{Script=Han}/u;
+
 /**
- * The three cards, in ROLE_ORDER, each anchored to the first item that plays its
- * role.
+ * WHERE EACH CARD FIRES: the first item the role is the POINT of, and not merely
+ * the first item the role is true of.
  *
- * ROLE_ORDER (radical, kanji, word) is the order they are emitted in when more
- * than one comes due at the same item, and it is not an arbitrary choice: it is
- * the order the composite position label prints, and the order the material is
- * built in. A radical is the smallest piece, a kanji is made of radicals, a word
- * is made of kanji, so each card can lean on the one before it.
+ * The first cut of this module anchored each card to the first item carrying the
+ * role at all. Every one of those is the very first item of the sequence, which
+ * plays all three roles at once, so a learner met three full-screen explainers
+ * before the first four characters and each one landed where its own copy was
+ * only half true. Each rule below picks the first item where the card has
+ * something real to point at, which is the doctrine the rest of the walk's cards
+ * already follow (okurigana waits for the first fixed tail, rendaku for the first
+ * voiced seam).
+ *
+ *   KANJI   the first item taught as a kanji. Unchanged: a kanji is exactly what
+ *           this item is, and it opens the whole curriculum.
+ *   RADICAL the first item that is a radical and NOTHING ELSE. This is the card
+ *           that has to explain that "radical" describes what other kanji are
+ *           built from and says nothing about standing alone. On a character that
+ *           is also a kanji and also a word, that point is invisible; on a shape
+ *           that is only ever a part, it is the shape in front of you.
+ *   WORD    the first word written with kanji that is not a single kanji folded
+ *           into its own character. A one-character word is the kanji you have
+ *           just been taught wearing a second label, and the card's whole subject
+ *           is that a word waits for the characters it is spelled with, which
+ *           nothing has waited for yet. The first written form built out of
+ *           characters already in hand is where that is true.
+ *
+ * Each falls back to the plain "carries the role" item if its rule matches
+ * nothing, so a re-cut curriculum degrades to an early card and never to a
+ * missing one.
+ */
+const ANCHOR_RULE: Readonly<
+  Record<CurriculumRole, (item: (typeof CURRICULUM_SEQUENCE)[number]) => boolean>
+> = {
+  kanji: (it) => it.roles.includes("kanji"),
+  radical: (it) => it.roles.length === 1 && it.roles[0] === "radical",
+  word: (it) =>
+    it.roles.includes("word") && !it.roles.includes("kanji") && HAS_KANJI.test(it.glyph),
+};
+
+/**
+ * The order the cards are emitted in when more than one comes due at the same
+ * item: DOWN THE HIERARCHY, each card introducing what the thing above it is
+ * built from.
+ *
+ * Words are what a learner is here for, kanji are what words are written with,
+ * radicals are what kanji are drawn from. So a walk that owes two cards reads as
+ * one step down and not as two unrelated announcements, and the copy can hand off
+ * in that direction.
+ *
+ * It is the reverse of ROLE_ORDER, which the composite label prints and which
+ * runs smallest piece first. Two different orders for two different jobs: a label
+ * lists what is on the card, and this teaches.
+ */
+const CARD_ORDER: readonly CurriculumRole[] = [...ROLE_ORDER].reverse();
+
+/**
+ * The three cards, in CARD_ORDER, each anchored by ANCHOR_RULE.
  *
  * Computed once at module load. It is a property of the shipped sequence, and no
  * user input reaches it.
  */
-export const SPINE_ANCHORS: readonly SpineAnchor[] = ROLE_ORDER.flatMap((role) => {
-  const item = CURRICULUM_SEQUENCE.find((it) => it.roles.includes(role));
-  // A role no item plays has no anchor and no card. It cannot happen over the
-  // shipped tables (spine-intros.test.ts asserts all three are anchored), and
+export const SPINE_ANCHORS: readonly SpineAnchor[] = CARD_ORDER.flatMap((role) => {
+  const item =
+    CURRICULUM_SEQUENCE.find(ANCHOR_RULE[role]) ??
+    CURRICULUM_SEQUENCE.find((it) => it.roles.includes(role));
+  // A role no item plays at all has no anchor and no card. It cannot happen over
+  // the shipped tables (spine-intros.test.ts asserts all three are anchored), and
   // dropping it beats minting a card with nowhere to fire.
   if (!item) return [];
   const anchor: SpineAnchor = {
