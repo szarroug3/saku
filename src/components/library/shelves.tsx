@@ -412,7 +412,10 @@ export function Shelf({
         const shown = section.entries.slice(0, section.cap ?? Infinity);
         const hidden = section.entries.length - shown.length;
         return (
-          <Card key={section.id}>
+          // kq-defer: skip painting this section while it's scrolled out of view.
+          // The Library stacks many of these, each a grid of translucent tiles;
+          // in kiri that offscreen paint is the shelf's scroll cost.
+          <Card key={section.id} className="kq-defer">
             <div className="mb-2 flex items-center gap-2">
               {/* Tri-state header, and each state NAMES ITS OWN text colour in
                   the same string as its border/fill — no shared `text-*` for a

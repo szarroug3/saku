@@ -1169,6 +1169,21 @@ body {
   backdrop-filter: var(--material-frost);
 }
 
+/* "Skip me entirely while I'm scrolled offscreen." The Library stacks many Cards,
+ * each a grid of translucent .kq-material tiles, and in kiri every one of those
+ * tiles blends over the fixed page mesh. Removing the per-card backdrop-filter
+ * (above) got the light screens like Settings under budget, but the Library keeps
+ * hundreds of tiles in the DOM at once and painting the offscreen ones is the
+ * cost that was left. content-visibility lets the browser drop layout AND paint
+ * for a section that isn't in view; contain-intrinsic-size hands it a placeholder
+ * height so the scrollbar doesn't lurch, and `auto` means "use the real height
+ * once you've measured it once". Harmless in the other three themes (opaque cards,
+ * no mesh) — it just trims their offscreen paint too. */
+.kq-defer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+
 /* "I am a sticky band over the page's ground, and I must occlude."
  *
  * The quiz screens' HUDs. Same material as a card, different fill: in the three
