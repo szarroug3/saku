@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { preload } from "react-dom";
 import type { ReactNode } from "react";
 
 // The landing — what a signed-out visitor sees at /. It introduces Saku and
@@ -34,6 +35,11 @@ const FEATURES: Array<{ title: string; body: string }> = [
 ];
 
 export function Landing({ signIn }: { signIn: ReactNode }) {
+  // Preload the mark here, not globally: it appears only in the hero below, so
+  // preloading it in the root layout wasted the fetch on every other route (and
+  // tripped the "preloaded but not used" console warning). Scoped to the landing,
+  // it's decoded before first paint so the hero <img> doesn't flash blank.
+  preload("/brand/saku-mark.png", { as: "image" });
   return (
     <main className="mx-auto max-w-3xl px-6 pb-24">
       {/* Hero */}

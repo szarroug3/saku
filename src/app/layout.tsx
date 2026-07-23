@@ -113,10 +113,11 @@ export default async function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
-        {/* Preload the brand art so it's decoded before first paint — otherwise
-            the <img> alt ("Saku") flashes as text on the landing and in the
-            sidebar until the PNG arrives. */}
-        <link rel="preload" as="image" href="/brand/saku-mark.png" />
+        {/* Preload the wordmark so it's decoded before first paint — the sidebar
+            shows it on every page, so without this its <img> flashes blank until
+            the PNG arrives. The mark is landing-only, so it's preloaded there
+            (src/components/landing.tsx) instead of globally, where it would go
+            unused on every other route. */}
         <link rel="preload" as="image" href="/brand/saku-wordmark.png" />
       </head>
       <body>
