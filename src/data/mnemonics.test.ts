@@ -258,9 +258,10 @@ test("hiragana を teaches /o/, and its prominent pronunciation never says wo", 
     m.analogy.some((s) => s.accent && s.text.toLowerCase().includes("o")),
     "the analogy must cue the o sound",
   );
-  // No ACCENT span — the spans painted as the sound — carries "wo". The shape
-  // word "wok" is allowed to survive as an UNACCENTED story word (it names the
-  // arc of を, not its sound), so this checks the accented spans, not the prose.
+  // No ACCENT span — the spans painted as the sound — carries "wo". The roller
+  // coaster's "woah!" survives as UNACCENTED prose (only the "o" inside it, and
+  // the "o" in "roller", are accented), so this checks the accented spans, not
+  // the prose: the sound the learner is told to hear is o, never wo.
   for (const span of [...m.analogy, ...m.mnemonic]) {
     if (span.accent) {
       assert.ok(
@@ -269,10 +270,9 @@ test("hiragana を teaches /o/, and its prominent pronunciation never says wo", 
       );
     }
   }
-  // The old "woah!" cue is gone entirely, accented or not.
-  const prose = [...m.analogy, ...m.mnemonic].map((s) => s.text).join(" ");
-  assert.ok(!/woah/i.test(prose), "the woah! cue is gone");
-  // The particle role is still explained, and still says it sounds like お.
-  assert.match(m.approximate ?? "", /object particle/);
-  assert.match(m.approximate ?? "", /お/);
+  // The particle role is still explained, and still says it sounds like お —
+  // now in the plain `usage` note (no speaker icon), not the phonetic
+  // `approximate` field, which never fit a character pronounced exactly like お.
+  assert.match(m.usage ?? "", /object particle/);
+  assert.match(m.usage ?? "", /お/);
 });

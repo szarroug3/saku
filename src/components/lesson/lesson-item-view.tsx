@@ -520,6 +520,7 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           glyph={item.glyph}
           voiceName={cfg.voiceName}
           href={entryHref(item.entry)}
+          soundNote={note}
         />
       ) : (
         <PlainHeadword
@@ -534,11 +535,11 @@ export function LessonItemView({ item }: { item: LessonItem }) {
         />
       )}
 
-      {/* The call-out, when the sound is irregular. Directly under the hero and
-          above the divider, because it is a correction to the thing you just
-          read, not a reference section to open later. A left rule in the accent
-          rather than a boxed card: it belongs to the hero. */}
-      {note ? (
+      {/* The irregular-sound call-out. When there's a mnemonic, MnemonicView
+          renders it right under the sound line (where the correction belongs);
+          this standalone copy is only for the plain-headword path, which has no
+          sound line of its own. */}
+      {!mnemonic && note ? (
         <div className="mt-6">
           <Callout>{note}</Callout>
         </div>

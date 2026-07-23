@@ -41,8 +41,9 @@
 // drops the small header glyph in that case so the character never prints twice.
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
+import { Callout } from "@/components/lesson/callout";
 import { Line } from "@/components/lesson/mnemonic-card";
 import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { SoundIcon } from "@/components/ui";
@@ -55,6 +56,7 @@ export function MnemonicView({
   voiceName,
   href,
   descriptor,
+  soundNote,
 }: {
   /** The authored hook — the single source both views render. */
   m: Mnemonic;
@@ -71,6 +73,10 @@ export function MnemonicView({
   /** Optional muted classification line ("Hiragana · Vowels") — the entry page's
    * row descriptor. The lesson has no such label and passes nothing. */
   descriptor?: string;
+  /** The irregular-sound call-out ("Said 'chi', not 'ti'"), when this kana has
+   * one. Rendered right under the sound line, since it is a correction to how
+   * the character is pronounced. Both call sites derive it from the glyph. */
+  soundNote?: ReactNode;
 }) {
   const chars = [...m.example.word];
 
@@ -165,6 +171,13 @@ export function MnemonicView({
             <Line line={m.analogy} />
           </span>
         </p>
+        {/* The irregular-sound correction, directly under the sound line it
+            corrects ("Said 'chi', not 'ti'"). */}
+        {soundNote ? (
+          <div className="mt-3">
+            <Callout>{soundNote}</Callout>
+          </div>
+        ) : null}
         {/* Where the analogy is only close, say so — an English mouth doesn't
             make this sound exactly. */}
         {m.approximate ? (
@@ -172,6 +185,11 @@ export function MnemonicView({
             <SoundIcon className="mr-1 align-[-0.15em]" />
             {m.approximate}
           </p>
+        ) : null}
+        {/* A plain usage note (を is the object particle) — no speaker icon,
+            because it is about how the character is used, not its sound. */}
+        {m.usage ? (
+          <p className="mt-2 text-[13px] leading-relaxed text-text-muted">{m.usage}</p>
         ) : null}
 
         {/* The kana caught in a real word, its own glyph accented. */}

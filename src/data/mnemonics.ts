@@ -167,6 +167,13 @@ export interface Mnemonic {
    * Rendered muted; omitted when there's nothing to caveat.
    */
   approximate?: string;
+  /**
+   * A plain usage note — NOT about the sound, so it renders with no speaker icon
+   * and in ordinary muted text, unlike `approximate`. For the handful of kana
+   * that are also grammar (を is the object particle), where the useful thing to
+   * say is how the character is USED, not how it is pronounced.
+   */
+  usage?: string;
 }
 
 /**
@@ -298,7 +305,9 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "gg." },
     ],
     mnemonic: [
-      { text: "A bird cracks out of a speckled " },
+      { text: "A bird cracks out of a speckled, " },
+      { text: "e", accent: true },
+      { text: "xotic " },
       { text: "e", accent: true },
       { text: "gg and squawks “" },
       { text: "ehh", accent: true },
@@ -360,7 +369,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     glyph: "カ",
     romaji: "ka",
     sound: "ka",
-    object: "karateka",
+    object: "karate kick",
     analogy: [
       { text: "Say “" },
       { text: "ka", accent: true },
@@ -391,7 +400,9 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "” like hiragana う." },
     ],
     mnemonic: [
-      { text: "A snowy roof has one little chimney poking up while snow slides off its long slope." },
+      { text: "A snowy r" },
+      { text: "oo", accent: true },
+      { text: "f has one little chimney poking up while snow slides off its long slope." },
     ],
     example: { word: "ウニ", reading: "uni", gloss: "sea urchin", hitIndex: 0 },
   },
@@ -409,7 +420,9 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     mnemonic: [
       { text: "An " },
       { text: "e", accent: true },
-      { text: "ngineer bolts an I-beam level, then taps it to check his work." },
+      { text: "ngineer bolts an I-beam level, then taps it to ch" },
+      { text: "e", accent: true },
+      { text: "ck his work." },
     ],
     example: { word: "エアコン", reading: "eakon", gloss: "air conditioner", hitIndex: 0 },
   },
@@ -429,7 +442,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     mnemonic: [
       { text: "An old " },
       { text: "oa", accent: true },
-      { text: "k stretches its weathered trunk and ancient limbs wide, and you stop to whisper “" },
+      { text: "k tree stretches its weathered trunk and ancient limbs wide, and you stop to whisper “" },
       { text: "oh", accent: true },
       { text: "!”" },
     ],
@@ -511,7 +524,9 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "." },
     ],
     mnemonic: [
-      { text: "A two-toothed key jams a rusty lock and screeches “" },
+      { text: "A two-toothed " },
+      { text: "key", accent: true },
+      { text: " jams a rusty lock and screeches “" },
       { text: "kee", accent: true },
       { text: "!”" },
     ],
@@ -1973,7 +1988,7 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
     glyph: "を",
     romaji: "wo",
     sound: "o",
-    object: "a wok",
+    object: "roller coaster",
     analogy: [
       { text: "Say “" },
       { text: "o", accent: true },
@@ -1982,10 +1997,14 @@ export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
       { text: "." },
     ],
     mnemonic: [
-      { text: "A wok tossing food up in an arc: を." },
+      { text: "Two kids throw their hands up on a r" },
+      { text: "o", accent: true },
+      { text: "ller coaster and scream “w" },
+      { text: "o", accent: true },
+      { text: "ahh!” as it loops down through を." },
     ],
     example: { word: "パンを", reading: "pan o", gloss: "bread [object]", hitIndex: 2 },
-    approximate: "This is the object particle. It attaches to a noun (パンを食べる, “eat bread”) and sounds exactly like お.",
+    usage: "This is the object particle. It attaches to a noun (パンを食べる, “eat bread”) and sounds exactly like お.",
   },
 
   ヲ: {
