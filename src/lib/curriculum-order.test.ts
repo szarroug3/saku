@@ -28,6 +28,7 @@ import {
   RADICALS,
   isRadicalTaughtAsKanji,
   radicalByGlyph,
+  radicalByWrittenForm,
   radicalOfKanji,
 } from "../data/radicals.ts";
 import { CURRICULUM_WORDS, wordKanji } from "./word-lesson.ts";
@@ -63,13 +64,13 @@ function componentsOf(c: string): { kanji: string[]; radicals: number[] } {
   const classify = (part: string) => {
     if (part === c) return;
     if (kanjiRow(part) !== undefined) return void kanji.add(part);
-    const own = radicalByGlyph(part);
+    const own = radicalByWrittenForm(part);
     if (own) return void radicals.add(own.num);
     const orig = variantOriginal(part);
     // 耂 resolves to 老, which is how 老 itself is drawn: not its own debt.
     if (orig === undefined || orig === c) return;
     if (kanjiRow(orig) !== undefined) return void kanji.add(orig);
-    const rad = radicalByGlyph(orig);
+    const rad = radicalByWrittenForm(orig);
     if (rad) radicals.add(rad.num);
   };
   for (const part of kanjiRow(c)?.comps ?? []) classify(part);
@@ -380,18 +381,29 @@ describe("variant forms", () => {
     assert.ok(componentRadicals("元").includes(radicalByGlyph("儿")!.num));
   });
 
-  test("a bound form with nothing behind it is drawn, not taught", () => {
-    // ⻌ is a form of 辶, which is no kanji, and radical 162 is filed in the
-    // table under 辵, so the chain stops with nothing to owe. 52 characters are
-    // drawn with it and none of them owes anything for it. This is a gap in the
-    // data, pinned so a re-cut that closes it shows up here.
+  test("⻌ resolves to radical 162, welded, ahead of every character drawn with it", () => {
+    // The bridge: KanjiVG's chain for the running shape stops at 辶, and the 214
+    // table holds radical 162 under its traditional glyph 辵, so the two only
+    // meet through `radicalByWrittenForm`. Neither ⻌ nor 辶 is ever an item; the
+    // debt is 辵, and it is welded like any other radical.
     assert.equal(variantOriginal("⻌"), "辶");
     assert.equal(kanjiRow("辶"), undefined);
-    assert.equal(radicalByGlyph("辶"), undefined);
+    assert.equal(radicalByGlyph("辶"), undefined, "辶 is not a table glyph");
+    assert.equal(radicalByWrittenForm("辶")!.num, 162);
     assert.equal(curriculumPosition("辶"), -1);
     assert.equal(curriculumPosition("⻌"), -1);
-    assert.ok(kanjiRow("道")!.comps.includes("⻌"));
-    assert.deepEqual(componentKanji("道"), ["首"]);
+
+    const drawn = KANJI.filter((k) => k.comps.includes("⻌")).map((k) => k.c);
+    assert.equal(drawn.length, 52);
+    for (const c of drawn) {
+      assert.ok(componentRadicals(c).includes(162), `${c} does not owe 辵`);
+      assert.ok(AT.get("辵")! < AT.get(c)!, `辵 must come before ${c}`);
+    }
+    // And it is welded to the first of them the sequence reaches, like any other
+    // radical: taught with 達, not stranded a lesson ahead of it.
+    const first = [...drawn].sort((a, b) => AT.get(a)! - AT.get(b)!)[0]!;
+    assert.equal(CURRICULUM_SEQUENCE[AT.get("辵")!]!.tiedTo, first);
+    assert.equal(AT.get("辵")! + 1, AT.get(first)!);
   });
 
   test("the variant map is followed one hop, never chased", () => {

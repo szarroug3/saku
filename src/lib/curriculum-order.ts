@@ -103,11 +103,13 @@
 //     readings and page, and the mapping is etymology (月 in 服 descends from
 //     肉). A learner meeting 明 is meeting 日. Same for 儿, 冫, 匸, 厶, 毋, which
 //     are Kangxi radicals with cards of their own.
-//   - ⻌→辶, ⺍→つ, ⺕→彑, 戌→戍 … the original has no card either, so there is
-//     still nothing to owe and the shape is drawn, not taught. 辶 is the biggest
-//     of these (52 characters): radical 162 is filed in the table under 辵, and
-//     KanjiVG's chain stops at 辶, so the two never meet. That is a gap in the
-//     DATA, named here rather than papered over with a hand-written mapping.
+//   - ⺍→つ, ⺕→彑, 㐮→襄, 戌→戍 … the original has no card either, so there is
+//     still nothing to owe and the shape is drawn, not taught.
+//
+// ⻌→辶 was the fourth case until the shape with no card behind it turned out to
+// be radical 162, which the table holds under its traditional glyph 辵 while
+// every character that uses it is drawn with 辶. `radicalByWrittenForm` is that
+// one edge, and it lands 辵 in front of the 52 characters drawn with the shape.
 //
 // The map is followed for ONE hop and never chased, because it contains a mutual
 // pair (戌→戍 and 戍→戌) that a transitive walk would not get out of.
@@ -144,7 +146,12 @@
 // shape, and every curriculum word appears exactly once in CURRICULUM_SEQUENCE.
 
 import { kanjiRow, kanjiTeachOrder, variantOriginal } from "@/data/kanji";
-import { radicalByGlyph, radicalOfKanji, type RadicalRow } from "@/data/radicals";
+import {
+  radicalByGlyph,
+  radicalByWrittenForm,
+  radicalOfKanji,
+  type RadicalRow,
+} from "@/data/radicals";
 import { RADICAL_TEACHING_ORDER } from "@/lib/radical-order";
 import { CURRICULUM_WORDS, wordKanji } from "@/lib/word-lesson";
 
@@ -257,7 +264,10 @@ function componentsOf(c: string): Components {
     // meaning, readings and page. Same for the shapes that are radicals in their
     // own right (儿 is Kangxi 10, whatever it descends from).
     if (kanjiRow(part) !== undefined) return addKanji(part);
-    const own = radicalByGlyph(part);
+    // `radicalByWrittenForm`, not `radicalByGlyph`: a decomposition names the
+    // shape as it is written, and for radical 162 that shape is 辶 while the
+    // table holds 辵. See the bridge in src/data/radicals.ts.
+    const own = radicalByWrittenForm(part);
     if (own) return addRadical(own);
     // NO CARD OF ITS OWN: a bound form (亻, 氵, 扌, 艹) that exists only inside
     // other characters. The debt is the character it is a form of, so nothing
@@ -268,11 +278,10 @@ function componentsOf(c: string): Components {
     // character is not built from itself.
     if (orig !== undefined && orig !== c) {
       if (kanjiRow(orig) !== undefined) return addKanji(orig);
-      const rad = radicalByGlyph(orig);
+      const rad = radicalByWrittenForm(orig);
       if (rad) return addRadical(rad);
     }
-    // A primitive with nothing behind it: ｜, 丶, ⻌ (a form of 辶, which is no
-    // kanji and not the glyph radical 162 is drawn with either). There is no
+    // A primitive with nothing behind it: 丶, ⺍ (a form of つ), 戌. There is no
     // card, no meaning and no reading anywhere in the data for these, so there
     // is nothing to owe. It is drawn when the character is drawn.
   };

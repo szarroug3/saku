@@ -69,6 +69,49 @@ export function radicalByGlyph(glyph: string): RadicalRow | undefined {
   return BY_GLYPH.get(glyph);
 }
 
+// THE SHAPE A RADICAL IS WRITTEN WITH, WHERE THE TABLE HAS THE OTHER ONE
+// =======================================================================
+// The 214 table carries ONE glyph per radical, and for radical 162 that glyph is
+// 辵. No modern character is drawn with 辵: 道 通 遠 and 49 others are drawn with
+// 辶 (KanjiVG calls the component ⻌ and records 辶 as what it is a form of). So a
+// consumer that starts from a DECOMPOSITION and asks "which radical is this
+// shape" gets nothing for the commonest running-shape in the language, and 52
+// characters end up owing no radical for a piece every one of them contains.
+//
+// This bridge is the missing edge, and it is exactly the case scripts/ingest/
+// radicals.mjs already knows about and has deliberately deferred: its JP_GLYPH
+// map remaps the two radicals whose Kangxi glyph is the traditional form (戶→戸,
+// 靑→青), and its header says a full Japanese variant map "needs a verified
+// curated source and is a follow-up". 162 is that follow-up. It is written here
+// rather than in the ingest because the ingest's two sources genuinely do not
+// attest it — Unicode's compat mapping gives 辵 and KanjiVG's chain stops at 辶,
+// so producing the edge there would mean writing a fact into a generated file
+// that the pipeline cannot re-derive. When JP_GLYPH grows a verified source, 162
+// belongs in it and this map goes away.
+//
+// ADDITIVE, ON PURPOSE. `radicalByGlyph` is untouched, so nothing that asks what
+// a character IS changes its answer (辶 is still not a radical row, and there is
+// still no radical entry, card or fact for it). Only a caller that opts into
+// `radicalByWrittenForm` sees the edge.
+const WRITTEN_FORM: ReadonlyMap<string, number> = new Map([
+  ["辶", 162], // the running shape; the table has 辵
+]);
+
+/**
+ * The radical drawn with this glyph, counting the modern written form as the
+ * radical it is a form of: `radicalByGlyph` first, then the bridge above.
+ *
+ * For a caller reading a decomposition, where the question is "what does this
+ * piece of the glyph oblige the learner to know". Use `radicalByGlyph` when the
+ * question is what a character is.
+ */
+export function radicalByWrittenForm(glyph: string): RadicalRow | undefined {
+  const own = BY_GLYPH.get(glyph);
+  if (own) return own;
+  const num = WRITTEN_FORM.get(glyph);
+  return num === undefined ? undefined : BY_NUM.get(num);
+}
+
 /** The radical a kanji is filed under — the one it gates on. */
 export function radicalOfKanji(kanji: string): RadicalRow | undefined {
   const num = RADICAL_OF[kanji];
