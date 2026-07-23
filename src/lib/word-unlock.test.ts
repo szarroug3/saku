@@ -25,6 +25,8 @@ import {
 import { wordMeaningFactId } from "../data/vocab.ts";
 import {
   anchorForFact,
+  claimableFacts,
+  quizzableFacts,
   readingAnchors,
   readingsProvedBy,
   unlockedReadingFacts,
@@ -125,5 +127,51 @@ describe("readingsProvedBy — the write side of the unlock", () => {
       unlockedReadingFacts(claiming([wordMeaningFactId("先生")])),
     );
     assert.deepEqual([...proved].sort(), [...unlocked].sort());
+  });
+});
+
+// The bug the owner hit: she marked a few kanji "I already know this" in the
+// Library, ran Quiz me, and was asked "山 read as ざん in 登山" for a word (登山)
+// she never learned. 山's さん reading is anchored by the ingest on 登山, so its
+// fact is kanji:山/reading@登山. Two guards close it: the claim drops the reading
+// (SOURCE), and the quiz drops any reading in an unlearned word (GUARD).
+const ZAN_FACT: FactId = readingFactId("山", "登山");
+const YAMA_MEANING: FactId = kanjiMeaningFactId("山");
+
+describe("claimableFacts: a kanji claim takes the meaning, not the readings", () => {
+  test("claiming 山 keeps its meaning and drops its word-anchored reading", () => {
+    assert.deepEqual(claimableFacts([YAMA_MEANING, ZAN_FACT]), [YAMA_MEANING]);
+  });
+
+  test("a kana's one fact and a word's facts survive a claim untouched", () => {
+    // Neither is a kanji reading fact, so the filter passes them straight
+    // through: "I know this kana" and "I know this word" still claim everything.
+    const kanaFact = "kana:か/reading" as FactId;
+    const wordFact = wordMeaningFactId("先生");
+    assert.deepEqual(claimableFacts([kanaFact, wordFact]), [kanaFact, wordFact]);
+  });
+});
+
+describe("quizzableFacts: a reading is never asked in an unlearned word", () => {
+  test("山/ざん is dropped from the quiz while 登山 is unlearned, even when met", () => {
+    // The reading is "met" by a stray claim on the fact itself, exactly the
+    // regression: it must still not be asked, because 登山 was never learned.
+    const h = claiming([ZAN_FACT]);
+    assert.ok(!quizzableFacts([ZAN_FACT], h).includes(ZAN_FACT));
+  });
+
+  test("learning 登山 makes 山/ざん quizzable", () => {
+    const h = claiming([wordMeaningFactId("登山")]);
+    assert.ok(quizzableFacts([ZAN_FACT], h).includes(ZAN_FACT));
+  });
+
+  test("kana, words and meanings always pass the quiz guard", () => {
+    const h = history();
+    const nonReadings: FactId[] = [
+      "kana:か/reading" as FactId,
+      wordMeaningFactId("先生"),
+      YAMA_MEANING,
+    ];
+    assert.deepEqual(quizzableFacts(nonReadings, h), nonReadings);
   });
 });

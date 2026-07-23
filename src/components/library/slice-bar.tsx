@@ -36,13 +36,15 @@ import {
   type Slice,
 } from "@/lib/library/slice";
 import { useQuizSession } from "@/lib/quiz-session";
+import { claimableFacts, quizzableFacts } from "@/lib/word-unlock";
 import type { Claims } from "@/lib/claims";
-import type { FactAggregate, FactId } from "@/types";
+import type { FactAggregate, FactId, HistoryFile } from "@/types";
 
 export function SliceBar({
   slice,
   facts,
   claims,
+  history,
   now,
   onClaim,
   showLabel = true,
@@ -51,6 +53,10 @@ export function SliceBar({
   slice: Slice;
   facts: Record<FactId, FactAggregate>;
   claims: Claims;
+  /** The whole history, so the quiz guard can ask whether the WORD a kanji
+   * reading is anchored in has been learned. A reading in an unlearned word is
+   * never quizzed, even if it became "met" some other way. */
+  history: HistoryFile;
   /** Passed in, never read from a clock here: every screen in this feature
    * renders against ONE `now`, or the bar and the table it summarises can
    * disagree about whether a fact is solid. */
@@ -96,19 +102,33 @@ export function SliceBar({
   // The one exception is a hand-picked selection (includeSolid): you toggled
   // exactly those items and pressed on, so it drills exactly what you picked,
   // unseen included — the explicit intent overrides the review default.
-  const quizOrder = includeSolid
-    ? order
-    : [...drillPlan(slice, facts, claims, now, true).probe];
+  // GUARD (see quizzableFacts): whatever the quiz would ask, a kanji reading
+  // anchored in a word the learner has not learned is dropped. It never asks
+  // "山 read as ざん in 登山" until 登山 itself has been learned, even if that
+  // reading became "met" some other way (a stray claim, a re-cut). Non-reading
+  // facts and readings whose word IS known are untouched, so kana, words and
+  // meanings quiz exactly as before, and a hand-picked selection still asks
+  // everything it picked except a reading in a word you never learned.
+  const quizOrder = quizzableFacts(
+    includeSolid ? order : [...drillPlan(slice, facts, claims, now, true).probe],
+    history,
+  );
   // Claim only ever touches NOT-solid facts: claiming what the model already
   // calls solid is a documented no-op. So even when Drill is force-including
   // solid facts, claim runs off the default plan and is disabled once every
   // not-solid fact is claimed.
-  const claimOrder = includeSolid
-    ? (() => {
-        const base = drillPlan(slice, facts, claims, now);
-        return [...base.teach, ...base.probe];
-      })()
-    : order;
+  // SOURCE (see claimableFacts): "I know this" claims a kanji's MEANING, never
+  // its word-anchored readings. Knowing 山 does not mean knowing 登山, so
+  // claiming 山 must not mark `kanji:山/reading@登山` known and slip it into the
+  // quiz. Kana claim their one fact and words claim all of theirs, unchanged.
+  const claimOrder = claimableFacts(
+    includeSolid
+      ? (() => {
+          const base = drillPlan(slice, facts, claims, now);
+          return [...base.teach, ...base.probe];
+        })()
+      : order,
+  );
   const count = sliceCount(slice, facts, claims, now, includeSolid);
   const sentence = sliceSentence(count);
   // ONE thing to learn is not a drill. A single kana IS its one reading, and a

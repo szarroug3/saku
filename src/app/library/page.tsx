@@ -514,6 +514,7 @@ function LibraryBody() {
           slice={slice}
           facts={history.facts}
           claims={claims}
+          history={history}
           now={now}
           onClaim={claim}
           includeSolid={selected.size > 0}

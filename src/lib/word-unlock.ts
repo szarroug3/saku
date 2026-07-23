@@ -173,3 +173,47 @@ export function anchorForFact(
   if (!row) return undefined;
   return preferredAnchor(row, (keb) => wordKnown(keb, history)) ?? undefined;
 }
+
+/** True when `fact` is a kanji's word-anchored READING fact, the kind keyed on
+ * (kanji, word). A lookup into READING_INDEX, not a parse of the id: the reading
+ * facts are exactly its keys, so a kana or word fact, or a kanji MEANING fact,
+ * answers false. This is the one classification the two guards below share. */
+export function isReadingFact(fact: FactId): boolean {
+  return READING_INDEX.has(fact);
+}
+
+/**
+ * The facts a kanji CLAIM ("I already know this") is allowed to mark known,
+ * with its word-anchored readings removed.
+ *
+ * Knowing a kanji is knowing its MEANING. Its readings are only ever asked
+ * inside a word, and are proved by LEARNING that word (`readingsProvedBy`), not
+ * by knowing the character. So claiming 山 must claim `kanji:山/meaning` and drop
+ * `kanji:山/reading@登山`, or the learner is credited with a reading in a word
+ * (登山) she never met. Kana, word, and kanji-meaning facts are not reading
+ * facts, so they pass through untouched: a kana claim still claims its one fact,
+ * a word claim still claims all of its facts.
+ */
+export function claimableFacts(facts: readonly FactId[]): FactId[] {
+  return facts.filter((f) => !isReadingFact(f));
+}
+
+/**
+ * The facts a Library quiz is allowed to ask, with any kanji reading in an
+ * unlearned word removed.
+ *
+ * A reading fact stays only when a word that attests it is known, which is when
+ * `anchorForFact` can name a learned word to frame the question on. This is a
+ * belt over the source fix in `claimableFacts`: even if a reading became "met"
+ * by some other path, the quiz still never asks a kanji's reading inside a word
+ * the learner has not learned. Non-reading facts (kana, words, meanings) always
+ * pass, so kana and vocabulary quizzes are unaffected.
+ */
+export function quizzableFacts(
+  facts: readonly FactId[],
+  history: HistoryFile,
+): FactId[] {
+  return facts.filter(
+    (f) => !isReadingFact(f) || anchorForFact(f, history) !== undefined,
+  );
+}

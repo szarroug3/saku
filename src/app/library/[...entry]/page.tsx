@@ -992,6 +992,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
         showLabel={false}
         facts={history.facts}
         claims={claims}
+        history={history}
         now={now}
         onClaim={claim}
       />
