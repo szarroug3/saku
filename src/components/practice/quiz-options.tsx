@@ -82,13 +82,22 @@ export function QuizOptionsFields() {
               English → Japanese
             </Chip>
           </Row>
+          {/* "Type it", NOT "Type romaji". This chip is the whole session's
+              typed-vs-picked switch, and "romaji" is a lie for half of what it
+              covers. In JP → EN the answer follows the FACT, not the direction: a
+              kana or a reading is romaji ("a", "sei"), but a kanji MEANING or a
+              word MEANING is the English gloss — shown 先生, you type "teacher".
+              The drill already tells the learner which one this card wants, live,
+              in the box (answerGuide → "Type romaji" / "Type English"), so the
+              switch itself only has to name the METHOD. Both rows read the same
+              way for the same reason, so they share the label and the order. */}
           {cfg.dirs.jp2en ? (
             <Row label="JP → EN answers">
               <Chip
                 on={cfg.styleJp2en === "typed"}
                 onClick={() => update({ styleJp2en: "typed" })}
               >
-                Type romaji
+                Type it
               </Chip>
               <Chip
                 on={cfg.styleJp2en === "mc"}
@@ -101,16 +110,16 @@ export function QuizOptionsFields() {
           {cfg.dirs.en2jp ? (
             <Row label="EN → JP answers">
               <Chip
+                on={cfg.styleEn2jp === "typed"}
+                onClick={() => update({ styleEn2jp: "typed" })}
+              >
+                Type it
+              </Chip>
+              <Chip
                 on={cfg.styleEn2jp === "mc"}
                 onClick={() => update({ styleEn2jp: "mc" })}
               >
                 Multiple choice
-              </Chip>
-              <Chip
-                on={cfg.styleEn2jp === "typed"}
-                onClick={() => update({ styleEn2jp: "typed" })}
-              >
-                Type romaji
               </Chip>
             </Row>
           ) : null}
