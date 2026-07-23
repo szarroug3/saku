@@ -121,7 +121,11 @@ export function SliceBar({
           in globals.css are a real hazard (rounded-xl + bg-card IS the Card),
           and this asks for its material by name instead, so its geometry is
           nobody's business but its own. */}
-      <div className="kq-band sticky bottom-0 z-10 mt-3.5 flex flex-wrap items-center gap-3 rounded-(--radius) border border-border p-3 shadow-card">
+      {/* No `sticky bottom-0` / `mt-3.5` any more: the bar lives in the shell's
+          frozen bottom dock (see components/dock.tsx), so it is already frozen in
+          place and the gap above it is the dock row's gap alone — the same gap the
+          top dock has, which is what keeps the three boxes evenly spaced. */}
+      <div className="kq-band flex flex-wrap items-center gap-3 rounded-(--radius) border border-border p-3 shadow-card">
         <div className="min-w-0 flex-1 text-[13px] text-text-muted">
           {/* An empty slice has no sentence (see sliceSentence): show nothing
               here at all rather than a lone label with a trailing comma and no

@@ -26,6 +26,7 @@ import { Shelf, shelfSections } from "@/components/library/shelves";
 import { visibleShelfIds, type ShelfSection } from "@/lib/library/shelf-view";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StickySearch } from "@/components/library/sticky-search";
+import { Dock } from "@/components/dock";
 import { Card, Chip, GhostBtn, Hint, Lbl, PageTitle } from "@/components/ui";
 import { factsOf } from "@/lib/facts";
 import {
@@ -353,12 +354,21 @@ function LibraryBody() {
 
   return (
     <>
-      <PageTitle
-        title="Library"
-        sub="Every character, reading and word the app knows. Search it, or open a shelf."
-      />
+      {/* THE FROZEN HEADER. Title, search and filter chips, lifted out of the
+          scroll into the shell's top dock so they stay put above the shelves. No
+          box around it — it sits on the ground like the shelves do, so the header
+          and the tiles read as one surface; the dock just keeps it frozen. The
+          px-3 matches the scroller's own inset so the header lines up with the
+          tiles below it. */}
+      <Dock slot="top">
+        <div className="px-3">
+          <PageTitle
+            title="Library"
+            sub="Every character, reading and word the app knows. Search it, or open a shelf."
+          />
 
       <StickySearch
+        bare
         value={query}
         onChange={commitQuery}
         placeholder="Search anything: し, shi, 生, せんせい, telephone…"
@@ -396,7 +406,9 @@ function LibraryBody() {
             Clear {selected.size} selected
           </GhostBtn>
         ) : null}
-      </StickySearch>
+        </StickySearch>
+        </div>
+      </Dock>
 
       {/* A plain div between the sticky field and the first Card, and it is
           load-bearing: graphite paints its lit hairline on
@@ -495,14 +507,18 @@ function LibraryBody() {
         )}
       </div>
 
-      <SliceBar
-        slice={slice}
-        facts={history.facts}
-        claims={claims}
-        now={now}
-        onClaim={claim}
-        includeSolid={selected.size > 0}
-      />
+      {/* THE FROZEN FOOTER BOX. The slice bar, docked below the frame so it stays
+          put while the shelves scroll. Its own box (kq-band), frozen in place. */}
+      <Dock slot="bottom">
+        <SliceBar
+          slice={slice}
+          facts={history.facts}
+          claims={claims}
+          now={now}
+          onClaim={claim}
+          includeSolid={selected.size > 0}
+        />
+      </Dock>
 
       <AttributionLink />
     </>

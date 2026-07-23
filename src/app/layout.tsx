@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 import { LocalMigration } from "@/components/auth/local-migration";
-import { SignedOutNotice } from "@/components/auth/signed-out-notice";
 import { SaveStatus } from "@/components/save-status";
 import { Sidebar } from "@/components/sidebar";
+// SignedOutNotice now lives in the Sidebar (a global concern, so it sits with the
+// global nav's Sign in control) — see src/components/sidebar.tsx.
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isSignedIn } from "@/lib/auth";
@@ -133,26 +134,50 @@ export default async function RootLayout({
                 {/* Inside the quiz providers, because what it asks about
                     ("discard the quiz in progress?") is their state. */}
                 <ConfirmProvider>
-                  <div className="mx-auto flex max-w-[1080px] gap-3.5 px-3 pb-15 pt-6">
+                  {/* THE SHELL SCROLLS INSIDE, NOT THE PAGE. The row is exactly
+                      the viewport tall and hides its own overflow, so the body
+                      never scrolls; the content column below is the one scroll
+                      container. This is what lets kiri's frosted frame (.kq-frame)
+                      stay perfectly still while the content scrolls within it —
+                      the frame's blur is computed once and never re-blends,
+                      because only the content in front of it moves. */}
+                  <div className="mx-auto flex h-dvh max-w-[1080px] gap-3.5 overflow-hidden px-3 py-6">
                     <Sidebar
                       signedIn={signedIn}
                       authEnabled={authEnabled}
                       initialCollapsed={sidebarCollapsed}
                     />
-                    <main className="min-w-0 flex-1">
-                      {/* Above the page, on every page: the screens that
-                          would otherwise show a learner's work as missing
-                          are exactly the ones this has to appear on. Renders
-                          nothing when there is nothing unsaved. */}
-                      <SaveStatus />
-                      {/* When a signed-out learner signs in, their local
-                          progress is replayed into the account and the local
-                          copy cleared — once, best effort. Only in Supabase mode
-                          with a session; file mode never has a local copy to
-                          merge. Renders nothing. */}
-                      <LocalMigration signedIn={authEnabled && signedIn} />
-                      <SignedOutNotice show={authEnabled && !signedIn} />
-                      {children}
+                    <main className="relative flex min-w-0 flex-1 flex-col gap-3.5">
+                      {/* FROZEN TOP DOCK. A page lifts its header here — the
+                          Library docks its search + filter chips — so it stays put
+                          above the scrolling frame instead of sliding over the
+                          frost. Empty (and hidden) on pages that dock nothing. */}
+                      <div id="kq-dock-top" className="kq-dock shrink-0 empty:hidden" />
+                      {/* The single frosted box + the content that scrolls within
+                          it. The frame absolutely fills this region, so it does
+                          NOT scroll with the content in front of it; kiri frosts
+                          it, the opaque themes leave it a no-op. */}
+                      <div className="relative min-h-0 flex-1">
+                        <div
+                          className="kq-stage pointer-events-none absolute inset-0 rounded-2xl"
+                          aria-hidden
+                        />
+                        <div className="kq-scroll relative h-full overflow-y-auto overscroll-contain rounded-2xl px-3 pb-15 pt-3">
+                          {/* On every page: the screens that would otherwise show
+                              a learner's work as missing are exactly the ones this
+                              has to appear on. Renders nothing when nothing is
+                              unsaved. */}
+                          <SaveStatus />
+                          {/* When a signed-out learner signs in, their local
+                              progress is replayed into the account and the local
+                              copy cleared — once, best effort. Renders nothing. */}
+                          <LocalMigration signedIn={authEnabled && signedIn} />
+                          {children}
+                        </div>
+                      </div>
+                      {/* FROZEN BOTTOM DOCK. The Library's slice bar docks here,
+                          frozen below the frame. Empty (hidden) elsewhere. */}
+                      <div id="kq-dock-bottom" className="kq-dock shrink-0 empty:hidden" />
                     </main>
                   </div>
                 </ConfirmProvider>

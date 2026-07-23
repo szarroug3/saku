@@ -245,12 +245,25 @@ export function Sidebar({
           {signedIn ? (
             <SignOut />
           ) : (
-            <Link
-              href="/login"
-              className="flex items-baseline whitespace-nowrap rounded-lg px-3 py-[9px] text-left text-sm text-text-muted hover:bg-panel"
-            >
-              Sign in
-            </Link>
+            <>
+              <Link
+                href="/login"
+                className="flex items-baseline whitespace-nowrap rounded-lg px-3 py-[9px] text-left text-sm text-text-muted hover:bg-panel"
+              >
+                Sign in
+              </Link>
+              {/* The heads-up that used to be a page-wide banner over every
+                  screen: your work lives in this browser until you sign in. It
+                  is a global fact about the account, so it belongs with the
+                  global Sign in, not stamped on top of each page. Hidden where
+                  the point is already made — the landing and the login page. */}
+              {pathname === "/" || pathname.startsWith("/login") ? null : (
+                <p className="px-3 pt-1 text-[11px] leading-snug text-text-muted">
+                  Your progress is saved in this browser only. Sign in to keep it
+                  across your devices.
+                </p>
+              )}
+            </>
           )}
         </div>
       ) : null}

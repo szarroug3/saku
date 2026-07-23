@@ -63,14 +63,18 @@ function speakable(entry: LibEntry): boolean {
  * nine", and inventing a fourth tone to mean "mixed" would be the average again
  * in a costume. */
 function toneClass(s: EntryStanding): string {
+  // Solid, no alpha: a half-transparent border over kiri's frosted frame is a
+  // partial-alpha edge that re-blends every scroll frame (the exact cost the
+  // frame design removes everywhere else). The hue still reads the standing; it
+  // just no longer bleeds the frost through its own outline.
   switch (s.standing) {
     case "solid":
-      return "border-success/50";
+      return "border-success";
     case "getting-there":
     case "slipping":
-      return "border-warning/50";
+      return "border-warning";
     case "shaky":
-      return "border-danger/50";
+      return "border-danger";
     default:
       return "border-border";
   }

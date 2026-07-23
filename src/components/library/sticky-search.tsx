@@ -46,6 +46,7 @@ export function StickySearch({
   onChange,
   placeholder,
   children,
+  bare = false,
 }: {
   value: string;
   onChange(v: string): void;
@@ -54,8 +55,32 @@ export function StickySearch({
    * one control, and pinning half of it means scrolling back up to find out
    * which shelf you were on. */
   children?: React.ReactNode;
+  /** Drop the occluding surface and the sticky mechanism: the field is in a
+   * FROZEN DOCK now (see components/dock.tsx), not the scroll flow, so nothing
+   * slides under it and the kq-surface panel was just a second box behind the
+   * field. Bare renders the field and chips alone; the dock's own box is the
+   * only surface. */
+  bare?: boolean;
 }) {
   const [sentinel, stuck] = useStuck();
+  if (bare) {
+    return (
+      <div className="w-full">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-(--radius) border border-border bg-transparent px-2.5 py-2 text-[15px] text-text"
+        />
+        {children ? (
+          <div className="flex flex-wrap items-center gap-1.5 pt-2.5">
+            {children}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <>
       {/* Zero-height, and it must stay directly above the field: it is what
