@@ -37,15 +37,23 @@ export async function getUserId(): Promise<string> {
   return user.id;
 }
 
+/** The current user's id, or null when there is no session. The same question
+ * getUserId asks, phrased so that "not signed in" is an answer instead of an
+ * error — which is what a Server Component wants when it is deciding what to
+ * render (and, in the root layout, whose history to seed). */
+export async function currentUserId(): Promise<string | null> {
+  if (!isSupabaseStore()) return LOCAL_USER;
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
 /** Whether the current request has an app user — true always in file mode (the
  * single local user), and in Supabase mode only when signed in. Unlike
  * getUserId this never throws: it is the "show the app or the landing?" question
  * the home page asks, where "not signed in" is an answer, not an error. */
 export async function isSignedIn(): Promise<boolean> {
-  if (!isSupabaseStore()) return true;
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return !!user;
+  return (await currentUserId()) !== null;
 }

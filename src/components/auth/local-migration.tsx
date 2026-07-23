@@ -13,13 +13,21 @@
 import { useEffect } from "react";
 
 import { migrateLocalProgress } from "@/lib/store/migrate-local";
+import { useHistory } from "@/lib/use-history";
 
 export function LocalMigration({ signedIn }: { signedIn: boolean }) {
+  // The page was seeded with the account as it stood BEFORE the merge, and
+  // nothing else refetches it. So a successful replay ends by re-reading it,
+  // which is the moment the work done signed out appears in the account's
+  // screens. A failed or empty run reports false and costs no request.
+  const { refresh } = useHistory();
   useEffect(() => {
     // Fire-and-forget: the merge is best-effort and reports nothing to the UI —
     // the local copy is intact until an upload lands, so there is no failure the
     // learner needs to see here.
-    void migrateLocalProgress(signedIn);
-  }, [signedIn]);
+    void migrateLocalProgress(signedIn).then((merged) => {
+      if (merged) void refresh();
+    });
+  }, [signedIn, refresh]);
   return null;
 }
