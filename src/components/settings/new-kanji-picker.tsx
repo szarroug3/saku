@@ -28,7 +28,7 @@
 // within three words of a flat ≤4-stroke cap while costing 410. See
 // NewKanjiOrder in src/types — the reasoning lives with the type, not here.
 
-import { Btn, Hint, Lbl } from "@/components/ui";
+import { Hint, Lbl } from "@/components/ui";
 import { kanjiTeachOrder } from "@/data/kanji";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type { NewKanjiOrder } from "@/types";
@@ -93,20 +93,30 @@ export function NewKanjiPicker() {
         {OPTIONS.map((o) => {
           const on = cfg.newKanjiOrder === o.id;
           return (
-            <Btn
+            <button
               key={o.id}
-              sel={on}
+              type="button"
               role="radio"
               aria-checked={on}
               onClick={() => update({ newKanjiOrder: o.id })}
-              // The kit's Btn is sized for a word. These hold two lines and a
-              // full-width hit area, so the padding and alignment are overridden
-              // and nothing else is: `sel` still owns the border, the fill and
-              // the text colour, in the branch where it is named once. Passing a
-              // colour in through className would put it in a fight with that
-              // branch that stylesheet order decides — which is the bug Btn's own
-              // comment documents, and it is not worth reintroducing for a pill.
-              className="w-full px-3 py-2 text-left"
+              // A bespoke button, not the kit's Btn, and the reason is the box
+              // model. Btn's `sel` state widens the border from 1px to 2px and
+              // pays for that pixel back out of its own padding — a compensation
+              // this control's full-width `px`/`py` override would have to wipe
+              // out. So selecting a card changed its border box and the whole
+              // stack twitched by a pixel or two.
+              //
+              // EVERY CARD CARRIES THE SAME 2px BORDER AT ALL TIMES, and only its
+              // COLOUR moves between the accent of the chosen one and the neutral
+              // of the rest. A same-width border reserves the same space whether
+              // or not it is the accent, so nothing shifts on selection. This is
+              // the Chip's rule (see ui.tsx), at Btn's size.
+              className={
+                "kq-material w-full cursor-pointer rounded-lg border-2 px-3 py-2 text-left transition-colors " +
+                (on
+                  ? "border-accent bg-accent-bg text-accent"
+                  : "border-border bg-card text-text hover:bg-panel")
+              }
             >
               <span className="block text-sm">{o.label}</span>
               {/* Not text-accent when selected: the subtitle is the same
@@ -115,7 +125,7 @@ export function NewKanjiPicker() {
               <span className="mt-0.5 block text-xs font-normal text-text-muted">
                 {o.sub}
               </span>
-            </Btn>
+            </button>
           );
         })}
       </div>
