@@ -1,6 +1,6 @@
 "use client";
 
-// The kanji readings table: all of them, one table, full ink on every row.
+// The kanji readings table: all of them, one table, shut rows dimmed in place.
 //
 // WHAT A READER WANTS OFF THIS TABLE
 // ==================================
@@ -17,14 +17,26 @@
 // page header again, five times. The example word carries the meaning, which is
 // the level at which meaning is actually true.
 //
-// NO DIMMING, AND THE QUIZ GATE IS UNCHANGED
-// ==========================================
-// Rows used to be greyed until a word you knew attested them. That made a
-// reference table look like a progress bar, so the grey is gone. The RULE it
-// was drawing is not: a reading fact is keyed on (kanji, word) and is only ever
-// asked once you learn a word that uses it (word-unlock.ts, untouched). Reading
-// the whole table today and being asked about part of it are two different
-// things, and only the first one happens here.
+// THE DIMMING, AND THE ONE LINE UNDER THE TABLE
+// =============================================
+// A row is greyed until a word you know attests its reading. The owner kept
+// this on the Library deliberately: this page is a picture of where you stand
+// with a character, and which readings you can be asked about is part of where
+// you stand. Dimmed IN PLACE, not split off into a second section, because a
+// shut reading is the same kind of thing as an open one and the table has to
+// stay a picture of the whole character.
+//
+// Grey with nothing saying what grey means is a puzzle, so one sentence under
+// the table says it. That is all it says. The paragraph it came from also
+// explained on'yomi against kun'yomi, which went out with the From column.
+//
+// WHAT THE DIMMING IS AND IS NOT
+// ==============================
+// It is ink. The RULE it draws lives in word-unlock.ts and is untouched here: a
+// reading fact is keyed on (kanji, word), so it is only ever ASKED once you
+// learn a word that uses it. Reading the whole table today and being asked
+// about part of it are two different things, and only the first one happens on
+// this page.
 
 import Link from "next/link";
 
@@ -99,13 +111,21 @@ export function KanjiReadings({
           {rows.map((r) => {
             const fact = readingFactId(r.k, r.anchor);
             // The word you have met, when there is one, because that is the
-            // example you can actually hear in your head.
-            const word = anchors.get(fact) ?? r.anchor;
+            // example you can actually hear in your head. No word you know
+            // attests the reading when this is empty, which is the shut case.
+            const known = anchors.get(fact);
+            const word = known ?? r.anchor;
             const agg: FactAggregate | undefined = facts[fact];
             const s = standingOf(agg, claims[fact], metric, now);
             const means = meaningOf(word);
             return (
-              <tr key={fact} className="border-b border-border last:border-b-0">
+              <tr
+                key={fact}
+                // Dimmed IN PLACE. Same table, same columns, less ink.
+                className={`border-b border-border last:border-b-0 ${
+                  known ? "" : "opacity-55"
+                }`}
+              >
                 <td className="py-2 pr-2 align-middle text-[15px]">{r.base}</td>
                 <td className="py-2 pr-2 align-middle">
                   <button
@@ -136,6 +156,9 @@ export function KanjiReadings({
           })}
         </tbody>
       </table>
+      <p className="mt-2.5 text-xs text-text-muted">
+        A dimmed reading opens when you learn a word that uses it.
+      </p>
     </Card>
   );
 }
