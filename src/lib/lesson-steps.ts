@@ -48,11 +48,13 @@ import {
   OKURIGANA_FIXED,
   OKURIGANA_INTRO,
   OKURIGANA_MOVING,
+  PITCH_INTRO,
   RENDAKU,
   TRANSITIVITY_INTRO,
   COUNTER_SOUND_CHANGE,
   type PhaseIntro,
 } from "@/data/phase-intros";
+import { wordPitch } from "@/data/pitch";
 import { isSoundChangeEntry } from "@/data/counters";
 import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow } from "@/data/vocab";
@@ -232,6 +234,15 @@ export function lessonSteps(
   // phase 2 but does not shift, so it never fires this — it is the contrast, not
   // the rule. See isSoundChangeEntry in src/data/counters.ts.
   let markedSoundChange = false;
+  // The pitch card rides the first word carrying a verified pitch, so the overline
+  // is taught before it is first drawn (on that word's reveal). ONCE EVER, not per
+  // lesson: it is a concept card whose id lives in CONCEPT_CARD_IDS, so a learner
+  // who has already read it (`shownIntros`) is never shown it again — ~69% of
+  // words have pitch, so a per-lesson gate would put it ahead of nearly every word
+  // lesson. Gated on `history` for the same reason the spine cards are: a caller
+  // with no history (a test naming a teach set) gets the pre-track walk, and only
+  // the app, which always passes history and the shown set, ever fires it.
+  let markedPitch = shownIntros.has(PITCH_INTRO.id) || !history;
   items.forEach((item, index) => {
     // THE CONCEPT CARDS GO FIRST, ahead of everything else this item might owe:
     // ahead of its conversion row, ahead of any rule card. A learner meeting
@@ -299,6 +310,13 @@ export function lessonSteps(
     if (!markedSoundChange && isSoundChangeEntry(item.entry)) {
       markedSoundChange = true;
       steps.push({ type: "intro", key: COUNTER_SOUND_CHANGE.id, intro: COUNTER_SOUND_CHANGE });
+    }
+    // The overline is about to appear on this word, so teach it first. Any word
+    // with verified pitch counts (wordPitch is keyed on the written form); a word
+    // with none draws no line and is not what this card waits for.
+    if (!markedPitch && item.kind === "word" && wordPitch(item.glyph) !== null) {
+      markedPitch = true;
+      steps.push({ type: "intro", key: PITCH_INTRO.id, intro: PITCH_INTRO });
     }
     steps.push({ type: "item", key: item.entry, item });
   });

@@ -41,17 +41,23 @@ import {
 import { pushSettings } from "@/lib/settings-sync";
 import { migratedGet } from "@/lib/storage-migrate";
 
-/** The three curriculum concept cards, by intro id.
+/** The concept cards shown ONCE EVER, by intro id.
  *
- * Spelled out here rather than imported from src/data/track-intros.ts on
- * purpose: this module is a leaf that the Settings reset path pulls in, and
- * importing the card DATA would drag the whole phase-intro table along with it.
- * spine-intros.test.ts asserts these are exactly the ids the cards carry, so the
- * two cannot drift apart quietly. */
+ * The three spine cards ("What kanji are", "What a radical is", "What words add")
+ * plus the pitch-accent card ("intro-pitch"): all are once-ever introductions, so
+ * something has to remember they have run, and this list is the registry the
+ * remembering hangs off (shownIntros, the reset sweep, the settings mirror).
+ *
+ * Spelled out here rather than imported from the card DATA on purpose: this module
+ * is a leaf that the Settings reset path pulls in, and importing the phase-intro
+ * table would drag it all along. spine-intros.test.ts asserts the three spine ids
+ * are exactly the spine cards' own, so those cannot drift; the pitch id is pinned
+ * to PITCH_INTRO.id by pitch-intro.test.ts for the same reason. */
 export const CONCEPT_CARD_IDS: readonly string[] = [
   "track-radical",
   "track-kanji",
   "track-word",
+  "intro-pitch",
 ];
 
 /** The localStorage key for one intro's "already shown" flag (renamed

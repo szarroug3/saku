@@ -75,6 +75,7 @@ import { entryOf, factInfo } from "@/lib/facts";
 import { speechForFact } from "@/lib/fact-speech";
 import { fitGlyphSize } from "@/lib/glyph-fit";
 import { pickListen } from "@/lib/listen";
+import { meaningMustShowGlyph } from "@/lib/homophone";
 import { toKana } from "@/lib/romaji";
 import { quizInstruction } from "@/lib/quiz-instruction";
 import { speak } from "@/lib/speech";
@@ -518,7 +519,15 @@ export function DrillScreen() {
     // pickListen returns false for every fact until the learner turns the type
     // on, so this never fires unasked and never gates. Rolled once here, frozen
     // on the runtime.
-    const listen = pickListen(f, cfg);
+    // A MEANING question for a word whose reading collides with another word the
+    // learner knows must show the written form — 箸 and 橋 are both はし, so an
+    // audio-only "what does it mean" has two right answers. So the listening
+    // (glyph-hidden) showing is refused for that word's meaning card; the visual
+    // jp2en meaning card (箸 → ?) still shows the glyph and is unambiguous. Only
+    // the meaning card is blocked: a READING listening card is fair, since every
+    // homophone shares the reading the learner is asked to produce. See
+    // src/lib/homophone.ts. Non-colliding words are untouched.
+    const listen = pickListen(f, cfg) && !meaningMustShowGlyph(f, history);
     const dir = listen
       ? "jp2en"
       : (fixedDirOf(f) ?? pickDir({ ...cfg, dirs: active.snapshot.dirs }));
