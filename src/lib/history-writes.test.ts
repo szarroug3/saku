@@ -38,6 +38,7 @@ import { describe, test } from "node:test";
 import { nextCurriculumLesson } from "@/lib/curriculum-lesson";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import { applyClaims, applySeen, emptyHistory } from "@/lib/history-ops";
+import { meaningFactId } from "@/data/kanji";
 
 const RANGE = LESSON_RANGE_DEFAULT;
 
@@ -92,10 +93,11 @@ describe("the local apply is enough to advance the curriculum", () => {
     // be an in-place edit of React state: the screen would go stale in a way
     // that only shows up as a missing re-render, which is exactly the class of
     // bug this whole change is meant to remove rather than add.
+    const kanjiMeaningFact = meaningFactId("一");
     const before = emptyHistory();
     const snapshot = JSON.stringify(before);
-    applyClaims(before, ["kanji:一/meaning"], 1_000);
-    applySeen(before, ["kanji:一/meaning"], 1_000);
+    applyClaims(before, [kanjiMeaningFact], 1_000);
+    applySeen(before, [kanjiMeaningFact], 1_000);
     assert.equal(JSON.stringify(before), snapshot);
   });
 });

@@ -52,11 +52,14 @@ import {
 } from "@/lib/grammar/vehicles";
 import type { WordClass } from "@/lib/conjugate";
 import {
+  KANJI,
   KANJI_SUBJECT,
   READING_INDEX,
   meaningFactId,
   readingFactId,
 } from "@/data/kanji";
+import { RADICALS, RADICAL_SUBJECT } from "@/data/radicals";
+import { curriculumPosition } from "@/lib/curriculum-order";
 import {
   VOCAB,
   VOCAB_SUBJECT,
@@ -268,7 +271,7 @@ export interface QuestionType {
    * ("what does 開ける mean" is a vocab question, not a transitivity one). The
    * drill uses this in place of picking a direction from the enabled set.
    */
-  fixedDir?: Direction;
+  fixedDir?: Direction | ((fact: FactId) => Direction | undefined);
 }
 
 /** Case- and space-forgiving comparison, for both scripts. `answers` holds
@@ -461,8 +464,50 @@ function frameFor(glyph: string, anchor: string, lead: string): string {
   return anchor === glyph ? "on its own" : `${lead} ${anchor}`;
 }
 
+/**
+ * THE BOARD MUST BE BUILDABLE. Sharp distractors, then whatever the corpus has.
+ *
+ * A kanji MEANING board was drawn from the confusable table alone, and a radical
+ * board from CHAR_INDEX — the KANA index, which no radical is in. So a kanji
+ * with no confusables got zero options and every radical got zero options, and
+ * a board of one is not a board: DrillScreen turns it back into a typed box, and
+ * there is no romaji for 一, so the card became unanswerable. 5,827 facts were
+ * in that state. The owner hit it on her first kanji lesson.
+ *
+ * The confusables are still what leads — they are the mistakes you would
+ * actually make, and that is the whole point of the table. This only supplies
+ * what the table could not, and it prefers kanji NEAR this one in the curriculum
+ * so a wrong option is something the learner has plausibly met. Nearness is a
+ * proxy for "about as familiar", the same proxy the word distractors already use
+ * (beginnerRank). It is deliberately NOT filtered by history: an option you have
+ * never seen is still a fair wrong answer, because the question is which one you
+ * DO know. See buildMcOptions, which dedupes by rendered label, so a top-up that
+ * happens to gloss like the answer is dropped rather than shown.
+ */
+const KANJI_GLYPHS: readonly string[] = KANJI.map((k) => k.c);
+const RADICAL_GLYPHS: readonly string[] = RADICALS.map((r) => r.glyph);
+
+function nearbyMeaningFill(glyph: string, pool: readonly string[], n: number): FactId[] {
+  const home = curriculumPosition(glyph);
+  // A glyph outside the sequence sorts to the end rather than to position 0,
+  // which would otherwise make every unsequenced shape look adjacent to the
+  // start of the curriculum and fill boards with the same handful of options.
+  const rank = (g: string) => {
+    const p = curriculumPosition(g);
+    return p < 0 ? Number.MAX_SAFE_INTEGER : Math.abs(p - home);
+  };
+  return pool
+    .filter((g) => g !== glyph)
+    .sort((a, b) => rank(a) - rank(b))
+    .slice(0, n)
+    .map(meaningFactId);
+}
+
 const kanjiQuestions: QuestionType = {
   id: "kanji",
+  // A reading fact is jp2en only — see fixedDirOf. A meaning fact keeps both
+  // directions, which is what "en→kanji and kanji→en" means for a kanji.
+  fixedDir: (fact) => (anchorOf(fact) ? "jp2en" : undefined),
   prompt(fact, dir, ctx) {
     const glyph = glyphOfFact(fact);
     // The fact's own anchor decides whether this is a reading question at all
@@ -531,9 +576,16 @@ const kanjiQuestions: QuestionType = {
     // mistake this one for — the confusable pairs, which is what that data is
     // for and its only sanctioned use — plus any katakana that looks like this
     // kanji (力 → カ), the same crossing the kana side makes in reverse.
+    // The pool to fall back on is the fact's OWN subject: a radical board is
+    // other radicals, a kanji board other kanji. Mixing them would put a shape
+    // the learner was told is "not a character on its own" beside three that
+    // are, which answers the question by category rather than by meaning.
+    const own = factInfo(fact)?.subject;
+    const pool = own === RADICAL_SUBJECT ? RADICAL_GLYPHS : KANJI_GLYPHS;
     return [
       ...crossScriptDistractors(c),
       ...distractorsFor(c, n).map(meaningFactId),
+      ...nearbyMeaningFill(c, pool, n),
     ]
       .filter((f) => factInfo(f))
       .slice(0, n);
@@ -631,6 +683,24 @@ const wordQuestions: QuestionType = {
 export function mcOnlyIn(fact: FactId, dir: Direction): boolean {
   const flag = questionsFor(fact).mcOnly;
   return flag === true || flag === dir;
+}
+
+/**
+ * The one direction `fact` may be asked in, or undefined to let the config pick.
+ *
+ * PER FACT, NOT PER SUBJECT, and that is the whole reason this exists. Kanji
+ * needs both answers at once: a MEANING fact is fair in either direction ("one"
+ * → 一, and 一 → "one", which is exactly the pair the owner asked for), while a
+ * READING fact is only fair as jp2en. Asked the other way, "いち → ?" wants 一
+ * and every distractor is another reading OF 一 — so the board renders 一 six
+ * times, buildMcOptions dedupes it to one, and a board of one becomes a typed
+ * box with no romaji that can answer it. That was 3,561 facts.
+ *
+ * A subject with one answer for all its facts still just writes the Direction.
+ */
+export function fixedDirOf(fact: FactId): Direction | undefined {
+  const fixed = questionsFor(fact).fixedDir;
+  return typeof fixed === "function" ? fixed(fact) : fixed;
 }
 
 /**
@@ -1263,6 +1333,11 @@ const BY_SUBJECT: Record<string, QuestionType> = {
   [GRAMMAR_SUBJECT]: grammarQuestions,
   [TRANSITIVITY_SUBJECT]: transitivityQuestions,
   [KEIGO_SUBJECT]: keigoQuestions,
+  // Radicals used to fall through to kana's rules, which look a glyph up in
+  // CHAR_INDEX and return nothing for a shape that is not a kana — so every
+  // radical card had an empty board. They ask and grade exactly like a kanji
+  // meaning fact, so they are one.
+  [RADICAL_SUBJECT]: kanjiQuestions,
 };
 
 /**

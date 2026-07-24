@@ -5,7 +5,7 @@
 
 import { BEHAVIOR } from "@/lib/config";
 import { questionsFor, type PromptContext } from "@/lib/engine/question";
-import { entryOf, factInfo, factKeys } from "@/lib/facts";
+import { ALL_FACTS, entryOf, factInfo, factKeys } from "@/lib/facts";
 import type {
   Direction,
   EntryId,
@@ -17,6 +17,7 @@ import type {
 export {
   answerIsJapanese,
   en2jpTypeable,
+  fixedDirOf,
   mcOnlyIn,
   questionsFor,
   revealFor,
@@ -221,7 +222,7 @@ export function buildMcOptions(fact: FactId, ctx?: PromptContext): FactId[] {
     return keys;
   };
   const taken = new Set(labelKey(fact));
-  const distractors = qt
+  const distractors: FactId[] = qt
     .distractors(fact, BEHAVIOR.mcOptions * 4, ctx)
     .filter((d) => {
       if (!factInfo(d)) return false;
@@ -233,6 +234,32 @@ export function buildMcOptions(fact: FactId, ctx?: PromptContext): FactId[] {
       return true;
     })
     .slice(0, BEHAVIOR.mcOptions - 1);
+  // THE BACKSTOP. A board of one is not a board — DrillScreen turns it back into
+  // a typed box, and for a card whose answer contains kanji there is no romaji
+  // that can answer it, so the learner is shown a question they cannot get
+  // right. That is how 一 came to be asked with a text box.
+  //
+  // Every subject that can run out of sharp distractors now fills from its own
+  // corpus first (see nearbyMeaningFill), but "can this subject always find
+  // one?" is a question each subject answers separately and can quietly stop
+  // answering — a new subject, a counter set with five members, a pattern with
+  // no siblings. So the guarantee is made HERE, once, where the board is
+  // actually built: same subject, any fact, deduped by rendered label like
+  // everything else.
+  //
+  // It is a floor, not a strategy. Reaching it means the distractors were poor;
+  // it only ensures they were not absent.
+  if (distractors.length === 0) {
+    const subject = factInfo(fact)?.subject;
+    for (const other of ALL_FACTS) {
+      if (other === fact || factInfo(other)?.subject !== subject) continue;
+      const keys = labelKey(other);
+      if (keys.some((k) => taken.has(k))) continue;
+      for (const k of keys) taken.add(k);
+      distractors.push(other);
+      if (distractors.length >= BEHAVIOR.mcOptions - 1) break;
+    }
+  }
   return shuffle([fact, ...distractors].slice(0, BEHAVIOR.mcOptions));
 }
 

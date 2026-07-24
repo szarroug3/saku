@@ -58,6 +58,7 @@ import {
   firstTryCredit,
   grammarSelectionFor,
   grammarVehicleFor,
+  fixedDirOf,
   mcOnlyIn,
   pickDir,
   questionsFor,
@@ -75,6 +76,7 @@ import { speechForFact } from "@/lib/fact-speech";
 import { fitGlyphSize } from "@/lib/glyph-fit";
 import { pickListen } from "@/lib/listen";
 import { toKana } from "@/lib/romaji";
+import { quizInstruction } from "@/lib/quiz-instruction";
 import { speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
 import { anchorForFact } from "@/lib/word-unlock";
@@ -519,7 +521,7 @@ export function DrillScreen() {
     const listen = pickListen(f, cfg);
     const dir = listen
       ? "jp2en"
-      : (qt.fixedDir ?? pickDir({ ...cfg, dirs: active.snapshot.dirs }));
+      : (fixedDirOf(f) ?? pickDir({ ...cfg, dirs: active.snapshot.dirs }));
     const styleTyped =
       dir === "jp2en"
         ? active.snapshot.styleJp2en === "typed"
@@ -1077,6 +1079,10 @@ export function DrillScreen() {
   // it does not know whether it is asking a kana, a kanji reading or a word.
   const ctx = ctxFor(q, anchorForFact(q.f, history));
   const prompt = questionsFor(q.f).prompt(q.f, q.dir, ctx);
+  // `q.mc` is the truth about how this card is being ANSWERED, which is what the
+  // instruction has to describe — "which of these" over a text box would be
+  // worse than saying nothing.
+  const instruction = quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed");
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   // The card already decided its shape at ask time: MC options were built (or
@@ -1267,6 +1273,16 @@ export function DrillScreen() {
       </div>
 
       <div className="flex flex-col items-center gap-4 pt-10 pb-4">
+        {/* WHAT THIS CARD IS ASKING FOR, above the prompt because it frames
+            everything below it. Every card has one — see quiz-instruction.ts for
+            why it is derived rather than a string each subject fills in. It sits
+            OUTSIDE the halo's key, so it does not re-animate on a retry: the
+            question has not changed, only the attempt. */}
+        {instruction ? (
+          <p className="-mb-2 text-center text-[13px] font-medium text-text-muted">
+            {instruction}
+          </p>
+        ) : null}
         <DrillHalo
           // Re-mounts on every new card and every attempt, which is what
           // replays the entry sweep, the shake and the glyph cross-fade.
