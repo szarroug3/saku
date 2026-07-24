@@ -1,53 +1,52 @@
 "use client";
 
-// The heading over one role's material, on a character that plays several.
+// The heading over one role's material on a lesson step.
 //
-// 人 is a word, a kanji and a shape other kanji are built around, and its lesson
-// now shows all three. Three roles' sections stacked with no seam read as one
-// long undifferentiated page, and the reader has no way to tell that the
-// readings table belongs to a different claim than the list of kanji built from
-// the shape. So each role's run of sections gets a heading and one line saying
-// what the role means for this character.
+// THE HEADING IS NOW THE ONLY ANSWER, SO IT IS ALWAYS THERE
+// ========================================================
+// 人 is a word, a kanji and a shape other kanji are built around, and the page
+// used to say so twice in two vocabularies: a badge in the top right reading
+// "Radical · Kanji · Word", and headings down the body reading "As a word", "As
+// a kanji", "As a building block" — the same three things, different words, and
+// in the opposite order. Two names for one idea is two ideas to a beginner, so
+// the badge is gone and these headings carry the whole job. They print the
+// badge's exact nouns (Radical, Kanji, Word) in the ladder's own order, and a
+// character that plays ONE role gets its one heading too: with nothing in the
+// corner any more, this is the only thing on the page naming what the reader is
+// looking at.
 //
-// ONLY WHEN THERE ARE SEVERAL. A plain kanji's lesson is entirely about being a
-// kanji, and captioning its parts "As a kanji" would be labelling the only thing
-// on the page. The caller passes `labelled: false` there and gets its sections
-// back untouched, which is how every single-role step keeps the screen it had
-// before roles were a set.
+// THE LINE IS THE SUBSTANCE, NOT DECORATION. Each heading is followed by one
+// sentence saying what the role means for the person reading, before any data.
+// The radical role in particular has no material left on the lesson (the list of
+// kanji built on the shape is the Library's), so its line IS the section — a
+// heading over nothing was the gap that started all of this.
 //
-// A BLOCK WITH NO CHILDREN IS LEGITIMATE HERE. The building-block role is now
-// taught by its line alone, so `children` is often null under "As a building
-// block". That is the section, not a hole: the heading and the line are what the
-// reader gets for that role, and the alternative is a role the badge promises
-// and the body never mentions.
+// A BLOCK WITH NO CHILDREN IS LEGITIMATE HERE, for exactly that reason.
 
 import type { ReactNode } from "react";
 
 import type { RoleName } from "@/lib/character-role";
 
 /** What each role means for the character in hand, said once, in the words a
- * beginner has. These answer the question the badge raises: it names three
- * roles, and this is what each of them buys you.
+ * beginner has. Every one of them points FORWARD, because a role is a promise
+ * about where this character turns up next.
  *
- * THE KANJI AND RADICAL LINES CARRY MORE WEIGHT THAN THEY USED TO. The lesson no
- * longer prints the in-word readings under "As a kanji" or the built-from-this
- * list under "As a building block" (both live on the Library entry, which is
- * where you go when you want the full catalogue). What is left is the point of
- * the role, so the line has to make it: where you will run into this character
- * next, and what seeing it there tells you. The kanji line does NOT say "and
- * these are the readings", because they are no longer below it. */
+ * They are deliberately three sentences and not one sentence three times. A
+ * reader meeting 人 reads all three in a row, and a shared skeleton with the
+ * noun swapped would make the three roles look like one fact restated, which is
+ * the thing this layout exists to undo. */
 const ROLE_HEADING: Record<RoleName, { title: string; lead: string }> = {
-  word: {
-    title: "As a word",
-    lead: "It carries a sound and a meaning of its own.",
+  radical: {
+    title: "Radical",
+    lead: "Other kanji are built on this shape. Learn it now and you will keep spotting it inside them.",
   },
   kanji: {
-    title: "As a kanji",
-    lead: "A character in its own right. Most of the time you will meet it inside a longer word, doing its share of the meaning.",
+    title: "Kanji",
+    lead: "A character in its own right, and one you will usually meet inside a longer word, pulling its weight in the meaning.",
   },
-  radical: {
-    title: "As a building block",
-    lead: "This shape shows up inside other kanji. Spot it in one and you have a head start on what that kanji is about.",
+  word: {
+    title: "Word",
+    lead: "Nothing else needs attaching. Said on its own, it is already a word.",
   },
 };
 
@@ -57,10 +56,11 @@ export function RoleBlock({
   children,
 }: {
   role: RoleName;
-  /** Whether to print the heading. False on a single-role step, where the
-   * sections are returned exactly as they were. */
+  /** Whether to print the heading. False for the steps that play no character
+   * role at all — a kana, a grammar pattern, a two-character word — whose
+   * sections come back exactly as they were. */
   labelled: boolean;
-  /** Optional, because the building-block role is taught by its line alone. */
+  /** Optional, because the radical role is taught by its line alone. */
   children?: ReactNode;
 }) {
   if (!labelled) return <>{children}</>;
