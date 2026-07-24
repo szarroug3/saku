@@ -62,16 +62,16 @@ describe("kanjiCuts", () => {
     });
   }
 
-  test("everyday and newspaper cut into 22 range sections of 100, tail of 36", () => {
+  test("everyday and newspaper cut into 43 range sections of 50, tail of 36", () => {
     for (const mode of ["everyday", "newspaper"] as const) {
       const cuts = kanjiCuts(mode);
-      assert.equal(cuts.length, 22);
-      for (const c of cuts.slice(0, 21)) assert.equal(c.glyphs.length, KANJI_CHUNK);
-      assert.equal(cuts[21].glyphs.length, 36);
+      assert.equal(cuts.length, 43);
+      for (const c of cuts.slice(0, 42)) assert.equal(c.glyphs.length, KANJI_CHUNK);
+      assert.equal(cuts[42].glyphs.length, 36);
       // Labels are ranges, with an EN DASH, and they are contiguous.
-      assert.equal(cuts[0].label, "1–100");
-      assert.equal(cuts[1].label, "101–200");
-      assert.equal(cuts[21].label, "2101–2136");
+      assert.equal(cuts[0].label, "1–50");
+      assert.equal(cuts[1].label, "51–100");
+      assert.equal(cuts[42].label, "2101–2136");
     }
   });
 

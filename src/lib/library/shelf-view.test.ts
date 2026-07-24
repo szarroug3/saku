@@ -100,7 +100,7 @@ describe("the section cap is taken AFTER the knowledge filter", () => {
     assert.equal(shown.length, KANJI_SECTIONS_SHOWN);
     assert.deepEqual(
       shown.map((s) => s.id),
-      ["r0", "r1", "r2"],
+      Array.from({ length: KANJI_SECTIONS_SHOWN }, (_, i) => `r${i}`),
     );
   });
 
@@ -112,12 +112,12 @@ describe("the section cap is taken AFTER the knowledge filter", () => {
     assert.equal(shownSectionsOf(KANJI_SUBJECT, sections, notKnown).length, 0);
   });
 
-  test('"All" (no filter) still caps at the first three sections', () => {
+  test('"All" (no filter) still caps at the first KANJI_SECTIONS_SHOWN sections', () => {
     const sections = Array.from({ length: 8 }, (_, i) => rangeSection(`r${i}`, 4));
     const shown = shownSectionsOf(KANJI_SUBJECT, sections);
     assert.deepEqual(
       shown.map((s) => s.id),
-      ["r0", "r1", "r2"],
+      Array.from({ length: KANJI_SECTIONS_SHOWN }, (_, i) => `r${i}`),
     );
   });
 });

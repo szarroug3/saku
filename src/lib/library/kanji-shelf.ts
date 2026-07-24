@@ -21,28 +21,29 @@ export interface KanjiCut {
 
 /** How many kanji a range section holds.
  *
- * 100 is a round number you can count in your head, and it makes the labels
- * ("1–100", "101–200") readable without a legend. It also divides 2,136 into 21
- * full sections and a short tail of 36, which is a tail small enough to look
- * like the end of a list rather than a broken section. */
-export const KANJI_CHUNK = 100;
+ * 50, matching the words and radicals shelves (GROUP_SIZE) so every browsable
+ * subject reads in the same size ranges — "1–50", "51–100" — instead of the
+ * kanji shelf alone counting by hundreds. 50 is still a round number you can
+ * count in your head, and it divides 2,136 into 42 full sections and a short
+ * tail of 36, small enough to look like the end of a list, not a broken one. */
+export const KANJI_CHUNK = 50;
 
 /** How many range sections the shelf actually paints.
  *
- * Three hundreds is plenty to have on one page, and the rest is search's job —
- * the same honesty the words shelf already practises. Cutting all 2,136 into 22
- * sections and painting every one of them cost +166ms on load and made the shelf
- * about five times longer to scroll, to show hundreds of kanji nobody is
- * anywhere near. Note the alternative that was rejected: widening KANJI_CHUNK to
- * 200 would only halve the sections while painting exactly as many tiles, so the
- * chunk stays at a countable 100 and the SHELF is what stops.
+ * Six fifties — the same 300 tiles the three hundreds used to paint, now that
+ * KANJI_CHUNK is 50; the visible cost is unchanged, only the labels got finer.
+ * That is plenty to have on one page, and the rest is search's job — the same
+ * honesty the words shelf already practises. Cutting all 2,136 into 43 sections
+ * and painting every one of them cost +166ms on load and made the shelf far
+ * longer to scroll, to show hundreds of kanji nobody is anywhere near. So the
+ * chunk stays a countable 50 and the SHELF is what stops.
  *
  * `kanjiCuts` still returns every cut — its tests hold that the cuts tile all
  * 2,136 with no gap and no overlap, and that property is worth keeping true —
  * so the cap is applied where the tiles are built, in components/library/shelves.tsx.
  * `grade` mode is NOT capped this way: its seven sections ARE the study order,
  * and it has its own per-section tile cap. */
-export const KANJI_SECTIONS_SHOWN = 3;
+export const KANJI_SECTIONS_SHOWN = 6;
 
 /**
  * The kanji shelf's sections, in the order the reader is studying in.
