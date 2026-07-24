@@ -173,16 +173,20 @@ export const KANJI_TRACK: PhaseIntro = {
   title: "Kanji are the characters Japanese words are written with.",
   body: [
     {
-      lead: "A kanji carries a meaning, not only a sound.",
-      text: "Kana spells sounds. A kanji stands for an idea and usually has a sound too: 山 means mountain and is read やま. Japanese also puts no spaces between words, and the switch between kanji and kana is much of how you find the breaks.",
+      lead: "A kanji stands for a meaning or an idea, not a fixed sound.",
+      text: "Kana spells sounds and nothing else. A kanji stands for an idea, and the sound it takes depends on the word it's in. 人 means person no matter where it is. It is said ひと on its own, じん in 外国人, にん in 三人. One character, one meaning, several pronunciations.",
+    },
+    {
+      lead: "So the meaning is what you learn first.",
+      text: "When learning a kanji, don't worry about what it sounds like in every word it's in. You will learn how it sounds in different words as they turn up.",
     },
     {
       lead: "This is why the characters come before the words.",
-      text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can work it out: a volcano, and nobody had to teach you the word. Learn a few hundred kanji and thousands of words open up behind them.",
+      text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can kind of guess the definition: a volcano, and nobody had to teach you the word. As you learn more and more kanji, you'll be able to guess at the definitions of more and more words.",
     },
     {
-      lead: "And a kanji is not one shape to memorize.",
-      text: "Each one is assembled from smaller pieces called radicals, which is the next thing you will see. Kana taught you every sound already, so this is the larger job starting now that the small one is done.",
+      lead: "A kanji is not one shape to memorize.",
+      text: "Each one is assembled from smaller pieces called radicals, which is the next thing you will see. Kana taught you every sound already, so you're now learning the bigger part of reading and speaking.",
     },
   ],
 };
