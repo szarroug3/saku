@@ -22,6 +22,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 
+import { japaneseFontClass } from "@/lib/japanese-text";
 import { resolve } from "@/lib/selection";
 import {
   activePreset,
@@ -63,7 +64,11 @@ function Tile({
           : "border-border bg-card text-text hover:bg-panel",
       )}
     >
-      <span className={cx("jp text-lg", glyphClass)}>{glyph}</span>
+      {/* `jp` was here and no stylesheet has ever defined it, so the あ on the
+          first tile has been rendering in the UI face. The rule is the same one
+          the Library glyph slots use, and it is why this can stay one component
+          for both tiles: あ takes the theme's Japanese face, ▲ does not. */}
+      <span className={cx(japaneseFontClass(glyph), "text-lg", glyphClass)}>{glyph}</span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
       <span
         className={cx(

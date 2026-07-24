@@ -610,12 +610,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
         <EntryHeader
           glyph={entry.glyph}
           // A pattern is up to nine characters long. At the default 76px
-          // 〜なければならない wraps three times and buries the gloss; 34px in the
-          // kana face keeps it the biggest thing on the card without it
-          // becoming the whole card.
-          glyphClass={
-            isGrammar ? "flex-none font-kana text-[34px] leading-tight" : undefined
-          }
+          // 〜なければならない wraps three times and buries the gloss; 34px keeps
+          // it the biggest thing on the card without it becoming the whole
+          // card. SIZE ONLY — the Japanese face is EntryHeader's call now, made
+          // from the glyph itself, so every kind gets it and not just this one.
+          glyphClass={isGrammar ? "flex-none text-[34px] leading-tight" : undefined}
           title={
             entry.meanings.slice(0, 3).join(" · ") || entry.readings.join(" · ")
           }

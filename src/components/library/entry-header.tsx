@@ -19,6 +19,7 @@ import type { ReactNode } from "react";
 import { PageTitle, SoundIcon } from "@/components/ui";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { TermLink } from "@/components/library/term-link";
+import { japaneseFontClass } from "@/lib/japanese-text";
 
 export function EntryHeader({
   glyph,
@@ -71,7 +72,18 @@ export function EntryHeader({
   return (
     <div className="flex flex-wrap items-start gap-5">
       {glyph ? (
-        <div className={glyphClass ?? "flex-none text-[76px] leading-none"}>{glyph}</div>
+        // The theme's Japanese face comes from the GLYPH, not from the caller.
+        // It is the one thing about the slot this component can answer without
+        // knowing what kind of entry it is showing, and answering it here is
+        // what keeps a Terms entry ("Counter") in the UI face while every kana,
+        // kanji, word and pattern gets --font-kana.
+        <div
+          className={`${japaneseFontClass(glyph)} ${
+            glyphClass ?? "flex-none text-[76px] leading-none"
+          }`}
+        >
+          {glyph}
+        </div>
       ) : null}
 
       {/* A FLOOR, NOT `min-w-0`, and it is a bug fix rather than a preference.

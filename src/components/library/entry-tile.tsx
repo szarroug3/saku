@@ -39,6 +39,7 @@ import { entryHref } from "@/lib/library/href";
 import type { EntryStanding } from "@/lib/library/standing";
 // What goes under the glyph — a .ts module so the "no entry shows a dash while
 // it has a reading" property is testable (the runner cannot load JSX).
+import { japaneseFontClass } from "@/lib/japanese-text";
 import { subLabel } from "@/lib/library/sub-label";
 import { speak } from "@/lib/speech";
 import type { VerbPair } from "@/data/transitivity";
@@ -180,7 +181,14 @@ export function EntryTile({
       >
         ✓
       </span>
-      <div className="select-none text-[26px] leading-[1.25] text-text">
+      {/* Same rule as the entry page's headword slot: the theme's Japanese face
+          when there is Japanese in the cell, the UI face for a Terms tile, whose
+          "glyph" is an English name. */}
+      <div
+        className={`select-none text-[26px] leading-[1.25] text-text ${japaneseFontClass(
+          entry.glyph,
+        )}`}
+      >
         {entry.glyph}
       </div>
       <div className="truncate text-xs text-text-muted">{subLabel(entry)}</div>
@@ -283,7 +291,13 @@ export function EntryRow({
           the main line, so the blank reads as "this one has no character" — which
           is exactly what it is — instead of as a missing asset. `entryName` is
           for controls that must be announced, not for a cell the eye can skip. */}
-      <span className="w-[64px] flex-none truncate text-[19px]">{entry.glyph}</span>
+      <span
+        className={`w-[64px] flex-none truncate text-[19px] ${japaneseFontClass(
+          entry.glyph,
+        )}`}
+      >
+        {entry.glyph}
+      </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px]">
           {/* ONE reading, and only when there is only one. 先生 gets せんせい.

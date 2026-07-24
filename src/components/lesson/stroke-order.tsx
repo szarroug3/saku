@@ -262,12 +262,26 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
   }, [measure, strokes.length]);
 
   return (
-    <div className="mt-1">
-      {/* `flex-nowrap` — NOT the default wrap. The frames live in their own
-          column BESIDE the animation and wrap INSIDE it; let the row wrap and a
-          long kanji pushes the whole chart underneath the diagram instead,
-          which is the layout this pairing exists to avoid. */}
-      <div className="flex flex-nowrap items-start gap-4">
+    <div className="mt-1 @container">
+      {/* SIDE BY SIDE ONCE THERE IS ROOM FOR BOTH, STACKED BELOW THAT.
+          The frames live in their own column beside the animation and wrap
+          INSIDE it, and `flex-nowrap` is what holds that: let the row wrap on
+          its own and a long kanji drops the whole chart underneath the diagram
+          at every width, which is the layout this pairing exists to avoid.
+
+          On a phone there is no room for the pairing at all. The animation is a
+          fixed 138px of the ~330px a card gets at 390px, so the frame column was
+          down to three cells a row and the "Show all 29 strokes" button, which
+          cannot wrap mid-word, ran past the card edge. Under @md the two views
+          stack and the frames get the full width — six a row instead of three,
+          so the chart is SHORTER stacked than it was squeezed.
+
+          A container query, not a media query, and for the reason the whole
+          component measures rather than counts: this card sits in a one-column
+          page and in a two-column split, and what decides the layout is the
+          width this card actually got. Same idiom as mark-view and the term
+          pages. */}
+      <div className="flex flex-col items-start gap-4 @md:flex-row @md:flex-nowrap">
         {/* The draw-along. It loops on its own, so there is nothing to press. */}
         <div className="rounded-lg border border-border bg-card p-1">
           <DrawAlong strokes={strokes} animate={!reduced} />
@@ -282,7 +296,10 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
             so without this a 29-frame chart forces the row wider than its
             container and the row breaks rather than the frames wrapping — the
             exact failure the `flex-nowrap` above is trying to prevent. */}
-        <div className="min-w-0 flex-[1_1_0]">
+        {/* `w-full` carries the stacked case: in a column the flex basis is a
+            HEIGHT, so without it the frames size to their content and wrap at
+            the widest cell instead of at the card edge. */}
+        <div className="w-full min-w-0 @md:flex-[1_1_0]">
           <div
             ref={frames}
             className="flex flex-wrap gap-2 overflow-hidden"

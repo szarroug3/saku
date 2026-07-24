@@ -90,6 +90,7 @@ import { keigoSetForEntry } from "@/data/keigo";
 import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
+import { japaneseFontClass } from "@/lib/japanese-text";
 import { knownLookalikes } from "@/lib/kanji-lookalikes";
 import type { CharacterRole } from "@/lib/character-role";
 import { characterRole, characterRoleTitle } from "@/lib/character-role";
@@ -361,7 +362,6 @@ function PlainHeadword({
   sub,
   canHear,
   hearGlyph,
-  kanaGlyph,
   right,
   voiceName,
 }: {
@@ -374,7 +374,6 @@ function PlainHeadword({
    * READING for a character that arrived on another track: 人 alone can be said
    * four ways, and the header prints the one the word takes. */
   hearGlyph: string;
-  kanaGlyph: boolean;
   right?: ReactNode;
   voiceName: string;
 }) {
@@ -384,9 +383,13 @@ function PlainHeadword({
         <Link
           href={entryHref(item.entry)}
           aria-label={`Open ${item.glyph} in the Library`}
-          className={`${
-            kanaGlyph ? "font-kana" : ""
-          } text-[72px] font-extralight leading-none text-text no-underline`}
+          // The theme's Japanese face, asked for by what the headword SAYS.
+          // This used to ask the step's kind and hand it to kana and grammar
+          // only, so a kanji or a word headword was set in --font-ui, which has
+          // no CJK coverage and left macOS to substitute a face nobody chose.
+          className={`${japaneseFontClass(
+            item.glyph,
+          )} text-[72px] font-extralight leading-none text-text no-underline`}
         >
           {item.glyph}
         </Link>
@@ -520,7 +523,6 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // Pronounceable surfaces only: a kana has one sound, and so does a character
   // that stands alone as a word, whichever track it arrived on.
   const canHear = canHearItem(item);
-  const kanaGlyph = item.kind === "kana" || item.kind === "grammar";
   // The app's own hook for this kana, when one is authored. When present it
   // drives the hero (big image, or the glyph as the hero when nothing's drawn);
   // when absent — an extended kana, or any non-kana — the plain headword stands
@@ -600,7 +602,6 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           sub={grammarSub}
           canHear={canHear && !sections.has("word-sense")}
           hearGlyph={item.glyph}
-          kanaGlyph={kanaGlyph}
           right={
             // The badge speaks for a CHARACTER, so it is asked the same pure
             // question it prints: 学生 plays the word role and is still two
