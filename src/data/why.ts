@@ -169,6 +169,42 @@ export const WHY_STROKE_ORDER: Why = {
 };
 
 /**
+ * What a stroke-order diagram IS, said once, under the diagram itself.
+ *
+ * THE PROBLEM THIS ANSWERS
+ * ========================
+ * A lesson page shows the character twice: set in a real typeface at the top,
+ * and drawn from KanjiVG's stroke data in "how it's written". Those two are not
+ * the same drawing, and on some characters the gap is wide enough to read as an
+ * error. 人 is the one that gets noticed: every Japanese face on a Mac (Hiragino
+ * Sans, Hiragino Mincho ProN, Hiragino Maru Gothic ProN, Klee, Yu Gothic, Yu
+ * Mincho, Toppan Bunkyu, Tsukushi A Round) forks the two strokes at the very
+ * apex, and KanjiVG forks them about a third of the way down the first stroke,
+ * so the written form has a long spine above the join that the printed form has
+ * no trace of. Overlay any of those fonts on the KanjiVG skeleton and the join
+ * sits in a visibly different place in all of them.
+ *
+ * NEITHER ONE IS WRONG, which is why this is copy and not a bug fix. KanjiVG is
+ * a HANDWRITING model, and a handwriting model is exactly what "how it's
+ * written" should show. A typeface is what you will actually meet on a page, and
+ * that is what the headword should be. Forcing them to match would mean
+ * throwing away one of the two things a learner needs.
+ *
+ * SO THE HONEST FIX IS TO SAY SO. This is the same move the kana side already
+ * makes with GLYPH_VARIANTS in src/data/characters.ts (き's connected loop
+ * against its detached lower stroke), and it deliberately closes the same way,
+ * on the reassurance that both shapes are one character. The difference is
+ * scope: a kana note is per-character, because only five kana split. This one is
+ * a property of every diagram, so it is one caption on the diagram instead of a
+ * table with two thousand rows in it.
+ *
+ * Content about the language, not about the app — see the file header. It names
+ * pens and books, never a screen or a control.
+ */
+export const WRITTEN_VS_PRINTED =
+  "The shape you write by hand and the shape a book prints aren’t always quite the same. Strokes can meet at a slightly different place, or run a little longer or shorter, so a printed character won’t always trace exactly over a handwritten one. It is the same character either way.";
+
+/**
  * Why we steer a beginner away from learning to WRITE this early — the reasoning
  * behind the "how it's written" section being collapsed by default on every
  * stepped lesson card.
