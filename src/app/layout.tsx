@@ -152,8 +152,8 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   // The sidebar is the app's nav, so it only belongs to someone who's in the
   // app: hidden for a signed-out visitor (who sees the landing) and on the auth
-  // pages. `authEnabled` (Supabase mode) is what puts a Sign out in it — in file
-  // mode there is no session to end.
+  // pages. `authEnabled` (Supabase keys present, so an account is possible) is
+  // what puts a Sign in/out in it — with no keys there is no session to end.
   const userId = await currentUserId();
   const [signedIn, authEnabled] = [userId !== null, isSupabaseStore()];
   // THE HISTORY, IN THE FIRST RESPONSE. Every screen that shows progress reads

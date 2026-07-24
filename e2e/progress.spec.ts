@@ -19,7 +19,7 @@ import type { FactId } from "@/types";
  * lose work."
  *
  * The quiz snapshots itself — deck, position, stats and the current question —
- * into localStorage under "kanaquiz-session", written on every resolved answer.
+ * into localStorage under "saku-session", written on every resolved answer.
  * These tests check that the promise that storage makes is actually kept at the
  * UI level: come back, and the count you had earned is still there.
  */

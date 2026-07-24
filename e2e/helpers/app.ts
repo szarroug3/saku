@@ -1,27 +1,25 @@
 import { test as base, expect, type Page } from "@playwright/test";
-import { copyFileSync, writeFileSync } from "node:fs";
 
 import { factInfo } from "@/lib/facts";
 import type { FactId } from "@/types";
-import {
-  E2E_HISTORY_FIXTURE,
-  E2E_HISTORY_PATH,
-  E2E_LISTS_FIXTURE,
-  E2E_LISTS_PATH,
-} from "./data-dir";
 
 /**
  * Test fixtures for the app.
  *
- * SEEDING STRATEGY (see the report): reaching a known quiz state needs two
- * things seeded, because the app splits them.
+ * SEEDING STRATEGY: the suite runs SIGNED OUT, the app's default when there is
+ * no Supabase session (see playwright.config.ts — the run blanks the Supabase
+ * keys). A signed-out learner's progress lives in THIS browser's localStorage,
+ * not in a server file, so both things a known quiz state needs are seeded there
+ * with `addInitScript`:
  *
- *  1. WHAT can be drilled comes from `history.json` on disk, read through
- *     GET /api/history. `selection.resolve` starts from `knownFacts(history)`,
- *     which is every fact with `history.facts[f].seen > 0`, or a key in
- *     `claims`, or a key in `seen`. `seen` is the cheapest of the three: it is
- *     a plain `Record<FactId, msEpoch>` recording "quiz me", and one entry is
- *     enough to make a fact drillable. So the fixture writes `seen`.
+ *  1. WHAT can be drilled comes from `localStorage["saku-local-history"]`, the
+ *     signed-out history the HistoryProvider reads (see store/local-progress.ts;
+ *     GET /api/history answers 401 with no account, and the client falls back to
+ *     this key). `selection.resolve` starts from `knownFacts(history)`, which is
+ *     every fact with `history.facts[f].seen > 0`, or a key in `claims`, or a key
+ *     in `seen`. `seen` is the cheapest of the three: a plain
+ *     `Record<FactId, msEpoch>` recording "quiz me", and one entry is enough to
+ *     make a fact drillable. So the fixture writes `seen`.
  *
  *  2. HOW it is asked comes from `localStorage["kanaquiz-cfg"]`. The app's
  *     `loadConfig()` spreads the stored object over `defaultConfig()`, so a
@@ -32,14 +30,10 @@ import {
  * with `Math.random()`, so the fixture removes the randomness at the source by
  * pinning a single direction, a single answer style and a tiny fact pool.
  *
- * ISOLATION: every path below is under e2e/.tmp, NOT the repo root. The suite
- * seeds and the app writes to a throwaway directory the server was pointed at via
- * SAKU_DATA_DIR (see e2e/helpers/data-dir.ts and playwright.config.ts), so the
- * maintainer's real history.json / lists.json are never opened by a run. Each
- * test still restores the isolated files to the pristine fixture afterwards,
- * because the app writes history itself (a finished quiz POSTs to /api/session),
- * so the reset is unconditional rather than only-if-we-wrote-it — it keeps one
- * spec's leftovers from leaking into the next.
+ * ISOLATION is free: Playwright gives every test its own browser context with a
+ * fresh, empty localStorage, so what one spec seeds or the app writes (a finished
+ * quiz that fell back to a local save) cannot leak into the next. There is no
+ * shared file to restore.
  */
 
 /** The subset of QuizConfig the e2e tests ever pin. Loosely typed on purpose:
@@ -103,40 +97,42 @@ export function textFilter(text: string): ConfigSeed {
   };
 }
 
+/** The signed-out history blob for a set of "quiz me" facts, shaped like the
+ * HistoryFile the client reads back from `saku-local-history`. */
 function historyWith(seen: string[]): string {
   const now = Date.now();
   const seenRecord: Record<string, number> = {};
   for (const f of seen) seenRecord[f] = now;
-  return JSON.stringify({ sessions: [], facts: {}, seen: seenRecord }, null, 1);
-}
-
-/** Put the ISOLATED history and lists back to their pristine fixtures. Only ever
- * touches e2e/.tmp — the repo-root files are not in play. Lists are reset too, so
- * a spec that files something into a list cannot bleed into the next one. */
-export function restoreHistory(): void {
-  copyFileSync(E2E_HISTORY_FIXTURE, E2E_HISTORY_PATH);
-  copyFileSync(E2E_LISTS_FIXTURE, E2E_LISTS_PATH);
+  return JSON.stringify({ sessions: [], facts: {}, seen: seenRecord });
 }
 
 export const test = base.extend<{
-  /** Seed disk + localStorage, then navigate. Call before the first goto. */
+  /** Seed the signed-out localStorage (history + config), then navigate. Call
+   * before the first goto. */
   seed: (options: SeedOptions) => Promise<void>;
 }>({
   seed: async ({ page }, use) => {
     await use(async ({ seen = [], cfg = {} }: SeedOptions) => {
-      writeFileSync(E2E_HISTORY_PATH, historyWith(seen));
-      // addInitScript runs before any page script on every navigation, so the
-      // config is in place before QuizConfigProvider's hydration effect reads
-      // it. Setting it after a goto would race that effect.
-      await page.addInitScript((value: string) => {
-        window.localStorage.setItem("kanaquiz-cfg", value);
-      }, JSON.stringify(cfg));
+      // addInitScript runs before any page script on every navigation, so both
+      // keys are in place before the HistoryProvider reads the local history and
+      // QuizConfigProvider's hydration effect reads the config. Setting them
+      // after a goto would race those.
+      //
+      // History is seeded ONCE, guarded on absence: a reload re-runs this script,
+      // and the app writes finished rounds straight into `saku-local-history`
+      // (the signed-out 401→local fallback), so re-seeding unconditionally would
+      // wipe progress the test just made. The config is pinned every time — it is
+      // input the test controls, not state the app accrues.
+      await page.addInitScript(
+        (v: { history: string; cfg: string }) => {
+          if (window.localStorage.getItem("saku-local-history") === null) {
+            window.localStorage.setItem("saku-local-history", v.history);
+          }
+          window.localStorage.setItem("kanaquiz-cfg", v.cfg);
+        },
+        { history: historyWith(seen), cfg: JSON.stringify(cfg) },
+      );
     });
-  },
-
-  page: async ({ page }, use) => {
-    await use(page);
-    restoreHistory();
   },
 });
 

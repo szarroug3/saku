@@ -12,11 +12,17 @@ import { test, expect, drillReady, type Page } from "./helpers/app";
  */
 
 const VOWELS = ["あ", "い", "う", "え", "お"];
-const SESSION_KEY = "kanaquiz-session";
+// The live snapshot key the app actually writes. It was renamed kanaquiz-session
+// → saku-session (the saku-* key rename; kanaquiz-session is now only the legacy
+// name migratedGet reads once and DELETES). This spec kept reading the old key,
+// so `storedSession` came back null on every load — which failed loudly where a
+// snapshot was asserted present and passed vacuously where one was asserted
+// absent. Reading the key the app writes is what makes these assertions real.
+const SESSION_KEY = "saku-session";
 
 /** Start the day-one lesson and step through to a live drill. */
 async function intoTheDrill(page: Page) {
-  await page.goto("/");
+  await page.goto("/learn");
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   // Day one opens on the hiragana track intro, so the walk is the five vowels
@@ -116,9 +122,12 @@ test("a session that lost its leg recovers instead of deadlocking", async ({
   seed,
 }) => {
   await seed({ seen: [], cfg: {} });
-  await page.addInitScript((payload: string) => {
-    localStorage.setItem("kanaquiz-session", payload);
-  }, wedgedSnapshot());
+  await page.addInitScript(
+    (v: { key: string; payload: string }) => {
+      localStorage.setItem(v.key, v.payload);
+    },
+    { key: SESSION_KEY, payload: wedgedSnapshot() },
+  );
 
   const navigations: string[] = [];
   page.on("framenavigated", (f) => {
@@ -264,7 +273,7 @@ test("Clear knowledge base clears the session in progress", async ({
   await expect(page.getByText("Nothing in progress")).toBeVisible();
 
   // Home is back to lesson one, which is the promise in full.
-  await page.goto("/");
+  await page.goto("/learn");
   await expect(page.locator("body")).toContainText("group 1 of 27");
 });
 

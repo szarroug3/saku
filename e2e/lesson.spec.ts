@@ -44,7 +44,7 @@ test("a new learner can take the first lesson through to its quiz", async ({
   // computes, and from nothing that is hiragana group 1.
   await seed({ seen: [], cfg: CFG });
 
-  await page.goto("/");
+  await page.goto("/learn");
   // The heading is upper-cased by CSS only, so the DOM text is lower case.
   await expect(page.locator("body")).toContainText("Up next");
   await expect(page.locator("body")).toContainText("hiragana");
@@ -132,7 +132,7 @@ test("claiming the first group advances the curriculum to the next one", async (
 }) => {
   await seed({ seen: [], cfg: CFG });
 
-  await page.goto("/");
+  await page.goto("/learn");
   await expect(page.locator("body")).toContainText("group 1 of 27");
 
   await page

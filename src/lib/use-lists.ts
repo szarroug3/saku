@@ -33,11 +33,20 @@ export function useLists() {
   const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/lists", { cache: "no-store" });
-      if (res.ok) setLists((await res.json()).lists ?? []);
-      // 401 = signed out: read this browser's local lists, the mirror of what
-      // useHistory does. Signed-out list edits fall back to localStorage (see
-      // progress-fetch.ts), and this is where they come back into view.
-      else if (res.status === 401) setLists(loadLocalLists());
+      if (res.ok) {
+        setLists((await res.json()).lists ?? []);
+      } else {
+        // DRAIN THE BODY on the non-ok paths. An unread response body leaves the
+        // fetch in-flight until GC, which is invisible in the app but stalls
+        // anything waiting on the network to go idle (Playwright's networkidle,
+        // for one) — and signed out, the 401 below is the COMMON path, not a rare
+        // one. Reading the small body to completion lets the request finish.
+        await res.text().catch(() => {});
+        // 401 = signed out: read this browser's local lists, the mirror of what
+        // useHistory does. Signed-out list edits fall back to localStorage (see
+        // progress-fetch.ts), and this is where they come back into view.
+        if (res.status === 401) setLists(loadLocalLists());
+      }
     } catch {
       // server unreachable — keep whatever we have
     } finally {

@@ -1,86 +1,47 @@
 import "server-only";
 
-// Server-side persistence for the learner's IN-PROGRESS session state — Sync
-// Part 2. The fourth blob beside history, lists and settings.
+// Server-side persistence for a signed-in learner's IN-PROGRESS session state —
+// Sync Part 2. The `session` jsonb on their `progress` row, beside history,
+// lists and settings.
 //
-// WHERE THE BLOB LIVES depends on STORAGE_BACKEND (see store/mode.ts): the local
-// session.json at the repo root in file mode, or the per-user `session` jsonb on
-// the `progress` row in Supabase in hosted mode. Same backend split as
-// settings.ts — the one-line branch in loadSessionState / writeSessionState is
-// all that changes between the two stores, and the LWW reconcile logic lives in
-// session-state.ts (pure, shared with the client and the tests).
+// WHO REACHES THIS. Only a signed-in request (getUserId → 401 otherwise). A
+// signed-out visitor's in-progress run lives in this browser's localStorage
+// snapshot, which is all a run needs to continue locally.
 //
 // A SEPARATE BLOB FROM history. `history` is what you FINISHED — folded into the
 // aggregate forever. `session` is what you are STILL DOING — a single run
-// envelope, last-writer-wins, cleared the moment the run ends. They are different
-// columns / different files so a stale in-progress copy can never resurrect a
-// finished run. Writing one leaves the other untouched (the upsert only sets the
-// `session` column).
+// envelope, last-writer-wins, cleared the moment the run ends. Different columns
+// so a stale in-progress copy can never resurrect a finished run. Writing one
+// leaves the other untouched (the upsert only sets the `session` column).
 //
 // THE WRITE APPLIES LAST-WRITER-WINS. A POST does not blindly overwrite: it
 // reconciles the incoming envelope against what is stored and keeps the fresher
 // (by updatedAt). So two devices posting near-simultaneously converge on the
 // newer write regardless of arrival order, and a stale device that races a clear
-// cannot un-clear a finished run just by arriving second.
-
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import path from "node:path";
+// cannot un-clear a finished run just by arriving second. The reconcile logic
+// lives in session-state.ts (pure, shared with the client and the tests).
 
 import {
-  EMPTY_ENVELOPE,
   normalizeEnvelope,
   pickNewer,
   type SessionStateEnvelope,
 } from "@/lib/session-state";
-import { isSupabaseStore } from "@/lib/store/mode";
 import { readSessionRow, writeSessionRow } from "@/lib/store/supabase-store";
 
-// WHERE the local file lives — the repo root by default, the same SAKU_DATA_DIR
-// override history.ts / settings.ts document (the e2e suite points it at a
-// throwaway directory; unset in every normal run).
-const DATA_DIR = process.env.SAKU_DATA_DIR
-  ? path.resolve(process.env.SAKU_DATA_DIR)
-  : process.cwd();
-const SESSION_PATH = path.join(DATA_DIR, "session.json");
-
-/** Indent 1, no trailing newline — legible under `git diff`, same rule as the
- * other blobs. */
-function writeSessionFile(env: SessionStateEnvelope): void {
-  writeFileSync(SESSION_PATH, JSON.stringify(env, null, 1), "utf-8");
-}
-
-/** Read session.json. A missing or corrupt file reads as the empty envelope (no
- * synced run) — the disposable-read rule settings.ts uses, and correct here: an
- * absent file genuinely means "no run to teleport", a valid state, and the
- * in-progress run is never the only copy of anything (finished rounds are in
- * history via their own outbox). */
-function readSessionFile(): SessionStateEnvelope {
-  if (existsSync(SESSION_PATH)) {
-    try {
-      return normalizeEnvelope(JSON.parse(readFileSync(SESSION_PATH, "utf-8")));
-    } catch {
-      // missing/corrupt file yields the empty envelope
-    }
-  }
-  return EMPTY_ENVELOPE;
-}
-
-/** The current backend's in-progress session envelope for `userId`. File mode
- * ignores the id (one session.json); Supabase reads the user's own row under
- * RLS. */
+/** The signed-in learner's in-progress session envelope. readSessionRow
+ * normalizes an unset column into the empty envelope (no synced run). */
 export async function loadSessionState(
   userId: string,
 ): Promise<SessionStateEnvelope> {
-  return isSupabaseStore() ? readSessionRow(userId) : readSessionFile();
+  return readSessionRow(userId);
 }
 
-/** The write half — the same backend split. */
+/** The write half — upserts only the `session` column. */
 async function writeSessionState(
   userId: string,
   env: SessionStateEnvelope,
 ): Promise<void> {
-  if (isSupabaseStore()) await writeSessionRow(userId, env);
-  else writeSessionFile(env);
+  await writeSessionRow(userId, env);
 }
 
 /**
