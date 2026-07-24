@@ -106,6 +106,8 @@ import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor, glyphVariantFor } from "@/data/characters";
+import { contextPronunciation } from "@/data/kana-context";
+import { KanaContextView } from "@/components/lesson/kana-context-view";
 import { cluster, membersOf } from "@/data/grammar/clusters";
 import { getMnemonic } from "@/data/mnemonics";
 import { pairForEntry } from "@/data/transitivity-facts";
@@ -507,6 +509,11 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // card where the character is met, so a learner who has only seen one form is
   // not thrown by the other later. Absent for the majority whose forms match.
   const glyphVariant = item.kind === "kana" ? glyphVariantFor(item.glyph) : null;
+  // The two kana whose sound is decided by what FOLLOWS them — ん takes the
+  // place of the next sound (しんぶん → shimbun), っ doubles it. Shown on the
+  // card where the kana is met so the rule arrives with the character rather
+  // than being inferred wrong in a drill. Null for every other kana.
+  const contextRules = item.kind === "kana" ? contextPronunciation(item.glyph) : null;
   const entry = libEntry(item.entry);
   const pattern = entry ? recipeOf(entry) : null;
   // The word's own row, looked up by GLYPH: a folded character carries the kanji
@@ -612,6 +619,16 @@ export function LessonItemView({ item }: { item: LessonItem }) {
       {glyphVariant ? (
         <div className={note ? "mt-3" : "mt-6"}>
           <Callout label="Note:">{glyphVariant}</Callout>
+        </div>
+      ) : null}
+
+      {/* "How it's said in context" — the following-sound rules for ん and っ.
+          Its own block rather than a Callout: it is not a one-line correction
+          but a small table of environments, and it reads as reference the
+          learner will come back to. */}
+      {contextRules ? (
+        <div className={note || glyphVariant ? "mt-6" : "mt-8"}>
+          <KanaContextView ctx={contextRules} />
         </div>
       ) : null}
 
