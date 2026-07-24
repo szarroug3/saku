@@ -291,6 +291,15 @@ export interface QuizConfig {
 export interface Selection {
   /** Subject ids to draw from ("kana", "kanji", "word"). Empty = all of them. */
   subjects: string[];
+  /**
+   * Practice-type ids to draw from — the finer-than-subject axis the Practice
+   * page's TYPE chooser edits ("hiragana", "katakana", "counter", …). Empty =
+   * all types, exactly as an empty `subjects` means all subjects. A type is a
+   * PREDICATE over facts, not a field on one: `subject` "kana" is two types
+   * (hiragana/katakana) and "word" is two (words/counters). See
+   * src/lib/practice-types.ts — factType() computes it, resolve() filters on it.
+   */
+  types: string[];
   /** A saved list's id, or null for "not restricted to a list". */
   list: string | null;
   /** Bands to include, OR-ed together — a fact is in if it matches ANY of
