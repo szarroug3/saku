@@ -9,11 +9,11 @@ Status board for everything in flight. One file per task in this folder; this is
 | 01 | [Vercel Analytics](01-analytics.md) | ✅ done (toggled on) | main | prod |
 | 02 | [Sidebar sign-in banner (collapsed) + placement](02-sidebar-banner.md) | ✅ shipped | main | prod |
 | 03 | [401 silent-drop data-loss fix + migration refresh](03-401-fix.md) | ✅ shipped | main | prod |
-| 04 | [Quiz clarity: audio + instructions + presentation labels](04-quiz-clarity.md) | 🟢 ready to merge | `quiz-clarity` | localhost:3002 |
+| 04 | [Quiz clarity: audio + instructions + results table (by word) + confusions](04-quiz-clarity.md) | 🔵 in progress (table redesign) | `quiz-clarity` | localhost:3002 |
 | 05 | [Sync Part 1: settings + kanaquiz→saku rename](05-sync-settings.md) | ✅ shipped (settings column applied) | main | prod |
 | 06 | [Standing/claim rework (the "solid" bug)](06-standing-claim.md) | 🟢 ready to merge — 1 wording flag | `standing-claim` | localhost:3006 |
 | 07 | [Continue-session masking → folded into #12](07-continue-session.md) | ⚪ folded into #12 | (with #12) | — |
-| 08 | [Presentation labels on both result screens → done in #04](08-fact-type-labels.md) | 🟢 ready to merge (in #04) | `quiz-clarity` | localhost:3002 |
+| 08 | [Results table by word + confusions column → in #04](08-fact-type-labels.md) | 🔵 in progress (in #04) | `quiz-clarity` | localhost:3002 |
 | 09 | [Pitch intro + homophone→show-kanji](09-pitch-homophone.md) | 🟢 ready to merge — DRAFT copy to finalize | `pitch-homophone` | localhost:3004 |
 | 10 | [Hint redesign: reading→no hint, meaning→mnemonic only](10-retry-hint.md) | 🔵 in progress (redesign) | `retry-hint` | localhost:3005 |
 | 11 | [Sync Part 2: in-progress session teleport](11-sync-session.md) | 🟢 ready to merge — needs `session` column | `sync-session` | localhost:3003 |
