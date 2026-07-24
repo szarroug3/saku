@@ -1,0 +1,21 @@
+-- Add the `settings` blob to the progress row.
+--
+-- The learner's server-synced preferences (quiz config, theme/appearance/accents,
+-- dismissal flags, latency baseline) live in one jsonb column beside `history`
+-- and `lists`, read/written by src/lib/settings.ts via readSettingsRow /
+-- writeSettingsRow in src/lib/store/supabase-store.ts.
+--
+-- RLS: no new policy is needed. The `progress` table's existing row-level
+-- security already scopes every read/write to `auth.uid() = user_id`, and a new
+-- column on that table inherits those policies automatically — the policies gate
+-- the ROW, not the column list. So this column is confined to its owner the
+-- moment it exists.
+--
+-- Idempotent: `if not exists` makes re-running this harmless.
+--
+-- APPLY THIS BY HAND against the production database (e.g. the Supabase SQL
+-- editor). Nothing in the app runs migrations; the code tolerates the column
+-- being absent (an unset column reads as empty/all-default settings), so applying
+-- it is what turns settings sync on for hosted users.
+
+alter table progress add column if not exists settings jsonb;

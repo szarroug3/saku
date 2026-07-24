@@ -1,8 +1,9 @@
 "use client";
 
-// Quiz configuration context — persisted to localStorage under
-// "kanaquiz-cfg", same key and shape as the legacy app so existing
-// selections survive the conversion.
+// Quiz configuration context — persisted to localStorage under "saku-cfg" (a
+// legacy "kanaquiz-cfg" value is migrated forward on first read), and mirrored to
+// the server as the `cfg` field of the settings blob (the source of truth). The
+// shape is unchanged from the legacy app so existing selections survive.
 
 import {
   createContext,
@@ -10,11 +11,16 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
 import { JP_FONTS } from "@/lib/config";
+import { CFG_KEY, OLD_CFG_KEY } from "@/lib/settings-keys";
+import { pushSettings } from "@/lib/settings-sync";
+import { migratedGet } from "@/lib/storage-migrate";
+import { useSettings } from "@/lib/use-settings";
 // The DATA-FREE seed modules, not kanji-lesson/word-lesson/selection: this
 // provider is mounted in the root layout on every route, and those modules
 // top-level import the kanji+vocab curricula and the fact registry. Seeding a
@@ -27,8 +33,6 @@ import {
 } from "@/lib/lesson-sizing";
 import { emptySelection } from "@/lib/selection-empty";
 import type { QuizConfig } from "@/types";
-
-const STORAGE_KEY = "kanaquiz-cfg";
 
 export function defaultConfig(): QuizConfig {
   return {
@@ -76,15 +80,19 @@ export function defaultConfig(): QuizConfig {
   };
 }
 
-function loadConfig(): QuizConfig {
+/** Coerce a parsed/stored config object (from localStorage OR the server) into a
+ * full, clamped QuizConfig. Anything that is not an object — or nothing at all —
+ * is the default config. Shared by the local-cache read and the server reconcile
+ * so both land on exactly the same shape. */
+function normalizeConfig(saved: unknown): QuizConfig {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
     if (saved && typeof saved === "object") {
-      const cfg: QuizConfig = { ...defaultConfig(), ...saved };
+      const raw = saved as Partial<QuizConfig> & { randomFont?: boolean };
+      const cfg: QuizConfig = { ...defaultConfig(), ...raw };
       // Migrate the pre-fonts shape: randomFont true → all fonts, false →
       // just the first (the legacy app always rendered JP_FONTS[0] then).
       if (!Array.isArray(cfg.fonts) || !cfg.fonts.length) {
-        cfg.fonts = saved.randomFont === false ? [JP_FONTS[0]] : [...JP_FONTS];
+        cfg.fonts = raw.randomFont === false ? [JP_FONTS[0]] : [...JP_FONTS];
       }
       // A stored `enabled` map is from before selection was a query. It is not
       // migrated and none is owed: those keys were CHARACTERS, and a character
@@ -117,6 +125,16 @@ function loadConfig(): QuizConfig {
   return defaultConfig();
 }
 
+/** The config from this browser's localStorage cache — the new `saku-cfg` key,
+ * migrated forward from the legacy `kanaquiz-cfg` on first read. */
+function loadConfig(): QuizConfig {
+  try {
+    return normalizeConfig(JSON.parse(migratedGet(localStorage, CFG_KEY, OLD_CFG_KEY) ?? "null"));
+  } catch {
+    return defaultConfig();
+  }
+}
+
 interface QuizConfigContextValue {
   cfg: QuizConfig;
   /** Merge a partial update into the config and persist it. */
@@ -135,16 +153,30 @@ export function QuizConfigProvider({ children }: { children: ReactNode }) {
   const [cfg, setCfg] = useState<QuizConfig>(defaultConfig);
   const [ready, setReady] = useState(false);
 
+  // The server's copy, seeded server-side (see settings-provider). Frozen at mount
+  // in a ref: the reconcile below is a one-time "server wins over local cache".
+  const { serverSettings } = useSettings();
+  const seededServer = useRef(serverSettings);
+
   useEffect(() => {
-    // One-time localStorage hydration must run post-mount (SSR can't read it)
-    // and set state synchronously so the real cfg paints in the same pass.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCfg(loadConfig());
+    // One-time hydration, post-mount (SSR can't read localStorage). SERVER WINS:
+    // if the server has a cfg it is normalized and used (and the write-back below
+    // reconciles the local cache to it); otherwise the migrated local cache stands.
+    const srvCfg = seededServer.current?.cfg;
+    setCfg(srvCfg ? normalizeConfig(srvCfg) : loadConfig());
     setReady(true);
   }, []);
 
+  // The write-back mirrors every change into the localStorage paint cache and,
+  // for user changes only, pushes it to the server. The first post-hydration run
+  // is the reconcile itself — it seeds the cache but must NOT push, or a value
+  // that came DOWN from the server would be echoed straight back up.
+  const hydratedOnce = useRef(false);
   useEffect(() => {
-    if (ready) localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+    if (!ready) return;
+    localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+    if (hydratedOnce.current) pushSettings({ cfg });
+    else hydratedOnce.current = true;
   }, [cfg, ready]);
 
   const set = useCallback(

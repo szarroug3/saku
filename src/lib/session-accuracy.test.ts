@@ -139,7 +139,7 @@ test("nothing answered yet is null, not 0%", () => {
 
 // ---------- the localStorage migration ----------
 //
-// The quiz snapshot is persisted to `kanaquiz-session` and restored with a bare
+// The quiz snapshot is persisted to `saku-session` and restored with a bare
 // JSON.parse — no normalising pass — so a run started before `firstTryCount`
 // existed comes back without the field. `undefined + 1` is NaN, and a NaN would
 // spread through every merge after it.

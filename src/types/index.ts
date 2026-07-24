@@ -1,5 +1,7 @@
 // Shared types for the kana quiz.
 
+import type { LatencyWindow } from "@/lib/slow";
+
 // ---------- identity: entries and facts ----------
 //
 // A character string used to be three things at once: the identity, the
@@ -118,7 +120,7 @@ export interface CharInfo {
   meaning: string | null;
 }
 
-// ---------- quiz config (localStorage "kanaquiz-cfg") ----------
+// ---------- quiz config (localStorage "saku-cfg") ----------
 
 export type QuizMode =
   | "drill"
@@ -681,4 +683,44 @@ export interface HistoryFile {
    * no longer say everything the aggregate knows.
    */
   facts: Record<FactId, FactAggregate>;
+}
+
+// ---------- settings (server-synced preferences) ----------
+//
+// The learner's PREFERENCES, as one server-persisted blob — the third jsonb on
+// the `progress` row beside `history` and `lists` (settings.json in file mode).
+// The server is the source of truth; localStorage holds a per-field cache purely
+// so the app (and the pre-hydration no-flash script) can paint before the server
+// answers. See src/lib/settings.ts (server read/write) and
+// src/lib/settings-provider.tsx (client seed + reconcile).
+//
+// Every field is OPTIONAL and absence means "this learner never set it, use the
+// app default". That is what lets a partial write (a single POST that changes
+// only the theme) merge into the stored blob without disturbing the rest, and it
+// is what keeps an older/empty settings row reading as a valid set of defaults.
+//
+// Theme/appearance/accents are stored LOOSELY (strings / a string map) rather
+// than as the client's literal unions: the server only moves JSON, and the
+// client already validates every value on read (isTheme / isAppearance /
+// isAccent in theme.tsx), so keeping the wire shape permissive avoids importing
+// client-only unions into server-imported type space.
+export interface SettingsFile {
+  /** Quiz configuration — the whole QuizConfig, same shape the client holds. */
+  cfg?: QuizConfig;
+  /** Palette id (aizome / graphite / momentum / kiri). Validated client-side. */
+  theme?: string;
+  /** Mode (system / light / dark). Validated client-side. */
+  appearance?: string;
+  /** Per-theme accent choice, keyed by theme id. Validated key-by-key client-side. */
+  accents?: Record<string, string>;
+  /** Has the claim explainer been dismissed? */
+  claimHintDismissed?: boolean;
+  /** Does the lesson "how it's written" section open by default? */
+  lessonWriting?: boolean;
+  /** Does the lesson readings section open by default? */
+  lessonReadings?: boolean;
+  /** Which once-ever concept cards have already been shown, by intro id. */
+  introShown?: string[];
+  /** The recall-latency baseline (a derived, self-healing tuning window). */
+  latency?: LatencyWindow;
 }

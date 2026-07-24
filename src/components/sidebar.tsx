@@ -15,8 +15,8 @@ import { useQuizSession } from "@/lib/quiz-session";
 // Persisted as a COOKIE, not localStorage, so the SERVER can read it (see
 // layout.tsx) and render the bar at the right width on the very first paint.
 // localStorage is client-only, so it would render expanded and then visibly snap
-// closed after hydration. New keys use the `saku-` prefix (the older `kanaquiz-`
-// keys are a separate rename still pending).
+// closed after hydration. This is a per-device preference and deliberately stays
+// local — it is NOT part of the server-synced settings blob (see settings.ts).
 const COLLAPSE_KEY = "saku-sidebar-collapsed";
 
 /** A bare chevron for the collapse/expand toggle — inline so the nav pulls in no

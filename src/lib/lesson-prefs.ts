@@ -30,13 +30,31 @@
 
 import { useEffect, useState } from "react";
 
+import {
+  LESSON_OPEN,
+  LESSON_READINGS_KEY,
+  LESSON_WRITING_KEY,
+  OLD_LESSON_READINGS_KEY,
+  OLD_LESSON_WRITING_KEY,
+} from "@/lib/settings-keys";
+import { pushSettings } from "@/lib/settings-sync";
+import { migratedGet } from "@/lib/storage-migrate";
+import type { SettingsFile } from "@/types";
+
 /** The two persisted sections. The value is the STORAGE KEY, so a caller names
- * the preference by its meaning and never types a raw string. */
+ * the preference by its meaning and never types a raw string. Renamed
+ * `kanaquiz-lesson-*` → `saku-lesson-*`, legacy names migrated forward on read. */
 export const LESSON_PREF_KEYS = {
   /** "How it's written" — the stroke-order section. */
-  writing: "kanaquiz-lesson-writing",
+  writing: LESSON_WRITING_KEY,
   /** The kanji readings table. */
-  readings: "kanaquiz-lesson-readings",
+  readings: LESSON_READINGS_KEY,
+} as const;
+
+/** The legacy key for each preference, for the one-time migration on read. */
+const OLD_LESSON_PREF_KEYS = {
+  writing: OLD_LESSON_WRITING_KEY,
+  readings: OLD_LESSON_READINGS_KEY,
 } as const;
 
 export type LessonPref = keyof typeof LESSON_PREF_KEYS;
@@ -47,23 +65,32 @@ export type LessonPref = keyof typeof LESSON_PREF_KEYS;
  * window, no throw. */
 export function readLessonPref(pref: LessonPref): boolean {
   try {
-    return localStorage.getItem(LESSON_PREF_KEYS[pref]) === "1";
+    return (
+      migratedGet(localStorage, LESSON_PREF_KEYS[pref], OLD_LESSON_PREF_KEYS[pref]) ===
+      LESSON_OPEN
+    );
   } catch {
     return false;
   }
 }
 
-/** Persist a section's open state. "1" for open, the key removed for closed —
- * so the default reads back as closed whether it was never set or explicitly
- * shut. Swallows storage errors (private mode / disabled): the choice still
- * applies for the session, it just isn't remembered. */
+/** The server field each preference maps to. */
+function settingsPatch(pref: LessonPref, open: boolean): SettingsFile {
+  return pref === "writing" ? { lessonWriting: open } : { lessonReadings: open };
+}
+
+/** Persist a section's open state — locally AND to the server. "1" for open, the
+ * key removed for closed — so the default reads back as closed whether it was
+ * never set or explicitly shut. Swallows storage errors (private mode / disabled);
+ * the server push is a no-op when no provider is mounted. */
 export function writeLessonPref(pref: LessonPref, open: boolean): void {
   try {
-    if (open) localStorage.setItem(LESSON_PREF_KEYS[pref], "1");
+    if (open) localStorage.setItem(LESSON_PREF_KEYS[pref], LESSON_OPEN);
     else localStorage.removeItem(LESSON_PREF_KEYS[pref]);
   } catch {
     // storage blocked — the toggle still works this session
   }
+  pushSettings(settingsPatch(pref, open));
 }
 
 /**

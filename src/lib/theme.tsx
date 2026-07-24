@@ -5,7 +5,7 @@
 // data-theme, data-appearance and data-accent; globals.css does the rest.
 //
 // Persisted to their OWN localStorage keys, deliberately NOT inside
-// "kanaquiz-cfg": how the app looks isn't quiz configuration, and keeping it
+// "saku-cfg": how the app looks isn't quiz configuration, and keeping it
 // separate is what lets the inline no-flash script in layout.tsx read it with
 // a few cheap getItem calls instead of parsing the whole config blob.
 //
@@ -34,9 +34,22 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+
+import {
+  THEME_KEY,
+  APPEARANCE_KEY,
+  ACCENTS_KEY,
+  OLD_THEME_KEY,
+  OLD_APPEARANCE_KEY,
+  OLD_ACCENTS_KEY,
+} from "@/lib/settings-keys";
+import { useSettings } from "@/lib/use-settings";
+import { pushSettings } from "@/lib/settings-sync";
+import { migratedGet } from "@/lib/storage-migrate";
 
 export const THEMES = ["aizome", "graphite", "momentum", "kiri"] as const;
 export type ThemeName = (typeof THEMES)[number];
@@ -69,9 +82,20 @@ export const DEFAULT_THEME = "kiri" satisfies ThemeName;
 export const DEFAULT_APPEARANCE = "system" satisfies Appearance;
 export const DEFAULT_ACCENT = "default" satisfies AccentName;
 
-export const THEME_KEY = "kanaquiz-theme";
-export const APPEARANCE_KEY = "kanaquiz-appearance";
-export const ACCENTS_KEY = "kanaquiz-accents";
+// The app-owned keys, renamed `kanaquiz-*` → `saku-*`, live in settings-keys.ts
+// (a plain module the settings-sync layer can share without an import cycle). Each
+// carries its legacy name so a returning user's value is migrated forward on first
+// read (see migratedGet) rather than silently reset. Re-exported here because the
+// no-flash script in layout.tsx pins its own copies to `typeof Theme.THEME_KEY`
+// etc., so a rename that it did not follow is a compile error, not a flash.
+export {
+  THEME_KEY,
+  APPEARANCE_KEY,
+  ACCENTS_KEY,
+  OLD_THEME_KEY,
+  OLD_APPEARANCE_KEY,
+  OLD_ACCENTS_KEY,
+};
 
 function isTheme(v: unknown): v is ThemeName {
   return THEMES.includes(v as ThemeName);
@@ -85,12 +109,18 @@ function isAccent(v: unknown): v is AccentName {
   return ACCENTS.includes(v as AccentName);
 }
 
-/** Read a stored value, falling back to the default. Anything unrecognized
- * (or unreadable storage) is just the default — the app is new, there's no
- * legacy shape worth migrating. */
-function load<T>(key: string, guard: (v: unknown) => v is T, fallback: T): T {
+/** Read a stored value, falling back to the default. Reads the new `saku-*` key,
+ * migrating the value forward from the legacy `kanaquiz-*` key on first read (see
+ * migratedGet) so a returning user is never reset. Anything unrecognized (or
+ * unreadable storage) is just the default. */
+function load<T>(
+  key: string,
+  oldKey: string,
+  guard: (v: unknown) => v is T,
+  fallback: T,
+): T {
   try {
-    const saved = localStorage.getItem(key);
+    const saved = migratedGet(localStorage, key, oldKey);
     if (guard(saved)) return saved;
   } catch {
     // storage blocked (private mode / disabled cookies) — use the default
@@ -98,24 +128,31 @@ function load<T>(key: string, guard: (v: unknown) => v is T, fallback: T): T {
   return fallback;
 }
 
-/** The accent map, validated key by key rather than trusted wholesale — it's
- * the only one of the three that's structured, so it's the only one where a
+/** Validate a raw accent map (from storage or the server) key by key — it's the
+ * only one of the three that's structured, so it's the only one where a
  * hand-edited or half-written entry can be partly good. An unknown theme id or
  * accent name is dropped and the rest is kept. */
-function loadAccents(): AccentMap {
-  try {
-    const raw: unknown = JSON.parse(localStorage.getItem(ACCENTS_KEY) ?? "null");
-    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-      const out: AccentMap = {};
-      for (const [k, v] of Object.entries(raw)) {
-        if (isTheme(k) && isAccent(v)) out[k] = v;
-      }
-      return out;
+function validateAccents(raw: unknown): AccentMap {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const out: AccentMap = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (isTheme(k) && isAccent(v)) out[k] = v;
     }
-  } catch {
-    // storage blocked or corrupt JSON — no accents, i.e. every theme's own
+    return out;
   }
   return {};
+}
+
+/** The accent map from storage — the new key, migrated forward from the old. */
+function loadAccents(): AccentMap {
+  try {
+    return validateAccents(
+      JSON.parse(migratedGet(localStorage, ACCENTS_KEY, OLD_ACCENTS_KEY) ?? "null"),
+    );
+  } catch {
+    // storage blocked or corrupt JSON — no accents, i.e. every theme's own
+    return {};
+  }
 }
 
 interface ThemeContextValue {
@@ -145,13 +182,30 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [systemDark, setSystemDark] = useState(false);
   const [ready, setReady] = useState(false);
 
+  // The server's copy of the settings, seeded server-side (see settings-provider).
+  // Frozen at mount in a ref: the reconcile below is a one-time "server wins over
+  // the local paint cache" decision, not a live subscription.
+  const { serverSettings } = useSettings();
+  const seededServer = useRef(serverSettings);
+
   useEffect(() => {
-    // One-time localStorage hydration must run post-mount (SSR can't read it)
-    // and set state synchronously so the real choice paints in the same pass.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTheme(load(THEME_KEY, isTheme, DEFAULT_THEME));
-    setAppearance(load(APPEARANCE_KEY, isAppearance, DEFAULT_APPEARANCE));
-    setAccents(loadAccents());
+    // One-time hydration, post-mount (SSR can't read localStorage). SERVER WINS:
+    // for each of the three, if the server has a valid value it is used and the
+    // local cache below is overwritten to match (the write-back effects fire on
+    // these setState calls); otherwise the migrated local cache stands. This is
+    // the paint cache reconciling up to the source of truth.
+    const srv = seededServer.current;
+    const srvTheme = srv?.theme;
+    const srvApp = srv?.appearance;
+    setTheme(
+      isTheme(srvTheme) ? srvTheme : load(THEME_KEY, OLD_THEME_KEY, isTheme, DEFAULT_THEME),
+    );
+    setAppearance(
+      isAppearance(srvApp)
+        ? srvApp
+        : load(APPEARANCE_KEY, OLD_APPEARANCE_KEY, isAppearance, DEFAULT_APPEARANCE),
+    );
+    setAccents(srv?.accents ? validateAccents(srv.accents) : loadAccents());
     setReady(true);
   }, []);
 
@@ -215,17 +269,30 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [accents, ready]);
 
-  const setThemeSafe = useCallback((next: ThemeName) => setTheme(next), []);
-  const setAppearanceSafe = useCallback(
-    (next: Appearance) => setAppearance(next),
-    [],
-  );
+  // Each user-initiated change updates the local state (which the write-back
+  // effects mirror into the localStorage paint cache) AND pushes the new value to
+  // the server, the source of truth. The push is only on the user-action path —
+  // the reconcile setState above never calls these, so a value that came DOWN
+  // from the server is not echoed back up.
+  const setThemeSafe = useCallback((next: ThemeName) => {
+    setTheme(next);
+    pushSettings({ theme: next });
+  }, []);
+  const setAppearanceSafe = useCallback((next: Appearance) => {
+    setAppearance(next);
+    pushSettings({ appearance: next });
+  }, []);
 
   // Writes one key of the map — the theme in effect — and leaves every other
-  // theme's choice alone. That single line is the whole per-theme feature.
+  // theme's choice alone. That single line is the whole per-theme feature; the
+  // push sends the whole (small) map, since the server stores it as one field.
   const setAccent = useCallback(
-    (next: AccentName) => setAccents((prev) => ({ ...prev, [theme]: next })),
-    [theme],
+    (next: AccentName) => {
+      const map = { ...accents, [theme]: next };
+      setAccents(map);
+      pushSettings({ accents: map });
+    },
+    [accents, theme],
   );
 
   const resolved: "light" | "dark" =

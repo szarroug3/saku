@@ -18,7 +18,7 @@
 //
 // A SEPARATE KEY FROM THE SESSION SNAPSHOT, ON PURPOSE
 // ====================================================
-// The quiz snapshot (`kanaquiz-session`) is the subject of a cross-tab
+// The quiz snapshot (`saku-session`) is the subject of a cross-tab
 // adoption protocol that took a write storm to get right — see the storm note
 // in quiz-session.tsx. This queue must not go anywhere near it. It has its own
 // key, no adoption, no owner stamp, and the only cross-tab hazard it has is two
@@ -32,10 +32,14 @@
 // PURE OF THE BROWSER. `localStorage` is passed in, so the whole queue is
 // testable in plain Node — see pending-records.test.ts.
 
+import { OLD_PENDING_KEY, PENDING_KEY } from "@/lib/settings-keys";
+import { migratedGet } from "@/lib/storage-migrate";
 import type { QuizSessionRecord } from "@/types";
 
-/** The localStorage key. Deliberately not the session snapshot's. */
-export const PENDING_KEY = "kanaquiz-pending-records";
+/** The localStorage key (renamed `kanaquiz-pending-records` → `saku-pending-records`,
+ * its legacy value migrated forward on read). Deliberately not the session
+ * snapshot's. Re-exported for callers and tests. */
+export { PENDING_KEY };
 
 /**
  * How many unsent records to keep.
@@ -69,7 +73,7 @@ export interface RecordStore {
  */
 export function readPending(store: RecordStore): QuizSessionRecord[] {
   try {
-    const raw = store.getItem(PENDING_KEY);
+    const raw = migratedGet(store, PENDING_KEY, OLD_PENDING_KEY);
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as QuizSessionRecord[]) : [];
