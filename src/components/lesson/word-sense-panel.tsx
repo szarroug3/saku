@@ -16,23 +16,38 @@
 // form: the reading is unambiguous, and the character alone can be read several
 // ways.
 //
-// ALL OF THE READINGS, ONE OF THEM DRILLED
-// ========================================
-// 人 is three words sharing one shape: ひと a person, じん the -ian suffix, にん
-// the counter for people. The vocabulary used to keep whichever one JMdict
-// happened to list first, which is how this panel came to teach 人 as a suffix
-// and 前 as "previous". It now prints every reading the form has (see
-// VocabRow.senses), in the same table idiom as the kanji readings on this page,
-// with the beginner's reading first.
+// THE READINGS THAT STAND ALONE, AND ONLY THOSE
+// =============================================
+// This panel used to print all three of 人's readings — ひと, じん, にん — under
+// the "Word" heading. Two of them are not words. じん is the -ian suffix and にん
+// counts people; neither is ever said by itself, and a table filed under "Word"
+// claims they are. The owner's reading of it: "when it's used as a word, it's
+// said exactly one way hito". The sounds a character makes welded into something
+// longer are the kanji block's, where they now are.
 //
-// One reading is still the one the quiz asks, and the foot says so, because a
-// screen that shows three readings and then grades one of them without warning
-// is a trap.
+// So it asks `standaloneSenses`, which keeps every reading of the same word class
+// as the primary. That is one row for 人 and four for 主 (あるじ, おも, しゅ,
+// ぬし are four genuine words), so the plural case stays and no "there is only
+// one" assumption is baked in anywhere below.
+//
+// One reading is still the one the quiz asks, and the foot says so whenever
+// there is more than one on show, because a screen that lists four readings and
+// then grades one of them without warning is a trap.
 
 import { HearButton } from "@/components/lesson/hear-button";
 import { LessonPanel } from "@/components/lesson/lesson-panel";
 import type { VocabRow } from "@/data/vocab";
-import { wordTypeOf } from "@/lib/lesson-roles";
+import { standaloneSenses, wordTypeOf } from "@/lib/lesson-roles";
+
+/** What the panel is FOR, in one line, because the kanji block above it now has
+ * a table of sounds too and the difference between the two is the whole point.
+ * That one is the character welded into something longer; this one is the
+ * character with nothing attached. Two lines, not one with a number swapped: a
+ * word with four readings has a fact about it that a word with one does not. */
+const LEAD_ONE =
+  "Alone in a sentence, with no other character attached, it is said this one way.";
+const LEAD_MANY =
+  "Alone in a sentence, with no other character attached, it can be any of these, and the meaning turns on which you say.";
 
 export function WordSensePanel({
   word,
@@ -41,20 +56,22 @@ export function WordSensePanel({
   word: VocabRow;
   voiceName: string;
 }) {
-  const senses = word.senses;
+  const senses = standaloneSenses(word);
+  const only = senses.length === 1 ? senses[0] : null;
 
   // ONE reading is a sentence, not a table. A header row over a single row of
-  // data is furniture around one fact, so the single-sense case keeps the shape
+  // data is furniture around one fact, so the single-reading case keeps the shape
   // this panel has always had.
-  if (senses.length < 2) {
-    const meaning = word.glosses.slice(0, 4).join(", ");
+  if (only) {
+    const meaning = only.glosses.slice(0, 4).join(", ");
     return (
       <LessonPanel title="How you say it, and what it means">
+        <p className="mb-2.5 text-[12px] leading-snug text-text-muted">{LEAD_ONE}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <HearButton glyph={word.reb} voiceName={voiceName} />
-          <span className="font-kana text-[24px] leading-none text-text">{word.reb}</span>
+          <HearButton glyph={only.reb} voiceName={voiceName} />
+          <span className="font-kana text-[24px] leading-none text-text">{only.reb}</span>
           <span className="text-[11px] uppercase tracking-[0.06em] text-text-muted">
-            {wordTypeOf(word)}
+            {wordTypeOf(only)}
           </span>
         </div>
         {meaning ? (
@@ -66,6 +83,7 @@ export function WordSensePanel({
 
   return (
     <LessonPanel title="How you say it, and what it means">
+      <p className="mb-2.5 text-[12px] leading-snug text-text-muted">{LEAD_MANY}</p>
       <div className="-mx-1 overflow-x-auto px-1">
         <table className="w-full text-left text-[13px]">
           <thead>

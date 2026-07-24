@@ -53,13 +53,26 @@
 // Folding the cards worked and then went too far: 人 came out as a sense table,
 // a sound explainer, an example sentence, five rows of in-word readings and a
 // list of the 22 kanji built on the shape, all on the screen you get handed the
-// first time you meet the character. Two of those are catalogues, and catalogues
-// belong on the page you go looking for. So `LessonReadings` and
-// `RadicalKanjiTable` are no longer mounted here at all; the Library entry page
-// still shows both, through its own `KanjiReadings` and `ComponentUses`, and it
-// always did — the two views never shared a section list, so the trim needed no
-// mode flag threaded through anything. In their place: the kanji's definition,
-// and a line under each role heading saying what the role is for.
+// first time you meet the character. The list of kanji built on the shape is a
+// catalogue and catalogues belong on the page you go looking for, so
+// `RadicalKanjiTable` is not mounted here; the Library entry page shows it
+// through `ComponentUses`, and always did.
+//
+// THE READINGS ARE THE LIBRARY'S TOO, and that is settled: "for the lesson i
+// don't want the kanji readings. just keep the meaning of the kanji and then the
+// definition of it as a word and how to say it." So the kanji block is its line
+// and its definition, and the word block is the sound and the sense.
+//
+// WHICH IS WHY THE SENSE TABLE LEFT THE WORD BLOCK. It listed ひと, じん and にん
+// under "Word", and that claims you can say じん by itself. You cannot; it only
+// ever turns up welded to something else. The word block keeps the readings that
+// stand alone, which is one for 人 and four for 主 (see `standaloneSenses`).
+//
+// AND THE BREAKDOWN IS FOR COMPOUNDS ONLY NOW. A word written with more than one
+// kanji has a real question hanging over it — which character is making which
+// sound — and 問題 answers it with 問 もん beside 題 だい. A word written with one
+// (人, and 食べる, whose second character is kana) has nothing to take apart, so
+// it shows nothing. See `splitsIntoKanji`.
 //
 // THE PICTURE IS THE HERO — AND THE LIBRARY SHOWS THE SAME ONE
 // ============================================================
@@ -88,14 +101,13 @@ import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { RoleBlock } from "@/components/lesson/role-block";
 import { WordSensePanel } from "@/components/lesson/word-sense-panel";
+import { WordBuiltFrom } from "@/components/library/word-built-from";
 import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor, glyphVariantFor } from "@/data/characters";
 import { cluster, membersOf } from "@/data/grammar/clusters";
-import { kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
-import { type VocabRow } from "@/data/vocab";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { keigoSetForEntry } from "@/data/keigo";
 import { buildRow } from "@/lib/grammar/build";
@@ -117,6 +129,7 @@ import {
 } from "@/lib/lesson-roles";
 import { formsOfWord } from "@/lib/word-forms";
 import { libEntry, recipeOf } from "@/lib/library/entries";
+import { piecesOf } from "@/lib/library/word-pieces";
 import { entryHref } from "@/lib/library/href";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
@@ -211,40 +224,6 @@ function WorkedLine({
         </span>
       ))}
     </p>
-  );
-}
-
-function WordReadingsPanel({
-  word,
-  voiceName,
-}: {
-  word: VocabRow;
-  voiceName: string;
-}) {
-  if (!word.align || word.align.length === 0) return null;
-  return (
-    <LessonPanel title="Why it sounds like that">
-      <div className="space-y-2">
-        {word.align.map(([k, surface], i) => {
-          const meaning = kanjiRow(k)?.meanings[0] ?? "";
-          return (
-            <div key={`${k}-${i}`} className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
-              <span className="flex items-center gap-2">
-                <HearButton glyph={surface} voiceName={voiceName} />
-                <span className="font-kana text-[20px] leading-none">{k}</span>
-              </span>
-              <span className="font-kana text-[16px] leading-none text-text">
-                {surface}
-              </span>
-              <span className="text-[11px] text-text-muted">meaning</span>
-              <span className="text-[11px] text-text-muted">
-                {meaning || "(no meaning listed)"}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </LessonPanel>
   );
 }
 
@@ -537,7 +516,10 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   const grammarExample = useGrammarExample(
     item.kind === "grammar" && pattern ? pattern.id : null,
   );
-  const wordAlign = word?.align && word.align.length > 0 ? word : null;
+  // The word split into the characters that make its sound, for the "Built from"
+  // box. Null for a word that cannot be split (the jukujikun, and any all-kana
+  // word); the section gate has already asked whether it is worth splitting.
+  const pieces = word ? piecesOf(word) : null;
   // A word that is only a word says what it is up top: "noun · student". A
   // character that is also a kanji spends its header on the character's meaning
   // and teaches its word sense in the word section, which is the same condition
@@ -649,11 +631,12 @@ export function LessonItemView({ item }: { item: LessonItem }) {
         ) : null}
         {roleHasSections("kanji", sectionList) ? (
           <RoleBlock role="kanji" labelled={labelRoles}>
-            {/* WHAT IT MEANS, NOT WHAT IT SOUNDS LIKE INSIDE WORDS. The table of
-                in-word readings has moved off the lesson entirely and lives on
-                the Library entry, which is the page you open when you want all
-                five rows for 人. Here the block opens with the definition, taken
-                from the kanji entry whichever track the step arrived on. */}
+            {/* WHAT IT MEANS, AND THAT IS THE WHOLE BLOCK. The table of sounds
+                the character takes inside words was here for one round and is
+                gone again: "for the lesson i don't want the kanji readings. just
+                keep the meaning of the kanji". It is the Library's, in full, on
+                the page you open when you want it. The definition is taken from
+                the kanji entry whichever track the step arrived on. */}
             {sections.has("kanji-meaning") ? (
               <KanjiMeaningPanel meanings={kanjiMeanings(item)} />
             ) : null}
@@ -672,9 +655,18 @@ export function LessonItemView({ item }: { item: LessonItem }) {
                 carries one, where you have come to read about the word; here the
                 page is already teaching the reading and the meaning, and a
                 sentence built from characters the learner has not reached yet is
-                one more thing to look at without being one more thing learned. */}
-            {word && sections.has("word-readings") && wordAlign ? (
-              <WordReadingsPanel word={wordAlign} voiceName={cfg.voiceName} />
+                one more thing to look at without being one more thing learned.
+
+                THE BREAKDOWN IS THE LIBRARY'S PANEL, NOT A SECOND ONE. 問題 is
+                問 もん and 題 だい, and the owner pointed at the box that already
+                says so on the word page: a tile per character carrying the sound
+                it makes in THIS word, and a line underneath naming the pattern
+                ("both kanji use their Chinese reading here"). The lesson used to
+                render the same fact as a stack of rows headed "Why it sounds
+                like that", which is one more implementation of one idea, so that
+                stack is gone and this is mounted in its place. */}
+            {sections.has("word-built-from") && pieces ? (
+              <WordBuiltFrom pieces={pieces} />
             ) : null}
           </RoleBlock>
         ) : null}

@@ -18,14 +18,25 @@ describe("lesson layout wiring", () => {
     assert.ok(iMeaning < iParts && iParts < iWriting);
   });
 
-  test("the word's sound panel stands alone, with no example beside it", () => {
+  test("the lesson mounts no readings table at all — that one is the Library's", () => {
+    assert.doesNotMatch(LESSON, /<LessonReadings/);
+  });
+
+  test("the word's breakdown stands alone, with no example beside it", () => {
+    // The kanji's own "Built from" is the component breakdown and belongs to the
+    // kanji block; the word's is the character breakdown and belongs to the word
+    // block. No step shows both, because a word written in several kanji is not
+    // a character with parts.
     assert.match(KANJI_ROW, /return\s*\(\s*<LessonPanel title="Built from">/);
-    // The example sentence is the Library's now, so the readings panel has no
-    // partner and needs no PairedRow to keep the row from going lopsided. It is
-    // gated on the section set, which is where "is there anything to explain"
-    // gets decided (see explainsItsSound).
-    assert.match(LESSON, /sections\.has\("word-readings"\)[\s\S]*<WordReadingsPanel/);
+    // The example sentence is the Library's now, so the breakdown has no partner
+    // and needs no PairedRow to keep the row from going lopsided. It is gated on
+    // the section set, which is where "is there anything to take apart" gets
+    // decided (see splitsIntoKanji).
+    assert.match(LESSON, /sections\.has\("word-built-from"\)[\s\S]*<WordBuiltFrom/);
     assert.doesNotMatch(LESSON, /WordSentencePanel/);
+    // ONE breakdown, not two. The lesson's own row stack said the same thing as
+    // the Library's box and is gone.
+    assert.doesNotMatch(LESSON, /WordReadingsPanel/);
   });
 
   test("lesson surfaces render no standings", () => {
