@@ -16,7 +16,7 @@ Open work only. Everything shipped and verified on prod has been removed. One fi
 | 24 | [電話 meaning card missing hint](24-denwa-hint-missing.md) | 🟢 ready to merge | `hint-confuse` | http://localhost:3013 |
 | 25 | [Listening-meaning card: show the kanji as a hint](25-listening-meaning-no-writing.md) | 🟠 specced (queued behind #24) | — | — |
 | 26 | [Discarding a session advances the track (bug)](26-discard-advances-track.md) | 🔵 in progress | `discard-no-advance` | http://localhost:3011 |
-| 27 | [Library: teaching order, ranged groups, full word list](27-library-teaching-order.md) | 🟠 not started | — | — |
+| 27 | [Library: teaching order, ranged groups, full word list](27-library-teaching-order.md) | 🟢 ready to merge | `library-order` | http://localhost:3015 |
 | 28 | [Practice: choose types + scope](28-practice-type-scope.md) | 🟠 not started | — | — |
 
 A 🔵 in-progress row's server is only up once its agent reports — until then the URL 404s.

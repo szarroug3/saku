@@ -304,7 +304,7 @@ function LibraryBody() {
   const visibleIds = useMemo<EntryId[]>(() => {
     if (q) return sections.flatMap((s) => s.hits.map((h) => h.entry.id));
     const sh = shelvesByKind.get(kind)!;
-    return visibleShelfIds(kind, sh.sections, sh.entries, keep);
+    return visibleShelfIds(kind, sh.sections, keep);
   }, [q, sections, kind, shelvesByKind, keep]);
 
   // A CLICK ON A TILE OR ROW. Without Shift it toggles the entry and drops the
@@ -490,7 +490,6 @@ function LibraryBody() {
                 key={kind}
                 kind={kind}
                 sections={sh.sections}
-                allEntries={sh.entries}
                 selected={selected}
                 onToggleEntry={onToggleEntry}
                 onToggleSection={onToggleSection}
