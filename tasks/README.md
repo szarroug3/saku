@@ -9,18 +9,16 @@ Status board for everything in flight. One file per task in this folder; this is
 | 01 | [Vercel Analytics](01-analytics.md) | ✅ done (toggled on) | main | prod |
 | 02 | [Sidebar sign-in banner (collapsed) + placement](02-sidebar-banner.md) | ✅ shipped | main | prod |
 | 03 | [401 silent-drop data-loss fix + migration refresh](03-401-fix.md) | ✅ shipped | main | prod |
-| 04 | [Quiz clarity: audio + instructions + results table (by word) + confused-for](04-quiz-clarity.md) | 🟢 ready to merge | `quiz-clarity` | localhost:3002 |
+| 04 | [Quiz clarity: audio + instructions + results table (by word) + confused-for](04-quiz-clarity.md) | ✅ merged + on prod | `quiz-clarity` | localhost:3002 |
 | 05 | [Sync Part 1: settings + kanaquiz→saku rename](05-sync-settings.md) | ✅ shipped (settings column applied) | main | prod |
-| 06 | [Standing/claim rework (the "solid" bug)](06-standing-claim.md) | 🟢 ready to merge — 1 wording flag | `standing-claim` | localhost:3006 |
+| 06 | [Standing/claim rework (the "solid" bug)](06-standing-claim.md) | ✅ merged + on prod | `standing-claim` | localhost:3006 |
 | 07 | [Continue-session masking → folded into #12](07-continue-session.md) | ⚪ folded into #12 | (with #12) | — |
 | 08 | [Results table by word + confused-for column → done in #04](08-fact-type-labels.md) | 🟢 ready to merge (in #04) | `quiz-clarity` | localhost:3002 |
-| 09 | [Pitch intro + homophone→show-kanji + lesson pitch line](09-pitch-homophone.md) | 🟢 ready to merge — DRAFT copy to finalize | `pitch-homophone` | localhost:3004 |
-| 10 | [Hint redesign: reading→no hint, meaning→2+-kanji components only](10-retry-hint.md) | 🟢 ready to merge | `retry-hint` | localhost:3005 |
-| 11 | [Sync Part 2: in-progress session teleport](11-sync-session.md) | 🟢 ready to merge — needs `session` column | `sync-session` | localhost:3003 |
-| 12 | [Sync Part 3: exact-position resume + masking (#07)](12-sync-resume.md) | 🔵 in progress (on `resume-position`, off #11) | `resume-position` | localhost:3007 |
-
-| 13 | [Move instruction below halo, white, drop small labels](13-instruction-layout.md) | 🔵 in progress | `quiz-clarity` | localhost:3002 |
-
+| 09 | [Pitch intro + homophone→show-kanji + lesson pitch line](09-pitch-homophone.md) | ✅ merged + on prod | `pitch-homophone` | localhost:3004 |
+| 10 | [Hint redesign: reading→no hint, meaning→2+-kanji components only](10-retry-hint.md) | ✅ merged + on prod | `retry-hint` | localhost:3005 |
+| 11 | [Sync Part 2: in-progress session teleport](11-sync-session.md) | ✅ merged + on prod | `sync-session` | localhost:3003 |
+| 12 | [Sync Part 3: exact-position resume + masking (#07)](12-sync-resume.md) | ✅ merged + on prod | main | prod |
+| 13 | [Move instruction below halo, white, drop small labels](13-instruction-layout.md) | 🟠 not started (located only) | — | — |
 | 14 | [Retire file mode → default logged-out + localStorage](14-retire-file-mode.md) | 🔵 in progress (on `retire-file-mode`, off #11) | `retire-file-mode` | localhost:3008 |
 
 ## Housekeeping
