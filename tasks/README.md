@@ -7,8 +7,8 @@ Open work only. Everything shipped and verified on prod has been removed. One fi
 | # | Task | Status | Branch |
 |---|------|--------|--------|
 | 14 | [Retire file mode → logged-out + localStorage default](14-retire-file-mode.md) | 🟢 ready to merge (1849 unit + 85 e2e) — has flags to review | `retire-file-mode` |
-| 15 | [Remove single definition on a multi-type lesson](15-multitype-definition.md) | 🟠 not started | — |
-| 16 | [Show a radical's meaning in the Radical section](16-radical-meaning.md) | 🟠 not started | — |
+| 15 | [Remove single definition on a multi-type lesson](15-multitype-definition.md) | 🟢 ready to merge | `lesson-sections` |
+| 16 | [Show a radical's meaning in the Radical section](16-radical-meaning.md) | 🟢 ready to merge | `lesson-sections` |
 | 17 | [Meaning instruction wording: "this" not "the"](17-instruction-below-halo.md) | 🟠 tiny tweak (rest shipped in #13) | — |
 | 18 | [Kana allophony (ん → m/ŋ/n by what follows)](18-kana-allophony.md) | 🟠 not started | — |
 | 19 | [Standing updates the moment you miss, not on End session](19-live-standing.md) | 🟠 not started | — |
