@@ -21,13 +21,14 @@
 // scope (fewer hiragana are "shaky" than are "known").
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { resolve } from "@/lib/selection";
 import {
   availableTypes,
-  scopeOf,
+  effectiveScope,
+  pruneEmptyTypes,
   toggleType,
   typeLabel,
   withScope,
@@ -157,8 +158,35 @@ export function PracticeSelector({
   metric: AccuracyMetric;
   onChange: (next: Selection) => void;
 }) {
-  const scope = scopeOf(sel);
   const types = availableTypes();
+
+  // Which scope the buttons/panel show. `scopeIntent` is the last preset the
+  // learner pressed; it only matters for "pick what I want" with an empty pool,
+  // which is field-for-field identical to "everything I know" and so cannot be
+  // read back off the Selection alone (see effectiveScope). Every other shape
+  // describes its own scope and ignores the intent.
+  const [scopeIntent, setScopeIntent] = useState<PracticeScope | null>(null);
+  const scope = effectiveScope(sel, scopeIntent);
+
+  // The type ids that resolve to at least one fact in a given selection's scope,
+  // computed the same way the chip counts are. Used to prune a chosen type that
+  // has nothing to drill after a scope change.
+  const presentTypesIn = (s: Selection): Set<string> =>
+    new Set(
+      types.filter(
+        (id) => resolve(withTypes(s, [id]), history, lists, metric).length > 0,
+      ),
+    );
+
+  // Switch scope, then drop any chosen type with 0 items in the new scope — a
+  // greyed-out "0" chip must not stay selected (the footer and drill would still
+  // claim it). The intent is remembered so "pick what I want" can open with an
+  // empty pool.
+  const changeScope = (next: PracticeScope) => {
+    setScopeIntent(next);
+    const moved = withScope(sel, next);
+    onChange(pruneEmptyTypes(moved, presentTypesIn(moved)));
+  };
 
   // Each type's count within the CURRENT scope, resolved exactly as Start would.
   // Keyed on the scope shape (not the type set) so toggling a chip doesn't churn
@@ -209,7 +237,7 @@ export function PracticeSelector({
             key={s.id}
             label={s.label}
             on={scope === s.id}
-            onClick={() => onChange(withScope(sel, s.id))}
+            onClick={() => changeScope(s.id)}
           />
         ))}
       </div>

@@ -34,9 +34,11 @@ import { entryOf } from "./facts.ts";
 import { COUNTER_ENTRIES } from "../data/counters.ts";
 import {
   availableTypes,
+  effectiveScope,
   factType,
   matchesTypes,
   PRACTICE_TYPES,
+  pruneEmptyTypes,
   scopeOf,
   toggleType,
   typeLabel,
@@ -283,5 +285,84 @@ describe("the drill is exactly the chosen types WITHIN the chosen scope", () => 
     const sel = withScope(emptySelection(), "everything"); // types = []
     const out = resolve(sel, h);
     assert.equal(out.length, hira.length + kata.length + kanji.length);
+  });
+});
+
+// ---------- bug 1: a scope switch prunes types that go empty ----------
+
+describe("pruneEmptyTypes drops a chosen type absent from the new scope", () => {
+  test("a type not in `present` is unselected; the present ones stay", () => {
+    const sel = withTypes(emptySelection(), ["hiragana", "radical"]);
+    const pruned = pruneEmptyTypes(sel, new Set(["hiragana"]));
+    assert.deepEqual(pruned.types, ["hiragana"]);
+  });
+
+  test("all present → the very same object, no churn", () => {
+    const sel = withTypes(emptySelection(), ["hiragana", "radical"]);
+    assert.equal(
+      pruneEmptyTypes(sel, new Set(["hiragana", "radical", "kanji"])),
+      sel,
+    );
+  });
+
+  test("only `types` changes — the scope fields are untouched", () => {
+    const sel = { ...withScope(emptySelection(), "shaky"), types: ["hiragana", "radical"] };
+    const pruned = pruneEmptyTypes(sel, new Set(["hiragana"]));
+    assert.deepEqual(pruned.states, sel.states);
+    assert.equal(pruned.list, sel.list);
+    assert.deepEqual(pruned.types, ["hiragana"]);
+  });
+
+  test("the repro: everything→shaky with 0 shaky radicals prunes radical (bug 1)", () => {
+    const hira = HIRAGANA.slice(0, 3);
+    const radical = RADICAL_FACTS.slice(0, 3).map((f) => f.id);
+    const facts: Record<string, FactAggregate> = {};
+    for (const id of hira) facts[id] = shaky(); // shaky hiragana remain
+    for (const id of radical) facts[id] = solid(); // solid radicals → 0 shaky
+    const h = historyOf(facts);
+
+    // Learner picked hiragana + radical under "everything I know".
+    const picked = withTypes(withScope(emptySelection(), "everything"), [
+      "hiragana",
+      "radical",
+    ]);
+    // Switch to "just the shaky ones".
+    const moved = withScope(picked, "shaky");
+    const present = new Set(
+      availableTypes().filter(
+        (id) => resolve(withTypes(moved, [id]), h).length > 0,
+      ),
+    );
+    assert.ok(present.has("hiragana"), "hiragana are shaky → present");
+    assert.ok(!present.has("radical"), "no shaky radicals → absent");
+
+    const pruned = pruneEmptyTypes(moved, present);
+    assert.deepEqual(pruned.types, ["hiragana"], "radical dropped from the drill");
+  });
+});
+
+// ---------- bug 2: "pick what I want" can actually be picked ----------
+
+describe("effectiveScope lets 'pick what I want' open with an empty pool (bug 2)", () => {
+  test("a bare custom selection is field-identical to everything — the ambiguity", () => {
+    const bare = withScope(emptySelection(), "custom");
+    assert.equal(scopeOf(bare), "everything");
+  });
+
+  test("custom intent wins over that ambiguity so the panel opens", () => {
+    const bare = withScope(emptySelection(), "custom");
+    assert.equal(effectiveScope(bare, "custom"), "custom");
+  });
+
+  test("a self-describing selection ignores a stale intent", () => {
+    const listed = { ...emptySelection(), list: "abc" };
+    assert.equal(effectiveScope(listed, "everything"), "custom");
+    const shakyPool = withScope(emptySelection(), "shaky");
+    assert.equal(effectiveScope(shakyPool, "custom"), "shaky");
+  });
+
+  test("no intent falls back to the derived scope", () => {
+    assert.equal(effectiveScope(emptySelection(), null), "everything");
+    assert.equal(effectiveScope({ ...emptySelection(), list: "x" }, null), "custom");
   });
 });

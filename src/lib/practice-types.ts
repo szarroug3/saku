@@ -186,6 +186,50 @@ export function withTypes(sel: Selection, types: string[]): Selection {
   return { ...sel, types };
 }
 
+/**
+ * Drop any chosen type that has nothing to drill in the current scope. `present`
+ * is the set of type ids that resolve to at least one fact right now (the caller
+ * computes it the same way the chips get their counts). Switching scope runs
+ * this so the selection can never carry a type whose count is 0: a chip that
+ * greys out to "0" in the new scope is also, in the same move, UNSELECTED — the
+ * footer and the drill both drop it, not just the styling. Returns the same
+ * Selection untouched when every chosen type is still present, so a no-op switch
+ * doesn't churn the object.
+ */
+export function pruneEmptyTypes(
+  sel: Selection,
+  present: ReadonlySet<string>,
+): Selection {
+  if (sel.types.every((t) => present.has(t))) return sel;
+  return withTypes(
+    sel,
+    sel.types.filter((t) => present.has(t)),
+  );
+}
+
+/**
+ * The scope the chooser should SHOW, given the stored Selection and the scope
+ * button the learner last pressed (their intent, or null for none yet).
+ *
+ * scopeOf() alone cannot tell "pick what I want, nothing chosen yet" apart from
+ * "everything I know": a custom pool with no list, text or rerun is field-for-
+ * field the empty query. So the moment the learner presses "pick what I want"
+ * before naming a list, scopeOf still reads "everything", the custom button
+ * never lights, and the panel that lets them pick never opens — the preset looks
+ * broken. When the intent is custom and the selection has not yet grown a manual
+ * narrowing, honour the intent so the panel opens. Any self-describing shape (a
+ * list, the shaky bands) wins over a stale intent, because it names its own
+ * scope.
+ */
+export function effectiveScope(
+  sel: Selection,
+  intent: PracticeScope | null,
+): PracticeScope {
+  const derived = scopeOf(sel);
+  if (intent === "custom" && derived === "everything") return "custom";
+  return derived;
+}
+
 /** Toggle one type id in a Selection's type set. */
 export function toggleType(sel: Selection, id: string): Selection {
   const has = sel.types.includes(id);
