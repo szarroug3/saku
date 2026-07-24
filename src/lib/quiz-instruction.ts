@@ -60,7 +60,7 @@ const NOUN: Record<string, string> = {
   transitivity: "verb",
 };
 
-function nounFor(fact: FactId): string {
+export function nounFor(fact: FactId): string {
   return NOUN[factInfo(fact)?.subject ?? ""] ?? "answer";
 }
 
@@ -91,7 +91,11 @@ export function quizInstruction(
     // The owner's own phrasing: "which of the following is the correct
     // [kanji, word, whatever]?". Shortened to "these" because the options sit
     // directly beneath it and "the following" is doing no work.
-    if (wantsMeaning) return "Which of these is what it means?";
+    //
+    // The meaning line NAMES the role, because the same glyph means different
+    // things as different roles: 可 is "can" as a KANJI and "acceptable" as a
+    // WORD, and "what it means" gave the learner no way to tell which was asked.
+    if (wantsMeaning) return `Which of these is what the ${noun} means?`;
     // A Japanese answer that is all kana is a SOUND, not a spelling — asking
     // "which of these is the correct word" over a board of readings is asking
     // the wrong question about the right options.
@@ -99,7 +103,7 @@ export function quizInstruction(
     return `Which of these is the correct ${noun}?`;
   }
 
-  if (wantsMeaning) return "Type what it means.";
+  if (wantsMeaning) return `Type what the ${noun} means.`;
   if (isSound(fact, dir)) return "Type how it's said.";
   // Reached only if a typed card ever wants a written form containing kanji,
   // which the drill is supposed to make impossible (it offers those as a board).

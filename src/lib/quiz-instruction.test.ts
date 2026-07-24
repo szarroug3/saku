@@ -98,6 +98,34 @@ describe("every card says what it wants", () => {
     );
   });
 
+  test("a MEANING instruction names the role, so kanji and word differ", () => {
+    // The bug: "Type what it means." on every meaning card. But 可 as a KANJI
+    // means "can" and as a WORD means "acceptable" — asked jp2en, the same glyph
+    // gives two different answers, and only the NOUN says which one the card
+    // wants. So the two must not read the same sentence.
+    assert.equal(
+      quizInstruction(meaningFactId("一"), "jp2en", "typed"),
+      "Type what the kanji means.",
+    );
+    assert.equal(
+      quizInstruction(wordMeaningFactId("問題"), "jp2en", "typed"),
+      "Type what the word means.",
+    );
+    assert.notEqual(
+      quizInstruction(meaningFactId("一"), "jp2en", "typed"),
+      quizInstruction(wordMeaningFactId("問題"), "jp2en", "typed"),
+    );
+    // The pick-one line names the role the same way.
+    assert.equal(
+      quizInstruction(meaningFactId("一"), "jp2en", "mc"),
+      "Which of these is what the kanji means?",
+    );
+    assert.equal(
+      quizInstruction(wordMeaningFactId("問題"), "jp2en", "mc"),
+      "Which of these is what the word means?",
+    );
+  });
+
   test("KANA IS NOT A MEANING, in either direction", () => {
     // Both directions got this wrong in earlier drafts. Shown "a" you produce
     // the CHARACTER あ (not "how it's said"), and shown あ you produce the

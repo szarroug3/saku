@@ -18,14 +18,17 @@
 // The facts sit under the same adjective bands the Progress and Library
 // screens use — shaky / slipping / getting there / solid — worst-first, so a
 // miss you want another look at is where your eye already is. The band is a
-// STATE, read from your history; it is never the answer. A retry chip is still
-// the glyph and nothing else (see factGlyph): the band tells you how a
-// character has been going, not what it says.
+// STATE, read from your history; it is never the answer. A retry chip is its
+// glyph and a TYPE badge (see factGlyph / factTypeLabel), never its answer: 何
+// can be here three times — kanji · meaning, kanji · reading, word · meaning —
+// and the badge is the only thing that tells three identical glyphs apart. The
+// band tells you how a character has been going, not what it says.
 
 import { useState } from "react";
 
 import { StandingChip } from "@/components/library/standing-chip";
 import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
+import { factTypeLabel } from "@/lib/fact-label";
 import { factInfo } from "@/lib/facts";
 import { standingFor } from "@/lib/library/standing";
 import {
@@ -39,9 +42,11 @@ import type { FactId } from "@/types";
 
 import { groupByStanding, initialPicked, retryHint } from "./retry-grouping";
 
-/** A missed fact as a chip — the glyph, and nothing else. Not the answer:
- * you are about to be asked these again, and printing "し = shi" here would
- * hand you the answer key to the retry you are choosing. */
+/** A missed fact as a chip — the glyph, paired on the chip with its TYPE badge
+ * (factTypeLabel), never its answer: you are about to be asked these again, and
+ * printing "し = shi" here would hand you the answer key to the retry you are
+ * choosing. The type ("kanji · reading") is not the answer — it is which
+ * question of the glyph you are choosing to redo. */
 function factGlyph(f: FactId): string {
   return factInfo(f)?.glyph ?? (f as string);
 }
@@ -165,7 +170,15 @@ export function RoundComplete({
                     }
                     onClick={() => setPicked((p) => ({ ...p, [f]: !p[f] }))}
                   >
-                    {factGlyph(f)}
+                    {/* Glyph over a TYPE badge, so 何 asked three ways reads as
+                        three chips. The badge inherits the button's colour and
+                        is dimmed a notch — a sublabel, not a second answer. */}
+                    <span className="flex flex-col items-center leading-tight">
+                      <span>{factGlyph(f)}</span>
+                      <span className="mt-0.5 text-[8.5px] uppercase tracking-[0.08em] opacity-65">
+                        {factTypeLabel(f)}
+                      </span>
+                    </span>
                   </SmallBtn>
                 ))}
               </div>
