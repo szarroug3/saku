@@ -162,6 +162,26 @@ export interface StudySession {
    * on sessions snapshotted before this field existed — read those as "lesson",
    * which is what every session was until the Library grew a one-off Quiz. */
   origin?: SessionOrigin;
+  /**
+   * The seen marks this session's START laid down, kept so a DISCARD can take
+   * them back and leave the frontier where it was.
+   *
+   * A lesson marks its own facts — and, for the curriculum spine, the kanji
+   * readings its words prove — seen BEFORE the drill, which advances the Learn
+   * frontier off them (see home-feed's startCurriculumLesson / quizMe). That is
+   * right for a lesson you leave running or complete, and wrong for one you throw
+   * away unscored: "it should not advance until I complete the session". So the
+   * facts newly seen at start are recorded here and un-seen on discard (quiz-
+   * session.tsx discardRun / discardSession → postUnseen), the exact inverse of
+   * the start's write, reaching the server too so another device sees no advance.
+   *
+   * Only the marks the start actually ADDED — a reading already seen from an
+   * earlier lesson is not listed, so rolling this back never revokes a unlock the
+   * discarded lesson did not create. Absent/empty for a session that marked
+   * nothing seen at start (a taught lesson's Start on non-curriculum tracks) and
+   * for sessions snapshotted before this field existed; both roll back nothing.
+   */
+  seededSeen?: FactId[];
 }
 
 /** Who opened a session. See StudySession.origin. */

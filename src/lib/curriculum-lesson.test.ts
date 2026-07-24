@@ -40,6 +40,8 @@ import {
   packLessons,
   packUnits,
 } from "./curriculum-lesson.ts";
+import { applyClaims, applyDropSeen, applySeen } from "./history-ops.ts";
+import { readingsProvedBy } from "./word-unlock.ts";
 import { compositePositionLabel } from "./lesson-position.ts";
 import {
   LESSON_RANGE_DEFAULT,
@@ -422,6 +424,72 @@ describe("the next lesson is a function of history, and there is no cursor", () 
     assert.deepEqual(
       nextCurriculumLesson(h, RANGE)!.facts,
       nextCurriculumLesson(h, RANGE)!.facts,
+    );
+  });
+});
+
+// Bug 26: starting a lesson marks its facts (and the readings its words prove)
+// seen, which advances the frontier BEFORE the drill. A discard scored nothing,
+// so it must un-see exactly what the start added and leave the frontier where it
+// was; completing keeps the advance. The app writes seen via applySeen and rolls
+// it back via applyDropSeen (see home-feed startCurriculumLesson and quiz-session
+// discardRun), so the invariant is a property of those two ops over the frontier.
+describe("start-then-discard does not advance the frontier; start-then-complete does", () => {
+  const EMPTY: HistoryFile = { sessions: [], facts: {} };
+  const TS = Date.UTC(2026, 6, 24);
+
+  // What the start marks seen: the lesson's own facts plus the readings its words
+  // prove — exactly home-feed's `[...facts, ...readingsProvedBy(kebs)]`.
+  function startSeed(lesson: NonNullable<ReturnType<typeof nextCurriculumLesson>>): FactId[] {
+    const words = lesson.cards.filter((c) => c.roles.includes("word")).map((c) => c.glyph);
+    return [...lesson.facts, ...readingsProvedBy(words)];
+  }
+
+  test("start advances the frontier, and discard restores it exactly", () => {
+    const before = nextCurriculumLesson(EMPTY, RANGE)!;
+    assert.ok(before, "there is a first lesson");
+
+    // START: mark the lesson's facts (and proved readings) seen.
+    const seed = startSeed(before);
+    const started = applySeen(EMPTY, seed, TS);
+    const advanced = nextCurriculumLesson(started, RANGE)!;
+    assert.notDeepEqual(
+      advanced.facts,
+      before.facts,
+      "starting moved the frontier off the lesson it just showed",
+    );
+
+    // DISCARD: un-see exactly what the start added.
+    const discarded = applyDropSeen(started, seed);
+    assert.deepEqual(
+      nextCurriculumLesson(discarded, RANGE)!.facts,
+      before.facts,
+      "discard leaves the frontier where it was before starting",
+    );
+  });
+
+  test("completing keeps the advance, even against the same un-see a discard runs", () => {
+    const before = nextCurriculumLesson(EMPTY, RANGE)!;
+    const seed = startSeed(before);
+    const started = applySeen(EMPTY, seed, TS);
+
+    // COMPLETE: finishSession claims the taught facts (and its rounds commit
+    // them). Model the durable half as a claim on the lesson's facts.
+    const completed = applyClaims(started, before.facts, TS);
+    assert.notDeepEqual(
+      nextCurriculumLesson(completed, RANGE)!.facts,
+      before.facts,
+      "completing advances the frontier",
+    );
+
+    // The claim, not the start's seen mark, now holds the frontier — so even
+    // rolling the seen back (which a completed session never does) cannot pull a
+    // completed lesson back onto the card.
+    const completedThenUnseen = applyDropSeen(completed, seed);
+    assert.notDeepEqual(
+      nextCurriculumLesson(completedThenUnseen, RANGE)!.facts,
+      before.facts,
+      "a completed lesson stays advanced regardless of its seen marks",
     );
   });
 });

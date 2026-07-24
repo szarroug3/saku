@@ -39,6 +39,7 @@ import {
   applyClaims,
   applyDeleteSessions,
   applyDropClaims,
+  applyDropSeen,
   applySeen,
   applySession,
   emptyHistory,
@@ -153,6 +154,13 @@ export function localDropClaim(facts: FactId[]): HistoryFile {
 /** "Quiz me", locally. Mirrors POST /api/seen. */
 export function localSeen(facts: FactId[], ts: number): HistoryFile {
   return mutateHistory((h) => applySeen(h, facts, ts));
+}
+
+/** Withdraw seen marks, locally. Mirrors POST /api/seen with `remove: true` —
+ * the roll-back a discarded lesson performs so its start no longer advances the
+ * frontier. */
+export function localDropSeen(facts: FactId[]): HistoryFile {
+  return mutateHistory((h) => applyDropSeen(h, facts));
 }
 
 /** A finished round, locally. Mirrors POST /api/session — same id-dedupe, so a

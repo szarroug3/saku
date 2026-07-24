@@ -74,7 +74,7 @@ import {
   enqueuePending,
   readPending,
 } from "@/lib/pending-records";
-import { postClaim, postSession } from "@/lib/progress-fetch";
+import { postClaim, postSession, postUnseen } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import {
   normalizeEnvelope,
@@ -262,6 +262,7 @@ interface QuizSessionContextValue {
     teach?: FactId[],
     what?: string,
     origin?: SessionOrigin,
+    seededSeen?: FactId[],
   ): void;
   /** Re-ask a subset from the fork. Comes back to the same fork. */
   retryLeg(facts: FactId[]): void;
@@ -1074,6 +1075,7 @@ export function QuizSessionProvider({
       teach: FactId[] = [],
       what?: string,
       origin: SessionOrigin = "lesson",
+      seededSeen: FactId[] = [],
     ) => {
       if (!facts.length) return;
       // Don't overwrite what's running — set it aside, then open the lesson.
@@ -1088,6 +1090,9 @@ export function QuizSessionProvider({
         what: name,
         snapshot,
         startedAt: now,
+        // The seen marks the caller laid down at start, so a discard can take
+        // exactly them back (see StudySession.seededSeen and discardRun below).
+        seededSeen,
         round: 1,
         // New material is read before it's asked. With nothing new in the
         // session there is nothing to read, so the lesson doesn't appear at
@@ -1358,11 +1363,30 @@ export function QuizSessionProvider({
    * is the right side of the trade: "I finished three rounds and then discarded"
    * should not erase three rounds of evidence.
    */
+  /**
+   * Take back the seen marks a discarded session's START laid down.
+   *
+   * The start advanced the Learn frontier by marking the lesson (and the kanji
+   * readings its words prove) seen; a discard scored nothing, so that advance has
+   * to come off with it — "it should not advance until I complete the session".
+   * postUnseen is the inverse of the start's markSeen and reaches the server too,
+   * so a discard on this device cannot leave another device seeing the advance.
+   * Only what the start ADDED is rolled back (seededSeen is that exact set), so a
+   * reading unlocked by an earlier lesson is untouched. A completed session keeps
+   * its advance: its rounds committed real facts to history, which the frontier
+   * reads regardless of the seen marks, so un-seeing cannot pull it back.
+   */
+  const rollbackSeededSeen = useCallback((s: StudySession | null) => {
+    const seen = s?.seededSeen;
+    if (seen && seen.length) void postUnseen(seen);
+  }, []);
+
   const discardSession = useCallback(() => {
+    rollbackSeededSeen(latest.current.session);
     setSession(null);
     setActive(null);
     setProgress(null);
-  }, []);
+  }, [rollbackSeededSeen]);
 
   /**
    * THE LAST LINE OF DEFENCE: drop every run there is, and make it stick.
@@ -1480,13 +1504,20 @@ export function QuizSessionProvider({
    * slots; a parked id is dropped from the list. */
   const discardRun = useCallback((id: string) => {
     if (id === FOCUSED_RUN) {
+      // Roll back the focused session's start-seen before dropping it, so the
+      // frontier lands where it was before the start. A one-off quiz has no
+      // session and no seededSeen, so this is a no-op for it.
+      rollbackSeededSeen(latest.current.session);
       setActive(null);
       setSession(null);
       setProgress(null);
       return;
     }
+    // A parked run carries its own session; un-see what its start added before
+    // it is dropped from the list.
+    rollbackSeededSeen(latest.current.parked?.find((r) => r.id === id)?.session ?? null);
     setParked((prev) => prev.filter((r) => r.id !== id));
-  }, []);
+  }, [rollbackSeededSeen]);
 
   /** Every run in progress, focused-first then most-recently-parked. Screens
    * read this instead of the leg/session split. */

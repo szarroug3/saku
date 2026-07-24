@@ -58,6 +58,7 @@ import {
   localDeleteSessions,
   localDropClaim,
   localRemoveFromList,
+  localDropSeen,
   localRenameList,
   localResetHistory,
   localSaveList,
@@ -133,6 +134,22 @@ export function postClaim(facts: FactId[], known: boolean): Promise<ProgressResu
 export function postSeen(facts: FactId[]): Promise<ProgressResult> {
   return announcing(
     postWithLocalFallback("/api/seen", { facts }, () => localSeen(facts, Date.now())),
+  );
+}
+
+/**
+ * Withdraw seen marks. Mirrors POST /api/seen with `remove: true`.
+ *
+ * The roll-back a DISCARDED curriculum lesson runs: its start marked the lesson
+ * (and the readings its words prove) seen, which advanced the frontier; discard
+ * takes those marks back so the frontier lands exactly where it was before the
+ * start. On 401 the withdrawal happens in this browser's local history, and the
+ * announce revalidates the shared copy either way. */
+export function postUnseen(facts: FactId[]): Promise<ProgressResult> {
+  return announcing(
+    postWithLocalFallback("/api/seen", { facts, remove: true }, () =>
+      localDropSeen(facts),
+    ),
   );
 }
 

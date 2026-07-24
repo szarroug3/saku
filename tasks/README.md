@@ -14,10 +14,10 @@ Open work only. Everything shipped and verified on prod has been removed. One fi
 | 19 | [Standing updates the moment you miss, not on End session](19-live-standing.md) | 🟠 not started | — |
 | 20 | [Confusion caught when you type another word's meaning (何↔可)](20-confusion-typed-meaning.md) | 🟠 not started | — |
 | 21 | [Everyday-words tiles clickable like hiragana vowels](21-everyday-words-clickable.md) | 🟠 not started | — |
-| 22 | [Should we quiz a kanji's "on its own" reading?](22-kanji-on-its-own-reading.md) | 🔍 needs decision | — |
+| 22 | [Kanji reading in a known word (formula hint), not "on its own"](22-kanji-on-its-own-reading.md) | 🟠 specced (queued behind #24) | — |
 | 23 | [Results-table presentation boxes should left-align](23-results-box-alignment.md) | 🟠 not started | — |
 | 24 | [電話 meaning card shows no hint](24-denwa-hint-missing.md) | 🟠 not started | — |
-| 25 | [Listening-meaning card never shows the writing](25-listening-meaning-no-writing.md) | 🔍 needs decision | — |
+| 25 | [Listening-meaning card: show the kanji as a hint](25-listening-meaning-no-writing.md) | 🟠 specced (queued behind #24) | — |
 | 26 | [Discarding a session still advances the track (bug)](26-discard-advances-track.md) | 🟠 not started | — |
 
 | 27 | [Library: teaching order, ranged groups, full word list](27-library-teaching-order.md) | 🟠 not started | — |

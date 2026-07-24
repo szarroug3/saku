@@ -1,2 +1,3 @@
-# 25 — Listening-meaning card never shows the writing 🔍 design
-With "Hear it, give the meaning" on, Sam was asked a word's meaning from AUDIO only, never shown the writing, and missed it repeatedly (images 10/11). Hearing a word and giving its meaning with no glyph is hard and, for homophones, ambiguous. Reconsider the listening-meaning card: show the writing, or narrow when it's used. Design decision.
+# 25 — Listening-meaning card: show the kanji as a hint 🟠 specced (queued behind #24, shared hint.ts)
+
+Sam's decision: on a "hear it, give the meaning" card, the HINT shows the KANJI / written form of the word (so the learner can see which word they heard). It does NOT leak the English answer (the writing isn't the meaning). Keep the card audio-first; the kanji is available as the hint.

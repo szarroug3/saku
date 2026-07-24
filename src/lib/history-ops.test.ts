@@ -20,6 +20,7 @@ import {
   applyClaims,
   applyDeleteSessions,
   applyDropClaims,
+  applyDropSeen,
   applySeen,
   applySession,
   emptyHistory,
@@ -85,6 +86,26 @@ test("applySeen sets a timestamp per fact, on its own key", () => {
   const after = applySeen(emptyHistory(), [fid("hira-sa")], 3_000);
   assert.deepEqual(after.seen, { "hira-sa": 3_000 });
   assert.equal("claims" in after, false, "seen is not claims");
+});
+
+test("applyDropSeen removes a seen mark and always returns a fresh object", () => {
+  const seen = applySeen(emptyHistory(), [fid("hira-sa"), fid("hira-si")], 3_000);
+  const dropped = applyDropSeen(seen, [fid("hira-sa")]);
+  assert.deepEqual(dropped.seen, { "hira-si": 3_000 }, "only the named mark goes");
+  assert.notEqual(dropped, seen, "a clone, so a caller can diff");
+  assert.deepEqual(seen.seen, { "hira-sa": 3_000, "hira-si": 3_000 }, "input untouched");
+  // Un-seeing a fact that was never seen changes nothing but still clones.
+  const noop = applyDropSeen(emptyHistory(), [fid("never")]);
+  assert.deepEqual(noop.seen ?? {}, {});
+});
+
+test("applyDropSeen inverts applySeen exactly", () => {
+  const facts = [fid("hira-a"), fid("hira-i")];
+  const base = emptyHistory();
+  const roundTrip = applyDropSeen(applySeen(base, facts, 9_000), facts);
+  // An absent `seen` key is how "never seen" is spelled; after the round trip
+  // there is nothing left to say a fact was seen.
+  assert.deepEqual(roundTrip.seen ?? {}, {});
 });
 
 // ---------- sessions ----------

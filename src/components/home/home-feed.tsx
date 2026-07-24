@@ -227,6 +227,15 @@ export function HomeFeed() {
   const writes = useHistoryWrites();
   const markSeen = (facts: FactId[]) => writes.markSeen(facts);
 
+  // Of the facts a start is about to mark seen, the ones that were NOT already
+  // seen — the marks this start actually ADDS. Handed to startSession as the
+  // session's seededSeen, so a discard rolls back exactly what its start laid
+  // down and never revokes a reading an earlier lesson had already unlocked (see
+  // StudySession.seededSeen / discardRun). Read against the pre-write history in
+  // this closure, which is the copy markSeen is about to mutate.
+  const newlySeen = (facts: FactId[]) =>
+    facts.filter((f) => history.seen?.[f] === undefined);
+
   // The lesson IS the session: its group, all of it new, all of it taught. It
   // does not go through the budget, because the budget's job is deciding how
   // much new material to hand out and the answer is already in your hand.
@@ -244,8 +253,11 @@ export function HomeFeed() {
   // whether the walk happens — and everything before it (which facts, what gets
   // marked seen) must not be able to drift between them.
   const startLesson = async (facts: FactId[], { teach = true } = {}) => {
+    // Only "Quiz me" (teach false) marks seen at start; Start (teach true) teaches
+    // first and marks nothing yet, so it seeds no seen to roll back.
+    const seeded = teach ? [] : newlySeen(facts);
     if (!teach) await markSeen(facts);
-    startSession(facts, teach ? facts : []);
+    startSession(facts, teach ? facts : [], undefined, "lesson", seeded);
   };
 
   // "Teach me here" for kana: open a session whose TEACH PHASE steps the group
@@ -269,8 +281,9 @@ export function HomeFeed() {
   // あ") for the HUD and the resume card, where a kanji or grammar lesson has no
   // name to give.
   const quizMe = (facts: FactId[]) => {
+    const seeded = newlySeen(facts);
     markSeen(facts);
-    startSession(facts, [], lesson?.group.label);
+    startSession(facts, [], lesson?.group.label, "lesson", seeded);
   };
 
   const claim = (facts: FactId[]) => {
@@ -298,8 +311,15 @@ export function HomeFeed() {
   // both, because a mixed card cannot know in advance which it will be.
   const startCurriculumLesson = (facts: FactId[], { teach = true } = {}) => {
     const kebs = lessonWords(curriculumLessonShown?.cards ?? []);
-    markSeen([...facts, ...readingsProvedBy(kebs)]);
-    startSession(facts, teach ? facts : []);
+    const seed = [...facts, ...readingsProvedBy(kebs)];
+    // Record only the marks this start ADDS as the session's seededSeen, so a
+    // discard un-sees exactly them: the lesson's own facts (always fresh here)
+    // plus any kanji reading its words newly prove. A discard then leaves the
+    // frontier where it was before Start; completing keeps it, because the
+    // committed rounds advance the frontier independently of these marks.
+    const seeded = newlySeen(seed);
+    markSeen(seed);
+    startSession(facts, teach ? facts : [], undefined, "lesson", seeded);
   };
 
   // "I already know these": claim the lesson (skip the drill), but still unlock

@@ -19,6 +19,7 @@ import {
   applyClaims,
   applyDeleteSessions,
   applyDropClaims,
+  applyDropSeen,
   applySeen,
   applySession,
   emptyHistory,
@@ -92,6 +93,16 @@ export async function saveSeen(
  * where `0` would have to be special-cased into meaning it. */
 export async function dropClaims(userId: string, facts: FactId[]): Promise<HistoryFile> {
   const next = applyDropClaims(await loadHistory(userId), facts);
+  await writeHistory(userId, next);
+  return next;
+}
+
+/** Withdraw "quiz me" records — the twin of dropClaims, used when a lesson is
+ * DISCARDED to take back the seen marks its start laid down (see applyDropSeen).
+ * Same delete-not-zero discipline: an absent key is "never seen", the state the
+ * frontier reads as fresh again. */
+export async function dropSeen(userId: string, facts: FactId[]): Promise<HistoryFile> {
+  const next = applyDropSeen(await loadHistory(userId), facts);
   await writeHistory(userId, next);
   return next;
 }

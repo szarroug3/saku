@@ -102,6 +102,28 @@ export function applySeen(
 }
 
 /**
+ * Withdraw "quiz me" records — the twin of applyDropClaims, and the roll-back
+ * half of applySeen.
+ *
+ * Starting a curriculum lesson marks its facts (and the kanji readings its words
+ * prove) seen BEFORE the drill, which advances the Learn frontier off them. That
+ * is right for a lesson you leave running, but a lesson you DISCARD was never
+ * learned, so the advance has to come back off with it — otherwise start-then-
+ * discard leaves the track advanced by a session that scored nothing. This is
+ * how the discard undoes exactly what the start added.
+ *
+ * Deletes the record rather than writing a zero, on the same rule as
+ * applyDropClaims: an absent key is how "never seen" is spelled, and it is the
+ * state every reader already handles. Always returns a clone, even when nothing
+ * was present to delete, so the file and local paths stay byte-identical.
+ */
+export function applyDropSeen(hist: HistoryFile, facts: FactId[]): HistoryFile {
+  const next = structuredClone(hist);
+  if (next.seen) for (const f of facts) delete next.seen[f];
+  return next;
+}
+
+/**
  * Append a session and fold its per-fact stats into the aggregate.
  *
  * IDEMPOTENT ON `id`: a record whose id is already stored returns the input
