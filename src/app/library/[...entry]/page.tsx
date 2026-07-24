@@ -71,6 +71,8 @@ import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { Card, Hint, Lbl, SoundIcon } from "@/components/ui";
 import { KANA_SUBJECT, glyphVariantFor } from "@/data/characters";
+import { contextPronunciation } from "@/data/kana-context";
+import { KanaContextView } from "@/components/lesson/kana-context-view";
 import {
   GRAMMAR_SUBJECT,
   patternMeaningFactId,
@@ -201,6 +203,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // kana up sees the identical sentence they met while learning it. Absent for
   // the majority whose forms match.
   const glyphVariant = isKana ? glyphVariantFor(entry.glyph) : null;
+  // The following-sound rules for ん and っ — the same source, and the same
+  // component, the lesson renders, so a kana looked up here reads what it was
+  // taught. Null for every kana that sounds the same wherever it sits.
+  const contextRules = isKana ? contextPronunciation(entry.glyph) : null;
   const isRadical = entry.kind === RADICAL_SUBJECT;
   // A verb pair is neither a glyph nor a single fact — its own layout, shared
   // with the teach walk (VerbPairView), draws it. `pair` is the two verbs and
@@ -691,6 +697,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
           {glyphVariant ? (
             <Card>
               <Callout label="Note:">{glyphVariant}</Callout>
+            </Card>
+          ) : null}
+          {/* "How it's said in context" — the following-sound rules for ん and
+              っ, in their own card, same component and source as the lesson. */}
+          {contextRules ? (
+            <Card>
+              <KanaContextView ctx={contextRules} />
             </Card>
           ) : null}
           {/* ONE ROW, ONE HEIGHT. Every two-column row on this page (here, the
