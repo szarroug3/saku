@@ -11,7 +11,7 @@ Status board for everything in flight. One file per task in this folder; this is
 | 03 | [401 silent-drop data-loss fix + migration refresh](03-401-fix.md) | ✅ shipped | main | prod |
 | 04 | [Quiz clarity: audio + instructions + chip/label types](04-quiz-clarity.md) | 🟢 ready to merge | `quiz-clarity` | localhost:3002 |
 | 05 | [Sync Part 1: settings + kanaquiz→saku rename](05-sync-settings.md) | ✅ shipped (settings column applied) | main | prod |
-| 06 | [Standing/claim rework (the "solid" bug)](06-standing-claim.md) | 🟠 confirmed, not built | — | — |
+| 06 | [Standing/claim rework (the "solid" bug)](06-standing-claim.md) | 🔵 in progress | `standing-claim` | localhost:3006 |
 | 07 | [Continue-session masking (claim looks dead)](07-continue-session.md) | 🟠 confirmed, not built | — | — |
 | 08 | [Fact-type labels → folded into #04 (presentation labels, both screens)](08-fact-type-labels.md) | 🔵 in progress (on `quiz-clarity`) | `quiz-clarity` | localhost:3002 |
 | 09 | [Pitch intro + homophone→show-kanji](09-pitch-homophone.md) | 🔵 in progress | `pitch-homophone` | localhost:3004 |
