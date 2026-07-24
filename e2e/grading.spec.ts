@@ -416,18 +416,28 @@ test("reveal after a wrong en2jp answer names the kanji that was asked for", asy
 }) => {
   // "one = one".
   //
-  // A typed card, and not because the answer is typeable — 一 is not kana, so
-  // `en2jpTypeable` is false and this card asks to be multiple choice. But 一 has
-  // no confusables, so `buildMcOptions` returns a single option and the drill
-  // falls back to a box rather than show a one-option board (a free point).
+  // THIS TEST USED TO DOCUMENT A BUG AS A FEATURE, and the comment it carried is
+  // worth keeping in the record:
   //
-  // Which is a real card a learner meets, so the reveal is asserted on it as it
-  // renders. The reveal is the whole value of the card in that state: there is
-  // no romaji that produces 一, so the miss is guaranteed and being TOLD the
-  // answer is the only thing the showing can offer.
+  //     A typed card, and not because the answer is typeable — 一 is not kana,
+  //     so `en2jpTypeable` is false and this card asks to be multiple choice.
+  //     But 一 has no confusables, so `buildMcOptions` returns a single option
+  //     and the drill falls back to a box rather than show a one-option board.
+  //     ... there is no romaji that produces 一, so the miss is guaranteed and
+  //     being TOLD the answer is the only thing the showing can offer.
+  //
+  // Every word of that was accurate. The conclusion was not: a card whose miss
+  // is GUARANTEED is not a card, and "the reveal is the only thing it can offer"
+  // is the description of a question that should never have been asked. The
+  // owner met this exact card in a real lesson, typed the reading, and was
+  // marked wrong twice by a box that could not accept any answer.
+  //
+  // 一 now boards against its curriculum neighbours (see nearbyMeaningFill), so
+  // this is a BOARD, and the test keeps its actual subject: whatever the input,
+  // a wrong en2jp answer must name the kanji that was asked for.
   await seed({ seen: ["kanji:一/meaning"], cfg: PRODUCE_CFG });
   await startPractice(page);
-  await typeAnswer(page, "ぬ");
+  await missTheBoard(page, "一");
 
   const r = reveal(page);
   await expect(r.box).toBeVisible();
