@@ -1,2 +1,0 @@
-# 17 — Full instruction below the halo, white (= #13) 🟢 done locally, not on prod
-Already implemented on local main (#13): instruction moves below the halo in bright white ("Type what this word means."), redundant "meaning"/"reading" sublabels dropped, anchor contexts ("in 人生") kept. Not yet on prod. TWEAK: make the MEANING instruction say "this" for consistency with the reading one ("Type what this word means", not "the word").
