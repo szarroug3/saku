@@ -169,10 +169,10 @@ export default async function RootLayout({
                     {/* THE SHELL SCROLLS INSIDE, NOT THE PAGE. The row is exactly
                         the viewport tall and hides its own overflow, so the body
                         never scrolls; the content column below is the one scroll
-                        container. This is what lets kiri's frosted frame (.kq-frame)
-                        stay perfectly still while the content scrolls within it —
-                        the frame's blur is computed once and never re-blends,
-                        because only the content in front of it moves. */}
+                        container. That is what keeps the two docks and the stage
+                        perfectly still while only the content in front of them
+                        moves, which is the condition every fixed material in kiri
+                        depends on. */}
                     <div className="mx-auto flex h-dvh max-w-[1080px] gap-3.5 overflow-hidden px-3 py-6">
                       <Sidebar
                         signedIn={signedIn}
@@ -185,10 +185,17 @@ export default async function RootLayout({
                             above the scrolling frame instead of sliding over the
                             frost. Empty (and hidden) on pages that dock nothing. */}
                         <div id="kq-dock-top" className="kq-dock shrink-0 empty:hidden" />
-                        {/* The single frosted box + the content that scrolls within
-                            it. The frame absolutely fills this region, so it does
-                            NOT scroll with the content in front of it; kiri frosts
-                            it, the opaque themes leave it a no-op. */}
+                        {/* The stage + the content that scrolls within it. The
+                            stage absolutely fills this region, so it does NOT
+                            scroll with the content in front of it.
+
+                            IT IS NOT FROSTED, and this used to say it was. A live
+                            blur behind a scroll region re-blends every frame, which
+                            was the whole of the kiri scroll lag, so .kq-stage is a
+                            compositor layer and nothing more (globals.css). A
+                            sticky bar that has to occlude therefore cannot lean on
+                            the stage for it and must declare kq-band itself; see
+                            SessionHud's `float`. */}
                         <div className="relative min-h-0 flex-1">
                           <div
                             className="kq-stage pointer-events-none absolute inset-0 rounded-2xl"
