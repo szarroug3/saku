@@ -19,11 +19,18 @@ import { describe, test } from "node:test";
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { KANJI_SUBJECT, meaningFactId } from "@/data/kanji";
+import { emptyAggregate, foldSession } from "@/lib/aggregate";
 import { claimedState } from "@/lib/claims";
 import type { Claims } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
 import { knownFactsOf, LIB_ENTRIES } from "@/lib/library/entries";
-import { entryIsKnown, entryStanding } from "@/lib/library/standing";
+import {
+  entryIsKnown,
+  entryStanding,
+  GETTING_THERE_PCT,
+  SOLID_PCT,
+  standingOf,
+} from "@/lib/library/standing";
 import type { AccuracyMetric, EntryId, FactAggregate, FactId } from "@/types";
 
 const METRIC: AccuracyMetric = "firstTry";
@@ -49,6 +56,116 @@ function claimAll(entryId: EntryId): Claims {
   for (const f of factsOf(entryId)) claims[f] = JUST_NOW;
   return claims;
 }
+
+const DAY = 86_400_000;
+const MIN = 60_000;
+
+/** A fact tested `justNow`, so recall ≈ 1 and status is `quiet` — the recency
+ * spike that used to read "solid" on its own. `firstTry`/`seen` set the record
+ * the accuracy gate now weighs. */
+function drilledJustNow(
+  counts: { seen: number; missed: number; firstTry: number; correct: number },
+  at: number,
+): FactAggregate {
+  return { ...counts, slow: 0, stability: 30, lastTested: at };
+}
+
+describe("standingOf — 'solid' takes accuracy, not just recency", () => {
+  const NOW_T = Date.UTC(2026, 5, 1);
+  const METRIC_S: AccuracyMetric = "firstTry";
+
+  test("the bug: heavily-missed but drilled just now is NOT solid", () => {
+    // The exact probe from the task: seen 3, missed 4, correct 1, firstTry 1,
+    // last tested = now. Recency says `quiet`; the record says 1/3 = 33%.
+    const agg = drilledJustNow(
+      { seen: 3, missed: 4, firstTry: 1, correct: 1 },
+      NOW_T,
+    );
+    const s = standingOf(agg, undefined, METRIC_S, NOW_T);
+    assert.notEqual(s.standing, "solid", "recency must not launder into solid");
+    assert.equal(s.standing, "shaky", "33% first-try is shaky");
+  });
+
+  test("a claim then a NEWER miss reflects the miss, not the claim — NOT solid", () => {
+    // Claimed at T; a real quiz session misses it four minutes later. Built
+    // through the actual fold so the newer-record path is the one under test.
+    const claimedAt = NOW_T;
+    const missAt = NOW_T + 4 * MIN;
+    const agg = emptyAggregate();
+    foldSession(
+      agg,
+      { seen: 1, missed: 1, firstTry: 0, correct: 0, firstTryHit: false },
+      missAt,
+    );
+    assert.ok(agg.lastTested > claimedAt, "the miss is the newer record");
+    const s = standingOf(agg, claimedAt, METRIC_S, missAt);
+    assert.notEqual(s.standing, "solid");
+    assert.equal(s.standing, "shaky", "0% first-try, claim discarded");
+  });
+
+  test("genuinely good accuracy, still fresh, IS solid — evidence earns the word", () => {
+    const agg = drilledJustNow(
+      { seen: 10, missed: 0, firstTry: 10, correct: 10 },
+      NOW_T,
+    );
+    assert.equal(standingOf(agg, undefined, METRIC_S, NOW_T).standing, "solid");
+  });
+
+  test("a claimed-but-never-tested fact reads 'claimed' — neutral, untested", () => {
+    // No aggregate at all (a claim writes no counts), claimed a moment ago.
+    const s = standingOf(undefined, NOW_T - 1000, METRIC_S, NOW_T);
+    assert.equal(s.standing, "claimed");
+    assert.equal(s.seen, 0, "a claim records no showings");
+  });
+
+  test("good accuracy gone cold is NOT solid — it still surfaces for review", () => {
+    // 100% first-try, but last tested 60 days ago at low stability: recall → 0,
+    // so it re-enters as material to re-teach. Unchanged by this work: solid was
+    // never available to a non-quiet fact, and must not become so.
+    const agg: FactAggregate = {
+      seen: 8,
+      missed: 0,
+      slow: 0,
+      firstTry: 8,
+      correct: 8,
+      stability: 5,
+      lastTested: NOW_T - 60 * DAY,
+    };
+    const s = standingOf(agg, undefined, METRIC_S, NOW_T);
+    assert.notEqual(s.standing, "solid");
+    assert.equal(s.standing, "slipping", "seen before, now lost → re-teach");
+  });
+
+  test("quiet + middling accuracy is 'getting there', not solid", () => {
+    // 70% first-try: mostly right, but short of SOLID_PCT. The band the fix
+    // opened — this used to read solid purely because it was quiet.
+    const agg = drilledJustNow(
+      { seen: 10, missed: 3, firstTry: 7, correct: 8 },
+      NOW_T,
+    );
+    assert.equal(
+      standingOf(agg, undefined, METRIC_S, NOW_T).standing,
+      "getting-there",
+    );
+  });
+
+  test("SOLID_PCT is the boundary: at it reads solid, just under does not", () => {
+    assert.ok(SOLID_PCT > GETTING_THERE_PCT, "solid must sit above getting-there");
+    const at = drilledJustNow(
+      { seen: 100, missed: 0, firstTry: SOLID_PCT, correct: 100 },
+      NOW_T,
+    );
+    assert.equal(standingOf(at, undefined, METRIC_S, NOW_T).standing, "solid");
+    const under = drilledJustNow(
+      { seen: 100, missed: 0, firstTry: SOLID_PCT - 1, correct: 100 },
+      NOW_T,
+    );
+    assert.equal(
+      standingOf(under, undefined, METRIC_S, NOW_T).standing,
+      "getting-there",
+    );
+  });
+});
 
 describe("entryIsKnown — the knowledge filter's one boolean", () => {
   test("a never-seen entry is NOT known", () => {
