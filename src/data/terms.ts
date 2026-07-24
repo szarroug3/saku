@@ -21,6 +21,19 @@
 // (the entry's title is its NAME), no facts (nothing here is gradeable — "what
 // is JLPT" has no answer to mark), and a body of plain prose.
 //
+// THE DEFINITION IS NOT THE WHOLE PAGE ANY MORE
+// ==============================================
+// Most of these words already have a proper explainer in the app: a concept card
+// the teach walk renders, with developed paragraphs and worked examples. The
+// Library was printing two thin sentences about the same idea a few inches from
+// where the lessons print four paragraphs, which is the app knowing something and
+// not saying it. So each term that has such a card now POINTS at it (`cards`), and
+// the entry page renders the card's own content, from the card's own objects. The
+// `summary` and `body` below still do their jobs — the one-liner is the shelf row
+// and the page's sub-heading, the body is the short answer at the top of the page
+// — and everything past that comes from the lessons. Nothing is retyped, so
+// nothing can drift.
+//
 // ⚠️ THE COPY IS DRAFT — OWNER VOICE PASS PENDING ⚠️
 // =================================================
 // Every `summary` and `body` string below is a DRAFT in the owner's plain
@@ -30,6 +43,26 @@
 // so where a word has more to it than one honest paragraph, this says the honest
 // paragraph and stops.
 
+import {
+  COMBO_H,
+  COMBO_K,
+  COUNTER_SOUND_CHANGE,
+  DAKUTEN_H,
+  DAKUTEN_K,
+  OKURIGANA_FIXED,
+  OKURIGANA_INTRO,
+  OKURIGANA_MOVING,
+  RENDAKU,
+  type PhaseIntro,
+} from "@/data/phase-intros";
+import {
+  COUNTERS_TRACK,
+  HIRAGANA_TRACK,
+  KANJI_TRACK,
+  KATAKANA_TRACK,
+  KEIGO_TRACK,
+  RADICAL_TRACK,
+} from "@/data/track-intros";
 import { entryId } from "@/lib/fact-id";
 import type { EntryId } from "@/types";
 
@@ -61,6 +94,37 @@ export interface Term {
   /** What someone might TYPE to find this beyond its name — the jargon and
    * spellings other resources use. Search matches an alias exactly. */
   readonly searchAlso?: readonly string[];
+  /**
+   * The concept card or cards the LESSONS teach this word with, unmodified.
+   *
+   * This is the same pointer-not-a-copy arrangement `Mark.intros` makes, for the
+   * same reason: the app already explains most of these words properly, once, in
+   * a card the teach walk renders (src/data/track-intros.ts for the words a whole
+   * track is about, src/data/phase-intros.ts for the writing rules). The Library
+   * used to hold a second, thinner explanation of the same thing, and two
+   * descriptions of one idea drift until the day they disagree. So the entry page
+   * renders THESE objects, and a copy edit to a card lands on both surfaces.
+   *
+   * Order is the order a reader should meet them: for a word taught once per
+   * script it is hiragana then katakana, and for okurigana it is the three
+   * moments the one rule is taught over.
+   *
+   * Absent for the words no card is about (see the note above the list). Those
+   * pages are `body` and nothing else, which is what they have always been.
+   */
+  readonly cards?: readonly PhaseIntro[];
+  /**
+   * The mark whose paragraphs this term wants, when a card teaches two marks at
+   * once and the page is about one of them.
+   *
+   * Only ゛ and ゜ need it. They share one card, which is right in a lesson — you
+   * meet them together and the circle only makes sense against the dashes — and
+   * wrong on a page titled Handakuten, which would open by explaining the other
+   * mark. `bodyFor` in src/data/marks.ts already does this split for the Writing
+   * rules shelf, off the `mark` tag the copy carries; this is the same call with
+   * the same argument.
+   */
+  readonly cardMark?: string;
 }
 
 /**
@@ -68,6 +132,20 @@ export interface Term {
  * umbrella, then each script, then the Latin-letter fallback), then kanji and
  * the parts kanji are built from, then the two words that name a surface rather
  * than a script — furigana and JLPT.
+ *
+ * WHICH ONES CARRY A CARD
+ * =======================
+ * Twelve of the eighteen name something the app teaches a card about, and those
+ * twelve point at it (`cards`). Six do not, and they are: romaji, furigana,
+ * JLPT, particle, pitch accent, mora. Each is a word the app USES on a surface
+ * without ever stopping to teach it, so there is no card to point at and the
+ * page stays the definition it has always been. Two of those are close calls
+ * worth recording. Romaji is defined inside the hiragana card, in one paragraph
+ * of four, so the card is not about it and lifting the whole card onto the
+ * Romaji page would answer a question about hiragana. PARTICLE_RULE reads like a
+ * match for `particle` and is not one: it teaches how は, へ and を are READ when
+ * they do that job, which is a fact about three kana, and it never says what a
+ * particle is.
  */
 export const TERMS: readonly Term[] = [
   {
@@ -79,6 +157,10 @@ export const TERMS: readonly Term[] = [
       "Each kana stands for a sound rather than a meaning, and between them they can spell any Japanese word.",
     ],
     searchAlso: ["kana", "syllabary", "syllabaries"],
+    // Kana is the two scripts together, so its page is the two cards that open
+    // them. There is no third card about the umbrella, and inventing one here
+    // would be the app authoring an explanation the lessons never give.
+    cards: [HIRAGANA_TRACK, KATAKANA_TRACK],
   },
   {
     id: "hiragana",
@@ -89,6 +171,7 @@ export const TERMS: readonly Term[] = [
       "It is used to write native Japanese words, word endings and grammar, and it is usually the first writing a learner picks up.",
     ],
     searchAlso: ["hiragana"],
+    cards: [HIRAGANA_TRACK],
   },
   {
     id: "katakana",
@@ -99,6 +182,7 @@ export const TERMS: readonly Term[] = [
       "It is used mostly for words borrowed from other languages, foreign names, and sometimes for emphasis. It stands for the same set of sounds as hiragana.",
     ],
     searchAlso: ["katakana"],
+    cards: [KATAKANA_TRACK],
   },
   {
     id: "romaji",
@@ -119,6 +203,7 @@ export const TERMS: readonly Term[] = [
       "Ordinary Japanese writing mixes kanji with kana.",
     ],
     searchAlso: ["kanji", "chinese characters", "han characters"],
+    cards: [KANJI_TRACK],
   },
   {
     id: "radical",
@@ -129,6 +214,7 @@ export const TERMS: readonly Term[] = [
       "Dictionaries file each kanji under one of its radicals, which is how you look a character up by its shape. Learning the common radicals makes a new kanji easier to break down.",
     ],
     searchAlso: ["radical", "radicals", "bushu", "kanji parts"],
+    cards: [RADICAL_TRACK],
   },
   {
     id: "furigana",
@@ -168,6 +254,9 @@ export const TERMS: readonly Term[] = [
       "The same mark works across the k, s, t and h rows.",
     ],
     searchAlso: ["dakuten", "voicing mark", "ten ten", "tenten"],
+    // One card per script, and only the ゛ half of each. See `cardMark`.
+    cards: [DAKUTEN_H, DAKUTEN_K],
+    cardMark: "゛",
   },
   {
     id: "handakuten",
@@ -178,6 +267,8 @@ export const TERMS: readonly Term[] = [
       "It is the mark that gives you ぱ, ぴ, ぷ, ぺ and ぽ.",
     ],
     searchAlso: ["handakuten", "maru", "circle mark", "p sound"],
+    cards: [DAKUTEN_H, DAKUTEN_K],
+    cardMark: "゜",
   },
   {
     id: "yoon",
@@ -188,6 +279,9 @@ export const TERMS: readonly Term[] = [
       "The small kana is written at half size, which is what tells you to blend the two rather than say them one after the other.",
     ],
     searchAlso: ["yoon", "youon", "yōon", "combo", "combination", "contracted sound", "small ya yu yo"],
+    // The combination cards, which are where the app names the word: "These are
+    // called yōon" is the last line of the hiragana one.
+    cards: [COMBO_H, COMBO_K],
   },
   {
     id: "okurigana",
@@ -198,6 +292,10 @@ export const TERMS: readonly Term[] = [
       "They are how a verb or adjective shows its grammar while the kanji stays fixed.",
     ],
     searchAlso: ["okurigana", "kana tail", "kana ending"],
+    // Three cards for one rule: the whole idea, the tail that moves, the tail
+    // that sits still. The lessons gate them one at a time; a reference page
+    // wants all three at once.
+    cards: [OKURIGANA_INTRO, OKURIGANA_MOVING, OKURIGANA_FIXED],
   },
   {
     id: "rendaku",
@@ -208,6 +306,7 @@ export const TERMS: readonly Term[] = [
       "It does not happen every time, but it is common enough that a joined word sounding voiced is usually this.",
     ],
     searchAlso: ["rendaku", "sequential voicing"],
+    cards: [RENDAKU],
   },
   {
     id: "counter",
@@ -218,6 +317,10 @@ export const TERMS: readonly Term[] = [
       "Which counter to use depends on the kind of thing, and a few of them change the number's sound as well.",
     ],
     searchAlso: ["counter", "counters", "counter word", "measure word", "josuushi"],
+    // What a counter is, then the one thing about counters that surprises
+    // people: 本 is ほん until it follows 一, where it is ぽん. Both cards are
+    // about counters, so both belong on the page the word sends you to.
+    cards: [COUNTERS_TRACK, COUNTER_SOUND_CHANGE],
   },
   {
     id: "particle",
@@ -238,6 +341,7 @@ export const TERMS: readonly Term[] = [
       "Choosing between them turns on who is doing the action, you or the other person.",
     ],
     searchAlso: ["keigo", "honorific", "humble", "sonkeigo", "kenjougo", "kenjogo", "polite speech", "politeness"],
+    cards: [KEIGO_TRACK],
   },
   {
     id: "pitch-accent",
