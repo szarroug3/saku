@@ -54,7 +54,7 @@ const CONTEXT: Record<string, ContextPronunciation> = {
   // when nothing follows.
   ん: {
     // DRAFT: Sam to finalise.
-    summary: "ん has no fixed sound of its own — it takes the place of the sound that follows it.",
+    summary: "ん has no fixed sound of its own. It takes the place of the sound that follows it.",
     rules: [
       { when: "before b, p, or m", sounds: "m", example: "しんぶん (shimbun), さんぽ (sampo)" },
       { when: "before k or g", sounds: 'ng (as in "sing")', example: "りんご (ringo)" },

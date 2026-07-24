@@ -22,7 +22,9 @@ export function KanaContextView({ ctx }: { ctx: ContextPronunciation }) {
         {ctx.rules.map((rule) => (
           <div key={rule.when} className="border-l-2 border-accent pl-3.5">
             <dt className="text-[13px] leading-relaxed text-text">
-              <span className="text-text-muted">{rule.when}</span> — said{" "}
+              <span className="text-text-muted">
+              {rule.when[0].toUpperCase() + rule.when.slice(1)}
+            </span>: said{" "}
               <span className="font-medium">{rule.sounds}</span>
             </dt>
             <dd className="mt-0.5 font-kana text-[13px] leading-relaxed text-text-muted">
