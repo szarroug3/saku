@@ -74,7 +74,7 @@ import { hintFor } from "@/lib/engine/hint";
 import { entryOf, factInfo } from "@/lib/facts";
 import { speechForFact } from "@/lib/fact-speech";
 import { fitGlyphSize } from "@/lib/glyph-fit";
-import { knownFactIds } from "@/lib/known-facts";
+import { confusionKnownFacts } from "@/lib/confusion-search";
 import { pickListen } from "@/lib/listen";
 import { meaningMustShowGlyph } from "@/lib/homophone";
 import { toKana } from "@/lib/romaji";
@@ -714,13 +714,17 @@ export function DrillScreen() {
           q.confused = said;
         }
       } else if (given && given !== "(time)") {
-        // The search space is the deck PLUS every fact the learner already
-        // knows — so a typed answer that names a KNOWN entry (its meaning or
-        // reading) is caught even when that entry is not in today's deck. This
-        // is task 20's 何↔可: "acceptable" is the word 可's gloss, a word Sam had
-        // learned but was not being shown. `confusedWith` still claims a pair
-        // only when exactly one entry answers, so the wider space stays honest.
-        const said = confusedWith(q.f, given, rt.deck, knownFactIds(history));
+        // The search space is the deck PLUS every fact of every entry the learner
+        // has met — so a typed answer that names a KNOWN entry (its meaning OR its
+        // reading) is caught even when that entry is not in today's deck, and even
+        // when only the entry's OTHER fact carries a record. This is task 20's
+        // 何↔可: Sam typed か (可's reading) on a reading card, but her known set
+        // held only word:可/meaning, so the deck-plus-known-FACTS space had no fact
+        // reading か and the confusion silently dropped. `confusionKnownFacts`
+        // makes the space entry-complete — knowing 可's meaning makes its reading a
+        // candidate — and `confusedWith` still claims a pair only when exactly one
+        // entry answers, so the wider space stays honest. See confusion-search.ts.
+        const said = confusedWith(q.f, given, rt.deck, confusionKnownFacts(history));
         if (said && said !== entryOf(q.f)) {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
           q.confused = said;
