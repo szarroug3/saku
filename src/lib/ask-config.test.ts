@@ -96,13 +96,17 @@ describe("Match-pairs menu", () => {
     );
   });
 
-  test("a missing or empty stored selection defaults to all three", () => {
+  test("a missing stored selection defaults to all three", () => {
     const all = ["definition", "romaji", "sentence"];
     assert.deepEqual(normalizePairResponses(undefined), all);
-    assert.deepEqual(normalizePairResponses([]), all);
+    assert.deepEqual(normalizePairResponses({}), all);
   });
 
-  test("each option can be added and removed while the last one stays on", () => {
+  test("an explicitly empty stored selection stays empty", () => {
+    assert.deepEqual(normalizePairResponses([]), []);
+  });
+
+  test("each option can be added and removed, including the last one", () => {
     assert.deepEqual(togglePairResponse(["definition"], "romaji"), [
       "definition",
       "romaji",
@@ -111,7 +115,7 @@ describe("Match-pairs menu", () => {
       togglePairResponse(["definition", "romaji"], "definition"),
       ["romaji"],
     );
-    assert.deepEqual(togglePairResponse(["romaji"], "romaji"), ["romaji"]);
+    assert.deepEqual(togglePairResponse(["romaji"], "romaji"), []);
   });
 });
 

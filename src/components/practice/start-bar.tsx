@@ -36,6 +36,7 @@ import {
   sentenceAsksRomaji,
   sentenceAsksSelection,
 } from "@/lib/ask-config";
+import { startIsDisabled } from "@/lib/practice-start";
 import type { AskConfig, QuizConfig } from "@/types";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
@@ -137,7 +138,7 @@ export function StartBar({
   // the page didn't move, and the app never said why. A button that is enabled
   // and inert is worse than one that is disabled and explains itself.
   const nothingToAsk = count > 0 && !howBroken && plannedCount === 0;
-  const disabled = !count || howBroken || nothingToAsk;
+  const disabled = startIsDisabled(cfg, count, plannedCount);
 
   // Never a bare greyed-out button. A disabled control that won't say why is
   // the reason people click a thing five times and then file a bug, and both
@@ -153,9 +154,7 @@ export function StartBar({
           // statement about right now, with the way out in the same sentence:
           // the app has nothing to learn by asking these today, and the fix is
           // to select more — which is the screen you are already on.
-          cfg.mode === "pairs"
-          ? "None of these make a useful pair. Include material with a definition or a kanji reading."
-          : "You're solid on all of these for now. Pick another deck to drill something else."
+          "You're solid on all of these for now. Pick another deck to drill something else."
         : null;
 
   return (

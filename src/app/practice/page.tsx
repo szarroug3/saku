@@ -32,7 +32,6 @@ import { useQuizSession } from "@/lib/quiz-session";
 import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
-import { pairFacts, pairSpecs } from "@/lib/pair-facts";
 import type { Selection } from "@/types";
 
 export default function PracticePage() {
@@ -88,21 +87,19 @@ export default function PracticePage() {
     const cap =
       cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null;
     if (cfg.mode === "pairs") {
-      const specs = pairSpecs(facts, cfg.pairResponses, history);
       return {
-        // The pairs screen applies Count after expanding variants, so it needs
-        // every eligible source fact rather than a prematurely sliced subset.
-        facts: pairFacts(facts, cfg.pairResponses, history),
-        count: cap === null ? specs.length : Math.min(specs.length, cap),
+        // Pair validity belongs to the pairs screen, which expands this pool
+        // into variants and applies Count afterward. Preflighting variants on
+        // the setup page rejected otherwise startable selections.
+        facts,
+        count: facts.length,
       };
     }
     const selected = cap === null ? facts : facts.slice(0, cap);
     return { facts: selected, count: selected.length };
   }, [
     facts,
-    history,
     cfg.mode,
-    cfg.pairResponses,
     cfg.length,
     cfg.limType,
     cfg.limCount,

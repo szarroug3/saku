@@ -199,17 +199,20 @@ export function askOf(cfg: Pick<QuizConfig, "ask">): AskConfig {
 }
 
 export function normalizePairResponses(raw: unknown): PairResponse[] {
-  const cleaned = clean<PairResponse>(raw, PAIR_RESPONSES);
-  return cleaned.length ? cleaned : [...PAIR_RESPONSES];
+  // Missing means an older saved config and gets the defaults. An explicit
+  // empty array is a real current choice, so preserve it and let Start explain
+  // why a run cannot begin yet.
+  return Array.isArray(raw)
+    ? clean<PairResponse>(raw, PAIR_RESPONSES)
+    : [...PAIR_RESPONSES];
 }
 
-/** Toggle one Match-pairs relationship while preserving its required
- * at-least-one invariant. */
+/** Toggle one Match-pairs relationship. Empty is valid setup state; StartBar,
+ * rather than the controls, enforces that a run needs at least one. */
 export function togglePairResponse(
   current: readonly PairResponse[],
   value: PairResponse,
 ): PairResponse[] {
   if (!current.includes(value)) return [...current, value];
-  if (current.length === 1) return [...current];
   return current.filter((x) => x !== value);
 }
