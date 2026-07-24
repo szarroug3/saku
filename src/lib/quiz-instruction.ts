@@ -46,14 +46,12 @@ import type { Direction, FactId } from "@/types";
 
 /** How the instruction names the thing you are being asked to produce.
  *
- * "Shape" for a radical rather than "radical": the drill is the wrong place to
- * be quizzing vocabulary about the curriculum, and a learner who has met 亅
- * knows it as a shape that turns up inside kanji. See role-block.tsx, which
- * uses the same plain word for the same reason. */
+ * "radical" for a radical — the same word the curriculum teaches it by, so the
+ * quiz names it the way the lessons do rather than inventing a softer synonym. */
 const NOUN: Record<string, string> = {
   kana: "kana",
   kanji: "kanji",
-  radical: "shape",
+  radical: "radical",
   word: "word",
   grammar: "pattern",
   keigo: "keigo verb",

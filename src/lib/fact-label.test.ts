@@ -46,8 +46,9 @@ describe("factTypeLabel — telling one glyph's facts apart", () => {
     const kana = ALL_FACTS.find((f) => String(f).startsWith("kana:あ"));
     assert.ok(kana, "あ is a fact");
     assert.equal(factTypeLabel(kana), "kana");
-    // A radical is named by the same word the drill uses: "shape", not "radical".
-    assert.equal(factTypeLabel(radicalMeaningFactId("一")), "shape");
+    // A radical is named by the same word the drill uses: "radical", the word
+    // the curriculum teaches it by.
+    assert.equal(factTypeLabel(radicalMeaningFactId("一")), "radical");
   });
 
   test("the label is never the answer", () => {

@@ -11,10 +11,10 @@
 // The label is subject + aspect, but only where the aspect disambiguates: a
 // kanji entry has a meaning and word-anchored readings, and a word has a meaning
 // and a reading, so those two get "· meaning" / "· reading". Everything else —
-// kana, a radical shape, a grammar pattern — has one askable aspect per glyph,
+// kana, a radical, a grammar pattern — has one askable aspect per glyph,
 // so its noun alone is unambiguous and the suffix would be noise. The noun comes
-// from `nounFor`, the same word the drill instruction uses ("shape" for a
-// radical, not "radical"), so the two never drift.
+// from `nounFor`, the same word the drill instruction uses ("radical" for a
+// radical, the word the curriculum teaches it by), so the two never drift.
 
 import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { KANJI_SUBJECT } from "@/data/kanji";
@@ -25,7 +25,7 @@ import type { FactId } from "@/types";
 
 /**
  * A short type badge for a fact — "kanji · meaning", "kanji · reading", "word ·
- * meaning", or just the plain noun ("kana", "shape") where the subject has only
+ * meaning", or just the plain noun ("kana", "radical") where the subject has only
  * one aspect. Distinguishes the same glyph asked as different facts.
  *
  * The reading-vs-meaning split is decided by lookup, not by parsing the id:
