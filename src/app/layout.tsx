@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { Analytics } from "@vercel/analytics/next";
 
 import { LocalMigration } from "@/components/auth/local-migration";
 import { SaveStatus } from "@/components/save-status";
@@ -225,6 +226,7 @@ export default async function RootLayout({
             </QuizConfigProvider>
           </HistoryProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
