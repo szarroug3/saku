@@ -104,6 +104,26 @@ test("an all-kana word has nothing to take apart, so it has no hint", () => {
   assert.equal(hintFor(wordMeaningFactId("これ"), "jp2en"), null);
 });
 
+test("a single-kanji word asked its MEANING has no hint — the gloss is the answer", () => {
+  // 口 is one kanji, so its per-kanji breakdown ("口 is mouth") is the whole
+  // gloss the card is asking for, not a nudge toward it. No decomposition, no
+  // hint. Regression: this used to print "口 is mouth" under the prompt on a
+  // hinted retry, handing over the answer.
+  const hint = hintFor(wordMeaningFactId("口"), "jp2en");
+  const text = hint?.kind === "text" ? hint.text : "";
+  assert.ok(!text.includes("mouth"), "the meaning hint must never be the gloss");
+  assert.equal(hint, null, "and the honest thing to say is nothing at all");
+});
+
+test("a single-kanji word asked its READING has no hint — the reading is the answer", () => {
+  // 人's only kanji reads ひと here, and ひと is the whole reading the card wants,
+  // not a first half of it. "人 is ひと here" was the answer with extra words.
+  const hint = hintFor(wordReadingFactId("人"), "jp2en");
+  const text = hint?.kind === "text" ? hint.text : "";
+  assert.ok(!text.includes("ひと"), "the reading hint must never be the reading");
+  assert.equal(hint, null, "and the honest thing to say is nothing at all");
+});
+
 test("a jukujikun word has no per-kanji reading to name", () => {
   // 大人 is おとな: the reading belongs to the word, not to 大 and 人. `align` is
   // null for exactly these, and the hint declines rather than inventing a split.

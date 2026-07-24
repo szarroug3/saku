@@ -190,11 +190,21 @@ function kanjiOf(word: string): string[] {
 function wordHint(fact: FactId, glyph: string, dir: Direction): Hint | null {
   if (dir !== "jp2en") return null;
   const kanji = kanjiOf(glyph);
-  // An all-kana word (これ, とても) has nothing to take apart, so it has no hint.
-  if (!kanji.length) return null;
+  // FEWER THAN TWO KANJI HAS NOTHING TO TAKE APART, so it has no hint. This is
+  // two cases with one cause: an all-kana word (これ, とても) has no kanji at
+  // all, and a SINGLE-kanji word (口, 人) has nothing left over once you name its
+  // one kanji — so the "breakdown" is the whole answer, not a nudge toward it.
+  // The meaning of 口 IS its only kanji's meaning ("口 is mouth" = the gloss), and
+  // the reading of 人 IS its only kanji's reading here ("人 is ひと here" = ひと).
+  // Both would print the asked answer under the prompt, which is the one thing
+  // THE ANSWER IS NEVER IN THE HINT forbids. A real decomposition needs two
+  // parts to hold apart, and that is exactly what "先 is before, 生 is life" and
+  // "先 is せん here" (only the first half of せんせい) are.
+  if (kanji.length < 2) return null;
   if (wordReadingFactId(glyph) === fact) {
     // A READING question is hinted with the FIRST kanji's reading in this word:
-    // enough to start the word, never the whole of it.
+    // enough to start the word, never the whole of it — the guard above is why
+    // "the first" is never also "the whole".
     const r = readingInWord(kanji[0], glyph);
     return r ? { kind: "text", text: `${kanji[0]} is ${r} here` } : null;
   }
