@@ -65,18 +65,42 @@ export function showsHowItsWritten(kind: LessonKind): boolean {
 /** One step of the walk-through: a glyph, its subject, and the facts learning it
  * covers. */
 export interface LessonItem {
+  /**
+   * The entry this step leads with, and where its Library link goes.
+   *
+   * NOT necessarily the entry every one of `facts` belongs to. A character the
+   * curriculum folds teaches several roles at once and has an entry per role
+   * (人 is kanji:人, radical:人 and word:人), and it is ONE step, so it leads
+   * with the entry its first fact named and carries the rest along. See
+   * `itemsFromFacts`.
+   */
   entry: EntryId;
   /** What it looks like — あ, 生, 先生, 〜てから. */
   glyph: string;
-  /** Which subject it belongs to — decides how the item renders. */
+  /** Which subject it belongs to — decides how the item renders. A folded
+   * character keeps the kind of the role it leads with; the OTHER roles it plays
+   * are read off the glyph by `lessonRoles`, which is what the view branches on.
+   */
   kind: LessonKind;
-  /** The facts of this entry that this teach set covers — one for a kana, the
-   * meaning fact for a kanji. */
+  /** Every fact this step teaches, in teach order: one for a kana, the meaning
+   * fact for a kanji, and for a folded character the facts of each role it
+   * plays. */
   facts: FactId[];
 }
 
+/** The kinds that name a ROLE of one character. Only these are ever folded
+ * together, and only when they are consecutive and share a glyph: kana, grammar,
+ * transitivity and keigo are separate teaching units even when a glyph repeats,
+ * and a keigo verb can be spelled exactly like a curriculum word. */
+const ROLE_KINDS: ReadonlySet<LessonKind> = new Set<LessonKind>([
+  "radical",
+  "kanji",
+  "word",
+]);
+
 /**
- * Group a flat fact list into per-entry items, in first-seen order.
+ * Group a flat fact list into the steps a walk pages through: one per entry, then
+ * one per CHARACTER for the characters the curriculum folds.
  *
  * The join from a fact to its entry, glyph and subject is a registry LOOKUP
  * (`entryOf`, `factInfo`) — never a parse of the id, the rule the whole
@@ -84,6 +108,25 @@ export interface LessonItem {
  * dictionaries) still groups: `entryOf` returns a stable stand-in and the glyph
  * degrades to the raw id, so a deleted character shows ugly rather than
  * vanishing the walk.
+ *
+ * THE SECOND PASS, AND WHY AN ENTRY IS NO LONGER THE STEP
+ * =======================================================
+ * An entry was the step for as long as one character meant one entry. The spine
+ * ended that: it folds a character's radical, kanji and word into ONE curriculum
+ * item, because it is one character met once. Grouped by entry alone, 人 came out
+ * as kanji:人 followed by word:人, and the walk asked the learner to press Next
+ * twice to get past a single character. The owner reported exactly that, and she
+ * was right about the cause.
+ *
+ * So consecutive groups that share a GLYPH and are all role kinds fold into one
+ * step, carrying every fact along. The view already renders a step by its role
+ * SET (see lesson-roles.ts), so one step shows the word, the kanji and the shape
+ * under their own headings, which is what the badge had been promising.
+ *
+ * CONSECUTIVE, AND ONLY ROLE KINDS, both load-bearing. Consecutive keeps the
+ * flattened facts identical to the input, which the walk and the drill both lean
+ * on. Role kinds keep genuinely separate teaching units apart: a keigo verb and a
+ * counter can be written exactly like a word, and neither is the same lesson.
  */
 export function itemsFromFacts(facts: readonly FactId[]): LessonItem[] {
   const byEntry = new Map<EntryId, LessonItem>();
@@ -104,5 +147,23 @@ export function itemsFromFacts(facts: readonly FactId[]): LessonItem[] {
     }
     item.facts.push(f);
   }
-  return order.map((e) => byEntry.get(e)!);
+
+  const steps: LessonItem[] = [];
+  for (const e of order) {
+    const item = byEntry.get(e)!;
+    const last = steps[steps.length - 1];
+    if (
+      last &&
+      last.glyph === item.glyph &&
+      ROLE_KINDS.has(last.kind) &&
+      ROLE_KINDS.has(item.kind)
+    ) {
+      // One character, one step. It keeps the entry and kind of the role it led
+      // with, which is the role the curriculum scheduled it as.
+      last.facts.push(...item.facts);
+      continue;
+    }
+    steps.push(item);
+  }
+  return steps;
 }

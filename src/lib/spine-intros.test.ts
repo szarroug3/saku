@@ -73,7 +73,7 @@ const ANCHOR_SHAPE: Record<
   (roles: readonly string[], glyph: string) => boolean
 > = {
   kanji: (roles) => roles.includes("kanji"),
-  radical: (roles) => roles.length === 1 && roles[0] === "radical",
+  radical: (roles) => roles.includes("radical"),
   word: (roles, glyph) =>
     roles.includes("word") && !roles.includes("kanji") && /\p{Script=Han}/u.test(glyph),
 };
@@ -139,17 +139,14 @@ describe("every role is anchored where its card has something to point at", () =
     assert.equal(anchor.glyph, first.glyph);
   });
 
-  test("the radical card is the first shape that is ONLY a radical", () => {
-    // The card's job is that "radical" describes what other kanji are built from
-    // and says nothing about standing alone. On a character that is also a kanji
-    // that point is invisible; on a shape that is only ever a part it is the
-    // thing on screen.
+  test("the radical card is the first character that plays the role at all", () => {
+    // Including a character that is also a kanji and a word. The card used to
+    // wait for a shape that is ONLY a piece, which reads better and arrives too
+    // late: the first lesson's tile says "Radical · Kanji · Word" before anything
+    // has said what a radical is, and a term shown before its definition is what
+    // these cards exist to prevent.
     const anchor = anchorFor("radical");
-    const item = CURRICULUM_SEQUENCE.find((it) => it.glyph === anchor.glyph)!;
-    assert.deepEqual([...item.roles], ["radical"]);
-    const first = CURRICULUM_SEQUENCE.find(
-      (it) => it.roles.length === 1 && it.roles[0] === "radical",
-    )!;
+    const first = CURRICULUM_SEQUENCE.find((it) => it.roles.includes("radical"))!;
     assert.equal(anchor.glyph, first.glyph);
   });
 
@@ -172,9 +169,11 @@ describe("every role is anchored where its card has something to point at", () =
     assert.equal(anchor.glyph, first.glyph);
   });
 
-  test("no two cards share an anchor, so each lands on its own item", () => {
-    const glyphs = SPINE_ANCHORS.map((a) => a.glyph);
-    assert.equal(new Set(glyphs).size, glyphs.length);
+  test("the kanji and radical cards share their anchor, and say so in order", () => {
+    // The opening character is both, so both cards are due ahead of it. Two
+    // explanations stacked is the price of never showing a label first.
+    assert.equal(anchorFor("kanji").glyph, anchorFor("radical").glyph);
+    assert.notEqual(anchorFor("word").glyph, anchorFor("kanji").glyph);
   });
 
   test("an anchor's gate facts are the meaning facts of the roles it plays", () => {
@@ -294,9 +293,21 @@ describe("the kanji card comes before the radical card", () => {
   const kanji = anchorFor("kanji");
   const radical = anchorFor("radical");
 
-  test("the kanji anchor precedes the radical anchor in the sequence", () => {
-    const at = (glyph: string) => CURRICULUM_SEQUENCE.findIndex((it) => it.glyph === glyph);
-    assert.ok(at(kanji.glyph) < at(radical.glyph), "a radical is introduced first");
+  test("they are due at the same character, so the emitted order decides", () => {
+    assert.equal(kanji.glyph, radical.glyph);
+    // CARD_ORDER runs down the hierarchy, so the card for the thing above comes
+    // out first. If that ever flipped, a learner would be told what kanji are
+    // built from before being told what a kanji is.
+    const plan = spineIntroPlan(
+      [{ kind: "kanji", glyph: kanji.glyph }],
+      BLANK,
+      new Set(),
+      new Set(),
+    );
+    assert.deepEqual(
+      (plan.get(0) ?? []).map((i) => i.id),
+      [kanji.intro.id, radical.intro.id],
+    );
   });
 
   test("both are in the first lesson, kanji card first", () => {
@@ -416,18 +427,21 @@ describe("a learner carrying progress from the old separate tracks", () => {
   );
   const priorProgress = met(OLD_RADICALS);
 
-  test("her first lesson really has lost the radical anchor", () => {
-    // Asserted, not assumed: if the packing ever stops dropping it, the test
-    // below still passes and stops proving anything.
-    const radical = anchorFor("radical");
+  test("her old radical progress really does thin out the first lesson", () => {
+    // Asserted, not assumed. The old separate radical track taught shapes the
+    // spine now folds into its opening lesson, so a learner who did any of it
+    // gets a first lesson with pieces already missing. That is what removed the
+    // card's old anchor, and it is why the anchor is a folded character now: one
+    // that carries several facts survives the filter.
     const lesson = nextCurriculumLesson(priorProgress, LESSON_RANGE_DEFAULT)!;
     assert.ok(
-      lesson.group.items.some((it) => it.glyph === radical.glyph),
-      "the lesson does not contain the radical anchor",
+      lesson.cards.length < lesson.group.items.length,
+      "nothing was filtered out, so this pins nothing",
     );
+    const radical = anchorFor("radical");
     assert.ok(
-      !lesson.cards.some((it) => it.glyph === radical.glyph),
-      "the anchor was not filtered out, so this pins nothing",
+      lesson.cards.some((it) => it.glyph === radical.glyph),
+      "the radical anchor did not survive the filter",
     );
   });
 
@@ -467,11 +481,12 @@ describe("a learner carrying progress from the old separate tracks", () => {
     );
   });
 
-  test("why the kanji card survived where the radical card did not", () => {
-    // The asymmetry the owner saw. Her first lesson kept its kanji anchor and
-    // lost its radical one, and the fold is the reason: 人 carries a word fact as
-    // well as a kanji fact, and a lesson keeps any item with anything left in it.
-    // Prior kanji progress alone does not take the item away.
+  test("a folded anchor survives prior progress in any one of its roles", () => {
+    // Why anchoring on a folded character is the robust choice, and the reason
+    // the kanji card kept working through two rounds of this bug while the
+    // radical card did not. A lesson keeps any item with anything left in it, and
+    // a character playing three roles has three chances to still be fresh. Prior
+    // kanji progress alone does not take it away.
     const kanji = anchorFor("kanji");
     const radical = anchorFor("radical");
     const prior = met([
@@ -479,14 +494,12 @@ describe("a learner carrying progress from the old separate tracks", () => {
       ...kanjiTeachOrder("everyday").slice(0, 30).map(kanjiMeaningFactId),
     ]);
     const lesson = nextCurriculumLesson(prior, LESSON_RANGE_DEFAULT)!;
-    assert.ok(
-      lesson.cards.some((it) => it.glyph === kanji.glyph),
-      "the kanji anchor survives, because its word fact is still fresh",
-    );
-    assert.ok(
-      !lesson.cards.some((it) => it.glyph === radical.glyph),
-      "the radical anchor is gone, having only the one fact",
-    );
+    for (const anchor of [kanji, radical]) {
+      assert.ok(
+        lesson.cards.some((it) => it.glyph === anchor.glyph),
+        `the ${anchor.role} anchor did not survive`,
+      );
+    }
   });
 
   test("and every card fires even once its anchor is well past", () => {

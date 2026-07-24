@@ -144,19 +144,24 @@ export const RADICAL_TRACK: PhaseIntro = {
   id: "track-radical",
   setId: "",
   eyebrow: "What a radical is",
-  title: "A radical is one of the pieces a kanji is drawn from.",
+  title: "A radical is a piece other kanji are built out of.",
   body: [
     {
-      lead: "One step below kanji.",
-      text: "Words are written with kanji, and kanji are drawn from a small stock of these shapes. 氵 is the water piece, and it is inside 海 (sea), 泳 (swim) and 湖 (lake). Recognizing a piece gives you a head start on a character you have never seen, though it is a hint and not a promise.",
+      // THE DISTINCTION LEADS NOW. The card fires ahead of the first character
+      // that plays the role at all, which is 人: a radical, a kanji and a word
+      // at once, with a tile that says so. So the first thing it has to answer is
+      // the question that label provokes, and the "氵 inside 海" example waits
+      // for the paragraph after it.
+      lead: "Being a radical says nothing about whether a character stands alone.",
+      text: "It answers one question: do other kanji get built out of this shape? 人 is a radical, and it is also a kanji you learn and a word you can say, all at once. 气 is a radical and nothing else, so you will only ever see it inside another character. Both get the label, because both are pieces.",
     },
     {
-      lead: "Calling a shape a radical says nothing about whether it stands alone.",
-      text: "It answers one question: do other kanji get built out of this? 人, 大 and 口 are radicals, and each is also a whole kanji you learn and use by itself. 气 and 亅 are radicals and nothing else, so you will only ever see them inside another character. Both kinds get the label, because both are pieces.",
+      lead: "One step below kanji.",
+      text: "Words are written with kanji, and kanji are drawn from a small stock of these pieces. 氵 is the water piece, and it is inside 海 (sea), 泳 (swim) and 湖 (lake). Recognizing a piece gives you a head start on a character you have never seen, though it is a hint and not a promise.",
     },
     {
       lead: "Each piece turns up just before the character that needs it.",
-      text: "So a kanji is never broken into a shape you have not seen. When a piece is a kanji too, learning that kanji is where you get the shape, and its card tells you it plays both parts.",
+      text: "So a kanji is never broken into a shape you have not seen. When a piece is a kanji too, learning that kanji is where you get the shape, and its card tells you every part it plays.",
     },
   ],
 };

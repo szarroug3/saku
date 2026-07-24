@@ -3,24 +3,29 @@
 //
 // WHAT THESE TESTS ARE FOR
 // ========================
-// The stepped teach phase renders itemsFromFacts(session.teach), one item at a
-// time. The grouping has one load-bearing invariant that isn't visible in a
-// screenshot and type-checks either way: the items must be the teach facts,
-// GROUPED BY ENTRY, IN ORDER, losing none and inventing none — otherwise a glyph
-// steps twice, or a fact the drill is about to ask never gets shown. So these
-// tests count.
+// The stepped teach phase renders itemsFromFacts(session.teach), one step at a
+// time. The grouping carries two load-bearing invariants, both invisible in a
+// screenshot and both type-checking either way:
+//
+//   1. The steps ARE the teach facts, in order, losing none and inventing none.
+//      Break it and a fact the drill is about to ask never gets shown.
+//   2. One CHARACTER is one step. Break it and a character playing three roles
+//      makes the learner press Next three times to get past it, which is what
+//      the owner reported on 人.
 //
 // The fixtures are real lessons (nextLesson, nextCurriculumLesson,
 // nextGrammarLesson) against a fresh learner, so the grouping is exercised on
-// the actual material the teach phase will hand it — including grammar, whose
-// producible patterns carry two facts per entry, and the curriculum spine, whose
-// single-kanji words carry three, the multi-fact-per-entry cases a one-fact kana
-// lesson can't reach.
+// the actual material the teach phase will hand it: grammar, whose producible
+// patterns carry two facts per entry, and the curriculum spine, whose folded
+// characters carry a whole entry's worth more.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
+import { KEIGO_SETS, keigoWordFactId } from "../data/keigo.ts";
+import { characterRoles } from "./character-role.ts";
 import { entryOf, factInfo } from "./facts.ts";
+import { lessonRoles } from "./lesson-roles.ts";
 import {
   GRAMMAR_PER_LESSON_DEFAULT,
   nextGrammarLesson,
@@ -86,15 +91,36 @@ describe("itemsFromFacts — the step model", () => {
         );
       });
 
-      test("every item's facts belong to that item's entry", () => {
+      test("every fact on a step belongs to that step's CHARACTER", () => {
+        // An entry is no longer the step: a folded character teaches several
+        // roles at once and has an entry per role, and it is one step (see
+        // itemsFromFacts). What still holds, and what the view relies on, is that
+        // every fact on a step is about the glyph the step shows.
         for (const it of items) {
-          for (const f of it.facts) assert.equal(entryOf(f), it.entry);
+          for (const f of it.facts) {
+            // Its own entry, or another entry for the same character: kanji:人
+            // and word:人 are two entries and one thing to learn.
+            const own = entryOf(f) === it.entry;
+            assert.ok(
+              own || factInfo(f)?.glyph === it.glyph,
+              `${f} is on ${it.glyph}'s step and belongs to neither`,
+            );
+          }
+        }
+        // The leading entry is always one of its own facts'.
+        for (const it of items) {
+          assert.ok(
+            it.facts.some((f) => entryOf(f) === it.entry),
+            `${it.glyph} leads with an entry none of its facts is in`,
+          );
         }
       });
 
-      test("no entry is stepped through twice", () => {
-        const entries = items.map((it) => it.entry);
-        assert.equal(new Set(entries).size, entries.length);
+      test("no glyph is stepped through twice", () => {
+        // The owner's report: pressing Next twice to get past one character. A
+        // character is one step, whatever number of roles it plays.
+        const glyphs = items.map((it) => it.glyph);
+        assert.equal(new Set(glyphs).size, glyphs.length);
       });
 
       test("each item's kind is its subject, and its glyph is the fact's glyph", () => {
@@ -106,6 +132,36 @@ describe("itemsFromFacts — the step model", () => {
       });
     });
   }
+
+  test("a folded character is ONE step carrying every role's facts", () => {
+    // The owner's report: "when i go through person, i have to click next twice
+    // to get to the next entry". 人 is a radical, a kanji and a word, which is
+    // three entries and one character, and the curriculum folded it long before
+    // the walk did.
+    const items = itemsFromFacts(TEACH_SETS.curriculum);
+    const folded = items.find((it) => characterRoles(it.glyph).length > 1);
+    assert.ok(folded, "the first curriculum lesson teaches no multi-role character");
+    // More facts than any single entry could own, and they come from more than
+    // one entry.
+    assert.ok(folded.facts.length > 1, `${folded.glyph} carries one fact`);
+    assert.ok(
+      new Set(folded.facts.map(entryOf)).size > 1,
+      `${folded.glyph} carries only its own entry's facts`,
+    );
+    // And the step really does say it plays them all, which is what the view
+    // renders its sections from.
+    assert.ok(lessonRoles(folded).length > 1);
+  });
+
+  test("two teaching units that share a glyph are NOT merged", () => {
+    // A keigo verb or a counter can be written exactly like a curriculum word,
+    // and neither is the same lesson. Only role kinds fold.
+    const keigoSet = KEIGO_SETS[0];
+    const word = keigoSet.words[0];
+    const facts = [keigoWordFactId(keigoSet, word), wordMeaningFactId(word)];
+    const items = itemsFromFacts(facts);
+    assert.equal(items.length, 2, "a keigo step was folded into a word step");
+  });
 
   test("kana day one steps あいうえお in order", () => {
     const items = itemsFromFacts(TEACH_SETS.kana);

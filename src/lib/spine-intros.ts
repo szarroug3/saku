@@ -107,13 +107,17 @@ const HAS_KANJI = /\p{Script=Han}/u;
  * already follow (okurigana waits for the first fixed tail, rendaku for the first
  * voiced seam).
  *
- *   KANJI   the first item taught as a kanji. Unchanged: a kanji is exactly what
- *           this item is, and it opens the whole curriculum.
- *   RADICAL the first item that is a radical and NOTHING ELSE. This is the card
- *           that has to explain that "radical" describes what other kanji are
- *           built from and says nothing about standing alone. On a character that
- *           is also a kanji and also a word, that point is invisible; on a shape
- *           that is only ever a part, it is the shape in front of you.
+ *   KANJI   the first item taught as a kanji. A kanji is exactly what this item
+ *           is, and it opens the whole curriculum.
+ *   RADICAL the first item that plays the radical role AT ALL, folded characters
+ *           included. It was once the first shape that is ONLY a radical, on the
+ *           argument that "a piece other kanji are built from" is visible there
+ *           and invisible on a character that is also a kanji and a word. Good
+ *           copy logic, and it lost to the screen: 人 opens lesson one with a
+ *           tile reading "Radical · Kanji · Word", so the label arrives two steps
+ *           before anything has said what a radical is. A term shown before its
+ *           definition is the exact failure these cards exist to prevent, so the
+ *           card leads and the copy carries the distinction instead.
  *   WORD    the first word written with kanji that is not a single kanji folded
  *           into its own character. A one-character word is the kanji you have
  *           just been taught wearing a second label, and the card's whole subject
@@ -129,7 +133,7 @@ const ANCHOR_RULE: Readonly<
   Record<CurriculumRole, (item: (typeof CURRICULUM_SEQUENCE)[number]) => boolean>
 > = {
   kanji: (it) => it.roles.includes("kanji"),
-  radical: (it) => it.roles.length === 1 && it.roles[0] === "radical",
+  radical: (it) => it.roles.includes("radical"),
   word: (it) =>
     it.roles.includes("word") && !it.roles.includes("kanji") && HAS_KANJI.test(it.glyph),
 };
@@ -230,11 +234,13 @@ export function spineIntroPlan(
   // CARD_ORDER, so two cards landing on one item read down the hierarchy.
   for (const anchor of SPINE_ANCHORS) {
     if (shown.has(anchor.intro.id)) continue;
-    // The sharp item, and it has to be showing IN that role: 人 steps twice, once
-    // as a kanji and once as a word, and only the kanji step is the kanji card's.
-    let at = walk.findIndex((step, i) => {
+    // The sharp item, matched on the ROLES the character plays and not on the
+    // kind its step arrived under. A folded character is one step now (see
+    // itemsFromFacts), and its kind names only the role it led with, so a kind
+    // test would hide the radical card behind a character stepping as a kanji.
+    let at = walk.findIndex((_, i) => {
       const item = itemAt(i);
-      return step.kind === anchor.role && item !== undefined && ANCHOR_RULE[anchor.role](item);
+      return item !== undefined && ANCHOR_RULE[anchor.role](item);
     });
     if (at < 0) {
       // No sharp item here. Wait for the lesson that has one, UNLESS it has

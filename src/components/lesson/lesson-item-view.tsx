@@ -574,12 +574,22 @@ export function LessonItemView({ item }: { item: LessonItem }) {
         <PlainHeadword
           item={item}
           titleRow={headline}
-          // The reading of the word it is, printed by the speaker on every
-          // character that has one. A folded 人 used to show neither.
-          pronunciation={word?.reb}
+          // ONE SOUND, OR NONE, IN THE HEADER.
+          // ==================================
+          // A speaker up here promises the character has A pronunciation, and a
+          // folded character does not: 人 is ひと, じん and にん. Printing one of
+          // the three beside a play button is the app picking a favourite and not
+          // saying so. Whenever the word-sense panel is on this page it lists
+          // every reading with a speaker of its own, so the header stands down
+          // and pronunciation is said once, in the place that can say it fully.
+          //
+          // Kana and word-only steps keep theirs. A kana IS one sound, and a
+          // word-only step (学生) has no sense panel, so the header is the only
+          // place its reading lives and there is only ever one to show.
+          pronunciation={sections.has("word-sense") ? undefined : word?.reb}
           sub={grammarSub}
-          canHear={canHear}
-          hearGlyph={word && sections.has("word-sense") ? word.reb : item.glyph}
+          canHear={canHear && !sections.has("word-sense")}
+          hearGlyph={item.glyph}
           kanaGlyph={kanaGlyph}
           right={
             // The badge speaks for a CHARACTER, so it is asked the same pure
