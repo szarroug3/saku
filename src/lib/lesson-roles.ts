@@ -121,6 +121,27 @@ export function kanjiMeanings(item: LessonItem): readonly string[] {
 }
 
 /**
+ * What this character means AS A RADICAL, when the step plays the radical role
+ * and the radical carries a meaning — 亅 is "hook", 人 is "man". Null otherwise:
+ * a step that plays no radical role, or a radical with no meaning on file.
+ *
+ * The Radical section used to be its heading and its one "other kanji are built
+ * on this shape" line and nothing else, even where the shape has a plain meaning
+ * of its own. So it now shows that meaning the way the Kanji section shows "What
+ * it means: person" and the Word section shows its glosses. The meaning is the
+ * radical row's own (radicals.ts), NOT the kanji's: a character that is both a
+ * radical and a kanji has a meaning in each table (人 is "man" the shape, but
+ * "person" the character), and this is the shape's, which is what this section
+ * is about. Whether a radical has a meaning at all is decided here so it can be
+ * tested without a renderer.
+ */
+export function radicalMeaningOf(item: LessonItem): string | null {
+  if (!lessonRoles(item).includes("radical")) return null;
+  const meaning = radicalByGlyph(item.glyph)?.meaning?.trim();
+  return meaning ? meaning : null;
+}
+
+/**
  * The readings of a one-character word you can actually say ON THEIR OWN.
  *
  * 人 has three readings on file and only ひと is a word: じん is the -ian suffix
@@ -460,6 +481,14 @@ export function headwordSubtitle(item: LessonItem): string {
   if (item.kind === "transitivity" || item.kind === "keigo") return "";
 
   const roles = lessonRoles(item);
+  // A MULTI-TYPE STEP HAS NO ONE HEADER DEFINITION. 人 is a radical, a kanji and
+  // a word, and the character means different things as each: the kanji is
+  // "person", the word is "person, someone, somebody", the shape is "man". A
+  // single line under the glyph has to pick one of the three and so misreads the
+  // other two. Each role's section now carries its own meaning (see the radical,
+  // kanji and word blocks), so the header stands down and says none of them. A
+  // single-role step still leads with its meaning: it has exactly one to give.
+  if (roles.length > 1) return "";
   if (roles.includes("kanji") || roles.includes("radical")) {
     // The kanji entry first: a radical that is taught as its own kanji has no
     // radical page in the Library, and a character with no meaning line at all

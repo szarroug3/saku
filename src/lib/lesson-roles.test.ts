@@ -53,6 +53,7 @@ import {
   headwordSubtitle,
   kanjiEntryOf,
   kanjiMeanings,
+  radicalMeaningOf,
   standaloneSenses,
   lessonRoles,
   lessonSections,
@@ -483,9 +484,21 @@ describe("canHearItem — pronounceable, whichever track it came on", () => {
 });
 
 describe("headwordSubtitle — one honest line for a character that is several things", () => {
-  test("a character with a kanji card leads with the character's meaning", () => {
-    assert.equal(headwordSubtitle(FOLDED), "person");
-    assert.equal(headwordSubtitle(RADICAL_SIDE), "person");
+  test("A MULTI-TYPE STEP HAS NO HEADER DEFINITION: each role's section says its own", () => {
+    // 人 is a radical, a kanji and a word, and it means something different as
+    // each — "man" the shape, "person" the character, "person, someone,
+    // somebody" the word. A single line under the glyph had to pick one and
+    // misread the rest, so the header now says none of them.
+    assert.equal(headwordSubtitle(FOLDED), "");
+    assert.equal(headwordSubtitle(RADICAL_SIDE), "");
+  });
+
+  test("a single-role kanji still leads with its meaning: it has exactly one to give", () => {
+    assert.equal(headwordSubtitle(step(kanjiEntry("乞"), "乞", "kanji")), "beg · invite · ask");
+  });
+
+  test("a single-role radical still leads with its meaning too", () => {
+    assert.equal(headwordSubtitle(step(radicalEntry("亅"), "亅", "radical")), "hook");
   });
 
   test("a word that is only a word keeps its reading and its glosses", () => {
@@ -495,6 +508,39 @@ describe("headwordSubtitle — one honest line for a character that is several t
   test("a kana keeps its reading, a pattern its meaning", () => {
     assert.equal(headwordSubtitle(step(kanaEntry("あ"), "あ", "kana")), "a");
     assert.ok(headwordSubtitle(step(patternEntry("te-kara"), "〜てから", "grammar")).length > 0);
+  });
+});
+
+describe("radicalMeaningOf — the shape's own meaning, for the Radical section", () => {
+  test("a radical with a meaning shows it, sourced from the radical table not the kanji's", () => {
+    // 亅 is a radical and nothing else, and "hook" is what the Radical section
+    // now shows under its line.
+    assert.equal(radicalMeaningOf(step(radicalEntry("亅"), "亅", "radical")), "hook");
+  });
+
+  test("a folded character shows the SHAPE's meaning, which is not the kanji's", () => {
+    // 人 the character means "person"; 人 the shape means "man". The Radical
+    // section shows the shape's, whichever track the step arrived on.
+    assert.equal(radicalMeaningOf(FOLDED), "man");
+    assert.equal(radicalMeaningOf(RADICAL_SIDE), "man");
+    // And it is genuinely the radical row's meaning, not the kanji entry's.
+    assert.deepEqual(kanjiMeanings(FOLDED), ["person"]);
+  });
+
+  test("a step that plays no radical role has no radical meaning", () => {
+    assert.equal(radicalMeaningOf(step(kanjiEntry("乞"), "乞", "kanji")), null);
+    assert.equal(radicalMeaningOf(step(wordEntry("学生"), "学生", "word")), null);
+    assert.equal(radicalMeaningOf(step(kanaEntry("あ"), "あ", "kana")), null);
+  });
+
+  test("ALL radicals with a meaning get one, not a hand-picked few", () => {
+    for (const [glyph, meaning] of [
+      ["一", "one"],
+      ["水", "water"],
+      ["火", "fire"],
+    ] as const) {
+      assert.equal(radicalMeaningOf(step(radicalEntry(glyph), glyph, "radical")), meaning);
+    }
   });
 });
 
