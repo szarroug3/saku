@@ -10,13 +10,13 @@ Status board for everything in flight. One file per task in this folder; this is
 | 02 | [Sidebar sign-in banner (collapsed) + placement](02-sidebar-banner.md) | ✅ shipped | main | prod |
 | 03 | [401 silent-drop data-loss fix + migration refresh](03-401-fix.md) | ✅ shipped | main | prod |
 | 04 | [Quiz clarity: audio + instructions + chip/label types](04-quiz-clarity.md) | 🟢 ready to merge | `quiz-clarity` | localhost:3002 |
-| 05 | [Sync Part 1: settings + kanaquiz→saku rename](05-sync-settings.md) | 🟢 ready to merge — needs SQL applied | `sync-settings` | — |
+| 05 | [Sync Part 1: settings + kanaquiz→saku rename](05-sync-settings.md) | ✅ shipped (settings column applied) | main | prod |
 | 06 | [Standing/claim rework (the "solid" bug)](06-standing-claim.md) | 🟠 confirmed, not built | — | — |
 | 07 | [Continue-session masking (claim looks dead)](07-continue-session.md) | 🟠 confirmed, not built | — | — |
 | 08 | [Fact-type labels on results grid + confusions](08-fact-type-labels.md) | 🟠 confirmed, not built | — | — |
 | 09 | [Pitch intro + homophone→show-kanji](09-pitch-homophone.md) | 🟠 designed, not built | — | — |
 | 10 | [Answer-revealing retry hint/reveal](10-retry-hint.md) | 🔍 investigating | — | — |
-| 11 | [Sync Part 2: in-progress session teleport](11-sync-session.md) | ⚪ queued | — | — |
+| 11 | [Sync Part 2: in-progress session teleport](11-sync-session.md) | 🔵 in progress | `sync-session` | tbd |
 | 12 | [Sync Part 3: exact-position resume](12-sync-resume.md) | ⚪ queued | — | — |
 
 ## Housekeeping
