@@ -319,6 +319,20 @@ describe("standaloneSenses — which readings you can actually say by themselves
     }
   });
 
+  test("one row per SOUND: あの and ある stop printing themselves twice", () => {
+    // The mirror of 主. One spelling, one sound, two senses: あの is "that" and
+    // also the "well…" filler, ある is the verb and also "a certain". Two rows
+    // with the identical reading read as a rendering fault, so the senses of a
+    // shared sound sit in one row. 18 words did this.
+    for (const glyph of ["あの", "ある"]) {
+      const readings = standaloneSenses(vocabRow(glyph)!).map((s) => s.reb);
+      assert.equal(new Set(readings).size, readings.length, `${glyph} repeats a reading`);
+    }
+    const kept = standaloneSenses(vocabRow("ある")!);
+    assert.equal(kept.length, 1);
+    assert.ok(kept[0].glosses.length > 1, "the merged row keeps both senses");
+  });
+
   test("主 KEEPS ALL FOUR, which is why the rule is not 'the first one'", () => {
     // あるじ, おも, しゅ, ぬし are four real words. Any rule that answered 人
     // with one reading by taking senses[0] alone would answer 主 with one too,

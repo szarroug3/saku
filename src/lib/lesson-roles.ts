@@ -190,7 +190,43 @@ function standsAlone(sense: WordSense): boolean {
 export function standaloneSenses(word: VocabRow): readonly WordSense[] {
   const [primary, ...rest] = word.senses;
   if (!primary) return [];
-  return [primary, ...rest.filter(standsAlone)];
+  return groupByReading([primary, ...rest.filter(standsAlone)]);
+}
+
+/**
+ * One row per SOUND, not per dictionary entry.
+ *
+ * The merge collapsed homographs by written form, and some of those entries
+ * share a reading and differ only in sense. あの is あの twice, "that, those" as
+ * a pre-noun adjectival and "say, well" as an interjection; ある is ある twice,
+ * the verb and "a certain". Both are real Japanese, and both printed as two rows
+ * with the identical reading in the first column, which reads as a rendering
+ * fault. 18 words did this.
+ *
+ * It is the mirror of the case that made this table multi-row in the first
+ * place. 主 is one spelling with four sounds and four meanings; あの is one
+ * spelling with one sound and two meanings. A table headed by the reading owes a
+ * row to each sound, so the senses of a shared sound belong together in it.
+ *
+ * Insertion order is kept, so the primary's reading stays first and is still the
+ * one the drill asks. This is display only: `VOCAB_FACTS` builds from the row's
+ * own `glosses`, never from here, so nothing about what is graded moves.
+ */
+function groupByReading(senses: readonly WordSense[]): readonly WordSense[] {
+  const byReading = new Map<string, WordSense>();
+  for (const sense of senses) {
+    const seen = byReading.get(sense.reb);
+    if (!seen) {
+      byReading.set(sense.reb, sense);
+      continue;
+    }
+    byReading.set(sense.reb, {
+      ...seen,
+      pos: [...new Set([...seen.pos, ...sense.pos])],
+      glosses: [...new Set([...seen.glosses, ...sense.glosses])],
+    });
+  }
+  return [...byReading.values()];
 }
 
 /** Every section a step can show, in the order the lesson prints them.
