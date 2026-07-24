@@ -249,6 +249,11 @@ export function mergeStats(into: SessionStats, from: SessionStats): SessionStats
     dst.everCorrect = dst.everCorrect || src.everCorrect;
     // First time asked wins, forever. See above.
     if (dst.firstTryCorrect === null) dst.firstTryCorrect = src.firstTryCorrect;
+    // Presentation is the opposite rule to the flag: the LATEST showing wins, so
+    // the chip names how the fact was most recently asked. `from` is the newer
+    // leg/round in every caller, so it overwrites when it has one. Not a count,
+    // so it sits outside the additive fields and the commutativity they promise.
+    if (src.shown) dst.shown = src.shown;
     for (const e of Object.keys(src.confused)) {
       const key = e as keyof typeof src.confused;
       dst.confused[key] = (dst.confused[key] ?? 0) + src.confused[key];

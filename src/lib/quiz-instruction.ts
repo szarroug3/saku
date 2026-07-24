@@ -46,21 +46,19 @@ import type { Direction, FactId } from "@/types";
 
 /** How the instruction names the thing you are being asked to produce.
  *
- * "Shape" for a radical rather than "radical": the drill is the wrong place to
- * be quizzing vocabulary about the curriculum, and a learner who has met 亅
- * knows it as a shape that turns up inside kanji. See role-block.tsx, which
- * uses the same plain word for the same reason. */
+ * "radical" for a radical — the same word the curriculum teaches it by, so the
+ * quiz names it the way the lessons do rather than inventing a softer synonym. */
 const NOUN: Record<string, string> = {
   kana: "kana",
   kanji: "kanji",
-  radical: "shape",
+  radical: "radical",
   word: "word",
   grammar: "pattern",
   keigo: "keigo verb",
   transitivity: "verb",
 };
 
-function nounFor(fact: FactId): string {
+export function nounFor(fact: FactId): string {
   return NOUN[factInfo(fact)?.subject ?? ""] ?? "answer";
 }
 
@@ -91,16 +89,22 @@ export function quizInstruction(
     // The owner's own phrasing: "which of the following is the correct
     // [kanji, word, whatever]?". Shortened to "these" because the options sit
     // directly beneath it and "the following" is doing no work.
-    if (wantsMeaning) return "Which of these is what it means?";
+    //
+    // The meaning line NAMES the role, because the same glyph means different
+    // things as different roles: 可 is "can" as a KANJI and "acceptable" as a
+    // WORD, and "what it means" gave the learner no way to tell which was asked.
+    if (wantsMeaning) return `Which of these is what the ${noun} means?`;
     // A Japanese answer that is all kana is a SOUND, not a spelling — asking
     // "which of these is the correct word" over a board of readings is asking
-    // the wrong question about the right options.
-    if (isSound(fact, dir)) return "Which of these is how it's said?";
+    // the wrong question about the right options. Names the role for the same
+    // reason the meaning line does: a reading is read off a kanji OR a word, and
+    // the learner should know which one this card is about.
+    if (isSound(fact, dir)) return `Which of these is how this ${noun} is said?`;
     return `Which of these is the correct ${noun}?`;
   }
 
-  if (wantsMeaning) return "Type what it means.";
-  if (isSound(fact, dir)) return "Type how it's said.";
+  if (wantsMeaning) return `Type what the ${noun} means.`;
+  if (isSound(fact, dir)) return `Type how this ${noun} is said.`;
   // Reached only if a typed card ever wants a written form containing kanji,
   // which the drill is supposed to make impossible (it offers those as a board).
   // Kept honest rather than unreachable-by-assumption: if the guard upstream
@@ -123,7 +127,7 @@ export function quizInstruction(
  * jp2en only reaches here when the answer is already Japanese, and a Japanese
  * jp2en answer is a reading by construction — that is the whole of what the
  * Japanese side of jp2en contains. */
-function isSound(fact: FactId, dir: Direction): boolean {
+export function isSound(fact: FactId, dir: Direction): boolean {
   if (dir === "jp2en") return true;
   const info = factInfo(fact);
   if (!info || info.subject !== VOCAB_SUBJECT) return false;

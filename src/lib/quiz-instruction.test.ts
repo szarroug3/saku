@@ -94,7 +94,35 @@ describe("every card says what it wants", () => {
     );
     assert.equal(
       quizInstruction(wordReadingFactId("問題"), "en2jp", "typed"),
-      "Type how it's said.",
+      "Type how this word is said.",
+    );
+  });
+
+  test("a MEANING instruction names the role, so kanji and word differ", () => {
+    // The bug: "Type what it means." on every meaning card. But 可 as a KANJI
+    // means "can" and as a WORD means "acceptable" — asked jp2en, the same glyph
+    // gives two different answers, and only the NOUN says which one the card
+    // wants. So the two must not read the same sentence.
+    assert.equal(
+      quizInstruction(meaningFactId("一"), "jp2en", "typed"),
+      "Type what the kanji means.",
+    );
+    assert.equal(
+      quizInstruction(wordMeaningFactId("問題"), "jp2en", "typed"),
+      "Type what the word means.",
+    );
+    assert.notEqual(
+      quizInstruction(meaningFactId("一"), "jp2en", "typed"),
+      quizInstruction(wordMeaningFactId("問題"), "jp2en", "typed"),
+    );
+    // The pick-one line names the role the same way.
+    assert.equal(
+      quizInstruction(meaningFactId("一"), "jp2en", "mc"),
+      "Which of these is what the kanji means?",
+    );
+    assert.equal(
+      quizInstruction(wordMeaningFactId("問題"), "jp2en", "mc"),
+      "Which of these is what the word means?",
     );
   });
 
@@ -105,7 +133,7 @@ describe("every card says what it wants", () => {
     const a = ALL_FACTS.find((f) => String(f).startsWith("kana:あ"));
     assert.ok(a);
     assert.equal(quizInstruction(a, "en2jp", "mc"), "Which of these is the correct kana?");
-    assert.equal(quizInstruction(a, "jp2en", "typed"), "Type how it's said.");
+    assert.equal(quizInstruction(a, "jp2en", "typed"), "Type how this kana is said.");
   });
 
   test("the instruction follows the MODE, not just the fact", () => {

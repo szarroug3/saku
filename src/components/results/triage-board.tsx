@@ -10,93 +10,9 @@
 import { useState } from "react";
 
 import { Btn, PrimaryBtn } from "@/components/ui";
-import { glyphOfFact, type RunFacts } from "@/components/results/summary";
-import type { FactId, FactSessionDetail, SessionStats } from "@/types";
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(" ");
-}
-
-/** The cell's tiny note: how it went, in the fewest characters that are true. */
-function noteOf(st: FactSessionDetail): string {
-  if (!st.everCorrect) return "Never";
-  if (st.misses > 0) return `×${st.misses}`;
-  if (st.slow > 0) return "Slow";
-  return "";
-}
-
-/** Never landed, or fought you more than once. The rest is amber. */
-function severe(st: FactSessionDetail): boolean {
-  return !st.everCorrect || st.misses >= 2;
-}
-
-function Cell({
-  glyph,
-  stat,
-  on,
-  onToggle,
-}: {
-  /** What the cell SHOWS. The fact it stands for is the caller's business —
-   * a cell is a face, not an identity. */
-  glyph: string;
-  stat: FactSessionDetail;
-  on: boolean;
-  onToggle: () => void;
-}) {
-  const note = noteOf(stat);
-  // Unselected is "not chosen for redrill", NOT "nearly invisible". The old
-  // `opacity-40` faded the WHOLE cell — border, glyph and note together — and
-  // on kiri's mesh, where --text-muted is already a 50%-alpha ink, that landed
-  // the kana near 1.5:1: the に and テ ghosts the user reported. The distinction
-  // is carried by border and fill instead, exactly as the selected states carry
-  // theirs: a neutral --border and a --panel ground read plainly as "off"
-  // against the coloured, tinted "on" cells, and the glyph drops only to
-  // --text-muted — the app's standard muted-text contrast (≥3:1 on --card in
-  // every theme), legible rather than a smudge.
-  const tone = !on
-    ? "border-border bg-panel"
-    : severe(stat)
-      ? "border-danger/50 bg-danger-bg"
-      : note
-        ? "border-warning/45 bg-warning-bg"
-        : // Only reachable by hand: a clean character pulled in from Solid.
-          "border-accent/50 bg-accent-bg";
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-pressed={on}
-      aria-label={note ? `${glyph}, ${note}` : glyph}
-      className={cx(
-        "relative cursor-pointer rounded-[10px] border px-1 pb-1.5 pt-2 text-center",
-        tone,
-      )}
-    >
-      {on ? (
-        <span
-          aria-hidden="true"
-          className="absolute right-1 top-0.5 text-[8px] text-accent"
-        >
-          ✓
-        </span>
-      ) : null}
-      <span
-        aria-hidden="true"
-        className={cx(
-          "block font-kana text-[19px] font-extralight leading-tight",
-          !on && "text-text-muted",
-        )}
-      >
-        {glyph}
-      </span>
-      {note ? (
-        <span aria-hidden="true" className="block text-[9px] leading-tight text-text-muted">
-          {note}
-        </span>
-      ) : null}
-    </button>
-  );
-}
+import { WordTable } from "@/components/results/word-table";
+import { type RunFacts } from "@/components/results/summary";
+import type { FactId, SessionStats } from "@/types";
 
 function Board({
   label,
@@ -139,16 +55,16 @@ function Board({
           </button>
         </span>
       </div>
-      <div className="mb-3.5 grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-1.5">
-        {facts.map((f) => (
-          <Cell
-            key={f}
-            glyph={glyphOfFact(f)}
-            stat={stats[f]}
-            on={selected.has(f)}
-            onToggle={() => onToggle(f)}
-          />
-        ))}
+      {/* One row per word, its facts as cells — the same table the retry fork
+          shows. Each cell says how it was asked, how it went, and what you said
+          instead. Selecting a cell adds that fact to the redrill. */}
+      <div className="mb-3.5">
+        <WordTable
+          facts={facts}
+          stats={stats}
+          isSelected={(f) => selected.has(f)}
+          onToggle={onToggle}
+        />
       </div>
     </>
   );

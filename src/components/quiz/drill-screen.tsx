@@ -88,6 +88,7 @@ import type {
   EntryId,
   FactId,
   SessionStats,
+  ShowingPresentation,
 } from "@/types";
 
 import { DrillDrawer } from "./drill-drawer";
@@ -172,6 +173,13 @@ interface DrillQuestion {
    * reads to decide whether it has a mix-up to name.
    */
   confused: EntryId | null;
+}
+
+/** The presentation a resolving showing writes into its stat, so the results
+ * and retry screens can say how it was asked. `mc` present means a board was
+ * offered; its absence is a typed box. See ShowingPresentation. */
+function showingOf(q: DrillQuestion): ShowingPresentation {
+  return { dir: q.dir, mode: q.mc ? "mc" : "typed", listen: q.listen };
 }
 
 /** The per-showing presentation context for a card: the anchor word for a kanji
@@ -655,7 +663,7 @@ export function DrillScreen() {
       // forgiving numerator all advance in one call so they cannot drift into
       // different units — which is exactly what they had done. See
       // src/lib/drill-stats.ts.
-      resolveShowing(st, credit, true);
+      resolveShowing(st, credit, true, showingOf(q));
       // Only a clean first try extends the streak — a miss below has already
       // zeroed it, so getting there on the retry doesn't restore it.
       if (q.tries === 0) rt.streak = (rt.streak ?? 0) + 1;
@@ -714,7 +722,7 @@ export function DrillScreen() {
         // Out of retries: the card is done with (re-queued for later), so it
         // counts as resolved even though you didn't get it. `credit` is
         // necessarily false here; passing it keeps the one rule in one place.
-        resolveShowing(st, credit, false);
+        resolveShowing(st, credit, false, showingOf(q));
         rt.resolved++;
         rt.feedback = { kind: "bad" };
         rt.deck.splice(Math.min(rt.deck.length, rt.pos + requeueGap()), 0, q.f);
@@ -772,7 +780,7 @@ export function DrillScreen() {
       // this records a first-try miss and marks the showing resolved, same as
       // running out of retries — see submit's out-of-retries branch.
       const st = statForShowing(rt.stats, q.f);
-      resolveShowing(st, false, false);
+      resolveShowing(st, false, false, showingOf(q));
       rt.resolved++;
     }
     // The back of the deck, not `pos + requeueGap()`: a skip is a deferral to the

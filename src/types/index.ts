@@ -377,6 +377,22 @@ export interface ListsFile {
 
 // ---------- per-session stats (in-memory during a quiz) ----------
 
+/**
+ * How a showing was PRESENTED — the axes that decide the sentence a card read,
+ * captured so the post-quiz screens can say "hear it → type the meaning" rather
+ * than only naming the fact. A property of a SHOWING, not a fact: the same fact
+ * can be asked more than one way (listening is rolled per showing, and the
+ * direction can be too), so this records the LAST showing that resolved. See
+ * src/lib/question-presentation.ts, which turns it into the chip label.
+ */
+export interface ShowingPresentation {
+  dir: Direction;
+  /** `mc` when the card offered a board, `typed` when it wanted a box. */
+  mode: "mc" | "typed";
+  /** An audio-prompt card: the word was played and its glyph hidden. */
+  listen: boolean;
+}
+
 /** One fact's stats for one run. Keyed by FactId — see SessionStats. */
 export interface FactSessionDetail {
   seen: number;
@@ -423,6 +439,15 @@ export interface FactSessionDetail {
    * conversion impossible to forget.
    */
   confused: Record<EntryId, number>;
+  /**
+   * How this fact's LAST resolved showing was presented — the input the results
+   * and retry screens turn into "hear it → type the meaning". Optional: a stat
+   * that never resolved a showing (a card put on screen and walked away from),
+   * or one restored from a snapshot written before this field existed, has none,
+   * and the screens fall back to naming the fact's type. Overwritten on each
+   * resolution, so a fact asked several ways carries its most recent framing.
+   */
+  shown?: ShowingPresentation;
 }
 
 /** One run's detail, keyed by FACT — the unit that can actually be graded. */

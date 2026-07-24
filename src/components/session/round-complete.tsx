@@ -13,35 +13,31 @@
 // emptiness rule starts at Complete round, because that is where the rest
 // starts and the rest is the only thing the rest is for.
 //
-// THE PICKER IS GROUPED BY STANDING, LIKE THE RESULTS SCREEN
-// ==========================================================
-// The facts sit under the same adjective bands the Progress and Library
-// screens use — shaky / slipping / getting there / solid — worst-first, so a
-// miss you want another look at is where your eye already is. The band is a
-// STATE, read from your history; it is never the answer. A retry chip is still
-// the glyph and nothing else (see factGlyph): the band tells you how a
-// character has been going, not what it says.
+// THE PICKER IS A TABLE, GROUPED BY WORD
+// ======================================
+// One row per word (entry), its facts as cells — the same WordTable the results
+// board uses, so both post-quiz screens read a miss the same way. Each cell says
+// how the card was ASKED ("hear it → type the meaning"), how it went, and, for a
+// miss, what you answered instead — never the answer itself: you are about to be
+// re-asked these. 何 can be here three times — heard and typed for its meaning,
+// seen and picked for its reading — and the cell is what tells them apart.
 
 import { useState } from "react";
 
-import { StandingChip } from "@/components/library/standing-chip";
-import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
+import { WordTable } from "@/components/results/word-table";
+import { Btn, Card, Hint } from "@/components/ui";
 import { factInfo } from "@/lib/facts";
-import { standingFor } from "@/lib/library/standing";
 import {
   roundCompleteView,
   SESSION_ROUND_TARGET,
   type StudySession,
 } from "@/lib/session";
-import { useQuizConfig } from "@/lib/quiz-config";
-import { useHistory } from "@/lib/use-history";
 import type { FactId } from "@/types";
 
-import { groupByStanding, initialPicked, retryHint } from "./retry-grouping";
+import { initialPicked, retryHint } from "./retry-grouping";
 
-/** A missed fact as a chip — the glyph, and nothing else. Not the answer:
- * you are about to be asked these again, and printing "し = shi" here would
- * hand you the answer key to the retry you are choosing. */
+/** The recovered line's glyph — what a retry earned back. Never paired with its
+ * answer: you may be about to be asked these again. */
 function factGlyph(f: FactId): string {
   return factInfo(f)?.glyph ?? (f as string);
 }
@@ -65,33 +61,8 @@ export function RoundComplete({
   // now, and only `outstanding` reaches the picker. That split is the whole of
   // the "my perfect retry left no trace" fix: the round keeps its record, the
   // OFFER stops re-offering work you have already done.
-  const {
-    selection,
-    answered,
-    recovered,
-    outstanding,
-    total,
-    firstTry,
-    needAnother,
-  } = roundCompleteView(session);
-
-  // Standing is a query over history, so it is read here — the same history,
-  // claims and metric the Library and Progress screens paint from, so a
-  // character reads "shaky" in exactly one voice across the app.
-  const { history } = useHistory();
-  const { cfg } = useQuizConfig();
-  // ONE `now` per mount, not per render: two reads a millisecond apart must not
-  // disagree about whether a fact is solid. Same rule as the Library page.
-  const [now] = useState(() => Date.now());
-  const claims = history.claims ?? {};
-  const groups = groupByStanding(selection, (f) =>
-    standingFor(history.facts, claims, f, cfg.accuracyMetric, now).standing,
-  );
-
-  // Which of the full selection you actually got to this round — used only to
-  // dim the ones you skipped, never to change what's pickable. Glyph only,
-  // still: no glyph here is paired with its answer.
-  const wasAnswered = new Set(answered);
+  const { selection, recovered, outstanding, total, firstTry, needAnother } =
+    roundCompleteView(session);
 
   // The OUTSTANDING misses open pre-ticked. So the default "Retry N" IS "retry
   // what's still open" — the same one tap the old dedicated button gave, now
@@ -149,28 +120,17 @@ export function RoundComplete({
             <Hint>{retryHint(outstanding.length, recovered.length)}</Hint>
           </p>
 
-          <div className="flex flex-col gap-3">
-            {groups.map(({ standing, facts }) => (
-              <div
-                key={standing}
-                className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
-              >
-                <StandingChip standing={standing} />
-                {facts.map((f) => (
-                  <SmallBtn
-                    key={f}
-                    sel={!!picked[f]}
-                    className={
-                      !picked[f] && !wasAnswered.has(f) ? "opacity-55" : ""
-                    }
-                    onClick={() => setPicked((p) => ({ ...p, [f]: !p[f] }))}
-                  >
-                    {factGlyph(f)}
-                  </SmallBtn>
-                ))}
-              </div>
-            ))}
-          </div>
+          {/* One row per word, its facts as cells — the same table the results
+              board shows. Each cell says how the card was asked ("hear it →
+              type the meaning"), how it went, and, for a miss, what you answered
+              instead. Outstanding misses open pre-ticked; tapping a cell adds or
+              drops it from the retry. */}
+          <WordTable
+            facts={selection}
+            stats={session.roundStats}
+            isSelected={(f) => !!picked[f]}
+            onToggle={(f) => setPicked((p) => ({ ...p, [f]: !p[f] }))}
+          />
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">

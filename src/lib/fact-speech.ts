@@ -28,7 +28,7 @@
 import { KANA_SUBJECT } from "@/data/characters";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
-import { VOCAB_SUBJECT } from "@/data/vocab";
+import { VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import type { FactInfo } from "@/types";
 
 /**
@@ -41,15 +41,23 @@ import type { FactInfo } from "@/types";
 export function speechForFact(info: FactInfo, anchor?: string): string | null {
   switch (info.subject) {
     case KANA_SUBJECT:
-    case VOCAB_SUBJECT:
     case TRANSITIVITY_SUBJECT:
-      // The glyph is itself a speakable surface: a kana character, a whole word,
-      // or (transitivity) the verb the fact asks for — 開ける is "akeru".
+      // The glyph is itself a speakable surface: a kana character, or
+      // (transitivity) the verb the fact asks for — 開ける is "akeru".
       return info.glyph;
+    case VOCAB_SUBJECT:
+      // Speak the READING, not the written word. 先生's surface reads せんせい
+      // either way, but 何 written is free to come out か (an on'yomi TTS
+      // prefers) instead of the taught なに — the reading pins the one sound the
+      // card means. A kana word has keb === reb, so this is a no-op for it.
+      return vocabRow(info.glyph)?.reb ?? info.glyph;
     case KANJI_SUBJECT:
       // Reading fact → speak the word that carries the reading (先生), never the
-      // bare 生. Meaning fact → no anchor → no sound.
-      return anchor ?? null;
+      // bare 生. Meaning fact → no anchor → no sound. And when that word is a
+      // single kanji (何's anchor is 何 itself) the written form has the same
+      // free-reading ambiguity, so speak the word's kana reading — なに, not the
+      // glyph the phone may voice as か.
+      return anchor ? (vocabRow(anchor)?.reb ?? anchor) : null;
     default:
       // Grammar, and any subject we don't recognise: err toward silence.
       return null;

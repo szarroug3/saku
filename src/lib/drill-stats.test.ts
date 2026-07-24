@@ -211,3 +211,19 @@ test("landing it on the retry is one showing, not first try", () => {
   assert.equal(sessionAccuracy(stats, "firstTry"), 0);
   assert.equal(sessionAccuracy(stats, "attempt"), 100);
 });
+
+test("resolveShowing records the showing's presentation for the results chip", () => {
+  // The post-quiz screens name HOW a card was asked; the framing rides here.
+  const stats: SessionStats = {};
+  const st = statForShowing(stats, POOL[0]);
+  resolveShowing(st, true, true, { dir: "jp2en", mode: "typed", listen: true });
+  assert.deepEqual(st.shown, { dir: "jp2en", mode: "typed", listen: true });
+
+  // Asked again a different way in the same run → the latest framing wins.
+  resolveShowing(st, true, true, { dir: "en2jp", mode: "mc", listen: false });
+  assert.deepEqual(st.shown, { dir: "en2jp", mode: "mc", listen: false });
+
+  // A resolution with no presentation leaves the last one in place, not blank.
+  resolveShowing(st, true, true);
+  assert.deepEqual(st.shown, { dir: "en2jp", mode: "mc", listen: false });
+});
