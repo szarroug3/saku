@@ -25,7 +25,7 @@
 // was scheduled for.
 //
 // EMPTINESS IS DECIDED HERE TOO, from the same helpers the sections themselves
-// ask (`teachableParts`, `formsOfWord`, `explainsItsSound`). Each component already
+// ask (`teachableParts`, `formsOfWord`, `splitsIntoKanji`). Each component already
 // returns null when it has nothing, which is enough to keep a hole off the page
 // but not enough to know whether a ROLE has anything to show at all, and a role
 // heading over three absent sections is worse than no heading.
@@ -38,14 +38,28 @@
 // on the shape. The owner's read of it: fine on a page you went looking for,
 // too much on a page you were handed.
 //
-// So this function answers for the LESSON only, and it answers smaller. Two
-// things it used to hand over are now the Library's alone: the table of readings
-// the kanji takes inside words, and the list of kanji built on the shape. Both
-// are exhaustive catalogues you consult once you already know the character;
-// neither is what you need on the minute you meet it. What the lesson keeps in
-// their place is the point of each role, said in a line (see RoleBlock), plus
-// the character's own definition where the kanji block would otherwise have
-// nothing under its heading.
+// So this function answers for the LESSON only, and it answers smaller. The list
+// of kanji built on the shape is the Library's alone: an exhaustive catalogue,
+// 22 entries deep for 人, that you consult once you already know the character.
+// What the lesson keeps in its place is the point of each role, said in a line
+// (see RoleBlock), plus the character's own definition.
+//
+// THE TABLE OF IN-WORD READINGS IS THE LIBRARY'S, and stays there: "for the
+// lesson i don't want the kanji readings. just keep the meaning of the kanji and
+// then the definition of it as a word and how to say it." So the kanji block is
+// a line and a definition, and there is no `kanji-readings` section.
+//
+// WHICH IS ALSO WHY THE SENSE TABLE LEFT THE WORD BLOCK. It sat under "Word"
+// listing ひと, じん and にん, which says you can say じん by itself. You cannot:
+// じん and にん are bound, they only ever occur welded into a longer word. What is
+// left in the word block is the readings that genuinely stand alone, which is
+// one for 人 and four for 主; see `standaloneSenses`.
+//
+// AND THE BREAKDOWN NARROWED TO COMPOUNDS. `word-built-from` is the Library's
+// "Built from" box, asked for by name for the case it answers: 問題 is 問 もん
+// and 題 だい, and which character is making which sound is a real question about
+// a word written with several of them. A word written with one kanji has no such
+// question, so the section is gated on there being two; see `splitsIntoKanji`.
 //
 // The Library entry page never called this function and still does not — it
 // assembles its own sections from `KanjiReadings` and `ComponentUses` — so the
@@ -54,7 +68,7 @@
 
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph } from "@/data/radicals";
-import { vocabRow, type VocabRow } from "@/data/vocab";
+import { vocabRow, type VocabRow, type WordSense } from "@/data/vocab";
 import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role";
 import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
@@ -106,6 +120,37 @@ export function kanjiMeanings(item: LessonItem): readonly string[] {
   return kanjiEntryOf(item)?.meanings ?? [];
 }
 
+/**
+ * The readings of a one-character word you can actually say ON THEIR OWN.
+ *
+ * 人 has three readings on file and only ひと is a word: じん is the -ian suffix
+ * and にん counts people, and both are BOUND — they exist only welded into
+ * something longer (外国人, 三人). Printing all three under "Word" told a reader
+ * that 人 said じん is a thing you can utter, which it is not.
+ *
+ * THE RULE IS "SHARES A PART OF SPEECH WITH THE PRIMARY", NOT A LIST OF BOUND
+ * TAGS. The obvious implementation — drop anything tagged suffix or counter — is
+ * wrong on the data: 山, 手, 口 and 川 all carry a counter tag and are four of the
+ * plainest standalone nouns in the language (see wordTypeOf, which already had to
+ * work around exactly this). So no tag is read as bound in isolation. A sense
+ * qualifies when it shares at least one tag with `senses[0]`, the reading the
+ * word is filed and drilled under: it is the same KIND of word as the one that
+ * demonstrably stands alone.
+ *
+ * It keeps 主 whole, which is the case that kills every one-reading shortcut:
+ * あるじ, おも, しゅ and ぬし are four real words, all four carrying the noun tag
+ * the primary carries, and all four come back. 中 keeps なか and ちゅう and drops
+ * じゅう, which is tagged suffix and nothing else.
+ *
+ * Never empty: the primary is always in, by construction.
+ */
+export function standaloneSenses(word: VocabRow): readonly WordSense[] {
+  const [primary, ...rest] = word.senses;
+  if (!primary) return [];
+  const free = new Set(primary.pos.map((p) => p.toLowerCase()));
+  return [primary, ...rest.filter((s) => s.pos.some((p) => free.has(p.toLowerCase())))];
+}
+
 /** Every section a step can show, in the order the lesson prints them.
  *
  * THE RADICAL COMES FIRST NOW, THEN THE KANJI, THEN THE WORD — ROLE_ORDER, the
@@ -129,7 +174,7 @@ export const SECTION_ORDER = [
   "kanji-parts",
   "word-sense",
   "word-forms",
-  "word-readings",
+  "word-built-from",
   "grammar-build",
   "grammar-example",
   "grammar-family",
@@ -147,30 +192,28 @@ const SECTION_ROLE: Partial<Record<LessonSection, RoleName>> = {
   "kanji-parts": "kanji",
   "word-sense": "word",
   "word-forms": "word",
-  "word-readings": "word",
+  "word-built-from": "word",
 };
 
 /**
- * Does this word's reading need explaining at all?
+ * Is this word written with more than one KANJI, so that taking it apart says
+ * something the word itself does not?
  *
- * True when the word is written with more than one character, so the reading
- * genuinely splits across them, or when a single character's reading in the word
- * differs from its base (a sound change worth pointing at). False for the common
- * folded case: one character, keeping its own reading, where the breakdown is the
- * word repeated back. `align` is the per-character [character, in-word, base]
- * table vocab.ts ships; no align means nothing to break down.
+ * MULTI-KANJI, NOT MULTI-CHARACTER, and the difference is 食べる. The old rule
+ * asked whether the written form was longer than one character, so 食べる passed
+ * on the strength of its okurigana and got a breakdown with one row in it: 食 is
+ * た. The owner asked for the breakdown "only for multi-kanji words", and one row
+ * is the shape she is ruling out — there is no split to see when there is one
+ * piece. 問題 is the case it exists for: 問 もん beside 題 だい, plus the line
+ * naming the pattern the pair follows.
+ *
+ * So the count is of kanji, off `align` (the per-character [character, in-word,
+ * base] table vocab.ts ships, which has one entry per kanji and none for kana).
+ * No align at all means a word that cannot be split — the jukujikun, where おとな
+ * belongs to 大人 and to neither character — and those show nothing either.
  */
-function explainsItsSound(word: VocabRow): boolean {
-  const align = word.align;
-  if (!align?.length) return false;
-  // NOT align.length: align covers only the KANJI, so 食べる aligns one entry
-  // (食) despite being three characters, and its breakdown still earns its place
-  // by saying which part of たべる the kanji accounts for. The question is
-  // whether the word is MORE than the single character, which is the written
-  // form's length.
-  if ([...word.keb].length > 1) return true;
-  const [, surface, base] = align[0];
-  return !!surface && !!base && surface !== base;
+function splitsIntoKanji(word: VocabRow): boolean {
+  return (word.align?.length ?? 0) > 1;
 }
 
 /**
@@ -203,14 +246,11 @@ export function lessonSections(item: LessonItem): LessonSection[] {
   if (word) {
     if (roles.includes("kanji") || roles.includes("radical")) out.add("word-sense");
     if (formsOfWord(word)?.length) out.add("word-forms");
-    // "Why it sounds like that" only when there IS something to explain. The
-    // panel earns its name on a word spread over several characters (電車 is 電
-    // でん plus 車 しゃ) or one whose sound shifts (手紙 is て plus かみ, said
-    // てがみ). On a one-character word that keeps its base reading it degrades to
-    // a single row saying 人 is read ひと, which the sense table right above it
-    // has already said. Every folded character in the curriculum is such a word,
-    // so this is the common case, not the corner.
-    if (explainsItsSound(word)) out.add("word-readings");
+    // "Built from" only when there are pieces to see. 電車 is 電 でん plus 車
+    // しゃ and the box is the answer to which character is making which sound;
+    // 人 has one character and 食べる has one kanji, and for both the box would
+    // be the word handed back with a border round it.
+    if (splitsIntoKanji(word)) out.add("word-built-from");
   }
   if (roles.includes("kanji")) {
     if (kanjiMeanings(item).length) out.add("kanji-meaning");

@@ -23,6 +23,17 @@
 // inside words, and the kanji built on the shape. The suite below pins the
 // smaller lesson AND the fact that the Library still carries what left, because
 // "we stopped showing it" and "we lost it" look identical from the lesson's side.
+//
+// AND THEN THE TWO BLOCKS WERE SORTED OUT
+// =======================================
+// Both cuts stand: no kanji built on the shape, no table of in-word readings.
+// What the kanji block keeps is what the character MEANS. What moved is the sense
+// table that had been sitting under WORD listing ひと, じん and にん, two of which
+// are not words you can say at all; the word block now shows only the readings
+// that stand alone. And the word-to-kanji breakdown narrowed to the words that
+// have something to break down: 問題 does, 人 and 食べる do not. So this suite
+// pins those three decisions, and pins 主, which is the character that proves
+// "standalone" is not a synonym for "one".
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -42,6 +53,7 @@ import {
   headwordSubtitle,
   kanjiEntryOf,
   kanjiMeanings,
+  standaloneSenses,
   lessonRoles,
   lessonSections,
   lessonWord,
@@ -84,15 +96,33 @@ describe("lessonRoles — every role the step teaches, not just the track it cam
 
 describe("lessonSections — a section per role, up the ladder", () => {
   test("人 teaches the shape, then the character, then the word, then how it's drawn", () => {
-    // No word-readings: 人 is one character keeping its own reading, so the
-    // breakdown would be the word said back to itself (see explainsItsSound).
-    // No example sentence either; that is the Library's now.
+    // No breakdown: 人 is one character, so there is nothing to take apart. No
+    // readings table either, in either block, and no example sentence; those are
+    // the Library's.
     assert.deepEqual(lessonSections(FOLDED), [
       "radical-note",
       "kanji-meaning",
       "word-sense",
       "how-its-written",
     ]);
+  });
+
+  test("問題 gets the breakdown, and it is the only extra a two-kanji word gets", () => {
+    const sections = lessonSections(step(wordEntry("問題"), "問題", "word"));
+    assert.deepEqual(sections, ["word-built-from"]);
+    assert.equal(roleHasSections("word", sections), true);
+  });
+
+  test("and the breakdown is a WORD section, so it sits under the word heading", () => {
+    assert.equal(roleHasSections("word", ["word-built-from"]), true);
+    assert.equal(roleHasSections("kanji", ["word-built-from"]), false);
+  });
+
+  test("the lesson has no readings table of its own, in either block", () => {
+    for (const s of lessonSections(FOLDED)) {
+      assert.notEqual(s as string, "kanji-readings");
+      assert.notEqual(s as string, "word-readings");
+    }
   });
 
   test("THE ORDER FLIPPED: radicals build kanji, kanji build words, and the page says it that way round now", () => {
@@ -107,9 +137,8 @@ describe("lessonSections — a section per role, up the ladder", () => {
     );
   });
 
-  test("the trim holds: no readings table, no list of kanji built on the shape", () => {
+  test("the trim holds: no list of kanji built on the shape either", () => {
     for (const s of lessonSections(FOLDED)) {
-      assert.notEqual(s as string, "kanji-readings");
       assert.notEqual(s as string, "radical-kanji");
     }
   });
@@ -126,7 +155,7 @@ describe("lessonSections — a section per role, up the ladder", () => {
     }
   });
 
-  test("a plain kanji keeps its meaning and its parts and its strokes, and loses its readings", () => {
+  test("a plain kanji keeps its meaning and its parts and its strokes", () => {
     assert.deepEqual(lessonSections(step(kanjiEntry("明"), "明", "kanji")), [
       "kanji-meaning",
       "kanji-parts",
@@ -151,13 +180,19 @@ describe("lessonSections — a section per role, up the ladder", () => {
     assert.equal(roleHasSections("radical", sections), true);
   });
 
-  test("a two-character word is unchanged, and gains no word-sense panel", () => {
-    // It KEEPS word-readings: 食べる spreads over more than one character, so the
-    // breakdown is doing real work. The example sentence is gone from every
-    // lesson, this one included; the Library still carries it.
+  test("食べる is one kanji and okurigana, so it conjugates and breaks down into nothing", () => {
+    // MULTI-CHARACTER IS NOT MULTI-KANJI, and this is the word that separates
+    // them: 食べる is three characters and one kanji, so the breakdown would be
+    // one tile saying 食 is た. The example sentence is gone from every lesson,
+    // this one included; the Library still carries it.
     const sections = lessonSections(step(wordEntry("食べる"), "食べる", "word"));
-    assert.deepEqual(sections, ["word-forms", "word-readings"]);
+    assert.deepEqual(sections, ["word-forms"]);
     assert.ok(!sections.includes("word-sense"), "its header already says both");
+  });
+
+  test("学生 is two kanji, so it keeps the breakdown and nothing else changes", () => {
+    const sections = lessonSections(step(wordEntry("学生"), "学生", "word"));
+    assert.deepEqual(sections, ["word-built-from"]);
   });
 
   test("a kana gets the stroke section and nothing else", () => {
@@ -255,6 +290,54 @@ describe("the headings, and the badge they replaced", () => {
   });
 });
 
+describe("standaloneSenses — which readings you can actually say by themselves", () => {
+  test("人 is exactly ひと: じん and にん only ever turn up welded to something", () => {
+    const kept = standaloneSenses(vocabRow("人")!);
+    assert.deepEqual(
+      kept.map((s) => s.reb),
+      ["ひと"],
+    );
+    assert.deepEqual(kept[0].glosses.slice(0, 1), ["person"]);
+  });
+
+  test("主 KEEPS ALL FOUR, which is why the rule is not 'the first one'", () => {
+    // あるじ, おも, しゅ, ぬし are four real words. Any rule that answered 人
+    // with one reading by taking senses[0] alone would answer 主 with one too,
+    // and lose three words to a bug that looks like a design.
+    const kept = standaloneSenses(vocabRow("主")!).map((s) => s.reb);
+    assert.equal(kept.length, 4);
+    assert.deepEqual([...kept].sort(), ["あるじ", "おも", "しゅ", "ぬし"].sort());
+  });
+
+  test("and the rule is not a list of bound TAGS either: 山 counts heaps and is still a mountain", () => {
+    // 山, 手, 口 and 川 all carry a counter tag. Reading "counter" as bound would
+    // delete four of the plainest words in the curriculum.
+    for (const w of ["山", "手", "口", "川"]) {
+      const row = vocabRow(w)!;
+      assert.deepEqual(
+        standaloneSenses(row).map((s) => s.reb),
+        [row.reb],
+        `${w} keeps its own reading`,
+      );
+    }
+    assert.equal(vocabRow("山")!.pos[0], "counter");
+  });
+
+  test("中 keeps the two nouns and drops じゅう, which is a suffix and nothing else", () => {
+    assert.deepEqual(
+      standaloneSenses(vocabRow("中")!).map((s) => s.reb),
+      ["なか", "ちゅう"],
+    );
+  });
+
+  test("a word with one reading comes back whole, so word-only steps cannot be touched", () => {
+    for (const w of ["学生", "食べる"]) {
+      const row = vocabRow(w)!;
+      assert.deepEqual(standaloneSenses(row), row.senses);
+    }
+  });
+});
+
 describe("the Library keeps what the lesson dropped", () => {
   const entryPage = readFileSync(
     fileURLToPath(new URL("../app/library/[...entry]/page.tsx", import.meta.url)),
@@ -265,6 +348,11 @@ describe("the Library keeps what the lesson dropped", () => {
     const shape = kanjiEntryOf(FOLDED);
     assert.ok(shape, "人 has a kanji entry");
     assert.equal(readingRowsOf(shape).length, 5);
+    // Two of the five, り and と, are readings of the character and no word of
+    // their own, which is why no list of word senses could ever stand in for
+    // this table. The lesson does not try; it sends you here.
+    const senses = vocabRow("人")!.senses.map((x) => x.reb);
+    for (const r of ["り", "と"]) assert.ok(!senses.includes(r));
   });
 
   test("and the 22 kanji built on the shape are still joined up", () => {
