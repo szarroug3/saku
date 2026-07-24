@@ -36,13 +36,13 @@ import { useId, useState } from "react";
 import { StrokeOrder } from "@/components/lesson/stroke-order";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { Card } from "@/components/ui";
-import { kanjiEntry, kanjiRow } from "@/data/kanji";
-import { radicalByGlyph } from "@/data/radicals";
+import { kanjiEntry } from "@/data/kanji";
 import { WHY_STROKE_ORDER, WHY_WRITING_EARLY } from "@/data/why";
-// The parts test lives in lib now, because the drill's hint builder asks it too
-// and the lesson and the hint must never disagree about what 明 is made of.
-import { teachableParts } from "@/lib/kanji-parts";
+// What this section can say when there is no diagram is worked out in lib, off
+// the role set, because the drill's hint builder asks the same parts question and
+// the lesson and the hint must never disagree about what 明 is made of.
 import type { LessonItem } from "@/lib/lesson-items";
+import { strokeFallbackOf } from "@/lib/lesson-roles";
 import { useLessonPref } from "@/lib/lesson-prefs";
 import { useGlyphStrokes } from "@/lib/strokes";
 import { entryHref } from "@/lib/library/href";
@@ -55,7 +55,15 @@ import { entryHref } from "@/lib/library/href";
  * — not because it is wrong, but because that page's Links section already
  * carries a "Made of" row, and printing the same components twice on one screen
  * reads as two different claims. The lesson keeps it: a walk-through has no
- * Links section, so the breakdown is the only place the parts appear. */
+ * Links section, so the breakdown is the only place the parts appear.
+ *
+ * WHICH OF THE THREE IS `strokeFallbackOf`'s ANSWER, not this component's. It
+ * used to be decided here off `item.kind`, and a step carries one kind chosen by
+ * whichever role the curriculum scheduled the character as, so 人 reached on the
+ * words track matched neither the kanji branch nor the radical one and printed
+ * "Learned as a whole shape" for a character the app knows is two strokes. The
+ * decision is a role question, so it moved to lesson-roles.ts where the role set
+ * lives and where it can be tested. */
 function WholeShapeFallback({
   item,
   reference = false,
@@ -63,16 +71,14 @@ function WholeShapeFallback({
   item: LessonItem;
   reference?: boolean;
 }) {
-  const row = item.kind === "kanji" ? kanjiRow(item.glyph) : undefined;
-  const radRow = item.kind === "radical" ? radicalByGlyph(item.glyph) : undefined;
-  const parts = item.kind === "kanji" && !reference ? teachableParts(item.glyph) : null;
+  const fallback = strokeFallbackOf(item, reference);
 
-  if (parts) {
+  if (fallback.show === "parts") {
     return (
       <div className="text-[13px]">
         <p className="text-text-muted">Built from parts you learn on their own:</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {parts.map((p, i) => (
+          {fallback.parts.map((p, i) => (
             <span key={`${p.c}-${i}`} className="flex items-center gap-2">
               {i > 0 ? <span className="text-text-muted">+</span> : null}
               <Link
@@ -89,12 +95,11 @@ function WholeShapeFallback({
     );
   }
 
-  const strokes = row?.strokes ?? radRow?.strokes;
-  if (strokes !== undefined) {
+  if (fallback.show === "strokes") {
     return (
       <p className="text-[13px] text-text-muted">
         <span className="text-text">
-          {strokes} stroke{strokes === 1 ? "" : "s"}
+          {fallback.strokes} stroke{fallback.strokes === 1 ? "" : "s"}
         </span>
         , and the stroke-order diagram for this one isn&rsquo;t in yet.
       </p>
@@ -195,9 +200,13 @@ export function HowItsWritten({
   // That is the whole difference between this and "announcing an absence". A
   // glyph we know NOTHING about — no count, no row — still renders nothing
   // rather than an empty heading.
-  const hasFallback =
-    (item.kind === "kanji" && kanjiRow(item.glyph) !== undefined) ||
-    (item.kind === "radical" && radicalByGlyph(item.glyph) !== undefined);
+  //
+  // Asked of the fallback itself, in reference mode, so the two can never
+  // disagree: "there is something to say" is exactly "the fallback is not the
+  // whole-shape line". Reference mode is right even though this guard also runs
+  // in the lesson, because the parts breakdown the lesson adds only ever exists
+  // where a stroke count does.
+  const hasFallback = strokeFallbackOf(item, true).show !== "whole";
   if (alwaysOpen && strokes.status === "loading") return null;
   if (alwaysOpen && strokes.status === "ready" && !strokes.data && !hasFallback) {
     return null;

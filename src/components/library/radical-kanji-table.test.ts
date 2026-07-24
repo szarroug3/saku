@@ -7,9 +7,14 @@
 // kanji track teaches in — not the raw index order KRADFILE happens to store,
 // and not by frequency. The sort key is `orderRow(c).i`. If that key is dropped
 // the table still renders, just in the wrong order, so the order is pinned here
-// against the data. The two callers (the radical lesson card, cap 5; the radical
-// Library entry, cap 30) must share this one component rather than author the
-// table twice, so the wiring is pinned too.
+// against the data.
+//
+// WHO CALLS IT NOW. The stepped lesson used to, capped at 5. It does not any
+// more: on the step where a shape is first met, a list of the kanji built on it
+// is 22 characters the reader has not learned, and the trim moved that catalogue
+// to the Library alone. So the callers are the two Library surfaces, the kanji
+// entry's "seen as a part of" and the radical entry's table at cap 30, and the
+// wiring pinned below is theirs.
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -46,7 +51,7 @@ describe("a radical's kanji are ordered by curriculum, not raw index", () => {
   });
 });
 
-describe("one table, shared by both callers with different caps", () => {
+describe("one table, on the reference pages only", () => {
   const table = read("./radical-kanji-table.tsx");
   const uses = read("./component-uses.tsx");
   const lesson = read("../lesson/lesson-item-view.tsx");
@@ -61,9 +66,11 @@ describe("one table, shared by both callers with different caps", () => {
     assert.match(uses, /asTable/);
   });
 
-  test("the lesson card mounts the shared table capped at 5", () => {
-    assert.match(lesson, /<RadicalKanjiTable/);
-    assert.match(lesson, /cap=\{5\}/);
+  test("the stepped lesson mounts it nowhere", () => {
+    // The JSX, not the name: the view's own header explains where the table
+    // went, and that sentence has to be allowed to name it.
+    assert.doesNotMatch(lesson, /<RadicalKanjiTable/);
+    assert.doesNotMatch(lesson, /from "@\/components\/library\/radical-kanji-table"/);
   });
 
   test("the Library radical entry uses the table capped at 30", () => {

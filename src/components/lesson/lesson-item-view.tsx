@@ -18,10 +18,10 @@
 // ========================================================
 // The frame is the same for every track: a headword with its reading or
 // meaning, then the sections that apply. Which sections apply is the only thing
-// that varies, and it varies in ONE place here — kana gets the mnemonic hero,
-// kanji gets its readings, everything gets "how it's written". Each section is
-// its own component and decides its own emptiness, so this file reads as "what
-// a lesson item is made of" and nothing more.
+// that varies, and it varies in ONE place here — kana gets the mnemonic hero, a
+// character gets a block for each role it plays, everything gets "how it's
+// written". Each section is its own component and decides its own emptiness, so
+// this file reads as "what a lesson item is made of" and nothing more.
 //
 // A SECTION PER ROLE, NOT PER KIND
 // ================================
@@ -35,6 +35,19 @@
 // to the tracks that really are one thing, kana and grammar and the pattern
 // cards. The affordances follow the same rule: a character that is a word is
 // pronounceable whichever track it arrived on.
+//
+// A LESSON, NOT A REFERENCE
+// =========================
+// Folding the cards worked and then went too far: 人 came out as a sense table,
+// a sound explainer, an example sentence, five rows of in-word readings and a
+// list of the 22 kanji built on the shape, all on the screen you get handed the
+// first time you meet the character. Two of those are catalogues, and catalogues
+// belong on the page you go looking for. So `LessonReadings` and
+// `RadicalKanjiTable` are no longer mounted here at all; the Library entry page
+// still shows both, through its own `KanjiReadings` and `ComponentUses`, and it
+// always did — the two views never shared a section list, so the trim needed no
+// mode flag threaded through anything. In their place: the kanji's definition,
+// and a line under each role heading saying what the role is for.
 //
 // THE PICTURE IS THE HERO — AND THE LIBRARY SHOWS THE SAME ONE
 // ============================================================
@@ -57,19 +70,18 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Callout } from "@/components/lesson/callout";
 import { HearButton } from "@/components/lesson/hear-button";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
+import { KanjiMeaningPanel } from "@/components/lesson/kanji-meaning-panel";
 import { KanjiPartsRow } from "@/components/lesson/kanji-parts-row";
 import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
-import { LessonReadings } from "@/components/lesson/lesson-readings";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { RoleBlock } from "@/components/lesson/role-block";
 import { WordSensePanel } from "@/components/lesson/word-sense-panel";
-import { RadicalKanjiTable } from "@/components/library/radical-kanji-table";
 import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor, glyphVariantFor } from "@/data/characters";
 import { cluster, membersOf } from "@/data/grammar/clusters";
-import { kanjiEntry, kanjiRow } from "@/data/kanji";
+import { kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
 import { exampleFor } from "@/data/word-examples";
 import { type VocabRow } from "@/data/vocab";
@@ -85,6 +97,7 @@ import type { LessonItem } from "@/lib/lesson-items";
 import {
   canHearItem,
   headwordSubtitle,
+  kanjiMeanings,
   lessonRoles,
   lessonSections,
   lessonWord,
@@ -493,9 +506,6 @@ function KeigoTeachView({
 
 export function LessonItemView({ item }: { item: LessonItem }) {
   const { cfg } = useQuizConfig();
-  const { history } = useHistory();
-  const claims = history.claims ?? {};
-  const [now] = useState(() => Date.now());
 
   const subtitle = headwordSubtitle(item);
   // The roles this character plays and the sections they earn, both read off the
@@ -664,33 +674,26 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           ) : null}
         </RoleBlock>
         <RoleBlock role="kanji" labelled={labelRoles && roleHasSections("kanji", sectionList)}>
+          {/* WHAT IT MEANS, NOT WHAT IT SOUNDS LIKE INSIDE WORDS. The table of
+              in-word readings has moved off the lesson entirely and lives on the
+              Library entry, which is the page you open when you want all five
+              rows for 人. Here the block opens with the definition, taken from
+              the kanji entry whichever track the step arrived on. */}
+          {sections.has("kanji-meaning") ? (
+            <KanjiMeaningPanel meanings={kanjiMeanings(item)} />
+          ) : null}
           {sections.has("kanji-parts") ? <KanjiPartsRow glyph={item.glyph} /> : null}
-          {/* Pointed at the KANJI entry, which is where the readings live. For a
-              step that arrived on the kanji track that is the entry it already
-              carries; for one that reached this character from the radical or
-              words track it is the fold, and the same table either way. */}
-          {sections.has("kanji-readings") ? (
-            <LessonReadings
-              item={{ ...item, entry: kanjiEntry(item.glyph) }}
-              voiceName={cfg.voiceName}
-            />
-          ) : null}
         </RoleBlock>
-        {/* A radical's kanji, in learning order: the shape's whole payoff is the
-            meaning it lends the kanji built on it, so this shows the first few of
-            them, each with its meaning and the reader's score. */}
-        <RoleBlock role="radical" labelled={labelRoles && roleHasSections("radical", sectionList)}>
-          {sections.has("radical-kanji") ? (
-            <RadicalKanjiTable
-              component={item.glyph}
-              cap={5}
-              facts={history.facts}
-              claims={claims}
-              metric={cfg.accuracyMetric}
-              now={now}
-            />
-          ) : null}
-        </RoleBlock>
+        {/* The building block, taught by its heading and its one line. The list
+            of kanji built on the shape is the Library's now: it is a catalogue,
+            22 entries deep for 人, and on the step where the shape is first met
+            not one of them has been learned yet. What the reader needs here is
+            that the shape recurs and is worth recognising, which is what the
+            line says. */}
+        <RoleBlock
+          role="radical"
+          labelled={labelRoles && roleHasSections("radical", sectionList)}
+        />
         {item.kind === "grammar" ? (
           <PairedRow
             wide={<GrammarBuildPanel item={item} />}
