@@ -56,3 +56,6 @@ history.json
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/history.json
+/settings.json
+/session.json

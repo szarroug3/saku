@@ -37,34 +37,19 @@ test("a kana asked for its romaji hints with the drawn picture, and nothing else
   assert.equal(hint.kind === "image" && hint.glyph, "あ");
 });
 
-test("a kanji reading hints with what the word's OTHER kanji reads", () => {
-  // The case the whole feature was described by: 生 in 先生 → ?
-  assert.equal(
-    textOf(hintFor(readingFactId("生", "先生"), "jp2en"), "生 in 先生"),
-    "先 is せん here",
-  );
-});
-
-test("a kanji meaning hints with its teachable components", () => {
+test("a kanji meaning hints with its teachable components, never the gloss", () => {
   // KanjiVG depth-1 order: 日 (left) then 月 (right), the reading order — not the
-  // old KRADFILE 月+日. Both are taught, so both name their meaning.
-  assert.equal(
-    textOf(hintFor(meaningFactId("明"), "jp2en"), "明's meaning"),
-    "made of 日 (day) + 月 (month)",
-  );
+  // old KRADFILE 月+日. Both are taught, so both name their meaning. ≥2 parts, so
+  // the learner still has to assemble "bright" from day + month.
+  const text = textOf(hintFor(meaningFactId("明"), "jp2en"), "明's meaning");
+  assert.equal(text, "made of 日 (day) + 月 (month)");
+  assert.ok(!text.includes("bright"), "the component hint must not state the gloss");
 });
 
 test("a word asked for its meaning hints with its kanji's meanings", () => {
   assert.equal(
     textOf(hintFor(wordMeaningFactId("先生"), "jp2en"), "先生's meaning"),
     "先 is before, 生 is life",
-  );
-});
-
-test("a word asked for its reading hints with the first kanji's reading here", () => {
-  assert.equal(
-    textOf(hintFor(wordReadingFactId("先生"), "jp2en"), "先生's reading"),
-    "先 is せん here",
   );
 });
 
@@ -104,6 +89,26 @@ test("an all-kana word has nothing to take apart, so it has no hint", () => {
   assert.equal(hintFor(wordMeaningFactId("これ"), "jp2en"), null);
 });
 
+test("a single-kanji word asked its MEANING has no hint — the gloss is the answer", () => {
+  // 口 is one kanji, so its per-kanji breakdown ("口 is mouth") is the whole
+  // gloss the card is asking for, not a nudge toward it. No decomposition, no
+  // hint. Regression: this used to print "口 is mouth" under the prompt on a
+  // hinted retry, handing over the answer.
+  const hint = hintFor(wordMeaningFactId("口"), "jp2en");
+  const text = hint?.kind === "text" ? hint.text : "";
+  assert.ok(!text.includes("mouth"), "the meaning hint must never be the gloss");
+  assert.equal(hint, null, "and the honest thing to say is nothing at all");
+});
+
+test("a single-kanji word asked its READING has no hint — the reading is the answer", () => {
+  // 人's only kanji reads ひと here, and ひと is the whole reading the card wants,
+  // not a first half of it. "人 is ひと here" was the answer with extra words.
+  const hint = hintFor(wordReadingFactId("人"), "jp2en");
+  const text = hint?.kind === "text" ? hint.text : "";
+  assert.ok(!text.includes("ひと"), "the reading hint must never be the reading");
+  assert.equal(hint, null, "and the honest thing to say is nothing at all");
+});
+
 test("a jukujikun word has no per-kanji reading to name", () => {
   // 大人 is おとな: the reading belongs to the word, not to 大 and 人. `align` is
   // null for exactly these, and the hint declines rather than inventing a split.
@@ -115,6 +120,15 @@ test("a kanji whose components aren't all teachable gets no parts hint", () => {
   // the same all-or-nothing test the lesson's "Built from parts" line applies —
   // raw KRADFILE primitives are never shown.
   assert.equal(hintFor(meaningFactId("生"), "jp2en"), null);
+});
+
+test("an atomic/pictograph kanji meaning has no hint — one part IS the answer", () => {
+  // 人 and 口 do not decompose into ≥2 taught kanji, so there is nothing to
+  // assemble. A single-component "made of X" hint would just be the gloss with
+  // one extra word, so the meaning card declines. This is the kanji-side twin of
+  // the single-kanji WORD rule below.
+  assert.equal(hintFor(meaningFactId("人"), "jp2en"), null);
+  assert.equal(hintFor(meaningFactId("口"), "jp2en"), null);
 });
 
 // ---------- the answer is never in the hint ----------
@@ -130,28 +144,32 @@ test("meaning-side hints are refused in the direction where they'd be the answer
   assert.equal(hintFor(kanaFact("あ"), "en2jp"), null);
 });
 
-test("hints that name something OTHER than the asked item are offered both ways", () => {
-  // A sibling kanji's reading is not 生's reading, and a pattern's host is not
-  // its gloss — neither can be the answer whichever way the card is turned.
-  assert.equal(
-    textOf(hintFor(readingFactId("生", "先生"), "en2jp"), "生 in 先生, en2jp"),
-    "先 is せん here",
-  );
+test("a grammar hint that names neither gloss nor output is offered both ways", () => {
+  // A pattern's host is not its gloss, so it can be shown whichever way the card
+  // is turned. (Reading and meaning hints, by contrast, are one-direction — see
+  // the reading section and the meaning-side test above.)
   assert.equal(
     textOf(hintFor(patternMeaningFactId("te-kara"), "en2jp"), "〜てから, en2jp"),
     "attaches to a verb",
   );
 });
 
-test("a kanji reading is hinted on the word the SHOWING framed it on", () => {
-  // word-unlock may move the question onto a word the learner has actually met.
-  // Hinting the fact's own anchor would name kanji that are not on screen.
-  const onOwnAnchor = hintFor(readingFactId("生", "先生"), "jp2en");
-  const onAnother = hintFor(readingFactId("生", "先生"), "jp2en", {
-    anchor: "学生",
-  });
-  assert.equal(textOf(onOwnAnchor, "生 in 先生"), "先 is せん here");
-  assert.equal(textOf(onAnother, "生 in 学生"), "学 is がく here");
+// ---------- no reading card gets a hint ----------
+
+test("a kanji reading fact has no hint — the reading is the answer", () => {
+  // Was "先 is せん here": naming the word's other kanji decomposes the very
+  // reading the card asked for. Both directions, and framed on any word.
+  assert.equal(hintFor(readingFactId("生", "先生"), "jp2en"), null);
+  assert.equal(hintFor(readingFactId("生", "先生"), "en2jp"), null);
+});
+
+test("a two-kanji word reading fact has no hint — half the reading is still a giveaway", () => {
+  // 家族 asked for its reading used to hint "家 is か here", handing over half of
+  // かぞく. Decomposing a reading is a giveaway by design, so there is no hint.
+  const hint = hintFor(wordReadingFactId("家族"), "jp2en");
+  const text = hint?.kind === "text" ? hint.text : "";
+  assert.ok(!text.includes("か"), "the reading hint must not name any of the reading");
+  assert.equal(hint, null);
 });
 
 // ---------- what a hint costs ----------

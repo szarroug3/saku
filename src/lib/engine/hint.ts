@@ -15,31 +15,38 @@
 // frame or an apology ("no hint for this one") is worse than no button, because
 // it costs a press to learn nothing.
 //
-// THE ANSWER IS NEVER IN THE HINT, and the direction is half of that argument.
-// A kanji's components are a fine nudge when you are shown 明 and asked what it
-// means; they are the ANSWER when you are shown "bright" and asked for the
-// glyph. So the meaning hints — kanji meaning, word meaning, word reading and
-// the kana picture — are jp2en only, where the Japanese is already on screen and
-// the hint is helping you read it. The hints that name something OTHER than the
-// asked item (a sibling kanji's reading, a pattern's host and form) are safe
-// both ways round and are offered both ways round.
+// THE ANSWER IS NEVER IN THE HINT, and after the retry-hint redesign that draws
+// a hard line: a hint exists ONLY for a card whose answer is a MEANING (or the
+// Japanese written form of one) that decomposes into TWO OR MORE component
+// kanji, and it shows those components — never the whole gloss, and never any
+// reading.
+//
+//   - NO READING CARD GETS A HINT. The reading IS the answer, so any
+//     decomposition of it (家 is か here, 人 is ひと here, a sibling kanji's
+//     on'yomi) hands over part or all of it. Kanji reading, word reading and
+//     listening-reading all decline.
+//   - A MEANING hint needs ≥2 parts to ASSEMBLE. 明 = 日 + 月 and 先生 = 先 +
+//     生 are nudges you still have to put together; an atomic kanji (口, 人) or a
+//     single-kanji word (口) has nothing left over, so its "breakdown" is the
+//     gloss itself — no hint.
+//   - DIRECTION still matters: meaning hints are jp2en only, where the Japanese
+//     is on screen and the hint helps you read it. Shown the gloss and asked to
+//     PRODUCE the Japanese, the components are how you write the answer, so there
+//     is no hint in that direction at all.
+//   - The kana picture and the grammar host/form hints survive: the kana
+//     mnemonic is a drawing, not the romaji it teaches, and a pattern's host
+//     ("attaches to a verb") and form ("uses the て-form") name neither its gloss
+//     nor its built output.
 
 import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT, grammarMeaning, grammarProduction } from "@/data/grammar";
-import {
-  KANJI_SUBJECT,
-  READING_INDEX,
-  kanjiRow,
-  readingFactId,
-} from "@/data/kanji";
+import { KANJI_SUBJECT, READING_INDEX, kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
-import { VOCAB_SUBJECT, vocabRow, wordReadingFactId } from "@/data/vocab";
+import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { FORM_LABEL, attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { factInfo } from "@/lib/facts";
 import { teachableParts } from "@/lib/kanji-parts";
 import type { Direction, FactId } from "@/types";
-
-import type { PromptContext } from "./question";
 
 /**
  * What a taken hint puts on screen.
@@ -57,22 +64,22 @@ export type Hint =
 
 /**
  * The hint for one SHOWING of a fact, or null when there is nothing honest to
- * say. `ctx` is the same per-showing context prompt/check/reveal are given, so a
- * kanji reading framed on the word the learner actually knows is hinted on THAT
- * word rather than the ingest's anchor.
+ * say.
+ *
+ * NO SHOWING CONTEXT IS TAKEN, because the only builder that used it was the
+ * kanji-reading hint, and reading cards no longer get a hint at all (the reading
+ * IS the answer — see the module header and kanjiHint/wordHint). What is left —
+ * kana pictures, kanji-component and word-meaning structural hints — depends
+ * only on the fact, not on which word it is being shown on.
  */
-export function hintFor(
-  fact: FactId,
-  dir: Direction,
-  ctx?: PromptContext,
-): Hint | null {
+export function hintFor(fact: FactId, dir: Direction): Hint | null {
   const info = factInfo(fact);
   if (!info) return null;
   switch (info.subject) {
     case KANA_SUBJECT:
       return kanaHint(info.glyph, dir);
     case KANJI_SUBJECT:
-      return kanjiHint(fact, info.glyph, dir, ctx);
+      return kanjiHint(fact, info.glyph, dir);
     case VOCAB_SUBJECT:
       return wordHint(fact, info.glyph, dir);
     case GRAMMAR_SUBJECT:
@@ -103,67 +110,40 @@ function kanaHint(glyph: string, dir: Direction): Hint | null {
 
 // ---------- kanji ----------
 
-function kanjiHint(
-  fact: FactId,
-  glyph: string,
-  dir: Direction,
-  ctx?: PromptContext,
-): Hint | null {
-  const anchor = READING_INDEX.get(fact)?.anchor;
-  if (anchor) {
-    // A READING question is keyed on (kanji, word), so the hint that is neither
-    // the answer nor a guess is what the word's OTHER kanji read as here. "生 in
-    // 人生 → ?" is hinted "人 is じん here", which tells you the word is being
-    // read on'yomi without telling you 生's half of it.
-    //
-    // Framed on the SHOWING's word, not the fact's: word-unlock may have moved
-    // the question onto a word the learner has actually met, and hinting the
-    // other one would name kanji that are not on screen.
-    return siblingReadingHint(glyph, ctx?.anchor ?? anchor);
-  }
+function kanjiHint(fact: FactId, glyph: string, dir: Direction): Hint | null {
+  // A READING QUESTION GETS NO HINT. The reading IS the answer, so there is no
+  // honest nudge: naming the word's other kanji ("人 is じん here") tells you the
+  // word is read on'yomi, which is a decomposition of the very reading you were
+  // asked for. Every reading fact of every subject declines the same way — see
+  // wordHint and the module header. A reading fact is the (kanji, word) pair
+  // READING_INDEX carries an anchor for; a meaning fact has none and falls
+  // through to the parts hint below.
+  if (READING_INDEX.get(fact)?.anchor) return null;
   // A MEANING question is hinted with the parts, which is the "Built from parts
   // you learn on their own" line the lesson already shows — and only when every
   // component is itself a jōyō kanji with a meaning, which is teachableParts'
   // own all-or-nothing test. Raw KRADFILE primitives are never used: the
   // codebase is explicit that they are unreliable for teaching.
+  //
+  // jp2en only, and NEVER for en2jp: shown "bright" and asked to produce 明, the
+  // components 日+月 are how you WRITE it, so they are the answer, not a nudge.
   if (dir !== "jp2en") return null;
   const parts = teachableParts(glyph);
   if (!parts) return null;
   const named = parts.filter((p) => p.meaning);
   if (named.length !== parts.length) return null;
+  // TWO PARTS OR NONE. A hint that names a single component is the answer with
+  // one extra word: an atomic/pictograph kanji (口, 人) has no teachable parts at
+  // all and lands above, but a kanji whose only jōyō component is one other kanji
+  // would be "made of X" — and if that lone X carries the glyph's meaning, the
+  // hint IS the gloss. The structural nudge only works when there are ≥2
+  // components to ASSEMBLE (明 = 日 + 月), which is the same "you still have to
+  // put it together" argument the multi-kanji word hint rests on.
+  if (named.length < 2) return null;
   return {
     kind: "text",
     text: `made of ${named.map((p) => `${p.c} (${p.meaning})`).join(" + ")}`,
   };
-}
-
-/** "人 is じん here", or "人 is じん, 生 is せい here" when the word has more than
- * two kanji. Null when the word's other kanji have no known reading — the
- * jukujikun (大人/おとな) land here, correctly: there is no per-kanji reading in
- * 大人 to name. */
-function siblingReadingHint(glyph: string, word: string): Hint | null {
-  const others = kanjiOf(word).filter((c) => c !== glyph);
-  const said: string[] = [];
-  for (const c of others) {
-    const r = readingInWord(c, word);
-    if (r) said.push(`${c} is ${r}`);
-  }
-  return said.length ? { kind: "text", text: `${said.join(", ")} here` } : null;
-}
-
-/**
- * How `kanji` is read inside `word`, or null.
- *
- * The word's own `align` first: it is the per-kanji breakdown the ingest derived
- * for THIS word, it is null exactly for the jukujikun where no such breakdown
- * exists, and it covers every word rather than only the ones a reading fact
- * happens to be anchored to. READING_INDEX is the fallback for a word the vocab
- * table does not carry as a row (a kanji anchored on itself, 一 in 一).
- */
-function readingInWord(kanji: string, word: string): string | null {
-  const hit = vocabRow(word)?.align?.find(([k]) => k === kanji);
-  if (hit) return hit[1];
-  return READING_INDEX.get(readingFactId(kanji, word))?.surface ?? null;
 }
 
 /** The distinct kanji in a word, in order. Kana are skipped: 食べる's べる has no
@@ -179,28 +159,32 @@ function kanjiOf(word: string): string[] {
 // ---------- words ----------
 
 /**
- * jp2en only, for both aspects, and the two reasons are different.
+ * MEANING cards only, and jp2en only.
  *
- * MEANING asked en2jp shows the gloss and wants the written word: a hint naming
- * 先 and 生 hands over 先生 outright. READING asked en2jp shows the gloss and
- * wants せんせい: naming 先's せん hands over half the answer AND a kanji that is
- * not on screen. In jp2en both are the honest nudge — the word is in front of
- * you and the hint helps you take it apart.
+ * A READING QUESTION GETS NO HINT — decomposing a reading is a giveaway by
+ * design: 家族 asked for its reading hinted "家 is か here" hands over half of
+ * かぞく, and a single-kanji word hands over all of it. The reading IS the answer,
+ * so there is no honest nudge, and the branch that used to build one is gone.
+ *
+ * MEANING asked jp2en shows the word and wants the gloss: naming its kanji ("先
+ * is before, 生 is life") is a structural nudge you still have to assemble into
+ * "teacher". Asked en2jp it shows the gloss and wants the written word, where
+ * naming 先 and 生 IS 先生 — so meaning hints are jp2en only.
  */
 function wordHint(fact: FactId, glyph: string, dir: Direction): Hint | null {
   if (dir !== "jp2en") return null;
+  // Reading facts decline outright, before any decomposition is attempted.
+  if (wordReadingFactId(glyph) === fact) return null;
   const kanji = kanjiOf(glyph);
-  // An all-kana word (これ, とても) has nothing to take apart, so it has no hint.
-  if (!kanji.length) return null;
-  if (wordReadingFactId(glyph) === fact) {
-    // A READING question is hinted with the FIRST kanji's reading in this word:
-    // enough to start the word, never the whole of it.
-    const r = readingInWord(kanji[0], glyph);
-    return r ? { kind: "text", text: `${kanji[0]} is ${r} here` } : null;
-  }
-  // A MEANING question is hinted with the meanings of its kanji: 先生 hints
-  // "先 is before, 生 is life". Every kanji or none — a partial breakdown reads
-  // as a claim about the whole word.
+  // FEWER THAN TWO KANJI HAS NOTHING TO TAKE APART, so no meaning hint either.
+  // An all-kana word (これ, とても) has no kanji at all; a SINGLE-kanji word (口)
+  // has nothing left over once you name its one kanji, so the "breakdown" ("口 is
+  // mouth") is the whole gloss the card asked for rather than a nudge toward it.
+  // A real decomposition needs two parts to hold apart — "先 is before, 生 is
+  // life", which you still have to read as "teacher".
+  if (kanji.length < 2) return null;
+  // Every kanji or none — a partial breakdown reads as a claim about the whole
+  // word.
   const said: string[] = [];
   for (const c of kanji) {
     const m = kanjiRow(c)?.meanings[0];

@@ -1080,7 +1080,7 @@ export function DrillScreen() {
   // hintless for the same "the hint would be the answer" reason.
   const hint =
     active && rt?.q && !rt.q.mc && !rt.q.listen
-      ? hintFor(rt.q.f, rt.q.dir, ctxFor(rt.q, anchorForFact(rt.q.f, history)))
+      ? hintFor(rt.q.f, rt.q.dir)
       : null;
   const hintDrawn = useDrawnImage(hint?.kind === "image" ? hint.src : null);
   const hintReady = !!hint && (hint.kind !== "image" || hintDrawn);
