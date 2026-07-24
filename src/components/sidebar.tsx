@@ -6,6 +6,8 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 
 import { SignOut } from "@/components/auth/sign-out";
+import { SignedOutNotice } from "@/components/auth/signed-out-notice";
+import { Dock } from "@/components/dock";
 
 import { useHistory } from "@/lib/use-history";
 import { useQuizSession } from "@/lib/quiz-session";
@@ -168,22 +170,42 @@ export function Sidebar({
   // hooks above so their call order stays unconditional.
   if (pathname.startsWith("/auth")) return null;
 
+  // The signed-out heads-up shows only when auth is on (Supabase mode) and there
+  // is no session, and never on the landing or the login screen where the point
+  // is already made. Same gate the expanded sidebar's paragraph uses below.
+  const showSignedOutNotice =
+    authEnabled &&
+    !signedIn &&
+    !(pathname === "/" || pathname.startsWith("/login"));
+
   // Collapsed: a thin rail that is nothing but the way back out. Main content
-  // (flex-1 in the layout) takes the freed width automatically.
+  // (flex-1 in the layout) takes the freed width automatically. The rail has no
+  // room for the signed-out notice, so when it applies we lift it — the same
+  // notice, plus its own Sign in control — into the shell's frozen top dock via
+  // the Dock portal. This lives in the sidebar (not the layout) so it tracks the
+  // reactive `collapsed` state: it appears and disappears the instant the user
+  // toggles the rail, not only on reload.
   if (collapsed) {
     return (
-      <nav className="sticky top-6 flex w-7 flex-none flex-col items-center self-start">
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          aria-label="Expand sidebar"
-          aria-expanded={false}
-          title="Expand"
-          className="rounded-lg p-1.5 text-text-muted hover:bg-panel hover:text-text"
-        >
-          <Chevron dir="right" />
-        </button>
-      </nav>
+      <>
+        <nav className="sticky top-6 flex w-7 flex-none flex-col items-center self-start">
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label="Expand sidebar"
+            aria-expanded={false}
+            title="Expand"
+            className="rounded-lg p-1.5 text-text-muted hover:bg-panel hover:text-text"
+          >
+            <Chevron dir="right" />
+          </button>
+        </nav>
+        {showSignedOutNotice ? (
+          <Dock slot="top">
+            <SignedOutNotice variant="banner" />
+          </Dock>
+        ) : null}
+      </>
     );
   }
 
@@ -258,13 +280,13 @@ export function Sidebar({
                   screen: your work lives in this browser until you sign in. It
                   is a global fact about the account, so it belongs with the
                   global Sign in, not stamped on top of each page. Hidden where
-                  the point is already made — the landing and the login page. */}
-              {pathname === "/" || pathname.startsWith("/login") ? null : (
-                <p className="px-3 pt-1 text-[11px] leading-snug text-text-muted">
-                  Your progress is saved in this browser only. Sign in to keep it
-                  across your devices.
-                </p>
-              )}
+                  the point is already made — the landing and the login page.
+                  When the bar is collapsed this same notice moves to the frozen
+                  top dock (see the collapsed branch above) — same copy, one
+                  home in <SignedOutNotice>. */}
+              {showSignedOutNotice ? (
+                <SignedOutNotice variant="sidebar" />
+              ) : null}
             </>
           )}
         </div>
