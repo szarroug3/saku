@@ -84,12 +84,13 @@ describe("lessonRoles — every role the step teaches, not just the track it cam
 
 describe("lessonSections — a section per role, up the ladder", () => {
   test("人 teaches the shape, then the character, then the word, then how it's drawn", () => {
+    // No word-readings: 人 is one character keeping its own reading, so the
+    // breakdown would be the word said back to itself (see explainsItsSound).
+    // No example sentence either; that is the Library's now.
     assert.deepEqual(lessonSections(FOLDED), [
       "radical-note",
       "kanji-meaning",
       "word-sense",
-      "word-readings",
-      "word-example",
       "how-its-written",
     ]);
   });
@@ -151,8 +152,11 @@ describe("lessonSections — a section per role, up the ladder", () => {
   });
 
   test("a two-character word is unchanged, and gains no word-sense panel", () => {
+    // It KEEPS word-readings: 食べる spreads over more than one character, so the
+    // breakdown is doing real work. The example sentence is gone from every
+    // lesson, this one included; the Library still carries it.
     const sections = lessonSections(step(wordEntry("食べる"), "食べる", "word"));
-    assert.deepEqual(sections, ["word-forms", "word-readings", "word-example"]);
+    assert.deepEqual(sections, ["word-forms", "word-readings"]);
     assert.ok(!sections.includes("word-sense"), "its header already says both");
   });
 
@@ -240,7 +244,14 @@ describe("the headings, and the badge they replaced", () => {
     const leads = [...roleBlock.matchAll(/lead:\s*\n?\s*"([^"]+)"/g)].map((m) => m[1]);
     assert.equal(leads.length, 3, "one line per role");
     assert.equal(new Set(leads).size, 3, "and three different lines");
-    for (const l of leads) assert.ok(l.length > 40, `"${l}" says something`);
+    // A whole sentence, not a character count. The floor used to be 40 chars,
+    // which is a proxy for "somebody wrote this" and starts working against the
+    // copy the moment it gets tightened: "This is also a full word on its own."
+    // is 36 characters and says everything the role needs.
+    for (const l of leads) {
+      assert.ok(l.trim().split(/\s+/).length >= 5, `"${l}" is a sentence`);
+      assert.ok(l.trim().endsWith("."), `"${l}" is punctuated`);
+    }
   });
 });
 

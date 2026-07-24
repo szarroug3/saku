@@ -95,7 +95,6 @@ import { noteFor, glyphVariantFor } from "@/data/characters";
 import { cluster, membersOf } from "@/data/grammar/clusters";
 import { kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
-import { exampleFor } from "@/data/word-examples";
 import { type VocabRow } from "@/data/vocab";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { keigoSetForEntry } from "@/data/keigo";
@@ -245,20 +244,6 @@ function WordReadingsPanel({
           );
         })}
       </div>
-    </LessonPanel>
-  );
-}
-
-function WordSentencePanel({ keb }: { keb: string }) {
-  const ex = exampleFor(keb);
-  return (
-    <LessonPanel title="Used like this">
-      {ex ? (
-        <>
-          <p className="font-kana text-[18px] leading-relaxed text-text">{ex.jp}</p>
-          <p className="mt-1.5 text-[13px] text-text-muted">{ex.en}</p>
-        </>
-      ) : null}
     </LessonPanel>
   );
 }
@@ -683,18 +668,13 @@ export function LessonItemView({ item }: { item: LessonItem }) {
             {sections.has("word-forms") && word && forms ? (
               <WordFormFan dictionary={word.keb} groups={forms} />
             ) : null}
-            {word ? (
-              <PairedRow
-                wide={
-                  sections.has("word-readings") && wordAlign ? (
-                    <WordReadingsPanel word={wordAlign} voiceName={cfg.voiceName} />
-                  ) : null
-                }
-                narrow={
-                  sections.has("word-example") ? <WordSentencePanel keb={word.keb} /> : null
-                }
-                even
-              />
+            {/* No example sentence in a lesson. The Library entry page still
+                carries one, where you have come to read about the word; here the
+                page is already teaching the reading and the meaning, and a
+                sentence built from characters the learner has not reached yet is
+                one more thing to look at without being one more thing learned. */}
+            {word && sections.has("word-readings") && wordAlign ? (
+              <WordReadingsPanel word={wordAlign} voiceName={cfg.voiceName} />
             ) : null}
           </RoleBlock>
         ) : null}

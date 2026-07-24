@@ -25,7 +25,7 @@
 // was scheduled for.
 //
 // EMPTINESS IS DECIDED HERE TOO, from the same helpers the sections themselves
-// ask (`teachableParts`, `formsOfWord`, `exampleFor`). Each component already
+// ask (`teachableParts`, `formsOfWord`, `explainsItsSound`). Each component already
 // returns null when it has nothing, which is enough to keep a hole off the page
 // but not enough to know whether a ROLE has anything to show at all, and a role
 // heading over three absent sections is worse than no heading.
@@ -55,7 +55,6 @@
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph } from "@/data/radicals";
 import { vocabRow, type VocabRow } from "@/data/vocab";
-import { exampleFor } from "@/data/word-examples";
 import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role";
 import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
@@ -131,7 +130,6 @@ export const SECTION_ORDER = [
   "word-sense",
   "word-forms",
   "word-readings",
-  "word-example",
   "grammar-build",
   "grammar-example",
   "grammar-family",
@@ -150,8 +148,30 @@ const SECTION_ROLE: Partial<Record<LessonSection, RoleName>> = {
   "word-sense": "word",
   "word-forms": "word",
   "word-readings": "word",
-  "word-example": "word",
 };
+
+/**
+ * Does this word's reading need explaining at all?
+ *
+ * True when the word is written with more than one character, so the reading
+ * genuinely splits across them, or when a single character's reading in the word
+ * differs from its base (a sound change worth pointing at). False for the common
+ * folded case: one character, keeping its own reading, where the breakdown is the
+ * word repeated back. `align` is the per-character [character, in-word, base]
+ * table vocab.ts ships; no align means nothing to break down.
+ */
+function explainsItsSound(word: VocabRow): boolean {
+  const align = word.align;
+  if (!align?.length) return false;
+  // NOT align.length: align covers only the KANJI, so 食べる aligns one entry
+  // (食) despite being three characters, and its breakdown still earns its place
+  // by saying which part of たべる the kanji accounts for. The question is
+  // whether the word is MORE than the single character, which is the written
+  // form's length.
+  if ([...word.keb].length > 1) return true;
+  const [, surface, base] = align[0];
+  return !!surface && !!base && surface !== base;
+}
 
 /**
  * The sections a step shows, in SECTION_ORDER, with the empty ones already
@@ -183,8 +203,14 @@ export function lessonSections(item: LessonItem): LessonSection[] {
   if (word) {
     if (roles.includes("kanji") || roles.includes("radical")) out.add("word-sense");
     if (formsOfWord(word)?.length) out.add("word-forms");
-    if (word.align?.length) out.add("word-readings");
-    if (exampleFor(word.keb)) out.add("word-example");
+    // "Why it sounds like that" only when there IS something to explain. The
+    // panel earns its name on a word spread over several characters (電車 is 電
+    // でん plus 車 しゃ) or one whose sound shifts (手紙 is て plus かみ, said
+    // てがみ). On a one-character word that keeps its base reading it degrades to
+    // a single row saying 人 is read ひと, which the sense table right above it
+    // has already said. Every folded character in the curriculum is such a word,
+    // so this is the common case, not the corner.
+    if (explainsItsSound(word)) out.add("word-readings");
   }
   if (roles.includes("kanji")) {
     if (kanjiMeanings(item).length) out.add("kanji-meaning");

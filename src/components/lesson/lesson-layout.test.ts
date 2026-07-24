@@ -18,16 +18,14 @@ describe("lesson layout wiring", () => {
     assert.ok(iMeaning < iParts && iParts < iWriting);
   });
 
-  test("the two paired rows use full-width fallback helper", () => {
+  test("the word's sound panel stands alone, with no example beside it", () => {
     assert.match(KANJI_ROW, /return\s*\(\s*<LessonPanel title="Built from">/);
-    // The word's readings and its example sentence still share one PairedRow,
-    // so either can be absent without leaving a hole. Which of them is present
-    // is now the section set's answer (`sections.has(…)`), not a second reading
-    // of the word row, so the match is on the row and its two halves.
-    assert.match(
-      LESSON,
-      /<PairedRow[\s\S]*wide=\{[\s\S]*<WordReadingsPanel[\s\S]*narrow=\{[\s\S]*<WordSentencePanel[\s\S]*\/>/,
-    );
+    // The example sentence is the Library's now, so the readings panel has no
+    // partner and needs no PairedRow to keep the row from going lopsided. It is
+    // gated on the section set, which is where "is there anything to explain"
+    // gets decided (see explainsItsSound).
+    assert.match(LESSON, /sections\.has\("word-readings"\)[\s\S]*<WordReadingsPanel/);
+    assert.doesNotMatch(LESSON, /WordSentencePanel/);
   });
 
   test("lesson surfaces render no standings", () => {

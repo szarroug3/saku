@@ -38,15 +38,15 @@ import type { RoleName } from "@/lib/character-role";
 const ROLE_HEADING: Record<RoleName, { title: string; lead: string }> = {
   radical: {
     title: "Radical",
-    lead: "Other kanji are built on this shape. Learn it now and you will keep spotting it inside them.",
+    lead: "Other kanji are built on this shape. Learn it now and you will keep spotting it inside them later.",
   },
   kanji: {
     title: "Kanji",
-    lead: "A character in its own right, and one you will usually meet inside a longer word, pulling its weight in the meaning.",
+    lead: "This is a character in its own right, and one you will usually see inside a longer word.",
   },
   word: {
     title: "Word",
-    lead: "Nothing else needs attaching. Said on its own, it is already a word.",
+    lead: "This is also a full word on its own.",
   },
 };
 
