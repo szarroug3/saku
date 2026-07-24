@@ -158,7 +158,7 @@ describe("itemsFromFacts — the step model", () => {
     // and neither is the same lesson. Only role kinds fold.
     const keigoSet = KEIGO_SETS[0];
     const word = keigoSet.words[0];
-    const facts = [keigoWordFactId(keigoSet, word), wordMeaningFactId(word)];
+    const facts = [keigoWordFactId(keigoSet, word), wordMeaningFactId(word.word)];
     const items = itemsFromFacts(facts);
     assert.equal(items.length, 2, "a keigo step was folded into a word step");
   });
