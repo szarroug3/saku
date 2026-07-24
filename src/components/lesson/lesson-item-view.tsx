@@ -124,6 +124,7 @@ import {
   lessonRoles,
   lessonSections,
   lessonWord,
+  radicalMeaningOf,
   roleHasSections,
   wordTypeOf,
 } from "@/lib/lesson-roles";
@@ -511,6 +512,10 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // The word's own row, looked up by GLYPH: a folded character carries the kanji
   // entry, and the word it also is lives under an entry of its own.
   const word = lessonWord(item);
+  // The shape's own meaning, for the Radical section — 亅 is "hook", 人 is "man".
+  // Null when the step plays no radical role or the shape has none on file, and
+  // then the Radical block stays just its heading and its line.
+  const radicalMeaning = radicalMeaningOf(item);
   const forms = word ? formsOfWord(word) : null;
   const grammarSub = item.kind === "grammar" && pattern ? attachesTo(pattern) : undefined;
   const grammarExample = useGrammarExample(
@@ -627,7 +632,19 @@ export function LessonItemView({ item }: { item: LessonItem }) {
             that the shape recurs and is worth recognising, which is what the
             line says. */}
         {roleHasSections("radical", sectionList) ? (
-          <RoleBlock role="radical" labelled={labelRoles} />
+          <RoleBlock role="radical" labelled={labelRoles}>
+            {/* WHAT THE SHAPE MEANS, when it has a meaning of its own. A radical
+                is a shape and an idea (亅 is "hook"), and where that idea is on
+                file the section shows it the way the Kanji block shows "What it
+                means: person" — the same panel, the shape's own meaning from
+                radicals.ts, not the character's. A radical with no meaning shows
+                nothing here and keeps just its heading and its line. */}
+            {radicalMeaning ? (
+              <LessonPanel title="What it means">
+                <p className="text-[15px] leading-relaxed text-text">{radicalMeaning}</p>
+              </LessonPanel>
+            ) : null}
+          </RoleBlock>
         ) : null}
         {roleHasSections("kanji", sectionList) ? (
           <RoleBlock role="kanji" labelled={labelRoles}>
