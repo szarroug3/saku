@@ -20,6 +20,9 @@ Open work only. Everything shipped and verified on prod has been removed. One fi
 | 25 | [Listening-meaning card never shows the writing](25-listening-meaning-no-writing.md) | 🔍 needs decision | — |
 | 26 | [Discarding a session still advances the track (bug)](26-discard-advances-track.md) | 🟠 not started | — |
 
+| 27 | [Library: teaching order, ranged groups, full word list](27-library-teaching-order.md) | 🟠 not started | — |
+| 28 | [Practice: choose types + scope](28-practice-type-scope.md) | 🟠 not started | — |
+
 ## Housekeeping
 - `.env.local` holds the Supabase DB connection string (my direct access) + a now-dead `STORAGE_BACKEND` (no-op after #14) — clean up / rotate whenever.
 - When #14 merges: no SQL needed (settings/session columns already applied); update `.env.local.example` env docs.
