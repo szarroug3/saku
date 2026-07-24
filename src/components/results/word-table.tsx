@@ -128,12 +128,19 @@ export function WordTable({
       {rows.map((row) => (
         <div
           key={row.entry}
-          className="grid grid-cols-[minmax(48px,auto)_1fr] items-center gap-x-2.5 gap-y-1"
+          // A FIXED first track, not minmax(_,auto): under `auto` a longer glyph
+          // (あなた) grew its own row's word column and pushed that row's boxes
+          // right, so the boxes no longer lined up down the table. A fixed width
+          // starts every row's boxes at the same x. `1fr` for the second track
+          // keeps the whole thing inside its container — no horizontal overflow.
+          className="grid grid-cols-[72px_1fr] items-center gap-x-2.5 gap-y-1"
         >
           {/* The word, once, disambiguated by its noun so 人 the kanji and 人
               the word read as two rows, not one repeated glyph. */}
-          <div className="flex flex-col items-center justify-center py-1">
-            <span aria-hidden="true" className="font-kana text-[22px] font-extralight leading-none">
+          <div className="flex min-w-0 flex-col items-center justify-center py-1">
+            {/* `max-w-full` + `break-all` so a rare word wider than the fixed
+                column wraps inside it instead of spilling over the boxes. */}
+            <span aria-hidden="true" className="max-w-full break-all text-center font-kana text-[22px] font-extralight leading-none">
               {glyphOf(row.entry)}
             </span>
             <span className="mt-0.5 text-[8.5px] uppercase tracking-[0.06em] text-text-muted">
