@@ -1,0 +1,90 @@
+{
+ "cfg": {
+  "mode": "drill",
+  "dirs": {
+   "jp2en": true,
+   "en2jp": true
+  },
+  "styleJp2en": "typed",
+  "styleEn2jp": "typed",
+  "length": "limited",
+  "limType": "cov",
+  "limCount": 50,
+  "retries": "lim",
+  "retryN": 2,
+  "timer": false,
+  "timerSec": 10,
+  "showAnswer": true,
+  "scriptLabel": true,
+  "fonts": [
+   "'Hiragino Sans'",
+   "'Hiragino Mincho ProN'",
+   "'Hiragino Maru Gothic ProN'",
+   "'Yu Gothic'",
+   "'Yu Mincho'",
+   "'Klee'",
+   "'Tsukushi A Round Gothic'",
+   "'Toppan Bunkyu Gothic'"
+  ],
+  "blurSubmit": false,
+  "voiceName": "",
+  "listenRomaji": true,
+  "listenMeaning": true,
+  "accuracyMetric": "firstTry",
+  "showVolume": true,
+  "graduateRuns": 10,
+  "slowFloorMs": 1500,
+  "newKanjiOrder": "everyday",
+  "lessonMinCost": 6,
+  "lessonMaxCost": 12,
+  "wordsPerLesson": 6,
+  "restFirstMin": 5,
+  "restThenMin": 10,
+  "showStreak": true,
+  "showAccuracy": true,
+  "showRetryPips": true,
+  "fadeControls": true,
+  "selection": {
+   "subjects": [],
+   "list": null,
+   "states": [],
+   "text": "",
+   "session": null
+  }
+ },
+ "theme": "kiri",
+ "appearance": "system",
+ "accents": {
+  "kiri": "magenta"
+ },
+ "introShown": [
+  "track-radical",
+  "track-kanji"
+ ],
+ "latency": {
+  "typed": [
+   3327,
+   1689,
+   2795,
+   1050,
+   1243,
+   3994,
+   1677,
+   5255,
+   1399,
+   6446,
+   1862,
+   1131,
+   1634,
+   2529,
+   2294,
+   6744,
+   9929
+  ],
+  "mc": [
+   2807,
+   2832,
+   2132
+  ]
+ }
+}
