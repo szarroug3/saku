@@ -166,13 +166,22 @@ test("a grammar hint that names neither gloss nor output is offered both ways", 
   );
 });
 
-// ---------- no reading card gets a hint ----------
+// ---------- the kanji reading card gets the FORMULA (task #22) ----------
 
-test("a kanji reading fact has no hint — the reading is the answer", () => {
-  // Was "先 is せん here": naming the word's other kanji decomposes the very
-  // reading the card asked for. Both directions, and framed on any word.
-  assert.equal(hintFor(readingFactId("生", "先生"), "jp2en"), null);
-  assert.equal(hintFor(readingFactId("生", "先生"), "en2jp"), null);
+test("a kanji reading fact gets a formula hint that never shows the asked reading", () => {
+  // 生 in 先生 → the nudge is [先 / せん] + [生] = 先生. The OTHER piece carries
+  // its reading; the asked piece (生, answer せい) is left blank, so the hint
+  // points at the answer without holding it. See src/lib/reading-formula.ts.
+  const hint = hintFor(readingFactId("生", "先生"), "jp2en");
+  assert.ok(hint && hint.kind === "formula", "a kanji reading card is hinted");
+  assert.deepEqual(hint.formula.pieces, [
+    { text: "先", reading: "せん" },
+    { text: "生" },
+  ]);
+  assert.equal(hint.formula.result, "先生");
+  // The asked piece never carries せい — the answer is not in the hint.
+  const asked = hint.formula.pieces.find((p) => p.text === "生");
+  assert.equal(asked?.reading, undefined);
 });
 
 test("a two-kanji word reading fact has no hint — half the reading is still a giveaway", () => {

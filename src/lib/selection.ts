@@ -25,6 +25,7 @@ import { kanjiEntry } from "@/data/kanji";
 import { accuracyOf } from "@/lib/accuracy";
 import { ALL_FACTS, entryOf, factInfo, factsOf } from "@/lib/facts";
 import { matchesTypes, typeLabel } from "@/lib/practice-types";
+import { quizzableFacts } from "@/lib/word-unlock";
 import type {
   AccuracyMetric,
   FactId,
@@ -319,9 +320,16 @@ export function resolve(
     out.add(f);
   }
 
-  // The whole named pool, in random order (see shuffled). The count is applied
-  // later, once, by the budget from Length — never here.
-  return shuffled([...out]);
+  // GUARD (see word-unlock.ts / quizzableFacts): a kanji reading is only ever
+  // asked inside a MULTI-PART word the learner already knows. A reading whose
+  // word is unlearned — or whose only "word" is the single kanji itself, the "on
+  // its own" card task #22 removed — is dropped here, at the one seam every
+  // review, practice and list drill draws its pool through. It can still have
+  // reached `seen` (a lesson seeds it, a stray claim marks it), so the write
+  // side does not settle this alone; this is where a non-askable reading is kept
+  // off the board. Non-reading facts pass untouched, so kana, words and meanings
+  // resolve exactly as before, and the count (countOf) drops with the pool.
+  return shuffled(quizzableFacts([...out], history));
 }
 
 /**

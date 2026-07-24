@@ -151,8 +151,15 @@ export interface DrillHaloProps {
   timerLeft: number;
   /** Length of the drain window in seconds — min(5, timerSec). */
   drainWindow: number;
-  /** The character (jp2en) or the romaji prompt (en2jp). */
+  /** The character (jp2en) or the romaji prompt (en2jp). For a kanji-reading
+   * card this is the WHOLE WORD (電話), so the reading is asked in context; see
+   * `highlight`. */
   glyph: string;
+  /** For a kanji-reading card: the ONE kanji whose reading is asked (話 in 電話).
+   * Every occurrence of it is drawn at full brightness with a soft glow and the
+   * rest of the word is dimmed, so the word gives context without the highlighted
+   * glyph's reading ever being shown. Unset elsewhere — the glyph renders plain. */
+  highlight?: string;
   /** The question's font, rolled once and kept in the runtime. */
   font: string;
   fontSize: number;
@@ -173,6 +180,7 @@ export function DrillHalo({
   timerLeft,
   drainWindow,
   glyph,
+  highlight,
   font,
   fontSize,
   crossFade,
@@ -240,7 +248,28 @@ export function DrillHalo({
             animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined,
           }}
         >
-          {glyph}
+          {highlight
+            ? // The word, with the asked kanji lit and the rest dimmed: context
+              // without a leak, since the highlighted glyph's reading is the
+              // answer and is never shown.
+              [...glyph].map((ch, i) =>
+                ch === highlight ? (
+                  <span
+                    key={i}
+                    style={{
+                      color: "var(--text)",
+                      textShadow: `0 0 18px ${mix("--accent", 55)}`,
+                    }}
+                  >
+                    {ch}
+                  </span>
+                ) : (
+                  <span key={i} style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+                    {ch}
+                  </span>
+                ),
+              )
+            : glyph}
         </span>
       )}
     </div>

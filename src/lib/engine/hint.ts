@@ -15,16 +15,21 @@
 // frame or an apology ("no hint for this one") is worse than no button, because
 // it costs a press to learn nothing.
 //
-// THE ANSWER IS NEVER IN THE HINT, and after the retry-hint redesign that draws
-// a hard line: a hint exists ONLY for a card whose answer is a MEANING (or the
-// Japanese written form of one) that decomposes into TWO OR MORE component
-// kanji, and it shows those components — never the whole gloss, and never any
-// reading.
+// THE ANSWER IS NEVER IN THE HINT. A meaning hint shows a card's TWO-OR-MORE
+// component kanji — never the whole gloss. A kanji-reading hint (task #22) shows
+// the OTHER pieces of the word with their readings and leaves the asked piece
+// blank — never the reading that was asked. Neither holds the answer.
 //
-//   - NO READING CARD GETS A HINT. The reading IS the answer, so any
-//     decomposition of it (家 is か here, 人 is ひと here, a sibling kanji's
-//     on'yomi) hands over part or all of it. Kanji reading, word reading and
-//     listening-reading all decline.
+//   - A KANJI READING CARD gets the FORMULA hint: it is asked inside a known,
+//     multi-part word ("病 in 病院 → ?"), and the nudge is [病] + [院 / いん] =
+//     病院 — the rest of the word filled in, the asked piece blank. See
+//     kanjiHint and src/lib/reading-formula.ts. The asked reading (びょう) never
+//     appears, so this obeys the rule above rather than breaking it.
+//   - WORD reading and listening-reading cards still get NO hint. There the
+//     whole answer is one word's reading, and naming its kanji ("家 is か here")
+//     hands over part or all of that one answer — see wordHint. Only the kanji
+//     card, which asks ONE piece of a word and can show the rest, has an honest
+//     formula to give.
 //   - A MEANING hint needs ≥2 parts to ASSEMBLE. 明 = 日 + 月 and 先生 = 先 +
 //     生 are nudges you still have to put together; an atomic kanji (口, 人) or a
 //     single-kanji word (口) has nothing left over, so its "breakdown" is the
@@ -46,6 +51,7 @@ import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { FORM_LABEL, attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { factInfo } from "@/lib/facts";
 import { teachableParts } from "@/lib/kanji-parts";
+import { readingFormula, type ReadingFormula } from "@/lib/reading-formula";
 import type { Direction, FactId } from "@/types";
 
 /**
@@ -60,26 +66,32 @@ import type { Direction, FactId } from "@/types";
  */
 export type Hint =
   | { kind: "image"; src: string; glyph: string }
-  | { kind: "text"; text: string };
+  | { kind: "text"; text: string }
+  | { kind: "formula"; formula: ReadingFormula };
 
 /**
  * The hint for one SHOWING of a fact, or null when there is nothing honest to
  * say.
  *
- * NO SHOWING CONTEXT IS TAKEN, because the only builder that used it was the
- * kanji-reading hint, and reading cards no longer get a hint at all (the reading
- * IS the answer — see the module header and kanjiHint/wordHint). What is left —
- * kana pictures, kanji-component and word-meaning structural hints — depends
- * only on the fact, not on which word it is being shown on.
+ * ONE piece of showing context is taken: `inWord`, the word a kanji-reading card
+ * is being FRAMED on (the known, multi-part anchor the drill picked — see
+ * word-unlock.ts). A reading card's formula hint lays out that exact word with
+ * its other pieces' readings filled in, so it must build on the word on screen,
+ * not the fact's ingest anchor. Every other hint — kana pictures, kanji-component
+ * and word-meaning structural hints — ignores it and depends only on the fact.
  */
-export function hintFor(fact: FactId, dir: Direction): Hint | null {
+export function hintFor(
+  fact: FactId,
+  dir: Direction,
+  inWord?: string,
+): Hint | null {
   const info = factInfo(fact);
   if (!info) return null;
   switch (info.subject) {
     case KANA_SUBJECT:
       return kanaHint(info.glyph, dir);
     case KANJI_SUBJECT:
-      return kanjiHint(fact, info.glyph, dir);
+      return kanjiHint(fact, info.glyph, dir, inWord);
     case VOCAB_SUBJECT:
       return wordHint(fact, info.glyph, dir);
     case GRAMMAR_SUBJECT:
@@ -110,15 +122,26 @@ function kanaHint(glyph: string, dir: Direction): Hint | null {
 
 // ---------- kanji ----------
 
-function kanjiHint(fact: FactId, glyph: string, dir: Direction): Hint | null {
-  // A READING QUESTION GETS NO HINT. The reading IS the answer, so there is no
-  // honest nudge: naming the word's other kanji ("人 is じん here") tells you the
-  // word is read on'yomi, which is a decomposition of the very reading you were
-  // asked for. Every reading fact of every subject declines the same way — see
-  // wordHint and the module header. A reading fact is the (kanji, word) pair
-  // READING_INDEX carries an anchor for; a meaning fact has none and falls
-  // through to the parts hint below.
-  if (READING_INDEX.get(fact)?.anchor) return null;
+function kanjiHint(
+  fact: FactId,
+  glyph: string,
+  dir: Direction,
+  inWord?: string,
+): Hint | null {
+  // A READING QUESTION IS HINTED WITH THE FORMULA (task #22). The reading is
+  // asked inside a known, multi-part word — "病 in 病院 → ?" — and the honest
+  // nudge is the REST of that word with its readings filled in and the asked
+  // piece left blank: [病] + [院 / いん] = 病院. The answer (病 = びょう) is never
+  // shown; only the other pieces are, so the learner backs it out of the whole
+  // rather than being handed it. Frames on the word the card is being shown on
+  // (`inWord`), falling back to the fact's own ingest anchor. readingFormula
+  // returns null for a one-piece word — the "on its own" card task #22 removed —
+  // so a reading with nothing beside it still gets no hint.
+  const anchor = READING_INDEX.get(fact)?.anchor;
+  if (anchor) {
+    const formula = readingFormula(glyph, inWord ?? anchor);
+    return formula ? { kind: "formula", formula } : null;
+  }
   // A MEANING question is hinted with the parts, which is the "Built from parts
   // you learn on their own" line the lesson already shows — and only when every
   // component is itself a jōyō kanji with a meaning, which is teachableParts'
