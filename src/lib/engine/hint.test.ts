@@ -65,6 +65,56 @@ test("電話 (a 2-kanji word) meaning hints with its components, not the gloss",
   assert.equal(hintFor(wordMeaningFactId("電話"), "en2jp"), null);
 });
 
+test("a LISTENING meaning card for 電話 hints with the written form, not the parts", () => {
+  // Task 25: the audio played 電話 and the glyph is hidden, so the honest nudge
+  // is the WRITTEN WORD itself — see which word you heard — not the component
+  // breakdown a visual meaning card gets. jp2en, because listening forces jp2en.
+  const hint = hintFor(wordMeaningFactId("電話"), "jp2en", true);
+  assert.ok(hint, "a listening meaning card has a hint");
+  assert.equal(hint.kind, "written", "and it is the written form, rendered big");
+  const text = hint.kind === "written" ? hint.text : "";
+  assert.equal(text, "電話", "the written word the learner just heard");
+  // Never the English answer, and never the component meanings of the visual card.
+  assert.ok(!/phone|call/i.test(text), "the written form must not state the gloss");
+  assert.ok(
+    !/electricity|tale/i.test(text),
+    "and it is the word, not the component breakdown",
+  );
+});
+
+test("a NON-listening meaning card for 電話 is unchanged — still the components", () => {
+  // The visual meaning card already shows 電話 on screen, so its hint stays the
+  // component breakdown. Only the listening showing swaps to the written form.
+  const text = textOf(hintFor(wordMeaningFactId("電話"), "jp2en"), "電話 visual");
+  assert.equal(text, "電 is electricity, 話 is tale");
+  // Passing listen=false explicitly is the same as the default.
+  assert.equal(
+    textOf(hintFor(wordMeaningFactId("電話"), "jp2en", false), "電話 listen=false"),
+    "電 is electricity, 話 is tale",
+  );
+});
+
+test("a listening single-kanji / all-kana word still gets a written-form hint", () => {
+  // The component breakdown had nothing to say for 口 (one kanji) or これ (no
+  // kanji), but the written form is a legitimate hint for either: it names the
+  // heard word without naming its gloss.
+  const kuchi = hintFor(wordMeaningFactId("口"), "jp2en", true);
+  assert.equal(kuchi?.kind === "written" && kuchi.text, "口");
+  assert.ok(
+    !(kuchi?.kind === "written" && /mouth/i.test(kuchi.text)),
+    "the written form is the word, not its meaning",
+  );
+  const kore = hintFor(wordMeaningFactId("これ"), "jp2en", true);
+  assert.equal(kore?.kind === "written" && kore.text, "これ");
+});
+
+test("a listening READING card still gets no hint — the reading is the answer", () => {
+  // `listen` only rescues the MEANING card. A reading fact declines outright,
+  // exactly as a visual reading card does, so hearing 電話 and typing でんわ is
+  // never handed the reading.
+  assert.equal(hintFor(wordReadingFactId("電話"), "jp2en", true), null);
+});
+
 test("a grammar meaning hints with what the pattern attaches to", () => {
   assert.equal(
     textOf(hintFor(patternMeaningFactId("te-kara"), "jp2en"), "〜てから's meaning"),

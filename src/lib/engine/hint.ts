@@ -60,19 +60,33 @@ import type { Direction, FactId } from "@/types";
  */
 export type Hint =
   | { kind: "image"; src: string; glyph: string }
-  | { kind: "text"; text: string };
+  | { kind: "text"; text: string }
+  // The WRITTEN FORM of the word, shown big enough to READ. Only a listening
+  // MEANING card produces this: the audio played the word and hid its glyph, so
+  // the honest nudge is to reveal WHICH word was heard (電話), not to gloss its
+  // parts. It is not a leak — the writing is not the meaning — and it must not
+  // render as a caption, because it is a Japanese word the learner is meant to
+  // read. Distinct from `text` for exactly that reason: the renderer prints it
+  // prominently, in the JP font, the way the prompt glyph would have been.
+  | { kind: "written"; text: string };
 
 /**
  * The hint for one SHOWING of a fact, or null when there is nothing honest to
  * say.
  *
- * NO SHOWING CONTEXT IS TAKEN, because the only builder that used it was the
- * kanji-reading hint, and reading cards no longer get a hint at all (the reading
- * IS the answer — see the module header and kanjiHint/wordHint). What is left —
- * kana pictures, kanji-component and word-meaning structural hints — depends
- * only on the fact, not on which word it is being shown on.
+ * `listen` is the ONE bit of showing state that survives, because it changes
+ * what an honest hint IS rather than which word a fact is framed on: a listening
+ * MEANING card played the word and hid its glyph, so the useful nudge is to show
+ * WHICH word was heard (the written form), not to gloss its parts. Everything
+ * else — kana pictures, kanji-component and (visual) word-meaning structural
+ * hints — depends only on the fact. Defaults false, so every non-listening
+ * caller is unchanged.
  */
-export function hintFor(fact: FactId, dir: Direction): Hint | null {
+export function hintFor(
+  fact: FactId,
+  dir: Direction,
+  listen = false,
+): Hint | null {
   const info = factInfo(fact);
   if (!info) return null;
   switch (info.subject) {
@@ -81,7 +95,7 @@ export function hintFor(fact: FactId, dir: Direction): Hint | null {
     case KANJI_SUBJECT:
       return kanjiHint(fact, info.glyph, dir);
     case VOCAB_SUBJECT:
-      return wordHint(fact, info.glyph, dir);
+      return wordHint(fact, info.glyph, dir, listen);
     case GRAMMAR_SUBJECT:
       return grammarHint(fact);
     default:
@@ -171,10 +185,26 @@ function kanjiOf(word: string): string[] {
  * "teacher". Asked en2jp it shows the gloss and wants the written word, where
  * naming 先 and 生 IS 先生 — so meaning hints are jp2en only.
  */
-function wordHint(fact: FactId, glyph: string, dir: Direction): Hint | null {
+function wordHint(
+  fact: FactId,
+  glyph: string,
+  dir: Direction,
+  listen: boolean,
+): Hint | null {
   if (dir !== "jp2en") return null;
   // Reading facts decline outright, before any decomposition is attempted.
   if (wordReadingFactId(glyph) === fact) return null;
+  // A LISTENING MEANING card is the reason this function takes `listen`. The
+  // audio played the word and the glyph is off screen, so the honest nudge is
+  // the WRITTEN FORM itself — 電話 — which lets the learner SEE which word they
+  // heard. It cannot leak: the writing is not the meaning, so a card asking for
+  // the English answer keeps its answer withheld. This REPLACES the component
+  // breakdown on the listening showing only; a visual meaning card (the glyph is
+  // already on screen) falls through to the parts hint below, unchanged. Every
+  // word qualifies, including single-kanji and all-kana words a component hint
+  // had nothing to say about — the written form is a legitimate hint for any of
+  // them, because it names the heard word without naming its gloss.
+  if (listen) return { kind: "written", text: glyph };
   const kanji = kanjiOf(glyph);
   // FEWER THAN TWO KANJI HAS NOTHING TO TAKE APART, so no meaning hint either.
   // An all-kana word (これ, とても) has no kanji at all; a SINGLE-kanji word (口)

@@ -1087,17 +1087,19 @@ export function DrillScreen() {
   // hintReady being false. Typed cards are untouched.
   // A LISTENING card is NOT excluded, and the earlier blanket "no hint on a
   // listening card" was wrong. Listening is word-only (see lib/listen.ts), so
-  // the only hint hintFor can build on one is a word hint, and a word's hint is
-  // never its reading or its mnemonic — after the retry-hint redesign it is the
-  // COMPONENT breakdown of a multi-kanji MEANING card (電話 → 電 electric + 話
-  // talk). A listening card whose answer is the ENGLISH gloss is exactly where
-  // that helps and cannot leak: the components name the kanji, never the gloss,
-  // so the one thing the audio withholds — the English answer — stays withheld.
-  // (A listening READING card asks for the reading, which wordHint declines
-  // outright, so hintFor already returns null there; there is no kana listening
-  // card to leak a picture. So letting hintFor decide is both correct and safe.)
+  // the only hint hintFor can build on one is a word hint. On a listening MEANING
+  // card the glyph is off screen, so hintFor is told `listen` and returns the
+  // WRITTEN FORM of the word (電話) rather than the component breakdown a visual
+  // meaning card gets: the point is to reveal WHICH word was heard, not to gloss
+  // its parts, and the writing is not the meaning, so the English answer the
+  // audio withholds stays withheld. (A listening READING card asks for the
+  // reading, which wordHint declines outright, so hintFor still returns null
+  // there; there is no kana listening card to leak a picture. So threading
+  // `listen` in is both correct and safe.)
   const hint =
-    active && rt?.q && !rt.q.mc ? hintFor(rt.q.f, rt.q.dir) : null;
+    active && rt?.q && !rt.q.mc
+      ? hintFor(rt.q.f, rt.q.dir, rt.q.listen)
+      : null;
   const hintDrawn = useDrawnImage(hint?.kind === "image" ? hint.src : null);
   const hintReady = !!hint && (hint.kind !== "image" || hintDrawn);
   hintReadyRef.current = hintReady;
@@ -1437,6 +1439,20 @@ export function DrillScreen() {
                 imgClassName="h-[104px] w-[104px] rounded-lg object-contain"
                 glyphClassName="text-4xl text-text-muted"
               />
+            ) : hint.kind === "written" ? (
+              // The WRITTEN FORM of the word the learner just heard — 電話 — on a
+              // listening meaning card whose glyph is hidden. Shown big and in the
+              // card's JP font, the way the prompt glyph would have been, because
+              // it is a Japanese word to READ, not a caption to skim. It reveals
+              // WHICH word was heard and nothing about its English meaning, so the
+              // audio-first card keeps its answer withheld.
+              <span
+                className="text-3xl leading-none text-text"
+                style={{ fontFamily: q.font }}
+                lang="ja"
+              >
+                {hint.text}
+              </span>
             ) : (
               <p className="max-w-[320px] text-center text-[12px] text-text-muted">
                 {hint.text}
