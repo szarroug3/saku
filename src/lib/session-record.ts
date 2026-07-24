@@ -35,6 +35,7 @@
 // reason quiz-session.tsx imports them that way: this sits on the path of the
 // always-mounted provider, and `facts.ts` is the whole ~3.6 MB subject registry.
 import { computeResults } from "@/lib/engine/results";
+import { factKeys } from "@/lib/fact-keys";
 import { firstTryShowings } from "@/lib/first-try";
 import type {
   FactId,
@@ -70,22 +71,28 @@ export interface RecordOptions {
 }
 
 /**
- * Project one run's stats into the record that goes on disk.
+ * Project a run's per-fact stats into the poolable SessionFactCounts map — the
+ * counts `aggregate.foldSession` reads, with none of the record envelope.
  *
- * Returns null when nothing was answered. An empty record is not a smaller
- * record, it is a lie: `foldSession` would move `lastTested` for facts nobody
- * was asked, and the sessions list would grow rows for rounds that never
- * happened. A round you walked into and out of without answering has produced
- * no evidence, so it produces no record.
+ * Split out of `buildSessionRecord` because a SECOND caller now needs exactly
+ * this and only this: the live-standing fold (src/lib/library/live-standing.ts)
+ * folds an IN-PROGRESS run's outcomes onto the aggregate the Library reads,
+ * without ever writing a record — no id, no mode, no ts envelope, no durable
+ * write. Sharing the projection is what guarantees the standing you see mid-
+ * drill is computed from the same counts the eventual commit will fold, so the
+ * number cannot change when the round finally banks. One projection, two folds.
+ *
+ * Iterates every key in `stats` (the same set `computeResults` counts). A card
+ * put on screen but not yet resolved has `seen === 0` here — drill-stats only
+ * advances the counters at resolution — so it projects to all-zero counts and
+ * `foldSession` moves nothing for it. That is the point: standing must not
+ * budge for a card still in flight, only for one that has actually resolved.
  */
-export function buildSessionRecord(
+export function projectSessionFacts(
   stats: SessionStats,
-  opts: RecordOptions,
-): QuizSessionRecord | null {
-  const s = computeResults(stats);
-  if (!s.total) return null;
+): QuizSessionRecord["facts"] {
   const facts: QuizSessionRecord["facts"] = {};
-  for (const c of s.facts) {
+  for (const c of factKeys(stats)) {
     facts[c] = {
       seen: stats[c].seen,
       missed: stats[c].misses,
@@ -116,6 +123,24 @@ export function buildSessionRecord(
       correct: stats[c].correct || (stats[c].everCorrect ? 1 : 0),
     };
   }
+  return facts;
+}
+
+/**
+ * Project one run's stats into the record that goes on disk.
+ *
+ * Returns null when nothing was answered. An empty record is not a smaller
+ * record, it is a lie: `foldSession` would move `lastTested` for facts nobody
+ * was asked, and the sessions list would grow rows for rounds that never
+ * happened. A round you walked into and out of without answering has produced
+ * no evidence, so it produces no record.
+ */
+export function buildSessionRecord(
+  stats: SessionStats,
+  opts: RecordOptions,
+): QuizSessionRecord | null {
+  const s = computeResults(stats);
+  if (!s.total) return null;
   return {
     id: opts.id ?? newRecordId(),
     ts: opts.ts,
@@ -124,7 +149,7 @@ export function buildSessionRecord(
     total: s.total,
     forgivingPct: Math.round((100 * s.forg) / s.total),
     strictPct: Math.round((100 * s.strict) / s.total),
-    facts,
+    facts: projectSessionFacts(stats),
     detail: stats,
     ...(opts.planned ? { planned: opts.planned } : {}),
     ...(opts.rounds !== undefined ? { rounds: opts.rounds } : {}),

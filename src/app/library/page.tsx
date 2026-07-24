@@ -47,6 +47,7 @@ import {
   type Selection,
 } from "@/lib/library/selection";
 import { entryStanding, entryIsKnown } from "@/lib/library/standing";
+import { useLiveFacts } from "@/lib/library/use-live-facts";
 import {
   kindFromParams,
   libraryUrl,
@@ -238,6 +239,12 @@ function LibraryBody() {
   // `?? {}` minted a fresh empty object. `history.claims` is the only input.
   const claims = useMemo(() => history.claims ?? {}, [history.claims]);
 
+  // Committed aggregate + the in-progress run, folded at read time, so a card
+  // missed mid-drill reads shaky here NOW rather than on End session. Falls back
+  // to history.facts (same reference) when nothing is in progress. Every
+  // standing surface on this page reads THIS, not history.facts.
+  const liveFacts = useLiveFacts(history.facts, now);
+
   /** Entries you have filed. Search sorts these to the front of a section. */
   const pinned = useMemo(() => {
     const set = new Set<string>();
@@ -262,9 +269,9 @@ function LibraryBody() {
     const wantKnown = stateFilter === "known";
     return (entry: LibEntry) =>
       entryIsKnown(
-        entryStanding(knownFactsOf(entry), history.facts, claims, cfg.accuracyMetric, now),
+        entryStanding(knownFactsOf(entry), liveFacts, claims, cfg.accuracyMetric, now),
       ) === wantKnown;
-  }, [stateFilter, history.facts, claims, cfg.accuracyMetric, now]);
+  }, [stateFilter, liveFacts, claims, cfg.accuracyMetric, now]);
 
   // SEARCH SPANS EVERY KIND, always — the kind chips govern the browse shelf,
   // not the search. This is what makes removing the "All" tab safe: you lost the
@@ -343,7 +350,7 @@ function LibraryBody() {
   }, [selected, q, kind, pinned, keep, shelvesByKind]);
 
   const standingOfEntry = (entry: LibEntry) =>
-    entryStanding(factsOf(entry.id), history.facts, claims, cfg.accuracyMetric, now);
+    entryStanding(factsOf(entry.id), liveFacts, claims, cfg.accuracyMetric, now);
 
   const claim = async (facts: FactId[]) => {
     // postClaim, not a raw fetch: a signed-out claim (401) is saved to this
@@ -494,7 +501,7 @@ function LibraryBody() {
                 selected={selected}
                 onToggleEntry={onToggleEntry}
                 onToggleSection={onToggleSection}
-                facts={history.facts}
+                facts={liveFacts}
                 claims={claims}
                 metric={cfg.accuracyMetric}
                 now={now}

@@ -202,6 +202,19 @@ interface QuizSessionContextValue {
   /** Non-null while a session loop is running — including during a rest, when
    * `active` is null because nothing is being drilled. */
   session: StudySession | null;
+  /**
+   * The in-progress run's per-fact outcomes that have NOT reached history yet —
+   * the focused drill leg's live runtime stats merged with the current round's
+   * banked-but-uncommitted `roundStats`. `{}` when nothing is in progress.
+   *
+   * This is the LIVE half of "history + live session" (see
+   * src/lib/library/live-standing.ts): the Library folds it onto committed
+   * `history.facts` so a miss shows the moment a card resolves, not on End
+   * session. Derived, never stored, and cleared to `{}` for free when a run is
+   * discarded — the session state it reads from is gone, so a rolled-back run
+   * has nothing left to resurrect.
+   */
+  liveStats: SessionStats;
   /** Non-null when /results has something to show. */
   results: ResultsPayload | null;
   /** Live progress for the sidebar chip; screens keep it updated. */
@@ -1652,11 +1665,34 @@ export function QuizSessionProvider({
     [router],
   );
 
+  // The in-progress run's uncommitted outcomes, for the live-standing fold.
+  //
+  // `roundStats` holds every leg of the CURRENT round that finished but has not
+  // banked to history yet (rounds commit at closeRound, which resets it). The
+  // focused drill leg's stats are not in there yet: they live in its runtime,
+  // mutated in place, and move into roundStats only when the leg finishes. So
+  // the live picture is the two merged — disjoint by construction, same fold
+  // order finishQuiz uses (banked first, then the newer leg).
+  //
+  // DRILL ONLY for the in-flight leg. The drill keeps its stats at
+  // `active.runtime.stats`; grid/pairs/assembly/substitution/recognition nest
+  // theirs under a per-mode key. Reading every mode's private runtime layout
+  // here would couple this provider to all of them, so those modes reflect live
+  // at their leg boundary (finishQuiz → roundStats) instead — a documented
+  // limitation, not the reported case, which is the kanji/word drill.
+  const liveStats = useMemo<SessionStats>(() => {
+    const banked = session?.roundStats ?? {};
+    const inFlight = (active?.runtime as { stats?: SessionStats } | undefined)
+      ?.stats;
+    return inFlight ? mergeStats(banked, inFlight) : banked;
+  }, [active, session]);
+
   const value = useMemo(
     () => ({
       restored,
       active,
       session,
+      liveStats,
       results,
       progress,
       setProgress,
@@ -1690,6 +1726,7 @@ export function QuizSessionProvider({
       restored,
       active,
       session,
+      liveStats,
       results,
       progress,
       saveError,
