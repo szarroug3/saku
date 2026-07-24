@@ -74,6 +74,27 @@ export interface HistoryContextValue {
   history: HistoryFile;
   loaded: boolean;
   refresh: () => Promise<void>;
+  /**
+   * Apply a write to the copy on screen, NOW, without asking anyone.
+   *
+   * This is the second half of "seed it early, sync it late", and the half that
+   * was missing. Seeding fixed the FIRST paint; every write after it still cost
+   * a round trip to the server and a second one to read the whole history back,
+   * with nothing on screen moving until both landed. Claiming a group took about
+   * two seconds to acknowledge a click whose outcome we already knew.
+   *
+   * We know it because the functions that decide it are pure and already
+   * shared: history-ops.ts is what the API route applies on the server and what
+   * the signed-out path applies in this browser. Handing the SAME op to the copy
+   * on screen is not a guess about what the server will say — it is the identical
+   * computation, run where the user is.
+   *
+   * So the post still goes, and the write still announces itself, and the
+   * revalidation still lands and wins if it disagrees (see onHistoryWrite
+   * below). What changes is that none of that is on the path between the click
+   * and the screen.
+   */
+  apply: (op: (hist: HistoryFile) => HistoryFile) => void;
 }
 
 /** Undefined means "no provider above me". `useHistory` turns that into a loud
@@ -180,9 +201,22 @@ export function HistoryProvider({
     };
   }, [refresh]);
 
+  // Applied to whatever is on screen at the time, via the updater form: an
+  // optimistic write and a revalidation can land in either order, and reading
+  // `state.history` from this closure would apply the op to a copy that may
+  // already be stale.
+  //
+  // `loaded` is forced true. A write is a fact about this learner's history that
+  // now exists, so the screen must stop saying it does not know yet — otherwise
+  // a click during the first revalidation shows a spinner over an answer we are
+  // already holding.
+  const apply = useCallback((op: (hist: HistoryFile) => HistoryFile) => {
+    setState((prev) => ({ ...prev, history: op(prev.history), loaded: true }));
+  }, []);
+
   const value = useMemo<HistoryContextValue>(
-    () => ({ history: state.history, loaded: state.loaded, refresh }),
-    [state.history, state.loaded, refresh],
+    () => ({ history: state.history, loaded: state.loaded, refresh, apply }),
+    [state.history, state.loaded, refresh, apply],
   );
 
   return <HistoryContext.Provider value={value}>{children}</HistoryContext.Provider>;

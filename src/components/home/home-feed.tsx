@@ -67,7 +67,7 @@ import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
 import { entryOf, factInfo } from "@/lib/facts";
 import { COUNTER_ENTRIES } from "@/data/counters";
-import { postClaim, postSeen } from "@/lib/progress-fetch";
+import { useHistoryWrites } from "@/lib/history-writes";
 import { useHistory } from "@/lib/use-history";
 import type { FactId, HistoryFile } from "@/types";
 
@@ -220,7 +220,12 @@ export function HomeFeed() {
   // Errors are swallowed on purpose, as they were at each of the call sites this
   // replaced: failing to record the intent must not cost you the drill you asked
   // for.
-  const markSeen = (facts: FactId[]) => postSeen(facts);
+  // Applied to the copy on screen first and posted in the background, so none of
+  // the four handlers below waits on a network round trip to move (see
+  // history-writes.ts). This is why they are no longer `async`: there is nothing
+  // left in any of them to await.
+  const writes = useHistoryWrites();
+  const markSeen = (facts: FactId[]) => writes.markSeen(facts);
 
   // The lesson IS the session: its group, all of it new, all of it taught. It
   // does not go through the budget, because the budget's job is deciding how
@@ -263,16 +268,17 @@ export function HomeFeed() {
   // needs one thing theirs don't: `lesson.group.label` names the run ("Vowels
   // あ") for the HUD and the resume card, where a kanji or grammar lesson has no
   // name to give.
-  const quizMe = async (facts: FactId[]) => {
-    await markSeen(facts);
+  const quizMe = (facts: FactId[]) => {
+    markSeen(facts);
     startSession(facts, [], lesson?.group.label);
   };
 
-  const claim = async (facts: FactId[]) => {
-    await postClaim(facts, true);
-    // The card is a function of history, so re-reading history IS how the next
-    // lesson advances. Nothing tells it which group to show next.
-    await refresh();
+  const claim = (facts: FactId[]) => {
+    // The card is a function of history, so applying the claim to the history IS
+    // how the next lesson advances — and applying it locally advances the card
+    // on this frame. Re-reading the server is no longer part of that; it happens
+    // anyway, behind the click, and agrees.
+    writes.claim(facts);
   };
 
   // Teaching a word is also what UNLOCKS its kanji's readings, the payoff (see
@@ -290,20 +296,19 @@ export function HomeFeed() {
   // A lesson with no word on it is the ordinary case early on, and then
   // `lessonWords` is empty and this is exactly `startLesson`. One handler covers
   // both, because a mixed card cannot know in advance which it will be.
-  const startCurriculumLesson = async (facts: FactId[], { teach = true } = {}) => {
+  const startCurriculumLesson = (facts: FactId[], { teach = true } = {}) => {
     const kebs = lessonWords(curriculumLessonShown?.cards ?? []);
-    await markSeen([...facts, ...readingsProvedBy(kebs)]);
+    markSeen([...facts, ...readingsProvedBy(kebs)]);
     startSession(facts, teach ? facts : []);
   };
 
   // "I already know these": claim the lesson (skip the drill), but still unlock
   // the kanji readings its words prove. Knowing the word is what makes the
   // reading fair, however you came to know it.
-  const claimCurriculumLesson = async (facts: FactId[]) => {
+  const claimCurriculumLesson = (facts: FactId[]) => {
     const readings = readingsProvedBy(lessonWords(curriculumLessonShown?.cards ?? []));
-    await postClaim(facts, true);
-    if (readings.length) await markSeen(readings);
-    await refresh();
+    writes.claim(facts);
+    if (readings.length) markSeen(readings);
   };
 
   // Which in-progress run, if any, belongs to each track: the signal that lets
