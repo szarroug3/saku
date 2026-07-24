@@ -14,19 +14,18 @@
 // So it says the how, then the what, then Start — in that order, because that
 // is the order of the sentence, and Start acts on exactly what it sits under.
 //
-// `sticky bottom-0` rather than pinned to the page: the bar belongs to the
-// Practice page, rides its bottom edge, and follows you down the picker so that
-// the selection you are fine-tuning is always one click from running. It matches
-// the language the picker's own footer set.
+// It sits at the BOTTOM OF THE PAGE — the last thing in the flow, after the
+// "How to ask" card — not `sticky bottom-0`. Sticky rode the viewport edge and
+// let the setup scroll UNDER it, so the bar hung over the Length row instead of
+// following the end of the content; Sam asked for it at the bottom of the page,
+// so it just ends the page. Start still sits directly under everything it acts
+// on, because that setup is the last thing above it.
 //
-// `kq-band` is what makes this bar OCCLUDE, and it replaces the `bg-bg` that
-// used to be here. A sticky band has to hide what scrolls under it, and the
-// honest answer to "with what?" is per-theme: the three opaque themes lay down
-// the page's own ground, while kiri occludes with a blur instead, because a
-// flat --bg there would punch an opaque rectangle through its mesh. That used
-// to be spelled `[class~="sticky"][class~="bg-bg"]` in globals.css — an
-// accidental class pair that armed by coincidence and disarmed by omission.
-// The bar now says what it is; see CARD MATERIAL in globals.css.
+// `kq-band` gives the bar its own material (a per-theme ground: the opaque
+// themes lay down the page's ground, kiri a blur, because a flat --bg would
+// punch an opaque rectangle through its mesh). It no longer needs to OCCLUDE a
+// scroll — nothing passes under a static footer — but the band still reads as a
+// distinct footer, which is what we want. See CARD MATERIAL in globals.css.
 //
 // Still load-bearing and NOT taste: momentum shelves the primary button off
 // `[class~="rounded-lg"][class~="bg-text"]`. Keep that one.
@@ -137,7 +136,7 @@ export function StartBar({
   return (
     <div
       className={cx(
-        "kq-band sticky bottom-0 -mx-3 mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5",
+        "kq-band -mx-3 mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5",
         "border-t",
         disabled ? "border-border" : "border-accent",
       )}
