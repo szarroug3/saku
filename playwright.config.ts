@@ -23,7 +23,18 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  reporter: [["list"]],
+  // A plain `pnpm run test:e2e` reports exactly as it always has: one line per
+  // test, nothing written to disk, nothing that wants to open a browser.
+  //
+  // `pnpm run test:e2e:report` sets E2E_HTML_REPORT=1, which adds Playwright's
+  // HTML reporter ALONGSIDE the list one — the terminal output is unchanged and
+  // a browsable report is written to ./playwright-report (gitignored).
+  // `open: "never"` matters: the HTML reporter's default is "on-failure", which
+  // would start a web server and block the run the moment a test fails.
+  // `pnpm run test:e2e:report:open` serves what was written.
+  reporter: process.env.E2E_HTML_REPORT
+    ? [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]]
+    : [["list"]],
   timeout: 60_000,
   expect: { timeout: 15_000 },
   use: {

@@ -18,7 +18,9 @@
     "audit-corpus": "node scripts/audit-corpus.ts",
     "audit-corpus:check": "node scripts/audit-corpus.ts --check",
     "test": "node --import ./src/lib/conjugate/test-hooks.mjs --test \"src/**/*.test.ts\"",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:report": "E2E_HTML_REPORT=1 playwright test",
+    "test:e2e:report:open": "playwright show-report"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
