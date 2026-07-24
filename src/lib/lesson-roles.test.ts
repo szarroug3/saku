@@ -15,8 +15,18 @@
 // which sections those roles earn — and, just as importantly, that a step which
 // really is one thing (a kana, a plain kanji, a two-character word, a grammar
 // pattern) comes out exactly as it did before roles were a set.
+//
+// AND THEN THE TRIM
+// =================
+// Delivering all three roles' material at once made the folded step a wall, so
+// two of its sections moved out to the Library: the readings the kanji takes
+// inside words, and the kanji built on the shape. The suite below pins the
+// smaller lesson AND the fact that the Library still carries what left, because
+// "we stopped showing it" and "we lost it" look identical from the lesson's side.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
 import { kanaEntry } from "@/data/characters";
@@ -25,13 +35,18 @@ import { patternEntry } from "@/data/grammar";
 import { radicalEntry } from "@/data/radicals";
 import { vocabRow, wordEntry } from "@/data/vocab";
 import type { LessonItem, LessonKind } from "@/lib/lesson-items";
+import { usedAsPartIn } from "@/lib/library/components";
+import { libEntry, readingRowsOf } from "@/lib/library/entries";
 import {
   canHearItem,
   headwordSubtitle,
+  kanjiEntryOf,
+  kanjiMeanings,
   lessonRoles,
   lessonSections,
   lessonWord,
   roleHasSections,
+  strokeFallbackOf,
   wordTypeOf,
 } from "@/lib/lesson-roles";
 import type { EntryId } from "@/types";
@@ -68,25 +83,52 @@ describe("lessonRoles — every role the step teaches, not just the track it cam
 });
 
 describe("lessonSections — a section per role, word first", () => {
-  test("人 teaches its word sense, its readings and what it builds", () => {
-    const sections = lessonSections(FOLDED);
-    assert.ok(sections.includes("word-sense"), "the word's sound and meaning");
-    assert.ok(sections.includes("kanji-readings"), "the in-word readings");
-    assert.ok(sections.includes("radical-kanji"), "the kanji built on the shape");
+  test("人 teaches its word sense, then what the character means, then its shape", () => {
+    assert.deepEqual(lessonSections(FOLDED), [
+      "word-sense",
+      "word-readings",
+      "word-example",
+      "kanji-meaning",
+      "radical-note",
+      "how-its-written",
+    ]);
     assert.ok(
-      sections.indexOf("word-sense") < sections.indexOf("kanji-readings"),
+      lessonSections(FOLDED).indexOf("word-sense") <
+        lessonSections(FOLDED).indexOf("kanji-meaning"),
       "the word comes first, as the badge's own sentence orders it",
     );
   });
 
-  test("the readings survive the fold: they are found by glyph, not by the step's entry", () => {
-    assert.ok(lessonSections(RADICAL_SIDE).includes("kanji-readings"));
+  test("the trim holds: no readings table, no list of kanji built on the shape", () => {
+    for (const s of lessonSections(FOLDED)) {
+      assert.notEqual(s as string, "kanji-readings");
+      assert.notEqual(s as string, "radical-kanji");
+    }
   });
 
-  test("a plain kanji is unchanged: parts, readings, how it's written", () => {
+  test("the character's material survives the fold: it is found by glyph, not by the step's entry", () => {
+    assert.deepEqual(lessonSections(RADICAL_SIDE), lessonSections(FOLDED));
+    assert.deepEqual(kanjiMeanings(RADICAL_SIDE), ["person"]);
+  });
+
+  test("every role a folded character plays still has a block on the page", () => {
+    const sections = lessonSections(FOLDED);
+    for (const role of ["word", "kanji", "radical"] as const) {
+      assert.ok(roleHasSections(role, sections), `${role} still claims a block`);
+    }
+  });
+
+  test("a plain kanji keeps its parts and its strokes, and loses its readings", () => {
     assert.deepEqual(lessonSections(step(kanjiEntry("明"), "明", "kanji")), [
       "kanji-parts",
-      "kanji-readings",
+      "how-its-written",
+    ]);
+  });
+
+  test("a single-role kanji gets no definition panel: the headword line is one inch up", () => {
+    const sections = lessonSections(step(kanjiEntry("明"), "明", "kanji"));
+    assert.ok(!sections.includes("kanji-meaning"));
+    assert.deepEqual(lessonSections(step(kanjiEntry("乞"), "乞", "kanji")), [
       "how-its-written",
     ]);
   });
@@ -126,10 +168,95 @@ describe("roleHasSections — a role heading only over material that is there", 
   });
 
   test("a role with no sections gets no heading", () => {
+    // 乞 plays one role, so nothing here is labelled anyway; what the answers
+    // pin is that a role with no material never claims a block. Its own kanji
+    // role has none since the readings left and it has no teachable parts.
     const sections = lessonSections(step(kanjiEntry("乞"), "乞", "kanji"));
-    assert.equal(roleHasSections("kanji", sections), true);
+    assert.equal(roleHasSections("kanji", sections), false);
     assert.equal(roleHasSections("radical", sections), false);
     assert.equal(roleHasSections("word", sections), false);
+  });
+
+  test("明 keeps a kanji block, on its parts alone", () => {
+    const sections = lessonSections(step(kanjiEntry("明"), "明", "kanji"));
+    assert.equal(roleHasSections("kanji", sections), true);
+  });
+});
+
+describe("the Library keeps what the lesson dropped", () => {
+  const entryPage = readFileSync(
+    fileURLToPath(new URL("../app/library/[...entry]/page.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  test("人's five in-word readings are still there to be read, off the same entry", () => {
+    const shape = kanjiEntryOf(FOLDED);
+    assert.ok(shape, "人 has a kanji entry");
+    assert.equal(readingRowsOf(shape).length, 5);
+  });
+
+  test("and the 22 kanji built on the shape are still joined up", () => {
+    assert.ok(usedAsPartIn("人").length > 10);
+  });
+
+  test("the entry page mounts both, so the reference is where they went", () => {
+    assert.match(entryPage, /<KanjiReadings/);
+    assert.match(entryPage, /<ComponentUses/);
+  });
+
+  test("the entry page's own material is untouched by the lesson's section list", () => {
+    // The two views never shared a list: nothing under app/library asks
+    // lessonSections, which is why the lesson could shrink on its own.
+    assert.doesNotMatch(entryPage, /lessonSections/);
+    assert.ok(libEntry(kanjiEntry("人"))?.meanings.length);
+  });
+});
+
+describe("strokeFallbackOf — what 'how it's written' says with no diagram in", () => {
+  test("THE BUG: 人 reached as a word gave up and said 'whole shape'", () => {
+    // The old test was `item.kind === "kanji"`, and this step's kind is "word",
+    // so both the parts branch and the count branch were skipped on a character
+    // whose stroke count has been on file all along.
+    const asWord = step(wordEntry("人"), "人", "word");
+    assert.deepEqual(strokeFallbackOf(asWord), { show: "strokes", strokes: 2 });
+  });
+
+  test("and it is the same answer from every track, which is the whole point", () => {
+    for (const s of [FOLDED, RADICAL_SIDE, step(wordEntry("人"), "人", "word")]) {
+      assert.deepEqual(strokeFallbackOf(s), { show: "strokes", strokes: 2 });
+    }
+  });
+
+  test("a kanji made of taught parts shows the breakdown on the lesson", () => {
+    const got = strokeFallbackOf(step(kanjiEntry("明"), "明", "kanji"));
+    assert.equal(got.show, "parts");
+    assert.deepEqual(
+      got.show === "parts" ? got.parts.map((p) => p.c) : [],
+      ["日", "月"],
+    );
+  });
+
+  test("the Library suppresses the breakdown and falls to the count", () => {
+    assert.deepEqual(strokeFallbackOf(step(kanjiEntry("明"), "明", "kanji"), true), {
+      show: "strokes",
+      strokes: 8,
+    });
+  });
+
+  test("a kana and a pattern have no count of their own, so they say nothing", () => {
+    assert.deepEqual(strokeFallbackOf(step(kanaEntry("あ"), "あ", "kana")), {
+      show: "whole",
+    });
+    assert.deepEqual(
+      strokeFallbackOf(step(patternEntry("te-kara"), "〜てから", "grammar")),
+      { show: "whole" },
+    );
+  });
+
+  test("a multi-character word has no single shape either", () => {
+    assert.deepEqual(strokeFallbackOf(step(wordEntry("学生"), "学生", "word")), {
+      show: "whole",
+    });
   });
 });
 

@@ -1,6 +1,15 @@
 "use client";
 
-// The kanji's readings, on the lesson — ALL OF THEM, ALL OPEN.
+// The kanji's readings, ALL OF THEM, ALL OPEN.
+//
+// NOTHING MOUNTS THIS TODAY. The lesson used to, and the trim took it off: five
+// rows of in-word readings on the step where a character is first met is a
+// catalogue handed to someone who has not learned a word that uses any of them.
+// The Library entry page shows the readings through `KanjiReadings`, which dims
+// what you have not opened yet, and that is where they belong. The file stays
+// because what it works out below — full ink on every row, the anchor word
+// unconditionally, no standing chip — is the answer for any lesson-side readings
+// table, and none of it is recoverable from the Library's version.
 //
 // WHAT CHANGED, AND WHY IT IS THE OPPOSITE OF THE LIBRARY
 // ======================================================

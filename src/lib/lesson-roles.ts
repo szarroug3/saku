@@ -24,20 +24,41 @@
 // was scheduled for.
 //
 // EMPTINESS IS DECIDED HERE TOO, from the same helpers the sections themselves
-// ask (`teachableParts`, `readingRowsOf`, `usedAsPartIn`, `formsOfWord`). Each
-// component already returns null when it has nothing, which is enough to keep a
-// hole off the page but not enough to know whether a ROLE has anything to show
-// at all, and a role heading over three absent sections is worse than no
-// heading.
+// ask (`teachableParts`, `formsOfWord`, `exampleFor`). Each component already
+// returns null when it has nothing, which is enough to keep a hole off the page
+// but not enough to know whether a ROLE has anything to show at all, and a role
+// heading over three absent sections is worse than no heading.
+//
+// A LESSON IS NOT THE LIBRARY, AND THIS IS WHERE THEY PART
+// =======================================================
+// Folding three cards into one step made the step carry all three cards' worth
+// of material, and for 人 that came to a sense table, a sound explainer, an
+// example sentence, five rows of in-word readings and a list of the kanji built
+// on the shape. The owner's read of it: fine on a page you went looking for,
+// too much on a page you were handed.
+//
+// So this function answers for the LESSON only, and it answers smaller. Two
+// things it used to hand over are now the Library's alone: the table of readings
+// the kanji takes inside words, and the list of kanji built on the shape. Both
+// are exhaustive catalogues you consult once you already know the character;
+// neither is what you need on the minute you meet it. What the lesson keeps in
+// their place is the point of each role, said in a line (see RoleBlock), plus
+// the character's own definition where the kanji block would otherwise have
+// nothing under its heading.
+//
+// The Library entry page never called this function and still does not — it
+// assembles its own sections from `KanjiReadings` and `ComponentUses` — so the
+// divergence needed no flag threaded through a shared component. It is simply
+// that this list got shorter and that one did not.
 
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
+import { radicalByGlyph } from "@/data/radicals";
 import { vocabRow, type VocabRow } from "@/data/vocab";
 import { exampleFor } from "@/data/word-examples";
 import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role";
-import { teachableParts } from "@/lib/kanji-parts";
+import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
-import { usedAsPartIn } from "@/lib/library/components";
-import { libEntry, readingRowsOf } from "@/lib/library/entries";
+import { libEntry } from "@/lib/library/entries";
 import { formsOfWord } from "@/lib/word-forms";
 
 /** The kinds that name a role. A step on one of these tracks plays that role
@@ -79,18 +100,31 @@ export function kanjiEntryOf(item: LessonItem) {
   return libEntry(kanjiEntry(item.glyph)) ?? null;
 }
 
+/** What the character means as a character, from the kanji entry, whichever
+ * track the step arrived on. Empty for a step with no kanji card. */
+export function kanjiMeanings(item: LessonItem): readonly string[] {
+  return kanjiEntryOf(item)?.meanings ?? [];
+}
+
 /** Every section a step can show, in the order the lesson prints them. The word
  * comes first because it is the most concrete thing a character can be, and the
  * badge's own sentence for a three-role character says the same three things in
- * the same order. */
+ * the same order.
+ *
+ * `radical-note` is the odd one: it has no panel behind it. Since the lesson
+ * stopped listing the kanji built on the shape, the building-block role has no
+ * material left, and a role the badge names and the page never mentions again is
+ * the gap that started all of this. So the role's block is its heading and its
+ * one line, and this entry is how a role with nothing under it still claims one.
+ * `roleHasSections` is the only thing that reads it. */
 export const SECTION_ORDER = [
   "word-sense",
   "word-forms",
   "word-readings",
   "word-example",
+  "kanji-meaning",
   "kanji-parts",
-  "kanji-readings",
-  "radical-kanji",
+  "radical-note",
   "grammar-build",
   "grammar-example",
   "grammar-family",
@@ -107,21 +141,30 @@ const SECTION_ROLE: Partial<Record<LessonSection, RoleName>> = {
   "word-forms": "word",
   "word-readings": "word",
   "word-example": "word",
+  "kanji-meaning": "kanji",
   "kanji-parts": "kanji",
-  "kanji-readings": "kanji",
-  "radical-kanji": "radical",
+  "radical-note": "radical",
 };
 
 /**
  * The sections a step shows, in SECTION_ORDER, with the empty ones already
  * dropped.
  *
- * The one section gated on something other than data is `word-sense`, the
- * reading-and-meaning panel. A word that is only a word says both in its header
- * already (学生 prints "noun · student" beside its reading), so the panel would
- * say them twice. A character with a kanji card spends its header on the
- * character's meaning, and then the panel is the only place the word it also is
- * gets taught.
+ * Three sections are gated on something other than data.
+ *
+ * `word-sense`, the reading-and-meaning panel: a word that is only a word says
+ * both in its header already (学生 prints "noun · student" beside its reading),
+ * so the panel would say them twice. A character with a kanji card spends its
+ * header on the character's meaning, and then the panel is the only place the
+ * word it also is gets taught.
+ *
+ * `kanji-meaning` and `radical-note` are both gated on the step playing SEVERAL
+ * roles, and for the same reason read from opposite ends. On a step that is only
+ * about the kanji, the definition is the headword line an inch above and the
+ * badge beside it already says what a kanji is for; repeating either would be
+ * two identical lines with nothing between them. On a folded step the reader
+ * reaches "As a kanji" having scrolled past a sense table, a sound explainer and
+ * an example sentence, and the heading has to be able to stand on its own.
  */
 export function lessonSections(item: LessonItem): LessonSection[] {
   if (item.kind === "transitivity" || item.kind === "keigo") return [];
@@ -137,13 +180,10 @@ export function lessonSections(item: LessonItem): LessonSection[] {
     if (exampleFor(word.keb)) out.add("word-example");
   }
   if (roles.includes("kanji")) {
-    const shape = kanjiEntryOf(item);
+    if (roles.length > 1 && kanjiMeanings(item).length) out.add("kanji-meaning");
     if (teachableParts(item.glyph)) out.add("kanji-parts");
-    if (shape && readingRowsOf(shape).length) out.add("kanji-readings");
   }
-  if (roles.includes("radical") && usedAsPartIn(item.glyph).length) {
-    out.add("radical-kanji");
-  }
+  if (roles.includes("radical") && roles.length > 1) out.add("radical-note");
   if (item.kind === "grammar") {
     out.add("grammar-build");
     out.add("grammar-example");
@@ -156,6 +196,39 @@ export function lessonSections(item: LessonItem): LessonSection[] {
   }
 
   return SECTION_ORDER.filter((s) => out.has(s));
+}
+
+/**
+ * What "how it's written" can honestly say about a glyph with no stroke diagram
+ * ingested: its component breakdown, its stroke count, or nothing but that it is
+ * learned whole.
+ *
+ * IT LIVES HERE BECAUSE IT IS A ROLE QUESTION, AND IT WAS ANSWERED AS A KIND ONE.
+ * The component used to ask `item.kind === "kanji"` for the breakdown and the
+ * count, and `item.kind === "radical"` for the radical's count. A step carries
+ * one kind and the folded curriculum picks it by whichever role the character was
+ * scheduled as, so 人 reached on the words track matched neither branch and got
+ * "Learned as a whole shape" for a character with a stroke count on file. Same
+ * class of bug as the sections had, same fix: read the role set.
+ *
+ * `reference` is the Library entry page, which suppresses the breakdown because
+ * its Links card already carries a "Made of" row.
+ */
+export type StrokeFallback =
+  | { show: "parts"; parts: KanjiPart[] }
+  | { show: "strokes"; strokes: number }
+  | { show: "whole" };
+
+export function strokeFallbackOf(item: LessonItem, reference = false): StrokeFallback {
+  const roles = lessonRoles(item);
+  const isKanji = roles.includes("kanji");
+  const parts = isKanji && !reference ? teachableParts(item.glyph) : null;
+  if (parts) return { show: "parts", parts };
+  const strokes =
+    (isKanji ? kanjiRow(item.glyph)?.strokes : undefined) ??
+    (roles.includes("radical") ? radicalByGlyph(item.glyph)?.strokes : undefined);
+  if (strokes !== undefined) return { show: "strokes", strokes };
+  return { show: "whole" };
 }
 
 /** Does this role have anything on this step? Drives the role heading, which

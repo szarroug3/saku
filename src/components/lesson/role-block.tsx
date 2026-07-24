@@ -10,10 +10,16 @@
 // what the role means for this character.
 //
 // ONLY WHEN THERE ARE SEVERAL. A plain kanji's lesson is entirely about being a
-// kanji, and captioning its readings "As a kanji" would be labelling the only
-// thing on the page. The caller passes `labelled: false` there and gets its
-// sections back untouched, which is how every single-role step keeps the screen
-// it had before roles were a set.
+// kanji, and captioning its parts "As a kanji" would be labelling the only thing
+// on the page. The caller passes `labelled: false` there and gets its sections
+// back untouched, which is how every single-role step keeps the screen it had
+// before roles were a set.
+//
+// A BLOCK WITH NO CHILDREN IS LEGITIMATE HERE. The building-block role is now
+// taught by its line alone, so `children` is often null under "As a building
+// block". That is the section, not a hole: the heading and the line are what the
+// reader gets for that role, and the alternative is a role the badge promises
+// and the body never mentions.
 
 import type { ReactNode } from "react";
 
@@ -21,7 +27,15 @@ import type { RoleName } from "@/lib/character-role";
 
 /** What each role means for the character in hand, said once, in the words a
  * beginner has. These answer the question the badge raises: it names three
- * roles, and this is what each of them buys you. */
+ * roles, and this is what each of them buys you.
+ *
+ * THE KANJI AND RADICAL LINES CARRY MORE WEIGHT THAN THEY USED TO. The lesson no
+ * longer prints the in-word readings under "As a kanji" or the built-from-this
+ * list under "As a building block" (both live on the Library entry, which is
+ * where you go when you want the full catalogue). What is left is the point of
+ * the role, so the line has to make it: where you will run into this character
+ * next, and what seeing it there tells you. The kanji line does NOT say "and
+ * these are the readings", because they are no longer below it. */
 const ROLE_HEADING: Record<RoleName, { title: string; lead: string }> = {
   word: {
     title: "As a word",
@@ -29,11 +43,11 @@ const ROLE_HEADING: Record<RoleName, { title: string; lead: string }> = {
   },
   kanji: {
     title: "As a kanji",
-    lead: "It counts as a character in its own right, and these are the readings it takes inside words.",
+    lead: "A character in its own right. Most of the time you will meet it inside a longer word, doing its share of the meaning.",
   },
   radical: {
     title: "As a building block",
-    lead: "Other kanji are built around this shape.",
+    lead: "This shape shows up inside other kanji. Spot it in one and you have a head start on what that kanji is about.",
   },
 };
 
@@ -46,7 +60,8 @@ export function RoleBlock({
   /** Whether to print the heading. False on a single-role step, where the
    * sections are returned exactly as they were. */
   labelled: boolean;
-  children: ReactNode;
+  /** Optional, because the building-block role is taught by its line alone. */
+  children?: ReactNode;
 }) {
   if (!labelled) return <>{children}</>;
   const { title, lead } = ROLE_HEADING[role];

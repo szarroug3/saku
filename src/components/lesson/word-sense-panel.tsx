@@ -27,8 +27,7 @@
 //
 // One reading is still the one the quiz asks, and the foot says so, because a
 // screen that shows three readings and then grades one of them without warning
-// is a trap. That is the same bargain the kanji readings table makes one section
-// down: show the whole character, ask only what a word has proved.
+// is a trap.
 
 import { HearButton } from "@/components/lesson/hear-button";
 import { LessonPanel } from "@/components/lesson/lesson-panel";
