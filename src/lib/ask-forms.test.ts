@@ -10,6 +10,7 @@ import {
   enabledFormsFor,
   formIsMc,
 } from "@/lib/ask-forms";
+import { ALL_FACTS } from "@/lib/facts";
 import type { AskConfig } from "@/types";
 
 const word = VOCAB.find((w) => !isKanaWord(w))!;
@@ -72,6 +73,38 @@ describe("enabledFormsFor", () => {
     });
     assert.equal(forms.length, 2);
     assert.deepEqual(forms.map((f) => formIsMc(kanaFact("あ"), f)), [false, true]);
+  });
+
+  test("English Type it never becomes an unselected MC kana card", () => {
+    const forms = enabledFormsFor(kanaFact("あ"), {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: ["typed"] },
+    });
+    assert.deepEqual(forms, []);
+  });
+
+  test("every emitted Type-it form actually renders typed", () => {
+    const typedOnly: AskConfig = {
+      japanese: {
+        prompts: ["text"],
+        responses: ["definition", "romaji"],
+        answers: ["typed"],
+      },
+      sentence: {
+        prompts: ["text"],
+        responses: ["definition", "romaji"],
+        answers: ["typed"],
+      },
+      english: { answers: ["typed"] },
+    };
+    for (const fact of ALL_FACTS) {
+      const forms = enabledFormsFor(fact, typedOnly);
+      assert.ok(
+        forms.every((form) => form.answer === "typed" && !formIsMc(fact, form)),
+        fact,
+      );
+    }
   });
 
   for (const prompt of ["text", "audio"] as const) {

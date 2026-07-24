@@ -116,6 +116,12 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
   const seen = new Set<string>();
   const out: CardForm[] = [];
   for (const f of forms) {
+    // An answer-format chip is a promise, not a preference. A subject that can
+    // only offer MC (or an en→jp target that cannot be typed) does not get to
+    // turn a selected Type-it form into an unselected multiple-choice card.
+    // Drop that unsupported combination; another selected form may still carry
+    // the fact, and deck construction omits facts with no supported forms.
+    if (f.answer === "typed" && formIsMc(fact, f)) continue;
     const key = `${f.source}|${f.response}|${f.listen ? 1 : 0}|${f.dir}|${formIsMc(fact, f) ? 1 : 0}`;
     if (seen.has(key)) continue;
     seen.add(key);
