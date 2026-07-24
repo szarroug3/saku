@@ -72,7 +72,7 @@ test("a session plays all three rounds through to Session complete", async ({
 
   await seed({ seen: [], cfg: CFG });
 
-  await page.goto("/");
+  await page.goto("/learn");
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);

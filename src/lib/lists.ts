@@ -1,10 +1,9 @@
-// Server-side persistence for saved lists.
+// Server-side persistence for a signed-in learner's saved lists — the `lists`
+// jsonb on their `progress` row.
 //
-// WHERE A LIST LIVES depends on STORAGE_BACKEND (see store/mode.ts): the local
-// lists.json at the repo root in file mode, or the per-user `lists` jsonb blob
-// in Supabase in hosted mode. The read-modify-write LOGIC below is unchanged
-// from when this was file-only; what's new is the async + `userId` threading and
-// the one-line backend branch in loadLists / writeLists.
+// WHO REACHES THIS. Only a signed-in request (getUserId → 401 otherwise). A
+// signed-out visitor's lists live in this browser's localStorage (see
+// store/local-progress.ts), applied with the same pure list-ops this file uses.
 //
 // Still a separate blob from history rather than a key inside it, for the same
 // reason it was a separate file: history is rewritten on every finished session
@@ -13,53 +12,18 @@
 
 import "server-only";
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import path from "node:path";
-
 import { withEntriesAdded, withEntriesRemoved, withName } from "@/lib/list-ops";
-import { isSupabaseStore } from "@/lib/store/mode";
 import { readListsRow, writeListsRow } from "@/lib/store/supabase-store";
 import type { EntryId, ListsFile, SavedList } from "@/types";
 
-// WHERE the local file lives — the repo root by default, unchanged from the bare
-// `path.join(process.cwd(), "lists.json")` this replaced. SAKU_DATA_DIR is the
-// same opt-in directory override history.ts documents in full: the e2e suite sets
-// it to a throwaway directory so a run never touches the maintainer's real
-// lists.json, and it is unset (so behavior is identical) in every normal run.
-const DATA_DIR = process.env.SAKU_DATA_DIR
-  ? path.resolve(process.env.SAKU_DATA_DIR)
-  : process.cwd();
-const LISTS_PATH = path.join(DATA_DIR, "lists.json");
-
-/** Indent 1, no trailing newline — legible under `git diff`, which is the only
- * reason the formatting is specified at all. Same rule as history.ts. */
-function writeListsFile(file: ListsFile): void {
-  writeFileSync(LISTS_PATH, JSON.stringify(file, null, 1), "utf-8");
-}
-
-function readListsFile(): ListsFile {
-  if (existsSync(LISTS_PATH)) {
-    try {
-      const raw = JSON.parse(readFileSync(LISTS_PATH, "utf-8")) as
-        | Partial<ListsFile>
-        | null;
-      return { lists: raw?.lists ?? [] };
-    } catch {
-      // missing/corrupt file yields no lists, same as history
-    }
-  }
-  return { lists: [] };
-}
-
-/** The current backend's lists for `userId`. File mode ignores the id (one
- * lists.json); Supabase reads the user's own row under RLS. */
+/** The signed-in learner's lists. readListsRow normalizes an unset column into
+ * no lists. */
 export async function loadLists(userId: string): Promise<ListsFile> {
-  return isSupabaseStore() ? readListsRow(userId) : readListsFile();
+  return readListsRow(userId);
 }
 
 async function writeLists(userId: string, file: ListsFile): Promise<void> {
-  if (isSupabaseStore()) await writeListsRow(userId, file);
-  else writeListsFile(file);
+  await writeListsRow(userId, file);
 }
 
 /** Add a list, or replace the one with the same id. */
@@ -79,7 +43,7 @@ export async function saveList(userId: string, list: SavedList): Promise<ListsFi
  * The guard is the model, not defensiveness. A derived list is a rule, and
  * writing to a rule either loses your addition on the next recompute or
  * silently freezes your live search — so it is refused inside withEntriesAdded,
- * the one tested pure op that owns "what an add DOES to a list". The fs/db half
+ * the one tested pure op that owns "what an add DOES to a list". The db half
  * calls straight through so the two can't diverge (which they once did).
  */
 export async function addToList(

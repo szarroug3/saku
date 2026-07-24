@@ -9,11 +9,12 @@ import { isSupabaseStore } from "@/lib/store/mode";
 // cookies onto the response. Without this the session silently expires.
 //
 // It does NOT gate the app. Saku is browsable signed out — the Library and every
-// reference page work without an account, and the data hooks treat a 401 as an
-// empty history rather than an error. Login is only needed to SAVE, and that is
-// enforced where the saving happens (the write API routes answer 401) and shown
-// where it helps (the home page is a landing when signed out; the sidebar offers
-// Sign in). In file mode there is no auth and this is a pass-through.
+// reference page work without an account, and the data hooks treat a 401 as
+// "save to this browser's localStorage" rather than an error. Login is only
+// needed to sync to an account, and that is enforced where the saving happens
+// (the write API routes answer 401) and shown where it helps (the home page is a
+// landing when signed out; the sidebar offers Sign in). When Supabase is not
+// configured (no keys) there is no auth and this is a pass-through.
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

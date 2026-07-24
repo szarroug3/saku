@@ -35,6 +35,29 @@ for (const route of routes.static) {
         // That is harness noise, not an application fault.
         if (text.includes("webpack-hmr")) return;
         if (text.includes("WebSocket")) return;
+        // Vercel Web Analytics (<Analytics/>) injects /_vercel/insights/script.js,
+        // which only exists on Vercel's platform — a local `next start` answers
+        // 404 and the browser logs a generic "Failed to load resource". Infra
+        // noise, not the app: the script is absent everywhere off Vercel and its
+        // absence says nothing about whether the page rendered. Matched on the
+        // failing resource's URL, since the console text itself is generic.
+        if (m.location().url.includes("/_vercel/insights/")) return;
+        // Signed-out data probes. The suite runs signed out, and hooks like
+        // useLists read the server first and fall back to this browser's
+        // localStorage on 401 (the documented pattern — see progress-fetch.ts).
+        // That 401 is BY DESIGN and handled in code, but the browser still logs a
+        // generic "Failed to load resource" for it. It is not a render fault — the
+        // page mounts and shows local data — so an expected 401 from the app's own
+        // /api endpoints is not counted, the same way the HMR/insights noise is
+        // not. A genuine failure still surfaces as a bad document status, a
+        // pageerror, or the app-error text asserted below.
+        if (
+          m.location().url.includes("/api/") &&
+          text.includes("Failed to load resource") &&
+          text.includes("401")
+        ) {
+          return;
+        }
         failures.push(`console.error: ${text}`);
       }
     });
@@ -45,14 +68,14 @@ for (const route of routes.static) {
     expect(response!.status(), `bad status for ${route}`).toBeLessThan(400);
 
     // Several routes are guards that redirect: /quiz and /session go to /learn
-    // when there is no quiz in progress, /chart goes to /library, and "/" itself
-    // redirects to /learn for any signed-in visitor — which, in file mode, is
-    // every visitor (auth.ts returns LOCAL_USER unconditionally). That last one
-    // was missing from this list, which is how `renders /` sat here for months as
-    // an undetected second copy of `renders /learn`. It is asserted explicitly
-    // below now, rather than being implied by a comment.
+    // when there is no quiz in progress, and /chart goes to /library. "/" itself
+    // no longer redirects here: the suite runs SIGNED OUT (see
+    // playwright.config.ts), and "/" is the landing for a signed-out visitor — it
+    // renders in place rather than redirecting to /learn. That the landing still
+    // mounts the nav is asserted below like every other route; that it is the
+    // landing and not the curriculum is asserted explicitly further down.
     //
-    // Following the redirect is the correct behaviour, so the assertion is that
+    // Following any redirect is the correct behaviour, so the assertion is that
     // the app ends up somewhere that rendered, not that the URL is unchanged.
     await page.waitForLoadState("networkidle");
 
@@ -107,38 +130,31 @@ for (const sample of dynamicSamples) {
 }
 
 /**
- * "/" IS NOT A PAGE IN THIS SUITE, AND SAYING SO IS THE POINT.
+ * "/" IS THE LANDING IN THIS SUITE — the front door a signed-out visitor sees.
  *
- * `renders /` above is generated from the route enumeration, so it looks like
- * landing-page coverage. It is not: src/app/page.tsx redirects a signed-in
- * visitor to /learn, and every visitor here is signed in, so that test follows
- * the redirect and asserts /learn — the same thing `renders /learn` asserts.
+ * `renders /` above is generated from the route enumeration and proves the shell
+ * mounts, but not WHICH page "/" is. src/app/page.tsx renders the landing when
+ * there is no session and only redirects to /learn once signed in; the suite runs
+ * signed out, so "/" stays "/" and shows src/components/landing.tsx. This names
+ * that, so a regression where "/" starts redirecting (or the landing stops
+ * rendering) is a failure here rather than a silent change no test notices.
  *
- * This test names the redirect, so the duplicate is visible instead of
- * disguised. What it does NOT do is cover the landing itself.
+ * This is coverage the old file-mode harness could not produce at all: it ran
+ * every visitor as an always-signed-in LOCAL_USER, so "/" was only ever a
+ * redirect and the landing was unreachable. Retiring file mode made the
+ * signed-out front door testable.
  */
-test("/ redirects a signed-in learner to /learn", async ({ page }) => {
+test("/ renders the landing for a signed-out visitor", async ({ page }) => {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
-  expect(new URL(page.url()).pathname).toBe("/learn");
-});
-
-/**
- * THE GAP THIS LEAVES, WRITTEN DOWN RATHER THAN FORGOTTEN.
- *
- * src/components/landing.tsx is the front door for every signed-out visitor and
- * has no e2e coverage at all, because this harness cannot produce a signed-out
- * visitor: the fixtures run STORAGE_BACKEND=file, and src/lib/auth.ts short
- * circuits to LOCAL_USER whenever the store is not Supabase. There is no seed
- * option, cookie, or storage state that makes `isSignedIn()` false.
- *
- * Covering it needs a fixture that boots the app in Supabase mode with no
- * session — a harness change, not a test. Until then this asserts the one thing
- * that IS checkable and true: the landing is what "/" renders when nobody is
- * signed in, so the redirect above is the only reason it is never seen here.
- */
-test.skip("the landing renders for a signed-out visitor", () => {
-  // Unreachable in file mode. See the comment above: this needs a Supabase-mode
-  // fixture with no session, and is skipped rather than deleted so the gap stays
-  // visible in the run output instead of living only in a comment.
+  // Still on "/", not redirected to /learn.
+  expect(new URL(page.url()).pathname).toBe("/");
+  // The landing's headline and its way-in link — the two things that make it the
+  // landing and not the curriculum feed.
+  await expect(
+    page.getByText("Learn Japanese from the very first character."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /start learning without an account/i }),
+  ).toBeVisible();
 });

@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import {
   test,
   expect,
@@ -12,7 +10,6 @@ import {
   answerTypedCorrectly,
   type Page,
 } from "./helpers/app";
-import { E2E_HISTORY_PATH } from "./helpers/data-dir";
 import { factInfo } from "@/lib/facts";
 import type { FactId, HistoryFile } from "@/types";
 
@@ -21,12 +18,14 @@ import type { FactId, HistoryFile } from "@/types";
  *
  * This is the one thing a unit test cannot show. The reported bug was a tester
  * answering eighteen questions correctly across two rounds and finding Progress
- * empty, Practice at zero, and history.json still 33 bytes — because nothing was
- * written until a session was COMPLETED, and they had not completed one.
+ * empty, Practice at zero, and nothing saved — because nothing was written until
+ * a session was COMPLETED, and they had not completed one.
  *
- * So the assertions here are made against the file on disk, from Node, while the
- * session is still running. Nothing else can distinguish "saved" from "still in
- * the browser's localStorage, where the old code left it".
+ * The suite runs SIGNED OUT, so "saved" means written to this browser's
+ * localStorage (`saku-local-history`, the 401→local fallback), not to a server.
+ * So the assertions here read that key straight out of the page while the session
+ * is still running — the only thing that can distinguish "saved" from "still only
+ * in React state, gone the moment the tab closes".
  */
 
 const VOWELS = ["あ", "い", "う", "え", "お"];
@@ -40,16 +39,22 @@ const CFG = {
   limType: "cov",
 };
 
-// The ISOLATED history under e2e/.tmp, the same file the seed writes and the app
-// (pointed there by SAKU_DATA_DIR) reads and writes. NOT the maintainer's
-// repo-root history.json, which a run never opens.
-function history(): HistoryFile {
-  return JSON.parse(readFileSync(E2E_HISTORY_PATH, "utf-8")) as HistoryFile;
+// This browser's signed-out history, read straight out of localStorage — the
+// same `saku-local-history` key the app writes finished rounds into and the
+// HistoryProvider reads back (store/local-progress.ts). Async because it crosses
+// into the page; every caller is already in an async test.
+async function history(page: Page): Promise<HistoryFile> {
+  const raw = await page.evaluate(() =>
+    window.localStorage.getItem("saku-local-history"),
+  );
+  return raw
+    ? (JSON.parse(raw) as HistoryFile)
+    : { sessions: [], facts: {}, claims: {}, seen: {} };
 }
 
-/** Total showings recorded across the whole file, for the five seeded facts. */
-function totalSeen(): number {
-  const h = history();
+/** Total showings recorded across the whole history, for the five seeded facts. */
+async function totalSeen(page: Page): Promise<number> {
+  const h = await history(page);
   return VOWEL_FACTS.reduce(
     (n, f) => n + (h.facts[f as FactId]?.seen ?? 0),
     0,
@@ -88,10 +93,10 @@ test("a completed round is on disk before the session ends", async ({
   seed,
 }) => {
   await seed({ seen: [], cfg: CFG });
-  // The starting state the bug report quoted: an empty file.
-  expect(history().sessions).toEqual([]);
 
-  await page.goto("/");
+  await page.goto("/learn");
+  // The starting state the bug report quoted: an empty history.
+  expect((await history(page)).sessions).toEqual([]);
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
@@ -99,19 +104,19 @@ test("a completed round is on disk before the session ends", async ({
 
   // STILL NOTHING, and that is correct: the round is not finished until you say
   // it is, and the fork is where you say it. The commit point is `closeRound`.
-  expect(history().sessions).toEqual([]);
+  expect((await history(page)).sessions).toEqual([]);
 
   await page.getByRole("button", { name: "Complete round", exact: true }).click();
 
   // THE FIX. One round, five facts, written while the session is still open —
   // the learner has pressed nothing that finishes anything.
-  await expect.poll(() => history().sessions.length).toBe(1);
-  expect(totalSeen()).toBe(VOWELS.length);
+  await expect.poll(async () => (await history(page)).sessions.length).toBe(1);
+  expect(await totalSeen(page)).toBe(VOWELS.length);
 
   // …and it is still there after the page goes away and comes back, which is
   // what "reloading or closing the page will not lose your progress" claims.
   await page.reload();
-  expect(totalSeen()).toBe(VOWELS.length);
+  expect(await totalSeen(page)).toBe(VOWELS.length);
   await expect(page.locator("body")).toContainText(/Until round 2|Ready when/);
 });
 
@@ -123,7 +128,7 @@ test("a round committed mid-session is not counted again at the end", async ({
   // its totals at the end; doing both would double every count in the file.
   await seed({ seen: [], cfg: CFG });
 
-  await page.goto("/");
+  await page.goto("/learn");
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   await teachThenQuiz(page);
@@ -136,7 +141,7 @@ test("a round committed mid-session is not counted again at the end", async ({
     await page
       .getByRole("button", { name: "Complete round", exact: true })
       .click();
-    await expect.poll(() => history().sessions.length).toBe(round);
+    await expect.poll(async () => (await history(page)).sessions.length).toBe(round);
     if (round === 1) {
       await page
         .getByRole("button", { name: /^Start (now →|round \d)$/ })
@@ -159,16 +164,14 @@ test("a round committed mid-session is not counted again at the end", async ({
   await page
     .getByRole("button", { name: "Complete session", exact: true })
     .click();
-  // "/learn", not "/". This waited on "/" and passed only by catching a redirect
-  // mid-flight: src/app/page.tsx redirects a signed-in visitor to /learn, and the
-  // suite runs in file mode where auth.ts returns LOCAL_USER unconditionally, so
-  // the learner is ALWAYS signed in and "/" is never where they come to rest.
-  // Waiting on a URL the app is in the middle of leaving is a race that would
-  // have started flaking rather than a statement about where a session ends.
-  await page.waitForURL((url) => new URL(url).pathname === "/learn");
+  // Home is "/". A session ends with router.push("/") (quiz-session.tsx), and for
+  // this SIGNED-OUT learner "/" is the landing — it renders in place rather than
+  // redirecting on to /learn the way a signed-in visitor's "/" does. So the run
+  // comes to rest on "/", which is where the sidebar's "Home" points them too.
+  await page.waitForURL((url) => new URL(url).pathname === "/");
 
   // Two rounds of five, once each. Fifteen would mean the session was written
   // on top of its own rounds; five would mean a round went missing.
-  await expect.poll(() => totalSeen()).toBe(2 * VOWELS.length);
-  expect(history().sessions.length).toBe(2);
+  await expect.poll(async () => await totalSeen(page)).toBe(2 * VOWELS.length);
+  expect((await history(page)).sessions.length).toBe(2);
 });
