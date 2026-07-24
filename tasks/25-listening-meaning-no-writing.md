@@ -1,0 +1,2 @@
+# 25 — Listening-meaning card never shows the writing 🔍 design
+With "Hear it, give the meaning" on, Sam was asked a word's meaning from AUDIO only, never shown the writing, and missed it repeatedly (images 10/11). Hearing a word and giving its meaning with no glyph is hard and, for homophones, ambiguous. Reconsider the listening-meaning card: show the writing, or narrow when it's used. Design decision.

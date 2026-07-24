@@ -1,0 +1,2 @@
+# 22 — Should we quiz a kanji's "on its own" reading? 🔍 design
+A kanji does not have one fixed reading; it depends on the word. Being asked "Type how this kanji is said" for 可 "on its own" (image 7) is questionable — 可 is not a standalone word. Asking an isolated reading only makes sense when the kanji IS a word on its own (人 = ひと). Reconsider quizzing kanji "on its own" readings for kanji that aren't standalone words. Needs a design decision.
