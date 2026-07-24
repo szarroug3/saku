@@ -19,7 +19,12 @@
 // Pure and React-free on purpose: it is unit-tested here and imported by a
 // client component, and a plain (cfg) => string is the whole of what both need.
 
-import type { AnswerStyle, QuizConfig } from "@/types";
+import {
+  enabledDirs,
+  sentenceAsksRomaji,
+  sentenceAsksSelection,
+} from "@/lib/ask-config";
+import type { AnswerStyle, AskConfig, QuizConfig } from "@/types";
 
 // Non-drill modes get a leading name; "drill" is the default and stays silent,
 // so an ordinary drill reads "Both directions · Typed · Endless" with no noun
@@ -37,6 +42,18 @@ function styleWord(s: AnswerStyle): string {
   return s === "typed" ? "Typed" : "Multiple choice";
 }
 
+/** Every answer format any enabled source offers — the Japanese source (only
+ * when it can actually ask, i.e. has a response too) and the English source. */
+function answerFormats(ask: AskConfig): AnswerStyle[] {
+  const out: AnswerStyle[] = [];
+  const { jp2en, en2jp } = enabledDirs(ask);
+  if (jp2en) out.push(...ask.japanese.answers);
+  if (sentenceAsksSelection(ask)) out.push("mc");
+  if (sentenceAsksRomaji(ask)) out.push(...ask.sentence.answers);
+  if (en2jp) out.push(...ask.english.answers);
+  return out;
+}
+
 /**
  * A concise, dot-separated line of the settings QuizOptionsFields controls.
  *
@@ -51,27 +68,31 @@ export function configSummary(cfg: QuizConfig): string {
   // Mode first, and only when it is not the default drill — see MODE_LABEL.
   if (cfg.mode !== "drill") parts.push(MODE_LABEL[cfg.mode]);
 
-  // Direction. Both selected reads as "Both directions" rather than the arrow
-  // pair spelled out twice. The neither-selected case is invalid (the editor
-  // enforces at least one), but a summary must never render a blank or a stray
-  // separator, so it says so plainly instead of crashing or going silent.
-  const { jp2en, en2jp } = cfg.dirs;
+  // Direction, INFERRED from the sources (see enabledDirs). Both reads as "Both
+  // directions" rather than the arrow pair spelled out twice. The neither case
+  // is invalid (the editor disables Start), but a summary must never render a
+  // blank or a stray separator, so it says so plainly.
+  const { jp2en, en2jp } = enabledDirs(cfg.ask);
   if (jp2en && en2jp) parts.push("Both directions");
   else if (jp2en) parts.push("Japanese → English");
   else if (en2jp) parts.push("English → Japanese");
-  else parts.push("No direction selected");
+  else parts.push("Nothing to ask");
 
-  // Answer style is PER DIRECTION, so only the enabled directions get a say. If
-  // both are on and answered the same way it is one word ("Typed"); if they
-  // differ it is "Typed / multiple choice"; if only one direction is on, that
-  // direction's style is the whole answer. With no direction on there is no
-  // style to state, so the segment is dropped entirely rather than guessed.
-  const styles: AnswerStyle[] = [];
-  if (jp2en) styles.push(cfg.styleJp2en);
-  if (en2jp) styles.push(cfg.styleEn2jp);
-  const distinct = [...new Set(styles)];
-  if (distinct.length === 1) parts.push(styleWord(distinct[0]));
-  else if (distinct.length === 2) parts.push("Typed / multiple choice");
+  // Audio is a prompt format, not a mode — name it when the Japanese source
+  // includes it, so a launch line says listening is in the run.
+  if (
+    cfg.ask.japanese.prompts.includes("audio") ||
+    cfg.ask.sentence.prompts.includes("audio")
+  ) {
+    parts.push("Audio");
+  }
+
+  // Answer format, pooled across the enabled sources. One word when they all
+  // agree; "Typed / multiple choice" when both formats are in play; dropped
+  // when nothing is selected.
+  const styles = new Set<AnswerStyle>(answerFormats(cfg.ask));
+  if (styles.size === 1) parts.push(styleWord([...styles][0]));
+  else if (styles.size === 2) parts.push("Typed / multiple choice");
 
   // Length. "Full coverage" is the editor's own name for the coverage cap, so
   // the summary uses it verbatim rather than inventing a second phrasing for

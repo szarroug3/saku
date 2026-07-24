@@ -21,6 +21,7 @@ import {
   boardIsUnambiguous,
   gradeRecognition,
   pickRecognition,
+  pickRecognitionForFact,
   readableRecognition,
 } from "./listen-sentence.ts";
 import type { HistoryFile } from "@/types";
@@ -70,6 +71,18 @@ describe("opt-in and non-gating", () => {
       CORPUS.length > wide,
       "some corpus sentences are unreadable even at full vocabulary",
     );
+  });
+});
+
+describe("a sentence source card stays attached to its deck fact", () => {
+  test("the targeted picker returns a board that credits that fact", () => {
+    const any = pickRecognition(ALL_KNOWN, seeded(7));
+    assert.ok(any?.facts.length);
+    const fact = any!.facts[0];
+    const targeted = pickRecognitionForFact(fact, ALL_KNOWN, seeded(7));
+    assert.ok(targeted);
+    assert.ok(targeted!.facts.includes(fact));
+    assert.ok(boardIsUnambiguous(targeted!));
   });
 });
 

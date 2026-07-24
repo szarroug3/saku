@@ -32,14 +32,15 @@ import {
   clampWordsPerLesson,
 } from "@/lib/lesson-sizing";
 import { emptySelection } from "@/lib/selection-empty";
+import { defaultAsk, migrateLegacyAsk, normalizeAsk } from "@/lib/ask-config";
 import type { QuizConfig } from "@/types";
 
 export function defaultConfig(): QuizConfig {
   return {
     mode: "drill",
-    dirs: { jp2en: true, en2jp: false },
-    styleJp2en: "typed",
-    styleEn2jp: "mc",
+    // HOW TO ASK, by source — see AskConfig / src/lib/ask-config.ts. Replaced
+    // the old dirs + per-direction styles + listen flags.
+    ask: defaultAsk(),
     length: "limited",
     limType: "cov",
     limCount: 50,
@@ -52,9 +53,6 @@ export function defaultConfig(): QuizConfig {
     fonts: [...JP_FONTS],
     blurSubmit: false,
     voiceName: "",
-    // Listening is opt-in and never a gate — both off until the learner asks.
-    listenRomaji: false,
-    listenMeaning: false,
     accuracyMetric: "firstTry",
     showVolume: true,
     graduateRuns: 10,
@@ -73,6 +71,9 @@ export function defaultConfig(): QuizConfig {
     showAccuracy: true,
     showRetryPips: true,
     fadeControls: true,
+    // Deliberately no `dirs` / `styleJp2en` / `styleEn2jp` / `listenRomaji` /
+    // `listenMeaning` here — they were replaced by `ask` above and are migrated
+    // forward from any saved config in normalizeConfig.
     // Everything, on day one. An empty query narrows nothing, which is both the
     // honest default and — unlike the 214-key map this replaced — a default
     // that costs six fields no matter how much material the app grows.
@@ -89,6 +90,47 @@ function normalizeConfig(saved: unknown): QuizConfig {
     if (saved && typeof saved === "object") {
       const raw = saved as Partial<QuizConfig> & { randomFont?: boolean };
       const cfg: QuizConfig = { ...defaultConfig(), ...raw };
+      // "How to ask" migration (task 30). A config saved with the new `ask`
+      // shape is normalised (unknown members dropped); one saved with the OLD
+      // dirs/styles/listen fields is migrated forward; anything else defaults.
+      // The old fields are then dropped so they can't shadow the new model.
+      const rawObj = raw as Record<string, unknown>;
+      if (rawObj.ask && typeof rawObj.ask === "object") {
+        cfg.ask = normalizeAsk(rawObj.ask);
+      } else if (
+        "dirs" in rawObj ||
+        "styleJp2en" in rawObj ||
+        "styleEn2jp" in rawObj ||
+        "listenRomaji" in rawObj ||
+        "listenMeaning" in rawObj
+      ) {
+        cfg.ask = migrateLegacyAsk(rawObj as never);
+      } else {
+        cfg.ask = defaultAsk();
+      }
+      // Sentence listening used to be a standalone mode. It is now the Audio
+      // prompt inside the Japanese-sentence source card.
+      if (raw.mode === "listen-sentence") {
+        cfg.mode = "drill";
+        cfg.ask.sentence.prompts = [
+          ...new Set([...cfg.ask.sentence.prompts, "audio" as const]),
+        ];
+        cfg.ask.sentence.responses = [
+          ...new Set([...cfg.ask.sentence.responses, "definition" as const]),
+        ];
+        cfg.ask.sentence.answers = [
+          ...new Set([...cfg.ask.sentence.answers, "mc" as const]),
+        ];
+      }
+      for (const stale of [
+        "dirs",
+        "styleJp2en",
+        "styleEn2jp",
+        "listenRomaji",
+        "listenMeaning",
+      ]) {
+        delete (cfg as unknown as Record<string, unknown>)[stale];
+      }
       // Migrate the pre-fonts shape: randomFont true → all fonts, false →
       // just the first (the legacy app always rendered JP_FONTS[0] then).
       if (!Array.isArray(cfg.fonts) || !cfg.fonts.length) {

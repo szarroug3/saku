@@ -132,6 +132,67 @@ export type QuizMode =
 export type Direction = "jp2en" | "en2jp";
 export type AnswerStyle = "typed" | "mc";
 
+// ---------- how to ask, by SOURCE (task 30) ----------
+//
+// The "How to ask" panel is organised by the SOURCE of a card, not by an
+// abstract direction. Three sources, each a set of multi-select chip rows, and
+// every field is a SET so "ask it both ways" is one selection rather than a
+// mode. Direction is INFERRED from these (see src/lib/ask-forms.ts), which is
+// why there is no `dirs` field any more: Japanese + Definition ⇒ jp→en,
+// Japanese/Sentence + Romaji ⇒ jp→reading, English ⇒ en→jp.
+//
+// The old shape (`dirs`, `styleJp2en`, `styleEn2jp`, `listenRomaji`,
+// `listenMeaning`) is migrated forward in src/lib/quiz-config.tsx — audio is now
+// just `Prompt Format: Audio`, never a separate opt-in.
+
+/** How a Japanese card is PROMPTED: shown as text, or played as audio.
+ * Audio is listening — the glyph is hidden and the word is spoken. Word-only,
+ * so a kana or a whole sentence has no audio form (see enabledFormsFor). */
+export type PromptFormat = "text" | "audio";
+
+/** What a Japanese card asks the learner to PRODUCE: the English meaning
+ * (Definition) or the reading/pronunciation (Romaji). Which one a given fact
+ * supports is a property of the fact — a reading fact has no definition, a
+ * kanji-less kana sentence has no romaji — not of this preference. */
+export type ResponseKind = "definition" | "romaji";
+
+/** A single Japanese token on its own — a kana, a kanji, or a word. */
+export interface JapaneseAsk {
+  /** Text · Audio. Empty = this source is off. */
+  prompts: PromptFormat[];
+  /** Definition · Romaji. */
+  responses: ResponseKind[];
+  /** Type it · Multiple choice. */
+  answers: AnswerStyle[];
+}
+
+/** A whole Japanese sentence. Definition is multiple-choice only (a fill-the-
+ * blank selection card); Romaji applies only when the sentence carries non-kana.
+ * Both constraints are enforced in enabledFormsFor, not here. */
+export interface SentenceAsk {
+  prompts: PromptFormat[];
+  responses: ResponseKind[];
+  answers: AnswerStyle[];
+}
+
+/** English shown as text; the response is ALWAYS Japanese (a reading or the
+ * written word — never romaji-as-answer), so the only choice is the answer
+ * format. */
+export interface EnglishAsk {
+  answers: AnswerStyle[];
+}
+
+/**
+ * The whole of "How to ask", by source. The SINGLE SOURCE OF TRUTH the panel
+ * edits and the deck generator reads — see src/lib/ask-forms.ts, which turns
+ * (this + a fact) into the concrete card forms, and derives direction from it.
+ */
+export interface AskConfig {
+  japanese: JapaneseAsk;
+  sentence: SentenceAsk;
+  english: EnglishAsk;
+}
+
 /** Which accuracy number every screen shows — the same forgiving/strict split
  * the results screen already offers, hoisted to a global preference.
  * firstTry = nailed it immediately · attempt = share of attempts correct. */
@@ -158,9 +219,13 @@ export type NewKanjiOrder = "everyday" | "grade" | "newspaper";
 
 export interface QuizConfig {
   mode: QuizMode;
-  dirs: { jp2en: boolean; en2jp: boolean };
-  styleJp2en: AnswerStyle;
-  styleEn2jp: AnswerStyle;
+  /**
+   * HOW TO ASK, by source — see AskConfig. Replaced `dirs` +
+   * `styleJp2en`/`styleEn2jp` (direction is now inferred) and the two
+   * `listen*` flags (audio is a Prompt Format). Migrated from the old shape in
+   * src/lib/quiz-config.tsx so a saved config still loads.
+   */
+  ask: AskConfig;
   length: "endless" | "limited";
   limType: "cov" | "count";
   limCount: number;
@@ -174,24 +239,6 @@ export interface QuizConfig {
   fonts: string[];
   blurSubmit: boolean;
   voiceName: string;
-
-  // ---------- listening (opt-in, word-only, never a gate) ----------
-  /**
-   * Hear a word, type its romaji — a new question type over the EXISTING word
-   * reading facts. The prompt is audio only (no glyph), the answer is the
-   * reading, graded on the forgiving romaji path. OFF by default: it appears
-   * only when the learner turns it on here, and never blocks progression. See
-   * src/lib/listen.ts for how a showing is chosen.
-   */
-  listenRomaji: boolean;
-  /**
-   * Hear a word, give its meaning — the same shape over the EXISTING word
-   * meaning facts, graded like any meaning check. OFF by default, opt-in, and
-   * non-gating, exactly like `listenRomaji`. Word-only: the owner ruled
-   * sentence dictation out (romaji of a sentence is ambiguous, and there is no
-   * sentence audio) — see tasks/22-the-four-skills.md.
-   */
-  listenMeaning: boolean;
 
   // ---------- what the numbers mean (used everywhere) ----------
   /** Drives the drill HUD pill, the Home deck rings, and the picker circles. */

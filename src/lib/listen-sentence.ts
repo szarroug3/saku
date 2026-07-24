@@ -9,16 +9,11 @@
 // meaning, so it grades with certainty — which is the whole reason it is allowed
 // where transcription is not.
 //
-// WHY IT IS ITS OWN MODULE (and its own screen), NOT A DRILL FLAG
-// ==============================================================
-// listenRomaji / listenMeaning are PRESENTATIONS of an existing word FACT: the
-// drill hides the glyph and plays the word, then grades the same jp2en fact on
-// the same FactId MC path. A recognition card cannot ride that path, because its
-// options are English SENTENCE MEANINGS, not FactIds — there is no fact whose
-// answer is "which of these four English sentences", so the drill's
-// `picked === q.f` comparison has nothing to compare. So this is a corpus-driven,
-// known-words-gated question type with its OWN screen, exactly like assembly and
-// substitution (task 11), and its enabling chip lives in the Listening row.
+// The corpus picker is shared by the legacy dedicated screen and task 30's
+// Japanese-sentence source cards. The latter target one grammar-meaning fact,
+// pin the resulting string-option board on the drill runtime, and therefore
+// participate in Full coverage without pretending an English sentence is a
+// FactId.
 //
 // SOURCE + GATE (reused, not reinvented)
 // ======================================
@@ -198,9 +193,35 @@ export function pickRecognition(
 ): RecognitionItem | null {
   const pool = readableRecognition(history);
   if (pool.length === 0) return null;
-  const answer = pool[Math.floor(rng() * pool.length)] ?? pool[0];
+  return recognitionFrom(pool, rng);
+}
+
+/** A recognition card that credits one particular grammar meaning fact.
+ * Full-coverage sentence forms use this so the sentence card remains a showing
+ * of the deck fact rather than an unrelated corpus draw. */
+export function pickRecognitionForFact(
+  fact: FactId,
+  history: HistoryFile,
+  rng: Rng = Math.random,
+): RecognitionItem | null {
+  const pool = readableRecognition(history).filter((ex) =>
+    recognitionFacts(ex).includes(fact),
+  );
+  if (pool.length === 0) return null;
+  return recognitionFrom(pool, rng);
+}
+
+function recognitionFrom(
+  pool: readonly Example[],
+  rng: Rng,
+): RecognitionItem | null {
+  // Try the whole eligible pool: one sentence failing to raise safe
+  // distractors must not make a supported fact appear unsupported.
+  const order = shuffledIndices(pool.length, rng);
+  for (const index of order) {
+    const answer = pool[index];
   const distractors = pickDistractors(answer, rng);
-  if (distractors.length < MIN_DISTRACTORS) return null;
+    if (distractors.length < MIN_DISTRACTORS) continue;
 
   const options = distractors.slice(0, WANT_DISTRACTORS);
   options.push(answer.en.trim());
@@ -220,8 +241,9 @@ export function pickRecognition(
   // The invariant, asserted at the source: no two options are a correct reading
   // of the audio, and the answer is exactly one option. A violation is a bug in
   // the picker, not something to serve — return null rather than a bad board.
-  if (!boardIsUnambiguous(item)) return null;
-  return item;
+    if (boardIsUnambiguous(item)) return item;
+  }
+  return null;
 }
 
 /**

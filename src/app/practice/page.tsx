@@ -26,7 +26,7 @@ import { PracticeResume } from "@/components/practice/practice-resume";
 import { QuizOptionsFields } from "@/components/practice/quiz-options";
 import { StartBar } from "@/components/practice/start-bar";
 import { PracticeSelector } from "@/components/practice/practice-selector";
-import { Card, Lbl, PageTitle } from "@/components/ui";
+import { Lbl, PageTitle } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { resolve, whatSentence } from "@/lib/selection";
@@ -144,9 +144,7 @@ export default function PracticePage() {
       />
 
       <Lbl>How to ask</Lbl>
-      <Card>
-        <QuizOptionsFields />
-      </Card>
+      <QuizOptionsFields />
 
       <StartBar
         cfg={cfg}

@@ -4,6 +4,7 @@
 // as pure data + logic additions.
 
 import { BEHAVIOR } from "@/lib/config";
+import { enabledDirs } from "@/lib/ask-config";
 import { questionsFor, type PromptContext } from "@/lib/engine/question";
 import { ALL_FACTS, entryOf, factInfo, factKeys } from "@/lib/facts";
 import type {
@@ -103,12 +104,13 @@ export function requeueGap(): number {
   );
 }
 
-/** Random direction from the enabled ones in cfg.dirs. */
+/** Random direction inferred from the enabled source groups. */
 export function pickDir(cfg: QuizConfig): Direction {
   const d: Direction[] = [];
-  if (cfg.dirs.jp2en) d.push("jp2en");
-  if (cfg.dirs.en2jp) d.push("en2jp");
-  return d[Math.floor(Math.random() * d.length)];
+  const dirs = enabledDirs(cfg.ask);
+  if (dirs.jp2en) d.push("jp2en");
+  if (dirs.en2jp) d.push("en2jp");
+  return d[Math.floor(Math.random() * d.length)] ?? "jp2en";
 }
 
 // ---------- answers ----------

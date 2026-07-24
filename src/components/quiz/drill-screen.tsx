@@ -10,7 +10,7 @@
 // seconds and the active-elapsed ms into the runtime on every tick, because
 // effect cleanups don't reliably run on page unload.
 //
-// Config split: builder settings (mode, dirs, styles, length) come from
+// Config split: builder settings (mode, source-based ask forms, length) come from
 // active.snapshot, frozen at Start Quiz. Settings-page values (retries,
 // timer, showAnswer, scriptLabel, fonts, and the four HUD toggles) are read
 // live from useQuizConfig so mid-drill drawer / Settings-tab edits apply
@@ -54,13 +54,9 @@ import {
   buildMcOptions,
   checkTyped,
   confusedWith,
-  en2jpTypeable,
   firstTryCredit,
   grammarSelectionFor,
   grammarVehicleFor,
-  fixedDirOf,
-  mcOnlyIn,
-  pickDir,
   questionsFor,
   requeueGap,
   retriesAllowed,
@@ -75,8 +71,18 @@ import { entryOf, factInfo } from "@/lib/facts";
 import { speechForFact } from "@/lib/fact-speech";
 import { fitGlyphSize } from "@/lib/glyph-fit";
 import { confusionKnownFacts } from "@/lib/confusion-search";
-import { pickListen } from "@/lib/listen";
 import { meaningMustShowGlyph } from "@/lib/homophone";
+import {
+  pickRecognitionForFact,
+  type RecognitionItem,
+} from "@/lib/listen-sentence";
+import {
+  buildCoverageDeck,
+  enabledFormsFor,
+  formIsMc,
+  jp2enResponse,
+  type CardForm,
+} from "@/lib/ask-forms";
 import { toKana } from "@/lib/romaji";
 import { quizInstruction } from "@/lib/quiz-instruction";
 import { speak } from "@/lib/speech";
@@ -102,6 +108,9 @@ interface DrillQuestion {
   /** The FACT being asked. What goes on screen for it is the fact's subject's
    * business (engine/question.ts), not this screen's. */
   f: FactId;
+  /** The settings combination pinned to this showing. Coverage supplies it
+   * from the deck; Count/Endless choose one when the card is drawn. */
+  form: CardForm;
   dir: Direction;
   /** Wrong attempts so far on this card. */
   tries: number;
@@ -138,6 +147,9 @@ interface DrillQuestion {
    * glosses to choose between), unchanged. Plain data, so it rides the
    * serialized runtime. */
   grammarSelection: GrammarSelection | null;
+  /** Audio-sentence → English-meaning board. Its options are strings rather
+   * than FactIds, so it carries its own correct index. */
+  recognition: RecognitionItem | null;
   /**
    * Whether the HINT was taken on this showing.
    *
@@ -181,7 +193,11 @@ interface DrillQuestion {
  * and retry screens can say how it was asked. `mc` present means a board was
  * offered; its absence is a typed box. See ShowingPresentation. */
 function showingOf(q: DrillQuestion): ShowingPresentation {
-  return { dir: q.dir, mode: q.mc ? "mc" : "typed", listen: q.listen };
+  return {
+    dir: q.dir,
+    mode: q.mc || q.recognition ? "mc" : "typed",
+    listen: q.listen,
+  };
 }
 
 /** The per-showing presentation context for a card: the anchor word for a kanji
@@ -227,6 +243,12 @@ interface DrillFeedback {
  * objects — no functions, no Infinity) for the sessionStorage snapshot. */
 interface DrillRuntime {
   deck: FactId[];
+  /** Facts with at least one form supported by this run and its readable
+   * sentence pool. Endless replenishes from this filtered set. */
+  pool: FactId[];
+  /** Form pinned to each deck slot. null means choose one when the slot is
+   * drawn (Count/Endless, plus restored pre-task-30 runtimes). */
+  forms: Array<CardForm | null>;
   /** Next deck index to draw from. */
   pos: number;
   /** Questions SHOWN so far. Used to key the per-question remount, not to
@@ -505,13 +527,15 @@ export function DrillScreen() {
     rt.waiting = false;
     rt.feedback = null;
     if (rt.pos >= rt.deck.length) {
-      if (limited) {
+      if (limited || rt.pool.length === 0) {
         endQuiz();
         return;
       }
-      rt.deck = rt.deck.concat(shuffle(active.facts.slice()));
+      rt.deck = rt.deck.concat(shuffle(rt.pool.slice()));
+      rt.forms = rt.forms.concat(rt.pool.map(() => null));
     }
     const f = rt.deck[rt.pos];
+    const pinned = rt.forms[rt.pos] ?? null;
     rt.pos++;
     rt.asked++;
     // A subject may pin the direction (transitivity is only askable en2jp) and
@@ -520,14 +544,9 @@ export function DrillScreen() {
     // so a typed box grades the prompt retyped as correct). Read both off the
     // question type before choosing a direction or a typed mode, so those
     // choices honor the subject rather than override it.
-    const qt = questionsFor(f);
-    // A listening showing plays the word and hides its glyph — which is the
-    // jp2en question (hear it, give the reading or the meaning) with the prompt
-    // taken away. So it forces jp2en, over any picked direction and even a
-    // subject's fixedDir, because it IS a jp2en answer. Opt-in and word-only:
-    // pickListen returns false for every fact until the learner turns the type
-    // on, so this never fires unasked and never gates. Rolled once here, frozen
-    // on the runtime.
+    // Coverage pins the exact form in the deck. Count and Endless choose one
+    // supported form now, once, and put it on q so remounts and retries cannot
+    // reroll it.
     // A MEANING question for a word whose reading collides with another word the
     // learner knows must show the written form — 箸 and 橋 are both はし, so an
     // audio-only "what does it mean" has two right answers. So the listening
@@ -536,14 +555,19 @@ export function DrillScreen() {
     // the meaning card is blocked: a READING listening card is fair, since every
     // homophone shares the reading the learner is asked to produce. See
     // src/lib/homophone.ts. Non-colliding words are untouched.
-    const listen = pickListen(f, cfg) && !meaningMustShowGlyph(f, history);
-    const dir = listen
-      ? "jp2en"
-      : (fixedDirOf(f) ?? pickDir({ ...cfg, dirs: active.snapshot.dirs }));
-    const styleTyped =
-      dir === "jp2en"
-        ? active.snapshot.styleJp2en === "typed"
-        : active.snapshot.styleEn2jp === "typed";
+    const available = usableForms(f);
+    const form =
+      pinned ??
+      available[Math.floor(Math.random() * available.length)] ?? {
+        source: "japanese",
+        response: jp2enResponse(f),
+        listen: false,
+        dir: "jp2en",
+        answer: "typed",
+      };
+    const listen = form.listen;
+    const dir = form.dir;
+    const styleTyped = !formIsMc(f, form);
     // Romaji only ever produces KANA. An en2jp typed card whose answer contains
     // a kanji (a kanji glyph, a kanji word like 先生) can't be answered by
     // typing romaji, so it is asked as multiple choice instead — never left as
@@ -552,13 +576,10 @@ export function DrillScreen() {
     // glyph. `en2jpTypeable` owns the "is the answer all kana" test, because for
     // a WORD asked by its meaning the en2jp answer is the kana reading — typeable
     // even though the written word carries kanji — and only the subject knows it.
-    const romajiUnanswerable =
-      styleTyped && dir === "en2jp" && !en2jpTypeable(f);
     // `mcOnlyIn` and not `qt.mcOnly`: the flag is a boolean OR a single
     // Direction, and a bare truthiness test on the Direction form would force MC
     // in the direction it was meant to leave typed.
-    const typedMode =
-      styleTyped && !romajiUnanswerable && !mcOnlyIn(f, dir);
+    const typedMode = styleTyped;
     // Font and MC options are rolled when the question is asked and stored in
     // the runtime so a remount doesn't reroll them.
     //
@@ -590,7 +611,18 @@ export function DrillScreen() {
     // ORDINARY answer early on — the card then falls back to the fixed meaning
     // question, which asks the pattern in one direction and its English in the
     // other, so grammar meaning is always askable.
-    const grammarSelection = typedMode ? null : grammarSelectionFor(f, history);
+    const grammarSelection =
+      form.source === "sentence" &&
+      form.response === "definition" &&
+      !form.listen
+        ? grammarSelectionFor(f, history)
+        : null;
+    const recognition =
+      form.source === "sentence" &&
+      form.response === "definition" &&
+      form.listen
+        ? pickRecognitionForFact(f, history)
+        : null;
     const ctx: PromptContext = {
       grammarVehicle: grammarVehicle ?? undefined,
       grammarSelection: grammarSelection ?? undefined,
@@ -610,6 +642,7 @@ export function DrillScreen() {
     const mc = built && built.length > 1 ? built : null;
     rt.q = {
       f,
+      form,
       dir,
       tries: 0,
       font: pickFont(cfg.fonts),
@@ -617,6 +650,7 @@ export function DrillScreen() {
       mcFonts: mc && dir === "en2jp" ? mc.map(() => pickFont(cfg.fonts)) : null,
       grammarVehicle,
       grammarSelection,
+      recognition,
       listen,
       // A new showing has not been hinted. Written here rather than backfilled,
       // so there is exactly one place a showing's hint state begins.
@@ -639,26 +673,47 @@ export function DrillScreen() {
     force();
   }
 
+  function usableForms(f: FactId): CardForm[] {
+    if (!active) return [];
+    return enabledFormsFor(f, active.snapshot.ask).filter(
+      (candidate) =>
+        !(
+          candidate.source === "japanese" &&
+          candidate.listen &&
+          meaningMustShowGlyph(f, history)
+        ) &&
+        !(
+          candidate.source === "sentence" &&
+          candidate.response === "definition" &&
+          (candidate.listen
+            ? pickRecognitionForFact(f, history, () => 0) === null
+            : grammarSelectionFor(f, history, () => 0) === null)
+        ),
+    );
+  }
+
   /** Legacy submit (plus the streak, which is the same first-try question
    * `firstTryCorrect` already answers). `picked` is the option FACT for MC
    * clicks (both dirs). */
-  function submit(given: string, picked?: FactId) {
+  function submit(given: string, picked?: FactId, recognitionPick?: number) {
     if (!rt || !rt.q || rt.waiting || finishedRef.current) return;
     const q = rt.q;
     const ms = elapsedBaseRef.current + (Date.now() - qStartRef.current);
     rt.elapsedMs = ms;
     // MC has no keystroke to wait for — the click IS the decision, so the
     // whole elapsed time is recall.
-    const style: LatencyStyle = q.mc ? "mc" : "typed";
-    if (q.mc) rt.firstKeyMs ??= ms;
+    const style: LatencyStyle = q.mc || q.recognition ? "mc" : "typed";
+    if (q.mc || q.recognition) rt.firstKeyMs ??= ms;
     // Clicking an MC option is answered by WHICH option, not by its label:
     // two options can carry the same text (two kanji meaning "life") and
     // comparing strings would mark a wrong click right. Typed answers go to the
     // subject's own checker.
     const ok =
-      picked !== undefined
-        ? picked === q.f
-        : checkTyped(q.f, given, q.dir, ctxFor(q));
+      recognitionPick !== undefined && q.recognition
+        ? recognitionPick === q.recognition.correct
+        : picked !== undefined
+          ? picked === q.f
+          : checkTyped(q.f, given, q.dir, ctxFor(q));
     const st = statForShowing(rt.stats, q.f);
     // A HINT FORFEITS "NAILED IT", and that is the whole of what it costs. Right
     // with a hint is the third outcome: seen, correct, not first-try — which is
@@ -745,7 +800,9 @@ export function DrillScreen() {
         resolveShowing(st, credit, false, showingOf(q));
         rt.resolved++;
         rt.feedback = { kind: "bad" };
-        rt.deck.splice(Math.min(rt.deck.length, rt.pos + requeueGap()), 0, q.f);
+        const at = Math.min(rt.deck.length, rt.pos + requeueGap());
+        rt.deck.splice(at, 0, q.f);
+        rt.forms.splice(at, 0, q.form);
         rt.requeued++;
         rt.waiting = true;
         stopCountdown();
@@ -806,6 +863,7 @@ export function DrillScreen() {
     // The back of the deck, not `pos + requeueGap()`: a skip is a deferral to the
     // end, not the near-future nudge a missed card gets.
     rt.deck.push(q.f);
+    rt.forms.push(q.form);
     rt.requeued++;
     stopCountdown();
     clearAdvance();
@@ -839,7 +897,7 @@ export function DrillScreen() {
       if (v.trim()) submit(v);
       return;
     }
-    if (rt.q.mc && /^[1-9]$/.test(e.key)) {
+    if ((rt.q.mc || rt.q.recognition) && /^[1-9]$/.test(e.key)) {
       // Don't hijack digits typed into a field (e.g. the drawer's timer box).
       const t = e.target;
       if (
@@ -847,8 +905,12 @@ export function DrillScreen() {
         (t.tagName === "INPUT" || t.tagName === "TEXTAREA")
       )
         return;
-      const opt = rt.q.mc[parseInt(e.key, 10) - 1];
+      const index = parseInt(e.key, 10) - 1;
+      const opt = rt.q.mc?.[index];
       if (opt) submit(labelOf(opt, rt.q.dir, ctxFor(rt.q)), opt);
+      else if (rt.q.recognition?.options[index]) {
+        submit(rt.q.recognition.options[index], undefined, index);
+      }
     }
   }
 
@@ -861,9 +923,33 @@ export function DrillScreen() {
     if (!Array.isArray(rt.deck)) {
       // Fresh quiz — build the deck. Redrill forces one full-coverage pass
       // over exactly the given facts; otherwise honor the builder snapshot.
-      rt.deck = active.forceCoverage
-        ? shuffle(active.facts.slice())
-        : buildDeck(active.facts, { ...cfg, ...active.snapshot });
+      const coverage =
+        active.forceCoverage ||
+        (active.snapshot.length === "limited" &&
+          active.snapshot.limType === "cov");
+      if (coverage) {
+        const built = buildCoverageDeck(active.facts, active.snapshot.ask);
+        const keep = built.deck.map((f, i) => {
+          const form = built.forms[i];
+          return !(
+            (form.source === "japanese" &&
+              form.listen &&
+              meaningMustShowGlyph(f, history)) ||
+            (form.source === "sentence" &&
+              form.response === "definition" &&
+              (form.listen
+                ? pickRecognitionForFact(f, history, () => 0) === null
+                : grammarSelectionFor(f, history, () => 0) === null))
+          );
+        });
+        rt.deck = built.deck.filter((_, i) => keep[i]);
+        rt.forms = built.forms.filter((_, i) => keep[i]);
+        rt.pool = [...new Set(rt.deck)];
+      } else {
+        rt.pool = active.facts.filter((f) => usableForms(f).length > 0);
+        rt.deck = buildDeck(rt.pool, { ...cfg, ...active.snapshot });
+        rt.forms = rt.deck.map(() => null);
+      }
       rt.pos = 0;
       rt.asked = 0;
       rt.resolved = 0;
@@ -879,6 +965,10 @@ export function DrillScreen() {
       nextQuestion();
       return;
     }
+    if (!Array.isArray(rt.forms)) rt.forms = rt.deck.map(() => null);
+    if (!Array.isArray(rt.pool)) {
+      rt.pool = active.facts.filter((f) => usableForms(f).length > 0);
+    }
     // Resuming a runtime written before these fields existed.
     if (typeof rt.streak !== "number") rt.streak = 0;
     if (rt.firstKeyMs === undefined) rt.firstKeyMs = null;
@@ -886,10 +976,21 @@ export function DrillScreen() {
     // `undefined` as "not hinted" is also what the flat `!q.hinted` test in
     // submit does, so this is belt and braces rather than the load-bearing part.
     if (rt.q && typeof rt.q.hinted !== "boolean") rt.q.hinted = false;
+    if (rt.q && !rt.q.form) {
+      rt.q.form = {
+        source: rt.q.dir === "en2jp" ? "english" : "japanese",
+        response:
+          rt.q.dir === "en2jp" ? "japanese" : jp2enResponse(rt.q.f),
+        listen: !!rt.q.listen,
+        dir: rt.q.dir,
+        answer: rt.q.mc || rt.q.recognition ? "mc" : "typed",
+      };
+    }
     // A showing in flight from before the reveal named mix-ups has no record of
     // what was said. Null, not undefined: `confusionNote` is only reached
     // through a truthiness test, so this is tidiness rather than load-bearing.
     if (rt.q && rt.q.confused === undefined) rt.q.confused = null;
+    if (rt.q && rt.q.recognition === undefined) rt.q.recognition = null;
     // A quiz mid-flight before this field existed: best-effort backfill so the
     // count doesn't jump. asked minus the card currently on screen (unresolved).
     if (typeof rt.resolved !== "number") {
@@ -1028,8 +1129,13 @@ export function DrillScreen() {
   const listenPlayFact = rt?.q?.listen ? rt.q.f : null;
   useEffect(() => {
     if (listenPlayKey == null || !listenPlayFact) return;
+    const current = rt?.q;
     const info = factInfo(listenPlayFact);
-    const text = info && speechForFact(info);
+    const text =
+      current?.form.source === "sentence" &&
+      current.form.response === "definition"
+        ? current.recognition?.jp
+        : info && speechForFact(info);
     if (text) speak(text, cfg.voiceName);
     // Fires only when a NEW listening card appears. The fact and voice are
     // stable for one `asked`, so keying on the card is the whole intent.
@@ -1104,7 +1210,7 @@ export function DrillScreen() {
           rt.q.f,
           rt.q.dir,
           anchorForFact(rt.q.f, history) ?? undefined,
-          rt.q.listen,
+          rt.q.listen && rt.q.form.source === "japanese",
         )
       : null;
   const hintDrawn = useDrawnImage(hint?.kind === "image" ? hint.src : null);
@@ -1153,7 +1259,9 @@ export function DrillScreen() {
   // `q.mc` is the truth about how this card is being ANSWERED, which is what the
   // instruction has to describe — "which of these" over a text box would be
   // worse than saying nothing.
-  const instruction = quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed");
+  const instruction = q.recognition
+    ? "Pick the sentence's meaning."
+    : quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed");
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   // The card already decided its shape at ask time: MC options were built (or
@@ -1162,7 +1270,7 @@ export function DrillScreen() {
   // which control to show — deriving it from the style again could disagree
   // with what was built (e.g. an MC-style card that fell back for want of
   // distractors).
-  const typedMode = !q.mc;
+  const typedMode = !q.mc && !q.recognition;
   // Live romaji→kana exactly when the ANSWER is Japanese, which is not the same
   // question as which direction the card faces. Keyed on direction alone this
   // was wrong both ways: a jp2en kanji reading wants せい and got a latin box,
@@ -1377,7 +1485,10 @@ export function DrillScreen() {
           listen={q.listen}
           onListen={() => {
             const info = factInfo(q.f);
-            const text = info && speechForFact(info);
+            const text =
+              q.form.source === "sentence" && q.form.response === "definition"
+                ? q.recognition?.jp
+                : info && speechForFact(info);
             if (text) speak(text, cfg.voiceName);
           }}
         />
@@ -1578,6 +1689,21 @@ export function DrillScreen() {
           // Capped so the six options sit as two rows of three under the
           // halo, rather than a five-plus-one straggle as wide as the stage.
           <div className="flex max-w-[250px] flex-wrap justify-center gap-2">
+            {q.recognition?.options.map((option, i) => (
+              <button
+                key={`${i}-${option}`}
+                onClick={() => submit(option, undefined, i)}
+                className={cx(
+                  "min-w-[110px] cursor-pointer rounded-lg border px-3.5 py-2.5 text-sm",
+                  revealing && i === q.recognition?.correct
+                    ? "border-success bg-success-bg text-success"
+                    : "border-border bg-card text-text hover:bg-panel",
+                )}
+              >
+                {option}
+                <span className="block text-[10px] text-text-muted">{i + 1}</span>
+              </button>
+            ))}
             {q.mc?.map((opt, i) => (
               <button
                 key={opt}
@@ -1610,6 +1736,12 @@ export function DrillScreen() {
           {revealing ? (
             <>
               <span className="text-sm">
+                {q.recognition ? (
+                  <span className="font-semibold text-danger">
+                    {q.recognition.answer}
+                  </span>
+                ) : (
+                  <>
                 <span className="text-lg text-text">{prompt.glyph}</span>
                 {prompt.context ? (
                   <span className="text-text-muted"> {prompt.context}</span>
@@ -1631,6 +1763,8 @@ export function DrillScreen() {
                         baked answer IS the prompt. See revealFor. */}
                     {revealFor(q.f, q.dir, ctx)}
                   </span>
+                )}
+                  </>
                 )}
               </span>
               {/* THE MIX-UP, when the app already knows this pair is one. A

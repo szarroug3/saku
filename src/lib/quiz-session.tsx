@@ -503,9 +503,20 @@ function canonical(s: StoredSession): string {
 function snapshotOf(cfg: QuizConfig): QuizSnapshot {
   return {
     mode: cfg.mode,
-    dirs: { ...cfg.dirs },
-    styleJp2en: cfg.styleJp2en,
-    styleEn2jp: cfg.styleEn2jp,
+    // Deep-ish copy so a later panel edit can't mutate a frozen snapshot.
+    ask: {
+      japanese: {
+        prompts: [...cfg.ask.japanese.prompts],
+        responses: [...cfg.ask.japanese.responses],
+        answers: [...cfg.ask.japanese.answers],
+      },
+      sentence: {
+        prompts: [...cfg.ask.sentence.prompts],
+        responses: [...cfg.ask.sentence.responses],
+        answers: [...cfg.ask.sentence.answers],
+      },
+      english: { answers: [...cfg.ask.english.answers] },
+    },
     length: cfg.length,
     limType: cfg.limType,
     limCount: cfg.limCount,

@@ -9,8 +9,10 @@
 
 import type { QuizConfig } from "@/types";
 
-/** The Home-builder settings frozen at Start — see quiz-session.tsx. */
+/** The Home-builder settings frozen at Start — see quiz-session.tsx. `ask`
+ * (task 30) replaced dirs + per-direction styles; freezing it also freezes the
+ * listening choice, which used to be read live. */
 export type QuizSnapshot = Pick<
   QuizConfig,
-  "mode" | "dirs" | "styleJp2en" | "styleEn2jp" | "length" | "limType" | "limCount"
+  "mode" | "ask" | "length" | "limType" | "limCount"
 >;

@@ -30,10 +30,31 @@
 // Still load-bearing and NOT taste: momentum shelves the primary button off
 // `[class~="rounded-lg"][class~="bg-text"]`. Keep that one.
 
-import type { QuizConfig } from "@/types";
+import {
+  askIsEmpty,
+  enabledDirs,
+  sentenceAsksRomaji,
+  sentenceAsksSelection,
+} from "@/lib/ask-config";
+import type { AskConfig, QuizConfig } from "@/types";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
+}
+
+/** The answer-format phrase for the how-line: what the enabled sources ask for,
+ * pooled and deduped. "Type romaji" keeps the old wording for a typed card. */
+function stylePhrase(ask: AskConfig): string | null {
+  const { jp2en, en2jp } = enabledDirs(ask);
+  const styles = new Set<string>();
+  const add = (formats: readonly ("typed" | "mc")[]) => {
+    for (const f of formats) styles.add(f === "typed" ? "Type romaji" : "Multiple choice");
+  };
+  if (jp2en) add(ask.japanese.answers);
+  if (sentenceAsksSelection(ask)) add(["mc"]);
+  if (sentenceAsksRomaji(ask)) add(ask.sentence.answers);
+  if (en2jp) add(ask.english.answers);
+  return styles.size ? [...styles].join(" + ") : null;
 }
 
 /** "Drill · Endless · Type romaji" — the HOW half, read off the live setup. */
@@ -70,18 +91,17 @@ export function howSentence(cfg: QuizConfig): string {
           `${cfg.limCount} ${cfg.mode === "pairs" ? "pairs" : "questions"}`,
   );
 
-  // Match pairs shows both sides at once — no answer style either.
+  // Match pairs shows both sides at once — no answer style either. Audio, when
+  // on, is called out before the answer format.
   if (cfg.mode !== "pairs") {
-    const styles: string[] = [];
-    if (cfg.dirs.jp2en) {
-      styles.push(cfg.styleJp2en === "typed" ? "Type romaji" : "Multiple choice");
+    if (
+      cfg.ask.japanese.prompts.includes("audio") ||
+      cfg.ask.sentence.prompts.includes("audio")
+    ) {
+      parts.push("Audio");
     }
-    if (cfg.dirs.en2jp) {
-      styles.push(cfg.styleEn2jp === "typed" ? "Type romaji" : "Multiple choice");
-    }
-    // Both directions answered the same way is one phrase, not two.
-    const unique = [...new Set(styles)];
-    if (unique.length) parts.push(unique.join(" + "));
+    const style = stylePhrase(cfg.ask);
+    if (style) parts.push(style);
   }
   return parts.join(" · ");
 }
@@ -110,7 +130,7 @@ export function StartBar({
 }) {
   // Grid ignores directions, so only the count gates it there.
   const howBroken =
-    cfg.mode !== "grid" && !cfg.dirs.jp2en && !cfg.dirs.en2jp;
+    cfg.mode === "drill" && askIsEmpty(cfg.ask);
   // Nothing to ask is a real, reachable state — everything selected is `quiet`
   // — and it used to leave Start looking live and doing nothing: you clicked,
   // the page didn't move, and the app never said why. A button that is enabled
@@ -124,7 +144,7 @@ export function StartBar({
   const reason = !count
     ? "Nothing is selected. Widen the filters above to start."
     : howBroken
-      ? "Choose a direction in the setup above."
+      ? "Choose at least one complete way to ask in the setup above."
       : nothingToAsk
         ? // Deliberately not "nothing to do" and not a congratulation. It is a
           // statement about right now, with the way out in the same sentence:
