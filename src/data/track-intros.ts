@@ -86,6 +86,10 @@ export const HIRAGANA_TRACK: PhaseIntro = {
       text: "It comes in two sets, hiragana and katakana. A kana stands for a whole sound rather than a single letter: か is “ka”, き is “ki”. There are about forty-six in each set.",
     },
     {
+      lead: "Each kana is one beat.",
+      text: "Japanese is spoken in even beats of the same length, and each beat is called a mora. Every kana is one mora: さくら is three, さ・く・ら. This steady beat is the rhythm of the language, and later it is what a word's pitch is drawn over.",
+    },
+    {
       lead: "Hiragana is the set you are starting with.",
       text: "It spells native Japanese words and the endings that hold a sentence together, so it is on every page of a beginner's book. Books like Minna no Nihongo introduce it but never teach it in a way that sticks.",
     },
