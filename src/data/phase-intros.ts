@@ -827,12 +827,16 @@ export const PITCH_INTRO: PhaseIntro = {
       text: "Japanese does not stress a syllable the way English does. Instead the voice sits high on some beats of a word and low on others, and where it drops is fixed for each word. From now on, a thin line is drawn over the reading to show it: the line runs over the high beats and turns down where the voice falls.",
     },
     {
-      lead: "Sometimes it is the only thing telling two words apart.",
-      text: "箸 (chopsticks) and 橋 (bridge) are both read はし, and the pitch is the difference: 箸 starts high and drops, 橋 starts low and rises. Most words are not a pair like this, so treat the line as how the word sounds, not as something you have to memorize.",
+      lead: "The symbol is here to help you tell same-sounding words apart.",
+      text: "箸 (chopsticks) and 橋 (bridge) are both read はし, and the pitch is the only difference in sound: 箸 starts high and drops, 橋 starts low and rises. We show the line so you learn that difference from the start, because a pronunciation learned wrong is hard to unlearn later. Most words are not a pair like this, so mostly the line is just how the word sounds.",
     },
     {
-      lead: "You are never tested on it.",
-      text: "The app never asks you to type or choose a pitch. The line is here only so you hear the word right the first time, because a pronunciation learned wrong is hard to unlearn later. A word with no line simply has no pitch recorded, and that is fine.",
+      lead: "The audio does not include the pitch.",
+      text: "The “hear it” speaker is a synthesized voice, and it uses its own accent rather than the word's real one. So trust the LINE over the reading, not the sound, when you want the accent — the sound is there to teach you the word, the line is there to teach you its pitch.",
+    },
+    {
+      lead: "You are never asked to produce a pitch — it is how the quiz stays fair.",
+      text: "The app never has you type or choose an accent. But it does use the mark to keep a meaning question honest: when the quiz asks what a word means, it shows the kanji AND the pronunciation together, so a same-sounding word like 箸 vs 橋 has one right answer — the mark and the glyph tell you which word is meant. A word with no line simply has no pitch recorded, and that is fine.",
     },
   ],
 };

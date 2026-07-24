@@ -40,7 +40,7 @@ import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { SmallBtn } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
-import { VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
+import { VOCAB_SUBJECT, vocabRow, wordMeaningFactId } from "@/data/vocab";
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { answerGuide, confusionNote } from "@/lib/drill-guidance";
@@ -1088,6 +1088,25 @@ export function DrillScreen() {
   // it does not know whether it is asking a kana, a kanji reading or a word.
   const ctx = ctxFor(q, anchorForFact(q.f, history));
   const prompt = questionsFor(q.f).prompt(q.f, q.dir, ctx);
+  // A MEANING question for a word whose reading collides with another word the
+  // learner knows shows the kanji (the glyph) AND the pronunciation together, so
+  // the pitch mark is what says which same-sounding word is meant — 箸[はし↓] vs
+  // 橋[は↑し]. Only here: it is scoped to the same colliding case that
+  // meaningMustShowGlyph blocks the audio card for, on the jp2en meaning showing
+  // (the one that shows the kanji and asks for the English), where a reading line
+  // aids without leaking the English answer. Display only; a word with no verified
+  // pitch shows nothing extra.
+  const promptPitch = (() => {
+    if (q.listen || q.dir !== "jp2en") return null;
+    const info = factInfo(q.f);
+    if (!info || info.subject !== VOCAB_SUBJECT) return null;
+    if (wordMeaningFactId(info.glyph) !== q.f) return null;
+    if (!meaningMustShowGlyph(q.f, history)) return null;
+    const row = vocabRow(info.glyph);
+    if (!row) return null;
+    const downstep = wordPitch(row.keb);
+    return downstep == null ? null : { reading: row.reb, downstep };
+  })();
   // `q.mc` is the truth about how this card is being ANSWERED, which is what the
   // instruction has to describe — "which of these" over a text box would be
   // worse than saying nothing.
@@ -1328,6 +1347,16 @@ export function DrillScreen() {
             supplies one, at a size you read rather than skim. */}
         {prompt.context ? (
           <p className="-mt-1 text-center text-[13px] text-text">{prompt.context}</p>
+        ) : null}
+        {/* The pronunciation, shown WITH the kanji on a homophone's meaning card
+            so the pitch mark says which same-sounding word is being asked about.
+            Display only — the answer is the English, which this does not leak. */}
+        {promptPitch ? (
+          <PitchReading
+            reading={promptPitch.reading}
+            downstep={promptPitch.downstep}
+            className="text-center text-[13px] text-text-muted"
+          />
         ) : null}
         {/* The second line of the question, when a subject has one — today the
             English translation under a selection card's blanked sentence.

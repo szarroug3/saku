@@ -57,7 +57,7 @@ import {
 import { wordPitch } from "@/data/pitch";
 import { isSoundChangeEntry } from "@/data/counters";
 import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
-import { vocabRow } from "@/data/vocab";
+import { vocabRow, wordReadingFactId } from "@/data/vocab";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
 import { spineIntroPlan } from "@/lib/spine-intros";
 import { startedTracks, trackOfItem } from "@/lib/track-open";
@@ -311,10 +311,18 @@ export function lessonSteps(
       markedSoundChange = true;
       steps.push({ type: "intro", key: COUNTER_SOUND_CHANGE.id, intro: COUNTER_SOUND_CHANGE });
     }
-    // The overline is about to appear on this word, so teach it first. Any word
-    // with verified pitch counts (wordPitch is keyed on the written form); a word
-    // with none draws no line and is not what this card waits for.
-    if (!markedPitch && item.kind === "word" && wordPitch(item.glyph) !== null) {
+    // The overline is about to appear on this word, so teach it first. Gated on
+    // the item TEACHING the word (its reading fact is in the step), NOT on
+    // item.kind: a folded character like 何 leads as its kanji (kind "kanji") yet
+    // teaches the word 何 in the same step, and its word-reading reveal draws the
+    // overline. Keying on kind alone missed exactly that — the first pitch word a
+    // learner meets — so key on the fact instead. wordPitch is on the written
+    // form; a word with none draws no line and is not what this card waits for.
+    if (
+      !markedPitch &&
+      wordPitch(item.glyph) !== null &&
+      item.facts.includes(wordReadingFactId(item.glyph))
+    ) {
       markedPitch = true;
       steps.push({ type: "intro", key: PITCH_INTRO.id, intro: PITCH_INTRO });
     }

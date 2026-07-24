@@ -36,6 +36,8 @@
 
 import { HearButton } from "@/components/lesson/hear-button";
 import { LessonPanel } from "@/components/lesson/lesson-panel";
+import { PitchReading } from "@/components/library/pitch-mark";
+import { wordPitch } from "@/data/pitch";
 import type { VocabRow } from "@/data/vocab";
 import { standaloneSenses, wordTypeOf } from "@/lib/lesson-roles";
 
@@ -59,6 +61,14 @@ export function WordSensePanel({
   const senses = standaloneSenses(word);
   const only = senses.length === 1 ? senses[0] : null;
 
+  // The pitch overline is stored per WORD and validated against its PRIMARY
+  // reading (word.reb) — the same reading the drill reveal and the Library header
+  // draw it on. So it is drawn only on that reading; another reading of the same
+  // word (何's なん beside its primary なに) has no verified pitch of its own and
+  // stays plain. Display only, never graded. See pitch-mark.tsx / src/data/pitch.ts.
+  const pitch = wordPitch(word.keb);
+  const drawsPitch = (reb: string) => pitch != null && reb === word.reb;
+
   // ONE reading is a sentence, not a table. A header row over a single row of
   // data is furniture around one fact, so the single-reading case keeps the shape
   // this panel has always had.
@@ -69,7 +79,15 @@ export function WordSensePanel({
         <p className="mb-2.5 text-[12px] leading-snug text-text-muted">{LEAD_ONE}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <HearButton glyph={only.reb} voiceName={voiceName} />
-          <span className="font-kana text-[24px] leading-none text-text">{only.reb}</span>
+          {drawsPitch(only.reb) ? (
+            <PitchReading
+              reading={only.reb}
+              downstep={pitch!}
+              className="font-kana text-[24px] leading-none text-text"
+            />
+          ) : (
+            <span className="font-kana text-[24px] leading-none text-text">{only.reb}</span>
+          )}
           <span className="text-[11px] uppercase tracking-[0.06em] text-text-muted">
             {wordTypeOf(only)}
           </span>
@@ -103,7 +121,15 @@ export function WordSensePanel({
                       same rule the readings table and the entry header follow. */}
                   <span className="flex items-center gap-2">
                     <HearButton glyph={s.reb} voiceName={voiceName} />
-                    <span className="font-kana text-[15px]">{s.reb}</span>
+                    {drawsPitch(s.reb) ? (
+                      <PitchReading
+                        reading={s.reb}
+                        downstep={pitch!}
+                        className="font-kana text-[15px]"
+                      />
+                    ) : (
+                      <span className="font-kana text-[15px]">{s.reb}</span>
+                    )}
                   </span>
                 </td>
                 <td className="py-2 pr-2 align-middle text-text-muted">

@@ -11,9 +11,11 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { lessonSteps } from "./lesson-steps.ts";
+import { itemsFromFacts } from "./lesson-items.ts";
 import { CONCEPT_CARD_IDS } from "./intro-shown.ts";
 import { PHASE_INTROS, PITCH_INTRO } from "../data/phase-intros.ts";
-import { wordReadingFactId } from "../data/vocab.ts";
+import { wordMeaningFactId, wordReadingFactId } from "../data/vocab.ts";
+import { meaningFactId, readingFactId, READING_INDEX } from "../data/kanji.ts";
 import { wordPitch } from "../data/pitch.ts";
 import type { HistoryFile } from "../types/index.ts";
 
@@ -63,5 +65,30 @@ describe("the pitch card fires ahead of the first pitch word", () => {
     // with nothing to read gets the item alone.
     const steps = lessonSteps([wordReadingFactId("先生")]);
     assert.ok(!ids(steps).includes("intro-pitch"));
+  });
+
+  test("a FOLDED word (何: kanji-led, taught with its word) still fires the card", () => {
+    // The bug: 何 is beginnerRank 1, the first word a learner meets, but it folds
+    // into a kanji-led step (item.kind === "kanji"), so a gate keyed on
+    // item.kind === "word" skipped it and the pitch card never appeared. The gate
+    // keys on the word's READING fact being in the step instead, which a folded
+    // item carries. Guard the fold first, then the fire.
+    const kReadings = [...READING_INDEX.values()]
+      .filter((r) => r.k === "何")
+      .map((r) => readingFactId(r.k, r.anchor));
+    const facts = [
+      meaningFactId("何"),
+      ...kReadings,
+      wordReadingFactId("何"),
+      wordMeaningFactId("何"),
+    ];
+    const item = itemsFromFacts(facts).find((it) => it.glyph === "何");
+    assert.ok(item, "何 is one item");
+    assert.equal(item!.kind, "kanji", "何 leads as its kanji — the fold that hid the bug");
+    assert.ok(item!.facts.includes(wordReadingFactId("何")), "yet it teaches the word 何");
+
+    const walk = ids(lessonSteps(facts, HISTORY, new Set()));
+    assert.ok(walk.includes("intro-pitch"), "the pitch card fires for the folded word");
+    assert.ok(walk.indexOf("intro-pitch") < walk.indexOf("何"));
   });
 });
