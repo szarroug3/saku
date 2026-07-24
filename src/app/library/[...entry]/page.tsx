@@ -117,6 +117,7 @@ import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
 import { piecesOf } from "@/lib/library/word-pieces";
 import { entryStanding, standingOf } from "@/lib/library/standing";
+import { useLiveFacts } from "@/lib/library/use-live-facts";
 import { speak } from "@/lib/speech";
 import { postClaim } from "@/lib/progress-fetch";
 import { useHistory } from "@/lib/use-history";
@@ -168,12 +169,18 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const [now] = useState(() => Date.now());
 
   const claims = history.claims ?? {};
+  // Committed aggregate + the in-progress run, folded at read time: a reading
+  // missed mid-drill reads shaky on this page NOW, not on End session. Same
+  // reference as history.facts when nothing is in progress. `facts` below is the
+  // entry's FactId LIST, a different thing — this is the aggregate MAP every
+  // standing read on this page uses in place of history.facts.
+  const liveFacts = useLiveFacts(history.facts, now);
   const facts = factsOf(entry.id);
   const isTransitivity = entry.kind === TRANSITIVITY_SUBJECT;
   const isKeigo = entry.kind === KEIGO_SUBJECT;
   const isCounter = entry.kind === COUNTER_KIND;
   const standingFacts = isTransitivity ? knownFactsOf(entry) : facts;
-  const standing = entryStanding(standingFacts, history.facts, claims, cfg.accuracyMetric, now);
+  const standing = entryStanding(standingFacts, liveFacts, claims, cfg.accuracyMetric, now);
   const words = appearsIn(entry);
   const parts = madeOf(entry);
   const mine = lists.filter((l) => l.kind === "fixed" && l.entries.includes(entry.id));
@@ -245,7 +252,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
   const meaningStanding = isKanji
     ? standingOf(
-        history.facts[meaningFactId(entry.glyph)],
+        liveFacts[meaningFactId(entry.glyph)],
         claims[meaningFactId(entry.glyph)],
         cfg.accuracyMetric,
         now,
@@ -337,14 +344,14 @@ function EntryView({ entry }: { entry: LibEntry }) {
           not exist. */}
       {isWord ? (
         <>
-          {history.facts[wordReadingFactId(entry.glyph)] !== undefined ||
+          {liveFacts[wordReadingFactId(entry.glyph)] !== undefined ||
           factsOf(entry.id).includes(wordReadingFactId(entry.glyph)) ? (
             <span className="flex items-center gap-1.5 text-[11px] text-text-muted">
               Reading{" "}
               <StandingChip
                 standing={
                   standingOf(
-                    history.facts[wordReadingFactId(entry.glyph)],
+                    liveFacts[wordReadingFactId(entry.glyph)],
                     claims[wordReadingFactId(entry.glyph)],
                     cfg.accuracyMetric,
                     now,
@@ -358,7 +365,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
             <StandingChip
               standing={
                 standingOf(
-                  history.facts[wordMeaningFactId(entry.glyph)],
+                  liveFacts[wordMeaningFactId(entry.glyph)],
                   claims[wordMeaningFactId(entry.glyph)],
                   cfg.accuracyMetric,
                   now,
@@ -388,7 +395,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
             <StandingChip
               standing={
                 standingOf(
-                  history.facts[patternMeaningFactId(pattern.id)],
+                  liveFacts[patternMeaningFactId(pattern.id)],
                   claims[patternMeaningFactId(pattern.id)],
                   cfg.accuracyMetric,
                   now,
@@ -731,7 +738,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
           {family.length > 0 ? (
             <KanaFamilyView
               cells={family}
-              facts={history.facts}
+              facts={liveFacts}
               claims={claims}
               metric={cfg.accuracyMetric}
               now={now}
@@ -757,7 +764,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
             <KanjiReadings
               rows={readingRows}
               anchors={anchors}
-              facts={history.facts}
+              facts={liveFacts}
               claims={claims}
               metric={cfg.accuracyMetric}
               now={now}
@@ -777,7 +784,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
           {words.length > 0 ? (
             <WordsWith
               words={words}
-              facts={history.facts}
+              facts={liveFacts}
               claims={claims}
               metric={cfg.accuracyMetric}
               now={now}
@@ -862,7 +869,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
             <PatternRecipe
               pattern={pattern}
               formula={formula}
-              facts={history.facts}
+              facts={liveFacts}
               claims={claims}
               metric={cfg.accuracyMetric}
               now={now}
@@ -889,7 +896,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
             <PatternFamily
               members={familyMembers}
               current={pattern}
-              facts={history.facts}
+              facts={liveFacts}
               claims={claims}
               metric={cfg.accuracyMetric}
               now={now}
@@ -942,7 +949,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
             <tbody>
               {genericRows.map((row) => {
                 const s = standingOf(
-                  history.facts[row.id],
+                  liveFacts[row.id],
                   claims[row.id],
                   cfg.accuracyMetric,
                   now,
@@ -1003,6 +1010,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
         // no glyph and would name those nothing.
         slice={{ label: entryName(entry), entries: [entry.id] }}
         showLabel={false}
+        // The committed aggregate on PURPOSE: this bar plans a drill, and the
+        // drill plan is a query over what you durably know, not over the run
+        // you are in the middle of. The live fold feeds the STANDING surfaces
+        // above (chips, tables) so a miss shows at once; it deliberately does
+        // not reach the drill selection, which would let a session rewrite its
+        // own deck from its own in-flight answers. Standing display: live.
+        // Drill planning: committed.
         facts={history.facts}
         claims={claims}
         history={history}

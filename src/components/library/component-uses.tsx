@@ -32,6 +32,7 @@ import { kanjiEntry } from "@/data/kanji";
 import { COMPONENT_USE_CAP, knownWordsUsing, usedAsPartIn } from "@/lib/library/components";
 import { entryHref } from "@/lib/library/href";
 import type { Claims } from "@/lib/claims";
+import { useLiveFacts } from "@/lib/library/use-live-facts";
 import type { AccuracyMetric, HistoryFile } from "@/types";
 
 export function ComponentUses({
@@ -56,6 +57,13 @@ export function ComponentUses({
   /** Row cap for the table variant. */
   tableCap?: number;
 }) {
+  // Committed aggregate + the in-progress run, so the kanji table and the
+  // "words you know" list below read a mid-drill miss the moment its card
+  // resolves rather than on End session. Same reference as history.facts when
+  // nothing is in progress. This is a standing SURFACE, so it folds live;
+  // `history` (the whole file) still feeds knownWordsUsing, which is not a
+  // standing question.
+  const liveFacts = useLiveFacts(history.facts, now);
   const kanji = usedAsPartIn(component);
   // NO `useMemo`, though the join walks all 12,553 vocabulary rows. The React
   // Compiler is on in this repo and memoises it for free; a hand-written
@@ -77,7 +85,7 @@ export function ComponentUses({
         <RadicalKanjiTable
           component={component}
           cap={tableCap}
-          facts={history.facts}
+          facts={liveFacts}
           claims={claims}
           metric={metric}
           now={now}
@@ -112,7 +120,7 @@ export function ComponentUses({
         <WordsWith
           words={known}
           label="Words you know that use it"
-          facts={history.facts}
+          facts={liveFacts}
           claims={claims}
           metric={metric}
           now={now}
