@@ -47,7 +47,7 @@ import Link from "next/link";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { KANA_SUBJECT, SETS } from "@/data/characters";
 import { getMnemonic } from "@/data/mnemonics";
-import { VOCAB_SUBJECT } from "@/data/vocab";
+import { VOCAB, VOCAB_SUBJECT, wordEntry } from "@/data/vocab";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
@@ -79,10 +79,9 @@ import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import {
   filterSections,
   sectionCapFor,
-  shownWordsOf,
-  WORD_TILES,
   type ShelfSection,
 } from "@/lib/library/shelf-view";
+import { curriculumRank, rangedGroups, wordRank } from "@/lib/library/ranged-groups";
 import { sectionState, type Selection } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
 import type { KnowledgeFilter } from "@/lib/library/url-state";
@@ -190,8 +189,18 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
           entries: TERMS.flatMap((t) => resolve(termEntry(t.id))),
         },
       ];
+    // EVERY word, in the beginner's teaching order, cut into ranges of
+    // GROUP_SIZE ("1–50", "51–100") like the kanji shelf's hundreds — and shown
+    // WHOLE, all 12,553, not the old top-120 "Everyday words" card. The owner
+    // wants to see the cost of the naive full render, so nothing is capped or
+    // deferred here; the ranges flow through the generic section render below and
+    // inherit its select-all header, which the single words card never had. See
+    // ranged-groups.ts for the order and the chunking.
     case VOCAB_SUBJECT:
-      return [];
+      return rangedGroups(
+        VOCAB.flatMap((w) => resolve(wordEntry(w.keb))),
+        wordRank,
+      );
     // Numbers and counters, cut into the groups the track teaches (see
     // counter-shelf.ts). Rendered as TILES like kana and kanji, not rows: a
     // counter is a glyph (一本, ひとつ) with a reading under it, which is what a
@@ -204,28 +213,17 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
     // its politeness forms read across the line. A small subject, shown whole.
     case KEIGO_SUBJECT:
       return keigoShelfSections();
-    // All 214, in canonical Kangxi order, cut by traditional stroke count — the
-    // way every radical chart is printed, and a real cut the data carries (each
-    // radical knows its strokes). Not one card of 214 (unbrowsable) and not a
-    // search box (this IS the whole subject, and 214 is a curriculum, not a
-    // dictionary). No cap: a stroke group is a dozen tiles, shown whole.
-    case RADICAL_SUBJECT: {
-      const byStroke = new Map<number, LibEntry[]>();
-      for (const r of RADICALS) {
-        const e = libEntry(radicalEntry(r.glyph));
-        if (!e) continue;
-        const group = byStroke.get(r.strokes) ?? [];
-        group.push(e);
-        byStroke.set(r.strokes, group);
-      }
-      return [...byStroke.entries()]
-        .sort(([a], [b]) => a - b)
-        .map(([strokes, entries]) => ({
-          id: `strokes-${strokes}`,
-          label: `${strokes} stroke${strokes === 1 ? "" : "s"}`,
-          entries,
-        }));
-    }
+    // All 214, in the order the curriculum TEACHES them — each radical woven in
+    // at the moment the first character needs it (curriculumRank over the spine)
+    // — cut into ranges like words and kanji. It used to cut by stroke count,
+    // which is how a radical chart is PRINTED but not the order a learner MEETS
+    // them; #27 makes every browsable subject read in teaching order. 214 is
+    // small, so every range shows whole (no cap). See ranged-groups.ts.
+    case RADICAL_SUBJECT:
+      return rangedGroups(
+        RADICALS.flatMap((r) => resolve(radicalEntry(r.glyph))),
+        curriculumRank,
+      );
   }
 }
 
@@ -238,7 +236,6 @@ function resolve(id: EntryId | null): LibEntry[] {
 export function Shelf({
   kind,
   sections,
-  allEntries,
   selected,
   onToggleEntry,
   onToggleSection,
@@ -252,8 +249,6 @@ export function Shelf({
 }: {
   kind: Kind;
   sections: readonly ShelfSection[];
-  /** Every entry on the shelf, for the words case where sections are empty. */
-  allEntries: readonly LibEntry[];
   /** The global, cross-kind selection this shelf draws its on-state from. */
   selected: Selection;
   onToggleEntry(id: EntryId, shiftKey: boolean): void;
@@ -319,35 +314,6 @@ export function Shelf({
       />
     );
   };
-
-  if (kind === VOCAB_SUBJECT) {
-    // `shownWordsOf`, not a local filter: it carries the shelf's teaching order
-    // (`beginnerRank`, so "Common everyday words" is true of what you see) and
-    // it is the SAME call `visibleShelfIds` makes, so the grid and the range a
-    // Shift-click sweeps cannot disagree about which word is where.
-    const words = shownWordsOf(allEntries, keep);
-    return (
-      <Card>
-        <Lbl>Everyday words</Lbl>
-        {words.length === 0 ? (
-          <FilterEmpty filter={filter} />
-        ) : (
-          <>
-            <p className="mb-3">
-              <Hint>
-                {keep
-                  ? `The first ${WORD_TILES} that match. Search to find any of the others.`
-                  : `Common everyday words. The first ${WORD_TILES} are here. Search to find any of the others.`}
-              </Hint>
-            </p>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
-              {words.slice(0, WORD_TILES).map(tile)}
-            </div>
-          </>
-        )}
-      </Card>
-    );
-  }
 
   // ROWS, NOT TILES, for grammar, marks AND verb pairs — the same argument all
   // three times. A tile is a 100px box built around a character; a grammar
