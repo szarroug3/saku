@@ -6,9 +6,6 @@ Open work only. Everything shipped and verified on prod has been removed. One fi
 
 | # | Task | Status | Branch | Test URL |
 |---|------|--------|--------|----------|
-| 14 | [Retire file mode → logged-out + localStorage](14-retire-file-mode.md) | 🟢 ready (merged to local main) | `retire-file-mode` | http://localhost:3000 |
-| 15 | [Remove single definition on a multi-type lesson](15-multitype-definition.md) | 🟢 ready to merge | `lesson-sections` | http://localhost:3010 |
-| 16 | [Show a radical's meaning in the Radical section](16-radical-meaning.md) | 🟢 ready to merge | `lesson-sections` | http://localhost:3010 |
 | 17 | [Meaning instruction wording: "this" not "the"](17-instruction-below-halo.md) | 🟠 tiny tweak (rest on prod via #13) | — | — |
 | 18 | [Kana allophony (ん → m/ŋ/n by what follows)](18-kana-allophony.md) | 🟠 not started | — | — |
 | 19 | [Standing updates the moment you miss](19-live-standing.md) | 🟠 not started | — | — |
