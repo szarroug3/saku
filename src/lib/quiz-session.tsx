@@ -76,6 +76,19 @@ import {
 } from "@/lib/pending-records";
 import { postClaim, postSession } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
+import {
+  normalizeEnvelope,
+  reconcile,
+  type SessionPayload,
+  type SessionStateEnvelope,
+} from "@/lib/session-state";
+import {
+  currentEnvelope,
+  envelopeBody,
+  pushSessionState,
+  readSyncMeta,
+  writeSyncMeta,
+} from "@/lib/session-state-sync";
 import { OLD_SESSION_KEY, SESSION_KEY } from "@/lib/settings-keys";
 import { migratedGet } from "@/lib/storage-migrate";
 import { buildSessionRecord } from "@/lib/session-record";
@@ -314,6 +327,15 @@ const QuizSessionContext = createContext<QuizSessionContextValue | null>(null);
  * you finish it or discard it, not when it gets old. */
 const STORAGE_KEY = SESSION_KEY;
 
+/** How long to coalesce in-progress changes before mirroring them to the server.
+ * A trailing debounce off `saveNow` (which the mode screens call per ANSWER, not
+ * per keystroke): the first change in a burst arms the timer and the LATEST state
+ * is pushed when it fires, so a run of answers costs at most one write every ~2s
+ * rather than one per card. See the per-card write warning in latency-store.ts
+ * for why per-answer server writes are the thing being avoided. A CLEAR (the run
+ * finished) bypasses this and pushes immediately — see schedulePush. */
+const PUSH_DEBOUNCE_MS = 2000;
+
 /** Identifies the tab that currently owns the quiz. Regenerated per mount, so
  * every tab gets its own. */
 const TAB_ID = Math.random().toString(36).slice(2);
@@ -468,7 +490,22 @@ function snapshotOf(cfg: QuizConfig): QuizSnapshot {
   };
 }
 
-export function QuizSessionProvider({ children }: { children: ReactNode }) {
+export function QuizSessionProvider({
+  children,
+  userId,
+  initialSession,
+}: {
+  children: ReactNode;
+  /** The signed-in account, or null for a signed-out Supabase visitor. Non-null
+   * (the implicit local user in file mode, or a real uuid) means there is a
+   * server to mirror the in-progress run to. Same contract as the settings /
+   * history providers. */
+  userId: string | null;
+  /** The server's read of this account's in-progress run envelope, seeded in the
+   * root layout, or null when there was none to read (signed out / read failed).
+   * Reconciled into the live session once, on load — see the seed effect. */
+  initialSession: SessionStateEnvelope | null;
+}) {
   const router = useRouter();
   const { cfg } = useQuizConfig();
   // Warm the two destinations a run navigates to, so a Start / Quiz me click
@@ -556,6 +593,157 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
     restoredRef.current = restored;
   });
 
+  // ---------- in-progress session sync (Sync Part 2) ----------
+  //
+  // A SEPARATE, ADDITIVE CHANNEL alongside the localStorage snapshot above and
+  // the finished-round outbox below. The localStorage snapshot is what makes
+  // Continue work on THIS device; this mirrors the same in-progress run to the
+  // SERVER so another device can pick it up. Last-writer-wins by timestamp — see
+  // src/lib/session-state.ts. It deliberately hangs off `saveNow` (so it fires on
+  // the same per-answer / per-boundary beats, never per keystroke) and off the
+  // adopt/echo guards there (so a cross-tab adoption or a seeded server state is
+  // never re-published in a loop).
+
+  /** The account this run mirrors to, or null for a signed-out Supabase visitor
+   * (no server — the run lives in this browser only). Mirrored in a ref so the
+   * stable push callbacks below can read it. */
+  const userIdRef = useRef(userId);
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
+  /** The synced document's identity: minted when the document goes empty→non-empty,
+   * forgotten when it clears, so a finished run and the next run are distinct
+   * sessions. Persisted (with the timestamp) under SESSION_SYNC_KEY so a reload
+   * keeps the run's identity. */
+  const sessionIdRef = useRef<string | null>(null);
+  const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** The body of the last envelope we published — a push whose body matches is
+   * pure churn (and would advance the server's LWW clock for no change), so it is
+   * skipped. Set on every push AND on every adoption, so an adopted/seeded state
+   * is recognised as already-published and never echoed back up. */
+  const lastPushedBodyRef = useRef<string | null>(null);
+
+  /** The syncable in-progress payload from the live snapshot: the focused leg +
+   * runtime, the session loop, the live progress, and the parked runs. Excludes
+   * `results` (a terminal view — it does not teleport) and `owner` (a
+   * device-local stamp). Null when nothing is in progress (a cleared document). */
+  const syncPayload = useCallback((): SessionPayload | null => {
+    const cur = latest.current;
+    if (!cur.active && !cur.session && (cur.parked?.length ?? 0) === 0) return null;
+    return {
+      active: cur.active ?? null,
+      session: cur.session ?? null,
+      progress: cur.progress ?? null,
+      parked: cur.parked ?? [],
+    };
+  }, []);
+
+  /** Publish the current run to the server NOW, last-writer-wins. Skips a push
+   * whose body matches the last one sent, and skips entirely when there is no
+   * server (userId null). A cleared payload publishes state:null (carrying the
+   * finishing run's id, so it targets that run) and then forgets the id so the
+   * next run mints a fresh one. */
+  const flushPush = useCallback(() => {
+    if (pushTimerRef.current) {
+      clearTimeout(pushTimerRef.current);
+      pushTimerRef.current = null;
+    }
+    if (userIdRef.current === null) return;
+    const payload = syncPayload();
+    if (payload && !sessionIdRef.current) sessionIdRef.current = genRunId();
+    const now = Date.now();
+    const env = currentEnvelope(payload, sessionIdRef.current, now);
+    const body = envelopeBody(env);
+    if (body === lastPushedBodyRef.current) return;
+    lastPushedBodyRef.current = body;
+    writeSyncMeta(window.localStorage, { sessionId: env.sessionId, updatedAt: now });
+    if (!payload) sessionIdRef.current = null; // the run ended — next run is new
+    void pushSessionState(env);
+  }, [syncPayload]);
+
+  /** Arm the mirror. `immediate` (a clear — the run just finished) pushes now, to
+   * minimise the window a stale in-progress copy on another device could
+   * resurrect it. Otherwise a trailing debounce: the first change arms a ~2s
+   * timer and the latest state is pushed when it fires, so a burst of answers
+   * costs one write, not one per card. */
+  const schedulePush = useCallback(
+    (immediate: boolean) => {
+      if (userIdRef.current === null) return;
+      if (immediate) {
+        flushPush();
+        return;
+      }
+      if (pushTimerRef.current) return;
+      pushTimerRef.current = setTimeout(() => {
+        pushTimerRef.current = null;
+        flushPush();
+      }, PUSH_DEBOUNCE_MS);
+    },
+    [flushPush],
+  );
+
+  /** Apply a winning REMOTE envelope (the server's, on load) to the live session,
+   * so the run appears on this device. Sets the sync refs FIRST so the ensuing
+   * localStorage save persists the adopted run to this device's snapshot without
+   * re-publishing it: `lastPushedBodyRef` makes the debounced push a no-op, and
+   * the meta is stamped with the server's own timestamp. `results` is left
+   * untouched — a terminal view is this device's own. */
+  const adoptRemoteEnvelope = useCallback((env: SessionStateEnvelope) => {
+    const s = (env.state ?? {}) as Partial<StoredSession>;
+    sessionIdRef.current = env.sessionId;
+    lastPushedBodyRef.current = envelopeBody(env);
+    writeSyncMeta(window.localStorage, {
+      sessionId: env.sessionId,
+      updatedAt: env.updatedAt,
+    });
+    setActive(s.active ?? null);
+    setSession(s.session ?? null);
+    setProgress(s.progress ?? null);
+    setParked(s.parked ?? []);
+  }, []);
+
+  // SEED FROM THE SERVER, ONCE. After the local snapshot is restored, reconcile
+  // the seeded server envelope against this device's own copy (last-writer-wins,
+  // by timestamp — see session-state.ts). A fresher server run is ADOPTED so it
+  // appears here (the teleport); a fresher local run is left in place and pushed
+  // up so the other device can pick it up.
+  //
+  // RUNS BEFORE ANY LOCAL WRITE, which is what makes a server CLEAR safe: a
+  // device holding a stale in-progress run adopts the clear (dropping the run)
+  // instead of its save effect re-publishing the run it was holding. The only
+  // race left is a device ACTIVELY answering at the instant another device
+  // finishes the same run — inherent to last-writer-wins, and documented.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (!restored || seededRef.current) return;
+    seededRef.current = true;
+    const meta = readSyncMeta(window.localStorage);
+    sessionIdRef.current = meta.sessionId;
+    const localEnv = currentEnvelope(syncPayload(), meta.sessionId, meta.updatedAt);
+    const remote = normalizeEnvelope(initialSession);
+    const { winner, adoptRemote } = reconcile(localEnv, remote);
+    // Whatever we do, the server already holds `remote` — record its body so the
+    // first ordinary save does not re-publish unchanged state.
+    lastPushedBodyRef.current = envelopeBody(remote);
+    if (adoptRemote) {
+      // A one-time hydration of the live session from the server's newer copy —
+      // the same set-state-in-effect the restore effect above does, and off the
+      // same one-shot guard, not a render loop.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      adoptRemoteEnvelope(winner);
+    } else if (
+      userIdRef.current !== null &&
+      envelopeBody(localEnv) !== envelopeBody(remote)
+    ) {
+      // Local won (or a tie) and the server does not already hold it — publish so
+      // the other device can pick it up. Debounced, off the hydration path.
+      schedulePush(false);
+    }
+    // Run once when `restored` flips; the callbacks and props read here are
+    // stable / frozen at mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restored]);
+
   /**
    * Write the snapshot. Stable identity — see `latest` above.
    *
@@ -626,10 +814,16 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(STORAGE_KEY, raw);
       lastBodyRef.current = body;
       lastRawRef.current = raw;
+      // Mirror the same change to the server (in-progress cross-device sync). We
+      // only reach here when the snapshot ACTUALLY changed (the guard above), so
+      // a cross-tab adoption's echo never schedules a push. A CLEAR (the run just
+      // finished) pushes immediately to minimise the window a stale copy could
+      // resurrect it; every other change is debounced ~2s off this same save.
+      schedulePush(syncPayload() === null);
     } catch {
       // storage full/unavailable — resume degrades gracefully to not-offered
     }
-  }, []);
+  }, [schedulePush, syncPayload]);
 
   useEffect(() => {
     if (!restored) return;
