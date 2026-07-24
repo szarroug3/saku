@@ -62,6 +62,7 @@ import { KEIGO_PER_LESSON_DEFAULT, nextKeigoLesson } from "@/lib/keigo-lesson";
 
 import { readingsProvedBy } from "@/lib/word-unlock";
 import { nextLesson } from "@/lib/lesson";
+import { resumeLesson } from "@/lib/lesson-resume";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
 import { entryOf, factInfo } from "@/lib/facts";
@@ -104,36 +105,6 @@ function trackOfRun(run: RunInfo): TrackKey | null {
   // kana · kanji · radical · grammar · transitivity · keigo all key on their
   // own subject, which is exactly the track key.
   return subject as TrackKey;
-}
-
-// History with a set of facts masked back out: every trace the frontier reads
-// to call a fact "met" (its aggregate, a claim, a "quiz me"), gone. See the
-// resumeLesson note for why: it hands the next-lesson functions the history as
-// it stood BEFORE an in-progress session committed its first round, so the
-// exact lesson that session is resting inside can be rebuilt and shown again.
-//
-// A shallow rebuild of the three fact-keyed maps, not a deep clone: the values
-// are left alone, only the keys in `drop` are omitted, and `sessions` is passed
-// through untouched (freshFacts reads the derived `facts`/`claims`/`seen`, never
-// the raw session list). Returns the SAME object when there is nothing to mask,
-// so the common no-open-session render allocates nothing.
-function withoutFacts(history: HistoryFile, facts: readonly FactId[]): HistoryFile {
-  if (!facts.length) return history;
-  const drop = new Set(facts);
-  const strip = <V,>(rec: Record<FactId, V> | undefined): Record<FactId, V> | undefined => {
-    if (!rec) return rec;
-    const out: Record<FactId, V> = {};
-    for (const key in rec) {
-      if (!drop.has(key as FactId)) out[key as FactId] = rec[key as FactId];
-    }
-    return out;
-  };
-  return {
-    ...history,
-    facts: strip(history.facts) ?? {},
-    claims: strip(history.claims),
-    seen: strip(history.seen),
-  };
 }
 
 export function HomeFeed() {
@@ -359,11 +330,12 @@ export function HomeFeed() {
   // partitioned per track by trackOfRun. Continue then routes back through
   // continueRun, exactly as the /current row does.
   //
-  // A run whose facts have advanced past the frontier means the card shows the
-  // NEXT set's material while Continue resumes the earlier, still-open one. The
-  // card keeps "Quiz me" and "I already know these" for the fresh set, so
-  // nothing is lost, and Continue is the one obvious way back into what is
-  // already going.
+  // Matching on the track is what lights the card; it does not decide WHICH
+  // lesson the card prints. That was left reading the frontier, and a frontier
+  // that has advanced past the run puts the NEXT set's characters over a
+  // Continue that resumes the earlier one — the card contradicting its own
+  // button. resumeShown below settles that: while this run is open, the card
+  // shows the lesson the run is resting in.
   const lessonRuns = runs.filter(
     (r) =>
       r.kind === "session" &&
@@ -388,52 +360,48 @@ export function HomeFeed() {
 
   // WHEN THE FRONTIER MOVES PAST A SESSION THAT IS STILL OPEN
   // ========================================================
-  // runForTrack above matches a run to its track's CARD, but that only helps
-  // while the card is on screen, and completing one round can take it off.
-  // A curriculum session drills a round and, on completing it, commits that
-  // round to history; for a step-ahead track that commit does not nudge the
-  // card to the next group, it removes the card outright. Finish round 1 of a
-  // set whose radical-only shapes unlock the kanji that follow them, and
-  // nextKanjiLesson can return the NEXT set the instant the session pauses to
-  // rest: the set you were resting in is gone, a fresh Start takes its place,
-  // and the resting session is reachable only from /current. Kana at its last
-  // group, and any track whose next lesson is momentarily unavailable, orphan
-  // the same way. This is the reported bug, and trackOfRun could never reach it:
-  // there was no card left to light.
+  // runForTrack above matches a run to its track's CARD, but a card that lights
+  // up with Continue still has to print the right material above the button,
+  // and the frontier stops being that material the moment the session starts.
+  // Starting is a write: the curriculum card marks its lesson seen before the
+  // teach walk, and every track commits its facts as each round closes, so the
+  // live next-lesson query moves on while the run rests where it was. On a
+  // step-ahead track the card then vanishes outright; on the curriculum spine,
+  // which always has a next lesson, the card stays and shows the FOLLOWING
+  // set's characters over a Continue that resumes the earlier one.
   //
-  // So when the live frontier offers NO card for a track that still has an open
-  // session, rebuild the lesson that session is resting inside: recompute the
-  // track's next lesson against a history with the run's OWN facts masked back
-  // out (withoutFacts), which is exactly the frontier as it stood when the
-  // session began. The card returns, with its Continue, and nothing else
-  // shifts: the fallback fires only when the card would otherwise be absent, so
-  // a track whose frontier is still non-null keeps showing the next set (the
-  // deliberate behavior runForTrack's note describes). It cannot double-light
-  // either, because it adds a card precisely where there was none.
-  const resumeLesson = <T,>(
+  // resumeLesson (lesson-resume.ts, with the whole failure mode written out)
+  // settles both: while a run is open for a track, the card shows the lesson
+  // that RUN is resting in, rebuilt against a history with the run's own facts
+  // masked back out — the frontier as it stood when the session began. The card
+  // body and the Continue button are then computed from the same run and cannot
+  // disagree. It falls back to the live frontier if the rebuild names nothing,
+  // so this can only change WHICH lesson a card shows, never whether there is
+  // one.
+  const resumeShown = <T,>(
     frontier: T | null,
     run: RunInfo | undefined,
     rebuild: (h: HistoryFile) => T | null,
-  ): T | null => (frontier ? frontier : run ? rebuild(withoutFacts(history, run.facts)) : null);
+  ): T | null => resumeLesson(history, frontier, run, rebuild);
   const range = { min: cfg.lessonMinCost, max: cfg.lessonMaxCost };
-  const lessonShown = resumeLesson(lesson, lessonRun, (h) => nextLesson(h));
+  const lessonShown = resumeShown(lesson, lessonRun, (h) => nextLesson(h));
   // One card for the whole spine, so it carries the resume fallback for all
   // three kinds. A resting lesson that happened to be all radicals, or all
   // words, resurfaces here for the same reason a mixed one does: it is a
   // curriculum lesson, and this rebuilds it.
-  const curriculumLessonShown = resumeLesson(curriculumLesson, curriculumRun, (h) =>
+  const curriculumLessonShown = resumeShown(curriculumLesson, curriculumRun, (h) =>
     nextCurriculumLesson(h, range),
   );
-  const counterLessonShown = resumeLesson(counterLesson, counterRun, (h) =>
+  const counterLessonShown = resumeShown(counterLesson, counterRun, (h) =>
     nextCounterLesson(h, COUNTERS_PER_LESSON_DEFAULT),
   );
-  const grammarLessonShown = resumeLesson(grammarLesson, grammarRun, (h) =>
+  const grammarLessonShown = resumeShown(grammarLesson, grammarRun, (h) =>
     nextGrammarLesson(h, GRAMMAR_PER_LESSON_DEFAULT),
   );
-  const transitivityLessonShown = resumeLesson(transitivityLesson, transitivityRun, (h) =>
+  const transitivityLessonShown = resumeShown(transitivityLesson, transitivityRun, (h) =>
     nextTransitivityLesson(h, TRANSITIVITY_PER_LESSON_DEFAULT),
   );
-  const keigoLessonShown = resumeLesson(keigoLesson, keigoRun, (h) =>
+  const keigoLessonShown = resumeShown(keigoLesson, keigoRun, (h) =>
     nextKeigoLesson(h, KEIGO_PER_LESSON_DEFAULT),
   );
 
