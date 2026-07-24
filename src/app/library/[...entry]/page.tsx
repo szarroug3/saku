@@ -742,7 +742,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
               margin. It does: the guard renders nothing, not an empty box. */}
           {readingRows.length > 0 ? (
             <KanjiReadings
-              glyph={entry.glyph}
               rows={readingRows}
               anchors={anchors}
               facts={history.facts}
