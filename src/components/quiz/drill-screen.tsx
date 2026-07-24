@@ -1170,8 +1170,22 @@ export function DrillScreen() {
   return (
     <div>
       {/* px-3 to inset the HUD's contents off both edges — the same value
-          pairs and grid use, so the three screens agree. */}
-      <div className="sticky top-0 z-10 px-3 py-1.5">
+          pairs and grid use, so the three screens agree.
+
+          AND IT OCCLUDES. This carried no material for a long time, on the
+          grounds that a drill card is one glyph and one input and the stage
+          therefore fits the viewport, so nothing ever passes beneath the pills.
+          That was true of the card and false of the SCREEN: open the drawer
+          (four toggles, retries, timer) and the page runs past the bottom of
+          the scroller, at which point the settings scroll straight under the
+          HUD. In kiri that is total, because --card is transparent and
+          --material-frost is none, so an unmaterialed HUD is a few outlines
+          over live text. kq-band is the app's word for a sticky band that must
+          occlude: --bg in the three opaque themes, blur(18px) saturate(150%) in
+          kiri, one filter for the screen and not one per card. The hairline is
+          where the band stops. Same treatment the session's lesson bar wears
+          (session/session-hud.tsx), for the same reason and by the same name. */}
+      <div className="kq-band sticky top-0 z-10 border-b border-border px-3 py-1.5">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           {/* Information — always quiet, and only ever present when it has
               something true to say. An empty pill is worse than no pill: "—

@@ -7,11 +7,12 @@
 // 2px hairline for progress, and Finish quiz sitting at 22% until the mouse
 // moves. Every colour comes from a theme token.
 //
-// The one deliberate departure from drill: drill's stage doesn't scroll, so
-// its sticky HUD carries no background at all. The grid is 214 cards long and
-// every one of them scrolls under these pills, so a scrim sits behind the HUD
-// — enough that the pills stay readable over a passing card, short of the hard
-// band drill dropped.
+// The one deliberate departure from drill: drill occludes with a flat-edged
+// kq-band, and the grid fades instead. The grid is 214 cards long and every one
+// of them scrolls under these pills, over a full page height, so a hard cut
+// would draw a permanent rule across a sheet that has no other rules in it. The
+// scrim keeps the pills readable over a passing card and lets the blur run out
+// at the bottom instead of stopping.
 //
 // That scrim CANNOT be an opaque paint of --bg, which is what it was: in kiri
 // --bg is an opaque #070a14 and the page ground is a gradient mesh, so the
