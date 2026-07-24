@@ -29,7 +29,53 @@
 
 import { emptyAggregate, foldSession } from "@/lib/aggregate";
 import { projectSessionFacts } from "@/lib/session-record";
-import type { FactAggregate, FactId, SessionStats } from "@/types";
+import type { FactAggregate, FactId, FactSessionDetail, SessionStats } from "@/types";
+
+/**
+ * A wrong first attempt with a retry still pending is a MISS the moment it
+ * happens — and the live view must show it, which is the whole point of #19.
+ *
+ * The subtlety: drill-stats only advances `seen` and the first-try flag at
+ * RESOLUTION (a card that lands, or runs out of retries), so a card you just
+ * fumbled but are being asked again sits at `seen === 0`, `firstTryCorrect ===
+ * null`, `misses > 0` — the wrong answer bumped `misses`, nothing else. Left as
+ * is, `projectSessionFacts` reads that `seen === 0` as "not asked" and folds
+ * nothing, so a CLAIMED fact you just missed keeps reading "claimed" until the
+ * showing resolves. That was the reported bug.
+ *
+ * This is where the live view legitimately parts from the durable projection.
+ * On disk, an unresolved showing must stay unresolved: writing `lastTested` for
+ * a card that has landed nothing would tell the model you were tested when the
+ * showing is still open, and a miss-then-recover would fold TWICE (once here,
+ * once at resolution). But at READ time, for one render, the first try is
+ * already spent — she has definitively missed it first-try, and getting it on
+ * the retry will still record `firstTryCorrect === false` — so the honest live
+ * reading is a resolved first-try miss: one showing, seen, nailed nothing.
+ *
+ * So for the LIVE fold only, coerce an attempted-but-unresolved fact
+ * (`seen === 0 && misses > 0`) to that resolved-first-try-miss shape. A card
+ * dealt but NEVER attempted (`misses === 0`) is untouched: it is not evidence,
+ * and standing must not budge for a card you have only been shown.
+ */
+function withInFlightMisses(live: SessionStats): SessionStats {
+  let copy: SessionStats | null = null;
+  for (const key of Object.keys(live) as FactId[]) {
+    const st = live[key];
+    if ((st.seen ?? 0) !== 0 || (st.misses ?? 0) === 0) continue;
+    // First wrong attempt spent, showing still open: read it as the first-try
+    // miss it already is — seen once, first try lost, nothing correct.
+    const resolved: FactSessionDetail = {
+      ...st,
+      seen: 1,
+      everCorrect: false,
+      firstTryCorrect: false,
+      firstTryCount: 0,
+      correct: 0,
+    };
+    (copy ??= { ...live })[key] = resolved;
+  }
+  return copy ?? live;
+}
 
 /**
  * The aggregate map the Library should read: `base` (committed history.facts)
@@ -61,7 +107,7 @@ export function foldLiveStats(
   live: SessionStats,
   now: number,
 ): Record<FactId, FactAggregate> {
-  const facts = projectSessionFacts(live);
+  const facts = projectSessionFacts(withInFlightMisses(live));
   const keys = Object.keys(facts) as FactId[];
   // Nothing answered → the committed aggregate IS the answer. Same reference so
   // memoised callers see no change and standing surfaces do not re-render.

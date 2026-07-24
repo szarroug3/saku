@@ -64,6 +64,20 @@ const MISS: FactSessionDetail = stat({
   correct: 0,
 });
 
+/** A card MISSED but not yet resolved — a wrong first attempt with a retry still
+ * pending. This is the exact live shape drill-screen leaves behind: `misses` is
+ * incremented on the wrong answer, but `seen` and the first-try flag stay at
+ * their unresolved values (drill-stats only advances those at resolution) while
+ * the same card sits on screen waiting for the next attempt. */
+const IN_FLIGHT_MISS: FactSessionDetail = stat({
+  seen: 0,
+  misses: 1,
+  everCorrect: false,
+  firstTryCorrect: null,
+  firstTryCount: 0,
+  correct: 0,
+});
+
 /** Fold a run's stats onto a fresh aggregate the way history.saveSession does —
  * projection + one review, at `ts`. This is what a COMMIT lands. */
 function commit(
@@ -102,6 +116,57 @@ describe("foldLiveStats — the Library reflects a miss the moment it lands", ()
     );
     assert.equal(s.standing, "shaky", "0/1 first-try is shaky");
     assert.equal(s.seen, 1);
+  });
+
+  test("a CLAIMED fact missed live stops reading 'claimed' at once", () => {
+    // い is CLAIMED and never answered — no aggregate in history.facts, its
+    // belief lives only in claims. The Library says "claimed".
+    const claimedAt = NOW - 5 * 24 * 60 * 60 * 1000; // claimed five days ago
+    assert.equal(
+      standingOf(undefined, claimedAt, METRIC, NOW).standing,
+      "claimed",
+      "before the drill, an untested claim reads claimed",
+    );
+
+    // Mid-drill: one wrong attempt on い, retry still pending, so the showing has
+    // NOT resolved (seen === 0). This is the exact live shape Sam saw — a filled
+    // retry dot, the card still on screen — and the case that was reading
+    // "claimed".
+    const live: SessionStats = { [NANI]: IN_FLIGHT_MISS };
+    const view = foldLiveStats({}, live, NOW);
+
+    // The live miss is newer than the claim, so the claim must NOT win: the
+    // standing has to flip off "claimed" to the tested/shaky state.
+    const s = standingOf(view[NANI], claimedAt, METRIC, NOW);
+    assert.notEqual(
+      s.standing,
+      "claimed",
+      "a claim must never override a fresh quiz miss",
+    );
+    assert.equal(s.standing, "shaky", "0/1 first-try on a claimed fact is shaky");
+    assert.equal(s.seen, 1);
+  });
+
+  test("a card dealt but never attempted does NOT move a claimed standing", () => {
+    // The other side of the line: a card on screen you have NOT answered yet
+    // (no wrong attempt, no miss) is not evidence, and must leave the claim
+    // standing exactly where it was — standing changes when you act on a card,
+    // not when it is dealt.
+    const claimedAt = NOW - 5 * 24 * 60 * 60 * 1000;
+    const dealt: FactSessionDetail = stat({
+      seen: 0,
+      misses: 0,
+      everCorrect: false,
+      firstTryCorrect: null,
+      firstTryCount: 0,
+      correct: 0,
+    });
+    const view = foldLiveStats({}, { [NANI]: dealt }, NOW);
+    assert.equal(
+      standingOf(view[NANI], claimedAt, METRIC, NOW).standing,
+      "claimed",
+      "an untouched card must not budge the claim",
+    );
   });
 
   test("a live miss pushes a solid fact to shaky before any commit", () => {
