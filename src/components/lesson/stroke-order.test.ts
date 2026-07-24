@@ -54,6 +54,8 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
+import { WRITTEN_VS_PRINTED } from "../../data/why.ts";
+
 const HERE = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const SRC = resolve(HERE, "../..");
 
@@ -159,5 +161,56 @@ describe("globals.css keyframes are visible to the CSS build", () => {
       /animate\s*\?\s*"animate-kvg-draw"\s*:\s*undefined/,
       "the animate-kvg-draw class must be conditional on the non-reduced branch",
     );
+  });
+});
+
+// The diagram is a HANDWRITING model and the headword beside it is a typeface.
+// They do not trace over each other on every character (人 is the one people
+// notice), and neither is wrong, so the app says so instead of pretending
+// otherwise. These pin the saying-so: that the note is still on screen, and that
+// it still reads like a person rather than a spec.
+describe("the diagram says which shape it is showing", () => {
+  test("the note is rendered, from the one place the copy lives", () => {
+    assert.match(
+      TSX,
+      /WRITTEN_VS_PRINTED/,
+      "stroke-order.tsx must render WRITTEN_VS_PRINTED under the diagram — without\n" +
+        "it a learner sees a handwritten shape and a printed one and is left to work\n" +
+        "out on their own that both are the same character",
+    );
+    assert.match(
+      TSX,
+      /from "@\/data\/why"/,
+      "the note must be imported from src/data/why.ts, not retyped here; two copies\n" +
+        "of one sentence is how they drift",
+    );
+  });
+
+  test("it follows the copy rules and closes on the reassurance", () => {
+    assert.ok(
+      !WRITTEN_VS_PRINTED.includes("—"),
+      "no em dash in learner-facing copy",
+    );
+    assert.ok(
+      !/\brather than\b/.test(WRITTEN_VS_PRINTED),
+      'no "X rather than Y" in learner-facing copy',
+    );
+    // The same close the kana glyph-variant notes use (src/data/characters.ts).
+    // The point of the note is not that the shapes differ, it is that differing
+    // does not make them two characters.
+    assert.match(
+      WRITTEN_VS_PRINTED,
+      /same character/,
+      "the note must end on the reassurance that both shapes are one character",
+    );
+  });
+
+  test("it talks about the language, never about the app", () => {
+    for (const word of ["click", "button", "page", "screen", "tap", "section"]) {
+      assert.ok(
+        !new RegExp(`\\b${word}`, "i").test(WRITTEN_VS_PRINTED),
+        `the note must not narrate the app; found "${word}"`,
+      );
+    }
   });
 });

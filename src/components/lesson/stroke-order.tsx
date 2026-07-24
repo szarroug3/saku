@@ -34,6 +34,17 @@
 // var(--accent) for the stroke being introduced, var(--border) for the writing
 // guide — so it reads on all four palettes in light and dark.
 //
+// AND ONE LINE OF PROSE
+// =====================
+// Under the two of them, WRITTEN_VS_PRINTED: the note that a handwritten shape
+// and a printed one do not always trace over each other. It is here because
+// KanjiVG is a HANDWRITING model and the headword above is a typeface, the two
+// genuinely differ (on 人 the strokes fork at the apex in every Japanese face on
+// a Mac and a third of the way down in KanjiVG), and a learner shown two
+// drawings with no word about it has to guess which one is the character. The
+// reasoning, and why this is copy instead of a fix, is on the constant in
+// src/data/why.ts.
+//
 // DATA
 // ====
 // Strokes come from src/lib/strokes.ts (lazy). This component is only mounted
@@ -48,6 +59,7 @@ import {
   type CSSProperties,
 } from "react";
 
+import { WRITTEN_VS_PRINTED } from "@/data/why";
 import { STROKE_GRID, type GlyphStrokes } from "@/lib/strokes";
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
@@ -295,6 +307,20 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
           ) : null}
         </div>
       </div>
+
+      {/* The handwritten-vs-printed note. UNDER THE WHOLE ROW, not beside the
+          animation: it is about both views at once, and about the headword the
+          reader has already scrolled past, so it reads as a caption on the
+          diagram and not as a footnote to the numbered chart.
+
+          Always shown, never behind a disclosure. The reader who needs it is
+          the one who has NOT noticed the two shapes disagree yet, and asking
+          them to open something to find that out is asking a question they do
+          not know they have. Quiet enough (11px, muted) to be skipped by the
+          reader who does not care. */}
+      <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
+        {WRITTEN_VS_PRINTED}
+      </p>
 
       {/* NO INLINE CREDIT HERE, AND THAT IS NOT AN OVERSIGHT.
           The stroke data is KanjiVG's (© Ulrich Apel and contributors, CC BY-SA
