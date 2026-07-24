@@ -159,7 +159,13 @@ test("a round committed mid-session is not counted again at the end", async ({
   await page
     .getByRole("button", { name: "Complete session", exact: true })
     .click();
-  await page.waitForURL((url) => new URL(url).pathname === "/");
+  // "/learn", not "/". This waited on "/" and passed only by catching a redirect
+  // mid-flight: src/app/page.tsx redirects a signed-in visitor to /learn, and the
+  // suite runs in file mode where auth.ts returns LOCAL_USER unconditionally, so
+  // the learner is ALWAYS signed in and "/" is never where they come to rest.
+  // Waiting on a URL the app is in the middle of leaving is a race that would
+  // have started flaking rather than a statement about where a session ends.
+  await page.waitForURL((url) => new URL(url).pathname === "/learn");
 
   // Two rounds of five, once each. Fifteen would mean the session was written
   // on top of its own rounds; five would mean a round went missing.

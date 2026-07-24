@@ -44,10 +44,16 @@ for (const route of routes.static) {
     expect(response, `no response for ${route}`).not.toBeNull();
     expect(response!.status(), `bad status for ${route}`).toBeLessThan(400);
 
-    // Several routes are guards that redirect when there is no quiz in
-    // progress: /quiz and /session go home, /chart goes to /library. Following
-    // the redirect is the correct behaviour, so the assertion is that the app
-    // ends up somewhere that rendered, not that the URL is unchanged.
+    // Several routes are guards that redirect: /quiz and /session go to /learn
+    // when there is no quiz in progress, /chart goes to /library, and "/" itself
+    // redirects to /learn for any signed-in visitor — which, in file mode, is
+    // every visitor (auth.ts returns LOCAL_USER unconditionally). That last one
+    // was missing from this list, which is how `renders /` sat here for months as
+    // an undetected second copy of `renders /learn`. It is asserted explicitly
+    // below now, rather than being implied by a comment.
+    //
+    // Following the redirect is the correct behaviour, so the assertion is that
+    // the app ends up somewhere that rendered, not that the URL is unchanged.
     await page.waitForLoadState("networkidle");
 
     // Every page in this app renders the site nav. Its presence is the cheapest
@@ -99,3 +105,40 @@ for (const sample of dynamicSamples) {
     }
   });
 }
+
+/**
+ * "/" IS NOT A PAGE IN THIS SUITE, AND SAYING SO IS THE POINT.
+ *
+ * `renders /` above is generated from the route enumeration, so it looks like
+ * landing-page coverage. It is not: src/app/page.tsx redirects a signed-in
+ * visitor to /learn, and every visitor here is signed in, so that test follows
+ * the redirect and asserts /learn — the same thing `renders /learn` asserts.
+ *
+ * This test names the redirect, so the duplicate is visible instead of
+ * disguised. What it does NOT do is cover the landing itself.
+ */
+test("/ redirects a signed-in learner to /learn", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  expect(new URL(page.url()).pathname).toBe("/learn");
+});
+
+/**
+ * THE GAP THIS LEAVES, WRITTEN DOWN RATHER THAN FORGOTTEN.
+ *
+ * src/components/landing.tsx is the front door for every signed-out visitor and
+ * has no e2e coverage at all, because this harness cannot produce a signed-out
+ * visitor: the fixtures run STORAGE_BACKEND=file, and src/lib/auth.ts short
+ * circuits to LOCAL_USER whenever the store is not Supabase. There is no seed
+ * option, cookie, or storage state that makes `isSignedIn()` false.
+ *
+ * Covering it needs a fixture that boots the app in Supabase mode with no
+ * session — a harness change, not a test. Until then this asserts the one thing
+ * that IS checkable and true: the landing is what "/" renders when nobody is
+ * signed in, so the redirect above is the only reason it is never seen here.
+ */
+test.skip("the landing renders for a signed-out visitor", () => {
+  // Unreachable in file mode. See the comment above: this needs a Supabase-mode
+  // fixture with no session, and is skipped rather than deleted so the gap stays
+  // visible in the run output instead of living only in a comment.
+});
