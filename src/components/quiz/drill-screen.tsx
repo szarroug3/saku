@@ -1309,16 +1309,6 @@ export function DrillScreen() {
       </div>
 
       <div className="flex flex-col items-center gap-4 pt-10 pb-4">
-        {/* WHAT THIS CARD IS ASKING FOR, above the prompt because it frames
-            everything below it. Every card has one — see quiz-instruction.ts for
-            why it is derived rather than a string each subject fills in. It sits
-            OUTSIDE the halo's key, so it does not re-animate on a retry: the
-            question has not changed, only the attempt. */}
-        {instruction ? (
-          <p className="-mb-2 text-center text-[13px] font-medium text-text-muted">
-            {instruction}
-          </p>
-        ) : null}
         <DrillHalo
           // Re-mounts on every new card and every attempt, which is what
           // replays the entry sweep, the shake and the glyph cross-fade.
@@ -1350,11 +1340,24 @@ export function DrillScreen() {
             if (text) speak(text, cfg.voiceName);
           }}
         />
-        {/* Part of the question, not decoration: without "in 人生" the glyph
-            above has nine right answers. Always rendered when the subject
-            supplies one, at a size you read rather than skim. */}
-        {prompt.context ? (
-          <p className="-mt-1 text-center text-[13px] text-text">{prompt.context}</p>
+        {/* WHAT THIS CARD IS ASKING FOR — below the halo now, and WHITE, so it
+            reads as the question rather than a muted hint above it. Every card
+            has one (see quiz-instruction.ts). Outside the halo's key so it does
+            not re-animate on a retry: the question hasn't changed, the attempt
+            has. */}
+        {instruction ? (
+          <p className="mt-1 text-center text-[15px] font-medium text-text">
+            {instruction}
+          </p>
+        ) : null}
+        {/* The context that is PART of the question and NOT redundant with the
+            instruction above: an anchor like "in 人生" / "on its own", without
+            which a kanji reading has nine right answers. The bare "meaning" /
+            "reading" labels are dropped — the full instruction already says which
+            it is, so they were only noise (Sam). Muted, because it supports the
+            white instruction rather than competing with it. */}
+        {prompt.context && prompt.context !== "meaning" && prompt.context !== "reading" ? (
+          <p className="-mt-1 text-center text-[13px] text-text-muted">{prompt.context}</p>
         ) : null}
         {/* The pronunciation, shown WITH the kanji on a homophone's meaning card
             so the pitch mark says which same-sounding word is being asked about.

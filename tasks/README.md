@@ -18,7 +18,7 @@ Status board for everything in flight. One file per task in this folder; this is
 | 10 | [Hint redesign: reading→no hint, meaning→2+-kanji components only](10-retry-hint.md) | ✅ merged + on prod | `retry-hint` | localhost:3005 |
 | 11 | [Sync Part 2: in-progress session teleport](11-sync-session.md) | ✅ merged + on prod | `sync-session` | localhost:3003 |
 | 12 | [Sync Part 3: exact-position resume + masking (#07)](12-sync-resume.md) | ✅ merged + on prod | main | prod |
-| 13 | [Move instruction below halo, white, drop small labels](13-instruction-layout.md) | 🟠 not started (located only) | — | — |
+| 13 | [Instruction below halo, white, drop meaning/reading labels](13-instruction-layout.md) | 🟢 done (local, not pushed) | main (local) | — |
 | 14 | [Retire file mode → default logged-out + localStorage](14-retire-file-mode.md) | 🔵 in progress (on `retire-file-mode`, off #11) | `retire-file-mode` | localhost:3008 |
 
 ## Housekeeping
