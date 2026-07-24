@@ -14,5 +14,11 @@ import type { QuizConfig } from "@/types";
  * listening choice, which used to be read live. */
 export type QuizSnapshot = Pick<
   QuizConfig,
-  "mode" | "ask" | "pairResponses" | "length" | "limType" | "limCount"
+  | "mode"
+  | "ask"
+  | "pairResponses"
+  | "gridResponses"
+  | "length"
+  | "limType"
+  | "limCount"
 >;

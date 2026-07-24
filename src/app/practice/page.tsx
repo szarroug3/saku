@@ -29,6 +29,7 @@ import { PracticeSelector } from "@/components/practice/practice-selector";
 import { Lbl, PageTitle } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
+import { gridFacts } from "@/lib/grid-facts";
 import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
@@ -95,22 +96,38 @@ export default function PracticePage() {
         count: facts.length,
       };
     }
+    if (cfg.mode === "grid") {
+      const selected = gridFacts(facts, cfg.gridResponses);
+      return { facts: selected, count: selected.length };
+    }
     const selected = cap === null ? facts : facts.slice(0, cap);
     return { facts: selected, count: selected.length };
   }, [
     facts,
     cfg.mode,
+    cfg.gridResponses,
     cfg.length,
     cfg.limType,
     cfg.limCount,
   ]);
+
+  // Grid narrows the selected pool by response type before dealing it, so its
+  // visible count and frozen run name must describe that narrowed pool rather
+  // than the broader filter result.
+  const runWhat = useMemo(
+    () =>
+      cfg.mode === "grid"
+        ? whatSentence(cfg.selection, planned.facts.length, lists)
+        : what,
+    [cfg.mode, cfg.selection, planned.facts.length, lists, what],
+  );
 
   // A one-off quiz, not a session: straight to /quiz, then /results when it ends.
   // No teach screen, no rest timer, no fork loop. startQuiz parks any run in
   // progress rather than overwriting it, so Start never destroys anything.
   const start = () => {
     if (!planned.facts.length) return;
-    startQuiz(planned.facts, { what });
+    startQuiz(planned.facts, { what: runWhat });
   };
 
   const setSelection = (selection: Selection) =>
@@ -164,7 +181,7 @@ export default function PracticePage() {
 
       <StartBar
         cfg={cfg}
-        what={what}
+        what={runWhat}
         count={facts.length}
         plannedCount={planned.count}
         onStart={start}

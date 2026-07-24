@@ -129,10 +129,11 @@ export function StartBar({
   plannedCount: number;
   onStart: () => void;
 }) {
-  // Grid ignores directions, so only the count gates it there.
+  // Grid ignores Drill's source matrix, but it still needs one response type.
   const howBroken =
     (cfg.mode === "drill" && askIsEmpty(cfg.ask)) ||
-    (cfg.mode === "pairs" && cfg.pairResponses.length === 0);
+    (cfg.mode === "pairs" && cfg.pairResponses.length === 0) ||
+    (cfg.mode === "grid" && cfg.gridResponses.length === 0);
   // Nothing to ask is a real, reachable state — everything selected is `quiet`
   // — and it used to leave Start looking live and doing nothing: you clicked,
   // the page didn't move, and the app never said why. A button that is enabled
@@ -148,13 +149,17 @@ export function StartBar({
     : howBroken
       ? cfg.mode === "pairs"
         ? "Choose at least one pair type in the setup above."
+        : cfg.mode === "grid"
+          ? "Choose at least one Grid response type in the setup above."
         : "Choose at least one complete way to ask in the setup above."
       : nothingToAsk
         ? // Deliberately not "nothing to do" and not a congratulation. It is a
           // statement about right now, with the way out in the same sentence:
           // the app has nothing to learn by asking these today, and the fix is
           // to select more — which is the screen you are already on.
-          "You're solid on all of these for now. Pick another deck to drill something else."
+          cfg.mode === "grid"
+            ? "None of the selected material has those Grid response types."
+            : "You're solid on all of these for now. Pick another deck to drill something else."
         : null;
 
   return (

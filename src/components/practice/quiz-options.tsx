@@ -8,10 +8,14 @@ import type { ReactNode } from "react";
 
 import { Card, Chip, Row, SmallBtn } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
-import { togglePairResponse } from "@/lib/ask-config";
+import {
+  toggleGridResponse,
+  togglePairResponse,
+} from "@/lib/ask-config";
 import type {
   AnswerStyle,
   AskConfig,
+  GridResponse,
   PromptFormat,
   PairResponse,
   ResponseKind,
@@ -148,6 +152,11 @@ export function QuizOptionsFields() {
   const pairResponse = (value: PairResponse) => {
     update({
       pairResponses: togglePairResponse(cfg.pairResponses, value),
+    });
+  };
+  const gridResponse = (value: GridResponse) => {
+    update({
+      gridResponses: toggleGridResponse(cfg.gridResponses, value),
     });
   };
 
@@ -330,9 +339,26 @@ export function QuizOptionsFields() {
           </AskRow>
         </SourceCard>
       ) : cfg.mode === "grid" ? (
-        <Card className="text-[13px] text-text-muted">
-          Grid drills your whole selection, typed.
-        </Card>
+        <SourceCard
+          title="Grid"
+          mark="text · typed"
+          description="Japanese appears on every card. Choose what you type back."
+        >
+          <AskRow label="Expected Response">
+            <Chip
+              on={cfg.gridResponses.includes("definition")}
+              onClick={() => gridResponse("definition")}
+            >
+              Definition
+            </Chip>
+            <Chip
+              on={cfg.gridResponses.includes("romaji")}
+              onClick={() => gridResponse("romaji")}
+            >
+              Reading / romaji
+            </Chip>
+          </AskRow>
+        </SourceCard>
       ) : null}
 
       {cfg.mode === "drill" || cfg.mode === "pairs" ? (

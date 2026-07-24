@@ -3,14 +3,30 @@ import { describe, test } from "node:test";
 
 import { defaultAsk } from "@/lib/ask-config";
 import { startIsDisabled } from "@/lib/practice-start";
-import type { PairResponse, QuizConfig } from "@/types";
+import type { GridResponse, PairResponse, QuizConfig } from "@/types";
 
 function pairConfig(pairResponses: PairResponse[]) {
   return {
     mode: "pairs",
     ask: defaultAsk(),
     pairResponses,
-  } satisfies Pick<QuizConfig, "mode" | "ask" | "pairResponses">;
+    gridResponses: ["definition", "romaji"],
+  } satisfies Pick<
+    QuizConfig,
+    "mode" | "ask" | "pairResponses" | "gridResponses"
+  >;
+}
+
+function gridConfig(gridResponses: GridResponse[]) {
+  return {
+    mode: "grid",
+    ask: defaultAsk(),
+    pairResponses: ["definition", "romaji", "sentence"],
+    gridResponses,
+  } satisfies Pick<
+    QuizConfig,
+    "mode" | "ask" | "pairResponses" | "gridResponses"
+  >;
 }
 
 describe("Match-pairs Start availability", () => {
@@ -33,6 +49,31 @@ describe("Match-pairs Start availability", () => {
   test("empty material disables Start regardless of selected pair types", () => {
     assert.equal(
       startIsDisabled(pairConfig(["definition", "sentence"]), 0, 0),
+      true,
+    );
+  });
+});
+
+describe("Grid Start availability", () => {
+  test("every nonempty response combination can start with matching material", () => {
+    const values: GridResponse[] = ["definition", "romaji"];
+    for (let mask = 1; mask < 1 << values.length; mask += 1) {
+      const selected = values.filter((_, index) => mask & (1 << index));
+      assert.equal(
+        startIsDisabled(gridConfig(selected), 12, 12),
+        false,
+        selected.join(" + "),
+      );
+    }
+  });
+
+  test("all response types may be off, but Start is then disabled", () => {
+    assert.equal(startIsDisabled(gridConfig([]), 12, 12), true);
+  });
+
+  test("no matching material disables Start", () => {
+    assert.equal(
+      startIsDisabled(gridConfig(["definition"]), 12, 0),
       true,
     );
   });

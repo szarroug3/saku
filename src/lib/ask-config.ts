@@ -11,6 +11,7 @@
 import type {
   AnswerStyle,
   AskConfig,
+  GridResponse,
   PromptFormat,
   PairResponse,
   QuizConfig,
@@ -25,6 +26,7 @@ const PAIR_RESPONSES: readonly PairResponse[] = [
   "romaji",
   "sentence",
 ];
+const GRID_RESPONSES: readonly GridResponse[] = ["definition", "romaji"];
 
 /** Keep only known members, in canonical order, deduped — so a hand-edited or
  * older stored array can't smuggle a stray value past the panel. */
@@ -213,6 +215,21 @@ export function togglePairResponse(
   current: readonly PairResponse[],
   value: PairResponse,
 ): PairResponse[] {
+  if (!current.includes(value)) return [...current, value];
+  return current.filter((x) => x !== value);
+}
+
+export function normalizeGridResponses(raw: unknown): GridResponse[] {
+  return Array.isArray(raw)
+    ? clean<GridResponse>(raw, GRID_RESPONSES)
+    : [...GRID_RESPONSES];
+}
+
+/** Empty is a valid editor state; Start owns the at-least-one requirement. */
+export function toggleGridResponse(
+  current: readonly GridResponse[],
+  value: GridResponse,
+): GridResponse[] {
   if (!current.includes(value)) return [...current, value];
   return current.filter((x) => x !== value);
 }

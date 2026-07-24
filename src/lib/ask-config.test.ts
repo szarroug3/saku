@@ -6,11 +6,13 @@ import {
   defaultAsk,
   migrateLegacyAsk,
   normalizeAsk,
+  normalizeGridResponses,
   normalizePairResponses,
   sentenceAsks,
   sentenceAsksRomaji,
   sentenceAsksSelection,
   togglePairResponse,
+  toggleGridResponse,
 } from "@/lib/ask-config";
 import type {
   AnswerStyle,
@@ -116,6 +118,35 @@ describe("Match-pairs menu", () => {
       ["romaji"],
     );
     assert.deepEqual(togglePairResponse(["romaji"], "romaji"), []);
+  });
+});
+
+describe("Grid menu", () => {
+  test("missing uses both defaults, while explicit empty stays empty", () => {
+    assert.deepEqual(normalizeGridResponses(undefined), [
+      "definition",
+      "romaji",
+    ]);
+    assert.deepEqual(normalizeGridResponses([]), []);
+  });
+
+  test("stored values are canonical and unknown values are dropped", () => {
+    assert.deepEqual(
+      normalizeGridResponses(["romaji", "wat", "definition", "romaji"]),
+      ["definition", "romaji"],
+    );
+  });
+
+  test("either option, including the last one, can be toggled", () => {
+    assert.deepEqual(toggleGridResponse(["definition"], "romaji"), [
+      "definition",
+      "romaji",
+    ]);
+    assert.deepEqual(
+      toggleGridResponse(["definition", "romaji"], "definition"),
+      ["romaji"],
+    );
+    assert.deepEqual(toggleGridResponse(["romaji"], "romaji"), []);
   });
 });
 
