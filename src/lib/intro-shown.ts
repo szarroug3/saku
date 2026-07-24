@@ -33,6 +33,14 @@
 // time costs a learner ten seconds. Not showing it costs them the word "radical",
 // which is the failure this file exists to stop.
 
+import {
+  introShownKey,
+  INTRO_SHOWN,
+  oldIntroShownKey,
+} from "@/lib/settings-keys";
+import { pushSettings } from "@/lib/settings-sync";
+import { migratedGet } from "@/lib/storage-migrate";
+
 /** The three curriculum concept cards, by intro id.
  *
  * Spelled out here rather than imported from src/data/track-intros.ts on
@@ -46,11 +54,10 @@ export const CONCEPT_CARD_IDS: readonly string[] = [
   "track-word",
 ];
 
-/** The localStorage key for one intro's "already shown" flag. Its own namespace,
- * beside "kanaquiz-cfg" and "kanaquiz-claim-hint". */
-export function introShownKey(id: string): string {
-  return `kanaquiz-intro-${id}`;
-}
+/** The localStorage key for one intro's "already shown" flag (renamed
+ * `kanaquiz-intro-*` → `saku-intro-*`, its legacy name migrated forward on read).
+ * Re-exported from the shared keys module. */
+export { introShownKey };
 
 /** Every key this module owns, for the reset sweep. */
 export const INTRO_SHOWN_KEYS: readonly string[] = CONCEPT_CARD_IDS.map(introShownKey);
@@ -58,10 +65,12 @@ export const INTRO_SHOWN_KEYS: readonly string[] = CONCEPT_CARD_IDS.map(introSho
 /** The stored value that means "shown". Anything else, including nothing, reads
  * as "still owed", which is the honest default for a learner who has never been
  * here. */
-const SHOWN = "shown";
+const SHOWN = INTRO_SHOWN;
 
-/** The reader half of a Storage, so a test can pass a plain object. */
-type Reader = Pick<Storage, "getItem">;
+/** The reader half of a Storage — getItem plus setItem, because reading migrates
+ * the legacy value forward on first read (see migratedGet). A test can still pass
+ * a plain object. */
+type Reader = Pick<Storage, "getItem" | "setItem">;
 /** The writer half. */
 type Writer = Pick<Storage, "setItem">;
 
@@ -72,11 +81,7 @@ type Writer = Pick<Storage, "setItem">;
  * explanation to someone who cannot be remembered is the safe error.
  */
 export function isIntroShown(store: Reader | null | undefined, id: string): boolean {
-  try {
-    return store?.getItem(introShownKey(id)) === SHOWN;
-  } catch {
-    return false;
-  }
+  return migratedGet(store, introShownKey(id), oldIntroShownKey(id)) === SHOWN;
 }
 
 /** Every card already shown, as the set the walk gates on. One read per card, so
@@ -116,8 +121,19 @@ export function markConceptCardsShown(
   store: Writer | null | undefined,
   ids: Iterable<string>,
 ): void {
+  let changed = false;
   for (const id of ids) {
-    if (CONCEPT_CARD_IDS.includes(id)) markIntroShown(store, id);
+    if (CONCEPT_CARD_IDS.includes(id)) {
+      markIntroShown(store, id);
+      changed = true;
+    }
+  }
+  // Mirror the full shown set to the server once, not per card — a single POST at
+  // the end of the walk rather than one per marking. `store` is a Writer here; a
+  // full Storage (getItem too) is what real callers pass, so the read-back is
+  // safe. Only when something was actually marked.
+  if (changed) {
+    pushSettings({ introShown: [...shownIntros(store as Reader)] });
   }
 }
 

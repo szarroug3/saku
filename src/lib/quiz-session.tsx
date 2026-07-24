@@ -76,6 +76,8 @@ import {
 } from "@/lib/pending-records";
 import { postClaim, postSession } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { OLD_SESSION_KEY, SESSION_KEY } from "@/lib/settings-keys";
+import { migratedGet } from "@/lib/storage-migrate";
 import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 import {
@@ -310,7 +312,7 @@ const QuizSessionContext = createContext<QuizSessionContextValue | null>(null);
  * across tabs, so two open tabs would otherwise write over each other; the
  * `owner` stamp below settles that. There is no expiry: a session ends when
  * you finish it or discard it, not when it gets old. */
-const STORAGE_KEY = "kanaquiz-session";
+const STORAGE_KEY = SESSION_KEY;
 
 /** Identifies the tab that currently owns the quiz. Regenerated per mount, so
  * every tab gets its own. */
@@ -506,7 +508,7 @@ export function QuizSessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const saved: StoredSession | null = JSON.parse(
-        localStorage.getItem(STORAGE_KEY) ?? "null",
+        migratedGet(localStorage, STORAGE_KEY, OLD_SESSION_KEY) ?? "null",
       );
       if (saved) {
         // Post-mount hydration, same pattern as quiz-config.

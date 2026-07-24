@@ -11,8 +11,9 @@ import "server-only";
 // files; this only moves where the blob lives. Unset columns are left untouched
 // on upsert, so writing history never disturbs lists and vice versa.
 
+import { normalizeSettings } from "@/lib/settings-merge";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { HistoryFile, ListsFile } from "@/types";
+import type { HistoryFile, ListsFile, SettingsFile } from "@/types";
 
 function normalizeHistory(raw: unknown): HistoryFile {
   const h = (raw ?? {}) as Partial<HistoryFile>;
@@ -67,4 +68,36 @@ export async function writeListsRow(userId: string, file: ListsFile): Promise<vo
       { onConflict: "user_id" },
     );
   if (error) throw new Error(`writing progress.lists failed: ${error.message}`);
+}
+
+// The `settings` jsonb is the third blob on the row, beside `history` and
+// `lists`. It is added by scripts/sql/add-settings-column.sql and inherits the
+// row's existing RLS (which scopes every read/write to `user_id`), so no new
+// policy is needed. Same read-modify-write split as history/lists: the MERGE
+// logic lives in settings.ts, this only moves the blob to and from the row, and
+// an unset `settings` column reads as the empty (all-default) settings.
+
+export async function readSettingsRow(userId: string): Promise<SettingsFile> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("progress")
+    .select("settings")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`reading progress.settings failed: ${error.message}`);
+  return normalizeSettings(data?.settings);
+}
+
+export async function writeSettingsRow(
+  userId: string,
+  settings: SettingsFile,
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("progress")
+    .upsert(
+      { user_id: userId, settings, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
+  if (error) throw new Error(`writing progress.settings failed: ${error.message}`);
 }

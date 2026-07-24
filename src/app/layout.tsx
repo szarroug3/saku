@@ -14,6 +14,8 @@ import { currentUserId } from "@/lib/auth";
 import { loadHistory } from "@/lib/history";
 import { HistoryProvider } from "@/lib/history-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
+import { loadSettings } from "@/lib/settings";
+import { SettingsProvider } from "@/lib/settings-provider";
 import { QuizSessionProvider } from "@/lib/quiz-session";
 import { isSupabaseStore } from "@/lib/store/mode";
 import { ThemeProvider } from "@/lib/theme";
@@ -38,9 +40,14 @@ export const metadata: Metadata = {
  * const to `typeof Theme.X` turns any drift from theme.tsx — a renamed key, a
  * changed default, a fifth theme — into a type error rather than a silent
  * flash. (`import type * as` never emits a require.) */
-const THEME_KEY: typeof Theme.THEME_KEY = "kanaquiz-theme";
-const APPEARANCE_KEY: typeof Theme.APPEARANCE_KEY = "kanaquiz-appearance";
-const ACCENTS_KEY: typeof Theme.ACCENTS_KEY = "kanaquiz-accents";
+const THEME_KEY: typeof Theme.THEME_KEY = "saku-theme";
+const APPEARANCE_KEY: typeof Theme.APPEARANCE_KEY = "saku-appearance";
+const ACCENTS_KEY: typeof Theme.ACCENTS_KEY = "saku-accents";
+// The legacy names, pinned the same way, so the no-flash script can fall back to
+// a returning user's un-migrated value and not flash the default at them.
+const OLD_THEME_KEY: typeof Theme.OLD_THEME_KEY = "kanaquiz-theme";
+const OLD_APPEARANCE_KEY: typeof Theme.OLD_APPEARANCE_KEY = "kanaquiz-appearance";
+const OLD_ACCENTS_KEY: typeof Theme.OLD_ACCENTS_KEY = "kanaquiz-accents";
 const DEFAULT_THEME: typeof Theme.DEFAULT_THEME = "kiri";
 const DEFAULT_APPEARANCE: typeof Theme.DEFAULT_APPEARANCE = "system";
 const DEFAULT_ACCENT: typeof Theme.DEFAULT_ACCENT = "default";
@@ -79,15 +86,22 @@ const ACCENTS: typeof Theme.ACCENTS = [
 //
 // "default" is deliberately not stampable — it means "no data-accent", i.e.
 // the theme's own — so the guard rejects it along with anything unknown.
-const NO_FLASH = `(function(){try{var d=document.documentElement,t=localStorage.getItem(${JSON.stringify(
+// `g(newKey, oldKey)` reads the renamed `saku-*` key, falling back to the legacy
+// `kanaquiz-*` value so a returning user whose data has not been migrated yet
+// still paints their real theme instead of flashing the default. Read-only on
+// purpose: the copy-forward write is left to the providers on mount (see
+// migratedGet / theme.tsx), keeping this script minimal and paint-blocking.
+const NO_FLASH = `(function(){try{var d=document.documentElement,g=function(k,o){var v=localStorage.getItem(k);return v!==null?v:localStorage.getItem(o);},t=g(${JSON.stringify(
   THEME_KEY,
-)}),a=localStorage.getItem(${JSON.stringify(APPEARANCE_KEY)});
+)},${JSON.stringify(OLD_THEME_KEY)}),a=g(${JSON.stringify(APPEARANCE_KEY)},${JSON.stringify(
+  OLD_APPEARANCE_KEY,
+)});
 if(${JSON.stringify(THEMES)}.indexOf(t)>=0)d.setAttribute("data-theme",t);else t=${JSON.stringify(
   DEFAULT_THEME,
 )};
 if(${JSON.stringify(APPEARANCES)}.indexOf(a)>=0)d.setAttribute("data-appearance",a);
-var m=JSON.parse(localStorage.getItem(${JSON.stringify(
-  ACCENTS_KEY,
+var m=JSON.parse(g(${JSON.stringify(ACCENTS_KEY)},${JSON.stringify(
+  OLD_ACCENTS_KEY,
 )})||"{}"),c=m&&m[t];
 if(c!==${JSON.stringify(DEFAULT_ACCENT)}&&${JSON.stringify(
   ACCENTS,
@@ -104,6 +118,17 @@ if(c!==${JSON.stringify(DEFAULT_ACCENT)}&&${JSON.stringify(
 async function seedHistory(userId: string) {
   try {
     return await loadHistory(userId);
+  } catch {
+    return null;
+  }
+}
+
+/** The settings seed, or null if it could not be read — the same contract as
+ * seedHistory. A null hands the question to the client cache (the individual
+ * localStorage keys) rather than failing the whole shell. */
+async function seedSettings(userId: string) {
+  try {
+    return await loadSettings(userId);
   } catch {
     return null;
   }
@@ -129,6 +154,12 @@ export default async function RootLayout({
   // that would have nothing to show for the query. Their progress lives in this
   // browser and the provider reads it there.
   const initialHistory = userId === null ? null : await seedHistory(userId);
+  // THE SETTINGS, IN THE FIRST RESPONSE, the same way and for the same reason as
+  // the history: read here (the same loadSettings the API route calls) so the
+  // theme/config providers reconcile against the server's copy on the first paint
+  // instead of after a client fetch. Null for a signed-out visitor (no account to
+  // read) — their preferences live in this browser's localStorage cache.
+  const initialSettings = userId === null ? null : await seedSettings(userId);
   // Read the sidebar's collapsed state server-side so it renders at the right
   // width on the first paint instead of loading expanded and snapping closed.
   const sidebarCollapsed =
@@ -153,6 +184,11 @@ export default async function RootLayout({
         <link rel="preload" as="image" href="/brand/saku-wordmark.png" />
       </head>
       <body>
+        {/* Server-synced settings, seeded above. Outermost of the client
+            providers because the theme and quiz-config providers below reconcile
+            their state against it (server wins), and the plain settings writers
+            push through it. */}
+        <SettingsProvider userId={userId} initial={initialSettings}>
         <ThemeProvider>
           {/* One history for the whole app, seeded above. Outside everything
               that reads it: the Sidebar, the sign-in merge, and every page. */}
@@ -240,6 +276,7 @@ export default async function RootLayout({
             </QuizConfigProvider>
           </HistoryProvider>
         </ThemeProvider>
+        </SettingsProvider>
         <Analytics />
       </body>
     </html>
