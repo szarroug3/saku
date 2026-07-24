@@ -21,6 +21,8 @@ Status board for everything in flight. One file per task in this folder; this is
 
 | 13 | [Move instruction below halo, white, drop small labels](13-instruction-layout.md) | 🔵 in progress | `quiz-clarity` | localhost:3002 |
 
+| 14 | [Retire file mode → default logged-out + localStorage](14-retire-file-mode.md) | ⚪ queued (after merges) | — | — |
+
 ## Housekeeping
 - `.env.local` holds the Supabase DB connection string (for direct DB access) — rotate/remove whenever.
 - When Sync Part 1 (#05) merges: apply `scripts/sql/add-settings-column.sql` to prod (I'll do it via the DB connection).
