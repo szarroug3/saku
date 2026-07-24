@@ -19,11 +19,19 @@
 import { useEffect, useRef, useState } from "react";
 
 import { BEHAVIOR, pickFont } from "@/lib/config";
-import { buildDeck, newFactStat, questionsFor, shuffle } from "@/lib/engine";
+import { newFactStat, shuffle } from "@/lib/engine";
 import { entryOf } from "@/lib/facts";
+import { pairSpecs, type PairSpec } from "@/lib/pair-facts";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
-import type { FactId, FactSessionDetail, QuizConfig, SessionStats } from "@/types";
+import { useHistory } from "@/lib/use-history";
+import type {
+  FactId,
+  FactSessionDetail,
+  HistoryFile,
+  QuizConfig,
+  SessionStats,
+} from "@/types";
 
 import { PairsHud } from "./pairs-hud";
 
@@ -41,8 +49,10 @@ import { PairsHud } from "./pairs-hud";
 // ---------- runtime (lives in active.runtime.pairs) ----------
 
 interface PairsCell {
-  /** The FACT this cell belongs to — the two sides of a pair share it. */
-  id: FactId;
+  /** The pair VARIANT this cell belongs to — the two sides share it. */
+  id: string;
+  /** Fact credited by a successful match. */
+  fact: FactId;
   label: string;
   /** The line under a `jp` cell that makes the pair findable at all: two of
    * 生's readings on one board are two identical 生 cells otherwise, and the
@@ -59,7 +69,7 @@ interface PairsCell {
 }
 
 interface PairsRuntime {
-  deck: FactId[];
+  deck: PairSpec[];
   pos: number;
   asked: number;
   endless: boolean;
@@ -75,7 +85,7 @@ interface PairsRuntime {
   /** Facts that have been mismatched on THIS board — the pair can still be
    * matched, but not first try, so it no longer extends the streak. Cleared
    * with every new board (they get a clean run at it again in endless). */
-  dirty: FactId[];
+  dirty: string[];
 }
 
 function statFor(stats: SessionStats, f: FactId): FactSessionDetail {
@@ -87,38 +97,47 @@ function statFor(stats: SessionStats, f: FactId): FactSessionDetail {
  * finished (returns false), take the next chars, mark them seen, and lay
  * out the shuffled kana+romaji cells.
  */
-function fillBoard(p: PairsRuntime, facts: FactId[], fonts: string[]): boolean {
+function fillBoard(p: PairsRuntime, specs: PairSpec[], fonts: string[]): boolean {
   p.pick = null;
   p.dirty = [];
   if (p.pos >= p.deck.length) {
-    if (p.endless) p.deck = p.deck.concat(shuffle(facts.slice()));
+    if (p.endless) p.deck = p.deck.concat(shuffle(specs.slice()));
     else return false;
   }
   const take = p.deck.slice(p.pos, p.pos + BEHAVIOR.pairsPerBoard);
   p.pos += take.length;
   p.asked += take.length;
-  for (const f of take) statFor(p.stats, f).seen++;
+  for (const spec of take) statFor(p.stats, spec.fact).seen++;
   p.board = shuffle([
-    ...take.map((f): PairsCell => {
-      const prompt = questionsFor(f).prompt(f, "jp2en");
+    ...take.map((spec): PairsCell => {
       return {
-        id: f,
-        label: prompt.glyph,
-        context: prompt.context,
+        id: spec.id,
+        fact: spec.fact,
+        label: spec.japanese,
+        context: spec.context,
         kind: "jp",
         font: pickFont(fonts),
         gone: false,
       };
     }),
-    ...take.map((f): PairsCell => {
-      const prompt = questionsFor(f).prompt(f, "en2jp");
-      return { id: f, label: prompt.glyph, kind: "answer", gone: false };
+    ...take.map((spec): PairsCell => {
+      return {
+        id: spec.id,
+        fact: spec.fact,
+        label: spec.answer,
+        kind: "answer",
+        gone: false,
+      };
     }),
   ]);
   return true;
 }
 
-function initPairs(active: ActiveQuiz, cfg: QuizConfig): PairsRuntime {
+function initPairs(
+  active: ActiveQuiz,
+  cfg: QuizConfig,
+  history: HistoryFile,
+): PairsRuntime {
   // Builder settings come from the frozen snapshot; redrills force a
   // limited full-coverage run regardless of it.
   const eff: QuizConfig = {
@@ -128,7 +147,12 @@ function initPairs(active: ActiveQuiz, cfg: QuizConfig): PairsRuntime {
       ? { length: "limited" as const, limType: "cov" as const }
       : {}),
   };
-  const deck = buildDeck(active.facts, eff);
+  const kinds = active.snapshot.pairResponses ?? cfg.pairResponses;
+  const specs = pairSpecs(active.facts, kinds, history);
+  let deck = shuffle(specs.slice());
+  if (eff.length === "limited" && eff.limType === "count") {
+    deck = deck.slice(0, eff.limCount);
+  }
   const endless = eff.length === "endless";
   const p: PairsRuntime = {
     deck,
@@ -142,14 +166,18 @@ function initPairs(active: ActiveQuiz, cfg: QuizConfig): PairsRuntime {
     streak: 0,
     dirty: [],
   };
-  fillBoard(p, active.facts, cfg.fonts); // deck is non-empty — always fills
+  fillBoard(p, specs, cfg.fonts);
   return p;
 }
 
 /** Get (or lazily create) the pairs runtime inside active.runtime. */
-function ensureRuntime(active: ActiveQuiz, cfg: QuizConfig): PairsRuntime {
+function ensureRuntime(
+  active: ActiveQuiz,
+  cfg: QuizConfig,
+  history: HistoryFile,
+): PairsRuntime {
   const rt = active.runtime as { pairs?: PairsRuntime };
-  const p = (rt.pairs ??= initPairs(active, cfg));
+  const p = (rt.pairs ??= initPairs(active, cfg, history));
   // Resuming a runtime written before the streak existed.
   if (typeof p.streak !== "number") p.streak = 0;
   if (!Array.isArray(p.dirty)) p.dirty = [];
@@ -185,7 +213,7 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
   const firstIdx = p.pick;
   p.pick = null;
   if (first.id === cell.id) {
-    const st = statFor(p.stats, cell.id);
+    const st = statFor(p.stats, cell.fact);
     st.everCorrect = true;
     // A board shows each pair exactly once (`seen++` once, at deal), so the
     // flag and its countable twin agree here by construction — the count is
@@ -204,15 +232,15 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
   // The JP side's fact takes the miss and the confusion entry.
   const jp = first.kind === "jp" ? first : cell;
   const other = first.kind === "jp" ? cell : first;
-  const st = statFor(p.stats, jp.id);
+  const st = statFor(p.stats, jp.fact);
   st.misses++;
   // `confused` is keyed by ENTRY — the thing you said instead. Both cells carry
   // their fact in `id`, so the answer cell names its own entry too. Two facts
   // of ONE entry are not a confusion (see FactSessionDetail): pairing 生's セイ
   // cell with 生's ショウ cell is a wrong answer about 生, not mixing 生 up
   // with something else.
-  const said = entryOf(other.id);
-  if (said !== entryOf(jp.id)) {
+  const said = entryOf(other.fact);
+  if (said !== entryOf(jp.fact)) {
     st.confused[said] = (st.confused[said] ?? 0) + 1;
   }
   p.streak = 0;
@@ -224,13 +252,14 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
 
 export function PairsScreen() {
   const { cfg } = useQuizConfig();
+  const { history } = useHistory();
   const { active, finishQuiz, setProgress } = useQuizSession();
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
 
   // Cast once; lazily create the runtime on the first render of a fresh
   // quiz (guarded, so StrictMode re-renders and remounts reuse it).
-  const p = active ? ensureRuntime(active, cfg) : null;
+  const p = active ? ensureRuntime(active, cfg, history) : null;
 
   // Transient mismatch flash: board indices currently flashing danger.
   const [flash, setFlash] = useState<number[]>([]);
@@ -239,7 +268,12 @@ export function PairsScreen() {
 
   const advanceBoard = () => {
     if (!active || !p) return;
-    if (fillBoard(p, active.facts, cfg.fonts)) rerender();
+    const specs = pairSpecs(
+      active.facts,
+      active.snapshot.pairResponses ?? cfg.pairResponses,
+      history,
+    );
+    if (fillBoard(p, specs, cfg.fonts)) rerender();
     else finishQuiz(p.stats);
   };
 
@@ -266,7 +300,7 @@ export function PairsScreen() {
   useEffect(() => {
     if (!p || armed.current) return;
     armed.current = true;
-    if (p.board.length > 0 && p.board.every((x) => x.gone)) {
+    if (p.board.length === 0 || p.board.every((x) => x.gone)) {
       nextTimer.current = window.setTimeout(advanceBoard, 500);
     }
     // advanceBoard is recreated per render; the armed guard makes this

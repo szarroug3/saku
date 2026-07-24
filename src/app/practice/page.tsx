@@ -32,6 +32,7 @@ import { useQuizSession } from "@/lib/quiz-session";
 import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
+import { pairFacts, pairSpecs } from "@/lib/pair-facts";
 import type { Selection } from "@/types";
 
 export default function PracticePage() {
@@ -86,8 +87,26 @@ export default function PracticePage() {
   const planned = useMemo(() => {
     const cap =
       cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null;
-    return { facts: cap === null ? facts : facts.slice(0, cap) };
-  }, [facts, cfg.length, cfg.limType, cfg.limCount]);
+    if (cfg.mode === "pairs") {
+      const specs = pairSpecs(facts, cfg.pairResponses, history);
+      return {
+        // The pairs screen applies Count after expanding variants, so it needs
+        // every eligible source fact rather than a prematurely sliced subset.
+        facts: pairFacts(facts, cfg.pairResponses, history),
+        count: cap === null ? specs.length : Math.min(specs.length, cap),
+      };
+    }
+    const selected = cap === null ? facts : facts.slice(0, cap);
+    return { facts: selected, count: selected.length };
+  }, [
+    facts,
+    history,
+    cfg.mode,
+    cfg.pairResponses,
+    cfg.length,
+    cfg.limType,
+    cfg.limCount,
+  ]);
 
   // A one-off quiz, not a session: straight to /quiz, then /results when it ends.
   // No teach screen, no rest timer, no fork loop. startQuiz parks any run in
@@ -150,7 +169,7 @@ export default function PracticePage() {
         cfg={cfg}
         what={what}
         count={facts.length}
-        plannedCount={planned.facts.length}
+        plannedCount={planned.count}
         onStart={start}
       />
     </>

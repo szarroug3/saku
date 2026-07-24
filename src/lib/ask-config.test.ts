@@ -6,9 +6,11 @@ import {
   defaultAsk,
   migrateLegacyAsk,
   normalizeAsk,
+  normalizePairResponses,
   sentenceAsks,
   sentenceAsksRomaji,
   sentenceAsksSelection,
+  togglePairResponse,
 } from "@/lib/ask-config";
 import type {
   AnswerStyle,
@@ -83,6 +85,33 @@ describe("AskConfig storage", () => {
       english: {},
     });
     assert.equal(askIsEmpty(ask), false);
+  });
+});
+
+describe("Match-pairs menu", () => {
+  test("stored values are canonical, deduped, and unknown values are dropped", () => {
+    assert.deepEqual(
+      normalizePairResponses(["sentence", "wat", "definition", "sentence"]),
+      ["definition", "sentence"],
+    );
+  });
+
+  test("a missing or empty stored selection defaults to all three", () => {
+    const all = ["definition", "romaji", "sentence"];
+    assert.deepEqual(normalizePairResponses(undefined), all);
+    assert.deepEqual(normalizePairResponses([]), all);
+  });
+
+  test("each option can be added and removed while the last one stays on", () => {
+    assert.deepEqual(togglePairResponse(["definition"], "romaji"), [
+      "definition",
+      "romaji",
+    ]);
+    assert.deepEqual(
+      togglePairResponse(["definition", "romaji"], "definition"),
+      ["romaji"],
+    );
+    assert.deepEqual(togglePairResponse(["romaji"], "romaji"), ["romaji"]);
   });
 });
 

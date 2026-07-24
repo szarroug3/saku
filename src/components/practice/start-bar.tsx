@@ -130,7 +130,8 @@ export function StartBar({
 }) {
   // Grid ignores directions, so only the count gates it there.
   const howBroken =
-    cfg.mode === "drill" && askIsEmpty(cfg.ask);
+    (cfg.mode === "drill" && askIsEmpty(cfg.ask)) ||
+    (cfg.mode === "pairs" && cfg.pairResponses.length === 0);
   // Nothing to ask is a real, reachable state — everything selected is `quiet`
   // — and it used to leave Start looking live and doing nothing: you clicked,
   // the page didn't move, and the app never said why. A button that is enabled
@@ -144,13 +145,17 @@ export function StartBar({
   const reason = !count
     ? "Nothing is selected. Widen the filters above to start."
     : howBroken
-      ? "Choose at least one complete way to ask in the setup above."
+      ? cfg.mode === "pairs"
+        ? "Choose at least one pair type in the setup above."
+        : "Choose at least one complete way to ask in the setup above."
       : nothingToAsk
         ? // Deliberately not "nothing to do" and not a congratulation. It is a
           // statement about right now, with the way out in the same sentence:
           // the app has nothing to learn by asking these today, and the fix is
           // to select more — which is the screen you are already on.
-          "You're solid on all of these for now. Pick another deck to drill something else."
+          cfg.mode === "pairs"
+          ? "None of these make a useful pair. Include material with a definition or a kanji reading."
+          : "You're solid on all of these for now. Pick another deck to drill something else."
         : null;
 
   return (

@@ -503,6 +503,7 @@ function canonical(s: StoredSession): string {
 function snapshotOf(cfg: QuizConfig): QuizSnapshot {
   return {
     mode: cfg.mode,
+    pairResponses: [...cfg.pairResponses],
     // Deep-ish copy so a later panel edit can't mutate a frozen snapshot.
     ask: {
       japanese: {

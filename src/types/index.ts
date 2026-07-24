@@ -131,6 +131,7 @@ export type QuizMode =
   | "listen-sentence";
 export type Direction = "jp2en" | "en2jp";
 export type AnswerStyle = "typed" | "mc";
+export type PairResponse = "definition" | "romaji" | "sentence";
 
 // ---------- how to ask, by SOURCE (task 30) ----------
 //
@@ -219,6 +220,9 @@ export type NewKanjiOrder = "everyday" | "grade" | "newspaper";
 
 export interface QuizConfig {
   mode: QuizMode;
+  /** Match-pairs relationships. Both cells are always visible text; at least
+   * one is kept selected by the editor. */
+  pairResponses: PairResponse[];
   /**
    * HOW TO ASK, by source — see AskConfig. Replaced `dirs` +
    * `styleJp2en`/`styleEn2jp` (direction is now inferred) and the two

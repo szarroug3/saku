@@ -12,6 +12,7 @@ import type {
   AnswerStyle,
   AskConfig,
   PromptFormat,
+  PairResponse,
   QuizConfig,
   ResponseKind,
 } from "@/types";
@@ -19,6 +20,11 @@ import type {
 const PROMPTS: readonly PromptFormat[] = ["text", "audio"];
 const RESPONSES: readonly ResponseKind[] = ["definition", "romaji"];
 const ANSWERS: readonly AnswerStyle[] = ["typed", "mc"];
+const PAIR_RESPONSES: readonly PairResponse[] = [
+  "definition",
+  "romaji",
+  "sentence",
+];
 
 /** Keep only known members, in canonical order, deduped — so a hand-edited or
  * older stored array can't smuggle a stray value past the panel. */
@@ -190,4 +196,20 @@ export function enabledDirs(ask: AskConfig): { jp2en: boolean; en2jp: boolean } 
 /** Read a QuizConfig's ask, tolerating a value that predates the field. */
 export function askOf(cfg: Pick<QuizConfig, "ask">): AskConfig {
   return cfg.ask ?? defaultAsk();
+}
+
+export function normalizePairResponses(raw: unknown): PairResponse[] {
+  const cleaned = clean<PairResponse>(raw, PAIR_RESPONSES);
+  return cleaned.length ? cleaned : [...PAIR_RESPONSES];
+}
+
+/** Toggle one Match-pairs relationship while preserving its required
+ * at-least-one invariant. */
+export function togglePairResponse(
+  current: readonly PairResponse[],
+  value: PairResponse,
+): PairResponse[] {
+  if (!current.includes(value)) return [...current, value];
+  if (current.length === 1) return [...current];
+  return current.filter((x) => x !== value);
 }

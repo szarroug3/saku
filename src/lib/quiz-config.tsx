@@ -32,12 +32,18 @@ import {
   clampWordsPerLesson,
 } from "@/lib/lesson-sizing";
 import { emptySelection } from "@/lib/selection-empty";
-import { defaultAsk, migrateLegacyAsk, normalizeAsk } from "@/lib/ask-config";
+import {
+  defaultAsk,
+  migrateLegacyAsk,
+  normalizeAsk,
+  normalizePairResponses,
+} from "@/lib/ask-config";
 import type { QuizConfig } from "@/types";
 
 export function defaultConfig(): QuizConfig {
   return {
     mode: "drill",
+    pairResponses: ["definition", "romaji", "sentence"],
     // HOW TO ASK, by source — see AskConfig / src/lib/ask-config.ts. Replaced
     // the old dirs + per-direction styles + listen flags.
     ask: defaultAsk(),
@@ -90,6 +96,7 @@ function normalizeConfig(saved: unknown): QuizConfig {
     if (saved && typeof saved === "object") {
       const raw = saved as Partial<QuizConfig> & { randomFont?: boolean };
       const cfg: QuizConfig = { ...defaultConfig(), ...raw };
+      cfg.pairResponses = normalizePairResponses(raw.pairResponses);
       // "How to ask" migration (task 30). A config saved with the new `ask`
       // shape is normalised (unknown members dropped); one saved with the OLD
       // dirs/styles/listen fields is migrated forward; anything else defaults.

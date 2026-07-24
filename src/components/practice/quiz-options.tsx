@@ -8,10 +8,12 @@ import type { ReactNode } from "react";
 
 import { Card, Chip, Row, SmallBtn } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { togglePairResponse } from "@/lib/ask-config";
 import type {
   AnswerStyle,
   AskConfig,
   PromptFormat,
+  PairResponse,
   ResponseKind,
 } from "@/types";
 
@@ -143,6 +145,11 @@ export function QuizOptionsFields() {
       ...cfg.ask,
       english: { answers: toggle(cfg.ask.english.answers, v) },
     });
+  const pairResponse = (value: PairResponse) => {
+    update({
+      pairResponses: togglePairResponse(cfg.pairResponses, value),
+    });
+  };
 
   return (
     <>
@@ -295,6 +302,33 @@ export function QuizOptionsFields() {
             </AskRow>
           </SourceCard>
         </>
+      ) : cfg.mode === "pairs" ? (
+        <SourceCard
+          title="Pairs"
+          mark="text only"
+          description="Choose at least one relationship to match."
+        >
+          <AskRow label="Pair Type">
+            <Chip
+              on={cfg.pairResponses.includes("definition")}
+              onClick={() => pairResponse("definition")}
+            >
+              Japanese + definition
+            </Chip>
+            <Chip
+              on={cfg.pairResponses.includes("romaji")}
+              onClick={() => pairResponse("romaji")}
+            >
+              Kanji + romaji
+            </Chip>
+            <Chip
+              on={cfg.pairResponses.includes("sentence")}
+              onClick={() => pairResponse("sentence")}
+            >
+              Sentence + translation
+            </Chip>
+          </AskRow>
+        </SourceCard>
       ) : cfg.mode === "grid" ? (
         <Card className="text-[13px] text-text-muted">
           Grid drills your whole selection, typed.
