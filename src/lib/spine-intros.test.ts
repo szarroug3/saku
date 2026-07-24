@@ -214,14 +214,16 @@ describe("every role is anchored where its card has something to point at", () =
     assert.equal(spineIntroPlan(walk, BLANK, new Set(), all).size, 0);
   });
 
-  test("the ids intro-shown.ts remembers are exactly the cards' own", () => {
+  test("every spine card's id is one intro-shown.ts remembers", () => {
     // intro-shown.ts spells the ids out rather than importing the card data, so
     // that the Settings reset path does not drag the phase-intro table into its
-    // bundle. This is the line that stops the two drifting.
-    assert.deepEqual(
-      [...CONCEPT_CARD_IDS].sort(),
-      SPINE_ANCHORS.map((a) => a.intro.id).sort(),
-    );
+    // bundle. This is the line that stops the SPINE ids drifting. CONCEPT_CARD_IDS
+    // also carries the once-ever pitch card ("intro-pitch"), pinned to its own
+    // card by pitch-intro.test.ts, so this is a subset check rather than equality.
+    const remembered = new Set(CONCEPT_CARD_IDS);
+    for (const id of SPINE_ANCHORS.map((a) => a.intro.id)) {
+      assert.ok(remembered.has(id), `intro-shown.ts forgot the spine card ${id}`);
+    }
   });
 });
 

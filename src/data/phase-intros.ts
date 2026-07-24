@@ -788,6 +788,59 @@ export const COUNTER_SOUND_CHANGE: PhaseIntro = {
   ],
 };
 
+// PITCH ACCENT — a pronunciation card, and this file's first card about how a
+// word SOUNDS rather than how it is written.
+// =========================================================================
+// ⚠️ DRAFT COPY — Sam to finalize. ⚠️ Every `title`, `lead` and `text` below is
+// placeholder prose written to prove the mechanism and land the three jobs (what
+// pitch is, how it helps, why now), in the same status as the track intros and
+// the counter/keigo cards. The STRUCTURE is the deliverable; the sentences are
+// scaffolding for the owner's voice pass. The 箸/橋 pair and the glossary term it
+// echoes (src/data/terms.ts, "pitch-accent") are the fixed facts; the wording is
+// not. Every draft string here is quoted in the task report.
+//
+// WHY IT EXISTS AND WHERE IT FIRES
+// --------------------------------
+// The app draws a pitch overline over a word's reading — on the drill reveal, on
+// the Library entry, and (task 09) wherever else a reading shows — the moment the
+// word has verified pitch. That line was appearing with nothing to say what it
+// meant: a mark a learner cannot read is at best noise and at worst a habit set
+// wrong. So this card is word-gated in lesson-steps.ts ONCE, ahead of the first
+// word the learner meets that carries a verified pitch, so the line is always
+// taught before it is first drawn. It is a once-ever concept card (its id is in
+// CONCEPT_CARD_IDS, src/lib/intro-shown.ts), not a per-lesson rule reminder:
+// ~69% of words carry pitch, so re-firing it per lesson would put it ahead of
+// almost every word lesson. Script-neutral (NO_SCRIPT): pitch is a sound, not a
+// spelling of one script.
+//
+// DISPLAY, NEVER GRADED. The card says outright that the app never asks the
+// learner to produce or pick a pitch — the overline is shown so a wrong habit is
+// not set, and that is the whole of its job. See pitch-mark.tsx.
+export const PITCH_INTRO: PhaseIntro = {
+  id: "intro-pitch",
+  setId: NO_SCRIPT,
+  eyebrow: "What pitch accent is",
+  title: "A word carries a tune: some morae are said high, some low.",
+  body: [
+    {
+      lead: "Pitch accent is the rise and fall across a word.",
+      text: "Japanese does not stress a syllable the way English does. Instead the voice sits high on some beats of a word and low on others, and where it drops is fixed for each word. From now on, a thin line is drawn over the reading to show it: the line runs over the high beats and turns down where the voice falls.",
+    },
+    {
+      lead: "The symbol is here to help you tell same-sounding words apart.",
+      text: "箸 (chopsticks) and 橋 (bridge) are both read はし, and the pitch is the only difference in sound: 箸 starts high and drops, 橋 starts low and rises. We show the line so you learn that difference from the start, because a pronunciation learned wrong is hard to unlearn later. Most words are not a pair like this, so mostly the line is just how the word sounds.",
+    },
+    {
+      lead: "The audio does not include the pitch.",
+      text: "The “hear it” speaker is a synthesized voice, and it uses its own accent rather than the word's real one. So trust the LINE over the reading, not the sound, when you want the accent. The sound is there to teach you the word, and the line is there to teach you its pitch.",
+    },
+    {
+      lead: "You are never asked to produce a pitch, and that is how the quiz stays fair.",
+      text: "The app never has you type or choose an accent. But it does use the mark to keep a meaning question honest: when the quiz asks what a word means, it shows the kanji AND the pronunciation together, so a same-sounding word like 箸 vs 橋 has one right answer, and the mark and the glyph tell you which word is meant. A word with no line simply has no pitch recorded, and that is fine.",
+    },
+  ],
+};
+
 /**
  * Section id → the card shown BEFORE that section's characters.
  *
@@ -861,6 +914,7 @@ export const PHASE_INTROS: PhaseIntro[] = [
   OKURIGANA_FIXED,
   TRANSITIVITY_INTRO,
   COUNTER_SOUND_CHANGE,
+  PITCH_INTRO,
 ];
 
 // NOT BUILT, AND SAY SO

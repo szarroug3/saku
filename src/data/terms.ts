@@ -52,6 +52,7 @@ import {
   OKURIGANA_FIXED,
   OKURIGANA_INTRO,
   OKURIGANA_MOVING,
+  PITCH_INTRO,
   RENDAKU,
   type PhaseIntro,
 } from "@/data/phase-intros";
@@ -352,6 +353,7 @@ export const TERMS: readonly Term[] = [
       "The line drawn over a reading shows where the voice stays high and where it drops.",
     ],
     searchAlso: ["pitch accent", "pitch", "accent", "downstep", "heiban", "atamadaka"],
+    cards: [PITCH_INTRO],
   },
   {
     id: "mora",

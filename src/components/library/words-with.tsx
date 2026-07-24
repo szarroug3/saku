@@ -17,8 +17,10 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { PitchReading } from "@/components/library/pitch-mark";
 import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Lbl } from "@/components/ui";
+import { wordPitch } from "@/data/pitch";
 import { VOCAB_SUBJECT, vocabRow, wordMeaningFactId } from "@/data/vocab";
 import { entryForGlyph } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
@@ -67,6 +69,10 @@ export function WordsWith({
         {shown.map((w) => {
           const id = entryForGlyph(VOCAB_SUBJECT, w);
           const row = vocabRow(w);
+          // The same pitch overline the word's own entry draws, on its reading
+          // here — display only, and only where a pitch is verified; a word with
+          // none shows the plain reading, unchanged. See pitch-mark.tsx.
+          const pitch = wordPitch(w);
           // A STANDING DOT, not the word's score copied here. The word is its
           // own entry with its own page; this row is a pointer to it.
           const s = standingOf(
@@ -84,7 +90,11 @@ export function WordsWith({
               ) : (
                 <span className="text-[16px]">{w}</span>
               )}
-              <span className="text-text-muted">{row?.reb}</span>
+              {row && pitch != null ? (
+                <PitchReading reading={row.reb} downstep={pitch} className="text-text-muted" />
+              ) : (
+                <span className="text-text-muted">{row?.reb}</span>
+              )}
               <span className="min-w-0 flex-1 truncate text-text-muted">
                 {row?.glosses.slice(0, 2).join(", ")}
               </span>

@@ -126,7 +126,7 @@ const SHIPPED = new Set([...PHASE_INTROS, ...Object.values(TRACK_INTROS)]);
 
 /** The six words the app uses but teaches no card about. Their pages are the
  * definition and nothing else. See the note over TERMS. */
-const NO_CARD = ["romaji", "furigana", "jlpt", "particle", "pitch-accent", "mora"];
+const NO_CARD = ["romaji", "furigana", "jlpt", "particle", "mora"];
 
 describe("a term points at the lessons' own explanation of it", () => {
   test("every card a term names is a card the app ships", () => {
