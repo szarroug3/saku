@@ -50,17 +50,21 @@ import type { Term } from "@/data/terms";
 export function TermView({ term }: { term: Term }) {
   return (
     <>
-      {/* The short answer, first and unchanged. It is what someone who came here
-          to settle a word mid-sentence needs, and the cards below it are for the
-          reader who wants the rest — so it keeps the top of the page even when
-          there is a great deal more underneath. */}
-      <Card>
-        <div className="space-y-2.5 text-[15px] leading-relaxed">
-          {term.body.map((para, i) => (
-            <p key={i}>{para}</p>
-          ))}
-        </div>
-      </Card>
+      {/* The short answer, and ONLY when nothing better follows it. The entry
+          header above already prints the one-line summary, so on a term that
+          carries a card this body was a third telling of the same thing, and the
+          weakest of the three: "Kanji are the characters Japanese borrowed from
+          Chinese" directly above a card that says it properly and at length. A
+          term with no card keeps it, because there it IS the page. */}
+      {(term.cards ?? []).length === 0 ? (
+        <Card>
+          <div className="space-y-2.5 text-[15px] leading-relaxed">
+            {term.body.map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       {(term.cards ?? []).map((card, _i, cards) => {
         // The paragraphs about THIS word. The identity for eleven of the twelve;
