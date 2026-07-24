@@ -28,7 +28,7 @@
 // to say when how-it-was-asked was never recorded.
 
 import { answerIsJapanese } from "@/lib/engine/question";
-import { factTypeLabel } from "@/lib/fact-label";
+import { aspectOf, factTypeLabel } from "@/lib/fact-label";
 import { factInfo } from "@/lib/facts";
 import { isSound, nounFor } from "@/lib/quiz-instruction";
 import type { Direction, FactId, ShowingPresentation } from "@/types";
@@ -54,18 +54,18 @@ function shownSide(fact: FactId, shown: ShowingPresentation): string {
 }
 
 /**
- * The chip label: how this fact was last presented, or — when no presentation
- * was captured — what the fact is.
+ * Just the `input → output` of a showing, with no noun — for a table whose ROW
+ * already names the word, so the noun would be repeated on every cell. Falls
+ * back to the fact's aspect ("meaning" / "reading") when no showing was
+ * recorded, and to "asked" for a one-aspect subject that has no aspect word.
  *
- * Never leaks the answer: it names the KIND of question ("the meaning", "the
- * reading", "the Japanese"), never a gloss or a reading the box would accept.
+ * Never leaks the answer: it names the KIND of question, never a gloss or a
+ * reading the box would accept.
  */
-export function presentationLabel(fact: FactId, shown?: ShowingPresentation): string {
-  const info = factInfo(fact);
-  if (!info) return String(fact);
-  if (!shown) return factTypeLabel(fact);
+export function presentationPhrase(fact: FactId, shown?: ShowingPresentation): string {
+  if (!factInfo(fact)) return String(fact);
+  if (!shown) return aspectOf(fact) ?? "asked";
 
-  const noun = nounFor(fact);
   const verb = shown.mode === "mc" ? "pick" : "type";
   const produced = producedSide(fact, shown.dir);
   const output =
@@ -75,5 +75,17 @@ export function presentationLabel(fact: FactId, shown?: ShowingPresentation): st
         ? `${verb} the reading`
         : `${verb} the Japanese`;
 
-  return `${noun} · ${shownSide(fact, shown)} → ${output}`;
+  return `${shownSide(fact, shown)} → ${output}`;
+}
+
+/**
+ * The chip label: how this fact was last presented, or — when no presentation
+ * was captured — what the fact is. `noun · input → output`, so a flat chip that
+ * does NOT group by word still tells a kanji and a word apart.
+ */
+export function presentationLabel(fact: FactId, shown?: ShowingPresentation): string {
+  const info = factInfo(fact);
+  if (!info) return String(fact);
+  if (!shown) return factTypeLabel(fact);
+  return `${nounFor(fact)} · ${presentationPhrase(fact, shown)}`;
 }

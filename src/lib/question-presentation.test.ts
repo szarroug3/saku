@@ -13,7 +13,10 @@ import { describe, test } from "node:test";
 import { meaningFactId, readingFactId } from "@/data/kanji";
 import { wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
 import { factTypeLabel } from "@/lib/fact-label";
-import { presentationLabel } from "@/lib/question-presentation";
+import {
+  presentationLabel,
+  presentationPhrase,
+} from "@/lib/question-presentation";
 import type { ShowingPresentation } from "@/types";
 
 const show = (
@@ -85,6 +88,30 @@ describe("presentationLabel — how the card was asked", () => {
     const fact = meaningFactId("何");
     assert.equal(presentationLabel(fact, undefined), factTypeLabel(fact));
     assert.equal(presentationLabel(fact, undefined), "kanji · meaning");
+  });
+
+  test("presentationPhrase drops the noun — the table row already names the word", () => {
+    // The table groups by word, so the cell needs only the input→output; the
+    // noun would be repeated on every cell of the row.
+    assert.equal(
+      presentationPhrase(wordMeaningFactId("問題"), show("jp2en", "typed", true)),
+      "hear it → type the meaning",
+    );
+    assert.equal(
+      presentationPhrase(meaningFactId("何"), show("jp2en", "mc", false)),
+      "see it → pick the meaning",
+    );
+    // And it is exactly the tail of the noun-prefixed label.
+    const p = show("en2jp", "typed", false);
+    assert.equal(
+      presentationLabel(wordMeaningFactId("問題"), p),
+      `word · ${presentationPhrase(wordMeaningFactId("問題"), p)}`,
+    );
+  });
+
+  test("presentationPhrase falls back to the aspect when nothing was recorded", () => {
+    assert.equal(presentationPhrase(meaningFactId("何"), undefined), "meaning");
+    assert.equal(presentationPhrase(wordReadingFactId("何"), undefined), "reading");
   });
 
   test("the label never leaks the answer", () => {
