@@ -83,6 +83,33 @@ export interface ResumableRun {
 }
 
 /**
+ * Has the learner CLAIMED every fact this run is resting on?
+ *
+ * The one signal that RELEASES the pin. Starting a session marks its facts
+ * `seen` (and a completed round folds them into the aggregate), and masking
+ * those back out is the whole job above — it is how the card keeps showing the
+ * set the run rests in while the frontier moves past it. A `claim` is the one
+ * write that must NOT be masked: "I already know these" on the Learn card is a
+ * deliberate, out-of-session statement that the resting material is done, and
+ * the card has to advance to prove the click landed. Masking it (the bug this
+ * closes) recomputed the resting lesson as still-fresh, so the frontier snapped
+ * back and the card looked dead.
+ *
+ * So a claim SUPERSEDES the pin: when every fact the run holds is claimed, the
+ * pin releases and the live frontier — which the same claim has already advanced
+ * — is what the card shows. Read against the CURRENT (unmasked) history on
+ * purpose: this asks what the learner has since claimed, not what the masked
+ * rebuild would see. Merely-`seen` never releases (that is the session's own
+ * start-write, the thing the mask exists to undo), and neither does a fact the
+ * run drilled to `met` — that is the session footprint the mid-drill resume
+ * depends on. Only an explicit claim does.
+ */
+function restingFactsClaimed(history: HistoryFile, run: ResumableRun): boolean {
+  if (!run.facts.length) return false;
+  return run.facts.every((f) => history.claims?.[f] != null);
+}
+
+/**
  * The lesson a track's card should SHOW.
  *
  * No open run for the track: the live frontier, unchanged — the ordinary case,
@@ -93,6 +120,11 @@ export interface ResumableRun {
  * on a card whose button says Continue. When the rebuild names nothing, the
  * frontier stands in, so this can only ever change WHICH lesson a card shows —
  * never whether there is one.
+ *
+ * An open run whose resting facts the learner has since CLAIMED: the pin
+ * releases and the live frontier shows through, so "I already know these"
+ * advances the card instead of looking dead (see restingFactsClaimed). The
+ * claim has already moved the frontier; this stops the mask from moving it back.
  */
 export function resumeLesson<T>(
   history: HistoryFile,
@@ -101,5 +133,9 @@ export function resumeLesson<T>(
   rebuild: (history: HistoryFile) => T | null,
 ): T | null {
   if (!run) return frontier;
+  // A claim on the resting material supersedes the pin: release to the live
+  // frontier so the card advances instead of masking the claim back out. See
+  // restingFactsClaimed — this is #07's "looks dead" fix.
+  if (restingFactsClaimed(history, run)) return frontier;
   return rebuild(withoutFacts(history, run.facts)) ?? frontier;
 }

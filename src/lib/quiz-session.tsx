@@ -276,6 +276,14 @@ interface QuizSessionContextValue {
   /** Resume the round after a "Look again": back to /quiz with the leg
    * untouched (NOT a fresh beginLeg, so nothing is re-asked). */
   resumeRound(): void;
+  /**
+   * Move the teach walk to item `n` (0-based), persisting the cursor on the
+   * session so a reload or a cross-device teleport resumes on the same page
+   * rather than restarting the walk. See StudySession.teachStep — the walk's
+   * step used to be the /session page's local state, thrown away on remount.
+   * No-op with no session.
+   */
+  setTeachStep(n: number): void;
   /** Complete the round: bank it, write the floor, start the rest. */
   completeRound(): void;
   /** The rest is over (or you skipped it): run the SAME whole set again. */
@@ -1228,6 +1236,20 @@ export function QuizSessionProvider({
     };
   }, [commitRecord]);
 
+  const setTeachStep = useCallback((n: number) => {
+    // Persist the walk's cursor on the session so it survives a remount and
+    // teleports with the run. Clamped non-negative here; the page clamps the
+    // upper bound against the live step count (a lesson can be re-cut shorter).
+    // Only writes when it actually moves, so paging does not churn the snapshot
+    // (and its debounced server push) with no-op saves.
+    setSession((s) => {
+      if (!s) return s;
+      const next = Math.max(0, n);
+      if ((s.teachStep ?? 0) === next) return s;
+      return { ...s, teachStep: next };
+    });
+  }, []);
+
   const completeRound = useCallback(() => {
     if (!session) return;
     const now = Date.now();
@@ -1619,6 +1641,7 @@ export function QuizSessionProvider({
       retryLeg,
       reviewLesson,
       resumeRound,
+      setTeachStep,
       completeRound,
       startNextRound,
       pauseSession,
@@ -1650,6 +1673,7 @@ export function QuizSessionProvider({
       retryLeg,
       reviewLesson,
       resumeRound,
+      setTeachStep,
       completeRound,
       startNextRound,
       pauseSession,

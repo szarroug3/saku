@@ -9,7 +9,7 @@
 // would be the one lying.
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import { RestScreen } from "@/components/session/rest-screen";
 import { RoundComplete } from "@/components/session/round-complete";
@@ -42,6 +42,7 @@ export default function SessionPage() {
     startSession,
     startFirstRound,
     resumeRound,
+    setTeachStep,
     recoverLostLeg,
   } = useQuizSession();
   const { history } = useHistory();
@@ -79,16 +80,14 @@ export default function SessionPage() {
     () => (session ? lessonSteps(session.teach, history, shownCards) : []),
     [teachKey, history, shownCards], // eslint-disable-line react-hooks/exhaustive-deps
   );
-  // Reset to the first item whenever the teach set changes (a new session, or a
-  // new round's material). Done by adjusting state during render off a stored
-  // key — the pattern React prefers over a reset effect (react.dev "You Might
-  // Not Need an Effect").
-  const [teachStep, setTeachStep] = useState(0);
-  const [prevTeachKey, setPrevTeachKey] = useState(teachKey);
-  if (teachKey !== prevTeachKey) {
-    setPrevTeachKey(teachKey);
-    setTeachStep(0);
-  }
+  // Where the walk is now lives on the SESSION (session.teachStep), not in this
+  // page's local state, so a reload or a cross-device teleport resumes on the
+  // page the learner left rather than restarting at item 1 — the exact-position
+  // teach resume. See StudySession.teachStep and setTeachStep. A fresh session
+  // has no teachStep and reads as 0; a session's teach set never changes under
+  // one session object, so the walk needs no in-page reset key any more (a new
+  // session is a new object that starts at 0 on its own).
+  const teachStep = session?.teachStep ?? 0;
 
   // No session (deep link, or a refresh with nothing stored) → Home. Wait for
   // the restore, or a refresh mid-rest would bounce you off your own break.

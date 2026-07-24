@@ -41,6 +41,16 @@ function seen(facts: readonly FactId[]): HistoryFile {
   return { sessions: [], facts: {}, seen: rec as HistoryFile["seen"] };
 }
 
+/** History after "I already know these": the facts are both seen (the session's
+ * own start-write) and CLAIMED (the deliberate statement that advances the
+ * card). Claiming is what supersedes an open run's pin. */
+function claimed(facts: readonly FactId[]): HistoryFile {
+  const h = seen(facts);
+  const rec: Record<string, number> = {};
+  for (const f of facts) rec[f] = Date.UTC(2026, 0, 2);
+  return { ...h, claims: rec as HistoryFile["claims"] };
+}
+
 const glyphs = (items: readonly { glyph: string }[]) => items.map((it) => it.glyph);
 
 describe("a curriculum session left open keeps its own set on the card", () => {
@@ -113,6 +123,62 @@ describe("a card that would disappear still comes back", () => {
     // that would otherwise have rendered.
     const shown = resumeLesson(history, frontier, { facts: ["nope" as FactId] }, () => null);
     assert.equal(shown, frontier);
+  });
+});
+
+describe("a claim on the resting set releases the pin (#07: the card must advance)", () => {
+  // The masking bug: while a session is parked on a lesson, the card pins to
+  // that lesson by masking the run's facts out of history. "I already know
+  // these" writes a CLAIM on those same facts — but the pin masked the claim
+  // back out too, so the card recomputed the resting lesson as still-fresh and
+  // looked dead. The claim must supersede the pin.
+  test("claiming every resting fact advances the card to the next lesson", () => {
+    const [first, second] = curriculum(RANGE);
+    // Before the claim: seen only, the pin holds and the card shows `first`.
+    const parked = seen(first.facts);
+    const run = { facts: first.facts };
+    const pinned = resumeLesson(parked, nextCurriculumLesson(parked, RANGE), run, (h) =>
+      nextCurriculumLesson(h, RANGE),
+    );
+    assert.equal(pinned?.group.index, first.index, "still pinned before the claim");
+
+    // After the claim: the frontier has advanced to `second`, and the pin
+    // releases to it instead of masking the claim back to `first`.
+    const history = claimed(first.facts);
+    const frontier = nextCurriculumLesson(history, RANGE);
+    assert.equal(frontier?.group.index, second.index, "the claim advanced the frontier");
+    const shown = resumeLesson(history, frontier, run, (h) =>
+      nextCurriculumLesson(h, RANGE),
+    );
+    assert.equal(shown?.group.index, second.index, "the card advanced with it");
+  });
+
+  test("a PARTIAL claim does not release — the run still spans unclaimed facts", () => {
+    const [first, second] = curriculum(RANGE);
+    // Only the run's first fact is claimed; the rest is merely seen. The run
+    // still rests on unclaimed material, so the pin holds and the card keeps
+    // showing the resting set rather than jumping ahead.
+    const history: HistoryFile = {
+      ...seen(first.facts),
+      claims: { [first.facts[0]]: Date.UTC(2026, 0, 2) } as HistoryFile["claims"],
+    };
+    const shown = resumeLesson(history, nextCurriculumLesson(history, RANGE), { facts: first.facts }, (h) =>
+      nextCurriculumLesson(h, RANGE),
+    );
+    assert.equal(shown?.group.index, first.index);
+    assert.notEqual(shown?.group.index, second.index);
+  });
+
+  test("merely-seen never releases (the ordinary open session keeps its pin)", () => {
+    // The regression guard: `seen` is the session's own start-write, and if it
+    // released the pin every open session would fail to pin at all. Only a claim
+    // releases.
+    const [first] = curriculum(RANGE);
+    const history = seen(first.facts);
+    const shown = resumeLesson(history, nextCurriculumLesson(history, RANGE), { facts: first.facts }, (h) =>
+      nextCurriculumLesson(h, RANGE),
+    );
+    assert.equal(shown?.group.index, first.index);
   });
 });
 
