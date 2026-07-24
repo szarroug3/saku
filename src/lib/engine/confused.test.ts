@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { buildMcOptions, confusedWith } from "@/lib/engine/index";
 import { kanaFact } from "@/data/characters";
 import { meaningFactId } from "@/data/kanji";
+import { wordMeaningFactId } from "@/data/vocab";
 import { entryOf, factInfo } from "@/lib/facts";
 
 const KA = kanaFact("か"); // "ka"
@@ -50,6 +51,44 @@ test("a kanji reading no longer fabricates a pair from the prediction table", ()
 
 test("empty / whitespace given never claims a pair", () => {
   assert.equal(confusedWith(KA, "   ", [KA, KI]), null);
+});
+
+// ---- task 20: a KNOWN entry outside the deck is a confusion candidate ----
+
+const NANI = meaningFactId("何"); // "what"
+const KA_WORD = wordMeaningFactId("可"); // the word 可 (か): "acceptable", ...
+
+test("typing a KNOWN word's meaning records it, even when it is not in the deck", () => {
+  // Sam was asked 何's meaning and typed "acceptable" — the gloss of the word 可,
+  // which she had learned but which was not in the 何 deck. Deck-only, that word
+  // is invisible and the confusion is lost (the bug); with her known facts in
+  // the search space, the one entry she named is found.
+  assert.equal(confusedWith(NANI, "acceptable", [NANI]), null);
+  assert.equal(
+    confusedWith(NANI, "acceptable", [NANI], [KA_WORD]),
+    entryOf(KA_WORD),
+  );
+});
+
+test("a KNOWN entry already in the deck is not double-counted", () => {
+  // Passing the same fact in both lists must resolve to one entry, not trip the
+  // ambiguity guard against itself.
+  assert.equal(
+    confusedWith(NANI, "acceptable", [NANI, KA_WORD], [KA_WORD]),
+    entryOf(KA_WORD),
+  );
+});
+
+test("the exactly-one guard still holds across the KNOWN space", () => {
+  // づ and ず both read "zu"; both merely KNOWN (not in the deck) is still
+  // ambiguous, so no pair — the wider search space does not weaken the guard.
+  assert.equal(confusedWith(KA, "zu", [KA], [DU, ZU]), null);
+});
+
+test("a KNOWN reading of the SAME entry is not a confusion", () => {
+  // づ also accepts "du"; asked づ, typed "du", with づ only in the known space,
+  // it must still not confuse づ with itself.
+  assert.equal(confusedWith(DU, "du", [DU], [DU]), null);
 });
 
 test("cross-script lookalikes surface as MC distractors", () => {

@@ -136,36 +136,53 @@ export function checkTyped(
  * things apart, and the things you mix up are 生 and 先, never one of 生's
  * readings with one of 先's.
  *
- * RESOLVED WITHIN THE DECK, AND ONLY WHEN UNAMBIGUOUS
- * ===================================================
- * `deck` is required, and it is the defence. A confusion is something the user
- * DEMONSTRATED, so the only things they could have meant are the things they
- * are actually being shown — the deck drawn for this session. Searching a
- * prediction table (the confusable pairs) or the whole dictionary instead lets
- * a reading that a hundred kanji share, or a meaning that sits in a lookalike
- * table, manufacture a pair the user never showed you.
+ * RESOLVED WITHIN WHAT THE LEARNER KNOWS, AND ONLY WHEN UNAMBIGUOUS
+ * =================================================================
+ * `deck` is the cards on screen this session; `known` is every fact the learner
+ * has already LEARNED (claimed, asked to be quizzed on, or answered before —
+ * the caller reads it off history). Together they are the search space, and the
+ * union is the defence: a confusion is something the user could actually have
+ * MEANT, so the only candidates are the things they are being shown now or have
+ * demonstrably met before. Searching a prediction table (the confusable pairs)
+ * or the whole dictionary instead lets a reading that a hundred kanji share, or
+ * a meaning that sits in a lookalike table, manufacture a pair from material the
+ * user has never encountered.
  *
- * And only EXACTLY ONE match counts. Over kana a romaji is near-unique, but
- * over kanji "shou" is a reading of ~200 entries; if the typed answer names
- * more than one entry in the deck, which one the user meant is unknowable, so
- * we claim none. Zero matches: a plain miss, no pair. Silence beats invention —
- * a wrong confusion pair poisons the mix-ups card, Patterns, and the weakness
- * ranking, and it looks identical to the app working.
- *
- * A different reading of the SAME entry is not a confusion between two entries
+ * `known` is why task 20's 何↔可 was being missed. Sam typed "acceptable" — the
+ * gloss of the WORD 可 (か), which she had learned but which was not in the 何
+ * deck. Deck-only, that word was invisible and the confusion went unrecorded;
+ * with her known facts in the search space, the one entry whose meaning she gave
+ * is found. A different reading of the SAME entry is still not a confusion
  * (answering 生's ショウ when its セイ was asked is a wrong answer about 生), so
  * the asked entry is excluded.
+ *
+ * And only EXACTLY ONE match counts. Over kana a romaji is near-unique, but
+ * over kanji "shou" is a reading of ~200 entries; if the typed answer names more
+ * than one KNOWN entry, which one the user meant is unknowable, so we claim
+ * none. This guard is what keeps the wider `known` search space honest: a
+ * reading or gloss shared by two learned entries stays silent rather than
+ * guessing. Zero matches: a plain miss, no pair. Silence beats invention — a
+ * wrong confusion pair poisons the mix-ups card, Patterns, and the weakness
+ * ranking, and it looks identical to the app working.
  */
 export function confusedWith(
   fact: FactId,
   given: string,
   deck: FactId[],
+  known: readonly FactId[] = [],
 ): EntryId | null {
   const g = given.trim().toLowerCase();
   if (!g) return null;
   const self = entryOf(fact);
   const matches = new Set<EntryId>();
-  for (const other of deck) {
+  const seen = new Set<FactId>();
+  // Deck first, then the learner's known facts — one pass over both. `seen`
+  // dedupes the overlap (a deck card is usually already known) so a fact isn't
+  // weighed twice; the entry Set makes double-counting harmless anyway, but the
+  // early-out on ambiguity reads cleaner without it.
+  for (const other of [...deck, ...known]) {
+    if (seen.has(other)) continue;
+    seen.add(other);
     const otherEntry = entryOf(other);
     if (otherEntry === self) continue;
     const info = factInfo(other);

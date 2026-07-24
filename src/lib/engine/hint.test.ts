@@ -53,6 +53,18 @@ test("a word asked for its meaning hints with its kanji's meanings", () => {
   );
 });
 
+test("電話 (a 2-kanji word) meaning hints with its components, not the gloss", () => {
+  // Task 24: this hint was generated all along — the drill was hiding the button
+  // on a LISTENING meaning card. hintFor itself is unconditional: 電話 is a
+  // multi-kanji word, so its meaning card names 電 and 話, and the English answer
+  // ("phone call") never appears in the nudge.
+  const text = textOf(hintFor(wordMeaningFactId("電話"), "jp2en"), "電話's meaning");
+  assert.equal(text, "電 is electricity, 話 is tale");
+  assert.ok(!/phone|call/i.test(text), "the component hint must not state the gloss");
+  // ...and never en2jp, where naming the kanji IS how you write the answer.
+  assert.equal(hintFor(wordMeaningFactId("電話"), "en2jp"), null);
+});
+
 test("a grammar meaning hints with what the pattern attaches to", () => {
   assert.equal(
     textOf(hintFor(patternMeaningFactId("te-kara"), "jp2en"), "〜てから's meaning"),

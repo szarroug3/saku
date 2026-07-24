@@ -74,6 +74,7 @@ import { hintFor } from "@/lib/engine/hint";
 import { entryOf, factInfo } from "@/lib/facts";
 import { speechForFact } from "@/lib/fact-speech";
 import { fitGlyphSize } from "@/lib/glyph-fit";
+import { knownFactIds } from "@/lib/known-facts";
 import { pickListen } from "@/lib/listen";
 import { meaningMustShowGlyph } from "@/lib/homophone";
 import { toKana } from "@/lib/romaji";
@@ -713,7 +714,13 @@ export function DrillScreen() {
           q.confused = said;
         }
       } else if (given && given !== "(time)") {
-        const said = confusedWith(q.f, given, rt.deck);
+        // The search space is the deck PLUS every fact the learner already
+        // knows — so a typed answer that names a KNOWN entry (its meaning or
+        // reading) is caught even when that entry is not in today's deck. This
+        // is task 20's 何↔可: "acceptable" is the word 可's gloss, a word Sam had
+        // learned but was not being shown. `confusedWith` still claims a pair
+        // only when exactly one entry answers, so the wider space stays honest.
+        const said = confusedWith(q.f, given, rt.deck, knownFactIds(history));
         if (said && said !== entryOf(q.f)) {
           st.confused[said] = (st.confused[said] ?? 0) + 1;
           q.confused = said;
@@ -1074,14 +1081,19 @@ export function DrillScreen() {
   // the same way a card with nothing honest to say is treated — no button at
   // all, not a disabled one, and the "?" key inert, both of which fall out of
   // hintReady being false. Typed cards are untouched.
-  // No hint on a listening card: a word's hint is its mnemonic picture or its
-  // kanji parts, both of which would put the answer on screen — the one thing an
-  // audio prompt exists to withhold. Treated like an mc showing, which is
-  // hintless for the same "the hint would be the answer" reason.
+  // A LISTENING card is NOT excluded, and the earlier blanket "no hint on a
+  // listening card" was wrong. Listening is word-only (see lib/listen.ts), so
+  // the only hint hintFor can build on one is a word hint, and a word's hint is
+  // never its reading or its mnemonic — after the retry-hint redesign it is the
+  // COMPONENT breakdown of a multi-kanji MEANING card (電話 → 電 electric + 話
+  // talk). A listening card whose answer is the ENGLISH gloss is exactly where
+  // that helps and cannot leak: the components name the kanji, never the gloss,
+  // so the one thing the audio withholds — the English answer — stays withheld.
+  // (A listening READING card asks for the reading, which wordHint declines
+  // outright, so hintFor already returns null there; there is no kana listening
+  // card to leak a picture. So letting hintFor decide is both correct and safe.)
   const hint =
-    active && rt?.q && !rt.q.mc && !rt.q.listen
-      ? hintFor(rt.q.f, rt.q.dir)
-      : null;
+    active && rt?.q && !rt.q.mc ? hintFor(rt.q.f, rt.q.dir) : null;
   const hintDrawn = useDrawnImage(hint?.kind === "image" ? hint.src : null);
   const hintReady = !!hint && (hint.kind !== "image" || hintDrawn);
   hintReadyRef.current = hintReady;
