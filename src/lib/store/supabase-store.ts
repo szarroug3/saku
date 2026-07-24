@@ -11,6 +11,10 @@ import "server-only";
 // files; this only moves where the blob lives. Unset columns are left untouched
 // on upsert, so writing history never disturbs lists and vice versa.
 
+import {
+  normalizeEnvelope,
+  type SessionStateEnvelope,
+} from "@/lib/session-state";
 import { normalizeSettings } from "@/lib/settings-merge";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { HistoryFile, ListsFile, SettingsFile } from "@/types";
@@ -100,4 +104,36 @@ export async function writeSettingsRow(
       { onConflict: "user_id" },
     );
   if (error) throw new Error(`writing progress.settings failed: ${error.message}`);
+}
+
+// The `session` jsonb is the fourth blob on the row, beside `history`, `lists`
+// and `settings`. It holds the IN-PROGRESS run envelope (see session-state.ts) —
+// separate from `history`, which holds what you FINISHED. Added by
+// scripts/sql/add-session-column.sql and inherits the row's RLS. An unset column
+// reads as the empty envelope (no synced run). Same read/write-a-whole-blob split
+// as the others; the last-writer-wins reconcile is applied in session-store.ts.
+
+export async function readSessionRow(userId: string): Promise<SessionStateEnvelope> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("progress")
+    .select("session")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`reading progress.session failed: ${error.message}`);
+  return normalizeEnvelope(data?.session);
+}
+
+export async function writeSessionRow(
+  userId: string,
+  session: SessionStateEnvelope,
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("progress")
+    .upsert(
+      { user_id: userId, session, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
+  if (error) throw new Error(`writing progress.session failed: ${error.message}`);
 }

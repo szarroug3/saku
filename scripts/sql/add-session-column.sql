@@ -1,0 +1,30 @@
+-- Add the `session` blob to the progress row — Sync Part 2 (in-progress session
+-- teleport).
+--
+-- The learner's IN-PROGRESS quiz/session state (the half-answered run: its deck
+-- position, current question, answers/attempts so far, requeue state, per-showing
+-- stats, and the session loop's phase + round) lives in one jsonb column beside
+-- `history`, `lists` and `settings`. It is read/written by src/lib/session-store.ts
+-- via readSessionRow / writeSessionRow in src/lib/store/supabase-store.ts, and
+-- synced last-writer-wins so a run started on one device can be picked up on
+-- another.
+--
+-- SEPARATE FROM `history`. `history` is what you FINISHED (folded in forever);
+-- this is what you are STILL DOING (last-writer-wins, cleared when the run ends).
+-- The two are different columns on purpose so a stale in-progress copy can never
+-- resurrect a finished run.
+--
+-- RLS: no new policy is needed. The `progress` table's existing row-level
+-- security already scopes every read/write to `auth.uid() = user_id`, and a new
+-- column on that table inherits those policies automatically — the policies gate
+-- the ROW, not the column list. So this column is confined to its owner the
+-- moment it exists, exactly like `settings`.
+--
+-- Idempotent: `if not exists` makes re-running this harmless.
+--
+-- APPLY THIS BY HAND against the production database (e.g. the Supabase SQL
+-- editor). Nothing in the app runs migrations; the code tolerates the column
+-- being absent (an unset column reads as the empty envelope, i.e. no synced
+-- run), so applying it is what turns in-progress session sync on for hosted users.
+
+alter table progress add column if not exists session jsonb;

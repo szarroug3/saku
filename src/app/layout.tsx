@@ -16,6 +16,7 @@ import { HistoryProvider } from "@/lib/history-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { loadSettings } from "@/lib/settings";
 import { SettingsProvider } from "@/lib/settings-provider";
+import { loadSessionState } from "@/lib/session-store";
 import { QuizSessionProvider } from "@/lib/quiz-session";
 import { isSupabaseStore } from "@/lib/store/mode";
 import { ThemeProvider } from "@/lib/theme";
@@ -134,6 +135,18 @@ async function seedSettings(userId: string) {
   }
 }
 
+/** The in-progress session seed, or null if it could not be read — same contract
+ * as seedHistory / seedSettings. A null hands the question to this device's own
+ * localStorage snapshot (which is all a run needs to continue locally) rather
+ * than failing the whole shell. */
+async function seedSessionState(userId: string) {
+  try {
+    return await loadSessionState(userId);
+  } catch {
+    return null;
+  }
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -160,6 +173,13 @@ export default async function RootLayout({
   // instead of after a client fetch. Null for a signed-out visitor (no account to
   // read) — their preferences live in this browser's localStorage cache.
   const initialSettings = userId === null ? null : await seedSettings(userId);
+  // THE IN-PROGRESS RUN, IN THE FIRST RESPONSE, the same way as history/settings:
+  // read here (the same loadSessionState the API route calls) so the quiz-session
+  // provider can reconcile a run started on another device into the live session
+  // on the first paint. Null for a signed-out visitor (no account) — their
+  // in-progress run lives in this browser's localStorage snapshot only.
+  const initialSessionState =
+    userId === null ? null : await seedSessionState(userId);
   // Read the sidebar's collapsed state server-side so it renders at the right
   // width on the first paint instead of loading expanded and snapping closed.
   const sidebarCollapsed =
@@ -194,7 +214,10 @@ export default async function RootLayout({
               that reads it: the Sidebar, the sign-in merge, and every page. */}
           <HistoryProvider userId={userId} initial={initialHistory}>
             <QuizConfigProvider>
-              <QuizSessionProvider>
+              <QuizSessionProvider
+                userId={userId}
+                initialSession={initialSessionState}
+              >
                 {/* No ListsProvider: lists live on the server now (lists.json,
                     beside history.json) and `useLists` fetches them the way
                     `useHistory` does. There is no app-wide list STATE left to
