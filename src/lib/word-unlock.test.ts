@@ -19,10 +19,11 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  READINGS,
   meaningFactId as kanjiMeaningFactId,
   readingFactId,
 } from "../data/kanji.ts";
-import { wordMeaningFactId } from "../data/vocab.ts";
+import { vocabRow, wordMeaningFactId } from "../data/vocab.ts";
 import {
   anchorForFact,
   claimableFacts,
@@ -127,6 +128,51 @@ describe("readingsProvedBy — the write side of the unlock", () => {
       unlockedReadingFacts(claiming([wordMeaningFactId("先生")])),
     );
     assert.deepEqual([...proved].sort(), [...unlocked].sort());
+  });
+});
+
+// A form JMdict files under several readings is taught as its primary, and the
+// primary now comes from the sense merge (src/data/vocab.ts, `withSenses`): 人 is
+// ひと, not the じん suffix the old dedup left in vocab.json. readings.json was cut
+// before that, so it credited the word 人 with じん — and since the reading that
+// UNLOCKS is the one the word attests, learning 人 opened the wrong reading and
+// left the one it was actually taught shut. src/data/kanji.ts (`reattest`)
+// re-derives the evidence from the joined row's `align`; this pins the outcome
+// for two of the 117 forms whose primary moved.
+//
+// By base rather than by anchor word, because the anchor is a re-pick over the
+// attesting words and moves when the evidence does. What must hold is about the
+// SOUND: 人 proves ひと and not じん.
+function readingFactByBase(kanji: string, base: string): FactId {
+  const row = READINGS.find((r) => r.k === kanji && r.base === base);
+  assert.ok(row, `${kanji} has a ${base} reading`);
+  return readingFactId(row.k, row.anchor);
+}
+
+describe("a word proves the reading it is actually taught with", () => {
+  test("learning 人 proves ひと and not じん", () => {
+    assert.equal(vocabRow("人")?.reb, "ひと", "人 is taught as ひと");
+    const proved = new Set(readingsProvedBy(["人"]));
+    assert.ok(proved.has(readingFactByBase("人", "ひと")), "人 proves 人/ひと");
+    assert.ok(!proved.has(readingFactByBase("人", "じん")), "人 does not prove 人/じん");
+    assert.ok(!proved.has(readingFactByBase("人", "にん")), "人 does not prove 人/にん");
+  });
+
+  test("learning 前 proves まえ and not ぜん", () => {
+    assert.equal(vocabRow("前")?.reb, "まえ", "前 is taught as まえ");
+    const proved = new Set(readingsProvedBy(["前"]));
+    assert.ok(proved.has(readingFactByBase("前", "まえ")), "前 proves 前/まえ");
+    assert.ok(!proved.has(readingFactByBase("前", "ぜん")), "前 does not prove 前/ぜん");
+  });
+
+  test("the reading 人 opens is the one the Library then says it was learned in", () => {
+    // The unlock and the "learned in" column read the same rows, so the reading
+    // that becomes askable is framed on 人 itself, and じん stays shut until a
+    // word that really carries it (外国人) is learned.
+    const h = claiming([wordMeaningFactId("人")]);
+    const anchors = readingAnchors(h);
+    assert.equal(anchors.get(readingFactByBase("人", "ひと")), "人");
+    assert.ok(!anchors.has(readingFactByBase("人", "じん")));
   });
 });
 

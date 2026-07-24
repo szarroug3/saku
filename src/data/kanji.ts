@@ -36,7 +36,7 @@ import kanjiJson from "./generated/kanji.json" with { type: "json" };
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import orderJson from "./generated/order.json" with { type: "json" };
 import readingsJson from "./generated/readings.json" with { type: "json" };
-import { vocabRow } from "./vocab.ts";
+import { VOCAB, vocabRow } from "./vocab.ts";
 import { entryId, factId, readingAspect } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo, NewKanjiOrder } from "../types/index.ts";
 
@@ -256,6 +256,69 @@ export const KANJI: readonly KanjiRow[] = (kanjiJson as readonly RawKanji[]).map
   }),
 );
 /**
+ * Re-derive WHICH WORDS ATTEST a reading from the vocabulary as it is served
+ * today, because readings.json's `words` lists were cut before a written form's
+ * primary reading could change under them.
+ *
+ * 人 is the case that shows what breaks. JMdict files three readings under that
+ * one form (ひと a person, じん the -ian suffix, にん the counter), and the cut
+ * that produced vocab.json let the suffix win the dedup, so the word 人 shipped
+ * as じん. src/data/vocab.ts now joins word-senses.json at load and serves 人 as
+ * ひと — but readings.json was built against the old primary, so it still lists
+ * 人 among the words proving じん and not among those proving ひと. The lesson
+ * teaches 人 as ひと while learning it credits じん: two halves of the app
+ * disagreeing about one word, and the half that decides which reading UNLOCKS is
+ * the wrong one.
+ *
+ * A word attests a reading when its own per-kanji breakdown says so, and `align`
+ * on the joined row is that breakdown for the primary the app actually teaches.
+ * So the row's evidence is recomputed from it, in both directions: 人 leaves
+ * じん's list and joins ひと's. 49 rows move, 117 written forms having changed
+ * primary in the sense merge.
+ *
+ * WHY HERE AND NOT IN A RE-CUT. Re-cutting readings.json means re-cutting
+ * vocab.json, and `beginnerRank` orders the entire curriculum from it — see the
+ * long note on SENSES in vocab.ts. The senses ship beside the ranks instead of
+ * inside them, and this is the same join one layer up: the attestation follows
+ * the primary the app serves, and not one rank moves.
+ *
+ * A reading whose every attesting word has moved away keeps its fact and its
+ * anchor and simply stops being unlockable: 仏's ふつ is left with no everyday
+ * word, because the word 仏 is ほとけ. That is the honest outcome. Inventing
+ * evidence for it would put the question back in front of a learner who has met
+ * nothing that proves it, which is the hole the unlock rule exists to close.
+ */
+const ATTESTING: ReadonlyMap<string, ReadonlySet<string>> = buildAttesting();
+
+function buildAttesting(): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  for (const w of VOCAB) {
+    // A jukujikun (大人/おとな) has no per-kanji breakdown and therefore proves
+    // no kanji reading, which is exactly what a null `align` already says.
+    for (const [k, , base] of w.align ?? []) {
+      const key = `${k}|${base}`;
+      const words = map.get(key);
+      if (words) words.add(w.keb);
+      else map.set(key, new Set([w.keb]));
+    }
+  }
+  return map;
+}
+
+function reattest(r: ReadingRow): ReadingRow {
+  const proving = ATTESTING.get(`${r.k}|${r.base}`);
+  // Kept in the row's own order, duplicates and all: 45 rows list a word twice
+  // and `nWords` counts what is listed, so de-duplicating here would quietly
+  // re-sort the readings table (entries.ts sorts on nWords) for rows this
+  // correction has nothing to say about.
+  const kept = r.words.filter((w) => proving?.has(w));
+  const added = proving ? [...proving].filter((w) => !r.words.includes(w)) : [];
+  if (kept.length === r.words.length && added.length === 0) return r;
+  const words = [...kept, ...added];
+  return { ...r, words, nWords: words.length };
+}
+
+/**
  * Re-anchor a reading to the everyday word that attests it with the LOWEST
  * `beginnerRank` — the first one a learner will actually meet.
  *
@@ -316,9 +379,13 @@ function reanchor(r: ReadingRow): ReadingRow {
   return best ? { ...r, anchor: best.anchor, surface: best.surface } : r;
 }
 
-export const READINGS: readonly ReadingRow[] = (readingsJson as readonly ReadingRow[]).map(
-  reanchor,
-);
+// Evidence first, then the anchor: `reanchor` picks the earliest word that
+// attests a reading, so it has to be choosing from the words that still do.
+// Left in the other order it would go on anchoring じん to 人, which is the
+// "learned in 人" the Library prints beside a reading the word 人 no longer has.
+export const READINGS: readonly ReadingRow[] = (readingsJson as readonly ReadingRow[])
+  .map(reattest)
+  .map(reanchor);
 
 /**
  * The default teaching order: `ramp B`.
