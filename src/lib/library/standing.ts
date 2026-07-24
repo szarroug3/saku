@@ -26,12 +26,26 @@
 //
 // The words come from the crossing, and each one is a claim the app can defend:
 //
-//   not seen       no counts, no claim ......... it has never asked you.
-//   you know these a claim, never tested ....... YOU said so. The app didn't.
-//   solid          quiet .......................  it expects you to get it right.
-//   getting there  probe, accuracy ≥ 65% ....... it isn't sure, you're mostly right.
-//   shaky          probe, accuracy < 65% ....... it isn't sure, you're often wrong.
+//   not seen       no counts, no claim .......... it has never asked you.
+//   claimed        a claim, never tested ........ YOU skipped the lesson. Untested.
+//   solid          quiet AND accuracy ≥ 80% ..... expects it right, and you have been.
+//   getting there  seen, accuracy ≥ 65% ......... mostly right, not yet airtight.
+//   shaky          seen, accuracy < 65% ......... you're often wrong.
 //   slipping       teach, but you HAVE seen it .. you had it. It's gone.
+//
+// WHY "solid" TAKES BOTH, AND NOT `quiet` ALONE
+// =============================================
+// `status` is a RECENCY reading — recall(now) — so it spikes to `quiet` the
+// instant after any drill, however badly the drill went (see scoring.recall:
+// zero elapsed → p ≈ 1). Reading "solid" off `quiet` alone was the bug: a fact
+// the learner had just missed four times out of five read `quiet` (drilled
+// seconds ago) and therefore "solid" — the app's own green light on a fact its
+// own accuracy number, one column over, called 20%. So "solid" is now the
+// CROSSING the header promised and did not deliver: the model expects you to
+// recall it right now (`quiet`) AND your record backs that up (accuracy ≥
+// SOLID_PCT). A recently-drilled fact with a poor record is `getting there` or
+// `shaky`, which is what its accuracy already said. Recency alone can quiet a
+// fact out of the drill list; it can no longer alone call it known.
 //
 // "slipping" is the interesting one and it is the one word here that could not
 // be said without the model. `teach` at p → 0 means "never met, or lost — the
@@ -57,7 +71,13 @@ export type Standing =
  * not statuses in a workflow. */
 export const STANDING_LABEL: Record<Standing, string> = {
   "not-seen": "not seen",
-  claimed: "you know this",
+  // Was "you know this". A claim now means "I skipped the lesson", NOT "I know
+  // it" (owner's intent — see claims.ts), so the chip states the ACT you took
+  // and lets the app keep its own counsel about whether you know it: the app has
+  // not tested you, and "claimed" says exactly that without agreeing or
+  // disagreeing. FLAGGED for Sam — "untested", "skipped" and "taken as read"
+  // were the other candidates; this is the small defensible pick, not a verdict.
+  claimed: "claimed",
   solid: "solid",
   "getting-there": "getting there",
   shaky: "shaky",
@@ -85,6 +105,18 @@ export const STANDING_TONE: Record<Standing, "good" | "warn" | "bad" | "mute"> =
  * like the constants in scoring.ts. It moves one adjective and orders nothing. */
 export const GETTING_THERE_PCT = 65;
 
+/** At or above this accuracy, a `quiet` fact is "solid" rather than merely
+ * "getting there". The bar that stops recency alone from reading as mastery.
+ *
+ * Invented, and in the same spirit as GETTING_THERE_PCT and everything in
+ * scoring.ts — one engineer's guess at where "you get it right cold almost
+ * every time" starts, fitted to nothing. 80 is "four out of five, first try,
+ * no retries": a strong record under the strict metric, short of the 100% a
+ * handful of showings can fluke. It gates one adjective (solid vs getting
+ * there) and orders nothing; move it and no list changes. It must sit ABOVE
+ * GETTING_THERE_PCT or "getting there" would never appear for a quiet fact. */
+export const SOLID_PCT = 80;
+
 /** Everything this needs to know about a fact. Not a HistoryFile: a caller that
  * has already gathered a fact's record should not have to hand over the whole
  * file, and a function that takes the whole file gets read as if it could look
@@ -106,16 +138,32 @@ export function standingOf(
   const state = effectiveState(agg, claimedAt);
   const s = status(state, now);
 
-  // A live claim outranks the adjective the arithmetic would pick, and says so
-  // in the user's own terms. It is checked BEFORE `quiet` because "solid" is a
-  // claim the APP makes from evidence, and there isn't any — the app has never
-  // asked you. Printing "solid" here would launder your assertion into the
-  // app's finding, which is the exact move this file exists to prevent.
+  // A claim you have NEVER been tested on gets its own word, and it is checked
+  // before anything the arithmetic would pick. It reports the ACT, not a
+  // finding: the app has no evidence about you here, because you asked it to
+  // skip the lesson rather than answer a quiz. Printing "solid" here would
+  // launder your assertion into the app's finding, the exact move this file
+  // exists to prevent — and the accuracy gate below would refuse it anyway,
+  // since a claim writes no counts (accuracy is null) and cannot clear any bar.
+  // `s !== "teach"` keeps a long-decayed claim from masquerading as still-fresh;
+  // once its belief has decayed to "teach" it reads "not seen", as untested
+  // material should.
   if (!seen && claimedAt && s !== "teach") return { standing: "claimed", seen };
   if (!seen) return { standing: "not-seen", seen };
-  if (s === "quiet") return { standing: "solid", seen };
+
+  // A fact with showings behind it, lost to time: re-teach, not re-test.
   if (s === "teach") return { standing: "slipping", seen };
+
+  // Everything left has been answered (seen > 0) and is not lost (quiet or
+  // probe), so it has a real accuracy — non-null by construction, since
+  // accuracyOf is null only for seen === 0. "solid" is the crossing of both
+  // sources: the model expects it right now (`quiet`) AND the record earns it
+  // (≥ SOLID_PCT). Recency without the record is not solid; it is whatever the
+  // accuracy already said, which is "getting there" or "shaky".
   const pct = agg ? accuracyOf(agg, metric) : null;
+  if (s === "quiet" && pct !== null && pct >= SOLID_PCT) {
+    return { standing: "solid", seen };
+  }
   return {
     standing: pct !== null && pct >= GETTING_THERE_PCT ? "getting-there" : "shaky",
     seen,

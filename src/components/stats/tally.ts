@@ -69,20 +69,17 @@ export const BUCKETS: readonly Standing[] = [
 /**
  * The word under a COUNT of facts, which is not always the word on one.
  *
- * STANDING_LABEL is written for a chip on a single row — "you know this", said
- * about そ. Under the number 35 it reads as a typo. Every other word in the set
- * is an adjective and survives the change of number unaltered ("83 solid", "188
- * shaky"); `claimed` is the only one that is a sentence about one thing, so it
- * is the only one here.
- *
- * This is deliberately a pluralisation and NOT a second opinion. If a word ever
- * needs to differ from STANDING_LABEL by more than its number, the fix is in
- * standing.ts — that file is the one place the app turns the model into a word,
- * and this map exists to leave it that way, not to fork it.
+ * Every standing is now a bare adjective (or past participle) and survives the
+ * change of number unaltered — "83 solid", "188 shaky", "35 claimed" — so this
+ * map no longer overrides any of them. It stays as its own export, not an alias
+ * of STANDING_LABEL, because that is the seam the old "you know this" / "you
+ * know these" split lived in: if a word ever again reads as a typo under a
+ * count, the pluralisation goes HERE and the single-row word stays in
+ * standing.ts, the one place the app turns the model into a word. Keeping the
+ * seam open is cheaper than reopening it.
  */
 export const BUCKET_LABEL: Record<Standing, string> = {
   ...STANDING_LABEL,
-  claimed: "you know these",
 };
 
 /** Bar fill per tone. The Library's chip paints the same tones as a border and a

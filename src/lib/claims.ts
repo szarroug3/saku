@@ -44,6 +44,27 @@
 // hiragana from your drills today, and does not remove it from the app forever
 // on the strength of one click in July. If you were right, you will be asked
 // once in the autumn and prove it. If you were wrong, the app finds out.
+//
+// WHAT A CLAIM IS NOT: A MASTERY REPORT
+// =====================================
+// This decaying belief is a SCHEDULING device and only that: it takes the fact
+// out of the lesson and drill rotation for a season. The owner's intent, in her
+// own words, draws the line the code must not cross — "Claiming means I don't
+// want to go through the lesson. Pretend I did it, but treat me as if I've never
+// taken a quiz. It does NOT mean ignore everything I do with it forever." So a
+// claim must never become the app TELLING YOU that you know something:
+//
+//   - The Library never reads the claimed belief as "solid". A claimed-untested
+//     fact reads "claimed" (its own neutral word); "solid" is reserved for a
+//     fact the app has actually seen you get right (standing.ts, SOLID_PCT).
+//   - A claim is authoritative only until you answer. The moment a session
+//     touches the fact, that session is the newer record and the claim is gone
+//     (effectiveState) — a miss the day after a claim reads as a miss, not as a
+//     dented certainty. Older claims never outrank newer drills.
+//
+// So the belief here clears your PATH; it does not make a CLAIM about your
+// memory. The one place the app is allowed to say a word about your memory is
+// standing.ts, and it will not say "solid" on your say-so.
 
 import { SCORING, UNMET } from "@/lib/scoring";
 import type { FactState, HistoryFile } from "@/types";
@@ -111,13 +132,21 @@ export function seenState(ts: number): FactState {
  * is right in both directions:
  *
  *   - You claim を today, having failed it in March. The claim is newer: the
- *     app believes you. March was true then and is not evidence about now.
+ *     app takes you at your word that you skipped its lesson, and March's miss
+ *     is not evidence about now. The fact clears out of the lesson and drill
+ *     rotation for a season (claimedState), which is what claiming is FOR.
  *   - You claim を today and then MISS it in a drill tomorrow. The session is
- *     newer: it folds normally from the claimed state, at p ≈ 1, so the miss is
- *     maximally surprising and takes the full penalty (see review()). Claiming
- *     something and then getting it wrong is the single most informative thing
- *     that can happen, and it costs you exactly what it should. No branch here
- *     does that — `review`'s arithmetic already did.
+ *     newer, so this returns the session's state and the claim is DISCARDED — a
+ *     claim never floors what a later answer shows, which is the owner's whole
+ *     point ("it does not mean ignore everything I do with it forever"). What
+ *     that session's state IS comes from aggregate.ts, and it folds the miss
+ *     from a COLD START: the claim's belief lives in a separate record and is
+ *     never folded into `facts`, so a miss right after a claim is treated as
+ *     failing untested material, not as a maximally-surprising fall from p ≈ 1.
+ *     That is not a leniency bug — it is exactly "pretend I did the lesson but
+ *     treat me as if I've never taken a quiz". The Library reads the resulting
+ *     state through standingOf, where the fact's poor ACCURACY, not this
+ *     arithmetic, is what keeps it off "solid" (see standing.ts).
  *
  * `agg` is Partial because a fact you have claimed and never been tested on has
  * no aggregate at all, which is the common case and not an error.
