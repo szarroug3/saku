@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { Analytics } from "@vercel/analytics/next";
 
+import { AuthModeInit } from "@/components/auth/auth-mode-init";
 import { LocalMigration } from "@/components/auth/local-migration";
 import { SaveStatus } from "@/components/save-status";
 import { Sidebar } from "@/components/sidebar";
@@ -208,6 +209,11 @@ export default async function RootLayout({
                                 has to appear on. Renders nothing when nothing is
                                 unsaved. */}
                             <SaveStatus />
+                            {/* Tell the progress write path whether an account
+                                exists, so a 401 on a write is read as "signed
+                                out, save local" or "signed-in token lapsed,
+                                refresh and retry" correctly. Renders nothing. */}
+                            <AuthModeInit signedIn={authEnabled && signedIn} />
                             {/* When a signed-out learner signs in, their local
                                 progress is replayed into the account and the local
                                 copy cleared — once, best effort. Renders nothing. */}

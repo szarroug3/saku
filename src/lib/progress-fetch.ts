@@ -4,24 +4,36 @@
 //
 // THE MECHANISM
 // =============
-// In Supabase mode a signed-out write returns 401 (AuthRequiredError →
-// historyErrorResponse). These wrappers catch exactly that status and, instead
-// of letting the write vanish, apply the SAME operation to this browser's local
-// store (see store/local-progress.ts) and report success. Every other outcome is
-// passed through untouched:
+// In Supabase mode a write returns 401 (AuthRequiredError → historyErrorResponse)
+// when the server has no session for the request. What that 401 MEANS depends on
+// whether an account exists at all — and the two meanings call for opposite
+// responses. The decision lives in progress-write.ts (pure, unit-tested); these
+// wrappers only supply the real fetch, the matching local op, and — for a
+// signed-in retry — a Supabase session refresh. Outcomes:
 //
 //   2xx            → the server saved it. Nothing local happens.
-//   401            → signed out. Apply locally, report ok. This is the fallback.
+//   401, signed OUT → this browser IS the store. Apply locally, report ok, and
+//                    the outbox drops it — the work is durably saved.
+//   401, signed IN  → a transient token lapse, NOT "no account". Refresh the
+//                    session and retry the POST once. If it lands, done; if it
+//                    still 401s, report NOT ok so the outbox keeps the record and
+//                    the save banner shows. NEVER written to local, NEVER a false
+//                    ok — a signed-in learner's write belongs on the server.
 //   503 / network  → a signed-IN failure (unreadable file, offline, server
 //                    down). Report NOT ok, write nothing local. The caller's
-//                    existing retry/queue behavior must handle these unchanged —
-//                    a network blip is not a reason to fork a signed-in learner's
-//                    history into localStorage.
+//                    existing retry/queue behavior handles these unchanged.
 //
-// So the local fallback is keyed on the ONE status that means "there is no
-// account to write to", and nothing else. A signed-out learner's buttons now
-// persist; a signed-in learner's durability story (pending-records.ts, the 503
-// banner) is exactly as it was.
+// "Signed in?" is a bit these plain modules cannot read for themselves; the app
+// shell hands it over through auth-mode.ts (see isSignedIn / setAuthMode).
+//
+// THE BUG THIS BRANCH CLOSES
+// ==========================
+// A signed-in write used to take the signed-OUT path on 401: applyLocal + report
+// ok + drop from the outbox. For a signed-in learner whose access token had just
+// lapsed (common on mobile / multi-device, where Supabase rotates tokens), a
+// finished round was written only to that device's localStorage, reported saved,
+// and dropped from retry with no banner — the write never reached the server.
+// That silently stranded a real user's progress on their phone.
 //
 // WHY WRAPPERS AND NOT A SHARED fetch()
 // =====================================
@@ -32,7 +44,13 @@
 // the caller decides "what to do once it's saved", and neither reaches into the
 // other.
 
+import { isSignedIn } from "@/lib/auth-mode";
 import { notifyHistoryWrite } from "@/lib/history-events";
+import {
+  resolveProgressWrite,
+  type ProgressResult,
+} from "@/lib/progress-write";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   localAddToList,
   localClaim,
@@ -50,43 +68,38 @@ import type { EntryId, FactId, QuizSessionRecord, SavedList } from "@/types";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
-/** What a wrapped write reports back. `ok` folds "the server saved it" and "I
- * saved it locally because you're signed out" into the one question a caller
- * asks — is this piece of work safe now. `status` is the raw HTTP status (0 for
- * a network failure) for the rare caller that wants to tell the two apart. */
-export interface ProgressResult {
-  ok: boolean;
-  status: number;
+export type { ProgressResult };
+
+/** Refresh this browser's Supabase session before a signed-in retry, rotating to
+ * a fresh access token so the retried POST carries a valid cookie. Resolves
+ * whether or not the refresh succeeded — a genuinely dead session just makes the
+ * retry 401 again, which is exactly the "keep it queued" signal we want. */
+async function refreshSupabaseSession(): Promise<void> {
+  await createSupabaseBrowserClient().auth.refreshSession();
 }
 
 /**
- * POST `body` to `url`; on a 401 run `applyLocal` and report ok. The shared body
- * of every wrapper below — the status branching lives here once so no endpoint
- * can get the "401 means local, everything else means pass through" rule subtly
- * wrong.
+ * POST `body` to `url`, then let resolveProgressWrite decide the outcome — the
+ * status/auth branching (including the signed-in refresh + retry) lives there
+ * once so no endpoint can get it subtly wrong. This wrapper only supplies the
+ * real IO: the fetch, the local op, the current auth bit, and the refresh.
  */
-async function postWithLocalFallback(
+function postWithLocalFallback(
   url: string,
   body: unknown,
   applyLocal: () => void,
 ): Promise<ProgressResult> {
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: JSON_HEADERS,
-      body: JSON.stringify(body),
-    });
-    if (res.status === 401) {
-      // Signed out: there is no server row, so this browser IS the store.
-      applyLocal();
-      return { ok: true, status: 401 };
-    }
-    return { ok: res.ok, status: res.status };
-  } catch {
-    // Offline or unreachable — NOT a signed-out 401, so nothing goes local. The
-    // caller treats this like any pre-existing failure (swallow, or keep queued).
-    return { ok: false, status: 0 };
-  }
+  return resolveProgressWrite({
+    send: () =>
+      fetch(url, {
+        method: "POST",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(body),
+      }),
+    applyLocal,
+    signedIn: isSignedIn(),
+    refreshSession: refreshSupabaseSession,
+  });
 }
 
 /**
@@ -203,21 +216,17 @@ export function deleteList(id: string): Promise<ProgressResult> {
 /**
  * As postWithLocalFallback, but the caller supplies the whole request — DELETE
  * carries its argument in the query string, not a JSON body, so it cannot go
- * through the POST helper. Same 401-means-local rule, one implementation apart
- * only in how the request is built.
+ * through the POST helper. Same decision (signed-out local, signed-in refresh +
+ * retry), one implementation apart only in how the request is built.
  */
-async function postWithLocalFallbackRequest(
+function postWithLocalFallbackRequest(
   send: () => Promise<Response>,
   applyLocal: () => void,
 ): Promise<ProgressResult> {
-  try {
-    const res = await send();
-    if (res.status === 401) {
-      applyLocal();
-      return { ok: true, status: 401 };
-    }
-    return { ok: res.ok, status: res.status };
-  } catch {
-    return { ok: false, status: 0 };
-  }
+  return resolveProgressWrite({
+    send,
+    applyLocal,
+    signedIn: isSignedIn(),
+    refreshSession: refreshSupabaseSession,
+  });
 }
