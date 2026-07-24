@@ -70,23 +70,40 @@ export function wordKnown(keb: string, history: HistoryFile): boolean {
 }
 
 /**
- * The word to ANCHOR a reading question on — a word the user has learned.
+ * "More than just that kanji" — the word has a second piece to frame the reading
+ * against, whether a second kanji (病院) or a kana tail (病む).
  *
- * Prefer the ingest's own anchor when it's known: it is the evidence-richest and
- * the fact is already keyed on it. Otherwise take the earliest known word by
- * beginnerRank — the one most likely to be familiar. Null when the user knows no
- * word that attests this reading, which is exactly when the reading is not yet
- * unlocked.
+ * A SINGLE-KANJI word is exactly its one kanji, so a reading question on it ("how
+ * is 人 read in 人") is the word's own reading card wearing a kanji hat — the
+ * isolated "on its own" card (`kanji:X/reading@X`) task #22 removes. A reading is
+ * only ever asked inside a word that has other pieces to show it beside, so the
+ * anchor a question frames on must be multi-part. Counted in code points, not
+ * UTF-16 units, so a surrogate-pair glyph still measures as one character. */
+export function isMultiPartWord(word: string): boolean {
+  return [...word].length > 1;
+}
+
+/**
+ * The word to ANCHOR a reading question on — a MULTI-PART word the user has
+ * learned.
+ *
+ * Prefer the ingest's own anchor when it's known and multi-part: it is the
+ * evidence-richest and the fact is already keyed on it. Otherwise take the
+ * earliest known multi-part word by beginnerRank — the one most likely to be
+ * familiar. Null when the user knows no multi-part word that attests this
+ * reading, which is exactly when the reading is not yet askable: either nothing
+ * proves it yet, or the only word that does is the single kanji itself (the "on
+ * its own" card task #22 removed from quizzing).
  */
 export function preferredAnchor(
   row: ReadingRow,
   known: (keb: string) => boolean,
 ): string | null {
-  if (known(row.anchor)) return row.anchor;
+  if (known(row.anchor) && isMultiPartWord(row.anchor)) return row.anchor;
   let best: string | null = null;
   let bestRank = Infinity;
   for (const w of row.words) {
-    if (!known(w)) continue;
+    if (!known(w) || !isMultiPartWord(w)) continue;
     const rank = vocabRow(w)?.beginnerRank ?? Infinity;
     if (rank < bestRank) {
       bestRank = rank;
@@ -146,6 +163,17 @@ export function unlockedReadingFacts(history: HistoryFile): FactId[] {
  * A reading is proved by a word when the word is in the reading's attesting
  * `words` list. Deduped, since one word (先生) proves several readings and
  * several words prove one.
+ *
+ * This is the WRITE side — it marks the reading `seen` so it enters the pool. It
+ * does NOT decide whether the reading is ever ASKED: that is task #22's rule, and
+ * it lives on the read side (`preferredAnchor` → `anchorForFact` / `quizzableFacts`),
+ * which only ever frames a reading on a MULTI-PART known word. So learning the
+ * single-kanji word 人 may mark 人's reading seen, but it is never quizzed until a
+ * multi-part word (恋人, 外国人) gives it a place to be asked — and the "on its
+ * own" reading whose only word IS the kanji (病/reading@病) is never asked at all.
+ * Keeping the seed broad and the ASK narrow is deliberate: it leaves this in step
+ * with the curriculum's own "a lesson unlocks its words' readings" invariant while
+ * the read-side gate does the removing.
  */
 export function readingsProvedBy(words: readonly string[]): FactId[] {
   const set = new Set(words);

@@ -142,37 +142,67 @@ describe("readingsProvedBy — the write side of the unlock", () => {
 //
 // By base rather than by anchor word, because the anchor is a re-pick over the
 // attesting words and moves when the evidence does. What must hold is about the
-// SOUND: 人 proves ひと and not じん.
+// SOUND: 人 in a word reads ひと or じん, and which word proved it is the point.
 function readingFactByBase(kanji: string, base: string): FactId {
   const row = READINGS.find((r) => r.k === kanji && r.base === base);
   assert.ok(row, `${kanji} has a ${base} reading`);
   return readingFactId(row.k, row.anchor);
 }
 
-describe("a word proves the reading it is actually taught with", () => {
-  test("learning 人 proves ひと and not じん", () => {
+// TASK #22: a kanji's reading is ONLY ever ASKED inside a MULTI-PART word the
+// learner knows. The single-kanji word 人 IS its own reading card (「人」→ ひと,
+// the word's reading), so knowing it must never open a second "how is 人 read on
+// its own" card. The reading becomes askable through a MULTI-PART word that
+// carries it — 恋人 for ひと, 外国人 for じん — framed on that word, never on the
+// bare glyph. The guarantee lives on the READ side (preferredAnchor →
+// anchorForFact / readingAnchors / quizzableFacts), so these test it there.
+describe("a kanji reading is asked only inside a multi-part word", () => {
+  test("knowing only the single-kanji word 人 makes none of 人's readings askable", () => {
     assert.equal(vocabRow("人")?.reb, "ひと", "人 is taught as ひと");
-    const proved = new Set(readingsProvedBy(["人"]));
-    assert.ok(proved.has(readingFactByBase("人", "ひと")), "人 proves 人/ひと");
-    assert.ok(!proved.has(readingFactByBase("人", "じん")), "人 does not prove 人/じん");
-    assert.ok(!proved.has(readingFactByBase("人", "にん")), "人 does not prove 人/にん");
-  });
-
-  test("learning 前 proves まえ and not ぜん", () => {
-    assert.equal(vocabRow("前")?.reb, "まえ", "前 is taught as まえ");
-    const proved = new Set(readingsProvedBy(["前"]));
-    assert.ok(proved.has(readingFactByBase("前", "まえ")), "前 proves 前/まえ");
-    assert.ok(!proved.has(readingFactByBase("前", "ぜん")), "前 does not prove 前/ぜん");
-  });
-
-  test("the reading 人 opens is the one the Library then says it was learned in", () => {
-    // The unlock and the "learned in" column read the same rows, so the reading
-    // that becomes askable is framed on 人 itself, and じん stays shut until a
-    // word that really carries it (外国人) is learned.
     const h = claiming([wordMeaningFactId("人")]);
     const anchors = readingAnchors(h);
-    assert.equal(anchors.get(readingFactByBase("人", "ひと")), "人");
-    assert.ok(!anchors.has(readingFactByBase("人", "じん")));
+    // Nothing multi-part to frame them in, so none unlock — not even ひと, the
+    // reading the word 人 itself carries. That reading is the word's own card.
+    assert.equal(anchorForFact(readingFactByBase("人", "ひと"), h), undefined);
+    assert.ok(!anchors.has(readingFactByBase("人", "ひと")), "人 alone: ひと not askable");
+    assert.ok(!anchors.has(readingFactByBase("人", "じん")), "人 alone: じん not askable");
+  });
+
+  test("learning a multi-part word makes its kanji's reading askable, framed on it", () => {
+    // 恋人 carries 人 as ひと and 外国人 carries it as じん; each is more than just
+    // the kanji, so each is a fair place to ask "how is 人 read HERE".
+    assert.equal(
+      anchorForFact(readingFactByBase("人", "ひと"), claiming([wordMeaningFactId("恋人")])),
+      "恋人",
+      "恋人 opens 人/ひと, framed on 恋人",
+    );
+    assert.equal(
+      anchorForFact(readingFactByBase("人", "じん"), claiming([wordMeaningFactId("外国人")])),
+      "外国人",
+      "外国人 opens 人/じん, framed on 外国人",
+    );
+  });
+});
+
+// TASK #22: the isolated "on its own" card — a reading whose ONLY attesting word
+// IS the single kanji (kanji:X/reading@X) — is removed from quizzing entirely.
+// 病's やまい reading is attested by the word 病 alone (病/reading@病), so no
+// multi-part word can ever frame it: it is never asked, however it was "met".
+describe("the on-its-own reading (kanji:X/reading@X) is never quizzed", () => {
+  const YAMAI: FactId = readingFactByBase("病", "やまい");
+
+  test("its fact IS the self-anchored kind", () => {
+    const row = READINGS.find((r) => r.k === "病" && r.base === "やまい");
+    assert.ok(row && row.anchor === "病", "病/やまい is anchored on the glyph itself");
+  });
+
+  test("it is not quizzable even when met by a stray claim on the fact", () => {
+    // The reading is "met" — claimed on the fact itself and its word learned —
+    // and still must not be asked: no multi-part word attests やまい, so there is
+    // nowhere fair to ask it.
+    const h = claiming([YAMAI, wordMeaningFactId("病")]);
+    assert.ok(!quizzableFacts([YAMAI], h).includes(YAMAI));
+    assert.equal(anchorForFact(YAMAI, h), undefined);
   });
 });
 

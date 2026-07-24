@@ -42,6 +42,7 @@
 import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { answerIsJapanese } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
+import { isReadingFact } from "@/lib/word-unlock";
 import type { Direction, FactId } from "@/types";
 
 /** How the instruction names the thing you are being asked to produce.
@@ -85,6 +86,13 @@ export function quizInstruction(
   const wantsMeaning =
     !answerIsJapanese(fact, dir) && factInfo(fact)?.meaning != null;
 
+  // A kanji reading is asked ONLY inside a word (task #22): "how is 病 said in
+  // 病院". The prompt names the word beneath the glyph; the instruction says the
+  // reading is the one IT TAKES THERE, so "せい in one word, しょう in another"
+  // reads as the point of the card and not a contradiction. A word or kana
+  // reading is the whole sound and takes no such qualifier.
+  const where = isReadingFact(fact) ? " in this word" : "";
+
   if (mode === "mc") {
     // The owner's own phrasing: "which of the following is the correct
     // [kanji, word, whatever]?". Shortened to "these" because the options sit
@@ -99,12 +107,13 @@ export function quizInstruction(
     // the wrong question about the right options. Names the role for the same
     // reason the meaning line does: a reading is read off a kanji OR a word, and
     // the learner should know which one this card is about.
-    if (isSound(fact, dir)) return `Which of these is how this ${noun} is said?`;
+    if (isSound(fact, dir))
+      return `Which of these is how this ${noun} is said${where}?`;
     return `Which of these is the correct ${noun}?`;
   }
 
   if (wantsMeaning) return `Type what this ${noun} means.`;
-  if (isSound(fact, dir)) return `Type how this ${noun} is said.`;
+  if (isSound(fact, dir)) return `Type how this ${noun} is said${where}.`;
   // Reached only if a typed card ever wants a written form containing kanji,
   // which the drill is supposed to make impossible (it offers those as a board).
   // Kept honest rather than unreachable-by-assumption: if the guard upstream

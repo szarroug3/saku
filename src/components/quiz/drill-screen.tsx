@@ -81,7 +81,7 @@ import { toKana } from "@/lib/romaji";
 import { quizInstruction } from "@/lib/quiz-instruction";
 import { speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
-import { anchorForFact } from "@/lib/word-unlock";
+import { anchorForFact, isReadingFact } from "@/lib/word-unlock";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import type {
@@ -1096,8 +1096,13 @@ export function DrillScreen() {
   // (A listening READING card asks for the reading, which wordHint declines
   // outright, so hintFor already returns null there; there is no kana listening
   // card to leak a picture. So letting hintFor decide is both correct and safe.)
+  // A kanji-reading card's formula hint is framed on the SAME word the prompt
+  // shows it in (see ctx below / anchorForFact), so the hint is handed that word.
+  // Every other hint ignores it.
   const hint =
-    active && rt?.q && !rt.q.mc ? hintFor(rt.q.f, rt.q.dir) : null;
+    active && rt?.q && !rt.q.mc
+      ? hintFor(rt.q.f, rt.q.dir, anchorForFact(rt.q.f, history) ?? undefined)
+      : null;
   const hintDrawn = useDrawnImage(hint?.kind === "image" ? hint.src : null);
   const hintReady = !!hint && (hint.kind !== "image" || hintDrawn);
   hintReadyRef.current = hintReady;
@@ -1107,6 +1112,16 @@ export function DrillScreen() {
   if (!active || !rt || !rt.q) return null;
 
   const q = rt.q;
+  // The word a kanji-reading card is asked IN — the known, multi-part anchor the
+  // drill picked (電話 for 話). Set only for that card type, and only jp2en
+  // (reading facts are jp2en; the guard is belt-and-braces). It drives two
+  // things below: the halo shows the WHOLE WORD with this card's kanji lit rather
+  // than the lone glyph, and the "in 電話" sublabel is dropped as redundant with
+  // it. undefined for every other card, which then renders exactly as before.
+  const readingWord =
+    q.dir === "jp2en" && !q.listen && isReadingFact(q.f)
+      ? anchorForFact(q.f, history)
+      : undefined;
   // What to put on screen is the fact's subject's answer, not this screen's.
   // The drill knows there is a glyph, maybe a line under it, and some options;
   // it does not know whether it is asking a kana, a kanji reading or a word.
@@ -1333,14 +1348,20 @@ export function DrillScreen() {
           state={haloState}
           timerLeft={rt.timerLeft ?? 0}
           drainWindow={drainWindow}
-          glyph={prompt.glyph}
+          // A kanji-reading card shows the WHOLE WORD (電話) so the reading is
+          // asked in context, with this card's kanji lit and the rest dimmed (see
+          // `highlight`). Every other card shows its own glyph. The word is
+          // context, not a leak: the highlighted glyph's reading is the answer and
+          // is never printed.
+          glyph={readingWord ?? prompt.glyph}
+          highlight={readingWord ? prompt.glyph : undefined}
           font={q.font}
           // A single glyph keeps its base size (GLYPH_PX for the Japanese side,
           // 0.6× for latin answer text — the old distinction). A multi-char
           // WORD scales down to sit on ONE line inside the halo instead of
           // overflowing and wrapping. See fitGlyphSize.
           fontSize={fitGlyphSize(
-            prompt.glyph,
+            readingWord ?? prompt.glyph,
             prompt.jp,
             prompt.jp ? GLYPH_PX : Math.round(GLYPH_PX * 0.6),
           )}
@@ -1370,9 +1391,15 @@ export function DrillScreen() {
             instruction above: an anchor like "in 人生" / "on its own", without
             which a kanji reading has nine right answers. The bare "meaning" /
             "reading" labels are dropped — the full instruction already says which
-            it is, so they were only noise (Sam). Muted, because it supports the
-            white instruction rather than competing with it. */}
-        {prompt.context && prompt.context !== "meaning" && prompt.context !== "reading" ? (
+            it is, so they were only noise (Sam). And when the WHOLE WORD is shown
+            in the halo (a kanji-reading card, `readingWord`), the "in 電話"
+            sublabel is dropped too: the word is right there with the kanji lit, so
+            repeating it underneath is the same noise (Sam, task #22). Muted,
+            because it supports the white instruction rather than competing. */}
+        {!readingWord &&
+        prompt.context &&
+        prompt.context !== "meaning" &&
+        prompt.context !== "reading" ? (
           <p className="-mt-1 text-center text-[13px] text-text-muted">{prompt.context}</p>
         ) : null}
         {/* The pronunciation, shown WITH the kanji on a homophone's meaning card
@@ -1437,6 +1464,28 @@ export function DrillScreen() {
                 imgClassName="h-[104px] w-[104px] rounded-lg object-contain"
                 glyphClassName="text-4xl text-text-muted"
               />
+            ) : hint.kind === "formula" ? (
+              // [病] + [院 / いん] = 病院. The asked piece is blank (its reading
+              // is the answer); every other piece carries the reading it takes in
+              // this word, and the word it all assembles into sits after the =.
+              // See src/lib/reading-formula.ts, which built the pieces.
+              <span className="flex flex-wrap items-end justify-center gap-x-1.5 gap-y-1 text-text-muted">
+                {hint.formula.pieces.map((p, i) => (
+                  <span key={i} className="flex items-end gap-x-1.5">
+                    {i > 0 ? <span className="pb-0.5 text-[14px]">+</span> : null}
+                    <span className="flex flex-col items-center leading-none">
+                      <span className="min-h-[13px] text-[11px] text-accent">
+                        {p.reading ?? " "}
+                      </span>
+                      <span className="text-xl text-text">{p.text}</span>
+                    </span>
+                  </span>
+                ))}
+                <span className="pb-0.5 text-[14px]">=</span>
+                <span className="pb-0.5 text-xl text-text">
+                  {hint.formula.result}
+                </span>
+              </span>
             ) : (
               <p className="max-w-[320px] text-center text-[12px] text-text-muted">
                 {hint.text}
