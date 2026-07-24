@@ -96,13 +96,15 @@ export function quizInstruction(
     if (wantsMeaning) return `Which of these is what the ${noun} means?`;
     // A Japanese answer that is all kana is a SOUND, not a spelling — asking
     // "which of these is the correct word" over a board of readings is asking
-    // the wrong question about the right options.
-    if (isSound(fact, dir)) return "Which of these is how it's said?";
+    // the wrong question about the right options. Names the role for the same
+    // reason the meaning line does: a reading is read off a kanji OR a word, and
+    // the learner should know which one this card is about.
+    if (isSound(fact, dir)) return `Which of these is how this ${noun} is said?`;
     return `Which of these is the correct ${noun}?`;
   }
 
   if (wantsMeaning) return `Type what the ${noun} means.`;
-  if (isSound(fact, dir)) return "Type how it's said.";
+  if (isSound(fact, dir)) return `Type how this ${noun} is said.`;
   // Reached only if a typed card ever wants a written form containing kanji,
   // which the drill is supposed to make impossible (it offers those as a board).
   // Kept honest rather than unreachable-by-assumption: if the guard upstream

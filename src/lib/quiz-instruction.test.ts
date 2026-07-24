@@ -94,7 +94,7 @@ describe("every card says what it wants", () => {
     );
     assert.equal(
       quizInstruction(wordReadingFactId("問題"), "en2jp", "typed"),
-      "Type how it's said.",
+      "Type how this word is said.",
     );
   });
 
@@ -133,7 +133,7 @@ describe("every card says what it wants", () => {
     const a = ALL_FACTS.find((f) => String(f).startsWith("kana:あ"));
     assert.ok(a);
     assert.equal(quizInstruction(a, "en2jp", "mc"), "Which of these is the correct kana?");
-    assert.equal(quizInstruction(a, "jp2en", "typed"), "Type how it's said.");
+    assert.equal(quizInstruction(a, "jp2en", "typed"), "Type how this kana is said.");
   });
 
   test("the instruction follows the MODE, not just the fact", () => {
