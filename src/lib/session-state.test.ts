@@ -60,6 +60,9 @@ function samplePayload(): SessionPayload {
       teach: ["kana:a"],
       what: "Hiragana · vowels",
       round: 2,
+      // The teach walk's cursor — the exact-position teach resume rides here on
+      // the session, so a teleport lands the learner on the same page.
+      teachStep: 3,
       phase: "drilling",
       restUntil: null,
       roundStats: {},
@@ -127,6 +130,14 @@ describe("round-trip faithfulness (runtime → blob → runtime)", () => {
     const s = (back.state as SessionPayload).session as Record<string, unknown>;
     assert.equal(s.phase, "drilling");
     assert.equal(s.round, 2);
+  });
+
+  test("the teach-walk cursor survives — page N restores to page N", () => {
+    const payload = samplePayload();
+    const back = normalizeEnvelope(JSON.parse(JSON.stringify(makeEnvelope(payload, "s", 1))));
+    const s = (back.state as SessionPayload).session as Record<string, unknown>;
+    // Left the walk on item 3; it comes back on item 3, not reset to the first.
+    assert.equal(s.teachStep, 3);
   });
 });
 

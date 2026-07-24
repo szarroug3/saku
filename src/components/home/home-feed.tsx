@@ -109,7 +109,7 @@ function trackOfRun(run: RunInfo): TrackKey | null {
 
 export function HomeFeed() {
   const { cfg } = useQuizConfig();
-  const { startSession, runs, continueRun } = useQuizSession();
+  const { startSession, runs, continueRun, discardRun } = useQuizSession();
   const { history, loaded, refresh } = useHistory();
 
   // The next lesson is a view of history, not a cursor — see next-lesson.tsx.
@@ -410,6 +410,27 @@ export function HomeFeed() {
     nextKeigoLesson(h, KEIGO_PER_LESSON_DEFAULT),
   );
 
+  // "I already know these" is a deliberate statement that the resting material
+  // is done, so it supersedes any session parked on exactly that material: close
+  // that run, not just advance the card. resumeLesson already releases the card
+  // BODY on a claim (lesson-resume.ts), but the Continue button is driven by the
+  // run's existence — leaving the run open would print an advanced lesson over a
+  // Continue that resumes the claimed-away one, the very body/button disagreement
+  // the resume machinery exists to prevent. Closing it drops the button AND, via
+  // the ordinary save path, updates the synced in-progress blob — a run that
+  // empties pushes a clear, the same completed-clears rule #11 uses, so the
+  // claimed-away session cannot teleport back onto another device.
+  //
+  // Guarded to a run resting ENTIRELY on the claimed facts: a wider run (kana's
+  // "all so far") that only overlaps the claimed group is left running, and its
+  // card keeps pinning as before. This is the same all-claimed test resumeLesson
+  // releases on, so the card and the run agree about when the pin lets go.
+  const closeIfClaimedAway = (run: RunInfo | undefined, claimed: FactId[]) => {
+    if (!run || !run.facts.length) return;
+    const set = new Set(claimed);
+    if (run.facts.every((f) => set.has(f))) discardRun(run.id);
+  };
+
   // The curriculum is finished only when EVERY track's card would render
   // nothing — the exact negation of the render conditions below, so this is
   // true precisely when the lesson feed would otherwise be empty. The grammar
@@ -454,7 +475,10 @@ export function HomeFeed() {
           lesson={lessonShown}
           onTeach={teachLesson}
           onQuizMe={quizMe}
-          onClaim={claim}
+          onClaim={(facts) => {
+            claim(facts);
+            closeIfClaimedAway(lessonRun, facts);
+          }}
           inSession={!!lessonRun}
           onContinue={() => lessonRun && continueRun(lessonRun.id)}
         />
@@ -471,7 +495,10 @@ export function HomeFeed() {
         <NextCurriculumLesson
           lesson={curriculumLessonShown}
           onStart={startCurriculumLesson}
-          onClaim={claimCurriculumLesson}
+          onClaim={(facts) => {
+            claimCurriculumLesson(facts);
+            closeIfClaimedAway(curriculumRun, facts);
+          }}
           inSession={!!curriculumRun}
           onContinue={() => curriculumRun && continueRun(curriculumRun.id)}
         />
@@ -489,7 +516,10 @@ export function HomeFeed() {
         <NextCounterLesson
           lesson={counterLessonShown}
           onStart={startLesson}
-          onClaim={claim}
+          onClaim={(facts) => {
+            claim(facts);
+            closeIfClaimedAway(counterRun, facts);
+          }}
           inSession={!!counterRun}
           onContinue={() => counterRun && continueRun(counterRun.id)}
         />
@@ -505,7 +535,10 @@ export function HomeFeed() {
           lesson={grammarLessonShown}
           lock={grammarTrackStarted ? grammarLock : null}
           onStart={startLesson}
-          onClaim={claim}
+          onClaim={(facts) => {
+            claim(facts);
+            closeIfClaimedAway(grammarRun, facts);
+          }}
           inSession={!!grammarRun}
           onContinue={() => grammarRun && continueRun(grammarRun.id)}
         />
@@ -520,7 +553,10 @@ export function HomeFeed() {
         <NextTransitivityLesson
           lesson={transitivityLessonShown}
           onStart={startLesson}
-          onClaim={claim}
+          onClaim={(facts) => {
+            claim(facts);
+            closeIfClaimedAway(transitivityRun, facts);
+          }}
           inSession={!!transitivityRun}
           onContinue={() => transitivityRun && continueRun(transitivityRun.id)}
         />
@@ -535,7 +571,10 @@ export function HomeFeed() {
         <NextKeigoLesson
           lesson={keigoLessonShown}
           onStart={startLesson}
-          onClaim={claim}
+          onClaim={(facts) => {
+            claim(facts);
+            closeIfClaimedAway(keigoRun, facts);
+          }}
           inSession={!!keigoRun}
           onContinue={() => keigoRun && continueRun(keigoRun.id)}
         />

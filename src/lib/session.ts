@@ -106,6 +106,25 @@ export interface StudySession {
   /** The round being drilled, or the one just finished. 1-based. */
   round: number;
   phase: SessionPhase;
+  /**
+   * Which item of the teach walk is on screen, 0-based — the teach phase's
+   * cursor.
+   *
+   * On the session rather than in the /session page's local state, and that
+   * move is the whole of the exact-position teach resume. The walk used to keep
+   * its step in a `useState(0)` that reset on every remount, so a reload or a
+   * cross-device teleport dropped the learner back on page 1 of a lesson they
+   * were partway through. Persisted here, it rides the localStorage snapshot and
+   * the synced blob exactly like `round` and the drill's runtime cursor do, so
+   * the walk resumes on the page it was left on.
+   *
+   * Optional and read as 0: a session snapshotted before this field existed, and
+   * a session that never entered the teach phase, both resume at the first item —
+   * which is where the walk always started anyway. Clamped to the step count at
+   * read time (session/page.tsx), so a lesson re-cut shorter under a stale cursor
+   * lands on its last item rather than off the end.
+   */
+  teachStep?: number;
   /** When the rest ends, ms since epoch. Null unless `phase === "resting"`.
    * A stored number, never a running timer — see the header. */
   restUntil: number | null;
