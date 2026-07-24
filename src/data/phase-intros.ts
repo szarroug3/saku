@@ -832,11 +832,11 @@ export const PITCH_INTRO: PhaseIntro = {
     },
     {
       lead: "The audio does not include the pitch.",
-      text: "The “hear it” speaker is a synthesized voice, and it uses its own accent rather than the word's real one. So trust the LINE over the reading, not the sound, when you want the accent — the sound is there to teach you the word, the line is there to teach you its pitch.",
+      text: "The “hear it” speaker is a synthesized voice, and it uses its own accent rather than the word's real one. So trust the LINE over the reading, not the sound, when you want the accent. The sound is there to teach you the word, and the line is there to teach you its pitch.",
     },
     {
-      lead: "You are never asked to produce a pitch — it is how the quiz stays fair.",
-      text: "The app never has you type or choose an accent. But it does use the mark to keep a meaning question honest: when the quiz asks what a word means, it shows the kanji AND the pronunciation together, so a same-sounding word like 箸 vs 橋 has one right answer — the mark and the glyph tell you which word is meant. A word with no line simply has no pitch recorded, and that is fine.",
+      lead: "You are never asked to produce a pitch, and that is how the quiz stays fair.",
+      text: "The app never has you type or choose an accent. But it does use the mark to keep a meaning question honest: when the quiz asks what a word means, it shows the kanji AND the pronunciation together, so a same-sounding word like 箸 vs 橋 has one right answer, and the mark and the glyph tell you which word is meant. A word with no line simply has no pitch recorded, and that is fine.",
     },
   ],
 };
