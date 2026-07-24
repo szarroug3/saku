@@ -127,7 +127,7 @@ export function quizInstruction(
  * jp2en only reaches here when the answer is already Japanese, and a Japanese
  * jp2en answer is a reading by construction — that is the whole of what the
  * Japanese side of jp2en contains. */
-function isSound(fact: FactId, dir: Direction): boolean {
+export function isSound(fact: FactId, dir: Direction): boolean {
   if (dir === "jp2en") return true;
   const info = factInfo(fact);
   if (!info || info.subject !== VOCAB_SUBJECT) return false;

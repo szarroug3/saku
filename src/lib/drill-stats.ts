@@ -40,7 +40,12 @@
 // resolution. A card on screen has contributed nothing to any of them yet, so
 // there is no in-flight showing for a guard to have to exclude.
 
-import type { FactSessionDetail, SessionStats, FactId } from "@/types";
+import type {
+  FactSessionDetail,
+  SessionStats,
+  FactId,
+  ShowingPresentation,
+} from "@/types";
 import { newFactStat } from "@/lib/engine";
 
 /**
@@ -78,6 +83,7 @@ export function resolveShowing(
   st: FactSessionDetail,
   credit: boolean,
   ok: boolean,
+  shown?: ShowingPresentation,
 ): void {
   st.seen++;
   if (st.firstTryCorrect === null) st.firstTryCorrect = credit;
@@ -86,4 +92,7 @@ export function resolveShowing(
     st.everCorrect = true;
     st.correct = (st.correct ?? 0) + 1;
   }
+  // The framing of the showing that just resolved. Last one wins — a fact asked
+  // two ways carries its most recent, which is what the post-quiz chip names.
+  if (shown) st.shown = shown;
 }

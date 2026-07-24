@@ -11,6 +11,7 @@ import { useState } from "react";
 
 import { Btn, PrimaryBtn } from "@/components/ui";
 import { glyphOfFact, type RunFacts } from "@/components/results/summary";
+import { presentationLabel } from "@/lib/question-presentation";
 import type { FactId, FactSessionDetail, SessionStats } from "@/types";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
@@ -31,19 +32,26 @@ function severe(st: FactSessionDetail): boolean {
 }
 
 function Cell({
+  fact,
   glyph,
   stat,
   on,
   onToggle,
 }: {
-  /** What the cell SHOWS. The fact it stands for is the caller's business —
-   * a cell is a face, not an identity. */
+  /** The fact this cell stands for — needed to name how it was asked. */
+  fact: FactId;
+  /** What the cell SHOWS. */
   glyph: string;
   stat: FactSessionDetail;
   on: boolean;
   onToggle: () => void;
 }) {
   const note = noteOf(stat);
+  // The SAME badge the mid-round retry picker prints — "hear it → type the
+  // meaning" — so both post-quiz screens read a missed card the same way, and 何
+  // asked three ways is three cells you can tell apart. Falls back to the fact's
+  // type when this run stored no presentation for it. See presentationLabel.
+  const label = presentationLabel(fact, stat.shown);
   // Unselected is "not chosen for redrill", NOT "nearly invisible". The old
   // `opacity-40` faded the WHOLE cell — border, glyph and note together — and
   // on kiri's mesh, where --text-muted is already a 50%-alpha ink, that landed
@@ -66,9 +74,9 @@ function Cell({
       type="button"
       onClick={onToggle}
       aria-pressed={on}
-      aria-label={note ? `${glyph}, ${note}` : glyph}
+      aria-label={note ? `${glyph}, ${label}, ${note}` : `${glyph}, ${label}`}
       className={cx(
-        "relative cursor-pointer rounded-[10px] border px-1 pb-1.5 pt-2 text-center",
+        "relative cursor-pointer rounded-[10px] border px-1.5 pb-1.5 pt-2 text-center",
         tone,
       )}
     >
@@ -94,6 +102,15 @@ function Cell({
           {note}
         </span>
       ) : null}
+      <span
+        aria-hidden="true"
+        className={cx(
+          "mt-0.5 block text-[8px] uppercase leading-tight tracking-[0.06em]",
+          on ? "text-text-muted" : "text-text-muted/80",
+        )}
+      >
+        {label}
+      </span>
     </button>
   );
 }
@@ -139,10 +156,13 @@ function Board({
           </button>
         </span>
       </div>
-      <div className="mb-3.5 grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-1.5">
+      {/* Wider cells than the old 56px: each now carries a "how it was asked"
+          badge under the glyph, the same line the retry picker shows. */}
+      <div className="mb-3.5 grid grid-cols-[repeat(auto-fill,minmax(104px,1fr))] gap-1.5">
         {facts.map((f) => (
           <Cell
             key={f}
+            fact={f}
             glyph={glyphOfFact(f)}
             stat={stats[f]}
             on={selected.has(f)}

@@ -19,17 +19,18 @@
 // screens use — shaky / slipping / getting there / solid — worst-first, so a
 // miss you want another look at is where your eye already is. The band is a
 // STATE, read from your history; it is never the answer. A retry chip is its
-// glyph and a TYPE badge (see factGlyph / factTypeLabel), never its answer: 何
-// can be here three times — kanji · meaning, kanji · reading, word · meaning —
-// and the badge is the only thing that tells three identical glyphs apart. The
-// band tells you how a character has been going, not what it says.
+// glyph and a badge for how the card was ASKED (see factGlyph /
+// presentationLabel), never its answer: 何 can be here three times — heard and
+// typed for its meaning, seen and picked for its reading — and the badge is the
+// only thing that tells three identical glyphs apart. The band tells you how a
+// character has been going, not what it says.
 
 import { useState } from "react";
 
 import { StandingChip } from "@/components/library/standing-chip";
 import { Btn, Card, Hint, SmallBtn } from "@/components/ui";
-import { factTypeLabel } from "@/lib/fact-label";
 import { factInfo } from "@/lib/facts";
+import { presentationLabel } from "@/lib/question-presentation";
 import { standingFor } from "@/lib/library/standing";
 import {
   roundCompleteView,
@@ -170,13 +171,16 @@ export function RoundComplete({
                     }
                     onClick={() => setPicked((p) => ({ ...p, [f]: !p[f] }))}
                   >
-                    {/* Glyph over a TYPE badge, so 何 asked three ways reads as
-                        three chips. The badge inherits the button's colour and
-                        is dimmed a notch — a sublabel, not a second answer. */}
+                    {/* Glyph over a badge that says how the card was ASKED —
+                        "hear it → type the meaning" — so 何 met three ways reads
+                        as three chips. The badge inherits the button's colour
+                        and is dimmed a notch: a sublabel, not a second answer.
+                        Falls back to the fact's type when the round never
+                        recorded a presentation for it (a skipped card). */}
                     <span className="flex flex-col items-center leading-tight">
                       <span>{factGlyph(f)}</span>
                       <span className="mt-0.5 text-[8.5px] uppercase tracking-[0.08em] opacity-65">
-                        {factTypeLabel(f)}
+                        {presentationLabel(f, session.roundStats[f]?.shown)}
                       </span>
                     </span>
                   </SmallBtn>

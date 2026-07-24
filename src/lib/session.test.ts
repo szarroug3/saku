@@ -214,6 +214,31 @@ test("mergeStats never produces NaN from a pre-firstTryCount snapshot", () => {
   assert.ok(both.firstTryCount <= both.seen);
 });
 
+test("mergeStats carries the LATEST showing's presentation", () => {
+  // Presentation is not a count — it does not sum, it is overwritten, because
+  // the chip names how the fact was MOST RECENTLY asked. `from` is the newer
+  // leg in every caller, so its framing wins.
+  const older = {
+    [f("a")]: detail({ shown: { dir: "jp2en", mode: "typed", listen: true } }),
+  };
+  const newer = {
+    [f("a")]: detail({ shown: { dir: "en2jp", mode: "mc", listen: false } }),
+  };
+  assert.deepEqual(mergeStats(older, newer)[f("a")].shown, {
+    dir: "en2jp",
+    mode: "mc",
+    listen: false,
+  });
+  // A newer leg that never recorded one keeps the older framing rather than
+  // blanking it.
+  const blank = { [f("a")]: detail({}) };
+  assert.deepEqual(mergeStats(older, blank)[f("a")].shown, {
+    dir: "jp2en",
+    mode: "typed",
+    listen: true,
+  });
+});
+
 test("mergeStats does not mutate its inputs", () => {
   // The loop merges the round into the total and keeps using the round.
   const a = { [f("a")]: detail({ seen: 1, firstTryCount: 1, correct: 1 }) };
