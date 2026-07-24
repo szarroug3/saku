@@ -26,7 +26,7 @@ export function Dock({
   slot,
   children,
 }: {
-  slot: "top" | "bottom";
+  slot: "banner" | "top" | "bottom";
   children: ReactNode;
 }) {
   const mounted = useSyncExternalStore(noop, onClient, onServer);

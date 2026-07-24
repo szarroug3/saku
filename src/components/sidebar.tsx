@@ -201,7 +201,7 @@ export function Sidebar({
           </button>
         </nav>
         {showSignedOutNotice ? (
-          <Dock slot="top">
+          <Dock slot="banner">
             <SignedOutNotice variant="banner" />
           </Dock>
         ) : null}

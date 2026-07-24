@@ -181,6 +181,14 @@ export default async function RootLayout({
                         initialCollapsed={sidebarCollapsed}
                       />
                       <main className="relative flex min-w-0 flex-1 flex-col gap-3.5">
+                        {/* GLOBAL BANNER DOCK, above the page's own top dock. The
+                            signed-out notice is a page-agnostic message and must sit
+                            at the very top — but a page (the Library) docks its OWN
+                            header into kq-dock-top, and two children of one slot order
+                            by mount, which put the banner UNDER the Library's search.
+                            Its own slot above the page dock fixes the order for every
+                            page at once. Empty (hidden) whenever nothing docks here. */}
+                        <div id="kq-dock-banner" className="kq-dock shrink-0 empty:hidden" />
                         {/* FROZEN TOP DOCK. A page lifts its header here — the
                             Library docks its search + filter chips — so it stays put
                             above the scrolling frame instead of sliding over the
