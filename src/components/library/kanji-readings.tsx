@@ -1,26 +1,30 @@
 "use client";
 
-// The kanji readings table — ALL of them, one table, shut rows dimmed in place.
+// The kanji readings table: all of them, one table, full ink on every row.
 //
-// WHY SHUT ROWS STAY IN THE TABLE
-// ===============================
-// Splitting them into a second section would say they are a different kind of
-// thing. They are not: they are the same character's readings, and the reason
-// three of them are shut is not that they are harder or rarer but that you have
-// not yet met a word that uses them. Dimmed in place, the table stays a picture
-// of the whole character — which is the one thing this page exists to show.
+// WHAT A READER WANTS OFF THIS TABLE
+// ==================================
+// Two things, and the owner named them both: how the character is said, and
+// what it means when it is said that way. So every row is a reading, a word it
+// is heard in, and what that word means. 入 is にゅう in 入院 (hospitalization),
+// い in 入れる (to put in), はい in 手に入る (to obtain). Same character, same
+// "enter" underneath, three different sounds a reader has to be able to place.
 //
-// THE UNLOCK MODEL, because it is genuinely confusing and the owner asked
-// ==================================================================
-// A kanji is NOT the lock. Learn 生 and its MEANING is askable immediately. Its
-// READINGS open one at a time, because a reading fact is keyed on (kanji, word)
-// — `kanji:生/reading@人生`, not `kanji:生/reading`. "What is 生 read as" has
-// eight answers and cannot be graded; "what is 生 read as in 人生" has one and
-// can. So a reading opens when you learn A WORD THAT USES IT, and you can know
-// 生 cold with three readings still shut. Different locks.
+// WHY THERE IS NO "MEANING OF THE READING" COLUMN
+// ===============================================
+// Because a reading has no meaning of its own. 入 means enter whichever way it
+// is pronounced, and a column repeating that on every row would just be the
+// page header again, five times. The example word carries the meaning, which is
+// the level at which meaning is actually true.
 //
-// That is why a shut row NAMES THE WORD THAT WOULD OPEN IT. "Not seen" alone
-// would be a dead end; the word is the actionable half, and it is a link.
+// NO DIMMING, AND THE QUIZ GATE IS UNCHANGED
+// ==========================================
+// Rows used to be greyed until a word you knew attested them. That made a
+// reference table look like a progress bar, so the grey is gone. The RULE it
+// was drawing is not: a reading fact is keyed on (kanji, word) and is only ever
+// asked once you learn a word that uses it (word-unlock.ts, untouched). Reading
+// the whole table today and being asked about part of it are two different
+// things, and only the first one happens here.
 
 import Link from "next/link";
 
@@ -48,26 +52,17 @@ function WordLink({ word }: { word: string }) {
   );
 }
 
-/** The earliest word by TEACHING ORDER that would open this reading.
+/** What the example word means, from the vocabulary the app already ships.
  *
- * `beginnerRank`, not raw frequency and not the ingest's anchor: the question a
- * shut row answers is "what do I learn next to open this", and the honest answer
- * is the one the curriculum will reach first. */
-function openingWord(row: ReadingRow): string | null {
-  let best: string | null = null;
-  let bestRank = Infinity;
-  for (const w of row.words) {
-    const rank = vocabRow(w)?.beginnerRank;
-    if (rank !== undefined && rank < bestRank) {
-      bestRank = rank;
-      best = w;
-    }
-  }
-  return best;
+ * `glosses[0]` is the primary sense after the sense merge, so 人 reads as "man,
+ * person" and not as the -ian suffix. A word the shelf never took returns null
+ * and the cell stays empty: the word is still real evidence for the reading,
+ * and printing a placeholder beside it would be noise. */
+function meaningOf(word: string): string | null {
+  return vocabRow(word)?.glosses[0] ?? null;
 }
 
 export function KanjiReadings({
-  glyph,
   rows,
   anchors,
   facts,
@@ -76,10 +71,10 @@ export function KanjiReadings({
   now,
   onSpeak,
 }: {
-  glyph: string;
   rows: readonly ReadingRow[];
   /** fact → the KNOWN word to show as its context. A reading absent from this
-   * map is shut: no word you know attests it. See word-unlock.ts. */
+   * map has no word you have met behind it, so the row falls back to the
+   * anchor, which is the evidence whether or not you have learned it. */
   anchors: Map<string, string>;
   facts: HistoryFile["facts"];
   claims: Claims;
@@ -94,40 +89,24 @@ export function KanjiReadings({
         <thead>
           <tr className="border-b border-border text-xs font-medium text-text-muted">
             <th className="py-1.5 pr-2 font-medium">Reading</th>
-            <th className="py-1.5 pr-2 font-medium">From</th>
             <th className="py-1.5 pr-2 font-medium">Hear</th>
-            <th className="py-1.5 pr-2 font-medium">Learned in</th>
-            <th className="py-1.5 pr-2 font-medium">Used in</th>
+            <th className="py-1.5 pr-2 font-medium">Example</th>
+            <th className="py-1.5 pr-2 font-medium">Means</th>
             <th className="py-1.5 font-medium">How you&rsquo;re doing</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => {
             const fact = readingFactId(r.k, r.anchor);
-            const known = anchors.get(fact);
-            const opens = known ? null : openingWord(r);
+            // The word you have met, when there is one, because that is the
+            // example you can actually hear in your head.
+            const word = anchors.get(fact) ?? r.anchor;
             const agg: FactAggregate | undefined = facts[fact];
             const s = standingOf(agg, claims[fact], metric, now);
+            const means = meaningOf(word);
             return (
-              <tr
-                key={fact}
-                // Dimmed IN PLACE. Same table, same columns, less ink.
-                className={`border-b border-border last:border-b-0 ${
-                  known ? "" : "opacity-55"
-                }`}
-              >
+              <tr key={fact} className="border-b border-border last:border-b-0">
                 <td className="py-2 pr-2 align-middle text-[15px]">{r.base}</td>
-                {/* CHINESE / JAPANESE, never on'yomi / kun'yomi. Those name the
-                    thing for someone who already knows it. */}
-                <td className="py-2 pr-2 align-middle text-text-muted">
-                  {r.type === "on"
-                    ? "Chinese"
-                    : r.type === "kun"
-                      ? "Japanese"
-                      : r.type === "both"
-                        ? "both"
-                        : "—"}
-                </td>
                 <td className="py-2 pr-2 align-middle">
                   <button
                     type="button"
@@ -139,23 +118,16 @@ export function KanjiReadings({
                   </button>
                 </td>
                 <td className="py-2 pr-2 align-middle">
-                  {known ? (
-                    <WordLink word={known} />
-                  ) : opens ? (
-                    <span className="text-text-muted">
-                      opens with <WordLink word={opens} />
-                    </span>
-                  ) : (
-                    // No everyday word attests it. Here to be READ, never asked.
-                    <span className="text-text-muted">no everyday word yet</span>
-                  )}
+                  <WordLink word={word} />
+                  {/* The reading is voiced in some words: 口's くち is ぐち in
+                      出口. Printed, because a reader who cannot see the shift
+                      concludes the table is wrong. Only the anchor has a
+                      surface recorded against it. */}
+                  {word === r.anchor && r.surface && r.surface !== r.base ? (
+                    <span className="ml-1.5 text-text-muted">({r.surface})</span>
+                  ) : null}
                 </td>
-                {/* A REAL NUMBER, in its own column. It was a bare bar with no
-                    legend stacked above the standing chip, and the two read as
-                    one thing. */}
-                <td className="py-2 pr-2 align-middle text-text-muted">
-                  {r.nWords} {r.nWords === 1 ? "word" : "words"}
-                </td>
+                <td className="py-2 pr-2 align-middle text-text-muted">{means}</td>
                 <td className="py-2 align-middle">
                   <StandingChip standing={s.standing} />
                 </td>
@@ -164,13 +136,6 @@ export function KanjiReadings({
           })}
         </tbody>
       </table>
-      <p className="mt-2.5 text-xs text-text-muted">
-        Readings <b className="text-text">from Chinese</b> came in with the
-        character and turn up mostly inside longer words;{" "}
-        <b className="text-text">Japanese</b> ones are the Japanese word{" "}
-        {glyph} was given to, usually on its own. A dimmed reading opens when you
-        learn a word that uses it.
-      </p>
     </Card>
   );
 }
