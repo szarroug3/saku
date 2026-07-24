@@ -93,7 +93,7 @@ export function quizInstruction(
     // The meaning line NAMES the role, because the same glyph means different
     // things as different roles: 可 is "can" as a KANJI and "acceptable" as a
     // WORD, and "what it means" gave the learner no way to tell which was asked.
-    if (wantsMeaning) return `Which of these is what the ${noun} means?`;
+    if (wantsMeaning) return `Which of these is what this ${noun} means?`;
     // A Japanese answer that is all kana is a SOUND, not a spelling — asking
     // "which of these is the correct word" over a board of readings is asking
     // the wrong question about the right options. Names the role for the same
@@ -103,7 +103,7 @@ export function quizInstruction(
     return `Which of these is the correct ${noun}?`;
   }
 
-  if (wantsMeaning) return `Type what the ${noun} means.`;
+  if (wantsMeaning) return `Type what this ${noun} means.`;
   if (isSound(fact, dir)) return `Type how this ${noun} is said.`;
   // Reached only if a typed card ever wants a written form containing kanji,
   // which the drill is supposed to make impossible (it offers those as a board).

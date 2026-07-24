@@ -105,11 +105,11 @@ describe("every card says what it wants", () => {
     // wants. So the two must not read the same sentence.
     assert.equal(
       quizInstruction(meaningFactId("一"), "jp2en", "typed"),
-      "Type what the kanji means.",
+      "Type what this kanji means.",
     );
     assert.equal(
       quizInstruction(wordMeaningFactId("問題"), "jp2en", "typed"),
-      "Type what the word means.",
+      "Type what this word means.",
     );
     assert.notEqual(
       quizInstruction(meaningFactId("一"), "jp2en", "typed"),
@@ -118,11 +118,11 @@ describe("every card says what it wants", () => {
     // The pick-one line names the role the same way.
     assert.equal(
       quizInstruction(meaningFactId("一"), "jp2en", "mc"),
-      "Which of these is what the kanji means?",
+      "Which of these is what this kanji means?",
     );
     assert.equal(
       quizInstruction(wordMeaningFactId("問題"), "jp2en", "mc"),
-      "Which of these is what the word means?",
+      "Which of these is what this word means?",
     );
   });
 
