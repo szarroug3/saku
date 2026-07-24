@@ -12,12 +12,12 @@ Status board for everything in flight. One file per task in this folder; this is
 | 04 | [Quiz clarity: audio + instructions + chip/label types](04-quiz-clarity.md) | 🟢 ready to merge | `quiz-clarity` | localhost:3002 |
 | 05 | [Sync Part 1: settings + kanaquiz→saku rename](05-sync-settings.md) | ✅ shipped (settings column applied) | main | prod |
 | 06 | [Standing/claim rework (the "solid" bug)](06-standing-claim.md) | 🔵 in progress | `standing-claim` | localhost:3006 |
-| 07 | [Continue-session masking (claim looks dead)](07-continue-session.md) | 🟠 confirmed, not built | — | — |
+| 07 | [Continue-session masking → folded into #12](07-continue-session.md) | ⚪ folded into #12 | (with #12) | — |
 | 08 | [Fact-type labels → folded into #04 (presentation labels, both screens)](08-fact-type-labels.md) | 🔵 in progress (on `quiz-clarity`) | `quiz-clarity` | localhost:3002 |
 | 09 | [Pitch intro + homophone→show-kanji](09-pitch-homophone.md) | 🔵 in progress | `pitch-homophone` | localhost:3004 |
 | 10 | [Answer-revealing retry hint/reveal](10-retry-hint.md) | 🔵 in progress | `retry-hint` | localhost:3005 |
 | 11 | [Sync Part 2: in-progress session teleport](11-sync-session.md) | 🔵 in progress | `sync-session` | tbd |
-| 12 | [Sync Part 3: exact-position resume](12-sync-resume.md) | ⚪ queued | — | — |
+| 12 | [Sync Part 3: exact-position resume + continue-session masking (#07)](12-sync-resume.md) | ⚪ queued (after #11) | — | — |
 
 ## Housekeeping
 - `.env.local` holds the Supabase DB connection string (for direct DB access) — rotate/remove whenever.
