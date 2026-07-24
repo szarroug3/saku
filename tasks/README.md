@@ -17,7 +17,7 @@ Status board for everything in flight. One file per task in this folder; this is
 | 09 | [Pitch intro + homophone→show-kanji + lesson pitch line](09-pitch-homophone.md) | 🟢 ready to merge — DRAFT copy to finalize | `pitch-homophone` | localhost:3004 |
 | 10 | [Hint redesign: reading→no hint, meaning→2+-kanji components only](10-retry-hint.md) | 🟢 ready to merge | `retry-hint` | localhost:3005 |
 | 11 | [Sync Part 2: in-progress session teleport](11-sync-session.md) | 🟢 ready to merge — needs `session` column | `sync-session` | localhost:3003 |
-| 12 | [Sync Part 3: exact-position resume + continue-session masking (#07)](12-sync-resume.md) | ⚪ queued (after #11) | — | — |
+| 12 | [Sync Part 3: exact-position resume + masking (#07)](12-sync-resume.md) | 🔵 in progress (on `resume-position`, off #11) | `resume-position` | localhost:3007 |
 
 | 13 | [Move instruction below halo, white, drop small labels](13-instruction-layout.md) | 🔵 in progress | `quiz-clarity` | localhost:3002 |
 
