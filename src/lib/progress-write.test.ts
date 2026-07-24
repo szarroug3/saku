@@ -216,3 +216,56 @@ describe("auth-mode signal wiring", () => {
     resetAuthMode();
   });
 });
+
+describe("migration replay decision (migrate-local.ts post())", () => {
+  // Migration only runs signed in, so its post() drives resolveProgressWrite with
+  // a fixed `signedIn: true` and a no-op applyLocal (a replay drains local UP into
+  // the account — it never writes local). These pin that contract: a 401 refreshes
+  // and retries once, a failure returns false WITHOUT ever touching local (so the
+  // caller keeps the local key for the next load), and a success returns true.
+  const migrationDeps = (send: () => Promise<WriteResponse>, refresh: () => Promise<void>) => ({
+    send,
+    // Fails the test if migration ever tries to write local — it must not.
+    applyLocal: () => assert.fail("migration must never write to local storage"),
+    signedIn: true,
+    refreshSession: refresh,
+  });
+
+  test("401 then refresh+retry SUCCEEDS → true (replay unsticks in-session)", async () => {
+    const send = scriptedSend([UNAUTH, OK]);
+    let refreshed = 0;
+    const res = await resolveProgressWrite(
+      migrationDeps(send.send, async () => void refreshed++),
+    );
+    assert.equal(res.ok, true);
+    assert.equal(refreshed, 1);
+    assert.equal(send.count, 2);
+  });
+
+  test("401 then retry STILL fails → false (local key preserved, retried next load)", async () => {
+    const send = scriptedSend([UNAUTH, UNAUTH]);
+    const res = await resolveProgressWrite(
+      migrationDeps(send.send, async () => {}),
+    );
+    assert.equal(res.ok, false);
+  });
+
+  test("503 → false without any refresh or local write", async () => {
+    const send = scriptedSend([UNREADABLE]);
+    let refreshed = 0;
+    const res = await resolveProgressWrite(
+      migrationDeps(send.send, async () => void refreshed++),
+    );
+    assert.equal(res.ok, false);
+    assert.equal(refreshed, 0);
+    assert.equal(send.count, 1);
+  });
+
+  test("network throw → false", async () => {
+    const send = scriptedSend([null]);
+    const res = await resolveProgressWrite(
+      migrationDeps(send.send, async () => {}),
+    );
+    assert.equal(res.ok, false);
+  });
+});

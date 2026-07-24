@@ -73,8 +73,11 @@ export type { ProgressResult };
 /** Refresh this browser's Supabase session before a signed-in retry, rotating to
  * a fresh access token so the retried POST carries a valid cookie. Resolves
  * whether or not the refresh succeeded — a genuinely dead session just makes the
- * retry 401 again, which is exactly the "keep it queued" signal we want. */
-async function refreshSupabaseSession(): Promise<void> {
+ * retry 401 again, which is exactly the "keep it queued" signal we want.
+ *
+ * Exported so the sign-in migration replay (migrate-local.ts) recovers from the
+ * SAME lapsed-token 401 the same way, instead of stalling until the next load. */
+export async function refreshSupabaseSession(): Promise<void> {
   await createSupabaseBrowserClient().auth.refreshSession();
 }
 

@@ -39,6 +39,8 @@
 // caller passes the server's own signed-in answer, and we re-check the browser
 // session is a real, non-anonymous user before touching anything.
 
+import { refreshSupabaseSession } from "@/lib/progress-fetch";
+import { resolveProgressWrite } from "@/lib/progress-write";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { FactId } from "@/types";
 
@@ -59,18 +61,30 @@ let runningOrDone = false;
 /** POST helper that answers one question: did the server accept this write. A
  * network throw or any non-2xx is "no", which keeps the local copy for a retry
  * — the opposite of the signed-out fallback, because here an account DOES exist
- * and the local copy must not be dropped until it is safely in it. */
+ * and the local copy must not be dropped until it is safely in it.
+ *
+ * A 401 during replay is ALWAYS a transient token lapse, never "no account":
+ * migrateLocalProgress only runs signed in and re-confirms a real user first. So
+ * this reuses the same signed-in decision the live write path uses — refresh the
+ * session and retry the POST once (see progress-write.ts) — which unsticks the
+ * replay in-session instead of stalling until the next page load. That lapsed
+ * token is the very reason a phone's replay stalled. `signedIn: true` is fixed
+ * here, so applyLocal is never reached (a migration never writes to local, it is
+ * draining local UP into the account) — hence the no-op. Every non-2xx and every
+ * throw still returns false, and the caller leaves the local key in place. */
 async function post(url: string, body: unknown): Promise<boolean> {
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: JSON_HEADERS,
-      body: JSON.stringify(body),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  const { ok } = await resolveProgressWrite({
+    send: () =>
+      fetch(url, {
+        method: "POST",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(body),
+      }),
+    applyLocal: () => {},
+    signedIn: true,
+    refreshSession: refreshSupabaseSession,
+  });
+  return ok;
 }
 
 /**
