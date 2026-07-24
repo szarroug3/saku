@@ -300,6 +300,25 @@ describe("standaloneSenses — which readings you can actually say by themselves
     assert.deepEqual(kept[0].glosses.slice(0, 1), ["person"]);
   });
 
+  test("一 is exactly いち: ひと is the 一つ form and shares tags with the primary", () => {
+    // The case that killed "shares a part of speech with the primary". いち is
+    // tagged noun AND prefix AND suffix, because 一 really is used all three
+    // ways. ひと is tagged numeric and prefix and nothing else, so it shared
+    // `prefix` with いち and rode in, and the word block claimed you can say 一
+    // alone as ひと. You cannot: ひと is 一つ and 一人.
+    const kept = standaloneSenses(vocabRow("一")!).map((s) => s.reb);
+    assert.deepEqual(kept, ["いち"]);
+  });
+
+  test("a numeral is still a word: 二 三 十 keep their readings", () => {
+    // The fix disqualifies `numeric` as a free tag on its own. That must not
+    // take the numbers with it, since each is a noun in its own right.
+    for (const [glyph, reb] of [["二", "に"], ["三", "さん"], ["十", "じゅう"]]) {
+      const kept = standaloneSenses(vocabRow(glyph)!).map((s) => s.reb);
+      assert.ok(kept.includes(reb), `${glyph} lost ${reb}`);
+    }
+  });
+
   test("主 KEEPS ALL FOUR, which is why the rule is not 'the first one'", () => {
     // あるじ, おも, しゅ, ぬし are four real words. Any rule that answered 人
     // with one reading by taking senses[0] alone would answer 主 with one too,

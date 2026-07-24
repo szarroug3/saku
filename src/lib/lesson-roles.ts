@@ -144,11 +144,53 @@ export function kanjiMeanings(item: LessonItem): readonly string[] {
  *
  * Never empty: the primary is always in, by construction.
  */
+/** Tags that mark a piece welded to something else. A tag carrying one of these
+ * is disqualified, INCLUDING the ones that also say "noun": JMdict writes "noun,
+ * used as a prefix" for 山, and that phrase describes 山道, not 山 said alone. */
+const BOUND_POS = ["prefix", "suffix", "counter"] as const;
+
+/** Word classes that can be uttered by themselves. A whitelist, not the absence
+ * of a blacklist, because "numeric" is neither: いち is a numeral AND a noun,
+ * while 一's ひと is a numeral and a prefix and nothing more. Reading the absence
+ * of a bound tag as freedom let ひと through on `numeric` alone. */
+const FREE_POS = [
+  "noun",
+  "verb",
+  "adjectiv",
+  "adverb",
+  "pronoun",
+  "expression",
+  "interjection",
+  "conjunction",
+] as const;
+
+/** Does this sense stand on its own, by its OWN tags?
+ *
+ * Sharing a tag with the primary is not enough, and 一 is the case that proves
+ * it. いち carries `noun (common)` and also `prefix` and `suffix`, because 一
+ * really is used all three ways. ひと carries `numeric` and `prefix` and nothing
+ * else: it is the 一つ and 一人 form, never a thing you say by itself. Sharing
+ * `prefix` with いち let it through, and the word block claimed 一 alone can be
+ * said ひと.
+ *
+ * So a sense has to earn its place with a FREE tag of its own. This is safe for
+ * the characters that break the naive "drop anything tagged counter" rule: 手,
+ * 口, 山 and 川 each carry a counter or suffix tag AND `noun (common)`, so all
+ * four survive. It keeps 主 whole, since あるじ, おも, しゅ and ぬし are each a
+ * noun in their own right. And it drops 人's じん (suffix alone) and にん
+ * (counter alone) along with 一's ひと. */
+function standsAlone(sense: WordSense): boolean {
+  return sense.pos.some((p) => {
+    const tag = p.toLowerCase();
+    if (BOUND_POS.some((bound) => tag.includes(bound))) return false;
+    return FREE_POS.some((free) => tag.includes(free));
+  });
+}
+
 export function standaloneSenses(word: VocabRow): readonly WordSense[] {
   const [primary, ...rest] = word.senses;
   if (!primary) return [];
-  const free = new Set(primary.pos.map((p) => p.toLowerCase()));
-  return [primary, ...rest.filter((s) => s.pos.some((p) => free.has(p.toLowerCase())))];
+  return [primary, ...rest.filter(standsAlone)];
 }
 
 /** Every section a step can show, in the order the lesson prints them.
