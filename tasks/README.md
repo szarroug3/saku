@@ -13,9 +13,9 @@ Status board for everything in flight. One file per task in this folder; this is
 | 05 | [Sync Part 1: settings + kanaquiz→saku rename](05-sync-settings.md) | ✅ shipped (settings column applied) | main | prod |
 | 06 | [Standing/claim rework (the "solid" bug)](06-standing-claim.md) | 🟠 confirmed, not built | — | — |
 | 07 | [Continue-session masking (claim looks dead)](07-continue-session.md) | 🟠 confirmed, not built | — | — |
-| 08 | [Fact-type labels on results grid + confusions](08-fact-type-labels.md) | 🟠 confirmed, not built | — | — |
-| 09 | [Pitch intro + homophone→show-kanji](09-pitch-homophone.md) | 🟠 designed, not built | — | — |
-| 10 | [Answer-revealing retry hint/reveal](10-retry-hint.md) | 🔍 investigating | — | — |
+| 08 | [Fact-type labels → folded into #04 (presentation labels, both screens)](08-fact-type-labels.md) | 🔵 in progress (on `quiz-clarity`) | `quiz-clarity` | localhost:3002 |
+| 09 | [Pitch intro + homophone→show-kanji](09-pitch-homophone.md) | 🔵 in progress | `pitch-homophone` | localhost:3004 |
+| 10 | [Answer-revealing retry hint/reveal](10-retry-hint.md) | 🔵 in progress | `retry-hint` | localhost:3005 |
 | 11 | [Sync Part 2: in-progress session teleport](11-sync-session.md) | 🔵 in progress | `sync-session` | tbd |
 | 12 | [Sync Part 3: exact-position resume](12-sync-resume.md) | ⚪ queued | — | — |
 
