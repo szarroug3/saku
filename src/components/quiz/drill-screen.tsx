@@ -1445,13 +1445,23 @@ export function DrillScreen() {
               // card's JP font, the way the prompt glyph would have been, because
               // it is a Japanese word to READ, not a caption to skim. It reveals
               // WHICH word was heard and nothing about its English meaning, so the
-              // audio-first card keeps its answer withheld.
-              <span
-                className="text-3xl leading-none text-text"
-                style={{ fontFamily: q.font }}
-                lang="ja"
-              >
-                {hint.text}
+              // audio-first card keeps its answer withheld. On a MULTI-KANJI word
+              // the per-kanji meanings (`parts`) sit beneath it, muted and small —
+              // the same breakdown a visual card gets, which names the kanji but
+              // never the gloss.
+              <span className="flex flex-col items-center gap-0.5">
+                <span
+                  className="text-3xl leading-none text-text"
+                  style={{ fontFamily: q.font }}
+                  lang="ja"
+                >
+                  {hint.text}
+                </span>
+                {hint.parts ? (
+                  <span className="max-w-[320px] text-center text-[12px] text-text-muted">
+                    {hint.parts}
+                  </span>
+                ) : null}
               </span>
             ) : (
               <p className="max-w-[320px] text-center text-[12px] text-text-muted">
