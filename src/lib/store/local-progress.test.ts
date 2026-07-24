@@ -166,7 +166,7 @@ test("localAddToList refuses a derived list, mirroring the server guard", () => 
     id: "d-1",
     name: "Kanji I miss",
     created: 1,
-    query: { subjects: [], list: null, states: [], text: "", session: null },
+    query: { subjects: [], types: [], list: null, states: [], text: "", session: null },
     origin: "search",
   };
   localSaveList(derived);

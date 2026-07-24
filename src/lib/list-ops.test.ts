@@ -40,6 +40,7 @@ function derived(): SavedList {
     created: 0,
     query: {
       subjects: [],
+      types: [],
       list: null,
       states: ["shaky"],
       text: "",

@@ -24,6 +24,7 @@ import { CONFUSABLE_WITH } from "@/data/confusable";
 import { kanjiEntry } from "@/data/kanji";
 import { accuracyOf } from "@/lib/accuracy";
 import { ALL_FACTS, entryOf, factInfo, factsOf } from "@/lib/facts";
+import { matchesTypes, typeLabel } from "@/lib/practice-types";
 import type {
   AccuracyMetric,
   FactId,
@@ -43,6 +44,7 @@ export { emptySelection } from "@/lib/selection-empty";
 export function isEverything(sel: Selection): boolean {
   return (
     !sel.subjects.length &&
+    !sel.types.length &&
     !sel.list &&
     !sel.states.length &&
     !sel.text.trim() &&
@@ -308,6 +310,10 @@ export function resolve(
       const info = factInfo(f);
       if (!info || !subjects.has(info.subject)) continue;
     }
+    // The finer, learner-facing cut: hiragana vs katakana, words vs counters.
+    // A separate axis from `subjects` (see practice-types.ts). `?? []` guards a
+    // list query persisted before types existed — an absent field is "all".
+    if (!matchesTypes(f, sel.types ?? [])) continue;
     if (!matchesText(f, needle)) continue;
     if (!matchesStates(f, sel.states, history, metric, mixups)) continue;
     out.add(f);
@@ -390,6 +396,7 @@ export function whatSentence(
     if (list) bits.push(list.name);
   }
   if (sel.session !== null && !sel.list) bits.push("That session");
+  for (const t of sel.types ?? []) bits.push(typeLabel(t));
   for (const s of sel.subjects) bits.push(subjectWord(s));
   if (sel.states.length) bits.push(sel.states.map(stateWord).join(" or "));
   if (sel.text.trim()) bits.push(`“${sel.text.trim()}”`);

@@ -14,6 +14,7 @@ import type { Selection } from "@/types";
 export function emptySelection(): Selection {
   return {
     subjects: [],
+    types: [],
     list: null,
     states: [],
     text: "",
