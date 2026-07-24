@@ -67,23 +67,44 @@ import type { Direction, FactId } from "@/types";
 export type Hint =
   | { kind: "image"; src: string; glyph: string }
   | { kind: "text"; text: string }
-  | { kind: "formula"; formula: ReadingFormula };
+  | { kind: "formula"; formula: ReadingFormula }
+  // The WRITTEN FORM of the word, shown big enough to READ. Only a listening
+  // MEANING card produces this: the audio played the word and hid its glyph, so
+  // the honest nudge is to reveal WHICH word was heard (電話), not to gloss its
+  // parts. It is not a leak — the writing is not the meaning — and it must not
+  // render as a caption, because it is a Japanese word the learner is meant to
+  // read. Distinct from `text` for exactly that reason: the renderer prints it
+  // prominently, in the JP font, the way the prompt glyph would have been.
+  //
+  // `parts` rides along ONLY for a MULTI-KANJI word — the same per-kanji meaning
+  // breakdown a visual meaning card gets ("電 is electricity, 話 is tale"),
+  // rendered small beneath the written word. Sam ruled the piece meanings an
+  // acceptable extra nudge on a listening card: they name the kanji, never the
+  // English gloss ("telephone"), so the answer stays withheld. Absent for a
+  // single-kanji or all-kana word, which has nothing to break down — those stay
+  // written-form-only.
+  | { kind: "written"; text: string; parts?: string };
 
 /**
  * The hint for one SHOWING of a fact, or null when there is nothing honest to
  * say.
  *
- * ONE piece of showing context is taken: `inWord`, the word a kanji-reading card
- * is being FRAMED on (the known, multi-part anchor the drill picked — see
- * word-unlock.ts). A reading card's formula hint lays out that exact word with
- * its other pieces' readings filled in, so it must build on the word on screen,
- * not the fact's ingest anchor. Every other hint — kana pictures, kanji-component
- * and word-meaning structural hints — ignores it and depends only on the fact.
+ * Two bits of showing context are taken, each because it changes what an honest
+ * hint IS. `inWord` is the word a kanji-reading card is being FRAMED on (the
+ * known, multi-part anchor the drill picked — see word-unlock.ts): a reading
+ * card's formula hint lays out that exact word with its other pieces' readings
+ * filled in, so it must build on the word on screen, not the fact's ingest
+ * anchor. `listen` marks a listening MEANING card, which played the word and hid
+ * its glyph — so the useful nudge is to show WHICH word was heard (the written
+ * form), not to gloss its parts. Every other hint — kana pictures, kanji-
+ * component and (visual) word-meaning structural hints — ignores both and
+ * depends only on the fact. Both default off, so every prior caller is unchanged.
  */
 export function hintFor(
   fact: FactId,
   dir: Direction,
   inWord?: string,
+  listen = false,
 ): Hint | null {
   const info = factInfo(fact);
   if (!info) return null;
@@ -93,7 +114,7 @@ export function hintFor(
     case KANJI_SUBJECT:
       return kanjiHint(fact, info.glyph, dir, inWord);
     case VOCAB_SUBJECT:
-      return wordHint(fact, info.glyph, dir);
+      return wordHint(fact, info.glyph, dir, listen);
     case GRAMMAR_SUBJECT:
       return grammarHint(fact);
     default:
@@ -194,27 +215,65 @@ function kanjiOf(word: string): string[] {
  * "teacher". Asked en2jp it shows the gloss and wants the written word, where
  * naming 先 and 生 IS 先生 — so meaning hints are jp2en only.
  */
-function wordHint(fact: FactId, glyph: string, dir: Direction): Hint | null {
+function wordHint(
+  fact: FactId,
+  glyph: string,
+  dir: Direction,
+  listen: boolean,
+): Hint | null {
   if (dir !== "jp2en") return null;
   // Reading facts decline outright, before any decomposition is attempted.
   if (wordReadingFactId(glyph) === fact) return null;
+  // The component breakdown, built once and used by both showings — "電 is
+  // electricity, 話 is tale" for a multi-kanji word, null otherwise (see
+  // componentMeanings for the ≥2-kanji / every-kanji-or-none rules).
+  const parts = componentMeanings(glyph);
+  // A LISTENING MEANING card is the reason this function takes `listen`. The
+  // audio played the word and the glyph is off screen, so the honest nudge is
+  // the WRITTEN FORM itself — 電話 — which lets the learner SEE which word they
+  // heard. It cannot leak: the writing is not the meaning, so a card asking for
+  // the English answer keeps its answer withheld. Every word qualifies, single-
+  // kanji and all-kana included — the written form names the heard word without
+  // naming its gloss.
+  //
+  // For a MULTI-KANJI word it ALSO carries the piece meanings (`parts`), the same
+  // breakdown the visual card gets, rendered beneath the word. Sam ruled that an
+  // acceptable bigger nudge on a listening card: it names the kanji, never the
+  // English gloss. Single-kanji / all-kana words have no `parts`, so they stay
+  // written-form-only.
+  if (listen) {
+    return parts
+      ? { kind: "written", text: glyph, parts }
+      : { kind: "written", text: glyph };
+  }
+  // A visual meaning card (the glyph is already on screen) shows the breakdown
+  // alone — null becomes no hint at all, exactly as before.
+  return parts ? { kind: "text", text: parts } : null;
+}
+
+/**
+ * The per-kanji meaning breakdown of a word — "先 is before, 生 is life" — or
+ * null when there is nothing honest to break down.
+ *
+ * FEWER THAN TWO KANJI HAS NOTHING TO TAKE APART. An all-kana word (これ, とても)
+ * has no kanji at all; a SINGLE-kanji word (口) has nothing left over once you
+ * name its one kanji, so the "breakdown" ("口 is mouth") is the whole gloss the
+ * card asked for rather than a nudge toward it. A real decomposition needs two
+ * parts to hold apart, which you still have to assemble into the meaning.
+ *
+ * EVERY KANJI OR NONE — a partial breakdown reads as a claim about the whole
+ * word, so a word with an unnamed kanji declines rather than half-explaining.
+ */
+function componentMeanings(glyph: string): string | null {
   const kanji = kanjiOf(glyph);
-  // FEWER THAN TWO KANJI HAS NOTHING TO TAKE APART, so no meaning hint either.
-  // An all-kana word (これ, とても) has no kanji at all; a SINGLE-kanji word (口)
-  // has nothing left over once you name its one kanji, so the "breakdown" ("口 is
-  // mouth") is the whole gloss the card asked for rather than a nudge toward it.
-  // A real decomposition needs two parts to hold apart — "先 is before, 生 is
-  // life", which you still have to read as "teacher".
   if (kanji.length < 2) return null;
-  // Every kanji or none — a partial breakdown reads as a claim about the whole
-  // word.
   const said: string[] = [];
   for (const c of kanji) {
     const m = kanjiRow(c)?.meanings[0];
     if (!m) return null;
     said.push(`${c} is ${m}`);
   }
-  return said.length ? { kind: "text", text: said.join(", ") } : null;
+  return said.length ? said.join(", ") : null;
 }
 
 // ---------- grammar ----------
