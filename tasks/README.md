@@ -21,7 +21,7 @@ Status board for everything in flight. One file per task in this folder; this is
 
 | 13 | [Move instruction below halo, white, drop small labels](13-instruction-layout.md) | 🔵 in progress | `quiz-clarity` | localhost:3002 |
 
-| 14 | [Retire file mode → default logged-out + localStorage](14-retire-file-mode.md) | ⚪ queued (after merges) | — | — |
+| 14 | [Retire file mode → default logged-out + localStorage](14-retire-file-mode.md) | 🔵 in progress (on `retire-file-mode`, off #11) | `retire-file-mode` | localhost:3008 |
 
 ## Housekeeping
 - `.env.local` holds the Supabase DB connection string (for direct DB access) — rotate/remove whenever.
