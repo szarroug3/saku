@@ -71,8 +71,10 @@ export function shownSectionsOf(
   kind: Kind,
   sections: readonly ShelfSection[],
   keep?: (entry: LibEntry) => boolean,
+  maxSections?: number,
 ): ShelfSection[] {
-  return filterSections(sections, keep).slice(0, sectionCapFor(kind, sections));
+  const cap = Math.min(sectionCapFor(kind, sections), maxSections ?? Infinity);
+  return filterSections(sections, keep).slice(0, cap);
 }
 
 /**
@@ -97,8 +99,9 @@ export function visibleShelfIds(
   kind: Kind,
   sections: readonly ShelfSection[],
   keep?: (entry: LibEntry) => boolean,
+  maxSections?: number,
 ): EntryId[] {
-  return shownSectionsOf(kind, sections, keep).flatMap((s) =>
+  return shownSectionsOf(kind, sections, keep, maxSections).flatMap((s) =>
     s.entries.slice(0, s.cap ?? Infinity).map((e) => e.id),
   );
 }

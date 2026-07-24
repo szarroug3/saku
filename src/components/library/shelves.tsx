@@ -67,6 +67,7 @@ import type { Claims } from "@/lib/claims";
 import {
   COUNTER_KIND,
   entryForGlyph,
+  KIND_LABEL,
   knownFactsOf,
   libEntry,
   type Kind,
@@ -246,6 +247,8 @@ export function Shelf({
   voice,
   keep,
   filter = "all",
+  sectionCap,
+  moreHref,
 }: {
   kind: Kind;
   sections: readonly ShelfSection[];
@@ -265,6 +268,14 @@ export function Shelf({
   /** Which filter is active, for the empty-state copy. The predicate above does
    * the work; this only picks the words when it removes everything. */
   filter?: KnowledgeFilter;
+  /** THE ALL TAB'S EXTRA CAP. When set, the shelf paints at most this many
+   * sections (on top of, and never above, its own section cap) — the All tab
+   * stacks every subject, so each shows a taste and defers the rest. Undefined on
+   * a subject's own tab, where the shelf shows everything it normally would. */
+  sectionCap?: number;
+  /** Where the "＋ N more" footer points when `sectionCap` truncates this shelf —
+   * the subject's own tab, which shows it whole. Only read in All-tab mode. */
+  moreHref?: string;
 }) {
   const tile = (entry: LibEntry) => (
     <EntryTile
@@ -339,8 +350,14 @@ export function Shelf({
   // while thousands of unknown kanji waited in section four and on. `filtered`
   // is the whole matching population (for the off-shelf count); `shownSections`
   // is what actually paints. See shelf-view.ts for the shared math.
+  // FILTER, then the shelf's own section cap, then (on the All tab) the extra
+  // per-subject cap — never letting the All cap raise the shelf's own limit,
+  // only lower it. On a subject's own tab `sectionCap` is undefined and this is
+  // exactly the shelf's own cap.
+  const allMode = sectionCap !== undefined;
   const filtered = filterSections(sections, keep);
-  const shownSections = filtered.slice(0, sectionCapFor(kind, sections));
+  const cap = Math.min(sectionCapFor(kind, sections), sectionCap ?? Infinity);
+  const shownSections = filtered.slice(0, cap);
 
   // What the kanji shelf is not showing you. COUNTED, never written down: the
   // matching population minus what the sections above actually hold, so it stays
@@ -349,12 +366,17 @@ export function Shelf({
   // sections, not the raw shelf — because `filtered` already carries the filter.
   // In `grade` mode the sections cover everything and none is capped, so this is
   // 0 and the line does not appear; that mode says what it holds back per
-  // section instead.
+  // section instead. SUPPRESSED in All-tab mode, where the generic per-subject
+  // "＋ N more … open the tab" footer below owns the deferral instead.
   const offShelf =
-    kind === KANJI_SUBJECT
+    kind === KANJI_SUBJECT && !allMode
       ? filtered.reduce((n, s) => n + s.entries.length, 0) -
         shownSections.reduce((n, s) => n + s.entries.length, 0)
       : 0;
+
+  // How many whole subject-groups the All tab is deferring to this subject's own
+  // tab. Only in All mode; the per-subject footer below reads it.
+  const hiddenSections = allMode ? filtered.length - shownSections.length : 0;
 
   // Everything on the shelf fell outside the filter. The clusters card still
   // renders above (it is a reference, not filtered content), but the shelf itself
@@ -443,6 +465,18 @@ export function Shelf({
             ＋ {offShelf.toLocaleString()} more kanji further along your order.
             Search to find any of them.
           </Hint>
+        </p>
+      ) : null}
+      {/* The All tab's per-subject deferral: the rest of this subject is one tab
+          away, whole. A counted line, so it stays honest if the cap ever moves,
+          and a real link so it is a way OUT of the taste, not just a note. */}
+      {hiddenSections > 0 && moreHref ? (
+        <p className="pt-0.5">
+          <Link href={moreHref} className="text-[13px] text-accent no-underline">
+            ＋ {hiddenSections.toLocaleString()} more{" "}
+            {KIND_LABEL[kind].toLowerCase()} group
+            {hiddenSections === 1 ? "" : "s"} — open the {KIND_LABEL[kind]} tab →
+          </Link>
         </p>
       ) : null}
     </>

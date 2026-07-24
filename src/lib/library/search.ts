@@ -34,7 +34,13 @@
 // page) before it is a data structure.
 
 import { CHAR_INDEX } from "@/data/characters";
-import { LIB_ENTRIES, type Kind, type LibEntry } from "@/lib/library/entries";
+import {
+  KIND_LABEL,
+  KINDS,
+  LIB_ENTRIES,
+  type Kind,
+  type LibEntry,
+} from "@/lib/library/entries";
 
 /** Why a row is in the list. The section IS the ranking's explanation. */
 export type MatchKind = "exact" | "prefix" | "meaning" | "inside" | "form";
@@ -102,6 +108,43 @@ const SECTION_ORDER: readonly MatchKind[] = [
   "inside",
 ];
 
+/** A match kind's rank, from SECTION_ORDER — used by `searchByType`, where one
+ * type's block mixes match kinds and must lead with the exact hits. Lower is
+ * better; derived from the array so the two orderings cannot drift. */
+const MATCH_RANK: Record<MatchKind, number> = Object.fromEntries(
+  SECTION_ORDER.map((why, i) => [why, i]),
+) as Record<MatchKind, number>;
+
+/**
+ * Every entry that matches, one Hit each, UNSECTIONED — the shared first pass
+ * both `search` (bucket by WHY) and `searchByType` (bucket by KIND) run before
+ * they group. One walk of LIB_ENTRIES, honouring the kind restriction and the
+ * knowledge filter; the caller decides how to slice the result.
+ */
+function collectHits(q: string, lower: string, opts: SearchOpts): Hit[] {
+  const pinned = opts.pinned;
+  const hits: Hit[] = [];
+  for (const entry of LIB_ENTRIES) {
+    if (opts.kind && entry.kind !== opts.kind) continue;
+    if (opts.keep && !opts.keep(entry)) continue;
+    const why = classify(entry, q, lower);
+    if (!why) continue;
+    hits.push({
+      entry,
+      why,
+      score:
+        // Pinned first, then the crude everyday-ness, then shorter glyphs. The
+        // length tie-break is what puts 出口 above 出入国管理: when nothing else
+        // separates two containment hits, the shorter word is the one you are
+        // likelier to have meant, and it is the one you can read.
+        (pinned?.has(entry.id) ? 0 : 1_000_000) +
+        entry.weight * 10 +
+        entry.glyph.length,
+    });
+  }
+  return hits;
+}
+
 /**
  * What you meant, in sections.
  *
@@ -114,28 +157,12 @@ export function search(query: string, opts: SearchOpts = {}): Section[] {
   if (!q) return [];
   const lower = q.toLowerCase();
   const perSection = opts.perSection ?? DEFAULT_PER_SECTION;
-  const pinned = opts.pinned;
 
   const buckets = new Map<MatchKind, Hit[]>();
-  for (const entry of LIB_ENTRIES) {
-    if (opts.kind && entry.kind !== opts.kind) continue;
-    if (opts.keep && !opts.keep(entry)) continue;
-    const why = classify(entry, q, lower);
-    if (!why) continue;
-    const list = buckets.get(why) ?? [];
-    list.push({
-      entry,
-      why,
-      score:
-        // Pinned first, then the crude everyday-ness, then shorter glyphs. The
-        // length tie-break is what puts 出口 above 出入国管理: when nothing else
-        // separates two containment hits, the shorter word is the one you are
-        // likelier to have meant, and it is the one you can read.
-        (pinned?.has(entry.id) ? 0 : 1_000_000) +
-        entry.weight * 10 +
-        entry.glyph.length,
-    });
-    buckets.set(why, list);
+  for (const hit of collectHits(q, lower, opts)) {
+    const list = buckets.get(hit.why) ?? [];
+    list.push(hit);
+    buckets.set(hit.why, list);
   }
 
   const sections: Section[] = [];
@@ -146,6 +173,62 @@ export function search(query: string, opts: SearchOpts = {}): Section[] {
     sections.push({
       why,
       label: SECTION_LABEL[why],
+      hits: hits.slice(0, perSection),
+      more: Math.max(0, hits.length - perSection),
+    });
+  }
+  return sections;
+}
+
+/** One type's block of search results — a Kanji table, a Words table. Same
+ * shape as a `Section`, cut a different way: `search` groups the hits by HOW
+ * they matched (exact / prefix / …), `searchByType` groups them by WHAT they
+ * are, which is what the All tab shows. */
+export interface TypeSection {
+  readonly kind: Kind;
+  /** The shelf's own name — "Kanji", "Radicals", "Words". */
+  readonly label: string;
+  readonly hits: readonly Hit[];
+  /** Hits beyond `hits` — the "＋ N more" count, over the filtered population. */
+  readonly more: number;
+}
+
+/**
+ * A search bucketed BY TYPE — the All tab's answer.
+ *
+ * One block per subject that has a match, in the curriculum TEACHING ORDER the
+ * shelves use (KINDS: kana → radicals → kanji → words → …), so the grouped
+ * results read in the same sequence a learner meets the subjects in. A subject
+ * with no match is ABSENT — no empty header — exactly the way the filtered
+ * shelves drop an emptied section.
+ *
+ * Within a block the hits mix match kinds (a Words block holds both the word you
+ * typed and the words it appears inside), ordered exact-first by MATCH_RANK and
+ * then by the same score `search` uses. It ALWAYS spans every kind — the type IS
+ * the grouping here, so a `kind` restriction would defeat the purpose; the
+ * per-subject tabs, which stay scoped, call `search` with their kind instead.
+ */
+export function searchByType(query: string, opts: SearchOpts = {}): TypeSection[] {
+  const q = query.trim();
+  if (!q) return [];
+  const lower = q.toLowerCase();
+  const perSection = opts.perSection ?? DEFAULT_PER_SECTION;
+
+  const buckets = new Map<Kind, Hit[]>();
+  for (const hit of collectHits(q, lower, { ...opts, kind: null })) {
+    const list = buckets.get(hit.entry.kind) ?? [];
+    list.push(hit);
+    buckets.set(hit.entry.kind, list);
+  }
+
+  const sections: TypeSection[] = [];
+  for (const kind of KINDS) {
+    const hits = buckets.get(kind);
+    if (!hits?.length) continue;
+    hits.sort((a, b) => MATCH_RANK[a.why] - MATCH_RANK[b.why] || a.score - b.score);
+    sections.push({
+      kind,
+      label: KIND_LABEL[kind],
       hits: hits.slice(0, perSection),
       more: Math.max(0, hits.length - perSection),
     });

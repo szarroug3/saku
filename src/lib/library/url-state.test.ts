@@ -26,12 +26,14 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { KINDS } from "@/lib/library/entries";
 import {
+  ALL_TAB,
   DEFAULT_KIND,
   DEFAULT_STATE,
   kindFromParams,
   libraryUrl,
   queryFromParams,
   stateFromParams,
+  tabFromParams,
 } from "@/lib/library/url-state";
 
 /** A URL, as the page sees it. `useSearchParams()` hands back a read-only
@@ -66,6 +68,29 @@ describe("kindFromParams", () => {
     assert.equal(kindFromParams(params("?kind=__proto__")), DEFAULT_KIND);
     assert.equal(kindFromParams(params("?kind=toString")), DEFAULT_KIND);
     assert.equal(DEFAULT_KIND, KANA_SUBJECT);
+  });
+});
+
+describe("tabFromParams — subjects plus the All tab", () => {
+  test("reads the All tab, and round-trips it through a URL", () => {
+    assert.equal(tabFromParams(params("?kind=all")), ALL_TAB);
+    const url = libraryUrl({ kind: ALL_TAB, query: "" });
+    assert.equal(url, "/library?kind=all");
+    const search = url.slice(url.indexOf("?"));
+    assert.equal(tabFromParams(params(search)), ALL_TAB);
+  });
+
+  test("every subject still reads through, and is NOT the All tab", () => {
+    for (const k of KINDS) {
+      assert.equal(tabFromParams(params(`?kind=${k}`)), k);
+      assert.notEqual(tabFromParams(params(`?kind=${k}`)), ALL_TAB);
+    }
+  });
+
+  test("All is an ADDITION, not the default — a plain URL still opens on kana", () => {
+    assert.equal(tabFromParams(params("")), DEFAULT_KIND);
+    assert.notEqual(DEFAULT_KIND, ALL_TAB);
+    assert.equal(libraryUrl({ kind: DEFAULT_KIND, query: "" }), "/library");
   });
 
   test("a fallback is a fallback, not a throw", () => {
