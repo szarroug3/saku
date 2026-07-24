@@ -37,7 +37,8 @@ import {
   type Kind,
   type LibEntry,
 } from "@/lib/library/entries";
-import { search, searchAll } from "@/lib/library/search";
+import { search, searchAll, searchByType } from "@/lib/library/search";
+import { allTabBrowseKinds, ALL_TAB_SECTIONS_PER_KIND } from "@/lib/library/all-tab";
 import {
   addRange,
   EMPTY_SELECTION,
@@ -49,11 +50,13 @@ import {
 import { entryStanding, entryIsKnown } from "@/lib/library/standing";
 import { useLiveFacts } from "@/lib/library/use-live-facts";
 import {
-  kindFromParams,
+  ALL_TAB,
   libraryUrl,
   queryFromParams,
   stateFromParams,
+  tabFromParams,
   type KnowledgeFilter,
+  type LibraryTab,
 } from "@/lib/library/url-state";
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -125,13 +128,14 @@ function LibraryBody() {
     (url: string) => window.history.replaceState(null, "", url),
     [],
   );
-  // ONE kind is shown at a time — there is no "All" view. Stacking every kind's
-  // shelf at once (kana 214 + kanji + words + grammar ≈ thousands of tiles) was
-  // genuinely laggy, and its value is already covered: SEARCH spans every kind,
-  // and the SELECTION below persists across kind switches, so you can still
-  // build a cross-kind drill without a screen that paints all of them. The
-  // default is Kana — the lightest first paint.
-  const kind = kindFromParams(searchParams);
+  // THE TAB — one subject, or All. All stacks every subject's shelf (each capped
+  // to a taste; see all-tab.ts) and buckets a search BY TYPE; a subject tab shows
+  // and searches only its own kind. The old "no All view, search spans every
+  // kind" rule is gone: search is now SCOPED to the tab, and All is the tab that
+  // spans everything. The default is still Kana — the lightest first paint — so a
+  // plain /library never opens on the heaviest render.
+  const tab = tabFromParams(searchParams);
+  const isAll = tab === ALL_TAB;
   const urlQuery = queryFromParams(searchParams);
   // THE KNOWLEDGE FILTER — All / Known / Not known. Like the kind, it lives in
   // the URL so a link carries it and Back steps through it, and it spans every
@@ -181,14 +185,14 @@ function LibraryBody() {
       if (debounce.current) clearTimeout(debounce.current);
       debounce.current = setTimeout(() => {
         ownQuery.current = value;
-        replaceUrl(libraryUrl({ kind, query: value, state: stateFilter }));
+        replaceUrl(libraryUrl({ kind: tab, query: value, state: stateFilter }));
       }, 250);
     },
-    [kind, stateFilter, replaceUrl],
+    [tab, stateFilter, replaceUrl],
   );
 
-  const selectKind = useCallback(
-    (next: Kind) => {
+  const selectTab = useCallback(
+    (next: LibraryTab) => {
       // Flush the pending query first — the tab switch carries whatever is in
       // the box RIGHT NOW, not whatever the debounce last got around to
       // writing, or the new history entry would disagree with the screen.
@@ -206,9 +210,9 @@ function LibraryBody() {
     (next: KnowledgeFilter) => {
       if (debounce.current) clearTimeout(debounce.current);
       ownQuery.current = query;
-      pushUrl(libraryUrl({ kind, query, state: next }));
+      pushUrl(libraryUrl({ kind: tab, query, state: next }));
     },
-    [kind, query, pushUrl],
+    [tab, query, pushUrl],
   );
 
   // The search runs over 9,761 entries per keystroke. That is ~1–2ms and would
@@ -273,12 +277,31 @@ function LibraryBody() {
       ) === wantKnown;
   }, [stateFilter, liveFacts, claims, cfg.accuracyMetric, now]);
 
-  // SEARCH SPANS EVERY KIND, always — the kind chips govern the browse shelf,
-  // not the search. This is what makes removing the "All" tab safe: you lost the
-  // stacked all-kinds BROWSE (the laggy part), but a query still reaches kana,
-  // kanji, words AND grammar at once, so "must" finds the patterns even while
-  // the Kana shelf is the one selected underneath.
-  const sections = useMemo(() => search(q, { pinned, keep }), [q, pinned, keep]);
+  // SEARCH FOLLOWS THE TAB. On a subject tab it is SCOPED to that kind (the Kana
+  // tab searches only kana), sectioned by HOW you matched (exact / prefix / …).
+  // On the All tab it spans every subject and is grouped BY TYPE — a Kanji block,
+  // a Radicals block, a Words block, in teaching order — which is the tab's whole
+  // point. Both come back as `{ key, label, hits, more }` so one render draws
+  // either; the difference is only what the blocks are cut by.
+  const resultSections = useMemo(() => {
+    if (!q) return [];
+    // `tab === ALL_TAB` (not `isAll`) so TypeScript narrows `tab` to a real Kind
+    // in the else branch, where `search` needs one.
+    if (tab === ALL_TAB) {
+      return searchByType(q, { pinned, keep }).map((s) => ({
+        key: s.kind as string,
+        label: s.label,
+        hits: s.hits,
+        more: s.more,
+      }));
+    }
+    return search(q, { kind: tab, pinned, keep }).map((s) => ({
+      key: s.why as string,
+      label: s.label,
+      hits: s.hits,
+      more: s.more,
+    }));
+  }, [q, tab, pinned, keep]);
 
   // Every shelf, cut once. Built for all three kinds up front (cheap array work,
   // no DOM) so switching the kind filter — or the "All" view that shows all
@@ -309,10 +332,25 @@ function LibraryBody() {
   // across sections (and, in search, across kinds), which is the order a range
   // follows.
   const visibleIds = useMemo<EntryId[]>(() => {
-    if (q) return sections.flatMap((s) => s.hits.map((h) => h.entry.id));
-    const sh = shelvesByKind.get(kind)!;
-    return visibleShelfIds(kind, sh.sections, keep);
-  }, [q, sections, kind, shelvesByKind, keep]);
+    if (q) return resultSections.flatMap((s) => s.hits.map((h) => h.entry.id));
+    // The All browse: the painted ids of every shown subject, capped exactly as
+    // its Shelf paints (ALL_TAB_SECTIONS_PER_KIND), concatenated in teaching
+    // order — so a Shift-range on All follows the same top-to-bottom reading the
+    // eye does across the stacked shelves.
+    if (tab === ALL_TAB) {
+      return allTabBrowseKinds(keep, (k) => shelvesByKind.get(k)!.sections).flatMap(
+        (k) =>
+          visibleShelfIds(
+            k,
+            shelvesByKind.get(k)!.sections,
+            keep,
+            ALL_TAB_SECTIONS_PER_KIND,
+          ),
+      );
+    }
+    const sh = shelvesByKind.get(tab)!;
+    return visibleShelfIds(tab, sh.sections, keep);
+  }, [q, resultSections, tab, shelvesByKind, keep]);
 
   // A CLICK ON A TILE OR ROW. Without Shift it toggles the entry and drops the
   // anchor there. With Shift, IF there is a live anchor still on screen, it adds
@@ -339,15 +377,23 @@ function LibraryBody() {
   const slice = useMemo(() => {
     if (selected.size > 0) return selectionSlice(selected, LIB_ENTRIES);
     if (q) {
-      const hits = searchAll(q, { pinned, keep });
+      // The bar means the results you can see — scoped to the tab like the search
+      // itself, all of them (not the 8-per-block the page had room for).
+      const hits = searchAll(q, { kind: tab === ALL_TAB ? null : tab, pinned, keep });
       return { label: q, entries: hits.map((h) => h.entry.id) };
     }
-    const entries = shelvesByKind.get(kind)!.entries;
+    // All browse with nothing selected: the bar is the whole library (the "drill
+    // everything" the per-kind shelf's "drill all of Kanji" generalises to).
+    if (tab === ALL_TAB) {
+      const entries = keep ? LIB_ENTRIES.filter(keep) : LIB_ENTRIES;
+      return { label: "Everything", entries: entries.map((e) => e.id) };
+    }
+    const entries = shelvesByKind.get(tab)!.entries;
     return {
-      label: KIND_LABEL[kind],
+      label: KIND_LABEL[tab],
       entries: (keep ? entries.filter(keep) : entries).map((e) => e.id),
     };
-  }, [selected, q, kind, pinned, keep, shelvesByKind]);
+  }, [selected, q, tab, pinned, keep, shelvesByKind]);
 
   const standingOfEntry = (entry: LibEntry) =>
     entryStanding(factsOf(entry.id), liveFacts, claims, cfg.accuracyMetric, now);
@@ -381,9 +427,14 @@ function LibraryBody() {
         placeholder="Search anything: し, shi, 生, せんせい, telephone…"
       >
         {/* The kind chips change what you SEE, never what you have SELECTED —
-            the selection outlives them. One is always active; there is no "All". */}
+            the selection outlives them. One is always active. ALL LEADS THE ROW:
+            it spans every subject (browse) and buckets a search by type, and the
+            per-subject chips scope to their one kind. */}
+        <Chip on={isAll} onClick={() => selectTab(ALL_TAB)}>
+          All
+        </Chip>
         {KINDS.map((k) => (
-          <Chip key={k} on={kind === k} onClick={() => selectKind(k)}>
+          <Chip key={k} on={tab === k} onClick={() => selectTab(k)}>
             {KIND_LABEL[k]}
           </Chip>
         ))}
@@ -424,7 +475,7 @@ function LibraryBody() {
           would silently wear the active-quiz detail. */}
       <div>
         {q ? (
-          sections.length === 0 ? (
+          resultSections.length === 0 ? (
             <Card>
               <p className="text-[13px]">
                 {stateFilter === "all" ? (
@@ -453,8 +504,8 @@ function LibraryBody() {
               </p>
             </Card>
           ) : (
-            sections.map((s) => (
-              <Card key={s.why}>
+            resultSections.map((s) => (
+              <Card key={s.key}>
                 <Lbl>
                   {s.label}
                   {s.more > 0 ? (
@@ -489,13 +540,64 @@ function LibraryBody() {
               </Card>
             ))
           )
+        ) : tab === ALL_TAB ? (
+          // THE ALL BROWSE — every subject with something to show, in teaching
+          // order, each its own tab's shelf capped to a taste. A subject the
+          // filter empties drops out entirely (allTabBrowseKinds), so no empty
+          // headers; if the filter empties them ALL, one message stands in.
+          (() => {
+            const kinds = allTabBrowseKinds(
+              keep,
+              (k) => shelvesByKind.get(k)!.sections,
+            );
+            if (kinds.length === 0) {
+              return (
+                <Card>
+                  <p className="text-[13px] text-text-muted">
+                    {stateFilter === "known"
+                      ? "Nothing is marked known yet."
+                      : "Everything is already known."}{" "}
+                    <Hint>
+                      Switch the filter to All to see every subject, or search.
+                    </Hint>
+                  </p>
+                </Card>
+              );
+            }
+            return kinds.map((k) => (
+              <div key={k}>
+                {/* The subject's name over its block — on All the section
+                    headers below ("1–50") repeat across subjects and don't say
+                    which type you're looking at; this does. */}
+                <div className="px-1 pb-1 pt-2">
+                  <Lbl>{KIND_LABEL[k]}</Lbl>
+                </div>
+                <Shelf
+                  kind={k}
+                  sections={shelvesByKind.get(k)!.sections}
+                  selected={selected}
+                  onToggleEntry={onToggleEntry}
+                  onToggleSection={onToggleSection}
+                  facts={liveFacts}
+                  claims={claims}
+                  metric={cfg.accuracyMetric}
+                  now={now}
+                  voice={cfg.voiceName}
+                  keep={keep}
+                  filter={stateFilter}
+                  sectionCap={ALL_TAB_SECTIONS_PER_KIND}
+                  moreHref={libraryUrl({ kind: k, query: "", state: stateFilter })}
+                />
+              </div>
+            ));
+          })()
         ) : (
           (() => {
-            const sh = shelvesByKind.get(kind)!;
+            const sh = shelvesByKind.get(tab)!;
             return (
               <Shelf
-                key={kind}
-                kind={kind}
+                key={tab}
+                kind={tab}
                 sections={sh.sections}
                 selected={selected}
                 onToggleEntry={onToggleEntry}
