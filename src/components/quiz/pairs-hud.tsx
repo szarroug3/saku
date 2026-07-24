@@ -7,10 +7,13 @@
 // 2px hairline for progress, and End quiz sitting at 22% until the mouse
 // moves. Every colour comes from a theme token.
 //
-// No background band: like drill (and unlike the grid, which scrolls) the
-// board fits the stage, so nothing ever passes under the pills and the sticky
-// wrapper needs no `bg-bg` — which would punch an opaque rectangle straight
-// through kiri's mesh.
+// No background band, and this is now the ONLY quiz HUD without one. The board
+// is sized to the stage and pairs has no drawer, no reveal and nothing that
+// grows, so there is genuinely never anything passing under the pills. Drill
+// looked like this too until its drawer was found to push the page past the
+// scroller; if anything is ever added below this board that can do the same,
+// this wants `kq-band` and a hairline like drill's, NOT a `bg-bg` — that would
+// punch an opaque rectangle straight through kiri's mesh.
 //
 // Pill / the fade / liveAccuracy are deliberate copies of drill-screen's, one
 // per screen, matching how drill keeps its own. ui.tsx is where they'd belong

@@ -209,20 +209,29 @@
   --bar-h: 2px;
 
   --bg: #eef2fa;
-  /* TRANSLUCENT — the live glass. The card is a white veil the fixed page mesh
-   * reads through, which is the whole of the kiri look. It is ALSO the thing that
-   * janks a naive scroll: a translucent element over a fixed backdrop re-blends
-   * against the backdrop every frame the two move apart. That is NOT solved by
-   * going opaque (which flattened the theme); it is solved by giving the card its
-   * own GPU layer, so scrolling re-COMPOSITES it instead of re-PAINTING it — see
-   * the `.kq-material` transform below. The richness that used to come from a
-   * per-card `backdrop-filter: saturate` now comes from saturating the ONE mesh
-   * element instead (body::before), so no card needs a filter at all. */
-  /* EXPERIMENT: transparent card over a FIXED frosted sheet (body::after below).
-   * The card has no fill and no blur of its own; it is a window onto the one fixed
-   * blurred layer, which reads through it as frosted glass. Because the blur lives
-   * on a fixed element and the card only reveals it, scrolling the card re-blends
-   * nothing — the frost stays put, the content moves. */
+  /* NO FILL AT ALL, which is the end of a long argument and worth stating as the
+   * conclusion it is.
+   *
+   * kiri's card began as a translucent white veil that the fixed page mesh read
+   * through, each card carrying its own `backdrop-filter: saturate` for richness.
+   * Two things came off that, in order. The filter went first: any
+   * backdrop-filter makes an element a backdrop root that re-snapshots its
+   * backdrop every scroll frame, and the Library paints one per shelf tile, so at
+   * N tiles it was the jank (p95 33.4ms against 17.6ms). The saturation was never
+   * a property of a card anyway; it belongs to the mesh, so it moved onto the one
+   * fixed mesh element (body::before, filtered exactly once, never repainted) and
+   * the cards read the already-rich result straight through.
+   *
+   * Then the fill went too, when the owner asked for the boxes taken off. What is
+   * left is a card that is a hole: the mesh, the page ground, and a solid 1px
+   * --border drawing the shape. Nothing composites, nothing re-blends, nothing
+   * filters. It is also why a sticky bar in this theme has NOTHING behind it by
+   * default and has to ask for kq-band by name (see CARD MATERIAL) instead of
+   * inheriting occlusion from the card it happens to sit on.
+   *
+   * There is no fixed frosted sheet under all of this. An earlier pass planned
+   * one (a body::after the transparent cards would be windows onto) and it was
+   * never built; if you are looking for it, it does not exist. */
   --card: transparent;
   --panel: rgba(13, 27, 42, 0.06);
   --text: #0d1b2a;
@@ -240,11 +249,6 @@
    * the mesh reads as a different colour at every point of the circle. */
   --arc: #096b87;
   --arc-track: #dfe3ec;
-  /* The middle frame's glass, as a STATIC tint (see .kq-stage): a live
-   * backdrop-filter behind the scroll re-blends every frame, so the scrolling
-   * frame gets a fixed, layer-cached fill instead. The frosted docks keep the
-   * real blur (nothing scrolls over them). */
-  --stage-fill: rgba(255, 255, 255, 0.5);
   --shadow-card: none; /* EXPERIMENT: definition comes from the border + frost */
   --shadow-btn: inset 0 1px 0 rgba(255, 255, 255, 0.6);
   /* Toned down for option 1: with see-through cards the mesh is behind everything,
@@ -255,13 +259,12 @@
     radial-gradient(40% 60% at 60% 20%, rgba(236, 72, 153, 0.04), transparent 70%);
 
   --dark-bg: #070a14;
-  /* EXPERIMENT: transparent, a window onto the fixed frosted sheet. See --card. */
+  /* No fill in dark either, and for the same reasons. See --card. */
   --dark-card: transparent;
   --dark-panel: rgba(255, 255, 255, 0.07);
   --dark-text: #eef1fb;
   --dark-text-muted: rgba(238, 241, 251, 0.5);
   --dark-border: #565b66; /* solid, neutral gray — light enough to read on the dark frost */
-  --dark-stage-fill: rgba(9, 13, 25, 0.5); /* dark glass for the middle frame — see --stage-fill */
   --dark-accent: #67d4f5;
   --dark-accent-bg: rgba(103, 212, 245, 0.13);
   --dark-danger: #ff8a94;
@@ -470,7 +473,6 @@
     --shadow-card: var(--dark-shadow-card);
     --shadow-btn: var(--dark-shadow-btn);
     --page-mesh: var(--dark-page-mesh, none);
-    --stage-fill: var(--dark-stage-fill);
   }
 }
 
@@ -494,7 +496,6 @@
   --shadow-card: var(--dark-shadow-card);
   --shadow-btn: var(--dark-shadow-btn);
   --page-mesh: var(--dark-page-mesh, none);
-  --stage-fill: var(--dark-stage-fill);
 }
 
 /* shadcn token names, mapped onto the palette above. Purely derived, so
@@ -840,30 +841,31 @@ body {
   pointer-events: none;
 }
 
-/* THE SINGLE FROSTED FRAME (.kq-frame, in layout.tsx). One backdrop-filtered box
- * that fills the content column and does NOT scroll — the page content scrolls in
- * front of it, inside .kq-scroll. Because the frame and its backdrop (the fixed
- * mesh, ::before) are both stationary, the blur is computed once and never
- * recomputes as the content scrolls: "the blurred box stays in place, the content
- * moves." The cards inside are transparent windows onto this one frost, so nothing
- * re-blends per frame. kiri only; the opaque themes leave .kq-frame a no-op. */
-[data-theme="kiri"] .kq-frame {
-  -webkit-backdrop-filter: blur(18px) var(--card-frost-sat);
-  backdrop-filter: blur(18px) var(--card-frost-sat);
-  border: 1px solid var(--border);
-  /* A whisper of fill so the frame reads as a pane, not just an outline. */
-  background: var(--frame-tint, rgba(255, 255, 255, 0.05));
-}
-
-/* THE MIDDLE FRAME — the one the shelves scroll inside. NOT a backdrop-filter:
- * a live blur behind a scroll region re-blends every frame in real browsers, no
- * matter how the content in front of it is layered, and that was the last of the
- * kiri scroll lag. Instead it is a STATIC tint promoted to its own compositor
- * layer (translateZ), so the panel is rasterised ONCE and the scrolling tiles
- * just move over a cached layer — a plain GPU re-composite, no repaint. It reads
- * as a calm glass panel over the mesh; the frosted look lives on the docks
- * (.kq-frame), which never have anything scroll over them. Opaque themes leave it
- * a no-op, so their middle region is just the page ground. */
+/* THERE IS NO FROSTED FRAME, and this note is the headstone so nobody goes
+ * looking for one.
+ *
+ * A `.kq-frame` rule used to sit here: one backdrop-filtered box filling the
+ * content column, stationary while the page scrolled in front of it, with the
+ * transparent cards acting as windows onto that single frost. It was a good
+ * idea and it is gone, because the owner asked for the outer box removed and
+ * what she was asking to remove WAS the frame. Nothing has worn the class since;
+ * verified across the worktree before deleting it, along with the --frame-tint
+ * it was the only reader of.
+ *
+ * The consequence is the load-bearing part. Removing it did not leave a weaker
+ * frost behind the content column, it left NONE — which is exactly why a sticky
+ * bar over scrolling content has to declare kq-band and cannot borrow occlusion
+ * from the region it sits in. Every place that used to be described as "on the
+ * frame" is really on the mesh and its own border.
+ *
+ * THE STAGE — the region the content scrolls inside — is what remains, and it is
+ * NOT a backdrop-filter. A live blur behind a scroll region re-blends every frame
+ * in real browsers no matter how the content in front of it is layered, and that
+ * was the last of the kiri scroll lag. It began life as a static tint on its own
+ * compositor layer, so the panel rasterised ONCE and the scrolling tiles moved
+ * over a cached layer. The tint went with the outer box; the layer stayed, which
+ * is where the smoothness always came from. Opaque themes leave it a no-op, so
+ * their middle region is just the page ground. */
 [data-theme="kiri"] .kq-stage {
   /* No outer box: the shelves are their own tiles, and a bordered, tinted panel
    * around them was a box inside a box. What stays is the compositor layer
@@ -1261,11 +1263,13 @@ body {
  * the in-app webview that never showed the jank. */
 [data-theme="kiri"] .kq-defer {
   transform: translateZ(0);
-  /* FLATTENED ONTO THE FRAME. The single frosted frame (.kq-frame) is the only
-   * surface in kiri now, so a shelf section is not its own box on top of it —
-   * just its header and its tiles sitting on the one frost. Drop the border box
-   * (fill and shadow are already gone via --card/--shadow-card); the tiles keep
-   * their own outlines, which is what "the header and the pieces under it" is. */
+  /* FLATTENED. A shelf section is not a box holding other boxes, just its header
+   * and its tiles sitting on the page's own ground. Drop the border (fill and
+   * shadow are already gone via --card/--shadow-card); the tiles keep their own
+   * outlines, which is what "the header and the pieces under it" is. Written
+   * when there was still a frosted frame under all of this to flatten ONTO; the
+   * frame is gone (see the headstone above) and the flattening outlived it,
+   * because the owner's note was about the boxes and not about the frost. */
   border-color: transparent;
   box-shadow: none;
   /* Tighter shelves. With no box around a section, the Card's 18px vertical
