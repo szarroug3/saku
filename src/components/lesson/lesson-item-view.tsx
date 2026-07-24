@@ -36,6 +36,18 @@
 // cards. The affordances follow the same rule: a character that is a word is
 // pronounceable whichever track it arrived on.
 //
+// ONE VOCABULARY FOR THE ROLES, AND NO CORNER BLOB
+// ================================================
+// That left the page naming the roles twice. A badge in the top right read
+// "Radical · Kanji · Word"; the headings down the body read "As a word", "As a
+// kanji", "As a building block" — three of the same things, in different words,
+// in the opposite order. So the badge is gone and the headings answer alone:
+// they print the badge's own nouns, in ROLE_ORDER (radicals build kanji, kanji
+// build words), each over one line saying what that role means for the reader,
+// and each separated from the next by a hairline. A character that plays ONE
+// role gets its one heading too, since with the corner empty nothing else on the
+// page says what it is looking at.
+//
 // A LESSON, NOT A REFERENCE
 // =========================
 // Folding the cards worked and then went too far: 人 came out as a sense table,
@@ -65,7 +77,7 @@
 // can't disagree about what a character is.
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { Children, useEffect, useState, type ReactNode } from "react";
 
 import { Callout } from "@/components/lesson/callout";
 import { HearButton } from "@/components/lesson/hear-button";
@@ -91,8 +103,7 @@ import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { knownLookalikes } from "@/lib/kanji-lookalikes";
-import type { CharacterRole } from "@/lib/character-role";
-import { characterRole, characterRoleTitle } from "@/lib/character-role";
+import { characterRole } from "@/lib/character-role";
 import type { LessonItem } from "@/lib/lesson-items";
 import {
   canHearItem,
@@ -408,45 +419,33 @@ function PlainHeadword({
   );
 }
 
-/** What each role set means for how you'll actually meet the character. The badge
- * says the roles (Title Cased, the same label the tiles print) and one plain line
- * underneath, because "Radical · Kanji" tells a beginner nothing on its own.
+/**
+ * The stack of sections under the hero, with a hairline between each.
  *
- * THE WORD ROLE IS THE ONE THAT DECIDES "is it a word?". A radical that is also a
- * kanji is not thereby a word you can say by itself — 攵 has a kanji card and
- * still never stands alone — so only the sets carrying `word` promise that. The
- * two sets without a kanji card (word-only, radical + word) cannot happen off
- * today's tables, where every curriculum word is written in jōyō kanji; they are
- * written out anyway so the badge stays truthful if the word list ever reaches
- * past the jōyō set. */
-const ROLE_NOTE: Record<CharacterRole, string> = {
-  radical: "A building block, not a word on its own. You'll see it inside other kanji.",
-  kanji: "It stands on its own as a character, but you'll meet it paired up inside words.",
-  word: "You'll meet this one as a word and nothing else. Nothing in the kanji track is built from it.",
-  "radical · kanji":
-    "Other kanji are built around it. By itself it isn't a word yet, so expect it in company.",
-  "radical · word":
-    "It works as a word by itself, and its shape lives inside other kanji, though it never gets a kanji card of its own.",
-  "kanji · word":
-    "Say it alone and it's already a word. It also pairs with other kanji to make longer ones.",
-  "radical · kanji · word":
-    "A word by itself, a character in longer words, and a shape other kanji are built around.",
-};
-
-/** The role blob in the top-right of a kanji/radical header: which roles this
- * character plays, and what that means for how you'll meet it. Null for anything
- * that plays none. */
-function RoleBadge({ glyph }: { glyph: string }) {
-  const role = characterRole(glyph);
-  const label = characterRoleTitle(glyph);
-  if (!role || !label) return null;
-  const note = ROLE_NOTE[role];
+ * WHY A RULE AND NOT JUST A GAP. Once the sections are headed with one-word
+ * nouns (Radical, Kanji, Word) the page is a run of short blocks, and whitespace
+ * alone left them reading as one column of loose paragraphs. The rule is the
+ * seam: it says where one claim about this character ends and the next begins,
+ * which is the whole point of splitting them by role. The same rule already ran
+ * under the hero, so this is that one line repeated rather than a new idea.
+ *
+ * Callers pass `null` for a block they have nothing for, and `Children.toArray`
+ * drops those, so the first surviving block is the one that opens without a rule
+ * above it and no absent section leaves a stray line behind.
+ */
+function SectionStack({ children }: { children: ReactNode }) {
+  const blocks = Children.toArray(children);
+  if (!blocks.length) return null;
   return (
-    <div className="rounded-lg border border-border bg-panel px-3 py-2 md:max-w-[240px] md:justify-self-end">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.07em] text-accent">
-        {label}
-      </span>
-      <p className="mt-1 text-[12px] leading-snug text-text-muted">{note}</p>
+    <div className="mt-9 border-t border-border pt-7">
+      {blocks.map((block, i) => (
+        <div
+          key={typeof block === "object" && "key" in block ? block.key : i}
+          className={i > 0 ? "mt-7 border-t border-border pt-7" : ""}
+        >
+          {block}
+        </div>
+      ))}
     </div>
   );
 }
@@ -514,9 +513,13 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   const roles = lessonRoles(item);
   const sectionList = lessonSections(item);
   const sections = new Set(sectionList);
-  // The role headings only make sense when there is more than one role to tell
-  // apart; a plain kanji keeps the unlabelled stack it has always had.
-  const labelRoles = roles.length > 1;
+  // THE HEADINGS ARE NOW THE ONLY THING THAT NAMES THE ROLES, so a character
+  // gets them however few it plays: 乞 is a kanji and nothing else, and with the
+  // badge removed its "Kanji" heading is the whole answer to what the reader is
+  // looking at. The gate is the same pure question the badge asked — does this
+  // GLYPH play any role — so 学生 and the kana, which never had a badge, keep
+  // the unlabelled stack they have always had.
+  const labelRoles = characterRole(item.glyph) !== null;
   // Pronounceable surfaces only: a kana has one sound, and so does a character
   // that stands alone as a word, whichever track it arrived on.
   const canHear = canHearItem(item);
@@ -602,18 +605,15 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           hearGlyph={item.glyph}
           kanaGlyph={kanaGlyph}
           right={
-            // The badge speaks for a CHARACTER, so it is asked the same pure
-            // question it prints: 学生 plays the word role and is still two
-            // characters, with no badge to show.
-            characterRole(item.glyph) ? (
-              <div className="space-y-3 md:justify-self-end">
-                <RoleBadge glyph={item.glyph} />
-                {/* Lookalikes are a kanji's problem: they are the characters
-                    this one is confused WITH on a page, which only arises once
-                    it has a card of its own. */}
-                {roles.includes("kanji") ? (
-                  <KanjiConfusables glyph={item.glyph} />
-                ) : null}
+            // The role badge used to live here, listing "Radical · Kanji · Word"
+            // over a line about what that mix means. The headings below say the
+            // same three nouns over the material each one owns, so the corner
+            // was the page saying it twice in two vocabularies. Lookalikes stay:
+            // they are a kanji's problem, the characters this one is confused
+            // WITH on a page, which only arises once it has a card of its own.
+            roles.includes("kanji") ? (
+              <div className="md:justify-self-end">
+                <KanjiConfusables glyph={item.glyph} />
               </div>
             ) : null
           }
@@ -642,73 +642,78 @@ export function LessonItemView({ item }: { item: LessonItem }) {
         </div>
       ) : null}
 
-      {/* The reference sections, full-width below the hero, off a single light
-          divider — no card around them, the flattening the owner asked for.
-          Each decides its own emptiness, and which of them appear is the role
-          set's decision: a kana shows only "how it's written", a plain kanji
-          adds its parts and its readings, and a character that is also a word
-          teaches the word too, under a heading of its own.
+      {/* The reference sections, full-width below the hero, no card around them,
+          the flattening the owner asked for. Each decides its own emptiness, and
+          which of them appear is the role set's decision: a kana shows only "how
+          it's written", a plain kanji its meaning and its parts, and a character
+          that is also a word teaches the word too, under a heading of its own.
 
-          The roles run word, kanji, building block, the order the badge's own
-          sentence puts them in for a character that plays all three. */}
-      <div className="mt-9 space-y-3 border-t border-border pt-7">
-        <RoleBlock role="word" labelled={labelRoles && roleHasSections("word", sectionList)}>
-          {sections.has("word-sense") && word ? (
-            <WordSensePanel word={word} voiceName={cfg.voiceName} />
-          ) : null}
-          {sections.has("word-forms") && word && forms ? (
-            <WordFormFan dictionary={word.keb} groups={forms} />
-          ) : null}
-          {word ? (
-            <PairedRow
-              wide={
-                sections.has("word-readings") && wordAlign ? (
-                  <WordReadingsPanel word={wordAlign} voiceName={cfg.voiceName} />
-                ) : null
-              }
-              narrow={
-                sections.has("word-example") ? <WordSentencePanel keb={word.keb} /> : null
-              }
-              even
-            />
-          ) : null}
-        </RoleBlock>
-        <RoleBlock role="kanji" labelled={labelRoles && roleHasSections("kanji", sectionList)}>
-          {/* WHAT IT MEANS, NOT WHAT IT SOUNDS LIKE INSIDE WORDS. The table of
-              in-word readings has moved off the lesson entirely and lives on the
-              Library entry, which is the page you open when you want all five
-              rows for 人. Here the block opens with the definition, taken from
-              the kanji entry whichever track the step arrived on. */}
-          {sections.has("kanji-meaning") ? (
-            <KanjiMeaningPanel meanings={kanjiMeanings(item)} />
-          ) : null}
-          {sections.has("kanji-parts") ? <KanjiPartsRow glyph={item.glyph} /> : null}
-        </RoleBlock>
+          THE ROLES RUN RADICAL, KANJI, WORD — the ladder, smallest first, the
+          order the concept cards teach it in and the order the composite label
+          on the lesson card prints. It used to run the other way. */}
+      <SectionStack>
         {/* The building block, taught by its heading and its one line. The list
             of kanji built on the shape is the Library's now: it is a catalogue,
             22 entries deep for 人, and on the step where the shape is first met
             not one of them has been learned yet. What the reader needs here is
             that the shape recurs and is worth recognising, which is what the
             line says. */}
-        <RoleBlock
-          role="radical"
-          labelled={labelRoles && roleHasSections("radical", sectionList)}
-        />
-        {item.kind === "grammar" ? (
-          <PairedRow
-            wide={<GrammarBuildPanel item={item} />}
-            narrow={
-              grammarExample ? (
-                <GrammarSentencePanel item={item} example={grammarExample} />
-              ) : null
-            }
-          />
+        {roleHasSections("radical", sectionList) ? (
+          <RoleBlock role="radical" labelled={labelRoles} />
         ) : null}
-        {item.kind === "grammar" ? <GrammarFamilyPanel item={item} /> : null}
+        {roleHasSections("kanji", sectionList) ? (
+          <RoleBlock role="kanji" labelled={labelRoles}>
+            {/* WHAT IT MEANS, NOT WHAT IT SOUNDS LIKE INSIDE WORDS. The table of
+                in-word readings has moved off the lesson entirely and lives on
+                the Library entry, which is the page you open when you want all
+                five rows for 人. Here the block opens with the definition, taken
+                from the kanji entry whichever track the step arrived on. */}
+            {sections.has("kanji-meaning") ? (
+              <KanjiMeaningPanel meanings={kanjiMeanings(item)} />
+            ) : null}
+            {sections.has("kanji-parts") ? <KanjiPartsRow glyph={item.glyph} /> : null}
+          </RoleBlock>
+        ) : null}
+        {roleHasSections("word", sectionList) ? (
+          <RoleBlock role="word" labelled={labelRoles}>
+            {sections.has("word-sense") && word ? (
+              <WordSensePanel word={word} voiceName={cfg.voiceName} />
+            ) : null}
+            {sections.has("word-forms") && word && forms ? (
+              <WordFormFan dictionary={word.keb} groups={forms} />
+            ) : null}
+            {word ? (
+              <PairedRow
+                wide={
+                  sections.has("word-readings") && wordAlign ? (
+                    <WordReadingsPanel word={wordAlign} voiceName={cfg.voiceName} />
+                  ) : null
+                }
+                narrow={
+                  sections.has("word-example") ? <WordSentencePanel keb={word.keb} /> : null
+                }
+                even
+              />
+            ) : null}
+          </RoleBlock>
+        ) : null}
+        {item.kind === "grammar" ? (
+          <div className="space-y-3">
+            <PairedRow
+              wide={<GrammarBuildPanel item={item} />}
+              narrow={
+                grammarExample ? (
+                  <GrammarSentencePanel item={item} example={grammarExample} />
+                ) : null
+              }
+            />
+            <GrammarFamilyPanel item={item} />
+          </div>
+        ) : null}
         {/* Last, and under no role heading: how the shape is drawn is one answer
             however many roles the character plays. */}
         {sections.has("how-its-written") ? <HowItsWritten item={item} /> : null}
-      </div>
+      </SectionStack>
     </div>
   );
 }

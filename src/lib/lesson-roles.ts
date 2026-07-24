@@ -6,7 +6,8 @@
 // The unified spine folds a character's radical card, its kanji card and its
 // one-character word into a single step. 人 is all three: a shape other kanji
 // are built around, a character with its own readings, and a word with a sound
-// and a meaning. The badge on the lesson has said so for a while. The BODY did
+// and a meaning. A badge on the lesson said so for a while (the role headings
+// say it now, and the badge is gone). The BODY did
 // not: the view branched on `LessonItem.kind`, an item carries exactly one kind,
 // so a folded character rendered exactly one role's material and the other two
 // were promised and never delivered.
@@ -106,25 +107,31 @@ export function kanjiMeanings(item: LessonItem): readonly string[] {
   return kanjiEntryOf(item)?.meanings ?? [];
 }
 
-/** Every section a step can show, in the order the lesson prints them. The word
- * comes first because it is the most concrete thing a character can be, and the
- * badge's own sentence for a three-role character says the same three things in
- * the same order.
+/** Every section a step can show, in the order the lesson prints them.
+ *
+ * THE RADICAL COMES FIRST NOW, THEN THE KANJI, THEN THE WORD — ROLE_ORDER, the
+ * ladder the concept cards teach and the composite label on the lesson card
+ * spells out: radicals build kanji, kanji build words. It used to run the other
+ * way, word first, on the reasoning that a word is the most concrete thing a
+ * character can be. That put the page's order at odds with every other place the
+ * app names these three, and a reader of 人 met "As a word / As a kanji / As a
+ * building block" under a badge reading "Radical · Kanji · Word": the same three
+ * things, in reverse, in different words. Smallest-first, and one vocabulary.
  *
  * `radical-note` is the odd one: it has no panel behind it. Since the lesson
- * stopped listing the kanji built on the shape, the building-block role has no
- * material left, and a role the badge names and the page never mentions again is
- * the gap that started all of this. So the role's block is its heading and its
- * one line, and this entry is how a role with nothing under it still claims one.
- * `roleHasSections` is the only thing that reads it. */
+ * stopped listing the kanji built on the shape, the radical role has no material
+ * left, and a role the page names and never explains is the gap that started all
+ * of this. So the role's block is its heading and its one line, and this entry is
+ * how a role with nothing under it still claims one. `roleHasSections` is the
+ * only thing that reads it. */
 export const SECTION_ORDER = [
+  "radical-note",
+  "kanji-meaning",
+  "kanji-parts",
   "word-sense",
   "word-forms",
   "word-readings",
   "word-example",
-  "kanji-meaning",
-  "kanji-parts",
-  "radical-note",
   "grammar-build",
   "grammar-example",
   "grammar-family",
@@ -137,34 +144,34 @@ export type LessonSection = (typeof SECTION_ORDER)[number];
  * stroke sections belong to no role: a pattern plays none, and how a character
  * is written is true of the shape however many roles it plays. */
 const SECTION_ROLE: Partial<Record<LessonSection, RoleName>> = {
+  "radical-note": "radical",
+  "kanji-meaning": "kanji",
+  "kanji-parts": "kanji",
   "word-sense": "word",
   "word-forms": "word",
   "word-readings": "word",
   "word-example": "word",
-  "kanji-meaning": "kanji",
-  "kanji-parts": "kanji",
-  "radical-note": "radical",
 };
 
 /**
  * The sections a step shows, in SECTION_ORDER, with the empty ones already
  * dropped.
  *
- * Three sections are gated on something other than data.
+ * `word-sense`, the reading-and-meaning panel, is the one section gated on
+ * something other than data: a word that is only a word says both in its header
+ * already (学生 prints "noun · student" beside its reading), so the panel would
+ * say them twice. A character with a kanji card spends its header on the
+ * character's meaning, and then the panel is the only place the word it also is
+ * gets taught.
  *
- * `word-sense`, the reading-and-meaning panel: a word that is only a word says
- * both in its header already (学生 prints "noun · student" beside its reading),
- * so the panel would say them twice. A character with a kanji card spends its
- * header on the character's meaning, and then the panel is the only place the
- * word it also is gets taught.
- *
- * `kanji-meaning` and `radical-note` are both gated on the step playing SEVERAL
- * roles, and for the same reason read from opposite ends. On a step that is only
- * about the kanji, the definition is the headword line an inch above and the
- * badge beside it already says what a kanji is for; repeating either would be
- * two identical lines with nothing between them. On a folded step the reader
- * reaches "As a kanji" having scrolled past a sense table, a sound explainer and
- * an example sentence, and the heading has to be able to stand on its own.
+ * `kanji-meaning` and `radical-note` USED TO BE gated on the step playing
+ * several roles, on the reasoning that a lone kanji's definition is the headword
+ * line an inch above and the badge in the corner already says what a kanji is
+ * for. The badge is gone, and its job passed to the role headings, so a role now
+ * has to be able to claim its block on a step where it is the only role: 乞 is a
+ * kanji and nothing else, and the heading over its definition is the only thing
+ * on the page that tells the reader so. The headword repeats one word; the
+ * alternative repeated nothing and named nothing.
  */
 export function lessonSections(item: LessonItem): LessonSection[] {
   if (item.kind === "transitivity" || item.kind === "keigo") return [];
@@ -180,10 +187,10 @@ export function lessonSections(item: LessonItem): LessonSection[] {
     if (exampleFor(word.keb)) out.add("word-example");
   }
   if (roles.includes("kanji")) {
-    if (roles.length > 1 && kanjiMeanings(item).length) out.add("kanji-meaning");
+    if (kanjiMeanings(item).length) out.add("kanji-meaning");
     if (teachableParts(item.glyph)) out.add("kanji-parts");
   }
-  if (roles.includes("radical") && roles.length > 1) out.add("radical-note");
+  if (roles.includes("radical")) out.add("radical-note");
   if (item.kind === "grammar") {
     out.add("grammar-build");
     out.add("grammar-example");
@@ -231,9 +238,11 @@ export function strokeFallbackOf(item: LessonItem, reference = false): StrokeFal
   return { show: "whole" };
 }
 
-/** Does this role have anything on this step? Drives the role heading, which
- * only appears when a character plays more than one role and only over material
- * that is really there. */
+/** Does this role have anything on this step? Drives the role block, which
+ * appears over material that is really there. Every role a character plays now
+ * has at least its own line to show, so this comes back true for each of them;
+ * it still answers honestly for a role the character does not play, which is
+ * what the view asks it. */
 export function roleHasSections(
   role: RoleName,
   sections: readonly LessonSection[],

@@ -82,20 +82,27 @@ describe("lessonRoles — every role the step teaches, not just the track it cam
   });
 });
 
-describe("lessonSections — a section per role, word first", () => {
-  test("人 teaches its word sense, then what the character means, then its shape", () => {
+describe("lessonSections — a section per role, up the ladder", () => {
+  test("人 teaches the shape, then the character, then the word, then how it's drawn", () => {
     assert.deepEqual(lessonSections(FOLDED), [
+      "radical-note",
+      "kanji-meaning",
       "word-sense",
       "word-readings",
       "word-example",
-      "kanji-meaning",
-      "radical-note",
       "how-its-written",
     ]);
+  });
+
+  test("THE ORDER FLIPPED: radicals build kanji, kanji build words, and the page says it that way round now", () => {
+    const got = lessonSections(FOLDED);
     assert.ok(
-      lessonSections(FOLDED).indexOf("word-sense") <
-        lessonSections(FOLDED).indexOf("kanji-meaning"),
-      "the word comes first, as the badge's own sentence orders it",
+      got.indexOf("radical-note") < got.indexOf("kanji-meaning"),
+      "the shape comes before the character built on it",
+    );
+    assert.ok(
+      got.indexOf("kanji-meaning") < got.indexOf("word-sense"),
+      "the character comes before the word it makes",
     );
   });
 
@@ -118,19 +125,29 @@ describe("lessonSections — a section per role, word first", () => {
     }
   });
 
-  test("a plain kanji keeps its parts and its strokes, and loses its readings", () => {
+  test("a plain kanji keeps its meaning and its parts and its strokes, and loses its readings", () => {
     assert.deepEqual(lessonSections(step(kanjiEntry("明"), "明", "kanji")), [
+      "kanji-meaning",
       "kanji-parts",
       "how-its-written",
     ]);
   });
 
-  test("a single-role kanji gets no definition panel: the headword line is one inch up", () => {
-    const sections = lessonSections(step(kanjiEntry("明"), "明", "kanji"));
-    assert.ok(!sections.includes("kanji-meaning"));
+  test("A SINGLE-ROLE KANJI NOW KEEPS ITS DEFINITION, because its heading is the only label left", () => {
+    // It used to be suppressed: the definition is also on the headword line, and
+    // the badge in the corner already said "Kanji". The badge is gone, so the
+    // block under the "Kanji" heading has to have something in it, and the
+    // definition is the thing the trim left standing.
     assert.deepEqual(lessonSections(step(kanjiEntry("乞"), "乞", "kanji")), [
+      "kanji-meaning",
       "how-its-written",
     ]);
+  });
+
+  test("a radical that is no kanji still gets its line, so its heading is not bare", () => {
+    const sections = lessonSections(step(radicalEntry("亅"), "亅", "radical"));
+    assert.deepEqual(sections, ["radical-note", "how-its-written"]);
+    assert.equal(roleHasSections("radical", sections), true);
   });
 
   test("a two-character word is unchanged, and gains no word-sense panel", () => {
@@ -159,27 +176,71 @@ describe("lessonSections — a section per role, word first", () => {
   });
 });
 
-describe("roleHasSections — a role heading only over material that is there", () => {
+describe("roleHasSections — a block for every role the character plays, and no others", () => {
   test("人 has something to show for each of its three roles", () => {
     const sections = lessonSections(FOLDED);
-    for (const role of ["word", "kanji", "radical"] as const) {
+    for (const role of ["radical", "kanji", "word"] as const) {
       assert.ok(roleHasSections(role, sections), `${role} has sections`);
     }
   });
 
-  test("a role with no sections gets no heading", () => {
-    // 乞 plays one role, so nothing here is labelled anyway; what the answers
-    // pin is that a role with no material never claims a block. Its own kanji
-    // role has none since the readings left and it has no teachable parts.
+  test("乞 claims the kanji block it plays and neither of the two it does not", () => {
     const sections = lessonSections(step(kanjiEntry("乞"), "乞", "kanji"));
-    assert.equal(roleHasSections("kanji", sections), false);
+    assert.equal(roleHasSections("kanji", sections), true);
     assert.equal(roleHasSections("radical", sections), false);
     assert.equal(roleHasSections("word", sections), false);
   });
 
-  test("明 keeps a kanji block, on its parts alone", () => {
+  test("明 keeps a kanji block, and claims nothing it is not", () => {
     const sections = lessonSections(step(kanjiEntry("明"), "明", "kanji"));
     assert.equal(roleHasSections("kanji", sections), true);
+    assert.equal(roleHasSections("radical", sections), false);
+    assert.equal(roleHasSections("word", sections), false);
+  });
+
+  test("a kana and a pattern claim no role block at all", () => {
+    for (const s of [
+      step(kanaEntry("あ"), "あ", "kana"),
+      step(patternEntry("te-kara"), "〜てから", "grammar"),
+    ]) {
+      const sections = lessonSections(s);
+      for (const role of ["radical", "kanji", "word"] as const) {
+        assert.equal(roleHasSections(role, sections), false);
+      }
+    }
+  });
+});
+
+describe("the headings, and the badge they replaced", () => {
+  const view = readFileSync(
+    fileURLToPath(new URL("../components/lesson/lesson-item-view.tsx", import.meta.url)),
+    "utf8",
+  );
+  const roleBlock = readFileSync(
+    fileURLToPath(new URL("../components/lesson/role-block.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  test("the role badge is off the lesson header", () => {
+    assert.doesNotMatch(view, /<RoleBadge/);
+    assert.doesNotMatch(view, /ROLE_NOTE/);
+  });
+
+  test("the headings say the badge's own three nouns, and none of the old prose labels", () => {
+    for (const title of ['title: "Radical"', 'title: "Kanji"', 'title: "Word"']) {
+      assert.ok(roleBlock.includes(title), `${title} is the heading`);
+    }
+    // Only what is PRINTED: the file's own notes still name the old labels,
+    // because saying what changed is why they are there.
+    const printed = roleBlock.slice(roleBlock.indexOf("const ROLE_HEADING"));
+    assert.doesNotMatch(printed, /As a word|As a kanji|As a building block/);
+  });
+
+  test("each heading leads with a line, so no role is a heading over nothing", () => {
+    const leads = [...roleBlock.matchAll(/lead:\s*\n?\s*"([^"]+)"/g)].map((m) => m[1]);
+    assert.equal(leads.length, 3, "one line per role");
+    assert.equal(new Set(leads).size, 3, "and three different lines");
+    for (const l of leads) assert.ok(l.length > 40, `"${l}" says something`);
   });
 });
 
