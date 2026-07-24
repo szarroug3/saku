@@ -322,7 +322,7 @@ export function QuizOptionsFields() {
               on={cfg.pairResponses.includes("definition")}
               onClick={() => pairResponse("definition")}
             >
-              Japanese + definition
+              Japanese + English
             </Chip>
             <Chip
               on={cfg.pairResponses.includes("romaji")}
@@ -349,13 +349,13 @@ export function QuizOptionsFields() {
               on={cfg.gridResponses.includes("definition")}
               onClick={() => gridResponse("definition")}
             >
-              Definition
+              English
             </Chip>
             <Chip
               on={cfg.gridResponses.includes("romaji")}
               onClick={() => gridResponse("romaji")}
             >
-              Reading / romaji
+              Kanji reading / romaji
             </Chip>
           </AskRow>
         </SourceCard>

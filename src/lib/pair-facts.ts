@@ -1,5 +1,6 @@
 // The text relationships Match pairs can honestly deal.
 
+import { KANA_SUBJECT } from "@/data/characters";
 import { patternMeaningFactId } from "@/data/grammar";
 import { jp2enResponse } from "@/lib/ask-forms";
 import { questionsFor, revealFor } from "@/lib/engine/question";
@@ -21,7 +22,15 @@ export interface PairSpec {
 
 function definitionSpec(fact: FactId): PairSpec | null {
   const info = factInfo(fact);
-  if (!info || jp2enResponse(fact) !== "definition") return null;
+  // "Japanese + English" is the natural Latin/English counterpart: a kana's
+  // romanization, or a meaning-bearing item's English definition.
+  if (
+    !info ||
+    (info.subject !== KANA_SUBJECT &&
+      jp2enResponse(fact) !== "definition")
+  ) {
+    return null;
+  }
   const prompt = questionsFor(fact).prompt(fact, "jp2en");
   return {
     id: `definition:${fact}`,

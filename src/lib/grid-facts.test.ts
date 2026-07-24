@@ -21,22 +21,27 @@ const facts = [
 ];
 
 describe("Grid response types", () => {
-  test("Definition keeps only facts answered with a definition", () => {
+  test("English keeps definitions plus kana romanization", () => {
     assert.deepEqual(
       gridFacts(facts, ["definition"]),
-      [definition, kanjiMeaning],
+      [definition, kanjiMeaning, kanaReading],
     );
   });
 
-  test("Reading keeps word, kanji, and kana reading facts", () => {
+  test("Kanji reading keeps only kanji-bearing reading facts", () => {
     assert.deepEqual(
       gridFacts(facts, ["romaji"]),
-      [wordReading, kanjiReading, kanaReading],
+      [wordReading, kanjiReading],
     );
   });
 
-  test("both response types preserve the selected fact order", () => {
+  test("both response types cover definitions, kanji readings, and kana", () => {
     assert.deepEqual(gridFacts(facts, ["definition", "romaji"]), facts);
+  });
+
+  test("a hiragana-only selection produces Grid cards through English", () => {
+    const hiragana = ["あ", "い", "う", "え"].map(kanaFact);
+    assert.deepEqual(gridFacts(hiragana, ["definition"]), hiragana);
   });
 
   test("an empty response selection deals no cards", () => {

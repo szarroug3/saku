@@ -29,15 +29,31 @@ const wordReading = wordReadingFactId(kanjiWord.keb);
 const kanjiReading = [...READING_INDEX.keys()][0];
 
 describe("Match-pairs relationships", () => {
-  test("Definition pairs use Japanese text and the subject-owned definition", () => {
+  test("Japanese + English uses definitions and kana romanization", () => {
     const specs = pairSpecs(
-      [wordMeaning, wordMeaningFactId(kanaWord.keb), meaningFactId("生")],
+      [
+        kanaFact("あ"),
+        wordMeaning,
+        wordMeaningFactId(kanaWord.keb),
+        meaningFactId("生"),
+      ],
       ["definition"],
       EMPTY,
     );
-    assert.equal(specs.length, 3);
+    assert.equal(specs.length, 4);
     assert.ok(specs.every((p) => p.kind === "definition"));
     assert.ok(specs.every((p) => p.japanese && p.answer));
+    assert.ok(specs.some((p) => p.japanese === "あ" && p.answer === "a"));
+  });
+
+  test("a hiragana-only selection produces a real matching board", () => {
+    const hiragana = ["あ", "い", "う", "え"].map(kanaFact);
+    const specs = pairSpecs(hiragana, ["definition"], EMPTY);
+    assert.equal(specs.length, hiragana.length);
+    assert.deepEqual(
+      specs.map((p) => p.answer),
+      ["a", "i", "u", "e"],
+    );
   });
 
   test("Romaji pairs require kanji-bearing Japanese", () => {
