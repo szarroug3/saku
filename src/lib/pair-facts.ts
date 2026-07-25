@@ -172,6 +172,51 @@ export function pairBoards(
 }
 
 /**
+ * The fewest pairs a Match-pairs board can BE a matching game with. One pair is
+ * not a board — there is no other pair on it to match against, so the "game" is
+ * "click the only two cells", which teaches nothing and cannot be got wrong.
+ */
+export const MIN_PAIRS_PER_BOARD = 2;
+
+/**
+ * The boards Match-pairs can actually DEAL: the (source × response) grouping of
+ * `pairBoards`, minus any degenerate board with fewer than two pairs.
+ *
+ * Grouping and playability are deliberately separate. `pairBoards` is the honest
+ * grouping — a lone radical still HAS a "Radicals ↔ Meaning" key, and #33's board
+ * tests read that grouping directly. But a one-pair board is not a matching game,
+ * so the matching SCREEN builds its deck from this filtered view instead, and the
+ * setup screen gates Start on it. This rule is Match-pairs-only: Grid deals typed
+ * single-glyph cards (a one-card Grid is fine) and must NOT use this.
+ */
+export function playablePairBoards(
+  facts: readonly FactId[],
+  kinds: readonly PairResponse[],
+  history: HistoryFile,
+): PairBoard[] {
+  return pairBoards(facts, kinds, history).filter(
+    (b) => b.specs.length >= MIN_PAIRS_PER_BOARD,
+  );
+}
+
+/**
+ * A Count-limited pairs deck can slice through a board and leave its last one a
+ * lone pair — a degenerate board the invariant forbids just as much as a lone
+ * board does. The deck is laid out board-CONTIGUOUS (see boardDeck), so the tail
+ * is the trailing run of specs sharing the last header; drop it when it is a
+ * single pair. (An exactly-on-boundary slice leaves a full board and no-ops.)
+ */
+export function dropClippedTail(deck: readonly PairSpec[]): PairSpec[] {
+  if (deck.length === 0) return [...deck];
+  const lastHeader = deck[deck.length - 1].header;
+  let tail = 0;
+  for (let i = deck.length - 1; i >= 0 && deck[i].header === lastHeader; i--) {
+    tail++;
+  }
+  return tail < MIN_PAIRS_PER_BOARD ? deck.slice(0, deck.length - tail) : [...deck];
+}
+
+/**
  * Every selected pair variant, deduped per board and in board order — a flat
  * view of `pairBoards` for callers that only need the specs. Consecutive specs
  * of one board stay contiguous, so a caller can still see the boards.

@@ -30,6 +30,7 @@ import { Lbl, PageTitle } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { gridFacts } from "@/lib/grid-facts";
+import { playablePairBoards } from "@/lib/pair-facts";
 import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
@@ -88,12 +89,17 @@ export default function PracticePage() {
     const cap =
       cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null;
     if (cfg.mode === "pairs") {
+      // Length/Count still belong to the pairs screen (it expands the pool into
+      // variants and caps afterward), so `facts` is handed over whole. But a
+      // selection can expand into NO playable board — every type having only a
+      // lone pair, which is not a matching game — and Start must not launch into
+      // an empty run. So the gate counts the specs on PLAYABLE (≥2-pair) boards:
+      // 0 here is the genuinely-unstartable case, and only that case, so it no
+      // longer rejects an otherwise startable selection.
+      const boards = playablePairBoards(facts, cfg.pairResponses, history);
       return {
-        // Pair validity belongs to the pairs screen, which expands this pool
-        // into variants and applies Count afterward. Preflighting variants on
-        // the setup page rejected otherwise startable selections.
         facts,
-        count: facts.length,
+        count: boards.reduce((n, b) => n + b.specs.length, 0),
       };
     }
     if (cfg.mode === "grid") {
@@ -106,9 +112,11 @@ export default function PracticePage() {
     facts,
     cfg.mode,
     cfg.gridResponses,
+    cfg.pairResponses,
     cfg.length,
     cfg.limType,
     cfg.limCount,
+    history,
   ]);
 
   // Grid narrows the selected pool by response type before dealing it, so its
