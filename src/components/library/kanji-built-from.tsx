@@ -5,42 +5,46 @@
 // The kanji page's counterpart to the word page's WordBuiltFrom, and the
 // deliberate division of labour between the two: the WORD page owns the READING
 // decomposition (電話 → 電 でん + 話 わ), the KANJI page owns the SHAPE
-// decomposition (可 → 丁 street + 口 mouth). A single-kanji word's reading split
-// is just the word repeating itself, so the word page hides it there and points
-// here; this is where the one useful breakdown of a lone kanji lives.
+// decomposition (可 → 丁 street + 口 mouth).
 //
-// SAME SOURCE AS THE LESSON, SAME CARD AS THE WORD PAGE. The pieces come from
-// teachableParts — the de-framed, all-or-nothing decomposition the lesson's
-// KanjiPartsRow and the drill's hint both read, so a kanji looked up here is
-// broken apart exactly as it was taught. The tiles are WordBuiltFrom's KanjiPiece
-// tile — glyph over meaning, linked to the piece's own page — so the two "Built
-// from" cards read as one idea in two directions rather than two designs.
+// THE FULL DECOMPOSITION, RADICALS INCLUDED. This is fed by `builtFrom`, not the
+// lesson's kanji-only `teachableParts`: 何 is 亻 person + 可 possible, and the 亻
+// half is exactly the part a learner needs even though it is a bound form with no
+// kanji card of its own. Each tile links — a variant like 亻 through to the
+// character it stands for (人), a bare primitive to its /radical page — so the
+// section is also the page's outgoing "made of" links, which is why the compact
+// Links-card row it used to duplicate is gone.
 //
-// ALL-OR-NOTHING, and that is teachableParts' call, not this component's. A kanji
-// whose pieces are not every one a taught kanji (a raw primitive like ｜ ノ マ, or
-// an atomic shape) yields null, and this renders nothing at all — no empty card,
-// no "made of nothing" line. The frame double-count teachableParts now collapses
-// (可 was 丁 + 口 + 丁) never reaches here.
+// SAME CARD AS THE WORD PAGE, SAME FRAME-DEDUP AS THE LESSON. The tile is
+// WordBuiltFrom's KanjiPiece tile — glyph over meaning, linked. The pieces come
+// through `deframe`, so a single enclosure KanjiVG split in two (可 was 丁 口 丁)
+// shows once, while a genuine repetition (品 口口口) is left whole.
+//
+// Empty for an atomic kanji (一, no pieces) — `builtFrom` returns [], and this
+// renders nothing at all: no empty card.
 
 import Link from "next/link";
 
 import { Card, Lbl } from "@/components/ui";
-import { kanjiEntry } from "@/data/kanji";
-import { teachableParts } from "@/lib/kanji-parts";
-import { entryHref } from "@/lib/library/href";
+import { builtFrom } from "@/lib/library/entries";
+import type { LibEntry } from "@/lib/library/entries";
+import { entryHref, radicalHref } from "@/lib/library/href";
 
-export function KanjiBuiltFrom({ glyph }: { glyph: string }) {
-  const parts = teachableParts(glyph);
-  if (!parts) return null;
+export function KanjiBuiltFrom({ entry }: { entry: LibEntry }) {
+  const pieces = builtFrom(entry);
+  if (!pieces.length) return null;
 
   return (
     <Card>
       <Lbl>Built from</Lbl>
       <div className="flex flex-wrap items-stretch gap-2">
-        {parts.map((p, i) => (
+        {pieces.map((p, i) => (
           <Link
             key={`${p.c}-${i}`}
-            href={entryHref(kanjiEntry(p.c))}
+            // A piece with an entry (a kanji, or a variant resolving to its
+            // taught character) goes to that page; a bare primitive with none
+            // goes to its /radical page, which says what the shape is.
+            href={p.id ? entryHref(p.id) : radicalHref(p.c)}
             className="flex flex-col items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-text no-underline hover:bg-panel"
           >
             <span className="text-[30px] leading-none">{p.c}</span>
@@ -51,7 +55,7 @@ export function KanjiBuiltFrom({ glyph }: { glyph: string }) {
         ))}
       </div>
       <p className="mt-2.5 text-xs text-text-muted">
-        Each piece is a character you learn on its own.
+        Each piece is a shape you can meet on its own.
       </p>
     </Card>
   );

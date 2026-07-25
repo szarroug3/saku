@@ -100,6 +100,7 @@ import {
 } from "@/data/keigo";
 import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
+import { deframe } from "@/lib/kanji-parts";
 import { factsOf } from "@/lib/facts";
 import type { EntryId, FactId, FactInfo } from "@/types";
 
@@ -761,6 +762,52 @@ export function madeOf(entry: LibEntry): Array<{ c: string; id: EntryId | null }
     const link = kanjiRow(c) ? c : variantTaughtKanji(c);
     return { c, id: link ? kanjiEntry(link) : null };
   });
+}
+
+/** One piece of the kanji-page "Built from" section: the shape to show, where
+ * tapping it goes, and the one-word meaning printed under it. */
+export interface BuiltPiece {
+  readonly c: string;
+  readonly id: EntryId | null;
+  readonly meaning: string;
+}
+
+/**
+ * The kanji page's "Built from" pieces — the FULL immediate decomposition, so
+ * unlike the lesson's kanji-only `teachableParts` this KEEPS the radical and
+ * variant pieces: 何 → 亻 person + 可 possible, 明 → 日 sun + 月 moon, 可 → 丁
+ * street + 口 mouth. Every piece is a link (a variant like 亻 through to the
+ * character it stands for, a bare primitive to its /radical page), and every
+ * piece carries its meaning so the tile reads glyph-over-meaning.
+ *
+ * THE #32 FRAME-DEDUP APPLIES HERE. `madeOf` reads the raw KanjiVG comps, which
+ * still double a split enclosure (可 → 丁,口,丁). `deframe` collapses that single
+ * frame written twice while leaving a genuine repetition intact (品 → 口,口,口) —
+ * it only ever drops the trailing copy, so slicing `madeOf` to the deframed
+ * length keeps each surviving piece paired with its own id and meaning.
+ *
+ * Empty for an atomic kanji (一 has no components); the section renders nothing.
+ */
+export function builtFrom(entry: LibEntry): BuiltPiece[] {
+  const pieces = madeOf(entry);
+  if (!pieces.length) return [];
+  const kept = deframe(pieces.map((p) => p.c)).length;
+  return pieces.slice(0, kept).map((p) => ({
+    c: p.c,
+    id: p.id,
+    meaning: builtPieceMeaning(p.c, p.id),
+  }));
+}
+
+/** The meaning printed under a "Built from" piece. A kanji's own gloss from
+ * `kanjiRow`; a variant form's (亻) from the taught character its id resolves to
+ * (人 → "person"); a bare primitive's from its radical row. Empty string when
+ * nothing has one — the tile then shows the glyph alone. */
+function builtPieceMeaning(c: string, id: EntryId | null): string {
+  const kanji = kanjiRow(c);
+  if (kanji) return kanji.meanings[0] ?? "";
+  if (id) return libEntry(id)?.meanings[0] ?? "";
+  return radicalByGlyph(c)?.meaning ?? "";
 }
 
 /**

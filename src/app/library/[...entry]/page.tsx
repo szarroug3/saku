@@ -106,14 +106,13 @@ import {
   KIND_LABEL,
   knownFactsOf,
   libEntry,
-  madeOf,
   readingRowsOf,
   recipeOf,
   type LibEntry,
 } from "@/lib/library/entries";
 import { characterRole } from "@/lib/character-role";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
-import { entryFromParam, entryFromSlug, entryHref, radicalHref } from "@/lib/library/href";
+import { entryFromParam, entryFromSlug, entryHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
 import { piecesOf } from "@/lib/library/word-pieces";
@@ -183,7 +182,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const standingFacts = isTransitivity ? knownFactsOf(entry) : facts;
   const standing = entryStanding(standingFacts, liveFacts, claims, cfg.accuracyMetric, now);
   const words = appearsIn(entry);
-  const parts = madeOf(entry);
   const mine = lists.filter((l) => l.kind === "fixed" && l.entries.includes(entry.id));
   const mark = markFor(entry.id);
   const term = termFor(entry.id);
@@ -489,40 +487,12 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
   const linkRows = (
     <>
-      {parts.length > 0 ? (
-        <LinkRow label="Made of">
-          {parts.map((p, i) => (
-            <span key={`${p.c}-${i}`} className="flex items-center gap-2">
-              {i > 0 ? <span className="text-text-muted">+</span> : null}
-              {p.id ? (
-                <GlyphLink id={p.id} glyph={p.c} />
-              ) : (
-                // A radical primitive with no KANJIDIC2 entry — ｜, ノ, マ. It
-                // USED TO BE DEAD GREY TEXT, on the reasoning that there was no
-                // page to send you to. There is one now: /radical/ノ says what
-                // the shape is, admits it has no meaning, and shows the 246
-                // kanji built from it. The link is a different colour from a
-                // kanji's on purpose — it goes somewhere thinner, and a reader
-                // who clicks expecting a character should be able to see that
-                // coming.
-                <Link
-                  href={radicalHref(p.c)}
-                  className="text-[17px] text-text-muted no-underline"
-                >
-                  {p.c}
-                </Link>
-              )}
-            </span>
-          ))}
-        </LinkRow>
-      ) : isKanji ? (
-        // 74 of the 2,136 jōyō kanji are atomic to KRADFILE — 生 is one, despite
-        // the design mocking it as 丿 + 土. Said in words rather than rendered as
-        // an empty row, which would read as missing data.
-        <LinkRow label="Made of">
-          <Hint>nothing smaller, this one is its own shape</Hint>
-        </LinkRow>
-      ) : null}
+      {/* NO "Made of" ROW HERE ANY MORE. The kanji page's shape decomposition is
+          now the rich "Built from" card below its strokes (KanjiBuiltFrom) — the
+          full immediate pieces, radicals included, each a link — so the compact
+          Links-card row that used to list the same components would be the page
+          saying "made of" twice. The card is the one place it is said. This block
+          only ever rendered for kanji, so nothing else loses a row. */}
 
       {/* A WORD's kanji, as links. The "Built from" card already shows them
           with their readings; this row is the one in the FIXED Links order, so a
@@ -782,13 +752,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
             />
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
-          {/* BUILT FROM — the SHAPE decomposition (可 → 丁 street + 口 mouth),
-              the kanji page's own breakdown that until now lived only in the
-              lesson. The de-framed, all-or-nothing teachableParts, so an atomic
-              kanji or one with a raw primitive piece renders nothing. Distinct
-              from the word page's "Built from", which splits a word into its
-              READING pieces — the shape is this page's to own. */}
-          <KanjiBuiltFrom glyph={entry.glyph} />
+          {/* BUILT FROM — the SHAPE decomposition (何 → 亻 person + 可 possible,
+              可 → 丁 street + 口 mouth), the kanji page's own breakdown. The FULL
+              immediate decomposition including radicals (not the lesson's
+              kanji-only teachableParts), de-framed so a split enclosure shows
+              once, each piece linked. This IS the page's "made of" now — the
+              compact Links-card row it used to duplicate is gone. Absent, not
+              empty, for an atomic kanji. Distinct from the word page's "Built
+              from", which splits a word into its READING pieces. */}
+          <KanjiBuiltFrom entry={entry} />
           {words.length > 0 ? (
             <WordsWith
               words={words}
