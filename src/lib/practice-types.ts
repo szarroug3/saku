@@ -19,9 +19,9 @@
 // existing Selection fields so this module invents no second definition of
 // "known" or "shaky":
 //
-//   everything .. the known pool (no state/list/session/text narrowing).
-//   shaky ....... SHAKY_BANDS — the bands that need work (see practice-presets).
-//   custom ...... a manual selection: a saved list, a rerun, or a text search.
+//   everything .. the known pool, optionally narrowed by kind and status.
+//   lists ....... one saved list, optionally narrowed by status.
+//   custom ...... a Library-built query, optionally narrowed by status.
 //
 // scopeOf() reads the scope OFF a Selection; withScope() writes it BACK, always
 // carrying the chosen types through. resolve() (selection.ts) then turns the
@@ -31,7 +31,6 @@
 
 import { COUNTER_ENTRIES } from "@/data/counters";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
-import { SHAKY_BANDS, shakySelection } from "@/lib/practice-presets";
 import { emptySelection } from "@/lib/selection-empty";
 import type { FactId, Selection } from "@/types";
 
@@ -129,37 +128,29 @@ export function availableTypes(): string[] {
 
 // ---------- the scope axis ----------
 
-export type PracticeScope = "everything" | "shaky" | "custom";
-
-function sameSet(a: readonly string[], b: readonly string[]): boolean {
-  if (a.length !== b.length) return false;
-  const set = new Set(a);
-  return b.every((x) => set.has(x));
-}
+export type PracticeScope = "everything" | "lists" | "custom";
 
 /**
  * Which scope a Selection expresses. Read off the SAME fields resolve() reads,
  * so the label can never disagree with the pool: no state/list/session/text is
- * "everything I know"; exactly SHAKY_BANDS and nothing else is "just the shaky
- * ones"; anything else — a saved list, a rerun, a text search, some other band
- * — is a manual "pick what I want". Types are ignored here: they are the OTHER
- * axis, and a typed everything-pool is still an everything scope.
+ * "everything I know"; status filters remain part of every scope. A saved list
+ * is the Lists scope. A rerun, text search, or subject filter is a Library-built
+ * "pick what I want" query. Types only belong to Everything.
  */
 export function scopeOf(sel: Selection): PracticeScope {
-  const bare = !sel.list && sel.session === null && !sel.text.trim();
-  if (bare && !sel.states.length) return "everything";
-  if (bare && sameSet(sel.states, SHAKY_BANDS)) return "shaky";
-  return "custom";
+  if (sel.list) return "lists";
+  const bare =
+    sel.session === null && !sel.text.trim() && !sel.subjects.length;
+  return bare ? "everything" : "custom";
 }
 
 /**
  * The same Selection moved into a scope, carrying the chosen types through.
  *
  *   everything → the empty query (the whole known pool).
- *   shaky ....→ SHAKY_BANDS.
+ *   lists .....→ keep the selected list, clear kind/manual filters.
  *   custom ...→ keep whatever manual narrowing is set (list, rerun, text) but
- *              drop the shaky bands, since "pick what I want" is the pool the
- *              learner named, not a band filter.
+ *              clear list and kind filters.
  *
  * Types survive every switch — changing scope never silently discards the type
  * chooser, and vice versa.
@@ -167,14 +158,18 @@ export function scopeOf(sel: Selection): PracticeScope {
 export function withScope(sel: Selection, scope: PracticeScope): Selection {
   switch (scope) {
     case "everything":
-      return { ...emptySelection(), types: sel.types };
-    case "shaky":
-      return { ...shakySelection(), types: sel.types };
+      return { ...emptySelection(), types: sel.types, states: sel.states };
+    case "lists":
+      return {
+        ...emptySelection(),
+        states: sel.states,
+        list: sel.list,
+      };
     case "custom":
       return {
         ...emptySelection(),
-        types: sel.types,
-        list: sel.list,
+        states: sel.states,
+        subjects: sel.subjects,
         session: sel.session,
         text: sel.text,
       };
@@ -217,16 +212,20 @@ export function pruneEmptyTypes(
  * before naming a list, scopeOf still reads "everything", the custom button
  * never lights, and the panel that lets them pick never opens — the preset looks
  * broken. When the intent is custom and the selection has not yet grown a manual
- * narrowing, honour the intent so the panel opens. Any self-describing shape (a
- * list, the shaky bands) wins over a stale intent, because it names its own
- * scope.
+ * narrowing, honour the intent so the panel opens. Any self-describing custom
+ * shape wins over a stale intent because it names its own scope.
  */
 export function effectiveScope(
   sel: Selection,
   intent: PracticeScope | null,
 ): PracticeScope {
   const derived = scopeOf(sel);
-  if (intent === "custom" && derived === "everything") return "custom";
+  if (
+    (intent === "custom" || intent === "lists") &&
+    derived === "everything"
+  ) {
+    return intent;
+  }
   return derived;
 }
 

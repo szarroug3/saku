@@ -380,7 +380,13 @@ export interface Selection {
  * one is what the model believes, the other is what a person is allowed to
  * read. They meet in `bandOf` and nowhere else, which is the point.
  */
-export type FactBand = "new" | "shaky" | "slipping" | "solid" | "mixup";
+export type FactBand =
+  | "new"
+  | "solid"
+  | "getting-there"
+  | "shaky"
+  | "slipping"
+  | "mixup";
 
 /**
  * A named list of things to drill. ONE OBJECT, FOUR SOURCES: an imported file,

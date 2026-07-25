@@ -3,7 +3,7 @@
 // WHAT TO PRACTISE — two axes: which TYPES, within which SCOPE.
 //
 // The drill is types ∩ scope (see src/lib/practice-types.ts). You pick a SCOPE —
-// everything you know, just the shaky ones, or a pool you name by hand — and any
+// everything you know, optionally filtered by status, or a pool you name by hand — and any
 // number of TYPES — hiragana, katakana, radicals, kanji, words, counters,
 // grammar, verb pairs, keigo. Start runs exactly the facts that are BOTH: e.g.
 // scope "everything I know" + types hiragana & radicals drills every hiragana
@@ -25,6 +25,7 @@ import { useMemo, useState } from "react";
 
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { resolve } from "@/lib/selection";
+import { emptySelection } from "@/lib/selection-empty";
 import {
   availableTypes,
   effectiveScope,
@@ -36,7 +37,13 @@ import {
   PRACTICE_TYPES,
   type PracticeScope,
 } from "@/lib/practice-types";
-import type { AccuracyMetric, HistoryFile, SavedList, Selection } from "@/types";
+import type {
+  AccuracyMetric,
+  FactBand,
+  HistoryFile,
+  SavedList,
+  Selection,
+} from "@/types";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -46,8 +53,16 @@ const GLYPH_BY_TYPE = new Map(PRACTICE_TYPES.map((t) => [t.id, t.glyph]));
 
 const SCOPES: ReadonlyArray<{ id: PracticeScope; label: string }> = [
   { id: "everything", label: "Everything I know" },
-  { id: "shaky", label: "Just the shaky ones" },
+  { id: "lists", label: "Lists" },
   { id: "custom", label: "Pick what I want" },
+];
+
+const STATUSES: ReadonlyArray<{ id: FactBand; label: string }> = [
+  { id: "solid", label: "Solid" },
+  { id: "shaky", label: "Shaky" },
+  { id: "getting-there", label: "Getting there" },
+  { id: "mixup", label: "Mix-ups" },
+  { id: "slipping", label: "Slipping" },
 ];
 
 function ScopeButton({
@@ -112,6 +127,38 @@ function TypeChip({
   );
 }
 
+function StatusChip({
+  label,
+  count,
+  on,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  on: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={count === 0}
+      className={cx(
+        "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]",
+        on
+          ? "border-accent bg-accent-bg text-accent"
+          : "border-border bg-card text-text hover:bg-panel",
+        count === 0 && "cursor-default opacity-40 hover:bg-card",
+      )}
+    >
+      <span>{label}</span>
+      <span className="rounded-full border border-border px-1.5 py-0.5 text-[10.5px] tabular-nums text-text-muted">
+        {count}
+      </span>
+    </button>
+  );
+}
+
 function ListTile({
   glyph,
   label,
@@ -150,15 +197,23 @@ export function PracticeSelector({
   lists,
   history,
   metric,
+  now,
+  graduateRuns,
   onChange,
 }: {
   sel: Selection;
   lists: SavedList[];
   history: HistoryFile;
   metric: AccuracyMetric;
+  now: number;
+  graduateRuns: number;
   onChange: (next: Selection) => void;
 }) {
   const types = availableTypes();
+  const context = useMemo(
+    () => ({ now, graduateRuns }),
+    [now, graduateRuns],
+  );
 
   // Which scope the buttons/panel show. `scopeIntent` is the last preset the
   // learner pressed; it only matters for "pick what I want" with an empty pool,
@@ -174,7 +229,9 @@ export function PracticeSelector({
   const presentTypesIn = (s: Selection): Set<string> =>
     new Set(
       types.filter(
-        (id) => resolve(withTypes(s, [id]), history, lists, metric).length > 0,
+        (id) =>
+          resolve(withTypes(s, [id]), history, lists, metric, 0, context).length >
+          0,
       ),
     );
 
@@ -203,12 +260,32 @@ export function PracticeSelector({
     return new Map(
       types.map((id) => [
         id,
-        resolve(withTypes(base, [id]), history, lists, metric).length,
+        resolve(withTypes(base, [id]), history, lists, metric, 0, context).length,
       ]),
     );
     // base derives from sel; scopeKey captures the scope fields that matter here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeKey, types, history, lists, metric]);
+  }, [scopeKey, types, history, lists, metric, context]);
+
+  const statusCounts = useMemo(() => {
+    const base = {
+      ...sel,
+      states: [] as FactBand[],
+    };
+    return new Map(
+      STATUSES.map(({ id }) => [
+        id,
+        resolve(
+          { ...base, states: [id] },
+          history,
+          lists,
+          metric,
+          0,
+          context,
+        ).length,
+      ]),
+    );
+  }, [sel, history, lists, metric, context]);
 
   // List tiles, only shown in custom scope. Each count reflects the chosen types
   // too, so it is the exact size that list contributes right now.
@@ -218,14 +295,23 @@ export function PracticeSelector({
         lists.map((l) => [
           l.id,
           resolve(
-            withTypes({ ...sel, list: l.id, states: [], session: null, text: "" }, sel.types),
+            withTypes(
+              {
+                ...emptySelection(),
+                list: l.id,
+                states: sel.states,
+              },
+              [],
+            ),
             history,
             lists,
             metric,
+            0,
+            context,
           ).length,
         ]),
       ),
-    [lists, history, metric, sel],
+    [lists, history, metric, sel, context],
   );
 
   return (
@@ -242,28 +328,69 @@ export function PracticeSelector({
         ))}
       </div>
 
-      {/* TYPES — which kinds of thing, multi-select. None lit = all types. */}
-      <div className="mb-1.5 flex flex-wrap gap-2">
-        {types.map((id) => (
-          <TypeChip
-            key={id}
-            id={id}
-            count={typeCounts.get(id) ?? 0}
-            on={sel.types.includes(id)}
-            onClick={() => onChange(toggleType(sel, id))}
-          />
-        ))}
+      <div className="border-t border-border pt-3">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+          Status
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {STATUSES.map(({ id, label }) => (
+            <StatusChip
+              key={id}
+              label={label}
+              count={statusCounts.get(id) ?? 0}
+              on={sel.states.includes(id)}
+              onClick={() => {
+                const next: Selection = {
+                  ...sel,
+                  states: sel.states.includes(id)
+                    ? sel.states.filter((state) => state !== id)
+                    : [...sel.states, id],
+                };
+                onChange(
+                  scope === "everything"
+                    ? pruneEmptyTypes(next, presentTypesIn(next))
+                    : next,
+                );
+              }}
+            />
+          ))}
+        </div>
+        <p className="mt-2 text-[12px] text-text-muted">
+          {sel.states.length
+            ? "Showing anything with one of the selected statuses."
+            : "No status picked — every status is included."}
+        </p>
       </div>
-      <p className="text-[12px] text-text-muted">
-        {sel.types.length
-          ? `Drilling ${sel.types.map(typeLabel).join(", ")}.`
-          : "No type picked — every type is included."}
-      </p>
 
-      {/* CUSTOM — pick the pool by hand: a saved list, or build one in the
-          Library. Only shown when the scope is "Pick what I want". */}
-      {scope === "custom" ? (
+      {scope === "everything" ? (
+        <div className="mt-3 border-t border-border pt-3">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+            Kind
+          </p>
+          <div className="mb-1.5 flex flex-wrap gap-2">
+            {types.map((id) => (
+              <TypeChip
+                key={id}
+                id={id}
+                count={typeCounts.get(id) ?? 0}
+                on={sel.types.includes(id)}
+                onClick={() => onChange(toggleType(sel, id))}
+              />
+            ))}
+          </div>
+          <p className="text-[12px] text-text-muted">
+            {sel.types.length
+              ? `Drilling ${sel.types.map(typeLabel).join(", ")}.`
+              : "No kind picked — every kind is included."}
+          </p>
+        </div>
+      ) : null}
+
+      {scope === "lists" ? (
         <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+            List
+          </p>
           {lists.map((l) => (
             <ListTile
               key={l.id}
@@ -275,18 +402,32 @@ export function PracticeSelector({
                 onChange(
                   sel.list === l.id
                     ? { ...sel, list: null }
-                    : { ...sel, list: l.id },
+                    : {
+                        ...emptySelection(),
+                        states: sel.states,
+                        list: l.id,
+                      },
                 )
               }
             />
           ))}
+          {!lists.length ? (
+            <p className="text-[12px] text-text-muted">
+              You haven&apos;t made any lists yet.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {scope === "custom" ? (
+        <div className="mt-3 border-t border-border pt-3">
           <Link
             href="/library"
             className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-card px-3 py-2.5 text-left text-[13px] text-text no-underline hover:bg-panel"
           >
             <span className="jp text-lg">＋</span>
             <span className="min-w-0 flex-1 truncate">
-              Build a list in the Library
+              Pick things in the Library
             </span>
             <span className="flex-none text-[11px] text-accent">Library →</span>
           </Link>

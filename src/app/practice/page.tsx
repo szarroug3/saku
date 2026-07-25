@@ -66,8 +66,19 @@ export default function PracticePage() {
   // the bar counts, computed once so the sentence and the session can never
   // disagree about what you pressed Start on.
   const facts = useMemo(
-    () => resolve(cfg.selection, history, lists, cfg.accuracyMetric),
-    [cfg.selection, cfg.accuracyMetric, history, lists],
+    () =>
+      resolve(cfg.selection, history, lists, cfg.accuracyMetric, 0, {
+        now: mountedNow ?? 0,
+        graduateRuns: cfg.graduateRuns,
+      }),
+    [
+      cfg.selection,
+      cfg.accuracyMetric,
+      cfg.graduateRuns,
+      mountedNow,
+      history,
+      lists,
+    ],
   );
 
   const what = useMemo(
@@ -181,6 +192,8 @@ export default function PracticePage() {
         lists={lists}
         history={history}
         metric={cfg.accuracyMetric}
+        now={mountedNow ?? 0}
+        graduateRuns={cfg.graduateRuns}
         onChange={setSelection}
       />
 

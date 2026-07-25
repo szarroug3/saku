@@ -19,16 +19,10 @@
 // Pure by contract: no React, no DOM, no fetch. Everything here is a function
 // of (query, history, lists) and nothing else.
 
-import { LOOKALIKES, kanaEntry } from "@/data/characters";
-import { CONFUSABLE_WITH } from "@/data/confusable";
-import { kanjiEntry } from "@/data/kanji";
+import { activeWeaknessPairs } from "@/lib/confusions";
 import { ALL_FACTS, entryOf, factInfo, factsOf } from "@/lib/facts";
 import { matchesTypes, typeLabel } from "@/lib/practice-types";
-import {
-  GETTING_THERE_PCT,
-  recentRunAccuracy,
-  SOLID_PCT,
-} from "@/lib/library/standing";
+import { standingOf } from "@/lib/library/standing";
 import { quizzableFacts } from "@/lib/word-unlock";
 import type {
   AccuracyMetric,
@@ -78,14 +72,15 @@ export function bandOf(
   fact: FactId,
   history: HistoryFile,
   metric: AccuracyMetric,
+  now = Date.now(),
 ): Exclude<FactBand, "mixup"> {
-  const agg = history.facts[fact];
-  if (!agg?.seen) return "new";
-  const acc = recentRunAccuracy(agg, metric);
-  if (acc === null) return "new";
-  if (acc < GETTING_THERE_PCT) return "shaky";
-  if (acc < SOLID_PCT) return "slipping";
-  return "solid";
+  const standing = standingOf(
+    history.facts[fact],
+    history.claims?.[fact],
+    metric,
+    now,
+  ).standing;
+  return standing === "not-seen" || standing === "claimed" ? "new" : standing;
 }
 
 /**
@@ -96,34 +91,14 @@ export function bandOf(
  * that ORs rather than one value that partitions — "Mix-ups" is a different
  * question from "Shaky", and the answer to both can be yes.
  */
-function mixedUpEntries(history: HistoryFile): Set<string> {
+function mixedUpEntries(
+  history: HistoryFile,
+  graduateRuns: number,
+): Set<string> {
   const out = new Set<string>();
-  for (const session of history.sessions) {
-    for (const [fact, d] of Object.entries(session.detail ?? {})) {
-      for (const [other, n] of Object.entries(d.confused ?? {})) {
-        if (!n) continue;
-        out.add(entryOf(fact as FactId));
-        out.add(other);
-      }
-    }
-  }
-  // Day one there are no measured mix-ups, and a chip that selects nothing
-  // until you have already made the mistake is a chip that looks broken. Fall
-  // back to the PREDICTED lookalikes, same fallback (and same sources) as
-  // decks.confusionDecks. The UI must not claim a count you never produced —
-  // that is why `fromHistory` exists over there — but for SELECTING, "things
-  // you are likely to mix up" is a useful answer on day one.
-  if (!out.size) {
-    for (const glyph of CONFUSABLE_WITH.keys()) {
-      const facts = factsOf(kanjiEntry(glyph));
-      if (facts.length) out.add(entryOf(facts[0]));
-    }
-    for (const group of LOOKALIKES) {
-      for (const c of group) {
-        const facts = factsOf(kanaEntry(c));
-        if (facts.length) out.add(entryOf(facts[0]));
-      }
-    }
+  for (const pair of activeWeaknessPairs(history, graduateRuns, entryOf)) {
+    out.add(pair.a);
+    out.add(pair.b);
   }
   return out;
 }
@@ -135,10 +110,11 @@ function matchesStates(
   history: HistoryFile,
   metric: AccuracyMetric,
   mixups: Set<string>,
+  now: number,
 ): boolean {
   if (!states.length) return true;
   if (states.includes("mixup") && mixups.has(entryOf(fact))) return true;
-  return states.includes(bandOf(fact, history, metric));
+  return states.includes(bandOf(fact, history, metric, now));
 }
 
 // ---------- text ----------
@@ -185,13 +161,14 @@ function factsOfList(
   history: HistoryFile,
   metric: AccuracyMetric,
   depth: number,
+  context: { now?: number; graduateRuns?: number },
 ): FactId[] {
   const list = lists.find((l) => l.id === id);
   if (!list || depth > 4) return [];
   if (list.kind === "fixed") {
     return list.entries.flatMap((e) => factsOf(e));
   }
-  return resolve(list.query, history, lists, metric, depth + 1);
+  return resolve(list.query, history, lists, metric, depth + 1, context);
 }
 
 // ---------- ordering ----------
@@ -287,11 +264,14 @@ export function resolve(
   lists: SavedList[] = [],
   metric: AccuracyMetric = "firstTry",
   depth = 0,
+  context: { now?: number; graduateRuns?: number } = {},
 ): FactId[] {
+  const now = context.now ?? Date.now();
+  const graduateRuns = context.graduateRuns ?? 10;
   // The starting pool: a list if one is named, otherwise everything you know.
   // NOT the whole dictionary — untaught material is learned, not drilled here.
   let pool: FactId[] = sel.list
-    ? factsOfList(sel.list, lists, history, metric, depth)
+    ? factsOfList(sel.list, lists, history, metric, depth, context)
     : knownFacts(history);
 
   if (sel.session !== null) {
@@ -306,7 +286,7 @@ export function resolve(
   const subjects = new Set(sel.subjects);
   const needle = sel.text.trim().toLowerCase();
   const mixups = sel.states.includes("mixup")
-    ? mixedUpEntries(history)
+    ? mixedUpEntries(history, graduateRuns)
     : new Set<string>();
 
   const out = new Set<FactId>();
@@ -320,7 +300,7 @@ export function resolve(
     // list query persisted before types existed — an absent field is "all".
     if (!matchesTypes(f, sel.types ?? [])) continue;
     if (!matchesText(f, needle)) continue;
-    if (!matchesStates(f, sel.states, history, metric, mixups)) continue;
+    if (!matchesStates(f, sel.states, history, metric, mixups, now)) continue;
     out.add(f);
   }
 
@@ -370,9 +350,10 @@ const SUBJECT_WORD: Record<string, string> = {
 
 const STATE_WORD: Record<FactBand, string> = {
   new: "New",
+  solid: "Solid",
+  "getting-there": "Getting there",
   shaky: "Shaky",
   slipping: "Slipping",
-  solid: "Solid",
   mixup: "Mix-ups",
 };
 
