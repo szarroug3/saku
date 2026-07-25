@@ -52,7 +52,12 @@ import {
   type SentenceOrderingTierId,
 } from "@/data/sentence-ordering-guides";
 import { factsOf } from "@/lib/facts";
-import { KINDS, factRows, libEntry } from "@/lib/library/entries";
+import {
+  KINDS,
+  SENTENCE_RULE_KIND,
+  factRows,
+  libEntry,
+} from "@/lib/library/entries";
 import { sliceIsDrillable } from "@/lib/library/slice";
 import { search } from "@/lib/library/search";
 import { kindFromParams } from "@/lib/library/url-state";
@@ -90,14 +95,22 @@ describe("the shelf exists and is reachable", () => {
     );
   });
 
-  test("all writing+sentence rules are entries, and every entry route resolves", () => {
+  test("writing and sentence rules have separate kinds, and every entry route resolves", () => {
     assert.equal(MARKS.length, 19);
     for (const m of MARKS) {
       const e = entryOfMark(m.id);
-      assert.equal(e.kind, MARK_SUBJECT);
+      assert.equal(
+        e.kind,
+        m.shelf === "sentence" ? SENTENCE_RULE_KIND : MARK_SUBJECT,
+      );
       // The round trip the entry page makes: id → entry → the mark it names.
       assert.equal(markFor(e.id)?.id, m.id);
     }
+    assert.ok(KINDS.includes(SENTENCE_RULE_KIND));
+    assert.equal(
+      kindFromParams(new URLSearchParams("?kind=sentence-rule")),
+      SENTENCE_RULE_KIND,
+    );
   });
 
   test("the three reading-rule marks resolve, round-trip and stay inert", () => {
@@ -131,7 +144,7 @@ describe("the shelf exists and is reachable", () => {
     assert.deepEqual(dakuten.readings, []);
   });
 
-  test("writing rules and sentence rules are split into shelf groups", () => {
+  test("writing rules and sentence rules are split into shelves", () => {
     const writing = MARKS.filter((m) => m.shelf === "writing");
     const sentence = MARKS.filter((m) => m.shelf === "sentence");
     assert.equal(writing.length, 9);

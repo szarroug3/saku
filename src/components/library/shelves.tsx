@@ -67,6 +67,7 @@ import { Card, Hint, Lbl } from "@/components/ui";
 import type { Claims } from "@/lib/claims";
 import {
   COUNTER_KIND,
+  SENTENCE_RULE_KIND,
   entryForGlyph,
   knownFactsOf,
   libEntry,
@@ -188,6 +189,9 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
             resolve(markEntry(m.id)),
           ),
         },
+      ];
+    case SENTENCE_RULE_KIND:
+      return [
         {
           id: "sentence-rules",
           label: "Sentence rules",
@@ -356,6 +360,7 @@ export function Shelf({
   const asRows =
     kind === GRAMMAR_SUBJECT ||
     kind === MARK_SUBJECT ||
+    kind === SENTENCE_RULE_KIND ||
     kind === TRANSITIVITY_SUBJECT ||
     kind === KEIGO_SUBJECT ||
     kind === TERM_SUBJECT;
