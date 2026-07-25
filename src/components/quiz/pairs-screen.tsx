@@ -22,6 +22,7 @@ import { BEHAVIOR, pickFont } from "@/lib/config";
 import { newFactStat, shuffle } from "@/lib/engine";
 import { entryOf } from "@/lib/facts";
 import { pairBoards, type PairSpec } from "@/lib/pair-facts";
+import { isResponseCaption } from "@/lib/quiz-boards";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
@@ -421,9 +422,11 @@ export function PairsScreen() {
                 ].join(" ")}
               >
                 {cell.label}
-                {/* Two 生 cells on one board are indistinguishable without it,
-                    and the pair becomes a coin flip. */}
-                {cell.context ? (
+                {/* Two 生 cells on one board are indistinguishable without a
+                    disambiguating anchor, and the pair becomes a coin flip. The
+                    bare response label ("meaning"/"reading") is dropped — the
+                    board HEADER already says it (task #33). */}
+                {cell.context && !isResponseCaption(cell.context) ? (
                   <span className="block text-[9px] leading-tight opacity-70">
                     {cell.context}
                   </span>

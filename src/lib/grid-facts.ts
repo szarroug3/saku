@@ -55,7 +55,8 @@ export function gridBoards(
   responses: readonly GridResponse[],
 ): FactBoard[] {
   const wanted = new Set(responses);
-  return groupBoards(facts, (fact) => gridBoardKey(fact, wanted)).map(
+  // Grid is a typed glyph→answer card — one-directional, so its header uses →.
+  return groupBoards(facts, (fact) => gridBoardKey(fact, wanted), "→").map(
     ({ items, ...board }) => ({ ...board, facts: items }),
   );
 }

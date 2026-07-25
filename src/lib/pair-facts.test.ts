@@ -128,8 +128,8 @@ describe("Match-pairs relationships", () => {
     ];
     // The dedup guard is PER BOARD: within a single headed board no two cells
     // share a visible Japanese-side identity or a visible answer. Across boards
-    // a glyph legitimately repeats (電話 on "Words → meaning" and on
-    // "Words → reading"), so uniqueness is asserted per board, not globally.
+    // a glyph legitimately repeats (電話 on "Words ↔ Meaning" and on
+    // "Words ↔ Reading"), so uniqueness is asserted per board, not globally.
     for (const board of pairBoards(
       facts,
       ["definition", "romaji", "sentence"],
@@ -156,12 +156,12 @@ describe("Match-pairs headed boards (task #33)", () => {
     }
     assert.deepEqual(
       boards.map((b) => b.header),
-      ["Kanji → meaning", "Kanji → reading", "Words → meaning", "Words → reading"],
+      ["Kanji ↔ Meaning", "Kanji ↔ Reading", "Words ↔ Meaning", "Words ↔ Reading"],
     );
     // wordMeaning (a definition) and wordReading (a romaji) of ONE word land on
     // two different boards — the disambiguation task #30 opened.
-    const meaningBoard = boards.find((b) => b.header === "Words → meaning")!;
-    const readingBoard = boards.find((b) => b.header === "Words → reading")!;
+    const meaningBoard = boards.find((b) => b.header === "Words ↔ Meaning")!;
+    const readingBoard = boards.find((b) => b.header === "Words ↔ Reading")!;
     assert.ok(meaningBoard.specs.some((s) => s.fact === wordMeaning));
     assert.ok(readingBoard.specs.some((s) => s.fact === wordReading));
   });
@@ -173,8 +173,8 @@ describe("Match-pairs headed boards (task #33)", () => {
     assert.deepEqual(
       boards.map((b) => [b.header, b.specs.map((s) => s.fact)]),
       [
-        ["Kanji → meaning", [kanji]],
-        ["Words → meaning", [wordish]],
+        ["Kanji ↔ Meaning", [kanji]],
+        ["Words ↔ Meaning", [wordish]],
       ],
     );
     // Both survive though their answers collide — the old GLOBAL dedup silently
@@ -187,7 +187,7 @@ describe("Match-pairs headed boards (task #33)", () => {
     const facts = ex.p.map(patternMeaningFactId);
     const boards = pairBoards(facts, ["sentence"], ALL_KNOWN);
     assert.ok(boards.length > 0);
-    assert.ok(boards.every((b) => b.header === "Sentences → meaning"));
+    assert.ok(boards.every((b) => b.header === "Sentences ↔ Meaning"));
     assert.ok(boards.every((b) => b.specs.every((s) => s.kind === "sentence")));
   });
 });

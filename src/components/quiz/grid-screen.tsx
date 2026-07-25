@@ -48,6 +48,7 @@ import {
 } from "@/lib/engine";
 import { entryOf, factInfo } from "@/lib/facts";
 import { gridBoards } from "@/lib/grid-facts";
+import { isResponseCaption } from "@/lib/quiz-boards";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import type { FactId, GridResponse, QuizConfig, SessionStats } from "@/types";
@@ -406,10 +407,12 @@ export function GridScreen() {
                 {prompt.glyph}
               </span>
               {/* Part of the question, not a caption: a cell showing 生 with no
-                  "in 人生" under it is asking for one of nine answers. Kana
-                  supplies none and the cell keeps its original spacing. */}
+                  "in 人生" under it is asking for one of nine answers. The bare
+                  response label ("meaning"/"reading") is dropped — the board
+                  HEADER already says it (task #33) — but a disambiguating anchor
+                  stays. Kana supplies none; the cell keeps its original spacing. */}
               <span className="mb-2 block min-h-3 text-[10px] leading-3 text-text-muted">
-                {prompt.context ?? ""}
+                {isResponseCaption(prompt.context) ? "" : (prompt.context ?? "")}
               </span>
               <form
                 onSubmit={(e) => {

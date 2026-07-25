@@ -64,11 +64,11 @@ describe("Grid headed boards (task #33)", () => {
     assert.deepEqual(
       boards.map((b) => [b.header, b.facts]),
       [
-        ["Kana → romaji", [kana]],
-        ["Kanji → meaning", [kanjiMeaning]],
-        ["Kanji → reading", [kanjiReading]],
-        ["Words → meaning", [wordMeaning]],
-        ["Words → reading", [wReading]],
+        ["Kana → Romaji", [kana]],
+        ["Kanji → Meaning", [kanjiMeaning]],
+        ["Kanji → Reading", [kanjiReading]],
+        ["Words → Meaning", [wordMeaning]],
+        ["Words → Reading", [wReading]],
       ],
     );
     // No board mixes source types, and each carries a single response.
@@ -81,12 +81,12 @@ describe("Grid headed boards (task #33)", () => {
   test("empty groups are absent", () => {
     assert.deepEqual(
       gridBoards(span, ["romaji"]).map((b) => b.header),
-      ["Kanji → reading", "Words → reading"],
+      ["Kanji → Reading", "Words → Reading"],
     );
     assert.deepEqual(gridBoards(span, ["definition"]).map((b) => b.header), [
-      "Kana → romaji",
-      "Kanji → meaning",
-      "Words → meaning",
+      "Kana → Romaji",
+      "Kanji → Meaning",
+      "Words → Meaning",
     ]);
     assert.deepEqual(gridBoards([], ["definition", "romaji"]), []);
   });
@@ -98,8 +98,8 @@ describe("Grid headed boards (task #33)", () => {
     assert.deepEqual(
       boards.map((b) => [b.header, b.facts]),
       [
-        ["Kanji → meaning", [kanji]],
-        ["Words → meaning", [wordish]],
+        ["Kanji → Meaning", [kanji]],
+        ["Words → Meaning", [wordish]],
       ],
     );
     assert.notEqual(boards[0].header, boards[1].header);
