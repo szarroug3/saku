@@ -6,7 +6,7 @@
 import { BEHAVIOR } from "@/lib/config";
 import { enabledDirs } from "@/lib/ask-config";
 import { questionsFor, type PromptContext } from "@/lib/engine/question";
-import { ALL_FACTS, entryOf, factInfo, factKeys } from "@/lib/facts";
+import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import type {
   Direction,
   EntryId,

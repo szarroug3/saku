@@ -227,19 +227,6 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
   return dedup(fact, out);
 }
 
-/** Roll ONE enabled form for a fact, uniformly — the Endless/Count per-showing
- * pick. Null when the fact has no enabled form (the caller then falls back to
- * the fact's own default framing). */
-export function pickForm(
-  fact: FactId,
-  ask: AskConfig,
-  rng: () => number = Math.random,
-): CardForm | null {
-  const forms = enabledFormsFor(fact, ask);
-  if (!forms.length) return null;
-  return forms[Math.floor(rng() * forms.length)] ?? forms[0];
-}
-
 /** A coverage deck: cards and their pinned forms, index-aligned. The drill
  * screen carries these two arrays side by side (a card is a fact + a form). */
 export interface CoverageDeck {
