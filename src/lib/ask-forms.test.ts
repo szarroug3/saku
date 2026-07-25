@@ -189,3 +189,196 @@ describe("buildCoverageDeck", () => {
     assert.ok(got.deck.every((f) => f === reading));
   });
 });
+
+describe("Unreachable Planned forms (settings selected but forms not generated)", () => {
+  test("grammar meaning audio is silently dropped (grammar not listenable)", () => {
+    const grammarFact = patternMeaningFactId(RECIPES[0].id);
+    const audioOnly: AskConfig = {
+      japanese: {
+        prompts: ["audio"],
+        responses: ["definition"],
+        answers: ["mc"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(grammarFact, audioOnly);
+    assert.deepEqual(forms, [], "Grammar meaning with audio should produce no forms");
+  });
+
+  test("kana audio is silently dropped (kana not listenable)", () => {
+    const kanaChar = kanaFact("あ");
+    const audioOnly: AskConfig = {
+      japanese: {
+        prompts: ["audio"],
+        responses: ["romaji"],
+        answers: ["mc"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(kanaChar, audioOnly);
+    assert.deepEqual(forms, [], "Kana with audio should produce no forms");
+  });
+
+  test("kanji reading audio is silently dropped (kanji reading not listenable)", () => {
+    const firstKanjiReading = READING_INDEX.keys().next().value;
+    assert.ok(firstKanjiReading, "expected at least one kanji reading fact");
+    const audioOnly: AskConfig = {
+      japanese: {
+        prompts: ["audio"],
+        responses: ["romaji"],
+        answers: ["mc"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(firstKanjiReading, audioOnly);
+    assert.deepEqual(forms, [], "Kanji reading with audio should produce no forms");
+  });
+
+  test("sentence romaji is silently dropped (not yet implemented)", () => {
+    const wordReading = wordReadingFactId(word.keb);
+    const sentenceRomajiOnly: AskConfig = {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: {
+        prompts: ["text", "audio"],
+        responses: ["romaji"],
+        answers: ["typed", "mc"],
+      },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(wordReading, sentenceRomajiOnly);
+    assert.deepEqual(forms, [], "Sentence romaji should produce no forms");
+  });
+});
+
+describe("Multiple settings paths to same question format (text vs audio as different FORMS)", () => {
+  test("word reading can be reached via text prompt", () => {
+    const textOnly: AskConfig = {
+      japanese: {
+        prompts: ["text"],
+        responses: ["romaji"],
+        answers: ["typed"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(reading, textOnly);
+    assert.equal(forms.length, 1);
+    assert.deepEqual(forms[0], {
+      source: "japanese",
+      response: "romaji",
+      listen: false,
+      dir: "jp2en",
+      answer: "typed",
+    });
+  });
+
+  test("word reading can be reached via audio prompt (creates different FORM)", () => {
+    const audioOnly: AskConfig = {
+      japanese: {
+        prompts: ["audio"],
+        responses: ["romaji"],
+        answers: ["typed"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(reading, audioOnly);
+    assert.equal(forms.length, 1);
+    assert.deepEqual(forms[0], {
+      source: "japanese",
+      response: "romaji",
+      listen: true,
+      dir: "jp2en",
+      answer: "typed",
+    });
+  });
+
+  test("word reading deduped when both text and audio selected", () => {
+    const both: AskConfig = {
+      japanese: {
+        prompts: ["text", "audio"],
+        responses: ["romaji"],
+        answers: ["typed"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(reading, both);
+    assert.equal(forms.length, 2, "Text and audio are different FORMS");
+    assert.deepEqual(forms.map((f) => f.listen), [false, true]);
+  });
+
+  test("word meaning can be reached via text or audio (creates different FORMS)", () => {
+    const textOnly: AskConfig = {
+      japanese: {
+        prompts: ["text"],
+        responses: ["definition"],
+        answers: ["mc"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const audioOnly: AskConfig = {
+      ...textOnly,
+      japanese: { ...textOnly.japanese, prompts: ["audio"] },
+    };
+    const textForms = enabledFormsFor(meaning, textOnly);
+    const audioForms = enabledFormsFor(meaning, audioOnly);
+    assert.equal(textForms.length, 1);
+    assert.equal(audioForms.length, 1);
+    assert.equal(textForms[0].listen, false);
+    assert.equal(audioForms[0].listen, true);
+  });
+
+  test("grammar sentence definition can be reached via text or audio (creates different FORMS)", () => {
+    const grammarFact = patternMeaningFactId(RECIPES[0].id);
+    const textOnly: AskConfig = {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: {
+        prompts: ["text"],
+        responses: ["definition"],
+        answers: ["mc"],
+      },
+      english: { answers: [] },
+    };
+    const audioOnly: AskConfig = {
+      ...textOnly,
+      sentence: { ...textOnly.sentence, prompts: ["audio"] },
+    };
+    const textForms = enabledFormsFor(grammarFact, textOnly);
+    const audioForms = enabledFormsFor(grammarFact, audioOnly);
+    assert.equal(textForms.length, 1);
+    assert.equal(audioForms.length, 1);
+    assert.equal(textForms[0].listen, false);
+    assert.equal(audioForms[0].listen, true);
+  });
+});
+
+describe("Blocked production facts (not yet implemented)", () => {
+  test("keigo production via English not generated (awaiting implementation)", () => {
+    // Keigo production facts don't exist in current data model;
+    // this test documents that when they do, they should be blocked.
+    // For now, we verify that sentence source with non-grammar facts
+    // produces no forms.
+    const wordMeaning = wordMeaningFactId(word.keb);
+    const enToJp: AskConfig = {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: {
+        prompts: ["text"],
+        responses: ["definition"],
+        answers: ["mc"],
+      },
+      english: { answers: ["mc"] },
+    };
+    const forms = enabledFormsFor(wordMeaning, enToJp);
+    // Sentence source only emits for grammar meaning facts, so word facts get no sentence forms.
+    assert.equal(
+      forms.filter((f) => f.source === "sentence").length,
+      0,
+      "Sentence source should not emit for non-grammar facts",
+    );
+  });
+});
