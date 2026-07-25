@@ -364,6 +364,7 @@ export function AssemblyScreen() {
           crossFade={card.tries === 0}
           sentenceFrame={item.en}
           sentenceFrameLang="en"
+          compactSentenceFrame
         />
         <div className="mt-5 text-xs font-semibold uppercase tracking-wide text-text-muted">
           Build the sentence

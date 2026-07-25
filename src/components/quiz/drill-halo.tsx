@@ -179,6 +179,8 @@ export interface DrillHaloProps {
   sentenceFrame?: string;
   /** Grammar frames are Japanese; sentence-building prompts are English. */
   sentenceFrameLang?: "ja" | "en";
+  /** A smaller frame for short English sentence-building prompts. */
+  compactSentenceFrame?: boolean;
 }
 
 export function DrillHalo({
@@ -195,6 +197,7 @@ export function DrillHalo({
   onListen,
   sentenceFrame,
   sentenceFrameLang = "ja",
+  compactSentenceFrame = false,
 }: DrillHaloProps) {
   const ring = ringSpec(state, cardKey, timerLeft, drainWindow);
   const wrong = state === "wrong" || state === "wrong-flash";
@@ -208,8 +211,10 @@ export function DrillHalo({
       style={
         square
           ? {
-              width: "min(92vw, 440px)",
-              minHeight: HALO_PX,
+              width: compactSentenceFrame
+                ? "min(84vw, 360px)"
+                : "min(92vw, 440px)",
+              minHeight: compactSentenceFrame ? 132 : HALO_PX,
             }
           : { width: HALO_PX, height: HALO_PX }
       }
@@ -242,7 +247,9 @@ export function DrillHalo({
       ) : null}
       {square ? (
         <div
-          className="kq-glyph relative px-5 py-6 text-center"
+          className={`kq-glyph relative text-center ${
+            compactSentenceFrame ? "px-4 py-4" : "px-5 py-6"
+          }`}
           style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
         >
           <p
