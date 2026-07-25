@@ -3,8 +3,11 @@ import { describe, test } from "node:test";
 
 import { kanaFact } from "@/data/characters";
 import { READING_INDEX } from "@/data/kanji";
-import { patternMeaningFactId } from "@/data/grammar";
+import { patternMeaningFactId, patternProductionFactId } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
+import { KEIGO_SETS, keigoWordFactId } from "@/data/keigo";
+import { VERB_PAIRS } from "@/data/transitivity";
+import { sideFactId } from "@/data/transitivity-facts";
 import { VOCAB, isKanaWord, wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
 import {
   buildCoverageDeck,
@@ -20,6 +23,9 @@ const reading = wordReadingFactId(word.keb);
 const meaning = wordMeaningFactId(word.keb);
 const firstKanjiReading = READING_INDEX.keys().next().value;
 const grammarFact = patternMeaningFactId(RECIPES[0].id);
+const grammarProductionFact = patternProductionFactId(RECIPES.find((r) => r.producible !== false)!.id);
+const keigoFact = keigoWordFactId(KEIGO_SETS[0], KEIGO_SETS[0].words[0]);
+const transitivityFact = sideFactId(VERB_PAIRS[0], "happens");
 
 const ALL: AskConfig = {
   japanese: {
@@ -462,5 +468,153 @@ describe("configIsReachable diagnostic", () => {
     };
     const result = configIsReachable([meaning], romajiOnly);
     assert.equal(result.isReachable, false, "no reading fact to enable romaji");
+  });
+});
+
+// ── Coverage of doc §5.2, §6.1, §6.2 — subject-specific form shapes ──────────
+
+describe("Grammar production fact (§5.2 Current)", () => {
+  // Grammar production: answered by picking a Japanese form. ask-forms sees this
+  // as jp→en direction with a 'romaji' response (the answer IS Japanese).
+  // There is no fixedDir, but answerIsJapanese(prod, 'jp2en') is true, so
+  // candidateDirs returns ['jp2en'] only — no en→jp form is generated.
+  test("grammar production fact produces jp→en 'romaji' forms (answer IS Japanese)", () => {
+    const forms = enabledFormsFor(grammarProductionFact, ALL);
+    assert.ok(forms.length > 0, "grammar production should yield forms");
+    assert.ok(
+      forms.every((f) => f.dir === "jp2en" && f.response === "romaji"),
+      "grammar production forms should be jp→en with romaji response",
+    );
+  });
+
+  test("grammar production has no en→jp form (answerIsJapanese pins it to jp→en)", () => {
+    const forms = enabledFormsFor(grammarProductionFact, ALL);
+    assert.equal(
+      forms.filter((f) => f.dir === "en2jp").length,
+      0,
+      "grammar production fact should produce no en→jp forms",
+    );
+  });
+
+  test("grammar production audio is silently dropped (not listenable)", () => {
+    const audioPromptOnly: AskConfig = {
+      japanese: {
+        prompts: ["audio"],
+        responses: ["definition", "romaji"],
+        answers: ["mc"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(grammarProductionFact, audioPromptOnly);
+    assert.deepEqual(forms, [], "grammar production with audio-only → no forms (not listenable)");
+  });
+});
+
+describe("Word meaning en→jp MC enforcement (§3.x — non-kana target)", () => {
+  // The doc marks word meaning en→jp as MC-only for kanji words because the
+  // written form (e.g. 先生) is not kana-only and therefore not typeable.
+  // ask-forms enforces this: a typed en→jp form for such a fact is MC-forced
+  // (en2jpTypeable returns false) and dropped by the dedup product rule.
+  test("word meaning en→jp: typed form is dropped for words with kanji (non-typeable target)", () => {
+    const typedEnOnly: AskConfig = {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: ["typed"] },
+    };
+    const forms = enabledFormsFor(meaning, typedEnOnly);
+    // The written form of a kanji word (e.g. 先生) is not kana-only, so typed
+    // is MC-forced and dropped by the product rule (no auto-upgrade).
+    assert.equal(
+      forms.filter((f) => f.dir === "en2jp").length,
+      0,
+      "en→jp typed form should be dropped for a word with kanji (formIsMc forced to true)",
+    );
+  });
+
+  test("word meaning en→jp: mc form IS emitted", () => {
+    const mcEnOnly: AskConfig = {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: ["mc"] },
+    };
+    const forms = enabledFormsFor(meaning, mcEnOnly);
+    assert.ok(
+      forms.some((f) => f.dir === "en2jp" && formIsMc(meaning, f)),
+      "en→jp mc form should be emitted",
+    );
+  });
+
+  test("word reading en→jp: typed form IS emitted (kana reading is typeable)", () => {
+    const typedEnOnly: AskConfig = {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: ["typed"] },
+    };
+    const forms = enabledFormsFor(reading, typedEnOnly);
+    assert.ok(
+      forms.some((f) => f.dir === "en2jp" && f.answer === "typed"),
+      "reading en→jp typed should be emitted (kana reading target is typeable)",
+    );
+  });
+});
+
+describe("Keigo recognition fact (§6.1 Current)", () => {
+  // Keigo: jp→en MC-only (recognition). en→jp and audio are Planned / By design.
+  test("keigo fact produces a jp→en MC form via japanese source", () => {
+    const forms = enabledFormsFor(keigoFact, ALL);
+    const jp2en = forms.filter((f) => f.dir === "jp2en" && !f.listen);
+    assert.ok(jp2en.length > 0, "keigo should produce at least one jp→en text form");
+    assert.ok(jp2en.every((f) => formIsMc(keigoFact, f)), "keigo jp→en must be MC-only");
+  });
+
+  test("keigo audio is silently dropped (Planned → not yet listenable)", () => {
+    const audioOnly: AskConfig = {
+      japanese: { prompts: ["audio"], responses: ["definition"], answers: ["mc"] },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(keigoFact, audioOnly);
+    assert.deepEqual(forms, [], "keigo with audio-only → no forms");
+  });
+
+  test("keigo en→jp is not generated (production is Planned, not Current)", () => {
+    const forms = enabledFormsFor(keigoFact, ALL);
+    assert.equal(
+      forms.filter((f) => f.dir === "en2jp").length,
+      0,
+      "keigo en→jp should not be generated (production is Planned)",
+    );
+  });
+});
+
+describe("Transitivity fact (§6.2 Current)", () => {
+  // Transitivity: en→jp (Current). jp→en is Planned and should be silently dropped.
+  test("transitivity fact produces an en→jp form (english source, en2jp fixed)", () => {
+    const forms = enabledFormsFor(transitivityFact, ALL);
+    const en2jp = forms.filter((f) => f.dir === "en2jp");
+    assert.ok(en2jp.length > 0, "transitivity should yield at least one en→jp form");
+    assert.ok(en2jp.every((f) => !f.listen), "en→jp forms are never audio");
+    assert.ok(en2jp.every((f) => formIsMc(transitivityFact, f)), "transitivity en→jp is MC");
+  });
+
+  test("transitivity jp→en is not generated (Planned, fixedDir = en2jp)", () => {
+    // transitivityQuestions has fixedDir: 'en2jp', so jp→en is never a candidate.
+    const forms = enabledFormsFor(transitivityFact, ALL);
+    assert.equal(
+      forms.filter((f) => f.dir === "jp2en").length,
+      0,
+      "transitivity jp→en should not be generated (fixedDir en2jp)",
+    );
+  });
+
+  test("transitivity audio produces no forms (en→jp direction has no audio)", () => {
+    const audioOnly: AskConfig = {
+      japanese: { prompts: ["audio"], responses: ["definition", "romaji"], answers: ["mc"] },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const forms = enabledFormsFor(transitivityFact, audioOnly);
+    assert.deepEqual(forms, [], "transitivity with audio-only jp source → no forms");
   });
 });
