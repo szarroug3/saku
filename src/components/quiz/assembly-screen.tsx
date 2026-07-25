@@ -59,6 +59,54 @@ interface AsmRuntime {
   stats: SessionStats;
 }
 
+interface CoachHint {
+  id: string;
+  text: string;
+}
+
+/**
+ * A lightweight teaching layer for sentence ordering.
+ *
+ * It uses only existing assembly data plus attempt count. First pass teaches
+ * strategy; later passes add stronger anchors when the learner is stuck.
+ */
+function coachHints(item: AssemblyItem, canon: readonly string[], tries: number): CoachHint[] {
+  const out: CoachHint[] = [
+    {
+      id: "keep-chunks",
+      text: "Treat each chip as one chunk. Particles are already attached to their word.",
+    },
+    {
+      id: "anchor-end",
+      text: "Anchor the ending first. The main action/state chunk is usually near the end.",
+    },
+    {
+      id: "before-end",
+      text: "Place topic/time/place chunks before that ending chunk, then refine the middle.",
+    },
+  ];
+
+  if (tries > 0) {
+    out.push({
+      id: "final-anchor",
+      text: `Try setting the final chunk first: \u300c${canon[canon.length - 1] ?? ""}\u300d.`,
+    });
+  }
+  if (tries > 1 && canon.length > 2) {
+    out.push({
+      id: "start-anchor",
+      text: `If needed, begin with: \u300c${canon[0] ?? ""}\u300d.`,
+    });
+  }
+  if (item.p.length > 0) {
+    out.push({
+      id: "pattern-clue",
+      text: "Pattern chunks and their host words usually stay tightly grouped in the frame.",
+    });
+  }
+  return out;
+}
+
 function buildRuntime(history: HistoryFile): AsmRuntime {
   const cards: AsmCard[] = [];
   const stats: SessionStats = {};
@@ -195,6 +243,7 @@ export function AssemblyScreen() {
   const item = card.item;
   const resolved = card.state !== "open";
   const canon = canonicalOrder(item);
+  const coach = coachHints(item, canon, card.tries);
   const hintBySurface = new Map(item.pieces.map((p) => [p.t, pieceHint(p)]));
 
   const place = (surface: string) => {
@@ -271,6 +320,23 @@ export function AssemblyScreen() {
             Build the sentence
           </div>
           <div className="mt-2 text-xl">{item.en}</div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-border bg-panel p-3 text-sm">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+            Ordering coach
+          </div>
+          <ul className="space-y-1 text-text-muted">
+            {coach.map((h) => (
+              <li key={h.id}>- {h.text}</li>
+            ))}
+          </ul>
+          {card.tries > 0 ? (
+            <p className="mt-2 text-[12px] text-text-muted">
+              You have {card.tries} miss{card.tries === 1 ? "" : "es"} on this card,
+              so stronger anchors are now shown.
+            </p>
+          ) : null}
         </div>
 
         {/* The tray: the answer, in order. A drop target. */}
