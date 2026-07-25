@@ -716,6 +716,15 @@ export interface QuizSessionRecord {
 export interface HistoryFile {
   sessions: QuizSessionRecord[];
   /**
+   * Confusion pairs the learner explicitly retired early, keyed by the
+   * canonical pair key from lib/confusions and valued with the write time.
+   *
+   * Sessions at or before the marker no longer feed that pair's open record.
+   * A later mix-up starts a fresh record, so "Clear now" forgives the typo
+   * without making the pair impossible to detect again.
+   */
+  clearedMixups?: Record<string, number>;
+  /**
    * What you SAID you know, per fact: ms epoch of the claim. See
    * src/lib/claims.ts for what a claim is worth to the model.
    *

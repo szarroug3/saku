@@ -17,6 +17,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  applyClearMixup,
   applyClaims,
   applyDeleteSessions,
   applyDropClaims,
@@ -55,6 +56,14 @@ test("emptyHistory is the day-one shell, without claims/seen keys", () => {
 });
 
 // ---------- claims ----------
+
+test("applyClearMixup records a monotonic floor without mutating history", () => {
+  const before = emptyHistory();
+  const first = applyClearMixup(before, "あ·お", 2_000);
+  const olderRetry = applyClearMixup(first, "あ·お", 1_000);
+  assert.deepEqual(olderRetry.clearedMixups, { "あ·お": 2_000 });
+  assert.equal("clearedMixups" in before, false, "input untouched");
+});
 
 test("applyClaims sets a timestamp per fact and does not mutate the input", () => {
   const before = emptyHistory();

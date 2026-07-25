@@ -47,6 +47,7 @@
 import { useCallback, useMemo } from "react";
 
 import {
+  applyClearMixup,
   applyClaims,
   applyDropClaims,
   applySeen,
@@ -54,6 +55,7 @@ import {
 } from "@/lib/history-ops";
 import {
   postClaim,
+  postClearMixup,
   postSeen,
   postSession,
   type ProgressResult,
@@ -79,6 +81,8 @@ export interface HistoryWrites {
   markSeen(facts: FactId[]): void;
   /** A finished round. */
   recordSession(record: QuizSessionRecord): void;
+  /** Retire an open confusion after a clean quiz. */
+  clearMixup(key: string): void;
 }
 
 export function useHistoryWrites(): HistoryWrites {
@@ -128,6 +132,11 @@ export function useHistoryWrites(): HistoryWrites {
       recordSession(record) {
         apply((h: HistoryFile) => applySession(h, record));
         reconcile(postSession(record));
+      },
+      clearMixup(key) {
+        const at = now();
+        apply((h: HistoryFile) => applyClearMixup(h, key, at));
+        reconcile(postClearMixup(key, at));
       },
     };
   }, [apply, reconcile]);

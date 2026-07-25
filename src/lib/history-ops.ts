@@ -123,6 +123,20 @@ export function applyDropSeen(hist: HistoryFile, facts: FactId[]): HistoryFile {
   return next;
 }
 
+/** Retire one confusion record without deleting the quiz evidence that formed
+ * it. Later mix-ups still reopen the pair because readers treat this timestamp
+ * as a floor, not a permanent ignore-list. */
+export function applyClearMixup(
+  hist: HistoryFile,
+  key: string,
+  ts: number,
+): HistoryFile {
+  const next = structuredClone(hist);
+  next.clearedMixups ??= {};
+  next.clearedMixups[key] = Math.max(next.clearedMixups[key] ?? 0, ts);
+  return next;
+}
+
 /**
  * Append a session and fold its per-fact stats into the aggregate.
  *

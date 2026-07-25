@@ -16,6 +16,7 @@
 import "server-only";
 
 import {
+  applyClearMixup,
   applyClaims,
   applyDeleteSessions,
   applyDropClaims,
@@ -103,6 +104,19 @@ export async function dropClaims(userId: string, facts: FactId[]): Promise<Histo
  * frontier reads as fresh again. */
 export async function dropSeen(userId: string, facts: FactId[]): Promise<HistoryFile> {
   const next = applyDropSeen(await loadHistory(userId), facts);
+  await writeHistory(userId, next);
+  return next;
+}
+
+/** Retire an open confusion record at the learner's request. The underlying
+ * sessions stay intact; the marker only sets the starting point for this
+ * pair's future lifecycle. */
+export async function clearMixup(
+  userId: string,
+  key: string,
+  ts: number,
+): Promise<HistoryFile> {
+  const next = applyClearMixup(await loadHistory(userId), key, ts);
   await writeHistory(userId, next);
   return next;
 }

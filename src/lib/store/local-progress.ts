@@ -36,6 +36,7 @@
 // lands where it would have landed had the learner been signed in all along.
 
 import {
+  applyClearMixup,
   applyClaims,
   applyDeleteSessions,
   applyDropClaims,
@@ -127,6 +128,7 @@ function normalizeHistory(h: Partial<HistoryFile>): HistoryFile {
     facts: h.facts ?? {},
     claims: h.claims ?? {},
     seen: h.seen ?? {},
+    ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),
   };
 }
 
@@ -161,6 +163,11 @@ export function localSeen(facts: FactId[], ts: number): HistoryFile {
  * frontier. */
 export function localDropSeen(facts: FactId[]): HistoryFile {
   return mutateHistory((h) => applyDropSeen(h, facts));
+}
+
+/** Retire a confusion record early, locally. Mirrors POST /api/mixup. */
+export function localClearMixup(key: string, ts: number): HistoryFile {
+  return mutateHistory((h) => applyClearMixup(h, key, ts));
 }
 
 /** A finished round, locally. Mirrors POST /api/session — same id-dedupe, so a
@@ -249,7 +256,8 @@ export function hasLocalProgress(): boolean {
   if (
     h.sessions.length ||
     Object.keys(h.claims ?? {}).length ||
-    Object.keys(h.seen ?? {}).length
+    Object.keys(h.seen ?? {}).length ||
+    Object.keys(h.clearedMixups ?? {}).length
   ) {
     return true;
   }

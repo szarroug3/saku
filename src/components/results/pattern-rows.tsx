@@ -38,6 +38,15 @@ function s(n: number): string {
   return n === 1 ? "" : "s";
 }
 
+/** The early-clear affordance is earned by a correct answer, not merely by
+ * avoiding this particular confusion while getting the card wrong another
+ * way or leaving it unanswered. */
+function landedThisRun(row: PairRow, stats: SessionStats): boolean {
+  return [row.a, row.b].some((entry) =>
+    factsOf(entry).some((fact) => stats[fact]?.everCorrect),
+  );
+}
+
 /** "nearly always ツ read as "shi"" — or "mixed up both ways", or nothing when
  * there aren't enough mix-ups to claim a direction at all. */
 function directionText(row: PairRow): string | null {
@@ -180,6 +189,7 @@ export function PatternRow({
   stats,
   graduateRuns,
   wasWorst,
+  onClear,
 }: {
   row: PairRow;
   stats: SessionStats;
@@ -187,6 +197,8 @@ export function PatternRow({
   /** The heaviest record on the screen — lets an improving row say what it was
    * before it started getting better. */
   wasWorst?: boolean;
+  /** Offered only after this quiz supplied a clean run for the pair. */
+  onClear?: () => void;
 }) {
   const [first, second] = lines(row, stats, graduateRuns, !!wasWorst);
   return (
@@ -208,7 +220,18 @@ export function PatternRow({
         ) : null}
       </span>
       {row.state === "improving" ? (
-        <Dots done={row.record.cleanStreak} total={graduateRuns} />
+        <span className="ml-auto flex flex-none flex-col items-end gap-1">
+          <Dots done={row.record.cleanStreak} total={graduateRuns} />
+          {onClear ? (
+            <button
+              type="button"
+              className="text-[11px] font-medium text-accent hover:underline"
+              onClick={onClear}
+            >
+              Clear now
+            </button>
+          ) : null}
+        </span>
       ) : (
         <Tag state={row.state} />
       )}
@@ -223,12 +246,14 @@ export function PatternSection({
   stats,
   graduateRuns,
   worstKey,
+  onClear,
 }: {
   label: string;
   rows: PairRow[];
   stats: SessionStats;
   graduateRuns: number;
   worstKey?: string;
+  onClear?: (key: string) => void;
 }) {
   if (!rows.length) return null;
   return (
@@ -242,6 +267,11 @@ export function PatternSection({
             stats={stats}
             graduateRuns={graduateRuns}
             wasWorst={row.key === worstKey}
+            onClear={
+              row.state === "improving" && landedThisRun(row, stats) && onClear
+                ? () => onClear(row.key)
+                : undefined
+            }
           />
         ))}
       </div>
