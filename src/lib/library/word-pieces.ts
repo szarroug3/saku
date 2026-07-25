@@ -128,6 +128,21 @@ export function piecesOf(w: VocabRow): readonly WordPiece[] | null {
   return out;
 }
 
+/**
+ * Whether a word is a lone kanji — one kanji piece, no kana at all.
+ *
+ * Its reading "decomposition" (水 → 水 みず) is the word repeating itself, so the
+ * word page suppresses its "Built from" section: the SHAPE breakdown a single
+ * kanji actually wants (可 → 丁 + 口) lives on the kanji page, which owns shape.
+ *
+ * A kanji WITH okurigana (生きる → 生 + きる) is NOT this — it has a tail worth
+ * showing — and neither is a multi-kanji compound (電話), so both keep the section.
+ * Null pieces (a jukujikun, an all-kana word) are not a single-kanji word either.
+ */
+export function isSingleKanjiWord(pieces: readonly WordPiece[] | null): boolean {
+  return pieces !== null && pieces.length === 1 && pieces[0].kind === "kanji";
+}
+
 // ---------- what the pieces are DOING: the compound note ----------
 
 /** kanji + base reading → whether that reading came in from Chinese or is the

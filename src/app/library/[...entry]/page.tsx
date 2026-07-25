@@ -50,6 +50,7 @@ import { AttributionLink } from "@/components/library/attribution-link";
 import { ComponentUses } from "@/components/library/component-uses";
 import { EntryHeader } from "@/components/library/entry-header";
 import { EntryLinks, GlyphLink, LinkRow } from "@/components/library/entry-links";
+import { KanjiBuiltFrom } from "@/components/library/kanji-built-from";
 import { KanaFamilyView } from "@/components/library/kana-family-view";
 import { KanjiReadings } from "@/components/library/kanji-readings";
 import { MarkView } from "@/components/library/mark-view";
@@ -115,7 +116,7 @@ import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { entryFromParam, entryFromSlug, entryHref, radicalHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
-import { piecesOf } from "@/lib/library/word-pieces";
+import { isSingleKanjiWord, piecesOf } from "@/lib/library/word-pieces";
 import { entryStanding, standingOf } from "@/lib/library/standing";
 import { useLiveFacts } from "@/lib/library/use-live-facts";
 import { speak } from "@/lib/speech";
@@ -441,6 +442,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // ---- word-only material ----
 
   const pieces = useMemo(() => (wordRow ? piecesOf(wordRow) : null), [wordRow]);
+  // A SINGLE-KANJI word (水/みず, 可/か) has nothing to decompose for reading — the
+  // one piece IS the word, so "Built from → 可 か" is the word printed twice. The
+  // shape breakdown a lone kanji actually wants lives on the KANJI page (one click
+  // away via the Shares link), which owns the shape decomposition. So the word
+  // page hides its reading-split here. A kanji WITH okurigana (生きる) has a real
+  // tail to show and keeps it; a multi-kanji compound (電話) keeps it.
+  const singleKanjiWord = isSingleKanjiWord(pieces);
   const forms = useMemo(() => (wordRow ? formsOfWord(wordRow) : null), [wordRow]);
   /** The word's kanji that have pages of their own — the "Shares" row below. */
   const kanjiPieces = useMemo(
@@ -781,6 +789,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
             />
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
+          {/* BUILT FROM — the SHAPE decomposition (可 → 丁 street + 口 mouth),
+              the kanji page's own breakdown that until now lived only in the
+              lesson. The de-framed, all-or-nothing teachableParts, so an atomic
+              kanji or one with a raw primitive piece renders nothing. Distinct
+              from the word page's "Built from", which splits a word into its
+              READING pieces — the shape is this page's to own. */}
+          <KanjiBuiltFrom glyph={entry.glyph} />
           {words.length > 0 ? (
             <WordsWith
               words={words}
@@ -832,8 +847,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
           <div className="mb-3.5 grid grid-cols-2 gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
             {/* Absent, not empty, for a jukujikun (大人/おとな) and an all-kana
                 word: there is no per-kanji reading to show, and inventing one
-                would be a fact that cannot be graded. */}
-            {pieces ? <WordBuiltFrom pieces={pieces} /> : <div />}
+                would be a fact that cannot be graded. Absent too for a
+                single-kanji word (水, 可): its reading-split is the word
+                repeating itself — the SHAPE breakdown it actually wants is on
+                the kanji page. */}
+            {pieces && !singleKanjiWord ? <WordBuiltFrom pieces={pieces} /> : <div />}
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
           {wordRow && forms ? <WordFormFan dictionary={wordRow.keb} groups={forms} /> : null}

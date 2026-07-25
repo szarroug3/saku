@@ -2,13 +2,39 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { VOCAB, vocabRow } from "@/data/vocab";
-import { compoundNote, piecesOf } from "@/lib/library/word-pieces";
+import {
+  compoundNote,
+  isSingleKanjiWord,
+  piecesOf,
+} from "@/lib/library/word-pieces";
 
 function pieces(keb: string) {
   const row = vocabRow(keb);
   assert.ok(row, `${keb} missing from vocab.json`);
   return piecesOf(row);
 }
+
+test("isSingleKanjiWord: a lone kanji word is one, its reading-split is trivial", () => {
+  // 水/みず, 人/じん — one kanji, no kana. The word page hides "Built from" for
+  // these; the shape breakdown lives on the kanji page.
+  assert.equal(isSingleKanjiWord(pieces("水")), true);
+  assert.equal(isSingleKanjiWord(pieces("人")), true);
+});
+
+test("isSingleKanjiWord: a word with a real split is NOT one", () => {
+  // A kanji + okurigana tail (生きる) has a tail worth showing; a multi-kanji
+  // compound (先生, 電話) has two sounds to separate. Both keep "Built from".
+  assert.equal(isSingleKanjiWord(pieces("生きる")), false);
+  assert.equal(isSingleKanjiWord(pieces("先生")), false);
+  assert.equal(isSingleKanjiWord(pieces("電話")), false);
+});
+
+test("isSingleKanjiWord: an unsplittable word (null pieces) is not one", () => {
+  // 大人/おとな is a jukujikun — piecesOf returns null, and null is not a
+  // single-kanji word, so the word page's existing null path is unaffected.
+  assert.equal(piecesOf(vocabRow("大人")!), null);
+  assert.equal(isSingleKanjiWord(null), false);
+});
 
 test("先生 splits into two linked kanji, each with its own sound", () => {
   const p = pieces("先生");

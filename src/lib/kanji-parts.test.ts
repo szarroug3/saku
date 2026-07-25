@@ -78,6 +78,19 @@ describe("teachableParts — de-framed enclosures", () => {
   });
 });
 
+describe("teachableParts — atomic or non-taught pieces yield nothing", () => {
+  // The all-or-nothing rule the kanji page's "Built from" card rides on: a null
+  // result renders no section. 一 has no components at all; 休 is 亻 + 木 but 亻
+  // is a bound form with no card, so "made of 亻" is not a statement to show.
+  test("一 is atomic — no built-from", () => {
+    assert.equal(teachableParts("一"), null);
+  });
+
+  test("休 has a non-taught piece (亻) — no built-from", () => {
+    assert.equal(teachableParts("休"), null);
+  });
+});
+
 describe("teachableParts — genuine repetitions UNCHANGED", () => {
   test("品 stays three 口", () => {
     assert.deepEqual(partChars("品"), ["口", "口", "口"]);
