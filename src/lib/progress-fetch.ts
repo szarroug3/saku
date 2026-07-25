@@ -54,6 +54,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   localAddToList,
   localClaim,
+  localClearMixup,
   localDeleteList,
   localDeleteSessions,
   localDropClaim,
@@ -149,6 +150,19 @@ export function postUnseen(facts: FactId[]): Promise<ProgressResult> {
   return announcing(
     postWithLocalFallback("/api/seen", { facts, remove: true }, () =>
       localDropSeen(facts),
+    ),
+  );
+}
+
+/** "Clear now" for a confusion pair. The timestamp is shared with the
+ * optimistic update so the screen and durable copy establish the same floor. */
+export function postClearMixup(
+  key: string,
+  ts: number,
+): Promise<ProgressResult> {
+  return announcing(
+    postWithLocalFallback("/api/mixup", { key, ts }, () =>
+      localClearMixup(key, ts),
     ),
   );
 }

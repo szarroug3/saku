@@ -158,6 +158,22 @@ describe("the denominator rule", () => {
 // ---------- graduation ----------
 
 describe("the lifecycle graduates", () => {
+  test("an explicit clear retires the old record and a later mix-up reopens it", () => {
+    const cleared = history(mixup(SEI, SAKI), clean(SEI));
+    cleared.clearedMixups = { [PAIR]: 2 };
+    assert.equal(activeWeaknessPairs(cleared, GRAD, entryOf).length, 0);
+
+    const reopened = history(
+      mixup(SEI, SAKI, 9),
+      clean(SEI),
+      mixup(SEI, SAKI),
+    );
+    reopened.clearedMixups = { [PAIR]: 2 };
+    const rec = recordFor(reopened);
+    assert.equal(rec.tracked, true);
+    assert.equal(rec.total, 1, "evidence before the clear stays retired");
+  });
+
   test("tracked stays open below the threshold", () => {
     const h = history(mixup(SEI, SAKI), clean(SEI), clean(SEI));
     const rec = recordFor(h);

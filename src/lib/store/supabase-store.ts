@@ -26,6 +26,7 @@ function normalizeHistory(raw: unknown): HistoryFile {
     facts: h.facts ?? {},
     claims: h.claims ?? {},
     seen: h.seen ?? {},
+    ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),
   };
 }
 

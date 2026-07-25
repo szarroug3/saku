@@ -116,6 +116,10 @@ async function replayHistory(): Promise<boolean> {
     allOk = false;
   }
 
+  for (const [key, ts] of Object.entries(hist.clearedMixups ?? {})) {
+    if (!(await post("/api/mixup", { key, ts }))) allOk = false;
+  }
+
   return allOk;
 }
 

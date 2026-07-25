@@ -301,6 +301,7 @@ export interface RecordOpts {
 }
 
 interface Slice {
+  ts: number;
   detail: SessionStats;
   pairs: Map<PairKey, RunPair>;
   /** The entries this run SHOWED. Precomputed per run rather than per pair:
@@ -314,6 +315,7 @@ function slices(history: HistoryFile, opts: RecordOpts): Slice[] {
     .filter((s) => s.detail && s.ts !== opts.excludeTs)
     .sort((p, q) => p.ts - q.ts)
     .map((s) => ({
+      ts: s.ts,
       detail: s.detail!,
       pairs: indexPairs(s.detail!, opts.entryOf),
       shown: entriesShown(s.detail!, opts.entryOf),
@@ -362,8 +364,10 @@ export function pairRecords(
   const records = new Map<PairKey, PairRecord>();
   for (const key of keys) {
     const [a, b] = pairEntries(key);
+    const clearedAt = history.clearedMixups?.[key] ?? 0;
     let rec = emptyRecord(key);
     for (const r of runs) {
+      if (r.ts <= clearedAt) continue;
       if (!qualifies(r.shown, a, b)) continue;
       rec = step(rec, r.pairs.get(key) ?? null, graduateRuns);
     }

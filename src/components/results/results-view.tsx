@@ -33,6 +33,7 @@ import { weakestFacts } from "@/lib/decks";
 import { entryOf } from "@/lib/facts";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ResultsPayload } from "@/lib/quiz-session";
+import { useHistoryWrites } from "@/lib/history-writes";
 import { emptySelection, resolve } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import type { AccuracyMetric, FactId, QuizMode } from "@/types";
@@ -100,6 +101,7 @@ function Line({ bits, className }: { bits: Bit[]; className?: string }) {
 export function ResultsView({ results }: { results: ResultsPayload }) {
   const { cfg } = useQuizConfig();
   const { history } = useHistory();
+  const writes = useHistoryWrites();
   const confirm = useConfirm();
   const { active, abandonQuiz, startQuiz } = useQuizSession();
 
@@ -262,6 +264,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         stats={stats}
         graduateRuns={graduateRuns}
         worstKey={worstKey}
+        onClear={(key) => writes.clearMixup(key)}
       />
 
       <TriageSection
