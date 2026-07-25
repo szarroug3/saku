@@ -1,4 +1,5 @@
-// The text relationships Match pairs can honestly deal.
+// The text relationships Match pairs can honestly deal, grouped into
+// homogeneous HEADED boards (task #33).
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { patternMeaningFactId } from "@/data/grammar";
@@ -6,6 +7,12 @@ import { jp2enResponse } from "@/lib/ask-forms";
 import { questionsFor, revealFor } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
 import { readableRecognition } from "@/lib/listen-sentence";
+import {
+  definitionResponse,
+  groupBoards,
+  type BoardKey,
+  type BoardResponse,
+} from "@/lib/quiz-boards";
 import type { FactId, HistoryFile, PairResponse } from "@/types";
 
 const HAS_KANJI = /\p{Script=Han}/u;
@@ -18,16 +25,25 @@ export interface PairSpec {
   japanese: string;
   answer: string;
   context?: string | null;
+  /** The header of the board this spec belongs to ("Kanji → meaning"). Carried
+   * on the spec so the screen, which walks a flat deck, can title the physical
+   * board and detect a board boundary without re-deriving it. */
+  header: string;
 }
 
-function definitionSpec(fact: FactId): PairSpec | null {
+/** A headed board: one source type, one response, and the specs on it. */
+export interface PairBoard extends BoardKey {
+  header: string;
+  specs: PairSpec[];
+}
+
+function definitionSpec(fact: FactId): Omit<PairSpec, "header"> | null {
   const info = factInfo(fact);
   // "Japanese + English" is the natural Latin/English counterpart: a kana's
   // romanization, or a meaning-bearing item's English definition.
   if (
     !info ||
-    (info.subject !== KANA_SUBJECT &&
-      jp2enResponse(fact) !== "definition")
+    (info.subject !== KANA_SUBJECT && jp2enResponse(fact) !== "definition")
   ) {
     return null;
   }
@@ -42,13 +58,9 @@ function definitionSpec(fact: FactId): PairSpec | null {
   };
 }
 
-function romajiSpec(fact: FactId): PairSpec | null {
+function romajiSpec(fact: FactId): Omit<PairSpec, "header"> | null {
   const info = factInfo(fact);
-  if (
-    !info ||
-    jp2enResponse(fact) !== "romaji" ||
-    !HAS_KANJI.test(info.glyph)
-  ) {
+  if (!info || jp2enResponse(fact) !== "romaji" || !HAS_KANJI.test(info.glyph)) {
     return null;
   }
   const prompt = questionsFor(fact).prompt(fact, "jp2en");
@@ -62,19 +74,31 @@ function romajiSpec(fact: FactId): PairSpec | null {
   };
 }
 
-/**
- * Build every selected pair variant. Sentence translation reuses the same
- * known-word-gated corpus Drill's sentence recognition uses. One sentence is
- * chosen per selected grammar fact, with duplicate Japanese/English labels
- * refused so a matching board never has two visually correct destinations.
- */
-export function pairSpecs(
+/** The board a pair spec belongs to. The kind resolves the response directly —
+ * a definition of a kana answers in romaji (Kana → romaji), otherwise a meaning
+ * (Kanji → meaning); a romaji spec is a reading (Words → reading); a sentence is
+ * its own source, whose cards are whole sentences matched to their meaning. */
+function pairBoardKey(spec: Omit<PairSpec, "header">): BoardKey | null {
+  if (spec.kind === "sentence") return { source: "sentence", response: "meaning" };
+  const info = factInfo(spec.fact);
+  if (!info) return null;
+  if (spec.kind === "romaji") {
+    return { source: info.subject, response: "reading" };
+  }
+  return {
+    source: info.subject,
+    response: definitionResponse(info.subject === KANA_SUBJECT),
+  };
+}
+
+/** Every selected pair variant, ungrouped and undeduped. */
+function rawSpecs(
   facts: readonly FactId[],
   kinds: readonly PairResponse[],
   history: HistoryFile,
-): PairSpec[] {
+): Array<Omit<PairSpec, "header">> {
   const wanted = new Set(facts);
-  const out: PairSpec[] = [];
+  const out: Array<Omit<PairSpec, "header">> = [];
   if (kinds.includes("definition")) {
     for (const f of facts) {
       const spec = definitionSpec(f);
@@ -110,20 +134,54 @@ export function pairSpecs(
       usedEn.add(ex.en);
     }
   }
-  // A matching deck must not contain two visually correct destinations.
-  // Context is part of the Japanese cell ("meaning" vs "reading", or an anchor
-  // word), so it participates in that side's identity; answer text stands
-  // alone and must be globally unique.
-  const left = new Set<string>();
-  const right = new Set<string>();
-  return out.filter((spec) => {
-    const l = `${spec.japanese}\u0000${spec.context ?? ""}`;
-    const r = spec.answer.trim().toLowerCase();
-    if (!r || left.has(l) || right.has(r)) return false;
-    left.add(l);
-    right.add(r);
-    return true;
-  });
+  return out;
+}
+
+/**
+ * Build the selected variants and GROUP them into homogeneous headed boards
+ * keyed by (source × response). The dedup-within-a-board guard runs PER BOARD:
+ * a matching board must never hold two visually-correct destinations, but the
+ * SAME 電話 legitimately appears once on "Words → meaning" (→ "phone") and once
+ * on "Words → reading" (→ "でんわ"), because those are two different boards.
+ *
+ * Context is part of the Japanese cell's identity ("meaning" vs "reading", or
+ * an anchor word); the answer text stands alone and must be unique on its board.
+ */
+export function pairBoards(
+  facts: readonly FactId[],
+  kinds: readonly PairResponse[],
+  history: HistoryFile,
+): PairBoard[] {
+  const grouped = groupBoards(rawSpecs(facts, kinds, history), pairBoardKey);
+  const boards: PairBoard[] = [];
+  for (const { items, header, ...key } of grouped) {
+    const left = new Set<string>();
+    const right = new Set<string>();
+    const specs: PairSpec[] = [];
+    for (const spec of items) {
+      const l = `${spec.japanese}\u0000${spec.context ?? ""}`;
+      const r = spec.answer.trim().toLowerCase();
+      if (!r || left.has(l) || right.has(r)) continue;
+      left.add(l);
+      right.add(r);
+      specs.push({ ...spec, header });
+    }
+    if (specs.length) boards.push({ ...key, header, specs });
+  }
+  return boards;
+}
+
+/**
+ * Every selected pair variant, deduped per board and in board order — a flat
+ * view of `pairBoards` for callers that only need the specs. Consecutive specs
+ * of one board stay contiguous, so a caller can still see the boards.
+ */
+export function pairSpecs(
+  facts: readonly FactId[],
+  kinds: readonly PairResponse[],
+  history: HistoryFile,
+): PairSpec[] {
+  return pairBoards(facts, kinds, history).flatMap((b) => b.specs);
 }
 
 /** Facts that can produce at least one selected variant, for Start gating. */
@@ -134,3 +192,5 @@ export function pairFacts(
 ): FactId[] {
   return [...new Set(pairSpecs(facts, kinds, history).map((p) => p.fact))];
 }
+
+export type { BoardResponse };

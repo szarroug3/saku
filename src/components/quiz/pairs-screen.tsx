@@ -21,7 +21,7 @@ import { useEffect, useRef, useState } from "react";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { newFactStat, shuffle } from "@/lib/engine";
 import { entryOf } from "@/lib/facts";
-import { pairSpecs, type PairSpec } from "@/lib/pair-facts";
+import { pairBoards, type PairSpec } from "@/lib/pair-facts";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
@@ -29,6 +29,7 @@ import type {
   FactId,
   FactSessionDetail,
   HistoryFile,
+  PairResponse,
   QuizConfig,
   SessionStats,
 } from "@/types";
@@ -69,6 +70,9 @@ interface PairsCell {
 }
 
 interface PairsRuntime {
+  /** The run's specs, boards laid end to end: within a board they're shuffled,
+   * the boards themselves stay in teaching order and CONTIGUOUS, so a physical
+   * board (a slice of BEHAVIOR.pairsPerBoard) never straddles two headers. */
   deck: PairSpec[];
   pos: number;
   asked: number;
@@ -77,6 +81,9 @@ interface PairsRuntime {
   total: number | null;
   stats: SessionStats;
   board: PairsCell[];
+  /** Header of the headed board the current physical board belongs to
+   * ("Kanji → meaning"). Shown above the cells (task #33). */
+  header: string;
   /** Index into board of the currently picked cell, if any. */
   pick: number | null;
   /** Pairs matched FIRST TRY, in a row; a mismatch puts it back to 0, exactly
@@ -92,21 +99,53 @@ function statFor(stats: SessionStats, f: FactId): FactSessionDetail {
   return (stats[f] ??= newFactStat());
 }
 
+/** A fresh run of specs, boards shuffled within and laid end to end in board
+ * order — the shape PairsRuntime.deck holds. Used to build the deck and to
+ * replenish it in endless mode. */
+function boardDeck(
+  facts: readonly FactId[],
+  kinds: PairResponse[],
+  history: HistoryFile,
+): PairSpec[] {
+  return pairBoards(facts, kinds, history).flatMap((b) =>
+    shuffle(b.specs.slice()),
+  );
+}
+
 /**
- * Advance the runtime to the next board: replenish (endless) or signal
- * finished (returns false), take the next chars, mark them seen, and lay
- * out the shuffled kana+romaji cells.
+ * Advance the runtime to the next physical board: replenish (endless, via
+ * `rebuild`) or signal finished (returns false), take up to a board's worth of
+ * the next specs — STOPPING at a header boundary so the board is homogeneous —
+ * mark them seen, record the header, and lay out the shuffled cells.
  */
-function fillBoard(p: PairsRuntime, specs: PairSpec[], fonts: string[]): boolean {
+function fillBoard(
+  p: PairsRuntime,
+  rebuild: () => PairSpec[],
+  fonts: string[],
+): boolean {
   p.pick = null;
   p.dirty = [];
   if (p.pos >= p.deck.length) {
-    if (p.endless) p.deck = p.deck.concat(shuffle(specs.slice()));
+    if (p.endless) p.deck = p.deck.concat(rebuild());
     else return false;
   }
-  const take = p.deck.slice(p.pos, p.pos + BEHAVIOR.pairsPerBoard);
-  p.pos += take.length;
+  // A physical board is BEHAVIOR.pairsPerBoard cells at most, but never spans
+  // two headed boards: stop early when the header changes, so every cell on the
+  // board answers the one thing the header names.
+  const start = p.pos;
+  const header = p.deck[start].header;
+  let end = start;
+  while (
+    end < p.deck.length &&
+    end - start < BEHAVIOR.pairsPerBoard &&
+    p.deck[end].header === header
+  ) {
+    end++;
+  }
+  const take = p.deck.slice(start, end);
+  p.pos = end;
   p.asked += take.length;
+  p.header = header;
   for (const spec of take) statFor(p.stats, spec.fact).seen++;
   p.board = shuffle([
     ...take.map((spec): PairsCell => {
@@ -148,8 +187,9 @@ function initPairs(
       : {}),
   };
   const kinds = active.snapshot.pairResponses ?? cfg.pairResponses;
-  const specs = pairSpecs(active.facts, kinds, history);
-  let deck = shuffle(specs.slice());
+  // Boards laid end to end (shuffled within, in teaching order). Count-limit
+  // trims the tail; it may clip the last board, which stays homogeneous.
+  let deck = boardDeck(active.facts, kinds, history);
   if (eff.length === "limited" && eff.limType === "count") {
     deck = deck.slice(0, eff.limCount);
   }
@@ -162,11 +202,12 @@ function initPairs(
     total: endless ? null : deck.length,
     stats: {},
     board: [],
+    header: "",
     pick: null,
     streak: 0,
     dirty: [],
   };
-  fillBoard(p, specs, cfg.fonts);
+  fillBoard(p, () => boardDeck(active.facts, kinds, history), cfg.fonts);
   return p;
 }
 
@@ -181,6 +222,9 @@ function ensureRuntime(
   // Resuming a runtime written before the streak existed.
   if (typeof p.streak !== "number") p.streak = 0;
   if (!Array.isArray(p.dirty)) p.dirty = [];
+  // Resuming a runtime written before headed boards — the deck's specs and the
+  // current header may be absent; the current board keeps running untitled.
+  if (typeof p.header !== "string") p.header = "";
   return p;
 }
 
@@ -268,12 +312,9 @@ export function PairsScreen() {
 
   const advanceBoard = () => {
     if (!active || !p) return;
-    const specs = pairSpecs(
-      active.facts,
-      active.snapshot.pairResponses ?? cfg.pairResponses,
-      history,
-    );
-    if (fillBoard(p, specs, cfg.fonts)) rerender();
+    const kinds = active.snapshot.pairResponses ?? cfg.pairResponses;
+    const rebuild = () => boardDeck(active.facts, kinds, history);
+    if (fillBoard(p, rebuild, cfg.fonts)) rerender();
     else finishQuiz(p.stats);
   };
 
@@ -334,10 +375,15 @@ export function PairsScreen() {
       />
 
       {/* The board is the stage, the way the halo is drill's: it stands on the
-          page rather than inside a card. The cells keep `rounded-lg`+`bg-card`
-          — the theme hook that earns them kiri's glass and momentum's shelf —
-          and there are sixteen of them, not a hundred, so the blur is cheap. */}
+          page rather than inside a card. */}
       <div className="flex flex-col items-center pt-8 pb-4">
+        {/* The board header (task #33): this matching board asks ONE response
+            of ONE source type, and the header is the whole of the disambiguation
+            — "Words → meaning" vs "Words → reading", a word board vs a kanji
+            board — so no per-cell tag is needed. */}
+        {p.header ? (
+          <span className="mb-3 text-sm font-medium text-text">{p.header}</span>
+        ) : null}
         <div className="grid w-full max-w-[430px] grid-cols-4 gap-2.5">
           {p.board.map((cell, i) => {
             const bad = flash.includes(i);
@@ -358,15 +404,20 @@ export function PairsScreen() {
                   // now: drawn outside the box, no layout to move, and pulled
                   // back over the border with a negative offset so it still
                   // reads as one 2px edge rather than a halo.
+                  // Task #33 follow-up (Sam): the board sits on a PLAIN
+                  // TRANSPARENT ground — the resting and matched cells drop the
+                  // frosted `bg-card` fill and are just their 1px edge over the
+                  // page. Picked and mismatch states keep their accent/danger
+                  // fills, so an active cell still reads.
                   cell.gone
                     ? // Matched: it fades out rather than vanishing, and stops
                       // being a target the instant it's spent.
-                      "pointer-events-none border border-border bg-card text-text opacity-[0.18]"
+                      "pointer-events-none border border-border bg-transparent text-text opacity-[0.18]"
                     : bad
                       ? "kq-pairs-miss border border-danger bg-danger-bg text-danger"
                       : picked
                         ? "border border-accent bg-accent-bg text-accent outline-2 -outline-offset-2 outline-accent"
-                        : "border border-border bg-card text-text hover:bg-panel",
+                        : "border border-border bg-transparent text-text hover:bg-panel",
                 ].join(" ")}
               >
                 {cell.label}
