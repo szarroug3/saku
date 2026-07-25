@@ -25,7 +25,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Btn, GhostBtn } from "@/components/ui";
+import { Btn, GhostBtn, SmallBtn } from "@/components/ui";
 import { newFactStat, retriesAllowed, shuffle } from "@/lib/engine";
 import {
   assemblyFacts,
@@ -374,7 +374,9 @@ export function AssemblyScreen() {
             learner from the sentence pieces. */}
         <div className="mt-5 flex w-full flex-col items-center">
           {!hintOpen ? (
-            <GhostBtn onClick={() => setHintOpen(true)}>Hint</GhostBtn>
+            <SmallBtn onClick={() => setHintOpen(true)} title="Hint (?)">
+              Hint
+            </SmallBtn>
           ) : (
             <div className="w-full space-y-3">
               <div className="rounded-xl border border-border bg-panel p-3 text-sm">
