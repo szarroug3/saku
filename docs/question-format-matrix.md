@@ -143,9 +143,11 @@ Grammar rows here are only grammar-source behavior.
 
 | Prompt source | Direction | Expected response | Typed | MC | Status | Example |
 |---|---|---|---|---|---|---|
-| Japanese source config (text card cue is English in this direction) | `en->jp` | Japanese production form | No | Yes | Current | Prompt `after doing X (eat)` -> pick `食べてから` |
+| Japanese source config (prompt is the vehicle verb; the production form is the answer — both Japanese) | `jp->en` (answer is Japanese) | Japanese production form | No | Yes | Current | Prompt `行く` → `〜てから` form → pick `行ってから` |
 | Japanese source config (audio prompt is Japanese) | `jp->jp` | Japanese production form | No | Yes | Planned | Hear `たべる` cue -> pick `食べてから` |
 | Japanese source (text self-copy of pattern label) | `jp->jp` | Same pattern text | No | No | By design | `〜てから` -> type `〜てから` (trivial copy) |
+
+> **Note on "direction":** ask-forms models grammar production as `jp→en` with response `"romaji"` because the answer IS Japanese (a conjugated form) — `answerIsJapanese` is true, so `candidateDirs` returns `["jp2en"]`. The card looks like production (you produce Japanese), but the data model treats it as a `jp→en` "romaji" card. The `en→jp` English source does not generate grammar production forms.
 
 ---
 

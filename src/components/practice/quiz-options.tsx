@@ -71,27 +71,6 @@ function AskRow({
   );
 }
 
-function NoteChip({
-  on,
-  onClick,
-  children,
-  note,
-}: {
-  on: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  note: string;
-}) {
-  return (
-    <Chip on={on} onClick={onClick} className="h-auto py-2 text-left">
-      <span className="block">
-        <span className="block">{children}</span>
-        <span className="mt-0.5 block text-[11px] text-text-muted">{note}</span>
-      </span>
-    </Chip>
-  );
-}
-
 export function QuizOptionsFields() {
   const { cfg, update } = useQuizConfig();
 
@@ -259,20 +238,18 @@ export function QuizOptionsFields() {
               </Chip>
             </AskRow>
             <AskRow label="Expected Response">
-              <NoteChip
+              <Chip
                 on={cfg.ask.sentence.responses.includes("definition")}
                 onClick={() => sentenceResponse("definition")}
-                note="multiple choice only"
               >
                 Definition
-              </NoteChip>
-              <NoteChip
+              </Chip>
+              <Chip
                 on={cfg.ask.sentence.responses.includes("romaji")}
                 onClick={() => sentenceResponse("romaji")}
-                note="when it has non-kana"
               >
                 Kana
-              </NoteChip>
+              </Chip>
             </AskRow>
             <AskRow label="Answer Format">
               <Chip

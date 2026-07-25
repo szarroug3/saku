@@ -64,6 +64,57 @@ interface CoachHint {
   text: string;
 }
 
+interface OrderGuideStep {
+  id: string;
+  text: string;
+}
+
+function roleOfChunk(surface: string): "topic" | "subject" | "object" | "setting" | "ending" | "other" {
+  if (/(は)$/.test(surface)) return "topic";
+  if (/(が)$/.test(surface)) return "subject";
+  if (/(を)$/.test(surface)) return "object";
+  if (/(に|で|へ|から|まで|より)$/.test(surface)) return "setting";
+  if (/(です|だ|だった|ます|ました|ません|たい|ない|なかった|んだ|んです|そうだ|そうだった|か)$/.test(surface)) {
+    return "ending";
+  }
+  return "other";
+}
+
+function orderingGuide(canon: readonly string[]): OrderGuideStep[] {
+  if (canon.length === 0) return [];
+  const out: OrderGuideStep[] = [];
+  const end = canon[canon.length - 1] ?? "";
+  out.push({
+    id: "anchor-end",
+    text: `Anchor the ending first: Japanese main action/statement usually closes the sentence, so start with 「${end}」 as your right edge.`,
+  });
+
+  const topic = canon.find((c) => roleOfChunk(c) === "topic");
+  if (topic) {
+    out.push({
+      id: "topic-early",
+      text: `Topic chunks often come early. Here, 「${topic}」 is a strong early candidate.`,
+    });
+  }
+
+  const mids = canon.filter((c) => {
+    const role = roleOfChunk(c);
+    return role === "subject" || role === "object" || role === "setting";
+  });
+  if (mids.length) {
+    out.push({
+      id: "middle-band",
+      text: `Then place role chunks in the middle (${mids.join(" / ")}) before the ending chunk.`,
+    });
+  }
+
+  out.push({
+    id: "not-english",
+    text: "Japanese is usually Subject-Object-Verb (or Topic-...-Verb), so do not force English word order.",
+  });
+  return out;
+}
+
 /**
  * A lightweight teaching layer for sentence ordering.
  *
@@ -74,28 +125,28 @@ function coachHints(item: AssemblyItem, canon: readonly string[], tries: number)
   const out: CoachHint[] = [
     {
       id: "keep-chunks",
-      text: "Treat each chip as one chunk. Particles are already attached to their word.",
+      text: "Think in chunks, not individual words; each chip already includes its particle.",
     },
     {
       id: "anchor-end",
-      text: "Anchor the ending first. The main action/state chunk is usually near the end.",
+      text: "A good first move is to lock in the ending chunk.",
     },
     {
       id: "before-end",
-      text: "Place topic/time/place chunks before that ending chunk, then refine the middle.",
+      text: "Then place topic/time/place chunks before it and adjust the middle.",
     },
   ];
 
   if (tries > 0) {
     out.push({
       id: "final-anchor",
-      text: `Try setting the final chunk first: \u300c${canon[canon.length - 1] ?? ""}\u300d.`,
+      text: `Try this anchor first: \u300c${canon[canon.length - 1] ?? ""}\u300d.`,
     });
   }
   if (tries > 1 && canon.length > 2) {
     out.push({
       id: "start-anchor",
-      text: `If needed, begin with: \u300c${canon[0] ?? ""}\u300d.`,
+      text: `Still stuck? Start from: \u300c${canon[0] ?? ""}\u300d.`,
     });
   }
   if (item.p.length > 0) {
@@ -216,6 +267,7 @@ export function AssemblyScreen() {
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
   const [hintOpen, setHintOpen] = useState(false);
+  const [teachOpen, setTeachOpen] = useState(true);
   const [shake, setShake] = useState(false);
   const dragging = useRef<{ from: "pool" | "tray"; surface: string } | null>(null);
 
@@ -244,6 +296,8 @@ export function AssemblyScreen() {
   const resolved = card.state !== "open";
   const canon = canonicalOrder(item);
   const coach = coachHints(item, canon, card.tries);
+  const guide = orderingGuide(canon);
+  const nextTarget = canon[card.tray.length] ?? null;
   const hintBySurface = new Map(item.pieces.map((p) => [p.t, pieceHint(p)]));
 
   const place = (surface: string) => {
@@ -323,25 +377,41 @@ export function AssemblyScreen() {
         </div>
 
         <div className="mt-4 rounded-xl border border-border bg-panel p-3 text-sm">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
-            Ordering coach
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-accent">
+              How Japanese order works
+            </div>
+            <GhostBtn onClick={() => setTeachOpen((v) => !v)}>
+              {teachOpen ? "Hide" : "Show"}
+            </GhostBtn>
           </div>
-          <ul className="space-y-1 text-text-muted">
-            {coach.map((h) => (
-              <li key={h.id}>- {h.text}</li>
-            ))}
-          </ul>
-          {card.tries > 0 ? (
-            <p className="mt-2 text-[12px] text-text-muted">
-              You have {card.tries} miss{card.tries === 1 ? "" : "es"} on this card,
-              so stronger anchors are now shown.
-            </p>
+          {teachOpen ? (
+            <div className="mt-2 space-y-2 text-text-muted">
+              <p>
+                Not always nouns first. Japanese usually puts the action/statement near the end,
+                and particles on chunks show each chunk&apos;s job.
+              </p>
+              <p>
+                English: &quot;Sam goes&quot;. Japanese often feels like &quot;Sam ... goes&quot; with role chunks
+                before the ending chunk.
+              </p>
+              <ul className="space-y-1">
+                {guide.map((step) => (
+                  <li key={step.id}>- {step.text}</li>
+                ))}
+              </ul>
+              {!resolved && nextTarget ? (
+                <p className="text-[12px]">
+                  Next coaching move: place <span lang="ja" className="font-medium">{nextTarget}</span>.
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
         {/* The tray: the answer, in order. A drop target. */}
         <ul
-          className={`mt-6 flex min-h-[68px] flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
+          className={`mt-6 flex min-h-17 flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
             card.state === "right"
               ? "border-success bg-success-bg"
               : trayFilled
@@ -457,21 +527,40 @@ export function AssemblyScreen() {
         ) : null}
 
         {hintOpen ? (
-          <div className="mt-4 rounded-xl border border-border bg-accent-bg p-3 text-sm">
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
-              Word meanings
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {item.pieces
-                .filter((p) => hintBySurface.get(p.t))
-                .map((p) => (
-                  <span key={p.t}>
-                    <span lang="ja" className="font-medium">
-                      {p.t}
-                    </span>{" "}
-                    <span className="text-text-muted">{hintBySurface.get(p.t)}</span>
-                  </span>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-xl border border-border bg-panel p-3 text-sm">
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+                Sentence ordering
+              </div>
+              <ul className="space-y-1 text-text-muted">
+                {coach.map((h) => (
+                  <li key={h.id}>- {h.text}</li>
                 ))}
+              </ul>
+              {card.tries > 0 ? (
+                <p className="mt-2 text-[12px] text-text-muted">
+                  You have {card.tries} miss{card.tries === 1 ? "" : "es"} on this card,
+                  so stronger anchors are now shown.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="rounded-xl border border-border bg-accent-bg p-3 text-sm">
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
+                Word meanings
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {item.pieces
+                  .filter((p) => hintBySurface.get(p.t))
+                  .map((p) => (
+                    <span key={p.t}>
+                      <span lang="ja" className="font-medium">
+                        {p.t}
+                      </span>{" "}
+                      <span className="text-text-muted">{hintBySurface.get(p.t)}</span>
+                    </span>
+                  ))}
+              </div>
             </div>
           </div>
         ) : null}

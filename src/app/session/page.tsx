@@ -14,6 +14,10 @@ import { useEffect, useMemo } from "react";
 
 import { RestScreen } from "@/components/session/rest-screen";
 import { SessionComplete } from "@/components/session/session-complete";
+import {
+  SentenceOrderingTeachWalk,
+  SENTENCE_ORDERING_TEACH_STEPS,
+} from "@/components/session/sentence-ordering-teach-walk";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
 import { SmallBtn } from "@/components/ui";
@@ -155,7 +159,10 @@ export default function SessionPage() {
     // (`startedAt` is optional on a leg snapshotted before the field existed;
     // an undated leg is old by definition, so it is not this session's.)
     const reviewing = !!active?.startedAt && active.startedAt >= session.startedAt;
-    const total = teachItems.length;
+    const sentenceOrderingTeaching = session.what === "Sentence ordering";
+    const total = sentenceOrderingTeaching
+      ? SENTENCE_ORDERING_TEACH_STEPS
+      : teachItems.length;
     const at = Math.min(teachStep, Math.max(0, total - 1));
     // Leave the lesson for the drill. Named here because two controls fire it:
     // the bar's "Quiz me" below, and the walk's forward button once it reaches
@@ -237,21 +244,29 @@ export default function SessionPage() {
           {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
         </SessionHud>
         <div className="mt-2">
-          <TeachWalk
-            facts={session.teach}
-            history={history}
-            // "Seen before" vs never met is a PRESENTATION difference and only
-            // that — the budget put both here for the same reason and neither
-            // is treated differently. History is the only thing that can tell
-            // them apart, and it's read here rather than stored on the session
-            // so it can't go stale against a deleted session.
-            familiar={(f) => !!history.facts[f]?.seen}
-            shownIntros={shownCards}
-            onStart={toDrill}
-            wider={wider}
-            step={at}
-            onStep={setTeachStep}
-          />
+          {sentenceOrderingTeaching ? (
+            <SentenceOrderingTeachWalk
+              step={at}
+              onStep={setTeachStep}
+              onStart={toDrill}
+            />
+          ) : (
+            <TeachWalk
+              facts={session.teach}
+              history={history}
+              // "Seen before" vs never met is a PRESENTATION difference and only
+              // that — the budget put both here for the same reason and neither
+              // is treated differently. History is the only thing that can tell
+              // them apart, and it's read here rather than stored on the session
+              // so it can't go stale against a deleted session.
+              familiar={(f) => !!history.facts[f]?.seen}
+              shownIntros={shownCards}
+              onStart={toDrill}
+              wider={wider}
+              step={at}
+              onStep={setTeachStep}
+            />
+          )}
         </div>
       </>
     );

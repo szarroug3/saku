@@ -172,6 +172,11 @@ export interface DrillHaloProps {
   listen?: boolean;
   /** Replay the word. Called by the centre speaker on a listening card. */
   onListen?: () => void;
+  /**
+   * A grammar selection card: render a square sentence frame instead of the
+   * circular halo glyph stage.
+   */
+  sentenceFrame?: string;
 }
 
 export function DrillHalo({
@@ -186,20 +191,29 @@ export function DrillHalo({
   crossFade,
   listen = false,
   onListen,
+  sentenceFrame,
 }: DrillHaloProps) {
   const ring = ringSpec(state, cardKey, timerLeft, drainWindow);
   const wrong = state === "wrong" || state === "wrong-flash";
+  const square = !!sentenceFrame;
 
   return (
     <div
       // The shake replays because the parent re-mounts this component on
       // every attempt — the same trick the grid screen's cards use.
       className={`kq-halo relative grid place-items-center ${wrong ? "animate-gshake" : ""}`}
-      style={{ width: HALO_PX, height: HALO_PX }}
+      style={
+        square
+          ? {
+              width: "min(92vw, 440px)",
+              minHeight: HALO_PX,
+            }
+          : { width: HALO_PX, height: HALO_PX }
+      }
     >
       <style>{HALO_CSS}</style>
       <div
-        className="kq-base absolute inset-0 rounded-full"
+        className={`kq-base absolute inset-0 ${square ? "rounded-2xl" : "rounded-full"}`}
         style={{
           background: `radial-gradient(circle, ${mix("--accent", 9)}, transparent 68%)`,
           border: "1px solid var(--border)",
@@ -207,7 +221,7 @@ export function DrillHalo({
           transition: "box-shadow .3s",
         }}
       />
-      {ring ? (
+      {!square && ring ? (
         <div
           key={ring.key}
           className="kq-ring absolute inset-0 rounded-full"
@@ -223,7 +237,20 @@ export function DrillHalo({
           }}
         />
       ) : null}
-      {listen ? (
+      {square ? (
+        <div
+          className="kq-glyph relative px-5 py-6 text-center"
+          style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
+        >
+          <p
+            lang="ja"
+            className="whitespace-normal wrap-break-word text-[30px] leading-[1.35] text-text"
+            style={{ fontFamily: font }}
+          >
+            {sentenceFrame}
+          </p>
+        </div>
+      ) : listen ? (
         // The audio IS the question, so the centre is a speaker, not the glyph.
         // Pressing it replays the word; the crossFade keeps it arriving like the
         // glyph it stands in for.
@@ -231,7 +258,7 @@ export function DrillHalo({
           type="button"
           onClick={onListen}
           aria-label="Play the word again"
-          className="kq-glyph relative flex size-[104px] cursor-pointer items-center justify-center rounded-full text-text-muted transition-colors hover:text-text"
+          className="kq-glyph relative flex size-26 cursor-pointer items-center justify-center rounded-full text-text-muted transition-colors hover:text-text"
           style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
         >
           <SoundIcon className="size-12" />

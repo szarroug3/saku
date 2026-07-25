@@ -247,6 +247,13 @@ interface QuizSessionContextValue {
   /** Begin a one-off quiz over `facts` with the current cfg; navigates to
    * /quiz. `what` names the run — see ActiveQuiz.what. */
   startQuiz(facts: FactId[], opts?: { redrill?: boolean; what?: string }): void;
+  /** Begin a one-off quiz in a specific mode, keeping all other snapshot fields
+   * from current cfg. Used by Learn cards that launch a dedicated question type. */
+  startQuizInMode(
+    facts: FactId[],
+    mode: QuizMode,
+    opts?: { redrill?: boolean; what?: string },
+  ): void;
   /**
    * The rest is over (or you skipped the lesson): begin round 1.
    *
@@ -273,6 +280,9 @@ interface QuizSessionContextValue {
    * `facts` is what src/lib/budget.ts decided the session is — ranked material
    * topped up from `teach` — not the raw selection. `teach` is the subset that
    * gets shown before it gets asked. `what` names it, frozen like the snapshot.
+   * `mode` is the quiz mode for the post-teach drill; if omitted, uses the
+   * current config mode. Sentence ordering sessions pass "assembly" to ensure
+   * the drill shows only chunk-ordering questions, not grammar meaning MC.
    */
   startSession(
     facts: FactId[],
@@ -280,6 +290,7 @@ interface QuizSessionContextValue {
     what?: string,
     origin?: SessionOrigin,
     seededSeen?: FactId[],
+    mode?: QuizMode,
   ): void;
   /** Re-ask a subset from the fork. Comes back to the same fork. */
   retryLeg(facts: FactId[], boxes?: string[]): void;
@@ -1001,6 +1012,20 @@ export function QuizSessionProvider({
     [cfg, beginLeg, parkIfActive],
   );
 
+  const startQuizInMode = useCallback(
+    (
+      facts: FactId[],
+      mode: QuizMode,
+      opts?: { redrill?: boolean; what?: string },
+    ) => {
+      if (!facts.length) return;
+      parkIfActive();
+      const snap = { ...snapshotOf(cfg), mode };
+      beginLeg(facts, opts?.what ?? countWhat(facts), snap, !!opts?.redrill);
+    },
+    [cfg, beginLeg, parkIfActive],
+  );
+
   // ---------- history ----------
 
   /**
@@ -1108,6 +1133,7 @@ export function QuizSessionProvider({
       what?: string,
       origin: SessionOrigin = "lesson",
       seededSeen: FactId[] = [],
+      mode?: QuizMode,
     ) => {
       if (!facts.length) return;
       // The session state and its route are one transition. router.push already
@@ -1120,7 +1146,7 @@ export function QuizSessionProvider({
         // Don't overwrite what's running — set it aside, then open the lesson.
         parkIfActive();
         const now = Date.now();
-        const snapshot = snapshotOf(cfg);
+        const snapshot = { ...snapshotOf(cfg), ...(mode && { mode }) };
         const teaching = teach.length > 0;
         const name = what ?? countWhat(facts);
         setSession({
@@ -1725,6 +1751,7 @@ export function QuizSessionProvider({
       retrySave,
       saveNow,
       startQuiz,
+      startQuizInMode,
       startFirstRound,
       finishQuiz,
       abandonQuiz,
@@ -1758,6 +1785,7 @@ export function QuizSessionProvider({
       retrySave,
       saveNow,
       startQuiz,
+      startQuizInMode,
       startFirstRound,
       finishQuiz,
       abandonQuiz,

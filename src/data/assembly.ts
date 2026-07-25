@@ -111,6 +111,18 @@ export function assemblyFacts(item: AssemblyItem): FactId[] {
 }
 
 /**
+ * Every distinct fact represented by assembly items the learner can currently
+ * read. Used to gate and label sentence-ordering drills started from Learn.
+ */
+export function readableAssemblyFacts(history: HistoryFile): FactId[] {
+  const out = new Set<FactId>();
+  for (const item of readableAssembly(history)) {
+    for (const fact of assemblyFacts(item)) out.add(fact);
+  }
+  return [...out];
+}
+
+/**
  * Can the learner read this item — every content lemma known?
  */
 export function assemblyReadable(item: AssemblyItem, history: HistoryFile): boolean {
@@ -122,6 +134,179 @@ export function assemblyReadable(item: AssemblyItem, history: HistoryFile): bool
  */
 export function readableAssembly(history: HistoryFile): readonly AssemblyItem[] {
   return ASSEMBLY.filter((it) => assemblyReadable(it, history));
+}
+
+/**
+ * One structural tier in the sentence-ordering track — a named sentence type
+ * (e.g. "Conditional sentences") defined by the grammar pattern IDs that tag
+ * its sentences in the assembly corpus.
+ *
+ * Tiers are ordered by pedagogical complexity: Simple first, then Conditional,
+ * Causal, Obligation and so on. The learner sees them as sentence STRUCTURE
+ * lessons, not grammar lessons — the pattern IDs are the engine's internal
+ * classification, never shown.
+ */
+export interface AssemblyTier {
+  readonly id: string;
+  /** Learner-visible name, shown on the lesson card. */
+  readonly label: string;
+  /** Assembly corpus pattern IDs (`item.p`) that define this tier. A sentence
+   * belongs to the FIRST tier whose pattern set intersects its own pattern
+   * list, provided no later-tier pattern also appears (see
+   * `readableAssemblyForTier`). */
+  readonly patterns: readonly string[];
+  /** Minimum number of readable sentences required for the tier to unlock.
+   * Below this, the learner cannot do a meaningful drill, so the tier is
+   * skipped rather than shown as locked. */
+  readonly minReadable: number;
+  /**
+   * Grammar pattern IDs that must have been taught in the grammar track before
+   * this tier unlocks. At least ONE must be learned (seen, claimed or tested).
+   *
+   * Empty for the simple tier — its patterns are structural particles that the
+   * grammar track never teaches as lessons. For all other tiers the prereqs
+   * are the patterns that describe the sentence structure this tier practices,
+   * so the learner knows what the pattern means before they practise placing it.
+   */
+  readonly grammarPrereqs: readonly string[];
+}
+
+/**
+ * The ordered sentence-structure tiers the sentence-ordering track teaches.
+ *
+ * Each tier unlocks independently once the learner has enough vocabulary to
+ * read its sentences — no grammar fact state is consulted here. The tiers are
+ * ordered from structurally simplest to most complex, so the learner always
+ * encounters simple particle-marked SOV sentences before conditional clauses,
+ * before causal connectives, and so on.
+ */
+export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
+  {
+    id: "simple",
+    label: "Simple sentences",
+    patterns: ["wo", "e", "made", "made-ni", "dake", "kara-source"],
+    minReadable: 3,
+    // Particles are structural markers, never taught as grammar lessons.
+    grammarPrereqs: [],
+  },
+  {
+    id: "conditional",
+    label: "Conditional sentences",
+    patterns: ["tara", "ba", "nara"],
+    minReadable: 3,
+    grammarPrereqs: ["tara", "ba", "nara"],
+  },
+  {
+    id: "causal",
+    label: "Because / so",
+    patterns: ["kara-reason", "node"],
+    minReadable: 3,
+    grammarPrereqs: ["kara-reason", "node"],
+  },
+  {
+    id: "obligation",
+    label: "Must / have to",
+    patterns: ["nakereba-naranai", "nakereba-ikenai", "nakya", "nai-to-ikenai"],
+    minReadable: 3,
+    grammarPrereqs: ["nakereba-naranai", "nakereba-ikenai", "nakya", "nai-to-ikenai"],
+  },
+  {
+    id: "sequential",
+    label: "After / while doing",
+    patterns: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
+    minReadable: 3,
+    grammarPrereqs: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
+  },
+  {
+    id: "desire",
+    label: "Want to / easy / hard",
+    patterns: ["tai", "yasui", "nikui"],
+    minReadable: 3,
+    grammarPrereqs: ["tai", "yasui", "nikui"],
+  },
+  {
+    id: "giving",
+    label: "Giving and receiving",
+    patterns: ["te-ageru", "te-kureru", "te-morau"],
+    minReadable: 3,
+    grammarPrereqs: ["te-ageru", "te-kureru", "te-morau"],
+  },
+  {
+    id: "reported",
+    label: "I think / seems like",
+    patterns: ["to-omou", "rashii", "kamoshirenai", "deshou"],
+    minReadable: 3,
+    grammarPrereqs: ["to-omou", "rashii", "kamoshirenai", "deshou"],
+  },
+  {
+    id: "contrast",
+    label: "Even though / only",
+    patterns: ["noni", "nai-de", "nai-request"],
+    minReadable: 3,
+    grammarPrereqs: ["noni", "nai-de", "nai-request"],
+  },
+  {
+    id: "request",
+    label: "Requests and proposals",
+    patterns: ["te-request", "mashou", "kata"],
+    minReadable: 3,
+    grammarPrereqs: ["te-request", "mashou", "kata"],
+  },
+];
+
+/**
+ * All grammar pattern IDs claimed by later tiers, given a tier index.
+ * Used to ensure each sentence belongs to exactly one tier — the earliest
+ * (simplest) one whose patterns match it.
+ */
+function laterTierPatterns(tierIndex: number): Set<string> {
+  return new Set(
+    SENTENCE_ORDERING_TIERS.slice(tierIndex + 1).flatMap((t) => [...t.patterns]),
+  );
+}
+
+/**
+ * Readable assembly items that belong to this tier.
+ *
+ * A sentence belongs to a tier when:
+ *   1. It is readable (all content lemmas known).
+ *   2. It has ≤4 pieces — short enough for a clear drag exercise.
+ *   3. At least one of its pattern tags is in this tier's pattern set.
+ *   4. None of its pattern tags belong to a later (more complex) tier.
+ *
+ * Rule 4 ensures each sentence lands in exactly one tier: a sentence tagged
+ * both `wo` (simple) and `tara` (conditional) appears only in the conditional
+ * tier, because `tara` is a later, more complex pattern.
+ */
+export function readableAssemblyForTier(
+  tier: AssemblyTier,
+  history: HistoryFile,
+): readonly AssemblyItem[] {
+  const tierIndex = SENTENCE_ORDERING_TIERS.indexOf(tier);
+  const later = laterTierPatterns(tierIndex);
+  const mine = new Set(tier.patterns);
+  return readableAssembly(history).filter(
+    (it) =>
+      it.pieces.length <= 4 &&
+      it.p.some((p) => mine.has(p)) &&
+      !it.p.some((p) => later.has(p)),
+  );
+}
+
+/**
+ * Every distinct grammar fact represented by the readable sentences in this
+ * tier. Passed to the session so the drill can credit assembly answers against
+ * the correct fact IDs.
+ */
+export function tierAssemblyFacts(
+  tier: AssemblyTier,
+  history: HistoryFile,
+): FactId[] {
+  const out = new Set<FactId>();
+  for (const item of readableAssemblyForTier(tier, history)) {
+    for (const fact of assemblyFacts(item)) out.add(fact);
+  }
+  return [...out];
 }
 
 /**

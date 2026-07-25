@@ -1206,6 +1206,7 @@ export function DrillScreen() {
   // it does not know whether it is asking a kana, a kanji reading or a word.
   const ctx = ctxFor(q, anchorForFact(q.f, history));
   const prompt = questionsFor(q.f).prompt(q.f, q.dir, ctx);
+  const selectionFrame = q.grammarSelection?.frame ?? null;
   // A MEANING question for a word whose reading collides with another word the
   // learner knows shows the kanji (the glyph) AND the pronunciation together, so
   // the pitch mark is what says which same-sounding word is meant — 箸[はし↓] vs
@@ -1459,6 +1460,7 @@ export function DrillScreen() {
                 : info && speechForFact(info);
             if (text) speak(text, cfg.voiceName);
           }}
+          sentenceFrame={selectionFrame ?? undefined}
         />
         {/* WHAT THIS CARD IS ASKING FOR — below the halo now, and WHITE, so it
             reads as the question rather than a muted hint above it. Every card
@@ -1481,7 +1483,8 @@ export function DrillScreen() {
             kanji lit, so repeating it underneath is the same noise (Sam, task
             #22). Muted, because it supports the white instruction rather than
             competing. */}
-        {!readingWord &&
+        {!selectionFrame &&
+        !readingWord &&
         prompt.context &&
         prompt.context !== "meaning" &&
         prompt.context !== "reading" &&
