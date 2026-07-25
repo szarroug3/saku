@@ -223,9 +223,11 @@ function requiredHost(r: Recipe): Host | null {
 }
 
 /**
- * The word types the learner has actually met — a word of that host whose
- * MEANING is no longer fresh. This is what a grammar pattern's host requirement
- * is checked against: 〜てから needs a learned VERB behind it, 〜ので a learned
+ * The word types the learner has actually COMPLETED — a word of that host whose
+ * lesson was finished or explicitly claimed. Both actions write a claim for the
+ * word's meaning. A `seen` marker does not count: Start writes that immediately
+ * so the open lesson can resume, before the learner has learned anything.
+ * 〜てから therefore needs a completed VERB behind it, and 〜ので a completed
  * な-adjective, before the pattern has anything to stand on.
  *
  * Scans the words curriculum (the only words the app teaches) and stops early
@@ -234,7 +236,7 @@ function requiredHost(r: Recipe): Host | null {
 export function learnedHosts(history: HistoryFile): Set<Host> {
   const hosts = new Set<Host>();
   for (const w of CURRICULUM_WORDS) {
-    if (isFresh(wordMeaningFactId(w.keb), history)) continue;
+    if (!history.claims?.[wordMeaningFactId(w.keb)]) continue;
     hosts.add(wordHost(w));
     if (hosts.size >= 4) break;
   }

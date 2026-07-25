@@ -36,6 +36,7 @@ import {
   GRAMMAR_PER_LESSON_DEFAULT,
   clampGrammarPerLesson,
   hasStartedGrammarTrack,
+  learnedHosts,
   nextGrammarLesson,
   nextGrammarLock,
   wordHost,
@@ -62,6 +63,12 @@ function claiming(facts: readonly FactId[]): HistoryFile {
   const claims: Record<string, number> = {};
   for (const f of facts) claims[f] = AT;
   return history({ claims: claims as HistoryFile["claims"] });
+}
+
+function seeing(facts: readonly FactId[]): HistoryFile {
+  const seen: Record<string, number> = {};
+  for (const f of facts) seen[f] = AT;
+  return history({ seen: seen as HistoryFile["seen"] });
 }
 
 /** "I finished the kana track" — every kana fact claimed, which is exactly the
@@ -155,6 +162,14 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
       }
     }
     assert.deepEqual(new Set(lesson.facts as unknown as string[]), expected);
+  });
+});
+
+describe("the word prerequisite means completed, not merely started", () => {
+  test("Start's seen marker does not unlock grammar; completing or claiming does", () => {
+    const verb = wordMeaningFactId(FIRST_VERB.keb);
+    assert.equal(learnedHosts(seeing([verb])).has("verb"), false);
+    assert.equal(learnedHosts(claiming([verb])).has("verb"), true);
   });
 });
 

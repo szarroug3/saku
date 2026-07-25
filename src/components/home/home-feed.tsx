@@ -34,7 +34,7 @@
 // selections, plan sessions, or start a drill of its own; the lesson cards start
 // their own sessions from their own facts.
 
-import { useMemo } from "react";
+import { startTransition, useMemo } from "react";
 
 import { CurriculumComplete } from "@/components/home/curriculum-complete";
 import { ClaimExplainer } from "@/components/lesson/claim-explainer";
@@ -252,12 +252,14 @@ export function HomeFeed() {
   // flag rather than two, because the two routes differ in exactly one thing —
   // whether the walk happens — and everything before it (which facts, what gets
   // marked seen) must not be able to drift between them.
-  const startLesson = async (facts: FactId[], { teach = true } = {}) => {
+  const startLesson = (facts: FactId[], { teach = true } = {}) => {
     // Only "Quiz me" (teach false) marks seen at start; Start (teach true) teaches
     // first and marks nothing yet, so it seeds no seen to roll back.
     const seeded = teach ? [] : newlySeen(facts);
-    if (!teach) await markSeen(facts);
-    startSession(facts, teach ? facts : [], undefined, "lesson", seeded);
+    startTransition(() => {
+      if (!teach) markSeen(facts);
+      startSession(facts, teach ? facts : [], undefined, "lesson", seeded);
+    });
   };
 
   // "Teach me here" for kana: open a session whose TEACH PHASE steps the group
@@ -282,8 +284,10 @@ export function HomeFeed() {
   // name to give.
   const quizMe = (facts: FactId[]) => {
     const seeded = newlySeen(facts);
-    markSeen(facts);
-    startSession(facts, [], lesson?.group.label, "lesson", seeded);
+    startTransition(() => {
+      markSeen(facts);
+      startSession(facts, [], lesson?.group.label, "lesson", seeded);
+    });
   };
 
   const claim = (facts: FactId[]) => {
@@ -318,8 +322,10 @@ export function HomeFeed() {
     // frontier where it was before Start; completing keeps it, because the
     // committed rounds advance the frontier independently of these marks.
     const seeded = newlySeen(seed);
-    markSeen(seed);
-    startSession(facts, teach ? facts : [], undefined, "lesson", seeded);
+    startTransition(() => {
+      markSeen(seed);
+      startSession(facts, teach ? facts : [], undefined, "lesson", seeded);
+    });
   };
 
   // "I already know these": claim the lesson (skip the drill), but still unlock

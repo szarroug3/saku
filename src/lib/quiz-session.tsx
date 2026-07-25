@@ -60,6 +60,7 @@ import {
   useMemo,
   useRef,
   useState,
+  startTransition,
   type ReactNode,
 } from "react";
 
@@ -1104,37 +1105,45 @@ export function QuizSessionProvider({
       seededSeen: FactId[] = [],
     ) => {
       if (!facts.length) return;
-      // Don't overwrite what's running — set it aside, then open the lesson.
-      parkIfActive();
-      const now = Date.now();
-      const snapshot = snapshotOf(cfg);
-      const teaching = teach.length > 0;
-      const name = what ?? countWhat(facts);
-      setSession({
-        facts,
-        teach,
-        what: name,
-        snapshot,
-        startedAt: now,
-        // The seen marks the caller laid down at start, so a discard can take
-        // exactly them back (see StudySession.seededSeen and discardRun below).
-        seededSeen,
-        round: 1,
-        // New material is read before it's asked. With nothing new in the
-        // session there is nothing to read, so the lesson doesn't appear at
-        // all rather than appearing empty.
-        phase: teaching ? "teaching" : "drilling",
-        restUntil: null,
-        roundStats: {},
-        recovered: [],
-        rounds: [],
-        totalStats: {},
-        lastActiveAt: now,
-        origin,
+      // The session state and its route are one transition. router.push already
+      // transitions the route, but the state setters used to be urgent: Home
+      // painted the newly-created run first, changing Start to "Continue
+      // session", and only then committed /session when its bundle was ready.
+      // Keeping both halves in the same transition leaves the initiating card
+      // intact until the destination can replace it.
+      startTransition(() => {
+        // Don't overwrite what's running — set it aside, then open the lesson.
+        parkIfActive();
+        const now = Date.now();
+        const snapshot = snapshotOf(cfg);
+        const teaching = teach.length > 0;
+        const name = what ?? countWhat(facts);
+        setSession({
+          facts,
+          teach,
+          what: name,
+          snapshot,
+          startedAt: now,
+          // The seen marks the caller laid down at start, so a discard can take
+          // exactly them back (see StudySession.seededSeen and discardRun below).
+          seededSeen,
+          round: 1,
+          // New material is read before it's asked. With nothing new in the
+          // session there is nothing to read, so the lesson doesn't appear at
+          // all rather than appearing empty.
+          phase: teaching ? "teaching" : "drilling",
+          restUntil: null,
+          roundStats: {},
+          recovered: [],
+          rounds: [],
+          totalStats: {},
+          lastActiveAt: now,
+          origin,
+        });
+        setResults(null);
+        if (teaching) router.push("/session");
+        else beginLeg(facts, name, snapshot, false);
       });
-      setResults(null);
-      if (teaching) router.push("/session");
-      else beginLeg(facts, name, snapshot, false);
     },
     [cfg, beginLeg, router, parkIfActive],
   );

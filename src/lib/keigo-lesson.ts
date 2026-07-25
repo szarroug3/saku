@@ -90,13 +90,14 @@ function setFresh(set: KeigoSet, history: HistoryFile): boolean {
 }
 
 /**
- * Whether a set's gate is open: at least one of the plain verbs it replaces is
- * learned vocabulary (its meaning fact no longer fresh). Until then the keigo
- * forms have no known plain verb to stand against. The formulaic phrase gates on
- * the go / come / be family (see KeigoSet.gate).
+ * Whether a set's gate is open: at least one of the plain verbs it replaces has
+ * a completed lesson or was explicitly claimed. Both actions leave a claim on
+ * the meaning fact. Merely starting the word lesson leaves only `seen`, which
+ * must not unlock this set before the learner finishes. The formulaic phrase
+ * gates on the go / come / be family (see KeigoSet.gate).
  */
 export function keigoUnlocked(set: KeigoSet, history: HistoryFile): boolean {
-  return set.gate.some((keb) => !isFresh(wordMeaningFactId(keb), history));
+  return set.gate.some((keb) => !!history.claims?.[wordMeaningFactId(keb)]);
 }
 
 /** Has the learner met any keigo set at all? Decides whether the track counts as

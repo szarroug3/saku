@@ -28,13 +28,22 @@ import type { FactId, HistoryFile } from "../types/index.ts";
 /** A learner who has done nothing. */
 const BLANK: HistoryFile = { sessions: [], facts: {} };
 
-/** A learner who has met exactly these facts, by the weakest record that counts
- * ("quiz me") — enough to make them non-fresh. */
+/** A learner who has merely started or chosen "quiz me". This is enough to make
+ * material non-fresh, but not enough to complete a vocabulary prerequisite. */
 function met(facts: readonly FactId[]): HistoryFile {
   return {
     sessions: [],
     facts: {},
     seen: Object.fromEntries(facts.map((f) => [f, 1])),
+  };
+}
+
+/** Completing a taught session and "I already know" both write claims. */
+function learned(facts: readonly FactId[]): HistoryFile {
+  return {
+    sessions: [],
+    facts: {},
+    claims: Object.fromEntries(facts.map((f) => [f, 1])),
   };
 }
 
@@ -50,7 +59,7 @@ describe("the track opens EARLY, on a plain verb the learner already knows", () 
   test("learning 食べる alone opens the eat / drink set — no other track needed", () => {
     // The whole gate: one plain verb, learned as ordinary vocabulary. There is no
     // reference to transitivity, counters, or grammar anywhere in the unlock.
-    const history = met([wordMeaningFactId("食べる")]);
+    const history = learned([wordMeaningFactId("食べる")]);
     assert.ok(keigoUnlocked(EAT, history));
     const lesson = nextKeigoLesson(history, 3);
     assert.ok(lesson, "the eat set did not open on 食べる");
@@ -59,15 +68,23 @@ describe("the track opens EARLY, on a plain verb the learner already knows", () 
   });
 
   test("any one of a set's plain verbs opens it (飲む opens eat too)", () => {
-    const history = met([wordMeaningFactId("飲む")]);
+    const history = learned([wordMeaningFactId("飲む")]);
     assert.ok(keigoUnlocked(EAT, history));
   });
 
   test("the position denominator is the whole curriculum", () => {
-    const history = met([wordMeaningFactId("食べる")]);
+    const history = learned([wordMeaningFactId("食べる")]);
     const lesson = nextKeigoLesson(history, 3)!;
     assert.equal(lesson.position.total, KEIGO_CURRICULUM_TOTAL);
     assert.equal(lesson.position.from, 1);
+  });
+});
+
+describe("starting a word lesson is not completing its prerequisite", () => {
+  test("a seen 食べる does not unlock the eat / drink set", () => {
+    const history = met([wordMeaningFactId("食べる")]);
+    assert.equal(keigoUnlocked(EAT, history), false);
+    assert.equal(nextKeigoLesson(history, 3), null);
   });
 });
 
@@ -92,7 +109,7 @@ describe("it interleaves rather than blocking", () => {
     // 食べる learned but 言う not: the eat set is ready and the say set is not.
     // A blocking track would stall on the say set; this one hands out eat and
     // steps over say.
-    const history = met([wordMeaningFactId("食べる")]);
+    const history = learned([wordMeaningFactId("食べる")]);
     assert.ok(keigoUnlocked(EAT, history));
     assert.ok(!keigoUnlocked(SAY, history));
     const lesson = nextKeigoLesson(history, 9)!;
@@ -105,7 +122,7 @@ describe("it interleaves rather than blocking", () => {
     // Learn 食べる (opens eat) and meet the eat set's facts. The next lesson skips
     // eat and its position counts it as done.
     const eatFacts = EAT.words.map((w) => keigoWordFactId(EAT, w));
-    const history = met([
+    const history = learned([
       wordMeaningFactId("食べる"),
       wordMeaningFactId("言う"),
       ...eatFacts,

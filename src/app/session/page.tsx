@@ -9,10 +9,10 @@
 // would be the one lying.
 
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo } from "react";
 
 import { RestScreen } from "@/components/session/rest-screen";
-import { RoundComplete } from "@/components/session/round-complete";
 import { SessionComplete } from "@/components/session/session-complete";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
@@ -26,6 +26,23 @@ import { lessonSteps } from "@/lib/lesson-steps";
 import { restLeftMs, SESSION_ROUND_TARGET } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
+
+// RoundComplete owns the detailed results table. That table reaches the grammar
+// question engine, which reaches the full sentence corpus; loading it with the
+// teaching screen made every Start download and parse roughly 2 MB of results-
+// only data before the first lesson card could appear. Keep it as a separate
+// chunk and pay for it only after a round has actually ended.
+const RoundComplete = dynamic(
+  () =>
+    import("@/components/session/round-complete").then(
+      (module) => module.RoundComplete,
+    ),
+  {
+    loading: () => (
+      <p className="text-[13px] text-text-muted">Loading round results…</p>
+    ),
+  },
+);
 
 export default function SessionPage() {
   const router = useRouter();
