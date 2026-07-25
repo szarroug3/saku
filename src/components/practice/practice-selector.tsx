@@ -21,7 +21,7 @@
 // scope (fewer hiragana are "shaky" than are "known").
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { resolve } from "@/lib/selection";
@@ -286,6 +286,15 @@ export function PracticeSelector({
       ]),
     );
   }, [sel, history, lists, metric, context]);
+
+  // A status chip with 0 should not remain selected after counts change.
+  useEffect(() => {
+    if (!sel.states.length) return;
+    const kept = sel.states.filter((s) => (statusCounts.get(s) ?? 0) > 0);
+    if (kept.length === sel.states.length) return;
+    const next: Selection = { ...sel, states: kept };
+    onChange(scope === "everything" ? pruneEmptyTypes(next, presentTypesIn(next)) : next);
+  }, [sel, statusCounts, scope, onChange]);
 
   // List tiles, only shown in custom scope. Each count reflects the chosen types
   // too, so it is the exact size that list contributes right now.

@@ -62,3 +62,6 @@ history.json
 
 # Local work tracker — not shipped
 tasks/
+
+# Local planning/reference doc kept out of commits
+docs/question-format-matrix.md
