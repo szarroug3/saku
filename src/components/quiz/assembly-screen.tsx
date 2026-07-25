@@ -25,7 +25,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Btn, GhostBtn, SmallBtn } from "@/components/ui";
+import { Btn } from "@/components/ui";
 import { newFactStat, retriesAllowed, shuffle } from "@/lib/engine";
 import {
   assemblyFacts,
@@ -370,55 +370,6 @@ export function AssemblyScreen() {
           Build the sentence
         </div>
 
-        {/* Same hint slot as the standard drill: the button becomes the hint in
-            place, above the answer control, so opening it does not separate the
-            learner from the sentence pieces. */}
-        <div className="mt-5 flex w-full flex-col items-center">
-          {!hintOpen ? (
-            <SmallBtn onClick={() => setHintOpen(true)} title="Hint (?)">
-              Hint
-            </SmallBtn>
-          ) : (
-            <div className="w-full space-y-3">
-              <div className="rounded-xl border border-border bg-panel p-3 text-sm">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
-                  {SENTENCE_ORDERING_GUIDES[tierId]?.eyebrow ?? "Sentence ordering"}
-                </div>
-                <p className="text-text">{thinkHint}</p>
-                {card.tries > 0 ? (
-                  <ul className="mt-2 space-y-1 text-[12px] text-text-muted">
-                    {coach.slice(3).map((hint) => (
-                      <li key={hint.id}>- {hint.text}</li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-              <div className="rounded-xl border border-border bg-accent-bg p-3 text-sm">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
-                  Word meanings
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {item.pieces
-                    .filter((piece) => hintBySurface.get(piece.t))
-                    .map((piece) => (
-                      <span key={piece.t}>
-                        <span lang="ja" className="font-medium">
-                          {piece.t}
-                        </span>{" "}
-                        <span className="text-text-muted">
-                          {hintBySurface.get(piece.t)}
-                        </span>
-                      </span>
-                    ))}
-                </div>
-              </div>
-              <div className="text-center">
-                <GhostBtn onClick={() => setHintOpen(false)}>Hide hint</GhostBtn>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* The tray: the answer, in order. A drop target. */}
         <ul
           className={`mt-4 flex min-h-17 w-full flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
@@ -502,47 +453,47 @@ export function AssemblyScreen() {
           )}
         </ul>
 
-        {/* The pool: pieces not yet placed. */}
-        {card.pool.length > 0 ? (
-          <ul
-            className="mt-5 flex flex-wrap items-center justify-center gap-2"
-            aria-label="Pieces to place"
-            onDragOver={(e) => {
-              if (dragging.current?.from === "tray") e.preventDefault();
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              const d = dragging.current;
-              if (d?.from === "tray") unplace(d.surface);
-              dragging.current = null;
-            }}
-          >
-            {card.pool.map((surface) => (
-              <li key={surface}>
-                <button
-                  type="button"
-                  lang="ja"
-                  draggable={!resolved}
-                  disabled={resolved}
-                  aria-label={`Piece ${surface}. Press Enter to place it, or drag it into the sentence.`}
-                  className="kq-material cursor-grab rounded-xl border border-border bg-card px-4 py-3 text-lg shadow-chip"
-                  onClick={() => place(surface)}
-                  onDragStart={() => {
-                    dragging.current = { from: "pool", surface };
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      place(surface);
-                    }
-                  }}
-                >
-                  {surface}
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        {/* Keep the pool's row reserved after its final piece is placed. Without
+            this minimum height, the controls jump upward at the exact moment
+            the learner finishes assembling the sentence. */}
+        <ul
+          className="mt-5 flex min-h-[62px] flex-wrap items-center justify-center gap-2"
+          aria-label="Pieces to place"
+          onDragOver={(e) => {
+            if (dragging.current?.from === "tray") e.preventDefault();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            const d = dragging.current;
+            if (d?.from === "tray") unplace(d.surface);
+            dragging.current = null;
+          }}
+        >
+          {card.pool.map((surface) => (
+            <li key={surface}>
+              <button
+                type="button"
+                lang="ja"
+                draggable={!resolved}
+                disabled={resolved}
+                aria-label={`Piece ${surface}. Press Enter to place it, or drag it into the sentence.`}
+                className="kq-material cursor-grab rounded-xl border border-border bg-card px-4 py-3 text-lg shadow-chip"
+                onClick={() => place(surface)}
+                onDragStart={() => {
+                  dragging.current = { from: "pool", surface };
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    place(surface);
+                  }
+                }}
+              >
+                {surface}
+              </button>
+            </li>
+          ))}
+        </ul>
 
         {resolved ? (
           <div lang="ja" className="mt-4 text-center text-base">
@@ -550,25 +501,36 @@ export function AssemblyScreen() {
           </div>
         ) : null}
 
-        <div className="mt-6 flex flex-col items-center gap-4">
+        <div className="mt-6 flex w-full flex-col items-center gap-4">
           {resolved ? (
             <Btn go onClick={next}>
               Next
             </Btn>
           ) : (
-            <>
-              <Btn go disabled={!trayFilled} onClick={check}>
+            <div className="flex items-center justify-center gap-3">
+              <Btn
+                go
+                className="w-20"
+                disabled={!trayFilled}
+                onClick={check}
+              >
                 Check
               </Btn>
-              <button
-                type="button"
+              <Btn
+                className="w-20"
                 onClick={skip}
                 title="Skip — ask this again later"
-                className="rounded px-2 py-0.5 text-[11px] text-text-muted hover:text-text"
               >
                 Skip
-              </button>
-            </>
+              </Btn>
+              <Btn
+                className="w-20"
+                onClick={() => setHintOpen((open) => !open)}
+                title="Hint (?)"
+              >
+                {hintOpen ? "Hide" : "Hint"}
+              </Btn>
+            </div>
           )}
           <span className="flex min-h-2 items-center gap-1.5">
             {!resolved && showPips ? (
@@ -591,6 +553,43 @@ export function AssemblyScreen() {
               </>
             ) : null}
           </span>
+
+          {hintOpen && !resolved ? (
+            <div className="w-full space-y-3">
+              <div className="rounded-xl border border-border bg-panel p-3 text-sm">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
+                  {SENTENCE_ORDERING_GUIDES[tierId]?.eyebrow ?? "Sentence ordering"}
+                </div>
+                <p className="text-text">{thinkHint}</p>
+                {card.tries > 0 ? (
+                  <ul className="mt-2 space-y-1 text-[12px] text-text-muted">
+                    {coach.slice(3).map((hint) => (
+                      <li key={hint.id}>- {hint.text}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+              <div className="rounded-xl border border-border bg-panel p-3 text-sm">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
+                  Word meanings
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {item.pieces
+                    .filter((piece) => hintBySurface.get(piece.t))
+                    .map((piece) => (
+                      <span key={piece.t}>
+                        <span lang="ja" className="font-medium">
+                          {piece.t}
+                        </span>{" "}
+                        <span className="text-text-muted">
+                          {hintBySurface.get(piece.t)}
+                        </span>
+                      </span>
+                    ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

@@ -30,6 +30,7 @@
 // so the drain steps once a second and the answer states appear instantly.
 
 import { SoundIcon } from "@/components/ui";
+import type { ReactNode } from "react";
 
 /** resting = still · draining = final seconds · right/wrong = answered.
  * "wrong-flash" is a wrong answer with retries still left: it pulses out and
@@ -181,6 +182,8 @@ export interface DrillHaloProps {
   sentenceFrameLang?: "ja" | "en";
   /** A smaller frame for short English sentence-building prompts. */
   compactSentenceFrame?: boolean;
+  /** Optional pronunciation shown inside the halo beneath the main glyph. */
+  reading?: ReactNode;
 }
 
 export function DrillHalo({
@@ -198,6 +201,7 @@ export function DrillHalo({
   sentenceFrame,
   sentenceFrameLang = "ja",
   compactSentenceFrame = false,
+  reading,
 }: DrillHaloProps) {
   const ring = ringSpec(state, cardKey, timerLeft, drainWindow);
   const wrong = state === "wrong" || state === "wrong-flash";
@@ -275,38 +279,40 @@ export function DrillHalo({
         </button>
       ) : (
         <span
-          // leading-[1.15] is the drill glyph's theme hook (see globals.css).
-          // whitespace-nowrap so a multi-char word stays on ONE line — the parent
-          // has already sized the glyph (see fitGlyphSize) to fit the hole across.
-          className="kq-glyph relative block whitespace-nowrap leading-[1.15]"
-          style={{
-            fontSize,
-            fontFamily: font,
-            animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined,
-          }}
+          className="kq-glyph relative flex flex-col items-center justify-center gap-1"
+          style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
         >
-          {highlight
-            ? // The word, with the asked kanji lit and the rest dimmed: context
-              // without a leak, since the highlighted glyph's reading is the
-              // answer and is never shown.
-              [...glyph].map((ch, i) =>
-                ch === highlight ? (
-                  <span
-                    key={i}
-                    style={{
-                      color: "var(--text)",
-                      textShadow: `0 0 18px ${mix("--accent", 55)}`,
-                    }}
-                  >
-                    {ch}
-                  </span>
-                ) : (
-                  <span key={i} style={{ color: "var(--text-muted)", opacity: 0.6 }}>
-                    {ch}
-                  </span>
-                ),
-              )
-            : glyph}
+          <span
+            // leading-[1.15] is the drill glyph's theme hook (see globals.css).
+            // whitespace-nowrap so a multi-char word stays on ONE line — the parent
+            // has already sized the glyph (see fitGlyphSize) to fit the hole across.
+            className="block whitespace-nowrap leading-[1.15]"
+            style={{ fontSize, fontFamily: font }}
+          >
+            {highlight
+              ? // The word, with the asked kanji lit and the rest dimmed: context
+                // without a leak, since the highlighted glyph's reading is the
+                // answer and is never shown.
+                [...glyph].map((ch, i) =>
+                  ch === highlight ? (
+                    <span
+                      key={i}
+                      style={{
+                        color: "var(--text)",
+                        textShadow: `0 0 18px ${mix("--accent", 55)}`,
+                      }}
+                    >
+                      {ch}
+                    </span>
+                  ) : (
+                    <span key={i} style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+                      {ch}
+                    </span>
+                  ),
+                )
+              : glyph}
+          </span>
+          {reading ? <span className="leading-none">{reading}</span> : null}
         </span>
       )}
     </div>
