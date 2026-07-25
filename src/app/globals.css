@@ -1719,90 +1719,41 @@ body {
 }
 
 .kq-gcard {
-  --gcard-fill: var(--gcard);
   border: 1px solid var(--gcard-edge);
   border-radius: var(--radius-md);
-  /* Bottom: the damp (transparent in three of the four themes, so they paint
-   * exactly what they painted before). Top: the state's fill. */
-  background-color: var(--gcard-damp);
-  background-image: linear-gradient(var(--gcard-fill), var(--gcard-fill));
-  color: var(--gcard-ink);
+  background: transparent;
+  color: var(--text);
   /* Every theme's own tile treatment in one line: momentum's hard 2px shelf,
    * kiri's inset top highlight, nothing at all for aizome and graphite. The
    * same token ui.tsx's buttons and chips elevate with. */
   box-shadow: var(--shadow-btn);
   transition:
-    --gcard-fill 250ms,
     border-color 250ms,
-    color 250ms,
     opacity 250ms;
 }
 
-/* Task #33 follow-up (Sam): the Grid board sits on a PLAIN TRANSPARENT ground.
- * The frosted look the sheet had was two layers on each idle card — the
- * translucent --gcard fill, and kiri's --gcard-damp (65% --bg, the "material
- * behind the board"). Both are zeroed here, scoped to the grid sheet, so an
- * unanswered card is just its 1px edge over the page. The RESOLVED states keep
- * their own fills (green/red/shake set --gcard-fill themselves), so a card
- * still reads the moment it's answered. NOTE: this deliberately drops the kiri
- * damp, whose long note above defends it on state-ink contrast grounds — that
- * is the accepted cost of the transparent-board request. */
-.kq-grid-sheet .kq-gcard {
-  --gcard: transparent;
-  --gcard-damp: transparent;
-}
-
-/* The two RESOLVED states. Identical shape, and the only two that recede:
- * fill, edge, ink, and the answer in the well all step back together, because
- * the card as a whole is done — this is one `opacity`, not four dimmed tokens
- * that could drift apart. The border is still 1px; opacity cannot change that,
- * which is exactly why the recede is carried this way and not by a heavier or
- * lighter edge. */
+/* State is carried by the border only. A wall of translucent state fills was
+ * both visually heavy and extra paint work on the large grid. Resolved cards
+ * still recede as a whole so attention stays on what remains. */
 .kq-gcard-right {
   border-color: var(--gcard-right-edge);
-  --gcard-fill: var(--gcard-right);
-  color: var(--gcard-right-ink);
   opacity: var(--gcard-resolved);
 }
 
 .kq-gcard-wrong {
   border-color: var(--gcard-wrong-edge);
-  --gcard-fill: var(--gcard-wrong);
-  color: var(--gcard-wrong-ink);
   opacity: var(--gcard-resolved);
 }
 
 /* Missed once, still answerable — still yours, so it does NOT recede. */
 .kq-gcard-missed {
   border-color: var(--gcard-missed-edge);
-  --gcard-fill: var(--gcard-missed);
-  color: var(--gcard-missed-ink);
 }
 
-/* The 450ms exception: the only state allowed to shout, and it shouts with a
- * glow — outside the box, no layout cost, cannot read as a thicker border.
- *
- * The glow rides on a pseudo-element rather than on the card's own box-shadow
- * for a dull but real reason: `box-shadow: var(--shadow-btn), <glow>` is
- * INVALID CSS in aizome and graphite, whose --shadow-btn is `none` — and `none`
- * in a shadow list drops the whole declaration, i.e. exactly two of the four
- * themes would have silently lost the glow. A separate layer composes with any
- * --shadow-btn, so momentum keeps its 2px shelf and kiri its inset highlight
- * while shaking. inset:-1px puts the layer on the border box, so the glow
- * starts at the card's edge and not 1px inside it. */
+/* During the short shake animation, the danger border is the only state color.
+ * No glow: even a transient shadow is multiplied across a very large board. */
 .kq-gcard-shake {
   border-color: var(--gcard-shake-edge);
-  --gcard-fill: var(--gcard-shake);
-  color: var(--gcard-shake-ink);
-  position: relative;
-}
-.kq-gcard-shake::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  box-shadow: var(--gcard-shake-glow);
-  pointer-events: none;
 }
 
 /* The glyph takes the card's state ink by inheritance; the well deliberately
