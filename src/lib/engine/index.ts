@@ -5,7 +5,11 @@
 
 import { BEHAVIOR } from "@/lib/config";
 import { enabledDirs } from "@/lib/ask-config";
-import { questionsFor, type PromptContext } from "@/lib/engine/question";
+import {
+  answerIsJapanese,
+  questionsFor,
+  type PromptContext,
+} from "@/lib/engine/question";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import type {
   Direction,
@@ -213,36 +217,52 @@ export function confusedWith(
  * dropped, in either direction. Over-request and slice AFTER filtering, so the
  * subject's lookalikes-first ordering survives and the board still fills.
  */
-export function buildMcOptions(fact: FactId, ctx?: PromptContext): FactId[] {
+export function buildMcOptions(
+  fact: FactId,
+  dir: Direction = "jp2en",
+  ctx?: PromptContext,
+  known: readonly FactId[] = [],
+): FactId[] {
   const qt = questionsFor(fact);
-  // What the option will READ AS — in BOTH directions, because one board is
-  // built and either direction may render it, and an option that collides in
-  // the direction we did not check is the same free point as one that collides
-  // in the direction we did.
+  // What the option will READ AS in THIS card's render direction.
   //
-  // The old version only asked for the en2jp label and, when a subject had none
-  // (a grammar meaning fact does not), fell back to the fact's ANSWERS — the
-  // glosses. So two patterns with distinct glosses and the identical rendered
-  // pattern 〜て both survived, and the board showed 〜て twice. Deduping on the
-  // GLYPH as well as the answers is what catches that: en2jp renders the glyph,
-  // so the glyph is a label, so it has to be claimed like one.
+  // This used to claim labels in BOTH directions. For a kanji-reading card,
+  // every sibling reading shares the same en2jp glyph (the kanji itself), so
+  // they were all dropped as duplicates before jp2en could show their distinct
+  // readings. That collapsed the board and triggered unrelated fallback options.
   const labelKey = (f: FactId): string[] => {
     const keys: string[] = [];
     const push = (s: string | null | undefined) => {
       const k = s?.trim().toLowerCase();
       if (k) keys.push(k);
     };
-    for (const dir of ["en2jp", "jp2en"] as const) {
-      const shown = qt.optionLabel?.(f, dir, ctx);
-      if (shown != null) push(shown);
-      else if (dir === "en2jp") push(factInfo(f)?.glyph);
-      else for (const a of factInfo(f)?.answers ?? []) push(a);
-    }
+    const shown = qt.optionLabel?.(f, dir, ctx);
+    if (shown != null) push(shown);
+    else if (dir === "en2jp") push(factInfo(f)?.glyph);
+    else for (const a of factInfo(f)?.answers ?? []) push(a);
     return keys;
   };
-  const taken = new Set(labelKey(fact));
-  const distractors: FactId[] = qt
+
+  const info = factInfo(fact);
+  const isKanjiReadingCard =
+    dir === "jp2en" &&
+    info?.subject === "kanji" &&
+    answerIsJapanese(fact, "jp2en");
+
+  const knownSet = new Set(known);
+  const preferKnown = (a: FactId, b: FactId) => {
+    const ak = knownSet.has(a) ? 1 : 0;
+    const bk = knownSet.has(b) ? 1 : 0;
+    return bk - ak;
+  };
+
+  const rankedDistractorCandidates = qt
     .distractors(fact, BEHAVIOR.mcOptions * 4, ctx)
+    .slice()
+    .sort(isKanjiReadingCard ? preferKnown : () => 0);
+
+  const taken = new Set(labelKey(fact));
+  const distractors: FactId[] = rankedDistractorCandidates
     .filter((d) => {
       if (!factInfo(d)) return false;
       const keys = labelKey(d);
@@ -268,10 +288,24 @@ export function buildMcOptions(fact: FactId, ctx?: PromptContext): FactId[] {
   //
   // It is a floor, not a strategy. Reaching it means the distractors were poor;
   // it only ensures they were not absent.
-  if (distractors.length === 0) {
-    const subject = factInfo(fact)?.subject;
-    for (const other of ALL_FACTS) {
-      if (other === fact || factInfo(other)?.subject !== subject) continue;
+  if (distractors.length < BEHAVIOR.mcOptions - 1) {
+    const subject = info?.subject;
+    const backfill = ALL_FACTS
+      .filter((other) => {
+        if (other === fact) return false;
+        const otherInfo = factInfo(other);
+        if (!otherInfo) return false;
+        // Reading cards should be filled with pronunciation options only.
+        if (isKanjiReadingCard) {
+          return (
+            otherInfo.subject === "kanji" && answerIsJapanese(other, "jp2en")
+          );
+        }
+        return otherInfo.subject === subject;
+      })
+      .sort(isKanjiReadingCard ? preferKnown : () => 0);
+
+    for (const other of backfill) {
       const keys = labelKey(other);
       if (keys.some((k) => taken.has(k))) continue;
       for (const k of keys) taken.add(k);

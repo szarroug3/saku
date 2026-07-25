@@ -605,7 +605,7 @@ export function DrillScreen() {
       ? grammarSelection.choices.slice()
       : typedMode
         ? null
-        : buildMcOptions(f, ctx);
+        : buildMcOptions(f, dir, ctx, confusionKnownFacts(history));
     const mc = built && built.length > 1 ? built : null;
     rt.q = {
       f,

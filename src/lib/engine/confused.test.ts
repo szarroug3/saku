@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 
 import { buildMcOptions, confusedWith } from "@/lib/engine/index";
 import { kanaFact } from "@/data/characters";
-import { meaningFactId } from "@/data/kanji";
+import { meaningFactId, readingFactId } from "@/data/kanji";
 import { wordMeaningFactId } from "@/data/vocab";
 import { entryOf, factInfo } from "@/lib/facts";
 
@@ -121,4 +121,31 @@ test("no MC option is co-correct with the asked fact (en2jp answerability)", () 
       assert.ok(!shared, `${opt} is co-correct with ${asked}`);
     }
   }
+});
+
+test("kanji-reading MC options are pronunciation facts (kana answers), not meanings", () => {
+  const asked = readingFactId("一", "一");
+  const opts = buildMcOptions(asked, "jp2en");
+  assert.ok(opts.length > 1, "reading MC should have multiple options");
+  for (const opt of opts) {
+    const info = factInfo(opt);
+    assert.ok(info, `option ${opt} should be live`);
+    assert.equal(info?.subject, "kanji", "options stay in kanji-reading space");
+    assert.ok(
+      info?.answers.every((a) => /[ぁ-ゖァ-ヺー]/.test(a)),
+      `option ${opt} should present kana reading answers`,
+    );
+  }
+});
+
+test("kanji-reading MC prefers known reading distractors when available", () => {
+  const asked = readingFactId("一", "一");
+  const known = [readingFactId("一", "唯一"), readingFactId("一", "一つ")];
+  const opts = buildMcOptions(asked, "jp2en", undefined, known);
+  const distractors = opts.filter((f) => f !== asked);
+  assert.ok(distractors.length > 0, "should have distractors");
+  assert.ok(
+    distractors.some((f) => known.includes(f)),
+    "should include at least one known reading distractor when available",
+  );
 });
