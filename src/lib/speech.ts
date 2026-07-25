@@ -142,9 +142,7 @@ export function jaVoices(): SpeechSynthesisVoice[] {
     .filter((v) => v.lang?.replace("_", "-").toLowerCase().startsWith("ja"));
 }
 
-/** Speak Japanese text with the configured voice ("" = auto). */
-export function speak(text: string, voiceName: string): void {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+function speakNow(text: string, voiceName: string): void {
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "ja-JP";
   const voices = jaVoices();
@@ -158,6 +156,32 @@ export function speak(text: string, voiceName: string): void {
   u.rate = 0.8;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
+}
+
+/** Speak Japanese text with the configured voice ("" = auto). */
+export function speak(text: string, voiceName: string): void {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  // Some browsers (notably Safari/WebKit) expose an empty voice list at first
+  // interaction and hydrate it moments later via `voiceschanged`. Speaking
+  // before hydration uses the browser fallback voice; replay then sounds
+  // "different" once the real list appears. Defer one short tick for that
+  // first call so both first play and replay use the same selected voice.
+  if (speechSynthesis.getVoices().length === 0) {
+    let fired = false;
+    const done = () => {
+      if (fired) return;
+      fired = true;
+      speechSynthesis.removeEventListener("voiceschanged", done);
+      speakNow(text, voiceName);
+    };
+    speechSynthesis.addEventListener("voiceschanged", done);
+    // Triggers hydration in engines that lazy-load voices on first query.
+    speechSynthesis.getVoices();
+    // Some engines never fire `voiceschanged`; still speak after a short wait.
+    setTimeout(done, 120);
+    return;
+  }
+  speakNow(text, voiceName);
 }
 
 /** Subscribe to voice-list changes; returns an unsubscribe. */

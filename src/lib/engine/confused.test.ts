@@ -6,7 +6,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildMcOptions, confusedWith } from "@/lib/engine/index";
+import { answerIsJapanese, buildMcOptions, confusedWith } from "@/lib/engine/index";
 import { kanaFact } from "@/data/characters";
 import { meaningFactId, readingFactId } from "@/data/kanji";
 import { wordMeaningFactId } from "@/data/vocab";
@@ -148,4 +148,17 @@ test("kanji-reading MC prefers known reading distractors when available", () => 
     distractors.some((f) => known.includes(f)),
     "should include at least one known reading distractor when available",
   );
+});
+
+test("word-meaning jp2en MC options stay in English answer space", () => {
+  const asked = wordMeaningFactId("あっというまに");
+  const opts = buildMcOptions(asked, "jp2en");
+  assert.ok(opts.length > 0, "word-meaning MC should yield at least the answer");
+  for (const opt of opts) {
+    assert.equal(
+      answerIsJapanese(opt, "jp2en"),
+      false,
+      `option ${opt} should not be a Japanese-answer fact on an English-meaning card`,
+    );
+  }
 });

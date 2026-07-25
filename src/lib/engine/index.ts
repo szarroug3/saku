@@ -248,6 +248,7 @@ export function buildMcOptions(
     dir === "jp2en" &&
     info?.subject === "kanji" &&
     answerIsJapanese(fact, "jp2en");
+  const askedAnswersAreJapanese = answerIsJapanese(fact, dir);
 
   const knownSet = new Set(known);
   const preferKnown = (a: FactId, b: FactId) => {
@@ -301,7 +302,10 @@ export function buildMcOptions(
             otherInfo.subject === "kanji" && answerIsJapanese(other, "jp2en")
           );
         }
-        return otherInfo.subject === subject;
+        return (
+          otherInfo.subject === subject &&
+          answerIsJapanese(other, dir) === askedAnswersAreJapanese
+        );
       })
       .sort(isKanjiReadingCard ? preferKnown : () => 0);
 
