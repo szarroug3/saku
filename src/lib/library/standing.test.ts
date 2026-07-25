@@ -166,6 +166,57 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
   });
 });
 
+describe("standingOf — the latest ten runs define the accuracy label", () => {
+  const withRuns = (hits: number): FactAggregate => ({
+    ...drilledJustNow(
+      { seen: 100, missed: 90, firstTry: 10, correct: 10 },
+      NOW,
+    ),
+    recentRuns: Array.from({ length: 10 }, (_, i) => ({
+      firstTry: i < hits,
+      eventually: i < hits,
+    })),
+  });
+
+  test("8+ is solid, despite poor all-time accuracy", () => {
+    assert.equal(standingOf(withRuns(8), undefined, METRIC, NOW).standing, "solid");
+  });
+
+  test("6–7 is getting there", () => {
+    assert.equal(
+      standingOf(withRuns(6), undefined, METRIC, NOW).standing,
+      "getting-there",
+    );
+    assert.equal(
+      standingOf(withRuns(7), undefined, METRIC, NOW).standing,
+      "getting-there",
+    );
+  });
+
+  test("fewer than 6 is shaky", () => {
+    assert.equal(standingOf(withRuns(5), undefined, METRIC, NOW).standing, "shaky");
+  });
+
+  test("unfilled window slots do not turn a short streak into instant mastery", () => {
+    const short = (hits: number): FactAggregate => ({
+      ...drilledJustNow(
+        { seen: hits, missed: 0, firstTry: hits, correct: hits },
+        NOW,
+      ),
+      recentRuns: Array.from({ length: hits }, () => ({
+        firstTry: true,
+        eventually: true,
+      })),
+    });
+    assert.equal(standingOf(short(5), undefined, METRIC, NOW).standing, "shaky");
+    assert.equal(
+      standingOf(short(6), undefined, METRIC, NOW).standing,
+      "getting-there",
+    );
+    assert.equal(standingOf(short(8), undefined, METRIC, NOW).standing, "solid");
+  });
+});
+
 describe("entryIsKnown — the knowledge filter's one boolean", () => {
   test("a never-seen entry is NOT known", () => {
     const s = entryStanding(factsOf(kana.id), NO_FACTS, NO_CLAIMS, METRIC, NOW);

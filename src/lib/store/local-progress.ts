@@ -1,5 +1,7 @@
 "use client";
 
+import { hydrateRecentRuns } from "@/lib/aggregate";
+
 // The signed-out learner's progress, kept in THIS browser's localStorage.
 //
 // THE PROBLEM THIS SOLVES
@@ -123,9 +125,10 @@ export function loadLocalHistory(): HistoryFile {
  * older build, or half-corrupted, still reads as a usable (possibly empty)
  * history rather than crashing a screen. */
 function normalizeHistory(h: Partial<HistoryFile>): HistoryFile {
+  const sessions = Array.isArray(h.sessions) ? h.sessions : [];
   return {
-    sessions: Array.isArray(h.sessions) ? h.sessions : [],
-    facts: h.facts ?? {},
+    sessions,
+    facts: hydrateRecentRuns(h.facts ?? {}, sessions),
     claims: h.claims ?? {},
     seen: h.seen ?? {},
     ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),

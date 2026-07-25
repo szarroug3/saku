@@ -168,19 +168,23 @@ describe("foldLiveStats — the Library reflects a miss the moment it lands", ()
     );
   });
 
-  test("a live miss pushes a solid fact to shaky before any commit", () => {
-    // 何 committed: one clean first-try showing a moment ago → solid.
+  test("a live miss updates the ten-run standing before any commit", () => {
+    // 何 enters this run at exactly 8 / 10: solid.
     const base = commit({}, { [NANI]: stat() }, NOW - 1000);
+    base[NANI].recentRuns = Array.from({ length: 10 }, (_, i) => ({
+      firstTry: i < 8,
+      eventually: i < 8,
+    }));
     assert.equal(
       standingOf(base[NANI], undefined, METRIC, NOW).standing,
       "solid",
     );
 
-    // Now miss it mid-drill. 1/2 = 50% first-try → shaky, live.
+    // The live miss pushes the oldest hit out: 7 / 10 → getting there.
     const view = foldLiveStats(base, { [NANI]: MISS }, NOW);
     assert.equal(
       standingOf(view[NANI], undefined, METRIC, NOW).standing,
-      "shaky",
+      "getting-there",
       "the uncommitted miss drops it out of solid immediately",
     );
     // Untouched facts keep their committed standing.

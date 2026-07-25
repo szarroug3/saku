@@ -15,15 +15,17 @@ import {
   normalizeEnvelope,
   type SessionStateEnvelope,
 } from "@/lib/session-state";
+import { hydrateRecentRuns } from "@/lib/aggregate";
 import { normalizeSettings } from "@/lib/settings-merge";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { HistoryFile, ListsFile, SettingsFile } from "@/types";
 
 function normalizeHistory(raw: unknown): HistoryFile {
   const h = (raw ?? {}) as Partial<HistoryFile>;
+  const sessions = Array.isArray(h.sessions) ? h.sessions : [];
   return {
-    sessions: Array.isArray(h.sessions) ? h.sessions : [],
-    facts: h.facts ?? {},
+    sessions,
+    facts: hydrateRecentRuns(h.facts ?? {}, sessions),
     claims: h.claims ?? {},
     seen: h.seen ?? {},
     ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),

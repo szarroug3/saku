@@ -28,9 +28,9 @@
 //
 //   not seen       no counts, no claim .......... it has never asked you.
 //   claimed        a claim, never tested ........ YOU skipped the lesson. Untested.
-//   solid          quiet AND accuracy ≥ 80% ..... expects it right, and you have been.
-//   getting there  seen, accuracy ≥ 65% ......... mostly right, not yet airtight.
-//   shaky          seen, accuracy < 65% ......... you're often wrong.
+//   solid          ≥ 80% of the last 10 runs .... eight in ten or better.
+//   getting there  ≥ 60% of the last 10 runs .... six or seven in ten.
+//   shaky          < 60% of the last 10 runs .... fewer than six in ten.
 //   slipping       teach, but you HAVE seen it .. you had it. It's gone.
 //
 // WHY "solid" TAKES BOTH, AND NOT `quiet` ALONE
@@ -54,6 +54,7 @@
 // it without printing a probability.
 
 import { accuracyOf } from "@/lib/accuracy";
+import { STANDING_RUN_WINDOW } from "@/lib/aggregate";
 import type { Claims } from "@/lib/claims";
 import { effectiveState } from "@/lib/claims";
 import { status } from "@/lib/scoring";
@@ -98,24 +99,29 @@ export const STANDING_TONE: Record<Standing, "good" | "warn" | "bad" | "mute"> =
   slipping: "warn",
 };
 
-/** Above this, a probed fact is "getting there" rather than "shaky".
- *
- * Invented, and the least defensible number in the Library — it is one
- * engineer's guess at where "mostly right" starts, fitted to nothing, exactly
- * like the constants in scoring.ts. It moves one adjective and orders nothing. */
-export const GETTING_THERE_PCT = 65;
+/** Six successful recent runs in ten is "getting there". */
+export const GETTING_THERE_PCT = 60;
 
-/** At or above this accuracy, a `quiet` fact is "solid" rather than merely
- * "getting there". The bar that stops recency alone from reading as mastery.
- *
- * Invented, and in the same spirit as GETTING_THERE_PCT and everything in
- * scoring.ts — one engineer's guess at where "you get it right cold almost
- * every time" starts, fitted to nothing. 80 is "four out of five, first try,
- * no retries": a strong record under the strict metric, short of the 100% a
- * handful of showings can fluke. It gates one adjective (solid vs getting
- * there) and orders nothing; move it and no list changes. It must sit ABOVE
- * GETTING_THERE_PCT or "getting there" would never appear for a quiet fact. */
+/** Eight successful recent runs in ten is solid. */
 export const SOLID_PCT = 80;
+
+/** Score from the ten most recent completed runs containing this fact. A run
+ * is one vote regardless of requeues within it; before ten runs, the unearned
+ * slots keep this a literal 8 / 6 / <6 progression rather than turning one
+ * lucky first run into 100%. Histories from before the rolling window was
+ * introduced fall back to their aggregate until stored sessions backfill it. */
+export function recentRunAccuracy(
+  agg: FactAggregate | undefined,
+  metric: AccuracyMetric,
+): number | null {
+  if (!agg) return null;
+  const runs = agg.recentRuns;
+  if (!runs?.length) return accuracyOf(agg, metric);
+  const hits = runs.filter((run) =>
+    metric === "firstTry" ? run.firstTry : run.eventually,
+  ).length;
+  return (100 * hits) / STANDING_RUN_WINDOW;
+}
 
 /** Everything this needs to know about a fact. Not a HistoryFile: a caller that
  * has already gathered a fact's record should not have to hand over the whole
@@ -154,14 +160,8 @@ export function standingOf(
   // A fact with showings behind it, lost to time: re-teach, not re-test.
   if (s === "teach") return { standing: "slipping", seen };
 
-  // Everything left has been answered (seen > 0) and is not lost (quiet or
-  // probe), so it has a real accuracy — non-null by construction, since
-  // accuracyOf is null only for seen === 0. "solid" is the crossing of both
-  // sources: the model expects it right now (`quiet`) AND the record earns it
-  // (≥ SOLID_PCT). Recency without the record is not solid; it is whatever the
-  // accuracy already said, which is "getting there" or "shaky".
-  const pct = agg ? accuracyOf(agg, metric) : null;
-  if (s === "quiet" && pct !== null && pct >= SOLID_PCT) {
+  const pct = recentRunAccuracy(agg, metric);
+  if (pct !== null && pct >= SOLID_PCT) {
     return { standing: "solid", seen };
   }
   return {

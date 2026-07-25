@@ -63,6 +63,8 @@ import type {
   SessionFactCounts,
 } from "@/types";
 
+export const STANDING_RUN_WINDOW = 10;
+
 /** A fact with no evidence: nothing done, nothing believed. */
 export function emptyAggregate(): FactAggregate {
   return { ...EMPTY_COUNTS, ...UNMET };
@@ -97,13 +99,40 @@ export function foldSession(
   // test occasion, so not evidence, so the model's clock must not move: writing
   // lastTested here would tell the model you were tested when you weren't.
   if (!(s.seen ?? 0)) return;
+  const firstTry = s.firstTryHit ?? (s.firstTry ?? 0) > 0;
+  agg.recentRuns = [
+    ...(agg.recentRuns ?? []),
+    { firstTry, eventually: (s.correct ?? 0) > 0 },
+  ].slice(-STANDING_RUN_WINDOW);
   // Absent `firstTryHit` means a record written when `firstTry` WAS the flag,
   // so `> 0` is not an approximation of the old verdict — it is the old verdict,
   // read back out of the field it was stored in. Replaying such a file lands on
   // the stability it landed on before this change, exactly.
-  const next = review(agg, s.firstTryHit ?? (s.firstTry ?? 0) > 0, ts);
+  const next = review(agg, firstTry, ts);
   agg.stability = next.stability;
   agg.lastTested = next.lastTested;
+}
+
+/** Backfill rolling verdicts for histories written before they existed.
+ * Stored verdicts win because the session list is capped and may no longer
+ * contain all ten runs for an old fact. */
+export function hydrateRecentRuns(
+  facts: Record<FactId, FactAggregate>,
+  sessions: readonly QuizSessionRecord[],
+): Record<FactId, FactAggregate> {
+  const missing = new Set(
+    Object.entries(facts)
+      .filter(([, agg]) => !Array.isArray(agg.recentRuns))
+      .map(([fact]) => fact as FactId),
+  );
+  if (!missing.size) return facts;
+
+  const rebuilt = foldSessions(sessions);
+  for (const fact of missing) {
+    const runs = rebuilt[fact]?.recentRuns;
+    if (runs?.length) facts[fact].recentRuns = runs;
+  }
+  return facts;
 }
 
 /**

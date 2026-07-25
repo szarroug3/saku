@@ -22,9 +22,13 @@
 import { LOOKALIKES, kanaEntry } from "@/data/characters";
 import { CONFUSABLE_WITH } from "@/data/confusable";
 import { kanjiEntry } from "@/data/kanji";
-import { accuracyOf } from "@/lib/accuracy";
 import { ALL_FACTS, entryOf, factInfo, factsOf } from "@/lib/facts";
 import { matchesTypes, typeLabel } from "@/lib/practice-types";
+import {
+  GETTING_THERE_PCT,
+  recentRunAccuracy,
+  SOLID_PCT,
+} from "@/lib/library/standing";
 import { quizzableFacts } from "@/lib/word-unlock";
 import type {
   AccuracyMetric,
@@ -77,10 +81,10 @@ export function bandOf(
 ): Exclude<FactBand, "mixup"> {
   const agg = history.facts[fact];
   if (!agg?.seen) return "new";
-  const acc = accuracyOf(agg, metric);
+  const acc = recentRunAccuracy(agg, metric);
   if (acc === null) return "new";
-  if (acc < 60) return "shaky";
-  if (acc < 85) return "slipping";
+  if (acc < GETTING_THERE_PCT) return "shaky";
+  if (acc < SOLID_PCT) return "slipping";
   return "solid";
 }
 

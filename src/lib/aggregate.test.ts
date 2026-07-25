@@ -122,17 +122,39 @@ describe("scheduling is unchanged by the firstTry split", () => {
     }
   });
 
-  it("OLD records replay to byte-identical scheduling state", () => {
+  it("OLD records replay to identical counts and scheduling state", () => {
     // The migration case: history.json on a real install, `firstTry` still 0/1
     // and no `firstTryHit` anywhere. Absent must derive to the old answer.
     for (const runs of CORPUS) {
       const before = replay(runs, writeOld, foldOld);
       const after = replay(runs, writeOld, foldSession);
       assert.deepEqual(stateOf(after), stateOf(before));
-      // and nothing else about an old record moved either: an old file read by
-      // new code is the same file, counts included.
-      assert.deepEqual(after, before);
+      assert.deepEqual(
+        {
+          seen: after.seen,
+          missed: after.missed,
+          firstTry: after.firstTry,
+          correct: after.correct,
+        },
+        {
+          seen: before.seen,
+          missed: before.missed,
+          firstTry: before.firstTry,
+          correct: before.correct,
+        },
+      );
     }
+  });
+
+  it("keeps only the ten newest run verdicts", () => {
+    const runs = Array.from({ length: 12 }, (_, i) => ({
+      seen: 1,
+      firstTryCount: i,
+      firstTryCorrect: i >= 2,
+    }));
+    const agg = replay(runs, writeNew, foldSession);
+    assert.equal(agg.recentRuns?.length, 10);
+    assert.ok(agg.recentRuns?.every((run) => run.firstTry));
   });
 
   it("the hit is the verdict, NOT the count being positive", () => {

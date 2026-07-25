@@ -621,6 +621,12 @@ export interface FactState {
   lastTested: number;
 }
 
+/** The binary result of one completed run that included a fact. */
+export interface RunVerdict {
+  firstTry: boolean;
+  eventually: boolean;
+}
+
 /**
  * One fact's stored record: what you did (counts) and what the model believes
  * (state). The key (a FactId) lives in the record that holds this, so the
@@ -630,7 +636,10 @@ export interface FactState {
  * src/lib/aggregate.ts — but they are not the same KIND of thing, and the split
  * above is what keeps the difference from being a comment.
  */
-export interface FactAggregate extends FactCounts, FactState {}
+export interface FactAggregate extends FactCounts, FactState {
+  /** Oldest → newest, capped at the ten most recent runs containing this fact. */
+  recentRuns?: RunVerdict[];
+}
 
 export interface QuizSessionRecord {
   /**
