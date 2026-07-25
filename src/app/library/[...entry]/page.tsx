@@ -721,16 +721,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* ================= KANJI ================= */}
       {isKanji ? (
         <>
-          {/* READINGS FIRST. They are what the page is for: 生 is one glyph and
-              eight readings keyed on the word each is read in, and that table is
-              the only place in the app it can be checked. How the glyph is drawn
-              and what it links to are both true and neither is the question a
-              reader came here with, so they follow rather than lead.
-
-              ABSENT, not empty, for the 114 jōyō kanji with no reading rows —
-              and because this is now the first thing in the branch, absence has
-              to leave the strokes row at the top of the page rather than a
-              margin. It does: the guard renders nothing, not an empty box. */}
+          {/* BUILT FROM leads — the SHAPE decomposition (何 → 亻 person + 可
+              possible, 可 → 丁 street + 口 mouth): the kanji page's own breakdown,
+              the full immediate decomposition including radicals (not the
+              lesson's kanji-only teachableParts), de-framed so a split enclosure
+              shows once, each piece linked. This IS the page's "made of" now —
+              the compact Links-card row it used to duplicate is gone. Absent,
+              not empty, for an atomic kanji. Distinct from the word page's
+              "Built from", which splits a word into its READING pieces. */}
+          <KanjiBuiltFrom entry={entry} />
+          {/* Readings: what the page is for — 生 is one glyph, eight readings
+              keyed on the word each is read in, the only place in the app that
+              table can be checked. ABSENT, not empty, for the 114 jōyō kanji
+              with no reading rows — the guard renders nothing, not an empty
+              box. */}
           {readingRows.length > 0 ? (
             <KanjiReadings
               rows={readingRows}
@@ -752,15 +756,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
             />
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
-          {/* BUILT FROM — the SHAPE decomposition (何 → 亻 person + 可 possible,
-              可 → 丁 street + 口 mouth), the kanji page's own breakdown. The FULL
-              immediate decomposition including radicals (not the lesson's
-              kanji-only teachableParts), de-framed so a split enclosure shows
-              once, each piece linked. This IS the page's "made of" now — the
-              compact Links-card row it used to duplicate is gone. Absent, not
-              empty, for an atomic kanji. Distinct from the word page's "Built
-              from", which splits a word into its READING pieces. */}
-          <KanjiBuiltFrom entry={entry} />
           {words.length > 0 ? (
             <WordsWith
               words={words}
