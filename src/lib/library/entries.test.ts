@@ -20,6 +20,7 @@ import test from "node:test";
 
 import { KANJI } from "@/data/kanji";
 import {
+  builtFrom,
   factRows,
   factsColumnHeader,
   factsTitle,
@@ -39,6 +40,45 @@ const need = (e: LibEntry | undefined): LibEntry => {
   assert.ok(e);
   return e;
 };
+
+// ---- builtFrom: the kanji page's "Built from" shape decomposition ----
+
+const built = (glyph: string) => builtFrom(need(libEntry(kanjiEntry(glyph))));
+
+test("builtFrom keeps radical pieces — 何 is 亻 + 可, each linked with a meaning", () => {
+  // The whole point of feeding this from madeOf rather than the kanji-only
+  // teachableParts: 亻 is a bound form with no card, but it is half of 何 and a
+  // learner needs it. It links through to the character it stands for (人).
+  const p = built("何");
+  assert.deepEqual(p.map((x) => x.c), ["亻", "可"]);
+  assert.ok(p.every((x) => x.id !== null), "every piece of 何 should link");
+  assert.equal(p[0]!.meaning, "person"); // 亻 → 人
+  assert.ok(p[1]!.meaning.length > 0, "可 should carry a meaning");
+});
+
+test("builtFrom on 明 is 日 + 月, two taught kanji", () => {
+  const p = built("明");
+  assert.deepEqual(p.map((x) => x.c), ["日", "月"]);
+  assert.ok(p.every((x) => x.id !== null));
+});
+
+test("builtFrom applies the #32 frame-dedup — 可 is 丁 + 口, not 丁 + 口 + 丁", () => {
+  // madeOf reads the raw KanjiVG comps (丁,口,丁); deframe collapses the single
+  // enclosure written twice.
+  const p = built("可");
+  assert.deepEqual(p.map((x) => x.c), ["丁", "口"]);
+  assert.equal(p[0]!.meaning, "street"); // 丁
+  assert.equal(p[1]!.meaning, "mouth"); // 口
+});
+
+test("builtFrom keeps a genuine repetition — 品 stays 口 + 口 + 口", () => {
+  assert.deepEqual(built("品").map((x) => x.c), ["口", "口", "口"]);
+});
+
+test("builtFrom is empty for an atomic kanji — no section", () => {
+  // 一 has no components; the page renders nothing rather than an empty card.
+  assert.deepEqual(built("一"), []);
+});
 
 test("a kanji's table is readings only — the meaning row is gone", () => {
   // 一 is the case the owner reported: its first row was the MEANING, under a

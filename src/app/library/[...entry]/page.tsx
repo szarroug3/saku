@@ -50,6 +50,7 @@ import { AttributionLink } from "@/components/library/attribution-link";
 import { ComponentUses } from "@/components/library/component-uses";
 import { EntryHeader } from "@/components/library/entry-header";
 import { EntryLinks, GlyphLink, LinkRow } from "@/components/library/entry-links";
+import { KanjiBuiltFrom } from "@/components/library/kanji-built-from";
 import { KanaFamilyView } from "@/components/library/kana-family-view";
 import { KanjiReadings } from "@/components/library/kanji-readings";
 import { MarkView } from "@/components/library/mark-view";
@@ -105,14 +106,13 @@ import {
   KIND_LABEL,
   knownFactsOf,
   libEntry,
-  madeOf,
   readingRowsOf,
   recipeOf,
   type LibEntry,
 } from "@/lib/library/entries";
 import { characterRole } from "@/lib/character-role";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
-import { entryFromParam, entryFromSlug, entryHref, radicalHref } from "@/lib/library/href";
+import { entryFromParam, entryFromSlug, entryHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
 import { piecesOf } from "@/lib/library/word-pieces";
@@ -182,7 +182,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const standingFacts = isTransitivity ? knownFactsOf(entry) : facts;
   const standing = entryStanding(standingFacts, liveFacts, claims, cfg.accuracyMetric, now);
   const words = appearsIn(entry);
-  const parts = madeOf(entry);
   const mine = lists.filter((l) => l.kind === "fixed" && l.entries.includes(entry.id));
   const mark = markFor(entry.id);
   const term = termFor(entry.id);
@@ -488,40 +487,12 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
   const linkRows = (
     <>
-      {parts.length > 0 ? (
-        <LinkRow label="Made of">
-          {parts.map((p, i) => (
-            <span key={`${p.c}-${i}`} className="flex items-center gap-2">
-              {i > 0 ? <span className="text-text-muted">+</span> : null}
-              {p.id ? (
-                <GlyphLink id={p.id} glyph={p.c} />
-              ) : (
-                // A radical primitive with no KANJIDIC2 entry — ｜, ノ, マ. It
-                // USED TO BE DEAD GREY TEXT, on the reasoning that there was no
-                // page to send you to. There is one now: /radical/ノ says what
-                // the shape is, admits it has no meaning, and shows the 246
-                // kanji built from it. The link is a different colour from a
-                // kanji's on purpose — it goes somewhere thinner, and a reader
-                // who clicks expecting a character should be able to see that
-                // coming.
-                <Link
-                  href={radicalHref(p.c)}
-                  className="text-[17px] text-text-muted no-underline"
-                >
-                  {p.c}
-                </Link>
-              )}
-            </span>
-          ))}
-        </LinkRow>
-      ) : isKanji ? (
-        // 74 of the 2,136 jōyō kanji are atomic to KRADFILE — 生 is one, despite
-        // the design mocking it as 丿 + 土. Said in words rather than rendered as
-        // an empty row, which would read as missing data.
-        <LinkRow label="Made of">
-          <Hint>nothing smaller, this one is its own shape</Hint>
-        </LinkRow>
-      ) : null}
+      {/* NO "Made of" ROW HERE ANY MORE. The kanji page's shape decomposition is
+          now the rich "Built from" card below its strokes (KanjiBuiltFrom) — the
+          full immediate pieces, radicals included, each a link — so the compact
+          Links-card row that used to list the same components would be the page
+          saying "made of" twice. The card is the one place it is said. This block
+          only ever rendered for kanji, so nothing else loses a row. */}
 
       {/* A WORD's kanji, as links. The "Built from" card already shows them
           with their readings; this row is the one in the FIXED Links order, so a
@@ -750,16 +721,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* ================= KANJI ================= */}
       {isKanji ? (
         <>
-          {/* READINGS FIRST. They are what the page is for: 生 is one glyph and
-              eight readings keyed on the word each is read in, and that table is
-              the only place in the app it can be checked. How the glyph is drawn
-              and what it links to are both true and neither is the question a
-              reader came here with, so they follow rather than lead.
-
-              ABSENT, not empty, for the 114 jōyō kanji with no reading rows —
-              and because this is now the first thing in the branch, absence has
-              to leave the strokes row at the top of the page rather than a
-              margin. It does: the guard renders nothing, not an empty box. */}
+          {/* BUILT FROM leads — the SHAPE decomposition (何 → 亻 person + 可
+              possible, 可 → 丁 street + 口 mouth): the kanji page's own breakdown,
+              the full immediate decomposition including radicals (not the
+              lesson's kanji-only teachableParts), de-framed so a split enclosure
+              shows once, each piece linked. This IS the page's "made of" now —
+              the compact Links-card row it used to duplicate is gone. Absent,
+              not empty, for an atomic kanji. Distinct from the word page's
+              "Built from", which splits a word into its READING pieces. */}
+          <KanjiBuiltFrom entry={entry} />
+          {/* Readings: what the page is for — 生 is one glyph, eight readings
+              keyed on the word each is read in, the only place in the app that
+              table can be checked. ABSENT, not empty, for the 114 jōyō kanji
+              with no reading rows — the guard renders nothing, not an empty
+              box. */}
           {readingRows.length > 0 ? (
             <KanjiReadings
               rows={readingRows}
@@ -832,7 +807,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
           <div className="mb-3.5 grid grid-cols-2 gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
             {/* Absent, not empty, for a jukujikun (大人/おとな) and an all-kana
                 word: there is no per-kanji reading to show, and inventing one
-                would be a fact that cannot be graded. */}
+                would be a fact that cannot be graded. A single-kanji word (何,
+                可) DOES show it — the one piece is a clickable link into that
+                kanji's page, which is worth a card even when the "split" is the
+                word itself. */}
             {pieces ? <WordBuiltFrom pieces={pieces} /> : <div />}
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
