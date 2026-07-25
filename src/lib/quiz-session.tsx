@@ -13,7 +13,7 @@
 // need to continue (deck, position, per-card states, remaining timer) in
 // `active.runtime`, a plain mutable object that lives here across mounts.
 // The timer contract is pause-while-away: screens stop their countdown (and
-// the slow-answer stopwatch) on unmount and resume from the stored remainder.
+// the countdown) on unmount and resume from the stored remainder.
 //
 // Config snapshot rule: the Home-builder settings (mode, directions, answer
 // styles, length) are FROZEN into the quiz at startQuiz — editing them
@@ -353,7 +353,7 @@ const STORAGE_KEY = SESSION_KEY;
  * A trailing debounce off `saveNow` (which the mode screens call per ANSWER, not
  * per keystroke): the first change in a burst arms the timer and the LATEST state
  * is pushed when it fires, so a run of answers costs at most one write every ~2s
- * rather than one per card. See the per-card write warning in latency-store.ts
+ * rather than one per card.
  * for why per-answer server writes are the thing being avoided. A CLEAR (the run
  * finished) bypasses this and pushes immediately — see schedulePush. */
 const PUSH_DEBOUNCE_MS = 2000;
@@ -1636,7 +1636,6 @@ export function QuizSessionProvider({
           firstTryCorrect: null,
           firstTryCount: 0,
           correct: 0,
-          slow: 0,
           confused: {},
         };
         for (const f of factKeys(record.detail)) {
@@ -1657,7 +1656,6 @@ export function QuizSessionProvider({
             // below — no need to synthesize this one either.
             firstTryCount: a.firstTry ?? 0,
             correct: a.correct ?? 0,
-            slow: a.slow,
             confused: {},
           };
         }

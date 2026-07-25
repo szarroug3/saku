@@ -30,7 +30,6 @@ function detail(over: Partial<FactSessionDetail> = {}): FactSessionDetail {
     firstTryCorrect: true,
     firstTryCount: 1,
     correct: 1,
-    slow: 0,
     confused: {},
     ...over,
   };

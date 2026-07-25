@@ -64,7 +64,6 @@ export function defaultConfig(): QuizConfig {
     accuracyMetric: "firstTry",
     showVolume: true,
     graduateRuns: 10,
-    slowFloorMs: 1500,
     // Dominates grade order on both axes at once — see NewKanjiOrder.
     newKanjiOrder: "everyday",
     // How long a kanji lesson runs, in draw+assembly cost — see LessonRange.

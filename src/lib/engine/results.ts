@@ -20,17 +20,15 @@ export interface ResultsSummary {
   total: number;
   forg: number;
   strict: number;
-  slow: number;
 }
 
-/** Totals for the results screen (forgiving vs strict + slow count). */
+/** Totals for the results screen (forgiving vs strict). */
 export function computeResults(stats: SessionStats): ResultsSummary {
   const facts = factKeys(stats);
   const total = facts.length;
   const forg = facts.filter((f) => stats[f].everCorrect).length;
   const strict = facts.filter((f) => stats[f].firstTryCorrect === true).length;
-  const slow = facts.reduce((n, f) => n + stats[f].slow, 0);
-  return { facts, total, forg, strict, slow };
+  return { facts, total, forg, strict };
 }
 
 /** Facts counting as "missed" under the given view, most misses first. */

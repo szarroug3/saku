@@ -193,7 +193,6 @@ function solid(): FactAggregate {
   return {
     seen: 4,
     missed: 0,
-    slow: 0,
     firstTry: 4,
     correct: 4,
     stability: 10,
@@ -206,7 +205,6 @@ function shaky(): FactAggregate {
   return {
     seen: 4,
     missed: 3,
-    slow: 0,
     firstTry: 0,
     correct: 1,
     stability: 2,

@@ -6,7 +6,7 @@
 // The React providers (theme, quiz-config) can consume the settings context
 // directly. But several settings are written by pure helpers called from deep in
 // the tree — the claim explainer's dismissal, a lesson section's open state, a
-// concept card marking itself shown, the latency baseline after an answer. Those
+// concept card marking itself shown. Those
 // helpers take a `Storage` and stay DOM-pure and testable; threading a React
 // callback through every one of their call sites would undo that.
 //

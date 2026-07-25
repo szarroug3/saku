@@ -73,7 +73,6 @@ export function emptyAggregate(): FactAggregate {
 function addCounts(agg: FactCounts, s: Partial<FactCounts>): void {
   agg.seen += s.seen ?? 0;
   agg.missed += s.missed ?? 0;
-  agg.slow += s.slow ?? 0;
   agg.firstTry += s.firstTry ?? 0;
   agg.correct += s.correct ?? 0;
 }

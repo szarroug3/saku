@@ -49,7 +49,6 @@ function stat(p: Partial<FactSessionDetail> = {}): FactSessionDetail {
     firstTryCorrect: true,
     firstTryCount: 1,
     correct: 1,
-    slow: 0,
     confused: {},
     ...p,
   };

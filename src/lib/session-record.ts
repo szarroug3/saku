@@ -96,7 +96,6 @@ export function projectSessionFacts(
     facts[c] = {
       seen: stats[c].seen,
       missed: stats[c].misses,
-      slow: stats[c].slow,
       // Folded into the aggregate so strict accuracy survives without having to
       // re-read every session's detail. A COUNT of showings, in `seen`'s unit —
       // the durable number and the pill the learner just watched are then the

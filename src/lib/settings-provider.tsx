@@ -17,7 +17,7 @@
 //   1. RECONCILE DOWN. On the first client render it writes the seeded server
 //      settings into the individual localStorage keys (applyServerSettings), so
 //      the readers that consult localStorage directly — the lesson sections, the
-//      concept cards, the claim explainer, the latency baseline — see the source
+//      concept cards and the claim explainer — see the source
 //      of truth. This is done synchronously in the render body (guarded to run
 //      once) rather than in an effect, because those readers mount as descendants
 //      and their mount effects run BEFORE a parent effect would; the cache has to
@@ -136,7 +136,7 @@ export function SettingsProvider({
   );
 
   // Register save() as the bridge the plain writers (claim-hint, lesson-prefs,
-  // intro-shown, latency) push through.
+  // intro-shown) push through.
   useEffect(() => {
     registerSettingsPusher(save);
     return () => unregisterSettingsPusher(save);

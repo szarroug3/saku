@@ -53,7 +53,6 @@ import type { AccuracyMetric, EntryId, FactCounts, FactId } from "@/types";
 export const EMPTY_COUNTS: FactCounts = {
   seen: 0,
   missed: 0,
-  slow: 0,
   firstTry: 0,
   correct: 0,
 };
@@ -96,7 +95,6 @@ export function totalFor(history: CountsByFact, facts: FactId[]): FactCounts {
     if (!a) continue;
     total.seen += a.seen;
     total.missed += a.missed;
-    total.slow += a.slow;
     total.firstTry += a.firstTry ?? 0;
     total.correct += a.correct ?? 0;
   }

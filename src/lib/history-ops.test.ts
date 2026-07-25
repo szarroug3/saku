@@ -40,7 +40,7 @@ function seedSession(ts: number, id?: string): QuizSessionRecord {
     forgivingPct: 100,
     strictPct: 100,
     facts: {
-      [fid("hira-a")]: { seen: 1, missed: 0, slow: 0, firstTry: 1, correct: 1 },
+      [fid("hira-a")]: { seen: 1, missed: 0, firstTry: 1, correct: 1 },
     } as QuizSessionRecord["facts"],
   };
 }

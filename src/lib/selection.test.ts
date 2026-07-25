@@ -36,7 +36,6 @@ function seen(over: Partial<FactAggregate> = {}): FactAggregate {
   return {
     seen: 4,
     missed: 0,
-    slow: 0,
     firstTry: 4,
     correct: 4,
     stability: 10,

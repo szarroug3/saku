@@ -36,7 +36,7 @@
 // "stability 106d" is a PREDICTION that reads as a HISTORY — the question it
 // actually drew was "does that mean I did it 106 days in a row?" — and no
 // caption fixes that. If a number cannot be explained to someone who has never
-// read the design doc, it does not ship. The one decimal here (the slow floor)
+// read the design doc, it does not ship.
 // is seconds on a clock, which is a unit and not a coefficient.
 
 import { useEffect, useRef, useState } from "react";
@@ -614,23 +614,6 @@ export function SettingsCard() {
           </SmallBtn>
         </Row>
 
-        {/* Stored in ms, typed in seconds, and the conversion lives here rather
-            than in the config — a floor on a stopwatch is a thing you state in
-            seconds, and 1500 is not a number anyone has an opinion about. */}
-        <Row
-          label="Never call an answer slow if it came in under"
-          info="Slow is measured against your own recent pace, not a fixed number, so as you get faster and steadier the bar comes down with you. This is the floor it can't go below. Without one, a very quick, very consistent run would start flagging good answers."
-        >
-          <NumIn
-            value={Math.round(cfg.slowFloorMs / 100) / 10}
-            onCommit={(v) => update({ slowFloorMs: Math.round(v * 1000) })}
-            label="Slow floor, seconds"
-            min={0.1}
-            max={30}
-            step={0.1}
-          />
-          <Hint>seconds</Hint>
-        </Row>
       </Card>
 
       <ResetProgress />

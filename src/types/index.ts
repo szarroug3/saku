@@ -1,7 +1,5 @@
 // Shared types for the kana quiz.
 
-import type { LatencyWindow } from "@/lib/slow";
-
 // ---------- identity: entries and facts ----------
 //
 // A character string used to be three things at once: the identity, the
@@ -258,13 +256,6 @@ export interface QuizConfig {
    * lower; it is a judgement call, not a fact, so it is yours to set.
    */
   graduateRuns: number;
-  /**
-   * Never flag a hesitation faster than this, however consistent you get.
-   * The slow threshold is max(slowFloorMs, median + 3·MAD) over your recent
-   * recall latencies — without a floor, a very fast, very steady run would
-   * start flagging 1.6s answers as "slow", which means nothing.
-   */
-  slowFloorMs: number;
 
   // ---------- what arrives next ----------
   /**
@@ -488,7 +479,6 @@ export interface FactSessionDetail {
    * and so into forgiving accuracy. Not the same question as `everCorrect`.
    */
   correct: number;
-  slow: number;
   /**
    * ENTRY you answered with instead → how many times. Keyed by EntryId, NOT
    * FactId, and that is the whole point: you mix up 生 with 先, not 生's
@@ -539,7 +529,6 @@ export interface FactCounts {
   seen: number;
   /** Wrong ATTEMPTS — can exceed `seen`, since one showing allows retries. */
   missed: number;
-  slow: number;
   /**
    * SHOWINGS answered correctly on the first attempt — the strict numerator,
    * and in `seen`'s unit so the two can be divided. A fact shown three times
@@ -817,6 +806,4 @@ export interface SettingsFile {
   lessonReadings?: boolean;
   /** Which once-ever concept cards have already been shown, by intro id. */
   introShown?: string[];
-  /** The recall-latency baseline (a derived, self-healing tuning window). */
-  latency?: LatencyWindow;
 }

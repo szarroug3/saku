@@ -15,7 +15,7 @@
 //                                       the individual keys, so the readers that
 //                                       consult localStorage directly (the lesson
 //                                       sections, the concept cards, the claim
-//                                       explainer, the latency baseline, and the
+//                                       explainer, and the
 //                                       pre-hydration no-flash script on the next
 //                                       load) all see the source of truth.
 //
@@ -32,14 +32,12 @@ import {
   CLAIM_HINT_KEY,
   introShownKey,
   INTRO_SHOWN,
-  LATENCY_KEY,
   LESSON_OPEN,
   LESSON_READINGS_KEY,
   LESSON_WRITING_KEY,
   OLD_ACCENTS_KEY,
   OLD_CFG_KEY,
   OLD_CLAIM_HINT_KEY,
-  OLD_LATENCY_KEY,
   OLD_LESSON_READINGS_KEY,
   OLD_LESSON_WRITING_KEY,
   oldIntroShownKey,
@@ -48,7 +46,6 @@ import {
   THEME_KEY,
   APPEARANCE_KEY,
 } from "@/lib/settings-keys";
-import type { LatencyWindow } from "@/lib/slow";
 import { migratedGet } from "@/lib/storage-migrate";
 import type { QuizConfig, SettingsFile } from "@/types";
 
@@ -111,9 +108,6 @@ export function readLocalSettings(store: SettingsStore | null | undefined): Sett
       (id) => migratedGet(store, introShownKey(id), oldIntroShownKey(id)) === INTRO_SHOWN,
     );
     if (shown.length) out.introShown = shown;
-
-    const latency = parse(migratedGet(store, LATENCY_KEY, OLD_LATENCY_KEY));
-    if (isPlainObject(latency)) out.latency = latency as LatencyWindow;
   } catch {
     // a throwing store — return what we have (the safe, partial answer)
   }
@@ -184,9 +178,5 @@ export function applyServerSettings(
       if (shown.has(id)) set(store, introShownKey(id), INTRO_SHOWN);
       else remove(store, introShownKey(id));
     }
-  }
-
-  if (settings.latency !== undefined) {
-    set(store, LATENCY_KEY, JSON.stringify(settings.latency));
   }
 }

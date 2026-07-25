@@ -67,7 +67,7 @@ function drilledJustNow(
   counts: { seen: number; missed: number; firstTry: number; correct: number },
   at: number,
 ): FactAggregate {
-  return { ...counts, slow: 0, stability: 30, lastTested: at };
+  return { ...counts, stability: 30, lastTested: at };
 }
 
 describe("standingOf — 'solid' takes accuracy, not just recency", () => {
@@ -125,7 +125,6 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
     const agg: FactAggregate = {
       seen: 8,
       missed: 0,
-      slow: 0,
       firstTry: 8,
       correct: 8,
       stability: 5,
@@ -212,7 +211,6 @@ describe("entryIsKnown — the knowledge filter's one boolean", () => {
         lastTested: state.lastTested,
         seen: 4,
         missed: 0,
-        slow: 0,
         firstTry: 4,
         correct: 4,
       };

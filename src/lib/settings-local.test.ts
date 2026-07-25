@@ -8,7 +8,6 @@ import {
   CLAIM_HINT_KEY,
   introShownKey,
   INTRO_SHOWN,
-  LATENCY_KEY,
   LESSON_OPEN,
   LESSON_WRITING_KEY,
   OLD_CFG_KEY,
@@ -57,17 +56,14 @@ test("readLocalSettings: an empty store reads as empty settings", () => {
   assert.deepEqual(readLocalSettings(null), {});
 });
 
-test("readLocalSettings: parses structured cfg / accents / latency, drops junk", () => {
+test("readLocalSettings: parses structured cfg / accents", () => {
   const store = fakeStore({
     [CFG_KEY]: JSON.stringify({ mode: "drill" }),
     [ACCENTS_KEY]: JSON.stringify({ kiri: "magenta" }),
-    [LATENCY_KEY]: "not json",
   });
   const out = readLocalSettings(store);
   assert.deepEqual(out.cfg, { mode: "drill" });
   assert.deepEqual(out.accents, { kiri: "magenta" });
-  // Unparseable latency is simply absent, not a throw.
-  assert.equal("latency" in out, false);
 });
 
 test("readLocalSettings: migrates a legacy kanaquiz- value forward on read", () => {
@@ -119,7 +115,6 @@ test("round trip: applyServerSettings then readLocalSettings recovers the blob",
     claimHintDismissed: true,
     lessonReadings: true,
     introShown: ["track-word"],
-    latency: { typed: [120, 140] },
   };
   applyServerSettings(store, settings);
   const back = readLocalSettings(store);

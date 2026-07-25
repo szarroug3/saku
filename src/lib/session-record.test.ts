@@ -43,7 +43,6 @@ function stat(p: Partial<FactSessionDetail> = {}): FactSessionDetail {
     firstTryCorrect: true,
     firstTryCount: 1,
     correct: 1,
-    slow: 0,
     confused: {},
     ...p,
   };
@@ -52,7 +51,7 @@ function stat(p: Partial<FactSessionDetail> = {}): FactSessionDetail {
 /** What ONE drill leg produced. A round is one of these, or several merged. */
 const LEG_1: SessionStats = {
   [A]: stat(),
-  [I]: stat({ misses: 2, firstTryCorrect: false, firstTryCount: 0, slow: 1 }),
+  [I]: stat({ misses: 2, firstTryCorrect: false, firstTryCount: 0}),
   [U]: stat({ misses: 1, firstTryCorrect: false, firstTryCount: 0, everCorrect: false, correct: 0 }),
 };
 
@@ -95,7 +94,6 @@ function counts(agg: Record<string, FactAggregate>) {
     out[k] = {
       seen: a.seen,
       missed: a.missed,
-      slow: a.slow,
       firstTry: a.firstTry,
       correct: a.correct,
     };

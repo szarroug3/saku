@@ -39,7 +39,7 @@ async function writeSettings(userId: string, settings: SettingsFile): Promise<vo
  * Read-modify-write on the whole blob, exactly like saveList: load the current
  * settings, field-replace with whatever the patch carries (mergeSettings), write
  * the result back. So a POST that changes only the theme leaves cfg, the accent
- * map, the dismissal flags and the latency window exactly as they were.
+ * map and the dismissal flags exactly as they were.
  */
 export async function saveSettings(
   userId: string,

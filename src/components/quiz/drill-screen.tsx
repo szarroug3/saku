@@ -7,8 +7,8 @@
 // in `active.runtime` (a stable, JSON-serializable object) so tab switches
 // (unmount/remount) resume mid-question and a page refresh survives via the
 // provider's sessionStorage snapshot. The countdown syncs its remaining
-// seconds and the active-elapsed ms into the runtime on every tick, because
-// effect cleanups don't reliably run on page unload.
+// seconds into the runtime on every tick, because effect cleanups don't
+// reliably run on page unload.
 //
 // Config split: builder settings (mode, source-based ask forms, length) come from
 // active.snapshot, frozen at Start Quiz. Settings-page values (retries,
@@ -17,9 +17,7 @@
 // instantly.
 //
 // Timer pauses while away: the interval stops on unmount (remainder already
-// in runtime) and resumes from the stored remainder on remount. Slow-answer
-// measurement counts ACTIVE time only — elapsed accumulates on pause and the
-// stopwatch restarts on resume.
+// in runtime) and resumes from the stored remainder on remount.
 //
 // The view: information stays, interaction fades. The HUD is small, quiet
 // pills that are always readable; End quiz and the gear drop to 22% and wake
@@ -45,9 +43,7 @@ import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { answerGuide, confusionNote } from "@/lib/drill-guidance";
 import { resolveShowing, statForShowing } from "@/lib/drill-stats";
-import { loadLatencies, pushLatency } from "@/lib/latency-store";
 import { sessionAccuracy } from "@/lib/session-accuracy";
-import { isSlow, type LatencyStyle, type LatencyWindow } from "@/lib/slow";
 import {
   answerIsJapanese,
   buildDeck,
@@ -158,8 +154,8 @@ interface DrillQuestion {
    * reason they are: everything frozen at ask time lives on `q`, and `q` is
    * rebuilt from scratch by nextQuestion, so the flag resets when the next card
    * is asked and cannot survive a remount as a stale true. (The `??=` hazard the
-   * markFirstKey comment describes is why this is written flat at construction
-   * rather than defaulted later.)
+   * same reason this is written flat at construction rather than defaulted
+   * later.)
    *
    * It stays true across RETRIES of the same showing, which is the point: the
    * hint you read on try one is still on screen on try two.
@@ -272,18 +268,6 @@ interface DrillRuntime {
   feedback: DrillFeedback | null;
   /** Remaining countdown seconds; null when the timer is off. */
   timerLeft: number | null;
-  /** Active (on-screen) ms spent on the current question so far. */
-  elapsedMs: number;
-  /**
-   * Recall latency for the current card: active ms from the character
-   * appearing to the FIRST keystroke. This — not time-to-submit — is what
-   * "slow" is judged on, because everything after the first keystroke is
-   * typing, and typing is motor skill rather than recognition. Charging ぎゃ
-   * for three keystrokes that あ never pays would read long romaji as
-   * hesitation. Null until the first key lands; for MC, set at click, where
-   * time-to-choose IS the recall.
-   */
-  firstKeyMs: number | null;
 }
 
 interface DrillHandlers {
@@ -423,14 +407,6 @@ export function DrillScreen() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const advanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Timestamp when the active stopwatch for this question (re)started. */
-  const qStartRef = useRef(0);
-  /** Active ms accumulated before the current stopwatch span. */
-  const elapsedBaseRef = useRef(0);
-  /** Your recent recall latencies, per answer style — the baseline every
-   * slow verdict is measured against. Loaded once; a ref rather than state
-   * because nothing renders from it. */
-  const latencyRef = useRef<LatencyWindow>({});
   /** Whether THIS render has a hint to give — including, for kana, whether the
    * drawing actually exists (see useDrawnImage). Mirrored into a ref because the
    * document keydown handler has to answer the same question the button does,
@@ -448,14 +424,6 @@ export function DrillScreen() {
     !!active && (active.forceCoverage || active.snapshot.length === "limited");
 
   // ---------- engine (fresh closures each render; legacy port) ----------
-
-  /** Stamp the recall latency the moment the first key lands — active time
-   * only, so pausing for a tab switch doesn't read as hesitation. Once per
-   * card: `??=` means later keystrokes (and retries) don't overwrite it. */
-  function markFirstKey() {
-    if (!rt || rt.waiting) return;
-    rt.firstKeyMs ??= elapsedBaseRef.current + (Date.now() - qStartRef.current);
-  }
 
   /** Take the hint on this showing. Idempotent, and refused once the card has
    * resolved: a hint after the answer is in would be a scoring change with
@@ -491,7 +459,7 @@ export function DrillScreen() {
   }
 
   /** Legacy startTimer: countdown from `from`, ticking once a second. Each
-   * tick writes the remainder + elapsed into the runtime (refresh survival). */
+   * tick writes the remainder into the runtime (refresh survival). */
   function startCountdown(from: number) {
     if (!rt) return;
     stopCountdown();
@@ -502,7 +470,6 @@ export function DrillScreen() {
   function tick() {
     if (!rt || !rt.q || rt.waiting) return;
     rt.timerLeft = Math.max(0, (rt.timerLeft ?? 0) - 1);
-    rt.elapsedMs = elapsedBaseRef.current + (Date.now() - qStartRef.current);
     if (rt.timerLeft <= 0) {
       submit("(time)");
       return;
@@ -662,10 +629,6 @@ export function DrillScreen() {
     // here, which put it in the same unit as `asked` while every numerator was
     // in the unit of `resolved` — see src/lib/drill-stats.ts for what that cost.
     statForShowing(rt.stats, f);
-    rt.elapsedMs = 0;
-    rt.firstKeyMs = null;
-    elapsedBaseRef.current = 0;
-    qStartRef.current = Date.now();
     if (cfg.timer) startCountdown(cfg.timerSec);
     else rt.timerLeft = null;
     setTyped("");
@@ -698,12 +661,6 @@ export function DrillScreen() {
   function submit(given: string, picked?: FactId, recognitionPick?: number) {
     if (!rt || !rt.q || rt.waiting || finishedRef.current) return;
     const q = rt.q;
-    const ms = elapsedBaseRef.current + (Date.now() - qStartRef.current);
-    rt.elapsedMs = ms;
-    // MC has no keystroke to wait for — the click IS the decision, so the
-    // whole elapsed time is recall.
-    const style: LatencyStyle = q.mc || q.recognition ? "mc" : "typed";
-    if (q.mc || q.recognition) rt.firstKeyMs ??= ms;
     // Clicking an MC option is answered by WHICH option, not by its label:
     // two options can carry the same text (two kanji meaning "life") and
     // comparing strings would mark a wrong click right. Typed answers go to the
@@ -719,9 +676,6 @@ export function DrillScreen() {
     // with a hint is the third outcome: seen, correct, not first-try — which is
     // an existing shape, not a new one (it is what a second-try success already
     // records), so nothing about the persisted file or the standings changes.
-    //
-    // Slowness is NOT a term here and must not become one: `st.slow` is its own
-    // counter that no numerator reads. A slow answer is a first-try answer.
     const credit = firstTryCredit(ok, q.tries, q.hinted);
     if (ok) {
       // The showing RESOLVED. `seen`, the flag, the first-try count and the
@@ -732,15 +686,6 @@ export function DrillScreen() {
       // Only a clean first try extends the streak — a miss below has already
       // zeroed it, so getting there on the retry doesn't restore it.
       if (q.tries === 0) rt.streak = (rt.streak ?? 0) + 1;
-      // "Slow" is a hesitation relative to YOUR OWN recent latencies, judged
-      // only on a clean first try: fumbling a retry says you didn't know it,
-      // which the miss already records — it isn't a speed fact. A timeout is
-      // never a latency sample either (it's an absence of one).
-      const latency = rt.firstKeyMs;
-      if (q.tries === 0 && latency !== null && given !== "(time)") {
-        if (isSlow(latency, latencyRef.current, style, cfg.slowFloorMs)) st.slow++;
-        latencyRef.current = pushLatency(latencyRef.current, style, latency);
-      }
       rt.resolved++; // answered correctly — this card is done
       rt.feedback = { kind: "good" };
       rt.waiting = true;
@@ -918,8 +863,6 @@ export function DrillScreen() {
     if (!active || !rt) return;
     startedRef.current = true;
     finishedRef.current = false;
-    // Your latency baseline outlives any one quiz — load it once per mount.
-    latencyRef.current = loadLatencies();
     if (!Array.isArray(rt.deck)) {
       // Fresh quiz — build the deck. Redrill forces one full-coverage pass
       // over exactly the given facts; otherwise honor the builder snapshot.
@@ -960,8 +903,6 @@ export function DrillScreen() {
       rt.waiting = false;
       rt.feedback = null;
       rt.timerLeft = null;
-      rt.elapsedMs = 0;
-      rt.firstKeyMs = null;
       nextQuestion();
       return;
     }
@@ -971,7 +912,6 @@ export function DrillScreen() {
     }
     // Resuming a runtime written before these fields existed.
     if (typeof rt.streak !== "number") rt.streak = 0;
-    if (rt.firstKeyMs === undefined) rt.firstKeyMs = null;
     // A showing in flight from before the hint existed was not hinted. Reading
     // `undefined` as "not hinted" is also what the flat `!q.hinted` test in
     // submit does, so this is belt and braces rather than the load-bearing part.
@@ -1000,11 +940,7 @@ export function DrillScreen() {
       nextQuestion();
       return;
     }
-    // Resume mid-question after a tab switch / remount / refresh: restart the
-    // active stopwatch from the accumulated elapsed, and the countdown from
-    // the stored remainder.
-    elapsedBaseRef.current = rt.elapsedMs ?? 0;
-    qStartRef.current = Date.now();
+    // Resume mid-question after a tab switch / remount / refresh.
     if (rt.waiting) {
       // A correct answer was mid auto-advance when we unmounted — re-arm it.
       // Only a correct one: a MISS now waits for Enter or the Continue button
@@ -1032,12 +968,6 @@ export function DrillScreen() {
     startedRef.current = false;
     stopCountdown();
     clearAdvance();
-    // Pause the active stopwatch: bank the elapsed into the runtime so the
-    // slow-answer clock doesn't run while we're away. (timerLeft is already
-    // there from the last tick.)
-    if (rt && rt.q && !rt.waiting) {
-      rt.elapsedMs = elapsedBaseRef.current + (Date.now() - qStartRef.current);
-    }
   }
 
   function onTimerCfgChange() {
@@ -1655,16 +1585,6 @@ export function DrillScreen() {
               placeholder={guide?.placeholder}
               value={typed}
               readOnly={revealing}
-              // Latency is stamped on a real keypress, NOT in onChange: React
-              // fires change when it syncs a controlled input on mount, which
-              // stamped every card at ~1ms and made every answer look instant.
-              // A printable keydown is unambiguously "they started answering" —
-              // and it ignores Enter, Tab and modifiers, which aren't answers.
-              onKeyDown={(e) => {
-                if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-                  markFirstKey();
-                }
-              }}
               // Convert-as-you-type for the Japanese side: the user sees これ /
               // せんせい form in the box (live mode leaves an incomplete trailing
               // run — "sens" → せんs — as latin). The value stays kana, so the

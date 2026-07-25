@@ -35,7 +35,6 @@ function detail(over: Partial<FactSessionDetail> = {}): FactSessionDetail {
     firstTryCorrect: true,
     firstTryCount: 1,
     correct: 1,
-    slow: 0,
     confused: {},
     ...over,
   };
@@ -52,7 +51,6 @@ function writeRecord(stats: SessionStats, ts: number): QuizSessionRecord {
     facts[c] = {
       seen: st.seen,
       missed: st.misses,
-      slow: st.slow,
       firstTry: st.firstTryCount,
       correct: st.correct || (st.everCorrect ? 1 : 0),
       firstTryHit: st.firstTryCorrect === true,

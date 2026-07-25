@@ -43,10 +43,6 @@ export const OLD_LESSON_READINGS_KEY = "kanaquiz-lesson-readings";
 /** The stored value meaning "this section opens by default"; absent means closed. */
 export const LESSON_OPEN = "1";
 
-// ---------- latency baseline (src/lib/latency-store.ts) ----------
-export const LATENCY_KEY = "saku-latency";
-export const OLD_LATENCY_KEY = "kanaquiz-latency";
-
 // ---------- once-ever concept-card intros (src/lib/intro-shown.ts) ----------
 /** The localStorage key for one intro's "already shown" flag. */
 export function introShownKey(id: string): string {

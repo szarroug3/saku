@@ -326,7 +326,6 @@ export function newFactStat(): FactSessionDetail {
     // yes/no over the run); this counts how many of the showings you landed,
     // and is the forgiving numerator — see src/lib/accuracy.ts.
     correct: 0,
-    slow: 0,
     confused: {},
   };
 }

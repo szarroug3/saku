@@ -1,7 +1,7 @@
 -- Add the `settings` blob to the progress row.
 --
 -- The learner's server-synced preferences (quiz config, theme/appearance/accents,
--- dismissal flags, latency baseline) live in one jsonb column beside `history`
+-- and dismissal flags) live in one jsonb column beside `history`
 -- and `lists`, read/written by src/lib/settings.ts via readSettingsRow /
 -- writeSettingsRow in src/lib/store/supabase-store.ts.
 --

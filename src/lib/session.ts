@@ -244,7 +244,6 @@ function emptyStat(): FactSessionDetail {
     firstTryCorrect: null,
     firstTryCount: 0,
     correct: 0,
-    slow: 0,
     confused: {},
   };
 }
@@ -284,7 +283,6 @@ export function mergeStats(into: SessionStats, from: SessionStats): SessionStats
     dst.misses += src.misses;
     dst.correct += src.correct;
     dst.firstTryCount += firstTryShowings(src);
-    dst.slow += src.slow;
     dst.everCorrect = dst.everCorrect || src.everCorrect;
     // First time asked wins, forever. See above.
     if (dst.firstTryCorrect === null) dst.firstTryCorrect = src.firstTryCorrect;

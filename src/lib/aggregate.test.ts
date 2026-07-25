@@ -32,7 +32,6 @@ function writeOld(r: Run): SessionFactCounts {
   return {
     seen: r.seen,
     missed: 0,
-    slow: 0,
     firstTry: r.firstTryCorrect ? 1 : 0,
     correct: r.seen,
   };
@@ -43,7 +42,6 @@ function writeNew(r: Run): SessionFactCounts {
   return {
     seen: r.seen,
     missed: 0,
-    slow: 0,
     firstTry: r.firstTryCount,
     correct: r.seen,
     firstTryHit: r.firstTryCorrect,
@@ -54,7 +52,6 @@ function writeNew(r: Run): SessionFactCounts {
 function foldOld(agg: FactAggregate, s: SessionFactCounts, ts: number): void {
   agg.seen += s.seen;
   agg.missed += s.missed;
-  agg.slow += s.slow;
   agg.firstTry += s.firstTry;
   agg.correct += s.correct;
   if (!s.seen) return;

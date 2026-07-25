@@ -68,14 +68,14 @@ describe("accuracyOf — the two metrics over one fact's counts", () => {
 describe("totalFor — pooling counts over facts (a real, larger population)", () => {
   const history: CountsByFact = {
     facts: {
-      [fid("hira-a")]: counts({ seen: 2, firstTry: 2, correct: 2, missed: 1, slow: 1 }),
-      [fid("hira-i")]: counts({ seen: 3, firstTry: 1, correct: 2, missed: 4, slow: 0 }),
+      [fid("hira-a")]: counts({ seen: 2, firstTry: 2, correct: 2, missed: 1}),
+      [fid("hira-i")]: counts({ seen: 3, firstTry: 1, correct: 2, missed: 4}),
     } as Record<FactId, FactCounts>,
   };
 
   test("sums each count field across the named facts", () => {
     const t = totalFor(history, [fid("hira-a"), fid("hira-i")]);
-    assert.deepEqual(t, { seen: 5, firstTry: 3, correct: 4, missed: 5, slow: 1 });
+    assert.deepEqual(t, { seen: 5, firstTry: 3, correct: 4, missed: 5});
   });
 
   test("silently skips a fact with no counts", () => {

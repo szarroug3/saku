@@ -53,7 +53,7 @@ test("reconcileSettings: server value wins over local cache", () => {
 });
 
 test("reconcileSettings: an empty server leaves the local cache intact", () => {
-  const local = { theme: "aizome", latency: { typed: [100] } };
+  const local = { theme: "aizome" };
   const merged = reconcileSettings(local, {});
   assert.deepEqual(merged, local);
 });

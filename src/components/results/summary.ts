@@ -7,7 +7,6 @@
 
 import { accuracyFor, accuracyOf, EMPTY_COUNTS } from "@/lib/accuracy";
 import { foldSessions } from "@/lib/aggregate";
-import { BEHAVIOR } from "@/lib/config";
 import { DECKS } from "@/lib/decks";
 import { computeResults } from "@/lib/engine";
 import { firstTryShowings } from "@/lib/first-try";
@@ -97,8 +96,6 @@ export interface RunFacts {
   firstTry: number;
   /** Facts answered right at some point. */
   eventually: number;
-  /** Slow-but-right answers, summed over facts. */
-  slowEvents: number;
   /** Wrong attempts across the run — the truth the metric can't soften. */
   totalMisses: number;
   /** The ring, through accuracy.ts. */
@@ -108,9 +105,7 @@ export interface RunFacts {
   stored?: { forgivingPct: number; strictPct: number };
   /** Facts that count as missed under `metric`, worst first. */
   missed: FactId[];
-  /** Right, but at least once over BEHAVIOR.slowAnswerMs. */
-  slowOnly: FactId[];
-  /** missed ∪ slowOnly — the Needs work board, and what Redrill offers. */
+  /** Facts missed under the selected metric — the Needs work board. */
   needsWork: FactId[];
   /** Everything else. */
   solid: FactId[];
@@ -168,7 +163,6 @@ function runAggregate(stats: SessionStats): FactCounts {
   for (const st of Object.values(stats)) {
     agg.seen += st.seen;
     agg.missed += st.misses;
-    agg.slow += st.slow;
     agg.firstTry += firstTryShowings(st);
   }
   return agg;
@@ -191,11 +185,7 @@ export function deriveRun(
         stats[b].misses - stats[a].misses ||
         Number(stats[a].everCorrect) - Number(stats[b].everCorrect),
     );
-  const missedSet = new Set(missed);
-  const slowOnly = r.facts
-    .filter((f) => stats[f].slow > 0 && !missedSet.has(f))
-    .sort((a, b) => stats[b].slow - stats[a].slow);
-  const needsWork = [...missed, ...slowOnly];
+  const needsWork = [...missed];
   const workSet = new Set(needsWork);
 
   return {
@@ -204,7 +194,6 @@ export function deriveRun(
     total: r.total,
     firstTry: r.strict,
     eventually: r.forg,
-    slowEvents: r.slow,
     totalMisses: r.facts.reduce((n, f) => n + stats[f].misses, 0),
     // Summary-only sessions kept percentages and nothing to recompute from.
     pct: summaryOnly
@@ -214,7 +203,6 @@ export function deriveRun(
       : accuracyOf(runAggregate(stats), metric),
     stored: summaryOnly,
     missed,
-    slowOnly,
     needsWork,
     solid: r.facts.filter((f) => !workSet.has(f)),
   };
@@ -238,8 +226,7 @@ export interface Worst {
  *   1. never got it        — not knowing beats fumbling, whatever the counts
  *   2. most misses         — among the ones you did get, how hard it fought
  *   3. historically weakest — your history's vote, through accuracy.ts
- *   4. slowest             — last resort
- *   5. still tied          — then say so, and name them
+ *   4. still tied          — then say so, and name them
  *
  * So history BREAKS ties and never WRITES the line: `prior` only ever narrows a
  * pool of facts that all really cost you today. Naming a fact you nailed this
@@ -270,15 +257,7 @@ export function worstOf(
     pool = pool.filter((f) => acc(f) === worstAcc);
   }
 
-  // 4 · slowest. No latency is stored, only how often an answer ran over
-  // BEHAVIOR.slowAnswerMs — that is the whole "took longest to recall" signal
-  // this app has.
-  if (pool.length > 1) {
-    const slowest = Math.max(...pool.map((f) => stats[f].slow));
-    pool = pool.filter((f) => stats[f].slow === slowest);
-  }
-
-  // 5 · genuinely identical — the caller names them all.
+  // 4 · genuinely identical — the caller names them all.
   return { facts: pool, kind, misses: most };
 }
 
@@ -290,7 +269,7 @@ export interface Bit {
   em?: boolean;
 }
 
-export type SummaryState = "misses" | "slow" | "retries" | "perfect";
+export type SummaryState = "misses" | "retries" | "perfect";
 
 export interface Summary {
   state: SummaryState;
@@ -356,18 +335,6 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
   ];
 }
 
-/** "ゑ took over 5s though, and speed is what's left". No latency is stored, so
- * the threshold is the number that can honestly be quoted. */
-function slowBits(run: RunFacts, stats: SessionStats): Bit[] {
-  const most = Math.max(...run.slowOnly.map((f) => stats[f].slow));
-  const slowest = run.slowOnly.filter((f) => stats[f].slow === most);
-  const secs = BEHAVIOR.slowAnswerMs / 1000;
-  return [
-    ...nameList(slowest),
-    { t: ` took over ${secs}s though, and speed is what's left` },
-  ];
-}
-
 /** The counts line: how the run reads under the chosen chip, plus anything the
  * Progress section earned. */
 function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
@@ -379,9 +346,6 @@ function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
     run.stored
       ? { t: `${run.stored.strictPct}% first try · ${run.stored.forgivingPct}% eventually right` }
       : { t: `${got} / ${run.total} ${metricWords(run.metric)}` },
-    ...(run.slowEvents
-      ? [{ t: ` · ${run.slowEvents} slow but right` }]
-      : []),
     ...(beaten
       ? [
           {
@@ -430,7 +394,6 @@ function perfectBits(run: RunFacts, prior: HistoryFile): Bit[] {
  * The summary line, in every state. Leads with the most useful TRUE thing:
  *
  *   misses  → what needs another pass, and which character cost the most
- *   slow    → nothing missed; speed is the frontier that's left
  *   retries → nothing left unlanded under "Eventually right", but it wasn't free
  *   perfect → nothing to diagnose, so report the achievement
  *
@@ -460,19 +423,8 @@ export function summarize(
     };
   }
 
-  if (run.slowOnly.length) {
-    return {
-      state: "slow",
-      headline: run.totalMisses
-        ? "Everything landed in the end"
-        : "Clean run, nothing missed",
-      detail: slowBits(run, stats),
-      counts,
-    };
-  }
-
   if (run.totalMisses) {
-    // Nothing unlanded and nothing slow, but retries happened: name what they
+    // Nothing unlanded, but retries happened: name what they
     // cost rather than calling it perfect.
     const worst = worstOf(
       { ...run, missed: run.facts.filter((f) => stats[f].misses > 0) },
@@ -502,7 +454,7 @@ export function summarize(
     headline: "Perfect run",
     detail: [
       {
-        t: `${run.total} / ${run.total} ${metricWords(run.metric)}, none slow`,
+        t: `${run.total} / ${run.total} ${metricWords(run.metric)}`,
       },
       ...(beat
         ? ([

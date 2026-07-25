@@ -44,7 +44,6 @@ function detail(over: Partial<FactSessionDetail> = {}): FactSessionDetail {
     firstTryCorrect: null,
     firstTryCount: 0,
     correct: 0,
-    slow: 0,
     confused: {},
     ...over,
   };
@@ -166,12 +165,12 @@ test("mergeStats keeps firstTryCount <= seen", () => {
 test("mergeStats is commutative in every count", () => {
   // Retry legs and rounds arrive in whatever order the loop ran them. The
   // counts must not care — only the flag does, and it is tested separately.
-  const a = { [f("a")]: detail({ seen: 2, firstTryCount: 2, correct: 2, misses: 1, slow: 1 }) };
-  const b = { [f("a")]: detail({ seen: 5, firstTryCount: 1, correct: 4, misses: 3, slow: 0 }) };
+  const a = { [f("a")]: detail({ seen: 2, firstTryCount: 2, correct: 2, misses: 1}) };
+  const b = { [f("a")]: detail({ seen: 5, firstTryCount: 1, correct: 4, misses: 3}) };
   const ab = mergeStats(a, b)[f("a")];
   const ba = mergeStats(b, a)[f("a")];
 
-  for (const k of ["seen", "firstTryCount", "correct", "misses", "slow"] as const) {
+  for (const k of ["seen", "firstTryCount", "correct", "misses"] as const) {
     assert.equal(ab[k], ba[k], `${k} is order-independent`);
   }
 });

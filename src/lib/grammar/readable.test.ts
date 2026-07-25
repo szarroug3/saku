@@ -42,7 +42,7 @@ function tested(...kebs: string[]): HistoryFile {
     facts: Object.fromEntries(
       kebs.map((k) => [
         wordMeaningFactId(k),
-        { seen: 1, missed: 0, slow: 0, firstTry: 1, correct: 1, lastTested: NOW, stability: 30 },
+        { seen: 1, missed: 0, firstTry: 1, correct: 1, lastTested: NOW, stability: 30 },
       ]),
     ),
   };

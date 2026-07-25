@@ -137,36 +137,6 @@ test("the round summary agrees with itself while a card is on screen", () => {
   );
 });
 
-test("a SLOW but correct first answer earns full first-try credit", () => {
-  // REFUTATION, kept as a test because it was a live hypothesis: a second
-  // auditor read `10 answered · 91% first try · 🔥 10` and inferred that a
-  // slow-but-right answer was being deducted from the "% first try" pill,
-  // which would have meant the label and the measurement disagreed and that
-  // someone had to choose what "first try" means.
-  //
-  // They do not disagree. firstTryCredit(ok, tries, hinted) has three terms and
-  // slowness is not one of them; `st.slow` is a separate counter that no
-  // numerator reads. A slow answer is a first-try answer, here and in the pill.
-  //
-  // The 91% was this file's bug: 10 resolved showings over a denominator of 11,
-  // the eleventh being the card on screen. 10/11 = 90.9%. The HUD's "10
-  // answered" (rt.resolved) and the summary's "11 questions" (Σ seen) are the
-  // same off-by-one seen from two sides.
-  const stats: SessionStats = {};
-  const st = statForShowing(stats, POOL[0]);
-  resolveShowing(st, true, true); // right, cold, unhinted — but took a while
-  st.slow++;
-
-  assert.equal(st.firstTryCount, 1, "slow does not forfeit the credit");
-  assert.equal(sessionAccuracy(stats, "firstTry"), 100);
-
-  // And the shape the auditor actually saw: ten clean answers, one of them
-  // slow, must read 100% and not 91%.
-  const run = driveCorrectly(10);
-  run[POOL[0]].slow++;
-  assert.equal(sessionAccuracy(run, "firstTry"), 100, "streak of 10 reads 100%");
-});
-
 test("a HINTED first answer does forfeit it — the one thing a hint costs", () => {
   // The other side of the same rule, so the refutation above cannot be read as
   // "nothing forfeits the credit".

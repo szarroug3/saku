@@ -51,8 +51,6 @@ function samplePayload(): SessionPayload {
         q: { f: "kana:i", dir: "jp2en", tries: 1, hinted: false, confused: null },
         waiting: false,
         timerLeft: null,
-        elapsedMs: 4200,
-        firstKeyMs: 900,
       },
     },
     session: {
