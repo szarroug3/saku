@@ -253,3 +253,85 @@ function fisherYates<T>(a: T[]): T[] {
   }
   return a;
 }
+
+/**
+ * Diagnostic: which settings are "reachable" (will produce at least one form for
+ * some fact)? and which are "unreachable" (selected but will never produce forms)?
+ *
+ * A setting combination is UNREACHABLE when:
+ * - Japanese source selects only audio, but the fact(s) are not listenable
+ *   (audio is word-only; kana, kanji, grammar, keigo, transitivity have no audio)
+ * - English source is off (empty answers) when all facts are en→jp only
+ * - A response kind is selected but no fact supports it
+ *   (e.g., selecting "romaji" when all facts are meaning facts with no reading)
+ * - Typed is selected only, but all facts are MC-forced
+ *   (e.g., kana en→jp, kanji meaning en→jp, grammar en→jp)
+ *
+ * This is purely a diagnostic tool; enabledFormsFor already silently drops
+ * unreachable combinations. Use this to document what users are selecting.
+ */
+export interface SettingsReachability {
+  /** True if this configuration will produce at least one form for the given facts. */
+  isReachable: boolean;
+  /** Human-readable explanation of why unreachable (if isReachable is false). */
+  reason?: string;
+}
+
+/**
+ * Check whether a given AskConfig will produce any forms for the given fact set.
+ *
+ * @param facts The fact(s) being asked
+ * @param ask The configuration (source settings, response kinds, answer styles)
+ * @returns whether the config is reachable and why (if not)
+ */
+export function configIsReachable(
+  facts: readonly FactId[],
+  ask: AskConfig,
+): SettingsReachability {
+  if (facts.length === 0) {
+    return { isReachable: false, reason: "No facts provided" };
+  }
+
+  // Check if any form is enabled for any fact
+  for (const fact of facts) {
+    const forms = enabledFormsFor(fact, ask);
+    if (forms.length > 0) {
+      return { isReachable: true };
+    }
+  }
+
+  // All facts produced no forms. Diagnose why.
+  const hasJapaneseSetting =
+    ask.japanese.prompts.length > 0 || ask.japanese.responses.length > 0;
+  const hasEnglishSetting = ask.english.answers.length > 0;
+  const hasSentenceSetting =
+    ask.sentence.prompts.length > 0 || ask.sentence.responses.length > 0;
+
+  if (!hasJapaneseSetting && !hasEnglishSetting && !hasSentenceSetting) {
+    return { isReachable: false, reason: "All sources disabled" };
+  }
+
+  // Check if audio-only was selected and no facts are listenable
+  const audioOnly =
+    ask.japanese.prompts.length === 1 &&
+    ask.japanese.prompts[0] === "audio" &&
+    hasJapaneseSetting;
+  if (audioOnly) {
+    const anyListenable = facts.some((f) => listenKind(f) !== null);
+    if (!anyListenable) {
+      return {
+        isReachable: false,
+        reason:
+          "Audio selected but no facts are listenable (word-only; kana, kanji, grammar are not)",
+      };
+    }
+  }
+
+  // If we get here, the combination is theoretically reachable but produces no forms
+  // for these specific facts (e.g., all facts are meaning-only but only romaji selected)
+  return {
+    isReachable: false,
+    reason:
+      "Settings don't match the facts (e.g., romaji selected but no reading facts, or typed-only selected but all MC-forced facts)",
+  };
+}

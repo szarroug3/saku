@@ -10,6 +10,7 @@ import {
   buildCoverageDeck,
   enabledFormsFor,
   formIsMc,
+  configIsReachable,
 } from "@/lib/ask-forms";
 import { ALL_FACTS } from "@/lib/facts";
 import type { AskConfig } from "@/types";
@@ -17,6 +18,8 @@ import type { AskConfig } from "@/types";
 const word = VOCAB.find((w) => !isKanaWord(w))!;
 const reading = wordReadingFactId(word.keb);
 const meaning = wordMeaningFactId(word.keb);
+const firstKanjiReading = READING_INDEX.keys().next().value;
+const grammarFact = patternMeaningFactId(RECIPES[0].id);
 
 const ALL: AskConfig = {
   japanese: {
@@ -63,7 +66,6 @@ describe("enabledFormsFor", () => {
   });
 
   test("kanji reading facts never get audio forms", () => {
-    const firstKanjiReading = READING_INDEX.keys().next().value;
     assert.ok(firstKanjiReading, "expected at least one kanji reading fact");
     const forms = enabledFormsFor(firstKanjiReading, ALL);
     assert.ok(forms.length > 0, "kanji reading should still have non-audio forms");
@@ -380,5 +382,85 @@ describe("Blocked production facts (not yet implemented)", () => {
       0,
       "Sentence source should not emit for non-grammar facts",
     );
+  });
+});
+
+describe("configIsReachable diagnostic", () => {
+  test("all sources disabled is unreachable", () => {
+    const empty: AskConfig = {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const result = configIsReachable([reading], empty);
+    assert.equal(result.isReachable, false);
+    assert.match(result.reason!, /All sources disabled/);
+  });
+
+  test("audio-only with non-listenable facts is unreachable", () => {
+    const audioOnly: AskConfig = {
+      japanese: {
+        prompts: ["audio"],
+        responses: ["definition", "romaji"],
+        answers: ["mc"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const result = configIsReachable([kanaFact("あ"), firstKanjiReading], audioOnly);
+    assert.equal(result.isReachable, false);
+    assert.match(result.reason!, /Audio selected/);
+  });
+
+  test("audio-only with listenable facts is reachable", () => {
+    const audioOnly: AskConfig = {
+      japanese: {
+        prompts: ["audio"],
+        responses: ["romaji"],
+        answers: ["mc"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const result = configIsReachable([reading], audioOnly);
+    assert.equal(result.isReachable, true);
+  });
+
+  test("text prompt with any fact is reachable", () => {
+    const text: AskConfig = {
+      japanese: {
+        prompts: ["text"],
+        responses: ["definition"],
+        answers: ["mc"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const result = configIsReachable([meaning], text);
+    assert.equal(result.isReachable, true);
+  });
+
+  test("english-only produces forms for en→jp facts", () => {
+    const englishOnly: AskConfig = {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: ["mc"] },
+    };
+    const result = configIsReachable([reading], englishOnly);
+    assert.equal(result.isReachable, true, "en→jp reading should be reachable");
+  });
+
+  test("romaji-only with only meaning facts is unreachable", () => {
+    const romajiOnly: AskConfig = {
+      japanese: {
+        prompts: ["text"],
+        responses: ["romaji"],
+        answers: ["typed"],
+      },
+      sentence: { prompts: [], responses: [], answers: [] },
+      english: { answers: [] },
+    };
+    const result = configIsReachable([meaning], romajiOnly);
+    assert.equal(result.isReachable, false, "no reading fact to enable romaji");
   });
 });
