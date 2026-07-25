@@ -31,7 +31,11 @@ import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { gridFacts } from "@/lib/grid-facts";
 import { playablePairBoards } from "@/lib/pair-facts";
-import { buildCoverageDeck, enabledFormsFor } from "@/lib/ask-forms";
+import {
+  buildCoverageDeck,
+  configIsReachable,
+  enabledFormsFor,
+} from "@/lib/ask-forms";
 import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
@@ -153,6 +157,14 @@ export default function PracticePage() {
     planned.facts,
   ]);
 
+  // Check if the current settings are reachable for drill mode with facts selected
+  const reachability = useMemo(() => {
+    if (cfg.mode !== "drill" || planned.facts.length === 0) {
+      return { isReachable: true };
+    }
+    return configIsReachable(planned.facts, cfg.ask);
+  }, [cfg.mode, cfg.ask, planned.facts]);
+
   const what = useMemo(
     () =>
       whatSentence(cfg.selection, questionCount, lists, {
@@ -238,6 +250,7 @@ export default function PracticePage() {
         what={runWhat}
         count={questionCount}
         plannedCount={planned.count}
+        reachability={reachability}
         onStart={start}
       />
     </>

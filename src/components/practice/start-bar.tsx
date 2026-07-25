@@ -40,6 +40,7 @@ import {
 } from "@/lib/ask-config";
 import { startIsDisabled } from "@/lib/practice-start";
 import type { AskConfig, QuizConfig } from "@/types";
+import type { SettingsReachability } from "@/lib/ask-forms";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -136,6 +137,7 @@ export function StartBar({
   what,
   count,
   plannedCount,
+  reachability,
   onStart,
 }: {
   cfg: QuizConfig;
@@ -151,6 +153,8 @@ export function StartBar({
    * an error and not an empty selection.
    */
   plannedCount: number;
+  /** Whether the current settings are reachable (will produce forms). */
+  reachability?: SettingsReachability;
   onStart: () => void;
 }) {
   // Grid ignores Drill's source matrix, but it still needs one response type.
@@ -163,6 +167,9 @@ export function StartBar({
   // the page didn't move, and the app never said why. A button that is enabled
   // and inert is worse than one that is disabled and explains itself.
   const nothingToAsk = count > 0 && !howBroken && plannedCount === 0;
+  // Check if settings are unreachable (will produce no forms for these facts)
+  const settingsUnreachable =
+    count > 0 && !howBroken && nothingToAsk && reachability && !reachability.isReachable;
   const disabled = startIsDisabled(cfg, count, plannedCount);
 
   // Never a bare greyed-out button. A disabled control that won't say why is
@@ -176,20 +183,24 @@ export function StartBar({
         : cfg.mode === "grid"
           ? "Choose at least one Grid response type in the setup above."
         : "Choose at least one complete way to ask in the setup above."
-      : nothingToAsk
-        ? // Deliberately not "nothing to do" and not a congratulation. It is a
-          // statement about right now, with the way out in the same sentence:
-          // the app has nothing to learn by asking these today, and the fix is
-          // to select more — which is the screen you are already on.
-          cfg.mode === "grid"
-            ? "None of the selected material has those Grid response types."
-            : cfg.mode === "pairs"
-              ? // Not "nothing to ask" but "nothing to MATCH": every type here
-                // makes at most a lone pair, and one pair is not a board. The way
-                // out is the same screen — widen until a type has two or more.
-                "These don't make a matching board. Pick more so at least one type has two or more pairs."
-              : "You're solid on all of these for now. Pick another deck to drill something else."
-        : null;
+      : settingsUnreachable
+        ? // Settings are unreachable — show specific reason from configIsReachable
+          reachability?.reason ||
+          "These settings can't be used with the selected material. Check the 'How to ask' settings above."
+        : nothingToAsk
+          ? // Deliberately not "nothing to do" and not a congratulation. It is a
+            // statement about right now, with the way out in the same sentence:
+            // the app has nothing to learn by asking these today, and the fix is
+            // to select more — which is the screen you are already on.
+            cfg.mode === "grid"
+              ? "None of the selected material has those Grid response types."
+              : cfg.mode === "pairs"
+                ? // Not "nothing to ask" but "nothing to MATCH": every type here
+                  // makes at most a lone pair, and one pair is not a board. The way
+                  // out is the same screen — widen until a type has two or more.
+                  "These don't make a matching board. Pick more so at least one type has two or more pairs."
+                : "You're solid on all of these for now. Pick another deck to drill something else."
+          : null;
 
   return (
     <div
