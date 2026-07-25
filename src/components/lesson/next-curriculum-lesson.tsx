@@ -127,16 +127,6 @@ export function NextCurriculumLesson({
               <span className="block font-kana text-[34px] font-extralight leading-[1.15]">
                 {card.glyph}
               </span>
-              {/* A word shows its reading, because that reading is what this
-                  lesson teaches. A kanji shows none: see the header. */}
-              {card.reading ? (
-                <span className="mt-0.5 block font-kana text-[13px] text-text-muted">
-                  {card.reading}
-                </span>
-              ) : null}
-              <span className="mt-1 block text-[13px] text-text-muted">
-                {card.meaning}
-              </span>
               {/* The role line, the same label the entry page uses: every role
                   this character plays, in one order — "Radical · Kanji · Word"
                   for 山, "Kanji · Word" for 何, "Radical" for a shape that is
