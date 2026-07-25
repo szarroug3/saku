@@ -147,4 +147,33 @@ describe("the ring, the pill and the durable aggregate are one measurement", () 
     assert.equal(ring(none), 0);
     assert.equal(durableAccuracy(none), 0);
   });
+
+  it("keeps mixed facts in Needs work even under Eventually right", () => {
+    const mixed: SessionStats = {
+      [f("a")]: detail({
+        seen: 2,
+        misses: 1,
+        everCorrect: true,
+        firstTryCorrect: true,
+        firstTryCount: 1,
+        correct: 2,
+      }),
+      [f("b")]: detail({
+        seen: 1,
+        misses: 0,
+        everCorrect: true,
+        firstTryCorrect: true,
+        firstTryCount: 1,
+        correct: 1,
+      }),
+    };
+
+    const run = deriveRun(
+      { mode: "drill", redrill: false, ts: 0, stats: mixed },
+      "attempt",
+    );
+
+    assert.deepEqual(run.needsWork, [f("a")]);
+    assert.deepEqual(run.solid, [f("b")]);
+  });
 });

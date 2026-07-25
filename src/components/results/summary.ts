@@ -105,7 +105,7 @@ export interface RunFacts {
   stored?: { forgivingPct: number; strictPct: number };
   /** Facts that count as missed under `metric`, worst first. */
   missed: FactId[];
-  /** Facts missed under the selected metric — the Needs work board. */
+  /** Facts that needed another look this run (any miss/retry) — Needs work. */
   needsWork: FactId[];
   /** Everything else. */
   solid: FactId[];
@@ -185,7 +185,16 @@ export function deriveRun(
         stats[b].misses - stats[a].misses ||
         Number(stats[a].everCorrect) - Number(stats[b].everCorrect),
     );
-  const needsWork = [...missed];
+  // Board split is about what needed another look in THIS run, not the lens
+  // chip's strict/forgiving metric. A fact can be first-try on one showing and
+  // still cost retries on another; misses>0 keeps that visible.
+  const needsWork = r.facts
+    .filter((f) => stats[f].misses > 0)
+    .sort(
+      (a, b) =>
+        stats[b].misses - stats[a].misses ||
+        Number(stats[a].everCorrect) - Number(stats[b].everCorrect),
+    );
   const workSet = new Set(needsWork);
 
   return {
