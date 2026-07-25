@@ -78,7 +78,7 @@ export function SliceBar({
    * The default "don't re-drill what you know" holds for whole-shelf and
    * whole-section slices, which never set it. */
   includeSolid?: boolean;
-  /** Optional claim-only facts for reference entries whose completion is
+  /** Optional additional claim-only facts for reference entries whose completion is
    * tracked without a quiz fact. Sentence-rule pages use their tier marker so
    * “I know this” advances the same Learn track as its lesson card. */
   claimFacts?: readonly FactId[];
@@ -126,16 +126,20 @@ export function SliceBar({
   // its word-anchored readings. Knowing 山 does not mean knowing 登山, so
   // claiming 山 must not mark `kanji:山/reading@登山` known and slip it into the
   // quiz. Kana claim their one fact and words claim all of theirs, unchanged.
-  const claimOrder = claimFacts
-    ? claimFacts.filter((id) => claims[id] === undefined)
-    : claimableFacts(
-        includeSolid
-          ? (() => {
-              const base = drillPlan(slice, facts, claims, now);
-              return [...base.teach, ...base.probe];
-            })()
-          : order,
-      );
+  const ordinaryClaimOrder = claimableFacts(
+    includeSolid
+      ? (() => {
+          const base = drillPlan(slice, facts, claims, now);
+          return [...base.teach, ...base.probe];
+        })()
+      : order,
+  );
+  const claimOrder = [
+    ...new Set([
+      ...ordinaryClaimOrder,
+      ...(claimFacts ?? []).filter((id) => claims[id] === undefined),
+    ]),
+  ];
   const count = sliceCount(slice, facts, claims, now, includeSolid);
   const sentence = sliceSentence(count);
   // ONE thing to learn is not a drill. A single kana IS its one reading, and a

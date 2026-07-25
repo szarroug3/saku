@@ -28,6 +28,11 @@ import { SliceBar } from "@/components/library/slice-bar";
 import { StickySearch } from "@/components/library/sticky-search";
 import { Dock } from "@/components/dock";
 import { Card, Chip, GhostBtn, Hint, Lbl, PageTitle } from "@/components/ui";
+import {
+  SENTENCE_ORDERING_TIERS,
+  tierAssemblyFacts,
+} from "@/data/assembly";
+import { markFor } from "@/data/marks";
 import { entryOf, factsOf } from "@/lib/facts";
 import { activeWeaknessPairs } from "@/lib/confusions";
 import {
@@ -68,6 +73,7 @@ import {
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { postClaim } from "@/lib/progress-fetch";
+import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { useHistory } from "@/lib/use-history";
 import type { EntryId, FactId } from "@/types";
 
@@ -461,6 +467,28 @@ function LibraryBody() {
     };
   }, [selected, q, tab, keep, shelvesByKind, allHits]);
 
+  // Sentence rules are reference entries backed by a learn-track completion
+  // marker rather than ordinary entry facts. Add those markers (and the same
+  // readable assembly facts the Learn card claims) for whichever sentence-rule
+  // rows the current shelf/search/selection slice contains. This keeps the
+  // standard shelf-wide “I know these” action without making writing marks
+  // pretend to be quiz facts.
+  const sentenceRuleClaimFacts = useMemo(() => {
+    const out = new Set<FactId>();
+    for (const entryId of slice.entries) {
+      const mark = markFor(entryId);
+      if (mark?.shelf !== "sentence") continue;
+      const tier = SENTENCE_ORDERING_TIERS.find(
+        (candidate) =>
+          candidate.id === mark.id.replace("sentence-rule-", ""),
+      );
+      if (!tier) continue;
+      for (const fact of tierAssemblyFacts(tier, history)) out.add(fact);
+      out.add(sentenceTierMarkerFact(tier.id));
+    }
+    return [...out];
+  }, [slice.entries, history]);
+
   const standingOfEntry = (entry: LibEntry) =>
     entryStanding(factsOf(entry.id), liveFacts, claims, cfg.accuracyMetric, now);
 
@@ -688,6 +716,7 @@ function LibraryBody() {
           now={now}
           onClaim={claim}
           includeSolid={selected.size > 0}
+          claimFacts={sentenceRuleClaimFacts}
         />
       </Dock>
 
