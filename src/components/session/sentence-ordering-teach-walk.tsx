@@ -235,6 +235,41 @@ type StepKey =
   | "condition"
   | "resultTopic";
 
+const DEFAULT_STEP_PARTS: readonly StepKey[] = ["topic", "core", "ending"];
+const REQUEST_STEP_PARTS: readonly StepKey[] = ["context", "target", "action", "ending"];
+const CONDITIONAL_STEP_PARTS: readonly StepKey[] = [
+  "condition",
+  "resultTopic",
+  "core",
+  "ending",
+];
+
+const STEP_PART_LABELS: Record<
+  SentenceOrderingTierId,
+  Partial<Record<StepKey, string>>
+> = {
+  simple: { topic: "Topic", core: "Object/detail", ending: "Final predicate" },
+  conditional: {
+    condition: "If part",
+    resultTopic: "Who the result is about",
+    core: "Other result information",
+    ending: "What happens",
+  },
+  causal: { topic: "Who the result is about", core: "Reason", ending: "What happened" },
+  obligation: { topic: "Who and when", core: "Required action", ending: "Must / have to" },
+  sequential: { topic: "Who", core: "Where or what", ending: "Action + added meaning" },
+  desire: { topic: "Who or what", core: "Action", ending: "Want / easy / hard" },
+  giving: { topic: "Whose side", core: "Who does what for whom", ending: "Giving / receiving" },
+  reported: { topic: "Who, what, or when", core: "Basic statement", ending: "Speaker's view" },
+  contrast: { topic: "Who the result is about", core: "First situation", ending: "What happened" },
+  request: {
+    context: "Time or place",
+    target: "What the action affects",
+    action: "Action",
+    ending: "Request / suggestion",
+  },
+};
+
 export interface TierChunk {
   en: string;
   enOrdered?: string;
@@ -802,14 +837,7 @@ const TIER_LESSONS: Record<SentenceOrderingTierId, readonly LessonDefinition[]> 
 };
 
 function stepExamples(tierId: SentenceOrderingTierId, key: StepKey) {
-  return TIER_EXAMPLES[tierId].map((ex) => ({
-    en: ex.en,
-    enChunk: ex[key]?.en ?? "",
-    enOrdered: ex.enOrdered,
-    enOrderedChunk: ex[key]?.enOrdered ?? ex[key]?.en ?? "",
-    jp: ex.jp,
-    chunk: ex[key]?.jp ?? "",
-  }));
+  return TIER_EXAMPLES[tierId].map((example) => ({ example, activePart: key }));
 }
 
 function lessonsForTier(tierId: SentenceOrderingTierId) {
@@ -826,15 +854,17 @@ function sentenceOrderingIntro(tierId: SentenceOrderingTierId): PhaseIntro {
   return sharedSentenceOrderingIntro(tierId);
 }
 
-function highlightChunk(sentence: string, chunk?: string): ReactNode {
-  if (!chunk) return sentence;
-  // Authored chunks are case-insensitive labels. Slice from the original
-  // sentence so capitalization on screen is preserved.
+interface PositionedStepPart {
+  part: StepKey;
+  start: number;
+  end: number;
+}
+
+function findChunkStart(sentence: string, chunk: string): number {
   const haystack = sentence.toLocaleLowerCase();
   const needle = chunk.toLocaleLowerCase();
   const needsStartBoundary = /^[a-z0-9]/i.test(chunk);
   const needsEndBoundary = /[a-z0-9]$/i.test(chunk);
-  let i = -1;
   let from = 0;
   while (from <= haystack.length - needle.length) {
     const candidate = haystack.indexOf(needle, from);
@@ -843,21 +873,111 @@ function highlightChunk(sentence: string, chunk?: string): ReactNode {
     const after = sentence[candidate + chunk.length] ?? "";
     const startsCleanly = !needsStartBoundary || !/[a-z0-9]/i.test(before);
     const endsCleanly = !needsEndBoundary || !/[a-z0-9]/i.test(after);
-    if (startsCleanly && endsCleanly) {
-      i = candidate;
-      break;
-    }
+    if (startsCleanly && endsCleanly) return candidate;
     from = candidate + 1;
   }
-  if (i < 0) return sentence;
-  const before = sentence.slice(0, i);
-  const after = sentence.slice(i + chunk.length);
+
+  if (needle.startsWith("as for ")) {
+    const bareChunk = chunk.replace(/^as for\s+/i, "").trim();
+    const bareStart = haystack.indexOf(bareChunk.toLocaleLowerCase());
+    if (bareStart >= 0) return bareStart;
+  }
+  return -1;
+}
+
+function stepPartOrder(tierId: SentenceOrderingTierId): readonly StepKey[] {
+  if (tierId === "request") return REQUEST_STEP_PARTS;
+  if (tierId === "conditional") return CONDITIONAL_STEP_PARTS;
+  return DEFAULT_STEP_PARTS;
+}
+
+function positionedStepParts(
+  sentence: string,
+  example: TierExample,
+  partOrder: readonly StepKey[],
+  representation: "en" | "enOrdered" | "jp",
+): PositionedStepPart[] {
+  const positioned = partOrder
+    .map((part) => {
+      const chunk = example[part];
+      const text =
+        representation === "enOrdered"
+          ? (chunk?.enOrdered ?? chunk?.en ?? "").replaceAll(", ", " → ")
+          : (chunk?.[representation] ?? "");
+      if (!text) return null;
+      const start = findChunkStart(sentence, text);
+      if (start < 0) return null;
+      return { part, start, end: start + text.length };
+    })
+    .filter((part): part is PositionedStepPart => part != null)
+    .sort((a, b) => a.start - b.start || b.end - b.start - (a.end - a.start));
+
+  return positioned.filter(
+    (candidate, index) =>
+      !positioned
+        .slice(0, index)
+        .some((placed) => candidate.start < placed.end && candidate.end > placed.start),
+  );
+}
+
+function focusedSentence(
+  sentence: string,
+  spans: readonly PositionedStepPart[],
+  activePart: StepKey,
+): ReactNode {
+  const out: ReactNode[] = [];
+  let cursor = 0;
+  spans.forEach((span, index) => {
+    if (span.start > cursor) out.push(sentence.slice(cursor, span.start));
+    out.push(
+      <span
+        key={`${span.part}-${span.start}-${index}`}
+        className={span.part === activePart ? "font-medium text-accent" : "font-medium text-text-muted"}
+      >
+        {sentence.slice(span.start, span.end)}
+      </span>,
+    );
+    cursor = span.end;
+  });
+  if (cursor < sentence.length) out.push(sentence.slice(cursor));
+  return out;
+}
+
+function FocusedPartBoxes({
+  sentence,
+  spans,
+  activePart,
+  labels,
+  lang,
+}: {
+  sentence: string;
+  spans: readonly PositionedStepPart[];
+  activePart: StepKey;
+  labels: Partial<Record<StepKey, string>>;
+  lang?: string;
+}) {
   return (
-    <>
-      {before}
-      <span className="text-accent">{sentence.slice(i, i + chunk.length)}</span>
-      {after}
-    </>
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      {spans.map((span) => {
+        const active = span.part === activePart;
+        return (
+          <div
+            key={`${span.part}-${span.start}`}
+            className="rounded-md border border-border/70 bg-card/60 px-2 py-1"
+          >
+            <span className={`block text-[9px] font-semibold uppercase tracking-wide ${active ? "text-accent" : "text-text-muted"}`}>
+              {labels[span.part]}
+            </span>
+            <span
+              lang={lang}
+              className={`text-[13px] font-medium ${active ? "text-accent" : "text-text-muted"}`}
+            >
+              {sentence.slice(span.start, span.end)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -912,31 +1032,78 @@ export function SentenceOrderingTeachWalk({
               </div>
 
               <div className="mt-2 space-y-3">
-                {lesson.examples.map((example, idx) => (
-                  <div
-                    key={`${example.en}-${example.jp}`}
-                    className="rounded-md border border-border/60 bg-card/40 px-3 py-2"
-                  >
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-                      Example {idx + 1}
-                    </p>
-                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                      Natural English
-                    </p>
-                    <p className="text-[14px] text-text-muted">
-                      {highlightChunk(example.en, example.enChunk)}
-                    </p>
-                    <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                      Japanese chunk order
-                    </p>
-                    <p className="text-[13px] text-text-muted">
-                      {highlightChunk(example.enOrdered, example.enOrderedChunk)}
-                    </p>
-                    <p lang="ja" className="mt-1 text-[20px] font-light text-text">
-                      {highlightChunk(example.jp, example.chunk)}
-                    </p>
-                  </div>
-                ))}
+                {lesson.examples.map(({ example, activePart }, idx) => {
+                  const partOrder = stepPartOrder(tierId);
+                  const labels = STEP_PART_LABELS[tierId];
+                  const orderedSentence = example.enOrdered.replaceAll(", ", " → ");
+                  const naturalParts = positionedStepParts(
+                    example.en,
+                    example,
+                    partOrder,
+                    "en",
+                  );
+                  const orderedParts = positionedStepParts(
+                    orderedSentence,
+                    example,
+                    partOrder,
+                    "enOrdered",
+                  );
+                  const japaneseParts = positionedStepParts(
+                    example.jp,
+                    example,
+                    partOrder,
+                    "jp",
+                  );
+                  return (
+                    <div
+                      key={`${example.en}-${example.jp}`}
+                      className="rounded-md border border-border/60 bg-card/40 px-3 py-2.5"
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+                        Example {idx + 1}
+                      </p>
+                      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-text">
+                        Natural English
+                      </p>
+                      <p className="text-[14px] text-text-muted">
+                        {focusedSentence(example.en, naturalParts, activePart)}
+                      </p>
+                      <FocusedPartBoxes
+                        sentence={example.en}
+                        spans={naturalParts}
+                        activePart={activePart}
+                        labels={labels}
+                      />
+
+                      <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-text">
+                        Japanese chunk order
+                      </p>
+                      <p className="text-[13px] text-text-muted">
+                        {focusedSentence(orderedSentence, orderedParts, activePart)}
+                      </p>
+                      <FocusedPartBoxes
+                        sentence={orderedSentence}
+                        spans={orderedParts}
+                        activePart={activePart}
+                        labels={labels}
+                      />
+
+                      <p className="mt-5 text-[10px] font-semibold uppercase tracking-wide text-text">
+                        Japanese
+                      </p>
+                      <p lang="ja" className="mt-1 text-[20px] font-light text-text-muted">
+                        {focusedSentence(example.jp, japaneseParts, activePart)}
+                      </p>
+                      <FocusedPartBoxes
+                        sentence={example.jp}
+                        spans={japaneseParts}
+                        activePart={activePart}
+                        labels={labels}
+                        lang="ja"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
