@@ -116,12 +116,13 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
   const seen = new Set<string>();
   const out: CardForm[] = [];
   for (const f of forms) {
-    // An answer-format chip is a promise, not a preference. A subject that can
-    // only offer MC (or an en→jp target that cannot be typed) does not get to
-    // turn a selected Type-it form into an unselected multiple-choice card.
-    // Drop that unsupported combination; another selected form may still carry
-    // the fact, and deck construction omits facts with no supported forms.
-    if (f.answer === "typed" && formIsMc(fact, f)) continue;
+    // A typed answer the fact can ONLY take as multiple choice (kana en→jp, an
+    // un-typeable en→jp target) is NOT dropped — it renders as the MC card. MC is
+    // the only way that fact can be asked in that direction, and a learner who
+    // chose the direction still wants it; dropping it drew an EMPTY board for a
+    // kana en→jp typed selection (the regression this fixes). The resolved-shape
+    // key below carries the MC resolution, so a typed-becomes-MC form and an
+    // explicit MC form collapse to one card — choosing both still yields one MC.
     const key = `${f.source}|${f.response}|${f.listen ? 1 : 0}|${f.dir}|${formIsMc(fact, f) ? 1 : 0}`;
     if (seen.has(key)) continue;
     seen.add(key);
