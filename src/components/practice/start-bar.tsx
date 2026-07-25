@@ -186,6 +186,7 @@ export function StartBar({
         type="button"
         disabled={disabled}
         onClick={onStart}
+        suppressHydrationWarning
         className={cx(
           "ml-auto flex-none cursor-pointer rounded-lg bg-text px-5 py-2",
           "text-sm font-semibold text-bg",
