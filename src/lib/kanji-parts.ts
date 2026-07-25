@@ -14,6 +14,33 @@ export interface KanjiPart {
 }
 
 /**
+ * Collapse an enclosing radical that KanjiVG split into a leading + trailing
+ * copy around the content it frames. 可 has ONE 丁-shaped frame around 口, but
+ * KanjiVG's depth-1 decomposition renders the wrapper as its two halves and
+ * records `["丁","口","丁"]`; likewise 哀 `["衣","口","衣"]`, 囚 `["囗","人","囗"]`,
+ * 衰 `["衣","口","口","衣"]`, 図 `["囗","⺍","乂","囗"]`. Shown verbatim, the lesson
+ * and drill hint say the frame twice.
+ *
+ * The signature of that split — and ONLY that split — is: the first and last
+ * entries are the SAME element AND that element does not appear anywhere between
+ * them. One wrapper, opened and closed around a different interior. We drop the
+ * trailing copy, leaving a single frame.
+ *
+ * A genuine repetition never matches, so it is left intact:
+ *   - a RUN of the same glyph (品 口口口, 器 口口大口口, 晶 日日日, 三 一一一) puts
+ *     that glyph in the middle too, so the "not in the interior" test fails;
+ *   - a side-by-side PAIR (林 木木, 双 又又, 炎 火火) has no interior at all — it is
+ *     two components, not a frame around content — so we require length ≥ 3.
+ */
+export function deframe(comps: readonly string[]): readonly string[] {
+  const x = comps[0];
+  if (comps.length >= 3 && comps[comps.length - 1] === x && !comps.slice(1, -1).includes(x)) {
+    return comps.slice(0, -1);
+  }
+  return comps;
+}
+
+/**
  * A kanji's components EXCLUDING itself, but ONLY when every one of them is
  * itself a jōyō kanji with a card — the same test kanjiCost uses for a "known
  * radical". Null otherwise, which every caller reads as "there is nothing
@@ -28,7 +55,7 @@ export interface KanjiPart {
 export function teachableParts(glyph: string): KanjiPart[] | null {
   const row = kanjiRow(glyph);
   if (!row) return null;
-  const parts = row.comps.filter((c) => c !== glyph);
+  const parts = deframe(row.comps).filter((c) => c !== glyph);
   if (!parts.length) return null;
   if (!parts.every((c) => kanjiRow(c) !== undefined)) return null;
   return parts.map((c) => ({ c, meaning: kanjiRow(c)?.meanings[0] ?? "" }));
