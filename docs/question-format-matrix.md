@@ -34,7 +34,7 @@ Kana entries have one reading fact.
 | Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Text: show kana glyph | `jp->en` | Romaji reading | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji"}` | `あ` -> type `a` |
-| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | `japanese: {prompts: includes "audio", responses: includes "romaji"}` (requires kana audio implementation) | Hear `a` -> type/pick `あ` |
+| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | `japanese: {prompts: includes "audio", responses: includes "romaji"}` (kana is not listenable; selecting audio will not generate this form) | Hear `a` -> type/pick `あ` |
 | Show romaji/English side | `en->jp` | Kana glyph | No | Yes | Current | `english: {answers: includes "mc"}` (MC-only; typed dropped) | Prompt `a` -> pick `あ` |
 | Text: show kana glyph (self-copy) | `jp->jp` | Same kana glyph | No | No | By design | N/A (trivial self-copy excluded) | `あ` -> type `あ` |
 
@@ -136,14 +136,14 @@ Grammar rows here are only grammar-source behavior. Grammar meaning facts can al
 | Prompt source | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Japanese source (text) | `jp->en` | English meaning | No | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition"}` (meaning facts; MC-only) | `〜てから` -> choose `after doing X` |
-| Japanese source (audio) | `jp->en` | English meaning | No | Yes | Planned | (Grammar not currently listenable; would require: `japanese: {prompts: includes "audio", responses: includes "definition"}`) | Hear `たべてから` -> choose `after doing X` |
+| Japanese source (audio) | `jp->en` | English meaning | No | Yes | Planned | `japanese: {prompts: includes "audio", responses: includes "definition"}` (grammar is not listenable; selecting audio will not generate this form) | Hear `たべてから` -> choose `after doing X` |
 
 ### 5.2 Production fact
 
 | Prompt source | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Japanese source config (text card cue is English in this direction) | `en->jp` | Japanese production form | No | Yes | Current | `english: {answers: includes "mc"}` (grammar production facts; MC-only) | Prompt `after doing X (eat)` -> pick `食べてから` |
-| Japanese source config (audio prompt is Japanese) | `jp->jp` | Japanese production form | No | Yes | Planned | (Not yet implemented; would use sentence source with grammar production) | Hear `たべる` cue -> pick `食べてから` |
+| Japanese source config (audio prompt is Japanese) | `jp->jp` | Japanese production form | No | Yes | Planned | `sentence: {prompts: includes "audio", responses: includes ?}` (awaiting sentence source for grammar production; not yet implemented) | Hear `たべる` cue -> pick `食べてから` |
 | Japanese source (text self-copy of pattern label) | `jp->jp` | Same pattern text | No | No | By design | N/A (trivial self-copy excluded) | `〜てから` -> type `〜てから` |
 
 ---
@@ -159,9 +159,9 @@ Keigo sets contain Japanese forms plus role/register semantics, so both recognit
 | Prompt source | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Japanese source (text) | `jp->en` | Meaning + register recognition | No | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition"}` (keigo meaning facts; MC-only) | `召し上がる` -> choose `eat / drink (honorific)` |
-| Japanese source (audio) | `jp->en` | Meaning + register recognition | No | Yes | Planned | (Awaiting audio support; would use: `japanese: {prompts: includes "audio", responses: includes "definition"}`) | Hear `めしあがる` -> choose `eat / drink (honorific)` |
-| English/register source (text) | `en->jp` | Keigo production form | No | Yes | Planned | (Would use: `english: {answers: includes "mc"}`; not yet implemented) | Prompt `eat / drink (honorific)` -> pick `召し上がる` |
-| English/register source (audio is Japanese cue only) | `jp->jp` | Keigo production form | No | Yes | Planned | (Not yet implemented) | Hear plain cue `たべる` + honorific target -> pick `召し上がる` |
+| Japanese source (audio) | `jp->en` | Meaning + register recognition | No | Yes | Planned | `japanese: {prompts: includes "audio", responses: includes "definition"}` (keigo is not listenable; selecting audio will not generate this form) | Hear `めしあがる` -> choose `eat / drink (honorific)` |
+| English/register source (text) | `en->jp` | Keigo production form | No | Yes | Planned | `english: {answers: includes "mc"}` (awaiting keigo production implementation; not yet emitted) | Prompt `eat / drink (honorific)` -> pick `召し上がる` |
+| English/register source (audio is Japanese cue only) | `jp->jp` | Keigo production form | No | Yes | Planned | `sentence: {prompts: includes "audio", responses: ?}` (awaiting sentence source for keigo production with audio; not yet implemented) | Hear plain cue `たべる` + honorific target -> pick `召し上がる` |
 | Japanese source (text self-copy) | `jp->jp` | Same keigo form | No | No | By design | N/A (trivial self-copy excluded) | `召し上がる` -> type `召し上がる` |
 
 ### 6.2 Verb Pair / Transitivity (`transitivity:*`) — corpus possibilities
@@ -172,8 +172,8 @@ Verb-pair rows include English cues plus paired Japanese lemmas/readings, so dis
 |---|---|---|---|---|---|---|---|
 | English cue source (text) | `en->jp` | Choose correct pair member (intransitive vs transitive) | No | Yes | Current | `english: {answers: includes "mc"}` (transitivity facts have fixedDir="en2jp", mcOnly=true) | `The door opened.` -> pick `開く` |
 | Japanese source (text) | `jp->en` | Meaning/usage recognition for shown pair member | No | Yes | Planned | (Awaiting implementation; would use: `japanese: {prompts: includes "text", responses: includes "definition"}`) | `開く` -> choose `to open (intransitive)` |
-| Japanese source (audio) | `jp->en` | Meaning/usage recognition for heard pair member | No | Yes | Planned | (Awaiting implementation; would use: `japanese: {prompts: includes "audio", responses: includes "definition"}`) | Hear `ひらく` -> choose `to open (intransitive)` |
-| English role source (text) | `en->jp` | Produce/select the correct Japanese pair member | No | Yes | Planned | (Alternative prompt phrasing for en->jp; awaiting implementation) | Prompt `open (something)` -> pick `開ける` |
+| Japanese source (audio) | `jp->en` | Meaning/usage recognition for heard pair member | No | Yes | Planned | `japanese: {prompts: includes "audio", responses: includes "definition"}` (transitivity is not listenable; selecting audio will not generate this form) | Hear `ひらく` -> choose `to open (intransitive)` |
+| English role source (text) | `en->jp` | Produce/select the correct Japanese pair member | No | Yes | Planned | `english: {answers: includes "mc"}` (alternative phrasing for transitivity en->jp; awaiting implementation of role-specific prompts) | Prompt `open (something)` -> pick `開ける` |
 | Japanese source (text self-copy) | `jp->jp` | Same verb form | No | No | By design | N/A (trivial self-copy excluded) | `開く` -> type `開く` |
 
 ### 6.3 Cross-cutting feasibility rules (corpus-level)
@@ -249,6 +249,22 @@ A question format appears in the deck when ALL these conditions apply:
 
 ---
 
+## Unreachable Rows: Planned Forms Blocked by Implementation
+
+Some Planned rows cannot be reached even if the user selects the settings shown, because the underlying feature is not implemented. Selecting these settings will silently drop those forms:
+
+| Blocked Row | Blocking Reason | Selecting This Setting | Does Not Generate | When Will It Be Unblocked? |
+|---|---|---|---|---|
+| Kana + Audio (jp→jp) | Kana entries have no audio form | `japanese: {prompts: includes "audio"}` | Kana audio forms | When kana audio support is implemented |
+| Grammar Meaning + Audio (jp→en) | Grammar patterns are not listenable | `japanese: {prompts: includes "audio"}` | Grammar audio forms | When grammar audio support is added |
+| Keigo Meaning + Audio (jp→en) | Keigo is not listenable | `japanese: {prompts: includes "audio"}` | Keigo audio forms | When keigo audio support is added |
+| Transitivity Meaning + Audio (jp→en) | Transitivity is not listenable | `japanese: {prompts: includes "audio"}` | Transitivity audio forms | When transitivity audio support is added |
+| Keigo Production (en→jp) | Keigo production not yet implemented | `english: {answers: includes "mc"}` | Keigo production forms | When keigo production feature ships |
+| Transitivity Role Variant (en→jp) | Transitivity role prompts not yet implemented | `english: {answers: includes "mc"}` | Role-specific transitivity forms | When transitivity role variant is implemented |
+| Grammar/Keigo Production + Audio (jp→jp) | Requires sentence source with production facts | `sentence: {prompts: includes "audio"}` | Grammar/keigo production audio | When sentence source supports these production types |
+
+---
+
 ## Why Current Runs May Show Fewer Cards Than This Matrix
 
 The matrix shows all corpus-feasible forms for each entry type. A real deck will show fewer, based on settings:
@@ -287,3 +303,22 @@ japanese: { prompts: ["text"], responses: ["definition"], answers: ["mc"] }
 english: { answers: ["mc"] }
 ```
 Then visible forms are: jp->en meaning definitions (MC), en->jp glyphs (MC). No reading facts, no audio, no typed.
+
+---
+
+## Multiple Settings Paths to the Same Question Format
+
+Some question formats in the matrix can be reached via multiple settings combinations. This is expected and correct — each combination produces a different FORM (different prompt type or answer control):
+
+| Question Format | Reachable Via | Settings Path |
+|---|---|---|
+| Word meaning fact (jp→en text) | Text prompt only | `japanese: {prompts: includes "text", responses: includes "definition"}` |
+| Word meaning fact (jp→en audio) | Audio prompt only | `japanese: {prompts: includes "audio", responses: includes "definition"}` |
+| Word reading fact (jp→jp text) | Text prompt only | `japanese: {prompts: includes "text", responses: includes "romaji"}` |
+| Word reading fact (jp→jp audio) | Audio prompt only | `japanese: {prompts: includes "audio", responses: includes "romaji"}` |
+| Word reading fact (en→jp) | Any en→jp setting | `english: {answers: includes "typed" or "mc"}` |
+| Grammar meaning fact (jp→en text) | Text prompt only | `japanese: {prompts: includes "text", responses: includes "definition"}` |
+| Grammar meaning fact (jp→en audio) | Audio prompt only | `japanese: {prompts: includes "audio", responses: includes "definition"}` (blocked) |
+| Grammar production fact (en→jp) | Any en→jp setting | `english: {answers: includes "mc"}` |
+
+The ask-forms.ts dedup logic ensures each resolved form appears exactly once in a coverage deck, even if multiple settings intents collapse to the same card.
