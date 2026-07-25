@@ -11,7 +11,8 @@ import {
   wordMeaningFactId,
   wordReadingFactId,
 } from "@/data/vocab";
-import { pairFacts, pairSpecs } from "@/lib/pair-facts";
+import { factInfo } from "@/lib/facts";
+import { pairBoards, pairFacts, pairSpecs } from "@/lib/pair-facts";
 import type { HistoryFile } from "@/types";
 
 const T = 1_700_000_000_000;
@@ -117,7 +118,7 @@ describe("Match-pairs relationships", () => {
     );
   });
 
-  test("no emitted deck has duplicate visible destinations", () => {
+  test("no matching board has duplicate visible destinations", () => {
     const facts = [
       ...VOCAB.flatMap((w) => [
         wordMeaningFactId(w.keb),
@@ -125,14 +126,68 @@ describe("Match-pairs relationships", () => {
       ]),
       ...CORPUS.flatMap((ex) => ex.p.map(patternMeaningFactId)),
     ];
-    const specs = pairSpecs(
+    // The dedup guard is PER BOARD: within a single headed board no two cells
+    // share a visible Japanese-side identity or a visible answer. Across boards
+    // a glyph legitimately repeats (電話 on "Words ↔ Meaning" and on
+    // "Words ↔ Reading"), so uniqueness is asserted per board, not globally.
+    for (const board of pairBoards(
       facts,
       ["definition", "romaji", "sentence"],
       ALL_KNOWN,
+    )) {
+      const left = board.specs.map((p) => `${p.japanese}\u0000${p.context ?? ""}`);
+      const right = board.specs.map((p) => p.answer.trim().toLowerCase());
+      assert.equal(new Set(left).size, left.length);
+      assert.equal(new Set(right).size, right.length);
+    }
+  });
+});
+
+describe("Match-pairs headed boards (task #33)", () => {
+  test("a selection spanning kanji+words and two responses splits into homogeneous headed boards", () => {
+    const boards = pairBoards(
+      [wordMeaning, wordReading, meaningFactId("生"), kanjiReading],
+      ["definition", "romaji"],
+      EMPTY,
     );
-    const left = specs.map((p) => `${p.japanese}\u0000${p.context ?? ""}`);
-    const right = specs.map((p) => p.answer.trim().toLowerCase());
-    assert.equal(new Set(left).size, left.length);
-    assert.equal(new Set(right).size, right.length);
+    for (const b of boards) {
+      assert.equal(new Set(b.specs.map((s) => factInfo(s.fact)!.subject)).size, 1);
+      assert.ok(b.specs.every((s) => s.header === b.header));
+    }
+    assert.deepEqual(
+      boards.map((b) => b.header),
+      ["Kanji ↔ Meaning", "Kanji ↔ Reading", "Words ↔ Meaning", "Words ↔ Reading"],
+    );
+    // wordMeaning (a definition) and wordReading (a romaji) of ONE word land on
+    // two different boards — the disambiguation task #30 opened.
+    const meaningBoard = boards.find((b) => b.header === "Words ↔ Meaning")!;
+    const readingBoard = boards.find((b) => b.header === "Words ↔ Reading")!;
+    assert.ok(meaningBoard.specs.some((s) => s.fact === wordMeaning));
+    assert.ok(readingBoard.specs.some((s) => s.fact === wordReading));
+  });
+
+  test("the 愛 word/kanji collision lands on two boards with distinct headers, both kept", () => {
+    const kanji = meaningFactId("愛");
+    const wordish = wordMeaningFactId("愛");
+    const boards = pairBoards([kanji, wordish], ["definition"], EMPTY);
+    assert.deepEqual(
+      boards.map((b) => [b.header, b.specs.map((s) => s.fact)]),
+      [
+        ["Kanji ↔ Meaning", [kanji]],
+        ["Words ↔ Meaning", [wordish]],
+      ],
+    );
+    // Both survive though their answers collide — the old GLOBAL dedup silently
+    // dropped one; per-board dedup keeps both, headed apart.
+    assert.notEqual(boards[0].header, boards[1].header);
+  });
+
+  test("a sentence board is headed and homogeneous", () => {
+    const ex = CORPUS.find((row) => row.p.length > 0)!;
+    const facts = ex.p.map(patternMeaningFactId);
+    const boards = pairBoards(facts, ["sentence"], ALL_KNOWN);
+    assert.ok(boards.length > 0);
+    assert.ok(boards.every((b) => b.header === "Sentences ↔ Meaning"));
+    assert.ok(boards.every((b) => b.specs.every((s) => s.kind === "sentence")));
   });
 });

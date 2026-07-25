@@ -47,9 +47,11 @@ import {
   shuffle,
 } from "@/lib/engine";
 import { entryOf, factInfo } from "@/lib/facts";
+import { gridBoards } from "@/lib/grid-facts";
+import { isResponseCaption } from "@/lib/quiz-boards";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
-import type { FactId, QuizConfig, SessionStats } from "@/types";
+import type { FactId, GridResponse, QuizConfig, SessionStats } from "@/types";
 
 import { GridHud } from "./grid-hud";
 
@@ -66,12 +68,25 @@ interface GridCard {
   font: string;
 }
 
-interface GridRuntime {
-  /** Card order — shuffled ONCE at init. FACTS: one cell per askable thing, so
-   * a kanji with three selected readings is three cells and each is graded on
-   * its own. Keying the board by character would put 生 on the board once and
-   * ask which of its nine readings you meant. */
+/** One headed board — a homogeneous sheet asking ONE response of ONE source
+ * type (task #33). Boards run as consecutive rounds; each carries its own
+ * header ("Kanji → meaning") shown above its sheet. */
+interface GridBoardRun {
+  header: string;
+  /** Card order for this board — shuffled ONCE at init. FACTS: one cell per
+   * askable thing, so a kanji with three selected readings is three cells and
+   * each is graded on its own. */
   order: FactId[];
+}
+
+interface GridRuntime {
+  /** The headed boards, in teaching order — run one sheet at a time. */
+  boards: GridBoardRun[];
+  /** Which board's sheet is showing. */
+  bi: number;
+  /** Every card, across all boards — keyed by fact, which is unique to one
+   * board (a glyph has a single (source × response) home), so one flat record
+   * serves them all. */
   cards: Record<FactId, GridCard>;
   /** Cards answered right on the FIRST try, in a row; any miss puts it back
    * to 0, exactly as the drill's does. In the runtime rather than React
@@ -80,25 +95,41 @@ interface GridRuntime {
   stats: SessionStats;
 }
 
-function initGrid(facts: FactId[], fonts: string[]): GridRuntime {
-  const order = shuffle(facts.slice());
+function initGrid(
+  facts: FactId[],
+  responses: GridResponse[],
+  fonts: string[],
+): GridRuntime {
   const cards: Record<FactId, GridCard> = {};
   const stats: SessionStats = {};
-  for (const f of order) {
-    stats[f] = newFactStat();
-    stats[f].seen++;
-    cards[f] = { value: "", state: "open", tries: 0, font: pickFont(fonts) };
-  }
-  return { order, cards, streak: 0, stats };
+  const boards: GridBoardRun[] = gridBoards(facts, responses).map((board) => {
+    const order = shuffle(board.facts.slice());
+    for (const f of order) {
+      stats[f] = newFactStat();
+      stats[f].seen++;
+      cards[f] = { value: "", state: "open", tries: 0, font: pickFont(fonts) };
+    }
+    return { header: board.header, order };
+  });
+  return { boards, bi: 0, cards, streak: 0, stats };
 }
 
 /** Get (or lazily create) the grid runtime inside active.runtime. */
-function ensureRuntime(active: ActiveQuiz, fonts: string[]): GridRuntime {
+function ensureRuntime(
+  active: ActiveQuiz,
+  responses: GridResponse[],
+  fonts: string[],
+): GridRuntime {
   const rt = active.runtime as { grid?: GridRuntime };
-  const g = (rt.grid ??= initGrid(active.facts, fonts));
+  const g = (rt.grid ??= initGrid(active.facts, responses, fonts));
   // Resuming a runtime written before the streak existed.
   if (typeof g.streak !== "number") g.streak = 0;
   return g;
+}
+
+/** Every card in the run, across all boards — for run-wide progress. */
+function allFacts(g: GridRuntime): FactId[] {
+  return g.boards.flatMap((b) => b.order);
 }
 
 function setCardValue(g: GridRuntime, f: FactId, value: string): void {
@@ -139,8 +170,9 @@ function checkCard(g: GridRuntime, f: FactId, cfg: QuizConfig): CheckOutcome {
   st.misses++;
   card.tries++;
   // `confused` is keyed by ENTRY — the thing you said instead, not one of its
-  // facts. See FactSessionDetail.
-  const said = confusedWith(f, v, g.order);
+  // facts. See FactSessionDetail. Scanned against the CURRENT board's cards —
+  // the ones on screen the answer could have been meant for.
+  const said = confusedWith(f, v, g.boards[g.bi]?.order ?? []);
   if (said && said !== entryOf(f)) {
     st.confused[said] = (st.confused[said] ?? 0) + 1;
   }
@@ -161,8 +193,11 @@ export function GridScreen() {
   const rerender = () => bump((n) => n + 1);
 
   // Cast once; lazily create the runtime on the first render of a fresh
-  // quiz (guarded, so StrictMode re-renders and remounts reuse it).
-  const g = active ? ensureRuntime(active, cfg.fonts) : null;
+  // quiz (guarded, so StrictMode re-renders and remounts reuse it). The
+  // response selection is read from the frozen snapshot, like pairs reads
+  // pairResponses, so the boards match the run that was started.
+  const responses = active?.snapshot.gridResponses ?? cfg.gridResponses;
+  const g = active ? ensureRuntime(active, responses, cfg.fonts) : null;
 
   // Transient shake state: cards mid-shake right now, keyed like the board.
   const [shaking, setShaking] = useState<Record<string, boolean>>({});
@@ -190,16 +225,27 @@ export function GridScreen() {
     }
   };
 
-  /** After a card locks: finish when none remain, else move focus on
+  /** After a card locks: move focus within the board, advance to the next
+   * headed board when this one is cleared, or finish after the last board
    * (skipped for blur-submit checks so we don't steal focus). */
   const advance = (fromBlur: boolean) => {
     if (!g) return;
-    const open = g.order.filter((x) => g.cards[x].state === "open");
-    if (!open.length) {
+    const cur = g.boards[g.bi]?.order ?? [];
+    const open = cur.filter((x) => g.cards[x].state === "open");
+    if (open.length) {
+      if (!fromBlur) inputRefs.current.get(open[0])?.focus();
+      return;
+    }
+    // This board's sheet is cleared. Move on to the next headed board — its
+    // header and cards render on the next paint and the bi-change effect below
+    // focuses its first card — or, past the last board, finish the run.
+    if (g.bi < g.boards.length - 1) {
+      g.bi++;
+      saveNow();
+      rerender();
+    } else {
       window.clearTimeout(finishTimer.current);
       finishTimer.current = window.setTimeout(() => finishQuiz(g.stats), 500);
-    } else if (!fromBlur) {
-      inputRefs.current.get(open[0])?.focus();
     }
   };
 
@@ -226,14 +272,16 @@ export function GridScreen() {
     advance(fromBlur);
   };
 
-  // On mount (once the quiz is available): focus the first open input, or —
-  // if every card is already resolved — re-arm the auto-finish timeout that
-  // a refresh may have lost.
+  // On mount (once the quiz is available): focus the first open input of the
+  // current board, or — if it's the last board and every card is resolved —
+  // re-arm the auto-finish timeout that a refresh may have lost. (A non-final
+  // board is never left fully resolved: advance() moves on synchronously.)
   const armed = useRef(false);
   useEffect(() => {
     if (!g || armed.current) return;
     armed.current = true;
-    const open = g.order.filter((f) => g.cards[f].state === "open");
+    const cur = g.boards[g.bi]?.order ?? [];
+    const open = cur.filter((f) => g.cards[f].state === "open");
     if (!open.length) {
       finishTimer.current = window.setTimeout(() => finishQuiz(g.stats), 500);
     } else {
@@ -241,6 +289,17 @@ export function GridScreen() {
     }
     // No dep array: finishQuiz is recreated per render and the armed guard
     // makes this effectively run-once per quiz.
+  });
+
+  // Focus the first open card whenever a new headed board takes the sheet.
+  const shownBoard = useRef(-1);
+  useEffect(() => {
+    if (!g || shownBoard.current === g.bi) return;
+    shownBoard.current = g.bi;
+    const open = (g.boards[g.bi]?.order ?? []).filter(
+      (f) => g.cards[f].state === "open",
+    );
+    if (open.length) inputRefs.current.get(open[0])?.focus();
   });
 
   useEffect(
@@ -254,8 +313,11 @@ export function GridScreen() {
     [],
   );
 
-  const total = g?.order.length ?? 0;
-  const done = g ? g.order.filter((f) => g.stats[f].everCorrect).length : 0;
+  // Progress is run-wide, across every headed board — the sheet showing is one
+  // round of a longer run, and the HUD counts the whole thing.
+  const facts = g ? allFacts(g) : [];
+  const total = facts.length;
+  const done = g ? facts.filter((f) => g.stats[f].everCorrect).length : 0;
   useEffect(() => {
     if (g) setProgress({ done, total });
   }, [g, done, total, setProgress]);
@@ -271,14 +333,28 @@ export function GridScreen() {
         streak={g.streak}
         onFinish={() => finishQuiz(g.stats)}
       />
+      {/* The board header (task #33): a homogeneous sheet asks ONE response of
+          ONE source type, and the header is the whole of the disambiguation —
+          "Kanji → meaning" vs "Kanji → reading", a kanji sheet vs a word sheet.
+          The board counter only appears once there's more than one board. */}
+      {g.boards[g.bi] ? (
+        <div className="mt-4 flex items-baseline justify-between gap-2 px-1">
+          <span className="text-sm font-medium text-text">
+            {g.boards[g.bi].header}
+          </span>
+          {g.boards.length > 1 ? (
+            <span className="text-[11px] tabular-nums text-text-muted">
+              Board {g.bi + 1} / {g.boards.length}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       {/* The sheet and its cards are `kq-grid*` hook classes rather than
           Tailwind colour utilities — see the GRID QUIZ SHEET section in
-          globals.css. Two things need naming here that a utility can't say:
-          these 214 cards must stay OUT of kiri's per-element frosting (the
-          sheet carries one blur for all of them instead), and each state is a
-          surface + edge + ink together, which is one class, not three. */}
+          globals.css. Each state is a surface + edge + ink together, which is
+          one class, not three. */}
       <div className="kq-grid-sheet mt-4">
-        {g.order.map((f) => {
+        {(g.boards[g.bi]?.order ?? []).map((f) => {
           const card = g.cards[f];
           const prompt = questionsFor(f).prompt(f, "jp2en");
           // Presentation only — this reads the state machine, it doesn't touch
@@ -331,10 +407,12 @@ export function GridScreen() {
                 {prompt.glyph}
               </span>
               {/* Part of the question, not a caption: a cell showing 生 with no
-                  "in 人生" under it is asking for one of nine answers. Kana
-                  supplies none and the cell keeps its original spacing. */}
+                  "in 人生" under it is asking for one of nine answers. The bare
+                  response label ("meaning"/"reading") is dropped — the board
+                  HEADER already says it (task #33) — but a disambiguating anchor
+                  stays. Kana supplies none; the cell keeps its original spacing. */}
               <span className="mb-2 block min-h-3 text-[10px] leading-3 text-text-muted">
-                {prompt.context ?? ""}
+                {isResponseCaption(prompt.context) ? "" : (prompt.context ?? "")}
               </span>
               <form
                 onSubmit={(e) => {

@@ -1738,6 +1738,20 @@ body {
     opacity 250ms;
 }
 
+/* Task #33 follow-up (Sam): the Grid board sits on a PLAIN TRANSPARENT ground.
+ * The frosted look the sheet had was two layers on each idle card — the
+ * translucent --gcard fill, and kiri's --gcard-damp (65% --bg, the "material
+ * behind the board"). Both are zeroed here, scoped to the grid sheet, so an
+ * unanswered card is just its 1px edge over the page. The RESOLVED states keep
+ * their own fills (green/red/shake set --gcard-fill themselves), so a card
+ * still reads the moment it's answered. NOTE: this deliberately drops the kiri
+ * damp, whose long note above defends it on state-ink contrast grounds — that
+ * is the accepted cost of the transparent-board request. */
+.kq-grid-sheet .kq-gcard {
+  --gcard: transparent;
+  --gcard-damp: transparent;
+}
+
 /* The two RESOLVED states. Identical shape, and the only two that recede:
  * fill, edge, ink, and the answer in the well all step back together, because
  * the card as a whole is done — this is one `opacity`, not four dimmed tokens
