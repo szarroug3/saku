@@ -10,9 +10,7 @@
 // simply have less to say — no confusions were recorded, so Patterns and
 // Progress stay silent rather than guess.
 //
-// NOTHING HERE WRITES SETTINGS. The First try / Eventually right chips are a
-// local lens on this run; the global preference only decides which one they
-// start on.
+// NOTHING HERE WRITES SETTINGS. Results are shown in first-try terms.
 
 import { useMemo, useState } from "react";
 
@@ -26,7 +24,7 @@ import {
   type Bit,
 } from "@/components/results/summary";
 import { TriageSection } from "@/components/results/triage-board";
-import { Card, Chip, PageTitle } from "@/components/ui";
+import { Card, PageTitle } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { analyzeRun } from "@/lib/confusions";
 import { weakestFacts } from "@/lib/decks";
@@ -36,7 +34,7 @@ import { useQuizSession, type ResultsPayload } from "@/lib/quiz-session";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { emptySelection, resolve } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
-import type { AccuracyMetric, FactId, QuizMode } from "@/types";
+import type { FactId, QuizMode } from "@/types";
 
 const EMPTY_ANALYSIS = { patterns: [], progress: [] };
 
@@ -105,11 +103,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   const confirm = useConfirm();
   const { active, abandonQuiz, startQuiz } = useQuizSession();
 
-  // Local lens, never a setting. Null means "still following the preference",
-  // which also survives cfg hydrating from localStorage a beat after mount —
-  // no effect, no stale initial state.
-  const [chosen, setChosen] = useState<AccuracyMetric | null>(null);
-  const metric = chosen ?? cfg.accuracyMetric;
+  const metric = "firstTry" as const;
 
   // Fixed at mount: a just-finished quiz shows time-of-day like the legacy
   // finish screen; anything older (reopened sessions) shows the full date.
@@ -227,8 +221,8 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
       <PageTitle
         title="Results"
         sub={`${modeName(results.mode)}${results.redrill ? " (redrill)" : ""} · ${
-          facts.total
-        } things · ${when}${summaryOnly ? " · Older session, summary only" : ""}`}
+          facts.questionsTotal
+        } questions · ${when}${summaryOnly ? " · Older session, summary only" : ""}`}
       />
 
       <Card className="flex items-center gap-3.5">
@@ -241,15 +235,6 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
           <Line bits={summary.counts} className="text-[13px] text-text-muted" />
         </span>
       </Card>
-
-      <div className="mb-3.5 flex flex-wrap gap-1.5">
-        <Chip on={metric === "firstTry"} onClick={() => setChosen("firstTry")}>
-          First try
-        </Chip>
-        <Chip on={metric === "attempt"} onClick={() => setChosen("attempt")}>
-          Eventually right
-        </Chip>
-      </div>
 
       <PatternSection
         label="Patterns"
@@ -268,9 +253,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
       />
 
       <TriageSection
-        // Remount on a flip: the chip re-derives which characters need work, so
-        // the selection it seeded has to be re-seeded with them.
-        key={metric}
+        key="firstTry"
         facts={facts}
         stats={stats}
         weakest={weakest}

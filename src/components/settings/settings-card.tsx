@@ -569,19 +569,13 @@ export function SettingsCard() {
 
         <Row
           label="Accuracy shown as"
-          info="First try only counts cards you got without a retry. Eventually right counts them however many goes it took. Applies everywhere the app shows a percentage."
+          info="Accuracy uses first try only. Applies everywhere the app shows a percentage."
         >
           <Chip
             on={cfg.accuracyMetric === "firstTry"}
             onClick={() => update({ accuracyMetric: "firstTry" })}
           >
             First try
-          </Chip>
-          <Chip
-            on={cfg.accuracyMetric === "attempt"}
-            onClick={() => update({ accuracyMetric: "attempt" })}
-          >
-            Eventually right
           </Chip>
         </Row>
 

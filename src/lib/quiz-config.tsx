@@ -97,6 +97,8 @@ function normalizeConfig(saved: unknown): QuizConfig {
     if (saved && typeof saved === "object") {
       const raw = saved as Partial<QuizConfig> & { randomFont?: boolean };
       const cfg: QuizConfig = { ...defaultConfig(), ...raw };
+      // Product decision: only first-try accuracy is supported.
+      cfg.accuracyMetric = "firstTry";
       cfg.pairResponses = normalizePairResponses(raw.pairResponses);
       cfg.gridResponses = normalizeGridResponses(raw.gridResponses);
       // "How to ask" migration (task 30). A config saved with the new `ask`
@@ -231,11 +233,13 @@ export function QuizConfigProvider({ children }: { children: ReactNode }) {
   }, [cfg, ready]);
 
   const set = useCallback(
-    (fn: (prev: QuizConfig) => QuizConfig) => setCfg(fn),
+    (fn: (prev: QuizConfig) => QuizConfig) =>
+      setCfg((prev) => ({ ...fn(prev), accuracyMetric: "firstTry" })),
     [],
   );
   const update = useCallback(
-    (patch: Partial<QuizConfig>) => setCfg((prev) => ({ ...prev, ...patch })),
+    (patch: Partial<QuizConfig>) =>
+      setCfg((prev) => ({ ...prev, ...patch, accuracyMetric: "firstTry" })),
     [],
   );
 

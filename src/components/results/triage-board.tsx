@@ -13,6 +13,7 @@ import { Btn, PrimaryBtn } from "@/components/ui";
 import {
   boxKeysForFacts,
   factOfBoxKey,
+  missedBoxKeysForFacts,
   type BoxKey,
   WordTable,
 } from "@/components/results/word-table";
@@ -23,20 +24,21 @@ function Board({
   label,
   facts,
   stats,
+  visibleBoxes,
   selected,
   onToggle,
-  onSetAll,
+  onSetVisible,
 }: {
   label: string;
   facts: FactId[];
   stats: SessionStats;
+  visibleBoxes: Set<BoxKey>;
   selected: Set<BoxKey>;
   onToggle: (box: BoxKey) => void;
-  onSetAll: (facts: FactId[], on: boolean) => void;
+  onSetVisible: (boxes: Set<BoxKey>, on: boolean) => void;
 }) {
   if (!facts.length) return null;
-  const boxes = boxKeysForFacts(facts, stats);
-  const n = boxes.filter((b) => selected.has(b)).length;
+  const n = [...visibleBoxes].filter((b) => selected.has(b)).length;
   return (
     <>
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -47,7 +49,7 @@ function Board({
           <button
             type="button"
             className="cursor-pointer text-accent hover:underline"
-            onClick={() => onSetAll(facts, true)}
+            onClick={() => onSetVisible(visibleBoxes, true)}
           >
             All
           </button>
@@ -55,7 +57,7 @@ function Board({
           <button
             type="button"
             className="cursor-pointer text-accent hover:underline"
-            onClick={() => onSetAll(facts, false)}
+            onClick={() => onSetVisible(visibleBoxes, false)}
           >
             None
           </button>
@@ -68,6 +70,7 @@ function Board({
         <WordTable
           facts={facts}
           stats={stats}
+          showOnly={visibleBoxes}
           isSelected={(box) => selected.has(box)}
           onToggle={onToggle}
         />
@@ -99,8 +102,12 @@ export function TriageSection({
   onRerun: () => void;
   onDrillWeakest: () => void;
 }) {
+  const allBoxes = new Set(boxKeysForFacts(facts.facts, stats));
+  const needsWorkBoxes = new Set(missedBoxKeysForFacts(facts.facts, stats));
+  const solidBoxes = new Set([...allBoxes].filter((b) => !needsWorkBoxes.has(b)));
+
   const [selected, setSelected] = useState<Set<BoxKey>>(
-    () => new Set(boxKeysForFacts(facts.needsWork, stats)),
+    () => new Set(needsWorkBoxes),
   );
 
   const toggle = (box: BoxKey) =>
@@ -109,10 +116,9 @@ export function TriageSection({
       if (!next.delete(box)) next.add(box);
       return next;
     });
-  const setAll = (list: FactId[], on: boolean) =>
+  const setVisible = (boxes: Set<BoxKey>, on: boolean) =>
     setSelected((prev) => {
       const next = new Set(prev);
-      const boxes = boxKeysForFacts(list, stats);
       for (const b of boxes) if (on) next.add(b);
         else next.delete(b);
       return next;
@@ -133,19 +139,21 @@ export function TriageSection({
     <>
       <Board
         label="Needs work"
-        facts={facts.needsWork}
+        facts={facts.facts}
         stats={stats}
+        visibleBoxes={needsWorkBoxes}
         selected={selected}
         onToggle={toggle}
-        onSetAll={setAll}
+        onSetVisible={setVisible}
       />
       <Board
         label="Solid"
-        facts={facts.solid}
+        facts={facts.facts}
         stats={stats}
+        visibleBoxes={solidBoxes}
         selected={selected}
         onToggle={toggle}
-        onSetAll={setAll}
+        onSetVisible={setVisible}
       />
       <div className="flex flex-wrap gap-2">
         {nothingToFix ? (

@@ -26,7 +26,7 @@
 
 import { Lbl } from "@/components/ui";
 import { reading } from "@/components/results/summary";
-import { factsOf, glyphOf } from "@/lib/facts";
+import { factsOf, factInfo, glyphOf } from "@/lib/facts";
 import type { PairRow } from "@/lib/confusions";
 import type { SessionStats } from "@/types";
 
@@ -36,6 +36,19 @@ function cx(...parts: Array<string | false | null | undefined>): string {
 
 function s(n: number): string {
   return n === 1 ? "" : "s";
+}
+
+function kindLabel(entry: string): string {
+  const first = factsOf(entry as never)[0];
+  const subject = first ? factInfo(first)?.subject : null;
+  if (subject === "kanji") return "kanji";
+  if (subject === "word") return "word";
+  if (subject === "radical") return "radical";
+  if (subject === "kana") return "kana";
+  if (subject === "grammar") return "grammar";
+  if (subject === "transitivity") return "verb pair";
+  if (subject === "keigo") return "keigo";
+  return "entry";
 }
 
 /** The early-clear affordance is earned by a correct answer, not merely by
@@ -208,8 +221,28 @@ export function PatternRow({
         TONE[row.state],
       )}
     >
-      <span className="min-w-[58px] flex-none font-kana text-[17px] font-extralight tracking-[0.04em]">
-        {glyphOf(row.a)} ↔ {glyphOf(row.b)}
+      <span className="min-w-[112px] flex-none">
+        <span className="flex items-center justify-center gap-2">
+          <span className="flex min-w-[42px] flex-col items-center">
+            <span className="font-kana text-[17px] font-extralight leading-none tracking-[0.04em]">
+              {glyphOf(row.a)}
+            </span>
+            <span className="mt-0.5 text-[10px] font-medium leading-none tracking-[0.03em] text-text-muted">
+              {kindLabel(row.a)}
+            </span>
+          </span>
+          <span aria-hidden="true" className="text-[17px] leading-none text-text">
+            ↔
+          </span>
+          <span className="flex min-w-[42px] flex-col items-center">
+            <span className="font-kana text-[17px] font-extralight leading-none tracking-[0.04em]">
+              {glyphOf(row.b)}
+            </span>
+            <span className="mt-0.5 text-[10px] font-medium leading-none tracking-[0.03em] text-text-muted">
+              {kindLabel(row.b)}
+            </span>
+          </span>
+        </span>
       </span>
       <span className="flex min-w-0 flex-col">
         <span className="text-[13px] leading-snug">{first}</span>

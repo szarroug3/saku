@@ -161,8 +161,7 @@ export function PairsHud({ asked, total, stats, streak, onEnd }: PairsHudProps) 
           </Pill>
           {cfg.showAccuracy && accuracy !== null ? (
             <Pill tone="accent">
-              {formatAccuracy(accuracy)}{" "}
-              {cfg.accuracyMetric === "firstTry" ? "first try" : "eventually right"}
+              {formatAccuracy(accuracy)} first try
             </Pill>
           ) : null}
           {/* A streak isn't a streak until it's a streak. */}

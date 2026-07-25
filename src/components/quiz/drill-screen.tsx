@@ -1366,8 +1366,7 @@ export function DrillScreen() {
             {rt.requeued ? <Pill>{rt.requeued} re-queued</Pill> : null}
             {cfg.showAccuracy && accuracy !== null ? (
               <Pill tone="accent">
-                {formatAccuracy(accuracy)}{" "}
-                {cfg.accuracyMetric === "firstTry" ? "first try" : "eventually right"}
+                {formatAccuracy(accuracy)} first try
               </Pill>
             ) : null}
             {/* A streak isn't a streak until it's a streak. */}

@@ -32,7 +32,8 @@ import type {
 /** How the chosen metric reads in a sentence — the chip's own words, so the
  * hero and the chip below it can't drift apart. */
 export function metricWords(metric: AccuracyMetric): string {
-  return metric === "firstTry" ? "first try" : "eventually right";
+  void metric;
+  return "first try";
 }
 
 function s(n: number): string {
@@ -91,6 +92,12 @@ export interface RunFacts {
   metric: AccuracyMetric;
   /** The facts this run asked. */
   facts: FactId[];
+  /** Showings/questions this run asked. */
+  questionsTotal: number;
+  /** Showings landed on first attempt. */
+  questionsFirstTry: number;
+  /** Showings landed eventually. */
+  questionsEventually: number;
   total: number;
   /** Facts answered right on the first attempt. */
   firstTry: number;
@@ -175,6 +182,7 @@ export function deriveRun(
   const { summaryOnly } = results;
   const stats = readableStats(results);
   const r = computeResults(stats);
+  const agg = runAggregate(stats);
 
   const missed = r.facts
     .filter((f) => isMissed(stats[f], metric))
@@ -200,6 +208,9 @@ export function deriveRun(
   return {
     metric,
     facts: r.facts,
+    questionsTotal: agg.seen,
+    questionsFirstTry: agg.firstTry,
+    questionsEventually: agg.correct,
     total: r.total,
     firstTry: r.strict,
     eventually: r.forg,
@@ -347,14 +358,15 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
 /** The counts line: how the run reads under the chosen chip, plus anything the
  * Progress section earned. */
 function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
-  const got = run.metric === "firstTry" ? run.firstTry : run.eventually;
+  const got =
+    run.metric === "firstTry" ? run.questionsFirstTry : run.questionsEventually;
   const beaten = progress.length;
   return [
     // A stored session counted nothing per fact, so "0 / 12 first try"
     // would be an invention. Report the two percentages it did keep.
     run.stored
-      ? { t: `${run.stored.strictPct}% first try · ${run.stored.forgivingPct}% eventually right` }
-      : { t: `${got} / ${run.total} ${metricWords(run.metric)}` },
+      ? { t: `${run.stored.strictPct}% first try` }
+      : { t: `${got} / ${run.questionsTotal} ${metricWords(run.metric)}` },
     ...(beaten
       ? [
           {
@@ -403,10 +415,10 @@ function perfectBits(run: RunFacts, prior: HistoryFile): Bit[] {
  * The summary line, in every state. Leads with the most useful TRUE thing:
  *
  *   misses  → what needs another pass, and which character cost the most
- *   retries → nothing left unlanded under "Eventually right", but it wasn't free
+ *   retries → nothing left unlanded, but it wasn't free
  *   perfect → nothing to diagnose, so report the achievement
  *
- * The "retries" state is what the forgiving chip creates: everything landed in
+ * The "retries" state is for runs where everything landed in
  * the end, so nothing counts as missed — but the run was not clean and the ring
  * is not 100%, and a "Perfect run" headline over a 92% ring is a lie.
  */
@@ -463,7 +475,7 @@ export function summarize(
     headline: "Perfect run",
     detail: [
       {
-        t: `${run.total} / ${run.total} ${metricWords(run.metric)}`,
+        t: `${run.questionsTotal} / ${run.questionsTotal} ${metricWords(run.metric)}`,
       },
       ...(beat
         ? ([
