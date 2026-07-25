@@ -290,19 +290,18 @@ export function EntryRow({
       >
         ✓
       </span>
-      {/* THE GLYPH, AND SOMETIMES NO GLYPH. The long-vowel mark has none, and
-          this cell is left EMPTY for it rather than filled with its name: the
-          fixed width keeps the rows aligned, and the name is right beside it on
-          the main line, so the blank reads as "this one has no character" — which
-          is exactly what it is — instead of as a missing asset. `entryName` is
-          for controls that must be announced, not for a cell the eye can skip. */}
-      <span
-        className={`w-[64px] flex-none truncate text-[19px] ${japaneseFontClass(
-          entry.glyph,
-        )}`}
-      >
-        {entry.glyph}
-      </span>
+      {/* Reserve a glyph column only when there is a glyph to show. Sentence
+          rules, keigo sets and terms are named concepts, so an empty 64px cell
+          only pushes their useful text away from the checkbox. */}
+      {entry.glyph ? (
+        <span
+          className={`w-[64px] flex-none truncate text-[19px] ${japaneseFontClass(
+            entry.glyph,
+          )}`}
+        >
+          {entry.glyph}
+        </span>
+      ) : null}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px]">
           {/* ONE reading, and only when there is only one. 先生 gets せんせい.
