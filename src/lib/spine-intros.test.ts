@@ -3,8 +3,8 @@
 //
 // WHAT THESE TESTS ARE FOR
 // ========================
-// The three concept cards are the first explanation a learner gets of what a
-// radical is, what a kanji is, and what a word is. Every way they can be wrong is
+// The two concept cards are the first explanation a learner gets of what a
+// radical is and what a kanji is. Every way they can be wrong is
 // silent:
 //
 //   1. Not firing at all. That is the regression this file was written after: the
@@ -65,21 +65,18 @@ function met(facts: Iterable<FactId>): HistoryFile {
  * these tests check the rule instead of echoing it back.
  *
  * The kanji card is about a character taught as a kanji; the radical card about a
- * shape that is only ever a piece; the word card about a written form built out
- * of characters, which a one-character word is not.
+ * shape that is only ever a piece.
  */
 const ANCHOR_SHAPE: Record<
-  "radical" | "kanji" | "word",
+  "radical" | "kanji",
   (roles: readonly string[], glyph: string) => boolean
 > = {
   kanji: (roles) => roles.includes("kanji"),
   radical: (roles) => roles.includes("radical"),
-  word: (roles, glyph) =>
-    roles.includes("word") && !roles.includes("kanji") && /\p{Script=Han}/u.test(glyph),
 };
 
 /** The anchor for one role, by name. */
-function anchorFor(role: "radical" | "kanji" | "word") {
+function anchorFor(role: "radical" | "kanji") {
   const anchor = SPINE_ANCHORS.find((a) => a.role === role);
   assert.ok(anchor, `${role} has no anchor`);
   return anchor;
@@ -120,16 +117,14 @@ function startFacts(
 }
 
 describe("every role is anchored where its card has something to point at", () => {
-  test("all three roles have a card, listed down the hierarchy", () => {
-    // Words are what a learner is here for, kanji spell words, radicals build
-    // kanji. The reverse of the label order, and a different job: see CARD_ORDER.
+  test("both roles have a card, listed down the hierarchy", () => {
     assert.deepEqual(
       SPINE_ANCHORS.map((a) => a.role),
-      [...ROLE_ORDER].reverse(),
+      ["kanji", "radical"],
     );
     assert.deepEqual(
       SPINE_ANCHORS.map((a) => a.intro.id),
-      [...ROLE_ORDER].reverse().map((r) => TRACK_INTROS[r].id),
+      ["kanji", "radical"].map((r) => TRACK_INTROS[r].id),
     );
   });
 
@@ -150,30 +145,10 @@ describe("every role is anchored where its card has something to point at", () =
     assert.equal(anchor.glyph, first.glyph);
   });
 
-  test("the word card is the first word spelled out of characters, not a fold", () => {
-    // A one-character word is the kanji you were just taught wearing a second
-    // label, and nothing has waited on anything yet. The card is about a word
-    // waiting for its kanji, so it fires at the first written form built from
-    // characters already in hand.
-    const anchor = anchorFor("word");
-    const item = CURRICULUM_SEQUENCE.find((it) => it.glyph === anchor.glyph)!;
-    assert.ok(item.roles.includes("word"));
-    assert.ok(!item.roles.includes("kanji"), "the word anchor is a folded kanji");
-    assert.match(anchor.glyph, /\p{Script=Han}/u);
-    const first = CURRICULUM_SEQUENCE.find(
-      (it) =>
-        it.roles.includes("word") &&
-        !it.roles.includes("kanji") &&
-        /\p{Script=Han}/u.test(it.glyph),
-    )!;
-    assert.equal(anchor.glyph, first.glyph);
-  });
-
   test("the kanji and radical cards share their anchor, and say so in order", () => {
     // The opening character is both, so both cards are due ahead of it. Two
     // explanations stacked is the price of never showing a label first.
     assert.equal(anchorFor("kanji").glyph, anchorFor("radical").glyph);
-    assert.notEqual(anchorFor("word").glyph, anchorFor("kanji").glyph);
   });
 
   test("an anchor's gate facts are the meaning facts of the roles it plays", () => {
@@ -203,9 +178,9 @@ describe("every role is anchored where its card has something to point at", () =
     const wordGlyph = anchorFor("word").glyph;
     const asKeigo = [{ kind: "keigo", glyph: wordGlyph }];
     assert.equal(spineIntroPlan(asKeigo, BLANK, new Set(), new Set()).size, 0);
-    // The identical glyph, stepping as the word it is, does owe the card.
+    // The identical glyph, stepping as the word it is, still owes no spine card.
     const asWord = [{ kind: "word", glyph: wordGlyph }];
-    assert.equal(spineIntroPlan(asWord, BLANK, new Set(), new Set()).size, 1);
+    assert.equal(spineIntroPlan(asWord, BLANK, new Set(), new Set()).size, 0);
   });
 
   test("a card already shown is never planned again", () => {

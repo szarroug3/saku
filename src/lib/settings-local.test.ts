@@ -114,7 +114,7 @@ test("round trip: applyServerSettings then readLocalSettings recovers the blob",
     accents: { kiri: "cyan" },
     claimHintDismissed: true,
     lessonReadings: true,
-    introShown: ["track-word"],
+    introShown: ["track-kanji"],
   };
   applyServerSettings(store, settings);
   const back = readLocalSettings(store);

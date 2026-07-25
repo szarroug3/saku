@@ -118,12 +118,12 @@ const HAS_KANJI = /\p{Script=Han}/u;
  *           before anything has said what a radical is. A term shown before its
  *           definition is the exact failure these cards exist to prevent, so the
  *           card leads and the copy carries the distinction instead.
- *   WORD    the first word written with kanji that is not a single kanji folded
- *           into its own character. A one-character word is the kanji you have
- *           just been taught wearing a second label, and the card's whole subject
- *           is that a word waits for the characters it is spelled with, which
- *           nothing has waited for yet. The first written form built out of
- *           characters already in hand is where that is true.
+ *   WORD    the first item that plays the word role at all, folded items
+ *           included. This card defines what words are in this spine, so it must
+ *           appear before the first place the UI labels an item as a word. When
+ *           the first word-role item is also a kanji/radical, this card leads
+ *           those cards at the same step and introduces the top of the hierarchy
+ *           first.
  *
  * Each falls back to the plain "carries the role" item if its rule matches
  * nothing, so a re-cut curriculum degrades to an early card and never to a
@@ -134,8 +134,7 @@ const ANCHOR_RULE: Readonly<
 > = {
   kanji: (it) => it.roles.includes("kanji"),
   radical: (it) => it.roles.includes("radical"),
-  word: (it) =>
-    it.roles.includes("word") && !it.roles.includes("kanji") && HAS_KANJI.test(it.glyph),
+  word: (it) => it.roles.includes("word"),
 };
 
 /**
@@ -152,7 +151,7 @@ const ANCHOR_RULE: Readonly<
  * runs smallest piece first. Two different orders for two different jobs: a label
  * lists what is on the card, and this teaches.
  */
-const CARD_ORDER: readonly CurriculumRole[] = [...ROLE_ORDER].reverse();
+const CARD_ORDER: readonly CurriculumRole[] = ["kanji", "radical"];
 
 /**
  * The three cards, in CARD_ORDER, each anchored by ANCHOR_RULE.
