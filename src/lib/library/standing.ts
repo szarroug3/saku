@@ -28,9 +28,9 @@
 //
 //   not seen       no counts, no claim .......... it has never asked you.
 //   claimed        a claim, never tested ........ YOU skipped the lesson. Untested.
-//   solid          ≥ 80% of the last 10 runs .... eight in ten or better.
-//   getting there  ≥ 60% of the last 10 runs .... six or seven in ten.
-//   shaky          < 60% of the last 10 runs .... fewer than six in ten.
+//   solid          ≥ 80% of recent runs ......... eight in ten or better.
+//   getting there  ≥ 60% of recent runs ......... six in ten or better.
+//   shaky          < 60% of recent runs .......... fewer than six in ten.
 //   slipping       teach, but you HAVE seen it .. you had it. It's gone.
 //
 // WHY "solid" TAKES BOTH, AND NOT `quiet` ALONE
@@ -54,7 +54,6 @@
 // it without printing a probability.
 
 import { accuracyOf } from "@/lib/accuracy";
-import { STANDING_RUN_WINDOW } from "@/lib/aggregate";
 import type { Claims } from "@/lib/claims";
 import { effectiveState } from "@/lib/claims";
 import { status } from "@/lib/scoring";
@@ -99,17 +98,17 @@ export const STANDING_TONE: Record<Standing, "good" | "warn" | "bad" | "mute"> =
   slipping: "warn",
 };
 
-/** Six successful recent runs in ten is "getting there". */
+/** At least 60% of recent runs is "getting there". */
 export const GETTING_THERE_PCT = 60;
 
-/** Eight successful recent runs in ten is solid. */
+/** At least 80% of recent runs is solid. */
 export const SOLID_PCT = 80;
 
 /** Score from the ten most recent completed runs containing this fact. A run
- * is one vote regardless of requeues within it; before ten runs, the unearned
- * slots keep this a literal 8 / 6 / <6 progression rather than turning one
- * lucky first run into 100%. Histories from before the rolling window was
- * introduced fall back to their aggregate until stored sessions backfill it. */
+ * is one vote regardless of requeues within it. For shorter histories, the
+ * percentage is calculated from the runs available. Histories from before the
+ * rolling window was introduced fall back to their aggregate until stored
+ * sessions backfill it. */
 export function recentRunAccuracy(
   agg: FactAggregate | undefined,
   metric: AccuracyMetric,
@@ -120,7 +119,7 @@ export function recentRunAccuracy(
   const hits = runs.filter((run) =>
     metric === "firstTry" ? run.firstTry : run.eventually,
   ).length;
-  return (100 * hits) / STANDING_RUN_WINDOW;
+  return (100 * hits) / runs.length;
 }
 
 /** Everything this needs to know about a fact. Not a HistoryFile: a caller that

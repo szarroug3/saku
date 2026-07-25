@@ -197,23 +197,29 @@ describe("standingOf — the latest ten runs define the accuracy label", () => {
     assert.equal(standingOf(withRuns(5), undefined, METRIC, NOW).standing, "shaky");
   });
 
-  test("unfilled window slots do not turn a short streak into instant mastery", () => {
-    const short = (hits: number): FactAggregate => ({
+  test("short histories use the percentage of available runs", () => {
+    const short = (hits: number, runs: number): FactAggregate => ({
       ...drilledJustNow(
-        { seen: hits, missed: 0, firstTry: hits, correct: hits },
+        {
+          seen: runs,
+          missed: runs - hits,
+          firstTry: hits,
+          correct: hits,
+        },
         NOW,
       ),
-      recentRuns: Array.from({ length: hits }, () => ({
-        firstTry: true,
-        eventually: true,
+      recentRuns: Array.from({ length: runs }, (_, i) => ({
+        firstTry: i < hits,
+        eventually: i < hits,
       })),
     });
-    assert.equal(standingOf(short(5), undefined, METRIC, NOW).standing, "shaky");
+    assert.equal(standingOf(short(1, 1), undefined, METRIC, NOW).standing, "solid");
+    assert.equal(standingOf(short(4, 5), undefined, METRIC, NOW).standing, "solid");
     assert.equal(
-      standingOf(short(6), undefined, METRIC, NOW).standing,
+      standingOf(short(3, 5), undefined, METRIC, NOW).standing,
       "getting-there",
     );
-    assert.equal(standingOf(short(8), undefined, METRIC, NOW).standing, "solid");
+    assert.equal(standingOf(short(2, 5), undefined, METRIC, NOW).standing, "shaky");
   });
 });
 
