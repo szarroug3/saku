@@ -20,6 +20,12 @@ import { normalizeSettings } from "@/lib/settings-merge";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { HistoryFile, ListsFile, SettingsFile } from "@/types";
 
+export interface ProgressSeedRow {
+  history: HistoryFile;
+  settings: SettingsFile;
+  session: SessionStateEnvelope;
+}
+
 function normalizeHistory(raw: unknown): HistoryFile {
   const h = (raw ?? {}) as Partial<HistoryFile>;
   const sessions = Array.isArray(h.sessions) ? h.sessions : [];
@@ -29,6 +35,23 @@ function normalizeHistory(raw: unknown): HistoryFile {
     claims: h.claims ?? {},
     seen: h.seen ?? {},
     ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),
+  };
+}
+
+export async function readProgressSeedRow(
+  userId: string,
+): Promise<ProgressSeedRow> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("progress")
+    .select("history, settings, session")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`reading progress seed failed: ${error.message}`);
+  return {
+    history: normalizeHistory(data?.history),
+    settings: normalizeSettings(data?.settings),
+    session: normalizeEnvelope(data?.session),
   };
 }
 

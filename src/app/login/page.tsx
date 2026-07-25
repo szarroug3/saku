@@ -3,18 +3,20 @@
 // they ask for a gated page directly. Google OAuth is the whole of it.
 
 import { GoogleSignIn } from "@/components/auth/google-sign-in";
+import Image from "next/image";
 
 export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-[80vh] max-w-sm flex-col items-center justify-center px-6 text-center">
       {/* alt="" — the <h1> below says "Sign in to Saku"; a non-empty alt would
           flash "Saku" as text before the PNG decodes. */}
-      <img
+      <Image
         src="/brand/saku-wordmark.png"
         alt=""
         width={160}
         height={160}
         className="mb-8 h-40 w-40 object-contain"
+        priority
       />
       <h1 className="text-[20px] font-medium text-text">Sign in to Saku</h1>
       <p className="mt-2 text-[14px] leading-relaxed text-text-muted">

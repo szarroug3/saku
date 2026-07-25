@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { preload } from "react-dom";
 import type { ReactNode } from "react";
 
@@ -46,12 +47,13 @@ export function Landing({ signIn }: { signIn: ReactNode }) {
       <section className="flex flex-col items-center pt-10 text-center">
         {/* alt="" on purpose — the <h1> below names the app; a non-empty alt
             would flash "Saku" as text while the PNG decodes. */}
-        <img
+        <Image
           src="/brand/saku-mark.png"
           alt=""
           width={132}
           height={132}
           className="h-33 w-33 object-contain"
+          priority
         />
         <h1 className="mt-6 text-[34px] font-medium leading-tight text-text sm:text-[40px]">
           Learn Japanese from the very first character.

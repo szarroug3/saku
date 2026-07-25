@@ -110,7 +110,7 @@ function trackOfRun(run: RunInfo): TrackKey | null {
 export function HomeFeed() {
   const { cfg } = useQuizConfig();
   const { startSession, runs, continueRun, discardRun } = useQuizSession();
-  const { history, loaded, refresh } = useHistory();
+  const { history, loaded } = useHistory();
 
   // The next lesson is a view of history, not a cursor — see next-lesson.tsx.
   // Null when there is no new material left, and the card is then not rendered

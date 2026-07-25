@@ -11,12 +11,10 @@ import { Sidebar } from "@/components/sidebar";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { currentUserId } from "@/lib/auth";
-import { loadHistory } from "@/lib/history";
+import { loadProgressSeeds } from "@/lib/history";
 import { HistoryProvider } from "@/lib/history-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
-import { loadSettings } from "@/lib/settings";
 import { SettingsProvider } from "@/lib/settings-provider";
-import { loadSessionState } from "@/lib/session-store";
 import { QuizSessionProvider } from "@/lib/quiz-session";
 import { isSupabaseStore } from "@/lib/store/mode";
 import { ThemeProvider } from "@/lib/theme";
@@ -118,7 +116,7 @@ if(c!==${JSON.stringify(DEFAULT_ACCENT)}&&${JSON.stringify(
  * the wording it already has for it. */
 async function seedHistory(userId: string) {
   try {
-    return await loadHistory(userId);
+    return (await loadProgressSeeds(userId)).history;
   } catch {
     return null;
   }
@@ -129,7 +127,7 @@ async function seedHistory(userId: string) {
  * localStorage keys) rather than failing the whole shell. */
 async function seedSettings(userId: string) {
   try {
-    return await loadSettings(userId);
+    return (await loadProgressSeeds(userId)).settings;
   } catch {
     return null;
   }
@@ -141,7 +139,7 @@ async function seedSettings(userId: string) {
  * than failing the whole shell. */
 async function seedSessionState(userId: string) {
   try {
-    return await loadSessionState(userId);
+    return (await loadProgressSeeds(userId)).session;
   } catch {
     return null;
   }
@@ -166,20 +164,18 @@ export default async function RootLayout({
   // and the pages they see (the landing, the auth screens) are exactly the ones
   // that would have nothing to show for the query. Their progress lives in this
   // browser and the provider reads it there.
-  const initialHistory = userId === null ? null : await seedHistory(userId);
-  // THE SETTINGS, IN THE FIRST RESPONSE, the same way and for the same reason as
-  // the history: read here (the same loadSettings the API route calls) so the
-  // theme/config providers reconcile against the server's copy on the first paint
-  // instead of after a client fetch. Null for a signed-out visitor (no account to
-  // read) — their preferences live in this browser's localStorage cache.
-  const initialSettings = userId === null ? null : await seedSettings(userId);
-  // THE IN-PROGRESS RUN, IN THE FIRST RESPONSE, the same way as history/settings:
-  // read here (the same loadSessionState the API route calls) so the quiz-session
-  // provider can reconcile a run started on another device into the live session
-  // on the first paint. Null for a signed-out visitor (no account) — their
-  // in-progress run lives in this browser's localStorage snapshot only.
-  const initialSessionState =
-    userId === null ? null : await seedSessionState(userId);
+  // THE SETTINGS and IN-PROGRESS RUN, IN THE FIRST RESPONSE, for the same reason
+  // as history: reconcile providers against the server copy on first paint,
+  // instead of waiting on a client fetch. Signed-out visitors have no account to
+  // read, so all three are null and local browser caches take over.
+  const [initialHistory, initialSettings, initialSessionState] =
+    userId === null
+      ? [null, null, null]
+      : await Promise.all([
+          seedHistory(userId),
+          seedSettings(userId),
+          seedSessionState(userId),
+        ]);
   // Read the sidebar's collapsed state server-side so it renders at the right
   // width on the first paint instead of loading expanded and snapping closed.
   const sidebarCollapsed =

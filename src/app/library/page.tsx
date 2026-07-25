@@ -35,6 +35,7 @@ import {
   KINDS,
   knownFactsOf,
   LIB_ENTRIES,
+  LIB_ENTRIES_BY_KIND,
   type Kind,
   type LibEntry,
 } from "@/lib/library/entries";
@@ -346,6 +347,14 @@ function LibraryBody() {
   // a Radicals block, a Words block, in teaching order — which is the tab's whole
   // point. Both come back as `{ key, label, hits, more }` so one render draws
   // either; the difference is only what the blocks are cut by.
+  const allHits = useMemo(
+    () =>
+      q
+        ? searchAll(q, { kind: tab === ALL_TAB ? null : tab, pinned, keep })
+        : [],
+    [q, tab, pinned, keep],
+  );
+
   const resultSections = useMemo(() => {
     if (!q) return [];
     // `tab === ALL_TAB` (not `isAll`) so TypeScript narrows `tab` to a real Kind
@@ -378,9 +387,10 @@ function LibraryBody() {
   const shelvesByKind = useMemo(() => {
     const m = new Map<Kind, { sections: ShelfSection[]; entries: LibEntry[] }>();
     for (const k of KINDS) {
+      const entries = LIB_ENTRIES_BY_KIND.get(k) ?? [];
       m.set(k, {
         sections: shelfSections(k, cfg.newKanjiOrder),
-        entries: LIB_ENTRIES.filter((e) => e.kind === k),
+        entries: [...entries],
       });
     }
     return m;
@@ -434,10 +444,9 @@ function LibraryBody() {
   const slice = useMemo(() => {
     if (selected.size > 0) return selectionSlice(selected, LIB_ENTRIES);
     if (q) {
-      // The bar means the results you can see — scoped to the tab like the search
-      // itself, all of them (not the 8-per-block the page had room for).
-      const hits = searchAll(q, { kind: tab === ALL_TAB ? null : tab, pinned, keep });
-      return { label: q, entries: hits.map((h) => h.entry.id) };
+      // The bar means every search hit under the same scope as the visible
+      // results (including the hidden +N rows), reusing the computed hit set.
+      return { label: q, entries: allHits.map((h) => h.entry.id) };
     }
     // All browse with nothing selected: the bar is the whole library (the "drill
     // everything" the per-kind shelf's "drill all of Kanji" generalises to).
@@ -450,7 +459,7 @@ function LibraryBody() {
       label: KIND_LABEL[tab],
       entries: (keep ? entries.filter(keep) : entries).map((e) => e.id),
     };
-  }, [selected, q, tab, pinned, keep, shelvesByKind]);
+  }, [selected, q, tab, keep, shelvesByKind, allHits]);
 
   const standingOfEntry = (entry: LibEntry) =>
     entryStanding(factsOf(entry.id), liveFacts, claims, cfg.accuracyMetric, now);

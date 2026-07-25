@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -220,12 +221,13 @@ export function Sidebar({
           instead, and the image is decorative. */}
       <div className="mb-2 flex items-center justify-between pr-1">
         <Link href="/" aria-label="Saku — home" className="block px-3 py-1">
-          <img
+          <Image
             src="/brand/saku-wordmark.png"
             alt=""
             width={96}
             height={96}
             className="h-auto w-20"
+            priority
           />
         </Link>
         <button

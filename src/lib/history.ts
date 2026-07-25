@@ -25,7 +25,11 @@ import {
   applySession,
   emptyHistory,
 } from "@/lib/history-ops";
-import { readHistoryRow, writeHistoryRow } from "@/lib/store/supabase-store";
+import {
+  readHistoryRow,
+  readProgressSeedRow,
+  writeHistoryRow,
+} from "@/lib/store/supabase-store";
 import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
 
 /**
@@ -35,6 +39,12 @@ import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
  */
 export async function loadHistory(userId: string): Promise<HistoryFile> {
   return readHistoryRow(userId);
+}
+
+/** One read for the three app-shell seeds (history/settings/session), so layout
+ * hydration can avoid three independent progress-row queries. */
+export async function loadProgressSeeds(userId: string) {
+  return readProgressSeedRow(userId);
 }
 
 /** The write half — upserts the `history` column, leaving lists/settings/session

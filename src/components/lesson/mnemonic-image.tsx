@@ -16,6 +16,7 @@
 // try with no effect/reset plumbing.
 
 import { useState } from "react";
+import Image from "next/image";
 
 export function MnemonicImage({
   src,
@@ -49,10 +50,11 @@ export function MnemonicImage({
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={src}
       alt=""
+      width={192}
+      height={192}
       className={imgClassName}
       aria-hidden
       onError={() => {

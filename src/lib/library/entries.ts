@@ -402,6 +402,19 @@ export function knownFactsOf(entry: LibEntry): readonly FactId[] {
 /** Every entry in the app, in browse order: kana, then kanji, then words. */
 export const LIB_ENTRIES: readonly LibEntry[] = build();
 
+/** Entries bucketed once by shelf kind, for callers that need repeated per-kind
+ * lookups without re-filtering the full library on every render. */
+export const LIB_ENTRIES_BY_KIND: ReadonlyMap<Kind, readonly LibEntry[]> =
+  (() => {
+    const buckets = new Map<Kind, LibEntry[]>();
+    for (const k of KINDS) buckets.set(k, []);
+    for (const e of LIB_ENTRIES) {
+      const list = buckets.get(e.kind);
+      if (list) list.push(e);
+    }
+    return buckets;
+  })();
+
 const BY_ID: ReadonlyMap<EntryId, LibEntry> = new Map(
   LIB_ENTRIES.map((e) => [e.id, e]),
 );

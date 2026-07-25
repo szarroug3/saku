@@ -26,7 +26,11 @@ import {
   pickNewer,
   type SessionStateEnvelope,
 } from "@/lib/session-state";
-import { readSessionRow, writeSessionRow } from "@/lib/store/supabase-store";
+import {
+  readProgressSeedRow,
+  readSessionRow,
+  writeSessionRow,
+} from "@/lib/store/supabase-store";
 
 /** The signed-in learner's in-progress session envelope. readSessionRow
  * normalizes an unset column into the empty envelope (no synced run). */
@@ -34,6 +38,13 @@ export async function loadSessionState(
   userId: string,
 ): Promise<SessionStateEnvelope> {
   return readSessionRow(userId);
+}
+
+/** Session-only view over the grouped app-shell seed read. */
+export async function loadSeedSessionState(
+  userId: string,
+): Promise<SessionStateEnvelope> {
+  return (await readProgressSeedRow(userId)).session;
 }
 
 /** The write half — upserts only the `session` column. */

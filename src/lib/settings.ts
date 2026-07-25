@@ -19,13 +19,22 @@
 import "server-only";
 
 import { mergeSettings } from "@/lib/settings-merge";
-import { readSettingsRow, writeSettingsRow } from "@/lib/store/supabase-store";
+import {
+  readProgressSeedRow,
+  readSettingsRow,
+  writeSettingsRow,
+} from "@/lib/store/supabase-store";
 import type { SettingsFile } from "@/types";
 
 /** The signed-in learner's settings. readSettingsRow normalizes an unset column
  * into the empty (all-default) settings. */
 export async function loadSettings(userId: string): Promise<SettingsFile> {
   return readSettingsRow(userId);
+}
+
+/** Settings-only view over the grouped app-shell seed read. */
+export async function loadSeedSettings(userId: string): Promise<SettingsFile> {
+  return (await readProgressSeedRow(userId)).settings;
 }
 
 /** The write half — upserts only the `settings` column. */
