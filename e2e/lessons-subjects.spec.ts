@@ -97,9 +97,9 @@ test("a compound word step shows the reading pieces it is Built from", async ({
   await startCurriculumLesson(page, "電話");
   await stepToHeadword(page, "電話");
 
-  await expect(
-    page.getByRole("heading", { level: 3, name: "Word", exact: true }),
-  ).toBeVisible();
+  // A two-character WORD plays no single-glyph character role, so its sections
+  // come back UNLABELLED — there is no "Word" role heading here (that is for a
+  // folded character like 人). The Built from card itself is the material.
   await expect(page.locator("body")).toContainText("Built from");
   // The two kanji pieces with the sound each makes IN THIS WORD.
   const builtFrom = page.locator("div.kq-material").filter({ hasText: "Built from" });
