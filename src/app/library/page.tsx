@@ -489,6 +489,46 @@ function LibraryBody() {
     return [...out];
   }, [slice.entries, history]);
 
+  const sentenceRuleActions = useMemo(() => {
+    if (slice.entries.length === 0) return null;
+    const tiers = slice.entries.map((entryId) => {
+      const mark = markFor(entryId);
+      if (mark?.shelf !== "sentence") return null;
+      return SENTENCE_ORDERING_TIERS.find(
+        (candidate) =>
+          candidate.id === mark.id.replace("sentence-rule-", ""),
+      ) ?? null;
+    });
+    // A mixed selection still gets the combined “I know these” action above,
+    // but it cannot honestly be one quiz: sentence assembly and ordinary fact
+    // questions use different modes.
+    if (tiers.some((tier) => tier === null)) return null;
+
+    const tierFacts = tiers.map((tier) => ({
+      tier: tier!,
+      facts: tierAssemblyFacts(tier!, history),
+    }));
+    const quizFacts = [
+      ...new Set(tierFacts.flatMap(({ facts }) => facts)),
+    ];
+    const nextTeach = tierFacts.find(
+      ({ tier, facts }) =>
+        facts.length > 0 &&
+        claims[sentenceTierMarkerFact(tier.id)] === undefined,
+    );
+    return {
+      quizFacts,
+      teachPlan: nextTeach
+        ? {
+            facts: nextTeach.facts,
+            teach: nextTeach.facts,
+            what: `Sentence ordering · tier ${nextTeach.tier.id}`,
+            mode: "assembly" as const,
+          }
+        : undefined,
+    };
+  }, [slice.entries, history, claims]);
+
   const standingOfEntry = (entry: LibEntry) =>
     entryStanding(factsOf(entry.id), liveFacts, claims, cfg.accuracyMetric, now);
 
@@ -717,6 +757,9 @@ function LibraryBody() {
           onClaim={claim}
           includeSolid={selected.size > 0}
           claimFacts={sentenceRuleClaimFacts}
+          quizFacts={sentenceRuleActions?.quizFacts}
+          quizMode={sentenceRuleActions ? "assembly" : undefined}
+          teachPlan={sentenceRuleActions?.teachPlan}
         />
       </Dock>
 

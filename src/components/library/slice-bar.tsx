@@ -38,7 +38,14 @@ import {
 import { useQuizSession } from "@/lib/quiz-session";
 import { claimableFacts, quizzableFacts } from "@/lib/word-unlock";
 import type { Claims } from "@/lib/claims";
-import type { FactAggregate, FactId, HistoryFile } from "@/types";
+import type { FactAggregate, FactId, HistoryFile, QuizMode } from "@/types";
+
+interface SliceTeachPlan {
+  facts: readonly FactId[];
+  teach: readonly FactId[];
+  what: string;
+  mode?: QuizMode;
+}
 
 export function SliceBar({
   slice,
@@ -50,6 +57,9 @@ export function SliceBar({
   showLabel = true,
   includeSolid = false,
   claimFacts,
+  quizFacts,
+  quizMode,
+  teachPlan,
 }: {
   slice: Slice;
   facts: Record<FactId, FactAggregate>;
@@ -82,8 +92,15 @@ export function SliceBar({
    * tracked without a quiz fact. Sentence-rule pages use their tier marker so
    * “I know this” advances the same Learn track as its lesson card. */
   claimFacts?: readonly FactId[];
+  /** A subject-specific quiz pool when entry facts are not the actual exercise.
+   * Sentence rules quiz readable assembly facts in assembly mode. */
+  quizFacts?: readonly FactId[];
+  quizMode?: QuizMode;
+  /** A subject-specific lesson launch. Sentence rules teach one coherent tier
+   * at a time instead of merging ten lesson walks into one. */
+  teachPlan?: SliceTeachPlan;
 }) {
-  const { startSession, startQuiz } = useQuizSession();
+  const { startSession, startQuiz, startQuizInMode } = useQuizSession();
   const [adding, setAdding] = useState(false);
   // "Quiz me" no longer drops straight into the drill. It opens a pre-start step
   // so the config that WILL run is visible and changeable first — the same gap
@@ -118,6 +135,7 @@ export function SliceBar({
     includeSolid ? order : [...drillPlan(slice, facts, claims, now, true).probe],
     history,
   );
+  const effectiveQuizOrder = quizFacts ? [...new Set(quizFacts)] : quizOrder;
   // Claim only ever touches NOT-solid facts: claiming what the model already
   // calls solid is a documented no-op. So even when Drill is force-including
   // solid facts, claim runs off the default plan and is disabled once every
@@ -242,9 +260,9 @@ export function SliceBar({
           {/* Quiz me — review what you KNOW. Gated on quizOrder (the met facts),
               so it is GONE, not shown empty, when you have met nothing here yet:
               a fresh shelf has nothing to quiz, only to teach. */}
-          {canDrill && quizOrder.length > 0 ? (
+          {(quizFacts ? effectiveQuizOrder.length > 0 : canDrill && quizOrder.length > 0) ? (
             <Btn sel onClick={() => setQuizzing(true)}>
-              Quiz me {quizOrder.length}
+              Quiz me {effectiveQuizOrder.length}
             </Btn>
           ) : null}
           {/* Teach me — learn the new, then probe. Gated on the full order, so it
@@ -258,6 +276,22 @@ export function SliceBar({
               Teach me {order.length}
             </Btn>
           ) : null}
+          {teachPlan?.facts.length ? (
+            <Btn
+              onClick={() =>
+                startSession(
+                  [...teachPlan.facts],
+                  [...teachPlan.teach],
+                  teachPlan.what,
+                  "library",
+                  undefined,
+                  teachPlan.mode,
+                )
+              }
+            >
+              Teach me {teachPlan.facts.length}
+            </Btn>
+          ) : null}
         </div>
       </div>
       {/* The pre-start step for "Quiz me". Mounted (and portalled) only while
@@ -268,8 +302,12 @@ export function SliceBar({
         open={quizzing}
         onOpenChange={setQuizzing}
         label={slice.label}
-        count={quizOrder.length}
-        onStart={() => startQuiz(quizOrder, { what: slice.label })}
+        count={effectiveQuizOrder.length}
+        onStart={() =>
+          quizMode
+            ? startQuizInMode(effectiveQuizOrder, quizMode, { what: slice.label })
+            : startQuiz(effectiveQuizOrder, { what: slice.label })
+        }
       />
     </>
   );
