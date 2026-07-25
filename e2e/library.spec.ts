@@ -174,7 +174,7 @@ test("filter chips still work after a back/forward/back through a detail page", 
   // The kind chip must still move the shelf.
   await chip("Words").click();
   await expect(page).toHaveURL(/\?kind=word$/);
-  await expect(page.getByText("Everyday words", { exact: true })).toBeVisible();
+  await expect(page.locator('a[href^="/library/word/"]').first()).toBeVisible();
 
   // And so must the knowledge filter (the other search-params-only control).
   await chip("Known").click();
