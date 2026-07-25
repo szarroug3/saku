@@ -80,6 +80,7 @@
 // longer a filter any scheduler runs.
 
 import { freshFacts, nextGroup } from "@/lib/budget";
+import { effectiveState } from "@/lib/claims";
 import {
   PREREQUISITE_ONLY,
   kanjiRow,
@@ -462,18 +463,22 @@ export function nextCurriculumLesson(
   range: LessonRange,
 ): CurriculumLesson | null {
   const groups = curriculum(range);
-  const fresh = freshFacts(groups.flatMap((g) => g.facts), history);
-  const facts = nextGroup(
-    groups.map((g) => g.facts),
-    fresh,
-  );
-  if (!facts.length) return null;
+  const itemIsMet = (it: CurriculumLessonItem): boolean =>
+    it.facts.some((f) => {
+      const state = effectiveState(
+        history.facts[f],
+        history.claims?.[f],
+        history.seen?.[f],
+      );
+      return state.lastTested > 0;
+    });
 
-  const group = groups.find((g) => g.facts.includes(facts[0]));
+  const group = groups.find((g) => g.items.some((it) => !itemIsMet(it)));
   if (!group) return null;
 
-  const left = new Set(facts);
-  const cards = group.items.filter((it) => it.facts.some((f) => left.has(f)));
+  const cards = group.items.filter((it) => !itemIsMet(it));
+  const facts = cards.flatMap((it) => it.facts);
+  if (!facts.length) return null;
 
   return {
     group,
