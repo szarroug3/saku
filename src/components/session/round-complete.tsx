@@ -24,7 +24,13 @@
 
 import { useState } from "react";
 
-import { WordTable } from "@/components/results/word-table";
+import {
+  boxKeysForFact,
+  boxKeysForFacts,
+  factOfBoxKey,
+  type BoxKey,
+  WordTable,
+} from "@/components/results/word-table";
 import { Btn, Card, Hint } from "@/components/ui";
 import { factInfo } from "@/lib/facts";
 import {
@@ -34,7 +40,7 @@ import {
 } from "@/lib/session";
 import type { FactId } from "@/types";
 
-import { initialPicked, retryHint } from "./retry-grouping";
+import { retryHint } from "./retry-grouping";
 
 /** The recovered line's glyph — what a retry earned back. Never paired with its
  * answer: you may be about to be asked these again. */
@@ -70,11 +76,16 @@ export function RoundComplete({
   // control. Pre-ticking `missed` was the bug: clear both misses on a retry and
   // the screen came back offering to retry them again, which is why the tester
   // could not tell a perfect retry from no retry at all.
-  const [picked, setPicked] = useState<Record<string, boolean>>(() =>
-    initialPicked(outstanding),
+  const [picked, setPicked] = useState<Set<BoxKey>>(
+    () => new Set(boxKeysForFacts(outstanding, session.roundStats)),
   );
 
-  const pickedList = selection.filter((f) => picked[f]);
+  const pickedFacts = [...picked]
+    .map((box) => factOfBoxKey(box))
+    .filter((f): f is FactId => !!f);
+  const pickedList = [...new Set(pickedFacts)].filter((f) =>
+    selection.includes(f),
+  );
 
   return (
     <>
@@ -128,8 +139,14 @@ export function RoundComplete({
           <WordTable
             facts={selection}
             stats={session.roundStats}
-            isSelected={(f) => !!picked[f]}
-            onToggle={(f) => setPicked((p) => ({ ...p, [f]: !p[f] }))}
+            isSelected={(box) => picked.has(box)}
+            onToggle={(box) =>
+              setPicked((prev) => {
+                const next = new Set(prev);
+                if (!next.delete(box)) next.add(box);
+                return next;
+              })
+            }
           />
         </div>
 

@@ -22,6 +22,50 @@ import {
 } from "@/lib/results-grouping";
 import type { FactId, SessionStats } from "@/types";
 
+export type BoxKey = string;
+
+export function boxKeyOf(fact: FactId, phrase: string): BoxKey {
+  return JSON.stringify([fact, phrase]);
+}
+
+export function factOfBoxKey(key: BoxKey): FactId | null {
+  try {
+    const parsed = JSON.parse(key);
+    if (!Array.isArray(parsed) || typeof parsed[0] !== "string") return null;
+    return parsed[0] as FactId;
+  } catch {
+    return null;
+  }
+}
+
+export function presentationPhrasesForFact(
+  fact: FactId,
+  stats: SessionStats,
+): string[] {
+  const st = stats[fact];
+  const showings = st?.showns?.length ? st.showns : st?.shown ? [st.shown] : [];
+  const phrases =
+    showings.length > 0
+      ? showings.map((s) => presentationPhrase(fact, s))
+      : [presentationPhrase(fact, st?.shown)];
+  // Distinct phrases in first-seen order; the same phrase can be asked several
+  // times in one run and should still render as one box.
+  return [...new Set(phrases)];
+}
+
+export function boxKeysForFact(fact: FactId, stats: SessionStats): BoxKey[] {
+  return presentationPhrasesForFact(fact, stats).map((phrase) =>
+    boxKeyOf(fact, phrase),
+  );
+}
+
+export function boxKeysForFacts(
+  facts: FactId[],
+  stats: SessionStats,
+): BoxKey[] {
+  return facts.flatMap((fact) => boxKeysForFact(fact, stats));
+}
+
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
@@ -47,18 +91,19 @@ function HowYouDid({ outcome }: { outcome: Outcome }) {
 
 function PresentationCell({
   fact,
+  phrase,
   stats,
   selected,
   onToggle,
 }: {
   fact: FactId;
+  phrase: string;
   stats: SessionStats;
   selected: boolean;
   onToggle: () => void;
 }) {
   const st = stats[fact];
   const outcome = outcomeOf(st);
-  const phrase = presentationPhrase(fact, st?.shown);
   // What you said instead, when a miss named a single entry to blame. Glyphs
   // only — this cell is about to be re-asked, so it must not print the answer,
   // and the entry you confused it FOR is not this fact's answer.
@@ -118,8 +163,8 @@ export function WordTable({
 }: {
   facts: FactId[];
   stats: SessionStats;
-  isSelected: (fact: FactId) => boolean;
-  onToggle: (fact: FactId) => void;
+  isSelected: (box: BoxKey) => boolean;
+  onToggle: (box: BoxKey) => void;
 }) {
   const rows = groupByEntry(facts);
   if (!rows.length) return null;
@@ -128,35 +173,45 @@ export function WordTable({
       {rows.map((row) => (
         <div
           key={row.entry}
-          // A FIXED first track, not minmax(_,auto): under `auto` a longer glyph
-          // (あなた) grew its own row's word column and pushed that row's boxes
-          // right, so the boxes no longer lined up down the table. A fixed width
-          // starts every row's boxes at the same x. `1fr` for the second track
-          // keeps the whole thing inside its container — no horizontal overflow.
-          className="grid grid-cols-[72px_1fr] items-center gap-x-2.5 gap-y-1"
+          className="border-b border-border/70 pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
         >
-          {/* The word, once, disambiguated by its noun so 人 the kanji and 人
-              the word read as two rows, not one repeated glyph. */}
-          <div className="flex min-w-0 flex-col items-center justify-center py-1">
-            {/* `max-w-full` + `break-all` so a rare word wider than the fixed
-                column wraps inside it instead of spilling over the boxes. */}
-            <span aria-hidden="true" className="max-w-full break-all text-center font-kana text-[22px] font-extralight leading-none">
-              {glyphOf(row.entry)}
-            </span>
-            <span className="mt-0.5 text-[8.5px] uppercase tracking-[0.06em] text-text-muted">
-              {nounFor(row.facts[0])}
-            </span>
-          </div>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-1.5">
-            {row.facts.map((f) => (
-              <PresentationCell
-                key={f}
-                fact={f}
-                stats={stats}
-                selected={isSelected(f)}
-                onToggle={() => onToggle(f)}
-              />
-            ))}
+          <div
+            // A FIXED first track, not minmax(_,auto): under `auto` a longer glyph
+            // (あなた) grew its own row's word column and pushed that row's boxes
+            // right, so the boxes no longer lined up down the table. A fixed width
+            // starts every row's boxes at the same x. `1fr` for the second track
+            // keeps the whole thing inside its container — no horizontal overflow.
+            className="grid grid-cols-[72px_1fr] items-center gap-x-2.5 gap-y-1"
+          >
+            {/* The word, once, disambiguated by its noun so 人 the kanji and 人
+                the word read as two rows, not one repeated glyph. */}
+            <div className="flex min-w-0 flex-col items-center justify-center py-1">
+              {/* `max-w-full` + `break-all` so a rare word wider than the fixed
+                  column wraps inside it instead of spilling over the boxes. */}
+              <span aria-hidden="true" className="max-w-full break-all text-center font-kana text-[22px] font-extralight leading-none">
+                {glyphOf(row.entry)}
+              </span>
+              <span className="mt-0.5 text-[8.5px] uppercase tracking-[0.06em] text-text-muted">
+                {nounFor(row.facts[0])}
+              </span>
+            </div>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-1.5">
+              {row.facts.flatMap((f) =>
+                presentationPhrasesForFact(f, stats).map((phrase, i) => {
+                  const box = boxKeyOf(f, phrase);
+                  return (
+                    <PresentationCell
+                      key={`${f}-${phrase}-${i}`}
+                      fact={f}
+                      phrase={phrase}
+                      stats={stats}
+                      selected={isSelected(box)}
+                      onToggle={() => onToggle(box)}
+                    />
+                  );
+                }),
+              )}
+            </div>
           </div>
         </div>
       ))}

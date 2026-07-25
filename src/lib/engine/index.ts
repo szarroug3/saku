@@ -327,5 +327,6 @@ export function newFactStat(): FactSessionDetail {
     // and is the forgiving numerator — see src/lib/accuracy.ts.
     correct: 0,
     confused: {},
+    showns: [],
   };
 }

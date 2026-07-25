@@ -107,8 +107,15 @@ export function quizInstruction(
     // the wrong question about the right options. Names the role for the same
     // reason the meaning line does: a reading is read off a kanji OR a word, and
     // the learner should know which one this card is about.
-    if (isSound(fact, dir))
+    if (isSound(fact, dir)) {
+      // en2jp reading boards currently present written-form options (facts), so
+      // the question must ask for how it is WRITTEN. "Said" is reserved for
+      // cards whose options are pronunciations.
+      if (dir === "en2jp") {
+        return `Which of these is how this ${noun} is written${where}?`;
+      }
       return `Which of these is how this ${noun} is said${where}?`;
+    }
     return `Which of these is the correct ${noun}?`;
   }
 

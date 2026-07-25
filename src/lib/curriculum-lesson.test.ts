@@ -29,7 +29,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { KANJI, kanjiRow, meaningFactId } from "../data/kanji.ts";
-import { RADICALS } from "../data/radicals.ts";
+import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
 import { VOCAB, wordMeaningFactId } from "../data/vocab.ts";
 import { CURRICULUM_SEQUENCE } from "./curriculum-order.ts";
 import {
@@ -294,6 +294,17 @@ describe("what a word costs is the two budgets reconciled", () => {
       assert.ok(it.cost > WORD_COST, `${it.glyph} was not charged for its shape`);
       assert.ok(it.facts.length >= 2, `${it.glyph} teaches only one fact`);
     }
+  });
+
+  test("a folded radical+kanji keeps the radical meaning fact", () => {
+    const folded = GROUPS.flatMap((g) => g.items).find(
+      (it) => it.roles.includes("radical") && it.roles.includes("kanji"),
+    );
+    assert.ok(folded);
+    assert.ok(
+      folded.facts.includes(radicalMeaningFactId(folded.glyph)),
+      `${folded.glyph} is missing its radical meaning fact`,
+    );
   });
 });
 

@@ -506,6 +506,14 @@ export interface FactSessionDetail {
    * resolution, so a fact asked several ways carries its most recent framing.
    */
   shown?: ShowingPresentation;
+  /**
+   * Every DISTINCT presentation this fact was resolved with this run, newest
+   * last. Optional for backward compatibility with older snapshots.
+   *
+   * This keeps results from hiding listened variants when a later text card of
+   * the same fact overwrites `shown`.
+   */
+  showns?: ShowingPresentation[];
 }
 
 /** One run's detail, keyed by FACT — the unit that can actually be graded. */

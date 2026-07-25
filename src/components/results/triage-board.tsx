@@ -10,7 +10,12 @@
 import { useState } from "react";
 
 import { Btn, PrimaryBtn } from "@/components/ui";
-import { WordTable } from "@/components/results/word-table";
+import {
+  boxKeysForFacts,
+  factOfBoxKey,
+  type BoxKey,
+  WordTable,
+} from "@/components/results/word-table";
 import { type RunFacts } from "@/components/results/summary";
 import type { FactId, SessionStats } from "@/types";
 
@@ -25,12 +30,13 @@ function Board({
   label: string;
   facts: FactId[];
   stats: SessionStats;
-  selected: Set<FactId>;
-  onToggle: (fact: FactId) => void;
+  selected: Set<BoxKey>;
+  onToggle: (box: BoxKey) => void;
   onSetAll: (facts: FactId[], on: boolean) => void;
 }) {
   if (!facts.length) return null;
-  const n = facts.filter((f) => selected.has(f)).length;
+  const boxes = boxKeysForFacts(facts, stats);
+  const n = boxes.filter((b) => selected.has(b)).length;
   return (
     <>
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -62,7 +68,7 @@ function Board({
         <WordTable
           facts={facts}
           stats={stats}
-          isSelected={(f) => selected.has(f)}
+          isSelected={(box) => selected.has(box)}
           onToggle={onToggle}
         />
       </div>
@@ -93,23 +99,29 @@ export function TriageSection({
   onRerun: () => void;
   onDrillWeakest: () => void;
 }) {
-  const [selected, setSelected] = useState<Set<FactId>>(
-    () => new Set(facts.needsWork),
+  const [selected, setSelected] = useState<Set<BoxKey>>(
+    () => new Set(boxKeysForFacts(facts.needsWork, stats)),
   );
 
-  const toggle = (fact: FactId) =>
+  const toggle = (box: BoxKey) =>
     setSelected((prev) => {
       const next = new Set(prev);
-      if (!next.delete(fact)) next.add(fact);
+      if (!next.delete(box)) next.add(box);
       return next;
     });
   const setAll = (list: FactId[], on: boolean) =>
     setSelected((prev) => {
       const next = new Set(prev);
-      for (const f of list) if (on) next.add(f);
-        else next.delete(f);
+      const boxes = boxKeysForFacts(list, stats);
+      for (const b of boxes) if (on) next.add(b);
+        else next.delete(b);
       return next;
     });
+
+  const selectedFacts = [...selected]
+    .map((box) => factOfBoxKey(box))
+    .filter((f): f is FactId => !!f);
+  const pickedFacts = [...new Set(selectedFacts)];
 
   const n = selected.size;
   // A perfect run breaks the button: "Redrill 0 selected" is meaningless when
@@ -152,7 +164,7 @@ export function TriageSection({
             <PrimaryBtn
               className="flex-1"
               disabled={!n}
-              onClick={() => onRedrill([...selected])}
+              onClick={() => onRedrill(pickedFacts)}
             >
               Redrill {n} selected
             </PrimaryBtn>

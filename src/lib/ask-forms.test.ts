@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { kanaFact } from "@/data/characters";
+import { READING_INDEX } from "@/data/kanji";
 import { patternMeaningFactId } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
 import { VOCAB, isKanaWord, wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
@@ -62,6 +63,14 @@ describe("enabledFormsFor", () => {
     assert.deepEqual(enabledFormsFor(kanaFact("あ"), audioOnly), []);
   });
 
+  test("kanji reading facts never get audio forms", () => {
+    const firstKanjiReading = READING_INDEX.keys().next().value;
+    assert.ok(firstKanjiReading, "expected at least one kanji reading fact");
+    const forms = enabledFormsFor(firstKanjiReading, ALL);
+    assert.ok(forms.length > 0, "kanji reading should still have non-audio forms");
+    assert.equal(forms.some((f) => f.listen), false);
+  });
+
   test("forms that resolve to the same forced control are deduped", () => {
     const forms = enabledFormsFor(kanaFact("あ"), {
       ...ALL,
@@ -117,29 +126,18 @@ describe("enabledFormsFor", () => {
     }
   });
 
-  for (const prompt of ["text", "audio"] as const) {
-    for (const answer of ["typed", "mc"] as const) {
-      test(`sentence romaji supports ${prompt} + ${answer} on a non-kana form`, () => {
-        const forms = enabledFormsFor(reading, {
-          japanese: { prompts: [], responses: [], answers: [] },
-          sentence: {
-            prompts: [prompt],
-            responses: ["romaji"],
-            answers: [answer],
-          },
-          english: { answers: [] },
-        });
-        assert.equal(forms.length, 1);
-        assert.deepEqual(forms[0], {
-          source: "sentence",
-          response: "romaji",
-          listen: prompt === "audio",
-          dir: "jp2en",
-          answer,
-        });
-      });
-    }
-  }
+  test("sentence romaji currently emits no forms", () => {
+    const forms = enabledFormsFor(reading, {
+      japanese: { prompts: [], responses: [], answers: [] },
+      sentence: {
+        prompts: ["text", "audio"],
+        responses: ["romaji"],
+        answers: ["typed", "mc"],
+      },
+      english: { answers: [] },
+    });
+    assert.deepEqual(forms, []);
+  });
 
   for (const prompt of ["text", "audio"] as const) {
     test(`sentence definition supports ${prompt} + multiple choice`, () => {

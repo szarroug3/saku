@@ -28,6 +28,7 @@
 
 import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { grammarMeaning } from "@/data/grammar";
+import { READING_INDEX } from "@/data/kanji";
 import {
   answerIsJapanese,
   en2jpTypeable,
@@ -71,6 +72,11 @@ function isWordReadingFact(fact: FactId): boolean {
   return (
     !!info && info.subject === VOCAB_SUBJECT && wordReadingFactId(info.glyph) === fact
   );
+}
+
+/** Whether this fact is a kanji reading fact (keyed on kanji+anchor word). */
+function isKanjiReadingFact(fact: FactId): boolean {
+  return READING_INDEX.has(fact);
 }
 
 /**
@@ -155,7 +161,7 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
         const listen = prompt === "audio";
         // Audio is word-only: a kana, a kanji, a sentence has no listenable
         // form, so an audio prompt is silently dropped for them.
-        if (listen && listenKind(fact) === null) continue;
+        if (listen && (listenKind(fact) === null || isKanjiReadingFact(fact))) continue;
         for (const answer of src.answers) {
           out.push({
             source: "japanese",
@@ -202,29 +208,10 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
     }
   }
 
-  // Sentence transcription uses a Japanese-bearing fact whose visible form has
-  // something to read beyond kana. The drill grades the existing romaji answer,
-  // so it keeps the same never-invent-a-second-grader contract as Japanese
-  // cards while remaining a distinct source/form for coverage.
-  const info = factInfo(fact);
-  if (
-    info &&
-    ask.sentence.responses.includes("romaji") &&
-    /[^\p{Script=Hiragana}\p{Script=Katakana}\sー・、。！？]/u.test(info.glyph) &&
-    jp2enResponse(fact) === "romaji"
-  ) {
-    for (const prompt of ask.sentence.prompts) {
-      for (const answer of ask.sentence.answers) {
-        out.push({
-          source: "sentence",
-          response: "romaji",
-          listen: prompt === "audio",
-          dir: "jp2en",
-          answer,
-        });
-      }
-    }
-  }
+  // Sentence+romaji is intentionally not emitted yet. It currently grades
+  // against the same answer axis as Japanese+romaji and produces near-duplicate
+  // cards in full-coverage runs; keep sentence forms to definition-selection
+  // until sentence-specific romaji grading/prompting is distinct.
   return dedup(fact, out);
 }
 

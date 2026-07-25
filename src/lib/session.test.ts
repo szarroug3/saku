@@ -228,6 +228,10 @@ test("mergeStats carries the LATEST showing's presentation", () => {
     mode: "mc",
     listen: false,
   });
+  assert.deepEqual(mergeStats(older, newer)[f("a")].showns, [
+    { dir: "jp2en", mode: "typed", listen: true },
+    { dir: "en2jp", mode: "mc", listen: false },
+  ]);
   // A newer leg that never recorded one keeps the older framing rather than
   // blanking it.
   const blank = { [f("a")]: detail({}) };
@@ -236,6 +240,19 @@ test("mergeStats carries the LATEST showing's presentation", () => {
     mode: "typed",
     listen: true,
   });
+
+  const withDup = {
+    [f("a")]: detail({
+      showns: [
+        { dir: "jp2en", mode: "typed", listen: true },
+        { dir: "jp2en", mode: "typed", listen: true },
+      ],
+    }),
+  };
+  assert.deepEqual(mergeStats(withDup, newer)[f("a")].showns, [
+    { dir: "jp2en", mode: "typed", listen: true },
+    { dir: "en2jp", mode: "mc", listen: false },
+  ]);
 });
 
 test("mergeStats does not mutate its inputs", () => {

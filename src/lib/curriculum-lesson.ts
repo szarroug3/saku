@@ -223,15 +223,15 @@ function countsAsRadical(roles: readonly CurriculumRole[]): boolean {
  *
  * The shape's meaning comes first when there is one, because that is what the
  * character IS; the word's meaning and reading follow. A both-role character
- * mints the KANJI meaning fact and not the radical one, which is what the kanji
- * track already did: 山 has a kanji card that says "also radical 46", and a
- * second radical:山 card would be the same shape taught twice. A kana word has
- * no reading fact, because it is its own reading (see buildVocabFacts).
+ * mints BOTH the kanji meaning fact and the radical meaning fact, so a radical
+ * definition can still be quizzed when it differs from the kanji meaning. A
+ * kana word has no reading fact, because it is its own reading (see
+ * buildVocabFacts).
  */
 function factsOf(item: CurriculumItem): FactId[] {
   const facts: FactId[] = [];
   if (item.roles.includes("kanji")) facts.push(meaningFactId(item.glyph));
-  else if (item.roles.includes("radical")) facts.push(radicalMeaningFactId(item.glyph));
+  if (item.roles.includes("radical")) facts.push(radicalMeaningFactId(item.glyph));
   if (item.roles.includes("word")) {
     facts.push(wordMeaningFactId(item.glyph));
     const row = vocabRow(item.glyph);

@@ -245,6 +245,7 @@ function emptyStat(): FactSessionDetail {
     firstTryCount: 0,
     correct: 0,
     confused: {},
+    showns: [],
   };
 }
 
@@ -274,6 +275,7 @@ export function mergeStats(into: SessionStats, from: SessionStats): SessionStats
       // pill and every merge after it. See firstTryShowings().
       firstTryCount: firstTryShowings(into[f]),
       confused: { ...into[f].confused },
+      showns: (into[f].showns ?? (into[f].shown ? [into[f].shown] : [])).slice(),
     };
   }
   for (const f of factKeys(from)) {
@@ -291,6 +293,20 @@ export function mergeStats(into: SessionStats, from: SessionStats): SessionStats
     // leg/round in every caller, so it overwrites when it has one. Not a count,
     // so it sits outside the additive fields and the commutativity they promise.
     if (src.shown) dst.shown = src.shown;
+    const mergedShowings = [
+      ...(dst.showns ?? []),
+      ...(src.showns ?? (src.shown ? [src.shown] : [])),
+    ];
+    if (mergedShowings.length) {
+      const seen = new Set<string>();
+      dst.showns = [];
+      for (const s of mergedShowings) {
+        const key = `${s.dir}|${s.mode}|${s.listen ? 1 : 0}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        dst.showns.push(s);
+      }
+    }
     for (const e of Object.keys(src.confused)) {
       const key = e as keyof typeof src.confused;
       dst.confused[key] = (dst.confused[key] ?? 0) + src.confused[key];

@@ -96,6 +96,10 @@ describe("every card says what it wants", () => {
       quizInstruction(wordReadingFactId("問題"), "en2jp", "typed"),
       "Type how this word is said.",
     );
+    assert.equal(
+      quizInstruction(wordReadingFactId("問題"), "en2jp", "mc"),
+      "Which of these is how this word is written?",
+    );
   });
 
   test("a MEANING instruction names the role, so kanji and word differ", () => {

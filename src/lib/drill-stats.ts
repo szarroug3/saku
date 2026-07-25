@@ -94,5 +94,12 @@ export function resolveShowing(
   }
   // The framing of the showing that just resolved. Last one wins — a fact asked
   // two ways carries its most recent, which is what the post-quiz chip names.
-  if (shown) st.shown = shown;
+  if (shown) {
+    st.shown = shown;
+    const list = st.showns ?? (st.showns = []);
+    const key = `${shown.dir}|${shown.mode}|${shown.listen ? 1 : 0}`;
+    if (!list.some((s) => `${s.dir}|${s.mode}|${s.listen ? 1 : 0}` === key)) {
+      list.push(shown);
+    }
+  }
 }

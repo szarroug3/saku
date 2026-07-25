@@ -188,12 +188,28 @@ test("resolveShowing records the showing's presentation for the results chip", (
   const st = statForShowing(stats, POOL[0]);
   resolveShowing(st, true, true, { dir: "jp2en", mode: "typed", listen: true });
   assert.deepEqual(st.shown, { dir: "jp2en", mode: "typed", listen: true });
+  assert.deepEqual(st.showns, [{ dir: "jp2en", mode: "typed", listen: true }]);
 
   // Asked again a different way in the same run → the latest framing wins.
   resolveShowing(st, true, true, { dir: "en2jp", mode: "mc", listen: false });
   assert.deepEqual(st.shown, { dir: "en2jp", mode: "mc", listen: false });
+  assert.deepEqual(st.showns, [
+    { dir: "jp2en", mode: "typed", listen: true },
+    { dir: "en2jp", mode: "mc", listen: false },
+  ]);
+
+  // Repeating a shape keeps one copy in the history list.
+  resolveShowing(st, true, true, { dir: "jp2en", mode: "typed", listen: true });
+  assert.deepEqual(st.showns, [
+    { dir: "jp2en", mode: "typed", listen: true },
+    { dir: "en2jp", mode: "mc", listen: false },
+  ]);
 
   // A resolution with no presentation leaves the last one in place, not blank.
   resolveShowing(st, true, true);
   assert.deepEqual(st.shown, { dir: "en2jp", mode: "mc", listen: false });
+  assert.deepEqual(st.showns, [
+    { dir: "jp2en", mode: "typed", listen: true },
+    { dir: "en2jp", mode: "mc", listen: false },
+  ]);
 });
