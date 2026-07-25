@@ -33,8 +33,8 @@ Kana entries have one reading fact.
 
 | Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
-| Text: show kana glyph | `jp->en` | Romaji reading | Yes | Yes | Current | `japanese: {prompts: ["text"], responses: ["romaji"]}` | `あ` -> type `a` |
-| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | (kana has no audio form; would require implementation) | Hear `a` -> type/pick `あ` |
+| Text: show kana glyph | `jp->en` | Romaji reading | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji"}` | `あ` -> type `a` |
+| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | `japanese: {prompts: includes "audio", responses: includes "romaji"}` (requires kana audio implementation) | Hear `a` -> type/pick `あ` |
 | Show romaji/English side | `en->jp` | Kana glyph | No | Yes | Current | `english: {answers: includes "mc"}` (MC-only; typed dropped) | Prompt `a` -> pick `あ` |
 | Text: show kana glyph (self-copy) | `jp->jp` | Same kana glyph | No | No | By design | N/A (trivial self-copy excluded) | `あ` -> type `あ` |
 
