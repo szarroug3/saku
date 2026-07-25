@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { kanaFact } from "@/data/characters";
-import { READING_INDEX } from "@/data/kanji";
+import { READING_INDEX, meaningFactId as kanjiMeaningFactId, KANJI } from "@/data/kanji";
 import { patternMeaningFactId, patternProductionFactId } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
 import { KEIGO_SETS, keigoWordFactId } from "@/data/keigo";
@@ -616,5 +616,55 @@ describe("Transitivity fact (§6.2 Current)", () => {
     };
     const forms = enabledFormsFor(transitivityFact, audioOnly);
     assert.deepEqual(forms, [], "transitivity with audio-only jp source → no forms");
+  });
+});
+
+// ── "By design" exclusions — things that must NEVER appear ───────────────────
+
+describe("By design: audio exclusions that must never generate forms", () => {
+  const audioOnly: AskConfig = {
+    japanese: {
+      prompts: ["audio"],
+      responses: ["definition", "romaji"],
+      answers: ["typed", "mc"],
+    },
+    sentence: { prompts: [], responses: [], answers: [] },
+    english: { answers: [] },
+  };
+
+  // §2.1: kanji MEANING audio is By design excluded (no audio form for kanji meaning).
+  // Distinct from §2.2 kanji reading audio (also excluded, tested separately).
+  test("kanji meaning audio: By design excluded (no audio form for kanji meaning fact)", () => {
+    const kanjiMeaning = kanjiMeaningFactId(KANJI[0].char);
+    const forms = enabledFormsFor(kanjiMeaning, audioOnly);
+    assert.deepEqual(forms, [], "kanji meaning with audio-only → no forms (By design)");
+  });
+
+  // §3.1: kana-only WORD audio is Current (words are listenable, unlike kana entries).
+  // Guard that the kana-only word case is NOT excluded, to prevent regressions.
+  test("kana-only word audio: correctly NOT excluded (kana-only words are listenable)", () => {
+    const kanaWord = VOCAB.find(isKanaWord)!;
+    const kanaWordMeaning = wordMeaningFactId(kanaWord.keb ?? kanaWord.reb!);
+    const forms = enabledFormsFor(kanaWordMeaning, audioOnly);
+    assert.ok(forms.length > 0, "kana-only word meaning with audio should produce forms");
+    assert.ok(forms.some((f) => f.listen), "at least one form should be audio");
+  });
+});
+
+describe("By design: self-copy forms are structurally impossible", () => {
+  // The jp→jp self-copy rows in the doc (あ→type あ, 一→type 一, etc.) cannot be
+  // generated because Direction = 'jp2en' | 'en2jp' — there is no jp2jp value.
+  // This test asserts the structural guarantee: no form produced by enabledFormsFor
+  // for any fact in the corpus has a direction outside the two valid values.
+  test("every form produced across all facts has direction 'jp2en' or 'en2jp' only", () => {
+    const validDirs = new Set(["jp2en", "en2jp"]);
+    for (const fact of ALL_FACTS) {
+      for (const form of enabledFormsFor(fact, ALL)) {
+        assert.ok(
+          validDirs.has(form.dir),
+          `fact ${fact} produced a form with invalid dir '${form.dir}' — self-copy guard violated`,
+        );
+      }
+    }
   });
 });
