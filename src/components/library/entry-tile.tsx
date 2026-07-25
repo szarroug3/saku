@@ -264,6 +264,21 @@ export function EntryRow({
   selected: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
+  const inlineMarkGlyph = entry.kind === MARK_SUBJECT ? entry.glyph : "";
+  const rowTitle =
+    entry.meanings.slice(0, 3).join(", ") || entry.sub;
+  const markTitle =
+    inlineMarkGlyph === "っ"
+      ? "Small tsu"
+      : inlineMarkGlyph === "ゃゅょ"
+        ? "Small ya / yu / yo"
+        : inlineMarkGlyph
+          ? [...inlineMarkGlyph]
+              .reduce((title, glyph) => title.replaceAll(glyph, ""), rowTitle)
+              .replace(/\s+/g, " ")
+              .trim()
+          : rowTitle;
+
   return (
     <div
       role="button"
@@ -293,7 +308,7 @@ export function EntryRow({
       {/* Reserve a glyph column only when there is a glyph to show. Sentence
           rules, keigo sets and terms are named concepts, so an empty 64px cell
           only pushes their useful text away from the checkbox. */}
-      {entry.glyph ? (
+      {entry.glyph && !inlineMarkGlyph ? (
         <span
           className={`w-[64px] flex-none truncate text-[19px] ${japaneseFontClass(
             entry.glyph,
@@ -311,7 +326,16 @@ export function EntryRow({
           {entry.readings.length === 1 ? (
             <span className="text-text-muted">{entry.readings[0]} · </span>
           ) : null}
-          {entry.meanings.slice(0, 3).join(", ") || entry.sub}
+          {markTitle}
+          {inlineMarkGlyph ? (
+            <>
+              {" ("}
+              <span className={japaneseFontClass(inlineMarkGlyph)}>
+                {[...inlineMarkGlyph].join(" ")}
+              </span>
+              {")"}
+            </>
+          ) : null}
         </span>
         {note ? (
           <span className="block truncate text-xs text-text-muted">{note}</span>
