@@ -440,14 +440,14 @@ export function AssemblyScreen() {
             <li className="text-sm text-text-muted">Drag the pieces in order</li>
           ) : (
             card.tray.map((surface, idx) => (
-              <li key={surface}>
+              <li key={surface} className="group relative">
                 <button
                   type="button"
                   lang="ja"
                   draggable={!resolved}
                   disabled={resolved}
                   aria-label={`Piece ${surface}, position ${idx + 1} of ${card.tray.length}. Arrow keys to move, Backspace to remove.`}
-                  className={`kq-material rounded-xl border px-4 py-3 text-lg ${
+                  className={`kq-material rounded-xl border px-4 py-3 pr-8 text-lg ${
                     card.state === "right"
                       ? "border-success bg-success-bg"
                       : "border-border bg-card"
@@ -480,6 +480,20 @@ export function AssemblyScreen() {
                 >
                   {surface}
                 </button>
+                {!resolved ? (
+                  <button
+                    type="button"
+                    aria-label={`Return ${surface} to the available pieces`}
+                    title="Return to available pieces"
+                    className="absolute right-1.5 top-1.5 flex size-5 cursor-pointer items-center justify-center rounded-full text-[13px] leading-none text-text-muted hover:bg-panel hover:text-text"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      unplace(surface);
+                    }}
+                  >
+                    ×
+                  </button>
+                ) : null}
               </li>
             ))
           )}
