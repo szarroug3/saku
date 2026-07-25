@@ -74,6 +74,10 @@ import { entryOf, factInfo } from "@/lib/facts";
 import { COUNTER_ENTRIES } from "@/data/counters";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { useHistory } from "@/lib/use-history";
+import {
+  sentenceTierDone,
+  sentenceTierMarkerFact,
+} from "@/lib/sentence-ordering-progress";
 import type { FactId, HistoryFile } from "@/types";
 import {
   SENTENCE_ORDERING_TIERS,
@@ -99,6 +103,40 @@ type TrackKey =
 
 const SENTENCE_ORDERING_PER_LESSON = 12;
 
+function sentenceLessonFacts(
+  tier: (typeof SENTENCE_ORDERING_TIERS)[number],
+  history: HistoryFile,
+): FactId[] {
+  const facts = tierAssemblyFacts(tier, history);
+  if (facts.length > 0) return facts;
+  // Fallback marker so the tier can still be surfaced/completed even when no
+  // pattern meaning fact can be resolved for its readable examples.
+  return [sentenceTierMarkerFact(tier.id)];
+}
+
+function sentenceTierUnlocked(tier: (typeof SENTENCE_ORDERING_TIERS)[number], history: HistoryFile): boolean {
+  const readable = readableAssemblyForTier(tier, history);
+  if (readable.length < tier.minReadable) return false;
+
+  // Grammar prereq: at least one of this tier's patterns must have been
+  // taught in the grammar track (seen, claimed or tested). The simple tier
+  // has no prereqs.
+  if (tier.grammarPrereqs.length > 0) {
+    const prereqMet = tier.grammarPrereqs.some((id) => {
+      const fid = patternMeaningFactId(id);
+      const st = effectiveState(
+        history.facts[fid],
+        history.claims?.[fid],
+        history.seen?.[fid],
+      );
+      return st.lastTested > 0;
+    });
+    if (!prereqMet) return false;
+  }
+
+  return true;
+}
+
 /**
  * Pure function: find the next unlocked sentence-ordering tier lesson, or null.
  *
@@ -113,42 +151,13 @@ function nextSentenceOrderingLesson(
 
   for (let i = 0; i < SENTENCE_ORDERING_TIERS.length; i++) {
     const tier = SENTENCE_ORDERING_TIERS[i];
-    const readable = readableAssemblyForTier(tier, history);
-    if (readable.length < tier.minReadable) continue;
+    // Sentence track is intentionally linear: you do not skip into a later tier
+    // while an earlier one is still unavailable or unfinished.
+    if (!sentenceTierUnlocked(tier, history)) return null;
 
-    // Grammar prereq: at least one of this tier's patterns must have been
-    // taught in the grammar track (seen, claimed or tested). This ensures the
-    // learner understands what the pattern MEANS before practising its
-    // structural position in a sentence. The simple tier has no prereqs —
-    // its patterns are particles that the grammar track never teaches.
-    if (tier.grammarPrereqs.length > 0) {
-      const prereqMet = tier.grammarPrereqs.some((id) => {
-        const fid = patternMeaningFactId(id);
-        const st = effectiveState(
-          history.facts[fid],
-          history.claims?.[fid],
-          history.seen?.[fid],
-        );
-        return st.lastTested > 0;
-      });
-      if (!prereqMet) continue;
-    }
+    const facts = sentenceLessonFacts(tier, history);
 
-    const facts = tierAssemblyFacts(tier, history);
-    if (facts.length === 0) continue;
-
-    // Tier is "done" when every fact has been seen/claimed/tested at least once
-    // — a capability signal (learner has encountered this material), not a
-    // scheduling signal (when to next surface it).
-    const tierDone = facts.every((f) => {
-      const st = effectiveState(
-        history.facts[f],
-        history.claims?.[f],
-        history.seen?.[f],
-      );
-      return st.lastTested > 0;
-    });
-    if (tierDone) continue;
+    if (sentenceTierDone(tier.id, facts, history)) continue;
 
     return {
       facts: facts.slice(0, SENTENCE_ORDERING_PER_LESSON),
@@ -168,7 +177,7 @@ function nextSentenceOrderingLesson(
 // for a run whose fact isn't in the registry, which then matches no track and
 // falls through to a plain Start, the safe default.
 function trackOfRun(run: RunInfo): TrackKey | null {
-  if (run.what === "Sentence ordering") return "sentence-ordering";
+  if (run.mode === "assembly") return "sentence-ordering";
   const fact = run.facts[0];
   if (!fact) return null;
   const subject = factInfo(fact)?.subject;
@@ -527,7 +536,7 @@ export function HomeFeed() {
           // first fact against each tier's fact pool, then reconstruct the card.
           for (let i = 0; i < SENTENCE_ORDERING_TIERS.length; i++) {
             const tier = SENTENCE_ORDERING_TIERS[i];
-            const facts = tierAssemblyFacts(tier, history);
+            const facts = sentenceLessonFacts(tier, history);
             if (!facts.includes(sentenceOrderingRun.facts[0])) continue;
             return {
               facts: sentenceOrderingRun.facts,
@@ -722,11 +731,28 @@ export function HomeFeed() {
       {sentenceOrderingLessonShown ? (
         <NextSentenceOrderingLesson
           lesson={sentenceOrderingLessonShown}
-          onStart={(facts) => startSession(facts, facts, sentenceOrderingLessonShown?.tierLabel, "lesson", undefined, "assembly")}
-          onQuizMe={(facts) => startQuizInMode(facts, "assembly")}
+          onStart={(facts) =>
+            startSession(
+              facts,
+              facts,
+              `Sentence ordering · tier ${sentenceOrderingLessonShown.tierId}`,
+              "lesson",
+              undefined,
+              "assembly",
+            )
+          }
+          onQuizMe={(facts) =>
+            startQuizInMode(facts, "assembly", {
+              what: `Sentence ordering · tier ${sentenceOrderingLessonShown.tierId}`,
+            })
+          }
           onClaim={(facts) => {
-            claim(facts);
-            closeIfClaimedAway(sentenceOrderingRun, facts);
+            const completed = [
+              ...facts,
+              sentenceTierMarkerFact(sentenceOrderingLessonShown.tierId),
+            ];
+            claim(completed);
+            closeIfClaimedAway(sentenceOrderingRun, completed);
           }}
           inSession={!!sentenceOrderingRun}
           onContinue={() => sentenceOrderingRun && continueRun(sentenceOrderingRun.id)}

@@ -10,6 +10,7 @@ import { describe, test } from "node:test";
 
 import {
   ASSEMBLY,
+  SENTENCE_ORDERING_TIERS,
   assemblyReadable,
   canonicalOrder,
   gradeAssembly,
@@ -18,6 +19,7 @@ import {
   type AssemblyItem,
 } from "./assembly.ts";
 import { STOCK_NAMES } from "../lib/grammar/readable.ts";
+import { CURRICULUM_PATTERNS } from "../lib/grammar-lesson.ts";
 import { VOCAB, wordMeaningFactId } from "./vocab.ts";
 import type { HistoryFile } from "../types/index.ts";
 
@@ -37,6 +39,47 @@ const OMNISCIENT: HistoryFile = {
   facts: {},
   claims: Object.fromEntries(VOCAB.map((w) => [wordMeaningFactId(w.keb), 1_700_000_000_000])),
 };
+
+describe("sentence-ordering follows the grammar teaching order", () => {
+  test("simple is first, then tiers follow their earliest taught prerequisite", () => {
+    assert.equal(SENTENCE_ORDERING_TIERS[0]?.id, "simple");
+
+    const curriculumIndex = new Map(
+      CURRICULUM_PATTERNS.map((pattern, index) => [pattern.id, index]),
+    );
+    const ordered = SENTENCE_ORDERING_TIERS.slice(1).map((tier) => {
+      const taught = tier.grammarPrereqs
+        .map((id) => curriculumIndex.get(id))
+        .filter((index): index is number => index !== undefined);
+      return {
+        id: tier.id,
+        firstPrerequisite: taught.length ? Math.min(...taught) : Number.POSITIVE_INFINITY,
+      };
+    });
+
+    assert.deepEqual(
+      ordered.map(({ id }) => id),
+      [
+        "request",
+        "sequential",
+        "contrast",
+        "desire",
+        "conditional",
+        "causal",
+        "giving",
+        "obligation",
+        "reported",
+      ],
+    );
+    for (let i = 1; i < ordered.length; i += 1) {
+      assert.ok(
+        ordered[i - 1].firstPrerequisite <= ordered[i].firstPrerequisite,
+        `${ordered[i].id} appears before an earlier grammar prerequisite`,
+      );
+    }
+  });
+
+});
 
 describe("the assembly corpus is well-formed", () => {
   test("it ships items", () => {

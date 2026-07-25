@@ -177,17 +177,48 @@ export interface AssemblyTier {
  * Each tier unlocks independently once the learner has enough vocabulary to
  * read its sentences — no grammar fact state is consulted here. The tiers are
  * ordered from structurally simplest to most complex, so the learner always
- * encounters simple particle-marked SOV sentences before conditional clauses,
- * before causal connectives, and so on.
+ * encounters simple particle-marked SOV sentences first. Every tier after that
+ * follows the first point at which one of its prerequisite patterns appears in
+ * CURRICULUM_PATTERNS (src/lib/grammar-lesson.ts): requests, sequence,
+ * contrast/negative linking, desire, conditionals, cause, giving/receiving,
+ * obligation, then reported stance.
  */
 export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
   {
     id: "simple",
     label: "Simple sentences",
     patterns: ["wo", "e", "made", "made-ni", "dake", "kara-source"],
-    minReadable: 3,
+    minReadable: 1,
     // Particles are structural markers, never taught as grammar lessons.
     grammarPrereqs: [],
+  },
+  {
+    id: "request",
+    label: "Requests and proposals",
+    patterns: ["te-request", "mashou", "kata"],
+    minReadable: 3,
+    grammarPrereqs: ["te-request", "mashou", "kata"],
+  },
+  {
+    id: "sequential",
+    label: "Te-form links and helpers",
+    patterns: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
+    minReadable: 3,
+    grammarPrereqs: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
+  },
+  {
+    id: "contrast",
+    label: "Even though / without",
+    patterns: ["noni", "nai-de", "nai-request"],
+    minReadable: 3,
+    grammarPrereqs: ["noni", "nai-de", "nai-request"],
+  },
+  {
+    id: "desire",
+    label: "Want to / easy / hard",
+    patterns: ["tai", "yasui", "nikui"],
+    minReadable: 3,
+    grammarPrereqs: ["tai", "yasui", "nikui"],
   },
   {
     id: "conditional",
@@ -204,27 +235,6 @@ export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
     grammarPrereqs: ["kara-reason", "node"],
   },
   {
-    id: "obligation",
-    label: "Must / have to",
-    patterns: ["nakereba-naranai", "nakereba-ikenai", "nakya", "nai-to-ikenai"],
-    minReadable: 3,
-    grammarPrereqs: ["nakereba-naranai", "nakereba-ikenai", "nakya", "nai-to-ikenai"],
-  },
-  {
-    id: "sequential",
-    label: "After / while doing",
-    patterns: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
-    minReadable: 3,
-    grammarPrereqs: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
-  },
-  {
-    id: "desire",
-    label: "Want to / easy / hard",
-    patterns: ["tai", "yasui", "nikui"],
-    minReadable: 3,
-    grammarPrereqs: ["tai", "yasui", "nikui"],
-  },
-  {
     id: "giving",
     label: "Giving and receiving",
     patterns: ["te-ageru", "te-kureru", "te-morau"],
@@ -232,25 +242,18 @@ export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
     grammarPrereqs: ["te-ageru", "te-kureru", "te-morau"],
   },
   {
+    id: "obligation",
+    label: "Must / have to",
+    patterns: ["nakereba-naranai", "nakereba-ikenai", "nakya", "nai-to-ikenai"],
+    minReadable: 3,
+    grammarPrereqs: ["nakereba-naranai", "nakereba-ikenai", "nakya", "nai-to-ikenai"],
+  },
+  {
     id: "reported",
     label: "I think / seems like",
     patterns: ["to-omou", "rashii", "kamoshirenai", "deshou"],
     minReadable: 3,
     grammarPrereqs: ["to-omou", "rashii", "kamoshirenai", "deshou"],
-  },
-  {
-    id: "contrast",
-    label: "Even though / only",
-    patterns: ["noni", "nai-de", "nai-request"],
-    minReadable: 3,
-    grammarPrereqs: ["noni", "nai-de", "nai-request"],
-  },
-  {
-    id: "request",
-    label: "Requests and proposals",
-    patterns: ["te-request", "mashou", "kata"],
-    minReadable: 3,
-    grammarPrereqs: ["te-request", "mashou", "kata"],
   },
 ];
 

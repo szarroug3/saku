@@ -16,7 +16,8 @@ import { RestScreen } from "@/components/session/rest-screen";
 import { SessionComplete } from "@/components/session/session-complete";
 import {
   SentenceOrderingTeachWalk,
-  SENTENCE_ORDERING_TEACH_STEPS,
+  sentenceOrderingTeachSteps,
+  type SentenceOrderingTierId,
 } from "@/components/session/sentence-ordering-teach-walk";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
@@ -30,6 +31,26 @@ import { lessonSteps } from "@/lib/lesson-steps";
 import { restLeftMs, SESSION_ROUND_TARGET } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
+
+const SENTENCE_TIER_IDS: readonly SentenceOrderingTierId[] = [
+  "simple",
+  "conditional",
+  "causal",
+  "obligation",
+  "sequential",
+  "desire",
+  "giving",
+  "reported",
+  "contrast",
+  "request",
+];
+
+function sentenceTierFromLabel(what: string): SentenceOrderingTierId {
+  const prefix = "Sentence ordering · tier ";
+  if (!what.startsWith(prefix)) return "simple";
+  const id = what.slice(prefix.length).trim() as SentenceOrderingTierId;
+  return SENTENCE_TIER_IDS.includes(id) ? id : "simple";
+}
 
 // RoundComplete owns the detailed results table. That table reaches the grammar
 // question engine, which reaches the full sentence corpus; loading it with the
@@ -159,9 +180,10 @@ export default function SessionPage() {
     // (`startedAt` is optional on a leg snapshotted before the field existed;
     // an undated leg is old by definition, so it is not this session's.)
     const reviewing = !!active?.startedAt && active.startedAt >= session.startedAt;
-    const sentenceOrderingTeaching = session.what === "Sentence ordering";
+    const sentenceOrderingTeaching = session.snapshot.mode === "assembly";
+    const sentenceTier = sentenceTierFromLabel(session.what);
     const total = sentenceOrderingTeaching
-      ? SENTENCE_ORDERING_TEACH_STEPS
+      ? sentenceOrderingTeachSteps(sentenceTier ?? "simple")
       : teachItems.length;
     const at = Math.min(teachStep, Math.max(0, total - 1));
     // Leave the lesson for the drill. Named here because two controls fire it:
@@ -249,6 +271,7 @@ export default function SessionPage() {
               step={at}
               onStep={setTeachStep}
               onStart={toDrill}
+              tierId={sentenceTier}
             />
           ) : (
             <TeachWalk

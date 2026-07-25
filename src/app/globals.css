@@ -38,6 +38,9 @@
   --border: #ddd8c9;
   --accent: #1f3a68;
   --accent-bg: #dfe4ee;
+  --sentence-topic: #245079;
+  --sentence-core: #9a4c72;
+  --sentence-ending: #5b4aa0;
   --danger: #9b2f26;
   --danger-bg: #f6e6e2;
   --success: #2f6a45;
@@ -64,6 +67,9 @@
   --dark-border: #453f36;
   --dark-accent: #8fa8d8;
   --dark-accent-bg: #2b3550;
+  --dark-sentence-topic: #7eb2ea;
+  --dark-sentence-core: #f0a8c9;
+  --dark-sentence-ending: #c1b1f2;
   --dark-danger: #e0857c;
   --dark-danger-bg: #46231e;
   --dark-success: #86bf9c;
@@ -100,6 +106,9 @@
   --border: #e0e2ea;
   --accent: #4b4ade;
   --accent-bg: #ecebff;
+  --sentence-topic: #2968d3;
+  --sentence-core: #bf3f8d;
+  --sentence-ending: #6c52d2;
   --danger: #d02f42;
   --danger-bg: #fdeaec;
   --success: #17864b;
@@ -119,6 +128,9 @@
   --dark-border: #24262d;
   --dark-accent: #7b7fff;
   --dark-accent-bg: #191a2e;
+  --dark-sentence-topic: #86b0ff;
+  --dark-sentence-core: #ff92c9;
+  --dark-sentence-ending: #b6a1ff;
   --dark-danger: #ff7a85;
   --dark-danger-bg: #2b1419;
   --dark-success: #4ade80;
@@ -158,6 +170,9 @@
   --border: #d7e2ec;
   --accent: #15803d;
   --accent-bg: #dcfce7;
+  --sentence-topic: #0f6fb3;
+  --sentence-core: #b33a83;
+  --sentence-ending: #6651bf;
   --danger: #dc2626;
   --danger-bg: #fee2e2;
   --success: #15803d;
@@ -177,6 +192,9 @@
   --dark-border: #263c50;
   --dark-accent: #34d76d;
   --dark-accent-bg: #123726;
+  --dark-sentence-topic: #7ec9ff;
+  --dark-sentence-core: #ff97d1;
+  --dark-sentence-ending: #bfafff;
   --dark-danger: #ff7b6b;
   --dark-danger-bg: #3d1a16;
   --dark-success: #34d76d;
@@ -239,6 +257,9 @@
   --border: #c4c7cf; /* solid, neutral light gray — no alpha to re-blend over the frost */
   --accent: #096b87;
   --accent-bg: rgba(9, 107, 135, 0.12);
+  --sentence-topic: #0e6fa1;
+  --sentence-core: #b63b78;
+  --sentence-ending: #6557c7;
   --danger: #b4232f;
   --danger-bg: rgba(180, 35, 47, 0.1);
   --success: #0f7a45;
@@ -267,6 +288,9 @@
   --dark-border: #565b66; /* solid, neutral gray — light enough to read on the dark frost */
   --dark-accent: #67d4f5;
   --dark-accent-bg: rgba(103, 212, 245, 0.13);
+  --dark-sentence-topic: #8ddfff;
+  --dark-sentence-core: #ff9dd2;
+  --dark-sentence-ending: #c8b7ff;
   --dark-danger: #ff8a94;
   --dark-danger-bg: rgba(255, 138, 148, 0.13);
   --dark-success: #4ade80;
@@ -462,6 +486,9 @@
     --border: var(--dark-border);
     --accent: var(--dark-accent);
     --accent-bg: var(--dark-accent-bg);
+    --sentence-topic: var(--dark-sentence-topic);
+    --sentence-core: var(--dark-sentence-core);
+    --sentence-ending: var(--dark-sentence-ending);
     --danger: var(--dark-danger);
     --danger-bg: var(--dark-danger-bg);
     --success: var(--dark-success);
@@ -485,6 +512,9 @@
   --border: var(--dark-border);
   --accent: var(--dark-accent);
   --accent-bg: var(--dark-accent-bg);
+  --sentence-topic: var(--dark-sentence-topic);
+  --sentence-core: var(--dark-sentence-core);
+  --sentence-ending: var(--dark-sentence-ending);
   --danger: var(--dark-danger);
   --danger-bg: var(--dark-danger-bg);
   --success: var(--dark-success);
@@ -496,6 +526,60 @@
   --shadow-card: var(--dark-shadow-card);
   --shadow-btn: var(--dark-shadow-btn);
   --page-mesh: var(--dark-page-mesh, none);
+}
+
+/* Sentence anatomy must remain visibly distinct even when a selected theme
+ * remaps its general-purpose accent tokens. These semantic colors are also
+ * used by labeled boxes, so color reinforces a written role instead of being
+ * the only way the distinction is communicated. */
+.sentence-part-topic {
+  color: #0e6fa1 !important;
+}
+
+.sentence-part-core {
+  color: #b63b78 !important;
+}
+
+.sentence-part-ending {
+  color: #6557c7 !important;
+}
+
+.sentence-part-action {
+  color: #207447 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme]:not([data-appearance="light"]) .sentence-part-topic {
+    color: #8ddfff !important;
+  }
+
+  [data-theme]:not([data-appearance="light"]) .sentence-part-core {
+    color: #ff9dd2 !important;
+  }
+
+  [data-theme]:not([data-appearance="light"]) .sentence-part-ending {
+    color: #c8b7ff !important;
+  }
+
+  [data-theme]:not([data-appearance="light"]) .sentence-part-action {
+    color: #86d6a4 !important;
+  }
+}
+
+:root[data-theme][data-appearance="dark"] .sentence-part-topic {
+  color: #8ddfff !important;
+}
+
+:root[data-theme][data-appearance="dark"] .sentence-part-core {
+  color: #ff9dd2 !important;
+}
+
+:root[data-theme][data-appearance="dark"] .sentence-part-ending {
+  color: #c8b7ff !important;
+}
+
+:root[data-theme][data-appearance="dark"] .sentence-part-action {
+  color: #86d6a4 !important;
 }
 
 /* shadcn token names, mapped onto the palette above. Purely derived, so

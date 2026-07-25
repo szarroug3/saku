@@ -184,7 +184,16 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
         {
           id: "writing-rules",
           label: "Writing rules",
-          entries: MARKS.flatMap((m) => resolve(markEntry(m.id))),
+          entries: MARKS.filter((m) => m.shelf === "writing").flatMap((m) =>
+            resolve(markEntry(m.id)),
+          ),
+        },
+        {
+          id: "sentence-rules",
+          label: "Sentence rules",
+          entries: MARKS.filter((m) => m.shelf === "sentence").flatMap((m) =>
+            resolve(markEntry(m.id)),
+          ),
         },
       ];
     // ONE SECTION, holding every pair, for the same reason marks take one: the

@@ -440,6 +440,8 @@ export interface RunInfo {
   facts: FactId[];
   /** A session's phase; undefined for a quiz. */
   phase?: StudySession["phase"];
+  /** The quiz mode this run drills in (e.g. "assembly"). */
+  mode: QuizMode;
   progress: QuizProgress | null;
   startedAt?: number;
   /** For ordering: a session's last-answer time, else when it was parked (or
@@ -461,6 +463,7 @@ function quizRunInfo(
     kind: "quiz",
     what: quiz.what,
     facts: quiz.facts,
+    mode: quiz.snapshot.mode,
     progress,
     startedAt: quiz.startedAt,
     lastActiveAt,
@@ -481,6 +484,7 @@ function sessionRunInfo(
     what: s.what,
     facts: s.facts,
     phase: s.phase,
+    mode: s.snapshot.mode,
     progress,
     startedAt: s.startedAt,
     lastActiveAt: s.lastActiveAt,

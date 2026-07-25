@@ -51,12 +51,32 @@ describe("the render only emits a label when scriptLabel gave one", () => {
   });
 });
 
-describe("exactly the four reading-rule marks are script-neutral", () => {
+describe("sentence-rule examples come from the shared sentence corpus", () => {
+  const SRC = readFileSync(new URL("./mark-view.tsx", import.meta.url), "utf8");
+
+  test("sentence examples are not gated on legacy intro.examples", () => {
+    assert.match(
+      SRC,
+      /mark\.shelf === "sentence" \? \(\s*<SentenceRuleExamples markId=\{mark\.id\} \/>/,
+    );
+    assert.doesNotMatch(
+      SRC,
+      /intro\.examples\?\.length \? \(\s*mark\.shelf === "sentence"/,
+    );
+  });
+});
+
+describe("script-neutral rule pages do not render an empty script label", () => {
   test("the data side of the same guarantee, so the mapping guards a real case", () => {
     const neutral = MARKS.filter((m) => m.intros.some((i) => i.setId === ""));
     assert.deepEqual(
-      neutral.map((m) => m.id),
+      neutral.filter((m) => m.shelf === "writing").map((m) => m.id),
       ["iteration-mark", "rendaku", "punctuation", "okurigana"],
+    );
+    assert.equal(
+      neutral.filter((m) => m.shelf === "sentence").length,
+      10,
+      "every sentence-rule page should also be script-neutral",
     );
     for (const m of neutral) {
       assert.ok(

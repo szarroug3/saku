@@ -966,7 +966,9 @@ function EntryView({ entry }: { entry: LibEntry }) {
           words that contain it, and no glyph to confuse with another, so its
           links row would be an empty card. */}
       {!isKana && !isKanji && !isWord && !isGrammar && !isTransitivity && !isKeigo ? (
-        <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+        <div className={mark ? "mt-6" : ""}>
+          <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+        </div>
       ) : null}
 
       {/* THE "Compare similar patterns" CARD IS GONE. It was a whole card
