@@ -84,16 +84,18 @@ describe("enabledFormsFor", () => {
     assert.deepEqual(forms.map((f) => formIsMc(kanaFact("あ"), f)), [false, true]);
   });
 
-  test("kana en→jp emits no form when only Type it is selected", () => {
+  test("kana en→jp typed renders as MC card (the form can only be asked as MC)", () => {
     const forms = enabledFormsFor(kanaFact("あ"), {
       japanese: { prompts: [], responses: [], answers: [] },
       sentence: { prompts: [], responses: [], answers: [] },
       english: { answers: ["typed"] },
     });
-    assert.deepEqual(forms, []);
+    assert.deepEqual(forms.length, 1);
+    assert.deepEqual(formIsMc(kanaFact("あ"), forms[0]), true);
   });
 
-  test("Type it never auto-converts to MC", () => {
+
+  test("typed forms that resolve to MC are kept and rendered as MC", () => {
     const typedOnly: AskConfig = {
       japanese: {
         prompts: ["text"],
@@ -107,12 +109,18 @@ describe("enabledFormsFor", () => {
       },
       english: { answers: ["typed"] },
     };
-    for (const fact of ALL_FACTS) {
-      const forms = enabledFormsFor(fact, typedOnly);
-      for (const form of forms) {
-        assert.equal(form.answer, "typed", fact);
-        assert.equal(formIsMc(fact, form), false, fact);
-      }
+    // Facts that require MC for some directions (like kana en→jp) should still
+    // generate forms when typed is selected — they render as MC. This ensures
+    // users see all available facts even when selecting typed-only.
+    const kanaEnJp = kanaFact("あ");
+    const forms = enabledFormsFor(kanaEnJp, typedOnly);
+    const enJpForms = forms.filter((f) => f.dir === "en2jp");
+    assert.ok(enJpForms.length > 0, "English should produce a form for kana");
+    for (const form of enJpForms) {
+      // The form is typed in intent, but resolves to MC because that's the only
+      // way kana can be asked in en→jp direction
+      assert.equal(form.answer, "typed");
+      assert.equal(formIsMc(kanaEnJp, form), true);
     }
   });
 

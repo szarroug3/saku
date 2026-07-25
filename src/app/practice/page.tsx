@@ -168,7 +168,7 @@ export default function PracticePage() {
     () =>
       cfg.mode === "grid"
         ? whatSentence(cfg.selection, questionCount, lists, {
-            showCount: !(cfg.mode === "drill" && cfg.length === "endless"),
+            showCount: cfg.length !== "endless",
           })
         : what,
     [cfg.mode, cfg.selection, questionCount, lists, what],

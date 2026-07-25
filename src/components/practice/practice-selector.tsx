@@ -110,6 +110,7 @@ function TypeChip({
       type="button"
       onClick={onClick}
       disabled={empty}
+      suppressHydrationWarning
       className={cx(
         "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]",
         on
@@ -143,6 +144,7 @@ function StatusChip({
       type="button"
       onClick={onClick}
       disabled={count === 0}
+      suppressHydrationWarning
       className={cx(
         "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]",
         on
