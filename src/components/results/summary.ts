@@ -5,7 +5,7 @@
 // order of the branches in `summarize` is the design, not an implementation
 // detail. Keeping it out of the view is what lets it be read as a cascade.
 
-import { accuracyFor, accuracyOf, EMPTY_COUNTS } from "@/lib/accuracy";
+import { accuracyOf, EMPTY_COUNTS } from "@/lib/accuracy";
 import { foldSessions } from "@/lib/aggregate";
 import { DECKS } from "@/lib/decks";
 import { computeResults } from "@/lib/engine";
@@ -17,6 +17,7 @@ import {
   glyphOf,
   readingOfEntry,
 } from "@/lib/facts";
+import { nounFor } from "@/lib/quiz-instruction";
 import type { PairRow } from "@/lib/confusions";
 import type { ResultsPayload } from "@/lib/quiz-session";
 import type {
@@ -231,11 +232,13 @@ export function deriveRun(
 // ---------- picking the worst ----------
 
 export interface Worst {
-  /** One fact, or the tie. */
-  facts: FactId[];
+  /** One entry, or the tie. */
+  entries: EntryId[];
+  /** Facts contributing to each tied entry's total miss count. */
+  byEntry: Record<EntryId, FactId[]>;
   /** "never" outranks any miss count — you don't know it at all. */
   kind: "never" | "misses";
-  /** Wrong attempts each of them cost. */
+  /** Wrong attempts each tied entry cost. */
   misses: number;
 }
 
@@ -245,12 +248,10 @@ export interface Worst {
  *
  *   1. never got it        — not knowing beats fumbling, whatever the counts
  *   2. most misses         — among the ones you did get, how hard it fought
- *   3. historically weakest — your history's vote, through accuracy.ts
- *   4. still tied          — then say so, and name them
+ *   3. still tied          — then say so, and name them
  *
- * So history BREAKS ties and never WRITES the line: `prior` only ever narrows a
- * pool of facts that all really cost you today. Naming a fact you nailed this
- * run would import a problem you didn't have.
+ * Ties are kept and named: if two or more facts share the top miss count in
+ * this run, the line says so instead of pretending one "cost the most".
  */
 export function worstOf(
   run: RunFacts,
@@ -261,24 +262,34 @@ export function worstOf(
 
   // 1 · never got it
   const never = run.missed.filter((f) => !stats[f].everCorrect);
-  let pool = never.length ? never : run.missed;
+  const pool = never.length ? never : run.missed;
   const kind: Worst["kind"] = never.length ? "never" : "misses";
 
-  // 2 · most misses
-  const most = Math.max(...pool.map((f) => stats[f].misses));
-  pool = pool.filter((f) => stats[f].misses === most);
-
-  // 3 · historically weakest. A single-fact list, so this is that fact's own
-  // ratio — a real accuracy, not an entry summary. No history is not weakness:
-  // an unpractised fact can't win this rung, so it sorts as unbeatable.
-  if (pool.length > 1) {
-    const acc = (f: FactId) => accuracyFor(prior, [f], run.metric) ?? Infinity;
-    const worstAcc = Math.min(...pool.map(acc));
-    pool = pool.filter((f) => acc(f) === worstAcc);
+  // 2 · most misses, by ENTRY (sum of this run's missed questions over all
+  // facts of that entry that missed).
+  const byEntry = new Map<EntryId, { misses: number; facts: FactId[] }>();
+  for (const f of pool) {
+    const e = entryOf(f);
+    const row = byEntry.get(e) ?? { misses: 0, facts: [] };
+    row.misses += stats[f].misses;
+    row.facts.push(f);
+    byEntry.set(e, row);
   }
+  const most = Math.max(...[...byEntry.values()].map((x) => x.misses));
+  const entries = [...byEntry.entries()]
+    .filter(([, x]) => x.misses === most)
+    .map(([e]) => e);
 
-  // 4 · genuinely identical — the caller names them all.
-  return { facts: pool, kind, misses: most };
+  void prior;
+  // 3 · genuinely identical on this run — the caller names them all.
+  return {
+    entries,
+    byEntry: Object.fromEntries(
+      entries.map((e) => [e, byEntry.get(e)?.facts ?? []]),
+    ) as Record<EntryId, FactId[]>,
+    kind,
+    misses: most,
+  };
 }
 
 // ---------- the sentence ----------
@@ -300,21 +311,33 @@ export interface Summary {
   counts: Bit[];
 }
 
-/** "ツ" · "ツ and ソ" · "ツ, ソ and 2 others" — a list stops being a headline
- * past two names. Takes facts and renders GLYPHS: an id is an identity, never
- * something a sentence says out loud. */
-function nameList(facts: FactId[]): Bit[] {
-  const [a, b] = facts.map(glyphOfFact);
-  if (facts.length === 1) return [{ t: a, em: true }];
-  if (facts.length === 2) {
-    return [{ t: a, em: true }, { t: " and " }, { t: b, em: true }];
+/** A natural-language entry list: "ツ (kana)", "ツ (kana) and ソ (kana)",
+ * "可 (kanji), 可 (word), and ソ (kana)".
+ * Takes facts and renders GLYPHS: an id is an identity, never something a
+ * sentence says out loud. */
+function nameList(
+  entries: EntryId[],
+  byEntry: Record<EntryId, FactId[]>,
+): Bit[] {
+  const renderOne = (entry: EntryId): Bit[] => {
+    const sample = byEntry[entry]?.[0];
+    const noun = sample ? nounFor(sample) : "entry";
+    return [{ t: glyphOf(entry), em: true }, { t: ` (${noun})` }];
+  };
+
+  if (entries.length === 0) return [];
+  if (entries.length === 1) return renderOne(entries[0]);
+  if (entries.length === 2) {
+    return [...renderOne(entries[0]), { t: " and " }, ...renderOne(entries[1])];
   }
-  return [
-    { t: a, em: true },
-    { t: ", " },
-    { t: b, em: true },
-    { t: ` and ${facts.length - 2} other${s(facts.length - 2)}` },
-  ];
+
+  const bits: Bit[] = [];
+  entries.forEach((entry, i) => {
+    bits.push(...renderOne(entry));
+    if (i < entries.length - 2) bits.push({ t: ", " });
+    else if (i === entries.length - 2) bits.push({ t: ", and " });
+  });
+  return bits;
 }
 
 /** How a single worst fact was actually got wrong: "every time you answered
@@ -333,8 +356,8 @@ function confusionTail(st: FactSessionDetail, count: number): string {
 }
 
 function worstBits(worst: Worst, stats: SessionStats): Bit[] {
-  const names = nameList(worst.facts);
-  const many = worst.facts.length > 1;
+  const names = nameList(worst.entries, worst.byEntry);
+  const many = worst.entries.length > 1;
   const each = many ? " each" : "";
   if (worst.kind === "never") {
     // "ヂャ never landed: 4 tries, no luck"
@@ -344,11 +367,22 @@ function worstBits(worst: Worst, stats: SessionStats): Bit[] {
     return [...names, { t: ` never landed: ${tail}` }];
   }
   if (many) {
-    // "ツ and ソ tied for worst: 4 misses each"
+    // "可 (word) and とお (word) tied for worst: 3 misses each"
     return [...names, { t: ` tied for worst: ${misses(worst.misses)} each` }];
   }
-  // "ツ cost you the most: 4 misses, every time you answered "shi""
-  const tail = confusionTail(stats[worst.facts[0]], worst.misses);
+  // "ツ (kana) cost you the most: 4 misses, every time you answered "shi""
+  const one = worst.entries[0];
+  const oneFacts = worst.byEntry[one] ?? [];
+  if (!oneFacts.length) {
+    return [...names, { t: ` cost you the most: ${misses(worst.misses)}` }];
+  }
+  const confusion: Record<EntryId, number> = {} as Record<EntryId, number>;
+  for (const f of oneFacts) {
+    for (const [e, n] of Object.entries(stats[f].confused ?? {}) as Array<[EntryId, number]>) {
+      confusion[e] = (confusion[e] ?? 0) + n;
+    }
+  }
+  const tail = confusionTail({ ...stats[oneFacts[0]], confused: confusion }, worst.misses);
   return [
     ...names,
     { t: ` cost you the most: ${misses(worst.misses)}${tail}` },
@@ -431,7 +465,7 @@ export function summarize(
   const counts = countBits(run, progress);
 
   if (run.missed.length) {
-    const worst = worstOf(run, stats, prior);
+    const worst = worstOf({ ...run, missed: run.needsWork }, stats, prior);
     const n = run.needsWork.length;
     return {
       state: "misses",
@@ -457,10 +491,10 @@ export function summarize(
       headline: "Everything landed in the end",
       detail: worst
         ? [
-            ...nameList(worst.facts),
+            ...nameList(worst.entries, worst.byEntry),
             {
               t: ` took the most retries: ${misses(worst.misses)}${
-                worst.facts.length > 1 ? " each" : ""
+                worst.entries.length > 1 ? " each" : ""
               }, but you got there`,
             },
           ]

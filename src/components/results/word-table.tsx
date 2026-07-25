@@ -115,7 +115,14 @@ const OUTCOME: Record<Outcome, { label: string; text: string; dot: string }> = {
   unseen: { label: "not shown", text: "text-text-muted", dot: "bg-text-muted" },
 };
 
-function HowYouDid({ outcome }: { outcome: Outcome }) {
+function HowYouDid({
+  outcome,
+  hideFirstTry,
+}: {
+  outcome: Outcome;
+  hideFirstTry?: boolean;
+}) {
+  if (hideFirstTry && outcome === "first-try") return null;
   const o = OUTCOME[outcome];
   return (
     <span className={cx("flex items-center gap-1 text-[9px] font-medium", o.text)}>
@@ -131,12 +138,16 @@ function PresentationCell({
   stats,
   selected,
   onToggle,
+  hideFirstTry,
+  solidTone,
 }: {
   fact: FactId;
   phrase: string;
   stats: SessionStats;
   selected: boolean;
   onToggle: () => void;
+  hideFirstTry?: boolean;
+  solidTone?: boolean;
 }) {
   const st = stats[fact];
   const outcome = outcomeForPhrase(st, phrase);
@@ -163,7 +174,9 @@ function PresentationCell({
         "cursor-pointer transition-colors",
         selected
           ? "border-accent bg-accent-bg"
-          : "border-border bg-panel hover:bg-card",
+          : solidTone
+            ? "border-success/45 bg-success-bg hover:bg-success-bg"
+            : "border-border bg-panel hover:bg-card",
       )}
     >
       {selected ? (
@@ -178,7 +191,7 @@ function PresentationCell({
         {phrase}
       </span>
       <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-        <HowYouDid outcome={outcome} />
+        <HowYouDid outcome={outcome} hideFirstTry={hideFirstTry} />
         {saidParts.length ? (
           <span className="inline-flex items-center gap-1 text-[9px] text-danger">
             <span aria-hidden="true" className="leading-none">
@@ -205,6 +218,8 @@ export function WordTable({
   isSelected,
   onToggle,
   showOnly,
+  hideFirstTry,
+  solidTone,
 }: {
   facts: FactId[];
   stats: SessionStats;
@@ -212,6 +227,10 @@ export function WordTable({
   onToggle: (box: BoxKey) => void;
   /** Optional box filter: render only these boxes, hide rows with none. */
   showOnly?: ReadonlySet<BoxKey>;
+  /** Optional: hide first-try status marker (dot + label). */
+  hideFirstTry?: boolean;
+  /** Optional: tint unselected cells as solid/safe. */
+  solidTone?: boolean;
 }) {
   const rows = groupByEntry(facts);
   if (!rows.length) return null;
@@ -258,6 +277,8 @@ export function WordTable({
                     stats={stats}
                     selected={isSelected(x.box)}
                     onToggle={() => onToggle(x.box)}
+                    hideFirstTry={hideFirstTry}
+                    solidTone={solidTone}
                   />
                 ))}
               </div>
