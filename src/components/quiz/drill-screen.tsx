@@ -1505,16 +1505,19 @@ export function DrillScreen() {
         {/* The context that is PART of the question and NOT redundant with the
             instruction above: an anchor like "in 人生" / "on its own", without
             which a kanji reading has nine right answers. The bare "meaning" /
-            "reading" labels are dropped — the full instruction already says which
-            it is, so they were only noise (Sam). And when the WHOLE WORD is shown
-            in the halo (a kanji-reading card, `readingWord`), the "in 電話"
-            sublabel is dropped too: the word is right there with the kanji lit, so
-            repeating it underneath is the same noise (Sam, task #22). Muted,
-            because it supports the white instruction rather than competing. */}
+            "reading" / "in japanese" labels are dropped — the full instruction
+            already says which it is (typing the word from an English prompt is
+            always Japanese), so they were only noise (Sam). And when the WHOLE
+            WORD is shown in the halo (a kanji-reading card, `readingWord`), the
+            "in 電話" sublabel is dropped too: the word is right there with the
+            kanji lit, so repeating it underneath is the same noise (Sam, task
+            #22). Muted, because it supports the white instruction rather than
+            competing. */}
         {!readingWord &&
         prompt.context &&
         prompt.context !== "meaning" &&
-        prompt.context !== "reading" ? (
+        prompt.context !== "reading" &&
+        prompt.context !== "in japanese" ? (
           <p className="-mt-1 text-center text-[13px] text-text-muted">{prompt.context}</p>
         ) : null}
         {/* The pronunciation, shown WITH the kanji on a homophone's meaning card
