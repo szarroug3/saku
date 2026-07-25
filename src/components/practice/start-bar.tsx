@@ -159,7 +159,12 @@ export function StartBar({
           // to select more — which is the screen you are already on.
           cfg.mode === "grid"
             ? "None of the selected material has those Grid response types."
-            : "You're solid on all of these for now. Pick another deck to drill something else."
+            : cfg.mode === "pairs"
+              ? // Not "nothing to ask" but "nothing to MATCH": every type here
+                // makes at most a lone pair, and one pair is not a board. The way
+                // out is the same screen — widen until a type has two or more.
+                "These don't make a matching board. Pick more so at least one type has two or more pairs."
+              : "You're solid on all of these for now. Pick another deck to drill something else."
         : null;
 
   return (

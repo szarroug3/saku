@@ -12,7 +12,14 @@ import {
   wordReadingFactId,
 } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
-import { pairBoards, pairFacts, pairSpecs } from "@/lib/pair-facts";
+import {
+  dropClippedTail,
+  pairBoards,
+  pairFacts,
+  pairSpecs,
+  playablePairBoards,
+  type PairSpec,
+} from "@/lib/pair-facts";
 import type { HistoryFile } from "@/types";
 
 const T = 1_700_000_000_000;
@@ -189,5 +196,85 @@ describe("Match-pairs headed boards (task #33)", () => {
     assert.ok(boards.length > 0);
     assert.ok(boards.every((b) => b.header === "Sentences ↔ Meaning"));
     assert.ok(boards.every((b) => b.specs.every((s) => s.kind === "sentence")));
+  });
+});
+
+describe("Match-pairs playable boards (≥2-pair invariant)", () => {
+  const kanjiA = meaningFactId("生");
+  const kanjiB = meaningFactId("愛");
+
+  test("a lone-pair board is grouped by pairBoards but dropped by playable", () => {
+    // The grouping is honest — a single kanji still HAS its Kanji ↔ Meaning board —
+    assert.equal(pairBoards([kanjiA], ["definition"], EMPTY).length, 1);
+    // — but one pair is not a matching game, so it is never dealable.
+    assert.deepEqual(playablePairBoards([kanjiA], ["definition"], EMPTY), []);
+  });
+
+  test("a board with two or more pairs is kept", () => {
+    const boards = playablePairBoards([kanjiA, kanjiB], ["definition"], EMPTY);
+    assert.equal(boards.length, 1);
+    assert.equal(boards[0].header, "Kanji ↔ Meaning");
+    assert.equal(boards[0].specs.length, 2);
+  });
+
+  test("a mixed selection keeps the ≥2 board and drops the lone one", () => {
+    // 生 + 愛 fill one Kanji ↔ Meaning board (two pairs); あ is a lone
+    // Kana ↔ Romaji pair, and only the full board survives.
+    const boards = playablePairBoards(
+      [kanjiA, kanjiB, kanaFact("あ")],
+      ["definition"],
+      EMPTY,
+    );
+    assert.deepEqual(
+      boards.map((b) => b.header),
+      ["Kanji ↔ Meaning"],
+    );
+  });
+
+  test("when every type is a lone pair there is no playable board", () => {
+    // One kanji (Kanji ↔ Meaning) and one kana (Kana ↔ Romaji): two grouped
+    // boards, each a single pair, so nothing is dealable — the all-empty case
+    // Start must gate rather than launch into a blank run.
+    const facts = [kanjiA, kanaFact("あ")];
+    assert.equal(pairBoards(facts, ["definition"], EMPTY).length, 2);
+    assert.deepEqual(playablePairBoards(facts, ["definition"], EMPTY), []);
+  });
+});
+
+describe("dropClippedTail — Count never leaves a lone tail pair", () => {
+  const spec = (header: string, id: string): PairSpec =>
+    ({
+      id,
+      fact: id,
+      kind: "definition",
+      japanese: id,
+      answer: id,
+      context: null,
+      header,
+    }) as unknown as PairSpec;
+
+  test("drops a trailing board the count-slice clipped to one pair", () => {
+    const deck = [spec("A", "a1"), spec("A", "a2"), spec("B", "b1")];
+    assert.deepEqual(
+      dropClippedTail(deck).map((s) => s.id),
+      ["a1", "a2"],
+    );
+  });
+
+  test("keeps the deck when the last board is whole", () => {
+    const deck = [
+      spec("A", "a1"),
+      spec("A", "a2"),
+      spec("B", "b1"),
+      spec("B", "b2"),
+    ];
+    assert.deepEqual(
+      dropClippedTail(deck).map((s) => s.id),
+      ["a1", "a2", "b1", "b2"],
+    );
+  });
+
+  test("an empty deck stays empty", () => {
+    assert.deepEqual(dropClippedTail([]), []);
   });
 });

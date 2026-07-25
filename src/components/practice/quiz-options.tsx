@@ -405,7 +405,7 @@ export function QuizOptionsFields() {
                     })
                   }
                   aria-label="Question count"
-                  className="w-20 rounded-lg border border-border bg-bg px-2 py-1.5 text-right text-sm text-text disabled:opacity-40"
+                  className="kq-num w-20 rounded-lg border border-border bg-bg px-2 py-1.5 text-right text-sm text-text disabled:opacity-40"
                 />
               </>
             ) : null}

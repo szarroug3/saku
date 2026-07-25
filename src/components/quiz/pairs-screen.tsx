@@ -21,7 +21,11 @@ import { useEffect, useRef, useState } from "react";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { newFactStat, shuffle } from "@/lib/engine";
 import { entryOf } from "@/lib/facts";
-import { pairBoards, type PairSpec } from "@/lib/pair-facts";
+import {
+  dropClippedTail,
+  playablePairBoards,
+  type PairSpec,
+} from "@/lib/pair-facts";
 import { isResponseCaption } from "@/lib/quiz-boards";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
@@ -108,7 +112,9 @@ function boardDeck(
   kinds: PairResponse[],
   history: HistoryFile,
 ): PairSpec[] {
-  return pairBoards(facts, kinds, history).flatMap((b) =>
+  // playablePairBoards, not pairBoards: a board with a single pair is not a
+  // matching game (task after #33), so it never reaches the deck.
+  return playablePairBoards(facts, kinds, history).flatMap((b) =>
     shuffle(b.specs.slice()),
   );
 }
@@ -192,7 +198,10 @@ function initPairs(
   // trims the tail; it may clip the last board, which stays homogeneous.
   let deck = boardDeck(active.facts, kinds, history);
   if (eff.length === "limited" && eff.limType === "count") {
-    deck = deck.slice(0, eff.limCount);
+    // The slice can clip the last board down to a lone pair; drop that tail so
+    // the count-limit never manufactures the degenerate board the deck itself
+    // is built to exclude.
+    deck = dropClippedTail(deck.slice(0, eff.limCount));
   }
   const endless = eff.length === "endless";
   const p: PairsRuntime = {
