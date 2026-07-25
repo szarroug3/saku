@@ -270,7 +270,7 @@ export default function SessionPage() {
         <div className="mt-3.5">
           <RoundComplete
             session={session}
-            onRetry={(facts) => retryLeg(facts)}
+            onRetry={(facts, boxes) => retryLeg(facts, boxes)}
             onComplete={completeRound}
           />
         </div>

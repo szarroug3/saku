@@ -81,6 +81,7 @@ import {
 } from "@/lib/ask-forms";
 import { toKana } from "@/lib/romaji";
 import { quizInstruction } from "@/lib/quiz-instruction";
+import { presentationPhrase } from "@/lib/question-presentation";
 import { speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
 import { anchorForFact, isReadingFact } from "@/lib/word-unlock";
@@ -224,6 +225,23 @@ function labelOf(fact: FactId, dir: Direction, ctx?: PromptContext): string {
   const info = factInfo(fact);
   if (!info) return "";
   return dir === "en2jp" ? info.glyph : (info.answers[0] ?? "");
+}
+
+function retryBoxKey(fact: FactId, phrase: string): string {
+  return JSON.stringify([fact, phrase]);
+}
+
+function recordMissedPhrase(
+  st: ReturnType<typeof statForShowing>,
+  phrase: string,
+  said?: string | null,
+): void {
+  const list = st.missedPhrases ?? (st.missedPhrases = []);
+  if (!list.includes(phrase)) list.push(phrase);
+  const cleaned = (said ?? "").trim();
+  if (!cleaned || cleaned === "--") return;
+  const map = st.saidByPhrase ?? (st.saidByPhrase = {});
+  map[phrase] = cleaned;
 }
 
 /** How the last answer landed. There is no `text`: the halo IS the feedback —
@@ -672,6 +690,7 @@ export function DrillScreen() {
           ? picked === q.f
           : checkTyped(q.f, given, q.dir, ctxFor(q));
     const st = statForShowing(rt.stats, q.f);
+    const phrase = presentationPhrase(q.f, showingOf(q));
     // A HINT FORFEITS "NAILED IT", and that is the whole of what it costs. Right
     // with a hint is the third outcome: seen, correct, not first-try — which is
     // an existing shape, not a new one (it is what a second-try success already
@@ -698,6 +717,13 @@ export function DrillScreen() {
     } else {
       rt.streak = 0; // any miss, including a timeout
       st.misses++;
+      const mcSaid = picked != null ? labelOf(picked, q.dir, ctxFor(q)) : null;
+      const typedSaid = given && given !== "(time)" ? given : null;
+      const recognitionSaid =
+        recognitionPick !== undefined && q.recognition
+          ? q.recognition.options[recognitionPick] ?? null
+          : null;
+      recordMissedPhrase(st, phrase, recognitionSaid ?? mcSaid ?? typedSaid);
       // `confused` is keyed by ENTRY — the thing you said instead of this fact's
       // answer. See FactSessionDetail: a confusion is a failure to tell two
       // entries apart, so it cannot be keyed by one of their facts.
@@ -872,6 +898,18 @@ export function DrillScreen() {
           active.snapshot.limType === "cov");
       if (coverage) {
         const built = buildCoverageDeck(active.facts, active.snapshot.ask);
+        const selectedBoxes = new Set(active.retryBoxes ?? []);
+        const isBoxSelected = (f: FactId, form: CardForm): boolean => {
+          if (!selectedBoxes.size) return true;
+          const shown: ShowingPresentation = {
+            dir: form.dir,
+            mode: formIsMc(f, form) ? "mc" : "typed",
+            listen: form.listen,
+          };
+          const phrase = presentationPhrase(f, shown);
+          return selectedBoxes.has(retryBoxKey(f, phrase));
+        };
+
         const keep = built.deck.map((f, i) => {
           const form = built.forms[i];
           return !(
@@ -882,7 +920,8 @@ export function DrillScreen() {
               form.response === "definition" &&
               (form.listen
                 ? pickRecognitionForFact(f, history, () => 0) === null
-                : grammarSelectionFor(f, history, () => 0) === null))
+                : grammarSelectionFor(f, history, () => 0) === null)) ||
+            !isBoxSelected(f, form)
           );
         });
         rt.deck = built.deck.filter((_, i) => keep[i]);

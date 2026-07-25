@@ -246,6 +246,8 @@ function emptyStat(): FactSessionDetail {
     correct: 0,
     confused: {},
     showns: [],
+    missedPhrases: [],
+    saidByPhrase: {},
   };
 }
 
@@ -276,6 +278,8 @@ export function mergeStats(into: SessionStats, from: SessionStats): SessionStats
       firstTryCount: firstTryShowings(into[f]),
       confused: { ...into[f].confused },
       showns: (into[f].showns ?? (into[f].shown ? [into[f].shown] : [])).slice(),
+      missedPhrases: (into[f].missedPhrases ?? []).slice(),
+      saidByPhrase: { ...(into[f].saidByPhrase ?? {}) },
     };
   }
   for (const f of factKeys(from)) {
@@ -310,6 +314,22 @@ export function mergeStats(into: SessionStats, from: SessionStats): SessionStats
     for (const e of Object.keys(src.confused)) {
       const key = e as keyof typeof src.confused;
       dst.confused[key] = (dst.confused[key] ?? 0) + src.confused[key];
+    }
+    if (src.missedPhrases?.length) {
+      const seen = new Set(dst.missedPhrases ?? []);
+      const merged = dst.missedPhrases ?? [];
+      for (const phrase of src.missedPhrases) {
+        if (seen.has(phrase)) continue;
+        seen.add(phrase);
+        merged.push(phrase);
+      }
+      dst.missedPhrases = merged;
+    }
+    if (src.saidByPhrase) {
+      dst.saidByPhrase = {
+        ...(dst.saidByPhrase ?? {}),
+        ...src.saidByPhrase,
+      };
     }
   }
   return out;

@@ -175,6 +175,9 @@ export interface ActiveQuiz {
    * stats, grid card states, pairs board, remaining timer…). Owned by the
    * mode screens; opaque to this provider. */
   runtime: Record<string, unknown>;
+  /** Optional box selection carried by a retry leg: each key is [fact, phrase].
+   * When present, force-coverage keeps only these selected showings. */
+  retryBoxes?: string[];
 }
 
 /** Sidebar progress chip: e.g. done=12 total=50 → "12/50"; total=null while
@@ -279,7 +282,7 @@ interface QuizSessionContextValue {
     seededSeen?: FactId[],
   ): void;
   /** Re-ask a subset from the fork. Comes back to the same fork. */
-  retryLeg(facts: FactId[]): void;
+  retryLeg(facts: FactId[], boxes?: string[]): void;
   /**
    * Mid-round "Look again": go back to the lesson without discarding the leg.
    *
@@ -968,6 +971,7 @@ export function QuizSessionProvider({
       what: string,
       snapshot: QuizSnapshot,
       redrill: boolean,
+      retryBoxes?: string[],
     ) => {
       if (!facts.length) return;
       setActive({
@@ -979,6 +983,7 @@ export function QuizSessionProvider({
         startedAt: Date.now(),
         snapshot,
         runtime: {},
+        retryBoxes,
       });
       setProgress(null);
       router.push("/quiz");
@@ -1174,12 +1179,12 @@ export function QuizSessionProvider({
   );
 
   const retryLeg = useCallback(
-    (facts: FactId[]) => {
+    (facts: FactId[], boxes?: string[]) => {
       if (!session || !facts.length) return;
       setSession({ ...session, phase: "drilling", lastActiveAt: Date.now() });
       // forceCoverage: a retry is one full pass over exactly these, whatever
       // the session's length setting says. You asked for these; you get these.
-      beginLeg(facts, "The misses", session.snapshot, true);
+      beginLeg(facts, "The misses", session.snapshot, true, boxes);
     },
     [session, beginLeg],
   );

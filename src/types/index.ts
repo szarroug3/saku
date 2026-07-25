@@ -514,6 +514,10 @@ export interface FactSessionDetail {
    * the same fact overwrites `shown`.
    */
   showns?: ShowingPresentation[];
+  /** Distinct presentation phrases this fact was missed on this run. */
+  missedPhrases?: string[];
+  /** What the learner picked/typed on a missed phrase (latest per phrase). */
+  saidByPhrase?: Record<string, string>;
 }
 
 /** One run's detail, keyed by FACT — the unit that can actually be graded. */

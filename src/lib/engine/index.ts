@@ -362,5 +362,7 @@ export function newFactStat(): FactSessionDetail {
     correct: 0,
     confused: {},
     showns: [],
+    missedPhrases: [],
+    saidByPhrase: {},
   };
 }

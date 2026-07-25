@@ -26,8 +26,8 @@ import { useState } from "react";
 
 import {
   boxKeysForFact,
-  boxKeysForFacts,
   factOfBoxKey,
+  missedBoxKeysForFacts,
   type BoxKey,
   WordTable,
 } from "@/components/results/word-table";
@@ -54,7 +54,7 @@ export function RoundComplete({
   onComplete,
 }: {
   session: StudySession;
-  onRetry: (facts: FactId[]) => void;
+  onRetry: (facts: FactId[], boxes: BoxKey[]) => void;
   onComplete: () => void;
 }) {
   // TWO lists, and the difference is the bug this screen was fixed for. The
@@ -77,7 +77,7 @@ export function RoundComplete({
   // the screen came back offering to retry them again, which is why the tester
   // could not tell a perfect retry from no retry at all.
   const [picked, setPicked] = useState<Set<BoxKey>>(
-    () => new Set(boxKeysForFacts(outstanding, session.roundStats)),
+    () => new Set(missedBoxKeysForFacts(outstanding, session.roundStats)),
   );
 
   const pickedFacts = [...picked]
@@ -86,6 +86,7 @@ export function RoundComplete({
   const pickedList = [...new Set(pickedFacts)].filter((f) =>
     selection.includes(f),
   );
+  const pickedBoxes = [...picked];
 
   return (
     <>
@@ -153,11 +154,11 @@ export function RoundComplete({
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Btn
             sel
-            disabled={!pickedList.length}
+            disabled={!pickedBoxes.length}
             className="disabled:cursor-default disabled:opacity-45"
-            onClick={() => onRetry(pickedList)}
+            onClick={() => onRetry(pickedList, pickedBoxes)}
           >
-            Retry {pickedList.length || "…"}
+            Retry {pickedBoxes.length || "…"}
           </Btn>
           <Btn go className="ml-auto" onClick={onComplete}>
             {session.round >= SESSION_ROUND_TARGET

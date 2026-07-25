@@ -66,6 +66,24 @@ export function boxKeysForFacts(
   return facts.flatMap((fact) => boxKeysForFact(fact, stats));
 }
 
+export function missedBoxKeysForFacts(
+  facts: FactId[],
+  stats: SessionStats,
+): BoxKey[] {
+  return facts.flatMap((fact) => {
+    const missed = stats[fact]?.missedPhrases ?? [];
+    return missed.map((phrase) => boxKeyOf(fact, phrase));
+  });
+}
+
+function saidTextForPhrase(st: SessionStats[FactId] | undefined, phrase: string): string | null {
+  const raw = st?.saidByPhrase?.[phrase];
+  if (raw == null) return null;
+  const said = raw.trim();
+  if (!said || said === "--") return null;
+  return said;
+}
+
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
@@ -104,17 +122,22 @@ function PresentationCell({
 }) {
   const st = stats[fact];
   const outcome = outcomeOf(st);
+  const said = saidTextForPhrase(st, phrase);
   // What you said instead, when a miss named a single entry to blame. Glyphs
   // only — this cell is about to be re-asked, so it must not print the answer,
   // and the entry you confused it FOR is not this fact's answer.
   const confused = confusedEntries(st).map(glyphOf);
+  const saidParts = said ? [said] : [];
+  for (const glyph of confused) {
+    if (!saidParts.includes(glyph)) saidParts.push(glyph);
+  }
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-pressed={selected}
       aria-label={`${phrase}, ${OUTCOME[outcome].label}${
-        confused.length ? `, answered ${confused.join(" ")} instead` : ""
+        saidParts.length ? `, answered ${saidParts.join(" ")} instead` : ""
       }`}
       className={cx(
         "relative flex min-w-0 flex-col gap-1 rounded-[10px] border px-2 py-1.5 text-left",
@@ -137,11 +160,11 @@ function PresentationCell({
       </span>
       <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         <HowYouDid outcome={outcome} />
-        {confused.length ? (
+        {saidParts.length ? (
           <span className="text-[9px] text-danger">
             → said{" "}
             <span aria-hidden="true" className="font-kana">
-              {confused.join(" ")}
+              {saidParts.join(" ")}
             </span>
           </span>
         ) : null}
