@@ -32,7 +32,9 @@
 
 import {
   askIsEmpty,
+  englishAsks,
   enabledDirs,
+  japaneseAsks,
   sentenceAsksRomaji,
   sentenceAsksSelection,
 } from "@/lib/ask-config";
@@ -56,6 +58,30 @@ function stylePhrase(ask: AskConfig): string | null {
   if (sentenceAsksRomaji(ask)) add(ask.sentence.answers);
   if (en2jp) add(ask.english.answers);
   return styles.size ? [...styles].join(" + ") : null;
+}
+
+function promptPhrase(ask: AskConfig): string | null {
+  const prompts = new Set<string>();
+  if (japaneseAsks(ask)) {
+    for (const p of ask.japanese.prompts) prompts.add(p === "text" ? "Text" : "Audio");
+  }
+  if (sentenceAsksSelection(ask) || sentenceAsksRomaji(ask)) {
+    for (const p of ask.sentence.prompts) prompts.add(p === "text" ? "Text" : "Audio");
+  }
+  return prompts.size ? [...prompts].join(" + ") : null;
+}
+
+function responsePhrase(ask: AskConfig): string | null {
+  const responses = new Set<string>();
+  if (japaneseAsks(ask)) {
+    for (const r of ask.japanese.responses) {
+      responses.add(r === "definition" ? "Definition" : "Romaji");
+    }
+  }
+  if (sentenceAsksSelection(ask)) responses.add("Definition");
+  if (sentenceAsksRomaji(ask)) responses.add("Romaji");
+  if (englishAsks(ask)) responses.add("Japanese");
+  return responses.size ? [...responses].join(" + ") : null;
 }
 
 /** "Drill · Endless · Type romaji" — the HOW half, read off the live setup. */
@@ -95,12 +121,10 @@ export function howSentence(cfg: QuizConfig): string {
   // Match pairs shows both sides at once — no answer style either. Audio, when
   // on, is called out before the answer format.
   if (cfg.mode !== "pairs") {
-    if (
-      cfg.ask.japanese.prompts.includes("audio") ||
-      cfg.ask.sentence.prompts.includes("audio")
-    ) {
-      parts.push("Audio");
-    }
+    const prompts = promptPhrase(cfg.ask);
+    if (prompts) parts.push(prompts);
+    const responses = responsePhrase(cfg.ask);
+    if (responses) parts.push(responses);
     const style = stylePhrase(cfg.ask);
     if (style) parts.push(style);
   }

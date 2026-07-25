@@ -31,6 +31,7 @@ import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { gridFacts } from "@/lib/grid-facts";
 import { playablePairBoards } from "@/lib/pair-facts";
+import { buildCoverageDeck, enabledFormsFor } from "@/lib/ask-forms";
 import { resolve, whatSentence } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
@@ -81,11 +82,6 @@ export default function PracticePage() {
     ],
   );
 
-  const what = useMemo(
-    () => whatSentence(cfg.selection, facts.length, lists),
-    [cfg.selection, facts.length, lists],
-  );
-
   // What actually runs: exactly the pool you picked, capped to the requested
   // length. This is an EXPLICIT selection — you chose "Everything I have seen"
   // or "Just the shaky ones" or a saved list — so Practice drills all of it,
@@ -130,15 +126,52 @@ export default function PracticePage() {
     history,
   ]);
 
+  // Footer count should reflect askable QUESTIONS for this run, not raw facts.
+  const questionCount = useMemo(() => {
+    if (cfg.mode === "pairs") return planned.count;
+    if (cfg.mode === "grid") return planned.facts.length;
+
+    if (cfg.length === "limited" && cfg.limType === "cov") {
+      return buildCoverageDeck(planned.facts, cfg.ask).deck.length;
+    }
+
+    if (cfg.length === "limited" && cfg.limType === "count") {
+      return cfg.limCount;
+    }
+
+    return planned.facts.reduce(
+      (sum, fact) => sum + enabledFormsFor(fact, cfg.ask).length,
+      0,
+    );
+  }, [
+    cfg.mode,
+    cfg.length,
+    cfg.limType,
+    cfg.limCount,
+    cfg.ask,
+    planned.count,
+    planned.facts,
+  ]);
+
+  const what = useMemo(
+    () =>
+      whatSentence(cfg.selection, questionCount, lists, {
+        showCount: !(cfg.mode === "drill" && cfg.length === "endless"),
+      }),
+    [cfg.selection, questionCount, lists, cfg.mode, cfg.length],
+  );
+
   // Grid narrows the selected pool by response type before dealing it, so its
   // visible count and frozen run name must describe that narrowed pool rather
   // than the broader filter result.
   const runWhat = useMemo(
     () =>
       cfg.mode === "grid"
-        ? whatSentence(cfg.selection, planned.facts.length, lists)
+        ? whatSentence(cfg.selection, questionCount, lists, {
+            showCount: !(cfg.mode === "drill" && cfg.length === "endless"),
+          })
         : what,
-    [cfg.mode, cfg.selection, planned.facts.length, lists, what],
+    [cfg.mode, cfg.selection, questionCount, lists, what],
   );
 
   // A one-off quiz, not a session: straight to /quiz, then /results when it ends.
@@ -203,7 +236,7 @@ export default function PracticePage() {
       <StartBar
         cfg={cfg}
         what={runWhat}
-        count={facts.length}
+        count={questionCount}
         plannedCount={planned.count}
         onStart={start}
       />

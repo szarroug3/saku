@@ -11,7 +11,6 @@ import {
   enabledFormsFor,
   formIsMc,
 } from "@/lib/ask-forms";
-import { en2jpTypeable, mcOnlyIn } from "@/lib/engine/question";
 import { ALL_FACTS } from "@/lib/facts";
 import type { AskConfig } from "@/types";
 
@@ -85,19 +84,16 @@ describe("enabledFormsFor", () => {
     assert.deepEqual(forms.map((f) => formIsMc(kanaFact("あ"), f)), [false, true]);
   });
 
-  test("kana en→jp renders its only available MC card when Type it is selected", () => {
+  test("kana en→jp emits no form when only Type it is selected", () => {
     const forms = enabledFormsFor(kanaFact("あ"), {
       japanese: { prompts: [], responses: [], answers: [] },
       sentence: { prompts: [], responses: [], answers: [] },
       english: { answers: ["typed"] },
     });
-    assert.equal(forms.length, 1);
-    assert.equal(forms[0].dir, "en2jp");
-    assert.equal(forms[0].answer, "typed", "the selected intent is preserved");
-    assert.equal(formIsMc(kanaFact("あ"), forms[0]), true);
+    assert.deepEqual(forms, []);
   });
 
-  test("Type it stays typed unless en→jp has no typeable control", () => {
+  test("Type it never auto-converts to MC", () => {
     const typedOnly: AskConfig = {
       japanese: {
         prompts: ["text"],
@@ -115,13 +111,7 @@ describe("enabledFormsFor", () => {
       const forms = enabledFormsFor(fact, typedOnly);
       for (const form of forms) {
         assert.equal(form.answer, "typed", fact);
-        if (formIsMc(fact, form)) {
-          assert.ok(
-            mcOnlyIn(fact, form.dir) ||
-              (form.dir === "en2jp" && !en2jpTypeable(fact)),
-            `${fact}: only an MC-only fact or untypeable Japanese answer may force MC`,
-          );
-        }
+        assert.equal(formIsMc(fact, form), false, fact);
       }
     }
   });

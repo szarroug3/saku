@@ -372,16 +372,17 @@ export function stateWord(s: FactBand): string {
  * the names summarise and are allowed to blur, the number never is. Same
  * contract the old whatSentence had, and the one thing worth keeping from it.
  *
- * Says "things", not "facts" and not "characters". "Characters" was a lie the
- * moment a selection could hold 生's nine readings — nine things, one character
- * — and "facts" is our word for it, not the user's.
+ * Says "questions", not "facts" and not "characters". This is the run-facing
+ * count users compare in the Practice footer and Start bar.
  */
 export function whatSentence(
   sel: Selection,
   count: number,
   lists: SavedList[] = [],
+  opts: { showCount?: boolean } = {},
 ): string {
-  if (!count) return "Nothing selected";
+  const showCount = opts.showCount ?? true;
+  if (showCount && !count) return "Nothing selected";
   const bits: string[] = [];
 
   if (sel.list) {
@@ -398,7 +399,8 @@ export function whatSentence(
   // know", not "Everything" — the pool is what you've seen or claimed, never the
   // untaught rest of the dictionary (see knownFacts).
   const head = bits.length ? bits.join(" · ") : "Everything you know";
-  return `${head} · ${count.toLocaleString()} thing${count === 1 ? "" : "s"}`;
+  if (!showCount) return head;
+  return `${head} · ${count.toLocaleString()} question${count === 1 ? "" : "s"}`;
 }
 
 /** Every subject that has any material, in registry order — the subject chips
