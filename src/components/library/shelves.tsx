@@ -43,6 +43,7 @@
 // depths of the same set.
 
 import Link from "next/link";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { KANA_SUBJECT, SETS } from "@/data/characters";
@@ -76,31 +77,64 @@ import { KEIGO_SUBJECT } from "@/data/keigo";
 import { counterShelfSections } from "@/lib/library/counter-shelf";
 import { keigoShelfSections } from "@/lib/library/keigo-shelf";
 import { kanjiCuts } from "@/lib/library/kanji-shelf";
-import {
-  filterSections,
-  sectionCapFor,
-  type ShelfSection,
-} from "@/lib/library/shelf-view";
+import { filterSections, type ShelfSection } from "@/lib/library/shelf-view";
 import { curriculumRank, rangedGroups, wordRank } from "@/lib/library/ranged-groups";
 import { sectionState, type Selection } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
 import type { KnowledgeFilter } from "@/lib/library/url-state";
+
+/**
+ * Keep the whole shelf scrollable without constructing thousands of offscreen
+ * tile components during the first render. A section mounts before it reaches
+ * the viewport and stays mounted afterward, so scrolling is automatic and
+ * there is no pagination or "show more" state.
+ */
+function DeferredShelfSection({
+  eager,
+  estimatedHeight,
+  render,
+}: {
+  eager: boolean;
+  estimatedHeight: number;
+  render: () => ReactNode;
+}) {
+  const [mounted, setMounted] = useState(eager);
+  const placeholder = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (mounted) return;
+    const node = placeholder.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setMounted(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setMounted(true);
+        observer.disconnect();
+      },
+      { rootMargin: "1600px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [mounted]);
+
+  if (mounted) return render();
+  return (
+    <div
+      ref={placeholder}
+      aria-hidden
+      style={{ height: estimatedHeight }}
+    />
+  );
+}
 import { factsOf } from "@/lib/facts";
 import type { AccuracyMetric, EntryId, FactAggregate, NewKanjiOrder } from "@/types";
 
 /** One cut of a shelf: a name and the entries under it. Its type and the view
- * math that reads it now live in @/lib/library/shelf-view (a .ts, so the filter
- * and cap logic can be unit-tested); this file only builds and renders them. */
-
-/** How many kanji tiles a SCHOOL-GRADE section paints before it defers the rest
- * to search — the words shelf's honesty, applied per grade, because grade 8
- * alone holds 1,110 of the 2,136. The SELECT toggle and the count stay over the
- * WHOLE grade, so "select all of grade 1" still means all of it; only the tiles
- * are capped. The range sections do NOT use this: a range is 100 long, and
- * capping it at 60 would hide 40 of every 100 — a range section is shown WHOLE
- * or not at all, and the range modes stop after KANJI_SECTIONS_SHOWN of them
- * instead. */
-const KANJI_TILES = 60;
+ * math that reads it live in @/lib/library/shelf-view so they can be unit-tested;
+ * this file only builds and renders them. */
 
 /** The sections of a shelf.
  *
@@ -121,21 +155,10 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
       );
     case KANJI_SUBJECT: {
       const cuts = kanjiCuts(kanjiOrder);
-      // BUILD EVERY CUT — do not stop at KANJI_SECTIONS_SHOWN here. The shelf's
-      // three-section cap belongs AFTER the knowledge filter (see shelf-view.ts:
-      // sectionCapFor / shownSectionsOf), because a filter that empties the
-      // leading sections must still reveal the surviving ones behind them. The
-      // cut itself stays complete — its tests hold that the cuts tile all 2,136
-      // — and both `grade`'s seven sections and every range section come back
-      // whole; the render decides how many to paint.
       return cuts.map((cut) => ({
         id: cut.id,
         label: cut.label,
         entries: cut.glyphs.flatMap((c) => resolve(entryForGlyph(KANJI_SUBJECT, c))),
-        // Only the grade sections need a tile cap; a range is already small
-        // enough to render whole. This `cap` is also how the render tells grade
-        // mode from a range mode (see sectionCapFor).
-        cap: kanjiOrder === "grade" ? KANJI_TILES : undefined,
       }));
     }
     case GRAMMAR_SUBJECT:
@@ -191,11 +214,9 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
       ];
     // EVERY word, in the beginner's teaching order, cut into ranges of
     // GROUP_SIZE ("1–50", "51–100") like the kanji shelf's hundreds — and shown
-    // WHOLE, all 12,553, not the old top-120 "Everyday words" card. The owner
-    // wants to see the cost of the naive full render, so nothing is capped or
-    // deferred here; the ranges flow through the generic section render below and
-    // inherit its select-all header, which the single words card never had. See
-    // ranged-groups.ts for the order and the chunking.
+    // WHOLE, all 12,553, not the old top-120 "Everyday words" card. The ranges
+    // flow through the generic deferred section render below and inherit its
+    // select-all header. See ranged-groups.ts for the order and chunking.
     case VOCAB_SUBJECT:
       return rangedGroups(
         VOCAB.flatMap((w) => resolve(wordEntry(w.keb))),
@@ -330,33 +351,10 @@ export function Shelf({
     kind === KEIGO_SUBJECT ||
     kind === TERM_SUBJECT;
 
-  // The knowledge filter applied to the cut, then the shelf's section cap. FILTER
-  // FIRST, CAP SECOND: each section keeps only the entries that pass and an
-  // emptied section drops out (a card headed "1–100" with nothing under it is a
-  // worse answer than no card), and only THEN does the kanji shelf take its first
-  // KANJI_SECTIONS_SHOWN. Capping before the filter was the bug — "Not known"
-  // would run against just the first three sections and call the shelf empty
-  // while thousands of unknown kanji waited in section four and on. `filtered`
-  // is the whole matching population (for the off-shelf count); `shownSections`
-  // is what actually paints. See shelf-view.ts for the shared math.
-  // FILTER, then the shelf's own section cap.
+  // Every matching section stays in the scroll. Distant sections are mounted
+  // near the viewport instead of being omitted or capped.
   const filtered = filterSections(sections, keep);
-  const cap = sectionCapFor(kind, sections);
-  const shownSections = filtered.slice(0, cap);
-
-  // What the kanji shelf is not showing you. COUNTED, never written down: the
-  // matching population minus what the sections above actually hold, so it stays
-  // right if KANJI_SECTIONS_SHOWN or KANJI_CHUNK ever moves. It now reflects the
-  // FILTER too — under "Not known" it is the unknown kanji past the three shown
-  // sections, not the raw shelf — because `filtered` already carries the filter.
-  // In `grade` mode the sections cover everything and none is capped, so this is
-  // 0 and the line does not appear; that mode says what it holds back per
-  // section instead.
-  const offShelf =
-    kind === KANJI_SUBJECT
-      ? filtered.reduce((n, s) => n + s.entries.length, 0) -
-        shownSections.reduce((n, s) => n + s.entries.length, 0)
-      : 0;
+  const shownSections = filtered;
 
   // Everything on the shelf fell outside the filter. The clusters card still
   // renders above (it is a reference, not filtered content), but the shelf itself
@@ -371,19 +369,24 @@ export function Shelf({
           <FilterEmpty filter={filter} />
         </Card>
       ) : null}
-      {shownSections.map((section) => {
+      {shownSections.map((section, index) => {
         const ids = section.entries.map((e) => e.id);
         const state = sectionState(selected, ids);
         const onCount = ids.filter((id) => selected.has(id)).length;
-        // Display cap for the huge school-grade sections. The toggle and count
-        // above use the FULL `ids`; only what renders is sliced.
-        const shown = section.entries.slice(0, section.cap ?? Infinity);
-        const hidden = section.entries.length - shown.length;
+        const shown = section.entries;
         return (
-          // kq-defer: skip painting this section while it's scrolled out of view.
-          // The Library stacks many of these, each a grid of translucent tiles;
-          // in kiri that offscreen paint is the shelf's scroll cost.
-          <Card key={section.id} className="kq-defer">
+          <DeferredShelfSection
+            key={section.id}
+            eager={index < 2}
+            estimatedHeight={Math.max(
+              240,
+              Math.min(4000, shown.length * 24),
+            )}
+            render={() => (
+              // kq-defer: after the section is mounted, skip its offscreen
+              // layout and paint. DeferredShelfSection avoids mounting distant
+              // groups in the first place.
+              <Card className="kq-defer">
             <div className="mb-2 flex items-center gap-2">
               {/* Tri-state header, and each state NAMES ITS OWN text colour in
                   the same string as its border/fill — no shared `text-*` for a
@@ -428,25 +431,11 @@ export function Shelf({
                 {shown.map(tile)}
               </div>
             )}
-            {hidden > 0 ? (
-              <p className="pt-2.5">
-                <Hint>
-                  ＋ {hidden} more in {section.label}. Search to find any of
-                  them.
-                </Hint>
-              </p>
-            ) : null}
-          </Card>
+              </Card>
+            )}
+          />
         );
       })}
-      {offShelf > 0 ? (
-        <p className="pt-0.5">
-          <Hint>
-            ＋ {offShelf.toLocaleString()} more kanji further along your order.
-            Search to find any of them.
-          </Hint>
-        </p>
-      ) : null}
     </>
   );
 }
