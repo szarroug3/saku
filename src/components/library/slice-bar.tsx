@@ -45,6 +45,9 @@ interface SliceTeachPlan {
   teach: readonly FactId[];
   what: string;
   mode?: QuizMode;
+  /** What the button counts. Usually facts; sentence-rule shelves count the
+   * coherent lessons the action begins working through. */
+  displayCount?: number;
 }
 
 export function SliceBar({
@@ -289,7 +292,7 @@ export function SliceBar({
                 )
               }
             >
-              Teach me {teachPlan.facts.length}
+              Teach me {teachPlan.displayCount ?? teachPlan.facts.length}
             </Btn>
           ) : null}
         </div>

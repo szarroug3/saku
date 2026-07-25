@@ -516,6 +516,10 @@ function LibraryBody() {
         facts.length > 0 &&
         claims[sentenceTierMarkerFact(tier.id)] === undefined,
     );
+    const unclaimedLessonCount = tierFacts.filter(
+      ({ tier }) =>
+        claims[sentenceTierMarkerFact(tier.id)] === undefined,
+    ).length;
     return {
       quizFacts,
       teachPlan: nextTeach
@@ -524,6 +528,7 @@ function LibraryBody() {
             teach: nextTeach.facts,
             what: `Sentence ordering · tier ${nextTeach.tier.id}`,
             mode: "assembly" as const,
+            displayCount: unclaimedLessonCount,
           }
         : undefined,
     };
