@@ -28,7 +28,8 @@ import { SliceBar } from "@/components/library/slice-bar";
 import { StickySearch } from "@/components/library/sticky-search";
 import { Dock } from "@/components/dock";
 import { Card, Chip, GhostBtn, Hint, Lbl, PageTitle } from "@/components/ui";
-import { factsOf } from "@/lib/facts";
+import { entryOf, factsOf } from "@/lib/facts";
+import { activeWeaknessPairs } from "@/lib/confusions";
 import {
   KIND_LABEL,
   KINDS,
@@ -38,7 +39,7 @@ import {
   type LibEntry,
 } from "@/lib/library/entries";
 import { search, searchAll, searchByType } from "@/lib/library/search";
-import { allTabBrowseKinds, ALL_TAB_SECTIONS_PER_KIND } from "@/lib/library/all-tab";
+import { allTabBrowseKinds } from "@/lib/library/all-tab";
 import {
   addRange,
   EMPTY_SELECTION,
@@ -47,7 +48,12 @@ import {
   toggleSection as toggleSectionIn,
   type Selection,
 } from "@/lib/library/selection";
-import { entryStanding, entryIsKnown } from "@/lib/library/standing";
+import {
+  entryStanding,
+  entryIsKnown,
+  standingOf,
+  type Standing,
+} from "@/lib/library/standing";
 import { useLiveFacts } from "@/lib/library/use-live-facts";
 import {
   ALL_TAB,
@@ -71,7 +77,23 @@ const STATE_CHIPS: readonly { value: KnowledgeFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "known", label: "Known" },
   { value: "unknown", label: "Not known" },
+  { value: "solid", label: "Solid" },
+  { value: "shaky", label: "Shaky" },
+  { value: "getting-there", label: "Getting there" },
+  { value: "mixup", label: "Mix-ups" },
+  { value: "slipping", label: "Slipping" },
 ];
+
+const FILTER_LABEL: Record<KnowledgeFilter, string> = {
+  all: "all",
+  known: "known",
+  unknown: "not-known",
+  solid: "solid",
+  shaky: "shaky",
+  "getting-there": "getting-there",
+  mixup: "mix-up",
+  slipping: "slipping",
+};
 
 /** `useSearchParams` client-side-renders everything up to the nearest Suspense
  * boundary, and a production build of a static page fails without one. The
@@ -248,6 +270,18 @@ function LibraryBody() {
   // to history.facts (same reference) when nothing is in progress. Every
   // standing surface on this page reads THIS, not history.facts.
   const liveFacts = useLiveFacts(history.facts, now);
+  const activeMixupEntries = useMemo(() => {
+    const entries = new Set<string>();
+    for (const pair of activeWeaknessPairs(
+      history,
+      cfg.graduateRuns,
+      entryOf,
+    )) {
+      entries.add(pair.a);
+      entries.add(pair.b);
+    }
+    return entries;
+  }, [history, cfg.graduateRuns]);
 
   /** Entries you have filed. Search sorts these to the front of a section. */
   const pinned = useMemo(() => {
@@ -270,12 +304,41 @@ function LibraryBody() {
   // instead of failing because its ten unlearned readings looked like work.
   const keep = useMemo(() => {
     if (stateFilter === "all") return undefined;
-    const wantKnown = stateFilter === "known";
+    if (stateFilter === "known" || stateFilter === "unknown") {
+      const wantKnown = stateFilter === "known";
+      return (entry: LibEntry) =>
+        entryIsKnown(
+          entryStanding(
+            knownFactsOf(entry),
+            liveFacts,
+            claims,
+            cfg.accuracyMetric,
+            now,
+          ),
+        ) === wantKnown;
+    }
+    if (stateFilter === "mixup") {
+      return (entry: LibEntry) => activeMixupEntries.has(entry.id);
+    }
+    const wanted: Standing = stateFilter;
     return (entry: LibEntry) =>
-      entryIsKnown(
-        entryStanding(knownFactsOf(entry), liveFacts, claims, cfg.accuracyMetric, now),
-      ) === wantKnown;
-  }, [stateFilter, liveFacts, claims, cfg.accuracyMetric, now]);
+      knownFactsOf(entry).some(
+        (fact) =>
+          standingOf(
+            liveFacts[fact],
+            claims[fact],
+            cfg.accuracyMetric,
+            now,
+          ).standing === wanted,
+      );
+  }, [
+    stateFilter,
+    liveFacts,
+    claims,
+    cfg.accuracyMetric,
+    now,
+    activeMixupEntries,
+  ]);
 
   // SEARCH FOLLOWS THE TAB. On a subject tab it is SCOPED to that kind (the Kana
   // tab searches only kana), sectioned by HOW you matched (exact / prefix / …).
@@ -333,19 +396,13 @@ function LibraryBody() {
   // follows.
   const visibleIds = useMemo<EntryId[]>(() => {
     if (q) return resultSections.flatMap((s) => s.hits.map((h) => h.entry.id));
-    // The All browse: the painted ids of every shown subject, capped exactly as
-    // its Shelf paints (ALL_TAB_SECTIONS_PER_KIND), concatenated in teaching
-    // order — so a Shift-range on All follows the same top-to-bottom reading the
-    // eye does across the stacked shelves.
+    // The All browse: the painted ids of every shown subject, concatenated in
+    // teaching order — so a Shift-range follows the same top-to-bottom reading
+    // the eye does across the stacked shelves.
     if (tab === ALL_TAB) {
       return allTabBrowseKinds(keep, (k) => shelvesByKind.get(k)!.sections).flatMap(
         (k) =>
-          visibleShelfIds(
-            k,
-            shelvesByKind.get(k)!.sections,
-            keep,
-            ALL_TAB_SECTIONS_PER_KIND,
-          ),
+          visibleShelfIds(k, shelvesByKind.get(k)!.sections, keep),
       );
     }
     const sh = shelvesByKind.get(tab)!;
@@ -484,7 +541,7 @@ function LibraryBody() {
                   </>
                 ) : (
                   <>
-                    No <b>{stateFilter === "known" ? "known" : "not-known"}</b>{" "}
+                    No <b>{FILTER_LABEL[stateFilter]}</b>{" "}
                     entries match <b>{q}</b>.
                   </>
                 )}
@@ -554,9 +611,7 @@ function LibraryBody() {
               return (
                 <Card>
                   <p className="text-[13px] text-text-muted">
-                    {stateFilter === "known"
-                      ? "Nothing is marked known yet."
-                      : "Everything is already known."}{" "}
+                    Nothing matches the {FILTER_LABEL[stateFilter]} filter.{" "}
                     <Hint>
                       Switch the filter to All to see every subject, or search.
                     </Hint>
@@ -585,8 +640,6 @@ function LibraryBody() {
                   voice={cfg.voiceName}
                   keep={keep}
                   filter={stateFilter}
-                  sectionCap={ALL_TAB_SECTIONS_PER_KIND}
-                  moreHref={libraryUrl({ kind: k, query: "", state: stateFilter })}
                 />
               </div>
             ));

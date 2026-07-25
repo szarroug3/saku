@@ -171,9 +171,17 @@ describe("libraryUrl", () => {
 });
 
 describe("stateFromParams", () => {
-  test("reads the two real filter values", () => {
+  test("reads every supported filter value", () => {
     assert.equal(stateFromParams(params("?state=known")), "known");
     assert.equal(stateFromParams(params("?state=unknown")), "unknown");
+    assert.equal(stateFromParams(params("?state=solid")), "solid");
+    assert.equal(stateFromParams(params("?state=shaky")), "shaky");
+    assert.equal(
+      stateFromParams(params("?state=getting-there")),
+      "getting-there",
+    );
+    assert.equal(stateFromParams(params("?state=mixup")), "mixup");
+    assert.equal(stateFromParams(params("?state=slipping")), "slipping");
   });
 
   test("an absent, empty, literal-all or hostile value falls back to all", () => {
@@ -193,4 +201,3 @@ describe("stateFromParams", () => {
     assert.doesNotThrow(() => stateFromParams(params("?state=%%%")));
   });
 });
-

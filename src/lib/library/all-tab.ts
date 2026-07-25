@@ -25,19 +25,6 @@
 import { KINDS, type Kind, type LibEntry } from "@/lib/library/entries";
 import { shownSectionsOf, type ShelfSection } from "@/lib/library/shelf-view";
 
-/** How many SECTIONS the All-tab browse paints per subject before it defers the
- * rest to that subject's own tab.
- *
- * All spans a lot — the words shelf alone is 12,553 entries across 252 ranged
- * groups, and its own tab paints them ALL on purpose (see ranged-groups.ts). The
- * All tab cannot: ten subjects stacked, each painting everything, is the laggy
- * all-kinds render the Library removed once already. So every subject shows only
- * its first couple of groups as a taste, with a counted "open the tab" link for
- * the rest — #27's ranged-groups honesty (a screenful, then search) applied one
- * level up, per subject. Two, not one, so a subject with a tiny leading group
- * (kana's 5 vowels) still shows something worth reading before the fold. */
-export const ALL_TAB_SECTIONS_PER_KIND = 2;
-
 /**
  * The subjects the All-tab browse renders, in teaching order — every KIND whose
  * shelf still has something to show under `keep`, with the empty ones dropped.

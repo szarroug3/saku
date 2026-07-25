@@ -61,7 +61,15 @@ export type LibraryTab = Kind | typeof ALL_TAB;
  * the default kind and an empty query, is OMITTED from the URL — the plain
  * `/library` shows everything, which is what a reference is for.
  */
-export type KnowledgeFilter = "all" | "known" | "unknown";
+export type KnowledgeFilter =
+  | "all"
+  | "known"
+  | "unknown"
+  | "solid"
+  | "shaky"
+  | "getting-there"
+  | "mixup"
+  | "slipping";
 export const DEFAULT_STATE: KnowledgeFilter = "all";
 
 /** Just enough of `URLSearchParams` to read one — which is also all of the
@@ -115,7 +123,15 @@ export function queryFromParams(params: ReadableParams): string {
  */
 export function stateFromParams(params: ReadableParams): KnowledgeFilter {
   const raw = params.get(STATE_PARAM);
-  return raw === "known" || raw === "unknown" ? raw : DEFAULT_STATE;
+  return raw === "known" ||
+    raw === "unknown" ||
+    raw === "solid" ||
+    raw === "shaky" ||
+    raw === "getting-there" ||
+    raw === "mixup" ||
+    raw === "slipping"
+    ? raw
+    : DEFAULT_STATE;
 }
 
 /**
