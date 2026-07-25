@@ -33,12 +33,18 @@ import {
   gradeAssembly,
   pickAssembly,
   pieceHint,
+  sentenceOrderingTierForItem,
   type AssemblyItem,
 } from "@/data/assembly";
+import {
+  SENTENCE_ORDERING_GUIDES,
+  type SentenceOrderingTierId,
+} from "@/data/sentence-ordering-guides";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
 import type { HistoryFile, SessionStats } from "@/types";
+import { DrillHalo, type HaloState } from "@/components/quiz/drill-halo";
 
 const TARGET = 12;
 
@@ -62,57 +68,6 @@ interface AsmRuntime {
 interface CoachHint {
   id: string;
   text: string;
-}
-
-interface OrderGuideStep {
-  id: string;
-  text: string;
-}
-
-function roleOfChunk(surface: string): "topic" | "subject" | "object" | "setting" | "ending" | "other" {
-  if (/(は)$/.test(surface)) return "topic";
-  if (/(が)$/.test(surface)) return "subject";
-  if (/(を)$/.test(surface)) return "object";
-  if (/(に|で|へ|から|まで|より)$/.test(surface)) return "setting";
-  if (/(です|だ|だった|ます|ました|ません|たい|ない|なかった|んだ|んです|そうだ|そうだった|か)$/.test(surface)) {
-    return "ending";
-  }
-  return "other";
-}
-
-function orderingGuide(canon: readonly string[]): OrderGuideStep[] {
-  if (canon.length === 0) return [];
-  const out: OrderGuideStep[] = [];
-  const end = canon[canon.length - 1] ?? "";
-  out.push({
-    id: "anchor-end",
-    text: `Anchor the ending first: Japanese main action/statement usually closes the sentence, so start with 「${end}」 as your right edge.`,
-  });
-
-  const topic = canon.find((c) => roleOfChunk(c) === "topic");
-  if (topic) {
-    out.push({
-      id: "topic-early",
-      text: `Topic chunks often come early. Here, 「${topic}」 is a strong early candidate.`,
-    });
-  }
-
-  const mids = canon.filter((c) => {
-    const role = roleOfChunk(c);
-    return role === "subject" || role === "object" || role === "setting";
-  });
-  if (mids.length) {
-    out.push({
-      id: "middle-band",
-      text: `Then place role chunks in the middle (${mids.join(" / ")}) before the ending chunk.`,
-    });
-  }
-
-  out.push({
-    id: "not-english",
-    text: "Japanese is usually Subject-Object-Verb (or Topic-...-Verb), so do not force English word order.",
-  });
-  return out;
 }
 
 /**
@@ -267,7 +222,6 @@ export function AssemblyScreen() {
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
   const [hintOpen, setHintOpen] = useState(false);
-  const [teachOpen, setTeachOpen] = useState(true);
   const [shake, setShake] = useState(false);
   const dragging = useRef<{ from: "pool" | "tray"; surface: string } | null>(null);
 
@@ -296,8 +250,18 @@ export function AssemblyScreen() {
   const resolved = card.state !== "open";
   const canon = canonicalOrder(item);
   const coach = coachHints(item, canon, card.tries);
-  const guide = orderingGuide(canon);
-  const nextTarget = canon[card.tray.length] ?? null;
+  const tierId = sentenceOrderingTierForItem(item) as SentenceOrderingTierId;
+  const thinkHint =
+    SENTENCE_ORDERING_GUIDES[tierId]?.hook ??
+    SENTENCE_ORDERING_GUIDES.simple.hook;
+  const haloState: HaloState =
+    card.state === "right"
+      ? "right"
+      : card.state === "wrong"
+        ? "wrong"
+        : shake
+          ? "wrong-flash"
+          : "resting";
   const hintBySurface = new Map(item.pieces.map((p) => [p.t, pieceHint(p)]));
 
   const place = (surface: string) => {
@@ -364,54 +328,27 @@ export function AssemblyScreen() {
         </span>
       </div>
 
-      <div
-        className={`kq-material rounded-2xl border bg-card p-8 shadow-card ${
-          card.state === "right" ? "border-success" : "border-border"
-        }`}
-      >
-        <div className="text-center">
-          <div className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-            Build the sentence
-          </div>
-          <div className="mt-2 text-xl">{item.en}</div>
-        </div>
-
-        <div className="mt-4 rounded-xl border border-border bg-panel p-3 text-sm">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-accent">
-              How Japanese order works
-            </div>
-            <GhostBtn onClick={() => setTeachOpen((v) => !v)}>
-              {teachOpen ? "Hide" : "Show"}
-            </GhostBtn>
-          </div>
-          {teachOpen ? (
-            <div className="mt-2 space-y-2 text-text-muted">
-              <p>
-                Not always nouns first. Japanese usually puts the action/statement near the end,
-                and particles on chunks show each chunk&apos;s job.
-              </p>
-              <p>
-                English: &quot;Sam goes&quot;. Japanese often feels like &quot;Sam ... goes&quot; with role chunks
-                before the ending chunk.
-              </p>
-              <ul className="space-y-1">
-                {guide.map((step) => (
-                  <li key={step.id}>- {step.text}</li>
-                ))}
-              </ul>
-              {!resolved && nextTarget ? (
-                <p className="text-[12px]">
-                  Next coaching move: place <span lang="ja" className="font-medium">{nextTarget}</span>.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+      <div className="flex flex-col items-center">
+        <DrillHalo
+          key={`${item.id}-${card.tries}`}
+          state={haloState}
+          cardKey={`${item.id}-${card.tries}`}
+          timerLeft={0}
+          drainWindow={0}
+          glyph=""
+          font="inherit"
+          fontSize={30}
+          crossFade={card.tries === 0}
+          sentenceFrame={item.en}
+          sentenceFrameLang="en"
+        />
+        <div className="mt-5 text-xs font-semibold uppercase tracking-wide text-text-muted">
+          Build the sentence
         </div>
 
         {/* The tray: the answer, in order. A drop target. */}
         <ul
-          className={`mt-6 flex min-h-17 flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
+          className={`mt-4 flex min-h-17 w-full flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
             card.state === "right"
               ? "border-success bg-success-bg"
               : trayFilled
@@ -527,21 +464,18 @@ export function AssemblyScreen() {
         ) : null}
 
         {hintOpen ? (
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 w-full space-y-3">
             <div className="rounded-xl border border-border bg-panel p-3 text-sm">
-              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
-                Sentence ordering
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
+                {SENTENCE_ORDERING_GUIDES[tierId]?.eyebrow ?? "Sentence ordering"}
               </div>
-              <ul className="space-y-1 text-text-muted">
-                {coach.map((h) => (
-                  <li key={h.id}>- {h.text}</li>
-                ))}
-              </ul>
+              <p className="text-text">{thinkHint}</p>
               {card.tries > 0 ? (
-                <p className="mt-2 text-[12px] text-text-muted">
-                  You have {card.tries} miss{card.tries === 1 ? "" : "es"} on this card,
-                  so stronger anchors are now shown.
-                </p>
+                <ul className="mt-2 space-y-1 text-[12px] text-text-muted">
+                  {coach.slice(3).map((hint) => (
+                    <li key={hint.id}>- {hint.text}</li>
+                  ))}
+                </ul>
               ) : null}
             </div>
 

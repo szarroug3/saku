@@ -257,6 +257,17 @@ export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
   },
 ];
 
+/** The most specific sentence-ordering tier represented by an assembly item.
+ * Items can carry several pattern tags (a conditional also contains ordinary
+ * particles), so the later/more-specific matching tier wins. */
+export function sentenceOrderingTierForItem(item: AssemblyItem): string {
+  for (let i = SENTENCE_ORDERING_TIERS.length - 1; i >= 0; i--) {
+    const tier = SENTENCE_ORDERING_TIERS[i];
+    if (item.p.some((pattern) => tier.patterns.includes(pattern))) return tier.id;
+  }
+  return "simple";
+}
+
 /**
  * All grammar pattern IDs claimed by later tiers, given a tier index.
  * Used to ensure each sentence belongs to exactly one tier — the earliest

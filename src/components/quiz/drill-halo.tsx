@@ -177,6 +177,8 @@ export interface DrillHaloProps {
    * circular halo glyph stage.
    */
   sentenceFrame?: string;
+  /** Grammar frames are Japanese; sentence-building prompts are English. */
+  sentenceFrameLang?: "ja" | "en";
 }
 
 export function DrillHalo({
@@ -192,6 +194,7 @@ export function DrillHalo({
   listen = false,
   onListen,
   sentenceFrame,
+  sentenceFrameLang = "ja",
 }: DrillHaloProps) {
   const ring = ringSpec(state, cardKey, timerLeft, drainWindow);
   const wrong = state === "wrong" || state === "wrong-flash";
@@ -243,9 +246,9 @@ export function DrillHalo({
           style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
         >
           <p
-            lang="ja"
+            lang={sentenceFrameLang}
             className="whitespace-normal wrap-break-word text-[30px] leading-[1.35] text-text"
-            style={{ fontFamily: font }}
+            style={{ fontFamily: sentenceFrameLang === "ja" ? font : undefined }}
           >
             {sentenceFrame}
           </p>

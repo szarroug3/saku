@@ -16,6 +16,7 @@ import {
   gradeAssembly,
   pickAssembly,
   readableAssembly,
+  sentenceOrderingTierForItem,
   type AssemblyItem,
 } from "./assembly.ts";
 import { STOCK_NAMES } from "../lib/grammar/readable.ts";
@@ -79,6 +80,33 @@ describe("sentence-ordering follows the grammar teaching order", () => {
     }
   });
 
+});
+
+describe("sentence-ordering quiz hints", () => {
+  const itemWithPatterns = (patterns: readonly string[]): AssemblyItem => ({
+    id: -1,
+    en: "",
+    jp: "",
+    pieces: [],
+    v: [],
+    p: patterns,
+  });
+
+  test("each tier's pattern selects that tier's Think hint", () => {
+    for (const tier of SENTENCE_ORDERING_TIERS) {
+      assert.equal(
+        sentenceOrderingTierForItem(itemWithPatterns([tier.patterns[0]])),
+        tier.id,
+      );
+    }
+  });
+
+  test("the more specific tier wins when an item also has a simple pattern", () => {
+    assert.equal(
+      sentenceOrderingTierForItem(itemWithPatterns(["wo", "tara"])),
+      "conditional",
+    );
+  });
 });
 
 describe("the assembly corpus is well-formed", () => {
