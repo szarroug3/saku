@@ -324,7 +324,9 @@ export function HomeFeed() {
     const seeded = newlySeen(seed);
     startTransition(() => {
       markSeen(seed);
-      startSession(facts, teach ? facts : [], undefined, "lesson", seeded);
+      // Drill the whole seeded set: the lesson's own facts plus the kanji
+      // readings the taught words now prove.
+      startSession(seed, teach ? facts : [], undefined, "lesson", seeded);
     });
   };
 
