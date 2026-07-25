@@ -34,7 +34,11 @@ import { SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
-import { entryName, type LibEntry } from "@/lib/library/entries";
+import {
+  SENTENCE_RULE_KIND,
+  entryName,
+  type LibEntry,
+} from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import type { EntryStanding } from "@/lib/library/standing";
 // What goes under the glyph — a .ts module so the "no entry shows a dash while
@@ -62,6 +66,7 @@ function speakable(entry: LibEntry): boolean {
   return (
     entry.kind !== GRAMMAR_SUBJECT &&
     entry.kind !== MARK_SUBJECT &&
+    entry.kind !== SENTENCE_RULE_KIND &&
     entry.kind !== TERM_SUBJECT
   );
 }
