@@ -132,6 +132,68 @@ export function howSentence(cfg: QuizConfig): string {
   return parts.join(" · ");
 }
 
+/**
+ * Pure function to determine the reason message for a disabled Start button.
+ * Exported for testing.
+ */
+export function getStartButtonReason(
+  cfg: QuizConfig,
+  count: number,
+  plannedCount: number,
+  reachability?: SettingsReachability,
+): string | null {
+  // Grid ignores Drill's source matrix, but it still needs one response type.
+  const howBroken =
+    (cfg.mode === "drill" && askIsEmpty(cfg.ask)) ||
+    (cfg.mode === "pairs" && cfg.pairResponses.length === 0) ||
+    (cfg.mode === "grid" && cfg.gridResponses.length === 0);
+  // Nothing to ask is a real, reachable state — everything selected is `quiet`
+  // — and it used to leave Start looking live and doing nothing: you clicked,
+  // the page didn't move, and the app never said why. A button that is enabled
+  // and inert is worse than one that is disabled and explains itself.
+  const nothingToAsk = count > 0 && !howBroken && plannedCount === 0;
+  // Check if settings are unreachable (will produce no forms for these facts)
+  const settingsUnreachable =
+    count > 0 && !howBroken && nothingToAsk && reachability && !reachability.isReachable;
+
+  if (!count) {
+    return "Nothing is selected. Widen the filters above to start.";
+  }
+  if (howBroken) {
+    if (cfg.mode === "pairs") {
+      return "Choose at least one pair type in the setup above.";
+    }
+    if (cfg.mode === "grid") {
+      return "Choose at least one Grid response type in the setup above.";
+    }
+    return "Choose at least one complete way to ask in the setup above.";
+  }
+  if (settingsUnreachable) {
+    // Settings are unreachable — show specific reason from configIsReachable
+    return (
+      reachability?.reason ||
+      "These settings can't be used with the selected material. Check the 'How to ask' settings above."
+    );
+  }
+  if (nothingToAsk) {
+    // Deliberately not "nothing to do" and not a congratulation. It is a
+    // statement about right now, with the way out in the same sentence:
+    // the app has nothing to learn by asking these today, and the fix is
+    // to select more — which is the screen you are already on.
+    if (cfg.mode === "grid") {
+      return "None of the selected material has those Grid response types.";
+    }
+    if (cfg.mode === "pairs") {
+      // Not "nothing to ask" but "nothing to MATCH": every type here
+      // makes at most a lone pair, and one pair is not a board. The way
+      // out is the same screen — widen until a type has two or more.
+      return "These don't make a matching board. Pick more so at least one type has two or more pairs.";
+    }
+    return "You're solid on all of these for now. Pick another deck to drill something else.";
+  }
+  return null;
+}
+
 export function StartBar({
   cfg,
   what,
@@ -157,50 +219,8 @@ export function StartBar({
   reachability?: SettingsReachability;
   onStart: () => void;
 }) {
-  // Grid ignores Drill's source matrix, but it still needs one response type.
-  const howBroken =
-    (cfg.mode === "drill" && askIsEmpty(cfg.ask)) ||
-    (cfg.mode === "pairs" && cfg.pairResponses.length === 0) ||
-    (cfg.mode === "grid" && cfg.gridResponses.length === 0);
-  // Nothing to ask is a real, reachable state — everything selected is `quiet`
-  // — and it used to leave Start looking live and doing nothing: you clicked,
-  // the page didn't move, and the app never said why. A button that is enabled
-  // and inert is worse than one that is disabled and explains itself.
-  const nothingToAsk = count > 0 && !howBroken && plannedCount === 0;
-  // Check if settings are unreachable (will produce no forms for these facts)
-  const settingsUnreachable =
-    count > 0 && !howBroken && nothingToAsk && reachability && !reachability.isReachable;
   const disabled = startIsDisabled(cfg, count, plannedCount);
-
-  // Never a bare greyed-out button. A disabled control that won't say why is
-  // the reason people click a thing five times and then file a bug, and both
-  // of these are one click from fixed — the fix is on this same screen.
-  const reason = !count
-    ? "Nothing is selected. Widen the filters above to start."
-    : howBroken
-      ? cfg.mode === "pairs"
-        ? "Choose at least one pair type in the setup above."
-        : cfg.mode === "grid"
-          ? "Choose at least one Grid response type in the setup above."
-        : "Choose at least one complete way to ask in the setup above."
-      : settingsUnreachable
-        ? // Settings are unreachable — show specific reason from configIsReachable
-          reachability?.reason ||
-          "These settings can't be used with the selected material. Check the 'How to ask' settings above."
-        : nothingToAsk
-          ? // Deliberately not "nothing to do" and not a congratulation. It is a
-            // statement about right now, with the way out in the same sentence:
-            // the app has nothing to learn by asking these today, and the fix is
-            // to select more — which is the screen you are already on.
-            cfg.mode === "grid"
-              ? "None of the selected material has those Grid response types."
-              : cfg.mode === "pairs"
-                ? // Not "nothing to ask" but "nothing to MATCH": every type here
-                  // makes at most a lone pair, and one pair is not a board. The way
-                  // out is the same screen — widen until a type has two or more.
-                  "These don't make a matching board. Pick more so at least one type has two or more pairs."
-                : "You're solid on all of these for now. Pick another deck to drill something else."
-          : null;
+  const reason = getStartButtonReason(cfg, count, plannedCount, reachability);
 
   return (
     <div
