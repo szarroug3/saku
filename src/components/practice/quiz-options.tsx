@@ -220,7 +220,7 @@ export function QuizOptionsFields() {
                 on={cfg.ask.japanese.responses.includes("romaji")}
                 onClick={() => jpResponse("romaji")}
               >
-                Romaji
+                Romaji/Kana
               </Chip>
             </AskRow>
             <AskRow label="Answer Format">
@@ -271,7 +271,7 @@ export function QuizOptionsFields() {
                 onClick={() => sentenceResponse("romaji")}
                 note="when it has non-kana"
               >
-                Romaji
+                Kana
               </NoteChip>
             </AskRow>
             <AskRow label="Answer Format">
