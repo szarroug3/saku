@@ -42,8 +42,7 @@ Kana entries have one reading fact.
 | Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Text: show kana glyph | `jp->en` | Romaji reading | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `あ` -> type/pick `a` |
-| Audio: play kana pronunciation | `jp->en` | Romaji reading | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Hear `あ` -> type/pick `a` |
-| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | Requires a distinct audio-dictation target for kana; the current `romaji` response means a Latin-letter reading. | Hear `a` -> type/pick `あ` |
+| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | Requires Japanese audio prompts plus a kana-glyph response target with typed and MC controls. | Hear `/a/` -> type/pick `あ` |
 | Show romaji/English side | `en->jp` | Kana glyph | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (typed resolves to the required MC control) | Prompt `a` -> pick `あ` |
 | Text: show kana glyph (self-copy) | `jp->jp` | Same kana glyph | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 | Text or audio kana | N/A | English definition | No | No | By design | N/A. A bare kana character has a reading fact, but no English meaning fact. | Not generated |
@@ -251,7 +250,7 @@ A question format appears in the deck when ALL these conditions apply:
    - Reading facts require: `responses.includes("romaji")` (jp->en) or `english.answers` (en->jp for reading en->jp)
 
 3. **Prompt type supported**: Audio prompts only work on listenable facts:
-   - Kana entries: text only (no audio)
+   - Kana entries: text currently; Japanese audio → kana glyph is planned
    - Kanji entries: text only (no audio for meaning; audio kanji reading is not disambiguated)
    - Words: text and audio both supported
    - Sentences: text and audio both supported (for grammar meaning facts only)
@@ -294,7 +293,7 @@ Some Planned rows cannot be reached even if the user selects the settings shown,
 
 | Blocked Row | Blocking Reason | Selecting This Setting | Does Not Generate | When Will It Be Unblocked? |
 |---|---|---|---|---|
-| Kana + Audio (jp→jp) | Kana entries have no audio form | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Kana audio forms | When kana audio support is implemented |
+| Kana + Audio (jp→jp) | Kana entries have no audio-to-glyph form | Planned Japanese audio prompt + kana-glyph response target with typed or MC answers | Kana listening-dictation forms | When kana audio-to-glyph support is implemented |
 | Grammar Meaning + Audio (jp→en) | Grammar patterns are not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Grammar audio forms | When grammar audio support is added |
 | Grammar Meaning (en→jp) | Bare-pattern reverse recognition is not emitted | `english: {answers: includes "typed" or "mc"}` | English meaning → Japanese pattern MC forms | When grammar meaning facts support the reverse direction |
 | Keigo Meaning + Audio (jp→en) | Keigo is not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Keigo audio forms | When keigo audio support is added |
