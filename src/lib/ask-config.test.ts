@@ -200,7 +200,7 @@ describe("every atomic source combination", () => {
 
   for (const prompt of prompts) {
     for (const answer of answers) {
-      test(`Japanese sentence romaji: ${prompt} + ${answer} is complete`, () => {
+      test(`Japanese sentence kana transcription stays disabled: ${prompt} + ${answer}`, () => {
         const ask = emptyAsk();
         ask.sentence = {
           prompts: [prompt],
@@ -208,9 +208,9 @@ describe("every atomic source combination", () => {
           answers: [answer],
           englishResponses: [],
         };
-        assert.equal(sentenceAsksRomaji(ask), true);
-        assert.equal(sentenceAsks(ask), true);
-        assert.equal(askIsEmpty(ask), false);
+        assert.equal(sentenceAsksRomaji(ask), false);
+        assert.equal(sentenceAsks(ask), false);
+        assert.equal(askIsEmpty(ask), true);
       });
     }
   }

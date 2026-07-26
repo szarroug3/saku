@@ -108,20 +108,12 @@ export function QuizOptionsFields() {
         prompts: toggle(cfg.ask.sentence.prompts, v),
       },
     });
-  const sentenceResponse = (v: ResponseKind) =>
+  const sentenceDefinition = () =>
     setAsk({
       ...cfg.ask,
       sentence: {
         ...cfg.ask.sentence,
-        responses: toggle(cfg.ask.sentence.responses, v),
-      },
-    });
-  const sentenceAnswer = (v: AnswerStyle) =>
-    setAsk({
-      ...cfg.ask,
-      sentence: {
-        ...cfg.ask.sentence,
-        answers: toggle(cfg.ask.sentence.answers, v),
+        responses: toggle(cfg.ask.sentence.responses, "definition"),
       },
     });
   const englishSentenceResponse = (v: EnglishSentenceResponse) =>
@@ -249,7 +241,7 @@ export function QuizOptionsFields() {
             <div className="py-4">
               <h4 className="text-[15px] font-semibold text-text">Japanese</h4>
               <p className="mt-1 text-[13px] text-text-muted">
-                See or hear Japanese, then answer with its definition or kana.
+                See or hear Japanese, then choose its English meaning.
               </p>
             </div>
             <AskRow label="Prompt Format">
@@ -269,33 +261,11 @@ export function QuizOptionsFields() {
             <AskRow label="Expected Response">
               <Chip
                 on={cfg.ask.sentence.responses.includes("definition")}
-                onClick={() => sentenceResponse("definition")}
+                onClick={sentenceDefinition}
               >
                 Definition
               </Chip>
-              <Chip
-                on={cfg.ask.sentence.responses.includes("romaji")}
-                onClick={() => sentenceResponse("romaji")}
-              >
-                Kana
-              </Chip>
             </AskRow>
-            {cfg.ask.sentence.responses.includes("romaji") ? (
-              <AskRow label="Kana Answer Format">
-                <Chip
-                  on={cfg.ask.sentence.answers.includes("typed")}
-                  onClick={() => sentenceAnswer("typed")}
-                >
-                  Type it
-                </Chip>
-                <Chip
-                  on={cfg.ask.sentence.answers.includes("mc")}
-                  onClick={() => sentenceAnswer("mc")}
-                >
-                  Multiple choice
-                </Chip>
-              </AskRow>
-            ) : null}
             <div className="border-t border-border py-4">
               <h4 className="text-[15px] font-semibold text-text">English</h4>
               <p className="mt-1 text-[13px] text-text-muted">

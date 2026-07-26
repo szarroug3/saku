@@ -147,9 +147,9 @@ The Sentences settings card has independent Japanese and English subsections. Ja
 
 | Prompt source | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
-| Japanese sentence (text or audio) | `jp->jp` | Full sentence in kana | No | No | By design | N/A. Sentence drills test sentence meaning or structure, not readings already taught in the word/kanji tracks. | Not generated |
-| Japanese sentence (text) | `jp->en` | English meaning recognition | No | Yes | Current | `sentence: {prompts: includes "text", responses: includes "definition"}`. Definition forces MC; `sentence.answers` applies only to Kana. | `先生は学校へ行く。` -> pick `The teacher goes to school.` |
-| Japanese sentence (audio) | `jp->en` | English meaning recognition | No | Yes | Current | `sentence: {prompts: includes "audio", responses: includes "definition"}`. Definition forces MC; `sentence.answers` applies only to Kana. | Hear `せんせいはがっこうへいく。` -> pick `The teacher goes to school.` |
+| Japanese sentence (text or audio) | `jp->jp` | Full sentence in kana | No | No | By design | N/A. Sentence drills test sentence meaning or structure, not readings already taught in the word/kanji tracks. The settings UI does not expose this response. | Not generated |
+| Japanese sentence (text) | `jp->en` | English meaning recognition | No | Yes | Current | `sentence: {prompts: includes "text", responses: includes "definition"}`. Definition is inherently MC; the stored `sentence.answers` field does not alter it. | `先生は学校へ行く。` -> pick `The teacher goes to school.` |
+| Japanese sentence (audio) | `jp->en` | English meaning recognition | No | Yes | Current | `sentence: {prompts: includes "audio", responses: includes "definition"}`. Definition is inherently MC; the stored `sentence.answers` field does not alter it. | Hear `せんせいはがっこうへいく。` -> pick `The teacher goes to school.` |
 | Sentence source (text) already in kana (self-copy) | `jp->jp` | Same full kana sentence | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 | Sentence source (text) with any script | `jp->jp` | Same written sentence or reordered visible chunks | No | No | By design | N/A. The complete Japanese answer is already visible, so copying or rearranging it does not test recall. | Not generated |
 | Sentence source (audio) | `jp->jp` | Exact kanji/kana orthography | No | No | By design | N/A. Audio does not uniquely determine kanji spelling, and sentence drills do not retest word readings. | Not generated |

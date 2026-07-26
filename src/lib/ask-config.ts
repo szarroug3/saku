@@ -177,16 +177,13 @@ export function sentenceAsksSelection(ask: AskConfig): boolean {
   return s.prompts.length > 0 && s.responses.includes("definition");
 }
 
-/** Whether the sentence source has a complete transcription form. Unlike a
- * definition response, Romaji can use either answer control; fact-level
- * enumeration later drops sentences that contain no non-kana to read. */
+/** Sentence transcription is intentionally unsupported. Kept as an exported
+ * compatibility predicate because summaries and stored configurations written
+ * before the removal still call it; it must remain false so a legacy
+ * `responses: ["romaji"]` value cannot enable Start and lead to an empty run. */
 export function sentenceAsksRomaji(ask: AskConfig): boolean {
-  const s = ask.sentence;
-  return (
-    s.prompts.length > 0 &&
-    s.responses.includes("romaji") &&
-    s.answers.length > 0
-  );
+  void ask;
+  return false;
 }
 
 /** Whether any complete sentence-source form is selected. */
