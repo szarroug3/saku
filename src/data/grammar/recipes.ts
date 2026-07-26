@@ -120,6 +120,15 @@ export interface Recipe {
    * and it is shown, not asked.
    */
   readonly gloss: string;
+  /**
+   * A learner-facing INTRODUCTION, shown as its own panel on the lesson card
+   * BEFORE "How to build it". Only the te-form uses it today: it is the one
+   * pattern that is really a foundation — every other て-row is built on it — so
+   * it earns a concept explanation and the 音便 rules laid out, rather than just
+   * a gloss. Each string is a paragraph. Absent on every ordinary pattern, whose
+   * gloss + build panel already say everything.
+   */
+  readonly intro?: readonly string[];
   readonly level: Level;
   /** Every host the OPENING half attaches to, and how. */
   readonly attach: readonly Attachment[];
@@ -342,6 +351,18 @@ export function isOrderFree(r: Recipe): boolean {
 // Within a group, N5 before N4.
 // ---------------------------------------------------------------------------
 
+/** The te-form's lesson intro — see Recipe.intro. It leads the whole track, so
+ * it is the one place a form is EXPLAINED rather than just drilled. */
+const TE_FORM_INTRO: readonly string[] = [
+  "The て-form is how a verb connects to what comes next — it is the base every " +
+    "other て-pattern is built on: 〜てください (a request), 〜て (do X, and then), " +
+    "〜てもいい (permission), 〜ている (an ongoing action).",
+  "Build it from the plain verb. る-verbs drop る and add て: 食べる → 食べて. " +
+    "う-verbs follow the 音便 sound-changes by their last kana — く→いて, ぐ→いで; " +
+    "む・ぶ・ぬ→んで; う・つ・る→って; す→して. One verb breaks the pattern: " +
+    "行く → 行って, not 行いて.",
+];
+
 export const RECIPES: readonly Recipe[] = [
   // --- て-form: three different things wearing one coat --------------------
   // The classic "one vendor entry, several facts" case. A textbook teaches
@@ -356,6 +377,7 @@ export const RECIPES: readonly Recipe[] = [
   },
   {
     id: "te-sequence",
+    intro: TE_FORM_INTRO,
     pattern: "〜て",
     gloss: "do X, and then",
     level: "N5",

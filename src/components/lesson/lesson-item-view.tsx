@@ -230,6 +230,25 @@ function WorkedLine({
   );
 }
 
+/** The learner-facing introduction a foundational pattern carries (Recipe.intro)
+ * — today only the て-form, which leads the track and is EXPLAINED, not just
+ * drilled. Absent (renders nothing) for every ordinary pattern. */
+function GrammarIntroPanel({ item }: { item: LessonItem }) {
+  const entry = libEntry(item.entry);
+  if (!entry) return null;
+  const pattern = recipeOf(entry);
+  if (!pattern?.intro?.length) return null;
+  return (
+    <LessonPanel title="The て-form">
+      <div className="space-y-2 text-[14px] leading-relaxed text-text-muted">
+        {pattern.intro.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
+      </div>
+    </LessonPanel>
+  );
+}
+
 function GrammarBuildPanel({ item }: { item: LessonItem }) {
   const entry = libEntry(item.entry);
   if (!entry) return null;
@@ -706,6 +725,7 @@ export function LessonItemView({ item }: { item: LessonItem }) {
         ) : null}
         {item.kind === "grammar" ? (
           <div className="space-y-3">
+            <GrammarIntroPanel item={item} />
             <PairedRow
               wide={<GrammarBuildPanel item={item} />}
               narrow={
