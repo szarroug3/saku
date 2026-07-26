@@ -236,14 +236,36 @@ function WorkedLine({
 function GrammarIntroPanel({ item }: { item: LessonItem }) {
   const entry = libEntry(item.entry);
   if (!entry) return null;
-  const pattern = recipeOf(entry);
-  if (!pattern?.intro?.length) return null;
+  const intro = recipeOf(entry)?.intro;
+  if (!intro) return null;
   return (
     <LessonPanel title="The て-form">
-      <div className="space-y-2 text-[14px] leading-relaxed text-text-muted">
-        {pattern.intro.map((p, i) => (
-          <p key={i}>{p}</p>
-        ))}
+      <p className="text-[14px] leading-relaxed text-text-muted">{intro.blurb}</p>
+      <div className="mt-3 space-y-1.5">
+        {intro.rules.map((r) => {
+          const stem = r.verb.slice(0, r.verb.length - r.drop.length);
+          return (
+            <div
+              key={r.verb}
+              className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-md border border-border bg-card px-3 py-1.5"
+            >
+              <span className="min-w-[9.5rem] text-[12px] text-text-muted">
+                {r.ending}
+              </span>
+              <span className="text-[17px] text-text" lang="ja">
+                {r.verb}
+                <span className="text-[14px] text-text-muted">
+                  {" "}
+                  − {r.drop} +{" "}
+                </span>
+                <span className="text-accent">{r.add}</span>
+                <span className="text-[14px] text-text-muted"> → </span>
+                {stem}
+                <span className="text-accent">{r.add}</span>
+              </span>
+            </div>
+          );
+        })}
       </div>
     </LessonPanel>
   );

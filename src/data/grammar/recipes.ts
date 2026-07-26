@@ -128,7 +128,7 @@ export interface Recipe {
    * a gloss. Each string is a paragraph. Absent on every ordinary pattern, whose
    * gloss + build panel already say everything.
    */
-  readonly intro?: readonly string[];
+  readonly intro?: GrammarIntro;
   readonly level: Level;
   /** Every host the OPENING half attaches to, and how. */
   readonly attach: readonly Attachment[];
@@ -351,17 +351,47 @@ export function isOrderFree(r: Recipe): boolean {
 // Within a group, N5 before N4.
 // ---------------------------------------------------------------------------
 
-/** The te-form's lesson intro — see Recipe.intro. It leads the whole track, so
- * it is the one place a form is EXPLAINED rather than just drilled. */
-const TE_FORM_INTRO: readonly string[] = [
-  "The て-form is how a verb connects to what comes next — it is the base every " +
-    "other て-pattern is built on: 〜てください (a request), 〜て (do X, and then), " +
-    "〜てもいい (permission), 〜ている (an ongoing action).",
-  "Build it from the plain verb. る-verbs drop る and add て: 食べる → 食べて. " +
-    "う-verbs follow the 音便 sound-changes by their last kana — く→いて, ぐ→いで; " +
-    "む・ぶ・ぬ→んで; う・つ・る→って; す→して. One verb breaks the pattern: " +
-    "行く → 行って, not 行いて.",
-];
+
+/** A learner-facing introduction for a foundational pattern (Recipe.intro). */
+export interface GrammarIntro {
+  /** A plain-language paragraph introducing the form. */
+  readonly blurb: string;
+  /** The build rules, rendered one per line as an equation. */
+  readonly rules: readonly TeFormRule[];
+}
+
+/** One conjugation rule, shown as "verb - drop + add -> result". The example
+ * verbs are KANA-ONLY so a beginner at grammar lesson 1 (little kanji yet) can
+ * read them; the rendered result accents the `add` piece. */
+export interface TeFormRule {
+  /** The ending(s) this rule covers, for the line's label. */
+  readonly ending: string;
+  /** A kana-only example verb of this ending. */
+  readonly verb: string;
+  /** The ending kana dropped from the verb. */
+  readonly drop: string;
+  /** What is added after dropping. */
+  readonly add: string;
+}
+
+/** The te-form's lesson intro (Recipe.intro). It leads the whole track, so it is
+ * the one place a form is explained rather than just drilled. */
+const TE_FORM_INTRO: GrammarIntro = {
+  blurb:
+    "The て-form is how one verb links to what comes next. It is the base that " +
+    "many patterns are built on: 〜てください (a request), 〜て (do X, and then), " +
+    "〜てもいい (permission), and 〜ている (an ongoing action). You make it from " +
+    "the plain verb by changing its ending.",
+  rules: [
+    { ending: "ends in る (a ru-verb)", verb: "たべる", drop: "る", add: "て" },
+    { ending: "ends in う, つ, or る", verb: "かう", drop: "う", add: "って" },
+    { ending: "ends in く", verb: "かく", drop: "く", add: "いて" },
+    { ending: "ends in ぐ", verb: "およぐ", drop: "ぐ", add: "いで" },
+    { ending: "ends in む, ぶ, or ぬ", verb: "のむ", drop: "む", add: "んで" },
+    { ending: "ends in す", verb: "はなす", drop: "す", add: "して" },
+    { ending: "the one exception", verb: "いく", drop: "く", add: "って" },
+  ],
+};
 
 export const RECIPES: readonly Recipe[] = [
   // --- て-form: three different things wearing one coat --------------------
