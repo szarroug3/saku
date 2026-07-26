@@ -1015,6 +1015,11 @@ function selectionShowing(
 
 const grammarQuestions: QuestionType = {
   id: "grammar",
+  // An English gloss can have more than one natural Japanese realization.
+  // Reverse MEANING recall is therefore recognition-only: choose the taught
+  // pattern, never type a supposedly unique translation. Production facts are
+  // fixed jp2en and do not reach this direction.
+  mcOnly: "en2jp",
   prompt(fact, dir, ctx) {
     const prod = grammarProduction(fact);
     if (prod) {

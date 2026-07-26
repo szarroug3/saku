@@ -168,7 +168,7 @@ Grammar rows here are only grammar-source behavior. Grammar meaning facts can al
 |---|---|---|---|---|---|---|---|
 | Japanese source (text) | `jp->en` | English meaning | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}` | `〜てから` -> type/pick `after doing X` |
 | Japanese example phrase containing the pattern (audio) | `jp->en` | English meaning | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}`. The audio is a contextual phrase containing the pattern, not a pronunciation of the pattern label. Grammar facts are not currently listenable. | Hear `たべてから` (`食べてから`, “after eating”) -> type/pick `after doing X` |
-| English meaning (text) | `en->jp` | Japanese pattern label | No | Yes | Planned | Intended: `english: {answers: includes "typed" or "mc"}`. A non-kana pattern target would force MC; the current grammar English path does not emit bare-pattern recognition. | Prompt `after doing X` -> pick `〜てから` |
+| English meaning (text) | `en->jp` | Japanese pattern label | No | Yes | Current | `english: {answers: includes "typed" or "mc"}`. Grammar meaning reverse recall is forced to MC because an English gloss can have more than one natural Japanese realization. | Prompt `after doing X` -> pick `〜てから` |
 
 ### 5.2 Production fact
 
@@ -296,7 +296,6 @@ Some Planned rows cannot be reached even if the user selects the settings shown,
 | Blocked Row | Blocking Reason | Selecting This Setting | Does Not Generate | When Will It Be Unblocked? |
 |---|---|---|---|---|
 | Grammar Meaning + Audio (jp→en) | Grammar patterns are not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Grammar audio forms | When grammar audio support is added |
-| Grammar Meaning (en→jp) | Bare-pattern reverse recognition is not emitted | `english: {answers: includes "typed" or "mc"}` | English meaning → Japanese pattern MC forms | When grammar meaning facts support the reverse direction |
 | Keigo Meaning + Audio (jp→en) | Keigo is not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Keigo audio forms | When keigo audio support is added |
 | Transitivity Meaning + Audio (jp→en) | Transitivity is not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Transitivity audio forms | When transitivity audio support is added |
 | Keigo Production (en→jp) | Keigo production not yet implemented | `english: {answers: includes "typed" or "mc"}` | Keigo production forms | When keigo production feature ships |
