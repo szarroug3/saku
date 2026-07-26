@@ -116,8 +116,13 @@ function buildHalf(
     };
   }
 
+  // A kana vehicle is the typed-production lane. Keep the normal written
+  // suffix for display/MC, but use its curated kana spelling for that lane.
+  const kanaVehicle = /^[\u3040-\u30ffー]+$/u.test(word);
+  const writtenAdd = kanaVehicle ? (at.kanaAdd ?? at.add) : at.add;
+
   // form: null — attach to the bare word. Nouns, and the vacuous rows.
-  if (at.form === null) return { ok: true, value: word + at.add };
+  if (at.form === null) return { ok: true, value: word + writtenAdd };
 
   if (cls === null) {
     return {
@@ -132,7 +137,11 @@ function buildHalf(
     return { ok: false, reason: "form-refused", detail: `${at.form}: ${base.detail}` };
   }
 
-  const add = suffixFor(r, word, cls, at);
+  const exceptionOrAdd = suffixFor(r, word, cls, at);
+  const add =
+    kanaVehicle && exceptionOrAdd === at.add
+      ? (at.kanaAdd ?? exceptionOrAdd)
+      : exceptionOrAdd;
 
   if (at.trim) {
     if (!base.value.endsWith(at.trim)) {

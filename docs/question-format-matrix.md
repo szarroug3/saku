@@ -210,7 +210,7 @@ Verb-pair rows include English cues plus paired Japanese lemmas/readings, so dis
 | Japanese source (text) | `jp->en` | Meaning/usage recognition for shown pair member | No | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}`. Role recognition is MC-only and offers the pair's two curated English cues. | `開く` -> pick `The door opened.` |
 | Japanese source (audio) | `jp->en` | Meaning/usage recognition for heard pair member | No | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}`. Audio speaks the member's stored kana reading; role recognition stays MC-only. | Hear `あく` -> pick `The door opened.` |
 | Japanese pair member (text or audio) | `jp->jp` | Reading in kana | No | No | By design | N/A. Verb-pair drills test which verb fits the role; direct reading recall belongs in the word/kanji tracks. | Not generated |
-| English role source (text) | `en->jp` | Produce/select the correct Japanese pair member | No | Yes | Planned | Intended: `english: {answers: includes "typed" or "mc"}` with a dedicated role-label prompt variant. Typed would resolve to MC for the non-kana target. | Prompt `open (something)` -> pick `開ける` |
+| Short role label without the curated sentence cue | `en->jp` | Produce/select the correct Japanese pair member | No | No | By design | N/A. The current full-sentence English cue already identifies the role in meaningful context; a second, weaker label-only card would duplicate it. | Not generated |
 | Japanese source (text self-copy) | `jp->jp` | Same verb form | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 
 ### 6.3 Cross-cutting feasibility rules (corpus-level)
@@ -220,7 +220,7 @@ These apply across special subjects when deciding if a row is practical to ship.
 | Rule | Applies to | Constraint | Status | Example |
 |---|---|---|---|---|
 | Audio-language policy | All audio rows | Audio cues are Japanese only; English cues are always text | Current policy | No English-audio rows |
-| Typed feasibility for Japanese targets | `en->jp` production rows | Non-kana targets are usually MC-first unless kana-only entry mode is provided | Current | `召し上がる`/`開ける` rows are MC-first |
+| Typed feasibility for Japanese targets | `en->jp` production rows | Typed production uses an authoritative kana target when the fact stores one; MC shows the normal written form. A glyph with no stored production reading is MC-only. | Current | Keigo/verb pairs type stored kana and pick written forms; a kanji meaning picks the glyph |
 | Multi-answer English meaning filter | `jp->en` meaning/definition rows | Typed is available when the fact has gradable accepted answers; a format that cannot grade its valid paraphrases must force MC | Current policy | Sentence definitions and special relationship facts force MC; ordinary word/grammar meanings can type or pick |
 | Japanese typing scope | All typed rows | Every Japanese expected response is typed in kana; Latin-letter romaji is used only when the expected response itself is explicitly a Romaji reading | Current policy | Kanji reading types `せい` and grammar production types `いってから` |
 | Register/role disambiguation | Keigo/transitivity | Prompt must encode register or transitivity role to avoid ambiguous grading | Current | `honorific` vs `humble`, `open (itself)` vs `open (something)` |
@@ -261,11 +261,11 @@ A question format appears in the deck when ALL these conditions apply:
    - Kana character facts: the closed matrix is kana → Romaji, audio → kana, and Romaji → kana
    - Kanji reading facts: jp->en only (fixedDir="jp2en")
    - Grammar production facts: internally jp->en only because their answer is Japanese
-   - Transitivity facts: en->jp only (fixedDir="en2jp")
+   - Keigo and transitivity facts: both recognition and production directions
    - Others: both directions available (both derived from settings)
 
 5. **Answer control viable**:
-   - MC-only constraints are enforced (meaning facts, kana en->jp, untypeable en->jp targets)
+   - MC-only constraints are enforced (sentence/register/role recognition, kana en->jp, and untypeable en->jp targets)
    - Typed only when typeable for that target
    - A typed intent that is not typeable resolves to the required MC control
    - Equivalent typed-forced-to-MC and explicit-MC forms are deduplicated
@@ -296,8 +296,7 @@ Some Planned rows cannot be reached even if the user selects the settings shown,
 | Blocked Row | Blocking Reason | Selecting This Setting | Does Not Generate | When Will It Be Unblocked? |
 |---|---|---|---|---|
 | Grammar Meaning + Audio (jp→en) | Grammar patterns are not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Grammar audio forms | When grammar audio support is added |
-| Transitivity Role Variant (en→jp) | Transitivity role prompts not yet implemented | `english: {answers: includes "typed" or "mc"}` | Role-specific transitivity forms | When transitivity role variant is implemented |
-| Grammar/Keigo Production + Audio (jp→jp) | Requires listenable production facts and a production cue | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Grammar/keigo production audio | When those production sources become listenable |
+| Grammar Production + Audio (jp→jp) | Requires a listenable production vehicle cue | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Grammar production audio | When grammar production vehicles gain an authoritative audio source |
 | English Sentence + Choose Sentence | Assembly currently renders chunk ordering only | `sentence: {englishResponses: includes "selection"}` | Japanese-sentence MC boards | When the assembly screen gains a sentence-selection variant |
 
 ---
@@ -331,8 +330,7 @@ The matrix shows all corpus-feasible forms for each entry type. A real deck will
 **Planned features not yet implemented**:
 - English sentence selection: the setting exists, but the assembly quiz currently implements ordering only
 - Grammar audio: awaiting audio support for patterns
-- Transitivity's separate short role-label prompt variant: awaiting implementation
-- Other Planned rows in the matrix
+- Keigo production from a heard plain verb plus an explicit register target: awaiting a dedicated source configuration
 
 **Real example**: If settings are:
 ```

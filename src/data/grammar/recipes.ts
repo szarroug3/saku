@@ -96,6 +96,9 @@ export interface Attachment {
   /** Text stripped off the end of the form's output before adding. */
   readonly trim?: string;
   readonly add: string;
+  /** Kana spelling of `add`, when the normal written suffix contains kanji.
+   * This is the authoritative typed-production target. */
+  readonly kanaAdd?: string;
 }
 
 export interface Recipe {
@@ -703,7 +706,7 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜方",
     gloss: "how to X / way of doing X",
     level: "N4",
-    attach: [{ host: "verb", form: "stem", add: "方" }],
+    attach: [{ host: "verb", form: "stem", add: "方", kanaAdd: "かた" }],
     notOn: ["する", "来る"],
     note:
       "〜方 builds a COMPOUND NOUN off the masu-stem — 食べ方, 読み方 — and off a " +
@@ -721,7 +724,7 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜に行く",
     gloss: "go in order to X",
     level: "N5",
-    attach: [{ host: "verb", form: "stem", add: "に行く" }],
+    attach: [{ host: "verb", form: "stem", add: "に行く", kanaAdd: "にいく" }],
     notOn: ["行く", "来る"],
     note:
       "The pattern's slot is the ERRAND, and going is not an errand you go on. " +
@@ -791,7 +794,7 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜始める",
     gloss: "begin to X",
     level: "N4",
-    attach: [{ host: "verb", form: "stem", add: "始める" }],
+    attach: [{ host: "verb", form: "stem", add: "始める", kanaAdd: "はじめる" }],
     note:
       "Aspectual compound verb: [V-stem] + 始める, the same stem slot 〜すぎる / " +
       "〜やすい hang off. Combines as freely as those — 行き始める, 食べ始める, " +
@@ -803,7 +806,7 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜続ける",
     gloss: "keep X-ing",
     level: "N4",
-    attach: [{ host: "verb", form: "stem", add: "続ける" }],
+    attach: [{ host: "verb", form: "stem", add: "続ける", kanaAdd: "つづける" }],
     note:
       "Aspectual compound verb, sibling of 〜始める: [V-stem] + 続ける. 降り続ける, " +
       "待ち続ける, 死に続ける (人が死に続ける is ordinary). 続ける is a v1, so the " +
@@ -850,7 +853,7 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜前に",
     gloss: "before doing X",
     level: "N5",
-    attach: [{ host: "verb", form: "dictionary", add: "前に" }],
+    attach: [{ host: "verb", form: "dictionary", add: "前に", kanaAdd: "まえに" }],
   },
   {
     id: "tsumori",
@@ -878,7 +881,7 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜と思う",
     gloss: "think that X",
     level: "N5",
-    attach: [{ host: "verb", form: "dictionary", add: "と思う" }],
+    attach: [{ host: "verb", form: "dictionary", add: "と思う", kanaAdd: "とおもう" }],
   },
   {
     id: "hazu",
@@ -951,7 +954,7 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜(よ)うと思う",
     gloss: "am thinking of X-ing",
     level: "N4",
-    attach: [{ host: "verb", form: "volitional", add: "と思う" }],
+    attach: [{ host: "verb", form: "volitional", add: "と思う", kanaAdd: "とおもう" }],
   },
 
   // --- conditionals: four ways, glossed the same ---------------------------
@@ -1261,9 +1264,24 @@ export const RECIPES: readonly Recipe[] = [
     gloss: "must be X (I'm sure)",
     level: "N3",
     attach: [
-      { host: "verb", form: "dictionary", add: "に違いない" },
-      { host: "adj-i", form: "dictionary", add: "に違いない" },
-      { host: "noun", form: null, add: "に違いない" },
+      {
+        host: "verb",
+        form: "dictionary",
+        add: "に違いない",
+        kanaAdd: "にちがいない",
+      },
+      {
+        host: "adj-i",
+        form: "dictionary",
+        add: "に違いない",
+        kanaAdd: "にちがいない",
+      },
+      {
+        host: "noun",
+        form: null,
+        add: "に違いない",
+        kanaAdd: "にちがいない",
+      },
     ],
     note:
       "Speaker's strong conviction. Plain form + に違いない for verb/adj (行くに違い" +
