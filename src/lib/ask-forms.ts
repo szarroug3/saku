@@ -38,6 +38,7 @@ import { KANA_SUBJECT } from "@/data/characters";
 import { grammarMeaning } from "@/data/grammar";
 import { READING_INDEX } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
+import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import {
   answerIsJapanese,
   en2jpTypeable,
@@ -97,6 +98,10 @@ function isKeigoFact(fact: FactId): boolean {
   return factInfo(fact)?.subject === KEIGO_SUBJECT;
 }
 
+function isTransitivityFact(fact: FactId): boolean {
+  return factInfo(fact)?.subject === TRANSITIVITY_SUBJECT;
+}
+
 function isKanaOnlyWordMeaningFact(fact: FactId): boolean {
   const info = factInfo(fact);
   if (!info || info.subject !== VOCAB_SUBJECT) return false;
@@ -144,7 +149,7 @@ export function formIsMc(fact: FactId, form: CardForm): boolean {
 }
 
 /** The directions a fact can be asked in, before the config narrows them. A
- * subject may pin one (a kanji reading is jp→en only, transitivity en→jp only);
+ * subject may pin one (a kanji reading is jp→en only);
  * otherwise both, EXCEPT a fact whose jp→en answer is already Japanese and is
  * not a word reading (a grammar production) has no distinct English-prompt
  * card, so it stays jp→en only rather than being asked twice identically. */
@@ -252,7 +257,9 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
         // closed matrix above; a kanji or ordinary grammar fact is dropped.
         if (
           listen &&
-          ((!isKeigoFact(fact) && listenKind(fact) === null) ||
+          ((!isKeigoFact(fact) &&
+            !isTransitivityFact(fact) &&
+            listenKind(fact) === null) ||
             isKanjiReadingFact(fact))
         )
           continue;

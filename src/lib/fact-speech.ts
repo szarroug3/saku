@@ -16,6 +16,8 @@
 //     already framed on ("生 · in 先生"). The caller passes that anchor.
 //   kanji MEANING fact → nothing. A lone 生 has no single reading to speak; the
 //     card shows "meaning", not a word, and the anchor is absent.
+//   verb pair → its curated member reading. 開く can be あく or ひらく, so the
+//     pair data, not TTS guessing from the glyph, selects the sound.
 //   grammar → nothing. 〜てから is a pattern, not a pronunciation — the same
 //     rule the Library grammar entries follow.
 //
@@ -28,7 +30,10 @@
 import { KANA_SUBJECT } from "@/data/characters";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT, keigoWordInfo } from "@/data/keigo";
-import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
+import {
+  TRANSITIVITY_SUBJECT,
+  transitivitySide,
+} from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import type { FactInfo } from "@/types";
 
@@ -42,10 +47,12 @@ import type { FactInfo } from "@/types";
 export function speechForFact(info: FactInfo, anchor?: string): string | null {
   switch (info.subject) {
     case KANA_SUBJECT:
-    case TRANSITIVITY_SUBJECT:
-      // The glyph is itself a speakable surface: a kana character, or
-      // (transitivity) the verb the fact asks for — 開ける is "akeru".
+      // The glyph is itself a speakable surface: one kana character.
       return info.glyph;
+    case TRANSITIVITY_SUBJECT:
+      // Pair members store a checked reading. Use it rather than asking TTS to
+      // choose among a kanji verb's possible readings.
+      return transitivitySide(info.id)?.reading ?? null;
     case VOCAB_SUBJECT:
       // Speak the READING, not the written word. 先生's surface reads せんせい
       // either way, but 何 written is free to come out か (an on'yomi TTS

@@ -699,33 +699,38 @@ describe("Keigo fact (§6.1 Current)", () => {
 });
 
 describe("Transitivity fact (§6.2 Current)", () => {
-  // Transitivity: en→jp (Current). jp→en is Planned and should be silently dropped.
-  test("transitivity fact produces an en→jp form (english source, en2jp fixed)", () => {
+  test("transitivity produces typed and MC English-cue production", () => {
     const forms = enabledFormsFor(transitivityFact, ALL);
     const en2jp = forms.filter((f) => f.dir === "en2jp");
-    assert.ok(en2jp.length > 0, "transitivity should yield at least one en→jp form");
+    assert.equal(en2jp.length, 2);
     assert.ok(en2jp.every((f) => !f.listen), "en→jp forms are never audio");
-    assert.ok(en2jp.every((f) => formIsMc(transitivityFact, f)), "transitivity en→jp is MC");
-  });
-
-  test("transitivity jp→en is not generated (Planned, fixedDir = en2jp)", () => {
-    // transitivityQuestions has fixedDir: 'en2jp', so jp→en is never a candidate.
-    const forms = enabledFormsFor(transitivityFact, ALL);
-    assert.equal(
-      forms.filter((f) => f.dir === "jp2en").length,
-      0,
-      "transitivity jp→en should not be generated (fixedDir en2jp)",
+    assert.deepEqual(
+      en2jp.map((form) => formIsMc(transitivityFact, form)),
+      [false, true],
     );
   });
 
-  test("transitivity audio produces no forms (en→jp direction has no audio)", () => {
+  test("transitivity Japanese text recognition is MC-only", () => {
+    const forms = enabledFormsFor(transitivityFact, ALL);
+    const text = forms.filter((f) => f.dir === "jp2en" && !f.listen);
+    assert.equal(text.length, 1);
+    assert.ok(
+      text.every((form) => formIsMc(transitivityFact, form)),
+      "role recognition must be MC",
+    );
+  });
+
+  test("transitivity audio produces MC role recognition", () => {
     const audioOnly: AskConfig = {
       japanese: { prompts: ["audio"], responses: ["definition", "romaji"], answers: ["mc"] },
       sentence: { prompts: [], responses: [], answers: [] },
       english: { answers: [] },
     };
     const forms = enabledFormsFor(transitivityFact, audioOnly);
-    assert.deepEqual(forms, [], "transitivity with audio-only jp source → no forms");
+    assert.equal(forms.length, 1);
+    assert.equal(forms[0].listen, true);
+    assert.equal(forms[0].dir, "jp2en");
+    assert.equal(formIsMc(transitivityFact, forms[0]), true);
   });
 });
 

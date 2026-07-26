@@ -206,9 +206,9 @@ Verb-pair rows include English cues plus paired Japanese lemmas/readings, so dis
 
 | Prompt source | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
-| English cue source (text) | `en->jp` | Produce or choose the correct pair member | Yes | Yes | Selection: Current; typed: Planned | Selection uses the current transitivity board. Typed production requires a kana-reading target; MC options show the written pair members. | `The door opened.` -> type `あく` / pick `開く` |
-| Japanese source (text) | `jp->en` | Meaning/usage recognition for shown pair member | No | Yes | Planned | Intended: `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}`. Transitivity facts are currently fixed to en->jp, so this emits no form. | `開く` -> pick `to open (intransitive)` |
-| Japanese source (audio) | `jp->en` | Meaning/usage recognition for heard pair member | No | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}`. Transitivity is fixed to en->jp and not currently listenable. | Hear `ひらく` -> pick `to open (intransitive)` |
+| English cue source (text) | `en->jp` | Produce or choose the correct pair member | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}`. Typed production targets the stored kana reading; MC is exactly the pair's two written members. | `The door opened.` -> type `あく` / pick `開く` |
+| Japanese source (text) | `jp->en` | Meaning/usage recognition for shown pair member | No | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}`. Role recognition is MC-only and offers the pair's two curated English cues. | `開く` -> pick `The door opened.` |
+| Japanese source (audio) | `jp->en` | Meaning/usage recognition for heard pair member | No | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}`. Audio speaks the member's stored kana reading; role recognition stays MC-only. | Hear `あく` -> pick `The door opened.` |
 | Japanese pair member (text or audio) | `jp->jp` | Reading in kana | No | No | By design | N/A. Verb-pair drills test which verb fits the role; direct reading recall belongs in the word/kanji tracks. | Not generated |
 | English role source (text) | `en->jp` | Produce/select the correct Japanese pair member | No | Yes | Planned | Intended: `english: {answers: includes "typed" or "mc"}` with a dedicated role-label prompt variant. Typed would resolve to MC for the non-kana target. | Prompt `open (something)` -> pick `開ける` |
 | Japanese source (text self-copy) | `jp->jp` | Same verb form | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
@@ -296,7 +296,6 @@ Some Planned rows cannot be reached even if the user selects the settings shown,
 | Blocked Row | Blocking Reason | Selecting This Setting | Does Not Generate | When Will It Be Unblocked? |
 |---|---|---|---|---|
 | Grammar Meaning + Audio (jp→en) | Grammar patterns are not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Grammar audio forms | When grammar audio support is added |
-| Transitivity Meaning + Audio (jp→en) | Transitivity is not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Transitivity audio forms | When transitivity audio support is added |
 | Transitivity Role Variant (en→jp) | Transitivity role prompts not yet implemented | `english: {answers: includes "typed" or "mc"}` | Role-specific transitivity forms | When transitivity role variant is implemented |
 | Grammar/Keigo Production + Audio (jp→jp) | Requires listenable production facts and a production cue | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Grammar/keigo production audio | When those production sources become listenable |
 | English Sentence + Choose Sentence | Assembly currently renders chunk ordering only | `sentence: {englishResponses: includes "selection"}` | Japanese-sentence MC boards | When the assembly screen gains a sentence-selection variant |
@@ -332,7 +331,7 @@ The matrix shows all corpus-feasible forms for each entry type. A real deck will
 **Planned features not yet implemented**:
 - English sentence selection: the setting exists, but the assembly quiz currently implements ordering only
 - Grammar audio: awaiting audio support for patterns
-- Transitivity typed production and role variants: awaiting implementation
+- Transitivity's separate short role-label prompt variant: awaiting implementation
 - Other Planned rows in the matrix
 
 **Real example**: If settings are:

@@ -109,12 +109,10 @@ function buildTransitivityFacts(): FactInfo[] {
         id,
         entry: pairEntry(p),
         glyph: member.word,
-        // The written form always, and the reading too when they differ — so a
-        // typed answer (defensive; the drill asks this as MC) accepts either.
-        answers:
-          member.word === member.reading
-            ? [member.word]
-            : [member.word, member.reading],
+        // The fact's recognition answer is the curated English role cue.
+        // Production is direction-specific and is graded by the question type
+        // against `word`/`reading` above.
+        answers: [member.en],
         subject: TRANSITIVITY_SUBJECT,
         meaning: member.en,
       });

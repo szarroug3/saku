@@ -81,8 +81,8 @@ describe("the seven card kinds", () => {
 
     // And the split falls exactly where the ruling puts it: a card that asks
     // for a READING or a PRODUCTION converts, a card that asks for a MEANING
-    // does not. (Transitivity is fixedDir en2jp and mcOnly, so it is never a
-    // jp2en typed box at all; it is listed here only because it has facts.)
+    // does not. Transitivity's jp2en side is role/meaning recognition and is
+    // MC-only, so it belongs on the non-converting meaning side.
     const converts = [...byKind.entries()].filter(([, v]) => v.has(true)).map(([k]) => k);
     const doesnt = [...byKind.entries()].filter(([, v]) => v.has(false)).map(([k]) => k);
     for (const k of converts) {
@@ -102,7 +102,10 @@ describe("the seven card kinds", () => {
       // the keigo word's own key rather than the literal "meaning" (a set carries
       // several words under one entry), so it is registered here by subject.
       assert.ok(
-        /meaning/.test(k) || k === "kana/reading" || k.startsWith("keigo/"),
+        /meaning/.test(k) ||
+          k === "kana/reading" ||
+          k.startsWith("keigo/") ||
+          k.startsWith("transitivity/"),
         `${k} does not convert but is neither a meaning nor kana`,
       );
     }

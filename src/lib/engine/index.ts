@@ -224,6 +224,7 @@ export function buildMcOptions(
   known: readonly FactId[] = [],
 ): FactId[] {
   const qt = questionsFor(fact);
+  const optionLimit = qt.maxOptions ?? BEHAVIOR.mcOptions;
   // What the option will READ AS in THIS card's render direction.
   //
   // This used to claim labels in BOTH directions. For a kanji-reading card,
@@ -258,7 +259,7 @@ export function buildMcOptions(
   };
 
   const rankedDistractorCandidates = qt
-    .distractors(fact, BEHAVIOR.mcOptions * 4, ctx)
+    .distractors(fact, optionLimit * 4, ctx)
     .slice()
     .sort(isKanjiReadingCard ? preferKnown : () => 0);
 
@@ -273,7 +274,7 @@ export function buildMcOptions(
       for (const k of keys) taken.add(k);
       return true;
     })
-    .slice(0, BEHAVIOR.mcOptions - 1);
+    .slice(0, optionLimit - 1);
   // THE BACKSTOP. A board of one is not a board — DrillScreen turns it back into
   // a typed box, and for a card whose answer contains kanji there is no romaji
   // that can answer it, so the learner is shown a question they cannot get
@@ -289,7 +290,7 @@ export function buildMcOptions(
   //
   // It is a floor, not a strategy. Reaching it means the distractors were poor;
   // it only ensures they were not absent.
-  if (distractors.length < BEHAVIOR.mcOptions - 1) {
+  if (distractors.length < optionLimit - 1) {
     const subject = info?.subject;
     const backfill = ALL_FACTS
       .filter((other) => {
@@ -314,10 +315,10 @@ export function buildMcOptions(
       if (keys.some((k) => taken.has(k))) continue;
       for (const k of keys) taken.add(k);
       distractors.push(other);
-      if (distractors.length >= BEHAVIOR.mcOptions - 1) break;
+      if (distractors.length >= optionLimit - 1) break;
     }
   }
-  return shuffle([fact, ...distractors].slice(0, BEHAVIOR.mcOptions));
+  return shuffle([fact, ...distractors].slice(0, optionLimit));
 }
 
 /** Retries allowed under cfg: none → 0, lim → retryN, unl → Infinity. */
