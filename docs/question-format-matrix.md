@@ -14,6 +14,7 @@ Completeness rule:
 - A same-script visible copy is still listed, but marked `By design` and `Not generated`.
 - A listening transcription is not a visible copy: hearing Japanese and writing its reading can be useful, so it is `Planned` when the data can support it.
 - A relationship the entry does not carry at all (for example, an English definition for a bare kana character) is listed as `By design`, with the missing data named.
+- Audio prompts are Japanese only. English cues are always text because the product does not test English listening.
 
 ## Terms
 
@@ -196,7 +197,7 @@ Keigo sets contain Japanese forms plus role/register semantics, so both recognit
 | Japanese source (audio) | `jp->jp` | Reading in kana | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. This is useful listening transcription, but Keigo audio/reading forms are not generated. | Hear `めしあがる` -> type/pick `めしあがる` |
 | English/register source (text) | `en->jp` | Keigo production form | No | Yes | Planned | Intended: `english: {answers: includes "typed" or "mc"}`. Keigo production is not emitted; its non-kana target would resolve typed to MC. | Prompt `eat / drink (honorific)` -> pick `召し上がる` |
 | English meaning/register source (text) | `en->jp` | Keigo reading in kana | Yes | Yes | Planned | Requires a reading-target production variant backed by the stored Keigo reading. | Prompt `eat / drink (honorific)` -> type/pick `めしあがる` |
-| English/register source (audio is Japanese cue only) | `jp->jp` | Keigo production form | No | Yes | Planned | No current settings path models an audio plain-form cue plus a register target; this requires a dedicated production-source configuration. | Hear plain cue `たべる` + honorific target -> pick `召し上がる` |
+| Japanese plain-form source (audio) + register target | `jp->jp` | Keigo production form | No | Yes | Planned | No current settings path models an audio plain-form cue plus a register target; this requires a dedicated production-source configuration. | Hear plain cue `たべる` + honorific target -> pick `召し上がる` |
 | Japanese source (text self-copy) | `jp->jp` | Same keigo form | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 
 ### 6.2 Verb Pair / Transitivity (`transitivity:*`) — corpus possibilities
@@ -220,7 +221,7 @@ These apply across special subjects when deciding if a row is practical to ship.
 
 | Rule | Applies to | Constraint | Status | Example |
 |---|---|---|---|---|
-| Japanese-audio policy | All audio rows | Audio cues should be Japanese audio only | Current policy | No English-audio -> Japanese rows |
+| Audio-language policy | All audio rows | Audio cues are Japanese only; English cues are always text | Current policy | No English-audio rows |
 | Typed feasibility for Japanese targets | `en->jp` production rows | Non-kana targets are usually MC-first unless kana-only entry mode is provided | Current | `召し上がる`/`開ける` rows are MC-first |
 | Multi-answer English meaning filter | `jp->en` meaning/definition rows | Typed is available when the fact has gradable accepted answers; a format that cannot grade its valid paraphrases must force MC | Current policy | Sentence definitions and special relationship facts force MC; ordinary word/grammar meanings can type or pick |
 | Romaji typing scope | All typed rows | Typed romaji is allowed only for kana entries; non-kana subjects type kana/kanji when Japanese output is required | Current policy | Kanji reading row types `せい`, not `sei` |
