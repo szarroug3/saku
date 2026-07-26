@@ -91,14 +91,13 @@ describe("enabledFormsFor", () => {
     assert.deepEqual(forms.map((f) => formIsMc(kanaFact("あ"), f)), [false, true]);
   });
 
-  test("kana en→jp typed renders as MC card (the form can only be asked as MC)", () => {
+  test("kana never generates an en→jp romaji-prompt form", () => {
     const forms = enabledFormsFor(kanaFact("あ"), {
       japanese: { prompts: [], responses: [], answers: [] },
       sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
       english: { answers: ["typed"] },
     });
-    assert.deepEqual(forms.length, 1);
-    assert.deepEqual(formIsMc(kanaFact("あ"), forms[0]), true);
+    assert.deepEqual(forms, []);
   });
 
 
@@ -117,18 +116,17 @@ describe("enabledFormsFor", () => {
       },
       english: { answers: ["typed"] },
     };
-    // Facts that require MC for some directions (like kana en→jp) should still
+    // Facts that require MC for some directions (like a kanji-word meaning) should still
     // generate forms when typed is selected — they render as MC. This ensures
     // users see all available facts even when selecting typed-only.
-    const kanaEnJp = kanaFact("あ");
-    const forms = enabledFormsFor(kanaEnJp, typedOnly);
+    const forms = enabledFormsFor(meaning, typedOnly);
     const enJpForms = forms.filter((f) => f.dir === "en2jp");
-    assert.ok(enJpForms.length > 0, "English should produce a form for kana");
+    assert.ok(enJpForms.length > 0, "English should produce a form for a kanji word");
     for (const form of enJpForms) {
-      // The form is typed in intent, but resolves to MC because that's the only
-      // way kana can be asked in en→jp direction
+      // The form is typed in intent, but resolves to MC because the written
+      // kanji target cannot be entered through the kana answer box.
       assert.equal(form.answer, "typed");
-      assert.equal(formIsMc(kanaEnJp, form), true);
+      assert.equal(formIsMc(meaning, form), true);
     }
   });
 

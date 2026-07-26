@@ -396,6 +396,10 @@ function crossScriptDistractors(glyph: string): FactId[] {
 
 const kanaQuestions: QuestionType = {
   id: "kana",
+  // Romaji is an answer format for seeing kana, never a prompt source. Kana
+  // production is tested by Japanese audio → kana instead, so the drill does
+  // not generate the old "a" → あ direction.
+  fixedDir: "jp2en",
   prompt(fact, dir) {
     const c = glyphOfFact(fact);
     const script = CHAR_INDEX[c]?.setLabel.toLowerCase() ?? null;
@@ -408,12 +412,8 @@ const kanaQuestions: QuestionType = {
           hint: script && `give the ${script}`,
         };
   },
-  // en2jp is multiple choice ONLY. The en2jp prompt for a kana fact is its
-  // romaji — "a" for あ — so a typed box graded through checkEn2jp accepted the
-  // prompt typed straight back and the card tested nothing, across all 214 kana.
-  // The romaji forgiveness in checkProduces is right everywhere else (これ must
-  // be answerable "kore" with no IME) and is left alone; kana en2jp opts out of
-  // typing entirely instead, which also keeps the card answerable without an IME.
+  // Keep the legacy direction MC-only as a defensive constraint for direct
+  // callers, although fixedDir prevents it from entering generated decks.
   mcOnly: "en2jp",
   check(fact, dir, given) {
     // en2jp wants the GLYPH and nothing else. No romaji forgiveness here: the

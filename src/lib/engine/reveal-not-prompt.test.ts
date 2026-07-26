@@ -206,7 +206,8 @@ describe("the four subjects that shipped the bug, by name", () => {
   // one she should have seen, not only with a count.
 
   const CASES: Array<{ fact: FactId; dir: Direction; reveal: string }> = [
-    // "a = a" — the headline. en2jp prompts the romaji, so the answer is the kana.
+    // Direct-helper coverage for the excluded legacy direction: if a stored old
+    // session resumes it, reveal still names the kana rather than the prompt.
     { fact: kanaFact("あ"), dir: "en2jp", reveal: "あ" },
     { fact: kanaFact("し"), dir: "en2jp", reveal: "し" },
     // jp2en was always right and must stay right: this direction is not touched.

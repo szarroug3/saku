@@ -135,10 +135,10 @@ test("jp2en typed: a kana reading is accepted in romaji", async ({
  *
  * The vehicle is the WORD これ, not the character あ. These three cases used to
  * ride on `kana:あ/reading`, and that stopped being an honest home for them: a
- * kana CHARACTER asked en2jp is prompted with its own romaji ("a"), so the
- * romaji case below was literally "type the prompt back and be marked right",
- * which is the bug this direction was fixed for. Kana characters are no longer
- * typed en2jp at all (see kana-en2jp-mc.spec.ts).
+ * kana CHARACTER asked en2jp used to be prompted with its own romaji ("a"), so
+ * the romaji case below was literally "type the prompt back and be marked
+ * right". That direction is no longer generated because Romaji is never a
+ * prompt source (see kana-en2jp-mc.spec.ts).
  *
  * これ keeps every claim intact and makes the romaji one true instead of
  * circular: it is prompted "this", it is answered これ, and "kore" is the
@@ -317,13 +317,9 @@ test("reveal after a wrong jp2en answer names the reading that was asked for", a
 /**
  * A wrong answer on a BOARD card, by clicking.
  *
- * The kana case below has no answer box to type into: `kanaQuestions.mcOnly`
- * is `"en2jp"`, because the en2jp prompt for a kana fact IS its romaji (see
- * kana-en2jp-mc.spec.ts). It originally called `typeAnswer`, which now times out
- * on an absent box — so the test died before reaching its reveal assertion and
- * "passed" as `test.fail()` for entirely the wrong reason. Driving the board is
- * what makes the assertion real, and it is the only one of the three that needs
- * to: the other two render a box for their own reasons and keep typing.
+ * The kanji case below has no answer box to type into: its Japanese glyph target
+ * resolves to MC. Driving the board makes the reveal assertion exercise the
+ * learner-facing selection path rather than an unavailable text input.
  *
  * Clicks the first option that is NOT the expected answer. Reading the wrong
  * option off the rendered board rather than naming one keeps the test
@@ -352,19 +348,17 @@ async function missTheBoard(page: Page, correct: string) {
 // these assertions need no timing budget at all. The test below pins that
 // directly, so the window cannot come back unnoticed.
 
-test("reveal after a wrong en2jp answer names the kana that was asked for", async ({
+test("reveal after a wrong en2jp answer names the kanji that was asked for", async ({
   page,
   seed,
 }) => {
-  // "a = a" — the headline case of the report.
-  await seed({ seen: ["kana:あ/reading"], cfg: PRODUCE_CFG });
+  await seed({ seen: ["kanji:一/meaning"], cfg: PRODUCE_CFG });
   await startPractice(page);
-  await missTheBoard(page, "あ");
+  await missTheBoard(page, "一");
 
   const r = reveal(page);
-  // Shown the romaji, asked to produce the kana. The revealed answer is the kana.
-  await expect(r.answer).toHaveText("あ");
-  await expect(r.prompt).toHaveText("a");
+  await expect(r.answer).toHaveText("一");
+  await expect(r.prompt).toHaveText("one");
 });
 
 /**

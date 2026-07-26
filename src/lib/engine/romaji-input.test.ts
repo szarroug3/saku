@@ -211,9 +211,9 @@ describe("no card can be answered by typing its own prompt", () => {
 
   test("the en2jp typed violations are the known ones, and no new shape", () => {
     // NOT a claim that en2jp is clean — it is not, and this change does not
-    // touch it. Kana en2jp prompts its own romaji and accepts it back (fixed on
-    // fix/kana-en2jp-mc, which makes that card multiple choice), and a handful
-    // of loanwords gloss as their own romanization (ramen → ラーメン).
+    // touch it. Kana-character en2jp is excluded from generated decks because
+    // Romaji is never a prompt source, while a handful of loanwords gloss as
+    // their own romanization (ramen → ラーメン).
     //
     // Asserted as a SHAPE rather than a count, deliberately: a count would go
     // stale the moment the kana branch merges and would then fail for the right

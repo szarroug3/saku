@@ -131,8 +131,8 @@ export function hintFor(
  * would not be a hint, it would be the answer with extra steps. The picture is
  * the half that makes you remember rather than tells you.
  *
- * jp2en only: shown the romaji and asked for the glyph, a drawing OF that glyph
- * is the answer.
+ * jp2en only: shown the kana glyph and asked for its Romaji reading. The drawing
+ * helps recall the visible shape without turning Romaji into a prompt source.
  */
 function kanaHint(glyph: string, dir: Direction): Hint | null {
   if (dir !== "jp2en") return null;

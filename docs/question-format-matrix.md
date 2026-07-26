@@ -15,6 +15,7 @@ Completeness rule:
 - A listening transcription is not a visible copy: hearing Japanese and writing its reading can be useful, so it is `Planned` when the data can support it.
 - A relationship the entry does not carry at all (for example, an English definition for a bare kana character) is listed as `By design`, with the missing data named.
 - Audio prompts are Japanese only. English cues are always text because the product does not test English listening.
+- Romaji is never a prompt source. It appears only as the answer to the explicit kana-glyph → Romaji-reading card.
 
 ## Terms
 
@@ -44,7 +45,7 @@ Kana entries have one reading fact.
 |---|---|---|---|---|---|---|---|
 | Text: show kana glyph | `jp->en` | Romaji reading | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `あ` -> type/pick `a` |
 | Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | Requires Japanese audio prompts plus a kana-glyph response target with typed and MC controls. | Hear `/a/` -> type/pick `あ` |
-| Show romaji/English side | `en->jp` | Kana glyph | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (typed resolves to the required MC control) | Prompt `a` -> pick `あ` |
+| Show romaji pronunciation | `en->jp` | Kana glyph | No | No | By design | N/A. Romaji is not used as a prompt source. Audio → kana is the useful production format. | Not generated |
 | Text: show kana glyph (self-copy) | `jp->jp` | Same kana glyph | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 | Text or audio kana | N/A | English definition | No | No | By design | N/A. A bare kana character has a reading fact, but no English meaning fact. | Not generated |
 
@@ -96,7 +97,7 @@ Words can have:
 | Show English meaning | `en->jp` | Written word form | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana-only words are typeable en->jp) | Prompt `this` -> type/pick `これ` |
 | Text: show kana-only word | `jp->jp` | Pronunciation written in kana | No | No | By design | N/A. The answer is visibly identical to the prompt, so this is a trivial copy. | Not generated |
 | Audio: play kana-only word | `jp->jp` | Pronunciation written in kana | Yes | Yes | Planned | Intended: a word-audio reading form with `answers: includes "typed" or "mc"`. Kana-only words currently have no separate reading fact. | Hear `これ` -> type/pick `これ` |
-| Show romaji pronunciation | `en->jp` | Written kana word | Yes | Yes | Planned | Intended: a pronunciation-source form with `answers: includes "typed" or "mc"`. The current English source uses the meaning, not romaji. | Prompt `kore` -> type/pick `これ` |
+| Show romaji pronunciation | `en->jp` | Written kana word | No | No | By design | N/A. Romaji is not used as a prompt source. | Not generated |
 
 ### 3.2 Single-kanji words (example: `人`)
 
@@ -109,7 +110,7 @@ Words can have:
 | Audio: play word (reading fact) | `jp->jp` | Reading | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Hear `ひと` -> type/pick `ひと` |
 | Show English meaning (reading fact) | `en->jp` | Reading (kana) | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana reading is typeable) | Prompt `person` -> type/pick `ひと` |
 | Text: show written word | `jp->jp` | Same written word | No | No | By design | N/A. This would copy the visible prompt. | Not generated |
-| Show romaji pronunciation | `en->jp` | Written kanji word | No | No | By design | N/A. A pronunciation alone is ambiguous across homophones and does not identify the intended spelling. | Not generated |
+| Show romaji pronunciation | `en->jp` | Written kanji word | No | No | By design | N/A. Romaji is not used as a prompt source; it would also be ambiguous across homophones. | Not generated |
 
 ### 3.3 Multi-kanji words (example: `先生`)
 
@@ -122,7 +123,7 @@ Words can have:
 | Audio: play word (reading fact) | `jp->jp` | Reading | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Hear `せんせい` -> type/pick `せんせい` |
 | Show English meaning (reading fact) | `en->jp` | Reading (kana) | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana reading is typeable) | Prompt `teacher` -> type/pick `せんせい` |
 | Text: show written word | `jp->jp` | Same written word | No | No | By design | N/A. This would copy the visible prompt. | Not generated |
-| Show romaji pronunciation | `en->jp` | Written kanji word | No | No | By design | N/A. A pronunciation alone can identify multiple spellings. | Not generated |
+| Show romaji pronunciation | `en->jp` | Written kanji word | No | No | By design | N/A. Romaji is not used as a prompt source; one pronunciation can also identify multiple spellings. | Not generated |
 
 ### 3.4 Mixed kanji+kana words (example: `食べる`)
 
@@ -135,7 +136,7 @@ Words can have:
 | Audio: play word (reading fact) | `jp->jp` | Reading | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Hear `たべる` -> type/pick `たべる` |
 | Show English meaning (reading fact) | `en->jp` | Reading (kana) | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana reading is typeable) | Prompt `to eat` -> type/pick `たべる` |
 | Text: show written word | `jp->jp` | Same written word | No | No | By design | N/A. This would copy the visible prompt. | Not generated |
-| Show romaji pronunciation | `en->jp` | Written mixed-script word | No | No | By design | N/A. Pronunciation alone does not reliably identify the intended kanji spelling. | Not generated |
+| Show romaji pronunciation | `en->jp` | Written mixed-script word | No | No | By design | N/A. Romaji is not used as a prompt source; pronunciation alone also does not reliably identify the intended kanji spelling. | Not generated |
 
 ---
 
@@ -260,6 +261,7 @@ A question format appears in the deck when ALL these conditions apply:
    - Grammar patterns: text only (audio awaiting implementation)
 
 4. **Direction allowed**: Some facts pin to one direction:
+   - Kana character facts: jp->en only; romaji is never a prompt
    - Kanji reading facts: jp->en only (fixedDir="jp2en")
    - Grammar production facts: internally jp->en only because their answer is Japanese
    - Transitivity facts: en->jp only (fixedDir="en2jp")
@@ -272,7 +274,7 @@ A question format appears in the deck when ALL these conditions apply:
    - Equivalent typed-forced-to-MC and explicit-MC forms are deduplicated
 
 6. **Required-control resolution**: Forms intended as typed but forced to MC still appear as MC:
-   - Example: Kana en->jp is always MC, so a typed-only English-source configuration still produces its MC card rather than an empty run
+   - Example: a kanji target requested through typed English-source settings resolves to MC rather than producing an unusable text box
 
 7. **Script rule**: Japanese typed responses always use kana:
    - Kanji reading, word reading, grammar production, and Japanese-audio transcription use kana characters, never Latin-letter romaji
@@ -326,7 +328,7 @@ The matrix shows all corpus-feasible forms for each entry type. A real deck will
 **If typed is not selected** (`answers` does not include "typed"):
 - Typed forms are dropped, but MC-only forms remain
 - Example: if `japanese: {answers: ["mc"]}`, typed kana and word readings disappear
-- Kana en->jp is already MC-only, so it remains (forced MC, not dropped)
+- MC-only Japanese targets remain available; kana-character en->jp is excluded separately because romaji is never a prompt
 
 **If MC is not selected** (`answers` does not include "mc"):
 - Objective typed forms remain typed
