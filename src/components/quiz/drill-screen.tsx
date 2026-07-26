@@ -48,6 +48,7 @@ import {
   answerIsJapanese,
   buildDeck,
   buildMcOptions,
+  grammarSelectionFor,
   checkTyped,
   confusedWith,
   firstTryCredit,
@@ -596,7 +597,7 @@ export function DrillScreen() {
     // ORDINARY answer early on — the card then falls back to the fixed meaning
     // question, which asks the pattern in one direction and its English in the
     // other, so grammar meaning is always askable.
-    const grammarSelection = null;
+    const grammarSelection = typedMode ? null : grammarSelectionFor(f, history);
     const recognition =
       form.source === "sentence" &&
       form.response === "definition"
