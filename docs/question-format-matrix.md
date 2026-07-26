@@ -29,6 +29,7 @@ Completeness rule:
 - `audio prompt`: Japanese is played
 - Japanese typing policy: whenever the expected response is Japanese, typed answers are kana. The kana-glyph → Latin reading card is the only typed-romaji format because its expected response is explicitly a Romaji reading, not Japanese text.
 - The internal response setting is still named `"romaji"` in current code. In non-kana sections that legacy name selects a Japanese-reading/production question; it does not mean the learner types Latin letters.
+- Japanese MC policy: outside explicit kana and word/kanji pronunciation tests, Japanese multiple-choice options use the normal written form with kanji where available.
 
 Status labels:
 - `Current`: implemented in the current engine
@@ -108,7 +109,7 @@ Words can have:
 | Show English meaning (meaning fact) | `en->jp` | Written word form | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (typed resolves to MC for the kanji target) | Prompt `person` -> pick `人` |
 | Text: show word (reading fact) | `jp->jp` | Reading (kana) | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `人` -> type/pick `ひと` |
 | Audio: play word (reading fact) | `jp->jp` | Type the kana reading or identify the written word | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. Typed answers use kana; MC options show written words. | Hear `ひと` -> type `ひと` / pick `人` |
-| Show English meaning (reading fact) | `en->jp` | Reading (kana) | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana reading is typeable) | Prompt `person` -> type/pick `ひと` |
+| Show English meaning (reading fact) | `en->jp` | Type the kana reading or identify the written word | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}`. Typed answers use kana; MC options show written words. | Prompt `person` -> type `ひと` / pick `人` |
 | Text: show written word | `jp->jp` | Same written word | No | No | By design | N/A. This would copy the visible prompt. | Not generated |
 | Show romaji pronunciation | `en->jp` | Written kanji word | No | No | By design | N/A. Romaji is not used as a prompt source; it would also be ambiguous across homophones. | Not generated |
 
@@ -121,7 +122,7 @@ Words can have:
 | Show English meaning (meaning fact) | `en->jp` | Written word form | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (typed resolves to MC for the kanji target) | Prompt `teacher` -> pick `先生` |
 | Text: show word (reading fact) | `jp->jp` | Reading (kana) | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `先生` -> type/pick `せんせい` |
 | Audio: play word (reading fact) | `jp->jp` | Type the kana reading or identify the written word | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. Typed answers use kana; MC options show written words. | Hear `せんせい` -> type `せんせい` / pick `先生` |
-| Show English meaning (reading fact) | `en->jp` | Reading (kana) | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana reading is typeable) | Prompt `teacher` -> type/pick `せんせい` |
+| Show English meaning (reading fact) | `en->jp` | Type the kana reading or identify the written word | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}`. Typed answers use kana; MC options show written words. | Prompt `teacher` -> type `せんせい` / pick `先生` |
 | Text: show written word | `jp->jp` | Same written word | No | No | By design | N/A. This would copy the visible prompt. | Not generated |
 | Show romaji pronunciation | `en->jp` | Written kanji word | No | No | By design | N/A. Romaji is not used as a prompt source; one pronunciation can also identify multiple spellings. | Not generated |
 
@@ -134,7 +135,7 @@ Words can have:
 | Show English meaning (meaning fact) | `en->jp` | Written word form | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (typed resolves to MC for the mixed-script target) | Prompt `to eat` -> pick `食べる` |
 | Text: show word (reading fact) | `jp->jp` | Reading (kana) | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `食べる` -> type/pick `たべる` |
 | Audio: play word (reading fact) | `jp->jp` | Type the kana reading or identify the written word | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. Typed answers use kana; MC options show written words. | Hear `たべる` -> type `たべる` / pick `食べる` |
-| Show English meaning (reading fact) | `en->jp` | Reading (kana) | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana reading is typeable) | Prompt `to eat` -> type/pick `たべる` |
+| Show English meaning (reading fact) | `en->jp` | Type the kana reading or identify the written word | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}`. Typed answers use kana; MC options show written words. | Prompt `to eat` -> type `たべる` / pick `食べる` |
 | Text: show written word | `jp->jp` | Same written word | No | No | By design | N/A. This would copy the visible prompt. | Not generated |
 | Show romaji pronunciation | `en->jp` | Written mixed-script word | No | No | By design | N/A. Romaji is not used as a prompt source; pronunciation alone also does not reliably identify the intended kanji spelling. | Not generated |
 
@@ -173,8 +174,8 @@ Grammar rows here are only grammar-source behavior. Grammar meaning facts can al
 
 | Prompt source | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
-| Japanese source config (text vehicle cue; answer is Japanese) | `jp->en` internal direction | Japanese production form in kana | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}`. The legacy response name selects Japanese production; typed output is kana. | Prompt `行く` + `〜てから` -> type/pick `いってから` |
-| Japanese source config (audio prompt is Japanese) | `jp->jp` | Japanese production form in kana | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. The typed answer is kana. Grammar production facts are not currently listenable. | Hear `たべる` cue -> type/pick `たべてから` |
+| Japanese source config (text vehicle cue; answer is Japanese) | `jp->en` internal direction | Produce the transformed Japanese form | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}`. The legacy response name selects Japanese production. Typed output is kana; MC uses the normal written form. | Prompt `行く` + `〜てから` -> type `いってから` / pick `行ってから` |
+| Japanese source config (audio prompt is Japanese) | `jp->jp` | Produce the transformed Japanese form | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. Typed output is kana; MC uses the normal written form. Grammar production facts are not currently listenable. | Hear `たべる` cue -> type `たべてから` / pick `食べてから` |
 | Japanese source (text self-copy of pattern label) | `jp->jp` | Same pattern text | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 | Japanese source (text showing a completed vehicle form) | `jp->jp` | Same completed production form | No | No | By design | N/A. The learner would only copy the visible answer. | Not generated |
 
@@ -226,6 +227,7 @@ These apply across special subjects when deciding if a row is practical to ship.
 | Corpus-backed examples | All planned rows | A row should have at least one corpus-backed cue/example path | Current | Plain-form cue `たべる` -> keigo target row |
 | Trivial self-copy filter | All text->same-text rows | If prompt and target are effectively identical copy tasks, mark row as `No` | Current policy | `これ` -> type `これ` is marked trivial |
 | Reading-track ownership | Sentence, grammar, Keigo, and transitivity | Direct kanji/word → kana transcription belongs in the word/kanji tracks; higher-level tracks test meaning, structure, register, role, or transformation | Current policy | Grammar may type `いってから` after conjugating `行く`, but Keigo does not ask `召し上がる` → `めしあがる` |
+| Japanese MC orthography | Every Japanese-answer MC outside pronunciation tests | Show the normal written form with kanji where available; kana is for typed production and explicit pronunciation testing | Current policy | `to eat` -> type `たべる` / pick `食べる` |
 
 Practical result:
 - Include rows that are feasible from corpus content and grading semantics, even if implementation is pending.

@@ -81,6 +81,15 @@ test("a visual word-reading board still shows kana readings", () => {
   );
 });
 
+test("an English-to-Japanese word-reading board shows written words", () => {
+  const opts = buildMcOptions(SENSEI_READING, "en2jp");
+  assert.ok(opts.length > 1, `expected multiple options, got ${opts.length}`);
+  const labels = opts.map((f) => factInfo(f)?.glyph);
+  assert.ok(labels.includes("先生"), "the correct written word should be an option");
+  assert.ok(!labels.includes("せんせい"), "the kana reading should not be an MC option");
+  assert.equal(new Set(labels).size, labels.length, "written options must be distinct");
+});
+
 test("en→jp grades a typed kana reading of the word as correct", () => {
   const q = questionsFor(SENSEI_READING);
   // Typed directly as kana (an IME user, or the drill's live romaji→kana box).
