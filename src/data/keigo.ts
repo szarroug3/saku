@@ -24,13 +24,11 @@
 // ===========================================
 // The track opens EARLY, the way grammar opens on known words: as soon as the
 // learner knows the plain verb a set replaces, they meet its keigo forms and are
-// asked to RECOGNISE them — shown 召し上がる, pick "eat / drink (honorific)". They
-// are never asked to PRODUCE a keigo form (shown a situation, type the verb) at
-// this stage; production rides in later on the same track. So every fact this
-// file mints is a recognition fact: the glyph is the keigo verb, the answer is
-// what it means and which register it is. See src/lib/engine/question.ts for how
-// it is asked (multiple choice, jp→en only) and src/lib/keigo-lesson.ts for the
-// early, per-set gate.
+// asked to RECOGNISE them — shown 召し上がる, pick "eat / drink (honorific)".
+// After that introduction, the same learned fact can be practiced in reverse:
+// type its stored kana reading or pick its written form from a precise
+// English/register cue. See src/lib/engine/question.ts for the two directions
+// and src/lib/keigo-lesson.ts for the early, per-set gate.
 //
 // WHAT ALREADY EXISTS, AND WHAT WAS ADDED
 // =======================================
@@ -258,6 +256,15 @@ export function keigoWordFactId(set: KeigoSet, word: KeigoWord): FactId {
  */
 export function recognitionGloss(set: KeigoSet, word: KeigoWord): string {
   return set.formulaic ? set.meaning : `${set.meaning} (${word.register})`;
+}
+
+/** The English/register cue for producing one Keigo form. Most recognition
+ * glosses already identify one form. A set with two forms in the same register
+ * uses the curated `use` distinction so production never presents one prompt
+ * with two correct Japanese answers. */
+export function productionCue(set: KeigoSet, word: KeigoWord): string {
+  const gloss = recognitionGloss(set, word);
+  return word.use ? `${gloss} · ${word.use}` : gloss;
 }
 
 /** Everything the question layer needs to ask a keigo fact without parsing its

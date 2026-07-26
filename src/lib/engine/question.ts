@@ -74,7 +74,12 @@ import {
   transitivitySide,
 } from "@/data/transitivity-facts";
 import { PROMPT as TRANSITIVITY_PROMPT } from "@/lib/transitivity";
-import { KEIGO_SUBJECT, keigoDistractors, keigoWordInfo } from "@/data/keigo";
+import {
+  KEIGO_SUBJECT,
+  keigoDistractors,
+  keigoWordInfo,
+  productionCue,
+} from "@/data/keigo";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
 import type { Direction, FactId, HistoryFile } from "@/types";
 
@@ -324,6 +329,9 @@ function en2jpTarget(fact: FactId): string {
   const info = factInfo(fact);
   if (!info) return "";
   if (info.subject === VOCAB_SUBJECT && isWordReading(fact)) return answerOf(fact);
+  if (info.subject === KEIGO_SUBJECT) {
+    return keigoWordInfo(fact)?.word.reading ?? info.glyph;
+  }
   return info.glyph;
 }
 
@@ -1292,27 +1300,18 @@ const transitivityQuestions: QuestionType = {
  * RECOGNITION, NOT PRODUCTION, and that is the whole shape. The prompt is the
  * Japanese verb (召し上がる); the answer is its recognition gloss ("eat / drink
  * (honorific)"). The direction is fixed to jp→en and the card is multiple choice
- * only: the learner is never shown a situation and asked to TYPE the keigo form
- * (that is production, which the track adds later — see the owner's ruling in
- * src/data/keigo.ts). The sharp distractor is the same set's opposite register,
- * so the board reads as the same action twice with honorific vs humble, and
- * passing requires knowing which one this verb is.
+ * Recognition is MC-only because the register distinction belongs in the
+ * answer. Production can be typed in kana or selected as a written form; the
+ * curated production cue disambiguates sets with two forms in one register.
  */
 const keigoQuestions: QuestionType = {
   id: KEIGO_SUBJECT,
-  mcOnly: true,
-  fixedDir: "jp2en",
+  mcOnly: "jp2en",
   prompt(fact, dir) {
     const info = keigoWordInfo(fact);
-    // jp→en (the only direction the drill ever asks, via fixedDir): the Japanese
-    // keigo verb is the glyph, and the answer carries the register, so "meaning"
-    // is the honest label — the same call the word subject makes. The en→jp arm
-    // is never rendered, but it is kept symmetric (glyph = the gloss, not the
-    // verb) so a reveal can never echo the prompt in either direction, the
-    // property reveal-not-prompt.test.ts asserts over every fact.
     if (dir === "en2jp") {
       return {
-        glyph: info?.gloss ?? answerOf(fact),
+        glyph: info ? productionCue(info.set, info.word) : answerOf(fact),
         jp: false,
         context: "which keigo verb",
         hint: null,
@@ -1326,14 +1325,7 @@ const keigoQuestions: QuestionType = {
     };
   },
   check(fact, dir, given) {
-    // jp→en (the direction the drill uses): the answer is the recognition gloss,
-    // so exact-match forgiveness is all it needs — the same `accepts` the meaning
-    // side of every subject uses. The card is MC, so `given` is an option's gloss.
     if (dir === "jp2en") return accepts(fact, given);
-    // en→jp is never rendered (fixedDir jp2en), but the grader stays symmetric
-    // so a reveal is always a string this grader would accept and never echoes
-    // the prompt — the two properties reveal-not-prompt.test.ts asserts. Here the
-    // Japanese to produce is the keigo verb itself.
     const info = keigoWordInfo(fact);
     if (!info) return false;
     const g = given.trim();

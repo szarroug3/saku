@@ -88,17 +88,16 @@ describe("starting a word lesson is not completing its prerequisite", () => {
   });
 });
 
-describe("RECOGNITION FIRST — every fact is shown-then-identify, never produce", () => {
-  test("every keigo fact is asked jp→en, multiple choice only", () => {
-    // Recognition = shown the Japanese keigo verb, pick what it means and which
-    // register. Production (shown a situation, type the verb) would be en→jp; no
-    // keigo fact is, so a learner can never be asked to produce before the
-    // concept is taught.
+describe("RECOGNITION FIRST — the lesson teaches identification before practice", () => {
+  test("recognition is MC-only while learned facts also support production", () => {
+    // The lesson introduces the Japanese form and register first. Once the fact
+    // is learned, practice may ask recognition or production; recognition stays
+    // MC-only because the register distinction is part of the answer.
     for (const set of KEIGO_SETS) {
       for (const w of set.words) {
         const qt = questionsFor(keigoWordFactId(set, w));
-        assert.equal(qt.fixedDir, "jp2en", `${w.word} is not fixed to recognition`);
-        assert.equal(qt.mcOnly, true, `${w.word} is not multiple-choice only`);
+        assert.equal(qt.fixedDir, undefined, `${w.word} cannot be practiced both ways`);
+        assert.equal(qt.mcOnly, "jp2en", `${w.word} recognition is not MC-only`);
       }
     }
   });

@@ -27,6 +27,7 @@
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { KANJI_SUBJECT } from "@/data/kanji";
+import { KEIGO_SUBJECT, keigoWordInfo } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import type { FactInfo } from "@/types";
@@ -58,6 +59,10 @@ export function speechForFact(info: FactInfo, anchor?: string): string | null {
       // free-reading ambiguity, so speak the word's kana reading — なに, not the
       // glyph the phone may voice as か.
       return anchor ? (vocabRow(anchor)?.reb ?? anchor) : null;
+    case KEIGO_SUBJECT:
+      // Keigo facts store the authoritative reading beside the written form.
+      // Speak that reading so TTS cannot choose an unintended kanji reading.
+      return keigoWordInfo(info.id)?.word.reading ?? null;
     default:
       // Grammar, and any subject we don't recognise: err toward silence.
       return null;

@@ -194,9 +194,9 @@ Keigo sets contain Japanese forms plus role/register semantics, so both recognit
 | Prompt source | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Japanese source (text) | `jp->en` | Meaning + register recognition | No | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}`. Keigo is MC-only, so typed resolves to MC. | `召し上がる` -> pick `eat / drink (honorific)` |
-| Japanese source (audio) | `jp->en` | Meaning + register recognition | No | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}`. Keigo is not currently listenable and would resolve to MC. | Hear `めしあがる` -> pick `eat / drink (honorific)` |
+| Japanese source (audio) | `jp->en` | Meaning + register recognition | No | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}`. The stored kana reading is spoken; Keigo recognition is MC-only. | Hear `めしあがる` -> pick `eat / drink (honorific)` |
 | Japanese Keigo form (text or audio) | `jp->jp` | Reading in kana | No | No | By design | N/A. Keigo drills test register and usage; direct reading recall belongs in the word/kanji tracks. | Not generated |
-| English meaning/register source (text) | `en->jp` | Produce the Keigo form | Yes | Yes | Planned | Requires a Keigo production variant. Typed answers use the stored kana reading; MC options show the written Keigo forms. | Prompt `eat / drink (honorific)` -> type `めしあがる` / pick `召し上がる` |
+| English meaning/register source (text) | `en->jp` | Produce the Keigo form | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}`. Typed answers use the stored kana reading; MC options show written Keigo forms. Curated usage text distinguishes multiple same-register forms for one action. | Prompt `eat / drink (honorific)` -> type `めしあがる` / pick `召し上がる` |
 | Japanese plain-form source (audio) + register target | `jp->jp` | Keigo production form | No | Yes | Planned | No current settings path models an audio plain-form cue plus a register target; this requires a dedicated production-source configuration. | Hear plain cue `たべる` + honorific target -> pick `召し上がる` |
 | Japanese source (text self-copy) | `jp->jp` | Same keigo form | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 
@@ -296,9 +296,7 @@ Some Planned rows cannot be reached even if the user selects the settings shown,
 | Blocked Row | Blocking Reason | Selecting This Setting | Does Not Generate | When Will It Be Unblocked? |
 |---|---|---|---|---|
 | Grammar Meaning + Audio (jp→en) | Grammar patterns are not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Grammar audio forms | When grammar audio support is added |
-| Keigo Meaning + Audio (jp→en) | Keigo is not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Keigo audio forms | When keigo audio support is added |
 | Transitivity Meaning + Audio (jp→en) | Transitivity is not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Transitivity audio forms | When transitivity audio support is added |
-| Keigo Production (en→jp) | Keigo production not yet implemented | `english: {answers: includes "typed" or "mc"}` | Keigo production forms | When keigo production feature ships |
 | Transitivity Role Variant (en→jp) | Transitivity role prompts not yet implemented | `english: {answers: includes "typed" or "mc"}` | Role-specific transitivity forms | When transitivity role variant is implemented |
 | Grammar/Keigo Production + Audio (jp→jp) | Requires listenable production facts and a production cue | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Grammar/keigo production audio | When those production sources become listenable |
 | English Sentence + Choose Sentence | Assembly currently renders chunk ordering only | `sentence: {englishResponses: includes "selection"}` | Japanese-sentence MC boards | When the assembly screen gains a sentence-selection variant |
@@ -334,7 +332,7 @@ The matrix shows all corpus-feasible forms for each entry type. A real deck will
 **Planned features not yet implemented**:
 - English sentence selection: the setting exists, but the assembly quiz currently implements ordering only
 - Grammar audio: awaiting audio support for patterns
-- Keigo/transitivity production: awaiting implementation
+- Transitivity typed production and role variants: awaiting implementation
 - Other Planned rows in the matrix
 
 **Real example**: If settings are:

@@ -497,32 +497,6 @@ describe("Multiple settings paths to same question format (text vs audio as diff
   });
 });
 
-describe("Blocked production facts (not yet implemented)", () => {
-  test("keigo production via English not generated (awaiting implementation)", () => {
-    // Keigo production facts don't exist in current data model;
-    // this test documents that when they do, they should be blocked.
-    // For now, we verify that sentence source with non-grammar facts
-    // produces no forms.
-    const wordMeaning = wordMeaningFactId(word.keb);
-    const enToJp: AskConfig = {
-      japanese: { prompts: [], responses: [], answers: [] },
-      sentence: {
-        prompts: ["text"],
-        responses: ["definition"],
-        answers: ["mc"],
-      },
-      english: { answers: ["mc"] },
-    };
-    const forms = enabledFormsFor(wordMeaning, enToJp);
-    // Sentence source only emits for grammar meaning facts, so word facts get no sentence forms.
-    assert.equal(
-      forms.filter((f) => f.source === "sentence").length,
-      0,
-      "Sentence source should not emit for non-grammar facts",
-    );
-  });
-});
-
 describe("configIsReachable diagnostic", () => {
   test("all sources disabled is unreachable", () => {
     const empty: AskConfig = {
@@ -690,8 +664,9 @@ describe("Word meaning en→jp MC enforcement (§3.x — non-kana target)", () =
   });
 });
 
-describe("Keigo recognition fact (§6.1 Current)", () => {
-  // Keigo: jp→en MC-only (recognition). en→jp and audio are Planned / By design.
+describe("Keigo fact (§6.1 Current)", () => {
+  // Recognition is MC-only; audio recognition and kana/kanji production are
+  // also current because every Keigo fact stores an authoritative reading.
   test("keigo fact produces a jp→en MC form via japanese source", () => {
     const forms = enabledFormsFor(keigoFact, ALL);
     const jp2en = forms.filter((f) => f.dir === "jp2en" && !f.listen);
@@ -699,22 +674,26 @@ describe("Keigo recognition fact (§6.1 Current)", () => {
     assert.ok(jp2en.every((f) => formIsMc(keigoFact, f)), "keigo jp→en must be MC-only");
   });
 
-  test("keigo audio is silently dropped (Planned → not yet listenable)", () => {
+  test("keigo audio produces a meaning/register recognition form", () => {
     const audioOnly: AskConfig = {
       japanese: { prompts: ["audio"], responses: ["definition"], answers: ["mc"] },
       sentence: { prompts: [], responses: [], answers: [] },
       english: { answers: [] },
     };
     const forms = enabledFormsFor(keigoFact, audioOnly);
-    assert.deepEqual(forms, [], "keigo with audio-only → no forms");
+    assert.equal(forms.length, 1);
+    assert.equal(forms[0].listen, true);
+    assert.equal(forms[0].dir, "jp2en");
+    assert.equal(formIsMc(keigoFact, forms[0]), true);
   });
 
-  test("keigo en→jp is not generated (production is Planned, not Current)", () => {
+  test("keigo en→jp emits typed kana and written-form MC production", () => {
     const forms = enabledFormsFor(keigoFact, ALL);
-    assert.equal(
-      forms.filter((f) => f.dir === "en2jp").length,
-      0,
-      "keigo en→jp should not be generated (production is Planned)",
+    const production = forms.filter((f) => f.dir === "en2jp");
+    assert.equal(production.length, 2);
+    assert.deepEqual(
+      production.map((form) => formIsMc(keigoFact, form)),
+      [false, true],
     );
   });
 });

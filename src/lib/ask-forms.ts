@@ -37,6 +37,7 @@ import {
 import { KANA_SUBJECT } from "@/data/characters";
 import { grammarMeaning } from "@/data/grammar";
 import { READING_INDEX } from "@/data/kanji";
+import { KEIGO_SUBJECT } from "@/data/keigo";
 import {
   answerIsJapanese,
   en2jpTypeable,
@@ -90,6 +91,10 @@ function isKanjiReadingFact(fact: FactId): boolean {
 
 function isKanaFact(fact: FactId): boolean {
   return factInfo(fact)?.subject === KANA_SUBJECT;
+}
+
+function isKeigoFact(fact: FactId): boolean {
+  return factInfo(fact)?.subject === KEIGO_SUBJECT;
 }
 
 function isKanaOnlyWordMeaningFact(fact: FactId): boolean {
@@ -245,7 +250,12 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
         const listen = prompt === "audio";
         // Generic audio is word-only. Kana dictation returned through the
         // closed matrix above; a kanji or ordinary grammar fact is dropped.
-        if (listen && (listenKind(fact) === null || isKanjiReadingFact(fact))) continue;
+        if (
+          listen &&
+          ((!isKeigoFact(fact) && listenKind(fact) === null) ||
+            isKanjiReadingFact(fact))
+        )
+          continue;
         for (const answer of src.answers) {
           out.push({
             source: "japanese",
