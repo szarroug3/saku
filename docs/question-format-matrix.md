@@ -63,13 +63,15 @@ Kanji and radicals share meaning-question controls, but only kanji entries carry
 | Show English meaning | `en->jp` | Japanese written form (glyph) | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (typed resolves to MC because the glyph is not typeable through the kana input) | Prompt `one` -> pick `一` |
 | Text: show kanji/radical glyph (self-copy) | `jp->jp` | Same written form (glyph) | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 
-### 2.2 Reading fact (kanji only)
+### 2.2 Kanji reading in written anchor context
 
 | Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Text: show kanji in anchor context | `jp->en` only | Reading (kana) | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` (jp->en only per fixedDir constraint) | `生` (in `人生`) -> type/pick `せい` |
-| Audio: play anchor-word pronunciation | `jp->jp` | Anchor reading (kana) | Yes | Yes | Planned | Intended: a kanji-reading audio source with `responses: includes "romaji"` and `answers: includes "typed" or "mc"`. It needs the anchor identity carried without leaking the reading. | Hear `人生` -> type/pick `じんせい` |
-| Show English anchor meaning/context | `en->jp` | Anchor reading (kana) | Yes | Yes | Planned | Intended: an English-source reading form with `answers: includes "typed" or "mc"`. Kanji reading facts are currently fixed to jp->en. | Prompt `life` for `人生` -> type/pick `じんせい` |
+| Audio: play anchor-word pronunciation | N/A | Reading of a particular kanji | No | No | By design | N/A. Audio does not identify which written kanji in the word is being tested. | Not generated |
+| Show English anchor meaning/context without the written anchor | N/A | Reading of a particular kanji | No | No | By design | N/A. An English meaning does not uniquely identify the intended kanji or reading. | Not generated |
+
+Kanji do not have one context-free pronunciation. The Current text form asks for the reading used by a visibly identified kanji inside a visibly written anchor word; it does not treat a bare kanji as independently readable.
 
 ### 2.3 Radical reading relationships
 
