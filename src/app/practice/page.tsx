@@ -37,9 +37,7 @@ import {
   enabledFormsFor,
 } from "@/lib/ask-forms";
 import {
-  sentenceAsksRomaji,
-  sentenceAsksSelection,
-  englishSentenceAsks,
+  englishSentenceAsksOrdering,
 } from "@/lib/ask-config";
 import { resolve, whatSentence } from "@/lib/selection";
 import {
@@ -85,10 +83,7 @@ export default function PracticePage() {
   // disagree about what you pressed Start on.
   const sentenceSelected = cfg.selection.types.includes("sentence");
   const sentenceConfigured =
-    cfg.mode === "drill" &&
-    (sentenceAsksSelection(cfg.ask) ||
-      sentenceAsksRomaji(cfg.ask) ||
-      englishSentenceAsks(cfg.ask));
+    cfg.mode === "drill" && englishSentenceAsksOrdering(cfg.ask);
   const includeSentences = sentenceSelected && sentenceConfigured;
   const learnedSentenceIds = useMemo(
     () => learnedSentenceTierIds(history),
@@ -264,7 +259,7 @@ export default function PracticePage() {
             showCount: cfg.length !== "endless",
           })
         : what,
-    [cfg.mode, cfg.selection, questionCount, lists, what],
+    [cfg.mode, cfg.length, cfg.selection, questionCount, lists, what],
   );
 
   // A one-off quiz, not a session: straight to /quiz, then /results when it ends.

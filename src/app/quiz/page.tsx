@@ -11,8 +11,7 @@ import { SentenceListenScreen } from "@/components/quiz/sentence-listen-screen";
 import { SubstitutionScreen } from "@/components/quiz/substitution-screen";
 import { useQuizSession } from "@/lib/quiz-session";
 import {
-  sentenceAsksRomaji,
-  sentenceAsksSelection,
+  englishSentenceAsksOrdering,
 } from "@/lib/ask-config";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 
@@ -44,8 +43,7 @@ export default function QuizPage() {
     active.snapshot.mode === "drill" &&
     active.facts.length > 0 &&
     active.facts.every(isSentenceTierMarkerFact) &&
-    (sentenceAsksSelection(active.snapshot.ask) ||
-      sentenceAsksRomaji(active.snapshot.ask));
+    englishSentenceAsksOrdering(active.snapshot.ask);
 
   switch (active.snapshot.mode) {
     case "drill":

@@ -78,8 +78,7 @@ import {
 import { postClaim, postSession, postUnseen } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import {
-  sentenceAsksRomaji,
-  sentenceAsksSelection,
+  englishSentenceAsksOrdering,
 } from "@/lib/ask-config";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import {
@@ -1632,8 +1631,7 @@ export function QuizSessionProvider({
       const sentencePractice =
         quiz?.snapshot.mode === "drill" &&
         quiz.facts.some(isSentenceTierMarkerFact) &&
-        (sentenceAsksSelection(quiz.snapshot.ask) ||
-          sentenceAsksRomaji(quiz.snapshot.ask));
+        englishSentenceAsksOrdering(quiz.snapshot.ask);
       const hasOrdinaryQuestions =
         quiz?.facts.some((fact) => !isSentenceTierMarkerFact(fact)) ?? false;
       // Sentence building is a Japanese-sentence source inside Drill, not a

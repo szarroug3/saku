@@ -22,7 +22,6 @@ const word = VOCAB.find((w) => !isKanaWord(w))!;
 const reading = wordReadingFactId(word.keb);
 const meaning = wordMeaningFactId(word.keb);
 const firstKanjiReading = READING_INDEX.keys().next().value;
-const grammarFact = patternMeaningFactId(RECIPES[0].id);
 const grammarProductionFact = patternProductionFactId(RECIPES.find((r) => r.producible !== false)!.id);
 const keigoFact = keigoWordFactId(KEIGO_SETS[0], KEIGO_SETS[0].words[0]);
 const transitivityFact = sideFactId(VERB_PAIRS[0], "happens");
@@ -536,19 +535,18 @@ describe("Word meaning en→jp MC enforcement (§3.x — non-kana target)", () =
   // written form (e.g. 先生) is not kana-only and therefore not typeable.
   // ask-forms enforces this: a typed en→jp form for such a fact is MC-forced
   // (en2jpTypeable returns false) and dropped by the dedup product rule.
-  test("word meaning en→jp: typed form is dropped for words with kanji (non-typeable target)", () => {
+  test("word meaning en→jp: typed intent resolves to MC for words with kanji", () => {
     const typedEnOnly: AskConfig = {
       japanese: { prompts: [], responses: [], answers: [] },
       sentence: { prompts: [], responses: [], answers: [] },
       english: { answers: ["typed"] },
     };
     const forms = enabledFormsFor(meaning, typedEnOnly);
-    // The written form of a kanji word (e.g. 先生) is not kana-only, so typed
-    // is MC-forced and dropped by the product rule (no auto-upgrade).
-    assert.equal(
-      forms.filter((f) => f.dir === "en2jp").length,
-      0,
-      "en→jp typed form should be dropped for a word with kanji (formIsMc forced to true)",
+    // The written form of a kanji word (e.g. 先生) is not kana-only, so the
+    // selected typed intent is resolved to the only safe control: MC.
+    assert.ok(
+      forms.some((f) => f.dir === "en2jp" && formIsMc(meaning, f)),
+      "en→jp typed intent should resolve to MC for a word with kanji",
     );
   });
 

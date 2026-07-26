@@ -51,7 +51,6 @@ import {
   checkTyped,
   confusedWith,
   firstTryCredit,
-  grammarSelectionFor,
   grammarVehicleFor,
   questionsFor,
   requeueGap,
@@ -144,7 +143,7 @@ interface DrillQuestion {
    * glosses to choose between), unchanged. Plain data, so it rides the
    * serialized runtime. */
   grammarSelection: GrammarSelection | null;
-  /** Audio-sentence → English-meaning board. Its options are strings rather
+  /** Japanese-sentence → English-meaning board (text or audio). Its options are strings rather
    * than FactIds, so it carries its own correct index. */
   recognition: RecognitionItem | null;
   /**
@@ -596,16 +595,10 @@ export function DrillScreen() {
     // ORDINARY answer early on — the card then falls back to the fixed meaning
     // question, which asks the pattern in one direction and its English in the
     // other, so grammar meaning is always askable.
-    const grammarSelection =
-      form.source === "sentence" &&
-      form.response === "definition" &&
-      !form.listen
-        ? grammarSelectionFor(f, history)
-        : null;
+    const grammarSelection = null;
     const recognition =
       form.source === "sentence" &&
-      form.response === "definition" &&
-      form.listen
+      form.response === "definition"
         ? pickRecognitionForFact(f, history)
         : null;
     const ctx: PromptContext = {
@@ -619,11 +612,13 @@ export function DrillScreen() {
     // property of the fact and these are a property of the sentence. They are
     // still FactIds, so everything downstream — grading by which option, the
     // reveal, confusion tracking — is the untouched existing path.
-    const built = grammarSelection
-      ? grammarSelection.choices.slice()
-      : typedMode
-        ? null
-        : buildMcOptions(f, dir, ctx, confusionKnownFacts(history));
+    const built = recognition
+      ? null
+      : grammarSelection
+        ? grammarSelection.choices.slice()
+        : typedMode
+          ? null
+          : buildMcOptions(f, dir, ctx, confusionKnownFacts(history));
     const mc = built && built.length > 1 ? built : null;
     rt.q = {
       f,
@@ -666,9 +661,7 @@ export function DrillScreen() {
         !(
           candidate.source === "sentence" &&
           candidate.response === "definition" &&
-          (candidate.listen
-            ? pickRecognitionForFact(f, history, () => 0) === null
-            : grammarSelectionFor(f, history, () => 0) === null)
+          pickRecognitionForFact(f, history, () => 0) === null
         ),
     );
   }
@@ -918,9 +911,7 @@ export function DrillScreen() {
               meaningMustShowGlyph(f, history)) ||
             (form.source === "sentence" &&
               form.response === "definition" &&
-              (form.listen
-                ? pickRecognitionForFact(f, history, () => 0) === null
-                : grammarSelectionFor(f, history, () => 0) === null)) ||
+              pickRecognitionForFact(f, history, () => 0) === null) ||
             !isBoxSelected(f, form)
           );
         });
@@ -1206,7 +1197,10 @@ export function DrillScreen() {
   // it does not know whether it is asking a kana, a kanji reading or a word.
   const ctx = ctxFor(q, anchorForFact(q.f, history));
   const prompt = questionsFor(q.f).prompt(q.f, q.dir, ctx);
-  const selectionFrame = q.grammarSelection?.frame ?? null;
+  const selectionFrame =
+    q.grammarSelection?.frame ??
+    (!q.listen ? q.recognition?.jp : null) ??
+    null;
   // A MEANING question for a word whose reading collides with another word the
   // learner knows shows the kanji (the glyph) AND the pronunciation together, so
   // the pitch mark is what says which same-sounding word is meant — 箸[はし↓] vs
