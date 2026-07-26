@@ -97,7 +97,7 @@ Words can have:
 | Audio: play word | `jp->en` | English meaning | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` (kana words are listenable) | Hear `これ` -> type/pick `this` |
 | Show English meaning | `en->jp` | Written word form | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana-only words are typeable en->jp) | Prompt `this` -> type/pick `これ` |
 | Text: show kana-only word | `jp->jp` | Pronunciation written in kana | No | No | By design | N/A. The answer is visibly identical to the prompt, so this is a trivial copy. | Not generated |
-| Audio: play kana-only word | `jp->jp` | Pronunciation written in kana | Yes | Yes | Planned | Intended: a word-audio reading form with `answers: includes "typed" or "mc"`. Kana-only words currently have no separate reading fact. | Hear `これ` -> type/pick `これ` |
+| Audio: play kana-only word | `jp->jp` | Pronunciation written in kana | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. The form is carried by the meaning fact because a kana-only word has no separate reading fact. | Hear `これ` -> type/pick `これ` |
 | Show romaji pronunciation | `en->jp` | Written kana word | No | No | By design | N/A. Romaji is not used as a prompt source. | Not generated |
 
 ### 3.2 Single-kanji words (example: `人`)
@@ -295,7 +295,6 @@ Some Planned rows cannot be reached even if the user selects the settings shown,
 
 | Blocked Row | Blocking Reason | Selecting This Setting | Does Not Generate | When Will It Be Unblocked? |
 |---|---|---|---|---|
-| Kana + Audio (jp→jp) | Kana entries have no audio-to-glyph form | Planned Japanese audio prompt + kana-glyph response target with typed or MC answers | Kana listening-dictation forms | When kana audio-to-glyph support is implemented |
 | Grammar Meaning + Audio (jp→en) | Grammar patterns are not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Grammar audio forms | When grammar audio support is added |
 | Grammar Meaning (en→jp) | Bare-pattern reverse recognition is not emitted | `english: {answers: includes "typed" or "mc"}` | English meaning → Japanese pattern MC forms | When grammar meaning facts support the reverse direction |
 | Keigo Meaning + Audio (jp→en) | Keigo is not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Keigo audio forms | When keigo audio support is added |

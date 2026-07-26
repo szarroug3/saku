@@ -27,7 +27,13 @@
 // Pure: no React, no clock, no storage. A function of (ask, fact) and nothing
 // else, so it is unit-tested directly.
 
-import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
+import {
+  VOCAB_SUBJECT,
+  isKanaWord,
+  vocabRow,
+  wordMeaningFactId,
+  wordReadingFactId,
+} from "@/data/vocab";
 import { KANA_SUBJECT } from "@/data/characters";
 import { grammarMeaning } from "@/data/grammar";
 import { READING_INDEX } from "@/data/kanji";
@@ -84,6 +90,17 @@ function isKanjiReadingFact(fact: FactId): boolean {
 
 function isKanaFact(fact: FactId): boolean {
   return factInfo(fact)?.subject === KANA_SUBJECT;
+}
+
+function isKanaOnlyWordMeaningFact(fact: FactId): boolean {
+  const info = factInfo(fact);
+  if (!info || info.subject !== VOCAB_SUBJECT) return false;
+  const row = vocabRow(info.glyph);
+  return (
+    !!row &&
+    isKanaWord(row) &&
+    wordMeaningFactId(info.glyph) === fact
+  );
 }
 
 /**
@@ -251,6 +268,27 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
           answer,
         });
       }
+    }
+  }
+
+  // Kana-only words have no separate reading fact because their written form
+  // already is their reading. Visible text → kana would therefore be a trivial
+  // self-copy, but AUDIO → kana is honest dictation: hear これ, produce これ.
+  // Carry that one useful reading form on the meaning fact without inventing a
+  // second fact or allowing a visible Romaji prompt.
+  if (
+    isKanaOnlyWordMeaningFact(fact) &&
+    ask.japanese.prompts.includes("audio") &&
+    ask.japanese.responses.includes("romaji")
+  ) {
+    for (const answer of ask.japanese.answers) {
+      out.push({
+        source: "japanese",
+        response: "japanese",
+        listen: true,
+        dir: "en2jp",
+        answer,
+      });
     }
   }
 
