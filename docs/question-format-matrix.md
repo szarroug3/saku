@@ -154,7 +154,7 @@ The Sentences settings card has independent Japanese and English subsections. Ja
 | Sentence source (audio) | `jp->jp` | Exact kanji/kana orthography | No | No | By design | N/A. Audio does not uniquely determine kanji spelling; the supported planned transcription target is full kana instead. | Not generated |
 | English sentence (text) | `en->jp` | Order Japanese chunks | Drag/order | No | Current | Drill mode + Sentences kind + `sentence: {englishResponses: includes "ordering"}` + at least one learned sentence rule. English prompt format is always text. | `Saku ate sushi.` -> order `サクは` / `寿司を` / `食べた。` |
 | English sentence (text) | `en->jp` | Choose the matching Japanese sentence | No | Yes | Planned | Intended: Drill mode + Sentences kind + `sentence: {englishResponses: includes "selection"}`. The setting is stored, but the assembly screen does not generate this MC board yet. | `Saku ate sushi.` -> pick `サクは寿司を食べた。` |
-| English sentence (text) | `en->jp` | Type the complete Japanese sentence in kana | Yes | No | Planned | Requires a new English-sentence response option for full kana production. The current English sentence subsection exposes ordering and selection only. | `Saku ate sushi.` -> type `さくはすしをたべた。` |
+| English sentence (text) | `en->jp` | Type a complete Japanese translation | No | No | By design | N/A. An English sentence can have multiple correct Japanese translations, so a single free-form typed answer cannot be graded reliably. | Not generated |
 
 ---
 
@@ -226,7 +226,7 @@ These apply across special subjects when deciding if a row is practical to ship.
 | Audio-language policy | All audio rows | Audio cues are Japanese only; English cues are always text | Current policy | No English-audio rows |
 | Typed feasibility for Japanese targets | `en->jp` production rows | Non-kana targets are usually MC-first unless kana-only entry mode is provided | Current | `召し上がる`/`開ける` rows are MC-first |
 | Multi-answer English meaning filter | `jp->en` meaning/definition rows | Typed is available when the fact has gradable accepted answers; a format that cannot grade its valid paraphrases must force MC | Current policy | Sentence definitions and special relationship facts force MC; ordinary word/grammar meanings can type or pick |
-| Japanese typing scope | All typed rows | Every Japanese expected response is typed in kana; Latin-letter romaji is used only when the expected response itself is explicitly a Romaji reading | Current policy | Kanji reading types `せい`, grammar production types `いってから`, and sentence production types `さくはすしをたべた` |
+| Japanese typing scope | All typed rows | Every Japanese expected response is typed in kana; Latin-letter romaji is used only when the expected response itself is explicitly a Romaji reading | Current policy | Kanji reading types `せい` and grammar production types `いってから` |
 | Register/role disambiguation | Keigo/transitivity | Prompt must encode register or transitivity role to avoid ambiguous grading | Current | `honorific` vs `humble`, `open (itself)` vs `open (something)` |
 | Corpus-backed examples | All planned rows | A row should have at least one corpus-backed cue/example path | Current | Plain-form cue `たべる` -> keigo target row |
 | Trivial self-copy filter | All text->same-text rows | If prompt and target are effectively identical copy tasks, mark row as `No` | Current policy | `これ` -> type `これ` is marked trivial |
@@ -275,7 +275,7 @@ A question format appears in the deck when ALL these conditions apply:
    - Example: Kana en->jp is always MC, so a typed-only English-source configuration still produces its MC card rather than an empty run
 
 7. **Script rule**: Japanese typed responses always use kana:
-   - Kanji reading, word reading, grammar production, and sentence production use kana characters, never Latin-letter romaji
+   - Kanji reading, word reading, grammar production, and Japanese-audio transcription use kana characters, never Latin-letter romaji
    - The only Latin-letter typed answer is the explicit kana-glyph → Romaji-reading card, such as `あ` → `a`
 
 8. **Triviality filter**: Text self-copy rows are explicitly excluded:
