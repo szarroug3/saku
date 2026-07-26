@@ -12,9 +12,9 @@ import {
 } from "./helpers/app";
 
 /**
- * Romaji is an answer to visible kana, never a prompt source. The generated
- * kana drill therefore has only the JP→EN card (see あ, answer "a"). Kana
- * production will use Japanese audio → kana when that planned format ships.
+ * Kana has three deliberate shapes. This file keeps the visible kana → Romaji
+ * typed path covered; ask-forms-settings covers audio → kana, and the form
+ * generator unit test proves visible Romaji → kana is recognition-only.
  */
 
 /** Hiragana with distinct romaji, so a prompt identifies exactly one fact. */

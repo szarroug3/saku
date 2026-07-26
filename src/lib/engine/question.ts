@@ -402,9 +402,9 @@ function crossScriptDistractors(glyph: string): FactId[] {
 
 const kanaQuestions: QuestionType = {
   id: "kana",
-  // Romaji is an answer format for seeing kana, never a prompt source. Kana
-  // production is tested by Japanese audio → kana instead, so the drill does
-  // not generate the old "a" → あ direction.
+  // The form generator owns kana's closed three-shape matrix. Its ordinary
+  // direction remains jp→en for legacy callers; pinned en→jp forms are used
+  // for audio dictation and visible Romaji recognition.
   fixedDir: "jp2en",
   prompt(fact, dir) {
     const c = glyphOfFact(fact);
@@ -418,8 +418,8 @@ const kanaQuestions: QuestionType = {
           hint: script && `give the ${script}`,
         };
   },
-  // Keep the legacy direction MC-only as a defensive constraint for direct
-  // callers, although fixedDir prevents it from entering generated decks.
+  // Visible Romaji → kana is recognition-only. formIsMc makes the one explicit
+  // exception for audio → typed kana.
   mcOnly: "en2jp",
   check(fact, dir, given) {
     // en2jp wants the GLYPH and nothing else. No romaji forgiveness here: the

@@ -2,7 +2,7 @@ import {
   test,
   expect,
   STEADY_CFG,
-  type Page,
+  optionButtons,
 } from "./helpers/app";
 import {
   seedQuiz,
@@ -39,11 +39,9 @@ const firstKanjiReading = READING_INDEX.keys().next().value;
 const grammarFact = patternMeaningFactId(RECIPES[0].id);
 
 describe("Unreachable settings combinations", () => {
-  test("kana with audio produces no cards (kana not listenable)", async ({
+  test("kana with audio produces a kana-picking listening card", async ({
     page,
   }) => {
-    // Kana fact with audio prompt and romaji response should produce no forms
-    // because kana entries have no audio support
     await seedQuiz(page, {
       seen: [kanaFact(kanaChar)],
       cfg: {
@@ -57,9 +55,9 @@ describe("Unreachable settings combinations", () => {
     });
     await startQuizDrill(page);
 
-    // Should reach the end with no cards asked
-    const endMessage = page.getByText(/no more|done|finished/i);
-    await expect(endMessage).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "Play the word again" })).toBeVisible();
+    await expect(page.locator(".kq-glyph")).toHaveCount(0);
+    await expect(optionButtons(page)).not.toHaveCount(0);
   });
 
   test("kanji reading with audio produces no cards (kanji reading not listenable)", async ({

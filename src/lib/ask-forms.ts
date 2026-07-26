@@ -27,6 +27,7 @@
 // else, so it is unit-tested directly.
 
 import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
+import { KANA_SUBJECT } from "@/data/characters";
 import { grammarMeaning } from "@/data/grammar";
 import { READING_INDEX } from "@/data/kanji";
 import {
@@ -79,6 +80,10 @@ function isKanjiReadingFact(fact: FactId): boolean {
   return READING_INDEX.has(fact);
 }
 
+function isKanaFact(fact: FactId): boolean {
+  return factInfo(fact)?.subject === KANA_SUBJECT;
+}
+
 /**
  * Which jp→en response a fact carries — Definition (an English gloss) or Romaji
  * (a reading / pronunciation).
@@ -99,9 +104,19 @@ export function jp2enResponse(fact: FactId): "definition" | "romaji" {
  * en→jp answer, or the subject is multiple-choice-only in this direction. */
 export function formIsMc(fact: FactId, form: CardForm): boolean {
   const styleTyped = form.answer === "typed";
+  // Kana has two en→jp productions with deliberately different controls:
+  // hearing /a/ may be answered by typing あ, while seeing the Romaji `a`
+  // must be recognition-only. The question type's broad en→jp MC constraint
+  // protects the latter; this explicit listening form is the one exception.
+  const typedKanaDictation =
+    styleTyped && isKanaFact(fact) && form.listen && form.dir === "en2jp";
   const romajiUnanswerable =
     styleTyped && form.dir === "en2jp" && !en2jpTypeable(fact);
-  return !(styleTyped && !romajiUnanswerable && !mcOnlyIn(fact, form.dir));
+  return !(
+    styleTyped &&
+    !romajiUnanswerable &&
+    (typedKanaDictation || !mcOnlyIn(fact, form.dir))
+  );
 }
 
 /** The directions a fact can be asked in, before the config narrows them. A
@@ -152,6 +167,55 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
  */
 export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
   if (!factInfo(fact)) return [];
+
+  // Kana deliberately has exactly three question shapes:
+  //   1. see kana   → type or pick Romaji
+  //   2. hear kana  → type or pick kana
+  //   3. see Romaji → pick kana
+  //
+  // The shared source model normally equates Japanese prompts with jp→en and
+  // English prompts with en→jp. Kana dictation is the useful exception:
+  // Japanese AUDIO is the prompt, but the answer is the Japanese glyph. Keep
+  // it here as an explicit closed matrix so no generic fact form can create a
+  // fourth kana question.
+  if (isKanaFact(fact)) {
+    const forms: CardForm[] = [];
+    if (ask.japanese.responses.includes("romaji")) {
+      if (ask.japanese.prompts.includes("text")) {
+        for (const answer of ask.japanese.answers) {
+          forms.push({
+            source: "japanese",
+            response: "romaji",
+            listen: false,
+            dir: "jp2en",
+            answer,
+          });
+        }
+      }
+      if (ask.japanese.prompts.includes("audio")) {
+        for (const answer of ask.japanese.answers) {
+          forms.push({
+            source: "japanese",
+            response: "japanese",
+            listen: true,
+            dir: "en2jp",
+            answer,
+          });
+        }
+      }
+    }
+    if (ask.english.answers.length > 0) {
+      forms.push({
+        source: "english",
+        response: "japanese",
+        listen: false,
+        dir: "en2jp",
+        answer: "mc",
+      });
+    }
+    return dedup(fact, forms);
+  }
+
   const out: CardForm[] = [];
   for (const dir of candidateDirs(fact)) {
     if (dir === "jp2en") {

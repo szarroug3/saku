@@ -15,7 +15,7 @@ Completeness rule:
 - A listening transcription is not a visible copy: hearing Japanese and writing its reading can be useful, so it is `Planned` when the data can support it.
 - A relationship the entry does not carry at all (for example, an English definition for a bare kana character) is listed as `By design`, with the missing data named.
 - Audio prompts are Japanese only. English cues are always text because the product does not test English listening.
-- Romaji is never a prompt source. It appears only as the answer to the explicit kana-glyph → Romaji-reading card.
+- Romaji is a prompt source only for the explicit kana-recognition card (`a` → pick `あ`). Elsewhere it is never shown as a prompt.
 
 ## Terms
 
@@ -45,8 +45,8 @@ Kana entries have one reading fact.
 | Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Text: show kana glyph | `jp->en` | Romaji reading | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `あ` -> type/pick `a` |
-| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | Requires Japanese audio prompts plus a kana-glyph response target with typed and MC controls. | Hear `/a/` -> type/pick `あ` |
-| Show romaji pronunciation | `en->jp` | Kana glyph | No | No | By design | N/A. Romaji is not used as a prompt source. Audio → kana is the useful production format. | Not generated |
+| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Hear `/a/` -> type/pick `あ` |
+| Show romaji pronunciation | `en->jp` | Kana glyph | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana resolves this visible production form to MC) | `a` -> pick `あ` |
 | Text: show kana glyph (self-copy) | `jp->jp` | Same kana glyph | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 | Text or audio kana | N/A | English definition | No | No | By design | N/A. A bare kana character has a reading fact, but no English meaning fact. | Not generated |
 
@@ -251,14 +251,14 @@ A question format appears in the deck when ALL these conditions apply:
    - Reading facts require: `responses.includes("romaji")` (jp->en) or `english.answers` (en->jp for reading en->jp)
 
 3. **Prompt type supported**: Audio prompts only work on listenable facts:
-   - Kana entries: text currently; Japanese audio → kana glyph is planned
+   - Kana entries: text and audio; audio asks the learner to produce the kana glyph
    - Kanji entries: text only (no audio for meaning; audio kanji reading is not disambiguated)
    - Words: text and audio both supported
    - Sentences: text and audio both supported (for grammar meaning facts only)
    - Grammar patterns: text only (audio awaiting implementation)
 
 4. **Direction allowed**: Some facts pin to one direction:
-   - Kana character facts: jp->en only; romaji is never a prompt
+   - Kana character facts: the closed matrix is kana → Romaji, audio → kana, and Romaji → kana
    - Kanji reading facts: jp->en only (fixedDir="jp2en")
    - Grammar production facts: internally jp->en only because their answer is Japanese
    - Transitivity facts: en->jp only (fixedDir="en2jp")
@@ -322,7 +322,7 @@ The matrix shows all corpus-feasible forms for each entry type. A real deck will
 **If typed is not selected** (`answers` does not include "typed"):
 - Typed forms are dropped, but MC-only forms remain
 - Example: if `japanese: {answers: ["mc"]}`, typed kana and word readings disappear
-- MC-only Japanese targets remain available; kana-character en->jp is excluded separately because romaji is never a prompt
+- MC-only Japanese targets remain available; visible Romaji → kana is always MC
 
 **If MC is not selected** (`answers` does not include "mc"):
 - Objective typed forms remain typed
