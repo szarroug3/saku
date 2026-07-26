@@ -91,6 +91,14 @@ function levelRank(level: Level): number {
   return level === "N5" ? 0 : level === "N4" ? 1 : 2;
 }
 
+/** te-sequence -- the bare te-form -- leads the whole track: it is the
+ * conjugation every other te-pattern (te-request, te-kara, te-iru...) is built
+ * on, so a beginner meets it as grammar lesson 1 (Sam's call). Everything else
+ * keeps its level/authored order behind it. */
+function teFormFirst(r: Recipe): number {
+  return r.id === "te-sequence" ? 0 : 1;
+}
+
 /**
  * The patterns the track teaches, in teaching order: the drillable recipes,
  * N5 before N4, stable within a level.
@@ -101,7 +109,8 @@ function levelRank(level: Level): number {
  * inside each level (Array.prototype.sort is stable).
  */
 export const CURRICULUM_PATTERNS: readonly Recipe[] = [...DRILLABLE].sort(
-  (a, b) => levelRank(a.level) - levelRank(b.level),
+  (a, b) =>
+    teFormFirst(a) - teFormFirst(b) || levelRank(a.level) - levelRank(b.level),
 );
 
 /**
