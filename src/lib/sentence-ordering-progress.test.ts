@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  learnedSentenceTierIds,
   sentenceTierDone,
   sentenceTierMarkerFact,
 } from "./sentence-ordering-progress.ts";
@@ -29,6 +30,20 @@ describe("sentence tier completion", () => {
     };
     assert.equal(sentenceTierDone("request", [A, B], history), true);
     assert.equal(sentenceTierDone("sequential", [A, B], history), false);
+  });
+
+  test("practice exposes only explicitly learned sentence tiers", () => {
+    const history: HistoryFile = {
+      ...EMPTY,
+      claims: {
+        [sentenceTierMarkerFact("simple")]: 1,
+        [sentenceTierMarkerFact("conditional")]: 1,
+      },
+    };
+    assert.deepEqual(learnedSentenceTierIds(history), [
+      "simple",
+      "conditional",
+    ]);
   });
 
   test("a completed assembly session advances without testing every tier fact", () => {

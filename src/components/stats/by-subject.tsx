@@ -39,10 +39,18 @@ import { Card, Lbl } from "@/components/ui";
 import { BUCKETS, fillFor, tallyFacts } from "@/components/stats/tally";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
+import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import type { Claims } from "@/lib/claims";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
 import { KIND_LABEL } from "@/lib/library/entries";
-import type { AccuracyMetric, EntryId, FactAggregate, FactId } from "@/types";
+import { learnedSentenceTierIds } from "@/lib/sentence-ordering-progress";
+import type {
+  AccuracyMetric,
+  EntryId,
+  FactAggregate,
+  FactId,
+  HistoryFile,
+} from "@/types";
 
 /** What each subject is called. KIND_LABEL is the Library's, and reusing it is
  * the point: the Library and Progress calling the same shelf two things is a bug
@@ -94,12 +102,15 @@ export function BySubject({
   claims,
   metric,
   now,
+  history,
 }: {
   facts: Record<FactId, FactAggregate>;
   claims: Claims;
   metric: AccuracyMetric;
   now: number;
+  history: HistoryFile;
 }) {
+  const learnedSentenceCount = learnedSentenceTierIds(history).length;
   return (
     <Card>
       <Lbl>By subject</Lbl>
@@ -115,9 +126,35 @@ export function BySubject({
               now={now}
             />
           ))}
+          <SentenceSubjectRow learned={learnedSentenceCount} />
         </tbody>
       </table>
     </Card>
+  );
+}
+
+function SentenceSubjectRow({ learned }: { learned: number }) {
+  const total = SENTENCE_ORDERING_TIERS.length;
+  return (
+    <tr className="border-b border-border last:border-b-0">
+      <th scope="row" className="py-2 pr-2 text-left font-normal">
+        Sentences
+      </th>
+      <td className="w-[92px] py-2">
+        <span
+          aria-hidden="true"
+          className="block h-1.5 overflow-hidden rounded-full bg-panel"
+        >
+          <span
+            className="block h-full bg-accent"
+            style={{ width: `${total > 0 ? (100 * learned) / total : 0}%` }}
+          />
+        </span>
+      </td>
+      <td className="w-[104px] whitespace-nowrap py-2 text-right tabular-nums text-text-muted">
+        {learned.toLocaleString()} of {total.toLocaleString()}
+      </td>
+    </tr>
   );
 }
 

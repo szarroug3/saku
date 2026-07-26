@@ -509,7 +509,12 @@ function LibraryBody() {
       facts: tierAssemblyFacts(tier!, history),
     }));
     const quizFacts = [
-      ...new Set(tierFacts.flatMap(({ facts }) => facts)),
+      ...new Set(
+        tierFacts.flatMap(({ tier, facts }) => [
+          ...facts,
+          sentenceTierMarkerFact(tier.id),
+        ]),
+      ),
     ];
     const nextTeach = tierFacts.find(
       ({ tier, facts }) =>
@@ -524,7 +529,10 @@ function LibraryBody() {
       quizFacts,
       teachPlan: nextTeach
         ? {
-            facts: nextTeach.facts,
+            facts: [
+              ...nextTeach.facts,
+              sentenceTierMarkerFact(nextTeach.tier.id),
+            ],
             teach: nextTeach.facts,
             what: `Sentence ordering · tier ${nextTeach.tier.id}`,
             mode: "assembly" as const,

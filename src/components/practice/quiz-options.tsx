@@ -138,7 +138,6 @@ export function QuizOptionsFields() {
       gridResponses: toggleGridResponse(cfg.gridResponses, value),
     });
   };
-
   return (
     <>
       <Card>
@@ -151,12 +150,6 @@ export function QuizOptionsFields() {
           </Chip>
           <Chip on={cfg.mode === "grid"} onClick={() => update({ mode: "grid" })}>
             Grid
-          </Chip>
-          <Chip
-            on={cfg.mode === "assembly"}
-            onClick={() => update({ mode: "assembly" })}
-          >
-            Build sentences
           </Chip>
           <Chip
             on={cfg.mode === "substitution"}

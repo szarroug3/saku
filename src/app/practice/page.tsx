@@ -32,7 +32,19 @@ import { useQuizSession } from "@/lib/quiz-session";
 import { gridFacts } from "@/lib/grid-facts";
 import { playablePairBoards } from "@/lib/pair-facts";
 import { buildCoverageDeck, enabledFormsFor } from "@/lib/ask-forms";
+import {
+  sentenceAsksRomaji,
+  sentenceAsksSelection,
+} from "@/lib/ask-config";
 import { resolve, whatSentence } from "@/lib/selection";
+import {
+  ASSEMBLY_QUIZ_TARGET,
+  readableAssemblyForTiers,
+} from "@/data/assembly";
+import {
+  learnedSentenceTierFacts,
+  learnedSentenceTierIds,
+} from "@/lib/sentence-ordering-progress";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
 import type { Selection } from "@/types";
@@ -66,13 +78,42 @@ export default function PracticePage() {
   // The facts the query names, right now — what Start hands the quiz and what
   // the bar counts, computed once so the sentence and the session can never
   // disagree about what you pressed Start on.
-  const facts = useMemo(
+  const sentenceSelected = cfg.selection.types.includes("sentence");
+  const sentenceConfigured =
+    cfg.mode === "drill" &&
+    (sentenceAsksSelection(cfg.ask) || sentenceAsksRomaji(cfg.ask));
+  const includeSentences = sentenceSelected && sentenceConfigured;
+  const learnedSentenceIds = useMemo(
+    () => learnedSentenceTierIds(history),
+    [history],
+  );
+  const sentenceQuestionCount = useMemo(
+    () => readableAssemblyForTiers(learnedSentenceIds, history).length,
+    [learnedSentenceIds, history],
+  );
+  const ordinaryTypes = cfg.selection.types.filter(
+    (type) => type !== "sentence",
+  );
+  const ordinarySelected =
+    !sentenceSelected || ordinaryTypes.length > 0;
+  const ordinaryFacts = useMemo(
     () =>
-      resolve(cfg.selection, history, lists, cfg.accuracyMetric, 0, {
-        now: mountedNow ?? 0,
-        graduateRuns: cfg.graduateRuns,
-      }),
+      ordinarySelected
+        ? resolve(
+            { ...cfg.selection, types: ordinaryTypes },
+            history,
+            lists,
+            cfg.accuracyMetric,
+            0,
+            {
+            now: mountedNow ?? 0,
+            graduateRuns: cfg.graduateRuns,
+            },
+          )
+        : [],
     [
+      ordinarySelected,
+      ordinaryTypes,
       cfg.selection,
       cfg.accuracyMetric,
       cfg.graduateRuns,
@@ -80,6 +121,10 @@ export default function PracticePage() {
       history,
       lists,
     ],
+  );
+  const sentenceFacts = useMemo(
+    () => (includeSentences ? learnedSentenceTierFacts(history) : []),
+    [includeSentences, history],
   );
 
   // What actually runs: exactly the pool you picked, capped to the requested
@@ -93,6 +138,12 @@ export default function PracticePage() {
   // uniform random N: take the first N. This keeps the selector's promise that
   // the number on the tile is the number you get.
   const planned = useMemo(() => {
+    if (includeSentences && !ordinarySelected) {
+      return {
+        facts: sentenceFacts,
+        count: Math.min(ASSEMBLY_QUIZ_TARGET, sentenceQuestionCount),
+      };
+    }
     const cap =
       cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null;
     if (cfg.mode === "pairs") {
@@ -103,20 +154,29 @@ export default function PracticePage() {
       // an empty run. So the gate counts the specs on PLAYABLE (≥2-pair) boards:
       // 0 here is the genuinely-unstartable case, and only that case, so it no
       // longer rejects an otherwise startable selection.
-      const boards = playablePairBoards(facts, cfg.pairResponses, history);
+      const boards = playablePairBoards(ordinaryFacts, cfg.pairResponses, history);
       return {
-        facts,
+        facts: ordinaryFacts,
         count: boards.reduce((n, b) => n + b.specs.length, 0),
       };
     }
     if (cfg.mode === "grid") {
-      const selected = gridFacts(facts, cfg.gridResponses);
+      const selected = gridFacts(ordinaryFacts, cfg.gridResponses);
       return { facts: selected, count: selected.length };
     }
-    const selected = cap === null ? facts : facts.slice(0, cap);
-    return { facts: selected, count: selected.length };
+    const selected =
+      cap === null ? ordinaryFacts : ordinaryFacts.slice(0, cap);
+    const sentenceCount = includeSentences
+      ? Math.min(ASSEMBLY_QUIZ_TARGET, sentenceQuestionCount)
+      : 0;
+    return {
+      facts: includeSentences ? [...selected, ...sentenceFacts] : selected,
+      count: selected.length + sentenceCount,
+    };
   }, [
-    facts,
+    ordinaryFacts,
+    ordinarySelected,
+    sentenceFacts,
     cfg.mode,
     cfg.gridResponses,
     cfg.pairResponses,
@@ -124,10 +184,25 @@ export default function PracticePage() {
     cfg.limType,
     cfg.limCount,
     history,
+    includeSentences,
+    sentenceQuestionCount,
   ]);
 
   // Footer count should reflect askable QUESTIONS for this run, not raw facts.
   const questionCount = useMemo(() => {
+    if (includeSentences) {
+      const ordinary = planned.facts.filter(
+        (fact) => !sentenceFacts.includes(fact),
+      );
+      const ordinaryCount = ordinary.reduce(
+        (sum, fact) => sum + enabledFormsFor(fact, cfg.ask).length,
+        0,
+      );
+      return (
+        ordinaryCount +
+        Math.min(ASSEMBLY_QUIZ_TARGET, sentenceQuestionCount)
+      );
+    }
     if (cfg.mode === "pairs") return planned.count;
     if (cfg.mode === "grid") return planned.facts.length;
 
@@ -149,6 +224,9 @@ export default function PracticePage() {
     cfg.limType,
     cfg.limCount,
     cfg.ask,
+    includeSentences,
+    sentenceFacts,
+    sentenceQuestionCount,
     planned.count,
     planned.facts,
   ]);
@@ -168,7 +246,7 @@ export default function PracticePage() {
     () =>
       cfg.mode === "grid"
         ? whatSentence(cfg.selection, questionCount, lists, {
-            showCount: !(cfg.mode === "drill" && cfg.length === "endless"),
+            showCount: true,
           })
         : what,
     [cfg.mode, cfg.selection, questionCount, lists, what],

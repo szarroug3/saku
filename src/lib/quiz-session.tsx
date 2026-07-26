@@ -78,6 +78,11 @@ import {
 import { postClaim, postSession, postUnseen } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import {
+  sentenceAsksRomaji,
+  sentenceAsksSelection,
+} from "@/lib/ask-config";
+import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
+import {
   normalizeEnvelope,
   reconcile,
   type SessionPayload,
@@ -1194,7 +1199,13 @@ export function QuizSessionProvider({
       const what = widen ? countWhat(facts) : session.what;
       // Re-read the current settings (see startNextRound): a change made while
       // the new material was being read should take effect on the first round.
-      const snapshot = snapshotOf(cfg);
+      const snapshot = {
+        ...snapshotOf(cfg),
+        // The lesson owns its question type. Global Practice settings may
+        // change answer details, but must not turn a sentence-ordering lesson's
+        // closing assembly quiz into an unrelated drill.
+        ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
+      };
       setSession({
         ...session,
         facts,
@@ -1363,7 +1374,11 @@ export function QuizSessionProvider({
     // hit ending a round, switching to Limited, and getting Endless again.
     // Stored back on the session so its record, its HUD and a redrill (retryLeg,
     // which reads session.snapshot) all name the settings this round ran under.
-    const snapshot = snapshotOf(cfg);
+    const snapshot = {
+      ...snapshotOf(cfg),
+      // Keep a dedicated lesson mode (notably sentence assembly) across rounds.
+      ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
+    };
     setSession({
       ...session,
       snapshot,
@@ -1613,6 +1628,39 @@ export function QuizSessionProvider({
   const finishQuiz = useCallback(
     (stats: SessionStats) => {
       const quiz = active;
+      const sentencePractice =
+        quiz?.snapshot.mode === "drill" &&
+        quiz.facts.some(isSentenceTierMarkerFact) &&
+        (sentenceAsksSelection(quiz.snapshot.ask) ||
+          sentenceAsksRomaji(quiz.snapshot.ask));
+      const hasOrdinaryQuestions =
+        quiz?.facts.some((fact) => !isSentenceTierMarkerFact(fact)) ?? false;
+      // Sentence building is a Japanese-sentence source inside Drill, not a
+      // separate mode. Preserve the ordinary answers at the source boundary,
+      // then show the selected learned sentence rules in the same run.
+      if (
+        sentencePractice &&
+        hasOrdinaryQuestions &&
+        quiz.runtime.sentencePhase !== true
+      ) {
+        setActive({
+          ...quiz,
+          runtime: {
+            ...quiz.runtime,
+            sentencePhase: true,
+            preSentenceStats: stats,
+          },
+        });
+        setProgress(null);
+        return;
+      }
+      const completedStats =
+        sentencePractice && quiz.runtime.preSentenceStats
+          ? mergeStats(
+              quiz.runtime.preSentenceStats as SessionStats,
+              stats,
+            )
+          : stats;
       // In a session, finishing a leg opens the fork — it does not score
       // anything and it does not leave the loop. Scoring happens once, when
       // the session ends.
@@ -1635,7 +1683,7 @@ export function QuizSessionProvider({
       }
       setActive(null);
       setProgress(null);
-      const s = computeResults(stats);
+      const s = computeResults(completedStats);
       if (!quiz || !s.total) {
         router.push("/");
         return;
@@ -1643,7 +1691,7 @@ export function QuizSessionProvider({
       // A one-off quiz has no rounds, so it commits once, here — the same
       // queue-then-post path a round takes, so it gets the same retries and the
       // same visible failure.
-      const record = buildSessionRecord(stats, {
+      const record = buildSessionRecord(completedStats, {
         mode: quiz.snapshot.mode,
         redrill: quiz.redrill,
         ts: Date.now(),
@@ -1654,7 +1702,7 @@ export function QuizSessionProvider({
         mode: quiz.snapshot.mode,
         redrill: quiz.redrill,
         ts: record?.ts ?? Date.now(),
-        stats,
+        stats: completedStats,
       });
       router.push("/results");
     },

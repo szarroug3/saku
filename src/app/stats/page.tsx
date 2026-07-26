@@ -45,6 +45,7 @@ import { MixUps } from "@/components/stats/mix-ups";
 import { tallyFacts } from "@/components/stats/tally";
 import { PageTitle } from "@/components/ui";
 import { factKeys } from "@/lib/facts";
+import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useHistory } from "@/lib/use-history";
 
@@ -66,7 +67,7 @@ export default function StatsPage() {
   // a bucket that is about the dictionary rather than about you.
   const recorded = [
     ...new Set([...factKeys(history.facts), ...factKeys(claims)]),
-  ];
+  ].filter((fact) => !isSentenceTierMarkerFact(fact));
   const tally = tallyFacts(recorded, history.facts, claims, cfg.accuracyMetric, now);
 
   return (
@@ -85,6 +86,7 @@ export default function StatsPage() {
           claims={claims}
           metric={cfg.accuracyMetric}
           now={now}
+          history={history}
         />
         <MixUps history={history} graduateRuns={cfg.graduateRuns} />
       </div>

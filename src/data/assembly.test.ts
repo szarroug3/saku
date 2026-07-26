@@ -15,7 +15,10 @@ import {
   canonicalOrder,
   gradeAssembly,
   pickAssembly,
+  pickAssemblyForTiers,
   readableAssembly,
+  readableAssemblyForTier,
+  readableAssemblyForTiers,
   sentenceOrderingTierForItem,
   type AssemblyItem,
 } from "./assembly.ts";
@@ -63,11 +66,11 @@ describe("sentence-ordering follows the grammar teaching order", () => {
       [
         "request",
         "sequential",
-        "contrast",
         "desire",
         "conditional",
         "causal",
         "giving",
+        "contrast",
         "obligation",
         "reported",
       ],
@@ -101,11 +104,66 @@ describe("sentence-ordering quiz hints", () => {
     }
   });
 
-  test("the more specific tier wins when an item also has a simple pattern", () => {
+  test("a sentence spanning multiple lessons stays out of single-tier drills", () => {
     assert.equal(
       sentenceOrderingTierForItem(itemWithPatterns(["wo", "tara"])),
-      "conditional",
+      null,
     );
+    assert.equal(
+      sentenceOrderingTierForItem(itemWithPatterns(["ba", "te-ageru"])),
+      null,
+    );
+  });
+
+  test("an unsupported way-of-doing sentence stays unclassified", () => {
+    assert.equal(sentenceOrderingTierForItem(itemWithPatterns(["kata"])), null);
+  });
+
+  test("negative requests stay with requests, not without/contrast", () => {
+    assert.equal(
+      sentenceOrderingTierForItem(itemWithPatterns(["nai-request"])),
+      "request",
+    );
+  });
+});
+
+describe("sentence-ordering quiz scope", () => {
+  test("a tier-scoped pool contains only that sentence type", () => {
+    for (const tier of SENTENCE_ORDERING_TIERS) {
+      const pool = readableAssemblyForTiers([tier.id], OMNISCIENT);
+      assert.ok(pool.length > 0, `${tier.id} should have readable exercises`);
+      for (const item of pool) {
+        assert.equal(sentenceOrderingTierForItem(item), tier.id);
+      }
+    }
+  });
+
+  test("the picker never crosses into an unrequested tier", () => {
+    for (let seed = 1; seed <= 20; seed += 1) {
+      const item = pickAssemblyForTiers(
+        OMNISCIENT,
+        ["conditional"],
+        seeded(seed),
+      );
+      assert.ok(item);
+      assert.equal(sentenceOrderingTierForItem(item), "conditional");
+    }
+  });
+
+  test("no learned sentence types means no sentence question", () => {
+    assert.equal(pickAssemblyForTiers(OMNISCIENT, [], seeded(1)), null);
+  });
+
+  test("conditional prompts state a condition in English", () => {
+    const tier = SENTENCE_ORDERING_TIERS.find(
+      (candidate) => candidate.id === "conditional",
+    )!;
+    const pool = readableAssemblyForTier(tier, OMNISCIENT);
+    assert.ok(pool.length >= tier.minReadable);
+    for (const item of pool) {
+      assert.match(item.en, /\b(if|when|unless|provided|in case)\b/i);
+    }
+    assert.ok(!pool.some((item) => item.en === "The box is in the storeroom."));
   });
 });
 

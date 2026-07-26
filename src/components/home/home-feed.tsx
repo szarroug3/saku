@@ -195,7 +195,7 @@ function trackOfRun(run: RunInfo): TrackKey | null {
 
 export function HomeFeed() {
   const { cfg } = useQuizConfig();
-  const { startSession, startQuizInMode, runs, continueRun, discardRun } = useQuizSession();
+  const { startSession, runs, continueRun, discardRun } = useQuizSession();
   const { history, loaded } = useHistory();
 
   // The next lesson is a view of history, not a cursor — see next-lesson.tsx.
@@ -731,21 +731,36 @@ export function HomeFeed() {
       {sentenceOrderingLessonShown ? (
         <NextSentenceOrderingLesson
           lesson={sentenceOrderingLessonShown}
-          onStart={(facts) =>
+          onStart={(facts) => {
+            const marker = sentenceTierMarkerFact(
+              sentenceOrderingLessonShown.tierId,
+            );
             startSession(
-              facts,
+              [...facts, marker],
               facts,
               `Sentence ordering · tier ${sentenceOrderingLessonShown.tierId}`,
               "lesson",
               undefined,
               "assembly",
-            )
-          }
-          onQuizMe={(facts) =>
-            startQuizInMode(facts, "assembly", {
-              what: `Sentence ordering · tier ${sentenceOrderingLessonShown.tierId}`,
-            })
-          }
+            );
+          }}
+          onQuizMe={(facts) => {
+            const marker = sentenceTierMarkerFact(
+              sentenceOrderingLessonShown.tierId,
+            );
+            // “Quiz me” skips the teaching walk, not the lesson session. Keep
+            // the same three-round spaced-repetition loop every other lesson
+            // uses; only `teach` is empty because the learner asked to go
+            // straight to the questions.
+            startSession(
+              [...facts, marker],
+              [],
+              `Sentence ordering · tier ${sentenceOrderingLessonShown.tierId}`,
+              "lesson",
+              undefined,
+              "assembly",
+            );
+          }}
           onClaim={(facts) => {
             const completed = [
               ...facts,

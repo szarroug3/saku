@@ -25,14 +25,15 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Btn } from "@/components/ui";
+import { Btn, SmallBtn } from "@/components/ui";
 import { newFactStat, retriesAllowed, shuffle } from "@/lib/engine";
 import {
   assemblyFacts,
+  ASSEMBLY_QUIZ_TARGET,
   canonicalOrder,
   gradeAssembly,
-  pickAssembly,
-  pieceHint,
+  pickAssemblyForTiers,
+  SENTENCE_ORDERING_TIERS,
   sentenceOrderingTierForItem,
   type AssemblyItem,
 } from "@/data/assembly";
@@ -40,13 +41,19 @@ import {
   SENTENCE_ORDERING_GUIDES,
   type SentenceOrderingTierId,
 } from "@/data/sentence-ordering-guides";
+import {
+  TIER_EXAMPLES,
+  type TierExample,
+} from "@/components/session/sentence-ordering-teach-walk";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
+import {
+  learnedSentenceTierIds,
+  sentenceTierMarkerFact,
+} from "@/lib/sentence-ordering-progress";
 import type { HistoryFile, SessionStats } from "@/types";
 import { DrillHalo, type HaloState } from "@/components/quiz/drill-halo";
-
-const TARGET = 12;
 
 interface AsmCard {
   item: AssemblyItem;
@@ -63,6 +70,7 @@ interface AsmRuntime {
   pos: number;
   streak: number;
   stats: SessionStats;
+  source: "lesson-examples" | "practice-corpus";
 }
 
 interface CoachHint {
@@ -113,12 +121,145 @@ function coachHints(item: AssemblyItem, canon: readonly string[], tries: number)
   return out;
 }
 
-function buildRuntime(history: HistoryFile): AsmRuntime {
+function quizTierIds(active: ActiveQuiz, history: HistoryFile): string[] {
+  const explicit = SENTENCE_ORDERING_TIERS.filter((tier) =>
+    active.facts.includes(sentenceTierMarkerFact(tier.id)),
+  ).map((tier) => tier.id);
+  if (explicit.length > 0) return explicit;
+
+  return learnedSentenceTierIds(history);
+}
+
+const LESSON_PARTS: Readonly<
+  Record<SentenceOrderingTierId, readonly (keyof TierExample)[]>
+> = {
+  request: ["context", "target", "action", "ending"],
+  conditional: ["condition", "resultTopic", "core", "ending"],
+  simple: ["topic", "core", "ending"],
+  causal: ["core", "topic", "ending"],
+  obligation: ["topic", "core", "ending"],
+  sequential: ["core", "topic", "ending"],
+  desire: ["topic", "core", "ending"],
+  giving: ["topic", "core", "ending"],
+  reported: ["topic", "core", "ending"],
+  contrast: ["core", "topic", "ending"],
+};
+
+function lessonPattern(tierId: SentenceOrderingTierId, jp: string): string {
+  const tier = SENTENCE_ORDERING_TIERS.find((candidate) => candidate.id === tierId)!;
+  const visible = tier.patterns.find((pattern) => {
+    const surface: Readonly<Record<string, string>> = {
+      "te-request": "ください",
+      "nai-request": "ないで",
+      mashou: "ましょう",
+      tara: "たら",
+      ba: "れば",
+      nara: "なら",
+      "kara-reason": "から",
+      node: "ので",
+      "te-iru": "ている",
+      "te-shimau": "てしま",
+      "te-miru": "てみ",
+      tai: "たい",
+      yasui: "やすい",
+      nikui: "にくい",
+      "te-ageru": "あげ",
+      "te-kureru": "くれ",
+      "te-morau": "もら",
+      "to-omou": "と思う",
+      rashii: "らしい",
+      kamoshirenai: "かもしれない",
+      noni: "のに",
+      "nai-de": "ないで",
+      "nakereba-naranai": "なければならない",
+      "nakereba-ikenai": "なければいけない",
+    };
+    return surface[pattern] ? jp.includes(surface[pattern]) : false;
+  });
+  return visible ?? tier.patterns[0];
+}
+
+function lessonPieces(
+  tierId: SentenceOrderingTierId,
+  example: TierExample,
+): AssemblyItem["pieces"] {
+  const starts = LESSON_PARTS[tierId]
+    .map((key) => {
+      const text = example[key];
+      if (!text || typeof text === "string" || !("jp" in text) || !text.jp) return null;
+      const start = example.jp.indexOf(text.jp);
+      return start < 0 ? null : { start, text: text.jp };
+    })
+    .filter((part): part is { start: number; text: string } => part !== null)
+    .sort((a, b) => a.start - b.start);
+  return starts.map((part, index) => ({
+    t: example.jp.slice(
+      part.start,
+      starts[index + 1]?.start ?? example.jp.length,
+    ),
+    h: null,
+  }));
+}
+
+function lessonItems(tierId: SentenceOrderingTierId): AssemblyItem[] {
+  const tierIndex = SENTENCE_ORDERING_TIERS.findIndex(
+    (tier) => tier.id === tierId,
+  );
+  return TIER_EXAMPLES[tierId].map((example, index) => ({
+    id: -10_000 - tierIndex * 10 - index,
+    en: example.en,
+    jp: example.jp,
+    pieces: lessonPieces(tierId, example),
+    v: [],
+    p: [lessonPattern(tierId, example.jp)],
+  }));
+}
+
+function usesLessonExamples(active: ActiveQuiz, tierIds: readonly string[]): boolean {
+  return (
+    tierIds.length === 1 &&
+    active.what.startsWith("Sentence ordering · tier ")
+  );
+}
+
+function buildRuntime(active: ActiveQuiz, history: HistoryFile): AsmRuntime {
   const cards: AsmCard[] = [];
   const stats: SessionStats = {};
   const seenIds = new Set<number>();
-  for (let i = 0; i < TARGET * 4 && cards.length < TARGET; i++) {
-    const item = pickAssembly(history);
+  const tierIds = quizTierIds(active, history);
+  const lessonSource = usesLessonExamples(active, tierIds);
+  const exactLessonCards =
+    lessonSource
+      ? lessonItems(tierIds[0] as SentenceOrderingTierId)
+      : null;
+  if (exactLessonCards) {
+    for (const item of exactLessonCards) {
+      cards.push({
+        item,
+        pool: shuffle(item.pieces.map((piece) => piece.t)),
+        tray: [],
+        state: "open",
+        tries: 0,
+      });
+      for (const fact of assemblyFacts(item)) {
+        if (!stats[fact]) stats[fact] = newFactStat();
+        stats[fact].seen++;
+      }
+    }
+    return {
+      cards,
+      pos: 0,
+      streak: 0,
+      stats,
+      source: "lesson-examples",
+    };
+  }
+  for (
+    let i = 0;
+    i < ASSEMBLY_QUIZ_TARGET * 4 && cards.length < ASSEMBLY_QUIZ_TARGET;
+    i++
+  ) {
+    const item = pickAssemblyForTiers(history, tierIds);
     if (!item) break;
     if (seenIds.has(item.id)) continue; // no repeats within one run
     seenIds.add(item.id);
@@ -134,12 +275,28 @@ function buildRuntime(history: HistoryFile): AsmRuntime {
       stats[f].seen++;
     }
   }
-  return { cards, pos: 0, streak: 0, stats };
+  return {
+    cards,
+    pos: 0,
+    streak: 0,
+    stats,
+    source: "practice-corpus",
+  };
 }
 
 function ensureRuntime(active: ActiveQuiz, history: HistoryFile): AsmRuntime {
   const rt = active.runtime as { assembly?: AsmRuntime };
-  return (rt.assembly ??= buildRuntime(history));
+  const tierIds = quizTierIds(active, history);
+  const expectedSource = usesLessonExamples(active, tierIds)
+    ? "lesson-examples"
+    : "practice-corpus";
+  // Replace queues saved by the older corpus-backed lesson implementation.
+  // Without this, an already-open lesson can keep showing seven unrelated
+  // generated cards even after lesson launches have been corrected.
+  if (rt.assembly?.source !== expectedSource) {
+    rt.assembly = buildRuntime(active, history);
+  }
+  return (rt.assembly ??= buildRuntime(active, history));
 }
 
 // ---------- mutations (module-level, runtime passed in) ----------
@@ -229,7 +386,14 @@ function skipCard(rt: AsmRuntime, card: AsmCard): void {
 export function AssemblyScreen() {
   const { cfg } = useQuizConfig();
   const { history, loaded } = useHistory();
-  const { active, finishQuiz, setProgress, saveNow } = useQuizSession();
+  const {
+    active,
+    session,
+    finishQuiz,
+    setProgress,
+    saveNow,
+    reviewLesson,
+  } = useQuizSession();
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
   const [hintOpen, setHintOpen] = useState(false);
@@ -250,8 +414,8 @@ export function AssemblyScreen() {
     // DRAFT copy.
     return (
       <div className="mx-auto mt-16 max-w-md text-center text-text-muted">
-        Learn a few more words first. Sentence building will unlock once you know
-        every word in a sentence.
+        Learn a sentence type and enough of its words first. Practice only uses
+        sentence types you have learned.
       </div>
     );
   }
@@ -261,10 +425,12 @@ export function AssemblyScreen() {
   const resolved = card.state !== "open";
   const canon = canonicalOrder(item);
   const coach = coachHints(item, canon, card.tries);
-  const tierId = sentenceOrderingTierForItem(item) as SentenceOrderingTierId;
+  const tierId = sentenceOrderingTierForItem(
+    item,
+  ) as SentenceOrderingTierId | null;
   const thinkHint =
-    SENTENCE_ORDERING_GUIDES[tierId]?.hook ??
-    SENTENCE_ORDERING_GUIDES.simple.hook;
+    (tierId ? SENTENCE_ORDERING_GUIDES[tierId]?.hook : undefined) ??
+    "Think about what each chunk does, then place the final predicate.";
   const haloState: HaloState =
     card.state === "right"
       ? "right"
@@ -273,7 +439,6 @@ export function AssemblyScreen() {
         : shake
           ? "wrong-flash"
           : "resting";
-  const hintBySurface = new Map(item.pieces.map((p) => [p.t, pieceHint(p)]));
 
   const place = (surface: string) => {
     if (resolved) return;
@@ -339,19 +504,44 @@ export function AssemblyScreen() {
     saveNow();
     rerender();
   };
+  const endQuiz = () => finishQuiz(rt.stats);
+  const hasLesson = !!session && session.teach.length > 0;
+  const pct = total > 0 ? Math.round((100 * done) / total) : 0;
 
   return (
-    <div className="mx-auto mt-6 max-w-xl">
-      <div className="mb-6 flex items-center justify-between text-sm text-text-muted">
-        <span className="rounded-full border border-border bg-accent-bg px-3 py-1 text-[13px] font-medium text-accent tabular-nums">
-          {rt.pos + 1} / {rt.cards.length}
-        </span>
-        <span className="tabular-nums" aria-hidden>
-          {rt.streak > 0 ? `\u{1F525} ${rt.streak}` : ""}
-        </span>
+    <div>
+      <div className="kq-band sticky top-0 z-10 border-b border-border px-3 py-1.5">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="kq-material rounded-full border border-accent/40 bg-accent-bg px-3 py-1 text-[13px] font-semibold tabular-nums text-accent">
+              {done} / {total}
+            </span>
+            {rt.streak >= 2 ? (
+              <span className="kq-material rounded-full border border-border px-2.5 py-0.5 text-[11px] tabular-nums text-text-muted">
+                🔥 {rt.streak}
+              </span>
+            ) : null}
+          </span>
+          <span className="flex items-center gap-1.5">
+            {hasLesson ? (
+              <SmallBtn onClick={reviewLesson}>Look again</SmallBtn>
+            ) : null}
+            <SmallBtn onClick={endQuiz}>End quiz</SmallBtn>
+          </span>
+        </div>
+        <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-200"
+            style={{
+              width: `${pct}%`,
+              boxShadow:
+                "0 0 8px color-mix(in srgb, var(--accent) 55%, transparent)",
+            }}
+          />
+        </div>
       </div>
 
-      <div className="flex flex-col items-center">
+      <div className="mx-auto mt-6 flex max-w-xl flex-col items-center">
         <DrillHalo
           key={`${item.id}-${card.tries}`}
           state={haloState}
@@ -558,7 +748,9 @@ export function AssemblyScreen() {
             <div className="w-full space-y-3">
               <div className="rounded-xl border border-border bg-panel p-3 text-sm">
                 <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
-                  {SENTENCE_ORDERING_GUIDES[tierId]?.eyebrow ?? "Sentence ordering"}
+                  {(tierId
+                    ? SENTENCE_ORDERING_GUIDES[tierId]?.eyebrow
+                    : undefined) ?? "Sentence ordering"}
                 </div>
                 <p className="text-text">{thinkHint}</p>
                 {card.tries > 0 ? (
@@ -568,25 +760,6 @@ export function AssemblyScreen() {
                     ))}
                   </ul>
                 ) : null}
-              </div>
-              <div className="rounded-xl border border-border bg-panel p-3 text-sm">
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
-                  Word meanings
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {item.pieces
-                    .filter((piece) => hintBySurface.get(piece.t))
-                    .map((piece) => (
-                      <span key={piece.t}>
-                        <span lang="ja" className="font-medium">
-                          {piece.t}
-                        </span>{" "}
-                        <span className="text-text-muted">
-                          {hintBySurface.get(piece.t)}
-                        </span>
-                      </span>
-                    ))}
-                </div>
               </div>
             </div>
           ) : null}

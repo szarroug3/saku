@@ -21,9 +21,11 @@
 // scope (fewer hiragana are "shaky" than are "known").
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { japaneseFontClass } from "@/lib/japanese-text";
+import { readableAssemblyForTiers } from "@/data/assembly";
+import { learnedSentenceTierIds } from "@/lib/sentence-ordering-progress";
 import { resolve } from "@/lib/selection";
 import { emptySelection } from "@/lib/selection-empty";
 import {
@@ -64,6 +66,15 @@ const STATUSES: ReadonlyArray<{ id: FactBand; label: string }> = [
   { id: "mixup", label: "Mix-ups" },
   { id: "slipping", label: "Slipping" },
 ];
+
+function sentenceScopeIsAvailable(sel: Selection): boolean {
+  return (
+    !sel.list &&
+    sel.session === null &&
+    !sel.text.trim() &&
+    sel.subjects.length === 0
+  );
+}
 
 function ScopeButton({
   label,
@@ -222,18 +233,33 @@ export function PracticeSelector({
   // describes its own scope and ignores the intent.
   const [scopeIntent, setScopeIntent] = useState<PracticeScope | null>(null);
   const scope = effectiveScope(sel, scopeIntent);
+  const learnedSentenceIds = useMemo(
+    () => learnedSentenceTierIds(history),
+    [history],
+  );
+  const sentenceCount = useMemo(
+    () => readableAssemblyForTiers(learnedSentenceIds, history).length,
+    [learnedSentenceIds, history],
+  );
+
+  const countForType = useCallback(
+    (s: Selection, id: string): number =>
+      id === "sentence"
+        ? sentenceScopeIsAvailable(s)
+          ? sentenceCount
+          : 0
+        : resolve(withTypes(s, [id]), history, lists, metric, 0, context).length,
+    [sentenceCount, history, lists, metric, context],
+  );
 
   // The type ids that resolve to at least one fact in a given selection's scope,
   // computed the same way the chip counts are. Used to prune a chosen type that
   // has nothing to drill after a scope change.
-  const presentTypesIn = (s: Selection): Set<string> =>
-    new Set(
-      types.filter(
-        (id) =>
-          resolve(withTypes(s, [id]), history, lists, metric, 0, context).length >
-          0,
-      ),
-    );
+  const presentTypesIn = useCallback(
+    (s: Selection): Set<string> =>
+      new Set(types.filter((id) => countForType(s, id) > 0)),
+    [types, countForType],
+  );
 
   // Switch scope, then drop any chosen type with 0 items in the new scope — a
   // greyed-out "0" chip must not stay selected (the footer and drill would still
@@ -260,12 +286,12 @@ export function PracticeSelector({
     return new Map(
       types.map((id) => [
         id,
-        resolve(withTypes(base, [id]), history, lists, metric, 0, context).length,
+        countForType(base, id),
       ]),
     );
     // base derives from sel; scopeKey captures the scope fields that matter here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeKey, types, history, lists, metric, context]);
+  }, [scopeKey, types, countForType]);
 
   const statusCounts = useMemo(() => {
     const base = {
@@ -294,7 +320,7 @@ export function PracticeSelector({
     if (kept.length === sel.states.length) return;
     const next: Selection = { ...sel, states: kept };
     onChange(scope === "everything" ? pruneEmptyTypes(next, presentTypesIn(next)) : next);
-  }, [sel, statusCounts, scope, onChange]);
+  }, [sel, statusCounts, scope, onChange, presentTypesIn]);
 
   // List tiles, only shown in custom scope. Each count reflects the chosen types
   // too, so it is the exact size that list contributes right now.

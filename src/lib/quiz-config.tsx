@@ -106,6 +106,10 @@ function normalizeConfig(saved: unknown): QuizConfig {
       // dirs/styles/listen fields is migrated forward; anything else defaults.
       // The old fields are then dropped so they can't shadow the new model.
       const rawObj = raw as Record<string, unknown>;
+      // A short-lived build exposed sentence practice as a separate "mixed"
+      // mode. Sentences now correctly use the Japanese-sentence source inside
+      // Drill, so migrate that saved UI state back to Drill.
+      if (rawObj.mode === "mixed") cfg.mode = "drill";
       if (rawObj.ask && typeof rawObj.ask === "object") {
         cfg.ask = normalizeAsk(rawObj.ask);
       } else if (
