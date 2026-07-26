@@ -26,7 +26,8 @@ Completeness rule:
 - `meaning fact`: a fact whose answer is a meaning/gloss
 - `text prompt`: Japanese is shown in text
 - `audio prompt`: Japanese is played
-- Romaji typing policy: only kana entries use typed romaji; all other Japanese output rows use kana/kanji typing, not romaji input
+- Japanese typing policy: whenever the expected response is Japanese, typed answers are kana. The kana-glyph → Latin reading card is the only typed-romaji format because its expected response is explicitly a Romaji reading, not Japanese text.
+- The internal response setting is still named `"romaji"` in current code. In non-kana sections that legacy name selects a Japanese-reading/production question; it does not mean the learner types Latin letters.
 
 Status labels:
 - `Current`: implemented in the current engine
@@ -151,7 +152,7 @@ The Sentences settings card has independent Japanese and English subsections. Ja
 | Sentence source (audio) | `jp->jp` | Exact kanji/kana orthography | No | No | By design | N/A. Audio does not uniquely determine kanji spelling; the supported planned transcription target is full kana instead. | Not generated |
 | English sentence (text) | `en->jp` | Order Japanese chunks | Drag/order | No | Current | Drill mode + Sentences kind + `sentence: {englishResponses: includes "ordering"}` + at least one learned sentence rule. English prompt format is always text. | `Saku ate sushi.` -> order `サクは` / `寿司を` / `食べた。` |
 | English sentence (text) | `en->jp` | Choose the matching Japanese sentence | No | Yes | Planned | Intended: Drill mode + Sentences kind + `sentence: {englishResponses: includes "selection"}`. The setting is stored, but the assembly screen does not generate this MC board yet. | `Saku ate sushi.` -> pick `サクは寿司を食べた。` |
-| English sentence (text) | `en->jp` | Type the complete Japanese sentence | Yes | No | Planned | Requires a new English-sentence response option for full production. The current English sentence subsection exposes ordering and selection only. | `Saku ate sushi.` -> type `サクは寿司を食べた。` |
+| English sentence (text) | `en->jp` | Type the complete Japanese sentence in kana | Yes | No | Planned | Requires a new English-sentence response option for full kana production. The current English sentence subsection exposes ordering and selection only. | `Saku ate sushi.` -> type `さくはすしをたべた。` |
 
 ---
 
@@ -171,12 +172,12 @@ Grammar rows here are only grammar-source behavior. Grammar meaning facts can al
 
 | Prompt source | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
-| Japanese source config (text vehicle cue; answer is Japanese) | `jp->en` internal direction | Japanese production form | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | Prompt `行く` + `〜てから` -> type/pick `行ってから` |
-| Japanese source config (audio prompt is Japanese) | `jp->jp` | Japanese production form | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. Grammar production facts are not currently listenable. | Hear `たべる` cue -> type/pick `食べてから` |
+| Japanese source config (text vehicle cue; answer is Japanese) | `jp->en` internal direction | Japanese production form in kana | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}`. The legacy response name selects Japanese production; typed output is kana. | Prompt `行く` + `〜てから` -> type/pick `いってから` |
+| Japanese source config (audio prompt is Japanese) | `jp->jp` | Japanese production form in kana | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. The typed answer is kana. Grammar production facts are not currently listenable. | Hear `たべる` cue -> type/pick `たべてから` |
 | Japanese source (text self-copy of pattern label) | `jp->jp` | Same pattern text | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 | Japanese source (text showing a completed vehicle form) | `jp->jp` | Same completed production form | No | No | By design | N/A. The learner would only copy the visible answer. | Not generated |
 
-> **Note on "direction":** ask-forms models grammar production as `jp→en` with response `"romaji"` because the answer IS Japanese (a conjugated form) — `answerIsJapanese` is true, so `candidateDirs` returns `["jp2en"]`. The card looks like production (you produce Japanese), but the data model treats it as a `jp→en` "romaji" card. The `en→jp` English source does not generate grammar production forms.
+> **Note on "direction":** ask-forms models grammar production as `jp→en` with the legacy response key `"romaji"` because the answer is Japanese (a conjugated form) — `answerIsJapanese` is true, so `candidateDirs` returns `["jp2en"]`. The learner types kana, not Latin-letter romaji. The `en→jp` English source does not generate grammar production forms.
 
 ---
 
@@ -223,7 +224,7 @@ These apply across special subjects when deciding if a row is practical to ship.
 | Audio-language policy | All audio rows | Audio cues are Japanese only; English cues are always text | Current policy | No English-audio rows |
 | Typed feasibility for Japanese targets | `en->jp` production rows | Non-kana targets are usually MC-first unless kana-only entry mode is provided | Current | `召し上がる`/`開ける` rows are MC-first |
 | Multi-answer English meaning filter | `jp->en` meaning/definition rows | Typed is available when the fact has gradable accepted answers; a format that cannot grade its valid paraphrases must force MC | Current policy | Sentence definitions and special relationship facts force MC; ordinary word/grammar meanings can type or pick |
-| Romaji typing scope | All typed rows | Typed romaji is allowed only for kana entries; non-kana subjects type kana/kanji when Japanese output is required | Current policy | Kanji reading row types `せい`, not `sei` |
+| Japanese typing scope | All typed rows | Every Japanese expected response is typed in kana; Latin-letter romaji is used only when the expected response itself is explicitly a Romaji reading | Current policy | Kanji reading types `せい`, grammar production types `いってから`, and sentence production types `さくはすしをたべた` |
 | Register/role disambiguation | Keigo/transitivity | Prompt must encode register or transitivity role to avoid ambiguous grading | Current | `honorific` vs `humble`, `open (itself)` vs `open (something)` |
 | Corpus-backed examples | All planned rows | A row should have at least one corpus-backed cue/example path | Current | Plain-form cue `たべる` -> keigo target row |
 | Trivial self-copy filter | All text->same-text rows | If prompt and target are effectively identical copy tasks, mark row as `No` | Current policy | `これ` -> type `これ` is marked trivial |
@@ -271,9 +272,9 @@ A question format appears in the deck when ALL these conditions apply:
 6. **Required-control resolution**: Forms intended as typed but forced to MC still appear as MC:
    - Example: Kana en->jp is always MC, so a typed-only English-source configuration still produces its MC card rather than an empty run
 
-7. **Script rule**: Typed romaji exists only for kana entries:
-   - Kanji reading, word reading, and sentence kana typing all use kana characters, not romaji
-   - Only kana glyphs can be answered with romaji input
+7. **Script rule**: Japanese typed responses always use kana:
+   - Kanji reading, word reading, grammar production, and sentence production use kana characters, never Latin-letter romaji
+   - The only Latin-letter typed answer is the explicit kana-glyph → Romaji-reading card, such as `あ` → `a`
 
 8. **Triviality filter**: Text self-copy rows are explicitly excluded:
    - `あ` -> type `あ` (kana self-copy): not generated
@@ -335,7 +336,7 @@ The matrix shows all corpus-feasible forms for each entry type. A real deck will
 - Text forms of the same row remain
 
 **Planned features not yet implemented**:
-- Sentence+romaji (typing full sentences in kana): awaiting distinct romaji grading
+- Sentence kana production: awaiting full-sentence kana data and grading
 - English sentence selection: the setting exists, but the assembly quiz currently implements ordering only
 - Grammar audio: awaiting audio support for patterns
 - Keigo/transitivity production: awaiting implementation
@@ -363,6 +364,6 @@ Some question formats in the matrix can be reached via multiple settings combina
 | Word reading fact (en→jp) | Any en→jp setting | `english: {answers: includes "typed" or "mc"}` |
 | Grammar meaning fact (jp→en text) | Text prompt only | `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}` |
 | Grammar meaning fact (jp→en audio) | Audio prompt only | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` (blocked) |
-| Grammar production fact (internal jp→en) | Japanese text + Romaji/Kana response | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` |
+| Grammar production fact (internal jp→en) | Japanese text + Kana response | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` (legacy setting name; learner types kana) |
 
 The ask-forms.ts dedup logic ensures each resolved form appears exactly once in a coverage deck, even if multiple settings intents collapse to the same card.
