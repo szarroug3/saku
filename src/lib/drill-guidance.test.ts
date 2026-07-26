@@ -73,8 +73,10 @@ test("a word whose gloss round-trips to its own kana still wants English", () =>
   assert.match(answerGuide(oden, "jp2en").note, /Answer in English/);
 });
 
-test("a kana asked en2jp is told it wants romaji", () => {
+test("a kana asked en2jp is told to produce kana", () => {
   const g = answerGuide(kanaFact("お"), "en2jp");
+  assert.match(g.placeholder, /kana/);
+  assert.doesNotMatch(g.placeholder, /romaji/);
   assert.match(g.note, /kana as you type/);
 });
 

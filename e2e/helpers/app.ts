@@ -158,7 +158,7 @@ export function answerBox(page: Page) {
     // The two placeholders lib/drill-guidance.ts hands out — one per kind of
     // answer. "Type answer" was the single old wording, replaced by "Type
     // English" when the box started saying which language it wants.
-    'input[placeholder="Type romaji, Enter to submit"], input[placeholder="Type English, Enter to submit"]',
+    'input[placeholder="Type romaji, Enter to submit"], input[placeholder="Type kana, Enter to submit"], input[placeholder="Type English, Enter to submit"]',
   );
 }
 

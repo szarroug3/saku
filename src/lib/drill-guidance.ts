@@ -73,7 +73,7 @@ export interface AnswerGuide {
 export function answerGuide(fact: FactId, dir: Direction): AnswerGuide {
   if (answerIsJapanese(fact, dir)) {
     return {
-      placeholder: "Type romaji, Enter to submit",
+      placeholder: "Type kana, Enter to submit",
       note: "Romaji turns into kana as you type.",
     };
   }

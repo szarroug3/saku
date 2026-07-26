@@ -261,10 +261,10 @@ export interface QuestionType {
    * romaji prompt to type against).
    *
    * A Direction means that direction only, and the other side stays typed.
-   * Kana sets `"en2jp"`: there the prompt IS the romaji, so a typed box grades
-   * the prompt retyped as correct and the card tests nothing. Picking あ off a
-   * board is a real recall test; jp2en (show あ, type "a") is untouched and
-   * stays typed.
+   * Kana sets `"en2jp"` for the visible Romaji prompt: a typed box would grade
+   * the prompt retyped as correct and test nothing. Picking あ off a board is a
+   * real recall test. The distinct audio → kana form is allowed to stay typed
+   * by formIsMc; jp2en (show あ, type "a") is also untouched.
    *
    * Read it through `mcOnlyIn`, never directly — a bare truthiness test on a
    * Direction value is true in both directions and silently loses the scoping.

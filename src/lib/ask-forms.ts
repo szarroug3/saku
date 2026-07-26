@@ -14,9 +14,10 @@
 //                    the old random direction/listen behaviour without a
 //                    separate code path.
 //
-// SUPPORTED, not merely enabled. A config may ask for Audio, but a kana has no
-// audio form and a meaning fact has no romaji response; a config may ask for
-// typed, but kana en→jp is multiple-choice only. Each candidate form is checked
+// SUPPORTED, not merely enabled. A config may ask for Audio, but most non-word
+// facts have no audio form and a meaning fact has no romaji response. Kana is
+// the explicit exception: its closed matrix includes audio dictation. Each
+// candidate form is checked
 // against what the FACT can actually be asked (fixedDirOf / listenKind /
 // en2jpTypeable / mcOnlyIn — the same predicates the drill already trusts) and
 // dropped if the fact can't carry it. The result is deduped on the RESOLVED
@@ -50,8 +51,9 @@ import type {
  * One way to ask a card, frozen onto the showing.
  *
  * `answer` is the learner's chosen format and an INTENT — a subject constraint
- * can still force multiple choice (kana en→jp, an un-typeable en→jp answer). Use
- * `formIsMc` for the resolved truth; the drill does.
+ * can still force multiple choice (visible kana en→jp, an un-typeable en→jp
+ * answer). Audio → typed kana is the deliberate exception. Use `formIsMc` for
+ * the resolved truth; the drill does.
  */
 export interface CardForm {
   /** Which settings card produced this form. Sentence forms use a corpus
@@ -137,8 +139,9 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
   const seen = new Set<string>();
   const out: CardForm[] = [];
   for (const f of forms) {
-    // A typed answer the fact can ONLY take as multiple choice (kana en→jp, an
-    // un-typeable en→jp target) is NOT dropped — it renders as the MC card. MC
+    // A typed answer the fact can ONLY take as multiple choice (visible
+    // Romaji→kana, an un-typeable en→jp target) is NOT dropped — it renders as
+    // the MC card. Audio→kana is separately recognized as typeable. MC
     // is the only way that fact can be asked in that direction, and a learner
     // who chose the direction still wants it; dropping it drew an EMPTY board
     // for a kana en→jp typed selection. The resolved-shape key below carries
@@ -157,7 +160,7 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
  * product of (Prompt Format × Response × Answer Format) for each source the fact
  * belongs to, minus the combinations the fact can't carry:
  *
- *   - audio only for a listenable word (kana / sentence / kanji have none),
+ *   - audio only for a listenable word, plus explicit kana dictation,
  *   - a jp→en response the fact doesn't have (no definition on a reading, no
  *     romaji on a meaning),
  *   - a direction the subject pins away.
@@ -223,8 +226,8 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
       if (!src.responses.includes(jp2enResponse(fact))) continue;
       for (const prompt of src.prompts) {
         const listen = prompt === "audio";
-        // Audio is word-only: a kana, a kanji, a sentence has no listenable
-        // form, so an audio prompt is silently dropped for them.
+        // Generic audio is word-only. Kana dictation returned through the
+        // closed matrix above; a kanji or ordinary grammar fact is dropped.
         if (listen && (listenKind(fact) === null || isKanjiReadingFact(fact))) continue;
         for (const answer of src.answers) {
           out.push({
@@ -323,8 +326,9 @@ function fisherYates<T>(a: T[]): T[] {
  * some fact)? and which are "unreachable" (selected but will never produce forms)?
  *
  * A setting combination is UNREACHABLE when:
- * - Japanese source selects only audio, but the fact(s) are not listenable
- *   (audio is word-only; kana, kanji, grammar, keigo, transitivity have no audio)
+ * - Japanese source selects only audio, but the fact(s) do not support the
+ *   selected audio response (generic audio is word-only; kana dictation is the
+ *   explicit non-word exception)
  * - English source is off (empty answers) when all facts are en→jp only
  * - A response kind is selected but no fact supports it
  *   (e.g., selecting "romaji" when all facts are meaning facts with no reading)
@@ -375,18 +379,21 @@ export function configIsReachable(
     return { isReachable: false, reason: "All sources disabled" };
   }
 
-  // Check if audio-only was selected and no facts are listenable
+  // Explain an audio-only configuration that produced no form. This is reached
+  // after enabledFormsFor has already allowed kana dictation, so a kana/audio
+  // configuration with the correct reading response never lands here.
   const audioOnly =
     ask.japanese.prompts.length === 1 &&
     ask.japanese.prompts[0] === "audio" &&
     hasJapaneseSetting;
   if (audioOnly) {
-    const anyListenable = facts.some((f) => listenKind(f) !== null);
+    const anyListenable = facts.some(
+      (f) => listenKind(f) !== null || isKanaFact(f),
+    );
     if (!anyListenable) {
       return {
         isReachable: false,
-        reason:
-          "Audio selected but no facts are listenable (word-only; kana, kanji, grammar are not)",
+        reason: "Audio selected but the selected material has no supported audio question",
       };
     }
   }
