@@ -91,13 +91,13 @@ test("a KNOWN reading of the SAME entry is not a confusion", () => {
   assert.equal(confusedWith(DU, "du", [DU], [DU]), null);
 });
 
-test("cross-script lookalikes surface as MC distractors", () => {
-  // Asking カ should be able to offer 力 (its kanji lookalike) as a wrong option.
+test("cross-script lookalikes are no longer offered as MC distractors", () => {
+  // Removed (Sam): kanji↔katakana lookalikes (力/カ, 口/ロ) are indistinguishable
+  // once the font changes, so none is offered as a wrong option any more.
   const opts = buildMcOptions(KATA_KA);
-  assert.ok(opts.includes(meaningFactId("力")), "力 should be an option for カ");
-  // ...and asking 力 should offer カ.
+  assert.ok(!opts.includes(meaningFactId("力")), "力 must NOT be an option for カ");
   const optsKanji = buildMcOptions(meaningFactId("力"));
-  assert.ok(optsKanji.includes(kanaFact("カ")), "カ should be an option for 力");
+  assert.ok(!optsKanji.includes(kanaFact("カ")), "カ must NOT be an option for 力");
 });
 
 test("a cross-script lookalike is a distractor, never an auto-scored confusion", () => {

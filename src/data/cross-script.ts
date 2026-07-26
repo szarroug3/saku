@@ -29,15 +29,11 @@
  * character a learner meets early enough for the confusion to matter.
  */
 export const CROSS_SCRIPT_LOOKALIKES: readonly (readonly [string, string])[] = [
-  ["力", "カ"], // power / KA — both two strokes, same lean.
-  ["口", "ロ"], // mouth / RO — the box, at kana size.
-  ["工", "エ"], // craft / E — three horizontals and a stem.
-  ["夕", "タ"], // evening / TA — one stroke's reach apart.
-  ["才", "オ"], // genius / O — kept though confusables.txt drops it.
-  ["十", "ナ"], // ten / NA — a cross vs a cross with a tail.
-  ["八", "ハ"], // eight / HA — the same two falling strokes.
-  ["七", "セ"], // seven / SE — one hook.
-  ["木", "ホ"], // tree / HO — 木 with the legs pulled in.
+  // Intentionally EMPTY (Sam's call). Every kanji<->katakana pair that used to
+  // live here is indistinguishable once the font changes — a coin flip, not a
+  // fair "read at speed" trap — so none is offered as a cross-script distractor.
+  // Within-script lookalikes (LOOKALIKES in characters.ts) still apply; keep the
+  // structure so a genuinely distinguishable pair could be added back later.
 ];
 
 /** glyph → the cross-script glyphs predicted to be confusable with it. */
