@@ -15,6 +15,7 @@ import {
 import type {
   AnswerStyle,
   AskConfig,
+  EnglishSentenceResponse,
   GridResponse,
   PromptFormat,
   PairResponse,
@@ -71,27 +72,6 @@ function AskRow({
   );
 }
 
-function NoteChip({
-  on,
-  onClick,
-  children,
-  note,
-}: {
-  on: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  note: string;
-}) {
-  return (
-    <Chip on={on} onClick={onClick} className="h-auto py-2 text-left">
-      <span className="block">
-        <span className="block">{children}</span>
-        <span className="mt-0.5 block text-[11px] text-text-muted">{note}</span>
-      </span>
-    </Chip>
-  );
-}
-
 export function QuizOptionsFields() {
   const { cfg, update } = useQuizConfig();
 
@@ -144,6 +124,14 @@ export function QuizOptionsFields() {
         answers: toggle(cfg.ask.sentence.answers, v),
       },
     });
+  const englishSentenceResponse = (v: EnglishSentenceResponse) =>
+    setAsk({
+      ...cfg.ask,
+      sentence: {
+        ...cfg.ask.sentence,
+        englishResponses: toggle(cfg.ask.sentence.englishResponses ?? [], v),
+      },
+    });
   const englishAnswer = (v: AnswerStyle) =>
     setAsk({
       ...cfg.ask,
@@ -159,7 +147,6 @@ export function QuizOptionsFields() {
       gridResponses: toggleGridResponse(cfg.gridResponses, value),
     });
   };
-
   return (
     <>
       <Card>
@@ -172,12 +159,6 @@ export function QuizOptionsFields() {
           </Chip>
           <Chip on={cfg.mode === "grid"} onClick={() => update({ mode: "grid" })}>
             Grid
-          </Chip>
-          <Chip
-            on={cfg.mode === "assembly"}
-            onClick={() => update({ mode: "assembly" })}
-          >
-            Build sentences
           </Chip>
           <Chip
             on={cfg.mode === "substitution"}
@@ -240,57 +221,6 @@ export function QuizOptionsFields() {
           </SourceCard>
 
           <SourceCard
-            title="Japanese sentence"
-            mark="文"
-            description="A whole sentence as the prompt."
-          >
-            <AskRow label="Prompt Format">
-              <Chip
-                on={cfg.ask.sentence.prompts.includes("text")}
-                onClick={() => sentencePrompt("text")}
-              >
-                Text
-              </Chip>
-              <Chip
-                on={cfg.ask.sentence.prompts.includes("audio")}
-                onClick={() => sentencePrompt("audio")}
-              >
-                Audio
-              </Chip>
-            </AskRow>
-            <AskRow label="Expected Response">
-              <NoteChip
-                on={cfg.ask.sentence.responses.includes("definition")}
-                onClick={() => sentenceResponse("definition")}
-                note="multiple choice only"
-              >
-                Definition
-              </NoteChip>
-              <NoteChip
-                on={cfg.ask.sentence.responses.includes("romaji")}
-                onClick={() => sentenceResponse("romaji")}
-                note="when it has non-kana"
-              >
-                Kana
-              </NoteChip>
-            </AskRow>
-            <AskRow label="Answer Format">
-              <Chip
-                on={cfg.ask.sentence.answers.includes("typed")}
-                onClick={() => sentenceAnswer("typed")}
-              >
-                Type it
-              </Chip>
-              <Chip
-                on={cfg.ask.sentence.answers.includes("mc")}
-                onClick={() => sentenceAnswer("mc")}
-              >
-                Multiple choice
-              </Chip>
-            </AskRow>
-          </SourceCard>
-
-          <SourceCard
             title="English"
             mark="EN"
             description="Shown in text. Response is always Japanese."
@@ -307,6 +237,83 @@ export function QuizOptionsFields() {
                 onClick={() => englishAnswer("mc")}
               >
                 Multiple choice
+              </Chip>
+            </AskRow>
+          </SourceCard>
+
+          <SourceCard
+            title="Sentences"
+            mark="文"
+            description="Practice complete Japanese and English sentences."
+          >
+            <div className="py-4">
+              <h4 className="text-[15px] font-semibold text-text">Japanese</h4>
+              <p className="mt-1 text-[13px] text-text-muted">
+                See or hear Japanese, then answer with its definition or kana.
+              </p>
+            </div>
+            <AskRow label="Prompt Format">
+              <Chip
+                on={cfg.ask.sentence.prompts.includes("text")}
+                onClick={() => sentencePrompt("text")}
+              >
+                Text
+              </Chip>
+              <Chip
+                on={cfg.ask.sentence.prompts.includes("audio")}
+                onClick={() => sentencePrompt("audio")}
+              >
+                Audio
+              </Chip>
+            </AskRow>
+            <AskRow label="Expected Response">
+              <Chip
+                on={cfg.ask.sentence.responses.includes("definition")}
+                onClick={() => sentenceResponse("definition")}
+              >
+                Definition
+              </Chip>
+              <Chip
+                on={cfg.ask.sentence.responses.includes("romaji")}
+                onClick={() => sentenceResponse("romaji")}
+              >
+                Kana
+              </Chip>
+            </AskRow>
+            {cfg.ask.sentence.responses.includes("romaji") ? (
+              <AskRow label="Kana Answer Format">
+                <Chip
+                  on={cfg.ask.sentence.answers.includes("typed")}
+                  onClick={() => sentenceAnswer("typed")}
+                >
+                  Type it
+                </Chip>
+                <Chip
+                  on={cfg.ask.sentence.answers.includes("mc")}
+                  onClick={() => sentenceAnswer("mc")}
+                >
+                  Multiple choice
+                </Chip>
+              </AskRow>
+            ) : null}
+            <div className="border-t border-border py-4">
+              <h4 className="text-[15px] font-semibold text-text">English</h4>
+              <p className="mt-1 text-[13px] text-text-muted">
+                Read an English sentence, then build or identify the Japanese.
+              </p>
+            </div>
+            <AskRow label="Expected Response">
+              <Chip
+                on={(cfg.ask.sentence.englishResponses ?? []).includes("ordering")}
+                onClick={() => englishSentenceResponse("ordering")}
+              >
+                Order the chunks
+              </Chip>
+              <Chip
+                on={(cfg.ask.sentence.englishResponses ?? []).includes("selection")}
+                onClick={() => englishSentenceResponse("selection")}
+              >
+                Choose the sentence
               </Chip>
             </AskRow>
           </SourceCard>

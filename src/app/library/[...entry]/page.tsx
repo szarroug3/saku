@@ -72,6 +72,10 @@ import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { Card, Hint, Lbl, SoundIcon } from "@/components/ui";
 import { KANA_SUBJECT, glyphVariantFor } from "@/data/characters";
+import {
+  SENTENCE_ORDERING_TIERS,
+  tierAssemblyFacts,
+} from "@/data/assembly";
 import { contextPronunciation } from "@/data/kana-context";
 import { KanaContextView } from "@/components/lesson/kana-context-view";
 import {
@@ -120,6 +124,7 @@ import { entryStanding, standingOf } from "@/lib/library/standing";
 import { useLiveFacts } from "@/lib/library/use-live-facts";
 import { speak } from "@/lib/speech";
 import { postClaim } from "@/lib/progress-fetch";
+import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -184,6 +189,18 @@ function EntryView({ entry }: { entry: LibEntry }) {
   const words = appearsIn(entry);
   const mine = lists.filter((l) => l.kind === "fixed" && l.entries.includes(entry.id));
   const mark = markFor(entry.id);
+  const sentenceRuleTier =
+    mark?.shelf === "sentence"
+      ? SENTENCE_ORDERING_TIERS.find(
+          (tier) => tier.id === mark.id.replace("sentence-rule-", ""),
+        )
+      : undefined;
+  const sentenceRuleClaimFacts = sentenceRuleTier
+    ? [
+        ...tierAssemblyFacts(sentenceRuleTier, history),
+        sentenceTierMarkerFact(sentenceRuleTier.id),
+      ]
+    : undefined;
   const term = termFor(entry.id);
   const mnemonic = getMnemonic(entry.glyph);
 
@@ -966,7 +983,9 @@ function EntryView({ entry }: { entry: LibEntry }) {
           words that contain it, and no glyph to confuse with another, so its
           links row would be an empty card. */}
       {!isKana && !isKanji && !isWord && !isGrammar && !isTransitivity && !isKeigo ? (
-        <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+        <div className={mark ? "mt-6" : ""}>
+          <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+        </div>
       ) : null}
 
       {/* THE "Compare similar patterns" CARD IS GONE. It was a whole card
@@ -1000,6 +1019,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
         history={history}
         now={now}
         onClaim={claim}
+        claimFacts={sentenceRuleClaimFacts}
       />
 
       <AttributionLink />

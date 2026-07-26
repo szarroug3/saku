@@ -10,7 +10,7 @@ const JP: AskConfig = {
     responses: ["definition", "romaji"],
     answers: ["typed"],
   },
-  sentence: { prompts: [], responses: [], answers: [] },
+  sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
   english: { answers: [] },
 };
 
@@ -34,7 +34,7 @@ describe("configSummary — source-inferred directions", () => {
   test("English alone names English → Japanese", () => {
     const ask: AskConfig = {
       japanese: { prompts: [], responses: [], answers: [] },
-      sentence: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
       english: { answers: ["mc"] },
     };
     assert.equal(
@@ -57,7 +57,7 @@ describe("configSummary — source-inferred directions", () => {
   test("an empty setup says so plainly", () => {
     const ask: AskConfig = {
       japanese: { prompts: [], responses: [], answers: [] },
-      sentence: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
       english: { answers: [] },
     };
     assert.equal(configSummary(mk({ ask })), "Nothing to ask · Endless");

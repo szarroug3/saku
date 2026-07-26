@@ -32,6 +32,8 @@
 
 import {
   askIsEmpty,
+  englishSentenceAsksOrdering,
+  englishSentenceAsksSelection,
   englishAsks,
   enabledDirs,
   japaneseAsks,
@@ -58,6 +60,8 @@ function stylePhrase(ask: AskConfig): string | null {
   if (sentenceAsksSelection(ask)) add(["mc"]);
   if (sentenceAsksRomaji(ask)) add(ask.sentence.answers);
   if (en2jp) add(ask.english.answers);
+  if (englishSentenceAsksOrdering(ask)) styles.add("Order chunks");
+  if (englishSentenceAsksSelection(ask)) styles.add("Multiple choice");
   return styles.size ? [...styles].join(" + ") : null;
 }
 
@@ -82,6 +86,8 @@ function responsePhrase(ask: AskConfig): string | null {
   if (sentenceAsksSelection(ask)) responses.add("Definition");
   if (sentenceAsksRomaji(ask)) responses.add("Romaji");
   if (englishAsks(ask)) responses.add("Japanese");
+  if (englishSentenceAsksOrdering(ask)) responses.add("Ordered Japanese");
+  if (englishSentenceAsksSelection(ask)) responses.add("Japanese sentence");
   return responses.size ? [...responses].join(" + ") : null;
 }
 

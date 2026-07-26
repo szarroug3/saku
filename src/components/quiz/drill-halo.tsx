@@ -30,6 +30,7 @@
 // so the drain steps once a second and the answer states appear instantly.
 
 import { SoundIcon } from "@/components/ui";
+import type { ReactNode } from "react";
 
 /** resting = still · draining = final seconds · right/wrong = answered.
  * "wrong-flash" is a wrong answer with retries still left: it pulses out and
@@ -172,6 +173,17 @@ export interface DrillHaloProps {
   listen?: boolean;
   /** Replay the word. Called by the centre speaker on a listening card. */
   onListen?: () => void;
+  /**
+   * A grammar selection card: render a square sentence frame instead of the
+   * circular halo glyph stage.
+   */
+  sentenceFrame?: string;
+  /** Grammar frames are Japanese; sentence-building prompts are English. */
+  sentenceFrameLang?: "ja" | "en";
+  /** A smaller frame for short English sentence-building prompts. */
+  compactSentenceFrame?: boolean;
+  /** Optional pronunciation shown inside the halo beneath the main glyph. */
+  reading?: ReactNode;
 }
 
 export function DrillHalo({
@@ -186,20 +198,34 @@ export function DrillHalo({
   crossFade,
   listen = false,
   onListen,
+  sentenceFrame,
+  sentenceFrameLang = "ja",
+  compactSentenceFrame = false,
+  reading,
 }: DrillHaloProps) {
   const ring = ringSpec(state, cardKey, timerLeft, drainWindow);
   const wrong = state === "wrong" || state === "wrong-flash";
+  const square = !!sentenceFrame;
 
   return (
     <div
       // The shake replays because the parent re-mounts this component on
       // every attempt — the same trick the grid screen's cards use.
       className={`kq-halo relative grid place-items-center ${wrong ? "animate-gshake" : ""}`}
-      style={{ width: HALO_PX, height: HALO_PX }}
+      style={
+        square
+          ? {
+              width: compactSentenceFrame
+                ? "min(84vw, 360px)"
+                : "min(92vw, 440px)",
+              minHeight: compactSentenceFrame ? 132 : HALO_PX,
+            }
+          : { width: HALO_PX, height: HALO_PX }
+      }
     >
       <style>{HALO_CSS}</style>
       <div
-        className="kq-base absolute inset-0 rounded-full"
+        className={`kq-base absolute inset-0 ${square ? "rounded-2xl" : "rounded-full"}`}
         style={{
           background: `radial-gradient(circle, ${mix("--accent", 9)}, transparent 68%)`,
           border: "1px solid var(--border)",
@@ -207,7 +233,7 @@ export function DrillHalo({
           transition: "box-shadow .3s",
         }}
       />
-      {ring ? (
+      {!square && ring ? (
         <div
           key={ring.key}
           className="kq-ring absolute inset-0 rounded-full"
@@ -223,7 +249,22 @@ export function DrillHalo({
           }}
         />
       ) : null}
-      {listen ? (
+      {square ? (
+        <div
+          className={`kq-glyph relative text-center ${
+            compactSentenceFrame ? "px-4 py-4" : "px-5 py-6"
+          }`}
+          style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
+        >
+          <p
+            lang={sentenceFrameLang}
+            className="whitespace-normal wrap-break-word text-[30px] leading-[1.35] text-text"
+            style={{ fontFamily: sentenceFrameLang === "ja" ? font : undefined }}
+          >
+            {sentenceFrame}
+          </p>
+        </div>
+      ) : listen ? (
         // The audio IS the question, so the centre is a speaker, not the glyph.
         // Pressing it replays the word; the crossFade keeps it arriving like the
         // glyph it stands in for.
@@ -231,45 +272,47 @@ export function DrillHalo({
           type="button"
           onClick={onListen}
           aria-label="Play the word again"
-          className="kq-glyph relative flex size-[104px] cursor-pointer items-center justify-center rounded-full text-text-muted transition-colors hover:text-text"
+          className="kq-glyph relative flex size-26 cursor-pointer items-center justify-center rounded-full text-text-muted transition-colors hover:text-text"
           style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
         >
           <SoundIcon className="size-12" />
         </button>
       ) : (
         <span
-          // leading-[1.15] is the drill glyph's theme hook (see globals.css).
-          // whitespace-nowrap so a multi-char word stays on ONE line — the parent
-          // has already sized the glyph (see fitGlyphSize) to fit the hole across.
-          className="kq-glyph relative block whitespace-nowrap leading-[1.15]"
-          style={{
-            fontSize,
-            fontFamily: font,
-            animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined,
-          }}
+          className="kq-glyph relative flex flex-col items-center justify-center gap-1"
+          style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
         >
-          {highlight
-            ? // The word, with the asked kanji lit and the rest dimmed: context
-              // without a leak, since the highlighted glyph's reading is the
-              // answer and is never shown.
-              [...glyph].map((ch, i) =>
-                ch === highlight ? (
-                  <span
-                    key={i}
-                    style={{
-                      color: "var(--text)",
-                      textShadow: `0 0 18px ${mix("--accent", 55)}`,
-                    }}
-                  >
-                    {ch}
-                  </span>
-                ) : (
-                  <span key={i} style={{ color: "var(--text-muted)", opacity: 0.6 }}>
-                    {ch}
-                  </span>
-                ),
-              )
-            : glyph}
+          <span
+            // leading-[1.15] is the drill glyph's theme hook (see globals.css).
+            // whitespace-nowrap so a multi-char word stays on ONE line — the parent
+            // has already sized the glyph (see fitGlyphSize) to fit the hole across.
+            className="block whitespace-nowrap leading-[1.15]"
+            style={{ fontSize, fontFamily: font }}
+          >
+            {highlight
+              ? // The word, with the asked kanji lit and the rest dimmed: context
+                // without a leak, since the highlighted glyph's reading is the
+                // answer and is never shown.
+                [...glyph].map((ch, i) =>
+                  ch === highlight ? (
+                    <span
+                      key={i}
+                      style={{
+                        color: "var(--text)",
+                        textShadow: `0 0 18px ${mix("--accent", 55)}`,
+                      }}
+                    >
+                      {ch}
+                    </span>
+                  ) : (
+                    <span key={i} style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+                      {ch}
+                    </span>
+                  ),
+                )
+              : glyph}
+          </span>
+          {reading ? <span className="leading-none">{reading}</span> : null}
         </span>
       )}
     </div>

@@ -146,6 +146,8 @@ Grammar rows here are only grammar-source behavior. Grammar meaning facts can al
 | Japanese source config (audio prompt is Japanese) | `jp->jp` | Japanese production form | No | Yes | Planned | `sentence: {prompts: includes "audio", responses: includes ?}` (awaiting sentence source for grammar production; not yet implemented) | Hear `たべる` cue -> pick `食べてから` |
 | Japanese source (text self-copy of pattern label) | `jp->jp` | Same pattern text | No | No | By design | N/A (trivial self-copy excluded) | `〜てから` -> type `〜てから` |
 
+> **Note on "direction":** ask-forms models grammar production as `jp→en` with response `"romaji"` because the answer IS Japanese (a conjugated form) — `answerIsJapanese` is true, so `candidateDirs` returns `["jp2en"]`. The card looks like production (you produce Japanese), but the data model treats it as a `jp→en` "romaji" card. The `en→jp` English source does not generate grammar production forms.
+
 ---
 
 ## 6) Keigo / Verb Pair / Other Special Subjects

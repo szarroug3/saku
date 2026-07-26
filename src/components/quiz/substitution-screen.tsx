@@ -18,7 +18,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Btn, GhostBtn } from "@/components/ui";
+import { Btn } from "@/components/ui";
 import { newFactStat, retriesAllowed } from "@/lib/engine";
 import {
   gradeSubstitution,
@@ -114,6 +114,16 @@ function advance(rt: SubRuntime): void {
   rt.pos++;
 }
 
+function skipCard(rt: SubRuntime, card: SubCard): void {
+  const index = rt.cards.indexOf(card);
+  if (index < 0) return;
+  const [skipped] = rt.cards.splice(index, 1);
+  skipped.value = "";
+  skipped.state = "open";
+  skipped.tries = 0;
+  rt.cards.push(skipped);
+}
+
 /** The first gloss of a verb, for the meaning hint. DRAFT: single gloss. */
 function gloss(surface: string): string {
   return vocabRow(surface)?.glosses[0] ?? "";
@@ -178,6 +188,14 @@ export function SubstitutionScreen() {
       return;
     }
     advance(rt);
+    saveNow();
+    rerender();
+  };
+
+  const skip = () => {
+    if (card.state !== "open") return;
+    skipCard(rt, card);
+    setHintOpen(false);
     saveNow();
     rerender();
   };
@@ -264,8 +282,36 @@ export function SubstitutionScreen() {
           ) : null}
         </div>
 
-        {hintOpen ? (
-          <div className="mt-4 rounded-xl border border-border bg-accent-bg p-3 text-sm">
+        <div className="mt-6 flex items-center justify-center gap-3">
+          {resolved ? (
+            <Btn go onClick={next}>
+              Next
+            </Btn>
+          ) : (
+            <>
+              <Btn go className="w-20" onClick={submit}>
+                Submit
+              </Btn>
+              <Btn
+                className="w-20"
+                onClick={skip}
+                title="Skip — ask this again later"
+              >
+                Skip
+              </Btn>
+              <Btn
+                className="w-20"
+                onClick={() => setHintOpen((open) => !open)}
+                title="Hint (?)"
+              >
+                {hintOpen ? "Hide" : "Hint"}
+              </Btn>
+            </>
+          )}
+        </div>
+
+        {hintOpen && !resolved ? (
+          <div className="mt-3 w-full rounded-xl border border-border bg-accent-bg p-3 text-sm">
             <span lang="ja" className="font-medium">
               {item.target.surface}
             </span>{" "}
@@ -276,23 +322,6 @@ export function SubstitutionScreen() {
             {gloss(item.demo.surface)} form
           </div>
         ) : null}
-
-        <div className="mt-6 flex items-center justify-end gap-3">
-          {resolved ? (
-            <Btn go onClick={next}>
-              Next
-            </Btn>
-          ) : (
-            <>
-              <GhostBtn onClick={() => setHintOpen((h) => !h)}>
-                {hintOpen ? "Hide hint" : "Hint"}
-              </GhostBtn>
-              <Btn go onClick={submit}>
-                Submit
-              </Btn>
-            </>
-          )}
-        </div>
       </div>
     </div>
   );

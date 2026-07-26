@@ -36,7 +36,7 @@ import {
 
 import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { PitchReading } from "@/components/library/pitch-mark";
-import { SmallBtn } from "@/components/ui";
+import { Btn, SmallBtn } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
 import { VOCAB_SUBJECT, vocabRow, wordMeaningFactId } from "@/data/vocab";
 import { formatAccuracy } from "@/lib/accuracy";
@@ -1206,6 +1206,7 @@ export function DrillScreen() {
   // it does not know whether it is asking a kana, a kanji reading or a word.
   const ctx = ctxFor(q, anchorForFact(q.f, history));
   const prompt = questionsFor(q.f).prompt(q.f, q.dir, ctx);
+  const selectionFrame = q.grammarSelection?.frame ?? null;
   // A MEANING question for a word whose reading collides with another word the
   // learner knows shows the kanji (the glyph) AND the pronunciation together, so
   // the pitch mark is what says which same-sounding word is meant — 箸[はし↓] vs
@@ -1459,6 +1460,16 @@ export function DrillScreen() {
                 : info && speechForFact(info);
             if (text) speak(text, cfg.voiceName);
           }}
+          sentenceFrame={selectionFrame ?? undefined}
+          reading={
+            promptPitch ? (
+              <PitchReading
+                reading={promptPitch.reading}
+                downstep={promptPitch.downstep}
+                className="text-[13px] text-text-muted"
+              />
+            ) : undefined
+          }
         />
         {/* WHAT THIS CARD IS ASKING FOR — below the halo now, and WHITE, so it
             reads as the question rather than a muted hint above it. Every card
@@ -1481,22 +1492,13 @@ export function DrillScreen() {
             kanji lit, so repeating it underneath is the same noise (Sam, task
             #22). Muted, because it supports the white instruction rather than
             competing. */}
-        {!readingWord &&
+        {!selectionFrame &&
+        !readingWord &&
         prompt.context &&
         prompt.context !== "meaning" &&
         prompt.context !== "reading" &&
         prompt.context !== "in japanese" ? (
           <p className="-mt-1 text-center text-[13px] text-text-muted">{prompt.context}</p>
-        ) : null}
-        {/* The pronunciation, shown WITH the kanji on a homophone's meaning card
-            so the pitch mark says which same-sounding word is being asked about.
-            Display only — the answer is the English, which this does not leak. */}
-        {promptPitch ? (
-          <PitchReading
-            reading={promptPitch.reading}
-            downstep={promptPitch.downstep}
-            className="text-center text-[13px] text-text-muted"
-          />
         ) : null}
         {/* The second line of the question, when a subject has one — today the
             English translation under a selection card's blanked sentence.
@@ -1512,101 +1514,6 @@ export function DrillScreen() {
         <p className="min-h-4 text-center text-[10px] uppercase tracking-[0.18em] text-text-muted">
           {hintTag}
         </p>
-
-        {/* THE HINT SLOT — the button and the hint it produces share one
-            place, directly above the answer control. Before it is taken the
-            slot holds the Hint button; the moment it is taken the same slot
-            holds the hint itself, so what you pressed becomes what you read
-            without the stage shifting the answer down under you. The hint
-            then stays for the rest of the showing, retries included, and is
-            subordinate to the prompt on purpose: the picture is smaller than
-            the halo and the line is one muted sentence, because a hint that
-            competes with the question has become the question.
-
-            The button is one SmallBtn, the same material as End quiz and the
-            gear. Absent on a card with no hint (see hintReady), absent during
-            a reveal wait, and gone the moment the hint is taken — there is
-            nothing to press twice. The two states are mutually exclusive, so
-            the slot is either button or hint, never both.
-
-            min-h-7 holds the baseline stable across the three unhinted-or-
-            text states — a card with no hint, a card showing the button, and
-            a card whose taken hint is a line of text — so nothing jumps as
-            you move between cards. A taken IMAGE is taller than that floor and
-            is allowed to be, exactly as before: it is a thing you asked for,
-            so it is allowed to arrive at its own size. */}
-        <span className="flex min-h-7 flex-col items-center justify-center">
-          {q.hinted && hint ? (
-            hint.kind === "image" ? (
-              // The drawing ALONE: no story, no analogy line, no example word.
-              // The mnemonic's text says the answer out loud ("a person saying
-              // AH"), and a hint that prints the answer is not a hint.
-              // MnemonicImage still falls back to the glyph if the file
-              // vanishes between the probe and here, which is the same graceful
-              // degrade the lesson has.
-              <MnemonicImage
-                src={hint.src}
-                glyph={hint.glyph}
-                imgClassName="h-[104px] w-[104px] rounded-lg object-contain"
-                glyphClassName="text-4xl text-text-muted"
-              />
-            ) : hint.kind === "formula" ? (
-              // [病] + [院 / いん] = 病院. The asked piece is blank (its reading
-              // is the answer); every other piece carries the reading it takes in
-              // this word, and the word it all assembles into sits after the =.
-              // See src/lib/reading-formula.ts, which built the pieces.
-              <span className="flex flex-wrap items-end justify-center gap-x-1.5 gap-y-1 text-text-muted">
-                {hint.formula.pieces.map((p, i) => (
-                  <span key={i} className="flex items-end gap-x-1.5">
-                    {i > 0 ? <span className="pb-0.5 text-[14px]">+</span> : null}
-                    <span className="flex flex-col items-center leading-none">
-                      <span className="min-h-[13px] text-[11px] text-accent">
-                        {p.reading ?? " "}
-                      </span>
-                      <span className="text-xl text-text">{p.text}</span>
-                    </span>
-                  </span>
-                ))}
-                <span className="pb-0.5 text-[14px]">=</span>
-                <span className="pb-0.5 text-xl text-text">
-                  {hint.formula.result}
-                </span>
-              </span>
-            ) : hint.kind === "written" ? (
-              // The WRITTEN FORM of the word the learner just heard — 電話 — on a
-              // listening meaning card whose glyph is hidden. Shown big and in the
-              // card's JP font, the way the prompt glyph would have been, because
-              // it is a Japanese word to READ, not a caption to skim. It reveals
-              // WHICH word was heard and nothing about its English meaning, so the
-              // audio-first card keeps its answer withheld. On a MULTI-KANJI word
-              // the per-kanji meanings (`parts`) sit beneath it, muted and small —
-              // the same breakdown a visual card gets, which names the kanji but
-              // never the gloss.
-              <span className="flex flex-col items-center gap-0.5">
-                <span
-                  className="text-3xl leading-none text-text"
-                  style={{ fontFamily: q.font }}
-                  lang="ja"
-                >
-                  {hint.text}
-                </span>
-                {hint.parts ? (
-                  <span className="max-w-[320px] text-center text-[12px] text-text-muted">
-                    {hint.parts}
-                  </span>
-                ) : null}
-              </span>
-            ) : (
-              <p className="max-w-[320px] text-center text-[12px] text-text-muted">
-                {hint.text}
-              </p>
-            )
-          ) : hintReady && !q.hinted && !rt.waiting ? (
-            <SmallBtn onClick={takeHint} title="Hint (?)">
-              Hint
-            </SmallBtn>
-          ) : null}
-        </span>
 
         {typedMode ? (
           // Box and the line that says what goes in it, as one unit: a tight
@@ -1693,7 +1600,12 @@ export function DrillScreen() {
             right. Held until you press Enter, so it's read rather than
             glimpsed. Fixed height whether or not it's showing — otherwise the
             stage jumps every time a card resolves. */}
-        <p className="flex min-h-[38px] flex-col items-center justify-center gap-0.5">
+        <p
+          className={cx(
+            "flex flex-col items-center justify-center gap-0.5",
+            revealing || missWaiting ? "min-h-[38px]" : "hidden",
+          )}
+        >
           {revealing ? (
             <>
               <span className="text-sm">
@@ -1755,22 +1667,6 @@ export function DrillScreen() {
             <SmallBtn onClick={nextQuestion} title="Continue (Enter)">
               Continue
             </SmallBtn>
-          ) : !rt.waiting ? (
-            // Skip lives in the same slot as Continue, and they never overlap: a
-            // miss sets `waiting`, so Continue owns the slot then, and every other
-            // moment you are actively on the card, which is exactly when skipping
-            // makes sense. Persistent through retries too, so "not now, later" is
-            // always one tap away — a real target on mobile, not a keystroke. See
-            // skipQuestion for what it does to the score (nothing if untried; the
-            // attempt stands if you tried).
-            <button
-              type="button"
-              onClick={skipQuestion}
-              title="Skip — ask this again later"
-              className="rounded px-2 py-0.5 text-[11px] text-text-muted hover:text-text"
-            >
-              Skip
-            </button>
           ) : null}
         </p>
 
@@ -1798,6 +1694,79 @@ export function DrillScreen() {
             </>
           ) : null}
         </span>
+
+        {!rt.waiting || q.hinted ? (
+          <span className="flex flex-col items-center gap-3">
+            <span className="flex items-center justify-center gap-3">
+              {!rt.waiting ? (
+                <Btn
+                  className="w-20"
+                  onClick={skipQuestion}
+                  title="Skip — ask this again later"
+                >
+                  Skip
+                </Btn>
+              ) : null}
+              {hintReady ? (
+                <Btn
+                  className="w-20"
+                  onClick={takeHint}
+                  disabled={q.hinted}
+                  title="Hint (?)"
+                >
+                  Hint
+                </Btn>
+              ) : null}
+            </span>
+            {q.hinted && hint ? (
+              hint.kind === "image" ? (
+                <MnemonicImage
+                  src={hint.src}
+                  glyph={hint.glyph}
+                  imgClassName="h-[104px] w-[104px] rounded-lg object-contain"
+                  glyphClassName="text-4xl text-text-muted"
+                />
+              ) : hint.kind === "formula" ? (
+                <span className="flex flex-wrap items-end justify-center gap-x-1.5 gap-y-1 text-text-muted">
+                  {hint.formula.pieces.map((p, i) => (
+                    <span key={i} className="flex items-end gap-x-1.5">
+                      {i > 0 ? <span className="pb-0.5 text-[14px]">+</span> : null}
+                      <span className="flex flex-col items-center leading-none">
+                        <span className="min-h-[13px] text-[11px] text-accent">
+                          {p.reading ?? " "}
+                        </span>
+                        <span className="text-xl text-text">{p.text}</span>
+                      </span>
+                    </span>
+                  ))}
+                  <span className="pb-0.5 text-[14px]">=</span>
+                  <span className="pb-0.5 text-xl text-text">
+                    {hint.formula.result}
+                  </span>
+                </span>
+              ) : hint.kind === "written" ? (
+                <span className="flex flex-col items-center gap-0.5">
+                  <span
+                    className="text-3xl leading-none text-text"
+                    style={{ fontFamily: q.font }}
+                    lang="ja"
+                  >
+                    {hint.text}
+                  </span>
+                  {hint.parts ? (
+                    <span className="max-w-[320px] text-center text-[12px] text-text-muted">
+                      {hint.parts}
+                    </span>
+                  ) : null}
+                </span>
+              ) : (
+                <p className="max-w-[320px] text-center text-[12px] text-text-muted">
+                  {hint.text}
+                </p>
+              )
+            ) : null}
+          </span>
+        ) : null}
       </div>
 
       {drawerOpen ? <DrillDrawer /> : null}

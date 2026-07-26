@@ -59,6 +59,7 @@ export const PRACTICE_TYPES: readonly PracticeType[] = [
   { id: "word", label: "Words", glyph: "語" },
   { id: "counter", label: "Counters", glyph: "本" },
   { id: "grammar", label: "Grammar", glyph: "文" },
+  { id: "sentence", label: "Sentences", glyph: "文。" },
   { id: "transitivity", label: "Verb pairs", glyph: "動" },
   { id: "keigo", label: "Keigo", glyph: "敬" },
 ];
@@ -121,7 +122,9 @@ export function availableTypes(): string[] {
       const t = factType(f);
       if (t) seen.add(t);
     }
-    PRESENT = PRACTICE_TYPES.map((t) => t.id).filter((id) => seen.has(id));
+    PRESENT = PRACTICE_TYPES.map((t) => t.id).filter(
+      (id) => id === "sentence" || seen.has(id),
+    );
   }
   return PRESENT;
 }

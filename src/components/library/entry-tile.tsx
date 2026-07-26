@@ -34,7 +34,11 @@ import { SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
-import { entryName, type LibEntry } from "@/lib/library/entries";
+import {
+  SENTENCE_RULE_KIND,
+  entryName,
+  type LibEntry,
+} from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import type { EntryStanding } from "@/lib/library/standing";
 // What goes under the glyph — a .ts module so the "no entry shows a dash while
@@ -62,6 +66,7 @@ function speakable(entry: LibEntry): boolean {
   return (
     entry.kind !== GRAMMAR_SUBJECT &&
     entry.kind !== MARK_SUBJECT &&
+    entry.kind !== SENTENCE_RULE_KIND &&
     entry.kind !== TERM_SUBJECT
   );
 }
@@ -259,6 +264,21 @@ export function EntryRow({
   selected: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
+  const inlineMarkGlyph = entry.kind === MARK_SUBJECT ? entry.glyph : "";
+  const rowTitle =
+    entry.meanings.slice(0, 3).join(", ") || entry.sub;
+  const markTitle =
+    inlineMarkGlyph === "っ"
+      ? "Small tsu"
+      : inlineMarkGlyph === "ゃゅょ"
+        ? "Small ya / yu / yo"
+        : inlineMarkGlyph
+          ? [...inlineMarkGlyph]
+              .reduce((title, glyph) => title.replaceAll(glyph, ""), rowTitle)
+              .replace(/\s+/g, " ")
+              .trim()
+          : rowTitle;
+
   return (
     <div
       role="button"
@@ -285,19 +305,18 @@ export function EntryRow({
       >
         ✓
       </span>
-      {/* THE GLYPH, AND SOMETIMES NO GLYPH. The long-vowel mark has none, and
-          this cell is left EMPTY for it rather than filled with its name: the
-          fixed width keeps the rows aligned, and the name is right beside it on
-          the main line, so the blank reads as "this one has no character" — which
-          is exactly what it is — instead of as a missing asset. `entryName` is
-          for controls that must be announced, not for a cell the eye can skip. */}
-      <span
-        className={`w-[64px] flex-none truncate text-[19px] ${japaneseFontClass(
-          entry.glyph,
-        )}`}
-      >
-        {entry.glyph}
-      </span>
+      {/* Reserve a glyph column only when there is a glyph to show. Sentence
+          rules, keigo sets and terms are named concepts, so an empty 64px cell
+          only pushes their useful text away from the checkbox. */}
+      {entry.glyph && !inlineMarkGlyph ? (
+        <span
+          className={`w-[64px] flex-none truncate text-[19px] ${japaneseFontClass(
+            entry.glyph,
+          )}`}
+        >
+          {entry.glyph}
+        </span>
+      ) : null}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px]">
           {/* ONE reading, and only when there is only one. 先生 gets せんせい.
@@ -307,7 +326,16 @@ export function EntryRow({
           {entry.readings.length === 1 ? (
             <span className="text-text-muted">{entry.readings[0]} · </span>
           ) : null}
-          {entry.meanings.slice(0, 3).join(", ") || entry.sub}
+          {markTitle}
+          {inlineMarkGlyph ? (
+            <>
+              {" ("}
+              <span className={japaneseFontClass(inlineMarkGlyph)}>
+                {[...inlineMarkGlyph].join(" ")}
+              </span>
+              {")"}
+            </>
+          ) : null}
         </span>
         {note ? (
           <span className="block truncate text-xs text-text-muted">{note}</span>

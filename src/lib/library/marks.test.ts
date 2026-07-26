@@ -47,8 +47,17 @@ import {
 } from "@/data/phase-intros";
 import { DAKUTEN_ROWS } from "@/data/dakuten-rows";
 import { MARKS, MARK_SUBJECT, bodyFor, markEntry, markFor } from "@/data/marks";
+import {
+  SENTENCE_ORDERING_INTROS,
+  type SentenceOrderingTierId,
+} from "@/data/sentence-ordering-guides";
 import { factsOf } from "@/lib/facts";
-import { KINDS, factRows, libEntry } from "@/lib/library/entries";
+import {
+  KINDS,
+  SENTENCE_RULE_KIND,
+  factRows,
+  libEntry,
+} from "@/lib/library/entries";
 import { sliceIsDrillable } from "@/lib/library/slice";
 import { search } from "@/lib/library/search";
 import { kindFromParams } from "@/lib/library/url-state";
@@ -86,14 +95,22 @@ describe("the shelf exists and is reachable", () => {
     );
   });
 
-  test("all nine marks are entries, and every entry route resolves", () => {
-    assert.equal(MARKS.length, 9);
+  test("writing and sentence rules have separate kinds, and every entry route resolves", () => {
+    assert.equal(MARKS.length, 19);
     for (const m of MARKS) {
       const e = entryOfMark(m.id);
-      assert.equal(e.kind, MARK_SUBJECT);
+      assert.equal(
+        e.kind,
+        m.shelf === "sentence" ? SENTENCE_RULE_KIND : MARK_SUBJECT,
+      );
       // The round trip the entry page makes: id → entry → the mark it names.
       assert.equal(markFor(e.id)?.id, m.id);
     }
+    assert.ok(KINDS.includes(SENTENCE_RULE_KIND));
+    assert.equal(
+      kindFromParams(new URLSearchParams("?kind=sentence-rule")),
+      SENTENCE_RULE_KIND,
+    );
   });
 
   test("the three reading-rule marks resolve, round-trip and stay inert", () => {
@@ -125,6 +142,28 @@ describe("the shelf exists and is reachable", () => {
     // NO READINGS: ゛ is not pronounced, and a romaji-shaped string here would be
     // exact-matched by search and handed to a speech synthesiser.
     assert.deepEqual(dakuten.readings, []);
+  });
+
+  test("writing rules and sentence rules are split into shelves", () => {
+    const writing = MARKS.filter((m) => m.shelf === "writing");
+    const sentence = MARKS.filter((m) => m.shelf === "sentence");
+    assert.equal(writing.length, 9);
+    assert.equal(sentence.length, 10);
+    assert.deepEqual(
+      sentence.map((m) => m.id),
+      [
+        "sentence-rule-simple",
+        "sentence-rule-conditional",
+        "sentence-rule-causal",
+        "sentence-rule-obligation",
+        "sentence-rule-sequential",
+        "sentence-rule-desire",
+        "sentence-rule-giving",
+        "sentence-rule-reported",
+        "sentence-rule-contrast",
+        "sentence-rule-request",
+      ],
+    );
   });
 });
 
@@ -229,6 +268,14 @@ describe("the Library shows the LESSON's explanation, not a copy of it", () => {
     assert.equal(marks.get("iteration-mark")?.intros[0], ITERATION_MARK);
     assert.equal(marks.get("rendaku")?.intros[0], RENDAKU);
     assert.equal(marks.get("punctuation")?.intros[0], PUNCTUATION);
+  });
+
+  test("every sentence-rule page points at its lesson intro by reference", () => {
+    for (const mark of MARKS.filter((candidate) => candidate.shelf === "sentence")) {
+      const tierId = mark.id.replace("sentence-rule-", "") as SentenceOrderingTierId;
+      assert.equal(mark.intros[0], SENTENCE_ORDERING_INTROS[tierId]);
+      assert.equal(mark.summary, SENTENCE_ORDERING_INTROS[tierId].title);
+    }
   });
 
   test("both scripts are carried, because they are not always the same rule", () => {

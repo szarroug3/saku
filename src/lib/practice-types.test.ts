@@ -116,7 +116,7 @@ describe("factType passes every other subject through 1:1", () => {
 // ---------- the chooser is data ----------
 
 describe("availableTypes offers only types with material, in order", () => {
-  test("all nine types have material today", () => {
+  test("all fact types plus the sentence corpus are offered", () => {
     assert.deepEqual(availableTypes(), [
       "hiragana",
       "katakana",
@@ -125,6 +125,7 @@ describe("availableTypes offers only types with material, in order", () => {
       "word",
       "counter",
       "grammar",
+      "sentence",
       "transitivity",
       "keigo",
     ]);
@@ -193,6 +194,16 @@ describe("scope is read off, and written back to, a Selection", () => {
     assert.deepEqual(sel.types.sort(), ["hiragana", "kanji"]);
     sel = toggleType(sel, "kanji");
     assert.deepEqual(sel.types, ["hiragana"]);
+  });
+
+  test("sentences combine with ordinary kinds and toggle independently", () => {
+    let sel = withTypes(emptySelection(), ["kanji"]);
+    sel = toggleType(sel, "sentence");
+    assert.deepEqual(sel.types, ["kanji", "sentence"]);
+    sel = toggleType(sel, "hiragana");
+    assert.deepEqual(sel.types, ["kanji", "sentence", "hiragana"]);
+    sel = toggleType(sel, "sentence");
+    assert.deepEqual(sel.types, ["kanji", "hiragana"]);
   });
 });
 

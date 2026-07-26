@@ -78,6 +78,11 @@ import {
 import { postClaim, postSession, postUnseen } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import {
+  sentenceAsksRomaji,
+  sentenceAsksSelection,
+} from "@/lib/ask-config";
+import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
+import {
   normalizeEnvelope,
   reconcile,
   type SessionPayload,
@@ -247,6 +252,13 @@ interface QuizSessionContextValue {
   /** Begin a one-off quiz over `facts` with the current cfg; navigates to
    * /quiz. `what` names the run — see ActiveQuiz.what. */
   startQuiz(facts: FactId[], opts?: { redrill?: boolean; what?: string }): void;
+  /** Begin a one-off quiz in a specific mode, keeping all other snapshot fields
+   * from current cfg. Used by Learn cards that launch a dedicated question type. */
+  startQuizInMode(
+    facts: FactId[],
+    mode: QuizMode,
+    opts?: { redrill?: boolean; what?: string },
+  ): void;
   /**
    * The rest is over (or you skipped the lesson): begin round 1.
    *
@@ -273,6 +285,9 @@ interface QuizSessionContextValue {
    * `facts` is what src/lib/budget.ts decided the session is — ranked material
    * topped up from `teach` — not the raw selection. `teach` is the subset that
    * gets shown before it gets asked. `what` names it, frozen like the snapshot.
+   * `mode` is the quiz mode for the post-teach drill; if omitted, uses the
+   * current config mode. Sentence ordering sessions pass "assembly" to ensure
+   * the drill shows only chunk-ordering questions, not grammar meaning MC.
    */
   startSession(
     facts: FactId[],
@@ -280,6 +295,7 @@ interface QuizSessionContextValue {
     what?: string,
     origin?: SessionOrigin,
     seededSeen?: FactId[],
+    mode?: QuizMode,
   ): void;
   /** Re-ask a subset from the fork. Comes back to the same fork. */
   retryLeg(facts: FactId[], boxes?: string[]): void;
@@ -429,6 +445,8 @@ export interface RunInfo {
   facts: FactId[];
   /** A session's phase; undefined for a quiz. */
   phase?: StudySession["phase"];
+  /** The quiz mode this run drills in (e.g. "assembly"). */
+  mode: QuizMode;
   progress: QuizProgress | null;
   startedAt?: number;
   /** For ordering: a session's last-answer time, else when it was parked (or
@@ -450,6 +468,7 @@ function quizRunInfo(
     kind: "quiz",
     what: quiz.what,
     facts: quiz.facts,
+    mode: quiz.snapshot.mode,
     progress,
     startedAt: quiz.startedAt,
     lastActiveAt,
@@ -470,6 +489,7 @@ function sessionRunInfo(
     what: s.what,
     facts: s.facts,
     phase: s.phase,
+    mode: s.snapshot.mode,
     progress,
     startedAt: s.startedAt,
     lastActiveAt: s.lastActiveAt,
@@ -520,6 +540,7 @@ function snapshotOf(cfg: QuizConfig): QuizSnapshot {
         prompts: [...cfg.ask.sentence.prompts],
         responses: [...cfg.ask.sentence.responses],
         answers: [...cfg.ask.sentence.answers],
+        englishResponses: [...(cfg.ask.sentence.englishResponses ?? [])],
       },
       english: { answers: [...cfg.ask.english.answers] },
     },
@@ -1001,6 +1022,20 @@ export function QuizSessionProvider({
     [cfg, beginLeg, parkIfActive],
   );
 
+  const startQuizInMode = useCallback(
+    (
+      facts: FactId[],
+      mode: QuizMode,
+      opts?: { redrill?: boolean; what?: string },
+    ) => {
+      if (!facts.length) return;
+      parkIfActive();
+      const snap = { ...snapshotOf(cfg), mode };
+      beginLeg(facts, opts?.what ?? countWhat(facts), snap, !!opts?.redrill);
+    },
+    [cfg, beginLeg, parkIfActive],
+  );
+
   // ---------- history ----------
 
   /**
@@ -1108,6 +1143,7 @@ export function QuizSessionProvider({
       what?: string,
       origin: SessionOrigin = "lesson",
       seededSeen: FactId[] = [],
+      mode?: QuizMode,
     ) => {
       if (!facts.length) return;
       // The session state and its route are one transition. router.push already
@@ -1120,7 +1156,7 @@ export function QuizSessionProvider({
         // Don't overwrite what's running — set it aside, then open the lesson.
         parkIfActive();
         const now = Date.now();
-        const snapshot = snapshotOf(cfg);
+        const snapshot = { ...snapshotOf(cfg), ...(mode && { mode }) };
         const teaching = teach.length > 0;
         const name = what ?? countWhat(facts);
         setSession({
@@ -1164,7 +1200,13 @@ export function QuizSessionProvider({
       const what = widen ? countWhat(facts) : session.what;
       // Re-read the current settings (see startNextRound): a change made while
       // the new material was being read should take effect on the first round.
-      const snapshot = snapshotOf(cfg);
+      const snapshot = {
+        ...snapshotOf(cfg),
+        // The lesson owns its question type. Global Practice settings may
+        // change answer details, but must not turn a sentence-ordering lesson's
+        // closing assembly quiz into an unrelated drill.
+        ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
+      };
       setSession({
         ...session,
         facts,
@@ -1333,7 +1375,11 @@ export function QuizSessionProvider({
     // hit ending a round, switching to Limited, and getting Endless again.
     // Stored back on the session so its record, its HUD and a redrill (retryLeg,
     // which reads session.snapshot) all name the settings this round ran under.
-    const snapshot = snapshotOf(cfg);
+    const snapshot = {
+      ...snapshotOf(cfg),
+      // Keep a dedicated lesson mode (notably sentence assembly) across rounds.
+      ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
+    };
     setSession({
       ...session,
       snapshot,
@@ -1583,6 +1629,39 @@ export function QuizSessionProvider({
   const finishQuiz = useCallback(
     (stats: SessionStats) => {
       const quiz = active;
+      const sentencePractice =
+        quiz?.snapshot.mode === "drill" &&
+        quiz.facts.some(isSentenceTierMarkerFact) &&
+        (sentenceAsksSelection(quiz.snapshot.ask) ||
+          sentenceAsksRomaji(quiz.snapshot.ask));
+      const hasOrdinaryQuestions =
+        quiz?.facts.some((fact) => !isSentenceTierMarkerFact(fact)) ?? false;
+      // Sentence building is a Japanese-sentence source inside Drill, not a
+      // separate mode. Preserve the ordinary answers at the source boundary,
+      // then show the selected learned sentence rules in the same run.
+      if (
+        sentencePractice &&
+        hasOrdinaryQuestions &&
+        quiz.runtime.sentencePhase !== true
+      ) {
+        setActive({
+          ...quiz,
+          runtime: {
+            ...quiz.runtime,
+            sentencePhase: true,
+            preSentenceStats: stats,
+          },
+        });
+        setProgress(null);
+        return;
+      }
+      const completedStats =
+        sentencePractice && quiz.runtime.preSentenceStats
+          ? mergeStats(
+              quiz.runtime.preSentenceStats as SessionStats,
+              stats,
+            )
+          : stats;
       // In a session, finishing a leg opens the fork — it does not score
       // anything and it does not leave the loop. Scoring happens once, when
       // the session ends.
@@ -1605,7 +1684,7 @@ export function QuizSessionProvider({
       }
       setActive(null);
       setProgress(null);
-      const s = computeResults(stats);
+      const s = computeResults(completedStats);
       if (!quiz || !s.total) {
         router.push("/");
         return;
@@ -1613,7 +1692,7 @@ export function QuizSessionProvider({
       // A one-off quiz has no rounds, so it commits once, here — the same
       // queue-then-post path a round takes, so it gets the same retries and the
       // same visible failure.
-      const record = buildSessionRecord(stats, {
+      const record = buildSessionRecord(completedStats, {
         mode: quiz.snapshot.mode,
         redrill: quiz.redrill,
         ts: Date.now(),
@@ -1624,7 +1703,7 @@ export function QuizSessionProvider({
         mode: quiz.snapshot.mode,
         redrill: quiz.redrill,
         ts: record?.ts ?? Date.now(),
-        stats,
+        stats: completedStats,
       });
       router.push("/results");
     },
@@ -1725,6 +1804,7 @@ export function QuizSessionProvider({
       retrySave,
       saveNow,
       startQuiz,
+      startQuizInMode,
       startFirstRound,
       finishQuiz,
       abandonQuiz,
@@ -1758,6 +1838,7 @@ export function QuizSessionProvider({
       retrySave,
       saveNow,
       startQuiz,
+      startQuizInMode,
       startFirstRound,
       finishQuiz,
       abandonQuiz,

@@ -25,22 +25,35 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Btn, GhostBtn } from "@/components/ui";
+import { Btn, SmallBtn } from "@/components/ui";
 import { newFactStat, retriesAllowed, shuffle } from "@/lib/engine";
 import {
   assemblyFacts,
+  ASSEMBLY_QUIZ_TARGET,
   canonicalOrder,
   gradeAssembly,
-  pickAssembly,
-  pieceHint,
+  pickAssemblyForTiers,
+  SENTENCE_ORDERING_TIERS,
+  sentenceOrderingTierForItem,
   type AssemblyItem,
 } from "@/data/assembly";
+import {
+  SENTENCE_ORDERING_GUIDES,
+  type SentenceOrderingTierId,
+} from "@/data/sentence-ordering-guides";
+import {
+  TIER_EXAMPLES,
+  type TierExample,
+} from "@/components/session/sentence-ordering-teach-walk";
 import { useHistory } from "@/lib/use-history";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
+import {
+  learnedSentenceTierIds,
+  sentenceTierMarkerFact,
+} from "@/lib/sentence-ordering-progress";
 import type { HistoryFile, SessionStats } from "@/types";
-
-const TARGET = 12;
+import { DrillHalo, type HaloState } from "@/components/quiz/drill-halo";
 
 interface AsmCard {
   item: AssemblyItem;
@@ -57,6 +70,7 @@ interface AsmRuntime {
   pos: number;
   streak: number;
   stats: SessionStats;
+  source: "lesson-examples" | "practice-corpus";
 }
 
 interface CoachHint {
@@ -74,28 +88,28 @@ function coachHints(item: AssemblyItem, canon: readonly string[], tries: number)
   const out: CoachHint[] = [
     {
       id: "keep-chunks",
-      text: "Treat each chip as one chunk. Particles are already attached to their word.",
+      text: "Think in chunks, not individual words; each chip already includes its particle.",
     },
     {
       id: "anchor-end",
-      text: "Anchor the ending first. The main action/state chunk is usually near the end.",
+      text: "A good first move is to lock in the ending chunk.",
     },
     {
       id: "before-end",
-      text: "Place topic/time/place chunks before that ending chunk, then refine the middle.",
+      text: "Then place topic/time/place chunks before it and adjust the middle.",
     },
   ];
 
   if (tries > 0) {
     out.push({
       id: "final-anchor",
-      text: `Try setting the final chunk first: \u300c${canon[canon.length - 1] ?? ""}\u300d.`,
+      text: `Try this anchor first: \u300c${canon[canon.length - 1] ?? ""}\u300d.`,
     });
   }
   if (tries > 1 && canon.length > 2) {
     out.push({
       id: "start-anchor",
-      text: `If needed, begin with: \u300c${canon[0] ?? ""}\u300d.`,
+      text: `Still stuck? Start from: \u300c${canon[0] ?? ""}\u300d.`,
     });
   }
   if (item.p.length > 0) {
@@ -107,12 +121,145 @@ function coachHints(item: AssemblyItem, canon: readonly string[], tries: number)
   return out;
 }
 
-function buildRuntime(history: HistoryFile): AsmRuntime {
+function quizTierIds(active: ActiveQuiz, history: HistoryFile): string[] {
+  const explicit = SENTENCE_ORDERING_TIERS.filter((tier) =>
+    active.facts.includes(sentenceTierMarkerFact(tier.id)),
+  ).map((tier) => tier.id);
+  if (explicit.length > 0) return explicit;
+
+  return learnedSentenceTierIds(history);
+}
+
+const LESSON_PARTS: Readonly<
+  Record<SentenceOrderingTierId, readonly (keyof TierExample)[]>
+> = {
+  request: ["context", "target", "action", "ending"],
+  conditional: ["condition", "resultTopic", "core", "ending"],
+  simple: ["topic", "core", "ending"],
+  causal: ["core", "topic", "ending"],
+  obligation: ["topic", "core", "ending"],
+  sequential: ["core", "topic", "ending"],
+  desire: ["topic", "core", "ending"],
+  giving: ["topic", "core", "ending"],
+  reported: ["topic", "core", "ending"],
+  contrast: ["core", "topic", "ending"],
+};
+
+function lessonPattern(tierId: SentenceOrderingTierId, jp: string): string {
+  const tier = SENTENCE_ORDERING_TIERS.find((candidate) => candidate.id === tierId)!;
+  const visible = tier.patterns.find((pattern) => {
+    const surface: Readonly<Record<string, string>> = {
+      "te-request": "ください",
+      "nai-request": "ないで",
+      mashou: "ましょう",
+      tara: "たら",
+      ba: "れば",
+      nara: "なら",
+      "kara-reason": "から",
+      node: "ので",
+      "te-iru": "ている",
+      "te-shimau": "てしま",
+      "te-miru": "てみ",
+      tai: "たい",
+      yasui: "やすい",
+      nikui: "にくい",
+      "te-ageru": "あげ",
+      "te-kureru": "くれ",
+      "te-morau": "もら",
+      "to-omou": "と思う",
+      rashii: "らしい",
+      kamoshirenai: "かもしれない",
+      noni: "のに",
+      "nai-de": "ないで",
+      "nakereba-naranai": "なければならない",
+      "nakereba-ikenai": "なければいけない",
+    };
+    return surface[pattern] ? jp.includes(surface[pattern]) : false;
+  });
+  return visible ?? tier.patterns[0];
+}
+
+function lessonPieces(
+  tierId: SentenceOrderingTierId,
+  example: TierExample,
+): AssemblyItem["pieces"] {
+  const starts = LESSON_PARTS[tierId]
+    .map((key) => {
+      const text = example[key];
+      if (!text || typeof text === "string" || !("jp" in text) || !text.jp) return null;
+      const start = example.jp.indexOf(text.jp);
+      return start < 0 ? null : { start, text: text.jp };
+    })
+    .filter((part): part is { start: number; text: string } => part !== null)
+    .sort((a, b) => a.start - b.start);
+  return starts.map((part, index) => ({
+    t: example.jp.slice(
+      part.start,
+      starts[index + 1]?.start ?? example.jp.length,
+    ),
+    h: null,
+  }));
+}
+
+function lessonItems(tierId: SentenceOrderingTierId): AssemblyItem[] {
+  const tierIndex = SENTENCE_ORDERING_TIERS.findIndex(
+    (tier) => tier.id === tierId,
+  );
+  return TIER_EXAMPLES[tierId].map((example, index) => ({
+    id: -10_000 - tierIndex * 10 - index,
+    en: example.en,
+    jp: example.jp,
+    pieces: lessonPieces(tierId, example),
+    v: [],
+    p: [lessonPattern(tierId, example.jp)],
+  }));
+}
+
+function usesLessonExamples(active: ActiveQuiz, tierIds: readonly string[]): boolean {
+  return (
+    tierIds.length === 1 &&
+    active.what.startsWith("Sentence ordering · tier ")
+  );
+}
+
+function buildRuntime(active: ActiveQuiz, history: HistoryFile): AsmRuntime {
   const cards: AsmCard[] = [];
   const stats: SessionStats = {};
   const seenIds = new Set<number>();
-  for (let i = 0; i < TARGET * 4 && cards.length < TARGET; i++) {
-    const item = pickAssembly(history);
+  const tierIds = quizTierIds(active, history);
+  const lessonSource = usesLessonExamples(active, tierIds);
+  const exactLessonCards =
+    lessonSource
+      ? lessonItems(tierIds[0] as SentenceOrderingTierId)
+      : null;
+  if (exactLessonCards) {
+    for (const item of exactLessonCards) {
+      cards.push({
+        item,
+        pool: shuffle(item.pieces.map((piece) => piece.t)),
+        tray: [],
+        state: "open",
+        tries: 0,
+      });
+      for (const fact of assemblyFacts(item)) {
+        if (!stats[fact]) stats[fact] = newFactStat();
+        stats[fact].seen++;
+      }
+    }
+    return {
+      cards,
+      pos: 0,
+      streak: 0,
+      stats,
+      source: "lesson-examples",
+    };
+  }
+  for (
+    let i = 0;
+    i < ASSEMBLY_QUIZ_TARGET * 4 && cards.length < ASSEMBLY_QUIZ_TARGET;
+    i++
+  ) {
+    const item = pickAssemblyForTiers(history, tierIds);
     if (!item) break;
     if (seenIds.has(item.id)) continue; // no repeats within one run
     seenIds.add(item.id);
@@ -128,12 +275,28 @@ function buildRuntime(history: HistoryFile): AsmRuntime {
       stats[f].seen++;
     }
   }
-  return { cards, pos: 0, streak: 0, stats };
+  return {
+    cards,
+    pos: 0,
+    streak: 0,
+    stats,
+    source: "practice-corpus",
+  };
 }
 
 function ensureRuntime(active: ActiveQuiz, history: HistoryFile): AsmRuntime {
   const rt = active.runtime as { assembly?: AsmRuntime };
-  return (rt.assembly ??= buildRuntime(history));
+  const tierIds = quizTierIds(active, history);
+  const expectedSource = usesLessonExamples(active, tierIds)
+    ? "lesson-examples"
+    : "practice-corpus";
+  // Replace queues saved by the older corpus-backed lesson implementation.
+  // Without this, an already-open lesson can keep showing seven unrelated
+  // generated cards even after lesson launches have been corrected.
+  if (rt.assembly?.source !== expectedSource) {
+    rt.assembly = buildRuntime(active, history);
+  }
+  return (rt.assembly ??= buildRuntime(active, history));
 }
 
 // ---------- mutations (module-level, runtime passed in) ----------
@@ -209,10 +372,28 @@ function advance(rt: AsmRuntime): void {
   rt.pos++;
 }
 
+function skipCard(rt: AsmRuntime, card: AsmCard): void {
+  const index = rt.cards.indexOf(card);
+  if (index < 0) return;
+  const [skipped] = rt.cards.splice(index, 1);
+  skipped.pool = shuffle(skipped.item.pieces.map((piece) => piece.t));
+  skipped.tray = [];
+  skipped.state = "open";
+  skipped.tries = 0;
+  rt.cards.push(skipped);
+}
+
 export function AssemblyScreen() {
   const { cfg } = useQuizConfig();
   const { history, loaded } = useHistory();
-  const { active, finishQuiz, setProgress, saveNow } = useQuizSession();
+  const {
+    active,
+    session,
+    finishQuiz,
+    setProgress,
+    saveNow,
+    reviewLesson,
+  } = useQuizSession();
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
   const [hintOpen, setHintOpen] = useState(false);
@@ -233,8 +414,8 @@ export function AssemblyScreen() {
     // DRAFT copy.
     return (
       <div className="mx-auto mt-16 max-w-md text-center text-text-muted">
-        Learn a few more words first. Sentence building will unlock once you know
-        every word in a sentence.
+        Learn a sentence type and enough of its words first. Practice only uses
+        sentence types you have learned.
       </div>
     );
   }
@@ -244,7 +425,20 @@ export function AssemblyScreen() {
   const resolved = card.state !== "open";
   const canon = canonicalOrder(item);
   const coach = coachHints(item, canon, card.tries);
-  const hintBySurface = new Map(item.pieces.map((p) => [p.t, pieceHint(p)]));
+  const tierId = sentenceOrderingTierForItem(
+    item,
+  ) as SentenceOrderingTierId | null;
+  const thinkHint =
+    (tierId ? SENTENCE_ORDERING_GUIDES[tierId]?.hook : undefined) ??
+    "Think about what each chunk does, then place the final predicate.";
+  const haloState: HaloState =
+    card.state === "right"
+      ? "right"
+      : card.state === "wrong"
+        ? "wrong"
+        : shake
+          ? "wrong-flash"
+          : "resting";
 
   const place = (surface: string) => {
     if (resolved) return;
@@ -298,50 +492,77 @@ export function AssemblyScreen() {
   };
 
   const trayFilled = card.tray.length === canon.length;
+  const allowed = retriesAllowed(cfg);
+  const retriesLeft = Math.max(0, allowed - card.tries);
+  const unlimited = cfg.retries === "unl";
+  const showPips = cfg.showRetryPips && (unlimited || allowed > 0);
+
+  const skip = () => {
+    if (resolved) return;
+    skipCard(rt, card);
+    setHintOpen(false);
+    saveNow();
+    rerender();
+  };
+  const endQuiz = () => finishQuiz(rt.stats);
+  const hasLesson = !!session && session.teach.length > 0;
+  const pct = total > 0 ? Math.round((100 * done) / total) : 0;
 
   return (
-    <div className="mx-auto mt-6 max-w-xl">
-      <div className="mb-6 flex items-center justify-between text-sm text-text-muted">
-        <span className="rounded-full border border-border bg-accent-bg px-3 py-1 text-[13px] font-medium text-accent tabular-nums">
-          {rt.pos + 1} / {rt.cards.length}
-        </span>
-        <span className="tabular-nums" aria-hidden>
-          {rt.streak > 0 ? `\u{1F525} ${rt.streak}` : ""}
-        </span>
+    <div>
+      <div className="kq-band sticky top-0 z-10 border-b border-border px-3 py-1.5">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="kq-material rounded-full border border-accent/40 bg-accent-bg px-3 py-1 text-[13px] font-semibold tabular-nums text-accent">
+              {done} / {total}
+            </span>
+            {rt.streak >= 2 ? (
+              <span className="kq-material rounded-full border border-border px-2.5 py-0.5 text-[11px] tabular-nums text-text-muted">
+                🔥 {rt.streak}
+              </span>
+            ) : null}
+          </span>
+          <span className="flex items-center gap-1.5">
+            {hasLesson ? (
+              <SmallBtn onClick={reviewLesson}>Look again</SmallBtn>
+            ) : null}
+            <SmallBtn onClick={endQuiz}>End quiz</SmallBtn>
+          </span>
+        </div>
+        <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-200"
+            style={{
+              width: `${pct}%`,
+              boxShadow:
+                "0 0 8px color-mix(in srgb, var(--accent) 55%, transparent)",
+            }}
+          />
+        </div>
       </div>
 
-      <div
-        className={`kq-material rounded-2xl border bg-card p-8 shadow-card ${
-          card.state === "right" ? "border-success" : "border-border"
-        }`}
-      >
-        <div className="text-center">
-          <div className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-            Build the sentence
-          </div>
-          <div className="mt-2 text-xl">{item.en}</div>
-        </div>
-
-        <div className="mt-4 rounded-xl border border-border bg-panel p-3 text-sm">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
-            Ordering coach
-          </div>
-          <ul className="space-y-1 text-text-muted">
-            {coach.map((h) => (
-              <li key={h.id}>- {h.text}</li>
-            ))}
-          </ul>
-          {card.tries > 0 ? (
-            <p className="mt-2 text-[12px] text-text-muted">
-              You have {card.tries} miss{card.tries === 1 ? "" : "es"} on this card,
-              so stronger anchors are now shown.
-            </p>
-          ) : null}
+      <div className="mx-auto mt-6 flex max-w-xl flex-col items-center">
+        <DrillHalo
+          key={`${item.id}-${card.tries}`}
+          state={haloState}
+          cardKey={`${item.id}-${card.tries}`}
+          timerLeft={0}
+          drainWindow={0}
+          glyph=""
+          font="inherit"
+          fontSize={30}
+          crossFade={card.tries === 0}
+          sentenceFrame={item.en}
+          sentenceFrameLang="en"
+          compactSentenceFrame
+        />
+        <div className="mt-5 text-xs font-semibold uppercase tracking-wide text-text-muted">
+          Build the sentence
         </div>
 
         {/* The tray: the answer, in order. A drop target. */}
         <ul
-          className={`mt-6 flex min-h-[68px] flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
+          className={`mt-4 flex min-h-17 w-full flex-wrap items-center justify-center gap-2 rounded-xl border p-3 ${
             card.state === "right"
               ? "border-success bg-success-bg"
               : trayFilled
@@ -363,14 +584,14 @@ export function AssemblyScreen() {
             <li className="text-sm text-text-muted">Drag the pieces in order</li>
           ) : (
             card.tray.map((surface, idx) => (
-              <li key={surface}>
+              <li key={surface} className="group relative">
                 <button
                   type="button"
                   lang="ja"
                   draggable={!resolved}
                   disabled={resolved}
                   aria-label={`Piece ${surface}, position ${idx + 1} of ${card.tray.length}. Arrow keys to move, Backspace to remove.`}
-                  className={`kq-material rounded-xl border px-4 py-3 text-lg ${
+                  className={`kq-material rounded-xl border px-4 py-3 pr-8 text-lg ${
                     card.state === "right"
                       ? "border-success bg-success-bg"
                       : "border-border bg-card"
@@ -403,52 +624,66 @@ export function AssemblyScreen() {
                 >
                   {surface}
                 </button>
+                {!resolved ? (
+                  <button
+                    type="button"
+                    aria-label={`Return ${surface} to the available pieces`}
+                    title="Return to available pieces"
+                    className="absolute right-1.5 top-1.5 flex size-5 cursor-pointer items-center justify-center rounded-full text-[13px] leading-none text-text-muted hover:bg-panel hover:text-text"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      unplace(surface);
+                    }}
+                  >
+                    ×
+                  </button>
+                ) : null}
               </li>
             ))
           )}
         </ul>
 
-        {/* The pool: pieces not yet placed. */}
-        {card.pool.length > 0 ? (
-          <ul
-            className="mt-5 flex flex-wrap items-center justify-center gap-2"
-            aria-label="Pieces to place"
-            onDragOver={(e) => {
-              if (dragging.current?.from === "tray") e.preventDefault();
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              const d = dragging.current;
-              if (d?.from === "tray") unplace(d.surface);
-              dragging.current = null;
-            }}
-          >
-            {card.pool.map((surface) => (
-              <li key={surface}>
-                <button
-                  type="button"
-                  lang="ja"
-                  draggable={!resolved}
-                  disabled={resolved}
-                  aria-label={`Piece ${surface}. Press Enter to place it, or drag it into the sentence.`}
-                  className="kq-material cursor-grab rounded-xl border border-border bg-card px-4 py-3 text-lg shadow-chip"
-                  onClick={() => place(surface)}
-                  onDragStart={() => {
-                    dragging.current = { from: "pool", surface };
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      place(surface);
-                    }
-                  }}
-                >
-                  {surface}
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        {/* Keep the pool's row reserved after its final piece is placed. Without
+            this minimum height, the controls jump upward at the exact moment
+            the learner finishes assembling the sentence. */}
+        <ul
+          className="mt-5 flex min-h-[62px] flex-wrap items-center justify-center gap-2"
+          aria-label="Pieces to place"
+          onDragOver={(e) => {
+            if (dragging.current?.from === "tray") e.preventDefault();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            const d = dragging.current;
+            if (d?.from === "tray") unplace(d.surface);
+            dragging.current = null;
+          }}
+        >
+          {card.pool.map((surface) => (
+            <li key={surface}>
+              <button
+                type="button"
+                lang="ja"
+                draggable={!resolved}
+                disabled={resolved}
+                aria-label={`Piece ${surface}. Press Enter to place it, or drag it into the sentence.`}
+                className="kq-material cursor-grab rounded-xl border border-border bg-card px-4 py-3 text-lg shadow-chip"
+                onClick={() => place(surface)}
+                onDragStart={() => {
+                  dragging.current = { from: "pool", surface };
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    place(surface);
+                  }
+                }}
+              >
+                {surface}
+              </button>
+            </li>
+          ))}
+        </ul>
 
         {resolved ? (
           <div lang="ja" className="mt-4 text-center text-base">
@@ -456,41 +691,78 @@ export function AssemblyScreen() {
           </div>
         ) : null}
 
-        {hintOpen ? (
-          <div className="mt-4 rounded-xl border border-border bg-accent-bg p-3 text-sm">
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
-              Word meanings
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {item.pieces
-                .filter((p) => hintBySurface.get(p.t))
-                .map((p) => (
-                  <span key={p.t}>
-                    <span lang="ja" className="font-medium">
-                      {p.t}
-                    </span>{" "}
-                    <span className="text-text-muted">{hintBySurface.get(p.t)}</span>
-                  </span>
-                ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div className="mt-6 flex items-center justify-end gap-3">
+        <div className="mt-6 flex w-full flex-col items-center gap-4">
           {resolved ? (
             <Btn go onClick={next}>
               Next
             </Btn>
           ) : (
-            <>
-              <GhostBtn onClick={() => setHintOpen((h) => !h)}>
-                {hintOpen ? "Hide hint" : "Hint"}
-              </GhostBtn>
-              <Btn go disabled={!trayFilled} onClick={check}>
+            <div className="flex items-center justify-center gap-3">
+              <Btn
+                go
+                className="w-20"
+                disabled={!trayFilled}
+                onClick={check}
+              >
                 Check
               </Btn>
-            </>
+              <Btn
+                className="w-20"
+                onClick={skip}
+                title="Skip — ask this again later"
+              >
+                Skip
+              </Btn>
+              <Btn
+                className="w-20"
+                onClick={() => setHintOpen((open) => !open)}
+                title="Hint (?)"
+              >
+                {hintOpen ? "Hide" : "Hint"}
+              </Btn>
+            </div>
           )}
+          <span className="flex min-h-2 items-center gap-1.5">
+            {!resolved && showPips ? (
+              <>
+                {unlimited ? (
+                  <span className="text-sm leading-none text-accent">∞</span>
+                ) : (
+                  Array.from({ length: allowed }, (_, index) => (
+                    <span
+                      key={index}
+                      className={`block size-1.5 rounded-full ${
+                        index < retriesLeft ? "bg-accent" : "bg-border"
+                      }`}
+                    />
+                  ))
+                )}
+                <span className="ml-1 text-[9px] uppercase tracking-[0.08em] text-text-muted/70">
+                  retries
+                </span>
+              </>
+            ) : null}
+          </span>
+
+          {hintOpen && !resolved ? (
+            <div className="w-full space-y-3">
+              <div className="rounded-xl border border-border bg-panel p-3 text-sm">
+                <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-accent">
+                  {(tierId
+                    ? SENTENCE_ORDERING_GUIDES[tierId]?.eyebrow
+                    : undefined) ?? "Sentence ordering"}
+                </div>
+                <p className="text-text">{thinkHint}</p>
+                {card.tries > 0 ? (
+                  <ul className="mt-2 space-y-1 text-[12px] text-text-muted">
+                    {coach.slice(3).map((hint) => (
+                      <li key={hint.id}>- {hint.text}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

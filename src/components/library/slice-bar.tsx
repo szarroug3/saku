@@ -38,7 +38,17 @@ import {
 import { useQuizSession } from "@/lib/quiz-session";
 import { claimableFacts, quizzableFacts } from "@/lib/word-unlock";
 import type { Claims } from "@/lib/claims";
-import type { FactAggregate, FactId, HistoryFile } from "@/types";
+import type { FactAggregate, FactId, HistoryFile, QuizMode } from "@/types";
+
+interface SliceTeachPlan {
+  facts: readonly FactId[];
+  teach: readonly FactId[];
+  what: string;
+  mode?: QuizMode;
+  /** What the button counts. Usually facts; sentence-rule shelves count the
+   * coherent lessons the action begins working through. */
+  displayCount?: number;
+}
 
 export function SliceBar({
   slice,
@@ -49,6 +59,10 @@ export function SliceBar({
   onClaim,
   showLabel = true,
   includeSolid = false,
+  claimFacts,
+  quizFacts,
+  quizMode,
+  teachPlan,
 }: {
   slice: Slice;
   facts: Record<FactId, FactAggregate>;
@@ -77,8 +91,19 @@ export function SliceBar({
    * The default "don't re-drill what you know" holds for whole-shelf and
    * whole-section slices, which never set it. */
   includeSolid?: boolean;
+  /** Optional additional claim-only facts for reference entries whose completion is
+   * tracked without a quiz fact. Sentence-rule pages use their tier marker so
+   * “I know this” advances the same Learn track as its lesson card. */
+  claimFacts?: readonly FactId[];
+  /** A subject-specific quiz pool when entry facts are not the actual exercise.
+   * Sentence rules quiz readable assembly facts in assembly mode. */
+  quizFacts?: readonly FactId[];
+  quizMode?: QuizMode;
+  /** A subject-specific lesson launch. Sentence rules teach one coherent tier
+   * at a time instead of merging ten lesson walks into one. */
+  teachPlan?: SliceTeachPlan;
 }) {
-  const { startSession, startQuiz } = useQuizSession();
+  const { startSession, startQuiz, startQuizInMode } = useQuizSession();
   const [adding, setAdding] = useState(false);
   // "Quiz me" no longer drops straight into the drill. It opens a pre-start step
   // so the config that WILL run is visible and changeable first — the same gap
@@ -113,6 +138,7 @@ export function SliceBar({
     includeSolid ? order : [...drillPlan(slice, facts, claims, now, true).probe],
     history,
   );
+  const effectiveQuizOrder = quizFacts ? [...new Set(quizFacts)] : quizOrder;
   // Claim only ever touches NOT-solid facts: claiming what the model already
   // calls solid is a documented no-op. So even when Drill is force-including
   // solid facts, claim runs off the default plan and is disabled once every
@@ -121,7 +147,7 @@ export function SliceBar({
   // its word-anchored readings. Knowing 山 does not mean knowing 登山, so
   // claiming 山 must not mark `kanji:山/reading@登山` known and slip it into the
   // quiz. Kana claim their one fact and words claim all of theirs, unchanged.
-  const claimOrder = claimableFacts(
+  const ordinaryClaimOrder = claimableFacts(
     includeSolid
       ? (() => {
           const base = drillPlan(slice, facts, claims, now);
@@ -129,6 +155,12 @@ export function SliceBar({
         })()
       : order,
   );
+  const claimOrder = [
+    ...new Set([
+      ...ordinaryClaimOrder,
+      ...(claimFacts ?? []).filter((id) => claims[id] === undefined),
+    ]),
+  ];
   const count = sliceCount(slice, facts, claims, now, includeSolid);
   const sentence = sliceSentence(count);
   // ONE thing to learn is not a drill. A single kana IS its one reading, and a
@@ -231,9 +263,9 @@ export function SliceBar({
           {/* Quiz me — review what you KNOW. Gated on quizOrder (the met facts),
               so it is GONE, not shown empty, when you have met nothing here yet:
               a fresh shelf has nothing to quiz, only to teach. */}
-          {canDrill && quizOrder.length > 0 ? (
+          {(quizFacts ? effectiveQuizOrder.length > 0 : canDrill && quizOrder.length > 0) ? (
             <Btn sel onClick={() => setQuizzing(true)}>
-              Quiz me {quizOrder.length}
+              Quiz me {effectiveQuizOrder.length}
             </Btn>
           ) : null}
           {/* Teach me — learn the new, then probe. Gated on the full order, so it
@@ -247,6 +279,22 @@ export function SliceBar({
               Teach me {order.length}
             </Btn>
           ) : null}
+          {teachPlan?.facts.length ? (
+            <Btn
+              onClick={() =>
+                startSession(
+                  [...teachPlan.facts],
+                  [...teachPlan.teach],
+                  teachPlan.what,
+                  "library",
+                  undefined,
+                  teachPlan.mode,
+                )
+              }
+            >
+              Teach me {teachPlan.displayCount ?? teachPlan.facts.length}
+            </Btn>
+          ) : null}
         </div>
       </div>
       {/* The pre-start step for "Quiz me". Mounted (and portalled) only while
@@ -257,8 +305,12 @@ export function SliceBar({
         open={quizzing}
         onOpenChange={setQuizzing}
         label={slice.label}
-        count={quizOrder.length}
-        onStart={() => startQuiz(quizOrder, { what: slice.label })}
+        count={effectiveQuizOrder.length}
+        onStart={() =>
+          quizMode
+            ? startQuizInMode(effectiveQuizOrder, quizMode, { what: slice.label })
+            : startQuiz(effectiveQuizOrder, { what: slice.label })
+        }
       />
     </>
   );

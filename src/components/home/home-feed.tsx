@@ -44,6 +44,10 @@ import { NextCurriculumLesson } from "@/components/lesson/next-curriculum-lesson
 import { NextLesson } from "@/components/lesson/next-lesson";
 import { NextTransitivityLesson } from "@/components/lesson/next-transitivity-lesson";
 import { NextKeigoLesson } from "@/components/lesson/next-keigo-lesson";
+import {
+  NextSentenceOrderingLesson,
+  type SentenceOrderingLesson,
+} from "@/components/lesson/next-sentence-ordering-lesson";
 import { PageTitle } from "@/components/ui";
 import { lessonWords, nextCurriculumLesson } from "@/lib/curriculum-lesson";
 import {
@@ -52,6 +56,7 @@ import {
   nextGrammarLesson,
   nextGrammarLock,
 } from "@/lib/grammar-lesson";
+import { patternMeaningFactId } from "@/data/grammar";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { COUNTERS_PER_LESSON_DEFAULT, nextCounterLesson } from "@/lib/counter-lesson";
 import {
@@ -69,7 +74,17 @@ import { entryOf, factInfo } from "@/lib/facts";
 import { COUNTER_ENTRIES } from "@/data/counters";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { useHistory } from "@/lib/use-history";
+import {
+  sentenceTierDone,
+  sentenceTierMarkerFact,
+} from "@/lib/sentence-ordering-progress";
 import type { FactId, HistoryFile } from "@/types";
+import {
+  SENTENCE_ORDERING_TIERS,
+  readableAssemblyForTier,
+  tierAssemblyFacts,
+} from "@/data/assembly";
+import { effectiveState } from "@/lib/claims";
 
 // The eight track keys a run can belong to. For every track but the two vocab
 // ones this IS the fact's subject string; counters and words share the `word`
@@ -83,7 +98,77 @@ type TrackKey =
   | "counter"
   | "grammar"
   | "transitivity"
-  | "keigo";
+  | "keigo"
+  | "sentence-ordering";
+
+const SENTENCE_ORDERING_PER_LESSON = 12;
+
+function sentenceLessonFacts(
+  tier: (typeof SENTENCE_ORDERING_TIERS)[number],
+  history: HistoryFile,
+): FactId[] {
+  const facts = tierAssemblyFacts(tier, history);
+  if (facts.length > 0) return facts;
+  // Fallback marker so the tier can still be surfaced/completed even when no
+  // pattern meaning fact can be resolved for its readable examples.
+  return [sentenceTierMarkerFact(tier.id)];
+}
+
+function sentenceTierUnlocked(tier: (typeof SENTENCE_ORDERING_TIERS)[number], history: HistoryFile): boolean {
+  const readable = readableAssemblyForTier(tier, history);
+  if (readable.length < tier.minReadable) return false;
+
+  // Grammar prereq: at least one of this tier's patterns must have been
+  // taught in the grammar track (seen, claimed or tested). The simple tier
+  // has no prereqs.
+  if (tier.grammarPrereqs.length > 0) {
+    const prereqMet = tier.grammarPrereqs.some((id) => {
+      const fid = patternMeaningFactId(id);
+      const st = effectiveState(
+        history.facts[fid],
+        history.claims?.[fid],
+        history.seen?.[fid],
+      );
+      return st.lastTested > 0;
+    });
+    if (!prereqMet) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Pure function: find the next unlocked sentence-ordering tier lesson, or null.
+ *
+ * Extracted from the component so the React Compiler can handle the for-loop
+ * control flow without skipping memoization of the surrounding useMemo.
+ */
+function nextSentenceOrderingLesson(
+  kanaComplete: boolean,
+  history: HistoryFile,
+): SentenceOrderingLesson | null {
+  if (!kanaComplete) return null;
+
+  for (let i = 0; i < SENTENCE_ORDERING_TIERS.length; i++) {
+    const tier = SENTENCE_ORDERING_TIERS[i];
+    // Sentence track is intentionally linear: you do not skip into a later tier
+    // while an earlier one is still unavailable or unfinished.
+    if (!sentenceTierUnlocked(tier, history)) return null;
+
+    const facts = sentenceLessonFacts(tier, history);
+
+    if (sentenceTierDone(tier.id, facts, history)) continue;
+
+    return {
+      facts: facts.slice(0, SENTENCE_ORDERING_PER_LESSON),
+      lessonNumber: i + 1,
+      totalLessons: SENTENCE_ORDERING_TIERS.length,
+      tierId: tier.id,
+      tierLabel: tier.label,
+    };
+  }
+  return null;
+}
 
 // Which track an in-progress run belongs to, read from its FACTS rather than
 // re-derived from a cursor. A curriculum lesson is single-subject, so the first
@@ -92,6 +177,7 @@ type TrackKey =
 // for a run whose fact isn't in the registry, which then matches no track and
 // falls through to a plain Start, the safe default.
 function trackOfRun(run: RunInfo): TrackKey | null {
+  if (run.mode === "assembly") return "sentence-ordering";
   const fact = run.facts[0];
   if (!fact) return null;
   const subject = factInfo(fact)?.subject;
@@ -202,6 +288,11 @@ export function HomeFeed() {
   // `lesson === null` (kana done) like every post-kana track.
   const keigoLesson = useMemo(
     () => (lesson ? null : nextKeigoLesson(history, KEIGO_PER_LESSON_DEFAULT)),
+    [lesson, history],
+  );
+
+  const sentenceOrderingLesson = useMemo(
+    () => nextSentenceOrderingLesson(!lesson, history),
     [lesson, history],
   );
 
@@ -390,6 +481,7 @@ export function HomeFeed() {
   const transitivityRun = runForTrack("transitivity");
   const counterRun = runForTrack("counter");
   const keigoRun = runForTrack("keigo");
+  const sentenceOrderingRun = runForTrack("sentence-ordering");
 
   // WHEN THE FRONTIER MOVES PAST A SESSION THAT IS STILL OPEN
   // ========================================================
@@ -437,6 +529,33 @@ export function HomeFeed() {
   const keigoLessonShown = resumeShown(keigoLesson, keigoRun, (h) =>
     nextKeigoLesson(h, KEIGO_PER_LESSON_DEFAULT),
   );
+  const sentenceOrderingLessonShown = sentenceOrderingLesson ??
+    (sentenceOrderingRun
+      ? (() => {
+          // Resume: find which tier the active run belongs to by matching its
+          // first fact against each tier's fact pool, then reconstruct the card.
+          for (let i = 0; i < SENTENCE_ORDERING_TIERS.length; i++) {
+            const tier = SENTENCE_ORDERING_TIERS[i];
+            const facts = sentenceLessonFacts(tier, history);
+            if (!facts.includes(sentenceOrderingRun.facts[0])) continue;
+            return {
+              facts: sentenceOrderingRun.facts,
+              lessonNumber: i + 1,
+              totalLessons: SENTENCE_ORDERING_TIERS.length,
+              tierId: tier.id,
+              tierLabel: tier.label,
+            };
+          }
+          // Fallback: can't identify tier, show run with position 1.
+          return {
+            facts: sentenceOrderingRun.facts,
+            lessonNumber: 1,
+            totalLessons: SENTENCE_ORDERING_TIERS.length,
+            tierId: "unknown",
+            tierLabel: "Sentence ordering",
+          };
+        })()
+      : null);
 
   // "I already know these" is a deliberate statement that the resting material
   // is done, so it supersedes any session parked on exactly that material: close
@@ -479,7 +598,8 @@ export function HomeFeed() {
     !(grammarLock && grammarTrackStarted) &&
     !transitivityLessonShown &&
     !counterLessonShown &&
-    !keigoLessonShown;
+    !keigoLessonShown &&
+    !sentenceOrderingLessonShown;
 
   // Until history has loaded, the lessons above are computed from an EMPTY
   // history — which is the day-one curriculum (Vowels あいうえお). Rendering that
@@ -605,6 +725,52 @@ export function HomeFeed() {
           }}
           inSession={!!keigoRun}
           onContinue={() => keigoRun && continueRun(keigoRun.id)}
+        />
+      ) : null}
+
+      {sentenceOrderingLessonShown ? (
+        <NextSentenceOrderingLesson
+          lesson={sentenceOrderingLessonShown}
+          onStart={(facts) => {
+            const marker = sentenceTierMarkerFact(
+              sentenceOrderingLessonShown.tierId,
+            );
+            startSession(
+              [...facts, marker],
+              facts,
+              `Sentence ordering · tier ${sentenceOrderingLessonShown.tierId}`,
+              "lesson",
+              undefined,
+              "assembly",
+            );
+          }}
+          onQuizMe={(facts) => {
+            const marker = sentenceTierMarkerFact(
+              sentenceOrderingLessonShown.tierId,
+            );
+            // “Quiz me” skips the teaching walk, not the lesson session. Keep
+            // the same three-round spaced-repetition loop every other lesson
+            // uses; only `teach` is empty because the learner asked to go
+            // straight to the questions.
+            startSession(
+              [...facts, marker],
+              [],
+              `Sentence ordering · tier ${sentenceOrderingLessonShown.tierId}`,
+              "lesson",
+              undefined,
+              "assembly",
+            );
+          }}
+          onClaim={(facts) => {
+            const completed = [
+              ...facts,
+              sentenceTierMarkerFact(sentenceOrderingLessonShown.tierId),
+            ];
+            claim(completed);
+            closeIfClaimedAway(sentenceOrderingRun, completed);
+          }}
+          inSession={!!sentenceOrderingRun}
+          onContinue={() => sentenceOrderingRun && continueRun(sentenceOrderingRun.id)}
         />
       ) : null}
 

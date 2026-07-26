@@ -14,6 +14,11 @@ import { useEffect, useMemo } from "react";
 
 import { RestScreen } from "@/components/session/rest-screen";
 import { SessionComplete } from "@/components/session/session-complete";
+import {
+  SentenceOrderingTeachWalk,
+  sentenceOrderingTeachSteps,
+  type SentenceOrderingTierId,
+} from "@/components/session/sentence-ordering-teach-walk";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
 import { SmallBtn } from "@/components/ui";
@@ -26,6 +31,26 @@ import { lessonSteps } from "@/lib/lesson-steps";
 import { restLeftMs, SESSION_ROUND_TARGET } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import { useQuizSession } from "@/lib/quiz-session";
+
+const SENTENCE_TIER_IDS: readonly SentenceOrderingTierId[] = [
+  "simple",
+  "conditional",
+  "causal",
+  "obligation",
+  "sequential",
+  "desire",
+  "giving",
+  "reported",
+  "contrast",
+  "request",
+];
+
+function sentenceTierFromLabel(what: string): SentenceOrderingTierId {
+  const prefix = "Sentence ordering · tier ";
+  if (!what.startsWith(prefix)) return "simple";
+  const id = what.slice(prefix.length).trim() as SentenceOrderingTierId;
+  return SENTENCE_TIER_IDS.includes(id) ? id : "simple";
+}
 
 // RoundComplete owns the detailed results table. That table reaches the grammar
 // question engine, which reaches the full sentence corpus; loading it with the
@@ -155,7 +180,11 @@ export default function SessionPage() {
     // (`startedAt` is optional on a leg snapshotted before the field existed;
     // an undated leg is old by definition, so it is not this session's.)
     const reviewing = !!active?.startedAt && active.startedAt >= session.startedAt;
-    const total = teachItems.length;
+    const sentenceOrderingTeaching = session.snapshot.mode === "assembly";
+    const sentenceTier = sentenceTierFromLabel(session.what);
+    const total = sentenceOrderingTeaching
+      ? sentenceOrderingTeachSteps(sentenceTier ?? "simple")
+      : teachItems.length;
     const at = Math.min(teachStep, Math.max(0, total - 1));
     // Leave the lesson for the drill. Named here because two controls fire it:
     // the bar's "Quiz me" below, and the walk's forward button once it reaches
@@ -237,21 +266,30 @@ export default function SessionPage() {
           {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
         </SessionHud>
         <div className="mt-2">
-          <TeachWalk
-            facts={session.teach}
-            history={history}
-            // "Seen before" vs never met is a PRESENTATION difference and only
-            // that — the budget put both here for the same reason and neither
-            // is treated differently. History is the only thing that can tell
-            // them apart, and it's read here rather than stored on the session
-            // so it can't go stale against a deleted session.
-            familiar={(f) => !!history.facts[f]?.seen}
-            shownIntros={shownCards}
-            onStart={toDrill}
-            wider={wider}
-            step={at}
-            onStep={setTeachStep}
-          />
+          {sentenceOrderingTeaching ? (
+            <SentenceOrderingTeachWalk
+              step={at}
+              onStep={setTeachStep}
+              onStart={toDrill}
+              tierId={sentenceTier}
+            />
+          ) : (
+            <TeachWalk
+              facts={session.teach}
+              history={history}
+              // "Seen before" vs never met is a PRESENTATION difference and only
+              // that — the budget put both here for the same reason and neither
+              // is treated differently. History is the only thing that can tell
+              // them apart, and it's read here rather than stored on the session
+              // so it can't go stale against a deleted session.
+              familiar={(f) => !!history.facts[f]?.seen}
+              shownIntros={shownCards}
+              onStart={toDrill}
+              wider={wider}
+              step={at}
+              onStep={setTeachStep}
+            />
+          )}
         </div>
       </>
     );

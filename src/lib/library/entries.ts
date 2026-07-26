@@ -119,6 +119,10 @@ import type { EntryId, FactId, FactInfo } from "@/types";
  * browse-only label, exactly the "track label" the ruling asked for.
  */
 export const COUNTER_KIND = "counter";
+/** Sentence-ordering rules are marks internally, but they are a full learning
+ * track rather than writing notation. Giving them a browse kind keeps their
+ * Library shelf and search results separate from dakuten, punctuation, etc. */
+export const SENTENCE_RULE_KIND = "sentence-rule";
 
 /** Which shelf an entry lives on. The subject id, re-stated as a union so a
  * screen can switch on it — the values come from each subject's own constant
@@ -131,6 +135,7 @@ export type Kind =
   | typeof KANJI_SUBJECT
   | typeof VOCAB_SUBJECT
   | typeof COUNTER_KIND
+  | typeof SENTENCE_RULE_KIND
   | typeof GRAMMAR_SUBJECT
   | typeof TRANSITIVITY_SUBJECT
   | typeof KEIGO_SUBJECT
@@ -141,10 +146,10 @@ export type Kind =
  * pairs grammar makes usable. Radicals sit just before kanji because 氵 is a
  * fact about 海; verb pairs sit after grammar because that is where the
  * curriculum teaches them (you need to build a sentence before "the door opened"
- * vs "I opened the door" is a distinction you can act on). WRITING RULES COME
- * LAST, by product decision: ゛ is a fact about か and once sat next to kana, but
- * the reading rules are reference a learner returns to, not a first stop, so the
- * shelf is parked at the end rather than second. */
+ * vs "I opened the door" is a distinction you can act on). Sentence rules sit
+ * after the grammar-based tracks they bring together. Writing rules remain
+ * reference material near the end: ゛ is a fact about か, but it is something a
+ * learner returns to rather than a first stop. */
 export const KINDS: readonly Kind[] = [
   KANA_SUBJECT,
   RADICAL_SUBJECT,
@@ -160,6 +165,7 @@ export const KINDS: readonly Kind[] = [
   // Keigo sits after verb pairs: it is a politeness layer over verbs the learner
   // already knows, so it browses after the plain-verb tracks it builds on.
   KEIGO_SUBJECT,
+  SENTENCE_RULE_KIND,
   MARK_SUBJECT,
   // Reference definitions, LAST — the same argument that parks Writing rules at
   // the end. A term is a word you look up, not a first stop, and like a mark it
@@ -175,6 +181,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   [KANJI_SUBJECT]: "Kanji",
   [VOCAB_SUBJECT]: "Words",
   [COUNTER_KIND]: "Numbers and counters",
+  [SENTENCE_RULE_KIND]: "Sentence rules",
   [GRAMMAR_SUBJECT]: "Grammar",
   [TRANSITIVITY_SUBJECT]: "Verb pairs",
   [KEIGO_SUBJECT]: "Keigo",
@@ -481,7 +488,7 @@ function build(): LibEntry[] {
   for (const m of MARKS) {
     out.push({
       id: markEntry(m.id),
-      kind: MARK_SUBJECT,
+      kind: m.shelf === "sentence" ? SENTENCE_RULE_KIND : MARK_SUBJECT,
       glyph: m.glyph,
       name: m.name,
       readings: [],
@@ -881,6 +888,7 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
     // one entry, and long vowels has none. Mark links are minted from the mark's
     // own id (`markEntry`), so nothing asks this.
     case MARK_SUBJECT:
+    case SENTENCE_RULE_KIND:
       return null;
     // A pattern is not resolved by its glyph — 〜て is te-sequence AND te-cause,
     // so a glyph names no single grammar entry. Grammar links are minted from a
@@ -998,6 +1006,7 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
     // It is here because the switch is exhaustive and because a silent `""` for
     // a kind that later grew a fact would ship a headed table with no heading.
     case MARK_SUBJECT:
+    case SENTENCE_RULE_KIND:
       return "Nothing to test";
     // A pair's facts are chips on its own page, never this generic table (the
     // entry page excludes transitivity from genericRows), so this heading is not
@@ -1118,6 +1127,7 @@ export function factRows(entry: LibEntry): FactRow[] {
     // attested reading) drops the whole box, so a mark page has no facts table
     // instead of an empty one. Nothing here had to be added for that to work.
     case MARK_SUBJECT:
+    case SENTENCE_RULE_KIND:
       return [];
     // A pair's gradeable facts, one row per ASKABLE side. Not rendered by the
     // entry page (which draws the pair itself), but kept honest for any generic

@@ -21,7 +21,6 @@
 // when every content lemma in it is a word the learner knows.
 
 import assemblyJson from "./generated/assembly-corpus.json" with { type: "json" };
-import { VOCAB } from "./vocab.ts";
 import { patternMeaningFactId } from "./grammar/index.ts";
 import { lemmaKnown } from "../lib/grammar/readable.ts";
 import { factInfo } from "../lib/facts.ts";
@@ -53,31 +52,165 @@ export interface AssemblyItem {
   readonly p: readonly string[];
 }
 
-export const ASSEMBLY: readonly AssemblyItem[] = assemblyJson as readonly AssemblyItem[];
+/** Short, reviewed exercises that keep the introductory tiers honest. The
+ * generated grammar corpus has almost no plain SOV sentences and every request
+ * in it is embedded inside a later conditional/sequential structure. These
+ * mirror the lesson examples so those lessons never borrow a semantically
+ * unrelated pattern merely to fill a quiz. */
+const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
+  {
+    id: -101,
+    en: "Saku ate sushi.",
+    jp: "サクは寿司を食べた。",
+    pieces: [
+      { t: "サクは", h: null },
+      { t: "寿司を", h: "寿司" },
+      { t: "食べた。", h: "食べる" },
+    ],
+    v: ["寿司", "食べる"],
+    p: ["simple"],
+  },
+  {
+    id: -102,
+    en: "Saku went to the store.",
+    jp: "サクは店に行った。",
+    pieces: [
+      { t: "サクは", h: null },
+      { t: "店に", h: "店" },
+      { t: "行った。", h: "行く" },
+    ],
+    v: ["店", "行く"],
+    p: ["simple"],
+  },
+  {
+    id: -103,
+    en: "Saku played with the red ball.",
+    jp: "サクは赤いボールで遊んだ。",
+    pieces: [
+      { t: "サクは", h: null },
+      { t: "赤いボールで", h: "ボール" },
+      { t: "遊んだ。", h: "遊ぶ" },
+    ],
+    v: ["赤い", "ボール", "遊ぶ"],
+    p: ["simple"],
+  },
+  {
+    id: -201,
+    en: "Please read this sentence.",
+    jp: "この文を読んでください。",
+    pieces: [
+      { t: "この文を", h: "文" },
+      { t: "読んで", h: "読む" },
+      { t: "ください。", h: "くださる" },
+    ],
+    v: ["文", "読む", "くださる"],
+    p: ["te-request"],
+  },
+  {
+    id: -202,
+    en: "Let's start now.",
+    jp: "今、始めましょう。",
+    pieces: [
+      { t: "今、", h: "今" },
+      { t: "始め", h: "始める" },
+      { t: "ましょう。", h: null },
+    ],
+    v: ["今", "始める"],
+    p: ["mashou"],
+  },
+  {
+    id: -203,
+    en: "Please write your name here.",
+    jp: "ここに名前を書いてください。",
+    pieces: [
+      { t: "ここに", h: "ここ" },
+      { t: "名前を", h: "名前" },
+      { t: "書いて", h: "書く" },
+      { t: "ください。", h: "くださる" },
+    ],
+    v: ["ここ", "名前", "書く", "くださる"],
+    p: ["te-request"],
+  },
+  {
+    id: -301,
+    en: "I want to go to Japan.",
+    jp: "私は日本へ行きたい。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "日本へ", h: "日本" },
+      { t: "行き", h: "行く" },
+      { t: "たい。", h: null },
+    ],
+    v: ["私", "日本", "行く"],
+    p: ["tai"],
+  },
+  {
+    id: -302,
+    en: "This book is easy to read.",
+    jp: "この本は読みやすい。",
+    pieces: [
+      { t: "この本は", h: "本" },
+      { t: "読み", h: "読む" },
+      { t: "やすい。", h: null },
+    ],
+    v: ["本", "読む"],
+    p: ["yasui"],
+  },
+  {
+    id: -303,
+    en: "This kanji is hard to remember.",
+    jp: "この漢字は覚えにくい。",
+    pieces: [
+      { t: "この漢字は", h: "漢字" },
+      { t: "覚え", h: "覚える" },
+      { t: "にくい。", h: null },
+    ],
+    v: ["漢字", "覚える"],
+    p: ["nikui"],
+  },
+  {
+    id: -401,
+    en: "Saku helped me.",
+    jp: "サクが手伝ってくれた。",
+    pieces: [
+      { t: "サクが", h: null },
+      { t: "手伝って", h: "手伝う" },
+      { t: "くれた。", h: "くれる" },
+    ],
+    v: ["手伝う", "くれる"],
+    p: ["te-kureru"],
+  },
+  {
+    id: -402,
+    en: "My mother cooked for me.",
+    jp: "母が料理してくれた。",
+    pieces: [
+      { t: "母が", h: "母" },
+      { t: "料理して", h: "料理" },
+      { t: "くれた。", h: "くれる" },
+    ],
+    v: ["母", "料理", "くれる"],
+    p: ["te-kureru"],
+  },
+  {
+    id: -403,
+    en: "I had my teacher explain it.",
+    jp: "先生に説明してもらった。",
+    pieces: [
+      { t: "先生に", h: "先生" },
+      { t: "説明して", h: "説明" },
+      { t: "もらった。", h: "もらう" },
+    ],
+    v: ["先生", "説明", "もらう"],
+    p: ["te-morau"],
+  },
+];
 
-/** keb OR reb → glosses, built once, for the per-piece meaning hint. */
-const GLOSS_BY_SPELLING: ReadonlyMap<string, readonly string[]> = (() => {
-  const map = new Map<string, readonly string[]>();
-  for (const w of VOCAB) {
-    for (const spelling of new Set([w.keb, w.reb])) {
-      if (!map.has(spelling)) map.set(spelling, w.glosses);
-    }
-  }
-  return map;
-})();
-
-/**
- * The meaning hint for a piece — the first gloss of its head content word, or
- * null when the piece has no content head or the word is not in the vocabulary.
- *
- * DRAFT COPY: this glosses only the head word (ごはんを → "meal"), not the whole
- * piece with its particle. It is honest and one tap away, per the mockup, but
- * the exact wording is not yet reviewed.
- */
-export function pieceHint(piece: AssemblyPiece): string | null {
-  if (!piece.h) return null;
-  return GLOSS_BY_SPELLING.get(piece.h)?.[0] ?? null;
-}
+export const ASSEMBLY: readonly AssemblyItem[] = [
+  ...CURATED_ASSEMBLY,
+  ...(assemblyJson as readonly AssemblyItem[]),
+];
+export const ASSEMBLY_QUIZ_TARGET = 12;
 
 /**
  * The canonical order for an item — the one accepted answer.
@@ -111,6 +244,18 @@ export function assemblyFacts(item: AssemblyItem): FactId[] {
 }
 
 /**
+ * Every distinct fact represented by assembly items the learner can currently
+ * read. Used to gate and label sentence-ordering drills started from Learn.
+ */
+export function readableAssemblyFacts(history: HistoryFile): FactId[] {
+  const out = new Set<FactId>();
+  for (const item of readableAssembly(history)) {
+    for (const fact of assemblyFacts(item)) out.add(fact);
+  }
+  return [...out];
+}
+
+/**
  * Can the learner read this item — every content lemma known?
  */
 export function assemblyReadable(item: AssemblyItem, history: HistoryFile): boolean {
@@ -122,6 +267,209 @@ export function assemblyReadable(item: AssemblyItem, history: HistoryFile): bool
  */
 export function readableAssembly(history: HistoryFile): readonly AssemblyItem[] {
   return ASSEMBLY.filter((it) => assemblyReadable(it, history));
+}
+
+/**
+ * One structural tier in the sentence-ordering track — a named sentence type
+ * (e.g. "Conditional sentences") defined by the grammar pattern IDs that tag
+ * its sentences in the assembly corpus.
+ *
+ * Tiers are ordered by pedagogical complexity: Simple first, then Conditional,
+ * Causal, Obligation and so on. The learner sees them as sentence STRUCTURE
+ * lessons, not grammar lessons — the pattern IDs are the engine's internal
+ * classification, never shown.
+ */
+export interface AssemblyTier {
+  readonly id: string;
+  /** Learner-visible name, shown on the lesson card. */
+  readonly label: string;
+  /** Assembly corpus pattern IDs (`item.p`) that define this tier. A sentence
+   * belongs to the FIRST tier whose pattern set intersects its own pattern
+   * list, provided no later-tier pattern also appears (see
+   * `readableAssemblyForTier`). */
+  readonly patterns: readonly string[];
+  /** Minimum number of readable sentences required for the tier to unlock.
+   * Below this, the learner cannot do a meaningful drill, so the tier is
+   * skipped rather than shown as locked. */
+  readonly minReadable: number;
+  /**
+   * Grammar pattern IDs that must have been taught in the grammar track before
+   * this tier unlocks. At least ONE must be learned (seen, claimed or tested).
+   *
+   * Empty for the simple tier — its patterns are structural particles that the
+   * grammar track never teaches as lessons. For all other tiers the prereqs
+   * are the patterns that describe the sentence structure this tier practices,
+   * so the learner knows what the pattern means before they practise placing it.
+   */
+  readonly grammarPrereqs: readonly string[];
+}
+
+/**
+ * The ordered sentence-structure tiers the sentence-ordering track teaches.
+ *
+ * Each tier unlocks independently once the learner has enough vocabulary to
+ * read its sentences — no grammar fact state is consulted here. The tiers are
+ * ordered from structurally simplest to most complex, so the learner always
+ * encounters simple particle-marked SOV sentences first. Every tier after that
+ * follows the first point at which one of its prerequisite patterns appears in
+ * CURRICULUM_PATTERNS (src/lib/grammar-lesson.ts): requests, sequence,
+ * contrast/negative linking, desire, conditionals, cause, giving/receiving,
+ * obligation, then reported stance.
+ */
+export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
+  {
+    id: "simple",
+    label: "Simple sentences",
+    patterns: ["simple", "wo", "e", "made", "made-ni", "dake", "kara-source"],
+    minReadable: 1,
+    // Particles are structural markers, never taught as grammar lessons.
+    grammarPrereqs: [],
+  },
+  {
+    id: "request",
+    label: "Requests and proposals",
+    patterns: ["te-request", "nai-request", "mashou"],
+    minReadable: 3,
+    grammarPrereqs: ["te-request", "nai-request", "mashou"],
+  },
+  {
+    id: "sequential",
+    label: "Te-form links and helpers",
+    patterns: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
+    minReadable: 3,
+    grammarPrereqs: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
+  },
+  {
+    id: "desire",
+    label: "Want to / easy / hard",
+    patterns: ["tai", "yasui", "nikui"],
+    minReadable: 3,
+    grammarPrereqs: ["tai", "yasui", "nikui"],
+  },
+  {
+    id: "conditional",
+    label: "Conditional sentences",
+    patterns: ["tara", "ba", "nara"],
+    minReadable: 3,
+    grammarPrereqs: ["tara", "ba", "nara"],
+  },
+  {
+    id: "causal",
+    label: "Because / so",
+    patterns: ["kara-reason", "node"],
+    minReadable: 3,
+    grammarPrereqs: ["kara-reason", "node"],
+  },
+  {
+    id: "giving",
+    label: "Giving and receiving",
+    patterns: ["te-ageru", "te-kureru", "te-morau"],
+    minReadable: 3,
+    grammarPrereqs: ["te-ageru", "te-kureru", "te-morau"],
+  },
+  {
+    id: "contrast",
+    label: "Even though / without",
+    patterns: ["noni", "nai-de"],
+    minReadable: 3,
+    grammarPrereqs: ["noni", "nai-de"],
+  },
+  {
+    id: "obligation",
+    label: "Must / have to",
+    patterns: ["nakereba-naranai", "nakereba-ikenai", "nakya", "nai-to-ikenai"],
+    minReadable: 3,
+    grammarPrereqs: ["nakereba-naranai", "nakereba-ikenai", "nakya", "nai-to-ikenai"],
+  },
+  {
+    id: "reported",
+    label: "I think / seems like",
+    patterns: ["to-omou", "rashii", "kamoshirenai", "deshou"],
+    minReadable: 3,
+    grammarPrereqs: ["to-omou", "rashii", "kamoshirenai", "deshou"],
+  },
+];
+
+/** The one unambiguous sentence-ordering tier represented by an assembly item.
+ * A sentence that combines two taught structures is useful Japanese, but it is
+ * a poor single-lesson exercise: “I'll lend you one if you like” should not be
+ * arbitrarily called either Conditional or Giving/receiving. Those compound
+ * items stay outside this teaching pool until they have their own lesson. */
+export function sentenceOrderingTierForItem(item: AssemblyItem): string | null {
+  const matches = SENTENCE_ORDERING_TIERS.filter((tier) =>
+    item.p.some((pattern) => tier.patterns.includes(pattern)),
+  );
+  return matches.length === 1 ? matches[0].id : null;
+}
+
+/**
+ * Readable assembly items that belong to this tier.
+ *
+ * A sentence belongs to a tier when:
+ *   1. It is readable (all content lemmas known).
+ *   2. It has ≤4 pieces — short enough for a clear drag exercise.
+ *   3. It maps unambiguously to this one tier.
+ */
+export function readableAssemblyForTier(
+  tier: AssemblyTier,
+  history: HistoryFile,
+): readonly AssemblyItem[] {
+  return readableAssembly(history).filter(
+    (it) =>
+      it.pieces.length <= 4 &&
+      sentenceOrderingTierForItem(it) === tier.id &&
+      // なら can also frame a topic (“as for the box”) even when an English
+      // translation contains no condition at all. That is valid Japanese, but
+      // it does not clearly teach conditional ordering from an English prompt.
+      (tier.id !== "conditional" ||
+        /\b(if|when|unless|provided|in case)\b/i.test(it.en)),
+  );
+}
+
+/** Readable exercises from exactly the sentence-ordering tiers requested. */
+export function readableAssemblyForTiers(
+  tierIds: readonly string[],
+  history: HistoryFile,
+): readonly AssemblyItem[] {
+  const wanted = new Set(tierIds);
+  const seen = new Set<number>();
+  const out: AssemblyItem[] = [];
+  for (const tier of SENTENCE_ORDERING_TIERS) {
+    if (!wanted.has(tier.id)) continue;
+    for (const item of readableAssemblyForTier(tier, history)) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+/** Roll one readable exercise from the requested learned/taught tiers. */
+export function pickAssemblyForTiers(
+  history: HistoryFile,
+  tierIds: readonly string[],
+  rng: Rng = Math.random,
+): AssemblyItem | null {
+  const pool = readableAssemblyForTiers(tierIds, history);
+  if (pool.length === 0) return null;
+  return pool[Math.floor(rng() * pool.length)] ?? pool[0];
+}
+
+/**
+ * Every distinct grammar fact represented by the readable sentences in this
+ * tier. Passed to the session so the drill can credit assembly answers against
+ * the correct fact IDs.
+ */
+export function tierAssemblyFacts(
+  tier: AssemblyTier,
+  history: HistoryFile,
+): FactId[] {
+  const out = new Set<FactId>();
+  for (const item of readableAssemblyForTier(tier, history)) {
+    for (const fact of assemblyFacts(item)) out.add(fact);
+  }
+  return [...out];
 }
 
 /**

@@ -21,6 +21,8 @@
 
 import {
   enabledDirs,
+  englishSentenceAsksOrdering,
+  englishSentenceAsksSelection,
   sentenceAsksRomaji,
   sentenceAsksSelection,
 } from "@/lib/ask-config";
@@ -51,6 +53,8 @@ function answerFormats(ask: AskConfig): AnswerStyle[] {
   if (sentenceAsksSelection(ask)) out.push("mc");
   if (sentenceAsksRomaji(ask)) out.push(...ask.sentence.answers);
   if (en2jp) out.push(...ask.english.answers);
+  if (englishSentenceAsksOrdering(ask)) out.push("typed");
+  if (englishSentenceAsksSelection(ask)) out.push("mc");
   return out;
 }
 
