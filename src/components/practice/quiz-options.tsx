@@ -15,6 +15,7 @@ import {
 import type {
   AnswerStyle,
   AskConfig,
+  EnglishSentenceResponse,
   GridResponse,
   PromptFormat,
   PairResponse,
@@ -123,6 +124,14 @@ export function QuizOptionsFields() {
         answers: toggle(cfg.ask.sentence.answers, v),
       },
     });
+  const englishSentenceResponse = (v: EnglishSentenceResponse) =>
+    setAsk({
+      ...cfg.ask,
+      sentence: {
+        ...cfg.ask.sentence,
+        englishResponses: toggle(cfg.ask.sentence.englishResponses, v),
+      },
+    });
   const englishAnswer = (v: AnswerStyle) =>
     setAsk({
       ...cfg.ask,
@@ -212,10 +221,37 @@ export function QuizOptionsFields() {
           </SourceCard>
 
           <SourceCard
-            title="Japanese sentence"
-            mark="文"
-            description="A whole sentence as the prompt."
+            title="English"
+            mark="EN"
+            description="Shown in text. Response is always Japanese."
           >
+            <AskRow label="Answer Format">
+              <Chip
+                on={cfg.ask.english.answers.includes("typed")}
+                onClick={() => englishAnswer("typed")}
+              >
+                Type it
+              </Chip>
+              <Chip
+                on={cfg.ask.english.answers.includes("mc")}
+                onClick={() => englishAnswer("mc")}
+              >
+                Multiple choice
+              </Chip>
+            </AskRow>
+          </SourceCard>
+
+          <SourceCard
+            title="Sentences"
+            mark="文"
+            description="Practice complete Japanese and English sentences."
+          >
+            <div className="py-4">
+              <h4 className="text-[15px] font-semibold text-text">Japanese</h4>
+              <p className="mt-1 text-[13px] text-text-muted">
+                See or hear Japanese, then answer with its definition or kana.
+              </p>
+            </div>
             <AskRow label="Prompt Format">
               <Chip
                 on={cfg.ask.sentence.prompts.includes("text")}
@@ -244,39 +280,40 @@ export function QuizOptionsFields() {
                 Kana
               </Chip>
             </AskRow>
-            <AskRow label="Answer Format">
+            {cfg.ask.sentence.responses.includes("romaji") ? (
+              <AskRow label="Kana Answer Format">
+                <Chip
+                  on={cfg.ask.sentence.answers.includes("typed")}
+                  onClick={() => sentenceAnswer("typed")}
+                >
+                  Type it
+                </Chip>
+                <Chip
+                  on={cfg.ask.sentence.answers.includes("mc")}
+                  onClick={() => sentenceAnswer("mc")}
+                >
+                  Multiple choice
+                </Chip>
+              </AskRow>
+            ) : null}
+            <div className="border-t border-border py-4">
+              <h4 className="text-[15px] font-semibold text-text">English</h4>
+              <p className="mt-1 text-[13px] text-text-muted">
+                Read an English sentence, then build or identify the Japanese.
+              </p>
+            </div>
+            <AskRow label="Expected Response">
               <Chip
-                on={cfg.ask.sentence.answers.includes("typed")}
-                onClick={() => sentenceAnswer("typed")}
+                on={cfg.ask.sentence.englishResponses.includes("ordering")}
+                onClick={() => englishSentenceResponse("ordering")}
               >
-                Type it
+                Order the chunks
               </Chip>
               <Chip
-                on={cfg.ask.sentence.answers.includes("mc")}
-                onClick={() => sentenceAnswer("mc")}
+                on={cfg.ask.sentence.englishResponses.includes("selection")}
+                onClick={() => englishSentenceResponse("selection")}
               >
-                Multiple choice
-              </Chip>
-            </AskRow>
-          </SourceCard>
-
-          <SourceCard
-            title="English"
-            mark="EN"
-            description="Shown in text. Response is always Japanese."
-          >
-            <AskRow label="Answer Format">
-              <Chip
-                on={cfg.ask.english.answers.includes("typed")}
-                onClick={() => englishAnswer("typed")}
-              >
-                Type it
-              </Chip>
-              <Chip
-                on={cfg.ask.english.answers.includes("mc")}
-                onClick={() => englishAnswer("mc")}
-              >
-                Multiple choice
+                Choose the sentence
               </Chip>
             </AskRow>
           </SourceCard>

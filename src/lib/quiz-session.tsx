@@ -540,6 +540,7 @@ function snapshotOf(cfg: QuizConfig): QuizSnapshot {
         prompts: [...cfg.ask.sentence.prompts],
         responses: [...cfg.ask.sentence.responses],
         answers: [...cfg.ask.sentence.answers],
+        englishResponses: [...cfg.ask.sentence.englishResponses],
       },
       english: { answers: [...cfg.ask.english.answers] },
     },

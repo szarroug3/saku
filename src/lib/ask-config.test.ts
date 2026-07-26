@@ -24,7 +24,12 @@ import type {
 function emptyAsk(): AskConfig {
   return {
     japanese: { prompts: [], responses: [], answers: [] },
-    sentence: { prompts: [], responses: [], answers: [] },
+    sentence: {
+      prompts: [],
+      responses: [],
+      answers: [],
+      englishResponses: [],
+    },
     english: { answers: [] },
   };
 }
@@ -47,7 +52,12 @@ describe("AskConfig storage", () => {
           responses: ["romaji"],
           answers: ["typed", "mc"],
         },
-        sentence: { prompts: [], responses: [], answers: [] },
+        sentence: {
+          prompts: [],
+          responses: [],
+          answers: [],
+          englishResponses: ["ordering"],
+        },
         english: { answers: ["mc"] },
       },
     );
@@ -69,7 +79,7 @@ describe("AskConfig storage", () => {
   test("each source can be fully off and an all-off setup is empty", () => {
     const empty = normalizeAsk({
       japanese: {},
-      sentence: {},
+      sentence: { englishResponses: [] },
       english: {},
     });
     assert.equal(askIsEmpty(empty), true);
@@ -173,19 +183,17 @@ describe("every atomic source combination", () => {
 
   for (const prompt of prompts) {
     for (const answer of answers) {
-      const valid = answer === "mc";
-      test(`Japanese sentence definition: ${prompt} + ${answer} is ${
-        valid ? "complete" : "invalid"
-      }`, () => {
+      test(`Japanese sentence definition: ${prompt} is complete and inherently multiple choice`, () => {
         const ask = emptyAsk();
         ask.sentence = {
           prompts: [prompt],
           responses: ["definition"],
           answers: [answer],
+          englishResponses: [],
         };
-        assert.equal(sentenceAsksSelection(ask), valid);
-        assert.equal(sentenceAsks(ask), valid);
-        assert.equal(askIsEmpty(ask), !valid);
+        assert.equal(sentenceAsksSelection(ask), true);
+        assert.equal(sentenceAsks(ask), true);
+        assert.equal(askIsEmpty(ask), false);
       });
     }
   }
@@ -198,6 +206,7 @@ describe("every atomic source combination", () => {
           prompts: [prompt],
           responses: ["romaji"],
           answers: [answer],
+          englishResponses: [],
         };
         assert.equal(sentenceAsksRomaji(ask), true);
         assert.equal(sentenceAsks(ask), true);
@@ -235,6 +244,7 @@ describe("incomplete source rows do not enable Start", () => {
       prompts: [],
       responses: ["romaji"],
       answers: ["typed"],
+      englishResponses: [],
     };
     assert.equal(askIsEmpty(noPrompt), true);
 
@@ -243,6 +253,7 @@ describe("incomplete source rows do not enable Start", () => {
       prompts: ["text"],
       responses: ["romaji"],
       answers: [],
+      englishResponses: [],
     };
     assert.equal(askIsEmpty(noAnswer), true);
   });

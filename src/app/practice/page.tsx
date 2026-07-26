@@ -35,6 +35,7 @@ import { buildCoverageDeck, enabledFormsFor } from "@/lib/ask-forms";
 import {
   sentenceAsksRomaji,
   sentenceAsksSelection,
+  englishSentenceAsks,
 } from "@/lib/ask-config";
 import { resolve, whatSentence } from "@/lib/selection";
 import {
@@ -81,7 +82,9 @@ export default function PracticePage() {
   const sentenceSelected = cfg.selection.types.includes("sentence");
   const sentenceConfigured =
     cfg.mode === "drill" &&
-    (sentenceAsksSelection(cfg.ask) || sentenceAsksRomaji(cfg.ask));
+    (sentenceAsksSelection(cfg.ask) ||
+      sentenceAsksRomaji(cfg.ask) ||
+      englishSentenceAsks(cfg.ask));
   const includeSentences = sentenceSelected && sentenceConfigured;
   const learnedSentenceIds = useMemo(
     () => learnedSentenceTierIds(history),

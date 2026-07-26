@@ -193,8 +193,7 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
   // presentations of the same safe, readable sentence board.
   if (
     grammarMeaning(fact) &&
-    ask.sentence.responses.includes("definition") &&
-    ask.sentence.answers.includes("mc")
+    ask.sentence.responses.includes("definition")
   ) {
     for (const prompt of ask.sentence.prompts) {
       out.push({

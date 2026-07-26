@@ -172,8 +172,13 @@ export interface JapaneseAsk {
 export interface SentenceAsk {
   prompts: PromptFormat[];
   responses: ResponseKind[];
+  /** Answer controls for Kana only. Definition is always multiple choice. */
   answers: AnswerStyle[];
+  /** English is always shown as text. */
+  englishResponses: EnglishSentenceResponse[];
 }
+
+export type EnglishSentenceResponse = "ordering" | "selection";
 
 /** English shown as text; the response is ALWAYS Japanese (a reading or the
  * written word — never romaji-as-answer), so the only choice is the answer

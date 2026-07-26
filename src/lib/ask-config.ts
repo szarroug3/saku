@@ -12,6 +12,7 @@ import type {
   AnswerStyle,
   AskConfig,
   GridResponse,
+  EnglishSentenceResponse,
   PromptFormat,
   PairResponse,
   QuizConfig,
@@ -21,6 +22,10 @@ import type {
 const PROMPTS: readonly PromptFormat[] = ["text", "audio"];
 const RESPONSES: readonly ResponseKind[] = ["definition", "romaji"];
 const ANSWERS: readonly AnswerStyle[] = ["typed", "mc"];
+const ENGLISH_SENTENCE_RESPONSES: readonly EnglishSentenceResponse[] = [
+  "ordering",
+  "selection",
+];
 const PAIR_RESPONSES: readonly PairResponse[] = [
   "definition",
   "romaji",
@@ -52,6 +57,7 @@ export function defaultAsk(): AskConfig {
       prompts: ["text"],
       responses: ["definition"],
       answers: ["mc"],
+      englishResponses: ["ordering"],
     },
     english: { answers: [] },
   };
@@ -78,6 +84,12 @@ export function normalizeAsk(raw: unknown): AskConfig {
       prompts: clean<PromptFormat>(s["prompts"], PROMPTS),
       responses: clean<ResponseKind>(s["responses"], RESPONSES),
       answers: clean<AnswerStyle>(s["answers"], ANSWERS),
+      englishResponses: Array.isArray(s["englishResponses"])
+        ? clean<EnglishSentenceResponse>(
+            s["englishResponses"],
+            ENGLISH_SENTENCE_RESPONSES,
+          )
+        : ["ordering"],
     },
     english: {
       answers: clean<AnswerStyle>(e["answers"], ANSWERS),
@@ -132,7 +144,12 @@ export function migrateLegacyAsk(old: LegacyAsk): AskConfig {
         : { prompts: [], responses: [], answers: [] },
     // Not represented in the old model; default it on so grammar selection
     // cards keep appearing exactly as before.
-    sentence: { prompts: ["text"], responses: ["definition"], answers: ["mc"] },
+    sentence: {
+      prompts: ["text"],
+      responses: ["definition"],
+      answers: ["mc"],
+      englishResponses: ["ordering"],
+    },
     english: { answers: en ? [old.styleEn2jp ?? "mc"] : [] },
   };
 }
@@ -157,11 +174,7 @@ export function englishAsks(ask: AskConfig): boolean {
  * (Definition · Multiple choice). */
 export function sentenceAsksSelection(ask: AskConfig): boolean {
   const s = ask.sentence;
-  return (
-    s.prompts.length > 0 &&
-    s.responses.includes("definition") &&
-    s.answers.includes("mc")
-  );
+  return s.prompts.length > 0 && s.responses.includes("definition");
 }
 
 /** Whether the sentence source has a complete transcription form. Unlike a
@@ -178,7 +191,25 @@ export function sentenceAsksRomaji(ask: AskConfig): boolean {
 
 /** Whether any complete sentence-source form is selected. */
 export function sentenceAsks(ask: AskConfig): boolean {
-  return sentenceAsksSelection(ask) || sentenceAsksRomaji(ask);
+  return (
+    sentenceAsksSelection(ask) ||
+    sentenceAsksRomaji(ask) ||
+    englishSentenceAsks(ask)
+  );
+}
+
+export function englishSentenceAsksOrdering(ask: AskConfig): boolean {
+  return ask.sentence.englishResponses.includes("ordering");
+}
+
+export function englishSentenceAsksSelection(ask: AskConfig): boolean {
+  return ask.sentence.englishResponses.includes("selection");
+}
+
+export function englishSentenceAsks(ask: AskConfig): boolean {
+  return (
+    englishSentenceAsksOrdering(ask) || englishSentenceAsksSelection(ask)
+  );
 }
 
 /** Nothing is selected anywhere — Start must be disabled. See start-bar.tsx. */
@@ -190,8 +221,11 @@ export function askIsEmpty(ask: AskConfig): boolean {
  * `cfg.dirs`. Japanese (either response) ⇒ jp→en; English ⇒ en→jp. */
 export function enabledDirs(ask: AskConfig): { jp2en: boolean; en2jp: boolean } {
   return {
-    jp2en: japaneseAsks(ask) || sentenceAsks(ask),
-    en2jp: englishAsks(ask),
+    jp2en:
+      japaneseAsks(ask) ||
+      sentenceAsksSelection(ask) ||
+      sentenceAsksRomaji(ask),
+    en2jp: englishAsks(ask) || englishSentenceAsks(ask),
   };
 }
 

@@ -24,7 +24,7 @@ const ALL: AskConfig = {
     responses: ["definition", "romaji"],
     answers: ["typed", "mc"],
   },
-  sentence: { prompts: [], responses: [], answers: [] },
+  sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
   english: { answers: ["typed", "mc"] },
 };
 
@@ -87,7 +87,7 @@ describe("enabledFormsFor", () => {
   test("kana en→jp emits no form when only Type it is selected", () => {
     const forms = enabledFormsFor(kanaFact("あ"), {
       japanese: { prompts: [], responses: [], answers: [] },
-      sentence: { prompts: [], responses: [], answers: [] },
+      sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
       english: { answers: ["typed"] },
     });
     assert.deepEqual(forms, []);
@@ -101,9 +101,10 @@ describe("enabledFormsFor", () => {
         answers: ["typed"],
       },
       sentence: {
-        prompts: ["text"],
-        responses: ["definition", "romaji"],
+        prompts: [],
+        responses: [],
         answers: ["typed"],
+        englishResponses: [],
       },
       english: { answers: ["typed"] },
     };
@@ -123,6 +124,7 @@ describe("enabledFormsFor", () => {
         prompts: ["text", "audio"],
         responses: ["romaji"],
         answers: ["typed", "mc"],
+        englishResponses: [],
       },
       english: { answers: [] },
     });
@@ -138,6 +140,7 @@ describe("enabledFormsFor", () => {
           prompts: [prompt],
           responses: ["definition"],
           answers: ["mc"],
+          englishResponses: [],
         },
         english: { answers: [] },
       });
@@ -153,7 +156,7 @@ describe("enabledFormsFor", () => {
     });
   }
 
-  test("sentence definition + Type it creates no unsupported card", () => {
+  test("sentence definition stays multiple choice regardless of the kana answer format", () => {
     const fact = patternMeaningFactId(RECIPES[0].id);
     assert.deepEqual(
       enabledFormsFor(fact, {
@@ -162,10 +165,19 @@ describe("enabledFormsFor", () => {
           prompts: ["text"],
           responses: ["definition"],
           answers: ["typed"],
+          englishResponses: [],
         },
         english: { answers: [] },
       }),
-      [],
+      [
+        {
+          source: "sentence",
+          response: "definition",
+          listen: false,
+          dir: "jp2en",
+          answer: "mc",
+        },
+      ],
     );
   });
 });
