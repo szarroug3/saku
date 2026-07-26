@@ -250,6 +250,14 @@ export function toHiragana(str: string): string {
  * long mark — i.e. a string romaji could actually have produced. Empty is
  * false: nothing is not an answer. A kanji anywhere makes it false, which is
  * the whole point — that answer is not reachable by typing romaji. */
+/** Whether a string contains any katakana. The drill uses this to convert typed
+ * romaji into katakana rather than hiragana when the card's answer is katakana
+ * (チャ, ロ) — otherwise the answer is untypeable, since the default conversion
+ * only produces hiragana. */
+export function isKatakana(str: string): boolean {
+  return /[゠-ヿㇰ-ㇿｦ-ﾝ]/u.test(str);
+}
+
 export function isKanaOnly(str: string): boolean {
   const s = str.trim();
   if (!s) return false;

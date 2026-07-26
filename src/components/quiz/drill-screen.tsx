@@ -79,7 +79,7 @@ import {
   jp2enResponse,
   type CardForm,
 } from "@/lib/ask-forms";
-import { toKana } from "@/lib/romaji";
+import { isKatakana, toKana } from "@/lib/romaji";
 import { quizInstruction } from "@/lib/quiz-instruction";
 import { presentationPhrase } from "@/lib/question-presentation";
 import { speak } from "@/lib/speech";
@@ -147,6 +147,9 @@ interface DrillQuestion {
   /** Japanese-sentence → English-meaning board (text or audio). Its options are strings rather
    * than FactIds, so it carries its own correct index. */
   recognition: RecognitionItem | null;
+  /** Whether the card's typed answer is KATAKANA — frozen at ask time so the
+   * live romaji→kana input converts to katakana (チャ) not hiragana. */
+  katakana: boolean;
   /**
    * Whether the HINT was taken on this showing.
    *
@@ -634,6 +637,7 @@ export function DrillScreen() {
       grammarVehicle,
       grammarSelection,
       recognition,
+      katakana: isKatakana(revealFor(f, dir, ctx)),
       listen,
       // A new showing has not been hinted. Written here rather than backfilled,
       // so there is exactly one place a showing's hint state begins.
@@ -1536,7 +1540,7 @@ export function DrillScreen() {
               onChange={(e) =>
                 setTyped(
                   romajiInput
-                    ? toKana(e.target.value, { live: true })
+                    ? toKana(e.target.value, { live: true, katakana: q.katakana })
                     : e.target.value,
                 )
               }
