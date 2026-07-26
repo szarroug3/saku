@@ -203,6 +203,7 @@ function showingOf(q: DrillQuestion): ShowingPresentation {
 function ctxFor(q: DrillQuestion, anchor?: string): PromptContext {
   return {
     anchor,
+    listen: q.listen,
     grammarVehicle: q.grammarVehicle ?? undefined,
     grammarSelection: q.grammarSelection ?? undefined,
   };
@@ -602,6 +603,7 @@ export function DrillScreen() {
         ? pickRecognitionForFact(f, history)
         : null;
     const ctx: PromptContext = {
+      listen,
       grammarVehicle: grammarVehicle ?? undefined,
       grammarSelection: grammarSelection ?? undefined,
     };

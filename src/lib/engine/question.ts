@@ -137,6 +137,12 @@ export interface Prompt {
 export interface PromptContext {
   anchor?: string;
   /**
+   * Whether this showing hides the Japanese prompt and plays it as audio.
+   * Word-reading MC uses this to show written-word choices while the typed
+   * version still asks for the kana that was heard.
+   */
+  listen?: boolean;
+  /**
    * The per-showing vehicle for a grammar PRODUCTION question — the verb to
    * build the pattern on THIS time. See lib/grammar/vehicles.ts for why the
    * fact stays fixed while the showing varies: naming the target makes the
@@ -596,6 +602,16 @@ const kanjiQuestions: QuestionType = {
 
 const wordQuestions: QuestionType = {
   id: "word",
+  optionLabel(fact, dir, ctx) {
+    // On a listening reading card, kana options only ask the learner to match a
+    // sound to itself. Typed recall still wants that kana; MC instead asks which
+    // written word was heard. A visual reading card cannot do this because its
+    // written word is already the prompt.
+    if (dir === "jp2en" && ctx?.listen && isWordReading(fact)) {
+      return glyphOfFact(fact);
+    }
+    return null;
+  },
   prompt(fact, dir) {
     // A word has two facts — how it is READ and what it MEANS — and they are
     // different questions about the same glyph. The reading fact's answer is

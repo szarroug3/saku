@@ -60,6 +60,27 @@ test("a jp→en word reading question offers other kana readings", () => {
   assert.equal(new Set(readings).size, readings.length, "no duplicate readings");
 });
 
+test("a listening word-reading board shows written words, not kana readings", () => {
+  const ctx = { listen: true };
+  const opts = buildMcOptions(SENSEI_READING, "jp2en", ctx);
+  assert.ok(opts.length > 1, `expected multiple options, got ${opts.length}`);
+  const labels = opts.map(
+    (f) => questionsFor(SENSEI_READING).optionLabel?.(f, "jp2en", ctx),
+  );
+  assert.ok(labels.includes("先生"), "the correct written word should be an option");
+  assert.ok(!labels.includes("せんせい"), "the heard kana should not be an MC option");
+  assert.equal(new Set(labels).size, labels.length, "written options must be distinct");
+});
+
+test("a visual word-reading board still shows kana readings", () => {
+  assert.equal(
+    questionsFor(SENSEI_READING).optionLabel?.(SENSEI_READING, "jp2en", {
+      listen: false,
+    }),
+    null,
+  );
+});
+
 test("en→jp grades a typed kana reading of the word as correct", () => {
   const q = questionsFor(SENSEI_READING);
   // Typed directly as kana (an IME user, or the drill's live romaji→kana box).
