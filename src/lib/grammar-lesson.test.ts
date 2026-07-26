@@ -118,7 +118,7 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
     assert.ok(levels.includes("N5") && levels.includes("N4"));
   });
 
-  test("the te-form leads; behind it, each level keeps its authored order", () => {
+  test("within a level, the authored (grouped) order is preserved — stable sort", () => {
     // The N5 slice of the curriculum is the N5 drillable recipes in RECIPES order;
     // likewise N4. That is what "stable" buys, and it keeps the て/ない/must
     // groupings intact inside each level.
@@ -126,16 +126,10 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
       const fromCurriculum = CURRICULUM_PATTERNS.filter((r) => r.level === level).map(
         (r) => r.id,
       );
-      const authored = RECIPES.filter(
+      const fromAuthored = RECIPES.filter(
         (r) => r.level === level && isProducible(r),
       ).map((r) => r.id);
-      // te-sequence (the te-form) is pulled to the very front of the whole
-      // curriculum (teFormFirst), so within its level the expected order is it
-      // first, then the rest of the authored order. Other levels are untouched.
-      const expected = authored.includes("te-sequence")
-        ? ["te-sequence", ...authored.filter((id) => id !== "te-sequence")]
-        : authored;
-      assert.deepEqual(fromCurriculum, expected);
+      assert.deepEqual(fromCurriculum, fromAuthored);
     }
   });
 
