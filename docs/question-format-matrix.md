@@ -41,7 +41,7 @@ Kana entries have one reading fact.
 | Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Text: show kana glyph | `jp->en` | Romaji reading | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `あ` -> type/pick `a` |
-| Audio: play kana pronunciation | `jp->en` | Romaji reading | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. Kana is not currently listenable, so this emits no form. | Hear `あ` -> type/pick `a` |
+| Audio: play kana pronunciation | `jp->en` | Romaji reading | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Hear `あ` -> type/pick `a` |
 | Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | Requires a distinct audio-dictation target for kana; the current `romaji` response means a Latin-letter reading. | Hear `a` -> type/pick `あ` |
 | Show romaji/English side | `en->jp` | Kana glyph | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (typed resolves to the required MC control) | Prompt `a` -> pick `あ` |
 | Text: show kana glyph (self-copy) | `jp->jp` | Same kana glyph | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
