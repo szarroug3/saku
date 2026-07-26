@@ -8,6 +8,13 @@ Scope:
 - Corpus-feasible possibilities, including explicit trivial cases marked as `No`
 - Current product rule: a selected typed form that cannot be graded through the text input resolves to multiple choice. Selecting typed and MC together still yields one deduplicated MC form.
 
+Completeness rule:
+- Each entry type lists every distinct prompt/response relationship its data can support, even when the relationship is not implemented.
+- Typed and MC share one row when they ask the same semantic question; the two control columns and the Example cell show which controls are available.
+- A same-script visible copy is still listed, but marked `By design` and `Not generated`.
+- A listening transcription is not a visible copy: hearing Japanese and writing its reading can be useful, so it is `Planned` when the data can support it.
+- A relationship the entry does not carry at all (for example, an English definition for a bare kana character) is listed as `By design`, with the missing data named.
+
 ## Terms
 
 - `jp->en`: show Japanese, answer in English or kana reading (depends on form)
@@ -34,22 +41,24 @@ Kana entries have one reading fact.
 | Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Text: show kana glyph | `jp->en` | Romaji reading | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `あ` -> type/pick `a` |
-| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. Kana is not currently listenable, so this emits no form. | Hear `a` -> type/pick `あ` |
+| Audio: play kana pronunciation | `jp->en` | Romaji reading | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. Kana is not currently listenable, so this emits no form. | Hear `あ` -> type/pick `a` |
+| Audio: play kana pronunciation | `jp->jp` | Kana glyph | Yes | Yes | Planned | Requires a distinct audio-dictation target for kana; the current `romaji` response means a Latin-letter reading. | Hear `a` -> type/pick `あ` |
 | Show romaji/English side | `en->jp` | Kana glyph | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (typed resolves to the required MC control) | Prompt `a` -> pick `あ` |
 | Text: show kana glyph (self-copy) | `jp->jp` | Same kana glyph | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
+| Text or audio kana | N/A | English definition | No | No | By design | N/A. A bare kana character has a reading fact, but no English meaning fact. | Not generated |
 
 ---
 
 ## 2) Kanji Entry (`kanji:*`) and Radical Entry (`radical:*`)
 
-Kanji/radical behavior shares the same question-type rules for meaning facts.
+Kanji and radicals share meaning-question controls, but only kanji entries carry anchor-word reading facts.
 
 ### 2.1 Meaning fact
 
 | Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Text: show kanji/radical glyph | `jp->en` | English meaning | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}` | `一` -> type/pick `one` |
-| Audio: play canonical reading | `jp->en` | English meaning | No | No | By design | N/A (semantically incoherent: hear reading, answer definition) | Not generated |
+| Audio: play a reading without an identifying word | `jp->en` | English meaning | No | No | By design | N/A. A bare kanji reading can match many kanji and does not identify which meaning fact is being asked; radicals have no audio/reading data. | Not generated |
 | Show English meaning | `en->jp` | Japanese written form (glyph) | No | Yes | Current | `english: {answers: includes "typed" or "mc"}` (typed resolves to MC because the glyph is not typeable through the kana input) | Prompt `one` -> pick `一` |
 | Text: show kanji/radical glyph (self-copy) | `jp->jp` | Same written form (glyph) | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 
@@ -58,8 +67,14 @@ Kanji/radical behavior shares the same question-type rules for meaning facts.
 | Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
 |---|---|---|---|---|---|---|---|
 | Text: show kanji in anchor context | `jp->en` only | Reading (kana) | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` (jp->en only per fixedDir constraint) | `生` (in `人生`) -> type/pick `せい` |
-| Audio: play anchor-word pronunciation | `jp->en` only | Reading | No | No | By design | N/A (cannot disambiguate which kanji+anchor reading fact is targeted) | Not generated |
-| `en->jp` reading | N/A | N/A | N/A | N/A | By design | N/A (kanji reading facts have fixedDir="jp2en"; en->jp not generated) | Not generated |
+| Audio: play anchor-word pronunciation | `jp->jp` | Anchor reading (kana) | Yes | Yes | Planned | Intended: a kanji-reading audio source with `responses: includes "romaji"` and `answers: includes "typed" or "mc"`. It needs the anchor identity carried without leaking the reading. | Hear `人生` -> type/pick `じんせい` |
+| Show English anchor meaning/context | `en->jp` | Anchor reading (kana) | Yes | Yes | Planned | Intended: an English-source reading form with `answers: includes "typed" or "mc"`. Kanji reading facts are currently fixed to jp->en. | Prompt `life` for `人生` -> type/pick `じんせい` |
+
+### 2.3 Radical reading relationships
+
+| Prompt | Direction | Expected response | Typed | MC | Status | Settings | Example |
+|---|---|---|---|---|---|---|---|
+| Radical glyph, meaning, or audio | N/A | Japanese reading/pronunciation | No | No | By design | N/A. Radical entries in this product carry a glyph and English meaning, but no authoritative Japanese reading. | Not generated |
 
 ---
 
@@ -76,7 +91,9 @@ Words can have:
 | Text: show word | `jp->en` | English meaning | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}` | `これ` -> type/pick `this` |
 | Audio: play word | `jp->en` | English meaning | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` (kana words are listenable) | Hear `これ` -> type/pick `this` |
 | Show English meaning | `en->jp` | Written word form | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana-only words are typeable en->jp) | Prompt `this` -> type/pick `これ` |
-| Text: show kana-only word (self-copy) | `jp->jp` | Same written form | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
+| Text: show kana-only word | `jp->jp` | Pronunciation written in kana | No | No | By design | N/A. The answer is visibly identical to the prompt, so this is a trivial copy. | Not generated |
+| Audio: play kana-only word | `jp->jp` | Pronunciation written in kana | Yes | Yes | Planned | Intended: a word-audio reading form with `answers: includes "typed" or "mc"`. Kana-only words currently have no separate reading fact. | Hear `これ` -> type/pick `これ` |
+| Show romaji pronunciation | `en->jp` | Written kana word | Yes | Yes | Planned | Intended: a pronunciation-source form with `answers: includes "typed" or "mc"`. The current English source uses the meaning, not romaji. | Prompt `kore` -> type/pick `これ` |
 
 ### 3.2 Single-kanji words (example: `人`)
 
@@ -88,6 +105,8 @@ Words can have:
 | Text: show word (reading fact) | `jp->jp` | Reading (kana) | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `人` -> type/pick `ひと` |
 | Audio: play word (reading fact) | `jp->jp` | Reading | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Hear `ひと` -> type/pick `ひと` |
 | Show English meaning (reading fact) | `en->jp` | Reading (kana) | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana reading is typeable) | Prompt `person` -> type/pick `ひと` |
+| Text: show written word | `jp->jp` | Same written word | No | No | By design | N/A. This would copy the visible prompt. | Not generated |
+| Show romaji pronunciation | `en->jp` | Written kanji word | No | No | By design | N/A. A pronunciation alone is ambiguous across homophones and does not identify the intended spelling. | Not generated |
 
 ### 3.3 Multi-kanji words (example: `先生`)
 
@@ -99,6 +118,8 @@ Words can have:
 | Text: show word (reading fact) | `jp->jp` | Reading (kana) | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `先生` -> type/pick `せんせい` |
 | Audio: play word (reading fact) | `jp->jp` | Reading | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Hear `せんせい` -> type/pick `せんせい` |
 | Show English meaning (reading fact) | `en->jp` | Reading (kana) | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana reading is typeable) | Prompt `teacher` -> type/pick `せんせい` |
+| Text: show written word | `jp->jp` | Same written word | No | No | By design | N/A. This would copy the visible prompt. | Not generated |
+| Show romaji pronunciation | `en->jp` | Written kanji word | No | No | By design | N/A. A pronunciation alone can identify multiple spellings. | Not generated |
 
 ### 3.4 Mixed kanji+kana words (example: `食べる`)
 
@@ -110,6 +131,8 @@ Words can have:
 | Text: show word (reading fact) | `jp->jp` | Reading (kana) | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | `食べる` -> type/pick `たべる` |
 | Audio: play word (reading fact) | `jp->jp` | Reading | Yes | Yes | Current | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Hear `たべる` -> type/pick `たべる` |
 | Show English meaning (reading fact) | `en->jp` | Reading (kana) | Yes | Yes | Current | `english: {answers: includes "typed" or "mc"}` (kana reading is typeable) | Prompt `to eat` -> type/pick `たべる` |
+| Text: show written word | `jp->jp` | Same written word | No | No | By design | N/A. This would copy the visible prompt. | Not generated |
+| Show romaji pronunciation | `en->jp` | Written mixed-script word | No | No | By design | N/A. Pronunciation alone does not reliably identify the intended kanji spelling. | Not generated |
 
 ---
 
@@ -124,8 +147,11 @@ The Sentences settings card has independent Japanese and English subsections. Ja
 | Sentence source + Definition (text) | `jp->en` | English meaning recognition | No | Yes | Current | `sentence: {prompts: includes "text", responses: includes "definition"}`. Definition forces MC; `sentence.answers` applies only to Kana. | `先生は学校へ行く。` -> pick `The teacher goes to school.` |
 | Sentence source + Definition (audio) | `jp->en` | English meaning recognition | No | Yes | Current | `sentence: {prompts: includes "audio", responses: includes "definition"}`. Definition forces MC; `sentence.answers` applies only to Kana. | Hear `せんせいはがっこうへいく。` -> pick `The teacher goes to school.` |
 | Sentence source (text) already in kana (self-copy) | `jp->jp` | Same full kana sentence | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
+| Sentence source (text) with any script | `jp->jp` | Same written sentence or reordered visible chunks | No | No | By design | N/A. The complete Japanese answer is already visible, so copying or rearranging it does not test recall. | Not generated |
+| Sentence source (audio) | `jp->jp` | Exact kanji/kana orthography | No | No | By design | N/A. Audio does not uniquely determine kanji spelling; the supported planned transcription target is full kana instead. | Not generated |
 | English sentence (text) | `en->jp` | Order Japanese chunks | Drag/order | No | Current | Drill mode + Sentences kind + `sentence: {englishResponses: includes "ordering"}` + at least one learned sentence rule. English prompt format is always text. | `Saku ate sushi.` -> order `サクは` / `寿司を` / `食べた。` |
 | English sentence (text) | `en->jp` | Choose the matching Japanese sentence | No | Yes | Planned | Intended: Drill mode + Sentences kind + `sentence: {englishResponses: includes "selection"}`. The setting is stored, but the assembly screen does not generate this MC board yet. | `Saku ate sushi.` -> pick `サクは寿司を食べた。` |
+| English sentence (text) | `en->jp` | Type the complete Japanese sentence | Yes | No | Planned | Requires a new English-sentence response option for full production. The current English sentence subsection exposes ordering and selection only. | `Saku ate sushi.` -> type `サクは寿司を食べた。` |
 
 ---
 
@@ -139,6 +165,7 @@ Grammar rows here are only grammar-source behavior. Grammar meaning facts can al
 |---|---|---|---|---|---|---|---|
 | Japanese source (text) | `jp->en` | English meaning | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}` | `〜てから` -> type/pick `after doing X` |
 | Japanese source (audio) | `jp->en` | English meaning | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}`. Grammar facts are not currently listenable. | Hear `たべてから` -> type/pick `after doing X` |
+| English meaning (text) | `en->jp` | Japanese pattern label | No | Yes | Planned | Intended: `english: {answers: includes "typed" or "mc"}`. A non-kana pattern target would force MC; the current grammar English path does not emit bare-pattern recognition. | Prompt `after doing X` -> pick `〜てから` |
 
 ### 5.2 Production fact
 
@@ -147,6 +174,7 @@ Grammar rows here are only grammar-source behavior. Grammar meaning facts can al
 | Japanese source config (text vehicle cue; answer is Japanese) | `jp->en` internal direction | Japanese production form | Yes | Yes | Current | `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}` | Prompt `行く` + `〜てから` -> type/pick `行ってから` |
 | Japanese source config (audio prompt is Japanese) | `jp->jp` | Japanese production form | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. Grammar production facts are not currently listenable. | Hear `たべる` cue -> type/pick `食べてから` |
 | Japanese source (text self-copy of pattern label) | `jp->jp` | Same pattern text | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
+| Japanese source (text showing a completed vehicle form) | `jp->jp` | Same completed production form | No | No | By design | N/A. The learner would only copy the visible answer. | Not generated |
 
 > **Note on "direction":** ask-forms models grammar production as `jp→en` with response `"romaji"` because the answer IS Japanese (a conjugated form) — `answerIsJapanese` is true, so `candidateDirs` returns `["jp2en"]`. The card looks like production (you produce Japanese), but the data model treats it as a `jp→en` "romaji" card. The `en→jp` English source does not generate grammar production forms.
 
@@ -164,7 +192,10 @@ Keigo sets contain Japanese forms plus role/register semantics, so both recognit
 |---|---|---|---|---|---|---|---|
 | Japanese source (text) | `jp->en` | Meaning + register recognition | No | Yes | Current | `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}`. Keigo is MC-only, so typed resolves to MC. | `召し上がる` -> pick `eat / drink (honorific)` |
 | Japanese source (audio) | `jp->en` | Meaning + register recognition | No | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}`. Keigo is not currently listenable and would resolve to MC. | Hear `めしあがる` -> pick `eat / drink (honorific)` |
+| Japanese source (text) | `jp->jp` | Reading in kana | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}`. Keigo data carries an authoritative reading, but the engine currently emits recognition facts only. | `召し上がる` -> type/pick `めしあがる` |
+| Japanese source (audio) | `jp->jp` | Reading in kana | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. This is useful listening transcription, but Keigo audio/reading forms are not generated. | Hear `めしあがる` -> type/pick `めしあがる` |
 | English/register source (text) | `en->jp` | Keigo production form | No | Yes | Planned | Intended: `english: {answers: includes "typed" or "mc"}`. Keigo production is not emitted; its non-kana target would resolve typed to MC. | Prompt `eat / drink (honorific)` -> pick `召し上がる` |
+| English meaning/register source (text) | `en->jp` | Keigo reading in kana | Yes | Yes | Planned | Requires a reading-target production variant backed by the stored Keigo reading. | Prompt `eat / drink (honorific)` -> type/pick `めしあがる` |
 | English/register source (audio is Japanese cue only) | `jp->jp` | Keigo production form | No | Yes | Planned | No current settings path models an audio plain-form cue plus a register target; this requires a dedicated production-source configuration. | Hear plain cue `たべる` + honorific target -> pick `召し上がる` |
 | Japanese source (text self-copy) | `jp->jp` | Same keigo form | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 
@@ -177,7 +208,10 @@ Verb-pair rows include English cues plus paired Japanese lemmas/readings, so dis
 | English cue source (text) | `en->jp` | Choose correct pair member (intransitive vs transitive) | No | Yes | Current | `english: {answers: includes "typed" or "mc"}`. Transitivity facts are fixed to en->jp and MC-only, so typed resolves to MC. | `The door opened.` -> pick `開く` |
 | Japanese source (text) | `jp->en` | Meaning/usage recognition for shown pair member | No | Yes | Planned | Intended: `japanese: {prompts: includes "text", responses: includes "definition", answers: includes "typed" or "mc"}`. Transitivity facts are currently fixed to en->jp, so this emits no form. | `開く` -> pick `to open (intransitive)` |
 | Japanese source (audio) | `jp->en` | Meaning/usage recognition for heard pair member | No | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}`. Transitivity is fixed to en->jp and not currently listenable. | Hear `ひらく` -> pick `to open (intransitive)` |
+| Japanese source (text) | `jp->jp` | Reading in kana | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "text", responses: includes "romaji", answers: includes "typed" or "mc"}`. Pair members carry authoritative readings, but reading facts are not emitted. | `開く` -> type/pick `あく` |
+| Japanese source (audio) | `jp->jp` | Reading in kana | Yes | Yes | Planned | Intended: `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}`. This listening transcription is not currently generated. | Hear `あく` -> type/pick `あく` |
 | English role source (text) | `en->jp` | Produce/select the correct Japanese pair member | No | Yes | Planned | Intended: `english: {answers: includes "typed" or "mc"}` with a dedicated role-label prompt variant. Typed would resolve to MC for the non-kana target. | Prompt `open (something)` -> pick `開ける` |
+| English sentence/role source (text) | `en->jp` | Reading of the correct pair member in kana | Yes | Yes | Planned | Requires a reading-target pair variant backed by the stored member reading. | `The door opened.` -> type/pick `あく` |
 | Japanese source (text self-copy) | `jp->jp` | Same verb form | No | No | By design | N/A (trivial self-copy excluded) | Not generated |
 
 ### 6.3 Cross-cutting feasibility rules (corpus-level)
@@ -188,7 +222,7 @@ These apply across special subjects when deciding if a row is practical to ship.
 |---|---|---|---|---|
 | Japanese-audio policy | All audio rows | Audio cues should be Japanese audio only | Current policy | No English-audio -> Japanese rows |
 | Typed feasibility for Japanese targets | `en->jp` production rows | Non-kana targets are usually MC-first unless kana-only entry mode is provided | Current | `召し上がる`/`開ける` rows are MC-first |
-| Multi-answer English meaning filter | `jp->en` meaning/definition rows | If multiple English phrasings are valid, typed is disabled and the row is MC-only | Current policy | Sentence/word/grammar meaning rows use MC to avoid rejecting valid paraphrases |
+| Multi-answer English meaning filter | `jp->en` meaning/definition rows | Typed is available when the fact has gradable accepted answers; a format that cannot grade its valid paraphrases must force MC | Current policy | Sentence definitions and special relationship facts force MC; ordinary word/grammar meanings can type or pick |
 | Romaji typing scope | All typed rows | Typed romaji is allowed only for kana entries; non-kana subjects type kana/kanji when Japanese output is required | Current policy | Kanji reading row types `せい`, not `sei` |
 | Register/role disambiguation | Keigo/transitivity | Prompt must encode register or transitivity role to avoid ambiguous grading | Current | `honorific` vs `humble`, `open (itself)` vs `open (something)` |
 | Corpus-backed examples | All planned rows | A row should have at least one corpus-backed cue/example path | Current | Plain-form cue `たべる` -> keigo target row |
@@ -245,11 +279,11 @@ A question format appears in the deck when ALL these conditions apply:
    - `あ` -> type `あ` (kana self-copy): not generated
    - `先生` -> type `先生` (word self-copy): not generated
 
-9. **Ambiguity rule**: Multi-acceptable-answer rows force MC-only:
-   - All meaning facts (English definitions): MC-only
-   - Grammar meanings: MC-only
-   - Keigo/transitivity meanings: MC-only
-   - Reading facts (kana/romaji answers): typed allowed (objective, single answer)
+9. **Ambiguity rule**: MC is forced only when the current grader cannot safely accept the valid answer space:
+   - Ordinary word, kanji/radical, and grammar meanings can type or pick because their accepted English answers are gradable
+   - Sentence definitions are MC-only because free-form sentence translation admits too many valid paraphrases
+   - Keigo/transitivity relationship meanings are MC-only because the register or role distinction is part of the answer
+   - Reading facts allow type or pick when an authoritative reading is stored
 
 ---
 
@@ -261,8 +295,11 @@ Some Planned rows cannot be reached even if the user selects the settings shown,
 |---|---|---|---|---|
 | Kana + Audio (jp→jp) | Kana entries have no audio form | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Kana audio forms | When kana audio support is implemented |
 | Grammar Meaning + Audio (jp→en) | Grammar patterns are not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Grammar audio forms | When grammar audio support is added |
+| Grammar Meaning (en→jp) | Bare-pattern reverse recognition is not emitted | `english: {answers: includes "typed" or "mc"}` | English meaning → Japanese pattern MC forms | When grammar meaning facts support the reverse direction |
 | Keigo Meaning + Audio (jp→en) | Keigo is not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Keigo audio forms | When keigo audio support is added |
+| Keigo Reading (text/audio) | Keigo emits relationship-recognition facts only | `japanese: {responses: includes "romaji", answers: includes "typed" or "mc"}` | Keigo kana-reading forms | When Keigo reading facts are emitted |
 | Transitivity Meaning + Audio (jp→en) | Transitivity is not listenable | `japanese: {prompts: includes "audio", responses: includes "definition", answers: includes "typed" or "mc"}` | Transitivity audio forms | When transitivity audio support is added |
+| Transitivity Reading (text/audio) | Pair members carry readings, but no reading facts are emitted | `japanese: {responses: includes "romaji", answers: includes "typed" or "mc"}` | Pair-member kana-reading forms | When transitivity reading facts are emitted |
 | Keigo Production (en→jp) | Keigo production not yet implemented | `english: {answers: includes "typed" or "mc"}` | Keigo production forms | When keigo production feature ships |
 | Transitivity Role Variant (en→jp) | Transitivity role prompts not yet implemented | `english: {answers: includes "typed" or "mc"}` | Role-specific transitivity forms | When transitivity role variant is implemented |
 | Grammar/Keigo Production + Audio (jp→jp) | Requires listenable production facts and a production cue | `japanese: {prompts: includes "audio", responses: includes "romaji", answers: includes "typed" or "mc"}` | Grammar/keigo production audio | When those production sources become listenable |
