@@ -322,5 +322,14 @@ export function pickVehicle(
 ): Vehicle | null {
   const options = vehiclesFor(r, onHost, known);
   if (options.length === 0) return null;
-  return options[Math.floor(rng() * options.length)] ?? options[0];
+  // Prefer the FIRST-LEARNED verb (Sam): the known option with the lowest
+  // beginnerRank — the earliest-taught, most-familiar word — so a grammar example
+  // anchors on a verb the learner knows cold rather than a random known one.
+  // `rng` still breaks exact rank ties, keeping the choice stable but not always
+  // identical when two words are equally early.
+  const rank = (v: Vehicle): number =>
+    vocabRow(v.surface)?.beginnerRank ?? Number.POSITIVE_INFINITY;
+  const best = Math.min(...options.map(rank));
+  const earliest = options.filter((v) => rank(v) === best);
+  return earliest[Math.floor(rng() * earliest.length)] ?? earliest[0]!;
 }

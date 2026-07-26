@@ -95,14 +95,20 @@ describe("vehiclesFor offers only LEGAL vehicles", () => {
   });
 });
 
-describe("variety across a run", () => {
-  test("pickVehicle spreads across the pool as the rng advances", () => {
+describe("first-learned verb across a run", () => {
+  test("pickVehicle always returns the earliest-taught option, whatever the rng", () => {
     const r = recipe("te-kara")!;
-    // Ten showings with distinct rng draws should not all land on one verb.
+    // Sam's call: an example anchors on the first-learned (lowest beginnerRank)
+    // verb, not a random one — so every showing lands on the SAME verb here,
+    // where the whole pool is eligible (no known-gate).
     const picks = [0.02, 0.15, 0.3, 0.45, 0.6, 0.72, 0.85, 0.93, 0.5, 0.1].map(
       (x) => pickVehicle(r, seq([x]))!.surface,
     );
-    assert.ok(new Set(picks).size >= 4, `only ${new Set(picks).size} distinct verbs across 10 showings`);
+    assert.equal(
+      new Set(picks).size,
+      1,
+      `expected one anchor verb, got ${[...new Set(picks)].join(", ")}`,
+    );
   });
 
   test("pickVehicle is null exactly when there is nothing legal to pick", () => {

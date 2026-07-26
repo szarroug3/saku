@@ -47,20 +47,20 @@ describe("PRODUCTION — naming the target destroys the ambiguity", () => {
   });
 });
 
-describe("PRODUCTION — the verb VARIES across a run (#50)", () => {
+describe("PRODUCTION — anchored on the first-learned verb (#50)", () => {
   // A deterministic rng: cycles the given draws so a "run" is reproducible.
   function seq(values: number[]): Rng {
     let i = 0;
     return () => values[i++ % values.length];
   }
 
-  test("one pattern, drilled repeatedly, is not forever the same verb", () => {
+  test("one pattern, drilled repeatedly, anchors on the same first-learned verb", () => {
     // The bug: every 〜てから production used 行く. Ten showings with advancing
     // rng draws must span several vehicles.
     const draws = [0.02, 0.15, 0.3, 0.45, 0.6, 0.72, 0.85, 0.93, 0.5, 0.1];
     const lemmas = draws.map((x) => variedProduction("te-kara", seq([x]))?.lemma);
     assert.ok(lemmas.every((l) => l), "some showing produced no question");
-    assert.ok(new Set(lemmas).size >= 4, `only ${new Set(lemmas).size} distinct verbs`);
+    assert.equal(new Set(lemmas).size, 1, `expected one anchor verb, got ${new Set(lemmas).size}`);
   });
 
   test("the varied answer is the pattern actually built on the chosen verb", () => {
