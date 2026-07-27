@@ -254,12 +254,12 @@ function GrammarIntroPanel({ item }: { item: LessonItem }) {
               </span>
               <span className="text-[17px] text-text" lang="ja">
                 {r.verb}
-                <span className="text-[14px] text-text-muted">
+                <span className="text-text-muted">
                   {" "}
                   − {r.drop} +{" "}
                 </span>
                 <span className="text-accent">{r.add}</span>
-                <span className="text-[14px] text-text-muted"> → </span>
+                <span className="text-text-muted"> → </span>
                 {stem}
                 <span className="text-accent">{r.add}</span>
               </span>

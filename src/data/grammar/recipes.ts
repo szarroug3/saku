@@ -378,10 +378,9 @@ export interface TeFormRule {
  * the one place a form is explained rather than just drilled. */
 const TE_FORM_INTRO: GrammarIntro = {
   blurb:
-    "The て-form is how one verb links to what comes next. It is the base that " +
-    "many patterns are built on: 〜てください (a request), 〜て (do X, and then), " +
-    "〜てもいい (permission), and 〜ている (an ongoing action). You make it from " +
-    "the plain verb by changing its ending.",
+    "The て-form is how one verb links to what comes after it. It is the base " +
+    "that many patterns are built on, so it is important to get it right from " +
+    "the beginning. You make it from the plain verb by changing its ending.",
   rules: [
     { ending: "ends in る (a ru-verb)", verb: "たべる", drop: "る", add: "て" },
     { ending: "ends in う, つ, or る", verb: "かう", drop: "う", add: "って" },
