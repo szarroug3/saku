@@ -1435,7 +1435,9 @@ export function QuizSessionProvider({
     setSession(null);
     setActive(null);
     setProgress(null);
-    router.push("/");
+    // Back to Learn, not Home — you finished a session, so the next thing you
+    // want is the next lesson, not the landing page (Sam). Signed in or out.
+    router.push("/learn");
   }, [session, router]);
 
   /**

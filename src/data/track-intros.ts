@@ -278,19 +278,23 @@ export const KEIGO_TRACK: PhaseIntro = {
   body: [
     {
       lead: "Keigo is the politeness system.",
-      text: "The same action has more than one verb, and which one you use depends on whose action it is. 食べる (to eat) becomes 召し上がる when it is the other person eating, and いただく when it is you.",
+      text: "The same action can have more than one verb, and which one you use depends on whose action it is. There is one verb for lifting up a person you respect, and another for stepping back from yourself.",
     },
     {
-      lead: "Raising the other person is called honorific.",
-      text: "You use an honorific verb for what someone you respect does, to lift them up. 召し上がる is the honorific of 食べる, so “please eat” to a guest uses it. It is never used for yourself.",
+      lead: "It is a whole different word, not a changed one.",
+      text: "This is the part people expect to be like grammar, and it is not. You do not conjugate the verb or add an ending. A keigo verb replaces the plain verb outright: it is a separate word you learn on its own and use in place of the one you already know.",
     },
     {
-      lead: "Lowering yourself is called humble.",
-      text: "You use a humble verb for your own actions, to step back from the person you are speaking to. いただく is the humble of 食べる, so “I will eat” at someone's table uses it. It is only ever used for yourself.",
+      lead: "Raising the other person is honorific.",
+      text: "You use an honorific verb for what someone you respect does, to lift them up. It is never used for your own actions.",
+    },
+    {
+      lead: "Lowering yourself is humble.",
+      text: "You use a humble verb for your own actions, to step back from the person you are speaking to. It is only ever used for yourself.",
     },
     {
       lead: "For now you only have to recognize these, not produce them.",
-      text: "いらっしゃいませ is the first thing said in any shop, and 召し上がる and いただく turn up early too. So this track opens as soon as you know the plain verb behind a set, and asks you what a keigo verb means and which of the two it is. Choosing the right one to say yourself comes later.",
+      text: "This track opens as soon as you know the plain verb a keigo word replaces. It asks you what a keigo verb means and which of the two it is. Choosing the right one to say yourself comes later.",
     },
   ],
 };
