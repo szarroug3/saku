@@ -20,6 +20,7 @@
 
 import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
+import { PreviewTile } from "@/components/lesson/preview-tile";
 import { WHY_TRACK } from "@/data/why";
 import type { CounterLesson } from "@/lib/counter-lesson";
 import { positionLabel } from "@/lib/lesson-position";
@@ -54,9 +55,18 @@ export function NextCounterLesson({
           items are "patterns", a counter IS a counter. */}
       <Lbl>Up next · {positionLabel("counters", position)}</Lbl>
 
+      {/* A PREVIEW, not the lesson: each tile shows the glyph and a single greyed
+          type — "Counter" for a form of a counter (ひとつ, 三本), "Number" for a
+          bare number kanji. The reading and meaning are the lesson's material,
+          taught in the walk, so they are not shown here. */}
       <div className="mt-4 flex flex-wrap gap-2">
         {cards.map((card) => (
-          <CounterTile key={card.glyph} card={card} />
+          <PreviewTile
+            key={card.glyph}
+            glyph={card.glyph}
+            type={card.counter ? "Counter" : "Number"}
+            base={26}
+          />
         ))}
       </div>
 
@@ -88,21 +98,3 @@ export function NextCounterLesson({
   );
 }
 
-/** One counter tile, standardized to the curriculum tile's shape: the glyph and
- * a single greyed TYPE line beneath it, nothing else — "Counter" for a form of a
- * counter (ひとつ, 三本), "Number" for a bare number kanji that carries no
- * counter. The reading and meaning are the lesson's own material, taught in the
- * walk and drilled the moment it ends, so the preview tile shows what a thing IS,
- * not what it means — exactly as the radical/kanji/word tiles do. */
-function CounterTile({ card }: { card: CounterLesson["cards"][number] }) {
-  return (
-    <div className="min-w-[112px] flex-1 rounded-lg border border-border px-3 pb-2.5 pt-3 text-center">
-      <span className="block font-kana text-[26px] font-extralight leading-[1.2]">
-        {card.glyph}
-      </span>
-      <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
-        {card.counter ? "Counter" : "Number"}
-      </span>
-    </div>
-  );
-}

@@ -21,6 +21,7 @@
 
 import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
+import { PreviewTile } from "@/components/lesson/preview-tile";
 import { WHY_TRACK } from "@/data/why";
 import type { TransitivityLesson } from "@/lib/transitivity-lesson";
 import { positionLabel } from "@/lib/lesson-position";
@@ -59,17 +60,12 @@ export function NextTransitivityLesson({
           the same way the radical/kanji/word tiles show a glyph and a role. */}
       <div className="mt-4 flex flex-wrap gap-2">
         {cards.map((card) => (
-          <div
+          <PreviewTile
             key={card.entry}
-            className="min-w-[132px] flex-1 rounded-lg border border-border px-3 pb-2.5 pt-3 text-center"
-          >
-            <span className="block font-kana text-[22px] font-extralight leading-[1.3] text-text">
-              {card.happens.word} · {card.doIt.word}
-            </span>
-            <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
-              Verb pair
-            </span>
-          </div>
+            glyph={`${card.happens.word} · ${card.doIt.word}`}
+            type="Verb pair"
+            base={22}
+          />
         ))}
       </div>
 

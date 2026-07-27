@@ -45,16 +45,14 @@
 // this lesson's own material, drilled the moment the lesson ends, so it is shown
 // outright, exactly as the words card showed it.
 
-import Link from "next/link";
-
 import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
+import { PreviewTile } from "@/components/lesson/preview-tile";
 import { kanjiEntry } from "@/data/kanji";
 import { radicalEntry } from "@/data/radicals";
 import { wordEntry } from "@/data/vocab";
 import { WHY_TRACK } from "@/data/why";
 import { characterRoleTitle } from "@/lib/character-role";
-import { fitGlyphSize } from "@/lib/glyph-fit";
 import type {
   CurriculumLesson,
   CurriculumLessonItem,
@@ -74,16 +72,6 @@ function tileEntry(item: CurriculumLessonItem): EntryId {
   if (item.roles.includes("radical")) return radicalEntry(item.glyph);
   return wordEntry(item.glyph);
 }
-
-// The preview tile is a FIXED box; the glyph inside shrinks to stay on one line.
-// A lone kanji sits at the base size; a long word (おまわりさん) scales down to
-// fit rather than wrapping and making its tile taller than its neighbours. Width
-// is the tile's inner span (w-[116px] minus the px-2 padding); the floor lets a
-// preview go a shade smaller than the drill halo, since legibility here is "you
-// can see which word is coming", not "read it at a glance".
-const TILE_GLYPH_BASE_PX = 34;
-const TILE_GLYPH_FIT_PX = 100;
-const TILE_GLYPH_MIN_PX = 12;
 
 export function NextCurriculumLesson({
   lesson,
@@ -129,41 +117,18 @@ export function NextCurriculumLesson({
             be a second thing to read saying what the tiles already do, and the
             app's own entry page is the guide here. */}
         <div className="mt-4 flex flex-wrap gap-2">
+          {/* The role line is the same label the entry page uses: every role a
+              character plays, in one order — "Radical · Kanji · Word" for 山,
+              "Kanji · Word" for 何, "Radical" for a shape that is only ever a
+              part. A PREVIEW, so that role is all a tile shows — no meaning, no
+              reading, and the old "you need this for X" note is gone. */}
           {cards.map((card) => (
-            <Link
+            <PreviewTile
               key={card.glyph}
+              glyph={card.glyph}
+              type={characterRoleTitle(card.glyph) ?? ""}
               href={entryHref(tileEntry(card))}
-              className="w-[116px] rounded-lg border border-border px-2 pb-2.5 pt-3 text-center text-text no-underline hover:bg-panel"
-            >
-              {/* Fixed-height glyph row so every tile is the same height whether
-                  its content is one kanji or a six-kana word; the inner span
-                  shrinks to one line (see TILE_GLYPH_* / fitGlyphSize). */}
-              <span className="flex h-[42px] items-center justify-center">
-                <span
-                  className="block whitespace-nowrap font-kana font-extralight leading-none"
-                  style={{
-                    fontSize: `${fitGlyphSize(
-                      card.glyph,
-                      true,
-                      TILE_GLYPH_BASE_PX,
-                      TILE_GLYPH_FIT_PX,
-                      TILE_GLYPH_MIN_PX,
-                    )}px`,
-                  }}
-                >
-                  {card.glyph}
-                </span>
-              </span>
-              {/* The role line, the same label the entry page uses: every role
-                  this character plays, in one order — "Radical · Kanji · Word"
-                  for 山, "Kanji · Word" for 何, "Radical" for a shape that is
-                  only ever a part. No number, no count, just what it is for. This
-                  is a PREVIEW, not the lesson, so the role is all it shows — the
-                  "you need this for X" note was teaching context and is gone. */}
-              <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
-                {characterRoleTitle(card.glyph)}
-              </span>
-            </Link>
+            />
           ))}
         </div>
 

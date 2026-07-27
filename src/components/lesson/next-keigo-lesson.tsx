@@ -21,6 +21,7 @@
 
 import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
+import { PreviewTile } from "@/components/lesson/preview-tile";
 import { WHY_TRACK } from "@/data/why";
 import type { KeigoLesson } from "@/lib/keigo-lesson";
 import { positionLabel } from "@/lib/lesson-position";
@@ -59,19 +60,16 @@ export function NextKeigoLesson({
           set with no keigo words of its own (a set phrase) shows its label. */}
       <div className="mt-4 flex flex-wrap gap-2">
         {cards.map((card) => (
-          <div
+          <PreviewTile
             key={card.entry}
-            className="min-w-[132px] flex-1 rounded-lg border border-border px-3 pb-2.5 pt-3 text-center"
-          >
-            <span className="block font-kana text-[20px] font-extralight leading-[1.3] text-text">
-              {card.words.length
+            glyph={
+              card.words.length
                 ? card.words.map((w) => w.word).join(" · ")
-                : "set phrase"}
-            </span>
-            <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
-              Keigo
-            </span>
-          </div>
+                : "set phrase"
+            }
+            type="Keigo"
+            base={20}
+          />
         ))}
       </div>
 

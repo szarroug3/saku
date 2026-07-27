@@ -23,6 +23,7 @@
 
 import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
+import { PreviewTile } from "@/components/lesson/preview-tile";
 import type { Why } from "@/data/why";
 import { WHY_TRACK } from "@/data/why";
 import type { GrammarLesson, GrammarLock } from "@/lib/grammar-lesson";
@@ -155,17 +156,12 @@ function TeachableLesson({
             role and no meaning. */}
         <div className="mt-4 flex flex-wrap gap-2">
           {cards.map((card) => (
-            <div
+            <PreviewTile
               key={card.id}
-              className="min-w-[132px] flex-1 rounded-lg border border-border px-3 pb-2.5 pt-3 text-center"
-            >
-              <span className="block font-kana text-[24px] font-extralight leading-[1.2]">
-                {card.pattern}
-              </span>
-              <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
-                Grammar
-              </span>
-            </div>
+              glyph={card.pattern}
+              type="Grammar"
+              base={24}
+            />
           ))}
         </div>
 
