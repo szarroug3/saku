@@ -34,18 +34,28 @@ function charAdvance(jp: boolean): number {
 }
 
 /**
- * Font size (px) that keeps `text` on ONE line inside the halo.
+ * Font size (px) that keeps `text` on ONE line inside a box `maxWidth` px wide.
  *
  * `base` is the size a single glyph would use (GLYPH_PX for the Japanese side,
  * 0.6× for the latin side — the drill's existing distinction, preserved). One
  * character returns `base` untouched; multi-character content scales down by
- * its estimated width to fit GLYPH_FIT_PX, never below GLYPH_MIN_PX.
+ * its estimated width to fit `maxWidth`, never below `minPx`.
+ *
+ * `maxWidth`/`minPx` default to the halo's values so the drill callers are
+ * unchanged; the Learn-page preview tiles pass their own (a fixed tile is
+ * narrower than the halo, and a preview can shrink a shade smaller).
  */
-export function fitGlyphSize(text: string, jp: boolean, base: number): number {
+export function fitGlyphSize(
+  text: string,
+  jp: boolean,
+  base: number,
+  maxWidth: number = GLYPH_FIT_PX,
+  minPx: number = GLYPH_MIN_PX,
+): number {
   // Code points, not UTF-16 units — a surrogate-pair glyph is one character.
   const chars = [...text].length;
   if (chars <= 1) return base;
   const width = chars * charAdvance(jp) * base;
-  if (width <= GLYPH_FIT_PX) return base;
-  return Math.max(GLYPH_MIN_PX, Math.floor((GLYPH_FIT_PX / width) * base));
+  if (width <= maxWidth) return base;
+  return Math.max(minPx, Math.floor((maxWidth / width) * base));
 }
