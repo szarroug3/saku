@@ -48,6 +48,7 @@
 // Only reads that are stale RELATIVE TO OUR OWN WRITE are dropped.
 
 import { applyRevalidation, type HistoryState, type RevalidationOutcome } from "@/lib/history-cache";
+import { foldPending, type PendingWrite } from "@/lib/history-pending";
 
 /** The starting value of the stamp. Any non-negative integer works; zero keeps
  * the first issued read's ticket at one, distinct from this. */
@@ -76,17 +77,31 @@ export function revalidationWins(issuedGeneration: number, currentGeneration: nu
  * Settle a revalidation against the copy on screen.
  *
  * The provider's single call site for landing a read: it folds the staleness
- * guard and the replacement together so the guard cannot be forgotten at one
- * call site and honoured at another. A stale read (one a local write or a newer
- * read has overtaken) returns `prev` untouched; a current one hands off to
- * applyRevalidation, which is the sole authority on server-vs-local-vs-nothing.
+ * guard, the replacement, and the pending-write overlay together so none can be
+ * forgotten at one call site and honoured at another. A stale read (one a local
+ * write or a newer read has overtaken) returns `prev` untouched; a current one
+ * hands off to applyRevalidation, which is the sole authority on
+ * server-vs-local-vs-nothing.
+ *
+ * The stamp above stops a read that LEFT BEFORE our write from landing. It
+ * cannot stop a read issued AFTER our write that nonetheless reaches the server
+ * before our post committed — the classic case being the SEEN of a curriculum
+ * claim landing (and revalidating) before the CLAIM post commits. So when a read
+ * REPLACES the copy on screen, the still-`pending` un-acknowledged writes are
+ * folded back over the fetched snapshot (see history-pending.ts): a server
+ * snapshot that has not yet caught up to our own write can never erase it. An
+ * `unavailable` outcome keeps `prev`, which already carries those writes, so it
+ * is left alone.
  */
 export function settleRevalidation(
   prev: HistoryState,
   issuedGeneration: number,
   currentGeneration: number,
   outcome: RevalidationOutcome,
+  pending: readonly PendingWrite[] = [],
 ): HistoryState {
   if (!revalidationWins(issuedGeneration, currentGeneration)) return prev;
-  return applyRevalidation(prev, outcome);
+  const settled = applyRevalidation(prev, outcome);
+  if (outcome.kind === "unavailable" || pending.length === 0) return settled;
+  return { ...settled, history: foldPending(settled.history, pending) };
 }
