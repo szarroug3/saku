@@ -240,64 +240,55 @@ export function PatternRecipe({
   // unscored ones, so the two lists are different lengths on the three mixed
   // patterns and 〜ので's one score would land on its verb row.
   const scored = new Set(isProducible(pattern) ? productionHosts(pattern) : []);
-  const anyScored = opening.some((f) => scored.has(f.host));
 
   return (
     // Full height: the page pairs this with the Links card in a row that shares
     // one height, so the box fills its half rather than ending short of it.
     <Card className="h-full">
       <Lbl>How to build it</Lbl>
-      <table className="w-full text-left">
-        {/* THE HEADER ROW EXISTS ONLY WHEN THERE ARE TWO COLUMNS. "The rule"
-            names the left column, which holds the formula and the worked
-            examples that are its evidence. Not "How it's built": the card's own
-            title already says that, and a column header repeating it stutters.
-            When nothing here is scored the score column is dropped, and a lone
-            "The rule" over the only column is noise, so the whole row goes with
-            it. */}
-        {anyScored ? (
-          <thead>
-            <tr className="border-b border-border text-xs font-medium text-text-muted">
-              <th className="py-1.5 pr-2 font-medium">The rule</th>
-              <th className="py-1.5 font-medium">How you&rsquo;re doing</th>
-            </tr>
-          </thead>
-        ) : null}
-        <tbody>
-          {opening.map((f) => {
-            const id = patternProductionFactId(pattern.id, f.host);
-            const owner = sharedRuleOwner(pattern, f.host);
-            return (
-              <tr
-                key={`open-${f.host}`}
-                className="border-b border-border last:border-b-0"
-              >
-                <td className="py-2.5 pr-2 align-top">
+      {/* ONE BOX PER HOST, the same presentation the LESSON's build panel uses
+          when it teaches a pattern (see GrammarBuildPanel in
+          lesson/lesson-item-view.tsx) — so a learner meets 〜てもいい one way and
+          the two pages cannot draw the same rule differently. Each host's formula
+          and its worked evidence sit in their own bordered box rather than as
+          rows of a cramped table, which gave the half-width column its examples
+          room to sit on one line instead of reflowing into a ribbon.
+
+          THE STANDING RIDES ALONG, which the lesson's version does not carry —
+          the lesson is teaching, this page is also a review. So the score the old
+          table kept in its own column becomes a chip in the corner of the host's
+          box: present only when the host is a real question, and standing in for
+          a chip with "same rule as 〜て" when the rule is scored on another
+          pattern's page (see the doc up top). A host that transforms nothing
+          (〜ので's verb row) shows neither, exactly as the table left its cell
+          empty. */}
+      <div className="space-y-3">
+        {opening.map((f) => {
+          const id = patternProductionFactId(pattern.id, f.host);
+          const owner = sharedRuleOwner(pattern, f.host);
+          const aside = scored.has(f.host) ? (
+            <StandingChip
+              standing={standingOf(facts[id], claims[id], metric, now).standing}
+            />
+          ) : owner ? (
+            <SharedRule owner={owner} />
+          ) : null;
+          return (
+            <div
+              key={`open-${f.host}`}
+              className="rounded-md border border-border bg-card px-3 py-2"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                <div className="min-w-0">
                   <FormulaLine f={f} />
-                  <WorkedLine f={f} />
-                </td>
-                {anyScored ? (
-                  // EMPTY, not "not seen": see the header. A row is here
-                  // because the Japanese is real, not because a question is.
-                  // Unless the rule is scored on ANOTHER pattern's page, which
-                  // is a different silence and says so — see the doc up top.
-                  <td className="py-2.5 align-top">
-                    {scored.has(f.host) ? (
-                      <StandingChip
-                        standing={
-                          standingOf(facts[id], claims[id], metric, now).standing
-                        }
-                      />
-                    ) : owner ? (
-                      <SharedRule owner={owner} />
-                    ) : null}
-                  </td>
-                ) : null}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                </div>
+                {aside ? <div className="flex-none">{aside}</div> : null}
+              </div>
+              <WorkedLine f={f} />
+            </div>
+          );
+        })}
+      </div>
       {/* THE CLOSING HALF OF A WRAP, labelled, because without the label the
           two formulas read as alternatives rather than as two ends of one
           pattern. 〜しか〜ない is not "a noun with しか OR a verb with ない"; it
