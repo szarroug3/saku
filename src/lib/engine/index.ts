@@ -289,8 +289,13 @@ export function buildMcOptions(
   // everything else.
   //
   // It is a floor, not a strategy. Reaching it means the distractors were poor;
-  // it only ensures they were not absent.
-  if (distractors.length < optionLimit - 1) {
+  // it only ensures they were not absent. So it fires ONLY when the board would
+  // otherwise be a board of one — never to pad a real board up to the limit.
+  // Padding is each subject's own job (its `distractors` tops up from its own
+  // corpus); doing it here mixes shapes that do not belong on one board — a
+  // grammar PRODUCTION board built on 高い got a bare 〜てください citation stapled
+  // on, an option that is not the adjective transformed at all.
+  if (distractors.length === 0) {
     const subject = info?.subject;
     const backfill = ALL_FACTS
       .filter((other) => {

@@ -89,7 +89,7 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
 
   test("MC board: distinct labels, exactly one correct, all on one verb", () => {
     const ctx = { grammarVehicle: TABERU };
-    const opts = buildMcOptions(TE_KARA, ctx);
+    const opts = buildMcOptions(TE_KARA, "en2jp", ctx);
     assert.ok(opts.length > 1, "MC degenerated to one option");
     // Exactly one option is the asked fact (the correct one).
     assert.equal(opts.filter((o) => o === TE_KARA).length, 1);
@@ -165,7 +165,7 @@ describe("a split production fact is drilled on ITS OWN host", () => {
 
   test("MC options for an adjective fact are all built on the adjective", () => {
     const ctx = { grammarVehicle: TAKAI };
-    const opts = buildMcOptions(SUGIRU_I, ctx);
+    const opts = buildMcOptions(SUGIRU_I, "en2jp", ctx);
     assert.ok(opts.length > 1, "MC degenerated to one option");
     assert.equal(opts.filter((o) => o === SUGIRU_I).length, 1);
     const qt = questionsFor(SUGIRU_I);

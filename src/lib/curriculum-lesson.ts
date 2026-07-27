@@ -463,8 +463,15 @@ export function nextCurriculumLesson(
   range: LessonRange,
 ): CurriculumLesson | null {
   const groups = curriculum(range);
+  // Met means FULLY learned — every fact of the item has been met — so an item
+  // keeps its place while ANYTHING is left in it. This is what lets a folded
+  // character survive partial prior progress: 人 met as a kanji (or as an old
+  // separate-track radical) still owes its word, so it stays in the lesson and
+  // the spine card anchored on it still has something to fire against. `some`
+  // here dropped the anchor the instant any one role was touched — the exact
+  // "the anchor was not even in the walk" bug spine-intros.ts's header describes.
   const itemIsMet = (it: CurriculumLessonItem): boolean =>
-    it.facts.some((f) => {
+    it.facts.every((f) => {
       const state = effectiveState(
         history.facts[f],
         history.claims?.[f],

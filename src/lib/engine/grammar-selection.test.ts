@@ -280,7 +280,11 @@ describe("the fixed meaning card is a real question in both directions", () => {
   test("no two options render the same label, for any pattern, either way", () => {
     for (const fact of SWEEP) {
       for (const dir of ["jp2en", "en2jp"] as const) {
-        const labels = buildMcOptions(fact).map((o) => labelOf(o, dir));
+        // The board dedupes by the label rendered in the direction it is BUILT
+        // for, which is always the direction it is shown in. Two meaning options
+        // can share a bare pattern (〜て cause vs sequence) that only collides
+        // en2jp; the en2jp board drops one, so build it the way it is asked.
+        const labels = buildMcOptions(fact, dir).map((o) => labelOf(o, dir));
         assert.equal(
           new Set(labels).size,
           labels.length,

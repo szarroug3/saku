@@ -35,10 +35,10 @@ const kanaChar = "あ";
 const word = VOCAB.find((w) => !isKanaWord(w))!;
 const wordReading = wordReadingFactId(word.keb);
 const wordMeaning = wordMeaningFactId(word.keb);
-const firstKanjiReading = READING_INDEX.keys().next().value;
+const firstKanjiReading = READING_INDEX.keys().next().value!;
 const grammarFact = patternMeaningFactId(RECIPES[0].id);
 
-describe("Unreachable settings combinations", () => {
+test.describe("Unreachable settings combinations", () => {
   test("kana with audio produces a kana-picking listening card", async ({
     page,
   }) => {
@@ -131,7 +131,7 @@ describe("Unreachable settings combinations", () => {
   });
 });
 
-describe("Multiple settings paths to same format (text vs audio)", () => {
+test.describe("Multiple settings paths to same format (text vs audio)", () => {
   test("word reading with text prompt shows a card", async ({ page }) => {
     await seedQuiz(page, {
       seen: [wordReading],
@@ -224,7 +224,7 @@ describe("Multiple settings paths to same format (text vs audio)", () => {
   });
 });
 
-describe("Settings enforcement", () => {
+test.describe("Settings enforcement", () => {
   test("selecting definition-only narrows to meaning facts, drops reading facts", async ({
     page,
   }) => {
