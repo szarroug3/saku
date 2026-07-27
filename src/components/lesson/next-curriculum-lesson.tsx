@@ -126,7 +126,11 @@ export function NextCurriculumLesson({
             <PreviewTile
               key={card.glyph}
               glyph={card.glyph}
-              type={characterRoleTitle(card.glyph) ?? ""}
+              // characterRoleTitle only knows single-character roles, so a
+              // multi-kana word (あなた) comes back null. On this track that can
+              // only be a word — radicals and kanji always have a role — so the
+              // honest fallback is "Word", never a blank label.
+              type={characterRoleTitle(card.glyph) ?? "Word"}
               href={entryHref(tileEntry(card))}
             />
           ))}
