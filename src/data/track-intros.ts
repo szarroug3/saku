@@ -288,10 +288,6 @@ export const KEIGO_TRACK: PhaseIntro = {
       lead: "Lowering yourself is called humble.",
       text: "You use a humble verb for your own actions, to step back from the person you are speaking to. いただく is the humble of 食べる, so “I will eat” at someone's table uses it. It is only ever used for yourself.",
     },
-    {
-      lead: "For now you only have to recognize these, not produce them.",
-      text: "いらっしゃいませ is the first thing said in any shop, and 召し上がる and いただく turn up early too. So this track opens as soon as you know the plain verb behind a set, and asks you what a keigo verb means and which of the two it is. Choosing the right one to say yourself comes later.",
-    },
   ],
 };
 

@@ -50,37 +50,21 @@ export function NextKeigoLesson({
     <Card>
       <Lbl>Up next · {positionLabel("keigo sets", position)}</Lbl>
 
-      {/* Each set as a row: the plain verb the learner knows, then the keigo
-          words that replace it, each tagged with its register. No link — a set
-          has no single glyph; the walk-through's card carries the rest. */}
+      {/* Each set as a row: the PLAIN verb the learner already knows — the one
+          thing that names which set is coming without spoiling the keigo forms
+          the walk will teach. A set phrase has no plain verb, so it falls back
+          to its meaning. No link — a set has no single glyph; the
+          walk-through's card carries the rest. */}
       <div className="mt-4 space-y-2">
         {cards.map((card) => (
           <div key={card.entry} className="rounded-lg border border-border p-3">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="text-[13px] text-text-muted">Plain:</span>
-              {card.plain.length ? (
-                <span className="font-kana text-[18px] font-extralight leading-none text-text">
-                  {card.plain.map((p) => p.word).join(" / ")}
-                </span>
-              ) : (
-                <span className="text-[13px] text-text-muted">set phrase</span>
-              )}
-              <span className="text-[12px] text-text-muted">— {card.meaning}</span>
+            <div className="font-kana text-[20px] font-extralight leading-none text-text">
+              {card.plain.length
+                ? card.plain.map((p) => p.word).join(" / ")
+                : card.meaning || "set phrase"}
             </div>
-            <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-4">
-              {card.words.map((w) => (
-                <div key={w.word} className="flex items-baseline gap-2">
-                  <span className="font-kana text-[20px] font-extralight leading-none text-text">
-                    {w.word}
-                  </span>
-                  <span className="font-kana text-[12px] text-text-muted">
-                    {w.reading}
-                  </span>
-                  <span className="text-[11px] uppercase tracking-wide text-text-muted">
-                    {w.register}
-                  </span>
-                </div>
-              ))}
+            <div className="mt-1.5 text-[11px] uppercase tracking-wide text-text-muted">
+              Keigo
             </div>
           </div>
         ))}
