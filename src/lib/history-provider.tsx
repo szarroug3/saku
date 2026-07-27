@@ -67,6 +67,11 @@ import {
   WRITE_SETTLE_MS,
 } from "@/lib/history-events";
 import {
+  dequeuePending,
+  enqueuePending,
+  type PendingWrite,
+} from "@/lib/history-pending";
+import {
   advanceGeneration,
   INITIAL_GENERATION,
   revalidationWins,
@@ -98,8 +103,15 @@ export interface HistoryContextValue {
    * revalidation still lands and wins if it disagrees (see onHistoryWrite
    * below). What changes is that none of that is on the path between the click
    * and the screen.
+   *
+   * Returns a `settle` the caller invokes when this write's post resolves. Until
+   * then the op is held in a pending queue and folded over any revalidation that
+   * lands, so a server read that has not yet caught up to this un-acknowledged
+   * write cannot erase it (see history-pending.ts). Calling `settle` drops it
+   * from that queue — the write is now the server's, or (on a refusal) about to
+   * be reverted by the caller's refresh.
    */
-  apply: (op: (hist: HistoryFile) => HistoryFile) => void;
+  apply: (op: (hist: HistoryFile) => HistoryFile) => () => void;
 }
 
 /** Undefined means "no provider above me". `useHistory` turns that into a loud
@@ -151,6 +163,15 @@ export function HistoryProvider({
   // refresh() saves this provider a second request (see coveredByRefresh).
   const issuedAt = useRef(0);
 
+  // The un-acknowledged optimistic writes, oldest first. `apply` enqueues; the
+  // caller's `settle` (returned by apply) dequeues when the post resolves. A
+  // revalidation that replaces the copy on screen folds these back on first, so
+  // a server read that has not yet caught up to a write we have already made
+  // cannot erase it (see history-pending.ts / settleRevalidation). `pendingId`
+  // just mints the stable id each write removes itself by.
+  const pending = useRef<PendingWrite[]>([]);
+  const pendingId = useRef(0);
+
   const refresh = useCallback(async () => {
     const mine = generation.current = advanceGeneration(generation.current);
     issuedAt.current = Date.now();
@@ -158,7 +179,16 @@ export function HistoryProvider({
     // Read the stamp ONCE, after the await: a local write (or a newer read) that
     // happened while we were fetching has moved it, and this read must then lose.
     const won = revalidationWins(mine, generation.current);
-    setState((prev) => settleRevalidation(prev, mine, generation.current, outcome));
+    // Fold the still-pending writes read AFTER the await too: an apply that
+    // enqueued while we were fetching must be layered on the snapshot we bring
+    // back, or it would be the very write this read erases.
+    setState((prev) =>
+      settleRevalidation(prev, mine, generation.current, outcome, pending.current),
+    );
+    // The cache is the server's answer WITHOUT our un-acked overlay: it is the
+    // durable truth, and the next reload will re-apply whatever writes are still
+    // pending then. Caching the folded copy would persist a write the server has
+    // not confirmed.
     if (won && userId && outcome.kind === "server") writeCachedHistory(userId, outcome.history);
   }, [userId]);
 
@@ -229,7 +259,21 @@ export function HistoryProvider({
     // still wins, which is how a refused write or a newer device's write corrects
     // us.
     generation.current = advanceGeneration(generation.current);
+    // Enqueue the op as an un-acknowledged write. A read issued AFTER this one
+    // passes the stamp guard, so the stamp alone would let it land a snapshot the
+    // server has not yet caught up to (the seen of a claim revalidating before
+    // the claim post commits). Folding this op over any such snapshot keeps the
+    // write on screen until its post resolves (see history-pending.ts).
+    const id = (pendingId.current += 1);
+    pending.current = enqueuePending(pending.current, id, op);
     setState((prev) => ({ ...prev, history: op(prev.history), loaded: true }));
+    // The caller settles when the post resolves (ok OR refused): the op leaves
+    // the overlay either way — the server now holds it, or the caller's refresh
+    // is about to revert it. A THROWN post (offline, still going to land) never
+    // settles, so the overlay keeps the change on screen until it does.
+    return () => {
+      pending.current = dequeuePending(pending.current, id);
+    };
   }, []);
 
   const value = useMemo<HistoryContextValue>(

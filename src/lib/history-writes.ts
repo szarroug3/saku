@@ -93,13 +93,23 @@ export function useHistoryWrites(): HistoryWrites {
   // comes back is the truth, including the case where a DIFFERENT write of ours
   // succeeded in between.
   //
-  // Only on an explicit `ok: false`. A thrown request (offline, aborted) is not
-  // a refusal — postSession's outbox keeps those queued and retries them — and
-  // refreshing on one would discard a change that is still going to land.
+  // `settle` (from apply) takes this write out of the pending overlay. It runs
+  // the moment the post RESOLVES either way:
+  //   - ok    → the server holds the write now, so later reads carry it and the
+  //             overlay is no longer needed to protect it;
+  //   - refused → drop it from the overlay FIRST, then refresh(): the refresh
+  //             reads the plain server truth (without the refused op folded back
+  //             on) and reverts the change.
+  // Only on an explicit `ok: false` do we refresh. A thrown request (offline,
+  // aborted) is not a refusal — postSession's outbox keeps those queued and
+  // retries them — and refreshing on one would discard a change that is still
+  // going to land, so we neither refresh NOR settle: the overlay keeps the
+  // change on screen until it lands.
   const reconcile = useCallback(
-    (write: Promise<ProgressResult>) => {
+    (write: Promise<ProgressResult>, settle: () => void) => {
       void write.then(
         (result) => {
+          settle();
           if (!result.ok) void refresh();
         },
         () => {},
@@ -117,26 +127,26 @@ export function useHistoryWrites(): HistoryWrites {
     return {
       claim(facts) {
         const at = now();
-        apply((h: HistoryFile) => applyClaims(h, facts, at));
-        reconcile(postClaim(facts, true));
+        const settle = apply((h: HistoryFile) => applyClaims(h, facts, at));
+        reconcile(postClaim(facts, true), settle);
       },
       unclaim(facts) {
-        apply((h: HistoryFile) => applyDropClaims(h, facts));
-        reconcile(postClaim(facts, false));
+        const settle = apply((h: HistoryFile) => applyDropClaims(h, facts));
+        reconcile(postClaim(facts, false), settle);
       },
       markSeen(facts) {
         const at = now();
-        apply((h: HistoryFile) => applySeen(h, facts, at));
-        reconcile(postSeen(facts));
+        const settle = apply((h: HistoryFile) => applySeen(h, facts, at));
+        reconcile(postSeen(facts), settle);
       },
       recordSession(record) {
-        apply((h: HistoryFile) => applySession(h, record));
-        reconcile(postSession(record));
+        const settle = apply((h: HistoryFile) => applySession(h, record));
+        reconcile(postSession(record), settle);
       },
       clearMixup(key) {
         const at = now();
-        apply((h: HistoryFile) => applyClearMixup(h, key, at));
-        reconcile(postClearMixup(key, at));
+        const settle = apply((h: HistoryFile) => applyClearMixup(h, key, at));
+        reconcile(postClearMixup(key, at), settle);
       },
     };
   }, [apply, reconcile]);
