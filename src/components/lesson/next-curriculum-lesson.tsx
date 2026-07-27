@@ -130,17 +130,12 @@ export function NextCurriculumLesson({
               {/* The role line, the same label the entry page uses: every role
                   this character plays, in one order — "Radical · Kanji · Word"
                   for 山, "Kanji · Word" for 何, "Radical" for a shape that is
-                  only ever a part. No number, no count, just what it is for. A
-                  wordless part keeps its "you need this for X" note underneath,
-                  because that is a reason it is here, not a role. */}
+                  only ever a part. No number, no count, just what it is for. This
+                  is a PREVIEW, not the lesson, so the role is all it shows — the
+                  "you need this for X" note was teaching context and is gone. */}
               <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
                 {characterRoleTitle(card.glyph)}
               </span>
-              {card.neededFor ? (
-                <span className="mt-0.5 block text-[10px] leading-tight text-text-muted/80">
-                  You need this for {card.neededFor}
-                </span>
-              ) : null}
             </Link>
           ))}
         </div>
