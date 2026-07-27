@@ -50,24 +50,33 @@ export function NextKeigoLesson({
     <Card>
       <Lbl>Up next · {positionLabel("keigo sets", position)}</Lbl>
 
-      {/* Each set as a row: the PLAIN verb the learner already knows — the one
-          thing that names which set is coming without spoiling the keigo forms
-          the walk will teach. A set phrase has no plain verb, so it falls back
-          to its meaning. No link — a set has no single glyph; the
-          walk-through's card carries the rest. */}
-      <div className="mt-4 space-y-2">
-        {cards.map((card) => (
-          <div key={card.entry} className="rounded-lg border border-border p-3">
-            <div className="font-kana text-[20px] font-extralight leading-none text-text">
-              {card.plain.length
-                ? card.plain.map((p) => p.word).join(" / ")
-                : card.meaning || "set phrase"}
+      {/* One compact tile per set, wrapping in a row like the counter and
+          grammar cards — the PLAIN verb the learner already knows over a quiet
+          "Keigo" tag, which names which set is coming without spoiling the
+          honorific/humble forms the walk will teach. A set phrase has no plain
+          verb, so it shows the Japanese phrase itself (いらっしゃいませ) — always
+          Japanese on the tile, never the English meaning, which the lesson page
+          carries. No link — a set has no single glyph; the walk's card has the
+          rest. */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {cards.map((card) => {
+          const glyph = card.plain.length
+            ? card.plain.map((p) => p.word).join(" / ")
+            : (card.words[0]?.word ?? "");
+          return (
+            <div
+              key={card.entry}
+              className="min-w-[112px] flex-1 rounded-lg border border-border px-3 pb-2.5 pt-3 text-center"
+            >
+              <span className="block font-kana text-[24px] font-extralight leading-[1.2] text-text">
+                {glyph}
+              </span>
+              <span className="mt-1 block text-[11px] tracking-wide text-text-muted/80">
+                Keigo
+              </span>
             </div>
-            <div className="mt-1.5 text-[11px] uppercase tracking-wide text-text-muted">
-              Keigo
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
