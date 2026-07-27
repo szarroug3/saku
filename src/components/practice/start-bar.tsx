@@ -30,68 +30,24 @@
 // Still load-bearing and NOT taste: momentum shelves the primary button off
 // `[class~="rounded-lg"][class~="bg-text"]`. Keep that one.
 
-import {
-  askIsEmpty,
-  englishSentenceAsksOrdering,
-  englishSentenceAsksSelection,
-  englishAsks,
-  enabledDirs,
-  japaneseAsks,
-  sentenceAsksRomaji,
-  sentenceAsksSelection,
-} from "@/lib/ask-config";
 import { startIsDisabled, getStartButtonReason } from "@/lib/practice-start";
-import type { AskConfig, QuizConfig } from "@/types";
+import type { InputFormat, QuizConfig } from "@/types";
 import type { SettingsReachability } from "@/lib/ask-forms";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
-/** The answer-format phrase for the how-line: what the enabled sources ask for,
- * pooled and deduped. "Type romaji" keeps the old wording for a typed card. */
-function stylePhrase(ask: AskConfig): string | null {
-  const { jp2en, en2jp } = enabledDirs(ask);
-  const styles = new Set<string>();
-  const add = (formats: readonly ("typed" | "mc")[]) => {
-    for (const f of formats) styles.add(f === "typed" ? "Type romaji" : "Multiple choice");
-  };
-  if (jp2en) add(ask.japanese.answers);
-  if (sentenceAsksSelection(ask)) add(["mc"]);
-  if (sentenceAsksRomaji(ask)) add(ask.sentence.answers);
-  if (en2jp) add(ask.english.answers);
-  if (englishSentenceAsksOrdering(ask)) styles.add("Order chunks");
-  if (englishSentenceAsksSelection(ask)) styles.add("Multiple choice");
-  return styles.size ? [...styles].join(" + ") : null;
-}
+// The one user-facing ask axis — see InputFormat. Everything else (direction,
+// responses, answer format) is automatic, so the how-line no longer spells it
+// out; it just names how the card is prompted.
+const INPUT_LABEL: Record<InputFormat, string> = {
+  text: "Text",
+  audio: "Audio",
+  both: "Both",
+};
 
-function promptPhrase(ask: AskConfig): string | null {
-  const prompts = new Set<string>();
-  if (japaneseAsks(ask)) {
-    for (const p of ask.japanese.prompts) prompts.add(p === "text" ? "Text" : "Audio");
-  }
-  if (sentenceAsksSelection(ask) || sentenceAsksRomaji(ask)) {
-    for (const p of ask.sentence.prompts) prompts.add(p === "text" ? "Text" : "Audio");
-  }
-  return prompts.size ? [...prompts].join(" + ") : null;
-}
-
-function responsePhrase(ask: AskConfig): string | null {
-  const responses = new Set<string>();
-  if (japaneseAsks(ask)) {
-    for (const r of ask.japanese.responses) {
-      responses.add(r === "definition" ? "Definition" : "Romaji");
-    }
-  }
-  if (sentenceAsksSelection(ask)) responses.add("Definition");
-  if (sentenceAsksRomaji(ask)) responses.add("Romaji");
-  if (englishAsks(ask)) responses.add("Japanese");
-  if (englishSentenceAsksOrdering(ask)) responses.add("Ordered Japanese");
-  if (englishSentenceAsksSelection(ask)) responses.add("Japanese sentence");
-  return responses.size ? [...responses].join(" + ") : null;
-}
-
-/** "Drill · Endless · Type romaji" — the HOW half, read off the live setup. */
+/** "Drill · Full coverage · Both" — the HOW half, read off the live setup. */
 export function howSentence(cfg: QuizConfig): string {
   const parts: string[] = [
     cfg.mode === "pairs"
@@ -125,16 +81,9 @@ export function howSentence(cfg: QuizConfig): string {
           `${cfg.limCount} ${cfg.mode === "pairs" ? "pairs" : "questions"}`,
   );
 
-  // Match pairs shows both sides at once — no answer style either. Audio, when
-  // on, is called out before the answer format.
-  if (cfg.mode !== "pairs") {
-    const prompts = promptPhrase(cfg.ask);
-    if (prompts) parts.push(prompts);
-    const responses = responsePhrase(cfg.ask);
-    if (responses) parts.push(responses);
-    const style = stylePhrase(cfg.ask);
-    if (style) parts.push(style);
-  }
+  // Match pairs shows both sides at once and has no input format. A drill names
+  // how it is prompted — the only remaining ask knob.
+  if (cfg.mode === "drill") parts.push(INPUT_LABEL[cfg.input]);
   return parts.join(" · ");
 }
 

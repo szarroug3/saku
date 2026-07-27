@@ -198,6 +198,18 @@ export interface AskConfig {
   english: EnglishAsk;
 }
 
+/**
+ * The single user-facing "how to ask" knob: how a card is PROMPTED. Everything
+ * else about the ask — responses, answer format, direction — is now automatic
+ * and always-on (see askFromInput in src/lib/ask-config.ts), so a lesson can't
+ * be broken by a toggle. "both" mixes text and audio prompts per card.
+ *
+ * `ask` is DERIVED from this (normalizeConfig regenerates it), so `input` is the
+ * source of truth the panel edits and `ask` is the shape the deck generator
+ * reads. The old three-source panel collapsed to this one axis.
+ */
+export type InputFormat = "text" | "audio" | "both";
+
 /** Which accuracy number every screen shows — the same forgiving/strict split
  * the results screen already offers, hoisted to a global preference.
  * firstTry = nailed it immediately · attempt = share of attempts correct. */
@@ -235,9 +247,19 @@ export interface QuizConfig {
    * src/lib/quiz-config.tsx so a saved config still loads.
    */
   ask: AskConfig;
+  /**
+   * The one user-facing input axis — see InputFormat. `ask` is DERIVED from this
+   * (regenerated in normalizeConfig), so this is what the panel edits; the
+   * stored `ask` only survives for one-time migration of pre-input configs.
+   */
+  input: InputFormat;
   length: "endless" | "limited";
   limType: "cov" | "count";
   limCount: number;
+  /** In-place retries on a wrong card BEFORE it is scored — see retries/retryN.
+   * When true, a card scored wrong (after those retries) comes back later in the
+   * run; when false, the run moves on and the card is not re-shown. Default on. */
+  requeue: boolean;
   retries: "none" | "lim" | "unl";
   retryN: number;
   timer: boolean;

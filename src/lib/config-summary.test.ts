@@ -1,22 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
+import { askFromInput } from "@/lib/ask-config";
 import { configSummary } from "@/lib/config-summary";
-import type { AskConfig, QuizConfig } from "@/types";
-
-const JP: AskConfig = {
-  japanese: {
-    prompts: ["text"],
-    responses: ["definition", "romaji"],
-    answers: ["typed"],
-  },
-  sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
-  english: { answers: [] },
-};
+import type { QuizConfig } from "@/types";
 
 const BASE = {
   mode: "drill",
-  ask: JP,
+  input: "text",
+  ask: askFromInput("text"),
   length: "endless",
   limType: "cov",
   limCount: 50,
@@ -26,52 +18,17 @@ function mk(over: Partial<QuizConfig>): QuizConfig {
   return { ...BASE, ...over };
 }
 
-describe("configSummary — source-inferred directions", () => {
-  test("Japanese alone names Japanese → English", () => {
-    assert.equal(configSummary(BASE), "Japanese → English · Typed · Endless");
+describe("configSummary — input format (the one ask knob)", () => {
+  test("a plain text drill names its input format and length", () => {
+    assert.equal(configSummary(BASE), "Text · Endless");
   });
 
-  test("English alone names English → Japanese", () => {
-    const ask: AskConfig = {
-      japanese: { prompts: [], responses: [], answers: [] },
-      sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
-      english: { answers: ["mc"] },
-    };
-    assert.equal(
-      configSummary(mk({ ask })),
-      "English → Japanese · Multiple choice · Endless",
-    );
+  test("audio input", () => {
+    assert.equal(configSummary(mk({ input: "audio" })), "Audio · Endless");
   });
 
-  test("both sources collapse to Both directions and pool their formats", () => {
-    const ask: AskConfig = {
-      ...JP,
-      english: { answers: ["mc"] },
-    };
-    assert.equal(
-      configSummary(mk({ ask })),
-      "Both directions · Typed / multiple choice · Endless",
-    );
-  });
-
-  test("an empty setup says so plainly", () => {
-    const ask: AskConfig = {
-      japanese: { prompts: [], responses: [], answers: [] },
-      sentence: { prompts: [], responses: [], answers: [], englishResponses: [] },
-      english: { answers: [] },
-    };
-    assert.equal(configSummary(mk({ ask })), "Nothing to ask · Endless");
-  });
-
-  test("Audio is named when selected", () => {
-    const ask: AskConfig = {
-      ...JP,
-      japanese: { ...JP.japanese, prompts: ["text", "audio"] },
-    };
-    assert.equal(
-      configSummary(mk({ ask })),
-      "Japanese → English · Audio · Typed · Endless",
-    );
+  test("both mixes text and audio", () => {
+    assert.equal(configSummary(mk({ input: "both" })), "Both · Endless");
   });
 });
 
@@ -79,23 +36,19 @@ describe("configSummary — length and mode", () => {
   test("full coverage uses the editor's own name", () => {
     assert.equal(
       configSummary(mk({ length: "limited", limType: "cov" })),
-      "Japanese → English · Typed · Full coverage",
+      "Text · Full coverage",
     );
   });
 
   test("Count states its cap", () => {
     assert.equal(
-      configSummary(
-        mk({ length: "limited", limType: "count", limCount: 25 }),
-      ),
-      "Japanese → English · Typed · Limited to 25",
+      configSummary(mk({ length: "limited", limType: "count", limCount: 25 })),
+      "Text · Limited to 25",
     );
   });
 
-  test("non-drill modes lead with their name", () => {
-    assert.equal(
-      configSummary(mk({ mode: "pairs" })),
-      "Match pairs · Japanese → English · Typed · Endless",
-    );
+  test("non-drill modes lead with their name and drop the input format", () => {
+    assert.equal(configSummary(mk({ mode: "pairs" })), "Match pairs · Endless");
+    assert.equal(configSummary(mk({ mode: "grid" })), "Grid · Endless");
   });
 });

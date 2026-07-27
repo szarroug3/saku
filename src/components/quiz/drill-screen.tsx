@@ -771,10 +771,16 @@ export function DrillScreen() {
         resolveShowing(st, credit, false, showingOf(q));
         rt.resolved++;
         rt.feedback = { kind: "bad" };
-        const at = Math.min(rt.deck.length, rt.pos + requeueGap());
-        rt.deck.splice(at, 0, q.f);
-        rt.forms.splice(at, 0, q.form);
-        rt.requeued++;
+        // Requeue when wrong (default on): the missed card comes back later in
+        // the run. Off means the run moves on — it is scored wrong here and not
+        // re-shown. In-place `retries` are unaffected; this only gates the
+        // post-retry requeue. See cfg.requeue.
+        if (cfg.requeue) {
+          const at = Math.min(rt.deck.length, rt.pos + requeueGap());
+          rt.deck.splice(at, 0, q.f);
+          rt.forms.splice(at, 0, q.form);
+          rt.requeued++;
+        }
         rt.waiting = true;
         stopCountdown();
         // NOTHING IS ARMED HERE, and that is the fix for the audit's worst

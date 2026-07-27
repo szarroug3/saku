@@ -33,11 +33,10 @@ import {
 } from "@/lib/lesson-sizing";
 import { emptySelection } from "@/lib/selection-empty";
 import {
-  defaultAsk,
-  migrateLegacyAsk,
-  normalizeAsk,
-  normalizeGridResponses,
-  normalizePairResponses,
+  allGridResponses,
+  allPairResponses,
+  askFromInput,
+  deriveInput,
 } from "@/lib/ask-config";
 import type { QuizConfig } from "@/types";
 
@@ -46,12 +45,17 @@ export function defaultConfig(): QuizConfig {
     mode: "drill",
     pairResponses: ["definition", "romaji", "sentence"],
     gridResponses: ["definition", "romaji"],
-    // HOW TO ASK, by source — see AskConfig / src/lib/ask-config.ts. Replaced
-    // the old dirs + per-direction styles + listen flags.
-    ask: defaultAsk(),
+    // The one user-facing input axis. `ask` is DERIVED from it (see
+    // askFromInput / normalizeConfig) — everything else about how to ask is
+    // automatic and always-on. "text" is the safe default: no surprise audio for
+    // a beginner who may have no TTS voice installed.
+    input: "text",
+    ask: askFromInput("text"),
     length: "limited",
     limType: "cov",
     limCount: 50,
+    // Missed cards come back later in the run, by default.
+    requeue: true,
     retries: "lim",
     retryN: 2,
     timer: false,
@@ -99,44 +103,38 @@ function normalizeConfig(saved: unknown): QuizConfig {
       const cfg: QuizConfig = { ...defaultConfig(), ...raw };
       // Product decision: only first-try accuracy is supported.
       cfg.accuracyMetric = "firstTry";
-      cfg.pairResponses = normalizePairResponses(raw.pairResponses);
-      cfg.gridResponses = normalizeGridResponses(raw.gridResponses);
-      // "How to ask" migration (task 30). A config saved with the new `ask`
-      // shape is normalised (unknown members dropped); one saved with the OLD
-      // dirs/styles/listen fields is migrated forward; anything else defaults.
+      // Pairs and grid have no per-mode chooser any more: they ALWAYS drill the
+      // full relationship / response set, so a stored (possibly narrowed) value
+      // is discarded and pinned to the full set here.
+      cfg.pairResponses = allPairResponses();
+      cfg.gridResponses = allGridResponses();
+      // "How to ask" is now a single derived axis. Resolve the user-facing
+      // `input` (text/audio/both) from whatever was stored, then REGENERATE
+      // `ask` from it — the stored `ask` only matters for this one-time read:
+      //   - a new `input` field wins outright;
+      //   - else a stored `ask` (task-30 shape) reads its prompt format back;
+      //   - else the OLD dirs/styles/listen fields migrate through the same lens;
+      //   - else default "text".
       // The old fields are then dropped so they can't shadow the new model.
       const rawObj = raw as Record<string, unknown>;
       // A short-lived build exposed sentence practice as a separate "mixed"
       // mode. Sentences now correctly use the Japanese-sentence source inside
       // Drill, so migrate that saved UI state back to Drill.
       if (rawObj.mode === "mixed") cfg.mode = "drill";
-      if (rawObj.ask && typeof rawObj.ask === "object") {
-        cfg.ask = normalizeAsk(rawObj.ask);
-      } else if (
-        "dirs" in rawObj ||
-        "styleJp2en" in rawObj ||
-        "styleEn2jp" in rawObj ||
-        "listenRomaji" in rawObj ||
-        "listenMeaning" in rawObj
-      ) {
-        cfg.ask = migrateLegacyAsk(rawObj as never);
-      } else {
-        cfg.ask = defaultAsk();
-      }
-      // Sentence listening used to be a standalone mode. It is now the Audio
-      // prompt inside the Japanese-sentence source card.
-      if (raw.mode === "listen-sentence") {
-        cfg.mode = "drill";
-        cfg.ask.sentence.prompts = [
-          ...new Set([...cfg.ask.sentence.prompts, "audio" as const]),
-        ];
-        cfg.ask.sentence.responses = [
-          ...new Set([...cfg.ask.sentence.responses, "definition" as const]),
-        ];
-        cfg.ask.sentence.answers = [
-          ...new Set([...cfg.ask.sentence.answers, "mc" as const]),
-        ];
-      }
+      // Sentence listening used to be a standalone mode; it now folds into the
+      // Audio prompt format, so a saved listen-sentence config becomes an audio
+      // drill.
+      const wasListenSentence = raw.mode === "listen-sentence";
+      if (wasListenSentence) cfg.mode = "drill";
+      let input = deriveInput(rawObj);
+      // A standalone listen-sentence run was audio; fold that in so the audio
+      // prompt survives the mode migration.
+      if (wasListenSentence && input === "text") input = "audio";
+      cfg.input = input;
+      cfg.ask = askFromInput(input);
+      // Missed cards requeue by default; only an explicit stored false turns it
+      // off. Absent (older config) means on.
+      cfg.requeue = rawObj.requeue === false ? false : true;
       for (const stale of [
         "dirs",
         "styleJp2en",

@@ -98,6 +98,7 @@ import { OLD_SESSION_KEY, SESSION_KEY } from "@/lib/settings-keys";
 import { migratedGet } from "@/lib/storage-migrate";
 import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
+import { forLessonOrigin } from "@/lib/lesson-snapshot";
 import {
   mergeStats,
   recoveredAfterLeg,
@@ -1155,7 +1156,10 @@ export function QuizSessionProvider({
         // Don't overwrite what's running — set it aside, then open the lesson.
         parkIfActive();
         const now = Date.now();
-        const snapshot = { ...snapshotOf(cfg), ...(mode && { mode }) };
+        const snapshot = forLessonOrigin(
+          { ...snapshotOf(cfg), ...(mode && { mode }) },
+          origin,
+        );
         const teaching = teach.length > 0;
         const name = what ?? countWhat(facts);
         setSession({
@@ -1199,13 +1203,16 @@ export function QuizSessionProvider({
       const what = widen ? countWhat(facts) : session.what;
       // Re-read the current settings (see startNextRound): a change made while
       // the new material was being read should take effect on the first round.
-      const snapshot = {
-        ...snapshotOf(cfg),
-        // The lesson owns its question type. Global Practice settings may
-        // change answer details, but must not turn a sentence-ordering lesson's
-        // closing assembly quiz into an unrelated drill.
-        ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
-      };
+      const snapshot = forLessonOrigin(
+        {
+          ...snapshotOf(cfg),
+          // The lesson owns its question type. Global Practice settings may
+          // change answer details, but must not turn a sentence-ordering
+          // lesson's closing assembly quiz into an unrelated drill.
+          ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
+        },
+        session.origin,
+      );
       setSession({
         ...session,
         facts,
@@ -1374,11 +1381,14 @@ export function QuizSessionProvider({
     // hit ending a round, switching to Limited, and getting Endless again.
     // Stored back on the session so its record, its HUD and a redrill (retryLeg,
     // which reads session.snapshot) all name the settings this round ran under.
-    const snapshot = {
-      ...snapshotOf(cfg),
-      // Keep a dedicated lesson mode (notably sentence assembly) across rounds.
-      ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
-    };
+    const snapshot = forLessonOrigin(
+      {
+        ...snapshotOf(cfg),
+        // Keep a dedicated lesson mode (notably sentence assembly) across rounds.
+        ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
+      },
+      session.origin,
+    );
     setSession({
       ...session,
       snapshot,

@@ -13,6 +13,7 @@ import type {
   AskConfig,
   GridResponse,
   EnglishSentenceResponse,
+  InputFormat,
   PromptFormat,
   PairResponse,
   QuizConfig,
@@ -61,6 +62,79 @@ export function defaultAsk(): AskConfig {
     },
     english: { answers: [] },
   };
+}
+
+/**
+ * DERIVE the full "how to ask" from the single user-facing input axis. This is
+ * the whole simplification: everything except the prompt FORMAT is fixed on and
+ * cannot be turned off, so no lesson can be broken by a toggle.
+ *
+ *   - Japanese: prompted in the chosen format(s), asked for BOTH its meaning and
+ *     its reading, TYPED (formIsMc coerces to MC wherever the fact can't be
+ *     typed — kana en→jp, mcOnlyIn, etc.).
+ *   - Sentence: same prompt format(s); grammar patterns appear as fill-the-blank
+ *     selection cards, and en→jp production (ordering + selection) stays on.
+ *   - English: en→jp production always on, typed (again coerced where needed).
+ *
+ * `input` "both" mixes text and audio prompts per card; "audio" is listening.
+ */
+export function askFromInput(input: InputFormat): AskConfig {
+  const prompts: PromptFormat[] = input === "both" ? ["text", "audio"] : [input];
+  return {
+    japanese: {
+      prompts,
+      responses: ["definition", "romaji"],
+      answers: ["typed"],
+    },
+    sentence: {
+      prompts,
+      responses: ["definition"],
+      answers: ["mc"],
+      englishResponses: ["ordering", "selection"],
+    },
+    english: { answers: ["typed"] },
+  };
+}
+
+/** The inverse, used ONLY for one-time migration of a pre-input saved config:
+ * read the effective input axis back off a stored `ask`. Both text+audio ⇒
+ * "both"; audio alone ⇒ "audio"; anything else (incl. empty) ⇒ "text". */
+export function inputFromAsk(ask: AskConfig): InputFormat {
+  const p = ask.japanese.prompts;
+  const hasText = p.includes("text");
+  const hasAudio = p.includes("audio");
+  if (hasText && hasAudio) return "both";
+  if (hasAudio) return "audio";
+  return "text";
+}
+
+/**
+ * Resolve the user-facing input axis from a stored config object — one-time
+ * migration only. Precedence:
+ *   1. an explicit new `input` field wins outright;
+ *   2. else a stored task-30 `ask` has its prompt format read back;
+ *   3. else the pre-task-30 dirs/styles/listen fields migrate through the same
+ *      lens;
+ *   4. else "text".
+ * The `listen-sentence` mode's audio fold-in is mode-dependent and stays in
+ * normalizeConfig (see quiz-config.tsx).
+ */
+export function deriveInput(rawObj: Record<string, unknown>): InputFormat {
+  const inp = rawObj["input"];
+  if (inp === "text" || inp === "audio" || inp === "both") return inp;
+  if (rawObj["ask"] && typeof rawObj["ask"] === "object") {
+    return inputFromAsk(normalizeAsk(rawObj["ask"]));
+  }
+  if (
+    "dirs" in rawObj ||
+    "styleJp2en" in rawObj ||
+    "styleEn2jp" in rawObj ||
+    "listenRomaji" in rawObj ||
+    "listenMeaning" in rawObj
+  ) {
+    return inputFromAsk(migrateLegacyAsk(rawObj as never));
+  }
+  return "text";
 }
 
 /** Coerce any stored/parsed value into a valid AskConfig — unknown members
@@ -229,6 +303,17 @@ export function enabledDirs(ask: AskConfig): { jp2en: boolean; en2jp: boolean } 
 /** Read a QuizConfig's ask, tolerating a value that predates the field. */
 export function askOf(cfg: Pick<QuizConfig, "ask">): AskConfig {
   return cfg.ask ?? defaultAsk();
+}
+
+/** The full pair-relationship set — pairs mode always drills every relationship
+ * now, so there is no per-mode chooser and this is what normalizeConfig pins. */
+export function allPairResponses(): PairResponse[] {
+  return [...PAIR_RESPONSES];
+}
+
+/** The full grid-response set — grid mode always drills every response now. */
+export function allGridResponses(): GridResponse[] {
+  return [...GRID_RESPONSES];
 }
 
 export function normalizePairResponses(raw: unknown): PairResponse[] {

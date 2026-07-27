@@ -19,19 +19,12 @@
 // Pure and React-free on purpose: it is unit-tested here and imported by a
 // client component, and a plain (cfg) => string is the whole of what both need.
 
-import {
-  enabledDirs,
-  englishSentenceAsksOrdering,
-  englishSentenceAsksSelection,
-  sentenceAsksRomaji,
-  sentenceAsksSelection,
-} from "@/lib/ask-config";
-import type { AnswerStyle, AskConfig, QuizConfig } from "@/types";
+import type { InputFormat, QuizConfig } from "@/types";
 
 // Non-drill modes get a leading name; "drill" is the default and stays silent,
-// so an ordinary drill reads "Both directions · Typed · Endless" with no noun
-// in front of it. Kept as a lookup rather than a chain so a new mode is one
-// line to name and impossible to forget in the middle of a ternary.
+// so an ordinary drill reads "Text · Full coverage" with no noun in front of it.
+// Kept as a lookup rather than a chain so a new mode is one line to name and
+// impossible to forget in the middle of a ternary.
 const MODE_LABEL: Record<Exclude<QuizConfig["mode"], "drill">, string> = {
   pairs: "Match pairs",
   grid: "Grid",
@@ -40,31 +33,23 @@ const MODE_LABEL: Record<Exclude<QuizConfig["mode"], "drill">, string> = {
   "listen-sentence": "Listen to sentences",
 };
 
-function styleWord(s: AnswerStyle): string {
-  return s === "typed" ? "Typed" : "Multiple choice";
-}
-
-/** Every answer format any enabled source offers — the Japanese source (only
- * when it can actually ask, i.e. has a response too) and the English source. */
-function answerFormats(ask: AskConfig): AnswerStyle[] {
-  const out: AnswerStyle[] = [];
-  const { jp2en, en2jp } = enabledDirs(ask);
-  if (jp2en) out.push(...ask.japanese.answers);
-  if (sentenceAsksSelection(ask)) out.push("mc");
-  if (sentenceAsksRomaji(ask)) out.push(...ask.sentence.answers);
-  if (en2jp) out.push(...ask.english.answers);
-  if (englishSentenceAsksOrdering(ask)) out.push("typed");
-  if (englishSentenceAsksSelection(ask)) out.push("mc");
-  return out;
-}
+// The one user-facing ask axis (see InputFormat). Everything else — direction,
+// responses, answer format — is automatic and always-on, so the summary no
+// longer spells it out: it would be the same on every run.
+const INPUT_LABEL: Record<InputFormat, string> = {
+  text: "Text",
+  audio: "Audio",
+  both: "Both",
+};
 
 /**
- * A concise, dot-separated line of the settings QuizOptionsFields controls.
+ * A concise, dot-separated line of the settings QuizOptionsFields controls —
+ * mode, input format, and length.
  *
  * Examples:
- *   "Both directions · Typed · Endless"
- *   "Japanese → English · Multiple choice · Limited to 50"
- *   "Grid · Both directions · Typed · Endless"
+ *   "Text · Full coverage"
+ *   "Both · Limited to 50"
+ *   "Match pairs · Full coverage"
  */
 export function configSummary(cfg: QuizConfig): string {
   const parts: string[] = [];
@@ -72,31 +57,8 @@ export function configSummary(cfg: QuizConfig): string {
   // Mode first, and only when it is not the default drill — see MODE_LABEL.
   if (cfg.mode !== "drill") parts.push(MODE_LABEL[cfg.mode]);
 
-  // Direction, INFERRED from the sources (see enabledDirs). Both reads as "Both
-  // directions" rather than the arrow pair spelled out twice. The neither case
-  // is invalid (the editor disables Start), but a summary must never render a
-  // blank or a stray separator, so it says so plainly.
-  const { jp2en, en2jp } = enabledDirs(cfg.ask);
-  if (jp2en && en2jp) parts.push("Both directions");
-  else if (jp2en) parts.push("Japanese → English");
-  else if (en2jp) parts.push("English → Japanese");
-  else parts.push("Nothing to ask");
-
-  // Audio is a prompt format, not a mode — name it when the Japanese source
-  // includes it, so a launch line says listening is in the run.
-  if (
-    cfg.ask.japanese.prompts.includes("audio") ||
-    cfg.ask.sentence.prompts.includes("audio")
-  ) {
-    parts.push("Audio");
-  }
-
-  // Answer format, pooled across the enabled sources. One word when they all
-  // agree; "Typed / multiple choice" when both formats are in play; dropped
-  // when nothing is selected.
-  const styles = new Set<AnswerStyle>(answerFormats(cfg.ask));
-  if (styles.size === 1) parts.push(styleWord([...styles][0]));
-  else if (styles.size === 2) parts.push("Typed / multiple choice");
+  // Input format is the drill's one ask knob; the other modes don't have it.
+  if (cfg.mode === "drill") parts.push(INPUT_LABEL[cfg.input]);
 
   // Length. "Full coverage" is the editor's own name for the coverage cap, so
   // the summary uses it verbatim rather than inventing a second phrasing for

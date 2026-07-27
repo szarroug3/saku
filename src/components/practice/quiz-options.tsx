@@ -1,144 +1,25 @@
 "use client";
 
-// HOW a practice run asks. The source cards are the approved concept-A
-// hierarchy: each row is a multi-select, and direction is inferred from the
-// complete combinations rather than edited as a separate setting.
-
-import type { ReactNode } from "react";
+// HOW a practice run asks. Collapsed to four knobs: Mode, Prompt Format (drill
+// only), Length, and Requeue. Everything else about how to ask — responses,
+// answer format, direction, and every pair/grid relationship — is automatic and
+// always-on (see askFromInput and the forced-full pair/grid sets in
+// normalizeConfig), so nothing here can be toggled into a state that breaks a
+// lesson.
 
 import { Card, Chip, Row, SmallBtn } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
-import {
-  toggleGridResponse,
-  togglePairResponse,
-} from "@/lib/ask-config";
-import type {
-  AnswerStyle,
-  AskConfig,
-  EnglishSentenceResponse,
-  GridResponse,
-  PromptFormat,
-  PairResponse,
-  ResponseKind,
-} from "@/types";
+import type { InputFormat } from "@/types";
 
-function toggle<T>(values: readonly T[], value: T): T[] {
-  return values.includes(value)
-    ? values.filter((v) => v !== value)
-    : [...values, value];
-}
-
-function SourceCard({
-  title,
-  mark,
-  description,
-  children,
-}: {
-  title: string;
-  mark: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <Card className="mb-3.5 px-5 py-5 sm:px-7">
-      <div className="pb-4">
-        <h3 className="text-[18px] font-semibold text-text">
-          {title}{" "}
-          <span className="ml-2 text-[14px] font-medium text-text-muted">
-            {mark}
-          </span>
-        </h3>
-        <p className="mt-1 text-[13px] text-text-muted">{description}</p>
-      </div>
-      <div className="border-t border-border">{children}</div>
-    </Card>
-  );
-}
-
-function AskRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="grid gap-2 border-b border-border py-4 last:border-b-0 sm:grid-cols-[180px_1fr] sm:items-center">
-      <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-        {label}
-      </span>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  );
-}
+const INPUT_LABEL: Record<InputFormat, string> = {
+  text: "Text",
+  audio: "Audio",
+  both: "Both",
+};
 
 export function QuizOptionsFields() {
   const { cfg, update } = useQuizConfig();
 
-  const setAsk = (ask: AskConfig) => update({ ask });
-  const jpPrompt = (v: PromptFormat) =>
-    setAsk({
-      ...cfg.ask,
-      japanese: {
-        ...cfg.ask.japanese,
-        prompts: toggle(cfg.ask.japanese.prompts, v),
-      },
-    });
-  const jpResponse = (v: ResponseKind) =>
-    setAsk({
-      ...cfg.ask,
-      japanese: {
-        ...cfg.ask.japanese,
-        responses: toggle(cfg.ask.japanese.responses, v),
-      },
-    });
-  const jpAnswer = (v: AnswerStyle) =>
-    setAsk({
-      ...cfg.ask,
-      japanese: {
-        ...cfg.ask.japanese,
-        answers: toggle(cfg.ask.japanese.answers, v),
-      },
-    });
-  const sentencePrompt = (v: PromptFormat) =>
-    setAsk({
-      ...cfg.ask,
-      sentence: {
-        ...cfg.ask.sentence,
-        prompts: toggle(cfg.ask.sentence.prompts, v),
-      },
-    });
-  const sentenceDefinition = () =>
-    setAsk({
-      ...cfg.ask,
-      sentence: {
-        ...cfg.ask.sentence,
-        responses: toggle(cfg.ask.sentence.responses, "definition"),
-      },
-    });
-  const englishSentenceResponse = (v: EnglishSentenceResponse) =>
-    setAsk({
-      ...cfg.ask,
-      sentence: {
-        ...cfg.ask.sentence,
-        englishResponses: toggle(cfg.ask.sentence.englishResponses ?? [], v),
-      },
-    });
-  const englishAnswer = (v: AnswerStyle) =>
-    setAsk({
-      ...cfg.ask,
-      english: { answers: toggle(cfg.ask.english.answers, v) },
-    });
-  const pairResponse = (value: PairResponse) => {
-    update({
-      pairResponses: togglePairResponse(cfg.pairResponses, value),
-    });
-  };
-  const gridResponse = (value: GridResponse) => {
-    update({
-      gridResponses: toggleGridResponse(cfg.gridResponses, value),
-    });
-  };
   return (
     <>
       <Card>
@@ -162,180 +43,19 @@ export function QuizOptionsFields() {
       </Card>
 
       {cfg.mode === "drill" ? (
-        <>
-          <SourceCard
-            title="Japanese"
-            mark="字 / 語 / かな"
-            description="A kanji, word, or kana on its own."
-          >
-            <AskRow label="Prompt Format">
+        <Card>
+          <Row label="Prompt Format">
+            {(["text", "audio", "both"] as const).map((v) => (
               <Chip
-                on={cfg.ask.japanese.prompts.includes("text")}
-                onClick={() => jpPrompt("text")}
+                key={v}
+                on={cfg.input === v}
+                onClick={() => update({ input: v })}
               >
-                Text
+                {INPUT_LABEL[v]}
               </Chip>
-              <Chip
-                on={cfg.ask.japanese.prompts.includes("audio")}
-                onClick={() => jpPrompt("audio")}
-              >
-                Audio
-              </Chip>
-            </AskRow>
-            <AskRow label="Expected Response">
-              <Chip
-                on={cfg.ask.japanese.responses.includes("definition")}
-                onClick={() => jpResponse("definition")}
-              >
-                Definition
-              </Chip>
-              <Chip
-                on={cfg.ask.japanese.responses.includes("romaji")}
-                onClick={() => jpResponse("romaji")}
-              >
-                Romaji/Kana
-              </Chip>
-            </AskRow>
-            <AskRow label="Answer Format">
-              <Chip
-                on={cfg.ask.japanese.answers.includes("typed")}
-                onClick={() => jpAnswer("typed")}
-              >
-                Type it
-              </Chip>
-              <Chip
-                on={cfg.ask.japanese.answers.includes("mc")}
-                onClick={() => jpAnswer("mc")}
-              >
-                Multiple choice
-              </Chip>
-            </AskRow>
-          </SourceCard>
-
-          <SourceCard
-            title="English"
-            mark="EN"
-            description="Shown in text. Response is always Japanese."
-          >
-            <AskRow label="Answer Format">
-              <Chip
-                on={cfg.ask.english.answers.includes("typed")}
-                onClick={() => englishAnswer("typed")}
-              >
-                Type it
-              </Chip>
-              <Chip
-                on={cfg.ask.english.answers.includes("mc")}
-                onClick={() => englishAnswer("mc")}
-              >
-                Multiple choice
-              </Chip>
-            </AskRow>
-          </SourceCard>
-
-          <SourceCard
-            title="Sentences"
-            mark="文"
-            description="Practice complete Japanese and English sentences."
-          >
-            <div className="py-4">
-              <h4 className="text-[15px] font-semibold text-text">Japanese</h4>
-              <p className="mt-1 text-[13px] text-text-muted">
-                See or hear Japanese, then choose its English meaning.
-              </p>
-            </div>
-            <AskRow label="Prompt Format">
-              <Chip
-                on={cfg.ask.sentence.prompts.includes("text")}
-                onClick={() => sentencePrompt("text")}
-              >
-                Text
-              </Chip>
-              <Chip
-                on={cfg.ask.sentence.prompts.includes("audio")}
-                onClick={() => sentencePrompt("audio")}
-              >
-                Audio
-              </Chip>
-            </AskRow>
-            <AskRow label="Expected Response">
-              <Chip
-                on={cfg.ask.sentence.responses.includes("definition")}
-                onClick={sentenceDefinition}
-              >
-                Definition
-              </Chip>
-            </AskRow>
-            <div className="border-t border-border py-4">
-              <h4 className="text-[15px] font-semibold text-text">English</h4>
-              <p className="mt-1 text-[13px] text-text-muted">
-                Read an English sentence, then build or identify the Japanese.
-              </p>
-            </div>
-            <AskRow label="Expected Response">
-              <Chip
-                on={(cfg.ask.sentence.englishResponses ?? []).includes("ordering")}
-                onClick={() => englishSentenceResponse("ordering")}
-              >
-                Order the chunks
-              </Chip>
-              <Chip
-                on={(cfg.ask.sentence.englishResponses ?? []).includes("selection")}
-                onClick={() => englishSentenceResponse("selection")}
-              >
-                Choose the sentence
-              </Chip>
-            </AskRow>
-          </SourceCard>
-        </>
-      ) : cfg.mode === "pairs" ? (
-        <SourceCard
-          title="Pairs"
-          mark="text only"
-          description="Choose at least one relationship to match."
-        >
-          <AskRow label="Pair Type">
-            <Chip
-              on={cfg.pairResponses.includes("definition")}
-              onClick={() => pairResponse("definition")}
-            >
-              Japanese + English
-            </Chip>
-            <Chip
-              on={cfg.pairResponses.includes("romaji")}
-              onClick={() => pairResponse("romaji")}
-            >
-              Kanji + romaji
-            </Chip>
-            <Chip
-              on={cfg.pairResponses.includes("sentence")}
-              onClick={() => pairResponse("sentence")}
-            >
-              Sentence + translation
-            </Chip>
-          </AskRow>
-        </SourceCard>
-      ) : cfg.mode === "grid" ? (
-        <SourceCard
-          title="Grid"
-          mark="text · typed"
-          description="Japanese appears on every card. Choose what you type back."
-        >
-          <AskRow label="Expected Response">
-            <Chip
-              on={cfg.gridResponses.includes("definition")}
-              onClick={() => gridResponse("definition")}
-            >
-              English
-            </Chip>
-            <Chip
-              on={cfg.gridResponses.includes("romaji")}
-              onClick={() => gridResponse("romaji")}
-            >
-              Kanji reading / romaji
-            </Chip>
-          </AskRow>
-        </SourceCard>
+            ))}
+          </Row>
+        </Card>
       ) : null}
 
       {cfg.mode === "drill" || cfg.mode === "pairs" ? (
@@ -386,6 +106,14 @@ export function QuizOptionsFields() {
                 />
               </>
             ) : null}
+          </Row>
+          <Row label="Requeue when wrong">
+            <Chip on={cfg.requeue} onClick={() => update({ requeue: true })}>
+              On
+            </Chip>
+            <Chip on={!cfg.requeue} onClick={() => update({ requeue: false })}>
+              Off
+            </Chip>
           </Row>
         </Card>
       ) : null}

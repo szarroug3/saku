@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  askFromInput,
   askIsEmpty,
   defaultAsk,
+  deriveInput,
+  inputFromAsk,
   migrateLegacyAsk,
   normalizeAsk,
   normalizeGridResponses,
@@ -260,5 +263,92 @@ describe("incomplete source rows do not enable Start", () => {
 
   test("English needs an answer format", () => {
     assert.equal(askIsEmpty(emptyAsk()), true);
+  });
+});
+
+describe("askFromInput — the derived, everything-on ask", () => {
+  test("text: text prompts, both responses, typed; en→jp production on", () => {
+    assert.deepEqual(askFromInput("text"), {
+      japanese: {
+        prompts: ["text"],
+        responses: ["definition", "romaji"],
+        answers: ["typed"],
+      },
+      sentence: {
+        prompts: ["text"],
+        responses: ["definition"],
+        answers: ["mc"],
+        englishResponses: ["ordering", "selection"],
+      },
+      english: { answers: ["typed"] },
+    });
+  });
+
+  test("audio: prompts become audio for both japanese and sentence", () => {
+    const ask = askFromInput("audio");
+    assert.deepEqual(ask.japanese.prompts, ["audio"]);
+    assert.deepEqual(ask.sentence.prompts, ["audio"]);
+    // Everything else is still the full, always-on set.
+    assert.deepEqual(ask.japanese.responses, ["definition", "romaji"]);
+    assert.deepEqual(ask.english.answers, ["typed"]);
+  });
+
+  test("both: mixes text and audio prompts", () => {
+    const ask = askFromInput("both");
+    assert.deepEqual(ask.japanese.prompts, ["text", "audio"]);
+    assert.deepEqual(ask.sentence.prompts, ["text", "audio"]);
+  });
+
+  test("every derived ask is non-empty (Start is never wrongly disabled)", () => {
+    for (const input of ["text", "audio", "both"] as const) {
+      assert.equal(askIsEmpty(askFromInput(input)), false, input);
+    }
+  });
+});
+
+describe("inputFromAsk — reading the axis back for migration", () => {
+  test("round-trips every input format", () => {
+    for (const input of ["text", "audio", "both"] as const) {
+      assert.equal(inputFromAsk(askFromInput(input)), input, input);
+    }
+  });
+
+  test("text+audio ⇒ both, audio alone ⇒ audio, else ⇒ text", () => {
+    const ask = defaultAsk();
+    assert.equal(inputFromAsk({ ...ask, japanese: { ...ask.japanese, prompts: ["text", "audio"] } }), "both");
+    assert.equal(inputFromAsk({ ...ask, japanese: { ...ask.japanese, prompts: ["audio"] } }), "audio");
+    assert.equal(inputFromAsk({ ...ask, japanese: { ...ask.japanese, prompts: ["text"] } }), "text");
+    assert.equal(inputFromAsk({ ...ask, japanese: { ...ask.japanese, prompts: [] } }), "text");
+  });
+});
+
+describe("deriveInput — migration precedence", () => {
+  test("an explicit input field wins outright", () => {
+    assert.equal(deriveInput({ input: "both" }), "both");
+    assert.equal(deriveInput({ input: "audio", ask: askFromInput("text") }), "audio");
+  });
+
+  test("a bad input field falls through to the next source", () => {
+    assert.equal(deriveInput({ input: "nonsense", ask: askFromInput("audio") }), "audio");
+  });
+
+  test("a stored task-30 ask reads its prompt format back", () => {
+    assert.equal(deriveInput({ ask: askFromInput("both") }), "both");
+    assert.equal(deriveInput({ ask: askFromInput("audio") }), "audio");
+  });
+
+  test("pre-task-30 dirs/listen fields migrate through the same lens", () => {
+    // jp→en text + a listen flag ⇒ text+audio ⇒ both
+    assert.equal(
+      deriveInput({ dirs: { jp2en: true }, styleJp2en: "typed", listenMeaning: true }),
+      "both",
+    );
+    // jp→en text, no listening ⇒ text
+    assert.equal(deriveInput({ dirs: { jp2en: true }, styleJp2en: "typed" }), "text");
+  });
+
+  test("an empty/unknown object defaults to text", () => {
+    assert.equal(deriveInput({}), "text");
+    assert.equal(deriveInput({ mode: "drill" }), "text");
   });
 });
