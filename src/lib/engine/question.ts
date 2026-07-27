@@ -473,11 +473,18 @@ function anchorOf(fact: FactId): string | null {
  * How to frame "which reading" for this anchor.
  *
  * 632 of the 3,178 reading facts (20%) are anchored to the kanji ITSELF — the
- * word 一 is a word, and it is read いち. Rendering those the general way gives
- * "一 · in 一", which reads as a bug and tells you nothing. It is not a bug and
- * the fact is not redundant: 一 on its own is いち while 一 in 一つ is ひと, and
- * those are two things you can be asked and get separately wrong. So the
- * standalone case gets the words it actually means.
+ * word 一 is a word, and it is read いち. That self-anchored reading is NOT asked
+ * as a kanji-reading card: "how is 一 said in 一 → いち" is exactly the question
+ * `word:一` already grades, so the reading is filtered out of every ask path
+ * (word-unlock.ts / quizzableFacts, and DrillScreen's deck build) and only the
+ * WORD fact tests it. A reading is asked as a kanji-reading ONLY inside a
+ * MULTI-CHARACTER word — 一 is ひと in 一つ, a distinct, non-redundant question —
+ * so in practice this receives only a multi-char `anchor` and returns "in 一つ".
+ *
+ * The anchor === glyph branch is a defensive fallback for the handful of
+ * non-ask callers that render a reading prompt with no context (e.g. the
+ * question-matrix contract test): it keeps such a prompt from reading "in 一",
+ * which would look like a bug. No drilled card reaches it.
  */
 function frameFor(glyph: string, anchor: string, lead: string): string {
   return anchor === glyph ? "on its own" : `${lead} ${anchor}`;
