@@ -253,6 +253,7 @@ export function EntryRow({
   note,
   voice,
   selected,
+  grid = false,
   onToggleSelect,
 }: {
   entry: LibEntry;
@@ -261,6 +262,12 @@ export function EntryRow({
   note?: string;
   voice: string;
   selected: boolean;
+  /** Lay the row out as a `grid-cols-subgrid` band of a shared parent grid,
+   * instead of a self-contained flex row. The grammar shelf turns this on so
+   * every pattern column sizes to the WIDEST pattern and the explanations align
+   * across rows (see shelves.tsx). Off everywhere else — the flat search list and
+   * the mark/term shelves keep the independent flex row. */
+  grid?: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   const inlineMarkGlyph = entry.kind === MARK_SUBJECT ? entry.glyph : "";
@@ -290,9 +297,14 @@ export function EntryRow({
           onToggleSelect(e.shiftKey);
         }
       }}
-      className={`flex cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 ${
-        selected ? "bg-accent-bg" : "hover:bg-panel"
-      }`}
+      className={`cursor-pointer select-none items-center border-b border-border py-2 text-text last:border-b-0 ${
+        // A subgrid band (grammar shelf) inherits the parent grid's shared tracks
+        // and column gap; the default row is a self-contained flex line with its
+        // own gap and edge padding.
+        grid
+          ? "col-span-full grid grid-cols-subgrid"
+          : "flex gap-3 px-1"
+      } ${selected ? "bg-accent-bg" : "hover:bg-panel"}`}
     >
       {/* The select box — leading, checkbox-shaped, so the row reads as a thing
           you tick. Filled accent when on. */}
@@ -312,16 +324,18 @@ export function EntryRow({
           // A grammar pattern is a PHRASE, not a character — 〜てください,
           // 〜てはいけない, 〜なければならない — so a fixed 64px cell truncated
           // every one of them to "〜て…" and made "please do X", "must not do X"
-          // and "after X" indistinguishable. Grammar rows size the glyph cell to
-          // its content instead (no truncate), with the old width as a floor so
-          // short patterns still align, and let the gloss column beside it shrink
-          // and truncate — the row never overflows on mobile because that column
-          // carries `min-w-0`. Every other kind keeps the fixed, truncated cell:
-          // a kanji or word glyph is one or two characters and wants the tidy
-          // column.
+          // and "after X" indistinguishable. On the grammar shelf the row is a
+          // subgrid band and this cell lands on a shared `max-content` track, so
+          // `whitespace-nowrap` (no width, no truncate) lets it take exactly the
+          // width the WIDEST pattern needs and keeps every pattern on one line.
+          // Off the grid (grammar in the flat search list) it falls back to a
+          // fixed 150px. Every other kind keeps the fixed, truncated 64px cell: a
+          // kanji or word glyph is one or two characters and wants the tidy column.
           className={`${
             entry.kind === GRAMMAR_SUBJECT
-              ? "w-[150px] flex-none pr-2"
+              ? grid
+                ? "whitespace-nowrap pr-2"
+                : "w-[150px] flex-none pr-2"
               : "w-[64px] flex-none truncate"
           } text-[19px] ${japaneseFontClass(entry.glyph)}`}
         >
