@@ -32,7 +32,7 @@ import { kanjiTeachOrder, meaningFactId as kanjiMeaningFactId } from "../data/ka
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { TRACK_INTROS } from "../data/track-intros.ts";
 import { ROLE_ORDER } from "./character-role.ts";
-import { CURRICULUM_SEQUENCE } from "./curriculum-order.ts";
+import { CURRICULUM_SEQUENCE, type CurriculumRole } from "./curriculum-order.ts";
 import { characterRoles } from "./character-role.ts";
 import {
   curriculum,
@@ -68,11 +68,14 @@ function met(facts: Iterable<FactId>): HistoryFile {
  * shape that is only ever a piece.
  */
 const ANCHOR_SHAPE: Record<
-  "radical" | "kanji",
+  CurriculumRole,
   (roles: readonly string[], glyph: string) => boolean
 > = {
   kanji: (roles) => roles.includes("kanji"),
   radical: (roles) => roles.includes("radical"),
+  // No word CARD is minted (see CARD_ORDER in spine-intros.ts), but "word" is a
+  // role, so the predicate is here to keep the lookup total for any anchor role.
+  word: (roles) => roles.includes("word"),
 };
 
 /** The anchor for one role, by name. */
@@ -124,7 +127,7 @@ describe("every role is anchored where its card has something to point at", () =
     );
     assert.deepEqual(
       SPINE_ANCHORS.map((a) => a.intro.id),
-      ["kanji", "radical"].map((r) => TRACK_INTROS[r].id),
+      (["kanji", "radical"] as const).map((r) => TRACK_INTROS[r].id),
     );
   });
 
@@ -172,13 +175,18 @@ describe("every role is anchored where its card has something to point at", () =
   });
 
   test("a step of another subject never triggers a card, whatever its glyph", () => {
-    // A keigo verb and a counter can be written exactly like a curriculum word.
-    // A keigo lesson is not where the app explains what a word is, so the plan
-    // looks at the step's KIND and not only at its spelling.
-    const wordGlyph = anchorFor("word").glyph;
-    const asKeigo = [{ kind: "keigo", glyph: wordGlyph }];
+    // A keigo verb and a counter can be written exactly like a curriculum item.
+    // A keigo lesson is not where the app explains what a kanji is, so the plan
+    // looks at the step's KIND and not only at its spelling — even when the glyph
+    // is the very character the kanji card anchors on.
+    const anchorGlyph = anchorFor("kanji").glyph;
+    const asKeigo = [{ kind: "keigo", glyph: anchorGlyph }];
     assert.equal(spineIntroPlan(asKeigo, BLANK, new Set(), new Set()).size, 0);
-    // The identical glyph, stepping as the word it is, still owes no spine card.
+    // A plain word — one that plays ONLY the word role — owes no spine card
+    // either: the word role has no card of its own, only kanji and radical do.
+    const wordGlyph = CURRICULUM_SEQUENCE.find(
+      (it) => it.roles.length === 1 && it.roles[0] === "word",
+    )!.glyph;
     const asWord = [{ kind: "word", glyph: wordGlyph }];
     assert.equal(spineIntroPlan(asWord, BLANK, new Set(), new Set()).size, 0);
   });

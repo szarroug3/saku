@@ -206,8 +206,10 @@ test("resolveShowing records the showing's presentation for the results chip", (
   ]);
 
   // A resolution with no presentation leaves the last one in place, not blank.
+  // The last showing was the jp2en repeat above (last framing wins), so that is
+  // what a blank resolution must preserve.
   resolveShowing(st, true, true);
-  assert.deepEqual(st.shown, { dir: "en2jp", mode: "mc", listen: false });
+  assert.deepEqual(st.shown, { dir: "jp2en", mode: "typed", listen: true });
   assert.deepEqual(st.showns, [
     { dir: "jp2en", mode: "typed", listen: true },
     { dir: "en2jp", mode: "mc", listen: false },

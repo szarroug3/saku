@@ -4,7 +4,7 @@ import { describe, test } from "node:test";
 import { kanaFact } from "@/data/characters";
 import { READING_INDEX, meaningFactId as kanjiMeaningFactId, KANJI } from "@/data/kanji";
 import { patternMeaningFactId, patternProductionFactId } from "@/data/grammar";
-import { RECIPES } from "@/data/grammar/recipes";
+import { RECIPES, isProducible } from "@/data/grammar/recipes";
 import { KEIGO_SETS, keigoWordFactId } from "@/data/keigo";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { sideFactId } from "@/data/transitivity-facts";
@@ -21,8 +21,8 @@ import type { AskConfig } from "@/types";
 const word = VOCAB.find((w) => !isKanaWord(w))!;
 const reading = wordReadingFactId(word.keb);
 const meaning = wordMeaningFactId(word.keb);
-const firstKanjiReading = READING_INDEX.keys().next().value;
-const grammarProductionFact = patternProductionFactId(RECIPES.find((r) => r.producible !== false)!.id);
+const firstKanjiReading = READING_INDEX.keys().next().value!;
+const grammarProductionFact = patternProductionFactId(RECIPES.find((r) => isProducible(r))!.id);
 const keigoFact = keigoWordFactId(KEIGO_SETS[0], KEIGO_SETS[0].words[0]);
 const transitivityFact = sideFactId(VERB_PAIRS[0], "happens");
 
@@ -362,7 +362,7 @@ describe("Unreachable Planned forms (settings selected but forms not generated)"
   });
 
   test("kanji reading audio is silently dropped (kanji reading not listenable)", () => {
-    const firstKanjiReading = READING_INDEX.keys().next().value;
+    const firstKanjiReading = READING_INDEX.keys().next().value!;
     assert.ok(firstKanjiReading, "expected at least one kanji reading fact");
     const audioOnly: AskConfig = {
       japanese: {
@@ -750,7 +750,7 @@ describe("By design: audio exclusions that must never generate forms", () => {
   // §2.1: kanji MEANING audio is By design excluded (no audio form for kanji meaning).
   // Distinct from §2.2 kanji reading audio (also excluded, tested separately).
   test("kanji meaning audio: By design excluded (no audio form for kanji meaning fact)", () => {
-    const kanjiMeaning = kanjiMeaningFactId(KANJI[0].char);
+    const kanjiMeaning = kanjiMeaningFactId(KANJI[0].c);
     const forms = enabledFormsFor(kanjiMeaning, audioOnly);
     assert.deepEqual(forms, [], "kanji meaning with audio-only → no forms (By design)");
   });

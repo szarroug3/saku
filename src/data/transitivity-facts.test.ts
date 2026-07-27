@@ -55,7 +55,10 @@ describe("every pair mints two facts, one per side", () => {
         assert.equal(info.subject, TRANSITIVITY_SUBJECT);
         assert.equal(info.glyph, p[side].word);
         assert.equal(info.meaning, p[side].en);
-        assert.ok(info.answers.includes(p[side].word));
+        // Modelled like a kanji MEANING fact: glyph is the verb, the accepted
+        // (recognition) answer is the English cue. Production is graded by the
+        // question type against `word`/`reading`, not by this list.
+        assert.ok(info.answers.includes(p[side].en));
       }
     }
   });

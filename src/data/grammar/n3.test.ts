@@ -131,8 +131,13 @@ describe("the producers produce — one answer per vehicle, prompt never the ans
         assert.ok(built.ok, `${id} refused ${v.surface}`);
         // The prompt is never itself an accepted answer.
         assert.notEqual(built.value, v.surface, `${id} left ${v.surface} untouched`);
-        // The suffix really attached — the built form ends in it.
-        assert.ok(built.value.endsWith(recipe(id)!.attach[0]!.add), `${id} on ${v.surface}`);
+        // The suffix really attached — the built form ends in it. A kana-written
+        // vehicle takes the recipe's curated kana spelling of the suffix (the
+        // typed-production lane), so accept `kanaAdd` there.
+        const at0 = recipe(id)!.attach[0]!;
+        const kanaVehicle = /^[぀-ヿー]+$/u.test(v.surface);
+        const suffix = kanaVehicle ? (at0.kanaAdd ?? at0.add) : at0.add;
+        assert.ok(built.value.endsWith(suffix), `${id} on ${v.surface}`);
         // Exactly one accepted answer: a production question carries a single
         // string, and re-running the recipe is deterministic.
         const q = production(id, v.surface, v.cls as WordClass);
