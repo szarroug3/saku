@@ -26,11 +26,39 @@ import {
   emptyHistory,
 } from "@/lib/history-ops";
 import {
+  mutateHistoryWithRetry,
+  type HistoryStore,
+} from "@/lib/history-mutate";
+import {
   readHistoryRow,
+  readHistoryRowVersioned,
   readProgressSeedRow,
   writeHistoryRow,
+  writeHistoryRowGuarded,
 } from "@/lib/store/supabase-store";
 import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
+
+/** The compare-and-set store the mutators below run their read-modify-write
+ * through, so two overlapping requests cannot clobber each other's field (see
+ * history-mutate.ts). One instance, since it is stateless — the request-bound
+ * Supabase client is created per call inside these primitives. */
+const store: HistoryStore = {
+  read: readHistoryRowVersioned,
+  write: writeHistoryRowGuarded,
+};
+
+/**
+ * Apply a pure op to this user's history and persist it, safe against a
+ * concurrent writer. The one seam every mutator below shares — the twin of
+ * store/local-progress.ts's `mutateHistory`, with the concurrency guard the
+ * shared server row needs and the single browser store does not.
+ */
+function mutateHistory(
+  userId: string,
+  op: (hist: HistoryFile) => HistoryFile,
+): Promise<HistoryFile> {
+  return mutateHistoryWithRetry(store, userId, op);
+}
 
 /**
  * The signed-in learner's history. The read half every mutator below builds on.
@@ -72,9 +100,7 @@ export async function saveClaims(
   facts: FactId[],
   ts: number,
 ): Promise<HistoryFile> {
-  const next = applyClaims(await loadHistory(userId), facts, ts);
-  await writeHistory(userId, next);
-  return next;
+  return mutateHistory(userId, (hist) => applyClaims(hist, facts, ts));
 }
 
 /**
@@ -93,9 +119,7 @@ export async function saveSeen(
   facts: FactId[],
   ts: number,
 ): Promise<HistoryFile> {
-  const next = applySeen(await loadHistory(userId), facts, ts);
-  await writeHistory(userId, next);
-  return next;
+  return mutateHistory(userId, (hist) => applySeen(hist, facts, ts));
 }
 
 /** Withdraw claims — "actually, I don't". Deletes the record rather than
@@ -103,9 +127,7 @@ export async function saveSeen(
  * one every reader already handles, and an absent key says "never claimed"
  * where `0` would have to be special-cased into meaning it. */
 export async function dropClaims(userId: string, facts: FactId[]): Promise<HistoryFile> {
-  const next = applyDropClaims(await loadHistory(userId), facts);
-  await writeHistory(userId, next);
-  return next;
+  return mutateHistory(userId, (hist) => applyDropClaims(hist, facts));
 }
 
 /** Withdraw "quiz me" records — the twin of dropClaims, used when a lesson is
@@ -113,9 +135,7 @@ export async function dropClaims(userId: string, facts: FactId[]): Promise<Histo
  * Same delete-not-zero discipline: an absent key is "never seen", the state the
  * frontier reads as fresh again. */
 export async function dropSeen(userId: string, facts: FactId[]): Promise<HistoryFile> {
-  const next = applyDropSeen(await loadHistory(userId), facts);
-  await writeHistory(userId, next);
-  return next;
+  return mutateHistory(userId, (hist) => applyDropSeen(hist, facts));
 }
 
 /** Retire an open confusion record at the learner's request. The underlying
@@ -126,9 +146,7 @@ export async function clearMixup(
   key: string,
   ts: number,
 ): Promise<HistoryFile> {
-  const next = applyClearMixup(await loadHistory(userId), key, ts);
-  await writeHistory(userId, next);
-  return next;
+  return mutateHistory(userId, (hist) => applyClearMixup(hist, key, ts));
 }
 
 /**
@@ -160,10 +178,10 @@ export async function saveSession(
   // fold, the 200-cap and the id-dedup all live in applySession now (see
   // history-ops.ts); when it returns the SAME object it was given, the record
   // was already stored, so writing again is pointless churn on the row.
-  const hist = await loadHistory(userId);
-  const next = applySession(hist, session);
-  if (next !== hist) await writeHistory(userId, next);
-  return next;
+  // applySession returns the SAME reference when the id is already stored;
+  // mutateHistory then writes nothing, preserving the dedup byte-for-byte across
+  // retries (a re-read after a lost CAS that now contains the record no-ops too).
+  return mutateHistory(userId, (hist) => applySession(hist, session));
 }
 
 /** Remove sessions (by ts) or everything, then rebuild the per-fact aggregate
@@ -189,10 +207,10 @@ export async function deleteSessions(
   // id-vs-ts keying and the rebuild (see history-ops.ts) and returns the SAME
   // object on the no-op, so `next !== hist` is exactly "did anything change":
   // bail before writing when it did not.
-  const hist = await loadHistory(userId);
-  const next = applyDeleteSessions(hist, ids, deleteAll);
-  if (next !== hist) await writeHistory(userId, next);
-  return next;
+  // applyDeleteSessions returns the SAME reference for a delete that selected
+  // nothing; mutateHistory then writes nothing, keeping the "bail before touching
+  // the row" guarantee the incrementally-grown aggregate depends on.
+  return mutateHistory(userId, (hist) => applyDeleteSessions(hist, ids, deleteAll));
 }
 
 /**

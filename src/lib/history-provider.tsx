@@ -54,7 +54,6 @@ import {
 
 import {
   applyCached,
-  applyRevalidation,
   outcomeForResponse,
   readCachedHistory,
   seededState,
@@ -67,6 +66,12 @@ import {
   onHistoryWrite,
   WRITE_SETTLE_MS,
 } from "@/lib/history-events";
+import {
+  advanceGeneration,
+  INITIAL_GENERATION,
+  revalidationWins,
+  settleRevalidation,
+} from "@/lib/history-sync";
 import { loadLocalHistory } from "@/lib/store/local-progress";
 import type { HistoryFile } from "@/types";
 
@@ -133,10 +138,13 @@ export function HistoryProvider({
 }) {
   const [state, setState] = useState<HistoryState>(() => seededState(initial));
 
-  // Newest answer wins. Two revalidations can overlap (a write's refresh landing
-  // beside a screen's), and without this the slower one would be free to
-  // overwrite the fresher with older data.
-  const generation = useRef(0);
+  // The monotonic stamp that decides which read is allowed to land (see
+  // history-sync.ts). Two revalidations can overlap (a write's refresh landing
+  // beside a screen's), and — the case that made claims revert — a revalidation
+  // can be in flight across an optimistic write. Both a newer read AND a local
+  // write advance this, and a read may only land if it has not been advanced past
+  // since it left. So a read that predates our own write can no longer clobber it.
+  const generation = useRef(INITIAL_GENERATION);
 
   // When the newest revalidation LEFT. A write that landed before then is
   // already in the answer we are waiting for, which is how a screen's own
@@ -144,12 +152,14 @@ export function HistoryProvider({
   const issuedAt = useRef(0);
 
   const refresh = useCallback(async () => {
-    const mine = ++generation.current;
+    const mine = generation.current = advanceGeneration(generation.current);
     issuedAt.current = Date.now();
     const outcome = await fetchHistory();
-    if (mine !== generation.current) return;
-    setState((prev) => applyRevalidation(prev, outcome));
-    if (userId && outcome.kind === "server") writeCachedHistory(userId, outcome.history);
+    // Read the stamp ONCE, after the await: a local write (or a newer read) that
+    // happened while we were fetching has moved it, and this read must then lose.
+    const won = revalidationWins(mine, generation.current);
+    setState((prev) => settleRevalidation(prev, mine, generation.current, outcome));
+    if (won && userId && outcome.kind === "server") writeCachedHistory(userId, outcome.history);
   }, [userId]);
 
   // The seed and the account it was read for, frozen at mount. Held in refs
@@ -211,6 +221,14 @@ export function HistoryProvider({
   // a click during the first revalidation shows a spinner over an answer we are
   // already holding.
   const apply = useCallback((op: (hist: HistoryFile) => HistoryFile) => {
+    // Advance the stamp FIRST. A revalidation already in flight left before this
+    // write and cannot contain it, so if it were allowed to land afterwards it
+    // would revert exactly what we just applied — the claim that advanced the
+    // card and then snapped back. Advancing here drops those stale-relative-to-us
+    // reads (see revalidationWins in history-sync.ts); a read issued after this
+    // still wins, which is how a refused write or a newer device's write corrects
+    // us.
+    generation.current = advanceGeneration(generation.current);
     setState((prev) => ({ ...prev, history: op(prev.history), loaded: true }));
   }, []);
 

@@ -16,6 +16,7 @@ import {
   type SessionStateEnvelope,
 } from "@/lib/session-state";
 import { hydrateRecentRuns } from "@/lib/aggregate";
+import type { VersionedRead } from "@/lib/history-mutate";
 import { normalizeSettings } from "@/lib/settings-merge";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { HistoryFile, ListsFile, SettingsFile } from "@/types";
@@ -75,6 +76,84 @@ export async function writeHistoryRow(userId: string, hist: HistoryFile): Promis
       { onConflict: "user_id" },
     );
   if (error) throw new Error(`writing progress.history failed: ${error.message}`);
+}
+
+/**
+ * A versioned read of the history row, for the compare-and-set write below. The
+ * `updated_at` is the concurrency token: a write only lands if the row still
+ * carries the value seen here (see history-mutate.ts). `maybeSingle` returns null
+ * for a user with no row yet, which reads as an empty history and `exists: false`.
+ */
+export async function readHistoryRowVersioned(userId: string): Promise<VersionedRead> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("progress")
+    .select("history, updated_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`reading progress.history failed: ${error.message}`);
+  return {
+    history: normalizeHistory(data?.history),
+    version: (data?.updated_at as string | null | undefined) ?? null,
+    exists: data != null,
+  };
+}
+
+/** Postgres unique-violation (a row inserted concurrently under the same
+ * user_id). Not an error to surface — it is the "someone beat me to the first
+ * write" signal, handled as a CAS miss. */
+function isUniqueViolation(error: { code?: string }): boolean {
+  return error.code === "23505";
+}
+
+/**
+ * Write the history ONLY if the row still carries `expected` — optimistic
+ * concurrency, so two overlapping writes cannot clobber each other. Returns true
+ * when it landed, false when a concurrent writer moved the token first.
+ *
+ * The new `updated_at` is forced strictly greater than the one we guarded on, so
+ * even two writes landing in the same millisecond leave DISTINCT tokens: after
+ * the first commits, the second's guard cannot still match the value it read, so
+ * the second is reliably detected as a miss and retried (Postgres re-checks the
+ * WHERE against the freshly committed row under READ COMMITTED). No integer
+ * version column, and so no schema migration, is needed.
+ */
+export async function writeHistoryRowGuarded(
+  userId: string,
+  hist: HistoryFile,
+  expected: VersionedRead,
+): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const prev = expected.version ? Date.parse(expected.version) : 0;
+  const nextTs = new Date(Math.max(Date.now(), prev + 1)).toISOString();
+
+  // No row yet: INSERT. A row that appeared since our read violates the user_id
+  // uniqueness, which is precisely the CAS miss we retry on.
+  if (!expected.exists) {
+    const { error } = await supabase
+      .from("progress")
+      .insert({ user_id: userId, history: hist, updated_at: nextTs });
+    if (error) {
+      if (isUniqueViolation(error)) return false;
+      throw new Error(`writing progress.history failed: ${error.message}`);
+    }
+    return true;
+  }
+
+  // Row exists: UPDATE guarded on the token. `.select` reports the affected rows,
+  // so zero rows means the guard did not match — a concurrent writer got there
+  // first. A legacy row with a null token is guarded with `.is`, not `.eq`.
+  const base = supabase
+    .from("progress")
+    .update({ history: hist, updated_at: nextTs })
+    .eq("user_id", userId);
+  const guarded =
+    expected.version == null
+      ? base.is("updated_at", null)
+      : base.eq("updated_at", expected.version);
+  const { data, error } = await guarded.select("user_id");
+  if (error) throw new Error(`writing progress.history failed: ${error.message}`);
+  return (data?.length ?? 0) > 0;
 }
 
 export async function readListsRow(userId: string): Promise<ListsFile> {
