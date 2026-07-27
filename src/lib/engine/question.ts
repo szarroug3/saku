@@ -81,6 +81,7 @@ import {
   productionCue,
 } from "@/data/keigo";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
+import { matchesEnglish } from "@/lib/engine/en-match";
 import type { Direction, FactId, HistoryFile } from "@/types";
 
 /**
@@ -289,12 +290,18 @@ export interface QuestionType {
 
 /** Case- and space-forgiving comparison, for both scripts. `answers` holds
  * romaji for kana, hiragana for readings and English for meanings; all three
- * want the same forgiveness and none of them wants any more than this. */
+ * want case/space forgiveness and no more.
+ *
+ * ENGLISH gets three additional deterministic layers on top — parenthetical
+ * notes stripped, spelled numbers accepting their digit, and length-scaled typo
+ * tolerance — and NOTHING ELSE does: `matchesEnglish` runs those layers only
+ * against glosses carrying a Latin letter, so a Japanese reading answer stays
+ * exact-match and a kana reading is never loosened into a near-miss. See
+ * en-match.ts for why (no synonym model — those accept antonyms). */
 function accepts(fact: FactId, given: string): boolean {
   const info = factInfo(fact);
   if (!info) return false;
-  const g = given.trim().toLowerCase();
-  return info.answers.some((a) => a.trim().toLowerCase() === g);
+  return matchesEnglish(given, info.answers);
 }
 
 /** The canonical answer to display — the first one. */
