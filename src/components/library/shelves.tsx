@@ -11,15 +11,15 @@
 // browsable. A shelf you cannot honestly cut is a search box, and saying so is
 // cheaper than a fake hierarchy.
 //
-// THE KANJI SHELF IS THE EXCEPTION, AND IT IS CUT BY A SETTING. It used to be
-// cut into jōyō grades, because that is what KANJIDIC2 records — and both
+// THE KANJI SHELF IS THE EXCEPTION, AND IT IS CUT BY THE TEACHING ORDER. It used
+// to be cut into jōyō grades, because that is what KANJIDIC2 records — and both
 // halves of that were wrong for the reader. "Jōyō" is the 2,136-kanji list that
 // is the entire contents of this app, so the word distinguishes nothing; and a
 // grade is the school year a Japanese CHILD meets it, a curriculum for people
 // who already speak the language. Worse, it was not the order she was studying
-// in: kanji order is `cfg.newKanjiOrder`, it defaults to `everyday`, and under
-// grade sections the kanji she will actually meet next were scattered across
-// seven cards, one of which held 1,110 of the 2,136 and showed 60 of them.
+// in: kanji arrive in the `everyday` order, and under grade sections the kanji
+// she will actually meet next were scattered across seven cards, one of which
+// held 1,110 of the 2,136 and showed 60 of them.
 //
 // So `shelfSections` takes the order, and the kanji shelf is cut into
 // consecutive hundreds OF THAT ORDER, labelled by range ("1–100", "101–200").
@@ -27,10 +27,7 @@
 // meet them in. IT STOPS AFTER THREE OF THEM, because 2,136 kanji is 22 cards
 // nobody scrolls and 300 is plenty to have on a page; a counted line says how
 // many are left and sends you to search, which is what the words shelf has
-// always done with its 12,553. `grade` mode still cuts by grade, because in THAT mode the
-// grades are the study order — the boundary between grade 3 and grade 4 is a
-// real event in the queue, and a range label would erase it. Its label just
-// drops the jargon: "School grade 4", the wording the setting already uses.
+// always done with its 12,553.
 //
 // SECTIONS AND TILES ARE MULTI-SELECT TOGGLES. You BUILD a drill by turning
 // things on: a section header toggles its whole row (hiragana vowels, the

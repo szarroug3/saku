@@ -570,8 +570,9 @@ function build(): LibEntry[] {
       glyph: w.keb,
       readings: [w.reb],
       meanings: w.glosses,
-      // No source name here either. See the kanji sub-line above.
-      sub: "Everyday word",
+      // No source name here either. See the kanji sub-line above. No sub-label:
+      // "everyday word" is not a fact worth a line under every one of 12,553.
+      sub: "",
       weight: 10_000 + (w.newspaperBand ?? 60),
     });
   }

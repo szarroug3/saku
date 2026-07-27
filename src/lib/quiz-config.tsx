@@ -64,8 +64,6 @@ export function defaultConfig(): QuizConfig {
     accuracyMetric: "firstTry",
     showVolume: true,
     graduateRuns: 10,
-    // Dominates grade order on both axes at once — see NewKanjiOrder.
-    newKanjiOrder: "everyday",
     // How long a kanji lesson runs, in draw+assembly cost — see LessonRange.
     lessonMinCost: LESSON_RANGE_DEFAULT.min,
     lessonMaxCost: LESSON_RANGE_DEFAULT.max,
@@ -143,6 +141,9 @@ function normalizeConfig(saved: unknown): QuizConfig {
         "styleEn2jp",
         "listenRomaji",
         "listenMeaning",
+        // Retired setting: the teaching order is always "everyday" now, so a
+        // saved newKanjiOrder is dropped rather than carried on the config.
+        "newKanjiOrder",
       ]) {
         delete (cfg as unknown as Record<string, unknown>)[stale];
       }
