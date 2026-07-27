@@ -73,7 +73,6 @@ import {
   TRANSITIVITY_SUBJECT,
   transitivitySide,
 } from "@/data/transitivity-facts";
-import { PROMPT as TRANSITIVITY_PROMPT } from "@/lib/transitivity";
 import {
   KEIGO_SUBJECT,
   keigoDistractors,
@@ -1288,14 +1287,14 @@ const transitivityQuestions: QuestionType = {
       return {
         glyph: side?.word ?? factInfo(fact)?.glyph ?? "",
         jp: true,
-        context: "meaning and role",
+        context: null,
         hint: null,
       };
     }
     return {
       glyph: side?.en ?? factInfo(fact)?.meaning ?? "",
       jp: false,
-      context: TRANSITIVITY_PROMPT,
+      context: null,
       hint: null,
     };
   },
@@ -1340,14 +1339,14 @@ const keigoQuestions: QuestionType = {
       return {
         glyph: info ? productionCue(info.set, info.word) : answerOf(fact),
         jp: false,
-        context: "which keigo verb",
+        context: null,
         hint: null,
       };
     }
     return {
       glyph: info?.word.word ?? glyphOfFact(fact),
       jp: true,
-      context: "meaning",
+      context: null,
       hint: null,
     };
   },

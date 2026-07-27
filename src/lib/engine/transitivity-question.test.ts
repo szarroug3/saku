@@ -12,12 +12,12 @@ import assert from "node:assert/strict";
 
 import { buildMcOptions } from "@/lib/engine/index";
 import { questionsFor } from "@/lib/engine/question";
+import { quizInstruction } from "@/lib/quiz-instruction";
 import {
   sideFactId,
   transitivitySide,
 } from "@/data/transitivity-facts";
 import { VERB_PAIRS } from "@/data/transitivity";
-import { PROMPT } from "@/lib/transitivity";
 
 /** An askable pair to exercise — the first whose both sides are askable, so the
  * board is a clean two-choice. */
@@ -36,19 +36,32 @@ test("recognition is MC-only while both directions are available", () => {
   assert.equal(qt.maxOptions, 2);
 });
 
-test("the prompt shows the English cue and the fixed instruction, not the verb", () => {
+test("the prompt shows the English cue and no sub-label, not the verb", () => {
   const qt = questionsFor(HAPPENS);
   const prompt = qt.prompt(HAPPENS, "en2jp");
   assert.equal(prompt.glyph, PAIR.happens.en);
   assert.equal(prompt.jp, false);
-  assert.equal(prompt.context, PROMPT);
+  // The role/register now lives in the folded instruction line, not a grey
+  // sub-label beneath the prompt.
+  assert.equal(prompt.context, null);
 });
 
-test("the recognition prompt shows the Japanese member and asks for its role", () => {
+test("the recognition prompt shows the Japanese member and no sub-label", () => {
   const prompt = questionsFor(HAPPENS).prompt(HAPPENS, "jp2en");
   assert.equal(prompt.glyph, PAIR.happens.word);
   assert.equal(prompt.jp, true);
-  assert.equal(prompt.context, "meaning and role");
+  assert.equal(prompt.context, null);
+});
+
+test("the folded instruction asks one clean question in each direction", () => {
+  assert.equal(
+    quizInstruction(HAPPENS, "jp2en", "mc"),
+    "Which of these is what this verb means?",
+  );
+  assert.equal(
+    quizInstruction(HAPPENS, "en2jp", "typed"),
+    "Type the verb that fits.",
+  );
 });
 
 test("check grades the pair's own verb right and the partner verb wrong", () => {

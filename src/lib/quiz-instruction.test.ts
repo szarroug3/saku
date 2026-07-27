@@ -25,8 +25,11 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
+import { KEIGO_FACTS } from "@/data/keigo";
 import { meaningFactId } from "@/data/kanji";
 import { radicalMeaningFactId } from "@/data/radicals";
+import { VERB_PAIRS } from "@/data/transitivity";
+import { sideFactId, transitivitySide } from "@/data/transitivity-facts";
 import { wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
 import { buildMcOptions } from "@/lib/engine";
 import { en2jpTypeable, fixedDirOf } from "@/lib/engine/question";
@@ -138,6 +141,37 @@ describe("every card says what it wants", () => {
     assert.ok(a);
     assert.equal(quizInstruction(a, "en2jp", "mc"), "Which of these is the correct kana?");
     assert.equal(quizInstruction(a, "jp2en", "typed"), "Type how this kana is said.");
+  });
+
+  test("transitivity and keigo fold the role into one clean question", () => {
+    // The grey sub-label under these cards is gone; the register/role now lives
+    // in the answer options, so the instruction is a single pinned question.
+    const trans = sideFactId(
+      VERB_PAIRS.find(
+        (p) =>
+          transitivitySide(sideFactId(p, "happens"))!.askable &&
+          transitivitySide(sideFactId(p, "doIt"))!.askable,
+      )!,
+      "happens",
+    );
+    assert.equal(
+      quizInstruction(trans, "jp2en", "mc"),
+      "Which of these is what this verb means?",
+    );
+    assert.equal(
+      quizInstruction(trans, "en2jp", "typed"),
+      "Type the verb that fits.",
+    );
+
+    const keigo = KEIGO_FACTS[0].id;
+    assert.equal(
+      quizInstruction(keigo, "jp2en", "mc"),
+      "Which of these is what this keigo verb means?",
+    );
+    assert.equal(
+      quizInstruction(keigo, "en2jp", "typed"),
+      "Type the keigo verb.",
+    );
   });
 
   test("the instruction follows the MODE, not just the fact", () => {
