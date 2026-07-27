@@ -5,10 +5,11 @@
 //
 // It is the transitivity card's cousin: a lesson with no name, a position counted
 // in items ("keigo sets 1-3 of 9"), and the same two routes in (Start walks then
-// drills, "Quiz me" drills now). What it teaches is a SET — a plain verb and its
-// honorific and humble forms — so each row shows the plain verb and the keigo
-// words that replace it, with the register each one is. There is no single glyph
-// to show and no one Library page a set links to as a character.
+// drills, "Quiz me" drills now). Like every card on this page it is a PREVIEW,
+// not the lesson: each tile shows the keigo words the set teaches and a greyed
+// "Keigo" tag, and stops there — the honorific/humble split, the registers, the
+// readings and the plain verb they replace are the lesson's material, taught in
+// the walk, not spelled out on the way in.
 //
 // WHY NO LOCK CARD
 // ================
@@ -50,38 +51,26 @@ export function NextKeigoLesson({
     <Card>
       <Lbl>Up next · {positionLabel("keigo sets", position)}</Lbl>
 
-      {/* Each set as a row: the plain verb the learner knows, then the keigo
-          words that replace it, each tagged with its register. No link — a set
-          has no single glyph; the walk-through's card carries the rest. */}
-      <div className="mt-4 space-y-2">
+      {/* A PREVIEW, not the lesson: each tile shows the keigo words the set
+          teaches and a single greyed "Keigo" tag, nothing else. Which word is
+          honorific and which is humble, the register tags, the readings and the
+          plain verb they replace are the lesson's own material, taught in the
+          walk — the tile only says that keigo is coming and which words it is. A
+          set with no keigo words of its own (a set phrase) shows its label. */}
+      <div className="mt-4 flex flex-wrap gap-2">
         {cards.map((card) => (
-          <div key={card.entry} className="rounded-lg border border-border p-3">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="text-[13px] text-text-muted">Plain:</span>
-              {card.plain.length ? (
-                <span className="font-kana text-[18px] font-extralight leading-none text-text">
-                  {card.plain.map((p) => p.word).join(" / ")}
-                </span>
-              ) : (
-                <span className="text-[13px] text-text-muted">set phrase</span>
-              )}
-              <span className="text-[12px] text-text-muted">— {card.meaning}</span>
-            </div>
-            <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-4">
-              {card.words.map((w) => (
-                <div key={w.word} className="flex items-baseline gap-2">
-                  <span className="font-kana text-[20px] font-extralight leading-none text-text">
-                    {w.word}
-                  </span>
-                  <span className="font-kana text-[12px] text-text-muted">
-                    {w.reading}
-                  </span>
-                  <span className="text-[11px] uppercase tracking-wide text-text-muted">
-                    {w.register}
-                  </span>
-                </div>
-              ))}
-            </div>
+          <div
+            key={card.entry}
+            className="min-w-[132px] flex-1 rounded-lg border border-border px-3 pb-2.5 pt-3 text-center"
+          >
+            <span className="block font-kana text-[20px] font-extralight leading-[1.3] text-text">
+              {card.words.length
+                ? card.words.map((w) => w.word).join(" · ")
+                : "set phrase"}
+            </span>
+            <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
+              Keigo
+            </span>
           </div>
         ))}
       </div>

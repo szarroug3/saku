@@ -88,28 +88,21 @@ export function NextCounterLesson({
   );
 }
 
-/** One counter, shown glyph · reading · meaning, with its counter as a quiet
- * tag. A kana form has no reading line: it is its own reading, so printing
- * ひとつ · ひとつ reads as a bug. A bare number carries no counter tag. */
+/** One counter tile, standardized to the curriculum tile's shape: the glyph and
+ * a single greyed TYPE line beneath it, nothing else — "Counter" for a form of a
+ * counter (ひとつ, 三本), "Number" for a bare number kanji that carries no
+ * counter. The reading and meaning are the lesson's own material, taught in the
+ * walk and drilled the moment it ends, so the preview tile shows what a thing IS,
+ * not what it means — exactly as the radical/kanji/word tiles do. */
 function CounterTile({ card }: { card: CounterLesson["cards"][number] }) {
   return (
     <div className="min-w-[112px] flex-1 rounded-lg border border-border px-3 pb-2.5 pt-3 text-center">
       <span className="block font-kana text-[26px] font-extralight leading-[1.2]">
         {card.glyph}
       </span>
-      {card.reading ? (
-        <span className="mt-0.5 block font-kana text-[13px] text-text-muted">
-          {card.reading}
-        </span>
-      ) : (
-        <span className="mt-0.5 block min-h-[16px]" />
-      )}
-      <span className="mt-1 block text-[13px] text-text">{card.meaning}</span>
-      {card.counter ? (
-        <span className="mt-1 block text-[10px] uppercase tracking-[0.06em] text-text-muted/80">
-          〜{card.counter}
-        </span>
-      ) : null}
+      <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
+        {card.counter ? "Counter" : "Number"}
+      </span>
     </div>
   );
 }

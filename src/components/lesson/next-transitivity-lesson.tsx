@@ -5,9 +5,10 @@
 //
 // It is the grammar card's cousin: a lesson with no name, a position counted in
 // items ("verb pairs 3–6 of 66"), and the same two routes in (Start walks then
-// drills, "Quiz me" drills now). What it teaches is a PAIR, not a glyph, so each
-// tile shows both verbs and the English cue that points to each — there is no
-// single glyph to show and no Library page to link a pair to.
+// drills, "Quiz me" drills now). Like every card on this page it is a PREVIEW,
+// not the lesson: each tile shows the pair's two verbs and a greyed "Verb pair"
+// tag, and stops there — the transitive/intransitive split and the readings are
+// the lesson's material, taught in the walk, not spoiled on the way in.
 //
 // WHY NO LOCK CARD
 // ================
@@ -50,41 +51,24 @@ export function NextTransitivityLesson({
     <Card>
       <Lbl>Up next · {positionLabel("verb pairs", position)}</Lbl>
 
-      {/* Each pair as a row: the two verbs side by side with the English that
-          points to each. No link — a pair has no single glyph and no entry
-          page; the walk-through's card carries the rest. */}
-      <div className="mt-4 space-y-2">
+      {/* A PREVIEW, not the lesson: each tile shows the pair's two verbs and a
+          single greyed TYPE line, nothing else. Which one is the "it happens"
+          verb and which is the "you do it" verb — and the readings — are the
+          lesson's own material, taught in the walk, so they are not shown here.
+          The tile says only that a verb pair is coming and which two verbs it is,
+          the same way the radical/kanji/word tiles show a glyph and a role. */}
+      <div className="mt-4 flex flex-wrap gap-2">
         {cards.map((card) => (
           <div
             key={card.entry}
-            className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-2"
+            className="min-w-[132px] flex-1 rounded-lg border border-border px-3 pb-2.5 pt-3 text-center"
           >
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="font-kana text-[22px] font-extralight leading-none text-text">
-                  {card.happens.word}
-                </span>
-                <span className="font-kana text-[12px] text-text-muted">
-                  {card.happens.reading}
-                </span>
-              </div>
-              <p className="mt-1 text-[12px] leading-snug text-text-muted">
-                {card.happens.en}
-              </p>
-            </div>
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="font-kana text-[22px] font-extralight leading-none text-text">
-                  {card.doIt.word}
-                </span>
-                <span className="font-kana text-[12px] text-text-muted">
-                  {card.doIt.reading}
-                </span>
-              </div>
-              <p className="mt-1 text-[12px] leading-snug text-text-muted">
-                {card.doIt.en}
-              </p>
-            </div>
+            <span className="block font-kana text-[22px] font-extralight leading-[1.3] text-text">
+              {card.happens.word} · {card.doIt.word}
+            </span>
+            <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
+              Verb pair
+            </span>
           </div>
         ))}
       </div>

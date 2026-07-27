@@ -147,10 +147,12 @@ function TeachableLesson({
             their own tracks' items. */}
         <Lbl>Up next · grammar · {positionLabel("patterns", position)}</Lbl>
 
-        {/* The patterns ARE the lesson — shown outright, pattern · gloss, because
-            a pattern is a form you already conjugate plus a fixed string. The
-            level rides along as a quiet tag: a beginner meets N5 before N4, and
-            the card says which is which without making a lesson of it. */}
+        {/* Each pattern tile is standardized to the curriculum tile's shape: the
+            pattern and a single greyed TYPE line beneath it, nothing else. The
+            gloss, sense and level are the lesson's own material — taught in the
+            walk and drilled the moment it ends — so the preview tile shows what a
+            thing IS ("Grammar"), the same way the radical/kanji/word tiles show a
+            role and no meaning. */}
         <div className="mt-4 flex flex-wrap gap-2">
           {cards.map((card) => (
             <div
@@ -160,16 +162,8 @@ function TeachableLesson({
               <span className="block font-kana text-[24px] font-extralight leading-[1.2]">
                 {card.pattern}
               </span>
-              {card.sense && (
-                <span className="mt-0.5 block font-kana text-[13px] text-text-muted">
-                  ({card.sense})
-                </span>
-              )}
-              <span className="mt-1 block text-[13px] text-text">
-                {card.gloss}
-              </span>
-              <span className="mt-1 block text-[10px] uppercase tracking-[0.06em] text-text-muted/80">
-                {card.level}
+              <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
+                Grammar
               </span>
             </div>
           ))}
