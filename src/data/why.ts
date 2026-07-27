@@ -334,8 +334,8 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "You already know the plain verb; this teaches the honorific form (for what someone else does) and the humble form (for what you do).",
     },
     paras: [
-      "Japanese has more than one word for the same action, and which one you use depends on who is doing it. For what a person you respect does, you use the HONORIFIC form, to raise them: 食べる becomes 召し上がる. For what you do yourself, you use the HUMBLE form, to step back: 食べる becomes いただく. It is the same eating either way, but using the wrong one is like bowing to yourself, and it is heard immediately.",
-      "A set opens as soon as you know the plain verb it replaces, so keigo starts early, on words you already have. For now, you just need to recognize these, not produce them yourself. That’ll come later.",
+      "Japanese has more than one word for the same action, and which one you use depends on who is doing it. For what a person you respect does, you use the HONORIFIC form, to raise them. For what you do yourself, you use the HUMBLE form, to step back. It is the same action either way, but using the wrong one is like bowing to yourself, and it is heard immediately.",
+      "A set opens as soon as you know the plain verb it replaces, so keigo starts early, on words you already have.",
     ],
   },
   transitivity: {

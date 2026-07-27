@@ -278,23 +278,19 @@ export const KEIGO_TRACK: PhaseIntro = {
   body: [
     {
       lead: "Keigo is the politeness system.",
-      text: "The same action can have more than one verb, and which one you use depends on whose action it is. There is one verb for lifting up a person you respect, and another for stepping back from yourself.",
+      text: "The same action has more than one verb, and which one you use depends on whose action it is: the person you are speaking to, or you yourself.",
     },
     {
       lead: "It is a whole different word, not a changed one.",
       text: "This is the part people expect to be like grammar, and it is not. You do not conjugate the verb or add an ending. A keigo verb replaces the plain verb outright: it is a separate word you learn on its own and use in place of the one you already know.",
     },
     {
-      lead: "Raising the other person is honorific.",
-      text: "You use an honorific verb for what someone you respect does, to lift them up. It is never used for your own actions.",
+      lead: "Raising the other person is called honorific.",
+      text: "You use an honorific verb for what someone you respect does, to lift them up. It is never used for yourself.",
     },
     {
-      lead: "Lowering yourself is humble.",
+      lead: "Lowering yourself is called humble.",
       text: "You use a humble verb for your own actions, to step back from the person you are speaking to. It is only ever used for yourself.",
-    },
-    {
-      lead: "For now you only have to recognize these, not produce them.",
-      text: "This track opens as soon as you know the plain verb a keigo word replaces. It asks you what a keigo verb means and which of the two it is. Choosing the right one to say yourself comes later.",
     },
   ],
 };

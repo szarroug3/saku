@@ -52,20 +52,19 @@ export function NextKeigoLesson({
     <Card>
       <Lbl>Up next · {positionLabel("keigo sets", position)}</Lbl>
 
-      {/* A PREVIEW, not the lesson: each tile shows the keigo words the set
-          teaches and a single greyed "Keigo" tag, nothing else. Which word is
-          honorific and which is humble, the register tags, the readings and the
-          plain verb they replace are the lesson's own material, taught in the
-          walk — the tile only says that keigo is coming and which words it is. A
-          set with no keigo words of its own (a set phrase) shows its label. */}
+      {/* A PREVIEW, not the lesson: each compact tile shows the Japanese the set
+          is anchored on — the plain verb the learner already knows, or, for a set
+          phrase with no plain verb, the phrase itself (いらっしゃいませ) — over a
+          quiet "Keigo" tag. Always Japanese, never the English meaning (the lesson
+          page carries that); the honorific/humble forms stay for the walk. */}
       <div className="mt-4 flex flex-wrap gap-2">
         {cards.map((card) => (
           <PreviewTile
             key={card.entry}
             glyph={
-              card.words.length
-                ? card.words.map((w) => w.word).join(" · ")
-                : "set phrase"
+              card.plain.length
+                ? card.plain.map((p) => p.word).join(" / ")
+                : (card.words[0]?.word ?? "")
             }
             type="Keigo"
             base={20}

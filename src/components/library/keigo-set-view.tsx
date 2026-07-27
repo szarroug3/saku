@@ -11,19 +11,7 @@
 // knows how to draw a keigo set, and both screens mount it.
 
 import { HearButton } from "@/components/lesson/hear-button";
-import { TermLink } from "@/components/library/term-link";
 import type { KeigoSet, KeigoWord } from "@/data/keigo";
-
-/** The one quiet way out of the word "keigo" itself, which this card leans on
- * (honorific, humble, register) but never defines. Placed once, above the set,
- * so both the Library page and the teach walk carry it and neither doubles it. */
-function KeigoTermLink() {
-  return (
-    <p className="mb-3 text-[12px]">
-      <TermLink id="keigo">What is keigo?</TermLink>
-    </p>
-  );
-}
 
 /** One keigo verb: its written form big, a speaker with its reading, and the
  * plain-language note of when it is used. */
@@ -45,15 +33,14 @@ function KeigoSide({
         <span className="font-kana text-[34px] font-extralight leading-none text-text">
           {word.word}
         </span>
-        <span className="pt-1 text-right font-kana text-[14px] text-text-muted">
-          {word.reading}
-        </span>
+        <div className="flex items-center gap-2 pt-1">
+          <HearButton glyph={word.word} voiceName={voiceName} />
+          <span className="text-right font-kana text-[14px] text-text-muted">
+            {word.reading}
+          </span>
+        </div>
       </div>
       <p className="mt-3 text-[14px] leading-relaxed text-text-muted">{note}</p>
-      <div className="mt-3 flex items-center gap-2">
-        <HearButton glyph={word.word} voiceName={voiceName} />
-        <span className="font-kana text-[15px] text-text-muted">{word.reading}</span>
-      </div>
     </div>
   );
 }
@@ -74,26 +61,19 @@ export function KeigoSetView({
     const phrase = set.words[0];
     return (
       <div>
-        <KeigoTermLink />
-        <p className="mb-3 text-[13px] text-text-muted">
-          <span className="font-medium text-text">Set phrase.</span>{" "}
-          {set.meaning}.
-        </p>
+        <p className="mb-4 text-[15px] text-text">{set.meaning}</p>
         {phrase ? (
           <div className="rounded-lg border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-3">
               <span className="font-kana text-[34px] font-extralight leading-none text-text">
                 {phrase.word}
               </span>
-              <span className="pt-1 text-right font-kana text-[14px] text-text-muted">
-                {phrase.reading}
-              </span>
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-              <HearButton glyph={phrase.word} voiceName={voiceName} />
-              <span className="font-kana text-[15px] text-text-muted">
-                {phrase.reading}
-              </span>
+              <div className="flex items-center gap-2 pt-1">
+                <HearButton glyph={phrase.word} voiceName={voiceName} />
+                <span className="text-right font-kana text-[14px] text-text-muted">
+                  {phrase.reading}
+                </span>
+              </div>
             </div>
           </div>
         ) : null}
@@ -127,14 +107,11 @@ export function KeigoSetView({
 
   return (
     <div>
-      <KeigoTermLink />
-      <p className="mb-3 text-[13px] text-text-muted">
-        <span className="font-medium text-text">Plain verb:</span>{" "}
-        <span className="font-kana text-text">
+      <p className="mb-4">
+        <span className="font-kana text-[20px] font-light text-text">
           {set.plain.map((p) => p.keb).join(" / ")}
         </span>{" "}
-        <span className="text-text-muted">({set.meaning})</span>, the everyday
-        word you already know.
+        <span className="text-[14px] text-text-muted">({set.meaning})</span>
       </p>
       <div className="grid gap-4 md:grid-cols-2">
         {honorific.map((w) => (
