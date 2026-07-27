@@ -22,20 +22,35 @@
 // beginner most needs told, to "—". They are told now.
 
 import { KANA_SUBJECT } from "@/data/characters";
+import { VOCAB_SUBJECT } from "@/data/vocab";
 import type { LibEntry } from "@/lib/library/entries";
 
 /** How the entry page joins a reading list, so a tile and the page it opens
  * agree on what し says. */
 export const READING_SEP = " · ";
 
-/** The line under the glyph: its reading(s) for kana, its one reading for
- * anything with exactly one, its meaning for a kanji with many — and a dash
- * only when the entry genuinely has neither. */
+/** How a word's glosses join under its glyph — the same comma the entry page's
+ * meaning row uses, so a tile and the page it opens agree on what 何 means. */
+export const MEANING_SEP = ", ";
+
+/** The line under the glyph: its reading(s) for kana, its MEANING for a word,
+ * its one reading for anything else with exactly one, its meaning for a kanji
+ * with many — and a dash only when the entry genuinely has neither. */
 export function subLabel(entry: LibEntry): string {
   // Kana first: every romanisation it carries, because they are spellings of
   // one sound rather than a choice among sounds.
   if (entry.kind === KANA_SUBJECT && entry.readings.length > 0) {
     return entry.readings.join(READING_SEP);
+  }
+  // A WORD shows its DEFINITION, not its reading. 何 is more useful as "what"
+  // than as なに on a shelf you browse to recall what a word means — its reading
+  // still lives one tap away on the entry page. Only words are switched here:
+  // kana show their romaji, a kanji its meaning already, a mark its rule. Fall
+  // through to the reading when a word carries no gloss, so the "never a dash
+  // while it has a reading" invariant the kana bug pinned still holds. Counters
+  // are a separate Kind (COUNTER_KIND) and unaffected.
+  if (entry.kind === VOCAB_SUBJECT && entry.meanings.length > 0) {
+    return entry.meanings.join(MEANING_SEP);
   }
   return entry.readings.length === 1
     ? entry.readings[0]

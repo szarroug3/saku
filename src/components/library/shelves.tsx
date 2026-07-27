@@ -312,12 +312,18 @@ export function Shelf({
   // A grammar pattern is a phrase, not a glyph — 〜なければならない does not fit a
   // 100px tile — so the Grammar shelf lays its patterns out as ROWS (the same
   // shape search results use), which have room for the pattern and its gloss.
-  const row = (entry: LibEntry) => (
+  //
+  // `grid` OPTS THE ROW INTO A SHARED SUBGRID so the pattern column sizes to the
+  // WIDEST pattern across every row — see the grammar branch below and EntryRow.
+  // The flat search list leaves it off; only the grammar shelf, which is one kind
+  // and wants its patterns aligned, turns it on.
+  const row = (entry: LibEntry, grid = false) => (
     <EntryRow
       key={entry.id}
       entry={entry}
       voice={voice}
       note={entry.sub}
+      grid={grid}
       standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
       selected={selected.has(entry.id)}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
@@ -434,8 +440,22 @@ export function Shelf({
                   <VerbPairHeader />
                   {shown.map(pairRow)}
                 </div>
+              ) : kind === GRAMMAR_SUBJECT ? (
+                // ONE GRID FOR THE WHOLE LIST so the pattern column is `max-content`
+                // of the WIDEST pattern — every 〜ないでください, 〜たことがある and
+                // 〜たほうがいい gets the width it needs and sits on one line, while
+                // the explanation column (`minmax(0,1fr)`) takes the rest and stays
+                // aligned across rows. Each row is a `grid-cols-subgrid` band, so its
+                // cells land on these shared tracks: checkbox, pattern, explanation,
+                // open, standing. The explanation's `min-w-0` lets it truncate on
+                // mobile rather than push the row wide.
+                <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3">
+                  {shown.map((entry) => row(entry, true))}
+                </div>
               ) : (
-                <div className="flex flex-col">{shown.map(row)}</div>
+                <div className="flex flex-col">
+                  {shown.map((entry) => row(entry))}
+                </div>
               )
             ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">

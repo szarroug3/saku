@@ -47,7 +47,6 @@ import { japaneseFontClass } from "@/lib/japanese-text";
 import { subLabel } from "@/lib/library/sub-label";
 import { speak } from "@/lib/speech";
 import type { VerbPair } from "@/data/transitivity";
-import { pairPattern } from "@/lib/transitivity-pattern";
 
 /** Whether an entry has a pronunciation worth a 🔊.
  *
@@ -221,12 +220,12 @@ export function StandingCell({ standing }: { standing: EntryStanding }) {
     return (
       <span className="whitespace-nowrap text-xs text-text-muted">
         <b className="font-medium text-warning">{activeNeedWork}</b> need work ·{" "}
-        <b className="font-medium">{unseen}</b> not seen
+        not seen
       </span>
     );
   }
   if (unseen > 0) {
-    return <span className="text-xs text-text-muted">{unseen} not seen</span>;
+    return <StandingChip standing="not-seen" />;
   }
   if (standing.needWork === 0) {
     return <span className="text-xs text-text-muted">all {standing.total} solid</span>;
@@ -254,6 +253,7 @@ export function EntryRow({
   note,
   voice,
   selected,
+  grid = false,
   onToggleSelect,
 }: {
   entry: LibEntry;
@@ -262,6 +262,12 @@ export function EntryRow({
   note?: string;
   voice: string;
   selected: boolean;
+  /** Lay the row out as a `grid-cols-subgrid` band of a shared parent grid,
+   * instead of a self-contained flex row. The grammar shelf turns this on so
+   * every pattern column sizes to the WIDEST pattern and the explanations align
+   * across rows (see shelves.tsx). Off everywhere else — the flat search list and
+   * the mark/term shelves keep the independent flex row. */
+  grid?: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   const inlineMarkGlyph = entry.kind === MARK_SUBJECT ? entry.glyph : "";
@@ -291,9 +297,14 @@ export function EntryRow({
           onToggleSelect(e.shiftKey);
         }
       }}
-      className={`flex cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 ${
-        selected ? "bg-accent-bg" : "hover:bg-panel"
-      }`}
+      className={`cursor-pointer select-none items-center border-b border-border py-2 text-text last:border-b-0 ${
+        // A subgrid band (grammar shelf) inherits the parent grid's shared tracks
+        // and column gap; the default row is a self-contained flex line with its
+        // own gap and edge padding.
+        grid
+          ? "col-span-full grid grid-cols-subgrid"
+          : "flex gap-3 px-1"
+      } ${selected ? "bg-accent-bg" : "hover:bg-panel"}`}
     >
       {/* The select box — leading, checkbox-shaped, so the row reads as a thing
           you tick. Filled accent when on. */}
@@ -310,9 +321,23 @@ export function EntryRow({
           only pushes their useful text away from the checkbox. */}
       {entry.glyph && !inlineMarkGlyph ? (
         <span
-          className={`w-[64px] flex-none truncate text-[19px] ${japaneseFontClass(
-            entry.glyph,
-          )}`}
+          // A grammar pattern is a PHRASE, not a character — 〜てください,
+          // 〜てはいけない, 〜なければならない — so a fixed 64px cell truncated
+          // every one of them to "〜て…" and made "please do X", "must not do X"
+          // and "after X" indistinguishable. On the grammar shelf the row is a
+          // subgrid band and this cell lands on a shared `max-content` track, so
+          // `whitespace-nowrap` (no width, no truncate) lets it take exactly the
+          // width the WIDEST pattern needs and keeps every pattern on one line.
+          // Off the grid (grammar in the flat search list) it falls back to a
+          // fixed 150px. Every other kind keeps the fixed, truncated 64px cell: a
+          // kanji or word glyph is one or two characters and wants the tidy column.
+          className={`${
+            entry.kind === GRAMMAR_SUBJECT
+              ? grid
+                ? "whitespace-nowrap pr-2"
+                : "w-[150px] flex-none pr-2"
+              : "w-[64px] flex-none truncate"
+          } text-[19px] ${japaneseFontClass(entry.glyph)}`}
         >
           {entry.glyph}
         </span>
@@ -446,9 +471,6 @@ export function VerbPairRow({
   selected: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
-  const pattern = pairPattern(pair.happens.reading, pair.doIt.reading);
-  const happensTail = pattern.isException ? undefined : pattern.from ?? undefined;
-  const doItTail = pattern.isException ? undefined : pattern.to ?? undefined;
   return (
     <div
       role="button"
@@ -473,8 +495,8 @@ export function VerbPairRow({
       >
         ✓
       </span>
-      <PairCell side={pair.happens} voice={voice} tail={happensTail} />
-      <PairCell side={pair.doIt} voice={voice} tail={doItTail} />
+      <PairCell side={pair.happens} voice={voice} />
+      <PairCell side={pair.doIt} voice={voice} />
       <ViewLink entry={entry} className="flex-none" />
       <span className="flex-none">
         <StandingCell standing={standing} />
