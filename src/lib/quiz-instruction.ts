@@ -39,6 +39,8 @@
 // subject gets a correct instruction by existing, and a wrong one is a wrong
 // NOUN rather than a missing line.
 
+import { KEIGO_SUBJECT } from "@/data/keigo";
+import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { answerIsJapanese } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
@@ -77,6 +79,24 @@ export function quizInstruction(
   mode: "mc" | "typed",
 ): string | null {
   if (!factInfo(fact)) return null;
+
+  // Transitivity and keigo fold the register/role that used to sit in a grey
+  // sub-label INTO the answer options, so each card is one clean question. The
+  // derived sentence below is close, but these two subjects pin the exact
+  // approved copy: the verb-pair and keigo cards each ask ONE thing and the
+  // role lives among the choices, not in a second line beneath the prompt.
+  const subject = factInfo(fact)?.subject;
+  if (subject === TRANSITIVITY_SUBJECT) {
+    return dir === "jp2en"
+      ? "Which of these is what this verb means?"
+      : "Type the verb that fits.";
+  }
+  if (subject === KEIGO_SUBJECT) {
+    return dir === "jp2en"
+      ? "Which of these is what this keigo verb means?"
+      : "Type the keigo verb.";
+  }
+
   const noun = nounFor(fact);
   // "Not Japanese" is not the same as "a meaning". Kana asked jp2en wants "a" —
   // latin, so not Japanese, and yet not a meaning either: あ does not MEAN
