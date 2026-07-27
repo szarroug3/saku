@@ -41,7 +41,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { NewKanjiPicker } from "@/components/settings/new-kanji-picker";
 import {
   AccentPicker,
   AppearancePicker,
@@ -335,10 +334,6 @@ export function SettingsCard() {
         >
           <AccentPicker />
         </Row>
-      </Card>
-
-      <Card>
-        <NewKanjiPicker />
       </Card>
 
       {/* The lesson length, in kanji not minutes. Two steppers, and the ONE

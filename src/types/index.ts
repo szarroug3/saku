@@ -286,11 +286,6 @@ export interface QuizConfig {
 
   // ---------- what arrives next ----------
   /**
-   * Which order unseen kanji queue up in. See NewKanjiOrder, and
-   * `kanjiTeachOrder` in src/data/kanji.ts for the three sequences themselves.
-   */
-  newKanjiOrder: NewKanjiOrder;
-  /**
    * How long a kanji lesson should be, in draw+assembly cost — see LessonRange
    * and `kanjiCost` in src/lib/kanji-lesson.ts. A lesson fills toward `max` and
    * only ends below `min` when the next indivisible piece won't fit.
