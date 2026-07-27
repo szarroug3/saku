@@ -79,6 +79,42 @@ describe("Grid Start availability", () => {
   });
 });
 
+describe("Substitution Start availability", () => {
+  // Substitution's material rides in through plannedCount: the practice page
+  // reports 0 when no conjugable verbs are known (hasSubstitutionMaterial), so
+  // the Start gate catches the starved case BEFORE launch instead of the screen
+  // showing its empty state after. count>0 here is a nonempty selection.
+  const subCfg = {
+    mode: "substitution" as const,
+    ask: defaultAsk(),
+    pairResponses: [] as PairResponse[],
+    gridResponses: [] as GridResponse[],
+  };
+
+  test("no conjugable verbs (0 planned) disables Start even with a selection", () => {
+    assert.equal(startIsDisabled(subCfg, 5, 0), true);
+  });
+
+  test("with material (planned > 0) Start is enabled", () => {
+    assert.equal(startIsDisabled(subCfg, 5, 3), false);
+  });
+
+  test("nothing selected disables Start", () => {
+    assert.equal(startIsDisabled(subCfg, 0, 0), true);
+  });
+
+  test("starved substitution shows the learn-verbs reason", () => {
+    assert.equal(
+      getStartButtonReason(subCfg, 5, 0),
+      "No verbs to conjugate yet — learn some, or pick material in the Library.",
+    );
+  });
+
+  test("substitution with material → null (Start enabled)", () => {
+    assert.equal(getStartButtonReason(subCfg, 5, 3), null);
+  });
+});
+
 // ── getStartButtonReason ──────────────────────────────────────────────────────
 // Tests the message text that appears inside a disabled Start button.
 

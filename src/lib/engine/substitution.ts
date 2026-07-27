@@ -140,6 +140,21 @@ export function pickSubstitution(
   };
 }
 
+/**
+ * Can this learner be shown a guided-substitution card at all right now?
+ *
+ * The pure availability predicate the Start gate and the runtime BOTH read, so
+ * the two can never disagree about whether the drill has material. It is exactly
+ * the runtime's own first question — the screen rolls cards with pickSubstitution
+ * and shows the empty state when the first roll comes back null — lifted out so
+ * Start can ask it before launching instead of after. Existence is deterministic
+ * (pickSubstitution returns null iff no (recipe, host) has two known,
+ * distinct-form vehicles), so the single roll is a sound gate.
+ */
+export function hasSubstitutionMaterial(history: HistoryFile): boolean {
+  return pickSubstitution(history) !== null;
+}
+
 /** The context the engine grades against — the target verb as a GrammarVehicle. */
 function ctxOf(item: SubstitutionItem): { grammarVehicle: GrammarVehicle } {
   return {

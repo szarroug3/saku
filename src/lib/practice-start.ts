@@ -60,6 +60,9 @@ export function getStartButtonReason(
     if (cfg.mode === "pairs") {
       return "These don't make a matching board. Pick more so at least one type has two or more pairs.";
     }
+    if (cfg.mode === "substitution") {
+      return "No verbs to conjugate yet — learn some, or pick material in the Library.";
+    }
     return "You're solid on all of these for now. Pick another deck to drill something else.";
   }
   return null;

@@ -31,6 +31,7 @@ import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { gridFacts } from "@/lib/grid-facts";
 import { playablePairBoards } from "@/lib/pair-facts";
+import { hasSubstitutionMaterial } from "@/lib/engine/substitution";
 import {
   buildCoverageDeck,
   configIsReachable,
@@ -144,6 +145,19 @@ export default function PracticePage() {
       return {
         facts: sentenceFacts,
         count: Math.min(ASSEMBLY_QUIZ_TARGET, sentenceQuestionCount),
+      };
+    }
+    // Substitution rolls its cards from the learner's KNOWN verbs (history),
+    // not from the selected pool — so its "is there material?" question is the
+    // same history-wide predicate the screen rolls against, not the selection
+    // count. Report 0 planned when no conjugable verbs are known so the Start
+    // gate below catches the empty case BEFORE launch, matching the runtime's
+    // own empty state instead of contradicting it. `facts` stays the selection
+    // (the runtime ignores it) so start()'s non-empty guard behaves as before.
+    if (cfg.mode === "substitution") {
+      return {
+        facts: ordinaryFacts,
+        count: hasSubstitutionMaterial(history) ? ordinaryFacts.length || 1 : 0,
       };
     }
     const cap =

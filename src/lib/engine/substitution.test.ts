@@ -12,6 +12,7 @@ import { describe, test } from "node:test";
 
 import {
   gradeSubstitution,
+  hasSubstitutionMaterial,
   pickSubstitution,
   type SubstitutionItem,
 } from "./substitution.ts";
@@ -105,6 +106,24 @@ describe("substitution needs known verbs", () => {
         `target ${item.target.surface} not in known set`,
       );
     }
+  });
+});
+
+describe("hasSubstitutionMaterial — the Start-gate predicate", () => {
+  test("false when nothing is known (matches the runtime's empty state)", () => {
+    assert.equal(hasSubstitutionMaterial(NOBODY), false);
+  });
+
+  test("true when enough verbs are known to roll a card", () => {
+    assert.equal(hasSubstitutionMaterial(VERBS_KNOWN), true);
+  });
+
+  test("agrees with pickSubstitution — never disagree about material", () => {
+    assert.equal(hasSubstitutionMaterial(NOBODY), pickSubstitution(NOBODY) !== null);
+    assert.equal(
+      hasSubstitutionMaterial(VERBS_KNOWN),
+      pickSubstitution(VERBS_KNOWN) !== null,
+    );
   });
 });
 
