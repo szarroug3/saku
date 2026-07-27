@@ -84,7 +84,7 @@ import { quizInstruction } from "@/lib/quiz-instruction";
 import { presentationPhrase } from "@/lib/question-presentation";
 import { speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
-import { anchorForFact, isReadingFact } from "@/lib/word-unlock";
+import { anchorForFact, isReadingFact, quizzableFacts } from "@/lib/word-unlock";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import type {
@@ -892,12 +892,27 @@ export function DrillScreen() {
     if (!Array.isArray(rt.deck)) {
       // Fresh quiz — build the deck. Redrill forces one full-coverage pass
       // over exactly the given facts; otherwise honor the builder snapshot.
+      //
+      // THE ASK GATE, applied to the LESSON path too. A kanji reading is only
+      // ever asked inside a MULTI-PART word the learner knows (word-unlock.ts /
+      // quizzableFacts) — the same cut `resolve` makes for every review, custom
+      // and list drill. But the lesson seed skips `resolve`: startCurriculumLesson
+      // drills `readingsProvedBy` DIRECTLY (home-feed.tsx), so a reading whose
+      // only word is the single kanji itself (`kanji:一/reading@一`, the "on its
+      // own" card task #22 removed) leaked straight onto the board — the owner hit
+      // it on 一. Gating here, at the one place active.facts becomes a deck, closes
+      // that hole for every entry point with LIVE post-`markSeen` history (the same
+      // history `anchorForFact` reads below), so a reading with no known multi-part
+      // anchor is dropped while `word:一` still tests its reading. The seed stays
+      // broad (the reading is still marked seen and enters the pool the moment a
+      // multi-part word proves it); only the ASK is narrowed.
+      const facts = quizzableFacts(active.facts, history);
       const coverage =
         active.forceCoverage ||
         (active.snapshot.length === "limited" &&
           active.snapshot.limType === "cov");
       if (coverage) {
-        const built = buildCoverageDeck(active.facts, active.snapshot.ask);
+        const built = buildCoverageDeck(facts, active.snapshot.ask);
         const selectedBoxes = new Set(active.retryBoxes ?? []);
         const isBoxSelected = (f: FactId, form: CardForm): boolean => {
           if (!selectedBoxes.size) return true;
@@ -926,7 +941,7 @@ export function DrillScreen() {
         rt.forms = built.forms.filter((_, i) => keep[i]);
         rt.pool = [...new Set(rt.deck)];
       } else {
-        rt.pool = active.facts.filter((f) => usableForms(f).length > 0);
+        rt.pool = facts.filter((f) => usableForms(f).length > 0);
         rt.deck = buildDeck(rt.pool, { ...cfg, ...active.snapshot });
         rt.forms = rt.deck.map(() => null);
       }
@@ -1483,15 +1498,23 @@ export function DrillScreen() {
           </p>
         ) : null}
         {/* The context that is PART of the question and NOT redundant with the
-            instruction above: an anchor like "in 人生" / "on its own", without
-            which a kanji reading has nine right answers. The bare "meaning" /
-            "reading" / "in japanese" labels are dropped — the full instruction
-            already says which it is (typing the word from an English prompt is
-            always Japanese), so they were only noise (Sam). And when the WHOLE
-            WORD is shown in the halo (a kanji-reading card, `readingWord`), the
-            "in 電話" sublabel is dropped too: the word is right there with the
-            kanji lit, so repeating it underneath is the same noise (Sam, task
-            #22). Muted, because it supports the white instruction rather than
+            instruction above — the frame that gives a card with several plausible
+            answers exactly one: "polite form" over a verb glyph, "Which verb
+            fits?" over a transitivity pair, sel.frame's blanked sentence.
+
+            A KANJI READING NEVER SHOWS ONE ANYMORE. Both of its old sublabels are
+            gone. "in 電話" is dropped because the WHOLE WORD is in the halo with
+            the kanji lit (`readingWord`) — repeating it underneath is noise (Sam,
+            task #22). "on its own" is gone at the root: a reading anchored to the
+            single kanji itself (`kanji:一/reading@一`) is filtered out of the deck
+            (see onMount / quizzableFacts), never asked, because `word:一` already
+            tests that exact reading — so the redundant "how is this kanji said in
+            this word / on its own" card the owner hit on 一 cannot reach here.
+
+            The bare "meaning" / "reading" / "in japanese" labels are dropped too —
+            the full instruction already says which it is (typing the word from an
+            English prompt is always Japanese), so they were only noise (Sam).
+            Muted, because it supports the white instruction rather than
             competing. */}
         {!selectionFrame &&
         !readingWord &&

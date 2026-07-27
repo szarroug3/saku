@@ -204,6 +204,29 @@ describe("the on-its-own reading (kanji:X/reading@X) is never quizzed", () => {
     assert.ok(!quizzableFacts([YAMAI], h).includes(YAMAI));
     assert.equal(anchorForFact(YAMAI, h), undefined);
   });
+
+  // THE LEAK, and where it is closed. Teaching the single-kanji word 病 SEEDS
+  // its self-anchored reading (readingsProvedBy is deliberately broad — the
+  // reading enters the pool so a later multi-part word can open it). The lesson
+  // used to drill that seed DIRECTLY, so the self-anchored card reached the
+  // board — the owner hit exactly this on 一. The fix routes the drill deck
+  // through the same `quizzableFacts` gate `resolve` already uses, so the seed
+  // stays broad while the ASK drops the self-anchored reading. This pins the two
+  // halves: seeded YES, drilled NO.
+  test("a single-kanji word seeds its self-anchored reading but never drills it", () => {
+    assert.ok(
+      readingsProvedBy(["病"]).includes(YAMAI),
+      "learning 病 seeds 病/やまい into the pool",
+    );
+    // The gate the drill deck applies (DrillScreen onMount → quizzableFacts),
+    // against the history the lesson leaves — 病's meaning known.
+    const h = claiming([wordMeaningFactId("病")]);
+    assert.deepEqual(
+      quizzableFacts(readingsProvedBy(["病"]), h),
+      [],
+      "the ask-gate drops the self-anchored reading from what gets drilled",
+    );
+  });
 });
 
 // The bug the owner hit: she marked a few kanji "I already know this" in the
