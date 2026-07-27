@@ -570,8 +570,9 @@ function build(): LibEntry[] {
       glyph: w.keb,
       readings: [w.reb],
       meanings: w.glosses,
-      // No source name here either. See the kanji sub-line above.
-      sub: "Everyday word",
+      // No source name here either. See the kanji sub-line above. No "Everyday
+      // word" sub — every vocab entry is one, so the label said nothing.
+      sub: "",
       weight: 10_000 + (w.newspaperBand ?? 60),
     });
   }

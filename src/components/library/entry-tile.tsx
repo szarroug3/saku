@@ -47,7 +47,6 @@ import { japaneseFontClass } from "@/lib/japanese-text";
 import { subLabel } from "@/lib/library/sub-label";
 import { speak } from "@/lib/speech";
 import type { VerbPair } from "@/data/transitivity";
-import { pairPattern } from "@/lib/transitivity-pattern";
 
 /** Whether an entry has a pronunciation worth a 🔊.
  *
@@ -221,12 +220,12 @@ export function StandingCell({ standing }: { standing: EntryStanding }) {
     return (
       <span className="whitespace-nowrap text-xs text-text-muted">
         <b className="font-medium text-warning">{activeNeedWork}</b> need work ·{" "}
-        <b className="font-medium">{unseen}</b> not seen
+        not seen
       </span>
     );
   }
   if (unseen > 0) {
-    return <span className="text-xs text-text-muted">{unseen} not seen</span>;
+    return <StandingChip standing="not-seen" />;
   }
   if (standing.needWork === 0) {
     return <span className="text-xs text-text-muted">all {standing.total} solid</span>;
@@ -310,9 +309,21 @@ export function EntryRow({
           only pushes their useful text away from the checkbox. */}
       {entry.glyph && !inlineMarkGlyph ? (
         <span
-          className={`w-[64px] flex-none truncate text-[19px] ${japaneseFontClass(
-            entry.glyph,
-          )}`}
+          // A grammar pattern is a PHRASE, not a character — 〜てください,
+          // 〜てはいけない, 〜なければならない — so a fixed 64px cell truncated
+          // every one of them to "〜て…" and made "please do X", "must not do X"
+          // and "after X" indistinguishable. Grammar rows size the glyph cell to
+          // its content instead (no truncate), with the old width as a floor so
+          // short patterns still align, and let the gloss column beside it shrink
+          // and truncate — the row never overflows on mobile because that column
+          // carries `min-w-0`. Every other kind keeps the fixed, truncated cell:
+          // a kanji or word glyph is one or two characters and wants the tidy
+          // column.
+          className={`${
+            entry.kind === GRAMMAR_SUBJECT
+              ? "w-[150px] flex-none pr-2"
+              : "w-[64px] flex-none truncate"
+          } text-[19px] ${japaneseFontClass(entry.glyph)}`}
         >
           {entry.glyph}
         </span>
@@ -446,9 +457,6 @@ export function VerbPairRow({
   selected: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
-  const pattern = pairPattern(pair.happens.reading, pair.doIt.reading);
-  const happensTail = pattern.isException ? undefined : pattern.from ?? undefined;
-  const doItTail = pattern.isException ? undefined : pattern.to ?? undefined;
   return (
     <div
       role="button"
@@ -473,8 +481,8 @@ export function VerbPairRow({
       >
         ✓
       </span>
-      <PairCell side={pair.happens} voice={voice} tail={happensTail} />
-      <PairCell side={pair.doIt} voice={voice} tail={doItTail} />
+      <PairCell side={pair.happens} voice={voice} />
+      <PairCell side={pair.doIt} voice={voice} />
       <ViewLink entry={entry} className="flex-none" />
       <span className="flex-none">
         <StandingCell standing={standing} />
