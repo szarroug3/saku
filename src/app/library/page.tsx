@@ -114,6 +114,21 @@ export default function LibraryPage() {
   );
 }
 
+/** True once the page has scrolled at all. The docked header is sticky at the top
+ * of the single page scroll, so any scroll at all slides the shelves up UNDER it;
+ * at the very top nothing is behind it. The occluding band is gated on this so it
+ * shows only when it has something to hide, not as a slab over the empty top. */
+function useScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 1);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return scrolled;
+}
+
 function LibraryBody() {
   const { history, refresh } = useHistory();
   const { cfg } = useQuizConfig();
@@ -178,6 +193,9 @@ function LibraryBody() {
   // on every keystroke is a field that can drop characters; this one is
   // instant, and the URL catches up (see `commitQuery`).
   const [query, setQuery] = useState(urlQuery);
+  // Whether the shelves have scrolled up under the header, which is the only time
+  // the header needs to occlude (see the dock band below).
+  const scrolled = useScrolled();
   // The last query WE wrote to the URL. Anything else the URL says arrived from
   // outside — Back, Forward, a pasted link — and must win over what is in the
   // box. Without this the effect below would fight the debounce and undo the
@@ -554,16 +572,16 @@ function LibraryBody() {
     <>
       {/* THE FROZEN HEADER. Title, search and filter chips, lifted out of the
           scroll into the shell's top dock so they stay put above the shelves.
-          `kq-band` is what makes it OCCLUDE: the shelf rows are `sticky` within
-          the same page scroll, so without an opaque band they slide up THROUGH
-          the header and collide with the search text. kq-band is the ground
-          rebuilt opaque for a sticky band, so it hides what scrolls under it
-          while still reading as the ground (no visible box), which is the whole
-          point of docking here. It is full-width (edge to edge of the dock); the
-          px-3 insets the content to line up with the tiles below. pb-2 gives the
-          band a clean lower edge past the chips. */}
+          The shelf rows are `sticky` within the same page scroll, so once you
+          scroll they slide up THROUGH the header; `kq-band` (the ground rebuilt
+          opaque for a sticky band) hides them under it. But at the very top there
+          is nothing behind the header, and a band there is just a slab of ground
+          colour sitting on the ground for no reason, so the band is gated on
+          `scrolled`: transparent at rest, occluding only once there is something
+          to hide. Full-width (edge to edge of the dock); px-3 insets the content
+          to line up with the tiles, pb-2 gives the band a clean lower edge. */}
       <Dock slot="top">
-        <div className="kq-band px-3 pb-2">
+        <div className={`px-3 pb-2${scrolled ? " kq-band" : ""}`}>
           <PageTitle
             title="Library"
             sub="Every character, reading and word the app knows."
