@@ -196,6 +196,45 @@ function wrapBuild(r: Recipe): string {
   return `Take ${part(open, "one")}, then ${part(close, secondArt)}.`;
 }
 
+/** The concrete verbs a wrap's worked pair is shown on: eat, drink, talk, the
+ * same everyday trio the て-pages build their examples on. */
+const WRAP_PAIR_VERBS = ["たべる", "のむ", "はなす"];
+
+/** A worked PAIR for a wrap pattern. `apply` refuses a wrap (it needs two words),
+ * so the derivation table would be empty; but a verb+verb wrap (〜たり〜たり) has an
+ * obvious worked example: build the open half on one verb and the close half on
+ * another and join them (たべたり + のんだりする = たべたりのんだりする). Only
+ * verb+verb wraps get this; a noun-slot wrap (〜しか〜ない, 〜は〜より) has no clean
+ * pair, so it keeps the build line alone. */
+function wrapDeriveRows(r: Recipe): IntroDeriveRow[] {
+  const open = r.attach[0];
+  const close = r.wrap?.close?.[0];
+  if (!open || !close || open.host !== "verb" || close.host !== "verb") return [];
+  const half = (a: { form: Form | null; add?: string }, ex: ExampleWord): string | null => {
+    if (!ex.cls) return null;
+    const base =
+      a.form && a.form !== "dictionary"
+        ? conjugate(ex.word, ex.cls, a.form as Form)
+        : { ok: true as const, value: ex.word };
+    return base.ok ? base.value + (a.add ?? "") : null;
+  };
+  const pool = WRAP_PAIR_VERBS.map((w) => EXAMPLES.verb.find((e) => e.word === w)).filter(
+    (e): e is ExampleWord => Boolean(e) && recipeAllows(r, (e as ExampleWord).word),
+  );
+  const rows: IntroDeriveRow[] = [];
+  for (let i = 0; i + 1 < pool.length && rows.length < 2; i += 1) {
+    const a = pool[i];
+    const b = pool[i + 1];
+    const oa = half(open, a);
+    const ob = half(close, b);
+    if (!oa || !ob) continue;
+    // "do things like X and Y" reads as the two verbs in -ing: eating and drinking.
+    const gloss = r.gloss.replace(/\bX\b/g, a.ing ?? a.en).replace(/\bY\b/g, b.ing ?? b.en);
+    rows.push({ verb: `${a.word}・${b.word}`, result: oa + ob, gloss });
+  }
+  return rows;
+}
+
 /**
  * The teach page for one pattern, in 〜ている-page-1 shape: a hero claim (the
  * meaning), a build line, and the build table. The eyebrow carries the pattern
@@ -244,6 +283,10 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
   const standalone =
     host === "verb" && !!attach?.form && attach.form !== "dictionary" && !attach.add;
   const ruleRows = standalone ? standaloneRuleRows(attach.form as Form) : [];
+  // A wrap builds its own worked pair (apply refuses two-slot patterns); a plain
+  // pattern derives one row per example verb.
+  const wrapRows = r.wrap?.close?.length ? wrapDeriveRows(r) : [];
+  const deriveRules = wrapRows.length ? wrapRows : deriveRows(r, host);
 
   // The header LEADS with the written pattern — "〜てから: After doing X." — so a
   // learner gets used to reading the pattern in its 〜て… form, then a human
@@ -256,6 +299,6 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     body: [{ text: build }],
     ...(ruleRows.length
       ? { buildRules: ruleRows, buildHeads: { label: "Ending" } }
-      : { deriveRules: deriveRows(r, host), deriveHeads: { form: formLabel ?? undefined } }),
+      : { deriveRules, deriveHeads: { form: formLabel ?? undefined } }),
   };
 }
