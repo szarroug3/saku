@@ -35,8 +35,8 @@ import { emptySelection } from "@/lib/selection-empty";
 import {
   allGridResponses,
   allPairResponses,
-  askFromInput,
-  deriveInput,
+  askFromAudioPrompts,
+  deriveAudioPrompts,
 } from "@/lib/ask-config";
 import type { QuizConfig } from "@/types";
 
@@ -45,12 +45,13 @@ export function defaultConfig(): QuizConfig {
     mode: "drill",
     pairResponses: ["definition", "romaji", "sentence"],
     gridResponses: ["definition", "romaji"],
-    // The one user-facing input axis. `ask` is DERIVED from it (see
-    // askFromInput / normalizeConfig) — everything else about how to ask is
-    // automatic and always-on. "text" is the safe default: no surprise audio for
-    // a beginner who may have no TTS voice installed.
-    input: "text",
-    ask: askFromInput("text"),
+    // The one user-facing "how to ask" knob, and it lives on Settings. Text is
+    // always on; this adds audio. `ask` is DERIVED from it (see
+    // askFromAudioPrompts / normalizeConfig) — everything else about how to ask
+    // is automatic and always-on. Default ON: audio is the richer default, and
+    // because text is always present, production cards stay reachable either way.
+    audioPrompts: true,
+    ask: askFromAudioPrompts(true),
     length: "limited",
     limType: "cov",
     limCount: 50,
@@ -106,13 +107,15 @@ function normalizeConfig(saved: unknown): QuizConfig {
       // is discarded and pinned to the full set here.
       cfg.pairResponses = allPairResponses();
       cfg.gridResponses = allGridResponses();
-      // "How to ask" is now a single derived axis. Resolve the user-facing
-      // `input` (text/audio/both) from whatever was stored, then REGENERATE
-      // `ask` from it — the stored `ask` only matters for this one-time read:
-      //   - a new `input` field wins outright;
+      // "How to ask" is now a single derived boolean. Resolve the user-facing
+      // `audioPrompts` (text is always on; this adds audio) from whatever was
+      // stored, then REGENERATE `ask` from it — the stored `ask` only matters
+      // for this one-time read:
+      //   - a new `audioPrompts` boolean wins outright;
+      //   - else the OLD tri-state `input` ("audio"/"both" ⇒ on, "text" ⇒ off);
       //   - else a stored `ask` (task-30 shape) reads its prompt format back;
-      //   - else the OLD dirs/styles/listen fields migrate through the same lens;
-      //   - else default "text".
+      //   - else the OLDER dirs/styles/listen fields migrate through the same lens;
+      //   - else off.
       // The old fields are then dropped so they can't shadow the new model.
       const rawObj = raw as Record<string, unknown>;
       // A short-lived build exposed sentence practice as a separate "mixed"
@@ -124,12 +127,12 @@ function normalizeConfig(saved: unknown): QuizConfig {
       // drill.
       const wasListenSentence = raw.mode === "listen-sentence";
       if (wasListenSentence) cfg.mode = "drill";
-      let input = deriveInput(rawObj);
+      let audioPrompts = deriveAudioPrompts(rawObj);
       // A standalone listen-sentence run was audio; fold that in so the audio
       // prompt survives the mode migration.
-      if (wasListenSentence && input === "text") input = "audio";
-      cfg.input = input;
-      cfg.ask = askFromInput(input);
+      if (wasListenSentence) audioPrompts = true;
+      cfg.audioPrompts = audioPrompts;
+      cfg.ask = askFromAudioPrompts(audioPrompts);
       // Missed cards requeue by default; only an explicit stored false turns it
       // off. Absent (older config) means on.
       cfg.requeue = rawObj.requeue === false ? false : true;
@@ -139,6 +142,9 @@ function normalizeConfig(saved: unknown): QuizConfig {
         "styleEn2jp",
         "listenRomaji",
         "listenMeaning",
+        // The retired tri-state prompt axis, replaced by the audioPrompts
+        // boolean above and read for migration in deriveAudioPrompts.
+        "input",
         // Retired setting: the teaching order is always "everyday" now, so a
         // saved newKanjiOrder is dropped rather than carried on the config.
         "newKanjiOrder",

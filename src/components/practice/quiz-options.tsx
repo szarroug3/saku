@@ -1,21 +1,16 @@
 "use client";
 
-// HOW a practice run asks. Collapsed to four knobs: Mode, Prompt Format (drill
-// only), Length, and Requeue. Everything else about how to ask — responses,
-// answer format, direction, and every pair/grid relationship — is automatic and
-// always-on (see askFromInput and the forced-full pair/grid sets in
+// HOW a practice run asks. Collapsed to two knobs: Mode and Length. Everything
+// else about how to ask — the prompt format (audio on/off), whether missed cards
+// requeue, responses, answer format, direction, and every pair/grid
+// relationship — is either a Settings-page preference or automatic and always-on
+// (see askFromAudioPrompts and the forced-full pair/grid sets in
 // normalizeConfig), so nothing here can be toggled into a state that breaks a
-// lesson.
+// lesson. The prompt-format and requeue toggles moved to Settings because they
+// are environmental preferences, not per-run choices.
 
 import { Card, Chip, Row, SmallBtn } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
-import type { InputFormat } from "@/types";
-
-const INPUT_LABEL: Record<InputFormat, string> = {
-  text: "Text",
-  audio: "Audio",
-  both: "Both",
-};
 
 export function QuizOptionsFields() {
   const { cfg, update } = useQuizConfig();
@@ -39,20 +34,6 @@ export function QuizOptionsFields() {
           Substitution
         </Chip>
       </Row>
-
-      {cfg.mode === "drill" ? (
-        <Row label="Prompt Format">
-          {(["text", "audio", "both"] as const).map((v) => (
-            <Chip
-              key={v}
-              on={cfg.input === v}
-              onClick={() => update({ input: v })}
-            >
-              {INPUT_LABEL[v]}
-            </Chip>
-          ))}
-        </Row>
-      ) : null}
 
       {cfg.mode === "drill" || cfg.mode === "pairs" ? (
         <>
@@ -102,14 +83,6 @@ export function QuizOptionsFields() {
                 />
               </>
             ) : null}
-          </Row>
-          <Row label="Requeue when wrong">
-            <Chip on={cfg.requeue} onClick={() => update({ requeue: true })}>
-              On
-            </Chip>
-            <Chip on={!cfg.requeue} onClick={() => update({ requeue: false })}>
-              Off
-            </Chip>
           </Row>
         </>
       ) : null}

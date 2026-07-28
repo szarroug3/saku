@@ -48,6 +48,7 @@ import {
 } from "@/components/settings/theme-picker";
 import { Btn, Card, Chip, Hint, Lbl, Row, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { askFromAudioPrompts } from "@/lib/ask-config";
 import { clearAllDismissedHints } from "@/lib/claim-hint";
 import { fontLabel, JP_FONTS } from "@/lib/config";
 import { availableFonts } from "@/lib/font-detect";
@@ -400,6 +401,34 @@ export function SettingsCard() {
 
       <Card>
         <Lbl>The drill</Lbl>
+
+        <Row
+          label="Audio prompts"
+          info="Also reads each card aloud, using the speech voice below. Cards are always shown as text too — this just adds the audio. Turn it off if this machine has no Japanese voice."
+        >
+          <Toggle
+            on={cfg.audioPrompts}
+            // `ask` is DERIVED from audioPrompts (see askFromAudioPrompts), so
+            // regenerate it in the same update — normalizeConfig only rebuilds it
+            // on load, not on a live toggle.
+            onClick={() =>
+              update({
+                audioPrompts: !cfg.audioPrompts,
+                ask: askFromAudioPrompts(!cfg.audioPrompts),
+              })
+            }
+          />
+        </Row>
+
+        <Row
+          label="Requeue when wrong"
+          info="A card you get wrong comes back later in the same run. Off means the run moves on and doesn't re-show it."
+        >
+          <Toggle
+            on={cfg.requeue}
+            onClick={() => update({ requeue: !cfg.requeue })}
+          />
+        </Row>
 
         <Row label="Retries">
           <Chip on={cfg.retries === "none"} onClick={() => update({ retries: "none" })}>

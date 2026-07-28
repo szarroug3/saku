@@ -1,17 +1,17 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { askFromInput } from "@/lib/ask-config";
+import { askFromAudioPrompts } from "@/lib/ask-config";
 import { forLessonOrigin } from "@/lib/lesson-snapshot";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
 
 /** A snapshot a user's Practice settings might have produced: a count-limited
- * grid, audio input. The lesson force should override mode and length but keep
- * the input (carried on `ask`). */
+ * grid, audio prompts on. The lesson force should override mode and length but
+ * keep the prompt format (carried on `ask`). */
 function userSnap(over: Partial<QuizSnapshot> = {}): QuizSnapshot {
   return {
     mode: "grid",
-    ask: askFromInput("audio"),
+    ask: askFromAudioPrompts(true),
     pairResponses: ["definition"],
     gridResponses: ["definition"],
     length: "endless",
@@ -29,10 +29,12 @@ describe("forLessonOrigin — lesson quizzes are lesson-driven", () => {
     assert.equal(out.limType, "cov");
   });
 
-  test("the input format (carried on ask) is kept live", () => {
+  test("the prompt format (carried on ask) is kept live", () => {
     const out = forLessonOrigin(userSnap(), "lesson");
-    // audio input survives the force — it is environmental, not the lesson's.
-    assert.deepEqual(out.ask.japanese.prompts, ["audio"]);
+    // audio prompts survive the force — environmental, not the lesson's. Text is
+    // always present too, so production stays reachable regardless.
+    assert.deepEqual(out.ask.japanese.prompts, ["text", "audio"]);
+    assert.ok(out.ask.japanese.prompts.includes("text"));
   });
 
   test("the assembly pin wins so a sentence-ordering lesson keeps assembly", () => {

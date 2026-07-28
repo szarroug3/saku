@@ -13,7 +13,6 @@ import type {
   AskConfig,
   GridResponse,
   EnglishSentenceResponse,
-  InputFormat,
   PromptFormat,
   PairResponse,
   QuizConfig,
@@ -65,21 +64,22 @@ export function defaultAsk(): AskConfig {
 }
 
 /**
- * DERIVE the full "how to ask" from the single user-facing input axis. This is
- * the whole simplification: everything except the prompt FORMAT is fixed on and
- * cannot be turned off, so no lesson can be broken by a toggle.
+ * DERIVE the full "how to ask" from the single user-facing toggle. This is the
+ * whole simplification: TEXT IS ALWAYS ON, and everything except whether AUDIO
+ * is added is fixed on and cannot be turned off, so no lesson can be broken by a
+ * toggle. In particular a grammar PRODUCTION card ("build the て-form") is a
+ * text-only prompt with no listen form, so with text always present it is always
+ * reachable — the bug the old audio-only option caused.
  *
- *   - Japanese: prompted in the chosen format(s), asked for BOTH its meaning and
- *     its reading, TYPED (formIsMc coerces to MC wherever the fact can't be
- *     typed — kana en→jp, mcOnlyIn, etc.).
+ *   - Japanese: prompted as text (plus audio when on), asked for BOTH its
+ *     meaning and its reading, TYPED (formIsMc coerces to MC wherever the fact
+ *     can't be typed — kana en→jp, mcOnlyIn, etc.).
  *   - Sentence: same prompt format(s); grammar patterns appear as fill-the-blank
  *     selection cards, and en→jp production (ordering + selection) stays on.
  *   - English: en→jp production always on, typed (again coerced where needed).
- *
- * `input` "both" mixes text and audio prompts per card; "audio" is listening.
  */
-export function askFromInput(input: InputFormat): AskConfig {
-  const prompts: PromptFormat[] = input === "both" ? ["text", "audio"] : [input];
+export function askFromAudioPrompts(audioPrompts: boolean): AskConfig {
+  const prompts: PromptFormat[] = audioPrompts ? ["text", "audio"] : ["text"];
   return {
     japanese: {
       prompts,
@@ -96,34 +96,28 @@ export function askFromInput(input: InputFormat): AskConfig {
   };
 }
 
-/** The inverse, used ONLY for one-time migration of a pre-input saved config:
- * read the effective input axis back off a stored `ask`. Both text+audio ⇒
- * "both"; audio alone ⇒ "audio"; anything else (incl. empty) ⇒ "text". */
-export function inputFromAsk(ask: AskConfig): InputFormat {
-  const p = ask.japanese.prompts;
-  const hasText = p.includes("text");
-  const hasAudio = p.includes("audio");
-  if (hasText && hasAudio) return "both";
-  if (hasAudio) return "audio";
-  return "text";
-}
-
 /**
- * Resolve the user-facing input axis from a stored config object — one-time
- * migration only. Precedence:
- *   1. an explicit new `input` field wins outright;
- *   2. else a stored task-30 `ask` has its prompt format read back;
- *   3. else the pre-task-30 dirs/styles/listen fields migrate through the same
+ * Resolve the user-facing "audio prompts on?" boolean from a stored config
+ * object — one-time migration only. Precedence:
+ *   1. an explicit new `audioPrompts` boolean wins outright;
+ *   2. else the old tri-state `input`: "audio"/"both" ⇒ on, "text" ⇒ off;
+ *   3. else a stored task-30 `ask` has its prompt format read back (audio in the
+ *      Japanese prompts ⇒ on);
+ *   4. else the pre-task-30 dirs/styles/listen fields migrate through the same
  *      lens;
- *   4. else "text".
+ *   5. else off — a legacy config with no audio signal keeps text-only, which is
+ *      the safe read (no surprise audio for a machine that may have no TTS).
  * The `listen-sentence` mode's audio fold-in is mode-dependent and stays in
  * normalizeConfig (see quiz-config.tsx).
  */
-export function deriveInput(rawObj: Record<string, unknown>): InputFormat {
+export function deriveAudioPrompts(rawObj: Record<string, unknown>): boolean {
+  const ap = rawObj["audioPrompts"];
+  if (typeof ap === "boolean") return ap;
   const inp = rawObj["input"];
-  if (inp === "text" || inp === "audio" || inp === "both") return inp;
+  if (inp === "audio" || inp === "both") return true;
+  if (inp === "text") return false;
   if (rawObj["ask"] && typeof rawObj["ask"] === "object") {
-    return inputFromAsk(normalizeAsk(rawObj["ask"]));
+    return normalizeAsk(rawObj["ask"]).japanese.prompts.includes("audio");
   }
   if (
     "dirs" in rawObj ||
@@ -132,9 +126,9 @@ export function deriveInput(rawObj: Record<string, unknown>): InputFormat {
     "listenRomaji" in rawObj ||
     "listenMeaning" in rawObj
   ) {
-    return inputFromAsk(migrateLegacyAsk(rawObj as never));
+    return migrateLegacyAsk(rawObj as never).japanese.prompts.includes("audio");
   }
-  return "text";
+  return false;
 }
 
 /** Coerce any stored/parsed value into a valid AskConfig — unknown members

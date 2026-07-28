@@ -198,18 +198,6 @@ export interface AskConfig {
   english: EnglishAsk;
 }
 
-/**
- * The single user-facing "how to ask" knob: how a card is PROMPTED. Everything
- * else about the ask — responses, answer format, direction — is now automatic
- * and always-on (see askFromInput in src/lib/ask-config.ts), so a lesson can't
- * be broken by a toggle. "both" mixes text and audio prompts per card.
- *
- * `ask` is DERIVED from this (normalizeConfig regenerates it), so `input` is the
- * source of truth the panel edits and `ask` is the shape the deck generator
- * reads. The old three-source panel collapsed to this one axis.
- */
-export type InputFormat = "text" | "audio" | "both";
-
 /** Which accuracy number every screen shows — the same forgiving/strict split
  * the results screen already offers, hoisted to a global preference.
  * firstTry = nailed it immediately · attempt = share of attempts correct. */
@@ -248,11 +236,15 @@ export interface QuizConfig {
    */
   ask: AskConfig;
   /**
-   * The one user-facing input axis — see InputFormat. `ask` is DERIVED from this
-   * (regenerated in normalizeConfig), so this is what the panel edits; the
-   * stored `ask` only survives for one-time migration of pre-input configs.
+   * The one user-facing "how to ask" knob: whether cards are prompted with AUDIO
+   * as well as text. Text is ALWAYS on, so this is a single boolean — on ⇒
+   * text+audio prompts, off ⇒ text only. `ask` is DERIVED from it (regenerated
+   * in normalizeConfig via askFromAudioPrompts), so this is the source of truth
+   * the Settings panel edits; the stored `ask` only survives for one-time
+   * migration of pre-toggle configs. Default ON. Lives on Settings, not Practice:
+   * it is environmental (does this machine have a TTS voice?), not per-run.
    */
-  input: InputFormat;
+  audioPrompts: boolean;
   length: "endless" | "limited";
   limType: "cov" | "count";
   limCount: number;
