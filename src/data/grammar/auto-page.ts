@@ -91,6 +91,9 @@ function appliedGloss(gloss: string, ex: ExampleWord): string {
       .replace(/\bif X\b/g, `if you ${base}`)
       .replace(/\bwhen X\b/g, `when you ${base}`)
       .replace(/\bbecause X\b/g, `because you ${base}`)
+      // "be X" is written for an adjective/noun predicate ("might be expensive");
+      // on a verb the "be" is wrong, so drop it: "might be X" -> "might eat".
+      .replace(/\bbe X\b/g, base)
       // "of X" takes a gerund: "in the state of eating", "way of eating".
       .replace(/\bof X\b/g, `of ${ex.ing}`)
       // Scaffolded verb: do / doing / did / done / does X.
