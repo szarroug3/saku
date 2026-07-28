@@ -18,6 +18,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
+import { CURRICULUM_LESSONS } from "../data/grammar/lessons.ts";
 import { KANA_GROUP_FACTS, nextLesson } from "./lesson.ts";
 import {
   isTeFormRecipe,
@@ -339,5 +340,71 @@ describe("the position counts PATTERNS, and the total is the drillable set", () 
       big.cards.map((c) => c.id),
       "the same lesson regardless of the count passed",
     );
+  });
+});
+
+// A pattern lesson shows the form its pattern is built ON in the middle column of
+// its build table (かく · かきます · かきましょう). If that form has never been
+// taught, the learner is asked to produce a shape the app never introduced — the
+// 〜ましょう/ます bug. These pin that every form a pattern leans on is grounded
+// first, and that a pattern which IS a whole conjugation teaches the rule itself.
+describe("every form a pattern uses is taught before the pattern uses it", () => {
+  // The page id prefix that teaches each verb form. gl-te-* is authored lesson 1;
+  // the rest are the form intros in form-intros.ts. gl-teiru-* does NOT match
+  // "gl-te-" (the 6th character is i, not the hyphen), so 〜ている stays out.
+  const FORM_TAUGHT_BY: readonly { prefix: string; form: string }[] = [
+    { prefix: "gl-te-", form: "te" },
+    { prefix: "gl-nai", form: "nai" },
+    { prefix: "gl-ta-form", form: "ta" },
+    { prefix: "gl-stem-form", form: "stem" },
+    { prefix: "gl-masu-form", form: "masu" },
+    { prefix: "gl-volitional-form", form: "volitional" },
+  ];
+
+  // form -> the earliest lesson index whose pages teach it.
+  const taughtAt = new Map<string, number>();
+  CURRICULUM_LESSONS.forEach((lesson, i) => {
+    for (const page of lesson.pages) {
+      if (page.kind !== "teach") continue;
+      for (const { prefix, form } of FORM_TAUGHT_BY) {
+        if (page.card.id.startsWith(prefix) && !taughtAt.has(form)) taughtAt.set(form, i);
+      }
+    }
+  });
+
+  /** The verb attach rule of a lesson's primary pattern, if it has one. */
+  function verbAttach(lesson: (typeof CURRICULUM_LESSONS)[number]) {
+    const r = RECIPES.find((x) => x.id === lesson.primaryPattern);
+    return r ? { r, a: r.attach.find((x) => x.host === "verb") } : null;
+  }
+
+  test("a prerequisite form (something is added to it) is taught at or before its use", () => {
+    CURRICULUM_LESSONS.forEach((lesson, i) => {
+      const hit = verbAttach(lesson);
+      if (!hit?.a?.form || hit.a.form === "dictionary" || !hit.a.add) return;
+      const at = taughtAt.get(hit.a.form);
+      assert.ok(
+        at !== undefined && at <= i,
+        `lesson ${i + 1} (${hit.r.id}) builds on the ${hit.a.form}-form but it is taught ${
+          at === undefined ? "nowhere" : `only at lesson ${at + 1}`
+        }`,
+      );
+    });
+  });
+
+  test("a pattern that IS a whole conjugation teaches the rule, not one example", () => {
+    CURRICULUM_LESSONS.forEach((lesson) => {
+      const hit = verbAttach(lesson);
+      // add empty = the form is the whole pattern (the potential, たら, ば, ...).
+      if (!hit?.a?.form || hit.a.form === "dictionary" || hit.a.add) return;
+      // te-sequence and 〜ている are hand-authored, with their own build pages.
+      if (hit.r.id === "te-sequence" || hit.r.id === "te-iru") return;
+      const page = [...lesson.pages].reverse().find((p) => p.kind === "teach");
+      const card = page?.kind === "teach" ? page.card : undefined;
+      assert.ok(
+        (card?.buildRules?.length ?? 0) >= 5,
+        `${hit.r.id} is a standalone conjugation but its page shows no rule table`,
+      );
+    });
   });
 });

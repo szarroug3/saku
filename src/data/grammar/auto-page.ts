@@ -16,7 +16,7 @@ import { primaryHost } from "@/lib/grammar/example";
 import { FORM_LABEL, HOST_ARTICLE } from "@/lib/grammar/formula";
 import { recipeAllows } from "@/lib/grammar/vehicles";
 import type { Host, Recipe } from "@/data/grammar/recipes";
-import type { IntroDeriveRow, PhaseIntro } from "@/data/phase-intros";
+import type { IntroBuildRule, IntroDeriveRow, PhaseIntro } from "@/data/phase-intros";
 
 /** One example word for the build table: the kana form, its class (null for a
  * noun, which does not conjugate), and its English meaning. */
@@ -90,6 +90,49 @@ function deriveRows(r: Recipe, host: Host): IntroDeriveRow[] {
   return rows;
 }
 
+/** The representative verbs an ending-change rule is shown across: one per godan
+ * sound-change group, an る-verb, and the two irregulars, so the rule is seen to
+ * hold class by class. Same spread the hand-authored form intros use. */
+const RULE_VERBS: { label: string; word: string; cls: WordClass }[] = [
+  { label: "う", word: "かう", cls: "v5u" },
+  { label: "く", word: "かく", cls: "v5k" },
+  { label: "ぐ", word: "およぐ", cls: "v5g" },
+  { label: "む", word: "のむ", cls: "v5m" },
+  { label: "す", word: "はなす", cls: "v5s" },
+  { label: "る-verb", word: "たべる", cls: "v1" },
+  { label: "する", word: "する", cls: "vs-i" },
+  { label: "くる", word: "くる", cls: "vk" },
+];
+
+/** Length of the shared leading run of two kana strings. */
+function commonPrefix(a: string, b: string): number {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return i;
+}
+
+/** An Ending·Change table for a standalone conjugation (the potential, passive,
+ * causative, volitional, たら, ば): for each representative verb, the drop and add
+ * that turn the dictionary form into that form, diffed off the shared prefix. A
+ * verb whose whole shape shifts (an irregular, or する→できる) is shown whole via
+ * `to`, the way the form intros show their irregulars. */
+function standaloneRuleRows(form: Form): IntroBuildRule[] {
+  const rows: IntroBuildRule[] = [];
+  for (const v of RULE_VERBS) {
+    const c = conjugate(v.word, v.cls, form);
+    if (!c.ok || c.value === v.word) continue;
+    const p = commonPrefix(v.word, c.value);
+    if (p === 0) {
+      // The whole word shifts (する→できる): no drop/add rule fits, so it is
+      // shown whole and flagged irregular, the way the form intros do.
+      rows.push({ label: "irregular", verb: v.word, to: c.value });
+    } else {
+      rows.push({ label: v.label, verb: v.word, drop: v.word.slice(p), add: c.value.slice(p) });
+    }
+  }
+  return rows;
+}
+
 /** Sentence-case a gloss for the hero line: "after doing X" → "After doing X." */
 function heroFromGloss(gloss: string): string {
   const g = gloss.trim();
@@ -129,6 +172,16 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     build = `Attach it to ${on}.`;
   }
 
+  // When the form IS the whole pattern (nothing added: the potential, passive,
+  // causative, たら, ば), the verb→result derivation would repeat itself, since the
+  // form and the result are the same word. Teach the conjugation instead, with the
+  // Ending·Change rule table the form intros use, so the rule is shown, not just an
+  // input and an output. Otherwise the form is a prerequisite taught on its own
+  // page, and the derivation table shows it slotting into the pattern.
+  const standalone =
+    host === "verb" && !!attach?.form && attach.form !== "dictionary" && !attach.add;
+  const ruleRows = standalone ? standaloneRuleRows(attach.form as Form) : [];
+
   // The header LEADS with the written pattern — "〜てから: After doing X." — so a
   // learner gets used to reading the pattern in its 〜て… form, then a human
   // explanation, then the build blurb and table (the 〜ている-page-1 shape).
@@ -138,7 +191,8 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     eyebrow: "Grammar",
     title: `${r.pattern}: ${heroFromGloss(r.gloss)}`,
     body: [{ text: build }],
-    deriveRules: deriveRows(r, host),
-    deriveHeads: { form: formLabel ?? undefined },
+    ...(ruleRows.length
+      ? { buildRules: ruleRows, buildHeads: { label: "Ending" } }
+      : { deriveRules: deriveRows(r, host), deriveHeads: { form: formLabel ?? undefined } }),
   };
 }

@@ -70,6 +70,69 @@ export const TA_FORM_PAGES: readonly PhaseIntro[] = [
   },
 ];
 
+/** The ます-form — the polite present. It is the stem (taught just before) plus
+ * ます, so the ending table is the stem's い-row shift with ます added. Taught here
+ * because 〜ましょう / 〜ませんか / 〜ましょうか all trim ます off it. */
+export const MASU_FORM_PAGES: readonly PhaseIntro[] = [
+  {
+    id: "gl-masu-form",
+    setId: "",
+    eyebrow: "The ます-form",
+    title: "The ます-form is the polite present.",
+    body: [
+      {
+        text: "It is the polite way to end a sentence, in place of the plain form. It is the stem you just learned plus ます.",
+      },
+      {
+        text: "So an う-verb shifts its last kana to the い-row before ます, and an る-verb drops る.",
+      },
+      {
+        text: "From it come 〜ましょう (let's), 〜ませんか (won't you), and 〜ましょうか (shall I): swap ます for the ending.",
+      },
+    ],
+    buildRules: [
+      { label: "う", verb: "かう", drop: "う", add: "います" },
+      { label: "く", verb: "かく", drop: "く", add: "きます" },
+      { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "ぎます" },
+      { label: "む", verb: "のむ", drop: "む", add: "みます" },
+      { label: "す", verb: "はなす", drop: "す", add: "します" },
+      { label: "る-verb", verb: "たべる", drop: "る", add: "ます" },
+    ],
+    buildHeads: { label: "Ending" },
+  },
+];
+
+/** The volitional form — the plain "let's" / "I'll". The last kana shifts to its
+ * お-row before う; an る-verb drops る and adds よう. The casual counterpart to
+ * 〜ましょう, taught because 〜(よ)うと思う (thinking of doing) is built on it. */
+export const VOLITIONAL_FORM_PAGES: readonly PhaseIntro[] = [
+  {
+    id: "gl-volitional-form",
+    setId: "",
+    eyebrow: "The volitional form",
+    title: "The volitional form is the plain “let's / I'll”.",
+    body: [
+      {
+        text: "It is the casual counterpart to 〜ましょう. Add と思う to it for 〜(よ)うと思う (I'm thinking of X-ing).",
+      },
+      {
+        text: "For an う-verb, the last kana shifts to its お-row, then う. An る-verb drops る and adds よう.",
+      },
+    ],
+    buildRules: [
+      { label: "う", verb: "かう", drop: "う", add: "おう" },
+      { label: "く", verb: "かく", drop: "く", add: "こう" },
+      { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "ごう" },
+      { label: "む", verb: "のむ", drop: "む", add: "もう" },
+      { label: "す", verb: "はなす", drop: "す", add: "そう" },
+      { label: "る-verb", verb: "たべる", drop: "る", add: "よう" },
+      { label: "irregular", verb: "する", to: "しよう" },
+      { label: "irregular", verb: "くる", to: "こよう" },
+    ],
+    buildHeads: { label: "Ending" },
+  },
+];
+
 /** The stem — the verb with ます taken off (the last kana shifts to its い-row, or
  * る drops). One page, same ending table. */
 export const STEM_FORM_PAGES: readonly PhaseIntro[] = [

@@ -28,7 +28,13 @@
 import { patternEntry } from "@/data/grammar";
 import { DRILLABLE, type Level, type Recipe } from "@/data/grammar/recipes";
 import { autoPatternPage } from "@/data/grammar/auto-page";
-import { NAI_FORM_PAGES, STEM_FORM_PAGES, TA_FORM_PAGES } from "@/data/grammar/form-intros";
+import {
+  MASU_FORM_PAGES,
+  NAI_FORM_PAGES,
+  STEM_FORM_PAGES,
+  TA_FORM_PAGES,
+  VOLITIONAL_FORM_PAGES,
+} from "@/data/grammar/form-intros";
 import { factsOf } from "@/lib/facts";
 import type { Form } from "@/lib/conjugate";
 import type { PhaseIntro } from "@/data/phase-intros";
@@ -340,6 +346,8 @@ const FORM_INTROS: readonly { form: Form; pages: readonly PhaseIntro[] }[] = [
   { form: "nai", pages: NAI_FORM_PAGES },
   { form: "ta", pages: TA_FORM_PAGES },
   { form: "stem", pages: STEM_FORM_PAGES },
+  { form: "masu", pages: MASU_FORM_PAGES },
+  { form: "volitional", pages: VOLITIONAL_FORM_PAGES },
 ];
 
 /** Recipe id → the form-intro pages to prepend to its lesson, for the one recipe
