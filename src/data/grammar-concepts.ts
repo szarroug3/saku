@@ -110,19 +110,17 @@ const VERB_CLASS_CONCEPT_PAGES: readonly PhaseIntro[] = [
   {
     id: "gc-class-u",
     setId: "",
-    title: "う-verbs shift their last sound.",
+    title: "う-verbs drop their last kana and add an ending.",
     body: [
       { text: "The larger group is called う-verbs (you may also see them called godan). Their dictionary form ends in a う-row kana: う, く, ぐ, す, つ, ぬ, ぶ, む, or る." },
-      { text: "To conjugate one, that last kana shifts across the five rows あ, い, う, え, お, and an ending is added. く becomes か, き, く, け, or こ depending on the form. The row you land on is set by the form you are building." },
-      { text: "What each ending does is a separate topic. The point here is the last sound moving from one row to another." },
+      { text: "To build a form, drop that last kana and add the ending, the same move as the て-form. Which ending you add is set by the form you are building." },
     ],
     buildRules: [
-      { label: "あ row", verb: "かく", drop: "く", add: "かない" },
-      { label: "い row", verb: "かく", drop: "く", add: "きます" },
-      { label: "え row", verb: "かく", drop: "く", add: "けば" },
-      { label: "お row", verb: "かく", drop: "く", add: "こう" },
+      { label: "negative", verb: "かく", drop: "く", add: "かない" },
+      { label: "polite", verb: "かく", drop: "く", add: "きます" },
+      { label: "て-form", verb: "かく", drop: "く", add: "いて" },
     ],
-    buildHeads: { label: "Row" },
+    buildHeads: { label: "Form" },
   },
   {
     id: "gc-class-ru",
@@ -308,7 +306,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
       "Every verb is one of two groups (plus two irregulars), and the group decides how every form is built.",
     body: [
       "Japanese verbs fall into two groups, う-verbs and る-verbs, plus the two irregular verbs する and くる. A verb's group decides how every one of its forms is conjugated.",
-      "An う-verb's last kana shifts across the あ, い, う, え, お rows. An る-verb just drops its final る and adds the ending. A verb ending in る can be either group, so you learn each verb's group along with the verb.",
+      "An う-verb drops its last kana and adds the ending. An る-verb just drops its final る and adds the ending. A verb ending in る can be either group, so you learn each verb's group along with the verb.",
     ],
     searchAlso: [
       "verb classes",

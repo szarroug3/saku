@@ -124,6 +124,9 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "Japanese verbs fall into two main groups, and the group decides the change. The larger group is called う-verbs: start from the dictionary form (the plain form you look a verb up by), drop its last kana, and add the ending that matches.",
       },
       {
+        text: "The name is from the kana chart, not the spelling: an う-verb ends in a kana from the う-row (う, く, ぐ, す, つ, ぬ, ぶ, む, or る), so かく and はなす are う-verbs too, not only verbs ending in う.",
+      },
+      {
         text: "Some endings use て and some use で. Which one you get is fixed by the verb's ending. They are the same form with the same meaning, so you never choose between them.",
       },
     ],
@@ -135,7 +138,10 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         add: "って",
         note: "The っ in って is a small っ, not a full-size つ.",
       },
+      { label: "", verb: "まつ", drop: "つ", add: "って" },
       { label: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んで" },
+      { label: "", verb: "あそぶ", drop: "ぶ", add: "んで" },
+      { label: "", verb: "しぬ", drop: "ぬ", add: "んで" },
       { label: "く", verb: "かく", drop: "く", add: "いて" },
       { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "いで" },
       { label: "す", verb: "はなす", drop: "す", add: "して" },
