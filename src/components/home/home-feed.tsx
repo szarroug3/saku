@@ -618,6 +618,14 @@ export function HomeFeed() {
           the top, and dismissed for good on the first "Got it". */}
       <ClaimExplainer />
 
+      {/* THE LESSON / TRACK CARDS — two columns on wide screens, one on narrow.
+          ONLY the track cards belong in this grid: the page-spanning banners stay
+          full-width in their own place — the claim explainer above it, and the
+          "curriculum complete" note below it. Column-gap only (no row-gap): each
+          Card keeps its own mb-3.5, so a single column reads exactly as before and
+          the two columns simply sit side by side once there is room. items-start
+          keeps a short card from stretching to its taller neighbour's height. */}
+      <div className="grid grid-cols-1 items-start gap-x-3.5 lg:grid-cols-2">
       {lessonShown ? (
         <NextLesson
           lesson={lessonShown}
@@ -773,6 +781,7 @@ export function HomeFeed() {
           onContinue={() => sentenceOrderingRun && continueRun(sentenceOrderingRun.id)}
         />
       ) : null}
+      </div>
 
       {/* Every track is exhausted: the lesson feed above rendered nothing, so
           Home says so on purpose rather than leaving a title over blank space,

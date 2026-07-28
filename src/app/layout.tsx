@@ -223,20 +223,31 @@ export default async function RootLayout({
                   {/* Inside the quiz providers, because what it asks about
                       ("discard the quiz in progress?") is their state. */}
                   <ConfirmProvider>
-                    {/* THE SHELL SCROLLS INSIDE, NOT THE PAGE. The row is exactly
-                        the viewport tall and hides its own overflow, so the body
-                        never scrolls; the content column below is the one scroll
-                        container. That is what keeps the two docks and the stage
-                        perfectly still while only the content in front of them
-                        moves, which is the condition every fixed material in kiri
-                        depends on. */}
-                    <div className="mx-auto flex h-dvh max-w-[1080px] gap-3.5 overflow-hidden px-3 py-6">
+                    {/* THE PAGE SCROLLS, NOT AN INNER FRAME. The shell is a plain
+                        flex row with no height cap and no overflow of its own, so
+                        <html> is the single scroll owner and the browser's own
+                        scrollbar is the one that moves. globals.css reserves that
+                        scrollbar's gutter (scrollbar-gutter: stable on html), so a
+                        page toggling between "tall enough to scroll" and "not"
+                        never re-centres the layout sideways — the whole-page shift
+                        the Settings "Start over" used to cause.
+
+                        The sidebar is flush LEFT (no mx-auto centring) and the main
+                        column takes the freed width — the max-width lives on <main>
+                        now, wider than the old shell-wide 1080 cap, so wide screens
+                        are used rather than boxed. The docks below are `sticky`
+                        rather than siblings of a fixed-height frame: that is what
+                        now keeps them and the stage still while only the content in
+                        front of them scrolls, the condition every fixed material in
+                        kiri depends on. Each is display:none when empty, so an
+                        unused dock adds no sticky element and no gap. */}
+                    <div className="flex gap-3.5 px-3 py-6">
                       <Sidebar
                         signedIn={signedIn}
                         authEnabled={authEnabled}
                         initialCollapsed={sidebarCollapsed}
                       />
-                      <main className="relative flex min-w-0 flex-1 flex-col gap-3.5">
+                      <main className="relative flex min-w-0 max-w-[1400px] flex-1 flex-col gap-3.5">
                         {/* GLOBAL BANNER DOCK, above the page's own top dock. The
                             signed-out notice is a page-agnostic message and must sit
                             at the very top — but a page (the Library) docks its OWN
@@ -244,12 +255,14 @@ export default async function RootLayout({
                             by mount, which put the banner UNDER the Library's search.
                             Its own slot above the page dock fixes the order for every
                             page at once. Empty (hidden) whenever nothing docks here. */}
-                        <div id="kq-dock-banner" className="kq-dock shrink-0 empty:hidden" />
+                        <div id="kq-dock-banner" className="kq-dock sticky top-0 z-30 shrink-0 empty:hidden" />
                         {/* FROZEN TOP DOCK. A page lifts its header here — the
                             Library docks its search + filter chips — so it stays put
-                            above the scrolling frame instead of sliding over the
-                            frost. Empty (and hidden) on pages that dock nothing. */}
-                        <div id="kq-dock-top" className="kq-dock shrink-0 empty:hidden" />
+                            above the scrolling page instead of sliding over the
+                            frost. `sticky top-0` is what freezes it now that the page
+                            (not an inner frame) scrolls. Empty (and hidden) on pages
+                            that dock nothing. */}
+                        <div id="kq-dock-top" className="kq-dock sticky top-0 z-20 shrink-0 empty:hidden" />
                         {/* The stage + the content that scrolls within it. The
                             stage absolutely fills this region, so it does NOT
                             scroll with the content in front of it.
@@ -261,12 +274,12 @@ export default async function RootLayout({
                             sticky bar that has to occlude therefore cannot lean on
                             the stage for it and must declare kq-band itself; see
                             SessionHud's `float`. */}
-                        <div className="relative min-h-0 flex-1">
+                        <div className="relative">
                           <div
                             className="kq-stage pointer-events-none absolute inset-0 rounded-2xl"
                             aria-hidden
                           />
-                          <div className="kq-scroll relative h-full overflow-y-auto overscroll-contain rounded-2xl px-3 pb-15 pt-3">
+                          <div className="kq-scroll relative rounded-2xl px-3 pb-15 pt-3">
                             {/* On every page: the screens that would otherwise show
                                 a learner's work as missing are exactly the ones this
                                 has to appear on. Renders nothing when nothing is
@@ -285,8 +298,11 @@ export default async function RootLayout({
                           </div>
                         </div>
                         {/* FROZEN BOTTOM DOCK. The Library's slice bar docks here,
-                            frozen below the frame. Empty (hidden) elsewhere. */}
-                        <div id="kq-dock-bottom" className="kq-dock shrink-0 empty:hidden" />
+                            frozen at the bottom of the viewport while the page
+                            scrolls. `sticky bottom-0` replaces the old fixed-frame
+                            freeze — the slice bar is not itself sticky, so this dock
+                            owns the freezing. Empty (hidden) elsewhere. */}
+                        <div id="kq-dock-bottom" className="kq-dock sticky bottom-0 z-20 shrink-0 empty:hidden" />
                       </main>
                     </div>
                   </ConfirmProvider>
