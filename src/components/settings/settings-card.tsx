@@ -404,7 +404,7 @@ export function SettingsCard() {
 
         <Row
           label="Audio prompts"
-          info="Also reads each card aloud, using the speech voice below. Cards are always shown as text too — this just adds the audio. Turn it off if this machine has no Japanese voice."
+          info="Adds listening cards, using the speech voice below: the word is played with its glyph hidden, so you answer by ear. Text cards still appear too. Turn it off if this machine has no Japanese voice, or if you can't use sound."
         >
           <Toggle
             on={cfg.audioPrompts}

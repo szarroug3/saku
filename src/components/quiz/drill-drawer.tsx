@@ -14,6 +14,7 @@
 import { useState } from "react";
 
 import { Btn, Row, SmallBtn } from "@/components/ui";
+import { askFromAudioPrompts } from "@/lib/ask-config";
 import { useQuizConfig } from "@/lib/quiz-config";
 
 function OnOff({ on, toggle }: { on: boolean; toggle: () => void }) {
@@ -38,6 +39,20 @@ export function DrillDrawer() {
           (applies instantly)
         </span>
       </p>
+      <Row label="Audio prompts" hint="some cards play the sound with no text">
+        {/* The escape hatch for a card you can't hear (no speakers, noisy room).
+            `ask` is DERIVED from audioPrompts, so regenerate it in the same
+            update, exactly as the Settings page does. */}
+        <OnOff
+          on={cfg.audioPrompts}
+          toggle={() =>
+            update({
+              audioPrompts: !cfg.audioPrompts,
+              ask: askFromAudioPrompts(!cfg.audioPrompts),
+            })
+          }
+        />
+      </Row>
       <Row label="Timer">
         <OnOff on={cfg.timer} toggle={() => update({ timer: !cfg.timer })} />
         {cfg.timer ? (
