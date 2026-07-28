@@ -149,7 +149,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     title: "The other group, る-verbs, just drop る and add て.",
     body: [
       {
-        text: "The second group is called る-verbs. These are simpler: drop the final る and add て. There is no sound change, and never で.",
+        text: "The second group is called る-verbs. These are simpler: drop the final る and add て. Unlike う-verbs, る-verbs only change to て, never で.",
       },
     ],
     buildRules: [
@@ -182,8 +182,10 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     eyebrow: "Building the て/で-form",
     title: "いく (to go) is the one exception.",
     body: [
-      { text: "A verb ending in く normally takes いて. いく does not: it becomes いって." },
-      { text: "This same special change comes back later, when you learn the past (た) form." },
+      { text: "A verb ending in く normally takes いて. いく does not: its て-form is いって." },
+      {
+        text: "いく breaks the rule only some of the time. In most forms it acts like any く-verb. The て-form is one of the few where it does not.",
+      },
     ],
     buildRules: [{ verb: "いく", drop: "く", add: "って" }],
   },
@@ -194,8 +196,9 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     title: "する and くる follow no rule, so you learn them by heart.",
     body: [
       {
-        text: "Two common verbs are irregular. する (to do) becomes して. くる (to come) becomes きて.",
+        text: "する (to do) and くる (to come) are the only two irregular verbs. Unlike いく, which is regular in most forms, these two never follow the う-verb or る-verb rules, so every form is learned by heart.",
       },
+      { text: "For the て-form: する becomes して, and くる becomes きて." },
     ],
     buildRules: [
       { verb: "する", to: "して" },
