@@ -143,10 +143,9 @@ function TeachableLesson({
 
   return (
     <>
-        {/* "grammar" stays as the track name and "patterns" names the items —
-            the two are not the same word here the way "kanji" and "words" are
-            their own tracks' items. */}
-        <Lbl>Up next · grammar · {positionLabel("patterns", position)}</Lbl>
+        {/* "grammar" stays as the track name; the item is now the LESSON (a
+            multi-page walk), not the pattern, so the position counts lessons. */}
+        <Lbl>Up next · grammar · {positionLabel("lesson", position)}</Lbl>
 
         {/* Each pattern tile is standardized to the curriculum tile's shape: the
             pattern and a single greyed TYPE line beneath it, nothing else. The

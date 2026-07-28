@@ -46,17 +46,13 @@
 // migrate, because there is no cursor.
 
 import { effectiveState } from "@/lib/claims";
-import { factsOf } from "@/lib/facts";
 import { primaryHost } from "@/lib/grammar/example";
 import type { LessonPosition } from "@/lib/lesson-position";
 import { wordClassOf } from "@/lib/word-forms";
 import { CURRICULUM_WORDS } from "@/lib/word-lesson";
-import {
-  GRAMMAR_SUBJECT,
-  patternEntry,
-  patternMeaningFactId,
-} from "@/data/grammar";
-import { DRILLABLE, type Host, type Level, type Recipe } from "@/data/grammar/recipes";
+import { GRAMMAR_SUBJECT, patternMeaningFactId } from "@/data/grammar";
+import { DRILLABLE, RECIPES, type Host, type Level, type Recipe } from "@/data/grammar/recipes";
+import { CURRICULUM_LESSONS, type GrammarLessonDef } from "@/data/grammar/lessons";
 import { wordMeaningFactId, type VocabRow } from "@/data/vocab";
 import type { FactId, HistoryFile } from "@/types";
 
@@ -144,14 +140,9 @@ export const CURRICULUM_PATTERNS: readonly Recipe[] = [...DRILLABLE].sort(
  */
 export const GRAMMAR_CURRICULUM_TOTAL = CURRICULUM_PATTERNS.length;
 
-/** Every fact a pattern teaches — its meaning always, its production where the
- * recipe carries one. Read off the registry (factsOf) rather than rebuilt, so
- * a drillable recipe whose example doesn't build contributes only the facts
- * that actually exist, and the lesson can never seed a fact the drill can't
- * render. Lookup, not parse — the same rule facts.ts is built on. */
-function patternFacts(r: Recipe): FactId[] {
-  return factsOf(patternEntry(r.id));
-}
+/** A recipe by its id — for recovering the pattern a lesson is built around
+ * (its card tile and its host gate). */
+const RECIPE_BY_ID: ReadonlyMap<string, Recipe> = new Map(RECIPES.map((r) => [r.id, r]));
 
 /** A fact the app has no record of — never answered, never claimed, never
  * "quiz me"'d. The one definition of "new", the same `lastTested === 0` rule
@@ -263,25 +254,29 @@ export function hasStartedGrammarTrack(history: HistoryFile): boolean {
   return false;
 }
 
-/** The next `size` fresh patterns in teaching order, and how many were met
- * before them. The set the lesson OR the lock is computed from — shared so the
- * two can never disagree about which patterns are next. */
-function nextGrammarSet(
+/** The next teachable lesson and its ordinal, or null when the track is done.
+ * The first lesson whose primary pattern's MEANING fact is still fresh — the
+ * same per-pattern freshness the track advanced on before, now read one lesson
+ * at a time. Its index IS its position in the track (every earlier lesson is
+ * met), so `index + 1` is the "lesson N" the card shows. Shared by the lesson
+ * and the lock so the two can never disagree about which lesson is next. */
+function nextLessonAt(
   history: HistoryFile,
-  count: number,
-): { rows: Recipe[]; met: number } {
-  const size = clampGrammarPerLesson(count);
-  const rows: Recipe[] = [];
-  let met = 0;
-  for (const r of CURRICULUM_PATTERNS) {
-    if (!isFresh(patternMeaningFactId(r.id), history)) {
-      met++;
-      continue;
+): { lesson: GrammarLessonDef; index: number } | null {
+  for (let i = 0; i < CURRICULUM_LESSONS.length; i++) {
+    const lesson = CURRICULUM_LESSONS[i];
+    if (isFresh(patternMeaningFactId(lesson.primaryPattern), history)) {
+      return { lesson, index: i };
     }
-    rows.push(r);
-    if (rows.length >= size) break;
   }
-  return { rows, met };
+  return null;
+}
+
+/** The host the lesson's primary pattern must be taught on, or null when it
+ * needs none. */
+function lessonHost(lesson: GrammarLessonDef): Host | null {
+  const recipe = RECIPE_BY_ID.get(lesson.primaryPattern);
+  return recipe ? requiredHost(recipe) : null;
 }
 
 /**
@@ -306,27 +301,25 @@ function nextGrammarSet(
  */
 export function nextGrammarLesson(
   history: HistoryFile,
-  count: number,
+  // Kept for call-site compatibility; a sitting is now one whole lesson, so
+  // there is no per-sitting size to apply.
+  _count?: number,
 ): GrammarLesson | null {
-  const { rows, met } = nextGrammarSet(history, count);
-  if (!rows.length) return null;
+  const next = nextLessonAt(history);
+  if (!next) return null;
+  const { lesson, index } = next;
 
-  const learned = learnedHosts(history);
-  const locked = rows.some((r) => {
-    const host = requiredHost(r);
-    return host !== null && !learned.has(host);
-  });
-  if (locked) return null;
+  const host = lessonHost(lesson);
+  if (host !== null && !learnedHosts(history).has(host)) return null;
 
-  const cards = rows.map(toCard);
-  const facts = rows.flatMap(patternFacts);
+  const recipe = RECIPE_BY_ID.get(lesson.primaryPattern);
   return {
-    cards,
-    facts,
+    cards: recipe ? [toCard(recipe)] : [],
+    facts: [...lesson.drills],
     position: {
-      from: met + 1,
-      to: met + cards.length,
-      total: GRAMMAR_CURRICULUM_TOTAL,
+      from: index + 1,
+      to: index + 1,
+      total: CURRICULUM_LESSONS.length,
     },
   };
 }
@@ -346,21 +339,14 @@ export interface GrammarLock {
  */
 export function nextGrammarLock(
   history: HistoryFile,
-  count: number,
+  _count?: number,
 ): GrammarLock | null {
-  const { rows } = nextGrammarSet(history, count);
-  if (!rows.length) return null;
+  const next = nextLessonAt(history);
+  if (!next) return null;
 
-  const learned = learnedHosts(history);
-  const missing = new Set<Host>();
-  for (const r of rows) {
-    const host = requiredHost(r);
-    if (host !== null && !learned.has(host)) missing.add(host);
-  }
-  if (!missing.size) return null;
-
-  const order: Host[] = ["verb", "adj-i", "adj-na", "noun"];
-  return { hosts: order.filter((h) => missing.has(h)) };
+  const host = lessonHost(next.lesson);
+  if (host === null || learnedHosts(history).has(host)) return null;
+  return { hosts: [host] };
 }
 
 /** The subject these lessons belong to. Re-exported so a caller holding a
