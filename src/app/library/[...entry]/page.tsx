@@ -54,6 +54,7 @@ import { KanjiBuiltFrom } from "@/components/library/kanji-built-from";
 import { KanaFamilyView } from "@/components/library/kana-family-view";
 import { KanjiReadings } from "@/components/library/kanji-readings";
 import { MarkView } from "@/components/library/mark-view";
+import { GrammarConceptView } from "@/components/library/grammar-concept-view";
 import { TermView } from "@/components/library/term-view";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternTeach } from "@/components/library/pattern-teach";
@@ -80,8 +81,13 @@ import { contextPronunciation } from "@/data/kana-context";
 import { KanaContextView } from "@/components/lesson/kana-context-view";
 import {
   GRAMMAR_SUBJECT,
+  isTeFormRecipe,
   patternMeaningFactId,
 } from "@/data/grammar";
+import {
+  grammarConceptEntry,
+  grammarConceptFor,
+} from "@/data/grammar-concepts";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { KANJI_SUBJECT, kanjiRow, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
@@ -202,6 +208,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ]
     : undefined;
   const term = termFor(entry.id);
+  // The grammar-concept reference behind this entry's id, if it names one (the
+  // て-form, in depth). Its content renders in place of the recipe card, like a
+  // mark or a term.
+  const concept = grammarConceptFor(entry.id);
   const mnemonic = getMnemonic(entry.glyph);
 
   // The two confusion lines. Both come out of here, and the history one is built
@@ -555,6 +565,24 @@ function EntryView({ entry }: { entry: LibEntry }) {
             className="text-[13px] text-accent no-underline"
           >
             all {familyMembers.length} side by side →
+          </Link>
+        </LinkRow>
+      ) : null}
+
+      {/* THE CONCEPT REFERENCE, for the 〜て family. Every verb-form-て pattern
+          (te-sequence, te-cause, te-request, …) links to the one page that
+          teaches the て-form as an IDEA — what a conjugation form is, how て
+          connects actions, and how the last verb carries the tense — content the
+          build table on this page deliberately does not repeat. `isTeFormRecipe`
+          is the verb attachment being the て-form (see data/grammar), so the row
+          appears on the whole family and nowhere else. */}
+      {isGrammar && pattern && isTeFormRecipe(pattern) ? (
+        <LinkRow label="Read about it">
+          <Link
+            href={entryHref(grammarConceptEntry("te-form"))}
+            className="text-[13px] text-accent no-underline"
+          >
+            The て-form, in depth →
           </Link>
         </LinkRow>
       ) : null}
@@ -933,6 +961,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
           table (a rule has no gradeable question). */}
       {mark ? <MarkView mark={mark} /> : null}
       {term ? <TermView term={term} /> : null}
+      {concept ? <GrammarConceptView concept={concept} /> : null}
 
       {/* The pair itself — the shared card the teach walk draws, so the Library
           and the lesson cannot show a pair two different ways. It stands in for

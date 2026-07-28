@@ -243,6 +243,22 @@ const LESSON_TE_FORM: GrammarLessonDef = {
   primaryPattern: "te-sequence",
 };
 
+/**
+ * The two CONCEPTUAL te-form pages, exported for the Library's grammar-concept
+ * reference (src/data/grammar-concepts.ts).
+ *
+ * `gl-te-intro` (what a conjugation form is) and `gl-te-use` (て as a connector,
+ * and the last verb carrying the tense and politeness) are the two pages that
+ * teach the て-form as an IDEA rather than a build table. The concept entry
+ * renders THESE objects, so the reference page and the lesson say the same words
+ * and cannot drift — the same pointer-not-a-copy arrangement marks and terms
+ * make. Selected by id off TE_FORM_PAGES rather than re-authored; the ids are
+ * stable, so the lookup is total. */
+export const TE_FORM_CONCEPT_PAGES: readonly PhaseIntro[] = [
+  TE_FORM_PAGES.find((p) => p.id === "gl-te-intro")!,
+  TE_FORM_PAGES.find((p) => p.id === "gl-te-use")!,
+];
+
 // ---------------------------------------------------------------------------
 // LESSON 2 — 〜ている.
 //

@@ -49,6 +49,11 @@ import { VOCAB, VOCAB_SUBJECT, wordEntry } from "@/data/vocab";
 import { GRAMMAR_SUBJECT, patternEntry } from "@/data/grammar";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
+import {
+  GRAMMAR_CONCEPT_SUBJECT,
+  GRAMMAR_CONCEPTS,
+  grammarConceptEntry,
+} from "@/data/grammar-concepts";
 import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
@@ -234,6 +239,20 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
           entries: TERMS.flatMap((t) => resolve(termEntry(t.id))),
         },
       ];
+    // ONE SECTION, holding every grammar concept — marks' and terms' argument
+    // again. A short set of idea pages that fits on a shelf and offers no cut
+    // worth inventing. Rendered as rows (see asRows) because a concept has no
+    // glyph to tile: its name and its one-line summary read across a line.
+    case GRAMMAR_CONCEPT_SUBJECT:
+      return [
+        {
+          id: "grammar-concepts",
+          label: "Grammar concepts",
+          entries: GRAMMAR_CONCEPTS.flatMap((c) =>
+            resolve(grammarConceptEntry(c.id)),
+          ),
+        },
+      ];
     // EVERY word, in the beginner's teaching order, cut into ranges of
     // GROUP_SIZE ("1–50", "51–100") like the kanji shelf's hundreds — and shown
     // WHOLE, all 12,553, not the old top-120 "Everyday words" card. The ranges
@@ -378,7 +397,8 @@ export function Shelf({
     kind === SENTENCE_RULE_KIND ||
     kind === TRANSITIVITY_SUBJECT ||
     kind === KEIGO_SUBJECT ||
-    kind === TERM_SUBJECT;
+    kind === TERM_SUBJECT ||
+    kind === GRAMMAR_CONCEPT_SUBJECT;
 
   // Every matching section stays in the scroll. Distant sections are mounted
   // near the viewport instead of being omitted or capped.
