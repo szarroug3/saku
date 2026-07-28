@@ -550,16 +550,17 @@ describe("a る-ending verb waits on the て-form", () => {
     return out;
   }
 
-  test("with the て-form unlearned, the spine locks at the verb rather than teaching it", () => {
+  test("with the て-form unlearned, the spine skips the verb and teaches on rather than locking", () => {
     const h = history(reachedTheVerb()); // te-form fact absent → fresh
-    assert.equal(
-      nextCurriculumLesson(h, RANGE),
-      null,
-      "no lesson while the gated verb is all that is left of the frontier",
+    // Skip-and-return: never a lock, and the frontier moves PAST the held-back
+    // verb to the next teachable material rather than stopping.
+    assert.equal(nextCurriculumLock(h, RANGE), null, "skip-and-return never locks");
+    const lesson = nextCurriculumLesson(h, RANGE);
+    assert.ok(lesson, "the spine keeps teaching past the gated verb");
+    assert.ok(
+      !lesson.cards.some((c) => c.glyph === gated!.glyph),
+      "and the held-back verb is not in the lesson it hands out",
     );
-    const lock = nextCurriculumLock(h, RANGE);
-    assert.ok(lock, "a lock is surfaced instead");
-    assert.equal(lock.verb, gated!.glyph, "and it names the verb it is waiting on");
   });
 
   test("once the て-form is learned, the verb teaches and the lock clears", () => {

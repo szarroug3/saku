@@ -478,11 +478,10 @@ export function nextCurriculumLesson(
 
   const cards = teachableCards(group, history);
   const facts = cards.flatMap((it) => it.facts);
-  // No teachable cards means one of two things, and both hand the card off:
-  // the curriculum is finished (frontierGroup already returned null for that,
-  // so not here), or every unmet item left is a る-ending verb held back until
-  // the て-form is learned — a LOCK, surfaced by nextCurriculumLock. Either way
-  // there is no lesson to teach right now.
+  // frontierGroup already guarantees teachable cards here, so this only guards
+  // the degenerate case of a teachable item that carries no facts. A group whose
+  // sole remaining items are held-back る-verbs was skipped by the frontier, not
+  // handed here (see frontierGroup — skip-and-return, not a lock).
   if (!facts.length) return null;
 
   return {
@@ -515,14 +514,21 @@ function itemIsMet(it: CurriculumLessonItem, history: HistoryFile): boolean {
   });
 }
 
-/** The first lesson with anything left unlearned in it — the frontier of the
- * climb — or null when the whole curriculum is done. Shared by the lesson and
- * the lock so the two can never disagree about which lesson is next. */
+/** The first lesson with anything TEACHABLE left in it — the frontier of the
+ * climb — or null when nothing is teachable (curriculum done, or the only things
+ * left are held-back る-verbs waiting on the て-form).
+ *
+ * SKIP-AND-RETURN, not a hard lock. A group whose only unlearned items are
+ * gated る-verbs is stepped over, so the words track keeps moving through
+ * everything else while the て-form is still unlearned. The moment the て-form is
+ * learned, `teachableCards` stops holding those verbs back, and the frontier
+ * returns to the earliest group that still has one — 知る gets taught then, in
+ * its place, rather than blocking the whole track until it does. */
 function frontierGroup(
   history: HistoryFile,
   range: LessonRange,
 ): CurriculumLessonGroup | null {
-  return curriculum(range).find((g) => g.items.some((it) => !itemIsMet(it, history))) ?? null;
+  return curriculum(range).find((g) => teachableCards(g, history).length > 0) ?? null;
 }
 
 /**
@@ -557,32 +563,19 @@ function teachableCards(
 }
 
 /**
- * The lock standing between the learner and the next lesson, or null when there
- * is none. The mirror of the grammar track's nextGrammarLock: same frontier,
- * and it reports what is in the way rather than what to teach.
- *
- * The one thing that can lock the spine is a る-ending verb met before the
- * て-form (see isGatedRuVerb). The lock is raised only when the verb is ALL that
- * is left of the frontier lesson — the learner has already been taught every
- * other item in it — so the words track teaches right up to the verb and then
- * waits, rather than blocking a whole mixed lesson on account of one word. Once
- * the て-form is learned the held-back verb becomes teachable and this is null.
+ * Always null: the words track SKIPS a held-back る-verb rather than locking on
+ * it. This export stays so the home feed's call site is untouched, but with
+ * skip-and-return (see frontierGroup) there is never a lock — the frontier moves
+ * past a gated verb, so the learner is never stopped, and 知る simply surfaces
+ * later, once the て-form is learned. Kept as a function (not deleted) because
+ * the mirror `nextGrammarLock` on the grammar side is real, and a caller reading
+ * both should see the shapes match.
  */
 export function nextCurriculumLock(
-  history: HistoryFile,
-  range: LessonRange,
+  _history: HistoryFile,
+  _range: LessonRange,
 ): CurriculumLock | null {
-  if (teFormLearned(history)) return null;
-  const group = frontierGroup(history, range);
-  if (!group) return null;
-
-  // Teachable already skips the gated verbs; if anything is still teachable the
-  // card teaches it and there is no lock yet.
-  if (teachableCards(group, history).length) return null;
-
-  const blocked = group.items.find((it) => !itemIsMet(it, history) && isGatedRuVerb(it));
-  if (!blocked) return null;
-  return { verb: blocked.glyph };
+  return null;
 }
 
 /** The written forms this lesson teaches as WORDS: what the reading unlock is
