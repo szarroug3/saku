@@ -53,7 +53,7 @@ export const TA_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-ta-form",
     setId: "",
     eyebrow: "The た-form",
-    title: "The た-form is the plain past — “did”.",
+    title: "The た-form is the plain past, “did”.",
     body: [
       {
         text: "Built just like the て/で-form you already know, but ending in た or だ. る-verbs drop る, and いく is the one exception.",
@@ -77,10 +77,13 @@ export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-stem-form",
     setId: "",
     eyebrow: "The stem",
-    title: "The stem is the verb with ます taken off.",
+    title: "The stem is a verb's connecting base.",
     body: [
       {
-        text: "Lots of patterns hang off the stem — 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
+        text: "The stem is the shape a verb takes to join onto something else. On its own it does nothing; it just holds the verb ready for whatever comes next.",
+      },
+      {
+        text: "A lot of patterns attach to it: 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much). The table below builds it from the dictionary form.",
       },
     ],
     buildRules: [
