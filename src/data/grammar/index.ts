@@ -289,7 +289,17 @@ export function productionHosts(r: Recipe): Host[] {
   // carry an adjective production fact: the whole 〜て family is verb-ending drills.
   // The row-shift forms are NOT here: they keep their single host-keyed mastery
   // fact and instead expand it per-ending in coverage (productionCoverageBuckets).
-  if (usesSoundChange(r)) return [];
+  if (usesSoundChange(r)) {
+    // The verb side splits by ENDING, so it carries no verb host fact. The 〜て
+    // family stops there: its adjective (高くて) is not separately scored, the
+    // whole family being verb-ending drills. But た/たら's adjective conditional
+    // (高かったら, 静かだったら) is its own formation, not a 音便, so those hosts
+    // keep their production fact alongside the verb's ending split.
+    if (isTeFormRecipe(r)) return [];
+    return HOST_ORDER.filter(
+      (h) => h !== "verb" && r.attach.some((a) => a.host === h && !isTrivialAttachment(a)),
+    );
+  }
   const primary = primaryHost(r);
   if (!primary) return [];
   const rest = HOST_ORDER.filter(
@@ -444,8 +454,10 @@ function buildGrammarFacts(): FactInfo[] {
           meaning: r.gloss,
         });
       }
-      mintSpecialVerbFacts(r, facts);
-      continue;
+      // Fall through to the host loop: for た/たら it mints the adjective
+      // conditional facts (productionHosts returns those non-verb hosts); for the
+      // 〜て family productionHosts is [], so the loop emits nothing and only the
+      // ending facts stand. The special verbs are minted once, below.
     }
     // The built form on a FIXED representative verb — see lib/grammar/example.ts
     // for why the word is fixed. Baking it here (rather than leaving a pattern

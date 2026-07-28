@@ -104,18 +104,26 @@ describe("a production fact per HOST, where the hosts are different rules", () =
     }
   });
 
-  test("the 音便 patterns carry NO host production fact — they split by ending", () => {
+  test("the 〜て family carries NO host production fact — it splits by ending", () => {
     // te-cause / te-permission / te-mo used to carry host-keyed production facts
-    // (and te-permission / te-mo deferred their adj-i rule to te-cause). The whole
-    // 音便 set (て/た/たら) now drills the verb sound-change endings only, so every
-    // one has productionHosts [] and no sharedProductionWith deferral remains —
-    // tara included, whose adjective conditional (高かったら) folds in the same way
-    // te-cause's 寒くて does.
-    for (const id of ["te-cause", "te-permission", "te-mo", "tara"]) {
+    // (and te-permission / te-mo deferred their adj-i rule to te-cause). The 〜て
+    // family now drills the verb sound-change endings only, so every one has
+    // productionHosts [] and no sharedProductionWith deferral remains. Its
+    // adjective (高くて) is not separately scored.
+    for (const id of ["te-cause", "te-permission", "te-mo"]) {
       const r = byId(id);
       assert.deepEqual(productionHosts(r), [], id);
       assert.equal(r.sharedProductionWith, undefined, id);
     }
+  });
+
+  test("た/たら split the VERB by ending but keep their adjective conditional", () => {
+    // The verb side of a た/たら pattern is a 音便 split (no verb host fact), but
+    // the adjective conditional (高かったら, 静かだったら) is a different formation,
+    // not a 音便, so 〜たら keeps its adj-i / adj-na production facts. Verb-only た
+    // patterns have no such host and still come back empty.
+    assert.deepEqual(productionHosts(byId("tara")), ["adj-i", "adj-na"], "tara");
+    assert.deepEqual(productionHosts(byId("ta-koto-ga-aru")), [], "ta-koto-ga-aru");
   });
 
   test("a deferral names a recipe that really does cover the host", () => {
