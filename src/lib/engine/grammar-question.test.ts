@@ -54,7 +54,9 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
     assert.equal(fixed.glyph, "行く"); // unchanged when no vehicle is threaded
     const varied = qt.prompt(TE_KARA, "en2jp", { grammarVehicle: TABERU });
     assert.equal(varied.glyph, "食べる");
-    assert.equal(varied.context, "〜てから form");
+    // The form name is no longer a sub-label; it folds into the instruction
+    // ("Type how this word is said in the 〜てから form."), so context is null.
+    assert.equal(varied.context, null);
   });
 
   test("check grades against the vehicle it prompted on", () => {
