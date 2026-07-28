@@ -213,7 +213,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
     : undefined;
   const term = termFor(entry.id);
   // The grammar-concept reference behind this entry's id, if it names one (the
-  // て-form, in depth). Its content renders in place of the recipe card, like a
+  // て-form). Its content renders in place of the recipe card, like a
   // mark or a term.
   const concept = grammarConceptFor(entry.id);
   const mnemonic = getMnemonic(entry.glyph);
@@ -576,54 +576,43 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </LinkRow>
       ) : null}
 
-      {/* THE CONCEPT REFERENCE, for the 〜て family. Every verb-form-て pattern
-          (te-sequence, te-cause, te-request, …) links to the one page that
-          teaches the て-form as an IDEA — what a conjugation form is, how て
-          connects actions, and how the last verb carries the tense — content the
-          build table on this page deliberately does not repeat. `isTeFormRecipe`
-          is the verb attachment being the て-form (see data/grammar), so the row
-          appears on the whole family and nowhere else. */}
-      {isGrammar && pattern && isTeFormRecipe(pattern) ? (
+      {/* CONCEPT REFERENCES — the foundational idea pages behind this pattern,
+          grouped under ONE "Read about it" heading (not one heading per link).
+          Each link appears on the family it explains: the て-form on every
+          verb-form-て pattern (isTeFormRecipe); the verb classes on every pattern
+          that CONJUGATES a verb (conjugatesVerb, so a plain-dictionary pattern is
+          left out); the two adjective kinds on every pattern that HOSTS an
+          adjective (hostsAdjective). See data/grammar for each predicate. */}
+      {isGrammar &&
+      pattern &&
+      (isTeFormRecipe(pattern) || conjugatesVerb(pattern) || hostsAdjective(pattern)) ? (
         <LinkRow label="Read about it">
-          <Link
-            href={entryHref(grammarConceptEntry("te-form"))}
-            className="text-[13px] text-accent no-underline"
-          >
-            The て-form, in depth →
-          </Link>
-        </LinkRow>
-      ) : null}
-
-      {/* THE VERB-CLASS CONCEPT, for every pattern that CONJUGATES a verb. The
-          moment a pattern asks for the て-form, the ない-form, the stem, and so on,
-          which of the two groups the verb is in (う-verb / る-verb) is what decides
-          the shape — so the class idea belongs on the whole verb-conjugating
-          family. `conjugatesVerb` is the verb attachment being a real conjugation
-          rather than the bare dictionary form (see data/grammar), so a pattern
-          that only takes the plain form does not get the row. */}
-      {isGrammar && pattern && conjugatesVerb(pattern) ? (
-        <LinkRow label="Read about it">
-          <Link
-            href={entryHref(grammarConceptEntry("verb-classes"))}
-            className="text-[13px] text-accent no-underline"
-          >
-            {grammarConceptRow("verb-classes")?.name} →
-          </Link>
-        </LinkRow>
-      ) : null}
-
-      {/* THE ADJECTIVE-TYPE CONCEPT, for every pattern that HOSTS an adjective
-          (〜すぎる, 〜ので, 〜そう, …). Whether the adjective is い or な decides how
-          it attaches, so the two-kinds idea belongs on the adjective-hosting
-          family. `hostsAdjective` is an adj-i or adj-na host on the recipe. */}
-      {isGrammar && pattern && hostsAdjective(pattern) ? (
-        <LinkRow label="Read about it">
-          <Link
-            href={entryHref(grammarConceptEntry("adjective-types"))}
-            className="text-[13px] text-accent no-underline"
-          >
-            {grammarConceptRow("adjective-types")?.name} →
-          </Link>
+          <div className="flex flex-col items-start gap-1">
+            {isTeFormRecipe(pattern) ? (
+              <Link
+                href={entryHref(grammarConceptEntry("te-form"))}
+                className="text-[13px] text-accent no-underline"
+              >
+                {grammarConceptRow("te-form")?.name} →
+              </Link>
+            ) : null}
+            {conjugatesVerb(pattern) ? (
+              <Link
+                href={entryHref(grammarConceptEntry("verb-classes"))}
+                className="text-[13px] text-accent no-underline"
+              >
+                {grammarConceptRow("verb-classes")?.name} →
+              </Link>
+            ) : null}
+            {hostsAdjective(pattern) ? (
+              <Link
+                href={entryHref(grammarConceptEntry("adjective-types"))}
+                className="text-[13px] text-accent no-underline"
+              >
+                {grammarConceptRow("adjective-types")?.name} →
+              </Link>
+            ) : null}
+          </div>
         </LinkRow>
       ) : null}
 

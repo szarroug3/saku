@@ -281,7 +281,7 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
 export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
   {
     id: "te-form",
-    name: "The て-form, in depth",
+    name: "The て-form",
     summary:
       "What a conjugation form is, how the て-form connects actions, and how the last verb sets the tense.",
     body: [

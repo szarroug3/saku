@@ -27,7 +27,7 @@ import {
 import { entryFromSlug, entryHref } from "@/lib/library/href";
 
 // The grammar-concept shelf: reference pages for the IDEAS behind the grammar
-// patterns. One today — the て-form, in depth. The load-bearing properties are
+// patterns. One today — the て-form. The load-bearing properties are
 // the same a term has (it RESOLVES to a page, has no gradeable facts, and points
 // at the lesson's own prose so the two cannot drift) PLUS the one thing this
 // feature exists for: the 〜て family of grammar entries LINKS to it.
@@ -58,7 +58,7 @@ describe("the grammar concept is a real, resolvable reference entry", () => {
   test("the て-form concept exists, at the stable id the link points to", () => {
     const entry = libEntry(grammarConceptEntry("te-form"));
     assert.ok(entry, "the te-form concept resolves to no entry");
-    assert.equal(entry.name, "The て-form, in depth");
+    assert.equal(entry.name, "The て-form");
   });
 
   test("a concept has no gradeable facts, like a mark or a term", () => {
@@ -162,7 +162,7 @@ describe("a concept points at the lesson's own prose, so the two cannot drift", 
 });
 
 describe("the te-family grammar entries link to the concept", () => {
-  // The page's Links card shows a "Read about it → The て-form, in depth" row for
+  // The page's Links card shows a "Read about it → The て-form" row for
   // exactly the verb-form-て patterns (isTeFormRecipe). This asserts the predicate
   // the page branches on: te-sequence is in, a non-て pattern is out.
   test("te-sequence is a te-form recipe, so it gets the link", () => {

@@ -92,7 +92,7 @@ test("every kind is indexed — no entry falls back to the legacy one-segment UR
     // glossary shelf (JLPT, kana, romaji, ...) — see TERM_KIND. "sentence-rule"
     // and "writing-rule" are the two mark shelves (SENTENCE_RULE_KIND /
     // MARK_SUBJECT), split by a mark's `shelf` in entries.ts. "grammar-concept"
-    // is the ideas-behind-the-patterns shelf (the て-form, in depth) — see
+    // is the ideas-behind-the-patterns shelf (the て-form) — see
     // GRAMMAR_CONCEPT_SUBJECT.
     ["counter", "grammar", "grammar-concept", "hiragana", "kanji", "katakana", "keigo", "radical", "sentence-rule", "term", "transitivity", "word", "writing-rule"],
   );
