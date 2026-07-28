@@ -81,12 +81,15 @@ import { contextPronunciation } from "@/data/kana-context";
 import { KanaContextView } from "@/components/lesson/kana-context-view";
 import {
   GRAMMAR_SUBJECT,
+  conjugatesVerb,
+  hostsAdjective,
   isTeFormRecipe,
   patternMeaningFactId,
 } from "@/data/grammar";
 import {
   grammarConceptEntry,
   grammarConceptFor,
+  grammarConceptRow,
 } from "@/data/grammar-concepts";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { KANJI_SUBJECT, kanjiRow, meaningFactId } from "@/data/kanji";
@@ -587,6 +590,58 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </LinkRow>
       ) : null}
 
+      {/* THE VERB-CLASS CONCEPT, for every pattern that CONJUGATES a verb. The
+          moment a pattern asks for the て-form, the ない-form, the stem, and so on,
+          which of the two groups the verb is in (う-verb / る-verb) is what decides
+          the shape — so the class idea belongs on the whole verb-conjugating
+          family. `conjugatesVerb` is the verb attachment being a real conjugation
+          rather than the bare dictionary form (see data/grammar), so a pattern
+          that only takes the plain form does not get the row. */}
+      {isGrammar && pattern && conjugatesVerb(pattern) ? (
+        <LinkRow label="Read about it">
+          <Link
+            href={entryHref(grammarConceptEntry("verb-classes"))}
+            className="text-[13px] text-accent no-underline"
+          >
+            {grammarConceptRow("verb-classes")?.name} →
+          </Link>
+        </LinkRow>
+      ) : null}
+
+      {/* THE ADJECTIVE-TYPE CONCEPT, for every pattern that HOSTS an adjective
+          (〜すぎる, 〜ので, 〜そう, …). Whether the adjective is い or な decides how
+          it attaches, so the two-kinds idea belongs on the adjective-hosting
+          family. `hostsAdjective` is an adj-i or adj-na host on the recipe. */}
+      {isGrammar && pattern && hostsAdjective(pattern) ? (
+        <LinkRow label="Read about it">
+          <Link
+            href={entryHref(grammarConceptEntry("adjective-types"))}
+            className="text-[13px] text-accent no-underline"
+          >
+            {grammarConceptRow("adjective-types")?.name} →
+          </Link>
+        </LinkRow>
+      ) : null}
+
+      {/* CONCEPT-TO-CONCEPT CROSS-LINKS. A concept page sends the reader on to its
+          siblings — the て-form idea and the verb-class idea each point at the
+          other — so the two most foundational pages are reachable from one
+          another. Every non-concept entry has `concept` null and renders nothing. */}
+      {concept?.related?.map((rel) => {
+        const other = grammarConceptRow(rel);
+        if (!other) return null;
+        return (
+          <LinkRow key={rel} label="Read about it">
+            <Link
+              href={entryHref(grammarConceptEntry(other.id))}
+              className="text-[13px] text-accent no-underline"
+            >
+              {other.name} →
+            </Link>
+          </LinkRow>
+        );
+      })}
+
       {/* THERE IS NO "no outside link" MESSAGE, and this is the decision that
           `noLinkReason` does not get to override. 7 of the 12 clusters have
           `link: null`, and 52 of the 81 patterns are in no cluster at all — so
@@ -992,6 +1047,23 @@ function EntryView({ entry }: { entry: LibEntry }) {
         <div className="mb-3.5">
           <KeigoSetView set={keigoSet} voiceName={cfg.voiceName} showLead={false} />
         </div>
+      ) : null}
+
+      {/* THE POLITENESS-LEVELS CONCEPT, on every keigo page. The set above teaches
+          the SPECIFIC honorific and humble verbs; this row sends the reader to the
+          idea behind them — the three registers and how whose action it is decides
+          which you use. Keigo has no Links card (like a verb pair), so this rides
+          in a card of its own rather than a Links row. */}
+      {isKeigo && keigoSet ? (
+        <Card>
+          <Lbl>Read about it</Lbl>
+          <Link
+            href={entryHref(grammarConceptEntry("keigo-registers"))}
+            className="text-[13px] text-accent no-underline"
+          >
+            {grammarConceptRow("keigo-registers")?.name} →
+          </Link>
+        </Card>
       ) : null}
 
       {/* The generic table, now serving grammar and anything new. No rows, no

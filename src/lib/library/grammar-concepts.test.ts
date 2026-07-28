@@ -9,7 +9,13 @@ import {
 } from "@/data/grammar-concepts";
 import { TE_FORM_CONCEPT_PAGES } from "@/data/grammar/lessons";
 import { RECIPES } from "@/data/grammar/recipes";
-import { isTeFormRecipe, patternEntry } from "@/data/grammar";
+import {
+  conjugatesVerb,
+  hostsAdjective,
+  isTeFormRecipe,
+  patternEntry,
+} from "@/data/grammar";
+import { KEIGO_SETS, keigoSetEntry } from "@/data/keigo";
 import {
   KINDS,
   KIND_LABEL,
@@ -91,34 +97,51 @@ describe("the grammar concept is a real, resolvable reference entry", () => {
 
   test("no learner-facing copy uses an em dash (Sam's rule)", () => {
     for (const c of GRAMMAR_CONCEPTS) {
-      const prose = [c.name, c.summary, ...c.body, ...(c.searchAlso ?? [])].join(" ");
+      const cardProse = c.cards
+        .flatMap((card) => [
+          card.title,
+          ...card.body.flatMap((p) => [p.lead ?? "", p.text]),
+        ])
+        .join(" ");
+      const prose = [
+        c.name,
+        c.summary,
+        ...c.body,
+        ...(c.searchAlso ?? []),
+        cardProse,
+      ].join(" ");
       assert.ok(!prose.includes("—"), `${c.id} uses an em dash`);
     }
   });
 });
 
 describe("a concept points at the lesson's own prose, so the two cannot drift", () => {
-  /** The lesson's own concept pages, by identity — a concept may point only at
-   * these, never a hand-built copy. Today only the te-form lesson exports any. */
-  const SHIPPED = new Set(TE_FORM_CONCEPT_PAGES);
-
   test("the te-form concept renders the lesson's own conceptual pages", () => {
     const te = GRAMMAR_CONCEPTS.find((c) => c.id === "te-form");
     assert.ok(te, "no te-form concept");
-    // The exact pages the lesson exports — same objects, so a copy edit to the
-    // lesson lands here too.
+    // The te-form concept REUSES the lesson's exported pages — same objects, so a
+    // copy edit to the lesson lands here too. That drift guarantee applies only to
+    // a concept that points at a lesson; the authored concepts below own their
+    // prose outright (one copy, in grammar-concepts.ts, nothing to drift from).
     assert.deepEqual(te.cards, TE_FORM_CONCEPT_PAGES);
     assert.ok(te.cards.length >= 2, "the concept teaches fewer than two pages");
+    for (const card of te.cards) {
+      assert.ok(
+        TE_FORM_CONCEPT_PAGES.includes(card),
+        `te-form names ${card.id}, which is not a lesson page it may reuse`,
+      );
+    }
   });
 
-  test("every card a concept names is a card the app ships", () => {
+  test("every concept has real, titled, non-empty teaching pages", () => {
     for (const c of GRAMMAR_CONCEPTS) {
+      assert.ok(c.cards.length >= 1, `${c.id} teaches no pages`);
+      const ids = new Set<string>();
       for (const card of c.cards) {
-        assert.ok(
-          SHIPPED.has(card),
-          `${c.id} names ${card.id}, which is not a card the app ships`,
-        );
         assert.ok(card.title.trim().length > 0, `${card.id} has no title`);
+        assert.ok(card.body.length > 0, `${card.id} has no body`);
+        assert.ok(!ids.has(card.id), `${c.id} repeats card id ${card.id}`);
+        ids.add(card.id);
       }
     }
   });
@@ -169,5 +192,112 @@ describe("the te-family grammar entries link to the concept", () => {
       entryHref(grammarConceptEntry("te-form")),
       "/library/grammar-concept/te-form",
     );
+  });
+});
+
+describe("the three new concepts resolve and carry a readable slug", () => {
+  const NEW = ["verb-classes", "adjective-types", "keigo-registers"] as const;
+
+  test("each resolves id -> entry -> content", () => {
+    for (const id of NEW) {
+      const entry = libEntry(grammarConceptEntry(id));
+      assert.ok(entry, `${id} resolves to no entry`);
+      assert.equal(entryName(entry), entry.name);
+      assert.ok(GRAMMAR_CONCEPTS.some((c) => c.id === id), `${id} is not a concept`);
+    }
+  });
+
+  test("each has a stable, round-tripping URL", () => {
+    for (const id of NEW) {
+      const href = entryHref(grammarConceptEntry(id));
+      assert.equal(href, `/library/grammar-concept/${id}`);
+      const [, , kind, slug] = href.split("/");
+      assert.equal(entryFromSlug(kind, slug), grammarConceptEntry(id));
+    }
+  });
+});
+
+describe("the verb-conjugating grammar entries link to う-verbs and る-verbs", () => {
+  // The page shows a "Read about it → う-verbs and る-verbs" row for every pattern
+  // that CONJUGATES a verb (conjugatesVerb). This asserts the predicate the page
+  // branches on: a te/nai/stem pattern is in, a bare-dictionary or noun pattern is
+  // out.
+  test("the concept exists at the id the link points to", () => {
+    const entry = libEntry(grammarConceptEntry("verb-classes"));
+    assert.ok(entry);
+    assert.equal(entry.name, "う-verbs and る-verbs");
+  });
+
+  test("a verb-form pattern is detected, and a non-conjugating one is not", () => {
+    const family = RECIPES.filter((r) => conjugatesVerb(r)).map((r) => r.id);
+    assert.ok(family.includes("te-sequence"), "te-sequence should conjugate a verb");
+    assert.ok(family.length >= 10, "the verb-form family looks too small");
+    // Sanity: the whole te-form family conjugates a verb, so verb-classes reaches
+    // at least everywhere the te-form concept does.
+    for (const r of RECIPES.filter((x) => isTeFormRecipe(x))) {
+      assert.ok(conjugatesVerb(r), `${r.id} is a te recipe but not verb-conjugating`);
+    }
+    // A pattern whose verb attachment is the bare dictionary form (no class
+    // needed) must not get the row.
+    const bare = RECIPES.find(
+      (r) => r.attach.find((a) => a.host === "verb")?.form === "dictionary",
+    );
+    if (bare) assert.ok(!conjugatesVerb(bare), `${bare.id} needs no verb class`);
+  });
+});
+
+describe("the adjective-hosting grammar entries link to い/な-adjectives", () => {
+  test("the concept exists at the id the link points to", () => {
+    const entry = libEntry(grammarConceptEntry("adjective-types"));
+    assert.ok(entry);
+    assert.equal(entry.name, "い-adjectives and な-adjectives");
+  });
+
+  test("adjective-hosting patterns are detected, and a verb-only one is not", () => {
+    const family = RECIPES.filter((r) => hostsAdjective(r)).map((r) => r.id);
+    // 〜すぎる, 〜ので, 〜そう all host an adjective.
+    assert.ok(family.includes("sugiru"));
+    assert.ok(family.includes("node"));
+    assert.ok(family.some((id) => id.startsWith("sou")));
+    assert.ok(family.length >= 3, "the adjective family looks too small");
+    // te-sequence hosts only a verb, so it must not get the adjective row.
+    const teSeq = RECIPES.find((r) => r.id === "te-sequence")!;
+    assert.ok(!hostsAdjective(teSeq), "te-sequence should not host an adjective");
+  });
+});
+
+describe("the keigo entries can reach the politeness-levels concept", () => {
+  test("the concept exists at the id the keigo pages point to", () => {
+    const entry = libEntry(grammarConceptEntry("keigo-registers"));
+    assert.ok(entry);
+    assert.equal(entry.name, "Keigo: the politeness levels");
+  });
+
+  test("every keigo set has an entry to carry the link", () => {
+    assert.ok(KEIGO_SETS.length > 0, "no keigo sets");
+    for (const set of KEIGO_SETS) {
+      assert.ok(libEntry(keigoSetEntry(set)), `${set.id} has no entry`);
+    }
+  });
+});
+
+describe("the two foundational concepts cross-link to each other", () => {
+  test("te-form and verb-classes each point at the other", () => {
+    const te = GRAMMAR_CONCEPTS.find((c) => c.id === "te-form")!;
+    const vc = GRAMMAR_CONCEPTS.find((c) => c.id === "verb-classes")!;
+    assert.ok(te.related?.includes("verb-classes"), "te-form does not link verb-classes");
+    assert.ok(vc.related?.includes("te-form"), "verb-classes does not link te-form");
+  });
+
+  test("every related id names a real, resolvable concept", () => {
+    for (const c of GRAMMAR_CONCEPTS) {
+      for (const rel of c.related ?? []) {
+        assert.ok(
+          GRAMMAR_CONCEPTS.some((x) => x.id === rel),
+          `${c.id} points at ${rel}, which is not a concept`,
+        );
+        assert.ok(libEntry(grammarConceptEntry(rel)), `${rel} resolves to no entry`);
+      }
+    }
   });
 });
