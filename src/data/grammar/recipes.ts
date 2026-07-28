@@ -1033,7 +1033,7 @@ export const RECIPES: readonly Recipe[] = [
   {
     id: "to-conditional",
     pattern: "〜と",
-    gloss: "whenever X, Y",
+    gloss: "whenever X",
     level: "N4",
     cluster: "conditionals",
     attach: [{ host: "verb", form: "dictionary", add: "と" }],

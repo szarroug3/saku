@@ -75,7 +75,13 @@ function pageHost(r: Recipe): Host {
  * gloss with no X slot is left as it is. */
 function appliedGloss(gloss: string, ex: ExampleWord): string {
   if (!/\bX\b/.test(gloss)) return gloss;
-  if (!ex.ing) return gloss.replace(/\bX\b/g, ex.en); // a noun or adjective: plain fill
+  if (!ex.ing) {
+    // A noun takes an article so a particle gloss reads ("from a book", not "from
+    // book"); an adjective takes none ("too expensive", not "too a expensive").
+    const filled =
+      ex.cls === null ? `${/^[aeiou]/i.test(ex.en) ? "an" : "a"} ${ex.en}` : ex.en;
+    return gloss.replace(/\bX\b/g, filled);
+  }
   const base = ex.en;
   return (
     gloss
@@ -91,6 +97,14 @@ function appliedGloss(gloss: string, ex: ExampleWord): string {
       .replace(/\bif X\b/g, `if you ${base}`)
       .replace(/\bwhen X\b/g, `when you ${base}`)
       .replace(/\bbecause X\b/g, `because you ${base}`)
+      // The other subordinate-clause frames — a complementizer ("that X"), a
+      // concessive ("even though X"), a temporal ("whenever X"), a reason
+      // ("that's why X") — all need a subject too, so the clause reads as English
+      // and not a bare verb ("think that you eat", not "think that eat").
+      .replace(/\bthat X\b/g, `that you ${base}`)
+      .replace(/\beven though X\b/g, `even though you ${base}`)
+      .replace(/\bwhenever X\b/g, `whenever you ${base}`)
+      .replace(/\bwhy X\b/g, `why you ${base}`)
       // "be X" is written for an adjective/noun predicate ("might be expensive");
       // on a verb the "be" is wrong, so drop it: "might be X" -> "might eat".
       .replace(/\bbe X\b/g, base)
