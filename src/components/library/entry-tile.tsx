@@ -32,6 +32,7 @@ import Link from "next/link";
 import { StandingChip } from "@/components/library/standing-chip";
 import { SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
@@ -61,10 +62,13 @@ import type { VerbPair } from "@/data/transitivity";
  * A TERM is the same case arriving from the other direction. "Kana", "Hiragana",
  * "Romaji" are the English names we use to talk ABOUT Japanese, so a term's glyph
  * is an English string. Handing that to a Japanese synthesiser produced a button
- * that visibly did nothing, which is worse than no button at all. */
+ * that visibly did nothing, which is worse than no button at all. A GRAMMAR
+ * CONCEPT is the same: a reference page (what a form is, う-verbs vs る-verbs) with
+ * an English title and no single sound to speak, so it gets no speaker either. */
 function speakable(entry: LibEntry): boolean {
   return (
     entry.kind !== GRAMMAR_SUBJECT &&
+    entry.kind !== GRAMMAR_CONCEPT_SUBJECT &&
     entry.kind !== MARK_SUBJECT &&
     entry.kind !== SENTENCE_RULE_KIND &&
     entry.kind !== TERM_SUBJECT
