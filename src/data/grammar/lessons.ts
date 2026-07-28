@@ -248,8 +248,8 @@ const TE_IRU_PAGES: PhaseIntro[] = [
   {
     id: "gl-teiru-meaning",
     setId: "",
-    eyebrow: "〜ている",
-    title: "Add いる to the て/で-form for an action in progress.",
+    eyebrow: "Grammar",
+    title: "〜ている: an action in progress.",
     body: [
       {
         text: 'Put a verb in its て/で-form, then add いる. It says the action is happening or ongoing, often "am/is/are …-ing" in English.',
