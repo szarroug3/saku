@@ -16,7 +16,7 @@ import { primaryHost } from "@/lib/grammar/example";
 import { FORM_LABEL, HOST_ARTICLE } from "@/lib/grammar/formula";
 import { recipeAllows } from "@/lib/grammar/vehicles";
 import type { Host, Recipe } from "@/data/grammar/recipes";
-import type { IntroBuildRule, PhaseIntro } from "@/data/phase-intros";
+import type { IntroDeriveRow, PhaseIntro } from "@/data/phase-intros";
 
 /** One example word for the build table: the kana form, its class (null for a
  * noun, which does not conjugate), and its English meaning. */
@@ -61,28 +61,30 @@ function pageHost(r: Recipe): Host {
   return primaryHost(r) ?? "verb";
 }
 
-/** The build-table rows for a pattern on a host: for each accepted example, the
- * base form the pattern attaches to, the suffix it adds, and the word's meaning.
- * Where the built form does not simply extend the base (a trim, an irregular
- * seam), the row falls back to showing the whole word → result. */
-function buildRows(r: Recipe, host: Host): IntroBuildRule[] {
+/** The pattern's gloss with its X slot filled by the verb's meaning, so the
+ * Meaning column reads as the pattern APPLIED — "go in order to X" + "write" =
+ * "go in order to write". A gloss with no X slot is left as it is. */
+function appliedGloss(gloss: string, verbEn: string): string {
+  return /\bX\b/.test(gloss) ? gloss.replace(/\bX\b/g, verbEn) : gloss;
+}
+
+/** The derivation rows for a pattern on a host: for each accepted example, the
+ * dictionary verb, the form the pattern attaches to (omitted where the word is
+ * taken unchanged), the finished pattern, and what the finished pattern means. */
+function deriveRows(r: Recipe, host: Host): IntroDeriveRow[] {
   const attach = r.attach.find((a) => a.host === host) ?? r.attach[0];
   if (!attach) return [];
-  const rows: IntroBuildRule[] = [];
+  const rows: IntroDeriveRow[] = [];
   for (const ex of EXAMPLES[host]) {
     if (!recipeAllows(r, ex.word)) continue;
     const built = apply(r, ex.word, ex.cls);
     if (!built.ok || built.value === ex.word) continue;
-    let base = ex.word;
-    if (attach.form && ex.cls) {
+    let form: string | undefined;
+    if (attach.form && attach.form !== "dictionary" && ex.cls) {
       const c = conjugate(ex.word, ex.cls, attach.form as Form);
-      if (c.ok) base = c.value;
+      if (c.ok && c.value !== ex.word) form = c.value;
     }
-    if (built.value.startsWith(base) && built.value.length > base.length) {
-      rows.push({ verb: base, add: built.value.slice(base.length), gloss: ex.en });
-    } else {
-      rows.push({ verb: ex.word, to: built.value, gloss: ex.en });
-    }
+    rows.push({ verb: ex.word, form, result: built.value, gloss: appliedGloss(r.gloss, ex.en) });
     if (rows.length >= 3) break;
   }
   return rows;
@@ -136,7 +138,7 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     eyebrow: "Grammar",
     title: `${r.pattern}: ${heroFromGloss(r.gloss)}`,
     body: [{ text: build }],
-    buildRules: buildRows(r, host),
-    buildHeads: { gloss: "Meaning" },
+    deriveRules: deriveRows(r, host),
+    deriveHeads: { form: formLabel ?? undefined },
   };
 }

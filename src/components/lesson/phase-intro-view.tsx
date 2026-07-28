@@ -21,6 +21,7 @@ import { HearButton } from "@/components/lesson/hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type {
   IntroBuildRule,
+  IntroDeriveRow,
   IntroExample,
   IntroPara,
   PhaseIntro,
@@ -81,6 +82,9 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
             </div>
             {intro.buildRules?.length ? (
               <IntroBuildTable rules={intro.buildRules} heads={intro.buildHeads} />
+            ) : null}
+            {intro.deriveRules?.length ? (
+              <IntroDeriveTable rows={intro.deriveRules} heads={intro.deriveHeads} />
             ) : null}
             {intro.buildFooter ? <IntroBuildFooter footer={intro.buildFooter} /> : null}
             {intro.transitivityPairs?.length ? (
@@ -417,6 +421,74 @@ export function IntroBuildTable({
               ) : null}
             </tr>
           ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/**
+ * A pattern's derivation table: Verb · Form · Pattern · Meaning. Shows the whole
+ * chain from the dictionary word to the finished pattern — かく · かき · かきにいく ·
+ * "go in order to write" — with the suffix the pattern adds accented in the
+ * Pattern column. The Form column drops out when the pattern attaches to the word
+ * unchanged (a noun, a plain dictionary form).
+ */
+export function IntroDeriveTable({
+  rows,
+  heads,
+}: {
+  rows: readonly IntroDeriveRow[];
+  heads?: { verb?: string; form?: string; pattern?: string };
+}) {
+  const hasForm = rows.some((r) => r.form);
+  const hasGloss = rows.some((r) => r.gloss);
+  const headCell = "px-4 py-2.5 font-semibold";
+  const jpCell = "whitespace-nowrap px-4 py-3 align-baseline font-kana text-[17px] text-text";
+  return (
+    <div className="overflow-hidden rounded-lg border border-border">
+      <table className="w-full border-collapse text-left" lang="ja">
+        <thead>
+          <tr
+            lang="en"
+            className="border-b border-border bg-panel/40 text-[11px] uppercase tracking-[0.1em] text-text-muted"
+          >
+            <th className={headCell}>{heads?.verb ?? "Verb"}</th>
+            {hasForm ? <th className={headCell}>{heads?.form ?? "Form"}</th> : null}
+            <th className={headCell}>{heads?.pattern ?? "Pattern"}</th>
+            {hasGloss ? <th className={headCell}>Meaning</th> : null}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const base = r.form ?? r.verb;
+            const suffix = r.result.startsWith(base) ? r.result.slice(base.length) : "";
+            const stem = suffix ? r.result.slice(0, r.result.length - suffix.length) : r.result;
+            return (
+              <tr key={r.verb} className="border-b border-border/60 last:border-0">
+                <td className={jpCell}>{r.verb}</td>
+                {hasForm ? <td className={jpCell}>{r.form ?? ""}</td> : null}
+                <td className={jpCell}>
+                  {suffix ? (
+                    <>
+                      {stem}
+                      <span className="text-accent">{suffix}</span>
+                    </>
+                  ) : (
+                    r.result
+                  )}
+                </td>
+                {hasGloss ? (
+                  <td
+                    lang="en"
+                    className="w-full min-w-[10rem] px-4 py-3 align-baseline text-[14px] leading-snug text-text"
+                  >
+                    {r.gloss ?? ""}
+                  </td>
+                ) : null}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

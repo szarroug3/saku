@@ -161,6 +161,24 @@ export interface IntroBuildRule {
   note?: string;
 }
 
+/**
+ * One row of a pattern derivation table: the dictionary verb, the form the
+ * pattern attaches to, the finished pattern, and what the finished pattern
+ * MEANS (かく · かき · かきにいく · "go in order to write") — the meaning is the
+ * pattern applied to the word, not the bare verb.
+ */
+export interface IntroDeriveRow {
+  /** The dictionary verb, kana: かく. */
+  verb: string;
+  /** The form the pattern attaches to: かき (stem), かいて (て-form). Omitted when
+   * the pattern attaches to the word unchanged (a noun, a plain dictionary form). */
+  form?: string;
+  /** The finished pattern built on the verb: かきにいく. */
+  result: string;
+  /** What the finished pattern means — the pattern applied to this verb. */
+  gloss?: string;
+}
+
 export interface PunctuationRow {
   /** The glyph, or a pair like "「 」". */
   mark: string;
@@ -224,6 +242,18 @@ export interface PhaseIntro {
    * default; `change` and `note` default to "Change" and "Note".
    */
   buildHeads?: { label?: string; change?: string; note?: string; gloss?: string };
+  /**
+   * A derivation table for a PATTERN page: the dictionary verb, the form the
+   * pattern attaches to, and the finished pattern — かく · かき · かきにいく. Shows
+   * the whole chain from the word you look up to the pattern, so a learner sees
+   * how the verb travels through the form into the pattern. The form column is
+   * dropped when the pattern attaches to the word unchanged (a noun, a plain
+   * dictionary form).
+   */
+  deriveRules?: readonly IntroDeriveRow[];
+  /** Column headings for a derivation table. `form` names the middle column
+   * (て-form, stem, …); `verb`/`pattern` default to "Verb"/"Pattern". */
+  deriveHeads?: { verb?: string; form?: string; pattern?: string };
   /**
    * A closing line under a build table that puts the rows together — the chain
    * the steps build toward (たべて、のんで、はなしている) with its meaning. Used by

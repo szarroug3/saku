@@ -80,10 +80,13 @@ export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
     title: "The stem is a verb's connecting base.",
     body: [
       {
-        text: "The stem is the shape a verb takes to join onto something else. On its own it does nothing; it just holds the verb ready for whatever comes next.",
+        text: "The stem is the shape a verb takes to join onto something else. On its own it does nothing; it just holds the verb ready for whatever comes next, similar to the て/で-form.",
       },
       {
-        text: "A lot of patterns attach to it: 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much). The table below builds it from the dictionary form.",
+        text: "A lot of patterns attach to it: 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
+      },
+      {
+        text: "For an う-verb, the last kana simply switches to its い-row. An る-verb just drops る.",
       },
     ],
     buildRules: [
