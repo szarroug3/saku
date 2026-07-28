@@ -297,6 +297,18 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ? `${role} · ${roleStrokes} stroke${roleStrokes === 1 ? "" : "s"}`
       : null;
 
+  // A keigo set's header wears WORD FORMAT: the plain verb(s) it replaces stand
+  // as the hero glyph (食べる / 飲む — 知る — 行く / 来る / いる), and the shared
+  // meaning sits to their right as the title, the same glyph-left/meaning-right
+  // shape a word entry uses. A SET PHRASE with no plain verb (いらっしゃいませ)
+  // shows the phrase itself as the hero instead. Empty for every non-keigo entry,
+  // where the header keeps `entry.glyph`.
+  const keigoGlyph = keigoSet
+    ? keigoSet.plain.length
+      ? keigoSet.plain.map((p) => p.keb).join(" / ")
+      : (keigoSet.words[0]?.word ?? "")
+    : "";
+
   const wordRow = isWord ? vocabRow(entry.glyph) : undefined;
   // null for four words in five, and the word branch renders nothing at all in
   // that case. A single Map lookup: the choosing happened at build time, in
@@ -609,15 +621,27 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
       <Card>
         <EntryHeader
-          glyph={entry.glyph}
+          // A keigo set has no single glyph; its hero is the plain verb(s) it
+          // replaces (or, for the set phrase, the phrase itself) — see keigoGlyph.
+          glyph={isKeigo && keigoSet ? keigoGlyph : entry.glyph}
           // A pattern is up to nine characters long. At the default 76px
           // 〜なければならない wraps three times and buries the gloss; 34px keeps
           // it the biggest thing on the card without it becoming the whole
           // card. SIZE ONLY — the Japanese face is EntryHeader's call now, made
           // from the glyph itself, so every kind gets it and not just this one.
-          glyphClass={isGrammar ? "flex-none text-[34px] leading-tight" : undefined}
+          // A keigo set's plain verbs (行く / 来る / いる) run just as long, so
+          // they take the same size.
+          glyphClass={
+            isGrammar || isKeigo ? "flex-none text-[34px] leading-tight" : undefined
+          }
           title={
-            entry.meanings.slice(0, 3).join(" · ") || entry.readings.join(" · ")
+            // A keigo set leads with the SHARED MEANING to the right of its
+            // plain-verb hero — the word-header shape — not the per-form
+            // recognition glosses ("eat / drink (honorific) · …"), which the
+            // set panel below already spells out register by register.
+            isKeigo && keigoSet
+              ? keigoSet.meaning
+              : entry.meanings.slice(0, 3).join(" · ") || entry.readings.join(" · ")
           }
           // NOT `entry.sub` for grammar. That string is "N4 pattern · must",
           // and the level is the one thing this page has decided not to print
@@ -630,7 +654,12 @@ function EntryView({ entry }: { entry: LibEntry }) {
           // "Number" forms are left plain: a page titled "Counter" is a poor
           // destination for the word "Number".
           sub={
-            isGrammar && pattern
+            // A keigo set drops the sub-line entirely: the gray "Keigo · eat /
+            // drink" restated the meaning now in the title and the shelf named
+            // in the breadcrumb, so it was the header saying its own name back.
+            isKeigo
+              ? null
+              : isGrammar && pattern
               ? attachesTo(pattern)
               : // A kanji or radical leads with its ROLE (radical · kanji · N
                 // strokes), replacing the bare strokes line and the radical's
@@ -918,14 +947,23 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </Card>
       ) : null}
 
-      {/* The keigo set itself — the shared card the teach walk draws, so the
+      {/* The keigo set itself — the shared view the teach walk draws, so the
           Library and the lesson cannot show a set two different ways. It stands
           in for the facts table (keigo is excluded from genericRows) the way the
-          verb pair does. */}
+          verb pair does.
+
+          NO OUTER CARD, unlike the verb pair. The set's honorific/humble FORMS
+          are already framed boxes (KeigoSide), so wrapping the view in a Card
+          put a box inside a box; the forms read directly on the page instead,
+          one level of boxing not two. `showLead={false}` drops the view's own
+          plain-verb / meaning lead line too: the header above now carries the
+          plain verb and the meaning, so repeating them here would be the page
+          saying the same thing twice. The lesson keeps the lead (showLead
+          defaults true) — there the view stands alone with no header. */}
       {isKeigo && keigoSet ? (
-        <Card>
-          <KeigoSetView set={keigoSet} voiceName={cfg.voiceName} />
-        </Card>
+        <div className="mb-3.5">
+          <KeigoSetView set={keigoSet} voiceName={cfg.voiceName} showLead={false} />
+        </div>
       ) : null}
 
       {/* The generic table, now serving grammar and anything new. No rows, no

@@ -50,9 +50,16 @@ function KeigoSide({
 export function KeigoSetView({
   set,
   voiceName,
+  showLead = true,
 }: {
   set: KeigoSet;
   voiceName: string;
+  /** The LEAD LINE at the top — the plain verb it replaces (verb sets) or the
+   * meaning paragraph (the set phrase). Shown in the lesson, where this view
+   * stands alone with no header to carry them. The Library entry page passes
+   * false: its header already prints the plain verb and the meaning in word
+   * format, so a lead line here would repeat them. */
+  showLead?: boolean;
 }) {
   const honorific = set.words.filter((w) => w.register === "honorific");
   const humble = set.words.filter((w) => w.register === "humble");
@@ -61,7 +68,9 @@ export function KeigoSetView({
     const phrase = set.words[0];
     return (
       <div>
-        <p className="mb-4 text-[15px] text-text">{set.meaning}</p>
+        {showLead ? (
+          <p className="mb-4 text-[15px] text-text">{set.meaning}</p>
+        ) : null}
         {phrase ? (
           <div className="rounded-lg border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-3">
@@ -107,12 +116,14 @@ export function KeigoSetView({
 
   return (
     <div>
-      <p className="mb-4">
-        <span className="font-kana text-[20px] font-light text-text">
-          {set.plain.map((p) => p.keb).join(" / ")}
-        </span>{" "}
-        <span className="text-[14px] text-text-muted">({set.meaning})</span>
-      </p>
+      {showLead ? (
+        <p className="mb-4">
+          <span className="font-kana text-[20px] font-light text-text">
+            {set.plain.map((p) => p.keb).join(" / ")}
+          </span>{" "}
+          <span className="text-[14px] text-text-muted">({set.meaning})</span>
+        </p>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-2">
         {honorific.map((w) => (
           <KeigoSide
