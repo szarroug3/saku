@@ -45,7 +45,7 @@ const DIRS: Direction[] = ["jp2en", "en2jp"];
 function ctxFor(surface: string): PromptContext {
   const v = VERB_VEHICLES.find((x) => x.surface === surface);
   assert.ok(v, `${surface} is in the vehicle pool`);
-  const gv: GrammarVehicle = { surface: v.surface, kana: v.kana, cls: v.cls };
+  const gv: GrammarVehicle = { surface: v.surface, kana: v.kana, cls: v.cls, known: true };
   return { grammarVehicle: gv };
 }
 

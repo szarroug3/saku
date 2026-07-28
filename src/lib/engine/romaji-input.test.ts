@@ -35,7 +35,7 @@ import type { Direction, FactId } from "@/types";
 
 const DIRS: Direction[] = ["jp2en", "en2jp"];
 
-const TABERU: GrammarVehicle = { surface: "食べる", kana: "たべる", cls: "v1" };
+const TABERU: GrammarVehicle = { surface: "食べる", kana: "たべる", cls: "v1", known: true };
 
 describe("the seven card kinds", () => {
   // One row per line of the ruling. Each names a real fact, so a re-cut of the

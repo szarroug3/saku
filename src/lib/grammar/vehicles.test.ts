@@ -277,16 +277,51 @@ describe("the known-word gate filters the pool", () => {
     assert.deepEqual(vehiclesFor(r, "verb", () => false), []);
   });
 
-  test("pickVehicle returns null when the learner knows no legal vehicle", () => {
-    const r = recipe("te-kara")!;
-    assert.equal(pickVehicle(r, () => 0, "verb", () => false), null);
-  });
-
-  test("pickVehicle can only ever roll a known vehicle", () => {
+  test("pickVehicle PREFERS a known vehicle whenever one exists", () => {
     const r = recipe("te-kara")!;
     const known = (s: string) => s === "読む";
     for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
       assert.equal(pickVehicle(r, seq([x]), "verb", known)!.surface, "読む");
     }
+  });
+
+  test("knowing NO pool verb still rolls a vehicle — an unambiguous unknown one", () => {
+    // The bug this whole change fixes: a beginner who has met none of the pool
+    // used to get null here, and the production item was silently not asked.
+    const r = recipe("te-kara")!;
+    for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
+      const v = pickVehicle(r, seq([x]), "verb", () => false);
+      assert.ok(v, "should still roll a vehicle when nothing is known");
+      // Only a plain non-る godan a learner can conjugate from spelling.
+      assert.ok(!v!.surface.endsWith("る"), `${v!.surface} ends in る`);
+      assert.notEqual(v!.cls, "v5k-s", "行く is unpredictable when unknown");
+      assert.notEqual(v!.cls, "v5u-s", "問う is unpredictable when unknown");
+    }
+  });
+
+  test("an UNKNOWN る-ending / 行く / する verb is NEVER rolled", () => {
+    const r = recipe("te-kara")!;
+    const banned = new Set(["行く", "食べる", "見る", "起きる", "帰る", "する", "来る"]);
+    // Sweep the rng so every eligible option gets a chance to be picked.
+    for (let i = 0; i < 200; i++) {
+      const v = pickVehicle(r, seq([i / 200]), "verb", () => false);
+      assert.ok(v);
+      assert.ok(!banned.has(v!.surface), `rolled the unpredictable ${v!.surface}`);
+    }
+  });
+
+  test("a KNOWN る-ending verb IS eligible (its class is no longer a guess)", () => {
+    const r = recipe("te-kara")!;
+    // 食べる is ichidan (る-ending) — banned as an unknown filler, but once the
+    // learner has met it, its class is known and it becomes fair game.
+    const known = (s: string) => s === "食べる";
+    for (const x of [0, 0.3, 0.6, 0.9]) {
+      assert.equal(pickVehicle(r, seq([x]), "verb", known)!.surface, "食べる");
+    }
+  });
+
+  test("pickVehicle is still null for a wrap (nothing legal to pick)", () => {
+    // Null now means only "no legal vehicle at all", not "knows nothing".
+    assert.equal(pickVehicle(recipe("shika-nai")!, () => 0, undefined, () => false), null);
   });
 });

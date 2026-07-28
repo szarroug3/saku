@@ -162,6 +162,9 @@ function ctxOf(item: SubstitutionItem): { grammarVehicle: GrammarVehicle } {
       surface: item.target.surface,
       kana: item.target.kana,
       cls: item.target.cls,
+      // A substitution target is a verb the learner is already drilling, so it
+      // is a KNOWN vehicle: shown and graded in its dictionary (kanji) surface.
+      known: true,
     },
   };
 }
