@@ -171,7 +171,7 @@ export function EntryTile({
       // Selected owns BOTH border and fill so it beats the tone border and is
       // unmissable; unselected keeps the standing tone. `cursor-pointer` +
       // `select-none` because the whole body is the toggle.
-      className={`relative cursor-pointer select-none rounded-[10px] border px-1.5 pb-2 pt-2.5 text-center ${
+      className={`relative cursor-pointer select-none rounded-[10px] border px-1.5 pb-2 pt-2.5 text-center [container-type:inline-size] ${
         selected ? "border-accent bg-accent-bg" : `bg-card ${toneClass(standing)}`
       }`}
       title={mnemonic}
@@ -189,10 +189,20 @@ export function EntryTile({
       {/* Same rule as the entry page's headword slot: the theme's Japanese face
           when there is Japanese in the cell, the UI face for a Terms tile, whose
           "glyph" is an English name. */}
+      {/* SHRINK-TO-FIT, like the Learn tiles. The tile is an inline-size
+          container (see the wrapper), and the glyph is sized in cqi against it:
+          90cqi split across the code-point count, floored at a readable 12px and
+          capped at the 26px a short glyph (新聞, 南) wants. `nowrap` forbids the
+          two-line spill a long word (アパート, おまわりさん) used to make — it
+          shrinks to one line instead of wrapping past the border. */}
       <div
-        className={`select-none text-[26px] leading-[1.25] text-text ${japaneseFontClass(
+        className={`select-none whitespace-nowrap leading-[1.25] text-text ${japaneseFontClass(
           entry.glyph,
         )}`}
+        style={{
+          ["--chars" as string]: [...entry.glyph].length,
+          fontSize: "clamp(12px, calc(90cqi / var(--chars)), 26px)",
+        }}
       >
         {entry.glyph}
       </div>
