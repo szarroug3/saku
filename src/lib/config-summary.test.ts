@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { askFromInput } from "@/lib/ask-config";
+import { askFromAudioPrompts } from "@/lib/ask-config";
 import { configSummary } from "@/lib/config-summary";
 import type { QuizConfig } from "@/types";
 
 const BASE = {
   mode: "drill",
-  input: "text",
-  ask: askFromInput("text"),
+  audioPrompts: false,
+  ask: askFromAudioPrompts(false),
   length: "endless",
   limType: "cov",
   limCount: 50,
@@ -18,17 +18,13 @@ function mk(over: Partial<QuizConfig>): QuizConfig {
   return { ...BASE, ...over };
 }
 
-describe("configSummary — input format (the one ask knob)", () => {
-  test("a plain text drill names its input format and length", () => {
+describe("configSummary — prompt format (the one ask knob)", () => {
+  test("a plain text drill names its prompt format and length", () => {
     assert.equal(configSummary(BASE), "Text · Endless");
   });
 
-  test("audio input", () => {
-    assert.equal(configSummary(mk({ input: "audio" })), "Audio · Endless");
-  });
-
-  test("both mixes text and audio", () => {
-    assert.equal(configSummary(mk({ input: "both" })), "Both · Endless");
+  test("audio prompts add audio to the text label", () => {
+    assert.equal(configSummary(mk({ audioPrompts: true })), "Text & audio · Endless");
   });
 });
 

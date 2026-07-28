@@ -2,11 +2,10 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
-  askFromInput,
+  askFromAudioPrompts,
   askIsEmpty,
   defaultAsk,
-  deriveInput,
-  inputFromAsk,
+  deriveAudioPrompts,
   migrateLegacyAsk,
   normalizeAsk,
   normalizeGridResponses,
@@ -266,9 +265,9 @@ describe("incomplete source rows do not enable Start", () => {
   });
 });
 
-describe("askFromInput — the derived, everything-on ask", () => {
-  test("text: text prompts, both responses, typed; en→jp production on", () => {
-    assert.deepEqual(askFromInput("text"), {
+describe("askFromAudioPrompts — the derived, everything-on ask", () => {
+  test("off: text prompts, both responses, typed; en→jp production on", () => {
+    assert.deepEqual(askFromAudioPrompts(false), {
       japanese: {
         prompts: ["text"],
         responses: ["definition", "romaji"],
@@ -284,71 +283,68 @@ describe("askFromInput — the derived, everything-on ask", () => {
     });
   });
 
-  test("audio: prompts become audio for both japanese and sentence", () => {
-    const ask = askFromInput("audio");
-    assert.deepEqual(ask.japanese.prompts, ["audio"]);
-    assert.deepEqual(ask.sentence.prompts, ["audio"]);
+  test("on: text AND audio prompts — text is always present", () => {
+    const ask = askFromAudioPrompts(true);
+    // The whole point of the fix: text is never dropped, so audio is additive.
+    assert.deepEqual(ask.japanese.prompts, ["text", "audio"]);
+    assert.deepEqual(ask.sentence.prompts, ["text", "audio"]);
     // Everything else is still the full, always-on set.
     assert.deepEqual(ask.japanese.responses, ["definition", "romaji"]);
     assert.deepEqual(ask.english.answers, ["typed"]);
   });
 
-  test("both: mixes text and audio prompts", () => {
-    const ask = askFromInput("both");
-    assert.deepEqual(ask.japanese.prompts, ["text", "audio"]);
-    assert.deepEqual(ask.sentence.prompts, ["text", "audio"]);
+  test("both on and off include a text prompt (production stays reachable)", () => {
+    for (const audio of [true, false]) {
+      assert.ok(askFromAudioPrompts(audio).japanese.prompts.includes("text"), String(audio));
+    }
   });
 
   test("every derived ask is non-empty (Start is never wrongly disabled)", () => {
-    for (const input of ["text", "audio", "both"] as const) {
-      assert.equal(askIsEmpty(askFromInput(input)), false, input);
+    for (const audio of [true, false]) {
+      assert.equal(askIsEmpty(askFromAudioPrompts(audio)), false, String(audio));
     }
   });
 });
 
-describe("inputFromAsk — reading the axis back for migration", () => {
-  test("round-trips every input format", () => {
-    for (const input of ["text", "audio", "both"] as const) {
-      assert.equal(inputFromAsk(askFromInput(input)), input, input);
-    }
+describe("deriveAudioPrompts — migration precedence", () => {
+  test("an explicit audioPrompts boolean wins outright", () => {
+    assert.equal(deriveAudioPrompts({ audioPrompts: true }), true);
+    assert.equal(deriveAudioPrompts({ audioPrompts: false, input: "both" }), false);
   });
 
-  test("text+audio ⇒ both, audio alone ⇒ audio, else ⇒ text", () => {
-    const ask = defaultAsk();
-    assert.equal(inputFromAsk({ ...ask, japanese: { ...ask.japanese, prompts: ["text", "audio"] } }), "both");
-    assert.equal(inputFromAsk({ ...ask, japanese: { ...ask.japanese, prompts: ["audio"] } }), "audio");
-    assert.equal(inputFromAsk({ ...ask, japanese: { ...ask.japanese, prompts: ["text"] } }), "text");
-    assert.equal(inputFromAsk({ ...ask, japanese: { ...ask.japanese, prompts: [] } }), "text");
-  });
-});
-
-describe("deriveInput — migration precedence", () => {
-  test("an explicit input field wins outright", () => {
-    assert.equal(deriveInput({ input: "both" }), "both");
-    assert.equal(deriveInput({ input: "audio", ask: askFromInput("text") }), "audio");
+  test("the old tri-state input migrates: audio/both ⇒ on, text ⇒ off", () => {
+    assert.equal(deriveAudioPrompts({ input: "both" }), true);
+    assert.equal(deriveAudioPrompts({ input: "audio" }), true);
+    assert.equal(deriveAudioPrompts({ input: "text" }), false);
   });
 
-  test("a bad input field falls through to the next source", () => {
-    assert.equal(deriveInput({ input: "nonsense", ask: askFromInput("audio") }), "audio");
+  test("a bad input field falls through to the stored ask", () => {
+    assert.equal(deriveAudioPrompts({ input: "nonsense", ask: askFromAudioPrompts(true) }), true);
   });
 
   test("a stored task-30 ask reads its prompt format back", () => {
-    assert.equal(deriveInput({ ask: askFromInput("both") }), "both");
-    assert.equal(deriveInput({ ask: askFromInput("audio") }), "audio");
+    assert.equal(deriveAudioPrompts({ ask: askFromAudioPrompts(true) }), true);
+    assert.equal(deriveAudioPrompts({ ask: askFromAudioPrompts(false) }), false);
+    // A legacy audio-only ask still reads as audio-on.
+    const ask = defaultAsk();
+    assert.equal(
+      deriveAudioPrompts({ ask: { ...ask, japanese: { ...ask.japanese, prompts: ["audio"] } } }),
+      true,
+    );
   });
 
   test("pre-task-30 dirs/listen fields migrate through the same lens", () => {
-    // jp→en text + a listen flag ⇒ text+audio ⇒ both
+    // jp→en text + a listen flag ⇒ text+audio ⇒ audio on
     assert.equal(
-      deriveInput({ dirs: { jp2en: true }, styleJp2en: "typed", listenMeaning: true }),
-      "both",
+      deriveAudioPrompts({ dirs: { jp2en: true }, styleJp2en: "typed", listenMeaning: true }),
+      true,
     );
-    // jp→en text, no listening ⇒ text
-    assert.equal(deriveInput({ dirs: { jp2en: true }, styleJp2en: "typed" }), "text");
+    // jp→en text, no listening ⇒ audio off
+    assert.equal(deriveAudioPrompts({ dirs: { jp2en: true }, styleJp2en: "typed" }), false);
   });
 
-  test("an empty/unknown object defaults to text", () => {
-    assert.equal(deriveInput({}), "text");
-    assert.equal(deriveInput({ mode: "drill" }), "text");
+  test("an empty/unknown object defaults to off", () => {
+    assert.equal(deriveAudioPrompts({}), false);
+    assert.equal(deriveAudioPrompts({ mode: "drill" }), false);
   });
 });

@@ -31,21 +31,12 @@
 // `[class~="rounded-lg"][class~="bg-text"]`. Keep that one.
 
 import { startIsDisabled, getStartButtonReason } from "@/lib/practice-start";
-import type { InputFormat, QuizConfig } from "@/types";
+import type { QuizConfig } from "@/types";
 import type { SettingsReachability } from "@/lib/ask-forms";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
-
-// The one user-facing ask axis — see InputFormat. Everything else (direction,
-// responses, answer format) is automatic, so the how-line no longer spells it
-// out; it just names how the card is prompted.
-const INPUT_LABEL: Record<InputFormat, string> = {
-  text: "Text",
-  audio: "Audio",
-  both: "Both",
-};
 
 /** "Drill · Full coverage · Both" — the HOW half, read off the live setup. */
 export function howSentence(cfg: QuizConfig): string {
@@ -81,9 +72,10 @@ export function howSentence(cfg: QuizConfig): string {
           `${cfg.limCount} ${cfg.mode === "pairs" ? "pairs" : "questions"}`,
   );
 
-  // Match pairs shows both sides at once and has no input format. A drill names
-  // how it is prompted — the only remaining ask knob.
-  if (cfg.mode === "drill") parts.push(INPUT_LABEL[cfg.input]);
+  // Match pairs shows both sides at once and has no prompt format. A drill names
+  // how it is prompted — the only remaining ask knob. Text is always on, so this
+  // just says whether audio is added too.
+  if (cfg.mode === "drill") parts.push(cfg.audioPrompts ? "Text & audio" : "Text");
   return parts.join(" · ");
 }
 

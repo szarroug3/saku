@@ -19,7 +19,7 @@
 // Pure and React-free on purpose: it is unit-tested here and imported by a
 // client component, and a plain (cfg) => string is the whole of what both need.
 
-import type { InputFormat, QuizConfig } from "@/types";
+import type { QuizConfig } from "@/types";
 
 // Non-drill modes get a leading name; "drill" is the default and stays silent,
 // so an ordinary drill reads "Text · Full coverage" with no noun in front of it.
@@ -33,22 +33,20 @@ const MODE_LABEL: Record<Exclude<QuizConfig["mode"], "drill">, string> = {
   "listen-sentence": "Listen to sentences",
 };
 
-// The one user-facing ask axis (see InputFormat). Everything else — direction,
-// responses, answer format — is automatic and always-on, so the summary no
-// longer spells it out: it would be the same on every run.
-const INPUT_LABEL: Record<InputFormat, string> = {
-  text: "Text",
-  audio: "Audio",
-  both: "Both",
-};
+// The one user-facing ask knob (audioPrompts). Text is always on; the summary
+// only says so when audio is added, since a text-only drill is the default and
+// everything else — direction, responses, answer format — is automatic.
+function promptLabel(cfg: QuizConfig): string {
+  return cfg.audioPrompts ? "Text & audio" : "Text";
+}
 
 /**
  * A concise, dot-separated line of the settings QuizOptionsFields controls —
- * mode, input format, and length.
+ * mode, prompt format, and length.
  *
  * Examples:
  *   "Text · Full coverage"
- *   "Both · Limited to 50"
+ *   "Text & audio · Limited to 50"
  *   "Match pairs · Full coverage"
  */
 export function configSummary(cfg: QuizConfig): string {
@@ -57,8 +55,8 @@ export function configSummary(cfg: QuizConfig): string {
   // Mode first, and only when it is not the default drill — see MODE_LABEL.
   if (cfg.mode !== "drill") parts.push(MODE_LABEL[cfg.mode]);
 
-  // Input format is the drill's one ask knob; the other modes don't have it.
-  if (cfg.mode === "drill") parts.push(INPUT_LABEL[cfg.input]);
+  // Prompt format is the drill's one ask knob; the other modes don't have it.
+  if (cfg.mode === "drill") parts.push(promptLabel(cfg));
 
   // Length. "Full coverage" is the editor's own name for the coverage cap, so
   // the summary uses it verbatim rather than inventing a second phrasing for
