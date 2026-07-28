@@ -404,7 +404,7 @@ test("a multiple-choice miss holds its reveal until the learner dismisses it", a
   await expect(r.answer).toHaveCount(0);
 });
 
-test("reveal after a wrong en2jp answer names the kanji that was asked for", async ({
+test("reveal on a no-confusables kanji, where MC falls back to a typed box, names it", async ({
   page,
   seed,
 }) => {
