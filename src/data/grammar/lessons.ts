@@ -409,8 +409,10 @@ const LESSON_BY_FACT: ReadonlyMap<FactId, GrammarLessonDef> = (() => {
 /**
  * The grammar lesson a teach set belongs to, or null when the facts are not a
  * grammar lesson (any other subject, or a grammar fact no lesson owns). Matches
- * on the first fact that names a lesson — a grammar sitting is one lesson, so
- * every fact in the set points at the same one.
+ * on the first fact that names a lesson. A pattern-bundle sitting now carries
+ * several lessons at once, so the walk uses grammarLessonsForFacts (plural); this
+ * single-lesson lookup is kept for callers that only need to know a set is
+ * grammar and which lesson it opens with.
  */
 export function grammarLessonForFacts(facts: readonly FactId[]): GrammarLessonDef | null {
   for (const f of facts) {
@@ -418,4 +420,23 @@ export function grammarLessonForFacts(facts: readonly FactId[]): GrammarLessonDe
     if (lesson) return lesson;
   }
   return null;
+}
+
+/**
+ * Every grammar lesson a teach set covers, in teaching (CURRICULUM_LESSONS)
+ * order — the bundled-sitting generalization of grammarLessonForFacts.
+ *
+ * A pattern-bundle sitting hands out up to three lessons' drills as one flat
+ * teach set (see nextGrammarLesson), so the walk has to emit each lesson's pages
+ * in turn, not just the first one's. Deduped and ordered by CURRICULUM_LESSONS so
+ * the pages read in the order the patterns are taught. Empty when the facts are
+ * not a grammar lesson.
+ */
+export function grammarLessonsForFacts(facts: readonly FactId[]): GrammarLessonDef[] {
+  const set = new Set(facts);
+  const out: GrammarLessonDef[] = [];
+  for (const lesson of CURRICULUM_LESSONS) {
+    if (lesson.drills.some((f) => set.has(f))) out.push(lesson);
+  }
+  return out;
 }
