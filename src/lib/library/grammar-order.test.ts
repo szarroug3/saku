@@ -26,7 +26,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
+import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
 import { RECIPES } from "@/data/grammar/recipes";
 import type { Level } from "@/data/grammar/recipes";
 import {
@@ -70,11 +70,16 @@ describe("grammarRank ranks every pattern in teaching order", () => {
   });
 });
 
-describe("the drillable order IS the curriculum order (no drift)", () => {
-  test("the drillable subsequence of the teaching order equals CURRICULUM_PATTERNS", () => {
-    const drillable = new Set(CURRICULUM_PATTERNS.map((r) => r.id));
-    const sub = GRAMMAR_TEACHING_ORDER.filter((r) => drillable.has(r.id)).map((r) => r.id);
-    assert.deepEqual(sub, CURRICULUM_PATTERNS.map((r) => r.id));
+describe("the shelf order IS the lesson order (no drift)", () => {
+  test("the teaching order equals CURRICULUM_LESSONS, pattern for pattern", () => {
+    // grammar-order derives its rank FROM CURRICULUM_LESSONS, so the shelf reads
+    // in the exact order the track teaches — 〜ている second, behind the bare
+    // て-form it builds on, not in its authored spot. This is the pin against a
+    // future edit re-deriving a sort that drifts from the lessons.
+    assert.deepEqual(
+      GRAMMAR_TEACHING_ORDER.map((r) => r.id),
+      CURRICULUM_LESSONS.map((l) => l.primaryPattern),
+    );
   });
 });
 
@@ -91,13 +96,12 @@ describe("the grammar shelf is ordered by grammarRank within each level section"
     assert.equal(shelfLevel("N5")[0], "te-sequence");
   });
 
-  test("within each level the drillable patterns keep curriculum order", () => {
-    const byLevel = (lv: Level) => new Set(CURRICULUM_PATTERNS.filter((r) => r.level === lv).map((r) => r.id));
+  test("within each level the shelf keeps the lesson order", () => {
+    const recipeById = new Map(RECIPES.map((r) => [r.id, r]));
+    const lessonOrder = CURRICULUM_LESSONS.map((l) => l.primaryPattern);
     for (const lv of ["N5", "N4", "N3"] as const) {
-      const wanted = CURRICULUM_PATTERNS.filter((r) => r.level === lv).map((r) => r.id);
-      const drillable = byLevel(lv);
-      const got = shelfLevel(lv).filter((id) => drillable.has(id));
-      assert.deepEqual(got, wanted, `${lv} shelf order diverges from the curriculum`);
+      const wanted = lessonOrder.filter((id) => recipeById.get(id)?.level === lv);
+      assert.deepEqual(shelfLevel(lv), wanted, `${lv} shelf order diverges from the lessons`);
     }
   });
 
