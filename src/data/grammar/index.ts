@@ -45,6 +45,12 @@
 
 import { entryId, factId, productionAspect } from "../../lib/fact-id.ts";
 import { HOST_ORDER, buildExample, primaryHost } from "../../lib/grammar/example.ts";
+import { apply } from "../../lib/grammar/apply.ts";
+import {
+  ENDING_ANCHOR,
+  TE_ENDINGS,
+  type TeEnding,
+} from "../../lib/grammar/te-endings.ts";
 import type { EntryId, FactId, FactInfo } from "../../types/index.ts";
 import {
   RECIPES,
@@ -57,6 +63,12 @@ import {
 } from "./recipes.ts";
 
 export const GRAMMAR_SUBJECT = "grammar";
+
+/** The bare て/で-form recipe, the one pattern whose production splits by ENDING
+ * rather than by host — its five per-ending facts replace the plain
+ * `grammar:te-sequence/production` fact. Named here so the split is spelled once
+ * and `productionHosts` / `buildGrammarFacts` can both recognise it. */
+export const TE_FORM_RECIPE_ID = "te-sequence";
 
 export function patternEntry(recipeId: string): EntryId {
   return entryId(GRAMMAR_SUBJECT, recipeId);
@@ -81,6 +93,22 @@ export function patternProductionFactId(recipeId: string, host?: Host): FactId {
     patternEntry(recipeId),
     productionAspect(host === undefined || host === primary ? null : host),
   );
+}
+
+/**
+ * The te-form's production fact for ONE ending — `grammar:te-sequence/production@te-utsu`.
+ *
+ * The ending plays the role the HOST plays in `patternProductionFactId`: it is
+ * the axis the fact is qualified on, spelled through the same `productionAspect`
+ * so the id shape is identical (`production@<qualifier>`). The te-form is the one
+ * pattern that splits this way — its five endings REPLACE the plain
+ * `grammar:te-sequence/production` fact rather than sitting beside it, so there is
+ * no unqualified te-sequence production fact to collide with. See te-endings.ts
+ * for why the split is by ending (each 音便 is a separate skill) and why る is not
+ * one of them.
+ */
+export function teEndingProductionFactId(ending: TeEnding): FactId {
+  return factId(patternEntry(TE_FORM_RECIPE_ID), productionAspect(ending));
 }
 
 /**
@@ -109,6 +137,13 @@ export function patternProductionFactId(recipeId: string, host?: Host): FactId {
  * The primary host leads, and it is the one keeping the unqualified fact id.
  */
 export function productionHosts(r: Recipe): Host[] {
+  // The te-form does not split by host — it splits by ENDING (see
+  // teEndingProductionFactId). Its production facts are minted separately in
+  // buildGrammarFacts, so it carries NO host-keyed production fact and every
+  // host-based consumer (the Library build panel, guided substitution, the
+  // distractor loop) correctly sees zero here rather than a plain fact that no
+  // longer exists. The per-ending rows are added back where they belong.
+  if (r.id === TE_FORM_RECIPE_ID) return [];
   const primary = primaryHost(r);
   if (!primary) return [];
   const rest = HOST_ORDER.filter(
@@ -183,7 +218,10 @@ const MEANING_OF = new Map<FactId, string>();
 /** A production fact's recipe AND the host it produces on — the host is half
  * the fact now that a pattern can carry one per host, and the drill needs it to
  * pick a vehicle of the right kind. */
-const PRODUCTION_OF = new Map<FactId, { recipeId: string; host: Host }>();
+const PRODUCTION_OF = new Map<
+  FactId,
+  { recipeId: string; host: Host; ending?: TeEnding }
+>();
 
 export const GRAMMAR_FACTS: FactInfo[] = buildGrammarFacts();
 
@@ -203,6 +241,34 @@ function buildGrammarFacts(): FactInfo[] {
     // isProducible, not isVacuous: a fact the generator will always refuse is
     // a fact the scheduler would schedule forever and never be able to ask.
     if (!isProducible(r)) continue;
+    // The te-form splits its production into one fact PER ENDING (see
+    // te-endings.ts): building the て-form of a く verb and of a す verb are two
+    // separate 音便 skills, so each ending is its own gradeable fact, baked on a
+    // representative verb of that ending. This REPLACES the plain
+    // grammar:te-sequence/production fact — productionHosts returns [] for it, so
+    // the loop below would emit nothing anyway; this block is the whole of the
+    // te-form's production side.
+    if (r.id === TE_FORM_RECIPE_ID) {
+      for (const ending of TE_ENDINGS) {
+        const anchor = ENDING_ANCHOR[ending];
+        const surface = apply(r, anchor.surface, anchor.cls);
+        if (!surface.ok || surface.value === anchor.surface) continue;
+        const kana = apply(r, anchor.kana, anchor.cls);
+        const form = surface.value;
+        const kanaForm = kana.ok ? kana.value : form;
+        const pId = teEndingProductionFactId(ending);
+        PRODUCTION_OF.set(pId, { recipeId: r.id, host: "verb", ending });
+        facts.push({
+          id: pId,
+          entry: patternEntry(r.id),
+          glyph: form,
+          answers: form === kanaForm ? [form] : [form, kanaForm],
+          subject: GRAMMAR_SUBJECT,
+          meaning: r.gloss,
+        });
+      }
+      continue;
+    }
     // The built form on a FIXED representative verb — see lib/grammar/example.ts
     // for why the word is fixed. Baking it here (rather than leaving a pattern
     // placeholder for a per-prompt generator) is what makes the production fact
@@ -255,10 +321,23 @@ export function grammarMeaning(fact: FactId): { recipe: Recipe } | null {
  */
 export function grammarProduction(
   fact: FactId,
-): { recipe: Recipe; lemma: string; host: Host } | null {
+): { recipe: Recipe; lemma: string; host: Host; ending?: TeEnding } | null {
   const hit = PRODUCTION_OF.get(fact);
   const r = hit ? recipe(hit.recipeId) : undefined;
   if (!r || !hit) return null;
+  // A per-ending te-form fact is baked on its ending's anchor verb, not the
+  // fixed 行く buildExample would hand back — 行く is the いく EXCEPTION and would
+  // be the wrong (and wrong-ending) fallback for, say, the す fact. So the lemma
+  // and the ending both come from the ending, and the showing's vehicle filter
+  // (grammarVehicleFor) uses the ending to pick a verb of the right class.
+  if (hit.ending) {
+    return {
+      recipe: r,
+      lemma: ENDING_ANCHOR[hit.ending].surface,
+      host: hit.host,
+      ending: hit.ending,
+    };
+  }
   const ex = buildExample(r, hit.host);
   return ex ? { recipe: r, lemma: ex.lemma, host: hit.host } : null;
 }

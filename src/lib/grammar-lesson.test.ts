@@ -20,10 +20,13 @@ import { describe, test } from "node:test";
 
 import { KANA_GROUP_FACTS, nextLesson } from "./lesson.ts";
 import {
+  TE_FORM_RECIPE_ID,
   patternMeaningFactId,
   patternProductionFactId,
   productionHosts,
+  teEndingProductionFactId,
 } from "../data/grammar/index.ts";
+import { TE_ENDINGS } from "./grammar/te-endings.ts";
 import {
   DRILLABLE,
   RECIPES,
@@ -155,11 +158,20 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
     for (const card of lesson.cards) {
       const r = recipe(card.id)!;
       expected.add(patternMeaningFactId(r.id));
-      // Every drillable pattern carries a production fact per HOST it teaches a
-      // separate rule for — usually one (the verb), three for 〜そう. Derived
-      // from productionHosts rather than assumed to be one, because a lesson
-      // that seeded only the verb fact would leave the adjective rule unmet
-      // forever: the lesson is where a fact is first introduced.
+      // The te-form is the one pattern that splits production by ENDING, not host
+      // (see te-endings.ts): five facts, one per 音便. productionHosts is [] for
+      // it, so its facts come from the ending list instead.
+      if (r.id === TE_FORM_RECIPE_ID) {
+        for (const ending of TE_ENDINGS) {
+          expected.add(teEndingProductionFactId(ending));
+        }
+        continue;
+      }
+      // Every other drillable pattern carries a production fact per HOST it
+      // teaches a separate rule for — usually one (the verb), three for 〜そう.
+      // Derived from productionHosts rather than assumed to be one, because a
+      // lesson that seeded only the verb fact would leave the adjective rule
+      // unmet forever: the lesson is where a fact is first introduced.
       for (const host of productionHosts(r)) {
         expected.add(patternProductionFactId(r.id, host));
       }

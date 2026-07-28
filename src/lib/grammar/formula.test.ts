@@ -200,17 +200,25 @@ describe("production hosts against formula rows", () => {
     }
   });
 
-  test("the mixed patterns really do have unscored rows, and only those three", () => {
-    // The empty-cell case is not hypothetical and it is not everywhere: it is
-    // exactly 〜てもいい, 〜ても and 〜ので. If this list changes the card is
-    // still correct, but the header comment explaining the empty cell is not.
+  test("the mixed patterns really do have unscored rows, and only those four", () => {
+    // The empty-cell case is not hypothetical and it is not everywhere. Three of
+    // the four are the shared/vacuous rows the header describes: 〜てもいい, 〜ても
+    // and 〜ので. The fourth is te-sequence — the te-form scores per ENDING, not
+    // per host (see te-endings.ts), so its host formula row carries no chip while
+    // its five per-ending facts are enumerated in the entry page's fact list. If
+    // this list changes the card is still correct, but a comment is stale.
     const mixed = RECIPES.filter((r) => {
       if (!isProducible(r)) return false;
       const scored = new Set(productionHosts(r));
       const rows = recipeFormula(r).opening;
       return rows.some((f) => !scored.has(f.host));
     }).map((r) => r.id);
-    assert.deepEqual(mixed.toSorted(), ["node", "te-mo", "te-permission"]);
+    assert.deepEqual(mixed.toSorted(), [
+      "node",
+      "te-mo",
+      "te-permission",
+      "te-sequence",
+    ]);
   });
 
   test("a wrap never carries a score column", () => {
