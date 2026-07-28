@@ -19,11 +19,7 @@ export const NAI_FORM_PAGES: readonly PhaseIntro[] = [
     setId: "",
     eyebrow: "The ない-form",
     title: "The ない-form is the plain “not” form.",
-    body: [
-      {
-        text: "For an う-verb, shift the last kana to its あ-row sound and add ない: く→か, む→ま, す→さ, and so on.",
-      },
-    ],
+    body: [{ text: "For an う-verb, the last kana shifts to its あ-row before ない." }],
     buildRules: [
       { label: "う", verb: "かう", drop: "う", add: "わない", note: "う shifts to わ, not あ." },
       { label: "く", verb: "かく", drop: "く", add: "かない" },
@@ -60,7 +56,7 @@ export const TA_FORM_PAGES: readonly PhaseIntro[] = [
     title: "The た-form is the plain past — “did”.",
     body: [
       {
-        text: "You build it exactly like the て/で-form you already know, but ending in た or だ. る-verbs drop る and add た (たべる → たべた), and いく → いった, the same exception the て-form has.",
+        text: "Built just like the て/で-form you already know, but ending in た or だ. る-verbs drop る, and いく is the one exception.",
       },
     ],
     buildRules: [
@@ -84,7 +80,7 @@ export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
     title: "The stem is the verb with ます taken off.",
     body: [
       {
-        text: "For an う-verb, shift the last kana to its い-row (く→き, む→み); for an る-verb, just drop る. Lots of patterns hang off the stem — 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
+        text: "Lots of patterns hang off the stem — 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
       },
     ],
     buildRules: [
