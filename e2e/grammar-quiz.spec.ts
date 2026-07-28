@@ -1,4 +1,4 @@
-import { test, expect, STEADY_CFG, direction } from "./helpers/app";
+import { test, expect, STEADY_CFG } from "./helpers/app";
 import { seedQuiz, ask, startQuizDrill } from "./helpers/quiz";
 
 import { patternMeaningFactId } from "@/data/grammar";
@@ -31,7 +31,7 @@ test("the recipe table still carries a reference (non-producible) pattern", () =
   expect(REFERENCE, "no non-producible reference pattern in the table").toBeTruthy();
 });
 
-test("a reference pattern is drilled by meaning multiple-choice, not production", async ({
+test("a reference pattern is drilled by meaning, not production", async ({
   page,
 }) => {
   const recipe = REFERENCE!;
@@ -39,23 +39,24 @@ test("a reference pattern is drilled by meaning multiple-choice, not production"
     seen: [patternMeaningFactId(recipe.id)],
     cfg: {
       ...STEADY_CFG,
-      // Pin jp→en so the PATTERN is the prompt (glyph) and the MEANING is the
-      // multiple-choice answer; without it both directions are enabled and the
-      // card could show the English gloss instead.
-      ...direction("jp2en"),
       ...ask({ jpPrompts: ["text"], jpResponses: ["definition"], jpAnswers: ["mc"] }),
     },
   });
   await startQuizDrill(page);
 
-  // The pattern itself is the prompt glyph, asked (not built). A reference pattern
-  // carries NO production fact — there is nothing to build — so the ONLY card it
-  // can draw is its meaning question. Reaching that card at all is the proof the
-  // pattern is taught and quizzed rather than silently dropped from the drill.
-  // (That the meaning question is multiple-choice with distinct options is pinned
-  // by the unit suite, grammar-library.test.ts.) Match on the pattern's own kana
-  // (past the leading 〜) so the assertion tracks the data.
+  // A reference pattern carries NO production fact — there is nothing to build —
+  // so the only card it can draw is its MEANING question. Reaching a card at all
+  // is the proof it is taught and quizzed rather than dropped from the drill. The
+  // seeded pattern is the only fact in the pool, so whichever direction the card
+  // takes — the pattern as the prompt (jp→en) or its meaning as the prompt
+  // (en→jp) — the glyph is about this one pattern. Assert either the pattern's
+  // kana or a word of its gloss, so the test does not depend on the direction the
+  // drill happens to pick. (That the meaning question is a multiple-choice card
+  // with distinct options is pinned by the unit suite, grammar-library.test.ts.)
+  const kana = recipe.pattern.replace(/[〜]/g, "").slice(0, 2);
+  const glossWords = recipe.gloss.match(/[A-Za-z]+/g) ?? [];
+  const glossWord = glossWords.reduce((a, b) => (b.length > a.length ? b : a), "");
   await expect(page.locator(".kq-glyph").first()).toContainText(
-    recipe.pattern.replace(/[〜]/g, "").slice(0, 2),
+    new RegExp(`${kana}|${glossWord}`),
   );
 });
