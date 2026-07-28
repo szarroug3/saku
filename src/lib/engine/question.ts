@@ -1056,7 +1056,7 @@ const grammarQuestions: QuestionType = {
       return {
         glyph: v ? v.surface : prod.lemma,
         jp: true,
-        context: `${patternLabel(prod.recipe)} form`,
+        context: null,
         hint: null,
       };
     }

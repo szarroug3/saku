@@ -42,6 +42,8 @@
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
+import { grammarProduction } from "@/data/grammar";
+import { patternLabel } from "@/data/grammar/recipes";
 import { answerIsJapanese } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
 import { isReadingFact } from "@/lib/word-unlock";
@@ -79,6 +81,21 @@ export function quizInstruction(
   mode: "mc" | "typed",
 ): string | null {
   if (!factInfo(fact)) return null;
+
+  // A grammar PRODUCTION card shows a verb in the halo and asks for it rebuilt in
+  // a named form (the 〜て form, the polite form…). The form name used to sit in a
+  // grey sub-label under the halo; it now rides INSIDE the instruction as one
+  // sentence, and the sub-label is dropped (see the grammar prompt in
+  // engine/question.ts). "word", not "pattern": the halo holds the vehicle verb,
+  // which is the word being reshaped. `patternLabel` + " form" is exactly the
+  // string that was the sub-label.
+  const prod = grammarProduction(fact);
+  if (prod) {
+    const form = `${patternLabel(prod.recipe)} form`;
+    return mode === "mc"
+      ? `Which of these is how this word is said in the ${form}?`
+      : `Type how this word is said in the ${form}.`;
+  }
 
   // Transitivity and keigo fold the register/role that used to sit in a grey
   // sub-label INTO the answer options, so each card is one clean question. The
