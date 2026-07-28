@@ -46,6 +46,7 @@
 import { entryId, factId, productionAspect } from "../../lib/fact-id.ts";
 import { HOST_ORDER, buildExample, primaryHost } from "../../lib/grammar/example.ts";
 import { apply } from "../../lib/grammar/apply.ts";
+import { recipeAllows } from "../../lib/grammar/vehicles.ts";
 import {
   ENDING_ANCHOR,
   TE_ENDINGS,
@@ -64,11 +65,32 @@ import {
 
 export const GRAMMAR_SUBJECT = "grammar";
 
-/** The bare て/で-form recipe, the one pattern whose production splits by ENDING
- * rather than by host — its five per-ending facts replace the plain
- * `grammar:te-sequence/production` fact. Named here so the split is spelled once
- * and `productionHosts` / `buildGrammarFacts` can both recognise it. */
+/** The bare て/で-form recipe. Its five per-ending facts replace the plain
+ * `grammar:te-sequence/production` fact. Named here as the canonical te-form
+ * pattern (its intro leads the track); the ENDING split it pioneered now applies
+ * to EVERY te-form-based recipe — see `isTeFormRecipe`. */
 export const TE_FORM_RECIPE_ID = "te-sequence";
+
+/**
+ * Is this recipe built on the て/で-form — i.e. does its VERB attachment hang off
+ * the て-form?
+ *
+ * This is the axis the per-ending production split runs on, and it is READ FROM
+ * THE DATA rather than hardcoded to a list of ids: 〜てから, 〜ている, 〜てしまう
+ * and the rest of the 〜て family are all "build the て-form, then add a fixed
+ * tail", so each drills the same five 音便 endings (って/いて/いで/んで/して) as
+ * te-sequence itself. A new te-pattern gains the per-ending drill by declaring a
+ * `form: "te"` verb attachment, with no edit here. る-verbs and the irregulars
+ * stay off the board for all of them, because `endingBucketOf` keys on the class
+ * (see te-endings.ts / vehicles.ts) — the filter is the same one te-sequence uses.
+ *
+ * Keyed on the VERB attachment specifically: 〜て on an adjective (寒くて) is a
+ * different rule, and these patterns split their production into the verb endings
+ * ONLY (productionHosts is [] for them, so no adjective production fact is minted).
+ */
+export function isTeFormRecipe(r: Recipe): boolean {
+  return r.attach.find((a) => a.host === "verb")?.form === "te";
+}
 
 export function patternEntry(recipeId: string): EntryId {
   return entryId(GRAMMAR_SUBJECT, recipeId);
@@ -96,19 +118,23 @@ export function patternProductionFactId(recipeId: string, host?: Host): FactId {
 }
 
 /**
- * The te-form's production fact for ONE ending — `grammar:te-sequence/production@te-utsu`.
+ * A te-form pattern's production fact for ONE ending — e.g.
+ * `grammar:te-kara/production@te-utsu`, `grammar:te-sequence/production@te-ku`.
  *
  * The ending plays the role the HOST plays in `patternProductionFactId`: it is
  * the axis the fact is qualified on, spelled through the same `productionAspect`
- * so the id shape is identical (`production@<qualifier>`). The te-form is the one
- * pattern that splits this way — its five endings REPLACE the plain
- * `grammar:te-sequence/production` fact rather than sitting beside it, so there is
- * no unqualified te-sequence production fact to collide with. See te-endings.ts
- * for why the split is by ending (each 音便 is a separate skill) and why る is not
- * one of them.
+ * so the id shape is identical (`production@<qualifier>`). EVERY te-form-based
+ * pattern splits this way (see `isTeFormRecipe`) — its five endings REPLACE the
+ * plain `grammar:<recipe>/production` fact rather than sitting beside it, so there
+ * is no unqualified production fact for a te-pattern to collide with. See
+ * te-endings.ts for why the split is by ending (each 音便 is a separate skill) and
+ * why る is not one of them.
  */
-export function teEndingProductionFactId(ending: TeEnding): FactId {
-  return factId(patternEntry(TE_FORM_RECIPE_ID), productionAspect(ending));
+export function teEndingProductionFactId(
+  recipeId: string,
+  ending: TeEnding,
+): FactId {
+  return factId(patternEntry(recipeId), productionAspect(ending));
 }
 
 /**
@@ -137,13 +163,14 @@ export function teEndingProductionFactId(ending: TeEnding): FactId {
  * The primary host leads, and it is the one keeping the unqualified fact id.
  */
 export function productionHosts(r: Recipe): Host[] {
-  // The te-form does not split by host — it splits by ENDING (see
-  // teEndingProductionFactId). Its production facts are minted separately in
-  // buildGrammarFacts, so it carries NO host-keyed production fact and every
-  // host-based consumer (the Library build panel, guided substitution, the
-  // distractor loop) correctly sees zero here rather than a plain fact that no
-  // longer exists. The per-ending rows are added back where they belong.
-  if (r.id === TE_FORM_RECIPE_ID) return [];
+  // A te-form pattern does not split by host — it splits by ENDING (see
+  // teEndingProductionFactId), and only on the VERB. Its production facts are
+  // minted separately in buildGrammarFacts, so it carries NO host-keyed production
+  // fact and every host-based consumer (the Library build panel, guided
+  // substitution, the distractor loop) correctly sees zero here rather than a
+  // plain fact that no longer exists. This is why 〜て/〜ても/〜てもいい no longer
+  // carry an adjective production fact: the whole 〜て family is verb-ending drills.
+  if (isTeFormRecipe(r)) return [];
   const primary = primaryHost(r);
   if (!primary) return [];
   const rest = HOST_ORDER.filter(
@@ -194,20 +221,25 @@ export function sharedRuleOwner(r: Recipe, host: Host): Recipe | undefined {
 }
 
 /**
- * Every grammar fact: 96 meanings + 65 productions.
+ * Every grammar fact: 96 meanings + 130 productions.
  *
  * The asymmetry is the model working, not an inconsistency — exactly as a word
  * having one reading fact while a kanji never does. Every pattern means
- * something; only 56 of them are something you can be asked to BUILD, and 5 of
- * those 56 are more than one thing to build — see `productionHosts`. 56 patterns
- * carry 65 production facts, and the 9 extra are adjective rules that were in
- * the table all along with nowhere to be asked. The 3 newest producers are the
- * aspectual/desiderative compounds 〜たがる / 〜始める / 〜続ける (each verb-only).
+ * something; only some are something you can be asked to BUILD, and some of those
+ * are more than one thing to build — see `productionHosts` (a host split, 〜すぎる
+ * on a verb vs an adjective) and `teEndingProductionFactId` (an ENDING split).
  *
- * It was 54 until 〜たり〜たり lost its production fact. That fact was reachable:
- * the scheduler could serve it, and the generator answered it with 行ったり —
- * half the pattern, graded as the whole of it. A pattern that WRAPS a slot has
- * no production fact, because there is no one string that answers it.
+ * The ending split is now the bulk of the production side. The whole 〜て family
+ * (17 recipes — see `isTeFormRecipe`) drills the て-form's five 音便 endings, so
+ * each te-pattern carries up to five per-ending production facts (五 for 〜てから,
+ * 四 for 〜てある, which refuses its intransitive-anchor ending) and no host-keyed
+ * one — 84 facts across the family. The remaining ~46 are the non-te producers,
+ * where 9 are adjective rules that were in the table all along with nowhere to be
+ * asked and the host loop below mints one fact per scored host.
+ *
+ * A pattern that WRAPS a slot (〜たり〜たり) has no production fact at all, because
+ * there is no one string that answers it — the generator once served 行ったり,
+ * half the pattern graded as the whole of it, and that fact was removed.
  */
 /** Which recipe a grammar fact belongs to, and which aspect it asks. Built
  * alongside GRAMMAR_FACTS so the question layer (engine/question.ts) can recover
@@ -241,22 +273,30 @@ function buildGrammarFacts(): FactInfo[] {
     // isProducible, not isVacuous: a fact the generator will always refuse is
     // a fact the scheduler would schedule forever and never be able to ask.
     if (!isProducible(r)) continue;
-    // The te-form splits its production into one fact PER ENDING (see
+    // A te-form pattern splits its production into one fact PER ENDING (see
     // te-endings.ts): building the て-form of a く verb and of a す verb are two
     // separate 音便 skills, so each ending is its own gradeable fact, baked on a
-    // representative verb of that ending. This REPLACES the plain
-    // grammar:te-sequence/production fact — productionHosts returns [] for it, so
-    // the loop below would emit nothing anyway; this block is the whole of the
-    // te-form's production side.
-    if (r.id === TE_FORM_RECIPE_ID) {
+    // representative verb of that ending and carrying the FULL pattern (書いてから
+    // for te-kara, 書いておく for te-oku). This REPLACES the plain
+    // grammar:<recipe>/production fact — productionHosts returns [] for every
+    // te-form pattern, so the host loop below would emit nothing anyway; this
+    // block is the whole of a te-pattern's production side. It applies to the
+    // entire 〜て family, not just te-sequence (see isTeFormRecipe).
+    if (isTeFormRecipe(r)) {
       for (const ending of TE_ENDINGS) {
         const anchor = ENDING_ANCHOR[ending];
+        // The recipe's own verb restriction still holds: 〜てある wants a verb
+        // somebody does to something, so its intransitive-anchor ending (泳ぐ) is
+        // skipped rather than baked into 泳いである — the same never-mark-correct-
+        // Japanese-wrong guard the vehicle pool applies. Absent a restriction
+        // (every other te-pattern) this is a no-op and all five endings mint.
+        if (!recipeAllows(r, anchor.surface)) continue;
         const surface = apply(r, anchor.surface, anchor.cls);
         if (!surface.ok || surface.value === anchor.surface) continue;
         const kana = apply(r, anchor.kana, anchor.cls);
         const form = surface.value;
         const kanaForm = kana.ok ? kana.value : form;
-        const pId = teEndingProductionFactId(ending);
+        const pId = teEndingProductionFactId(r.id, ending);
         PRODUCTION_OF.set(pId, { recipeId: r.id, host: "verb", ending });
         facts.push({
           id: pId,

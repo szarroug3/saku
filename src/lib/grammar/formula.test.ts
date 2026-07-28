@@ -16,7 +16,7 @@ import { describe, test } from "node:test";
 
 import { attachesTo, FORM_LABEL, HOST_LABEL, recipeFormula } from "./formula";
 import { RECIPES, isProducible, type Recipe } from "../../data/grammar/recipes";
-import { productionHosts } from "../../data/grammar/index";
+import { isTeFormRecipe, productionHosts } from "../../data/grammar/index";
 import { formsFor } from "../conjugate/index";
 
 function byId(id: string): Recipe {
@@ -200,25 +200,23 @@ describe("production hosts against formula rows", () => {
     }
   });
 
-  test("the mixed patterns really do have unscored rows, and only those four", () => {
-    // The empty-cell case is not hypothetical and it is not everywhere. Three of
-    // the four are the shared/vacuous rows the header describes: 〜てもいい, 〜ても
-    // and 〜ので. The fourth is te-sequence — the te-form scores per ENDING, not
-    // per host (see te-endings.ts), so its host formula row carries no chip while
-    // its five per-ending facts are enumerated in the entry page's fact list. If
-    // this list changes the card is still correct, but a comment is stale.
+  test("the mixed patterns really do have unscored rows: node and the 〜て family", () => {
+    // The empty-cell case has two sources, and both are principled. 〜ので (node)
+    // is the vacuous kind the header describes: its verb / adj-i rows transform
+    // nothing, so those cells stay blank while its adj-na row is scored. The rest
+    // are the WHOLE 〜て family — the te-form scores per ENDING, not per host (see
+    // te-endings.ts / isTeFormRecipe), so every te-pattern's host formula rows
+    // carry no chip while its per-ending facts are enumerated on the entry page.
     const mixed = RECIPES.filter((r) => {
       if (!isProducible(r)) return false;
       const scored = new Set(productionHosts(r));
       const rows = recipeFormula(r).opening;
       return rows.some((f) => !scored.has(f.host));
     }).map((r) => r.id);
-    assert.deepEqual(mixed.toSorted(), [
-      "node",
-      "te-mo",
-      "te-permission",
-      "te-sequence",
-    ]);
+    const teFamily = RECIPES.filter(
+      (r) => isProducible(r) && isTeFormRecipe(r),
+    ).map((r) => r.id);
+    assert.deepEqual(mixed.toSorted(), ["node", ...teFamily].toSorted());
   });
 
   test("a wrap never carries a score column", () => {

@@ -24,11 +24,12 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { patternProductionFactId } from "@/data/grammar";
+import { teEndingProductionFactId } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
 import { questionsFor, type GrammarVehicle, type PromptContext } from "@/lib/engine/question";
 import { buildExample } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
+import { endingBucketOf } from "@/lib/grammar/te-endings";
 import {
   VERB_VEHICLES,
   transitivityAllows,
@@ -49,13 +50,23 @@ function ctxFor(surface: string): PromptContext {
   return { grammarVehicle: gv };
 }
 
+/** 〜てある's production is per-ending now, so the fact under test is the one for
+ * the ctx vehicle's own ending. A vehicle with NO drillable ending (行く, 来る,
+ * する — the irregulars te-aru also forbids) has no per-ending fact of its own;
+ * te-ku stands in, and the grader's ending gate rejects the vehicle anyway, so
+ * the card falls back to that fact's baked answer (書いてある). */
+function factFor(ctx: PromptContext) {
+  const cls = ctx.grammarVehicle?.cls ?? null;
+  return teEndingProductionFactId("te-aru", endingBucketOf(cls) ?? "te-ku");
+}
+
 function grade(given: string, ctx: PromptContext): boolean {
-  const fact = patternProductionFactId("te-aru", "verb");
+  const fact = factFor(ctx);
   return DIRS.every((d) => questionsFor(fact).check(fact, d, given, ctx));
 }
 
 function gradeAny(given: string, ctx: PromptContext): boolean {
-  const fact = patternProductionFactId("te-aru", "verb");
+  const fact = factFor(ctx);
   return DIRS.some((d) => questionsFor(fact).check(fact, d, given, ctx));
 }
 
@@ -159,11 +170,15 @@ describe("the grader refuses a form built on a verb the pattern does not take", 
   });
 
   test("the genuine cases still grade correct", () => {
+    // One transitive verb per drillable ending. する is NOT here any more: it is a
+    // lexical irregular, and te-aru's production is per-ending now (see
+    // te-endings.ts), so する — like every irregular — never rolls as a te-form
+    // vehicle. The godan cases each grade against their own ending's fact.
     for (const [word, answer, kana] of [
       ["書く", "書いてある", "かいてある"],
       ["読む", "読んである", "よんである"],
       ["買う", "買ってある", "かってある"],
-      ["する", "してある", "してある"],
+      ["話す", "話してある", "はなしてある"],
     ] as const) {
       const ctx = ctxFor(word);
       assert.equal(grade(answer, ctx), true, answer);

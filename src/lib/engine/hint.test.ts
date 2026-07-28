@@ -11,7 +11,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { kanaFact } from "@/data/characters";
-import { patternMeaningFactId, patternProductionFactId } from "@/data/grammar";
+import {
+  patternMeaningFactId,
+  patternProductionFactId,
+  teEndingProductionFactId,
+} from "@/data/grammar";
 import { meaningFactId, readingFactId } from "@/data/kanji";
 import { wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
 import { firstTryCredit } from "@/lib/engine/index";
@@ -137,13 +141,14 @@ test("a grammar meaning hints with what the pattern attaches to", () => {
 
 test("a grammar production hints with the form it builds on", () => {
   // Never the built answer: knowing 〜てから takes the て-form does not tell you
-  // 行ってから.
+  // 買ってから. te-kara's production is per-ending now, so this asks its te-utsu
+  // fact — the hint is the same "uses the て-form" for every ending.
   const text = textOf(
-    hintFor(patternProductionFactId("te-kara"), "jp2en"),
+    hintFor(teEndingProductionFactId("te-kara", "te-utsu"), "jp2en"),
     "〜てから's production",
   );
   assert.equal(text, "uses the て-form");
-  assert.ok(!text.includes("行"), "the hint must not contain the built form");
+  assert.ok(!text.includes("買"), "the hint must not contain the built form");
 });
 
 // ---------- the cards with no hint ----------

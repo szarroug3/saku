@@ -23,6 +23,7 @@ import {
   patternEntry,
   patternMeaningFactId,
   patternProductionFactId,
+  teEndingProductionFactId,
 } from "@/data/grammar";
 import { buildDeck, buildMcOptions, checkTyped, questionsFor } from "@/lib/engine";
 import { factInfo } from "@/lib/facts";
@@ -108,7 +109,8 @@ describe("a selected pattern DRILLS", () => {
   test("a grammar fact routes to the grammar question type, not kana's", () => {
     const mean = patternMeaningFactId("te-kara");
     assert.equal(questionsFor(mean).id, "grammar");
-    const prod = patternProductionFactId("te-kara");
+    // te-kara's production is per-ending now; the per-ending fact must route too.
+    const prod = teEndingProductionFactId("te-kara", "te-utsu");
     assert.equal(questionsFor(prod).id, "grammar");
   });
 
@@ -144,18 +146,21 @@ describe("a selected pattern DRILLS", () => {
   });
 
   test("a PRODUCTION question grades the engine-built form, in kanji or kana", () => {
-    const fact = patternProductionFactId("te-kara");
-    // 行ってから, on the fixed representative verb — the て-form is irregular, so
-    // this proves the engine, not just string-concatenation.
-    assert.ok(checkTyped(fact, "行ってから", "en2jp"), "kanji surface is accepted");
-    assert.ok(checkTyped(fact, "いってから", "en2jp"), "kana reading is accepted");
-    assert.ok(!checkTyped(fact, "行きてから", "en2jp"), "the naive (wrong) form is rejected");
+    // 〜たい, a non-te verb pattern still baked on the fixed 行く (行きたい). te-form
+    // production is per-ending and baked on the ending's godan anchor, exercised
+    // in te-endings.test.ts; this checks the generic host-baked production path.
+    const fact = patternProductionFactId("tai");
+    // 行きたい is [stem] + たい (行く → 行き), so this proves the engine picks the
+    // stem, not just string-concatenation onto the dictionary form.
+    assert.ok(checkTyped(fact, "行きたい", "en2jp"), "kanji surface is accepted");
+    assert.ok(checkTyped(fact, "いきたい", "en2jp"), "kana reading is accepted");
+    assert.ok(!checkTyped(fact, "行くたい", "en2jp"), "the naive (wrong) form is rejected");
   });
 
   test("PRODUCTION distractors are other forms of the SAME verb", () => {
-    const fact = patternProductionFactId("te-kara");
+    const fact = patternProductionFactId("tai");
     const opts = buildMcOptions(fact);
-    // Every option is a form of 行く (the fixed verb), one of which is 行ってから.
+    // Every option is a form of 行く (the fixed verb), one of which is 行きたい.
     for (const o of opts) {
       assert.match(factInfo(o)!.glyph, /^行/, "options are all forms of 行く");
     }
@@ -171,7 +176,10 @@ describe("a selected pattern DRILLS", () => {
     // gradeable typed answer or a multi-option board.
     const facts = [
       patternMeaningFactId("te-kara"),
-      patternProductionFactId("te-kara"),
+      // A per-ending te-form production fact is exactly the kind that must not
+      // fall back to a zero-answer card, so it is included here on purpose.
+      teEndingProductionFactId("te-kara", "te-utsu"),
+      patternProductionFactId("tai"),
       patternMeaningFactId("nakya"),
     ];
     for (const f of buildDeck(facts, {

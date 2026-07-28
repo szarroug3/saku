@@ -90,15 +90,19 @@ describe("sharedRuleOwner marks the rows scored on another pattern's page", () =
     }
   });
 
-  test("the shipped population is 〜ても and 〜てもいい, on adj-i, both owned by 〜て", () => {
-    // Not the point of the sweep above, which is general. This is the count the
-    // change was measured against, so a recipe quietly gaining or losing a
-    // deferral shows up as a diff here rather than as a surprise on screen.
+  test("no row defers any more: the 〜て family split by ending removed the two", () => {
+    // This USED to be 〜てもいい/adj-i → 〜て and 〜ても/adj-i → 〜て, both deferring
+    // their adjective rule to te-cause. Generalizing the per-ending production
+    // split to the whole 〜て family took te-cause's adjective production fact
+    // away (it drills verb endings only now), so there is nothing to defer TO and
+    // the deferral was removed from the data. The mechanism below stays — it
+    // still guards any FUTURE non-te deferring recipe — but its population is now
+    // empty, and that emptiness is asserted so a deferral reappearing is a diff.
     const marked = scoredColumnRows()
       .map(({ r, host }) => ({ r, host, owner: sharedRuleOwner(r, host) }))
       .filter((x) => x.owner)
       .map((x) => `${x.r.pattern}/${x.host} → ${x.owner!.pattern}`);
-    assert.deepEqual(marked, ["〜てもいい/adj-i → 〜て", "〜ても/adj-i → 〜て"]);
+    assert.deepEqual(marked, []);
   });
 
   test("〜ので's two blanks stay blank", () => {
