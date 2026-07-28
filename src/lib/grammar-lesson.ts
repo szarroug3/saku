@@ -4,8 +4,7 @@
 // That refusal is about JAPANESE and it stands. This file still publishes a
 // GRAMMAR_CURRICULUM_TOTAL, because "how many patterns does this track teach"
 // is a question about the app rather than the subject — the distinction, and
-// why the answer is the 56 drillable recipes and not the 96 authored ones, is
-// argued at that constant.
+// why the answer is all 96 authored recipes, is argued at that constant.
 //
 // WHY THIS IS word-lesson.ts, NOT kanji-lesson.ts
 // ===============================================
@@ -17,15 +16,16 @@
 // COUNT of new patterns, not a cost range — a PURE function of history with no
 // cursor, exactly as kana, kanji and words manage it.
 //
-// WHAT THE TRACK TEACHES, AND WHAT IT LEAVES ON THE CLUSTER PAGE
-// =============================================================
-// Only DRILLABLE patterns — the ones `isProducible` says can carry a production
-// question with ONE answer. A reference-only pattern (a wrap like 〜しか〜ない,
-// or a vacuous one like 〜は〜より whose "production" is just retyping) is real
-// grammar and worth SHOWING, but it is not a lesson: it lives in the cluster map
-// (clusters.ts), shown and never asked. A lesson card that taught a pattern the
-// drill will forever refuse to quiz would be a lesson with no second half — the
-// same reason data/grammar/index.ts mints no production fact for those rows.
+// WHAT THE TRACK TEACHES
+// ======================
+// ALL 96 patterns. A DRILLABLE pattern — one `isProducible` says can carry a
+// production question with ONE answer — is taught by meaning AND production. A
+// non-producible pattern (a wrap like 〜しか〜ない, or a vacuous one like 〜は〜より
+// whose "production" is just retyping) carries only a MEANING fact, so it is
+// taught by a teach page and quizzed by meaning multiple choice, with no
+// production half. Both are real lessons; the only difference is whether the
+// quiz has a production question, which data/grammar/index.ts settles by minting
+// a production fact for the drillable rows and none for the rest.
 //
 // THE ORDER, AND THE ONE DECISION THE DATA DOESN'T SETTLE
 // ======================================================
@@ -37,8 +37,8 @@
 // that is both "grouped by function" and "all N5 before any N4".
 //
 // A beginner meeting grammar for the first time (the moment this track opens,
-// right after kana) wants the easier half first. So the teaching order is the
-// drillable recipes sorted N5-before-N4, STABLY — which preserves the authored
+// right after kana) wants the easier half first. So the teaching order is all
+// the recipes sorted N5-before-N4, STABLY — which preserves the authored
 // within-level order (and thus the functional grouping inside each level) while
 // guaranteeing no N4 pattern is taught before the N5 patterns. This is a
 // curriculum call the data leaves open; it is flagged for owner review. Change
@@ -51,7 +51,7 @@ import type { LessonPosition } from "@/lib/lesson-position";
 import { wordClassOf } from "@/lib/word-forms";
 import { CURRICULUM_WORDS } from "@/lib/word-lesson";
 import { GRAMMAR_SUBJECT, patternMeaningFactId } from "@/data/grammar";
-import { DRILLABLE, RECIPES, type Host, type Level, type Recipe } from "@/data/grammar/recipes";
+import { RECIPES, type Host, type Level, type Recipe } from "@/data/grammar/recipes";
 import { CURRICULUM_LESSONS, type GrammarLessonDef } from "@/data/grammar/lessons";
 import { wordMeaningFactId, type VocabRow } from "@/data/vocab";
 import type { FactId, HistoryFile } from "@/types";
@@ -97,34 +97,35 @@ function teFormFirst(r: Recipe): number {
 }
 
 /**
- * The patterns the track teaches, in teaching order: the drillable recipes,
- * N5 before N4, stable within a level.
+ * The patterns the track teaches, in teaching order: ALL 96 recipes, N5 before
+ * N4 before N3, stable within a level.
  *
- * Computed once — it is a property of the data, not of the user. `DRILLABLE` is
- * already `RECIPES.filter(isProducible)` in authored order; the stable sort
- * lifts every N5 ahead of every N4 without disturbing the functional grouping
- * inside each level (Array.prototype.sort is stable).
+ * Computed once — it is a property of the data, not of the user. Every recipe is
+ * taught: a producible one carries a production drill, a non-producible one
+ * (vacuous, order-free, or 〜しか〜ない) carries only its meaning fact and is
+ * quizzed by meaning multiple choice. The stable sort lifts every N5 ahead of
+ * every N4 without disturbing the functional grouping inside each level
+ * (Array.prototype.sort is stable), so the 40 non-producible patterns interleave
+ * by level among their kin.
  */
-export const CURRICULUM_PATTERNS: readonly Recipe[] = [...DRILLABLE].sort(
+export const CURRICULUM_PATTERNS: readonly Recipe[] = [...RECIPES].sort(
   (a, b) =>
     teFormFirst(a) - teFormFirst(b) || levelRank(a.level) - levelRank(b.level),
 );
 
 /**
  * How many patterns the track teaches — the denominator on the lesson card.
- * 56 (DRILLABLE), out of 96 authored RECIPES.
+ * All 96 authored RECIPES.
  *
- * WHY THE DRILLABLE COUNT AND NOT THE WHOLE TABLE
- * ===============================================
- * The 40 non-drillable recipes are real grammar and are really shown — the
- * cluster map prints them, and a learner will read them. They are still not the
- * denominator, because a denominator is a promise about the TRACK: "keep going
- * and you will have met all of these". This track never teaches those 40 and,
- * by construction, never can — data/grammar/index.ts mints no production fact
- * for them, so a lesson card holding one would be a lesson the drill would
- * forever refuse to quiz. 96 would promise 40 lessons that cannot exist. It is
- * the same error as counting the 6,340 advanced words the words track declines
- * to push: material the app HAS is not material the app TEACHES.
+ * WHY THE WHOLE TABLE NOW, AND NOT ONLY THE DRILLABLE 56
+ * =====================================================
+ * The 40 non-producible recipes are real grammar the learner has to meet, and
+ * the track now teaches them: each carries a MEANING fact, so it gets a teach
+ * page and is quizzed by meaning multiple choice, with no production drill.
+ * That makes them lessons like any other, so the denominator — a promise about
+ * the TRACK, "keep going and you will have met all of these" — counts them. The
+ * only thing a non-producible pattern lacks is the production half of its quiz,
+ * which is a property of the QUESTION, not of whether the pattern is taught.
  *
  * AND THE HEADER OF recipes.ts IS NOT AN OBJECTION TO THIS
  * =======================================================
@@ -132,11 +133,9 @@ export const CURRICULUM_PATTERNS: readonly Recipe[] = [...DRILLABLE].sort(
  * answer — vendors count N5 at 40, 84, 125 or 132, and the JLPT withdrew its
  * own list. All true, and it is a question about JAPANESE. This is a different
  * question with a different subject: how many patterns does THIS app's grammar
- * track teach? That one has an answer, because we authored the table and we
- * decide what is drillable. Printing 56 claims nothing about the language; it
- * claims something about the app, which is exactly the kind of claim a progress
- * counter is allowed to make. Counting the authored 96 would blur the two back
- * together by implying the table is a census of the subject.
+ * track teach? That one has an answer, because we authored the table. Printing
+ * 96 claims nothing about the language; it claims something about the app, which
+ * is exactly the kind of claim a progress counter is allowed to make.
  */
 export const GRAMMAR_CURRICULUM_TOTAL = CURRICULUM_PATTERNS.length;
 
@@ -198,13 +197,13 @@ export interface GrammarLesson {
   cards: GrammarCard[];
   facts: FactId[];
   /**
-   * Where you are, in PATTERNS — "3–7 of 56".
+   * Where you are, in PATTERNS — "3–7 of 96".
    *
    * The card used to say "lesson 3" and stop there, and the comment that stood
    * here defended it: the curriculum's length is fixed but a total "would read
    * as a promise". It reads as a promise because it IS one — the mistake was
    * making the promise about lessons, which the app cannot keep, rather than
-   * about patterns, which it can. 56 is the whole of what this track will ever
+   * about patterns, which it can. 96 is the whole of what this track will ever
    * teach and it does not move; see GRAMMAR_CURRICULUM_TOTAL.
    *
    * ITEMS ARE PATTERNS. Not lessons, and not sentences either — a pattern is

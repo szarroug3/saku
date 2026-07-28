@@ -24,6 +24,7 @@ import {
 } from "./assembly.ts";
 import { STOCK_NAMES } from "../lib/grammar/readable.ts";
 import { CURRICULUM_PATTERNS } from "../lib/grammar-lesson.ts";
+import { isProducible } from "./grammar/recipes.ts";
 import { VOCAB, wordMeaningFactId } from "./vocab.ts";
 import type { HistoryFile } from "../types/index.ts";
 
@@ -48,8 +49,19 @@ describe("sentence-ordering follows the grammar teaching order", () => {
   test("simple is first, then tiers follow their earliest taught prerequisite", () => {
     assert.equal(SENTENCE_ORDERING_TIERS[0]?.id, "simple");
 
+    // The sentence-ordering tiers sequence on the PRODUCIBLE teaching order — the
+    // patterns the grammar track actually drills. CURRICULUM_PATTERNS now holds
+    // all 96 recipes (the non-producible ones are taught by meaning too), but a
+    // meaning-only pattern does not move a tier's unlock: the `reported` tier's
+    // prereqs (to-omou, rashii, kamoshirenai, deshou) are all non-producible, and
+    // it sits last because none of them is a drilled prerequisite. Filtering to
+    // producible keeps this measuring the same teaching order it always did; the
+    // relative order of the producible patterns inside CURRICULUM_PATTERNS is
+    // unchanged by the expansion (the sort is stable). Re-ordering the tiers to
+    // account for when a meaning-only pattern is introduced is an assembly-track
+    // decision, tracked separately.
     const curriculumIndex = new Map(
-      CURRICULUM_PATTERNS.map((pattern, index) => [pattern.id, index]),
+      CURRICULUM_PATTERNS.filter(isProducible).map((pattern, index) => [pattern.id, index]),
     );
     const ordered = SENTENCE_ORDERING_TIERS.slice(1).map((tier) => {
       const taught = tier.grammarPrereqs

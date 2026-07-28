@@ -26,7 +26,7 @@
 // teach pages; the interim is honest (one tile is one page), never a stub.
 
 import { patternEntry } from "@/data/grammar";
-import { DRILLABLE, type Level, type Recipe } from "@/data/grammar/recipes";
+import { RECIPES, type Level, type Recipe } from "@/data/grammar/recipes";
 import { autoPatternPage } from "@/data/grammar/auto-page";
 import {
   MASU_FORM_PAGES,
@@ -315,8 +315,10 @@ const LESSON_TE_IRU: GrammarLessonDef = {
 // stable within a level (the sort is copied from grammar-lesson.ts's
 // CURRICULUM_PATTERNS rather than imported, because that file imports THIS one
 // and the dependency runs one way). te-sequence becomes the authored L1; every
-// other drillable recipe becomes a one-page `pattern` lesson for now — the same
-// terse tile the track showed before, one concept per sitting.
+// other recipe becomes a one-page `pattern` lesson for now — the same terse tile
+// the track showed before, one concept per sitting. All 96 recipes are taught: a
+// producible pattern drills its production, a non-producible one drills its
+// meaning only (its lesson's drills are [meaning] by construction).
 // ---------------------------------------------------------------------------
 
 function levelRank(level: Level): number {
@@ -336,7 +338,15 @@ function leadRank(r: Recipe): number {
   return LESSON_LEAD[r.id] ?? 2;
 }
 
-const ORDERED: readonly Recipe[] = [...DRILLABLE].sort(
+// ALL 96 recipes are taught, not only the 56 producible ones. A producible
+// recipe carries a production drill; a non-producible one (a vacuous pattern
+// like 〜と思う, an order-free wrap like 〜たり〜たり, or 〜しか〜ない) carries only
+// its meaning fact, so its lesson drills MEANING alone (autoLesson reads factsOf,
+// which is [meaning] for it) and is quizzed by multiple choice. The sort is
+// unchanged and stable, so the 40 non-producible patterns interleave by level
+// among their kin — 〜と思う (N5) sits with the N5s, the N3 set after the N4s —
+// and each level keeps its authored RECIPES order.
+const ORDERED: readonly Recipe[] = [...RECIPES].sort(
   (a, b) => leadRank(a) - leadRank(b) || levelRank(a.level) - levelRank(b.level),
 );
 

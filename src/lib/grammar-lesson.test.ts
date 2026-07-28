@@ -92,19 +92,29 @@ function kanaAndVerb(): HistoryFile {
   return claiming([...KANA_GROUP_FACTS.flat(), wordMeaningFactId(FIRST_VERB.keb)]);
 }
 
-describe("the curriculum is the drillable patterns, N5 before N4", () => {
-  test("every taught pattern is producible — no reference-only rows", () => {
+describe("the curriculum is ALL patterns, N5 before N4", () => {
+  test("every taught pattern carries a fact; producible ones drill production, the rest meaning only", () => {
     for (const r of CURRICULUM_PATTERNS) {
-      assert.ok(isProducible(r), `${r.id} is not producible and must not be taught`);
+      // Every taught pattern is quizzable: a producible one carries a production
+      // fact (via productionHosts, an ending split, or an @iku/@suru/@kuru fact),
+      // and every pattern — producible or not — carries a meaning fact. The one
+      // thing a lesson must never do is teach a pattern with NOTHING to ask.
+      assert.ok(
+        factInfo(patternMeaningFactId(r.id)),
+        `${r.id} has no meaning fact and must not be taught`,
+      );
     }
-    // The known reference-only patterns are explicitly absent: the two vacuous
-    // comparisons, the two order-free/data-blocked wraps.
+    // The whole table is taught now, so the four formerly reference-only patterns
+    // are PRESENT — quizzed by meaning multiple choice, with no production drill.
     const taught = new Set(CURRICULUM_PATTERNS.map((r) => r.id));
     for (const id of ["wa-yori", "hou-ga-yori", "tari-tari", "shika-nai"]) {
-      assert.ok(!taught.has(id), `${id} is reference-only and must not be taught`);
+      assert.ok(taught.has(id), `${id} is now taught by meaning and must be present`);
+      assert.ok(!isProducible(recipe(id)!), `${id} is expected to be non-producible`);
+      // Its drills are meaning only — no production fact exists for it.
+      assert.ok(factInfo(patternMeaningFactId(id)));
     }
-    // It is exactly the drillable set, no more and no less.
-    assert.equal(CURRICULUM_PATTERNS.length, DRILLABLE.length);
+    // It is exactly the whole table, no more and no less.
+    assert.equal(CURRICULUM_PATTERNS.length, RECIPES.length);
   });
 
   test("levels are monotone: every N5 before every N4 before every N3", () => {
@@ -125,16 +135,15 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
   });
 
   test("the te-form leads; behind it, each level keeps its authored order", () => {
-    // The N5 slice of the curriculum is the N5 drillable recipes in RECIPES order;
-    // likewise N4. That is what "stable" buys, and it keeps the て/ない/must
-    // groupings intact inside each level.
+    // The N5 slice of the curriculum is ALL the N5 recipes in RECIPES order;
+    // likewise N4 and N3. That is what "stable" buys, and it keeps the て/ない/must
+    // groupings intact inside each level, with the non-producible patterns
+    // interleaved exactly where the table places them.
     for (const level of ["N5", "N4", "N3"] as const) {
       const fromCurriculum = CURRICULUM_PATTERNS.filter((r) => r.level === level).map(
         (r) => r.id,
       );
-      const authored = RECIPES.filter(
-        (r) => r.level === level && isProducible(r),
-      ).map((r) => r.id);
+      const authored = RECIPES.filter((r) => r.level === level).map((r) => r.id);
       // te-sequence (the te-form) is pulled to the very front of the whole
       // curriculum (teFormFirst) because it carries the track's introduction, so
       // within its level the expected order is it first, then the rest of the
@@ -313,18 +322,18 @@ describe("lesson sizing is a count, clamped", () => {
 
 // The card counts PATTERNS — "3–7 of 53" — where it used to say "lesson 3" and
 // deliberately withhold a total.
-describe("the position counts PATTERNS, and the total is the drillable set", () => {
-  test("the total is the 56 drillable recipes, not the 96 authored ones", () => {
-    // The 40 reference-only recipes are shown on cluster/pattern pages and never
-    // taught by the production track, so counting them would promise 40 lessons
-    // that cannot exist — data/grammar/index.ts mints no production fact for
-    // them. 40 = 28 original + the 12 N3 recognition patterns, which are
-    // vacuous by construction (they attach to a clause, not a vehicle).
+describe("the position counts PATTERNS, and the total is the whole table", () => {
+  test("the total is all 96 authored recipes, drillable and not alike", () => {
+    // Every recipe is taught now: a producible one by meaning + production, a
+    // non-producible one by meaning multiple choice. So the denominator counts
+    // the whole table — the 40 non-producible patterns included, since each is a
+    // real lesson with a real (meaning) question.
     assert.equal(GRAMMAR_CURRICULUM_TOTAL, CURRICULUM_PATTERNS.length);
-    assert.equal(GRAMMAR_CURRICULUM_TOTAL, DRILLABLE.length);
-    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 56);
-    assert.equal(RECIPES.length, 96);
-    assert.ok(GRAMMAR_CURRICULUM_TOTAL < RECIPES.length);
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, RECIPES.length);
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 96);
+    // The drillable set is a strict subset — production is the second half of
+    // some lessons' quiz, not the gate on whether a pattern is taught.
+    assert.ok(DRILLABLE.length < GRAMMAR_CURRICULUM_TOTAL);
   });
 
   // That every counted pattern is one a lesson can actually reach is already
@@ -393,7 +402,12 @@ describe("every form a pattern uses is taught before the pattern uses it", () =>
   test("a prerequisite form (something is added to it) is taught at or before its use", () => {
     CURRICULUM_LESSONS.forEach((lesson, i) => {
       const hit = verbAttach(lesson);
-      if (!hit?.a?.form || hit.a.form === "dictionary" || !hit.a.add) return;
+      // Only PRODUCIBLE patterns drill a verb form and so need it taught first. A
+      // non-producible pattern (e.g. 〜たり〜たり, built on the た-form) is quizzed by
+      // meaning only, never asked to build the form, so it cannot false-fail this
+      // guard — and the guard must stay strict for the producible patterns it is for.
+      if (!hit || !isProducible(hit.r)) return;
+      if (!hit.a?.form || hit.a.form === "dictionary" || !hit.a.add) return;
       const at = taughtAt.get(hit.a.form);
       assert.ok(
         at !== undefined && at <= i,
@@ -407,8 +421,11 @@ describe("every form a pattern uses is taught before the pattern uses it", () =>
   test("a pattern that IS a whole conjugation teaches the rule, not one example", () => {
     CURRICULUM_LESSONS.forEach((lesson) => {
       const hit = verbAttach(lesson);
+      // Producible patterns only — a non-producible pattern teaches meaning, not a
+      // conjugation rule, so it has no rule table to check.
+      if (!hit || !isProducible(hit.r)) return;
       // add empty = the form is the whole pattern (the potential, たら, ば, ...).
-      if (!hit?.a?.form || hit.a.form === "dictionary" || hit.a.add) return;
+      if (!hit.a?.form || hit.a.form === "dictionary" || hit.a.add) return;
       // te-sequence and 〜ている are hand-authored, with their own build pages.
       if (hit.r.id === "te-sequence" || hit.r.id === "te-iru") return;
       const page = [...lesson.pages].reverse().find((p) => p.kind === "teach");
