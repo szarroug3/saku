@@ -194,9 +194,14 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
   // rather than after a possessive, so they don't read as "a な-adjective's the
   // form…".
   const on = HOST_ARTICLE[host];
+  const dict = attach?.form === "dictionary";
   const phrase = formLabel ? /^the /.test(formLabel) : false;
   let build: string;
-  if (formLabel && add) {
+  if (dict) {
+    // The dictionary form is the word doing nothing, so it takes no possessive:
+    // "Take a verb, just as it is, and add と思う", never "a verb's just as it is".
+    build = add ? `Take ${on}, just as it is, and add ${add}.` : `Take ${on} just as it is.`;
+  } else if (formLabel && add) {
     build = phrase
       ? `Put ${on} into ${formLabel}, then add ${add}.`
       : `Take ${on}'s ${formLabel} and add ${add}.`;
