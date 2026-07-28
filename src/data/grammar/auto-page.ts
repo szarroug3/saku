@@ -19,11 +19,17 @@ import type { Host, Recipe } from "@/data/grammar/recipes";
 import type { IntroBuildRule, IntroDeriveRow, PhaseIntro } from "@/data/phase-intros";
 
 /** One example word for the build table: the kana form, its class (null for a
- * noun, which does not conjugate), and its English meaning. */
+ * noun, which does not conjugate), and its English meaning. Verbs also carry the
+ * inflected English forms, so the Meaning column can slot the verb into whatever
+ * shape a gloss's X frame needs (base, gerund, past, past participle). */
 interface ExampleWord {
   word: string;
   cls: WordClass | null;
   en: string;
+  ing?: string;
+  pp?: string;
+  past?: string;
+  s?: string;
 }
 
 /** A small, beginner-friendly example set per host — common words whose readings
@@ -31,12 +37,12 @@ interface ExampleWord {
  * is shown to hold across them. Filtered per recipe, three shown. */
 const EXAMPLES: Record<Host, ExampleWord[]> = {
   verb: [
-    { word: "たべる", cls: "v1", en: "eat" },
-    { word: "のむ", cls: "v5m", en: "drink" },
-    { word: "かく", cls: "v5k", en: "write" },
-    { word: "かう", cls: "v5u", en: "buy" },
-    { word: "はなす", cls: "v5s", en: "speak" },
-    { word: "あそぶ", cls: "v5b", en: "play" },
+    { word: "たべる", cls: "v1", en: "eat", ing: "eating", pp: "eaten", past: "ate", s: "eats" },
+    { word: "のむ", cls: "v5m", en: "drink", ing: "drinking", pp: "drunk", past: "drank", s: "drinks" },
+    { word: "かく", cls: "v5k", en: "write", ing: "writing", pp: "written", past: "wrote", s: "writes" },
+    { word: "かう", cls: "v5u", en: "buy", ing: "buying", pp: "bought", past: "bought", s: "buys" },
+    { word: "はなす", cls: "v5s", en: "speak", ing: "speaking", pp: "spoken", past: "spoke", s: "speaks" },
+    { word: "あそぶ", cls: "v5b", en: "play", ing: "playing", pp: "played", past: "played", s: "plays" },
   ],
   "adj-i": [
     { word: "たかい", cls: "adj-i", en: "expensive" },
@@ -61,11 +67,41 @@ function pageHost(r: Recipe): Host {
   return primaryHost(r) ?? "verb";
 }
 
-/** The pattern's gloss with its X slot filled by the verb's meaning, so the
- * Meaning column reads as the pattern APPLIED — "go in order to X" + "write" =
- * "go in order to write". A gloss with no X slot is left as it is. */
-function appliedGloss(gloss: string, verbEn: string): string {
-  return /\bX\b/.test(gloss) ? gloss.replace(/\bX\b/g, verbEn) : gloss;
+/** The pattern's gloss with its X slot filled by the example's meaning, so the
+ * Meaning column reads as the pattern APPLIED. A verb's X takes whatever English
+ * form its frame calls for — "after doing X" + eat = "after eating", "may do X" +
+ * eat = "may eat" — so the scaffolding words ("do", "doing") do not survive into
+ * the reading. A noun or adjective has no such frames, so it is filled plainly. A
+ * gloss with no X slot is left as it is. */
+function appliedGloss(gloss: string, ex: ExampleWord): string {
+  if (!/\bX\b/.test(gloss)) return gloss;
+  if (!ex.ing) return gloss.replace(/\bX\b/g, ex.en); // a noun or adjective: plain fill
+  const base = ex.en;
+  return (
+    gloss
+      // An adjective-only alternative sense (〜すぎる "too X", 〜そう "looks X")
+      // does not apply to a verb row; drop it so the verb reading stands alone.
+      .replace(/ \/ (?:too|looks?) X\b/g, "")
+      // Inflected X first, so "of X-ing" is not caught by the "of X" gerund rule.
+      .replace(/\bX-ing\b/g, ex.ing)
+      .replace(/\bX-ed\b/g, ex.pp!)
+      // A bare X after a conjunction needs a subject to read as a clause.
+      .replace(/\beven if X\b/g, `even if you ${base}`)
+      .replace(/\bif\/when X\b/g, `if/when you ${base}`)
+      .replace(/\bif X\b/g, `if you ${base}`)
+      .replace(/\bwhen X\b/g, `when you ${base}`)
+      .replace(/\bbecause X\b/g, `because you ${base}`)
+      // "of X" takes a gerund: "in the state of eating", "way of eating".
+      .replace(/\bof X\b/g, `of ${ex.ing}`)
+      // Scaffolded verb: do / doing / did / done / does X.
+      .replace(/\bdoing X\b/g, ex.ing)
+      .replace(/\bdone X\b/g, ex.pp!)
+      .replace(/\bdid X\b/g, ex.past!)
+      .replace(/\bdoes X\b/g, ex.s!)
+      .replace(/\bdo X\b/g, base)
+      // Bare X is the base form.
+      .replace(/\bX\b/g, base)
+  );
 }
 
 /** The derivation rows for a pattern on a host: for each accepted example, the
@@ -84,7 +120,7 @@ function deriveRows(r: Recipe, host: Host): IntroDeriveRow[] {
       const c = conjugate(ex.word, ex.cls, attach.form as Form);
       if (c.ok && c.value !== ex.word) form = c.value;
     }
-    rows.push({ verb: ex.word, form, result: built.value, gloss: appliedGloss(r.gloss, ex.en) });
+    rows.push({ verb: ex.word, form, result: built.value, gloss: appliedGloss(r.gloss, ex) });
     if (rows.length >= 3) break;
   }
   return rows;
