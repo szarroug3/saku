@@ -140,10 +140,25 @@ export interface IntroBuildRule {
   label?: string;
   /** The dictionary-form verb, kana-only for a beginner: "かう". */
   verb: string;
-  /** The kana dropped from the end of `verb`: "う". */
-  drop: string;
-  /** What is added after dropping: "って". */
-  add: string;
+  /** The kana dropped from the end of `verb`: "う". Omitted for an add-only step
+   * (a て-form plus いる), where nothing is removed. */
+  drop?: string;
+  /** What is added after dropping: "って". Omitted for an irregular row (use
+   * `to`), where there is no rule to add by. */
+  add?: string;
+  /** The whole result, for an IRREGULAR verb that follows no drop/add rule
+   * (する → して). When set, the row renders as `verb → to` and `drop`/`add` are
+   * ignored — the honest shape for a form you memorise rather than build. */
+  to?: string;
+  /** An English meaning for the built form, shown in a right-hand "Meaning"
+   * column — used where the table doubles as a meaning demonstration (たべている ·
+   * is eating), not just a build rule. The column appears only when some row
+   * carries one. */
+  gloss?: string;
+  /** An optional aside for this row, shown in a right-hand notes column — e.g.
+   * "The っ is a small っ, not a full-size つ." Rows without one leave the cell
+   * empty; the column appears only when some row has a note. */
+  note?: string;
 }
 
 export interface PunctuationRow {
@@ -203,6 +218,12 @@ export interface PhaseIntro {
    * itself rather than a sentence describing it.
    */
   buildRules?: readonly IntroBuildRule[];
+  /**
+   * Column headings for a build table's heading row. `label` names the first
+   * column (endings on one page, verb types on another) and so has no sensible
+   * default; `change` and `note` default to "Change" and "Note".
+   */
+  buildHeads?: { label?: string; change?: string; note?: string; gloss?: string };
   /**
    * A punctuation catalogue, rendered as a table. Only PUNCTUATION uses this: its
    * content is a set of marks with names and jobs, not a rule with worked

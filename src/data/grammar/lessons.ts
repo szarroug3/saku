@@ -108,19 +108,30 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     title: "Most verbs are う-verbs, and their ending decides the change.",
     body: [
       {
-        text: "Japanese verbs fall into two main groups. The larger group is called う-verbs. To build the て/で-form, start from the dictionary form (the plain form you look a verb up by), drop its last kana, and add the ending that matches.",
+        lead: "This is the て/で-form,",
+        text: "named for the て or で the verb ends in once you build it.",
+      },
+      {
+        text: "Japanese verbs fall into two main groups, and the group decides the change. The larger group is called う-verbs: start from the dictionary form (the plain form you look a verb up by), drop its last kana, and add the ending that matches.",
       },
       {
         text: "Some endings use て and some use で. Which one you get is fixed by the verb's ending. They are the same form with the same meaning, so you never choose between them.",
       },
     ],
     buildRules: [
-      { label: "う・つ・る", verb: "かう", drop: "う", add: "って" },
+      {
+        label: "う・つ・る",
+        verb: "かう",
+        drop: "う",
+        add: "って",
+        note: "The っ in って is a small っ, not a full-size つ.",
+      },
       { label: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んで" },
       { label: "く", verb: "かく", drop: "く", add: "いて" },
       { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "いで" },
       { label: "す", verb: "はなす", drop: "す", add: "して" },
     ],
+    buildHeads: { label: "Ending" },
   },
   {
     id: "gl-te-ru-verbs",
@@ -132,9 +143,9 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "The second group is called る-verbs. These are simpler: drop the final る and add て. There is no sound change, and never で.",
       },
     ],
-    examples: [
-      { from: "たべる", op: "→", to: "たべて", gloss: "to eat" },
-      { from: "みる", op: "→", to: "みて", gloss: "to see" },
+    buildRules: [
+      { verb: "たべる", drop: "る", add: "て" },
+      { verb: "みる", drop: "る", add: "て" },
     ],
   },
   {
@@ -150,10 +161,11 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "You learn each verb's group along with the verb, and the app tags it for you. With practice you will start to recognise which group a verb belongs to.",
       },
     ],
-    examples: [
-      { from: "かえる", op: "→", to: "かえって", gloss: "to return, an う-verb", say: "かえって" },
-      { from: "たべる", op: "→", to: "たべて", gloss: "to eat, an る-verb", say: "たべて" },
+    buildRules: [
+      { label: "う-verb", verb: "かえる", drop: "る", add: "って" },
+      { label: "る-verb", verb: "たべる", drop: "る", add: "て" },
     ],
+    buildHeads: { label: "Verb type" },
   },
   {
     id: "gl-te-iku",
@@ -164,7 +176,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       { text: "A verb ending in く normally takes いて. いく does not: it becomes いって." },
       { text: "This same special change comes back later, when you learn the past (た) form." },
     ],
-    examples: [{ from: "いく", op: "→", to: "いって", gloss: "to go", say: "いって" }],
+    buildRules: [{ verb: "いく", drop: "く", add: "って" }],
   },
   {
     id: "gl-te-irregular",
@@ -176,9 +188,9 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "Two common verbs are irregular. する (to do) becomes して. くる (to come) becomes きて.",
       },
     ],
-    examples: [
-      { from: "する", op: "→", to: "して", gloss: "to do", say: "して" },
-      { from: "くる", op: "→", to: "きて", gloss: "to come", say: "きて" },
+    buildRules: [
+      { verb: "する", to: "して" },
+      { verb: "くる", to: "きて" },
     ],
   },
   {
@@ -214,6 +226,82 @@ const LESSON_TE_FORM: GrammarLessonDef = {
 };
 
 // ---------------------------------------------------------------------------
+// LESSON 2 — 〜ている.
+//
+// Builds directly on lesson 1: 〜ている is the て/で-form plus いる. Three pages,
+// per Grammar.md: what it means (an action in progress) -> how to build it
+// (the て/で-form, then + いる) -> connecting ongoing actions (chain て-forms,
+// end with 〜ている). The build page reuses the same equation table as lesson 1,
+// as an add-only step (て-form + いる), including the する/くる irregulars the
+// learner just met.
+// ---------------------------------------------------------------------------
+
+const TE_IRU_PAGES: PhaseIntro[] = [
+  {
+    id: "gl-teiru-meaning",
+    setId: "",
+    eyebrow: "〜ている",
+    title: "Add いる to the て/で-form for an action in progress.",
+    body: [
+      {
+        text: 'Put a verb in its て/で-form, then add いる. It says the action is happening or ongoing, often "am/is/are …-ing" in English.',
+      },
+      {
+        text: "Only the first part becomes the て/で-form. いる is added on the end.",
+      },
+    ],
+    buildRules: [
+      { verb: "たべる", to: "たべている", gloss: "is eating" },
+      { verb: "よむ", to: "よんでいる", gloss: "is reading" },
+      { verb: "のむ", to: "のんでいる", gloss: "is drinking" },
+    ],
+  },
+  {
+    id: "gl-teiru-build",
+    setId: "",
+    eyebrow: "Building 〜ている",
+    title: "Take the て/で-form you know, then add いる.",
+    body: [
+      {
+        text: "You already learned the て/で-form. To make 〜ている, start from that form and add いる.",
+      },
+      {
+        text: "The first part stays in its て/で-form; adding いる is what gives the whole thing its ongoing meaning.",
+      },
+    ],
+    buildRules: [
+      { verb: "たべて", add: "いる", gloss: "is eating" },
+      { verb: "のんで", add: "いる", gloss: "is drinking" },
+      { verb: "して", add: "いる", gloss: "is doing" },
+      { verb: "きて", add: "いる", gloss: "is coming" },
+    ],
+  },
+  {
+    id: "gl-teiru-connect",
+    setId: "",
+    eyebrow: "Using 〜ている",
+    title: "Chain て/で-forms, and end with 〜ている.",
+    body: [
+      {
+        text: "As you saw with the て/で-form, it can connect ideas. To connect ongoing actions, put the earlier verbs in their て/で-form and end the chain with 〜ている.",
+      },
+      {
+        text: "たべて、のんでいる means is eating and drinking. たべて、のんで、はなしている means is eating, drinking, and talking. Each verb before the last is a plain て/で-form; only the final verb takes 〜ている.",
+      },
+      { lead: "The shape is", text: "Vて、Vて、Vている." },
+    ],
+  },
+];
+
+const LESSON_TE_IRU: GrammarLessonDef = {
+  id: "te-iru",
+  title: "〜ている",
+  pages: TE_IRU_PAGES.map((card) => ({ kind: "teach", card })),
+  drills: patternFacts("te-iru"),
+  primaryPattern: "te-iru",
+};
+
+// ---------------------------------------------------------------------------
 // THE CURRICULUM, AS LESSONS.
 //
 // Same order the track has always taught in: te-form first, then N5 before N4,
@@ -228,12 +316,21 @@ function levelRank(level: Level): number {
   return level === "N5" ? 0 : level === "N4" ? 1 : 2;
 }
 
-function teFormFirst(r: Recipe): number {
-  return r.id === "te-sequence" ? 0 : 1;
+/** The authored lessons that lead the track, in the order Grammar.md sets: the
+ * て/で-form first, then 〜ている. Everything else falls to `2` and keeps its
+ * level/authored order behind them. This is the first slice of the draft's
+ * family re-cut; the rest of the ordering is still the recipe table's. */
+const LESSON_LEAD: Readonly<Record<string, number>> = {
+  "te-sequence": 0,
+  "te-iru": 1,
+};
+
+function leadRank(r: Recipe): number {
+  return LESSON_LEAD[r.id] ?? 2;
 }
 
 const ORDERED: readonly Recipe[] = [...DRILLABLE].sort(
-  (a, b) => teFormFirst(a) - teFormFirst(b) || levelRank(a.level) - levelRank(b.level),
+  (a, b) => leadRank(a) - leadRank(b) || levelRank(a.level) - levelRank(b.level),
 );
 
 /** A not-yet-authored pattern, as a single terse lesson: one `pattern` page
@@ -254,7 +351,11 @@ function autoLesson(r: Recipe): GrammarLessonDef {
  * the lesson card ("lesson N of X"), and it is accurate to the number of
  * lessons because it IS the list of lessons. */
 export const CURRICULUM_LESSONS: readonly GrammarLessonDef[] = ORDERED.map((r) =>
-  r.id === "te-sequence" ? LESSON_TE_FORM : autoLesson(r),
+  r.id === "te-sequence"
+    ? LESSON_TE_FORM
+    : r.id === "te-iru"
+      ? LESSON_TE_IRU
+      : autoLesson(r),
 );
 
 /** Fact -> the lesson that teaches it. Built once from every lesson's drills, so

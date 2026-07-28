@@ -80,7 +80,7 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
               ) : null}
             </div>
             {intro.buildRules?.length ? (
-              <IntroBuildTable rules={intro.buildRules} />
+              <IntroBuildTable rules={intro.buildRules} heads={intro.buildHeads} />
             ) : null}
             {intro.transitivityPairs?.length ? (
               <TransitivityPairsTable rows={intro.transitivityPairs} />
@@ -140,8 +140,8 @@ export function IntroBody({
               </span>
             </span>
           ) : null}
-          <p className="text-[15px] leading-relaxed text-text-muted">
-            {p.lead ? <span className="font-medium text-text">{p.lead} </span> : null}
+          <p className="text-[15px] leading-relaxed text-text">
+            {p.lead ? <span className="font-medium text-accent">{p.lead} </span> : null}
             {p.text}
           </p>
         </div>
@@ -300,36 +300,119 @@ export function PunctuationTable({ rows }: { rows: readonly PunctuationRow[] }) 
  * a grammar teach page can show the transformation instead of describing it. An
  * optional per-row label names the ending(s) the row generalises (う・つ・る).
  */
-export function IntroBuildTable({ rules }: { rules: readonly IntroBuildRule[] }) {
+/** The small (half-size) kana, each mapped to its full-size counterpart. Used to
+ * flag a built form that contains one — the small っ of 買って, the small ゃ of a
+ * contraction — so a learner doesn't write the full-size character by mistake. */
+const SMALL_KANA: Readonly<Record<string, string>> = {
+  っ: "つ", ッ: "ツ",
+  ゃ: "や", ゅ: "ゆ", ょ: "よ",
+  ャ: "ヤ", ュ: "ユ", ョ: "ヨ",
+  ぁ: "あ", ぃ: "い", ぅ: "う", ぇ: "え", ぉ: "お",
+  ゎ: "わ", ヮ: "ワ",
+};
+
+/** A note naming the first small kana in a built form, or null if it has none.
+ * Applied automatically to every grammar build row, so any small っ / small ゃ a
+ * form introduces is always called out without the author having to remember. */
+function smallKanaNote(text: string): string | null {
+  for (const ch of text) {
+    const big = SMALL_KANA[ch];
+    if (big) return `The ${ch} is a small ${ch}, not a full-size ${big}.`;
+  }
+  return null;
+}
+
+export function IntroBuildTable({
+  rules,
+  heads,
+}: {
+  rules: readonly IntroBuildRule[];
+  heads?: { label?: string; change?: string; note?: string; gloss?: string };
+}) {
+  // One framed table with hairline row separators, not a stack of boxes. Each row
+  // is enriched with its built result and a note — an explicit one, else an
+  // auto-detected small-kana flag. The label column (left, white) and the notes
+  // column (right, muted) each appear only when some row uses them, so a plain
+  // single-verb table is not left with empty columns. Every build table carries
+  // the same heading row so the related te-form pages read as one format.
+  const rows = rules.map((r) => {
+    const stem = r.drop ? r.verb.slice(0, r.verb.length - r.drop.length) : r.verb;
+    const result = r.to ?? stem + (r.add ?? "");
+    return { r, stem, note: r.note ?? smallKanaNote(result) };
+  });
+  const hasLabels = rules.some((r) => r.label);
+  const hasNotes = rows.some((x) => x.note);
+  const hasGloss = rules.some((r) => r.gloss);
+  const hasRight = hasNotes || hasGloss;
+  const headCell = "px-4 py-2.5 font-semibold";
   return (
-    <div className="space-y-1.5">
-      {rules.map((r) => {
-        const stem = r.verb.slice(0, r.verb.length - r.drop.length);
-        return (
-          <div
-            key={r.verb}
-            className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-md border border-border bg-panel/40 px-3 py-1.5"
-            lang="ja"
+    <div className="overflow-hidden rounded-lg border border-border">
+      <table className="w-full border-collapse text-left" lang="ja">
+        <thead>
+          <tr
+            lang="en"
+            className="border-b border-border bg-panel/40 text-[11px] uppercase tracking-[0.1em] text-text-muted"
           >
-            {r.label ? (
-              <span className="min-w-[4.5rem] font-kana text-[13px] text-text-muted">
-                {r.label}
-              </span>
-            ) : null}
-            <span className="font-kana text-[17px] text-text">
-              {r.verb}
-              <span className="text-text-muted">
-                {" "}
-                − {r.drop} +{" "}
-              </span>
-              <span className="text-accent">{r.add}</span>
-              <span className="text-text-muted"> → </span>
-              {stem}
-              <span className="text-accent">{r.add}</span>
-            </span>
-          </div>
-        );
-      })}
+            {hasLabels ? <th className={headCell}>{heads?.label ?? "Ending"}</th> : null}
+            <th className={headCell}>{heads?.change ?? "Change"}</th>
+            {hasNotes ? <th className={headCell}>{heads?.note ?? "Note"}</th> : null}
+            {hasGloss ? <th className={headCell}>{heads?.gloss ?? "Meaning"}</th> : null}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ r, stem, note }) => (
+            <tr key={r.verb} className="border-b border-border/60 last:border-0">
+              {hasLabels ? (
+                <td className="whitespace-nowrap px-4 py-3 align-baseline font-kana text-[14px] text-text">
+                  {r.label ?? ""}
+                </td>
+              ) : null}
+              <td
+                className={`${hasRight ? "" : "w-full "}whitespace-nowrap px-4 py-3 align-baseline font-kana text-[17px] text-text`}
+              >
+                {r.to ? (
+                  // An irregular verb follows no drop/add rule, so it is shown
+                  // whole: する → して. Same table frame, honest shape.
+                  <>
+                    {r.verb}
+                    <span className="text-text-muted"> → </span>
+                    <span className="text-accent">{r.to}</span>
+                  </>
+                ) : (
+                  <>
+                    {r.verb}
+                    {/* No drop for an add-only step (て-form + いる); the "− X"
+                        segment shows only when something is removed. */}
+                    <span className="text-text-muted">
+                      {r.drop ? ` − ${r.drop} + ` : " + "}
+                    </span>
+                    <span className="text-accent">{r.add}</span>
+                    <span className="text-text-muted"> → </span>
+                    {stem}
+                    <span className="text-accent">{r.add}</span>
+                  </>
+                )}
+              </td>
+              {hasNotes ? (
+                <td
+                  lang="en"
+                  className={`${hasGloss ? "" : "w-full min-w-[13rem] "}px-4 py-3 align-baseline text-[13px] leading-snug text-text-muted`}
+                >
+                  {note ?? ""}
+                </td>
+              ) : null}
+              {hasGloss ? (
+                <td
+                  lang="en"
+                  className="w-full min-w-[10rem] px-4 py-3 align-baseline text-[14px] leading-snug text-text"
+                >
+                  {r.gloss ?? ""}
+                </td>
+              ) : null}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
