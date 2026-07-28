@@ -23,10 +23,13 @@ import type { HistoryFile } from "@/types";
 
 // The head grammar sitting the seeded history opens, from the scheduler itself —
 // a guard that the seed really does open the track before the UI walk runs.
+// CLAIMED, not seen: the grammar host gate (learnedHosts) opens on a LEARNED
+// verb, and a claim is what marks a word learned. Seeding `seen` would leave the
+// verb merely queued, so the track would stay locked.
 const HISTORY = {
   sessions: [],
   facts: {},
-  seen: Object.fromEntries(seenKanaAndVerb().map((f) => [f, 1])),
+  claims: Object.fromEntries(seenKanaAndVerb().map((f) => [f, 1])),
 } as unknown as HistoryFile;
 const LESSON = nextGrammarLesson(HISTORY);
 
@@ -41,7 +44,7 @@ test("the grammar track's first sitting teaches building the て-form", async ({
   // The head is the て-form form-lesson, taught solo (one card in the sitting).
   expect(LESSON!.cards.map((c) => c.id)).toEqual(["te-sequence"]);
 
-  await seed({ seen: seenKanaAndVerb(), cfg: {} });
+  await seed({ claims: seenKanaAndVerb(), cfg: {} });
   await page.goto("/learn");
 
   const card = lessonCard(page, "grammar");

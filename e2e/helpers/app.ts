@@ -43,6 +43,10 @@ export type ConfigSeed = Record<string, unknown>;
 export type SeedOptions = {
   /** Fact ids to mark as "quiz me", making them the drillable pool. */
   seen?: string[];
+  /** Fact ids to mark CLAIMED ("I already know this"). A claim is what the
+   * grammar host gate reads (learnedHosts), so a track that opens on a LEARNED
+   * word — grammar needs a learned verb — is seeded with claims, not seen. */
+  claims?: string[];
   /** Partial QuizConfig merged over the app defaults. */
   cfg?: ConfigSeed;
 };
@@ -99,11 +103,13 @@ export function textFilter(text: string): ConfigSeed {
 
 /** The signed-out history blob for a set of "quiz me" facts, shaped like the
  * HistoryFile the client reads back from `saku-local-history`. */
-function historyWith(seen: string[]): string {
+function historyWith(seen: string[], claims: string[]): string {
   const now = Date.now();
   const seenRecord: Record<string, number> = {};
   for (const f of seen) seenRecord[f] = now;
-  return JSON.stringify({ sessions: [], facts: {}, seen: seenRecord });
+  const claimsRecord: Record<string, number> = {};
+  for (const f of claims) claimsRecord[f] = now;
+  return JSON.stringify({ sessions: [], facts: {}, seen: seenRecord, claims: claimsRecord });
 }
 
 export const test = base.extend<{
@@ -112,7 +118,7 @@ export const test = base.extend<{
   seed: (options: SeedOptions) => Promise<void>;
 }>({
   seed: async ({ page }, use) => {
-    await use(async ({ seen = [], cfg = {} }: SeedOptions) => {
+    await use(async ({ seen = [], claims = [], cfg = {} }: SeedOptions) => {
       // addInitScript runs before any page script on every navigation, so both
       // keys are in place before the HistoryProvider reads the local history and
       // QuizConfigProvider's hydration effect reads the config. Setting them
@@ -130,7 +136,7 @@ export const test = base.extend<{
           }
           window.localStorage.setItem("kanaquiz-cfg", v.cfg);
         },
-        { history: historyWith(seen), cfg: JSON.stringify(cfg) },
+        { history: historyWith(seen, claims), cfg: JSON.stringify(cfg) },
       );
     });
   },

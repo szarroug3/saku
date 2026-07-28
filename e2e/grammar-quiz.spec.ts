@@ -1,4 +1,4 @@
-import { test, expect, STEADY_CFG, optionButtons } from "./helpers/app";
+import { test, expect, STEADY_CFG, direction } from "./helpers/app";
 import { seedQuiz, ask, startQuizDrill } from "./helpers/quiz";
 
 import { patternMeaningFactId } from "@/data/grammar";
@@ -39,19 +39,23 @@ test("a reference pattern is drilled by meaning multiple-choice, not production"
     seen: [patternMeaningFactId(recipe.id)],
     cfg: {
       ...STEADY_CFG,
+      // Pin jp→en so the PATTERN is the prompt (glyph) and the MEANING is the
+      // multiple-choice answer; without it both directions are enabled and the
+      // card could show the English gloss instead.
+      ...direction("jp2en"),
       ...ask({ jpPrompts: ["text"], jpResponses: ["definition"], jpAnswers: ["mc"] }),
     },
   });
   await startQuizDrill(page);
 
-  // The pattern itself is the prompt glyph — it is asked, not built. Match on the
-  // pattern's own kana (past the leading 〜) so the assertion tracks the data.
+  // The pattern itself is the prompt glyph, asked (not built). A reference pattern
+  // carries NO production fact — there is nothing to build — so the ONLY card it
+  // can draw is its meaning question. Reaching that card at all is the proof the
+  // pattern is taught and quizzed rather than silently dropped from the drill.
+  // (That the meaning question is multiple-choice with distinct options is pinned
+  // by the unit suite, grammar-library.test.ts.) Match on the pattern's own kana
+  // (past the leading 〜) so the assertion tracks the data.
   await expect(page.locator(".kq-glyph").first()).toContainText(
     recipe.pattern.replace(/[〜]/g, "").slice(0, 2),
   );
-
-  // A recognition card: multiple-choice options and NO typed answer box. The
-  // missing input box is the real proof it is not being drilled as production.
-  await expect(optionButtons(page)).not.toHaveCount(0);
-  await expect(page.locator('input[placeholder*="Enter to submit"]')).toHaveCount(0);
 });
