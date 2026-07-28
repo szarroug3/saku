@@ -87,6 +87,7 @@ import {
   patternMeaningFactId,
 } from "@/data/grammar";
 import {
+  GRAMMAR_CONCEPT_SUBJECT,
   grammarConceptEntry,
   grammarConceptFor,
   grammarConceptRow,
@@ -467,7 +468,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // pattern is a shape rather than a sound, and a diacritic has no pronunciation
   // at all.
   const sound =
-    entry.kind === GRAMMAR_SUBJECT || mark || !entry.glyph
+    entry.kind === GRAMMAR_SUBJECT ||
+    entry.kind === GRAMMAR_CONCEPT_SUBJECT ||
+    mark ||
+    !entry.glyph
       ? null
       : isWord && wordRow
         ? { text: wordRow.reb, speak: wordRow.reb, pitch: wordPitch(wordRow.keb) }

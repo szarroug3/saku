@@ -114,7 +114,7 @@ const VERB_CLASS_CONCEPT_PAGES: readonly PhaseIntro[] = [
     body: [
       { text: "The larger group is called う-verbs (you may also see them called godan). Their dictionary form ends in a う-row kana: う, く, ぐ, す, つ, ぬ, ぶ, む, or る." },
       { text: "To conjugate one, that last kana shifts across the five rows あ, い, う, え, お, and an ending is added. く becomes か, き, く, け, or こ depending on the form. The row you land on is set by the form you are building." },
-      { text: "Do not worry about what each ending does yet. The point here is the last sound moving from one row to another." },
+      { text: "What each ending does is a separate topic. The point here is the last sound moving from one row to another." },
     ],
     buildRules: [
       { label: "あ row", verb: "かく", drop: "く", add: "かない" },
@@ -236,7 +236,7 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
     body: [
       { text: "You can say the same thing at different levels of politeness, and Japanese has three registers for it." },
       { lead: "Polite (ていねい)", text: "is the neutral courteous layer, です and ます, the one everyone learns first." },
-      { lead: "Honorific (そんけい) and humble (けんじょう)", text: "sit on top of it, and they swap in different verbs. The next pages are about those two." },
+      { lead: "Honorific (そんけい) and humble (けんじょう)", text: "sit on top of it, and each swaps in a different verb depending on whose action it is." },
     ],
   },
   {
