@@ -27,6 +27,7 @@
 
 import { patternEntry } from "@/data/grammar";
 import { DRILLABLE, type Level, type Recipe } from "@/data/grammar/recipes";
+import { autoPatternPage } from "@/data/grammar/auto-page";
 import { factsOf } from "@/lib/facts";
 import type { PhaseIntro } from "@/data/phase-intros";
 import type { FactId } from "@/types";
@@ -228,12 +229,11 @@ const LESSON_TE_FORM: GrammarLessonDef = {
 // ---------------------------------------------------------------------------
 // LESSON 2 — 〜ている.
 //
-// Builds directly on lesson 1: 〜ている is the て/で-form plus いる. Three pages,
-// per Grammar.md: what it means (an action in progress) -> how to build it
-// (the て/で-form, then + いる) -> connecting ongoing actions (chain て-forms,
-// end with 〜ている). The build page reuses the same equation table as lesson 1,
-// as an add-only step (て-form + いる), including the する/くる irregulars the
-// learner just met.
+// Builds directly on lesson 1: 〜ている is the て/で-form plus いる. Two pages: what
+// it means and how to build it (one page — the meaning and the build are the same
+// small move, so they share a page), then connecting ongoing actions (chain
+// て-forms, end with 〜ている). The build table reuses lesson 1's equation frame as
+// an add-only step (て-form + いる), including the する/くる irregulars.
 // ---------------------------------------------------------------------------
 
 const TE_IRU_PAGES: PhaseIntro[] = [
@@ -245,25 +245,6 @@ const TE_IRU_PAGES: PhaseIntro[] = [
     body: [
       {
         text: 'Put a verb in its て/で-form, then add いる. It says the action is happening or ongoing, often "am/is/are …-ing" in English.',
-      },
-      {
-        text: "Only the first part becomes the て/で-form. いる is added on the end.",
-      },
-    ],
-    buildRules: [
-      { verb: "たべる", to: "たべている", gloss: "is eating" },
-      { verb: "よむ", to: "よんでいる", gloss: "is reading" },
-      { verb: "のむ", to: "のんでいる", gloss: "is drinking" },
-    ],
-  },
-  {
-    id: "gl-teiru-build",
-    setId: "",
-    eyebrow: "Building 〜ている",
-    title: "Take the て/で-form you know, then add いる.",
-    body: [
-      {
-        text: "You already learned the て/で-form. To make 〜ている, start from that form and add いる.",
       },
       {
         text: "The first part stays in its て/で-form; adding いる is what gives the whole thing its ongoing meaning.",
@@ -342,14 +323,16 @@ const ORDERED: readonly Recipe[] = [...DRILLABLE].sort(
   (a, b) => leadRank(a) - leadRank(b) || levelRank(a.level) - levelRank(b.level),
 );
 
-/** A not-yet-authored pattern, as a single terse lesson: one `pattern` page
- * over the recipe's own facts, taught exactly as the track taught it before. */
+/** A pattern with no hand-authored lesson, as a single generated page: the
+ * 〜ている-page-1 shape (meaning line + build table), derived from the recipe by
+ * autoPatternPage. The te-form and 〜ている are authored by hand; every other
+ * drillable pattern flows through here so the whole track reads as one style. */
 function autoLesson(r: Recipe): GrammarLessonDef {
   const facts = patternFacts(r.id);
   return {
     id: r.id,
     title: r.pattern,
-    pages: [{ kind: "pattern", facts }],
+    pages: [{ kind: "teach", card: autoPatternPage(r) }],
     drills: facts,
     primaryPattern: r.id,
   };
