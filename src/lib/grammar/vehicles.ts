@@ -40,6 +40,7 @@
 import { apply } from "./apply.ts";
 import { vocabRow } from "../../data/vocab.ts";
 import { isIntransitive, isTransitive } from "../word-forms.ts";
+import { endingBucketOf, type TeEnding } from "./te-endings.ts";
 import type { Host, Recipe, Transitivity } from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
 
@@ -271,6 +272,7 @@ export function vehiclesFor(
   r: Recipe,
   onHost?: Host,
   known?: (surface: string) => boolean,
+  ending?: TeEnding,
 ): Vehicle[] {
   if (r.wrap) return []; // a wrap needs two words; apply() refuses it anyway.
   const hosts = new Set(r.attach.map((a) => a.host));
@@ -285,6 +287,14 @@ export function vehiclesFor(
     // caller asking "what can this recipe be built on at all".
     if (onHost !== undefined && host !== onHost) continue;
     for (const v of POOL[host]) {
+      // A PER-ENDING te-form fact wants a verb of exactly ITS ending: the te-utsu
+      // fact must roll a う/つ verb, the te-su fact a す verb. endingBucketOf keys
+      // on the class, so this also refuses every る-ending verb (v5r 帰る and v1
+      // 食べる both map to null) and the 行く/する/来る irregulars — the learner
+      // cannot predict their て-form from spelling, which is the whole reason the
+      // る case has no per-ending fact. Absent (no ending given) this is a no-op
+      // and every other pattern's vehicle pool is unchanged.
+      if (ending !== undefined && endingBucketOf(v.cls) !== ending) continue;
       // THE ONE CONSTRAINT apply() CANNOT SEE. Everything else this function
       // refuses, it refuses by building and looking — see the header. 〜てある
       // on 行く BUILDS: the engine produces 行ってある happily, because the
@@ -350,10 +360,13 @@ export function pickVehicle(
   rng: Rng = Math.random,
   onHost?: Host,
   known?: (surface: string) => boolean,
+  ending?: TeEnding,
 ): Vehicle | null {
-  // Every LEGAL vehicle for this recipe/host — do NOT gate by `known` here, so
-  // the unknown-fallback below can still draw from the full legal pool.
-  const all = vehiclesFor(r, onHost);
+  // Every LEGAL vehicle for this recipe/host/ending — do NOT gate by `known`
+  // here, so the unknown-fallback below can still draw from the full legal pool.
+  // The ending pins a te-form production pick to a verb of that ending (and, via
+  // endingBucketOf, keeps every unknown る-verb and irregular off the board).
+  const all = vehiclesFor(r, onHost, undefined, ending);
   let options: Vehicle[];
   if (known) {
     const knownOpts = all.filter((v) => known(v.surface));

@@ -56,11 +56,17 @@ import {
 } from "@/data/vocab";
 import {
   GRAMMAR_SUBJECT,
+  TE_FORM_RECIPE_ID,
   patternEntry,
   patternMeaningFactId,
   patternProductionFactId,
   productionHosts,
+  teEndingProductionFactId,
 } from "@/data/grammar";
+import {
+  ENDING_LABEL,
+  TE_ENDINGS,
+} from "@/lib/grammar/te-endings";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
@@ -101,7 +107,7 @@ import {
 import { buildExample } from "@/lib/grammar/example";
 import { HOST_LABEL } from "@/lib/grammar/formula";
 import { deframe } from "@/lib/kanji-parts";
-import { factsOf } from "@/lib/facts";
+import { factInfo, factsOf } from "@/lib/facts";
 import type { EntryId, FactId, FactInfo } from "@/types";
 
 /**
@@ -1261,6 +1267,28 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       speak: null,
     },
   ];
+  // The te-form is the one pattern whose production splits by ENDING, not host
+  // (see te-endings.ts): five facts, one per 音便, each baked on a representative
+  // verb of that ending. It carries no host-keyed production fact, so its rows
+  // are enumerated here rather than by the host loop below — otherwise the page
+  // that promises to list what is scored would show none of the five.
+  if (isProducible(r) && r.id === TE_FORM_RECIPE_ID) {
+    for (const ending of TE_ENDINGS) {
+      const id = teEndingProductionFactId(ending);
+      const info = factInfo(id);
+      if (!info) continue;
+      rows.push({
+        id,
+        label: `Build it (${ENDING_LABEL[ending]})`,
+        answer: info.glyph,
+        askedIn: [],
+        unattested: false,
+        origin: null,
+        speak: null,
+      });
+    }
+    return rows;
+  }
   // ONE ROW PER PRODUCTION FACT, which is one per host that carries one. The
   // page is a list of the entry's FACTS, so a pattern with a separate adjective
   // fact has to show it — otherwise the split exists in the scheduler and the

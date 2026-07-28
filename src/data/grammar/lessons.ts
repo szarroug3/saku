@@ -216,8 +216,14 @@ const TE_FORM_PAGES: PhaseIntro[] = [
 ];
 
 /** Lesson 1, fully authored: the te-form pages, then the te-sequence drill it
- * sets up. `drills` are te-sequence's own facts, so the quiz after the walk is
- * the te-form production/meaning drill the track already had. */
+ * sets up. `drills` are te-sequence's own facts — the meaning fact plus ONE
+ * production fact per ending (って, んで, いて, いで, して; see te-endings.ts). The
+ * te-form's production splits by ending rather than carrying a single "build the
+ * て-form" fact, so a full-coverage round now asks the learner to build the
+ * て-form of one verb of EACH ending, not one verb total. patternFacts reads
+ * exactly this set off the registry (the plain production fact no longer exists),
+ * so it stays in sync by construction. る-ending verbs are excluded on purpose —
+ * their class is not predictable from spelling. */
 const LESSON_TE_FORM: GrammarLessonDef = {
   id: "te-form",
   title: "The て/で-form",
