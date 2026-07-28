@@ -20,6 +20,7 @@
 import { HearButton } from "@/components/lesson/hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type {
+  IntroBuildRule,
   IntroExample,
   IntroPara,
   PhaseIntro,
@@ -78,6 +79,9 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
                 </div>
               ) : null}
             </div>
+            {intro.buildRules?.length ? (
+              <IntroBuildTable rules={intro.buildRules} />
+            ) : null}
             {intro.transitivityPairs?.length ? (
               <TransitivityPairsTable rows={intro.transitivityPairs} />
             ) : null}
@@ -285,6 +289,47 @@ export function PunctuationTable({ rows }: { rows: readonly PunctuationRow[] }) 
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/**
+ * A build rule as an equation: `かう − う + って → かって`, the dropped kana greyed
+ * and the added one accented so the change reads as a change. The same treatment
+ * the te-form build table has always used (lesson-item-view.tsx), lifted here so
+ * a grammar teach page can show the transformation instead of describing it. An
+ * optional per-row label names the ending(s) the row generalises (う・つ・る).
+ */
+export function IntroBuildTable({ rules }: { rules: readonly IntroBuildRule[] }) {
+  return (
+    <div className="space-y-1.5">
+      {rules.map((r) => {
+        const stem = r.verb.slice(0, r.verb.length - r.drop.length);
+        return (
+          <div
+            key={r.verb}
+            className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-md border border-border bg-panel/40 px-3 py-1.5"
+            lang="ja"
+          >
+            {r.label ? (
+              <span className="min-w-[4.5rem] font-kana text-[13px] text-text-muted">
+                {r.label}
+              </span>
+            ) : null}
+            <span className="font-kana text-[17px] text-text">
+              {r.verb}
+              <span className="text-text-muted">
+                {" "}
+                − {r.drop} +{" "}
+              </span>
+              <span className="text-accent">{r.add}</span>
+              <span className="text-text-muted"> → </span>
+              {stem}
+              <span className="text-accent">{r.add}</span>
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

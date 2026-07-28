@@ -111,18 +111,15 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "Japanese verbs fall into two main groups. The larger group is called う-verbs. To build the て/で-form, start from the dictionary form (the plain form you look a verb up by), drop its last kana, and add the ending that matches.",
       },
       {
-        text: "The endings group up: う, つ and る take って; む, ぶ and ぬ take んで; く takes いて; ぐ takes いで; す takes して.",
-      },
-      {
         text: "Some endings use て and some use で. Which one you get is fixed by the verb's ending. They are the same form with the same meaning, so you never choose between them.",
       },
     ],
-    examples: [
-      { from: "かう", op: "→", to: "かって", gloss: "to buy", say: "かって" },
-      { from: "のむ", op: "→", to: "のんで", gloss: "to drink", say: "のんで" },
-      { from: "かく", op: "→", to: "かいて", gloss: "to write", say: "かいて" },
-      { from: "およぐ", op: "→", to: "およいで", gloss: "to swim", say: "およいで" },
-      { from: "はなす", op: "→", to: "はなして", gloss: "to speak", say: "はなして" },
+    buildRules: [
+      { label: "う・つ・る", verb: "かう", drop: "う", add: "って" },
+      { label: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んで" },
+      { label: "く", verb: "かく", drop: "く", add: "いて" },
+      { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "いで" },
+      { label: "す", verb: "はなす", drop: "す", add: "して" },
     ],
   },
   {
@@ -192,11 +189,14 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     body: [
       {
         lead: "It connects.",
-        text: "The て/で-form joins one action or situation to the next. Depending on the sentence it can feel like and, and then, so, because, or while, and the context tells you which.",
+        text: 'The て/で-form joins one action or situation to the next. Depending on the sentence it can feel like "and", "and then", "so", "because", or "while", and the context tells you which.',
       },
       {
         lead: "The final verb carries the rest.",
-        text: "The form itself does not say when something happened or whether it is polite. The last verb does. たべて、ねます means eat and then sleep; たべて、ねました means ate and then slept. Only the last verb changed.",
+        text: "The form itself does not say when something happened or whether it is polite. The last verb does. たべて、ねます means eat and then sleep; たべて、ねました means ate and then slept.",
+      },
+      {
+        text: "Don't worry about how that last verb is built yet. Just notice that the first verb, たべて, stays the same in both, and only the last verb changes.",
       },
     ],
   },

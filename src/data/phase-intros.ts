@@ -128,6 +128,24 @@ export interface IntroExample {
  * in phase-intro-view.tsx) instead of the prose-plus-examples every other card
  * uses.
  */
+/**
+ * One row of a build table: a verb turned into a form by dropping a tail and
+ * adding another, shown as the equation `かう − う + って → かって`. The view
+ * greys the dropped kana and accents the added one, so the eye reads the change
+ * as a change. The optional `label` names the ending(s) the row covers (う・つ・る)
+ * for a rule the reader should generalise, and is omitted for a one-off verb.
+ */
+export interface IntroBuildRule {
+  /** The ending(s) this row covers, e.g. "う・つ・る". Omitted for a single verb. */
+  label?: string;
+  /** The dictionary-form verb, kana-only for a beginner: "かう". */
+  verb: string;
+  /** The kana dropped from the end of `verb`: "う". */
+  drop: string;
+  /** What is added after dropping: "って". */
+  add: string;
+}
+
 export interface PunctuationRow {
   /** The glyph, or a pair like "「 」". */
   mark: string;
@@ -178,6 +196,13 @@ export interface PhaseIntro {
    * glyphless writing rules — 々, rendaku, okurigana — use this.
    */
   examples?: readonly IntroExample[];
+  /**
+   * A build table: the rule as a list of equations (`かう − う + って → かって`),
+   * the dropped kana greyed and the added one accented. Used by the grammar
+   * te-form pages, where "how to build it" reads best as the transformation
+   * itself rather than a sentence describing it.
+   */
+  buildRules?: readonly IntroBuildRule[];
   /**
    * A punctuation catalogue, rendered as a table. Only PUNCTUATION uses this: its
    * content is a set of marks with names and jobs, not a rule with worked
