@@ -140,17 +140,13 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
     }
   });
 
-  test("a lesson from a kana-done, verb-learned history is the head of the order — all N5", () => {
-    const lesson = nextGrammarLesson(kanaAndVerb(), 4)!;
-    assert.equal(lesson.cards.length, 4);
-    for (const card of lesson.cards) {
-      assert.equal(card.level, "N5");
-    }
-    // It is the literal prefix of the curriculum.
-    assert.deepEqual(
-      lesson.cards.map((c) => c.id),
-      CURRICULUM_PATTERNS.slice(0, 4).map((r) => r.id),
-    );
+  test("a lesson from a kana-done, verb-learned history is the FIRST lesson — the て-form", () => {
+    // A grammar sitting is now one whole lesson (multi-page), not a handful of
+    // pattern tiles. The first lesson is the て/で-form (te-sequence), N5.
+    const lesson = nextGrammarLesson(kanaAndVerb())!;
+    assert.equal(lesson.cards.length, 1);
+    assert.equal(lesson.cards[0].id, "te-sequence");
+    assert.equal(lesson.cards[0].level, "N5");
   });
 
   test("a lesson's facts are the taught patterns' meaning + production facts", () => {
@@ -313,11 +309,19 @@ describe("the position counts PATTERNS, and the total is the drillable set", () 
     assert.equal(first.position.total, GRAMMAR_CURRICULUM_TOTAL);
   });
 
-  test("the total is the same whatever the lesson size — only the span moves", () => {
+  test("the lesson size no longer moves the span — a sitting is one whole lesson", () => {
+    // The count argument is vestigial now (a sitting is one multi-page lesson),
+    // so it changes nothing: same lesson, same single-item span, whatever is
+    // passed.
     const small = nextGrammarLesson(kanaAndVerb(), 2)!;
     const big = nextGrammarLesson(kanaAndVerb(), 8)!;
     assert.equal(small.position.total, big.position.total);
-    assert.equal(small.position.to, 2);
-    assert.equal(big.position.to, 8);
+    assert.equal(small.position.from, small.position.to, "one lesson, not a span");
+    assert.equal(small.position.from, 1, "the first lesson");
+    assert.deepEqual(
+      small.cards.map((c) => c.id),
+      big.cards.map((c) => c.id),
+      "the same lesson regardless of the count passed",
+    );
   });
 });
