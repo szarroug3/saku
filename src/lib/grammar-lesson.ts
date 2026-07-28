@@ -156,6 +156,27 @@ function isFresh(fact: FactId, history: HistoryFile): boolean {
   return state.lastTested === 0;
 }
 
+/** The て/で-form — grammar lesson 1, the recipe every other te-pattern builds
+ * on (see teFormFirst). Named once here so the words track, which holds a
+ * る-ending verb back until this is learned, reads the id from grammar rather
+ * than spelling it out itself. */
+export const TE_FORM_RECIPE = "te-sequence";
+
+/**
+ * Has the learner learned the て-form yet?
+ *
+ * True once its meaning fact is no longer fresh — tested, claimed, or "quiz
+ * me"'d — the exact "learned, not merely on screen" signal every gate in the
+ * app reads. The WORDS track reads this (see nextCurriculumLock): a る-ending
+ * verb's class cannot be told from its spelling, so the spine holds the first
+ * one back (知る) until the て-form lesson is done and the word lesson can then
+ * name the class. This is the mirror of the grammar track's own host gate —
+ * there a pattern waits on a word, here a word waits on a pattern.
+ */
+export function teFormLearned(history: HistoryFile): boolean {
+  return !isFresh(patternMeaningFactId(TE_FORM_RECIPE), history);
+}
+
 /** One pattern, ready to render on a lesson card. */
 export interface GrammarCard {
   /** The recipe id — the key the drill's facts hang off. */

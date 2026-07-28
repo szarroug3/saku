@@ -100,6 +100,32 @@ function isAdjective(cls: WordClass): boolean {
 }
 
 /**
+ * For a verb whose written form ends in る — the one case where the spelling
+ * alone cannot tell you the class — which class it actually is, in the app's
+ * learner terms: "う-verb" (godan) or "る-verb" (ichidan). Null for everything
+ * else.
+ *
+ * WHY る-ENDING ONLY. A verb ending in う, く, ぐ, す, つ, ぬ, ぶ or む is
+ * unambiguously a う-verb; the class is written on its face. It is the る ending
+ * that is shared — 知る conjugates as a う-verb (知って) and 食べる as a る-verb
+ * (食べて), and nothing in 〜る says which. So this is the one shape that earns a
+ * note on the word card AND the one the words track holds back until the て-form
+ * is learned (see nextCurriculumLock): the two questions are the same question.
+ *
+ * v1 / v1-s are the る-verbs (ichidan); every v5* is a う-verb (godan). The
+ * irregulars whose form ends in る (来る kuru, する and its compounds, 演ずる) are
+ * neither godan nor ichidan, so they get NO label rather than a wrong one — null
+ * is the honest answer, and it leaves them ungated too.
+ */
+export function ruVerbKind(w: VocabRow): "う-verb" | "る-verb" | null {
+  if (!w.keb.endsWith("る")) return null;
+  const cls = wordClassOf(w);
+  if (cls === "v1" || cls === "v1-s") return "る-verb";
+  if (cls && cls.startsWith("v5")) return "う-verb";
+  return null;
+}
+
+/**
  * ONLY VERBS AND い-ADJECTIVES GET A FORMS SECTION.
  *
  * な-adjectives are excluded on purpose. 静か conjugates through the copula

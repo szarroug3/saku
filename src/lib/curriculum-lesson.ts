@@ -81,6 +81,8 @@
 
 import { freshFacts, nextGroup } from "@/lib/budget";
 import { effectiveState } from "@/lib/claims";
+import { teFormLearned } from "@/lib/grammar-lesson";
+import { ruVerbKind } from "@/lib/word-forms";
 import {
   PREREQUISITE_ONLY,
   kanjiRow,
@@ -440,6 +442,15 @@ export interface CurriculumLesson {
   over: boolean;
 }
 
+/** The lock on the next curriculum lesson: a る-ending verb the spine will not
+ * teach until the て-form is learned. The words-track twin of GrammarLock, which
+ * names the word type a pattern is waiting on. */
+export interface CurriculumLock {
+  /** The written form held back — 知る — so the card can name the verb the
+   * learner is one grammar lesson away from. */
+  verb: string;
+}
+
 /**
  * The next lesson, or null when the curriculum is done.
  *
@@ -462,29 +473,16 @@ export function nextCurriculumLesson(
   history: HistoryFile,
   range: LessonRange,
 ): CurriculumLesson | null {
-  const groups = curriculum(range);
-  // Met means FULLY learned — every fact of the item has been met — so an item
-  // keeps its place while ANYTHING is left in it. This is what lets a folded
-  // character survive partial prior progress: 人 met as a kanji (or as an old
-  // separate-track radical) still owes its word, so it stays in the lesson and
-  // the spine card anchored on it still has something to fire against. `some`
-  // here dropped the anchor the instant any one role was touched — the exact
-  // "the anchor was not even in the walk" bug spine-intros.ts's header describes.
-  const itemIsMet = (it: CurriculumLessonItem): boolean =>
-    it.facts.every((f) => {
-      const state = effectiveState(
-        history.facts[f],
-        history.claims?.[f],
-        history.seen?.[f],
-      );
-      return state.lastTested > 0;
-    });
-
-  const group = groups.find((g) => g.items.some((it) => !itemIsMet(it)));
+  const group = frontierGroup(history, range);
   if (!group) return null;
 
-  const cards = group.items.filter((it) => !itemIsMet(it));
+  const cards = teachableCards(group, history);
   const facts = cards.flatMap((it) => it.facts);
+  // No teachable cards means one of two things, and both hand the card off:
+  // the curriculum is finished (frontierGroup already returned null for that,
+  // so not here), or every unmet item left is a る-ending verb held back until
+  // the て-form is learned — a LOCK, surfaced by nextCurriculumLock. Either way
+  // there is no lesson to teach right now.
   if (!facts.length) return null;
 
   return {
@@ -495,6 +493,96 @@ export function nextCurriculumLesson(
     cost: cards.reduce((n, card) => n + card.cost, 0),
     over: group.over,
   };
+}
+
+/**
+ * Met means FULLY learned — every fact of the item has been met — so an item
+ * keeps its place while ANYTHING is left in it. This is what lets a folded
+ * character survive partial prior progress: 人 met as a kanji (or as an old
+ * separate-track radical) still owes its word, so it stays in the lesson and
+ * the spine card anchored on it still has something to fire against. `some`
+ * dropping the anchor the instant any one role was touched was the exact
+ * "the anchor was not even in the walk" bug spine-intros.ts's header describes.
+ */
+function itemIsMet(it: CurriculumLessonItem, history: HistoryFile): boolean {
+  return it.facts.every((f) => {
+    const state = effectiveState(
+      history.facts[f],
+      history.claims?.[f],
+      history.seen?.[f],
+    );
+    return state.lastTested > 0;
+  });
+}
+
+/** The first lesson with anything left unlearned in it — the frontier of the
+ * climb — or null when the whole curriculum is done. Shared by the lesson and
+ * the lock so the two can never disagree about which lesson is next. */
+function frontierGroup(
+  history: HistoryFile,
+  range: LessonRange,
+): CurriculumLessonGroup | null {
+  return curriculum(range).find((g) => g.items.some((it) => !itemIsMet(it, history))) ?? null;
+}
+
+/**
+ * A word item the words track holds back until the て-form is learned: a verb
+ * whose written form ends in る.
+ *
+ * A る-ending verb's class (godan vs ichidan) cannot be read off its spelling,
+ * and the word lesson wants to TEACH which it is (see ruVerbKind and the note on
+ * the word card) — but that lesson only makes sense once the learner has met the
+ * て-form, the first place the two classes visibly diverge (知って vs 食べて). So
+ * the first such verb, 知る, is held back until grammar lesson 1 is done. A verb
+ * ending in any other kana is unambiguous and never gated; a non-verb is not
+ * gated; the irregular る-verbs (来る, する) have no class to teach and ruVerbKind
+ * returns null for them, so they pass too. */
+function isGatedRuVerb(it: CurriculumLessonItem): boolean {
+  if (!it.roles.includes("word")) return false;
+  const row = vocabRow(it.glyph);
+  return row ? ruVerbKind(row) !== null : false;
+}
+
+/** The unmet items of a lesson that are teachable RIGHT NOW: the frontier's
+ * unlearned items, minus any る-ending verb held back because the て-form is not
+ * learned yet. Once the て-form is learned nothing is held back and this is the
+ * plain remainder, exactly as before the gate existed. */
+function teachableCards(
+  group: CurriculumLessonGroup,
+  history: HistoryFile,
+): CurriculumLessonItem[] {
+  const unmet = group.items.filter((it) => !itemIsMet(it, history));
+  if (teFormLearned(history)) return unmet;
+  return unmet.filter((it) => !isGatedRuVerb(it));
+}
+
+/**
+ * The lock standing between the learner and the next lesson, or null when there
+ * is none. The mirror of the grammar track's nextGrammarLock: same frontier,
+ * and it reports what is in the way rather than what to teach.
+ *
+ * The one thing that can lock the spine is a る-ending verb met before the
+ * て-form (see isGatedRuVerb). The lock is raised only when the verb is ALL that
+ * is left of the frontier lesson — the learner has already been taught every
+ * other item in it — so the words track teaches right up to the verb and then
+ * waits, rather than blocking a whole mixed lesson on account of one word. Once
+ * the て-form is learned the held-back verb becomes teachable and this is null.
+ */
+export function nextCurriculumLock(
+  history: HistoryFile,
+  range: LessonRange,
+): CurriculumLock | null {
+  if (teFormLearned(history)) return null;
+  const group = frontierGroup(history, range);
+  if (!group) return null;
+
+  // Teachable already skips the gated verbs; if anything is still teachable the
+  // card teaches it and there is no lock yet.
+  if (teachableCards(group, history).length) return null;
+
+  const blocked = group.items.find((it) => !itemIsMet(it, history) && isGatedRuVerb(it));
+  if (!blocked) return null;
+  return { verb: blocked.glyph };
 }
 
 /** The written forms this lesson teaches as WORDS: what the reading unlock is

@@ -52,10 +52,12 @@ import { kanjiEntry } from "@/data/kanji";
 import { radicalEntry } from "@/data/radicals";
 import { wordEntry } from "@/data/vocab";
 import { WHY_TRACK } from "@/data/why";
+import type { Why } from "@/data/why";
 import { characterRoleTitle } from "@/lib/character-role";
 import type {
   CurriculumLesson,
   CurriculumLessonItem,
+  CurriculumLock,
 } from "@/lib/curriculum-lesson";
 import { compositePositionLabel } from "@/lib/lesson-position";
 import { entryHref } from "@/lib/library/href";
@@ -73,14 +75,32 @@ function tileEntry(item: CurriculumLessonItem): EntryId {
   return wordEntry(item.glyph);
 }
 
+/** Why a る-ending verb waits on the て-form — the lock card's pull, swapped in
+ * for the ordinary curriculum "why" when the spine is held at 知る. */
+const CURRICULUM_LOCK_WHY: Why = {
+  lede: {
+    strong: "A verb ending in る hides its type.",
+    rest: "知る and 食べる look the same and change differently, so the te-form comes first.",
+  },
+  paras: [
+    "Most verbs wear their type on their ending. A verb ending in う, く, す and the rest is always a う-verb. But a verb ending in る could be either kind — 知る is a う-verb (知って) and 食べる is a る-verb (食べて) — and nothing in the spelling says which.",
+    "The te-form is the first place the two kinds visibly split, so it is worth learning before the first る-ending verb rather than after. Finish the te-form on the grammar track and this verb opens, taught with its type.",
+  ],
+};
+
 export function NextCurriculumLesson({
   lesson,
+  lock,
   onStart,
   onClaim,
   inSession = false,
   onContinue,
 }: {
-  lesson: CurriculumLesson;
+  lesson: CurriculumLesson | null;
+  /** The lock, when the next thing the spine would teach is a る-ending verb met
+   * before the て-form. Shown instead of a lesson, the words-track twin of the
+   * grammar card's lock. */
+  lock?: CurriculumLock | null;
   /**
    * Start the lesson. The facts ARE the session — no budget, no length: the
    * unit was decided by the material.
@@ -97,6 +117,15 @@ export function NextCurriculumLesson({
   inSession?: boolean;
   onContinue?: () => void;
 }) {
+  if (lock && !lesson) {
+    return (
+      <Card>
+        <LockedLead verb={lock.verb} />
+        <WhyDisclosure why={CURRICULUM_LOCK_WHY} />
+      </Card>
+    );
+  }
+  if (!lesson) return null;
   const { position, cards } = lesson;
 
   return (
@@ -197,5 +226,36 @@ export function NextCurriculumLesson({
             it belongs on screen; a pull, so only the lede shows until opened. */}
         <WhyDisclosure why={WHY_TRACK.curriculum} />
       </Card>
+  );
+}
+
+/** The locked card: the next thing the spine would teach is a る-ending verb met
+ * before the て-form, so it names the verb and points at the grammar track,
+ * showing no lesson. The grammar card's LockedLead, the other way round — there
+ * a pattern waits on a word, here a word waits on a pattern. */
+function LockedLead({ verb }: { verb: string }) {
+  return (
+    <>
+      <Lbl>Up next · words</Lbl>
+      <p className="mt-0.5 text-[13px] text-text-muted">
+        Learn the{" "}
+        <span className="font-kana" lang="ja">
+          て
+        </span>
+        -form on the grammar track and{" "}
+        <span className="font-kana" lang="ja">
+          {verb}
+        </span>{" "}
+        opens. A verb ending in{" "}
+        <span className="font-kana" lang="ja">
+          る
+        </span>{" "}
+        could be either type, and the{" "}
+        <span className="font-kana" lang="ja">
+          て
+        </span>
+        -form is where the two split.
+      </p>
+    </>
   );
 }
