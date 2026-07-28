@@ -380,17 +380,22 @@ export function IntroBuildTable({
                     <span className="text-accent">{r.to}</span>
                   </>
                 ) : (
+                  // A drop and/or an add, each shown only when present: a plain
+                  // te-form row drops and adds (かう − う + って → かって); an
+                  // add-only row just adds (たべて + いる → たべている); a drop-only
+                  // row just drops (たべる − る → たべ).
                   <>
                     {r.verb}
-                    {/* No drop for an add-only step (て-form + いる); the "− X"
-                        segment shows only when something is removed. */}
-                    <span className="text-text-muted">
-                      {r.drop ? ` − ${r.drop} + ` : " + "}
-                    </span>
-                    <span className="text-accent">{r.add}</span>
+                    {r.drop ? <span className="text-text-muted"> − {r.drop}</span> : null}
+                    {r.add ? (
+                      <>
+                        <span className="text-text-muted"> + </span>
+                        <span className="text-accent">{r.add}</span>
+                      </>
+                    ) : null}
                     <span className="text-text-muted"> → </span>
                     {stem}
-                    <span className="text-accent">{r.add}</span>
+                    {r.add ? <span className="text-accent">{r.add}</span> : null}
                   </>
                 )}
               </td>
