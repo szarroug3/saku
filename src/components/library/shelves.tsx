@@ -54,6 +54,7 @@ import { VERB_PAIRS } from "@/data/transitivity";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CLUSTERS } from "@/data/grammar/clusters";
 import { RECIPES } from "@/data/grammar/recipes";
+import { grammarRank } from "@/lib/library/grammar-order";
 import {
   EntryRow,
   EntryTile,
@@ -161,14 +162,25 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
     }
     case GRAMMAR_SUBJECT:
       // By JLPT level, the one cut the recipes already carry. It is opinion, not
-      // fact (see recipes.ts) — good enough for a shelf, and it keeps the two
-      // groups small enough to render whole.
-      return (["N5", "N4"] as const).map((lv) => ({
+      // fact (see recipes.ts) — good enough for a shelf, and it keeps the groups
+      // small enough to render whole. All three tiers now that N3 patterns are
+      // taught.
+      //
+      // WITHIN a level the entries run in TEACHING order, not raw recipe order:
+      // `grammarRank` is a pattern's index in the track's teaching sequence
+      // (te-sequence first, then N5 → N4 → N3, stable within a level — see
+      // lib/library/grammar-order.ts). The teaching order is level-monotone, so
+      // ordering each section by grammarRank makes the shelf read in lesson order
+      // top to bottom: the pattern below the one you are on is the pattern you
+      // study next. Both drillable and recognition-only patterns are ranked, so
+      // all patterns appear, each in its taught position.
+      return (["N5", "N4", "N3"] as const).map((lv) => ({
         id: `level-${lv}`,
         label: `${lv} patterns`,
-        entries: RECIPES.filter((r) => r.level === lv).flatMap((r) =>
-          resolve(patternEntry(r.id)),
-        ),
+        entries: RECIPES.filter((r) => r.level === lv)
+          .slice()
+          .sort((a, b) => grammarRank(a.id) - grammarRank(b.id))
+          .flatMap((r) => resolve(patternEntry(r.id))),
       }));
     // ONE SECTION, holding all five. Not "no sections" like words — that branch
     // means "too many to browse, go and search", which is the opposite of the

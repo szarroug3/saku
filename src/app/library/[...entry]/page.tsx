@@ -56,7 +56,7 @@ import { KanjiReadings } from "@/components/library/kanji-readings";
 import { MarkView } from "@/components/library/mark-view";
 import { TermView } from "@/components/library/term-view";
 import { PatternFamily } from "@/components/library/pattern-family";
-import { PatternRecipe } from "@/components/library/pattern-recipe";
+import { PatternTeach } from "@/components/library/pattern-teach";
 import { SliceBar } from "@/components/library/slice-bar";
 import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
@@ -115,7 +115,7 @@ import {
   type LibEntry,
 } from "@/lib/library/entries";
 import { characterRole } from "@/lib/character-role";
-import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
+import { attachesTo } from "@/lib/grammar/formula";
 import { entryFromParam, entryFromSlug, entryHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
@@ -248,7 +248,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // off this one object, and a null here is simply "not a grammar entry".
   const pattern = recipeOf(entry);
   const isGrammar = pattern !== null;
-  const formula = useMemo(() => (pattern ? recipeFormula(pattern) : null), [pattern]);
   // WHICH HOSTS ARE SCORED IS NOT DECIDED HERE ANY MORE. It used to be, to
   // build a chip per production host in the header. Those scores are now a
   // column in PatternRecipe, which already lays out one row per host, so the
@@ -881,23 +880,23 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ) : null}
 
       {/* ================= GRAMMAR ================= */}
-      {isGrammar && pattern && formula ? (
+      {isGrammar && pattern ? (
         <>
-          {/* THE RECIPE TAKES THE WIDER HALF, in the same 1.45fr/1fr row where a
-              kana puts its mnemonic and a kanji its strokes. It needs the space
-              for the same reason they do: the formula and its three worked
-              examples are a line of Japanese plus three arrows, and squeezed
-              into an even split they reflow into a ribbon. The pairing is what
-              stops the page being a stack of full-width boxes. */}
+          {/* THE BUILD CARD TAKES THE WIDER HALF, in the same 1.45fr/1fr row where
+              a kana puts its mnemonic and a kanji its strokes. It needs the space
+              for the same reason they do: the build blurb and its worked table are
+              a line of Japanese plus a few rows, and squeezed into an even split
+              they reflow into a ribbon. The pairing is what stops the page being a
+              stack of full-width boxes.
+
+              PatternTeach is the LESSON'S build, not a Library-only formula: it
+              renders autoPatternPage(pattern) — the same PhaseIntro the grammar
+              lesson teaches this pattern with — through the same IntroBody /
+              IntroBuildTable / IntroDeriveTable blocks. So a learner sees one
+              build (kana verbs, grammatical meanings), here and in the lesson, and
+              the two cannot drift. See pattern-teach.tsx. */}
           <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
-            <PatternRecipe
-              pattern={pattern}
-              formula={formula}
-              facts={liveFacts}
-              claims={claims}
-              metric={cfg.accuracyMetric}
-              now={now}
-            />
+            <PatternTeach pattern={pattern} />
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
 
