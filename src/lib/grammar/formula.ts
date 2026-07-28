@@ -123,12 +123,13 @@ export const FORM_LABEL: Record<Form, string> = {
   tara: "たら-form",
   tai: "たい-form",
   teiru: "ている-form",
-  // Named by what it IS rather than by 連用形, which is the word for someone who
-  // already knows it. The parenthetical is the whole definition and it is short
-  // enough to carry: every reader has met ます by the time they meet 〜すぎる.
+  // Just "stem". The stem gets its own intro page before any pattern that uses
+  // it, so the label needn't carry a definition — and the old
+  // "(the ます-form minus ます)" parenthetical pointed at ます, which is not taught
+  // before the stem (the ます-form is built FROM the stem, not the reverse).
   //
   // A VERB DEFINITION, AND IT IS ONLY TRUE OF VERBS. See FORM_LABEL_BY_HOST.
-  stem: "stem (the ます-form minus ます)",
+  stem: "stem",
   adverb: "adverb form",
   prenominal: "the form it takes before a noun",
   polite: "polite form",
