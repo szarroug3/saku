@@ -298,7 +298,7 @@ function lessonHost(lesson: GrammarLessonDef): Host | null {
 }
 
 // ---------------------------------------------------------------------------
-// SITTINGS: how the 56 lessons are grouped into what a learner meets at once.
+// SITTINGS: how the 96 lessons are grouped into what a learner meets at once.
 //
 // A NEW FORM IS TAUGHT ALONE; ADDING AN ENDING BUNDLES
 // ====================================================
@@ -401,7 +401,7 @@ export const GRAMMAR_SITTINGS: readonly (readonly number[])[] = (() => {
 })();
 
 /** How many sittings the track cuts into — the denominator on the lesson card
- * ("lesson N of X"). Counts SITTINGS, not the 56 patterns: a form lesson is one
+ * ("lesson N of X"). Counts SITTINGS, not the 96 patterns: a form lesson is one
  * sitting and a pattern bundle is one sitting, so this is smaller than the
  * pattern total. */
 export const GRAMMAR_SITTINGS_TOTAL = GRAMMAR_SITTINGS.length;
