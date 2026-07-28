@@ -176,6 +176,23 @@ function heroFromGloss(gloss: string): string {
   return /[.!?]$/.test(cap) ? cap : `${cap}.`;
 }
 
+/** The build line for a WRAP pattern (〜たり〜たり, 〜は〜より, 〜しか〜ない): it has
+ * two slots, so the single-slot line would describe only the opening half and read
+ * as if the whole pattern were "た-form + り". Describe both halves. */
+function wrapBuild(r: Recipe): string {
+  const open = r.attach[0];
+  const close = r.wrap?.close?.[0];
+  if (!open || !close) return "";
+  const bareNoun = (h: Host) => HOST_ARTICLE[h].replace(/^an? /, "");
+  const part = (a: { host: Host; form: Form | null; add?: string }, art: string) => {
+    const label = a.form && a.form !== "dictionary" ? FORM_LABEL[a.form] : null;
+    const base = label ? `${art} ${bareNoun(a.host)}'s ${label}` : `${art} ${bareNoun(a.host)}`;
+    return a.add ? `${base} and add ${a.add}` : base;
+  };
+  const secondArt = close.host === open.host ? "another" : "a";
+  return `Take ${part(open, "one")}, then ${part(close, secondArt)}.`;
+}
+
 /**
  * The teach page for one pattern, in 〜ている-page-1 shape: a hero claim (the
  * meaning), a build line, and the build table. The eyebrow carries the pattern
@@ -212,6 +229,8 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
   } else {
     build = `Attach it to ${on}.`;
   }
+  // A wrap has a second slot the single-slot line above cannot describe.
+  if (r.wrap?.close?.length) build = wrapBuild(r);
 
   // When the form IS the whole pattern (nothing added: the potential, passive,
   // causative, たら, ば), the verb→result derivation would repeat itself, since the
