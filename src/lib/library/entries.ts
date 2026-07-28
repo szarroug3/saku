@@ -70,6 +70,11 @@ import {
   TE_ENDINGS,
 } from "@/lib/grammar/te-endings";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
+import {
+  GRAMMAR_CONCEPT_SUBJECT,
+  GRAMMAR_CONCEPTS,
+  grammarConceptEntry,
+} from "@/data/grammar-concepts";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   COUNTER_CURRICULUM,
@@ -145,6 +150,7 @@ export type Kind =
   | typeof COUNTER_KIND
   | typeof SENTENCE_RULE_KIND
   | typeof GRAMMAR_SUBJECT
+  | typeof GRAMMAR_CONCEPT_SUBJECT
   | typeof TRANSITIVITY_SUBJECT
   | typeof KEIGO_SUBJECT
   | typeof TERM_SUBJECT;
@@ -169,6 +175,12 @@ export const KINDS: readonly Kind[] = [
   // its own order — see COUNTER_KIND.
   COUNTER_KIND,
   GRAMMAR_SUBJECT,
+  // Grammar concepts sit right after Grammar: they are the IDEAS the grammar
+  // patterns rest on (what a conjugation form is, how the て-form connects), so a
+  // learner reaches for them alongside the patterns they explain. Reference
+  // material like a term, but browsed here rather than at the end, next to the
+  // shelf it is about.
+  GRAMMAR_CONCEPT_SUBJECT,
   TRANSITIVITY_SUBJECT,
   // Keigo sits after verb pairs: it is a politeness layer over verbs the learner
   // already knows, so it browses after the plain-verb tracks it builds on.
@@ -191,6 +203,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   [COUNTER_KIND]: "Numbers and counters",
   [SENTENCE_RULE_KIND]: "Sentence rules",
   [GRAMMAR_SUBJECT]: "Grammar",
+  [GRAMMAR_CONCEPT_SUBJECT]: "Grammar concepts",
   [TRANSITIVITY_SUBJECT]: "Verb pairs",
   [KEIGO_SUBJECT]: "Keigo",
   [TERM_SUBJECT]: "Terms",
@@ -530,6 +543,27 @@ function build(): LibEntry[] {
       // Beside marks (1), for the same reason: a handful of reference entries
       // that answer "what is this word", worth leading with when a query hits
       // one, and never numerous enough to bury anything.
+      weight: 1,
+    });
+  }
+
+  // Grammar concepts — the ideas behind the grammar patterns, built exactly like
+  // a term: no glyph (the title IS the name, so `meanings` carries it and `sub`
+  // the one-line summary, which is what EntryRow and PageTitle print), no
+  // readings (nothing here is a sound), and search finds a concept by its name or
+  // an alias. No facts, minted below by no one — a concept is read, never asked.
+  for (const c of GRAMMAR_CONCEPTS) {
+    out.push({
+      id: grammarConceptEntry(c.id),
+      kind: GRAMMAR_CONCEPT_SUBJECT,
+      glyph: "",
+      name: c.name,
+      readings: [],
+      meanings: [c.name],
+      searchAlso: c.searchAlso,
+      sub: c.summary,
+      // Beside marks and terms (1): a reference entry worth leading with when a
+      // query hits it, and never numerous enough to bury anything.
       weight: 1,
     });
   }
@@ -918,6 +952,11 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
     // (termEntry). So this is never asked.
     case TERM_SUBJECT:
       return null;
+    // A grammar concept has no glyph either, and nothing links to one by glyph —
+    // it is reached from the shelf, from search, or from a te-family entry's
+    // Links row, and every link is minted from its own id (grammarConceptEntry).
+    case GRAMMAR_CONCEPT_SUBJECT:
+      return null;
   }
 }
 
@@ -1016,6 +1055,11 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
     // a kind that later grew a fact would ship a headed table with no heading.
     case MARK_SUBJECT:
     case SENTENCE_RULE_KIND:
+      return "Nothing to test";
+    // A grammar concept never has rows (see factRows), for the same reason a mark
+    // does not: "what is a conjugation form" has no gradeable answer. The page's
+    // `rows.length > 0` guard drops the whole section, so this never shows.
+    case GRAMMAR_CONCEPT_SUBJECT:
       return "Nothing to test";
     // A pair's facts are chips on its own page, never this generic table (the
     // entry page excludes transitivity from genericRows), so this heading is not
@@ -1137,6 +1181,12 @@ export function factRows(entry: LibEntry): FactRow[] {
     // instead of an empty one. Nothing here had to be added for that to work.
     case MARK_SUBJECT:
     case SENTENCE_RULE_KIND:
+      return [];
+    // A GRAMMAR CONCEPT HAS NO FACTS AT ALL — like a mark or a term. "What is a
+    // conjugation form" is a thing to read, not a question to mark, so the empty
+    // array is the shape of that and the entry page's `rows.length > 0` guard
+    // drops the facts box entirely.
+    case GRAMMAR_CONCEPT_SUBJECT:
       return [];
     // A pair's gradeable facts, one row per ASKABLE side. Not rendered by the
     // entry page (which draws the pair itself), but kept honest for any generic

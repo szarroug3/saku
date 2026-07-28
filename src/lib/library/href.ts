@@ -55,6 +55,7 @@
 import type { EntryId } from "@/types";
 import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
 import { MARKS, markEntry } from "@/data/marks";
+import { GRAMMAR_CONCEPTS, grammarConceptEntry } from "@/data/grammar-concepts";
 import { TERMS, termEntry } from "@/data/terms";
 import { patternEntry } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
@@ -230,6 +231,10 @@ function buildSlugKeys(): Map<EntryId, string> {
   const map = new Map<EntryId, string>();
   for (const m of MARKS) map.set(markEntry(m.id), m.id);
   for (const t of TERMS) map.set(termEntry(t.id), t.id);
+  // A grammar concept has no glyph (its LibEntry.glyph is the empty string), so
+  // its URL is its own stable id — /library/grammar-concept/te-form — the same
+  // treatment a mark and a term get.
+  for (const c of GRAMMAR_CONCEPTS) map.set(grammarConceptEntry(c.id), c.id);
   for (const r of RECIPES) map.set(patternEntry(r.id), r.id);
   for (const p of VERB_PAIRS) {
     map.set(pairEntry(p), `${p.happens.word}-${p.doIt.word}`);
