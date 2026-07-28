@@ -437,14 +437,12 @@ export const RECIPES: readonly Recipe[] = [
       { host: "verb", form: "te", add: "もいい" },
       { host: "adj-i", form: "te", add: "もいい" },
     ],
-    sharedProductionWith: "te-cause",
     note:
-      "NO adjective production fact of its own, and that asymmetry is a " +
-      "decision rather than an oversight — see sharedProductionWith. 高くても" +
-      "いい is te-cause's rule (高い → 高くて) plus もいい, and te-cause already " +
-      "scores that rule on the adj-i host. Its verb half DOES get its own fact: " +
-      "行く → 行って is the て-form's 音便, which is a real transformation and " +
-      "the thing the item measures.",
+      "A て-form pattern (see isTeFormRecipe), so its production splits by ENDING " +
+      "on the VERB — 買ってもいい, 書いてもいい, … — and it carries NO adjective " +
+      "production fact. 高くてもいい is te-cause's い → くて rule plus もいい, and " +
+      "the 〜て family drills the verb 音便 endings only; the adjective form is " +
+      "not scored as its own production question on any te-pattern.",
   },
   {
     id: "te-prohibition",
@@ -552,11 +550,11 @@ export const RECIPES: readonly Recipe[] = [
       { host: "verb", form: "te", add: "も" },
       { host: "adj-i", form: "te", add: "も" },
     ],
-    sharedProductionWith: "te-cause",
     note:
-      "Same call as te-permission, for the same reason: 高くても is te-cause's " +
-      "い → くて plus も, and one rule scored three times across 〜て, 〜ても and " +
-      "〜てもいい would be three numbers about one skill.",
+      "Same shape as te-permission: a て-form pattern whose production splits by " +
+      "ENDING on the verb (買っても, 書いても, …), with no adjective production " +
+      "fact. 高くても is te-cause's い → くて plus も; the 〜て family scores the " +
+      "verb 音便 endings only.",
   },
 
   // --- ない-form ----------------------------------------------------------

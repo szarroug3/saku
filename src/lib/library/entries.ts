@@ -56,7 +56,7 @@ import {
 } from "@/data/vocab";
 import {
   GRAMMAR_SUBJECT,
-  TE_FORM_RECIPE_ID,
+  isTeFormRecipe,
   patternEntry,
   patternMeaningFactId,
   patternProductionFactId,
@@ -1267,14 +1267,15 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       speak: null,
     },
   ];
-  // The te-form is the one pattern whose production splits by ENDING, not host
-  // (see te-endings.ts): five facts, one per 音便, each baked on a representative
-  // verb of that ending. It carries no host-keyed production fact, so its rows
-  // are enumerated here rather than by the host loop below — otherwise the page
-  // that promises to list what is scored would show none of the five.
-  if (isProducible(r) && r.id === TE_FORM_RECIPE_ID) {
+  // A te-form pattern's production splits by ENDING, not host (see te-endings.ts):
+  // up to five facts, one per 音便, each baked on a representative verb of that
+  // ending carrying the full pattern (書いてから). It carries no host-keyed
+  // production fact, so its rows are enumerated here rather than by the host loop
+  // below — otherwise the page that promises to list what is scored would show
+  // none of them. Applies to the whole 〜て family, not just te-sequence.
+  if (isProducible(r) && isTeFormRecipe(r)) {
     for (const ending of TE_ENDINGS) {
-      const id = teEndingProductionFactId(ending);
+      const id = teEndingProductionFactId(r.id, ending);
       const info = factInfo(id);
       if (!info) continue;
       rows.push({

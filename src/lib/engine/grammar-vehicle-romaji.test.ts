@@ -25,8 +25,13 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { SETS } from "@/data/characters";
-import { patternProductionFactId } from "@/data/grammar";
+import {
+  isTeFormRecipe,
+  patternProductionFactId,
+  teEndingProductionFactId,
+} from "@/data/grammar";
 import { RECIPES, isProducible } from "@/data/grammar/recipes";
+import { endingBucketOf } from "@/lib/grammar/te-endings";
 import { factInfo } from "@/lib/facts";
 import { apply, hostOfClass } from "@/lib/grammar/apply";
 import {
@@ -140,24 +145,38 @@ interface Case {
  */
 const CASES: Case[] = (() => {
   const out: Case[] = [];
+  const push = (fact: FactId, r: (typeof RECIPES)[number], v: Vehicle): void => {
+    if (!factInfo(fact)) return;
+    if (!recipeAllows(r, v.surface)) return;
+    const surface = apply(r, v.surface, v.cls);
+    if (!surface.ok || surface.value === v.surface) return;
+    const kana = apply(r, v.kana, v.cls);
+    const gv: GrammarVehicle = { surface: v.surface, kana: v.kana, cls: v.cls, known: true };
+    out.push({
+      fact,
+      ctx: { grammarVehicle: gv },
+      form: surface.value,
+      kanaForm: kana.ok ? kana.value : surface.value,
+      label: `${r.id} on ${v.surface}`,
+    });
+  };
   for (const r of RECIPES) {
     if (!isProducible(r)) continue;
+    // A te-form pattern's production fact is keyed on the ENDING, not the host
+    // (see te-endings.ts), and the vehicle must be a godan verb of that ending —
+    // so a る-verb / irregular never rolls. This is the same seam the drill uses
+    // and the P0 (romaji forgiveness on a て-form) lives on it.
+    if (isTeFormRecipe(r)) {
+      for (const v of VEHICLES) {
+        const ending = endingBucketOf(v.cls);
+        if (!ending) continue;
+        push(teEndingProductionFactId(r.id, ending), r, v);
+      }
+      continue;
+    }
     for (const v of VEHICLES) {
       const host = v.cls === null ? "noun" : hostOfClass(v.cls);
-      const fact = patternProductionFactId(r.id, host);
-      if (!factInfo(fact)) continue;
-      if (!recipeAllows(r, v.surface)) continue;
-      const surface = apply(r, v.surface, v.cls);
-      if (!surface.ok || surface.value === v.surface) continue;
-      const kana = apply(r, v.kana, v.cls);
-      const gv: GrammarVehicle = { surface: v.surface, kana: v.kana, cls: v.cls, known: true };
-      out.push({
-        fact,
-        ctx: { grammarVehicle: gv },
-        form: surface.value,
-        kanaForm: kana.ok ? kana.value : surface.value,
-        label: `${r.id} on ${v.surface}`,
-      });
+      push(patternProductionFactId(r.id, host), r, v);
     }
   }
   return out;
@@ -176,18 +195,22 @@ describe("a varied-vehicle production answer, graded with the ctx the drill send
     assert.ok(CASES.length > 200, `only ${CASES.length} cases`);
   });
 
-  test("the reported P0: tabetekudasai answers 〜てください on 食べる", () => {
-    const c = CASES.find((x) => x.label === "te-request on 食べる");
+  test("the reported P0: kaitekudasai answers 〜てください on 書く", () => {
+    // The reproduction was 〜てください built on a verb, graded by romaji. te-request
+    // is now a per-ending te-form fact, so its vehicle is a godan of the ending
+    // (書く, te-ku) rather than the る-verb 食べる, which no longer rolls — the
+    // romaji-forgiveness property is identical either way.
+    const c = CASES.find((x) => x.label === "te-request on 書く");
     assert.ok(c, "the reproduction case must exist");
-    assert.equal(c.form, "食べてください");
-    assert.equal(c.kanaForm, "たべてください");
+    assert.equal(c.form, "書いてください");
+    assert.equal(c.kanaForm, "かいてください");
     for (const dir of DIRS) {
-      assert.equal(check(c, "食べてください", dir), true, "kanji form");
-      assert.equal(check(c, "たべてください", dir), true, "kana form");
+      assert.equal(check(c, "書いてください", dir), true, "kanji form");
+      assert.equal(check(c, "かいてください", dir), true, "kana form");
       // The one that shipped false.
-      assert.equal(check(c, "tabetekudasai", dir), true, "romaji spelling");
+      assert.equal(check(c, "kaitekudasai", dir), true, "romaji spelling");
       // Katakana folds too, as it does everywhere else in the app.
-      assert.equal(check(c, "タベテクダサイ", dir), true, "katakana");
+      assert.equal(check(c, "カイテクダサイ", dir), true, "katakana");
     }
   });
 
@@ -258,13 +281,16 @@ describe("a varied-vehicle production answer, graded with the ctx the drill send
   test("no vehicle in the ctx: the baked path, unchanged", () => {
     // The fix must not have moved the OTHER path. A production fact with no
     // ctx grades against its baked answers exactly as before.
-    const fact = patternProductionFactId("te-request");
+    // te-request's per-ending te-utsu fact is baked on 買う (see ENDING_ANCHOR),
+    // so its own answers are 買ってください / かってください — the fixed vehicle the
+    // no-ctx path grades against.
+    const fact = teEndingProductionFactId("te-request", "te-utsu");
     const answers = factInfo(fact)?.answers ?? [];
-    assert.deepEqual(answers.slice(0, 2), ["行ってください", "いってください"]);
+    assert.deepEqual(answers.slice(0, 2), ["買ってください", "かってください"]);
     for (const a of answers) {
       assert.equal(questionsFor(fact).check(fact, "jp2en", a), true);
     }
-    assert.equal(questionsFor(fact).check(fact, "jp2en", "ittekudasai"), true);
+    assert.equal(questionsFor(fact).check(fact, "jp2en", "kattekudasai"), true);
     assert.equal(questionsFor(fact).check(fact, "jp2en", "食べてください"), false);
   });
 });

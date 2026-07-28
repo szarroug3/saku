@@ -25,7 +25,12 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { KANA_SUBJECT, kanaFact } from "@/data/characters";
-import { GRAMMAR_SUBJECT, patternMeaningFactId, patternProductionFactId } from "@/data/grammar";
+import {
+  GRAMMAR_SUBJECT,
+  patternMeaningFactId,
+  patternProductionFactId,
+  teEndingProductionFactId,
+} from "@/data/grammar";
 import { KANJI_SUBJECT, meaningFactId, readingFactId } from "@/data/kanji";
 import { VOCAB_SUBJECT, wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
 import { ALL_FACTS, factInfo } from "@/lib/facts";
@@ -43,7 +48,7 @@ describe("the seven card kinds", () => {
   const ROWS: [string, FactId, Direction, boolean][] = [
     ["kanji reading (せい)", readingFactId("生", "先生"), "jp2en", true],
     ["word reading (せんせい)", wordReadingFactId("先生"), "jp2en", true],
-    ["grammar production (行ってから)", patternProductionFactId("te-kara"), "jp2en", true],
+    ["grammar production (買ってから)", teEndingProductionFactId("te-kara", "te-utsu"), "jp2en", true],
     ["kana (a)", kanaFact("あ"), "jp2en", false],
     ["kanji meaning (life)", meaningFactId("生"), "jp2en", false],
     ["word meaning (teacher)", wordMeaningFactId("先生"), "jp2en", false],
@@ -196,11 +201,13 @@ describe("no card can be answered by typing its own prompt", () => {
   });
 
   test("grammar production accepts neither its vehicle nor a romaji of it", () => {
-    // The one converting card whose prompt is sometimes KANA (する, ある), so
-    // the structural argument above needs checking rather than asserting: the
-    // learner really can type this prompt back. She still cannot answer with it,
-    // because a recipe that leaves the vehicle unchanged is not producible.
-    const fact = patternProductionFactId("te-kara");
+    // The converting card whose prompt is sometimes KANA (する, ある), so the
+    // structural argument above needs checking rather than asserting: the learner
+    // really can type this prompt back. She still cannot answer with it, because a
+    // recipe that leaves the vehicle unchanged is not producible. Uses 〜たい, a
+    // verb-only pattern that takes the る-verb 食べる — a te-form pattern is now
+    // per-ending and never rolls a る-verb (see te-endings.ts).
+    const fact = patternProductionFactId("tai");
     const qt = questionsFor(fact);
     const ctx = { grammarVehicle: TABERU };
     const shown = qt.prompt(fact, "jp2en", ctx).glyph;
@@ -209,7 +216,7 @@ describe("no card can be answered by typing its own prompt", () => {
       assert.equal(qt.check(fact, "jp2en", given, ctx), false, `accepted ${given}`);
     }
     // And the answer it does want is reachable by typing.
-    assert.equal(qt.check(fact, "jp2en", "tabetekara", ctx), true);
+    assert.equal(qt.check(fact, "jp2en", "tabetai", ctx), true);
   });
 
   test("the en2jp typed violations are the known ones, and no new shape", () => {

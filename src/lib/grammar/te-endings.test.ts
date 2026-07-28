@@ -22,12 +22,13 @@ import { describe, test } from "node:test";
 import {
   TE_FORM_RECIPE_ID,
   grammarProduction,
+  patternEntry,
   patternMeaningFactId,
   patternProductionFactId,
   teEndingProductionFactId,
 } from "@/data/grammar";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
-import { factInfo } from "@/lib/facts";
+import { factInfo, factsOf } from "@/lib/facts";
 import { buildCoverageDeck } from "@/lib/ask-forms";
 import { VERB_VEHICLES } from "@/lib/grammar/vehicles";
 import { wordMeaningFactId } from "@/data/vocab";
@@ -79,7 +80,7 @@ const ALL: AskConfig = {
 describe("the five per-ending te-form facts", () => {
   test("each ending's fact exists, baked on its representative verb", () => {
     for (const ending of TE_ENDINGS) {
-      const id = teEndingProductionFactId(ending);
+      const id = teEndingProductionFactId(TE_FORM_RECIPE_ID, ending);
       const info = factInfo(id);
       assert.ok(info, `${ending}: no fact in the registry`);
       const want = EXPECTED[ending];
@@ -102,7 +103,7 @@ describe("the five per-ending te-form facts", () => {
 
   test("grammarProduction resolves each fact to its ending and anchor verb", () => {
     for (const ending of TE_ENDINGS) {
-      const prod = grammarProduction(teEndingProductionFactId(ending));
+      const prod = grammarProduction(teEndingProductionFactId(TE_FORM_RECIPE_ID, ending));
       assert.ok(prod, `${ending}: not a production fact`);
       assert.equal(prod!.ending, ending);
       assert.equal(prod!.host, "verb");
@@ -139,7 +140,7 @@ describe("the vehicle rolled for a per-ending fact matches its ending", () => {
 
   test("empty history: rolls a predictable verb of the right ending, never a る-verb or irregular", () => {
     for (const ending of TE_ENDINGS) {
-      const fact = teEndingProductionFactId(ending);
+      const fact = teEndingProductionFactId(TE_FORM_RECIPE_ID, ending);
       for (let i = 0; i < 80; i++) {
         const v = grammarVehicleFor(fact, history());
         assert.ok(v, `${ending}: no vehicle rolled`);
@@ -166,7 +167,7 @@ describe("the vehicle rolled for a per-ending fact matches its ending", () => {
     // 待つ is a te-utsu verb; once known it should win over the 買う anchor and be
     // shown known (kanji), because a production item on a known word tests the
     // pattern, not vocabulary.
-    const fact = teEndingProductionFactId("te-utsu");
+    const fact = teEndingProductionFactId(TE_FORM_RECIPE_ID, "te-utsu");
     const seen = new Set<string>();
     for (let i = 0; i < 80; i++) {
       const v = grammarVehicleFor(fact, knowing("待つ"));
@@ -183,12 +184,12 @@ describe("the vehicle rolled for a per-ending fact matches its ending", () => {
 });
 
 describe("grading never marks correct Japanese wrong", () => {
-  const grammar = questionsFor(teEndingProductionFactId("te-utsu"));
+  const grammar = questionsFor(teEndingProductionFactId(TE_FORM_RECIPE_ID, "te-utsu"));
 
   test("both the kanji and kana built forms grade true for a rolled vehicle", () => {
     for (const ending of TE_ENDINGS) {
       const anchor = ENDING_ANCHOR[ending];
-      const fact = teEndingProductionFactId(ending);
+      const fact = teEndingProductionFactId(TE_FORM_RECIPE_ID, ending);
       const qt = questionsFor(fact);
       // Show the anchor as a KNOWN vehicle; both scripts of the built form count.
       const ctx = {
@@ -212,7 +213,7 @@ describe("grading never marks correct Japanese wrong", () => {
   });
 
   test("a wrong ending's form does NOT grade true", () => {
-    const fact = teEndingProductionFactId("te-utsu");
+    const fact = teEndingProductionFactId(TE_FORM_RECIPE_ID, "te-utsu");
     // 書いて is the answer to te-ku, not to te-utsu built on 買う (買って).
     assert.equal(grammar.check(fact, "jp2en", "書いて", {
       grammarVehicle: { surface: "買う", kana: "かう", cls: "v5u", known: true },
@@ -226,7 +227,7 @@ describe("the te-form lesson deck carries one production card per ending", () =>
   test("its drills are the meaning fact plus the five per-ending production facts", () => {
     const expected = new Set<FactId>([
       patternMeaningFactId(TE_FORM_RECIPE_ID),
-      ...TE_ENDINGS.map(teEndingProductionFactId),
+      ...TE_ENDINGS.map((e) => teEndingProductionFactId(TE_FORM_RECIPE_ID, e)),
     ]);
     assert.deepEqual(new Set(lesson.drills), expected);
   });
@@ -234,9 +235,49 @@ describe("the te-form lesson deck carries one production card per ending", () =>
   test("buildCoverageDeck expands to exactly the five ending production facts", () => {
     const { deck } = buildCoverageDeck(lesson.drills, ALL);
     const prod = new Set(deck.filter((f) => grammarProduction(f)));
-    assert.deepEqual(prod, new Set(TE_ENDINGS.map(teEndingProductionFactId)));
+    assert.deepEqual(prod, new Set(TE_ENDINGS.map((e) => teEndingProductionFactId(TE_FORM_RECIPE_ID, e))));
     assert.equal(prod.size, 5);
     // The meaning fact is also asked, so the deck is not production-only.
     assert.ok(deck.includes(patternMeaningFactId(TE_FORM_RECIPE_ID)));
+  });
+});
+
+// The whole point of the generalization: the ending split is NOT special to
+// te-sequence. Any recipe whose verb attachment is the て-form drills the same
+// five endings, each carrying its OWN full pattern (書いてから, not 書いて).
+describe("the ending split generalizes to a second te-pattern (te-kara)", () => {
+  const EXPECTED_KARA: Record<TeEnding, string> = {
+    "te-utsu": "買ってから",
+    "te-ku": "書いてから",
+    "te-gu": "泳いでから",
+    "te-mbn": "飲んでから",
+    "te-su": "話してから",
+  };
+
+  test("te-kara mints five per-ending facts, each the full pattern, and no plain one", () => {
+    for (const ending of TE_ENDINGS) {
+      const id = teEndingProductionFactId("te-kara", ending);
+      const info = factInfo(id);
+      assert.ok(info, `te-kara ${ending}: no fact in the registry`);
+      assert.equal(info!.glyph, EXPECTED_KARA[ending], `te-kara ${ending}: glyph`);
+      const prod = grammarProduction(id);
+      assert.ok(prod, `te-kara ${ending}: not resolved as production`);
+      assert.equal(prod!.ending, ending);
+      assert.equal(prod!.recipe.id, "te-kara");
+    }
+    // Replaced, not doubled: no unqualified grammar:te-kara/production survives.
+    assert.equal(factInfo(patternProductionFactId("te-kara")), undefined);
+    assert.equal(grammarProduction(patternProductionFactId("te-kara")), null);
+  });
+
+  test("its deck yields exactly five production cards, one per distinct ending, plus meaning", () => {
+    const drills = factsOf(patternEntry("te-kara"));
+    const { deck } = buildCoverageDeck(drills, ALL);
+    // Deduped by fact — the deck repeats each fact once per card kind (typed, MC).
+    const prod = new Set(deck.filter((f) => grammarProduction(f)));
+    assert.equal(prod.size, 5);
+    const endings = new Set([...prod].map((f) => grammarProduction(f)!.ending));
+    assert.deepEqual(endings, new Set(TE_ENDINGS));
+    assert.ok(deck.includes(patternMeaningFactId("te-kara")));
   });
 });

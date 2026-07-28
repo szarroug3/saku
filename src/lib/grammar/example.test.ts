@@ -88,27 +88,31 @@ describe("the baked example is a QUESTION, not the word retyped", () => {
 });
 
 describe("a production fact per HOST, where the hosts are different rules", () => {
-  test("the five split patterns carry a fact for each of their hosts", () => {
+  test("the four host-split patterns carry a fact for each of their hosts", () => {
+    // te-cause is NOT here any more: it is a て-form pattern (see isTeFormRecipe),
+    // so its production splits by ENDING on the verb, not by host, and
+    // productionHosts is [] for it. These four are the non-te patterns whose
+    // adjective form is a genuinely different rule from their verb form.
     const expected: Record<string, string[]> = {
       "sou-appearance": ["verb", "adj-i", "adj-na"],
       sugiru: ["verb", "adj-i", "adj-na"],
       ba: ["verb", "adj-i"],
       tara: ["verb", "adj-i", "adj-na"],
-      "te-cause": ["verb", "adj-i", "adj-na"],
     };
     for (const [id, hosts] of Object.entries(expected)) {
       assert.deepEqual(productionHosts(byId(id)), hosts, id);
     }
   });
 
-  test("the two deferring patterns carry ONE, and say who covers the rest", () => {
-    // Not an oversight, and the test says so as loudly as the data does: 高くても
-    // is te-cause's い → くて plus も. Scoring that rule once per pattern would
-    // be three numbers about one skill.
-    for (const id of ["te-permission", "te-mo"]) {
+  test("the te-form patterns carry NO host production fact — they split by ending", () => {
+    // te-cause / te-permission / te-mo used to carry host-keyed production facts
+    // (and te-permission / te-mo deferred their adj-i rule to te-cause). The whole
+    // 〜て family now drills the verb 音便 endings only, so every one of them has
+    // productionHosts [] and no sharedProductionWith deferral remains.
+    for (const id of ["te-cause", "te-permission", "te-mo"]) {
       const r = byId(id);
-      assert.deepEqual(productionHosts(r), ["verb"], id);
-      assert.equal(r.sharedProductionWith, "te-cause");
+      assert.deepEqual(productionHosts(r), [], id);
+      assert.equal(r.sharedProductionWith, undefined, id);
     }
   });
 

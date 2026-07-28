@@ -20,12 +20,13 @@ import { describe, test } from "node:test";
 
 import { KANA_GROUP_FACTS, nextLesson } from "./lesson.ts";
 import {
-  TE_FORM_RECIPE_ID,
+  isTeFormRecipe,
   patternMeaningFactId,
   patternProductionFactId,
   productionHosts,
   teEndingProductionFactId,
 } from "../data/grammar/index.ts";
+import { factInfo } from "./facts.ts";
 import { TE_ENDINGS } from "./grammar/te-endings.ts";
 import {
   DRILLABLE,
@@ -158,12 +159,15 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
     for (const card of lesson.cards) {
       const r = recipe(card.id)!;
       expected.add(patternMeaningFactId(r.id));
-      // The te-form is the one pattern that splits production by ENDING, not host
-      // (see te-endings.ts): five facts, one per 音便. productionHosts is [] for
-      // it, so its facts come from the ending list instead.
-      if (r.id === TE_FORM_RECIPE_ID) {
+      // A te-form pattern splits production by ENDING, not host (see te-endings.ts):
+      // up to five facts, one per 音便. productionHosts is [] for the whole 〜て
+      // family, so its facts come from the ending list instead. Guarded by
+      // factInfo so a pattern that refuses an ending's anchor (〜てある drops 泳ぐ)
+      // contributes only the endings it actually minted.
+      if (isTeFormRecipe(r)) {
         for (const ending of TE_ENDINGS) {
-          expected.add(teEndingProductionFactId(ending));
+          const id = teEndingProductionFactId(r.id, ending);
+          if (factInfo(id)) expected.add(id);
         }
         continue;
       }
