@@ -29,8 +29,9 @@
 // and the inline --kq-sweep (always set to the state's resting value) stands,
 // so the drain steps once a second and the answer states appear instantly.
 
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+
 import { SoundIcon } from "@/components/ui";
-import type { ReactNode } from "react";
 
 /** resting = still · draining = final seconds · right/wrong = answered.
  * "wrong-flash" is a wrong answer with retries still left: it pulses out and
@@ -49,6 +50,63 @@ const HOLE_PX = 84;
 export const GLYPH_PX = 78;
 
 const RING_MASK = `radial-gradient(circle, transparent ${HOLE_PX}px, #000 ${HOLE_PX + 1}px)`;
+
+// The usable inner box for a WRAPPING text prompt inside the ring. The hole is
+// radius 84 (diameter 168); a multi-line block insets from the band and stays
+// clear of the ring's curve at the top and bottom. A lone glyph never fills it,
+// so a single character still renders big and on one line.
+const FIT_W = 150;
+const FIT_H = 138;
+/** The smallest a wrapped text cue is allowed to shrink to before it stops
+ * being comfortably legible. Higher than the old single-line glyph floor: a cue
+ * that is allowed to wrap has vertical room the one-line path never had, so it
+ * reaches this floor only for genuinely long prompts. */
+const TEXT_MIN_PX = 22;
+
+/**
+ * Split a "MAIN · QUALIFIER" prompt into its main text and a trailing qualifier.
+ *
+ * The qualifier is a disambiguator — keigo's productionCue appends "· more
+ * deferential" so a register with two forms never asks one prompt with two right
+ * answers — not the core question, so it drops to a smaller, quieter sub-line
+ * rather than competing for space. ONLY the trailing " · " tail splits: a plain
+ * glyph, a kanji, or a single-word cue has none and returns unchanged.
+ */
+function splitQualifier(text: string): { main: string; sub: string | null } {
+  const sep = " · ";
+  const at = text.lastIndexOf(sep);
+  if (at <= 0) return { main: text, sub: null };
+  return { main: text.slice(0, at), sub: text.slice(at + sep.length) };
+}
+
+/**
+ * Shrink a font size until the referenced block fits the ring's inner box on
+ * BOTH axes, never below the readable floor.
+ *
+ * Measurement, not arithmetic: the block WRAPS, so its height depends on where
+ * the words break — a thing only the laid-out DOM knows. Runs in a layout effect
+ * so the fitted size is in place before the browser paints (no flash of the
+ * oversized prompt). `key` changes per card, which re-measures.
+ */
+function useFitFontSize(maxSize: number, key: string) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState(maxSize);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let s = maxSize;
+    el.style.fontSize = `${s}px`;
+    while (
+      s > TEXT_MIN_PX &&
+      (el.scrollHeight > FIT_H || el.scrollWidth > el.clientWidth)
+    ) {
+      s -= 1;
+      el.style.fontSize = `${s}px`;
+    }
+    setSize(s);
+  }, [maxSize, key]);
+  return [ref, size] as const;
+}
 
 const HALO_CSS = `
 @property --kq-sweep {
@@ -163,7 +221,16 @@ export interface DrillHaloProps {
   highlight?: string;
   /** The question's font, rolled once and kept in the runtime. */
   font: string;
+  /** The size for the SINGLE-LINE glyph paths (a lone glyph, and the
+   * highlighted kanji-reading word), pre-fitted by the caller. */
   fontSize: number;
+  /** The BASE (unshrunk) size for a wrapping text prompt — GLYPH_PX for the
+   * Japanese side, 0.6× for a latin cue. The prompt starts here and shrinks by
+   * measurement to fit the ring on both axes (see useFitFontSize); a lone glyph
+   * measures well within the box and stays at this size. Optional: a caller that
+   * only shows a sentence frame (assembly) never reaches the wrapping path, and
+   * omitting it falls back to `fontSize`. */
+  maxFontSize?: number;
   /** Cross-fade the glyph in — true on a new card, false on a retry of the
    * same one, where re-fading the unchanged glyph would just be noise. */
   crossFade: boolean;
@@ -195,6 +262,7 @@ export function DrillHalo({
   highlight,
   font,
   fontSize,
+  maxFontSize,
   crossFade,
   listen = false,
   onListen,
@@ -278,43 +346,113 @@ export function DrillHalo({
           <SoundIcon className="size-12" />
         </button>
       ) : (
-        <span
-          className="kq-glyph relative flex flex-col items-center justify-center gap-1"
-          style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
-        >
-          <span
-            // leading-[1.15] is the drill glyph's theme hook (see globals.css).
-            // whitespace-nowrap so a multi-char word stays on ONE line — the parent
-            // has already sized the glyph (see fitGlyphSize) to fit the hole across.
-            className="block whitespace-nowrap leading-[1.15]"
-            style={{ fontSize, fontFamily: font }}
-          >
-            {highlight
-              ? // The word, with the asked kanji lit and the rest dimmed: context
-                // without a leak, since the highlighted glyph's reading is the
-                // answer and is never shown.
-                [...glyph].map((ch, i) =>
-                  ch === highlight ? (
-                    <span
-                      key={i}
-                      style={{
-                        color: "var(--text)",
-                        textShadow: `0 0 18px ${mix("--accent", 55)}`,
-                      }}
-                    >
-                      {ch}
-                    </span>
-                  ) : (
-                    <span key={i} style={{ color: "var(--text-muted)", opacity: 0.6 }}>
-                      {ch}
-                    </span>
-                  ),
-                )
-              : glyph}
-          </span>
-          {reading ? <span className="leading-none">{reading}</span> : null}
-        </span>
+        <PromptGlyph
+          glyph={glyph}
+          highlight={highlight}
+          font={font}
+          fontSize={fontSize}
+          maxFontSize={maxFontSize ?? fontSize}
+          crossFade={crossFade}
+          reading={reading}
+        />
       )}
     </div>
+  );
+}
+
+/**
+ * The centre prompt for a non-listening, non-sentence card.
+ *
+ * Two shapes share this seat. A HIGHLIGHTED kanji-reading word (電話 with 話 lit)
+ * stays a single pre-fitted line — the per-character colouring is the point and a
+ * short word never needs to wrap. Everything else — a lone glyph, and a long
+ * English cue like "say (humble) · more deferential" — WRAPS and shrink-to-fits
+ * the ring's inner box on both axes: a single character measures well within the
+ * box and stays big, a multi-word cue lands on two or three comfortable lines
+ * fully inside the ring rather than one line that pokes out of it. A trailing
+ * "· qualifier" is peeled onto a smaller, quieter sub-line (see splitQualifier).
+ */
+function PromptGlyph({
+  glyph,
+  highlight,
+  font,
+  fontSize,
+  maxFontSize,
+  crossFade,
+  reading,
+}: {
+  glyph: string;
+  highlight?: string;
+  font: string;
+  fontSize: number;
+  maxFontSize: number;
+  crossFade: boolean;
+  reading?: ReactNode;
+}) {
+  const { main, sub } = splitQualifier(glyph);
+  // Re-fit whenever the prompt text or its font changes — that is one per card.
+  const [fitRef, fitSize] = useFitFontSize(maxFontSize, `${glyph} ${font}`);
+
+  return (
+    <span
+      className="kq-glyph relative flex flex-col items-center justify-center gap-1"
+      style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
+    >
+      {highlight ? (
+        <span
+          // leading-[1.15] is the drill glyph's theme hook (see globals.css).
+          // whitespace-nowrap so the highlighted word stays on ONE line — the
+          // caller has already sized it (fitGlyphSize) to fit the hole across.
+          className="block whitespace-nowrap leading-[1.15]"
+          style={{ fontSize, fontFamily: font }}
+        >
+          {/* The word, with the asked kanji lit and the rest dimmed: context
+              without a leak, since the highlighted glyph's reading is the
+              answer and is never shown. */}
+          {[...glyph].map((ch, i) =>
+            ch === highlight ? (
+              <span
+                key={i}
+                style={{
+                  color: "var(--text)",
+                  textShadow: `0 0 18px ${mix("--accent", 55)}`,
+                }}
+              >
+                {ch}
+              </span>
+            ) : (
+              <span key={i} style={{ color: "var(--text-muted)", opacity: 0.6 }}>
+                {ch}
+              </span>
+            ),
+          )}
+        </span>
+      ) : (
+        <div
+          ref={fitRef}
+          // Fixed width so the block WRAPS (and so a too-long token overflows
+          // measurably); the layout effect shrinks fontSize until it also fits
+          // FIT_H. wrap-break-word lets an over-long word break rather than
+          // force the whole prompt microscopic.
+          className="flex flex-col items-center justify-center text-center leading-[1.15] wrap-break-word"
+          style={{
+            width: FIT_W,
+            maxWidth: FIT_W,
+            fontSize: fitSize,
+            fontFamily: font,
+          }}
+        >
+          <span className="block">{main}</span>
+          {sub ? (
+            // The qualifier: smaller, muted, quiet — a disambiguator under the
+            // question, not part of it.
+            <span className="mt-1 text-[0.6em] leading-[1.2] text-text-muted">
+              {sub}
+            </span>
+          ) : null}
+        </div>
+      )}
+      {reading ? <span className="leading-none">{reading}</span> : null}
+    </span>
   );
 }

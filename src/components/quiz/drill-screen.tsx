@@ -1447,6 +1447,11 @@ export function DrillScreen() {
             prompt.jp,
             prompt.jp ? GLYPH_PX : Math.round(GLYPH_PX * 0.6),
           )}
+          // The base size a WRAPPING text prompt starts from before the halo
+          // shrink-to-fits it (fontSize above is the single-line path, still
+          // used by the highlighted reading-word). A lone glyph fits at base and
+          // stays big; a long English cue wraps down from here.
+          maxFontSize={prompt.jp ? GLYPH_PX : Math.round(GLYPH_PX * 0.6)}
           crossFade={q.tries === 0}
           // A listening card hides the glyph and plays the word instead; the
           // speaker replays it. `glyph` above is still passed (harmless — the
@@ -1555,22 +1560,29 @@ export function DrillScreen() {
             <span className="text-[11px] text-text-muted">{guide?.note}</span>
             </span>
           ) : (
-          // Capped so the six options sit as two rows of three under the
-          // halo, rather than a five-plus-one straggle as wide as the stage.
-          <div className="flex max-w-[250px] flex-wrap justify-center gap-2">
+          // A UNIFORM 3-COLUMN GRID. Every option box is the same width (three
+          // equal 1fr tracks) and the same height (auto-rows-fr makes the rows
+          // equal, the buttons stretch to fill their cell), so a six-option
+          // keigo board is a clean 2×3 instead of a variable-width stack. Fewer
+          // options just fill fewer cells with the SAME box — a two-option
+          // verb-pair board is one row of two, not a padded 2×3 with holes.
+          // Long option text ("eat / drink (honorific)") wraps inside the fixed
+          // cell rather than widening it. Selection/answer states, the number
+          // labels and the click handlers are exactly as before.
+          <div className="grid w-[min(92vw,480px)] auto-rows-fr grid-cols-3 gap-2">
             {q.recognition?.options.map((option, i) => (
               <button
                 key={`${i}-${option}`}
                 onClick={() => submit(option, undefined, i)}
                 className={cx(
-                  "min-w-[110px] cursor-pointer rounded-lg border px-3.5 py-2.5 text-sm",
+                  "flex h-full min-h-[60px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-sm wrap-break-word hyphens-auto",
                   revealing && i === q.recognition?.correct
                     ? "border-success bg-success-bg text-success"
                     : "border-border bg-card text-text hover:bg-panel",
                 )}
               >
-                {option}
-                <span className="block text-[10px] text-text-muted">{i + 1}</span>
+                <span>{option}</span>
+                <span className="text-[10px] text-text-muted">{i + 1}</span>
               </button>
             ))}
             {q.mc?.map((opt, i) => (
@@ -1578,7 +1590,7 @@ export function DrillScreen() {
                 key={opt}
                 onClick={() => submit(labelOf(opt, q.dir, ctx), opt)}
                 className={cx(
-                  "min-w-[74px] cursor-pointer rounded-lg border px-3.5 py-2.5 text-xl",
+                  "flex h-full min-h-[60px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-3 py-2 text-center text-xl wrap-break-word",
                   // The option you should have picked, lit alongside the reveal.
                   revealing && opt === q.f
                     ? "border-success bg-success-bg text-success"
@@ -1590,8 +1602,8 @@ export function DrillScreen() {
                     : undefined
                 }
               >
-                {labelOf(opt, q.dir, ctx)}
-                <span className="block text-[10px] text-text-muted">{i + 1}</span>
+                <span>{labelOf(opt, q.dir, ctx)}</span>
+                <span className="text-[10px] text-text-muted">{i + 1}</span>
               </button>
             ))}
           </div>
