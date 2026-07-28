@@ -102,6 +102,33 @@ export function verbAttachForm(r: Recipe): Form | null | undefined {
 }
 
 /**
+ * Does this recipe CONJUGATE a verb — i.e. hang off a verb form that is not the
+ * bare dictionary form?
+ *
+ * The axis the "verb classes" concept runs on. The moment a pattern asks for the
+ * て-form, the ない-form, the stem, and so on, WHICH of the two groups the verb is
+ * in (う-verb / る-verb) is what decides the shape — so every such pattern is a
+ * place a learner would want the class idea explained. Read from the data, not a
+ * hardcoded list: `null` (no verb host) and `"dictionary"` (attach to the plain
+ * form, no class needed) are both excluded, everything else is in. */
+export function conjugatesVerb(r: Recipe): boolean {
+  const f = verbAttachForm(r);
+  return f != null && f !== "dictionary";
+}
+
+/**
+ * Does this recipe attach to an ADJECTIVE — an い-adjective or a な-adjective?
+ *
+ * The axis the "adjective types" concept runs on. Any pattern that hosts an
+ * adjective (〜すぎる, 〜ので, 〜そう, and the rest) is a place the い-vs-な split
+ * matters, because the two kinds attach differently. Read straight off the
+ * attachments' hosts, so a new adjective-hosting pattern earns the link with no
+ * edit here. */
+export function hostsAdjective(r: Recipe): boolean {
+  return r.attach.some((a) => a.host === "adj-i" || a.host === "adj-na");
+}
+
+/**
  * Does this recipe's verb attachment carry a 音便 SOUND CHANGE — i.e. is it built
  * on the て-form, the た-form, or たら?
  *
