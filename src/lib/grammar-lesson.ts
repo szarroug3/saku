@@ -197,18 +197,16 @@ export interface GrammarLesson {
   cards: GrammarCard[];
   facts: FactId[];
   /**
-   * Where you are, in PATTERNS — "3–7 of 96".
+   * Where you are, in SITTINGS — "lesson N of X".
    *
-   * The card used to say "lesson 3" and stop there, and the comment that stood
-   * here defended it: the curriculum's length is fixed but a total "would read
-   * as a promise". It reads as a promise because it IS one — the mistake was
-   * making the promise about lessons, which the app cannot keep, rather than
-   * about patterns, which it can. 96 is the whole of what this track will ever
-   * teach and it does not move; see GRAMMAR_CURRICULUM_TOTAL.
-   *
-   * ITEMS ARE PATTERNS. Not lessons, and not sentences either — a pattern is
-   * what a card teaches and what a fact hangs off, so it is the only unit whose
-   * count means anything to the person reading it.
+   * A sitting is what the learner meets at once: one form lesson, or a bundle of
+   * up to three pattern lessons (see GRAMMAR_SITTINGS). It is the honest unit for
+   * "lesson N of X" now that a card can hold more than one pattern: counting the
+   * 96 patterns would put a span like "3–7 of 96" on a card that is really one
+   * sitting. `from === to` always: the item IS the current sitting, so the span
+   * is a single number and `total` is the sitting count. The pattern total (96)
+   * is still exported as GRAMMAR_CURRICULUM_TOTAL for callers that count patterns
+   * rather than sittings.
    */
   position: LessonPosition;
 }
@@ -299,19 +297,145 @@ function lessonHost(lesson: GrammarLessonDef): Host | null {
   return recipe ? requiredHost(recipe) : null;
 }
 
+// ---------------------------------------------------------------------------
+// SITTINGS: how the 56 lessons are grouped into what a learner meets at once.
+//
+// A NEW FORM IS TAUGHT ALONE; ADDING AN ENDING BUNDLES
+// ====================================================
+// Meeting a verb conjugation form for the first time (the て-form, the ない-form,
+// the potential...) is the heavy move — a whole build table, class by class — so
+// its lesson gets a sitting to itself. A pattern that only bolts an ending onto a
+// form the learner already has (〜てから is [V-て] + から) is the light move, so
+// those bundle up to three at a time. Owner's call: "all you're doing is adding
+// an ending, so we should include more material."
+//
+// WHICH LESSON IS A "FORM LESSON"
+// ===============================
+// The FIRST lesson, in teaching order, whose primary pattern's verb attaches at a
+// given form — for the forms below, the ones a beginner meets as a new shape. The
+// FIRST user only: 〜てcause redundantly re-renders a て build table, but て was
+// introduced back at lesson 1, so te-cause is NOT a form lesson and bundles like
+// any other ending. 〜ている is added by id: it debuts the ている aspect even though
+// its verb sits at the already-taught て-form.
+// ---------------------------------------------------------------------------
+
+/** The verb forms whose DEBUT lesson stands alone. `dictionary` is absent on
+ * purpose (attaching at the plain form teaches no new shape), so 〜ので and the
+ * other dictionary-form patterns bundle. */
+const FORM_LESSON_FORMS: ReadonlySet<string> = new Set([
+  "te",
+  "nai",
+  "ta",
+  "stem",
+  "masu",
+  "volitional",
+  "potential",
+  "passive",
+  "causative",
+  "causativePassive",
+  "ba",
+  "tara",
+]);
+
+/** The verb attach form of a lesson's primary pattern, read off the recipe (the
+ * same `attach.find(host === "verb").form` the form-intro placement uses), or
+ * undefined when the pattern does not attach to a verb. */
+function verbAttachForm(lesson: GrammarLessonDef): string | undefined {
+  const recipe = RECIPE_BY_ID.get(lesson.primaryPattern);
+  return recipe?.attach.find((a) => a.host === "verb")?.form ?? undefined;
+}
+
+/** The ids of the form lessons — the ones taught solo. Walk the curriculum once
+ * and flag the first lesson to introduce each form; add 〜ている by id. */
+const FORM_LESSON_IDS: ReadonlySet<string> = (() => {
+  const ids = new Set<string>();
+  const seen = new Set<string>();
+  for (const lesson of CURRICULUM_LESSONS) {
+    if (lesson.id === "te-iru") {
+      ids.add(lesson.id);
+      continue;
+    }
+    const form = verbAttachForm(lesson);
+    if (form && FORM_LESSON_FORMS.has(form) && !seen.has(form)) ids.add(lesson.id);
+    if (form) seen.add(form);
+  }
+  return ids;
+})();
+
+/** Is this lesson taught by itself? */
+function isFormLesson(lesson: GrammarLessonDef): boolean {
+  return FORM_LESSON_IDS.has(lesson.id);
+}
+
+/** How many pattern lessons ride in one bundle. A form lesson is always solo; a
+ * run of pattern lessons is cut into chunks this size. */
+const PATTERN_BUNDLE_MAX = 3;
+
+/**
+ * The sittings, as arrays of curriculum indices in teaching order. Deterministic
+ * from CURRICULUM_LESSONS, computed once: every form lesson is a solo `[i]`, and
+ * every maximal run of pattern lessons between form lessons is chunked into
+ * groups of at most PATTERN_BUNDLE_MAX. A bundle never spans a form lesson, so a
+ * form lesson always starts and ends its own sitting.
+ */
+export const GRAMMAR_SITTINGS: readonly (readonly number[])[] = (() => {
+  const sittings: number[][] = [];
+  const n = CURRICULUM_LESSONS.length;
+  let i = 0;
+  while (i < n) {
+    if (isFormLesson(CURRICULUM_LESSONS[i])) {
+      sittings.push([i]);
+      i += 1;
+      continue;
+    }
+    let j = i;
+    while (j < n && !isFormLesson(CURRICULUM_LESSONS[j])) j += 1;
+    for (let k = i; k < j; k += PATTERN_BUNDLE_MAX) {
+      const chunk: number[] = [];
+      for (let m = k; m < Math.min(k + PATTERN_BUNDLE_MAX, j); m++) chunk.push(m);
+      sittings.push(chunk);
+    }
+    i = j;
+  }
+  return sittings;
+})();
+
+/** How many sittings the track cuts into — the denominator on the lesson card
+ * ("lesson N of X"). Counts SITTINGS, not the 56 patterns: a form lesson is one
+ * sitting and a pattern bundle is one sitting, so this is smaller than the
+ * pattern total. */
+export const GRAMMAR_SITTINGS_TOTAL = GRAMMAR_SITTINGS.length;
+
+/** Curriculum lesson index -> the 0-based number of the sitting it belongs to.
+ * The inverse of GRAMMAR_SITTINGS, for turning "the next teachable lesson" into
+ * "which sitting am I in". */
+const SITTING_OF_LESSON: readonly number[] = (() => {
+  const map = new Array<number>(CURRICULUM_LESSONS.length).fill(0);
+  GRAMMAR_SITTINGS.forEach((members, sitting) => {
+    for (const idx of members) map[idx] = sitting;
+  });
+  return map;
+})();
+
 /**
  * The next grammar lesson, or null when there is nothing teachable to hand out.
  *
- * Walk the curriculum in teaching order and take the next `count` patterns whose
- * MEANING fact is still fresh. A met pattern is skipped and counted, the same
- * signal the words track uses.
+ * Find the next teachable lesson (the first whose MEANING fact is still fresh, a
+ * met pattern skipped, the same signal the words track uses), then hand out its
+ * whole SITTING: just that lesson if it is a form lesson, or the fresh pattern
+ * lessons of its bundle (up to three) otherwise. `cards` are the sitting's
+ * patterns and `facts` the union of their drills.
  *
- * THE HOST GATE. Unlike before, a pattern DOES have a prerequisite: the learner
- * needs a real word of the type it attaches to (see `requiredHost`). If any
- * pattern in the next set needs a host the learner has not met, the lesson is
- * LOCKED and this returns null — the caller then shows the locked card
- * (nextGrammarLock) instead, exactly as the words track locks a set behind its
- * kanji.
+ * THE HOST GATE. A pattern needs a real word of the type it attaches to (see
+ * `requiredHost`). The gate is applied PER LESSON as the sitting is built:
+ *   - If the first (teachable) lesson of the sitting is host-locked, the whole
+ *     lesson is LOCKED and this returns null — the caller shows the locked card
+ *     (nextGrammarLock) instead, exactly as before.
+ *   - If a LATER lesson in a pattern bundle needs a host not yet met, the bundle
+ *     simply stops before it. A not-yet-reached pattern must not lock the ones
+ *     ahead of it in the same sitting; the learner still gets the teachable head
+ *     of the bundle, and the blocked pattern becomes the head of a future
+ *     sitting where its own lock (if still unmet) applies.
  *
  * Null also means the curriculum is finished (no fresh patterns left). Either
  * way there is no teachable lesson, and the card falls back to lock or nothing.
@@ -321,25 +445,50 @@ function lessonHost(lesson: GrammarLessonDef): Host | null {
  */
 export function nextGrammarLesson(
   history: HistoryFile,
-  // Kept for call-site compatibility; a sitting is now one whole lesson, so
-  // there is no per-sitting size to apply.
+  // Kept for call-site compatibility; the sitting size is fixed by the grouping
+  // (a form lesson solo, a pattern bundle up to three), so there is no per-call
+  // size to apply.
   _count?: number,
 ): GrammarLesson | null {
   const next = nextLessonAt(history);
   if (!next) return null;
-  const { lesson, index } = next;
+  const { index: startIndex } = next;
 
-  const host = lessonHost(lesson);
-  if (host !== null && !learnedHosts(history).has(host)) return null;
+  const sittingNo = SITTING_OF_LESSON[startIndex];
+  const members = GRAMMAR_SITTINGS[sittingNo];
+  const learned = learnedHosts(history);
 
-  const recipe = RECIPE_BY_ID.get(lesson.primaryPattern);
+  // Build the sitting from its still-fresh lessons at or after the teachable
+  // head, applying the host gate per lesson.
+  const chosen: GrammarLessonDef[] = [];
+  for (const idx of members) {
+    if (idx < startIndex) continue; // earlier members are already met, behind us
+    const lesson = CURRICULUM_LESSONS[idx];
+    if (!isFresh(patternMeaningFactId(lesson.primaryPattern), history)) continue;
+    const host = lessonHost(lesson);
+    if (host !== null && !learned.has(host)) {
+      if (chosen.length === 0) return null; // head is host-locked: lock the card
+      break; // a later bundle member is blocked: stop before it, keep the head
+    }
+    chosen.push(lesson);
+  }
+  if (chosen.length === 0) return null;
+
+  const cards: GrammarCard[] = [];
+  const facts: FactId[] = [];
+  for (const lesson of chosen) {
+    const recipe = RECIPE_BY_ID.get(lesson.primaryPattern);
+    if (recipe) cards.push(toCard(recipe));
+    facts.push(...lesson.drills);
+  }
+
   return {
-    cards: recipe ? [toCard(recipe)] : [],
-    facts: [...lesson.drills],
+    cards,
+    facts,
     position: {
-      from: index + 1,
-      to: index + 1,
-      total: CURRICULUM_LESSONS.length,
+      from: sittingNo + 1,
+      to: sittingNo + 1,
+      total: GRAMMAR_SITTINGS_TOTAL,
     },
   };
 }

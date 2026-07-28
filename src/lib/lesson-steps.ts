@@ -58,7 +58,7 @@ import { wordPitch } from "@/data/pitch";
 import { isSoundChangeEntry } from "@/data/counters";
 import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow, wordReadingFactId } from "@/data/vocab";
-import { grammarLessonForFacts } from "@/data/grammar/lessons";
+import { grammarLessonsForFacts } from "@/data/grammar/lessons";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
 import { spineIntroPlan } from "@/lib/spine-intros";
 import { startedTracks, trackOfItem } from "@/lib/track-open";
@@ -188,21 +188,23 @@ export function lessonSteps(
   shownIntros: ReadonlySet<string> = new Set(),
 ): LessonStep[] {
   // GRAMMAR takes a different walk: its pages are AUTHORED, not derived from the
-  // teach set the way a kana lesson's steps are. A grammar sitting is one lesson
-  // (see data/grammar/lessons.ts), so if the teach set names one, emit that
-  // lesson's pages in order — a teach page is a concept card (the same PhaseIntro
-  // kana uses), a pattern page is the terse recipe tile the track always showed.
-  // Anything that is not a grammar lesson falls through to the kana-native walk
-  // below, unchanged.
-  const grammarLesson = grammarLessonForFacts(facts);
-  if (grammarLesson) {
+  // teach set the way a kana lesson's steps are. A grammar sitting is one form
+  // lesson OR a bundle of up to three pattern lessons (see grammar-lesson.ts), so
+  // emit EVERY lesson the teach set names, in teaching order, each lesson's pages
+  // in turn — a teach page is a concept card (the same PhaseIntro kana uses), a
+  // pattern page is the terse recipe tile the track always showed. Anything that
+  // is not a grammar lesson falls through to the kana-native walk below.
+  const grammarLessons = grammarLessonsForFacts(facts);
+  if (grammarLessons.length > 0) {
     const grammarSteps: LessonStep[] = [];
-    for (const page of grammarLesson.pages) {
-      if (page.kind === "teach") {
-        grammarSteps.push({ type: "intro", key: page.card.id, intro: page.card });
-      } else {
-        for (const item of itemsFromFacts([...page.facts])) {
-          grammarSteps.push({ type: "item", key: item.entry, item });
+    for (const grammarLesson of grammarLessons) {
+      for (const page of grammarLesson.pages) {
+        if (page.kind === "teach") {
+          grammarSteps.push({ type: "intro", key: page.card.id, intro: page.card });
+        } else {
+          for (const item of itemsFromFacts([...page.facts])) {
+            grammarSteps.push({ type: "item", key: item.entry, item });
+          }
         }
       }
     }

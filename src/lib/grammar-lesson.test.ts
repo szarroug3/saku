@@ -40,6 +40,8 @@ import {
   CURRICULUM_PATTERNS,
   GRAMMAR_CURRICULUM_TOTAL,
   GRAMMAR_PER_LESSON_DEFAULT,
+  GRAMMAR_SITTINGS,
+  GRAMMAR_SITTINGS_TOTAL,
   clampGrammarPerLesson,
   hasStartedGrammarTrack,
   learnedHosts,
@@ -304,13 +306,25 @@ describe("lessons advance without a cursor", () => {
   });
 });
 
-describe("lesson sizing is a count, clamped", () => {
-  test("default is a small count (~4)", () => {
+describe("lesson sizing is fixed by the grouping, not the count", () => {
+  test("default count is still exported (vestigial, ~4)", () => {
     assert.equal(GRAMMAR_PER_LESSON_DEFAULT, 4);
   });
-  test("a lesson holds at most `count` patterns", () => {
-    const lesson = nextGrammarLesson(kanaAndVerb(), 2)!;
-    assert.ok(lesson.cards.length <= 2);
+  test("the count argument does not change the sitting handed out", () => {
+    // A sitting is a form lesson (solo) or a pattern bundle (<=3); the passed
+    // count is ignored. The head of the track is te-sequence, a form lesson, so
+    // it is one card whatever the count.
+    const small = nextGrammarLesson(kanaAndVerb(), 2)!;
+    const big = nextGrammarLesson(kanaAndVerb(), 8)!;
+    assert.deepEqual(
+      small.cards.map((c) => c.id),
+      big.cards.map((c) => c.id),
+    );
+    assert.equal(small.cards.length, 1);
+  });
+  test("a pattern bundle holds at most three patterns", () => {
+    const lesson = nextGrammarLesson(kanaAndVerb())!;
+    assert.ok(lesson.cards.length <= 3);
   });
   test("clamp keeps it whole and in range", () => {
     assert.equal(clampGrammarPerLesson(0), 1);
@@ -320,9 +334,10 @@ describe("lesson sizing is a count, clamped", () => {
   });
 });
 
-// The card counts PATTERNS — "3–7 of 53" — where it used to say "lesson 3" and
-// deliberately withhold a total.
-describe("the position counts PATTERNS, and the total is the whole table", () => {
+// GRAMMAR_CURRICULUM_TOTAL is the PATTERN total, a separate denominator from the
+// sitting count the lesson card's position now uses (see the "sittings" describe).
+// Every recipe is taught, so it counts the whole 96-recipe table.
+describe("the pattern total is the whole authored table", () => {
   test("the total is all 96 authored recipes, drillable and not alike", () => {
     // Every recipe is taught now: a producible one by meaning + production, a
     // non-producible one by meaning multiple choice. So the denominator counts
@@ -340,27 +355,143 @@ describe("the position counts PATTERNS, and the total is the whole table", () =>
   // pinned above ("every taught pattern is producible"), which is the same
   // guarantee the denominator rests on — not restated here.
 
-  test("the span is as wide as the lesson, and starts at patterns-met + 1", () => {
+  test("the position is the current SITTING of the sitting total", () => {
     const first = nextGrammarLesson(kanaAndVerb(), 4)!;
+    // The first teachable sitting is te-sequence, a form lesson, so sitting 1.
     assert.equal(first.position.from, 1);
-    assert.equal(first.position.to, first.cards.length);
-    assert.equal(first.position.total, GRAMMAR_CURRICULUM_TOTAL);
+    assert.equal(first.position.to, 1, "a sitting is one item, from === to");
+    assert.equal(first.position.total, GRAMMAR_SITTINGS_TOTAL);
+    // The denominator counts sittings, not patterns, and there are fewer of them.
+    assert.ok(GRAMMAR_SITTINGS_TOTAL < GRAMMAR_CURRICULUM_TOTAL);
   });
 
-  test("the lesson size no longer moves the span — a sitting is one whole lesson", () => {
-    // The count argument is vestigial now (a sitting is one multi-page lesson),
-    // so it changes nothing: same lesson, same single-item span, whatever is
-    // passed.
+  test("the total is the number of sittings the track cuts into", () => {
+    // Deterministic from the curriculum: form lessons solo, pattern runs in <=3.
+    assert.equal(GRAMMAR_SITTINGS.length, GRAMMAR_SITTINGS_TOTAL);
+    // 44 sittings for the whole 96-pattern table: the solo form lessons plus the
+    // pattern runs cut into bundles of <=3.
+    assert.equal(GRAMMAR_SITTINGS_TOTAL, 44);
+    // Every pattern lands in exactly one sitting — the sittings partition the
+    // whole curriculum, none dropped and none double-counted.
+    const covered = GRAMMAR_SITTINGS.flat();
+    assert.equal(covered.length, CURRICULUM_PATTERNS.length);
+    assert.deepEqual(
+      [...covered].sort((a, b) => a - b),
+      CURRICULUM_PATTERNS.map((_, i) => i),
+    );
+  });
+
+  test("the count no longer moves the sitting — the grouping fixes its size", () => {
     const small = nextGrammarLesson(kanaAndVerb(), 2)!;
     const big = nextGrammarLesson(kanaAndVerb(), 8)!;
     assert.equal(small.position.total, big.position.total);
-    assert.equal(small.position.from, small.position.to, "one lesson, not a span");
-    assert.equal(small.position.from, 1, "the first lesson");
+    assert.equal(small.position.from, small.position.to, "one sitting, not a span");
+    assert.equal(small.position.from, 1, "the first sitting");
     assert.deepEqual(
       small.cards.map((c) => c.id),
       big.cards.map((c) => c.id),
-      "the same lesson regardless of the count passed",
+      "the same sitting regardless of the count passed",
     );
+  });
+});
+
+// The sitting model: a new form is taught alone, endings bundle up to three. A
+// form lesson (the first to introduce a verb form, plus authored 〜ている) stands
+// alone; a run of pattern lessons is cut into groups of at most three, never
+// spanning a form lesson.
+describe("sittings: form lessons solo, pattern lessons bundle up to three", () => {
+  // The 13 lessons taught alone (see FORM_LESSON_FORMS in grammar-lesson.ts): the
+  // first user of each verb form, plus 〜ている by id. te-form's primaryPattern is
+  // te-sequence.
+  const FORM_LESSON_PATTERNS = [
+    "te-sequence",
+    "te-iru",
+    "nai-request",
+    "ta-koto-ga-aru",
+    "ni-iku",
+    "mashou",
+    "tara",
+    "potential",
+    "passive",
+    "causative",
+    "causative-passive",
+    "you-to-omou",
+    "ba",
+  ];
+
+  /** The primaryPatterns of the sitting a given pattern belongs to. */
+  function sittingPatterns(patternId: string): string[] {
+    const idx = CURRICULUM_LESSONS.findIndex((l) => l.primaryPattern === patternId);
+    const members = GRAMMAR_SITTINGS.find((s) => s.includes(idx))!;
+    return members.map((i) => CURRICULUM_LESSONS[i].primaryPattern);
+  }
+
+  test("the first sitting is te-sequence, alone", () => {
+    assert.deepEqual(
+      GRAMMAR_SITTINGS[0].map((i) => CURRICULUM_LESSONS[i].primaryPattern),
+      ["te-sequence"],
+    );
+  });
+
+  test("every form lesson stands alone in its sitting", () => {
+    for (const id of FORM_LESSON_PATTERNS) {
+      assert.deepEqual(sittingPatterns(id), [id], `${id} should be solo`);
+    }
+  });
+
+  test("te-cause is NOT solo — て was already introduced by lesson 1", () => {
+    // te-cause redundantly renders a て build table, but て debuts at te-sequence,
+    // so te-cause is a pattern lesson and bundles.
+    const members = sittingPatterns("te-cause");
+    assert.ok(members.length > 1, "te-cause should bundle");
+    assert.ok(members.includes("te-cause"));
+  });
+
+  test("no bundle spans a form lesson, and every sitting is at most three", () => {
+    const formSet = new Set(FORM_LESSON_PATTERNS);
+    for (const sitting of GRAMMAR_SITTINGS) {
+      assert.ok(sitting.length >= 1 && sitting.length <= 3);
+      const patterns = sitting.map((i) => CURRICULUM_LESSONS[i].primaryPattern);
+      const forms = patterns.filter((p) => formSet.has(p));
+      if (forms.length > 0) {
+        assert.equal(sitting.length, 1, `${patterns.join(",")} mixes a form lesson`);
+      }
+      // members are consecutive curriculum indices
+      for (let k = 1; k < sitting.length; k++) {
+        assert.equal(sitting[k], sitting[k - 1] + 1);
+      }
+    }
+  });
+
+  test("walking sitting by sitting from a fresh history covers every pattern", () => {
+    // Learn a word of every host so nothing locks, then walk: claim each sitting's
+    // patterns and take the next. The position must advance by exactly one sitting
+    // each step, every card must be a fresh pattern, and the walk must reach the
+    // last sitting having shown all 96 patterns.
+    const hostWords = ["verb", "adj-i", "adj-na", "noun"]
+      .map((h) => CURRICULUM_WORDS.find((w) => wordHost(w) === h))
+      .filter((w): w is NonNullable<typeof w> => Boolean(w));
+    const claimed = new Set<FactId>([
+      ...KANA_GROUP_FACTS.flat(),
+      ...hostWords.map((w) => wordMeaningFactId(w.keb)),
+    ]);
+    const seen: string[] = [];
+    let lastSitting = 0;
+    for (let guard = 0; guard < 200; guard++) {
+      const lesson = nextGrammarLesson(claiming([...claimed]));
+      if (!lesson) break;
+      assert.equal(lesson.position.from, lesson.position.to, "a sitting is one item");
+      assert.equal(lesson.position.from, lastSitting + 1, "the sitting advances by one");
+      assert.ok(lesson.cards.length >= 1 && lesson.cards.length <= 3);
+      for (const c of lesson.cards) {
+        assert.ok(!seen.includes(c.id), `${c.id} was re-taught`);
+        seen.push(c.id);
+        claimed.add(patternMeaningFactId(c.id));
+      }
+      lastSitting = lesson.position.from;
+    }
+    assert.equal(lastSitting, GRAMMAR_SITTINGS_TOTAL, "the walk reaches the last sitting");
+    assert.equal(new Set(seen).size, CURRICULUM_PATTERNS.length, "every pattern shown");
   });
 });
 
