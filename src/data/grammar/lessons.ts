@@ -28,7 +28,9 @@
 import { patternEntry } from "@/data/grammar";
 import { DRILLABLE, type Level, type Recipe } from "@/data/grammar/recipes";
 import { autoPatternPage } from "@/data/grammar/auto-page";
+import { NAI_FORM_PAGES, STEM_FORM_PAGES, TA_FORM_PAGES } from "@/data/grammar/form-intros";
 import { factsOf } from "@/lib/facts";
+import type { Form } from "@/lib/conjugate";
 import type { PhaseIntro } from "@/data/phase-intros";
 import type { FactId } from "@/types";
 
@@ -323,16 +325,43 @@ const ORDERED: readonly Recipe[] = [...DRILLABLE].sort(
   (a, b) => leadRank(a) - leadRank(b) || levelRank(a.level) - levelRank(b.level),
 );
 
-/** A pattern with no hand-authored lesson, as a single generated page: the
- * 〜ている-page-1 shape (meaning line + build table), derived from the recipe by
- * autoPatternPage. The te-form and 〜ている are authored by hand; every other
- * drillable pattern flows through here so the whole track reads as one style. */
+/** A form and the intro pages that teach it. The intro rides the FIRST pattern
+ * in teaching order that is built on that form, so the form is taught just before
+ * it is first used — the way lesson 1 teaches the て-form before the て-patterns.
+ * (The て-form and stem→ます chain past this: te-sequence/te-iru are authored, and
+ * the te-family all sits under lesson 1's form.) */
+const FORM_INTROS: readonly { form: Form; pages: readonly PhaseIntro[] }[] = [
+  { form: "nai", pages: NAI_FORM_PAGES },
+  { form: "ta", pages: TA_FORM_PAGES },
+  { form: "stem", pages: STEM_FORM_PAGES },
+];
+
+/** Recipe id → the form-intro pages to prepend to its lesson, for the one recipe
+ * that first introduces each form. Computed off ORDERED so it always lands on the
+ * head of the family, whatever the order re-cut. */
+const FORM_INTRO_AT: ReadonlyMap<string, readonly PhaseIntro[]> = (() => {
+  const m = new Map<string, readonly PhaseIntro[]>();
+  for (const fi of FORM_INTROS) {
+    const first = ORDERED.find((r) => r.attach.find((a) => a.host === "verb")?.form === fi.form);
+    if (first) m.set(first.id, fi.pages);
+  }
+  return m;
+})();
+
+/** A pattern with no hand-authored lesson, as a generated page: the 〜ている-page-1
+ * shape (meaning line + build table), derived from the recipe by autoPatternPage.
+ * Where this pattern is the first to use a form, the form's intro pages are
+ * prepended so the form is taught before it is used. The te-form and 〜ている are
+ * authored by hand; every other drillable pattern flows through here. */
 function autoLesson(r: Recipe): GrammarLessonDef {
   const facts = patternFacts(r.id);
+  const intro = (FORM_INTRO_AT.get(r.id) ?? []).map(
+    (card) => ({ kind: "teach" as const, card }),
+  );
   return {
     id: r.id,
     title: r.pattern,
-    pages: [{ kind: "teach", card: autoPatternPage(r) }],
+    pages: [...intro, { kind: "teach", card: autoPatternPage(r) }],
     drills: facts,
     primaryPattern: r.id,
   };

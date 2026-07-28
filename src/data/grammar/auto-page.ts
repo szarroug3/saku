@@ -127,11 +127,14 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     build = `Attach it to ${on}.`;
   }
 
+  // The header LEADS with the written pattern — "〜てから: After doing X." — so a
+  // learner gets used to reading the pattern in its 〜て… form, then a human
+  // explanation, then the build blurb and table (the 〜ている-page-1 shape).
   return {
     id: `gl-auto-${r.id}`,
     setId: "",
-    eyebrow: r.pattern,
-    title: heroFromGloss(r.gloss),
+    eyebrow: "Grammar",
+    title: `${r.pattern}: ${heroFromGloss(r.gloss)}`,
     body: [{ text: build }],
     buildRules: buildRows(r, host),
     buildHeads: { gloss: "Meaning" },
