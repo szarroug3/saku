@@ -90,6 +90,11 @@ export interface IntroPara {
   mark?: string;
   lead?: string;
   text: string;
+  /** A substring of `text` to render in the accent colour, in place, so a phrase
+   * inside the sentence can be picked out (the adjective しずかな in しずかなへや,
+   * so the eye sees which part is the adjective and which is the noun). First
+   * occurrence only; ignored if it is not found in `text`. */
+  accent?: string;
 }
 
 /**

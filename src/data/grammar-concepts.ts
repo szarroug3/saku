@@ -203,11 +203,11 @@ const ADJECTIVE_TYPE_CONCEPT_PAGES: readonly PhaseIntro[] = [
     setId: "",
     title: "な-adjectives take な, and lean on です.",
     body: [
-      { text: "A な-adjective does not change its own shape. Before a noun it takes な, as in しずかな へや (a quiet room)." },
+      { text: "A な-adjective does not change its own shape. Before a noun it takes な, as in しずかなへや (a quiet room).", accent: "しずかな" },
       { text: "For tense and connection it borrows です, だった, and で, so しずかです is polite, しずかだった is past, and しずかで connects to what follows. The adjective itself stays しずか throughout." },
     ],
     buildRules: [
-      { label: "before a noun", verb: "しずか", to: "しずかな へや" },
+      { label: "before a noun", verb: "しずか", to: "しずかなへや" },
       { label: "polite", verb: "しずか", to: "しずかです" },
       { label: "past", verb: "しずか", to: "しずかだった" },
       { label: "connecting", verb: "しずか", to: "しずかで" },
@@ -219,7 +219,7 @@ const ADJECTIVE_TYPE_CONCEPT_PAGES: readonly PhaseIntro[] = [
     setId: "",
     title: "A few look like い but are な-adjectives.",
     body: [
-      { text: "Most words ending in い are い-adjectives, but a handful are not. きれい (pretty, clean) and きらい (disliked) end in い and yet behave as な-adjectives: きれいな はな, きれいです." },
+      { text: "Most words ending in い are い-adjectives, but a handful are not. きれい (pretty, clean) and きらい (disliked) end in い and yet behave as な-adjectives: きれいなはな, きれいです.", accent: "きれいな" },
       { text: "There are only a few of these, so you learn them as exceptions. The app tags each word's kind, so you never have to guess." },
     ],
   },

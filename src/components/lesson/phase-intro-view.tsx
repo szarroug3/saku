@@ -147,7 +147,18 @@ export function IntroBody({
           ) : null}
           <p className="text-[15px] leading-relaxed text-text">
             {p.lead ? <span className="font-medium text-accent">{p.lead} </span> : null}
-            {p.text}
+            {p.accent && p.text.includes(p.accent)
+              ? (() => {
+                  const i = p.text.indexOf(p.accent!);
+                  return (
+                    <>
+                      {p.text.slice(0, i)}
+                      <span className="text-accent">{p.accent}</span>
+                      {p.text.slice(i + p.accent!.length)}
+                    </>
+                  );
+                })()
+              : p.text}
           </p>
         </div>
       ))}
