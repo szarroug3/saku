@@ -82,6 +82,7 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
             {intro.buildRules?.length ? (
               <IntroBuildTable rules={intro.buildRules} heads={intro.buildHeads} />
             ) : null}
+            {intro.buildFooter ? <IntroBuildFooter footer={intro.buildFooter} /> : null}
             {intro.transitivityPairs?.length ? (
               <TransitivityPairsTable rows={intro.transitivityPairs} />
             ) : null}
@@ -413,6 +414,22 @@ export function IntroBuildTable({
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/** The closing line under a build table: the chain its rows build toward, the
+ * Japanese accented and its meaning beneath, set apart so it reads as the result
+ * of the steps above rather than another step. */
+function IntroBuildFooter({ footer }: { footer: { chain: string; gloss: string } }) {
+  return (
+    <div className="rounded-lg border border-border bg-panel/40 px-4 py-3">
+      <p lang="ja" className="font-kana text-[17px] text-accent">
+        {footer.chain}
+      </p>
+      <p lang="en" className="mt-1 text-[14px] text-text-muted">
+        {footer.gloss}
+      </p>
     </div>
   );
 }

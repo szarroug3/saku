@@ -286,10 +286,19 @@ const TE_IRU_PAGES: PhaseIntro[] = [
         text: "As you saw with the て/で-form, it can connect ideas. To connect ongoing actions, put the earlier verbs in their て/で-form and end the chain with 〜ている.",
       },
       {
-        text: "たべて、のんでいる means is eating and drinking. たべて、のんで、はなしている means is eating, drinking, and talking. Each verb before the last is a plain て/で-form; only the final verb takes 〜ている.",
+        lead: "Each verb before the last",
+        text: "takes the plain て/で-form; only the final verb takes 〜ている. Build each one, then put them together.",
       },
-      { lead: "The shape is", text: "Vて、Vて、Vている." },
     ],
+    buildRules: [
+      { verb: "たべる", to: "たべて", gloss: "eat" },
+      { verb: "のむ", to: "のんで", gloss: "drink" },
+      { verb: "はなす", to: "はなしている", gloss: "talk" },
+    ],
+    buildFooter: {
+      chain: "たべて、のんで、はなしている",
+      gloss: "is eating, drinking, and talking",
+    },
   },
 ];
 

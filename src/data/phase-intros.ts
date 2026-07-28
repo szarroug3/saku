@@ -225,6 +225,13 @@ export interface PhaseIntro {
    */
   buildHeads?: { label?: string; change?: string; note?: string; gloss?: string };
   /**
+   * A closing line under a build table that puts the rows together — the chain
+   * the steps build toward (たべて、のんで、はなしている) with its meaning. Used by
+   * the 〜ている "connect ongoing actions" page: show each verb's form, then
+   * combine them.
+   */
+  buildFooter?: { chain: string; gloss: string };
+  /**
    * A punctuation catalogue, rendered as a table. Only PUNCTUATION uses this: its
    * content is a set of marks with names and jobs, not a rule with worked
    * examples, so it reads as a reference table with a closing sentence beneath.
