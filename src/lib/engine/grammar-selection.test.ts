@@ -225,7 +225,7 @@ describe("the fixed meaning card is a real question in both directions", () => {
     const p = questionsFor(TE_KARA_MEANING).prompt(TE_KARA_MEANING, "en2jp");
     assert.equal(p.glyph, "after doing X");
     assert.equal(p.jp, false, "English must not get the JP font");
-    assert.equal(p.context, "pattern");
+    assert.equal(p.context, null);
     const opts = buildMcOptions(TE_KARA_MEANING);
     // The exact shipped failure: prompt 〜てから, and 〜てから among the buttons.
     assert.ok(opts.map((o) => labelOf(o, "en2jp")).includes("〜てから"));

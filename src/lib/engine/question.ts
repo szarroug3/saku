@@ -1104,7 +1104,9 @@ const grammarQuestions: QuestionType = {
         // English, so no JP font — the same call the word subject makes when it
         // prompts with a meaning.
         jp: false,
-        context: "pattern",
+        // No "pattern" sub-label: the instruction already reads "Which of these
+        // is the correct pattern?", so the tag beneath was pure redundancy.
+        context: null,
         hint: null,
       };
     }
