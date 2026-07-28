@@ -24,7 +24,7 @@ import { wordMeaningFactId } from "@/data/vocab";
 import type { HistoryFile } from "@/types";
 
 const TE_KARA = patternProductionFactId("te-kara");
-const TABERU: GrammarVehicle = { surface: "食べる", kana: "たべる", cls: "v1" };
+const TABERU: GrammarVehicle = { surface: "食べる", kana: "たべる", cls: "v1", known: true };
 
 const NOW = 1_700_000_000_000;
 
@@ -112,18 +112,42 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
   test("an illegal ctx vehicle collapses to the fixed baked behaviour", () => {
     // A noun can't take てから. Threading one must not break the item — it falls
     // back to 行く rather than emitting a bad form.
-    const bad = { grammarVehicle: { surface: "本", kana: "ほん", cls: null } };
+    const bad = { grammarVehicle: { surface: "本", kana: "ほん", cls: null, known: true } };
     const qt = questionsFor(TE_KARA);
     assert.equal(qt.prompt(TE_KARA, "en2jp", bad).glyph, "行く");
     assert.ok(checkTyped(TE_KARA, "行ってから", "en2jp", bad));
+  });
+
+  test("an UNKNOWN filler vehicle is shown and revealed in KANA, graded either script", () => {
+    // 書く chosen as an unknown filler (known:false): the learner has not met the
+    // kanji, so glyph, option labels and reveal are all drawn in kana — but the
+    // grader still accepts BOTH scripts (the invariant: never mark correct
+    // Japanese wrong). Legality/building still run on the real 書く surface.
+    const KAKU_UNKNOWN = {
+      grammarVehicle: { surface: "書く", kana: "かく", cls: "v5k", known: false },
+    } as const;
+    const qt = questionsFor(TE_KARA);
+    // Prompt glyph is the kana reading, never the kanji surface.
+    assert.equal(qt.prompt(TE_KARA, "en2jp", KAKU_UNKNOWN).glyph, "かく");
+    // Reveal is the kana-built form.
+    assert.equal(qt.answerReveal?.(TE_KARA, "en2jp", KAKU_UNKNOWN), "かいてから");
+    // Distractor option labels are all built on the kana reading.
+    for (const opt of qt.distractors(TE_KARA, 5, KAKU_UNKNOWN)) {
+      const label = qt.optionLabel?.(opt, "en2jp", KAKU_UNKNOWN);
+      assert.ok(label, "an unknown-vehicle distractor has no label");
+      assert.ok(label!.startsWith("かい"), `${label} is not the kana form of 書く`);
+    }
+    // The grader accepts the kana answer AND the kanji answer — both are correct.
+    assert.ok(checkTyped(TE_KARA, "かいてから", "en2jp", KAKU_UNKNOWN));
+    assert.ok(checkTyped(TE_KARA, "書いてから", "en2jp", KAKU_UNKNOWN));
   });
 });
 
 describe("a split production fact is drilled on ITS OWN host", () => {
   const SUGIRU_V = patternProductionFactId("sugiru");
   const SUGIRU_I = patternProductionFactId("sugiru", "adj-i");
-  const TAKAI: GrammarVehicle = { surface: "高い", kana: "たかい", cls: "adj-i" };
-  const IKU: GrammarVehicle = { surface: "行く", kana: "いく", cls: "v5k-s" };
+  const TAKAI: GrammarVehicle = { surface: "高い", kana: "たかい", cls: "adj-i", known: true };
+  const IKU: GrammarVehicle = { surface: "行く", kana: "いく", cls: "v5k-s", known: true };
 
   test("the two facts are different ids with different baked answers", () => {
     // If these ever collapse to one id the split is undone and one score is
@@ -196,16 +220,18 @@ describe("a split production fact is drilled on ITS OWN host", () => {
   });
 });
 
-describe("grammarVehicleFor rolls only KNOWN vehicles", () => {
+describe("grammarVehicleFor prefers known vehicles, fills with predictable unknowns", () => {
   const SUGIRU_I = patternProductionFactId("sugiru", "adj-i");
 
-  test("a learner who knows one pool verb always rolls that verb", () => {
+  test("a learner who knows one pool verb always rolls that verb, marked known", () => {
     // Knowing 読む and nothing else: every showing of てから is on 読む, never a
     // verb she has not met. This is the whole point — a production item tests the
     // pattern, not whether she can conjugate an unknown word.
     const knows = knowing("読む");
     for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
-      assert.equal(grammarVehicleFor(TE_KARA, knows, () => x)?.surface, "読む");
+      const v = grammarVehicleFor(TE_KARA, knows, () => x);
+      assert.equal(v?.surface, "読む");
+      assert.equal(v?.known, true);
     }
   });
 
@@ -214,18 +240,34 @@ describe("grammarVehicleFor rolls only KNOWN vehicles", () => {
     assert.equal(grammarVehicleFor(TE_KARA, knowing("食べる"), () => 0)?.surface, "食べる");
   });
 
-  test("knowing no pool word yields null, so the showing falls back to baked", () => {
+  test("knowing no pool word still rolls a vehicle — unknown, predictable, kana-shown", () => {
+    // The BUG: this used to yield null and the production item was not asked.
+    // Now it rolls a plain non-る godan the learner can conjugate from spelling,
+    // marked known:false so every showing surface is drawn in kana.
     const NOBODY: HistoryFile = { sessions: [], facts: {} };
-    assert.equal(grammarVehicleFor(TE_KARA, NOBODY, () => 0.3), null);
+    for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
+      const v = grammarVehicleFor(TE_KARA, NOBODY, () => x);
+      assert.ok(v, "should still roll a vehicle for a total beginner");
+      assert.equal(v!.known, false);
+      assert.ok(!v!.surface.endsWith("る"), `${v!.surface} is an unpredictable る-verb`);
+      assert.notEqual(v!.cls, "v5k-s");
+      assert.notEqual(v!.cls, "v5u-s");
+    }
   });
 
-  test("the gate respects the host pin: a known verb does not unlock an adj fact", () => {
-    // SUGIRU_I is the adj-i fact. Knowing only a verb leaves it with no legal
-    // KNOWN vehicle, so it rolls null and falls back to its baked 高い — never a
-    // verb, which would be the other fact's question.
+  test("the host pin holds: a known verb still yields an ADJ vehicle for an adj fact", () => {
+    // SUGIRU_I is the adj-i fact. Knowing only a verb leaves it with no known
+    // adj vehicle, so it fills with an unknown adj (all adj hosts are
+    // predictable) — an adj-i, never the verb, which would be the other fact's
+    // question. Marked known:false → shown in kana.
     const onlyVerb = knowing("行く");
-    assert.equal(grammarVehicleFor(SUGIRU_I, onlyVerb, () => 0.3), null);
-    // And knowing the adjective unlocks it.
-    assert.equal(grammarVehicleFor(SUGIRU_I, knowing("高い"), () => 0.3)?.surface, "高い");
+    const filled = grammarVehicleFor(SUGIRU_I, onlyVerb, () => 0.3);
+    assert.ok(filled);
+    assert.equal(filled!.cls?.startsWith("adj-i"), true);
+    assert.equal(filled!.known, false);
+    // And knowing the adjective rolls it as a KNOWN vehicle.
+    const known = grammarVehicleFor(SUGIRU_I, knowing("高い"), () => 0.3);
+    assert.equal(known?.surface, "高い");
+    assert.equal(known?.known, true);
   });
 });

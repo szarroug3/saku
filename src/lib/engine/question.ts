@@ -176,6 +176,15 @@ export interface GrammarVehicle {
   readonly surface: string;
   readonly kana: string;
   readonly cls: WordClass | null;
+  /**
+   * Whether the learner has MET this vehicle. When false the vehicle is an
+   * unknown filler chosen because she has learned none of the pool, and every
+   * SHOWING surface (glyph, distractors, option label, reveal) is drawn in KANA
+   * — the learner cannot be shown 買う and expected to read it as かう. Building
+   * and legality still run on the real (kanji) `surface`; only display flips.
+   * The grader accepts either script, so a kana answer is always correct.
+   */
+  readonly known: boolean;
 }
 
 /**
@@ -924,15 +933,17 @@ function builtOn(
  * tests. This is the one place the drill needs to touch the vehicle pool, so it
  * lives here beside the QuestionType that consumes it.
  *
- * KNOWN VEHICLES ONLY. `history` is REQUIRED and gates the pool to words the
- * learner has met — the same discipline as `grammarSelectionFor`: a production
- * item drilled on a word she has not learned measures vocabulary, not the
- * pattern (see vehicles.ts's header on why a vehicle must be known cold), and
- * an optional gate is one a caller forgets silently. "Known" is the app's one
- * notion of known (`wordKnown`, through `effectiveState`), so a CLAIM makes a
- * word an eligible vehicle exactly as a lesson does. Null is the ORDINARY early
- * answer when she knows none of the pool yet: the showing falls back to the
- * fixed baked vehicle, so a production fact is never unaskable.
+ * PREFERS KNOWN VEHICLES, fills with predictable unknown ones. `history` is
+ * REQUIRED and drives the same preference as `grammarSelectionFor`: a known
+ * vehicle wins whenever one exists, because a production item drilled on a
+ * known word measures the pattern rather than vocabulary (see vehicles.ts). But
+ * when she has met NONE of the pool the item must still be askable, so
+ * `pickVehicle` falls back to a vehicle whose conjugation she can predict from
+ * spelling and this returns it with `known: false` — the caller then draws it
+ * in KANA. "Known" is the app's one notion of known (`wordKnown`, through
+ * `effectiveState`), so a CLAIM makes a word a known vehicle exactly as a lesson
+ * does. Null is now rare: only a wrap or a recipe no pooled word can host, in
+ * which case the showing falls back to the fixed baked vehicle.
  */
 export function grammarVehicleFor(
   fact: FactId,
@@ -945,11 +956,15 @@ export function grammarVehicleFor(
   // (行きそう and 高そう are separate facts because they are separate rules), so
   // rolling a verb for the adj-i fact would ask the other fact's question and
   // record the answer against this one.
-  const picked: Vehicle | null = pickVehicle(prod.recipe, rng, prod.host, (surface) =>
-    wordKnown(surface, history),
-  );
+  const isKnown = (surface: string) => wordKnown(surface, history);
+  const picked: Vehicle | null = pickVehicle(prod.recipe, rng, prod.host, isKnown);
   return picked
-    ? { surface: picked.surface, kana: picked.kana, cls: picked.cls }
+    ? {
+        surface: picked.surface,
+        kana: picked.kana,
+        cls: picked.cls,
+        known: isKnown(picked.surface),
+      }
     : null;
 }
 
@@ -1054,7 +1069,9 @@ const grammarQuestions: QuestionType = {
       // showing's (varied) one when present and legal, else the baked 行く.
       const v = variedVehicle(prod.recipe, ctx, prod.host);
       return {
-        glyph: v ? v.surface : prod.lemma,
+        // An UNKNOWN filler vehicle is shown in kana: 買う she has not met reads
+        // as かう. A known vehicle keeps its dictionary surface.
+        glyph: v ? (v.known ? v.surface : v.kana) : prod.lemma,
         jp: true,
         context: null,
         hint: null,
@@ -1104,7 +1121,9 @@ const grammarQuestions: QuestionType = {
         // English, so no JP font — the same call the word subject makes when it
         // prompts with a meaning.
         jp: false,
-        context: "pattern",
+        // No "pattern" sub-label: the instruction already reads "Which of these
+        // is the correct pattern?", so the tag beneath was pure redundancy.
+        context: null,
         hint: null,
       };
     }
@@ -1166,6 +1185,12 @@ const grammarQuestions: QuestionType = {
       const out: FactId[] = [];
       if (v) {
         const answer = builtOn(prod.recipe, v);
+        // Compare and emit in the SAME script the prompt uses: kana for an
+        // unknown filler, kanji for a known vehicle. A distractor that coincides
+        // with the answer in the shown script would be a second right option.
+        const shown = (b: { form: string; kanaForm: string }) =>
+          v.known ? b.form : b.kanaForm;
+        const answerShown = answer ? shown(answer) : null;
         for (const r of RECIPES) {
           if (r.id === prod.recipe.id || !isProducible(r)) continue;
           // A plausible wrong answer is ANOTHER pattern built on the SAME
@@ -1173,7 +1198,7 @@ const grammarQuestions: QuestionType = {
           // vehicle and land on a different string — a distractor that coincides
           // with the answer would be a second right option.
           const d = builtOn(r, v);
-          if (!d || (answer && d.form === answer.form)) continue;
+          if (!d || (answerShown && shown(d) === answerShown)) continue;
           // The distractor's fact is the one for THIS vehicle's host, and it has
           // to be a fact that exists: 〜ても builds fine on 高い but has no adj-i
           // production fact (it defers to te-cause — see sharedProductionWith),
@@ -1233,7 +1258,9 @@ const grammarQuestions: QuestionType = {
     const prod = grammarProduction(fact);
     if (prod) {
       const v = variedVehicle(prod.recipe, ctx, prod.host);
-      return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
+      if (!v) return null;
+      const built = builtOn(prod.recipe, v);
+      return built ? (v.known ? built.form : built.kanaForm) : null;
     }
     // A fixed MEANING card asked en2jp offers PATTERN glyphs. Its distractors are
     // other recipes and two of them can share a bare pattern with the answer
@@ -1264,7 +1291,9 @@ const grammarQuestions: QuestionType = {
     const prod = grammarProduction(fact);
     if (!prod) return null;
     const v = variedVehicle(prod.recipe, ctx, prod.host);
-    return v ? (builtOn(prod.recipe, v)?.form ?? null) : null;
+    if (!v) return null;
+    const built = builtOn(prod.recipe, v);
+    return built ? (v.known ? built.form : built.kanaForm) : null;
   },
 };
 

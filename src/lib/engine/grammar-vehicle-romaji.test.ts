@@ -150,7 +150,7 @@ const CASES: Case[] = (() => {
       const surface = apply(r, v.surface, v.cls);
       if (!surface.ok || surface.value === v.surface) continue;
       const kana = apply(r, v.kana, v.cls);
-      const gv: GrammarVehicle = { surface: v.surface, kana: v.kana, cls: v.cls };
+      const gv: GrammarVehicle = { surface: v.surface, kana: v.kana, cls: v.cls, known: true };
       out.push({
         fact,
         ctx: { grammarVehicle: gv },

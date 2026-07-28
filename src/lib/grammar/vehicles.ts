@@ -301,18 +301,49 @@ export function vehiclesFor(
 }
 
 /**
- * Pick one legal vehicle for a recipe, or null when none is available.
+ * Is this vehicle SAFE to show a learner who has NOT met it — i.e. can she
+ * predict its conjugation from spelling alone?
+ *
+ * Non-verb hosts (adj, noun) are always safe: they carry no 音便 the learner
+ * has to guess. (The い-adj / な-adj ambiguity is a separate, tiny edge case and
+ * is deliberately not blocked here.)
+ *
+ * A VERB is safe only when it is a plain godan with a NON-る ending. Everything
+ * that ends in る is out — a る-ending surface could be ichidan (食べる), godan
+ * (帰る), or irregular (する/来る), and nothing in the spelling says which, so its
+ * て-form is unpredictable. Two non-る verbs are out too, for the same reason at
+ * one remove: 行く (v5k-s) and 問う (v5u-s) look like ordinary godan but carry an
+ * irregular 音便 (行って not 行いて, 問うて not 問って). What is left — v5u, v5k,
+ * v5g, v5s, v5t, v5n, v5b, v5m — a learner CAN conjugate from the ending alone.
+ *
+ * KNOWN verbs are exempt from this test entirely (see `pickVehicle`): once she
+ * has learned 食べる its class is known, so its て-form is no longer a guess.
+ */
+export function unambiguousWhenUnknown(v: Vehicle): boolean {
+  if (v.host !== "verb") return true;
+  return !v.surface.endsWith("る") && v.cls !== "v5k-s" && v.cls !== "v5u-s";
+}
+
+/**
+ * Pick one vehicle for a recipe, or null when none is available.
  *
  * `rng` defaults to Math.random; pass a seeded one in tests. Null means the
- * caller should fall back to the fixed vehicle (行く) — a wrap, or a recipe the
- * pool cannot host.
+ * caller should fall back to the fixed vehicle (行く) — a wrap, or a recipe no
+ * pooled word can host at all.
  *
  * `onHost` pins the pick to one host, and a production showing always passes
  * it: the fact being drilled is a fact ABOUT that host. See `vehiclesFor`.
  *
- * `known` is the KNOWN-WORD gate, threaded straight to `vehiclesFor`: with it,
- * only words the learner has met are eligible, and null (fall back to the baked
- * vehicle) is the ordinary early answer when she knows none of the pool yet.
+ * `known` is the KNOWN-WORD preference. PREFER a vehicle the learner has met —
+ * a production item drilled on a known word tests the pattern, not vocabulary.
+ * But a production fact must never become UNASKABLE just because she has met
+ * none of the pool: so when she knows none, fall back to the vehicles she can
+ * still conjugate from spelling (`unambiguousWhenUnknown`) and show those in
+ * kana (the caller's job). That keeps the item askable from lesson one while
+ * never asking her to produce a 音便 she has no way to predict (an unknown
+ * る-verb, 行く, する…). Without a `known` predicate every legal vehicle is
+ * eligible (a cluster page's worked examples). Null only when the resulting
+ * pool is empty.
  */
 export function pickVehicle(
   r: Recipe,
@@ -320,7 +351,16 @@ export function pickVehicle(
   onHost?: Host,
   known?: (surface: string) => boolean,
 ): Vehicle | null {
-  const options = vehiclesFor(r, onHost, known);
+  // Every LEGAL vehicle for this recipe/host — do NOT gate by `known` here, so
+  // the unknown-fallback below can still draw from the full legal pool.
+  const all = vehiclesFor(r, onHost);
+  let options: Vehicle[];
+  if (known) {
+    const knownOpts = all.filter((v) => known(v.surface));
+    options = knownOpts.length > 0 ? knownOpts : all.filter(unambiguousWhenUnknown);
+  } else {
+    options = all;
+  }
   if (options.length === 0) return null;
   // Prefer the FIRST-LEARNED verb (Sam): the known option with the lowest
   // beginnerRank — the earliest-taught, most-familiar word — so a grammar example
