@@ -32,6 +32,7 @@ import Link from "next/link";
 import { StandingChip } from "@/components/library/standing-chip";
 import { SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { KEIGO_SUBJECT } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
 import {
@@ -271,6 +272,14 @@ export function EntryRow({
   onToggleSelect(shiftKey: boolean): void;
 }) {
   const inlineMarkGlyph = entry.kind === MARK_SUBJECT ? entry.glyph : "";
+  // A keigo set has no glyph, so leading with its meanings printed an
+  // English-only row — and the single-word sets, which happen to carry one
+  // reading, looked different again ("くださる · give…"). A keigo set IS its
+  // Japanese words, so every keigo row leads with them — the forms joined
+  // (召し上がる / いただく), the same shape the single-word ones show — with the
+  // "Keigo · <meaning>" sub-line (passed as `note`) beneath. `entryName` is the
+  // words for a keigo set (its glyph is empty), never the empty string.
+  const leadName = entry.kind === KEIGO_SUBJECT ? entryName(entry) : "";
   const rowTitle =
     entry.meanings.slice(0, 3).join(", ") || entry.sub;
   const markTitle =
@@ -344,6 +353,12 @@ export function EntryRow({
       ) : null}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px]">
+          {/* A keigo set leads with its Japanese keigo word(s), not its English
+              meanings — see leadName above. Its meaning rides the sub-line. */}
+          {leadName ? (
+            <span className={japaneseFontClass(leadName)}>{leadName}</span>
+          ) : (
+            <>
           {/* ONE reading, and only when there is only one. 先生 gets せんせい.
               生 gets its meaning, because "生 is read せい" is false — it has nine
               readings and this row would be picking one and presenting it as the
@@ -361,6 +376,8 @@ export function EntryRow({
               {")"}
             </>
           ) : null}
+            </>
+          )}
         </span>
         {note ? (
           <span className="block truncate text-xs text-text-muted">{note}</span>
