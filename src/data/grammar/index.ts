@@ -46,12 +46,15 @@
 import { entryId, factId, productionAspect } from "../../lib/fact-id.ts";
 import { HOST_ORDER, buildExample, primaryHost } from "../../lib/grammar/example.ts";
 import { apply } from "../../lib/grammar/apply.ts";
-import { recipeAllows } from "../../lib/grammar/vehicles.ts";
+import { recipeAllows, vehiclesFor } from "../../lib/grammar/vehicles.ts";
 import {
   ENDING_ANCHOR,
+  ROW_SHIFT_CLASSES,
   TE_ENDINGS,
   type TeEnding,
+  type VehicleBucket,
 } from "../../lib/grammar/te-endings.ts";
+import type { Form, WordClass } from "../../lib/conjugate/index.ts";
 import type { EntryId, FactId, FactInfo } from "../../types/index.ts";
 import {
   RECIPES,
@@ -89,7 +92,121 @@ export const TE_FORM_RECIPE_ID = "te-sequence";
  * ONLY (productionHosts is [] for them, so no adjective production fact is minted).
  */
 export function isTeFormRecipe(r: Recipe): boolean {
-  return r.attach.find((a) => a.host === "verb")?.form === "te";
+  return verbAttachForm(r) === "te";
+}
+
+/** The form this recipe's VERB attachment hangs off, or undefined for a recipe
+ * with no verb host. Read once here so every gate below asks the same question. */
+export function verbAttachForm(r: Recipe): Form | null | undefined {
+  return r.attach.find((a) => a.host === "verb")?.form;
+}
+
+/**
+ * Does this recipe's verb attachment carry a 音便 SOUND CHANGE — i.e. is it built
+ * on the て-form, the た-form, or たら?
+ *
+ * The generalization of `isTeFormRecipe`. The た-form's 音便 is byte-for-byte the
+ * て-form's (った/んだ/いた/いだ/した for って/んで/いて/いで/して), and たら is た + ら,
+ * so 〜たことがある, 〜たら and the rest split into the SAME five ending buckets as
+ * the 〜て family — one skill (the 音便) regardless of the suffix. This is the axis
+ * the per-ending production split runs on, and it is READ FROM THE DATA (the verb
+ * attachment's `form`) rather than a hardcoded id list: a pattern gains the drill
+ * by declaring `form: "te" | "ta" | "tara"`, with no edit here. る-verbs and the
+ * irregulars stay off the board for all of them (endingBucketOf keys on the class).
+ */
+export function usesSoundChange(r: Recipe): boolean {
+  const f = verbAttachForm(r);
+  return f === "te" || f === "ta" || f === "tara";
+}
+
+/**
+ * The row-shift forms — the ones with NO 音便, where every ending is its own
+ * skill and the full-coverage round drills one verb per ending on a SINGLE
+ * mastery fact (see `productionCoverageBuckets`). ば is here: its coverage is the
+ * ten classes, and it is the one row-shift form on which する/来る are NOT
+ * irregular (すれば/くれば coincide with the ichidan-る rule), so it carries no
+ * special-verb facts. dictionary is deliberately absent — it is trivial (retype
+ * the word), so no row-shift production fact is minted for it.
+ */
+const ROW_SHIFT_FORMS: ReadonlySet<Form> = new Set<Form>([
+  "masu",
+  "nai",
+  "stem",
+  "volitional",
+  "potential",
+  "passive",
+  "causative",
+  "causativePassive",
+  "ba",
+]);
+
+/**
+ * The three irregular verbs, each its own memorized production skill.
+ *
+ * `regular` is the class whose rule a learner would WRONGLY apply — the baseline
+ * `specialVerbIrregular` compares against. For 行く that is the plain godan-く
+ * (v5k): 行く is regular everywhere EXCEPT its 音便 (行って not 行いて), so measured
+ * against v5k it comes out irregular on exactly て/た/たら and nowhere else. For
+ * する/来る it is the ichidan-る rule (v1) a learner reaches for because they end
+ * in る: measured against it they are irregular on every producible form except
+ * ば, where すれば/くれば happen to coincide with drop-る + れば.
+ */
+interface SpecialVerb {
+  readonly surface: string;
+  readonly kana: string;
+  readonly cls: WordClass;
+  /** The fact-id qualifier: grammar:<recipe>/production@iku|suru|kuru. */
+  readonly qualifier: string;
+  /** The regular rule this verb is measured against — see the doc above. */
+  readonly regular: WordClass;
+}
+
+const SPECIAL_VERBS: readonly SpecialVerb[] = [
+  { surface: "行く", kana: "いく", cls: "v5k-s", qualifier: "iku", regular: "v5k" },
+  { surface: "する", kana: "する", cls: "vs-i", qualifier: "suru", regular: "v1" },
+  { surface: "来る", kana: "くる", cls: "vk", qualifier: "kuru", regular: "v1" },
+];
+
+/** The irregular-verb production qualifiers and the label the Library prints for
+ * each "Build it" row — the display half of SPECIAL_VERBS, exported so the entry
+ * page can enumerate an @iku/@suru/@kuru row without knowing how they are minted.
+ * A row is shown only where the fact exists (factInfo), so this list is a menu,
+ * not a promise. */
+export const SPECIAL_VERB_ROWS: readonly { qualifier: string; label: string }[] =
+  SPECIAL_VERBS.map((sv) => ({ qualifier: sv.qualifier, label: sv.surface }));
+
+/**
+ * Is this irregular verb IRREGULAR for this recipe's form — i.e. does its real
+ * conjugation differ from what the regular rule (`sv.regular`) predicts?
+ *
+ * Computed, not hand-listed, so "which forms are irregular" cannot drift from the
+ * conjugation engine. Building the recipe on the verb's TRUE class and on the
+ * regular baseline and comparing yields, for 行く, exactly {て, た, たら} and, for
+ * する/来る, every producible form except ば — the principled version of "add the
+ * special verbs where they are actually special". False when the verb does not
+ * build here at all (a noun-only recipe, a form that leaves it untouched), which
+ * is also correctly "no fact".
+ */
+function specialVerbIrregular(r: Recipe, sv: SpecialVerb): boolean {
+  // On the KANA reading, never the kanji surface. 来る's irregularity is in the
+  // sound (きて, not the naive くて), and the kanji 来 masks it: 来て is the surface
+  // string whether the reading is きて or a regular くて, so a surface comparison
+  // finds 来る regular everywhere and never mints @kuru. The kana form exposes the
+  // real difference — きて vs くて — for all three verbs.
+  const real = apply(r, sv.kana, sv.cls);
+  if (!real.ok || real.value === sv.kana) return false;
+  const regular = apply(r, sv.kana, sv.regular);
+  return !regular.ok || regular.value !== real.value;
+}
+
+/** A recipe's per-irregular-verb production fact — grammar:<recipe>/production@iku
+ * (etc). The qualifier plays the role the 音便 ending plays in
+ * `teEndingProductionFactId`, spelled through the same `productionAspect`. */
+export function specialVerbProductionFactId(
+  recipeId: string,
+  qualifier: string,
+): FactId {
+  return factId(patternEntry(recipeId), productionAspect(qualifier));
 }
 
 export function patternEntry(recipeId: string): EntryId {
@@ -163,14 +280,16 @@ export function teEndingProductionFactId(
  * The primary host leads, and it is the one keeping the unqualified fact id.
  */
 export function productionHosts(r: Recipe): Host[] {
-  // A te-form pattern does not split by host — it splits by ENDING (see
+  // A 音便 pattern (て/た/たら) does not split by host — it splits by ENDING (see
   // teEndingProductionFactId), and only on the VERB. Its production facts are
   // minted separately in buildGrammarFacts, so it carries NO host-keyed production
   // fact and every host-based consumer (the Library build panel, guided
   // substitution, the distractor loop) correctly sees zero here rather than a
   // plain fact that no longer exists. This is why 〜て/〜ても/〜てもいい no longer
   // carry an adjective production fact: the whole 〜て family is verb-ending drills.
-  if (isTeFormRecipe(r)) return [];
+  // The row-shift forms are NOT here: they keep their single host-keyed mastery
+  // fact and instead expand it per-ending in coverage (productionCoverageBuckets).
+  if (usesSoundChange(r)) return [];
   const primary = primaryHost(r);
   if (!primary) return [];
   const rest = HOST_ORDER.filter(
@@ -221,21 +340,27 @@ export function sharedRuleOwner(r: Recipe, host: Host): Recipe | undefined {
 }
 
 /**
- * Every grammar fact: 96 meanings + 130 productions.
+ * Every grammar fact: one MEANING per pattern, plus PRODUCTIONS for the ones you
+ * can be asked to build. The production side splits three ways, because "build
+ * this pattern" is not one skill:
  *
- * The asymmetry is the model working, not an inconsistency — exactly as a word
- * having one reading fact while a kanji never does. Every pattern means
- * something; only some are something you can be asked to BUILD, and some of those
- * are more than one thing to build — see `productionHosts` (a host split, 〜すぎる
- * on a verb vs an adjective) and `teEndingProductionFactId` (an ENDING split).
+ *   HOST     〜すぎる on a verb vs an い-adjective are two rules (行きすぎる, 高すぎ
+ *            る), so two facts — see `productionHosts`.
+ *   ENDING   a 音便 pattern (て/た/たら) is five separate sound-change skills, so
+ *            up to five per-ending facts (五 for 〜てから, 四 for 〜てある, which
+ *            refuses its intransitive-anchor ending) and NO host-keyed one — see
+ *            `teEndingProductionFactId` / `usesSoundChange`.
+ *   VERB     行く / する / 来る are irregular where the rule does not predict them,
+ *            each a memorized skill of its own, so a pattern carries an @iku /
+ *            @suru / @kuru fact wherever they are special — see
+ *            `specialVerbProductionFactId` / `mintSpecialVerbFacts`.
  *
- * The ending split is now the bulk of the production side. The whole 〜て family
- * (17 recipes — see `isTeFormRecipe`) drills the て-form's five 音便 endings, so
- * each te-pattern carries up to five per-ending production facts (五 for 〜てから,
- * 四 for 〜てある, which refuses its intransitive-anchor ending) and no host-keyed
- * one — 84 facts across the family. The remaining ~46 are the non-te producers,
- * where 9 are adjective rules that were in the table all along with nowhere to be
- * asked and the host loop below mints one fact per scored host.
+ * The ROW-SHIFT forms (ます, ない, stem, 〜ば, …) are the deliberate NON-split: their
+ * every-ending coverage rides on the CARD, not the fact, so 〜ます keeps ONE mastery
+ * fact and the full-coverage round still asks かきます / かいます / たべます in one pass
+ * — see `productionCoverageBuckets`. So a 音便 pattern is 5 endings + @iku + @suru +
+ * @kuru (8 for 〜てから), a ます pattern is 1 regular fact + @suru + @kuru, and a ば
+ * pattern is 1 regular fact alone (する/来る coincide with the ichidan rule there).
  *
  * A pattern that WRAPS a slot (〜たり〜たり) has no production fact at all, because
  * there is no one string that answers it — the generator once served 行ったり,
@@ -247,13 +372,22 @@ export function sharedRuleOwner(r: Recipe, host: Host): Recipe | undefined {
  * kanji subject follows with READING_INDEX. Declared BEFORE GRAMMAR_FACTS, whose
  * builder populates them, or the build reaches them in their dead zone. */
 const MEANING_OF = new Map<FactId, string>();
-/** A production fact's recipe AND the host it produces on — the host is half
- * the fact now that a pattern can carry one per host, and the drill needs it to
- * pick a vehicle of the right kind. */
+/** A production fact's recipe, the host it produces on, and its BUCKET — the
+ * vehicle filter it is pinned to. The host is half the fact now that a pattern
+ * can carry one per host; the bucket is the other axis, a 音便 ending (te/ta/たら)
+ * or an irregular verb (@iku/@suru/@kuru). Absent for a plain host fact, whose
+ * showings roll freely (a row-shift fact's per-ending coverage rides on the CARD,
+ * not the fact — see productionCoverageBuckets). */
 const PRODUCTION_OF = new Map<
   FactId,
-  { recipeId: string; host: Host; ending?: TeEnding }
+  { recipeId: string; host: Host; bucket?: VehicleBucket }
 >();
+/** A ROW-SHIFT production fact -> the class buckets its full-coverage round
+ * expands it into, one per drillable ending (see productionCoverageBuckets). A
+ * SINGLE mastery fact, drilled once per ending, not fragmented into per-ending
+ * facts. Empty/absent for every fact that is a single card (音便 endings and the
+ * irregular verbs are already one-bucket facts; adjective/noun facts roll one). */
+const COVERAGE_OF = new Map<FactId, VehicleBucket[]>();
 
 export const GRAMMAR_FACTS: FactInfo[] = buildGrammarFacts();
 
@@ -273,23 +407,22 @@ function buildGrammarFacts(): FactInfo[] {
     // isProducible, not isVacuous: a fact the generator will always refuse is
     // a fact the scheduler would schedule forever and never be able to ask.
     if (!isProducible(r)) continue;
-    // A te-form pattern splits its production into one fact PER ENDING (see
-    // te-endings.ts): building the て-form of a く verb and of a す verb are two
-    // separate 音便 skills, so each ending is its own gradeable fact, baked on a
+    // A 音便 pattern (て/た/たら) splits its production into one fact PER ENDING
+    // (see te-endings.ts): building the て/た-form of a く verb and of a す verb are
+    // two separate 音便 skills, so each ending is its own gradeable fact, baked on a
     // representative verb of that ending and carrying the FULL pattern (書いてから
-    // for te-kara, 書いておく for te-oku). This REPLACES the plain
-    // grammar:<recipe>/production fact — productionHosts returns [] for every
-    // te-form pattern, so the host loop below would emit nothing anyway; this
-    // block is the whole of a te-pattern's production side. It applies to the
-    // entire 〜て family, not just te-sequence (see isTeFormRecipe).
-    if (isTeFormRecipe(r)) {
+    // for te-kara, 書いたことがある for ta-koto-ga-aru). This REPLACES the plain
+    // grammar:<recipe>/production fact — productionHosts returns [] for every 音便
+    // pattern, so the host loop below emits nothing for them. It applies to the
+    // whole 〜て family AND the た/たら patterns, not just te-sequence.
+    if (usesSoundChange(r)) {
       for (const ending of TE_ENDINGS) {
         const anchor = ENDING_ANCHOR[ending];
         // The recipe's own verb restriction still holds: 〜てある wants a verb
         // somebody does to something, so its intransitive-anchor ending (泳ぐ) is
         // skipped rather than baked into 泳いである — the same never-mark-correct-
         // Japanese-wrong guard the vehicle pool applies. Absent a restriction
-        // (every other te-pattern) this is a no-op and all five endings mint.
+        // (every other 音便 pattern) this is a no-op and all five endings mint.
         if (!recipeAllows(r, anchor.surface)) continue;
         const surface = apply(r, anchor.surface, anchor.cls);
         if (!surface.ok || surface.value === anchor.surface) continue;
@@ -297,7 +430,11 @@ function buildGrammarFacts(): FactInfo[] {
         const form = surface.value;
         const kanaForm = kana.ok ? kana.value : form;
         const pId = teEndingProductionFactId(r.id, ending);
-        PRODUCTION_OF.set(pId, { recipeId: r.id, host: "verb", ending });
+        PRODUCTION_OF.set(pId, {
+          recipeId: r.id,
+          host: "verb",
+          bucket: { kind: "ending", ending },
+        });
         facts.push({
           id: pId,
           entry: patternEntry(r.id),
@@ -307,6 +444,7 @@ function buildGrammarFacts(): FactInfo[] {
           meaning: r.gloss,
         });
       }
+      mintSpecialVerbFacts(r, facts);
       continue;
     }
     // The built form on a FIXED representative verb — see lib/grammar/example.ts
@@ -334,9 +472,84 @@ function buildGrammarFacts(): FactInfo[] {
         subject: GRAMMAR_SUBJECT,
         meaning: r.gloss,
       });
+      // A ROW-SHIFT verb fact is ONE mastery fact, but its full-coverage round
+      // drills every ending — one verb per godan ending plus the v5r and v1
+      // classes. That coverage is recorded here (the buckets the recipe can
+      // legally host) and expanded per CARD by the coverage layer, so 'solid' on
+      // 〜ます stays a single fact while the quiz still asks かきます, かいます, たべ
+      // ます … in one round. Only the verb host, and only the row-shift forms.
+      if (host === "verb" && ROW_SHIFT_FORMS.has(verbAttachForm(r) as Form)) {
+        const buckets = rowShiftCoverage(r);
+        if (buckets.length) COVERAGE_OF.set(pId, buckets);
+      }
     }
+    mintSpecialVerbFacts(r, facts);
   }
   return facts;
+}
+
+/**
+ * The class buckets a row-shift recipe's coverage round expands its ONE mastery
+ * fact into — the ROW_SHIFT_CLASSES the recipe can legally build on, in ending
+ * order. Computed off the vehicle pool (not assumed to be all ten) so a recipe
+ * that restricts its verbs — 〜られる passive wants a transitive one — covers only
+ * the endings it can actually host, exactly as the deal would.
+ */
+function rowShiftCoverage(r: Recipe): VehicleBucket[] {
+  const classes = new Set(vehiclesFor(r, "verb").map((v) => v.cls));
+  return ROW_SHIFT_CLASSES.filter((c) => classes.has(c)).map((cls) => ({
+    kind: "class",
+    cls,
+  }));
+}
+
+/**
+ * Mint the @iku / @suru / @kuru production facts a recipe carries — one per
+ * irregular verb that is IRREGULAR on this recipe's form (specialVerbIrregular)
+ * AND that the recipe accepts (recipeAllows). 行く lands only on 音便 patterns;
+ * する/来る on every producible form except ば. Each is baked on its own verb and
+ * pinned to a `verb` bucket so its showings roll exactly that verb — a separate
+ * memorized skill, never mixed into the ending or class coverage.
+ */
+function mintSpecialVerbFacts(r: Recipe, facts: FactInfo[]): void {
+  for (const sv of SPECIAL_VERBS) {
+    if (!recipeAllows(r, sv.surface)) continue;
+    if (!specialVerbIrregular(r, sv)) continue;
+    const surface = apply(r, sv.surface, sv.cls);
+    if (!surface.ok || surface.value === sv.surface) continue;
+    const kana = apply(r, sv.kana, sv.cls);
+    const form = surface.value;
+    const kanaForm = kana.ok ? kana.value : form;
+    const pId = specialVerbProductionFactId(r.id, sv.qualifier);
+    PRODUCTION_OF.set(pId, {
+      recipeId: r.id,
+      host: "verb",
+      bucket: { kind: "verb", surface: sv.surface },
+    });
+    facts.push({
+      id: pId,
+      entry: patternEntry(r.id),
+      glyph: form,
+      answers: form === kanaForm ? [form] : [form, kanaForm],
+      subject: GRAMMAR_SUBJECT,
+      meaning: r.gloss,
+    });
+  }
+}
+
+/**
+ * The BUCKETS a production fact's full-coverage round expands it into, or empty.
+ *
+ * Non-empty only for a ROW-SHIFT verb mastery fact: the coverage layer (ask-forms)
+ * multiplies that ONE fact's card forms across these buckets so the round asks a
+ * verb of every ending while the fact stays single. Empty for everything else —
+ * a 音便 ending fact and an @iku/@suru/@kuru fact are already one-bucket facts
+ * pinned by the fact itself, and an adjective/noun fact rolls one vehicle — so the
+ * coverage layer leaves them as a single card. See engine/question.grammarVehicleFor,
+ * which reads the CARD's bucket for these and the FACT's bucket otherwise.
+ */
+export function productionCoverageBuckets(fact: FactId): readonly VehicleBucket[] {
+  return COVERAGE_OF.get(fact) ?? [];
 }
 
 /** The recipe a MEANING fact asks about, or null. A lookup, never a parse. */
@@ -361,22 +574,25 @@ export function grammarMeaning(fact: FactId): { recipe: Recipe } | null {
  */
 export function grammarProduction(
   fact: FactId,
-): { recipe: Recipe; lemma: string; host: Host; ending?: TeEnding } | null {
+): { recipe: Recipe; lemma: string; host: Host; bucket?: VehicleBucket } | null {
   const hit = PRODUCTION_OF.get(fact);
   const r = hit ? recipe(hit.recipeId) : undefined;
   if (!r || !hit) return null;
-  // A per-ending te-form fact is baked on its ending's anchor verb, not the
-  // fixed 行く buildExample would hand back — 行く is the いく EXCEPTION and would
-  // be the wrong (and wrong-ending) fallback for, say, the す fact. So the lemma
-  // and the ending both come from the ending, and the showing's vehicle filter
-  // (grammarVehicleFor) uses the ending to pick a verb of the right class.
-  if (hit.ending) {
-    return {
-      recipe: r,
-      lemma: ENDING_ANCHOR[hit.ending].surface,
-      host: hit.host,
-      ending: hit.ending,
-    };
+  // A BUCKETED fact (a 音便 ending or an irregular verb) is baked on its bucket's
+  // own verb, not the fixed 行く buildExample would hand back — 行く is the いく
+  // EXCEPTION and would be the wrong (and wrong-ending) fallback for, say, the す
+  // fact. So the lemma and the bucket both come from the bucket, and the showing's
+  // vehicle filter (grammarVehicleFor) uses the bucket to pick the right verb.
+  // A class bucket never reaches a FACT (row-shift coverage lives on the card), so
+  // only ending / verb buckets are seen here.
+  if (hit.bucket) {
+    const lemma =
+      hit.bucket.kind === "ending"
+        ? ENDING_ANCHOR[hit.bucket.ending].surface
+        : hit.bucket.kind === "verb"
+          ? hit.bucket.surface
+          : ""; // class buckets are card-level, never stored on a fact
+    return { recipe: r, lemma, host: hit.host, bucket: hit.bucket };
   }
   const ex = buildExample(r, hit.host);
   return ex ? { recipe: r, lemma: ex.lemma, host: hit.host } : null;

@@ -35,7 +35,8 @@ import {
   wordReadingFactId,
 } from "@/data/vocab";
 import { KANA_SUBJECT } from "@/data/characters";
-import { grammarMeaning } from "@/data/grammar";
+import { grammarMeaning, productionCoverageBuckets } from "@/data/grammar";
+import type { VehicleBucket } from "@/lib/grammar/te-endings";
 import { READING_INDEX } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
@@ -74,6 +75,18 @@ export interface CardForm {
   listen: boolean;
   dir: Direction;
   answer: AnswerStyle;
+  /**
+   * The vehicle bucket this card is pinned to, for a ROW-SHIFT grammar production
+   * fact whose full-coverage round drills every ending on ONE mastery fact. The
+   * coverage layer expands that fact's forms across its class buckets
+   * (productionCoverageBuckets) and stamps each card with the class here, so the
+   * drill rolls a verb of exactly that ending (grammarVehicleFor reads it).
+   *
+   * Absent on every other card — a 音便 ending fact and an @iku/@suru/@kuru fact
+   * are pinned by the FACT, and every non-grammar card ignores it. Plain data, so
+   * it rides the drill's serialized runtime.
+   */
+  bucket?: VehicleBucket;
 }
 
 /** Whether a word READING fact — its jp→en answer is a kana reading, and its
@@ -174,7 +187,10 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
     // for a kana en→jp typed selection. The resolved-shape key below carries
     // the MC resolution, so a typed-becomes-MC form and an explicit MC form
     // collapse to one card — choosing both still yields one MC.
-    const key = `${f.source}|${f.response}|${f.listen ? 1 : 0}|${f.dir}|${formIsMc(fact, f) ? 1 : 0}`;
+    const bucketKey = f.bucket
+      ? `${f.bucket.kind}:${f.bucket.kind === "class" ? f.bucket.cls : f.bucket.kind === "ending" ? f.bucket.ending : f.bucket.surface}`
+      : "";
+    const key = `${f.source}|${f.response}|${f.listen ? 1 : 0}|${f.dir}|${formIsMc(fact, f) ? 1 : 0}|${bucketKey}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(f);
@@ -333,6 +349,22 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
   // against the same answer axis as Japanese+romaji and produces near-duplicate
   // cards in full-coverage runs; keep sentence forms to definition-selection
   // until sentence-specific romaji grading/prompting is distinct.
+
+  // A ROW-SHIFT grammar production fact is ONE fact but "test all the endings"
+  // means its full-coverage round asks a verb of EACH ending — かきます, かいます,
+  // たべます … — without fragmenting the mastery fact. So each production form is
+  // multiplied across the fact's class buckets, and each copy carries the class it
+  // must roll (grammarVehicleFor reads it). Empty for every other fact — a 音便
+  // ending fact and an @iku/@suru/@kuru fact are already single-bucket, and a
+  // non-row-shift fact rolls one vehicle — so those pass through unmultiplied.
+  const buckets = productionCoverageBuckets(fact);
+  if (buckets.length > 0) {
+    const expanded: CardForm[] = [];
+    for (const form of out) {
+      for (const bucket of buckets) expanded.push({ ...form, bucket });
+    }
+    return dedup(fact, expanded);
+  }
   return dedup(fact, out);
 }
 

@@ -584,7 +584,11 @@ export function DrillScreen() {
     // History gates the pool to words the learner knows, exactly as it gates the
     // selection item below: a production is never drilled on a word she has not
     // met. Null (she knows none of the pool yet) falls back to the baked vehicle.
-    const grammarVehicle = grammarVehicleFor(f, history);
+    // form.bucket pins a ROW-SHIFT production card to one ending's class, so a
+    // full-coverage round rolls a verb of each ending on the one mastery fact.
+    // Absent on every other card, where the fact's own bucket (or a free pick)
+    // decides — see grammarVehicleFor.
+    const grammarVehicle = grammarVehicleFor(f, history, undefined, form.bucket);
     // A grammar MEANING card may be asked as a SELECTION item instead — "which
     // pattern fills this blank in a real sentence", rather than "what does this
     // pattern mean". Same fact, same score, a harder and more honest showing.

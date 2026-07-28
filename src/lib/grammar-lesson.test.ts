@@ -21,11 +21,12 @@ import { describe, test } from "node:test";
 import { CURRICULUM_LESSONS } from "../data/grammar/lessons.ts";
 import { KANA_GROUP_FACTS, nextLesson } from "./lesson.ts";
 import {
-  isTeFormRecipe,
   patternMeaningFactId,
   patternProductionFactId,
   productionHosts,
+  specialVerbProductionFactId,
   teEndingProductionFactId,
+  usesSoundChange,
 } from "../data/grammar/index.ts";
 import { factInfo } from "./facts.ts";
 import { TE_ENDINGS } from "./grammar/te-endings.ts";
@@ -165,20 +166,31 @@ describe("the curriculum is the drillable patterns, N5 before N4", () => {
       // family, so its facts come from the ending list instead. Guarded by
       // factInfo so a pattern that refuses an ending's anchor (〜てある drops 泳ぐ)
       // contributes only the endings it actually minted.
-      if (isTeFormRecipe(r)) {
+      // A 音便 pattern (て/た/たら) splits production by ENDING, not host (see
+      // te-endings.ts): up to five facts, one per 音便. productionHosts is [] for
+      // the whole 音便 set, so its facts come from the ending list instead. Guarded
+      // by factInfo so a pattern that refuses an ending's anchor (〜てある drops 泳ぐ)
+      // contributes only the endings it actually minted.
+      if (usesSoundChange(r)) {
         for (const ending of TE_ENDINGS) {
           const id = teEndingProductionFactId(r.id, ending);
           if (factInfo(id)) expected.add(id);
         }
-        continue;
+      } else {
+        // Every other drillable pattern carries a production fact per HOST it
+        // teaches a separate rule for — usually one (the verb), three for 〜そう.
+        // Derived from productionHosts rather than assumed to be one, because a
+        // lesson that seeded only the verb fact would leave the adjective rule
+        // unmet forever: the lesson is where a fact is first introduced.
+        for (const host of productionHosts(r)) {
+          expected.add(patternProductionFactId(r.id, host));
+        }
       }
-      // Every other drillable pattern carries a production fact per HOST it
-      // teaches a separate rule for — usually one (the verb), three for 〜そう.
-      // Derived from productionHosts rather than assumed to be one, because a
-      // lesson that seeded only the verb fact would leave the adjective rule
-      // unmet forever: the lesson is where a fact is first introduced.
-      for (const host of productionHosts(r)) {
-        expected.add(patternProductionFactId(r.id, host));
+      // Plus the irregular-verb facts (@iku / @suru / @kuru) the pattern carries,
+      // where 行く / する / 来る are special on its form — a memorized skill each.
+      for (const q of ["iku", "suru", "kuru"]) {
+        const id = specialVerbProductionFactId(r.id, q);
+        if (factInfo(id)) expected.add(id);
       }
     }
     assert.deepEqual(new Set(lesson.facts as unknown as string[]), expected);

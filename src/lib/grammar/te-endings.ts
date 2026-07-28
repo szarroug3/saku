@@ -122,3 +122,75 @@ export const ENDING_LABEL: Record<TeEnding, string> = {
   "te-mbn": "む・ぶ・ぬ",
   "te-su": "す",
 };
+
+// ===========================================================================
+// VEHICLE BUCKETS — the general "which verbs a production showing may roll".
+//
+// The 音便 ending above is ONE way a production fact slices its vehicle pool.
+// The other two, added for the row-shift forms and the irregular verbs, share
+// the same shape so the vehicles / engine / coverage layers filter on ONE type
+// instead of three:
+//
+//   ending  a 音便 group (5), keyed on endingBucketOf — used by て/た/たら, where
+//           う・つ collapse to って/った and む・ぶ・ぬ to んで/んだ, so the class
+//           is coarser than the kana. る is excluded (spelling-ambiguous).
+//   class   ONE conjugation class — used by the row-shift forms (ます, ない, stem,
+//           volitional, potential, passive, causative, causativePassive, ば),
+//           where there is NO sound change so every ending is its own skill and
+//           v5r (帰る) and v1 (食べる) ARE predictable and drillable. The class IS
+//           the ending here, which is why row-shift coverage is finer (10) than
+//           音便 coverage (5).
+//   verb    ONE specific irregular verb — 行く / する / 来る. These never fall in
+//           an ending bucket (endingBucketOf returns null for all three) and are
+//           their own memorized skills, so each rolls exactly itself.
+// ===========================================================================
+
+/** Which verbs a production showing may roll — the axis a fact (or a coverage
+ * card) is pinned to. See the block comment above for the three kinds. */
+export type VehicleBucket =
+  | { readonly kind: "ending"; readonly ending: TeEnding }
+  | { readonly kind: "class"; readonly cls: WordClass }
+  | { readonly kind: "verb"; readonly surface: string };
+
+/**
+ * Does this vehicle fall in the bucket? A (class, surface) pair is all any of
+ * the three matches needs — endingBucketOf keys the 音便 case on the class, and
+ * a class/verb bucket is a direct equality. Keyed on the class (never the last
+ * kana) for the same reason endingBucketOf is: the spelling lies about 帰る.
+ */
+export function vehicleInBucket(
+  v: { readonly cls: WordClass | null; readonly surface: string },
+  b: VehicleBucket,
+): boolean {
+  switch (b.kind) {
+    case "ending":
+      return endingBucketOf(v.cls) === b.ending;
+    case "class":
+      return v.cls === b.cls;
+    case "verb":
+      return v.surface === b.surface;
+  }
+}
+
+/**
+ * The conjugation classes a ROW-SHIFT form's full-coverage round drills — one
+ * per godan ending PLUS the godan-る class and the ichidan class, because a
+ * row-shift (ます, ない, 〜たい …) has no 音便 to merge them: 書きます and 買います
+ * are different endings, and 帰ります (v5r) and 食べます (v1) are unambiguous and
+ * so drillable, unlike in the て-form. 行く/する/来る are NOT here — they are
+ * irregular on these forms and carry their own `verb` buckets — so their classes
+ * (v5k-s, vs-i, vk) are deliberately absent. A godan-く is covered by 書く (v5k),
+ * not 行く (v5k-s). See `usesSoundChange` / `productionCoverageBuckets`.
+ */
+export const ROW_SHIFT_CLASSES: readonly WordClass[] = [
+  "v5u",
+  "v5k",
+  "v5g",
+  "v5s",
+  "v5t",
+  "v5n",
+  "v5b",
+  "v5m",
+  "v5r",
+  "v1",
+];

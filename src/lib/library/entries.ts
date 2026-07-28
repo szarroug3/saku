@@ -56,12 +56,14 @@ import {
 } from "@/data/vocab";
 import {
   GRAMMAR_SUBJECT,
-  isTeFormRecipe,
+  SPECIAL_VERB_ROWS,
   patternEntry,
   patternMeaningFactId,
   patternProductionFactId,
   productionHosts,
+  specialVerbProductionFactId,
   teEndingProductionFactId,
+  usesSoundChange,
 } from "@/data/grammar";
 import {
   ENDING_LABEL,
@@ -1267,13 +1269,13 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       speak: null,
     },
   ];
-  // A te-form pattern's production splits by ENDING, not host (see te-endings.ts):
-  // up to five facts, one per 音便, each baked on a representative verb of that
-  // ending carrying the full pattern (書いてから). It carries no host-keyed
+  // A 音便 pattern's production splits by ENDING, not host (see te-endings.ts): up
+  // to five facts, one per 音便, each baked on a representative verb of that ending
+  // carrying the full pattern (書いてから, 書いたことがある). It carries no host-keyed
   // production fact, so its rows are enumerated here rather than by the host loop
   // below — otherwise the page that promises to list what is scored would show
-  // none of them. Applies to the whole 〜て family, not just te-sequence.
-  if (isProducible(r) && isTeFormRecipe(r)) {
+  // none of them. Applies to the whole 〜て family AND the た/たら patterns.
+  if (isProducible(r) && usesSoundChange(r)) {
     for (const ending of TE_ENDINGS) {
       const id = teEndingProductionFactId(r.id, ending);
       const info = factInfo(id);
@@ -1288,6 +1290,7 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
         speak: null,
       });
     }
+    pushSpecialVerbRows(r, rows);
     return rows;
   }
   // ONE ROW PER PRODUCTION FACT, which is one per host that carries one. The
@@ -1295,6 +1298,10 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
   // fact has to show it — otherwise the split exists in the scheduler and the
   // one screen that promises to enumerate what is scored still says there is a
   // single "Build it". The label names the host for the same reason.
+  //
+  // A row-shift verb fact stays ONE row here — the full-coverage round drills its
+  // endings on that single mastery fact, so the page shows the one "Build it" and
+  // the per-ending coverage is a quiz behaviour, not extra facts.
   const hosts = isProducible(r) ? productionHosts(r) : [];
   {
     for (const host of hosts) {
@@ -1314,7 +1321,29 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       });
     }
   }
+  if (isProducible(r)) pushSpecialVerbRows(r, rows);
   return rows;
+}
+
+/** Append a "Build it (行く/する/来る)" row for each irregular-verb production fact
+ * the pattern carries — 行って for 〜て, します for 〜ます — so the entry page lists
+ * the special-verb skills the quiz drills alongside the ending / host rows. Only
+ * the facts that exist (factInfo) are shown: 〜ば carries none, 〜てある only @suru. */
+function pushSpecialVerbRows(r: Recipe, rows: FactRow[]): void {
+  for (const sv of SPECIAL_VERB_ROWS) {
+    const id = specialVerbProductionFactId(r.id, sv.qualifier);
+    const info = factInfo(id);
+    if (!info) continue;
+    rows.push({
+      id,
+      label: `Build it (${sv.label})`,
+      answer: info.glyph,
+      askedIn: [],
+      unattested: false,
+      origin: null,
+      speak: null,
+    });
+  }
 }
 
 /** How a reading's KANJIDIC2 type reads to someone who has never heard the

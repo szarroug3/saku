@@ -38,13 +38,34 @@ const meanings = grammarFacts.filter((fact) => grammarMeaning(fact));
 const productions = grammarFacts.filter((fact) => grammarProduction(fact));
 
 function shape(fact: FactId) {
-  return enabledFormsFor(fact, GRAMMAR_ONLY).map((form) => ({
-    source: form.source,
-    response: form.response,
-    listen: form.listen,
-    dir: form.dir,
-    control: formIsMc(fact, form) ? "mc" : "typed",
-  }));
+  // DISTINCT card shapes. A row-shift grammar production fact expands into one
+  // card per ending BUCKET (かきます, かいます … on one mastery fact — see
+  // productionCoverageBuckets), so its forms repeat each shape once per bucket.
+  // The bucket does not change the source/response/dir/control this test is
+  // about, so collapse on that shape: the question is which SHAPES a fact is
+  // asked in, not how many verbs a coverage round rolls.
+  const seen = new Set<string>();
+  const out: Array<{
+    source: string;
+    response: string;
+    listen: boolean;
+    dir: string;
+    control: string;
+  }> = [];
+  for (const form of enabledFormsFor(fact, GRAMMAR_ONLY)) {
+    const s = {
+      source: form.source,
+      response: form.response,
+      listen: form.listen,
+      dir: form.dir,
+      control: formIsMc(fact, form) ? "mc" : "typed",
+    };
+    const key = `${s.source}|${s.response}|${s.listen}|${s.dir}|${s.control}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s);
+  }
+  return out;
 }
 
 describe("question matrix §5: grammar", () => {

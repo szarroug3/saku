@@ -25,6 +25,7 @@ import {
   patternEntry,
   patternMeaningFactId,
   patternProductionFactId,
+  specialVerbProductionFactId,
   teEndingProductionFactId,
 } from "@/data/grammar";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
@@ -101,11 +102,11 @@ describe("the five per-ending te-form facts", () => {
     assert.equal(grammarProduction(plain), null);
   });
 
-  test("grammarProduction resolves each fact to its ending and anchor verb", () => {
+  test("grammarProduction resolves each fact to its ending bucket and anchor verb", () => {
     for (const ending of TE_ENDINGS) {
       const prod = grammarProduction(teEndingProductionFactId(TE_FORM_RECIPE_ID, ending));
       assert.ok(prod, `${ending}: not a production fact`);
-      assert.equal(prod!.ending, ending);
+      assert.deepEqual(prod!.bucket, { kind: "ending", ending });
       assert.equal(prod!.host, "verb");
       assert.equal(prod!.lemma, ENDING_ANCHOR[ending].surface);
     }
@@ -224,19 +225,30 @@ describe("grading never marks correct Japanese wrong", () => {
 describe("the te-form lesson deck carries one production card per ending", () => {
   const lesson = CURRICULUM_LESSONS.find((l) => l.primaryPattern === TE_FORM_RECIPE_ID)!;
 
-  test("its drills are the meaning fact plus the five per-ending production facts", () => {
+  test("its drills are the meaning fact, the five per-ending facts, and @iku/@suru/@kuru", () => {
     const expected = new Set<FactId>([
       patternMeaningFactId(TE_FORM_RECIPE_ID),
       ...TE_ENDINGS.map((e) => teEndingProductionFactId(TE_FORM_RECIPE_ID, e)),
+      ...["iku", "suru", "kuru"].map((q) =>
+        specialVerbProductionFactId(TE_FORM_RECIPE_ID, q),
+      ),
     ]);
     assert.deepEqual(new Set(lesson.drills), expected);
   });
 
-  test("buildCoverageDeck expands to exactly the five ending production facts", () => {
+  test("buildCoverageDeck expands to the five endings plus the three irregular verbs", () => {
     const { deck } = buildCoverageDeck(lesson.drills, ALL);
     const prod = new Set(deck.filter((f) => grammarProduction(f)));
-    assert.deepEqual(prod, new Set(TE_ENDINGS.map((e) => teEndingProductionFactId(TE_FORM_RECIPE_ID, e))));
-    assert.equal(prod.size, 5);
+    assert.deepEqual(
+      prod,
+      new Set([
+        ...TE_ENDINGS.map((e) => teEndingProductionFactId(TE_FORM_RECIPE_ID, e)),
+        ...["iku", "suru", "kuru"].map((q) =>
+          specialVerbProductionFactId(TE_FORM_RECIPE_ID, q),
+        ),
+      ]),
+    );
+    assert.equal(prod.size, 8); // 5 音便 + 行く + する + 来る
     // The meaning fact is also asked, so the deck is not production-only.
     assert.ok(deck.includes(patternMeaningFactId(TE_FORM_RECIPE_ID)));
   });
@@ -262,7 +274,7 @@ describe("the ending split generalizes to a second te-pattern (te-kara)", () => 
       assert.equal(info!.glyph, EXPECTED_KARA[ending], `te-kara ${ending}: glyph`);
       const prod = grammarProduction(id);
       assert.ok(prod, `te-kara ${ending}: not resolved as production`);
-      assert.equal(prod!.ending, ending);
+      assert.deepEqual(prod!.bucket, { kind: "ending", ending });
       assert.equal(prod!.recipe.id, "te-kara");
     }
     // Replaced, not doubled: no unqualified grammar:te-kara/production survives.
@@ -270,14 +282,20 @@ describe("the ending split generalizes to a second te-pattern (te-kara)", () => 
     assert.equal(grammarProduction(patternProductionFactId("te-kara")), null);
   });
 
-  test("its deck yields exactly five production cards, one per distinct ending, plus meaning", () => {
+  test("its deck yields the five distinct endings plus @iku/@suru/@kuru, and meaning", () => {
     const drills = factsOf(patternEntry("te-kara"));
     const { deck } = buildCoverageDeck(drills, ALL);
     // Deduped by fact — the deck repeats each fact once per card kind (typed, MC).
     const prod = new Set(deck.filter((f) => grammarProduction(f)));
-    assert.equal(prod.size, 5);
-    const endings = new Set([...prod].map((f) => grammarProduction(f)!.ending));
-    assert.deepEqual(endings, new Set(TE_ENDINGS));
+    const endingBuckets = new Set(
+      [...prod]
+        .map((f) => grammarProduction(f)!.bucket)
+        .filter((b) => b?.kind === "ending")
+        .map((b) => (b as { ending: TeEnding }).ending),
+    );
+    assert.deepEqual(endingBuckets, new Set(TE_ENDINGS));
+    // 五 endings + 行く/する/来る — te-kara has no verb restriction, so all three.
+    assert.equal(prod.size, 8);
     assert.ok(deck.includes(patternMeaningFactId("te-kara")));
   });
 });

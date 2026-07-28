@@ -88,28 +88,30 @@ describe("the baked example is a QUESTION, not the word retyped", () => {
 });
 
 describe("a production fact per HOST, where the hosts are different rules", () => {
-  test("the four host-split patterns carry a fact for each of their hosts", () => {
-    // te-cause is NOT here any more: it is a て-form pattern (see isTeFormRecipe),
-    // so its production splits by ENDING on the verb, not by host, and
-    // productionHosts is [] for it. These four are the non-te patterns whose
-    // adjective form is a genuinely different rule from their verb form.
+  test("the host-split patterns carry a fact for each of their hosts", () => {
+    // Neither te-cause NOR tara is here any more: both are 音便 patterns (see
+    // usesSoundChange), so their production splits by ENDING on the verb, not by
+    // host, and productionHosts is [] for them. These three are the non-音便
+    // patterns whose adjective form is a genuinely different rule from their verb
+    // form — ば and 〜ます-less stem / 〜そう where there is no sound change to fold.
     const expected: Record<string, string[]> = {
       "sou-appearance": ["verb", "adj-i", "adj-na"],
       sugiru: ["verb", "adj-i", "adj-na"],
       ba: ["verb", "adj-i"],
-      tara: ["verb", "adj-i", "adj-na"],
     };
     for (const [id, hosts] of Object.entries(expected)) {
       assert.deepEqual(productionHosts(byId(id)), hosts, id);
     }
   });
 
-  test("the te-form patterns carry NO host production fact — they split by ending", () => {
+  test("the 音便 patterns carry NO host production fact — they split by ending", () => {
     // te-cause / te-permission / te-mo used to carry host-keyed production facts
     // (and te-permission / te-mo deferred their adj-i rule to te-cause). The whole
-    // 〜て family now drills the verb 音便 endings only, so every one of them has
-    // productionHosts [] and no sharedProductionWith deferral remains.
-    for (const id of ["te-cause", "te-permission", "te-mo"]) {
+    // 音便 set (て/た/たら) now drills the verb sound-change endings only, so every
+    // one has productionHosts [] and no sharedProductionWith deferral remains —
+    // tara included, whose adjective conditional (高かったら) folds in the same way
+    // te-cause's 寒くて does.
+    for (const id of ["te-cause", "te-permission", "te-mo", "tara"]) {
       const r = byId(id);
       assert.deepEqual(productionHosts(r), [], id);
       assert.equal(r.sharedProductionWith, undefined, id);

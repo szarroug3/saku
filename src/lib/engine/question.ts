@@ -50,7 +50,7 @@ import {
   type Rng,
   type Vehicle,
 } from "@/lib/grammar/vehicles";
-import { endingBucketOf, type TeEnding } from "@/lib/grammar/te-endings";
+import { vehicleInBucket, type VehicleBucket } from "@/lib/grammar/te-endings";
 import type { WordClass } from "@/lib/conjugate";
 import {
   KANJI,
@@ -877,17 +877,18 @@ function variedVehicle(
   r: import("@/data/grammar/recipes").Recipe,
   ctx?: PromptContext,
   onHost?: Host,
-  ending?: TeEnding,
+  bucket?: VehicleBucket,
 ): GrammarVehicle | null {
   const v = ctx?.grammarVehicle;
   if (!v || !apply(r, v.surface, v.cls).ok) return null;
-  // A vehicle of the WRONG ENDING is treated exactly like an illegal one for a
-  // per-ending te-form fact: the te-su fact grades against a す verb, so a stale
-  // ctx carrying a く verb (a remount, a serialized runtime from before the
-  // ending split) is dropped and the showing falls back to the fact's own baked
-  // anchor. endingBucketOf keys on the class, so this also refuses an unknown
-  // る-verb that a bad runtime slipped in.
-  if (ending !== undefined && endingBucketOf(v.cls) !== ending) return null;
+  // A vehicle of the WRONG BUCKET is treated exactly like an illegal one for a
+  // pinned fact: the te-su fact grades against a す verb and the @suru fact against
+  // する, so a stale ctx carrying the wrong verb (a remount, a serialized runtime
+  // from before the split) is dropped and the showing falls back to the fact's own
+  // baked anchor. A row-shift fact passes no bucket here (its per-ending coverage
+  // lives on the card, and grading builds on whatever legal verb was rolled), so
+  // this is a no-op for it — the recipeAllows/host checks below are its guard.
+  if (bucket !== undefined && !vehicleInBucket(v, bucket)) return null;
   // A VEHICLE THE RECIPE DOES NOT TAKE IS AN ILLEGAL ONE, even though it builds.
   // apply() is happy to conjugate 行く into 行ってある — the 音便 is right and the
   // sentence is not Japanese — so the recipe's own restriction has to be asked
@@ -958,6 +959,7 @@ export function grammarVehicleFor(
   fact: FactId,
   history: HistoryFile,
   rng: Rng = Math.random,
+  cardBucket?: VehicleBucket,
 ): GrammarVehicle | null {
   const prod = grammarProduction(fact);
   if (!prod) return null;
@@ -966,15 +968,19 @@ export function grammarVehicleFor(
   // rolling a verb for the adj-i fact would ask the other fact's question and
   // record the answer against this one.
   const isKnown = (surface: string) => wordKnown(surface, history);
-  // PINNED TO THE FACT'S ENDING too, for a per-ending te-form fact: the te-su
-  // fact must roll a す verb, never a く one, or it would ask (and score) a
-  // different ending's skill. Absent an ending this is an ordinary pick.
+  // PINNED TO A BUCKET. The FACT's own bucket comes first — a 音便 ending fact
+  // (te-su → a す verb) or an @iku/@suru/@kuru fact (that one verb). A ROW-SHIFT
+  // fact has none, so the CARD supplies one: the full-coverage round expands the
+  // single mastery fact into one card per ending (productionCoverageBuckets) and
+  // hands the class bucket here, so this showing rolls a verb of exactly that
+  // ending. Absent both, an ordinary free pick (endless mode, one random verb).
+  const bucket = cardBucket ?? prod.bucket;
   const picked: Vehicle | null = pickVehicle(
     prod.recipe,
     rng,
     prod.host,
     isKnown,
-    prod.ending,
+    bucket,
   );
   return picked
     ? {
@@ -1085,7 +1091,7 @@ const grammarQuestions: QuestionType = {
       // The vehicle verb is the big glyph; the pattern names the target, which
       // is what makes production a question with ONE answer. The vehicle is the
       // showing's (varied) one when present and legal, else the baked 行く.
-      const v = variedVehicle(prod.recipe, ctx, prod.host, prod.ending);
+      const v = variedVehicle(prod.recipe, ctx, prod.host, prod.bucket);
       return {
         // An UNKNOWN filler vehicle is shown in kana: 買う she has not met reads
         // as かう. A known vehicle keeps its dictionary surface.
@@ -1159,7 +1165,7 @@ const grammarQuestions: QuestionType = {
       // fixed answer baked in the fact — otherwise a 食べる showing would only
       // accept 行ってから. Both scripts count, as the baked path does. No legal
       // vehicle → the baked answers, unchanged.
-      const v = variedVehicle(prod.recipe, ctx, prod.host, prod.ending);
+      const v = variedVehicle(prod.recipe, ctx, prod.host, prod.bucket);
       if (v) {
         const built = builtOn(prod.recipe, v);
         if (built) {
@@ -1199,7 +1205,7 @@ const grammarQuestions: QuestionType = {
   distractors(fact, n, ctx) {
     const prod = grammarProduction(fact);
     if (prod) {
-      const v = variedVehicle(prod.recipe, ctx, prod.host, prod.ending);
+      const v = variedVehicle(prod.recipe, ctx, prod.host, prod.bucket);
       const out: FactId[] = [];
       if (v) {
         const answer = builtOn(prod.recipe, v);
@@ -1275,7 +1281,7 @@ const grammarQuestions: QuestionType = {
     // right, so return null and let the drill use it.
     const prod = grammarProduction(fact);
     if (prod) {
-      const v = variedVehicle(prod.recipe, ctx, prod.host, prod.ending);
+      const v = variedVehicle(prod.recipe, ctx, prod.host, prod.bucket);
       if (!v) return null;
       const built = builtOn(prod.recipe, v);
       return built ? (v.known ? built.form : built.kanaForm) : null;
@@ -1308,7 +1314,7 @@ const grammarQuestions: QuestionType = {
     if (mean && dir === "en2jp") return patternLabel(mean.recipe);
     const prod = grammarProduction(fact);
     if (!prod) return null;
-    const v = variedVehicle(prod.recipe, ctx, prod.host, prod.ending);
+    const v = variedVehicle(prod.recipe, ctx, prod.host, prod.bucket);
     if (!v) return null;
     const built = builtOn(prod.recipe, v);
     return built ? (v.known ? built.form : built.kanaForm) : null;
