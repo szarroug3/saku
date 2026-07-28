@@ -117,6 +117,30 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
     assert.equal(qt.prompt(TE_KARA, "en2jp", bad).glyph, "行く");
     assert.ok(checkTyped(TE_KARA, "行ってから", "en2jp", bad));
   });
+
+  test("an UNKNOWN filler vehicle is shown and revealed in KANA, graded either script", () => {
+    // 書く chosen as an unknown filler (known:false): the learner has not met the
+    // kanji, so glyph, option labels and reveal are all drawn in kana — but the
+    // grader still accepts BOTH scripts (the invariant: never mark correct
+    // Japanese wrong). Legality/building still run on the real 書く surface.
+    const KAKU_UNKNOWN = {
+      grammarVehicle: { surface: "書く", kana: "かく", cls: "v5k", known: false },
+    } as const;
+    const qt = questionsFor(TE_KARA);
+    // Prompt glyph is the kana reading, never the kanji surface.
+    assert.equal(qt.prompt(TE_KARA, "en2jp", KAKU_UNKNOWN).glyph, "かく");
+    // Reveal is the kana-built form.
+    assert.equal(qt.answerReveal?.(TE_KARA, "en2jp", KAKU_UNKNOWN), "かいてから");
+    // Distractor option labels are all built on the kana reading.
+    for (const opt of qt.distractors(TE_KARA, 5, KAKU_UNKNOWN)) {
+      const label = qt.optionLabel?.(opt, "en2jp", KAKU_UNKNOWN);
+      assert.ok(label, "an unknown-vehicle distractor has no label");
+      assert.ok(label!.startsWith("かい"), `${label} is not the kana form of 書く`);
+    }
+    // The grader accepts the kana answer AND the kanji answer — both are correct.
+    assert.ok(checkTyped(TE_KARA, "かいてから", "en2jp", KAKU_UNKNOWN));
+    assert.ok(checkTyped(TE_KARA, "書いてから", "en2jp", KAKU_UNKNOWN));
+  });
 });
 
 describe("a split production fact is drilled on ITS OWN host", () => {
