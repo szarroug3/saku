@@ -20,6 +20,7 @@ import {
   groupsFor,
   hasForms,
   isIntransitive,
+  ruVerbKind,
   wordClassOf,
 } from "@/lib/word-forms";
 import { formsFor } from "@/lib/conjugate";
@@ -62,6 +63,34 @@ test("the special godan classes are mapped — the gap that shipped twice", () =
     assert.ok(row, `${word} is not in vocab.json — the fixture, not the map, is stale`);
     assert.equal(wordClassOf(row), expected, `${word} should classify as ${expected}`);
   }
+});
+
+test("ruVerbKind names the class only for the ambiguous る-ending verbs", () => {
+  // The one shape spelling can't resolve: a verb ending in る. A godan る-ender is
+  // a う-verb (知る), an ichidan one a る-verb (食べる). Everything else is null —
+  // an unambiguous ending, an adjective, a noun, or an irregular with no class to
+  // teach — so the note and the words-track gate both stay silent for them.
+  const kind = (keb: string) => {
+    const row = vocabRow(keb);
+    assert.ok(row, `${keb} is not in vocab.json — the fixture is stale`);
+    return ruVerbKind(row);
+  };
+
+  assert.equal(kind("知る"), "う-verb"); // v5r — the first verb the gate blocks
+  assert.equal(kind("食べる"), "る-verb"); // v1 — an ichidan る-verb
+
+  // A verb that ends in any other kana is unambiguous and takes no note.
+  assert.equal(kind("言う"), null);
+  assert.equal(kind("話す"), null);
+
+  // Irregulars that happen to end in る are neither godan nor ichidan: no label
+  // rather than a wrong one (which also leaves them ungated).
+  assert.equal(kind("来る"), null); // vk
+  assert.equal(kind("する"), null); // vs-i
+
+  // A non-verb ending in る has no class to show.
+  const noun = VOCAB.find((w) => w.keb.endsWith("る") && wordClassOf(w) === null);
+  if (noun) assert.equal(ruVerbKind(noun), null, `${noun.keb} is not a verb`);
 });
 
 test("行く conjugates with its irregular 音便 — the silent failure, made visible", () => {

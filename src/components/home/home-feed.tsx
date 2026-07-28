@@ -49,7 +49,11 @@ import {
   type SentenceOrderingLesson,
 } from "@/components/lesson/next-sentence-ordering-lesson";
 import { PageTitle } from "@/components/ui";
-import { lessonWords, nextCurriculumLesson } from "@/lib/curriculum-lesson";
+import {
+  lessonWords,
+  nextCurriculumLesson,
+  nextCurriculumLock,
+} from "@/lib/curriculum-lesson";
 import {
   GRAMMAR_PER_LESSON_DEFAULT,
   hasStartedGrammarTrack,
@@ -229,6 +233,23 @@ export function HomeFeed() {
       lesson
         ? null
         : nextCurriculumLesson(history, {
+            min: cfg.lessonMinCost,
+            max: cfg.lessonMaxCost,
+          }),
+    [lesson, history, cfg.lessonMinCost, cfg.lessonMaxCost],
+  );
+
+  // The one thing that can HOLD the spine rather than pace it: a る-ending verb
+  // (知る) met before the て-form. Its class can't be told from its spelling, so
+  // the words track waits for grammar lesson 1 before teaching it, then names
+  // the class. This is the words-track twin of grammarLock — there a pattern
+  // waits on a word, here a word waits on a pattern. Null once the て-form is
+  // learned, and the spine flows on untouched.
+  const curriculumLock = useMemo(
+    () =>
+      lesson
+        ? null
+        : nextCurriculumLock(history, {
             min: cfg.lessonMinCost,
             max: cfg.lessonMaxCost,
           }),
@@ -594,6 +615,9 @@ export function HomeFeed() {
   const curriculumComplete =
     !lessonShown &&
     !curriculumLessonShown &&
+    // A spine held at 知る behind the て-form is NOT complete — it has a lock
+    // card, and the learner is one grammar lesson from continuing.
+    !curriculumLock &&
     !grammarLessonShown &&
     !(grammarLock && grammarTrackStarted) &&
     !transitivityLessonShown &&
@@ -647,9 +671,13 @@ export function HomeFeed() {
           happened to be all radicals, or all words, still resurfaces here.
           Start and "Quiz me" both go through startCurriculumLesson, which also
           unlocks the kanji readings the lesson's words prove. */}
-      {curriculumLessonShown ? (
+      {curriculumLessonShown || curriculumLock ? (
         <NextCurriculumLesson
           lesson={curriculumLessonShown}
+          // Show the lock only when there is no lesson to teach: an in-progress
+          // session rebuilt by resumeLesson always shows over a lock, so the
+          // learner finishes the lesson they had open before the wall appears.
+          lock={curriculumLessonShown ? null : curriculumLock}
           onStart={startCurriculumLesson}
           onClaim={(facts) => {
             claimCurriculumLesson(facts);

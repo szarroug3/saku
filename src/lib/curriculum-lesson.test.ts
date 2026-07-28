@@ -30,16 +30,20 @@ import { describe, test } from "node:test";
 
 import { KANJI, kanjiRow, meaningFactId } from "../data/kanji.ts";
 import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
-import { VOCAB, wordMeaningFactId } from "../data/vocab.ts";
+import { VOCAB, vocabRow, wordMeaningFactId } from "../data/vocab.ts";
+import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { CURRICULUM_SEQUENCE } from "./curriculum-order.ts";
 import {
   CURRICULUM_TOTALS,
   WORD_COST,
   curriculum,
   nextCurriculumLesson,
+  nextCurriculumLock,
   packLessons,
   packUnits,
 } from "./curriculum-lesson.ts";
+import { learnedHosts } from "./grammar-lesson.ts";
+import { ruVerbKind } from "./word-forms.ts";
 import { applyClaims, applyDropSeen, applySeen } from "./history-ops.ts";
 import { readingsProvedBy } from "./word-unlock.ts";
 import { compositePositionLabel } from "./lesson-position.ts";
@@ -501,6 +505,141 @@ describe("start-then-discard does not advance the frontier; start-then-complete 
       nextCurriculumLesson(completedThenUnseen, RANGE)!.facts,
       before.facts,
       "a completed lesson stays advanced regardless of its seen marks",
+    );
+  });
+});
+
+// THE CROSS-TRACK GATE. A る-ending verb's class (godan vs ichidan) cannot be
+// read off its spelling, so the words track holds the first one back until the
+// て-form (grammar lesson 1) is learned and the word lesson can name the class.
+// This is the mirror of the grammar track's host gate — there a pattern waits on
+// a word, here a word waits on a pattern. Pinned as properties of the data (the
+// first gated verb is found, never typed) so it survives the sequence changing.
+describe("a る-ending verb waits on the て-form", () => {
+  const TE_FORM = patternMeaningFactId("te-sequence");
+
+  /** The first る-ending verb the curriculum teaches, and the lesson it lands in
+   * — discovered from the packing, so no glyph is hard-coded. */
+  const gated = (() => {
+    for (const g of GROUPS) {
+      for (const it of g.items) {
+        if (!it.roles.includes("word")) continue;
+        const row = vocabRow(it.glyph);
+        if (row && ruVerbKind(row) !== null) return { glyph: it.glyph, group: g };
+      }
+    }
+    return null;
+  })();
+
+  test("the curriculum teaches one, and its written form ends in る", () => {
+    assert.ok(gated, "no る-ending verb in the curriculum — the gate guards nothing");
+    assert.ok(gated.glyph.endsWith("る"), `${gated.glyph} does not end in る`);
+  });
+
+  /** A learner who has been taught everything in the gated verb's lesson EXCEPT
+   * the verb itself — the exact moment the spine would next teach it. */
+  function reachedTheVerb(): FactId[] {
+    const out: FactId[] = [];
+    for (const g of GROUPS) {
+      for (const it of g.items) {
+        if (it.glyph === gated!.glyph) continue; // leave the verb unmet
+        out.push(...it.facts);
+      }
+      if (g === gated!.group) break;
+    }
+    return out;
+  }
+
+  test("with the て-form unlearned, the spine locks at the verb rather than teaching it", () => {
+    const h = history(reachedTheVerb()); // te-form fact absent → fresh
+    assert.equal(
+      nextCurriculumLesson(h, RANGE),
+      null,
+      "no lesson while the gated verb is all that is left of the frontier",
+    );
+    const lock = nextCurriculumLock(h, RANGE);
+    assert.ok(lock, "a lock is surfaced instead");
+    assert.equal(lock.verb, gated!.glyph, "and it names the verb it is waiting on");
+  });
+
+  test("once the て-form is learned, the verb teaches and the lock clears", () => {
+    const h = history([...reachedTheVerb(), TE_FORM]);
+    assert.equal(nextCurriculumLock(h, RANGE), null, "nothing gates any more");
+    const lesson = nextCurriculumLesson(h, RANGE);
+    assert.ok(lesson, "the verb's lesson is teachable");
+    assert.ok(
+      lesson.cards.some((c) => c.glyph === gated!.glyph),
+      "and the held-back verb is now in it",
+    );
+  });
+
+  test("the verb's own lesson still teaches its other items; only the verb waits", () => {
+    // Reach the verb's lesson with nothing in it claimed yet, て-form fresh.
+    const out: FactId[] = [];
+    for (const g of GROUPS) {
+      if (g === gated!.group) break;
+      out.push(...g.facts);
+    }
+    const h = history(out);
+    const lesson = nextCurriculumLesson(h, RANGE);
+    assert.ok(lesson, "the lesson teaches");
+    assert.equal(lesson.group.index, gated!.group.index, "it is the verb's own lesson");
+    assert.ok(
+      !lesson.cards.some((c) => c.glyph === gated!.glyph),
+      "with the る-verb held back",
+    );
+    assert.ok(lesson.cards.length > 0, "but the rest of the lesson is taught");
+    assert.equal(
+      nextCurriculumLock(h, RANGE),
+      null,
+      "and no lock shows while other items are still teachable",
+    );
+  });
+
+  test("no deadlock: a verb is learned before the gate, so the て-form is completable first", () => {
+    // The て-form's own host gate needs a learned VERB (grammar-lesson.ts). If the
+    // first verb the curriculum teaches were itself gated, the two tracks would
+    // wait on each other forever. It is not: an earlier, non-る verb (言う) is
+    // learned by the time the lock is raised, so the learner can always finish the
+    // て-form and pass the lock.
+    const h = history(reachedTheVerb());
+    assert.ok(
+      learnedHosts(h).has("verb"),
+      "the learner already has a verb to build the て-form on",
+    );
+  });
+
+  test("later る-verbs are not gated once the て-form is learned", () => {
+    // The gate is on the て-form, not on each verb: learning it opens every
+    // remaining る-verb at once. Find the SECOND gated-shape verb and confirm it
+    // teaches straight through with the て-form learned.
+    const ruVerbs: string[] = [];
+    for (const g of GROUPS) {
+      for (const it of g.items) {
+        if (!it.roles.includes("word")) continue;
+        const row = vocabRow(it.glyph);
+        if (row && ruVerbKind(row) !== null) ruVerbs.push(it.glyph);
+      }
+      if (ruVerbs.length >= 2) break;
+    }
+    if (ruVerbs.length < 2) return; // only one in range; nothing more to prove
+    const second = ruVerbs[1];
+    // Claim everything up to the second such verb, plus the て-form, and confirm
+    // it is teachable (never held back).
+    const out: FactId[] = [TE_FORM];
+    outer: for (const g of GROUPS) {
+      for (const it of g.items) {
+        if (it.glyph === second) break outer;
+        out.push(...it.facts);
+      }
+    }
+    const h = history(out);
+    assert.equal(nextCurriculumLock(h, RANGE), null, "no lock past the て-form");
+    const lesson = nextCurriculumLesson(h, RANGE);
+    assert.ok(lesson);
+    assert.ok(
+      lesson.cards.some((c) => c.glyph === second),
+      `${second} teaches without being held back`,
     );
   });
 });
