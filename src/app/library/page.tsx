@@ -553,13 +553,17 @@ function LibraryBody() {
   return (
     <>
       {/* THE FROZEN HEADER. Title, search and filter chips, lifted out of the
-          scroll into the shell's top dock so they stay put above the shelves. No
-          box around it — it sits on the ground like the shelves do, so the header
-          and the tiles read as one surface; the dock just keeps it frozen. The
-          px-3 matches the scroller's own inset so the header lines up with the
-          tiles below it. */}
+          scroll into the shell's top dock so they stay put above the shelves.
+          `kq-band` is what makes it OCCLUDE: the shelf rows are `sticky` within
+          the same page scroll, so without an opaque band they slide up THROUGH
+          the header and collide with the search text. kq-band is the ground
+          rebuilt opaque for a sticky band, so it hides what scrolls under it
+          while still reading as the ground (no visible box), which is the whole
+          point of docking here. It is full-width (edge to edge of the dock); the
+          px-3 insets the content to line up with the tiles below. pb-2 gives the
+          band a clean lower edge past the chips. */}
       <Dock slot="top">
-        <div className="px-3">
+        <div className="kq-band px-3 pb-2">
           <PageTitle
             title="Library"
             sub="Every character, reading and word the app knows."
