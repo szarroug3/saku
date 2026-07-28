@@ -682,11 +682,14 @@
 }
 
 /* Always reserve the scrollbar's width, whether or not the page needs one.
- * The shell is centred with mx-auto inside the viewport, so a page tall enough
- * to scroll loses ~15px to the scrollbar and re-centres 7px to the left — and
- * the sidebar visibly jumps as you move between a short page (Home) and a tall
- * one (the chart). It reads as "the chart is wider"; it's the gutter appearing.
- * Reserving it means every page lays out identically. */
+ * <html> is the app's one scroll owner (the shell is a plain flex row with no
+ * overflow — see layout.tsx), so a page that toggles between "tall enough to
+ * scroll" and "not" gains or loses ~15px of viewport width as the scrollbar
+ * comes and goes. The layout below it re-flows into that width and the whole
+ * page slides sideways — the jump Settings' "Start over" produced when its
+ * content shrank past the fold, and the sidebar jump between a short page and a
+ * tall one. Reserving the gutter means the scrollbar's space is always there
+ * and every page lays out at the identical width. */
 html {
   scrollbar-gutter: stable;
 }
