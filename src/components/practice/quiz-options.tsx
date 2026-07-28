@@ -21,45 +21,41 @@ export function QuizOptionsFields() {
   const { cfg, update } = useQuizConfig();
 
   return (
-    <>
-      <Card>
-        <Row label="Mode">
-          <Chip on={cfg.mode === "drill"} onClick={() => update({ mode: "drill" })}>
-            Drill
-          </Chip>
-          <Chip on={cfg.mode === "pairs"} onClick={() => update({ mode: "pairs" })}>
-            Match pairs
-          </Chip>
-          <Chip on={cfg.mode === "grid"} onClick={() => update({ mode: "grid" })}>
-            Grid
-          </Chip>
-          <Chip
-            on={cfg.mode === "substitution"}
-            onClick={() => update({ mode: "substitution" })}
-          >
-            Substitution
-          </Chip>
-        </Row>
-      </Card>
+    <Card>
+      <Row label="Mode">
+        <Chip on={cfg.mode === "drill"} onClick={() => update({ mode: "drill" })}>
+          Drill
+        </Chip>
+        <Chip on={cfg.mode === "pairs"} onClick={() => update({ mode: "pairs" })}>
+          Match pairs
+        </Chip>
+        <Chip on={cfg.mode === "grid"} onClick={() => update({ mode: "grid" })}>
+          Grid
+        </Chip>
+        <Chip
+          on={cfg.mode === "substitution"}
+          onClick={() => update({ mode: "substitution" })}
+        >
+          Substitution
+        </Chip>
+      </Row>
 
       {cfg.mode === "drill" ? (
-        <Card>
-          <Row label="Prompt Format">
-            {(["text", "audio", "both"] as const).map((v) => (
-              <Chip
-                key={v}
-                on={cfg.input === v}
-                onClick={() => update({ input: v })}
-              >
-                {INPUT_LABEL[v]}
-              </Chip>
-            ))}
-          </Row>
-        </Card>
+        <Row label="Prompt Format">
+          {(["text", "audio", "both"] as const).map((v) => (
+            <Chip
+              key={v}
+              on={cfg.input === v}
+              onClick={() => update({ input: v })}
+            >
+              {INPUT_LABEL[v]}
+            </Chip>
+          ))}
+        </Row>
       ) : null}
 
       {cfg.mode === "drill" || cfg.mode === "pairs" ? (
-        <Card>
+        <>
           <Row label="Length">
             <Chip
               on={cfg.length === "endless"}
@@ -115,8 +111,8 @@ export function QuizOptionsFields() {
               Off
             </Chip>
           </Row>
-        </Card>
+        </>
       ) : null}
-    </>
+    </Card>
   );
 }
