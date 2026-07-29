@@ -99,4 +99,10 @@ test("a session plays all three rounds through to Session complete", async ({
 
   await expect(page.locator("body")).toContainText("complete");
   expect(loopErrors).toEqual([]);
+
+  // Complete session (for good) returns to Learn — the next lesson — not Home.
+  await page
+    .getByRole("button", { name: "Complete session", exact: true })
+    .click();
+  await page.waitForURL("**/learn");
 });

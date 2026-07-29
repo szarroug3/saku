@@ -164,11 +164,10 @@ test("a round committed mid-session is not counted again at the end", async ({
   await page
     .getByRole("button", { name: "Complete session", exact: true })
     .click();
-  // Home is "/". A session ends with router.push("/") (quiz-session.tsx), and for
-  // this SIGNED-OUT learner "/" is the landing — it renders in place rather than
-  // redirecting on to /learn the way a signed-in visitor's "/" does. So the run
-  // comes to rest on "/", which is where the sidebar's "Home" points them too.
-  await page.waitForURL((url) => new URL(url).pathname === "/");
+  // Complete session lands on /learn (finishSession → router.push("/learn"), the
+  // next lesson), signed in or out. It used to bounce to "/" — a guard clobbered
+  // the /learn push — which this line used to encode; that's the bug now fixed.
+  await page.waitForURL("**/learn");
 
   // Two rounds of five, once each. Fifteen would mean the session was written
   // on top of its own rounds; five would mean a round went missing.
