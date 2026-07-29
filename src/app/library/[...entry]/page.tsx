@@ -619,21 +619,28 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* CONCEPT-TO-CONCEPT CROSS-LINKS. A concept page sends the reader on to its
           siblings — the て-form idea and the verb-class idea each point at the
           other — so the two most foundational pages are reachable from one
-          another. Every non-concept entry has `concept` null and renders nothing. */}
-      {concept?.related?.map((rel) => {
-        const other = grammarConceptRow(rel);
-        if (!other) return null;
-        return (
-          <LinkRow key={rel} label="Read about it">
-            <Link
-              href={entryHref(grammarConceptEntry(other.id))}
-              className="text-[13px] text-accent no-underline"
-            >
-              {other.name} →
-            </Link>
-          </LinkRow>
-        );
-      })}
+          another. Grouped under ONE "Read about it" heading (not one per link),
+          the same as the pattern block above. Every non-concept entry has
+          `concept` null and renders nothing. */}
+      {concept?.related && concept.related.length > 0 ? (
+        <LinkRow label="Read about it">
+          <div className="flex flex-col items-start gap-1">
+            {concept.related.map((rel) => {
+              const other = grammarConceptRow(rel);
+              if (!other) return null;
+              return (
+                <Link
+                  key={rel}
+                  href={entryHref(grammarConceptEntry(other.id))}
+                  className="text-[13px] text-accent no-underline"
+                >
+                  {other.name} →
+                </Link>
+              );
+            })}
+          </div>
+        </LinkRow>
+      ) : null}
 
       {/* KEIGO's concept reference — the politeness-levels idea behind the
           specific honorific/humble verbs above. It rides in the SAME Links box

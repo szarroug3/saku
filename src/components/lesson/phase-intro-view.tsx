@@ -453,7 +453,12 @@ export function IntroDeriveTable({
   heads?: { verb?: string; form?: string; pattern?: string };
 }) {
   const hasForm = rows.some((r) => r.form);
-  const hasGloss = rows.some((r) => r.gloss);
+  // The Meaning column earns its place only when the gloss VARIES per row (X
+  // filled by each verb: "go to write" / "go to read"). A particle pattern gives
+  // every row the same static gloss ("marks the direct object" ×3) — that single
+  // meaning is already the page's hero title, so a column repeating it three
+  // times is noise. Suppressed when the rows carry one distinct gloss or none.
+  const hasGloss = new Set(rows.map((r) => r.gloss).filter(Boolean)).size > 1;
   const headCell = "px-4 py-2.5 font-semibold";
   const jpCell = "whitespace-nowrap px-4 py-3 align-baseline font-kana text-[17px] text-text";
   return (

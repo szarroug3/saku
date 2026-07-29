@@ -190,7 +190,12 @@ function standaloneRuleRows(form: Form): IntroBuildRule[] {
 function heroFromGloss(gloss: string): string {
   const g = gloss.trim();
   const cap = g.charAt(0).toUpperCase() + g.slice(1);
-  return /[.!?]$/.test(cap) ? cap : `${cap}.`;
+  if (/[.!?…]$/.test(cap)) return cap;
+  // A gloss that ENDS on a connective ("do X, and then") describes a link to a
+  // following clause; a full stop makes the hero read as a dangling fragment
+  // ("Do X, and then."), so an ellipsis signals the continuation instead.
+  if (/\b(and then|and|then)$/i.test(cap)) return `${cap}…`;
+  return `${cap}.`;
 }
 
 /** The build line for a WRAP pattern (〜たり〜たり, 〜は〜より, 〜しか〜ない): it has

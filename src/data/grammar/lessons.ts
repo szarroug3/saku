@@ -226,7 +226,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "The form itself does not say when something happened or whether it is polite. The last verb does. たべて、ねます means eat and then sleep; たべて、ねました means ate and then slept.",
       },
       {
-        text: "Don't worry about how that last verb is built yet. Just notice that the first verb, たべて, stays the same in both, and only the last verb changes.",
+        text: "Don't worry about how that last verb is built. Just notice that the first verb, たべて, stays the same in both, and only the last verb changes.",
       },
     ],
   },
