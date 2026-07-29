@@ -105,9 +105,18 @@ function speakables(name) {
   process.exit(1);
 }
 
-// Always seed the Settings preview phrase so picking the voice previews IT, not
-// the browser fallback. Dedup in case the set already contains it.
-const texts = [...new Set([VOICE_PREVIEW, ...speakables(set)])];
+// Pair each string with the text to SYNTHESIZE. A bare single mora comes back
+// near-silent from edge-tts, so for the kana set we synthesize a HELD "<kana>ー"
+// — one audible sound at consistent loudness — while still keying the clip on
+// the ORIGINAL kana, so speech.ts looks up "か" and gets the "かー" audio. The
+// sokuon っ has no standalone sound, so it is left bare. The Settings preview
+// (multi-mora) is always seeded and never padded. Entries are [keyText, ttsText].
+const held = (k) => (set === "kana" && k !== "っ" && k !== "ッ" ? `${k}ー` : k);
+const seen = new Set();
+const items = [
+  [VOICE_PREVIEW, VOICE_PREVIEW],
+  ...speakables(set).map((t) => [t, held(t)]),
+].filter(([k]) => !seen.has(k) && !!seen.add(k));
 const supabase = createClient(url, key, { auth: { persistSession: false } });
 // Fail early with a clear message if uv is missing (unless a direct binary is set).
 if (!process.env.EDGE_TTS_BIN) {
@@ -125,7 +134,7 @@ if (!process.env.EDGE_TTS_BIN) {
 const tmp = mkdtempSync(join(tmpdir(), "seed-voice-"));
 
 console.log(
-  `Seeding ${texts.length} "${set}" clip(s) for voice "${voiceId}" ` +
+  `Seeding ${items.length} "${set}" clip(s) for voice "${voiceId}" ` +
     `(${voice} ${rate}/${pitch}) into bucket "${bucket}".`,
 );
 
@@ -133,7 +142,7 @@ let made = 0;
 let skipped = 0;
 let failed = 0;
 try {
-  for (const text of texts) {
+  for (const [text, tts] of items) {
     const path = voiceObjectPath(voiceId, text);
     const folder = path.slice(0, path.lastIndexOf("/"));
     const file = path.slice(path.lastIndexOf("/") + 1);
@@ -146,7 +155,7 @@ try {
 
     const out = join(tmp, "clip.mp3");
     try {
-      runEdge(out, text);
+      runEdge(out, tts);
     } catch (e) {
       console.error(`  edge-tts failed for "${text}": ${e.message}`);
       failed++;

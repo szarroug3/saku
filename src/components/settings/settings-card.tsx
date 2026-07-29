@@ -312,7 +312,8 @@ export function SettingsCard() {
   // `voices`, so accept it too rather than snapping the selection back to Auto.
   const currentVoice =
     cfg.voiceName &&
-    (voices.some((v) => v.name === cfg.voiceName) || isPackVoice(cfg.voiceName))
+    (voices.some((v) => v.name === cfg.voiceName) ||
+      (isPackVoice(cfg.voiceName) && packVoicesEnabled()))
       ? cfg.voiceName
       : "";
 

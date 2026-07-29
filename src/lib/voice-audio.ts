@@ -41,6 +41,11 @@ export const PACK_VOICES: readonly PackVoice[] = [
     label: "Keita (soothing)",
     source: { voice: "ja-JP-KeitaNeural", rate: "-10%", pitch: "-12Hz" },
   },
+  {
+    id: "nanami",
+    label: "Nanami",
+    source: { voice: "ja-JP-NanamiNeural", rate: "+0%", pitch: "-8Hz" },
+  },
 ];
 
 /** The phrase the Settings voice picker previews on selection. Seeded for every

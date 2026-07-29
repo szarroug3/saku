@@ -66,7 +66,10 @@ export function defaultConfig(): QuizConfig {
     scriptLabel: true,
     fonts: [...JP_FONTS],
     blurSubmit: false,
-    voiceName: "",
+    // The soothing pack voice is the default. When its bucket isn't configured
+    // (packVoicesEnabled() false) or a clip is missing, speak() falls back to the
+    // browser voice, so this is safe even before the audio is seeded.
+    voiceName: "keita-soothing",
     accuracyMetric: "firstTry",
     showVolume: true,
     graduateRuns: 10,
