@@ -161,53 +161,50 @@ export function NextLesson({
 
       {/* The two intents, kept apart because they route apart. "Quiz me" is
           the go button — it marks the group seen and drills it. "I already
-          know these" claims it and skips. See onQuizMe / onClaim above. */}
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          <Btn onClick={() => onClaim(lesson.facts)}>
-            I already know {chars.length === 1 ? "this" : `these ${chars.length}`}
-          </Btn>
-          <Btn onClick={() => onClaim(setFacts(group.setId))}>
-            I know all {group.setLabel.toLowerCase()}
-          </Btn>
-        </div>
-        {/* The same scope fork the end of the lesson offers, because this is
-            the same drill reached by the other door — skipping the teach walk
-            shouldn't also skip the choice of how much to be asked. "These
-            only" keeps the accent; the cumulative run is the offer beside it.
-            See scriptSoFar() for what "so far" is allowed to mean.
+          know these" claims it and skips. See onQuizMe / onClaim above.
 
-            The fork collapses when the wider scope resolves to these same
-            facts — the first group of a script, where there is nothing before
-            it to accumulate. What's left is the ordinary "Quiz me", NOT one of
-            the two scoped labels kept on alone: "Quiz me on these only" names
-            a scope, and naming a scope implies the other one is somewhere on
-            screen. With one set there is no scope to name. */}
-        <div className="flex flex-wrap gap-1.5">
-          {soFar ? (
-            <>
-              <Btn onClick={() => onQuizMe(soFar)}>
-                Quiz me on all {group.setLabel.toLowerCase()} so far
-              </Btn>
-              <Btn onClick={() => onQuizMe(lesson.facts)}>
-                Quiz me on these only
-              </Btn>
-            </>
-          ) : (
-            <Btn onClick={() => onQuizMe(lesson.facts)}>
-              Quiz me
+          One uniform 2-col grid: every button is a DIRECT child (fragments
+          are transparent in the DOM, so :nth-child/:last-child still count),
+          each fills its cell, and a lone last button (odd total) spans both
+          columns via the last-child:nth-child(odd) variant. Order is claims
+          first, then quiz, then Start last.
+
+          The scope fork is the same one the end of the lesson offers — this
+          is the same drill by the other door, so skipping the teach walk
+          shouldn't skip the choice of how much to be asked. It collapses to a
+          plain "Quiz me" when the wider scope resolves to these same facts
+          (the first group of a script, nothing before it to accumulate); a
+          lone scoped label would imply the other is on screen. */}
+      <div className="mt-5 grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2">
+        <Btn className="w-full" onClick={() => onClaim(lesson.facts)}>
+          I already know {chars.length === 1 ? "this" : `these ${chars.length}`}
+        </Btn>
+        <Btn className="w-full" onClick={() => onClaim(setFacts(group.setId))}>
+          I know all {group.setLabel.toLowerCase()}
+        </Btn>
+        {soFar ? (
+          <>
+            <Btn className="w-full" onClick={() => onQuizMe(soFar)}>
+              Quiz me on all {group.setLabel.toLowerCase()} so far
             </Btn>
-          )}
-          {inSession && onContinue ? (
-            <Btn go onClick={onContinue}>
-              Continue session
+            <Btn className="w-full" onClick={() => onQuizMe(lesson.facts)}>
+              Quiz me on these only
             </Btn>
-          ) : (
-            <Btn go onClick={() => onTeach(lesson.facts)}>
-              Start
-            </Btn>
-          )}
-        </div>
+          </>
+        ) : (
+          <Btn className="w-full" onClick={() => onQuizMe(lesson.facts)}>
+            Quiz me
+          </Btn>
+        )}
+        {inSession && onContinue ? (
+          <Btn go className="w-full" onClick={onContinue}>
+            Continue session
+          </Btn>
+        ) : (
+          <Btn go className="w-full" onClick={() => onTeach(lesson.facts)}>
+            Start
+          </Btn>
+        )}
       </div>
     </Card>
   );
