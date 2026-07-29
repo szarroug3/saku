@@ -50,6 +50,7 @@ const OLD_ACCENTS_KEY: typeof Theme.OLD_ACCENTS_KEY = "kanaquiz-accents";
 const DEFAULT_THEME: typeof Theme.DEFAULT_THEME = "kiri";
 const DEFAULT_APPEARANCE: typeof Theme.DEFAULT_APPEARANCE = "system";
 const DEFAULT_ACCENT: typeof Theme.DEFAULT_ACCENT = "default";
+const DEFAULT_ACCENTS: typeof Theme.DEFAULT_ACCENTS = { kiri: "magenta" };
 const THEMES: typeof Theme.THEMES = [
   "aizome",
   "graphite",
@@ -101,7 +102,7 @@ if(${JSON.stringify(THEMES)}.indexOf(t)>=0)d.setAttribute("data-theme",t);else t
 if(${JSON.stringify(APPEARANCES)}.indexOf(a)>=0)d.setAttribute("data-appearance",a);
 var m=JSON.parse(g(${JSON.stringify(ACCENTS_KEY)},${JSON.stringify(
   OLD_ACCENTS_KEY,
-)})||"{}"),c=m&&m[t];
+)})||"{}"),c=(m&&m[t])||(${JSON.stringify(DEFAULT_ACCENTS)})[t];
 if(c!==${JSON.stringify(DEFAULT_ACCENT)}&&${JSON.stringify(
   ACCENTS,
 )}.indexOf(c)>=0)d.setAttribute("data-accent",c);
@@ -188,6 +189,10 @@ export default async function RootLayout({
       lang="en"
       data-theme={DEFAULT_THEME}
       data-appearance={DEFAULT_APPEARANCE}
+      // The default theme's out-of-the-box accent (kiri → magenta), so the first
+      // paint already wears it; the no-flash script overrides for a returning
+      // user, and `undefined` (a theme with no default accent) omits the attr.
+      data-accent={DEFAULT_ACCENTS[DEFAULT_THEME]}
       suppressHydrationWarning
     >
       <head>

@@ -122,8 +122,11 @@ function NumIn({
 
 /** Legacy voice-name reformat: "Kyoko (Enhanced)" → "Kyoko · Enhanced". */
 function voiceLabel(name: string): string {
+  // Drop the language tag macOS appends ("Eddy (Japanese (Japan))" → "Eddy"),
+  // but keep a meaningful build qualifier ("Kyoko (Enhanced)" → "Kyoko · Enhanced").
   return name
-    .replace(/\s*\(.*?\)\s*$/, (m) => m.replace("(", "· ").replace(")", ""))
+    .replace(/\s*\(Japanese \(Japan\)\)\s*$/i, "")
+    .replace(/\s*\(([^)]+)\)\s*$/, " · $1")
     .trim();
 }
 
@@ -553,31 +556,28 @@ export function SettingsCard() {
         <Row label="Speech voice" info={voiceInfo(platform)}>
           {voices.length || packEnabled ? (
             <>
+              {/* Auto leads; every other voice — pack (Keita/Nanami, when
+                  configured) and the device's own — is folded into ONE list
+                  sorted by label, so the picker reads alphabetically. */}
               <Chip on={currentVoice === ""} onClick={() => pickVoice("")}>
                 Auto
               </Chip>
-              {/* PACK VOICES first — the whole reason they exist is to beat the
-                  device's own voice, so they lead. Only shown when configured
-                  (a Storage bucket is set); otherwise this list is browser-only. */}
-              {packEnabled &&
-                PACK_VOICES.map((p) => (
+              {[
+                ...(packEnabled
+                  ? PACK_VOICES.map((p) => ({ value: p.id, label: p.label }))
+                  : []),
+                ...voices.map((v) => ({ value: v.name, label: voiceLabel(v.name) })),
+              ]
+                .sort((a, b) => a.label.localeCompare(b.label))
+                .map((p) => (
                   <Chip
-                    key={p.id}
-                    on={currentVoice === p.id}
-                    onClick={() => pickVoice(p.id)}
+                    key={p.value}
+                    on={currentVoice === p.value}
+                    onClick={() => pickVoice(p.value)}
                   >
                     {p.label}
                   </Chip>
                 ))}
-              {voices.map((v) => (
-                <Chip
-                  key={v.name}
-                  on={currentVoice === v.name}
-                  onClick={() => pickVoice(v.name)}
-                >
-                  {voiceLabel(v.name)}
-                </Chip>
-              ))}
             </>
           ) : (
             <Hint>No Japanese voices found</Hint>

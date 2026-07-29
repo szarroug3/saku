@@ -82,6 +82,11 @@ export const DEFAULT_THEME = "kiri" satisfies ThemeName;
 export const DEFAULT_APPEARANCE = "system" satisfies Appearance;
 export const DEFAULT_ACCENT = "default" satisfies AccentName;
 
+/** The out-of-the-box accent PER THEME; any theme not listed wears its own
+ * ("default"). kiri ships with magenta. An explicit stored choice (including
+ * picking a theme's own accent, stored as "default") overrides this. */
+export const DEFAULT_ACCENTS: AccentMap = { kiri: "magenta" };
+
 // The app-owned keys, renamed `kanaquiz-*` → `saku-*`, live in settings-keys.ts
 // (a plain module the settings-sync layer can share without an import cycle). Each
 // carries its legacy name so a returning user's value is migrated forward on first
@@ -146,12 +151,17 @@ function validateAccents(raw: unknown): AccentMap {
 /** The accent map from storage — the new key, migrated forward from the old. */
 function loadAccents(): AccentMap {
   try {
-    return validateAccents(
-      JSON.parse(migratedGet(localStorage, ACCENTS_KEY, OLD_ACCENTS_KEY) ?? "null"),
-    );
+    // Defaults under stored: kiri gets magenta unless the user set kiri's accent
+    // explicitly (their choice, incl. "default", overrides).
+    return {
+      ...DEFAULT_ACCENTS,
+      ...validateAccents(
+        JSON.parse(migratedGet(localStorage, ACCENTS_KEY, OLD_ACCENTS_KEY) ?? "null"),
+      ),
+    };
   } catch {
-    // storage blocked or corrupt JSON — no accents, i.e. every theme's own
-    return {};
+    // storage blocked or corrupt JSON — the out-of-the-box accents
+    return { ...DEFAULT_ACCENTS };
   }
 }
 
@@ -178,7 +188,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // localStorage after mount to avoid SSR/client markup mismatches.
   const [theme, setTheme] = useState<ThemeName>(DEFAULT_THEME);
   const [appearance, setAppearance] = useState<Appearance>(DEFAULT_APPEARANCE);
-  const [accents, setAccents] = useState<AccentMap>({});
+  const [accents, setAccents] = useState<AccentMap>({ ...DEFAULT_ACCENTS });
   const [systemDark, setSystemDark] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -205,7 +215,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         ? srvApp
         : load(APPEARANCE_KEY, OLD_APPEARANCE_KEY, isAppearance, DEFAULT_APPEARANCE),
     );
-    setAccents(srv?.accents ? validateAccents(srv.accents) : loadAccents());
+    setAccents(
+      srv?.accents ? { ...DEFAULT_ACCENTS, ...validateAccents(srv.accents) } : loadAccents(),
+    );
     setReady(true);
   }, []);
 
