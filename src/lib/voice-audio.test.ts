@@ -4,8 +4,10 @@ import { test } from "node:test";
 import {
   PACK_VOICES,
   isPackVoice,
+  packApiUrl,
   packAudioUrl,
   packVoice,
+  ttsSsml,
   voiceKey,
   voiceObjectPath,
 } from "./voice-audio.ts";
@@ -51,4 +53,19 @@ test("packAudioUrl is null unconfigured, a public URL when configured", () => {
 
   restore("NEXT_PUBLIC_SUPABASE_URL", savedUrl);
   restore("NEXT_PUBLIC_VOICE_AUDIO_BUCKET", savedBucket);
+});
+
+test("packApiUrl points at the on-demand route with encoded params", () => {
+  assert.equal(packApiUrl("keita", "うみ"), `/api/tts?v=keita&t=${encodeURIComponent("うみ")}`);
+});
+
+test("ttsSsml embeds the voice + prosody, derives lang, and escapes text", () => {
+  const ssml = ttsSsml("ja-JP-KeitaNeural", "-10%", "-12Hz", "海");
+  assert.match(ssml, /xml:lang="ja-JP"/);
+  assert.match(ssml, /<voice name="ja-JP-KeitaNeural">/);
+  assert.match(ssml, /<prosody rate="-10%" pitch="-12Hz">海<\/prosody>/);
+  // Locale comes from the voice prefix.
+  assert.match(ttsSsml("en-GB-ThomasNeural", "+0%", "+0Hz", "hi"), /xml:lang="en-GB"/);
+  // XML-escaped so a stray metacharacter can't break the document.
+  assert.match(ttsSsml("ja-JP-KeitaNeural", "+0%", "+0Hz", `a<b>&"'`), /a&lt;b&gt;&amp;&quot;&apos;/);
 });

@@ -123,3 +123,33 @@ export function packAudioUrl(voiceId: string, text: string): string | null {
   if (!base || !bucket) return null;
   return `${base}/storage/v1/object/public/${bucket}/${voiceObjectPath(voiceId, text)}`;
 }
+
+/** The app's own on-demand route: generate-if-missing, cache, then serve. Used
+ * by speech.ts as the second tier when the CDN clip isn't there yet (words and
+ * sentences, which aren't pre-seeded). A relative URL, so it resolves against
+ * the app origin in the browser. */
+export function packApiUrl(voiceId: string, text: string): string {
+  return `/api/tts?v=${encodeURIComponent(voiceId)}&t=${encodeURIComponent(text)}`;
+}
+
+/**
+ * SSML for Azure Speech REST — one voice, with prosody, text XML-escaped. Shared
+ * by the seeder and /api/tts so a clip generated up front and one generated on
+ * demand are byte-for-byte the same request. The locale is taken from the voice
+ * name's prefix (ja-JP-KeitaNeural → ja-JP).
+ */
+export function ttsSsml(voice: string, rate: string, pitch: string, text: string): string {
+  const lang = voice.split("-").slice(0, 2).join("-") || "ja-JP";
+  const esc = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+  return (
+    `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${lang}">` +
+    `<voice name="${voice}"><prosody rate="${rate}" pitch="${pitch}">${esc(text)}</prosody>` +
+    `</voice></speak>`
+  );
+}

@@ -2,7 +2,7 @@
 // Note: browsers only refresh the installed-voice list on a full restart,
 // and Siri voices are never exposed to the web speech API.
 
-import { isPackVoice, packAudioUrl } from "@/lib/voice-audio";
+import { isPackVoice, packApiUrl, packAudioUrl, packVoicesEnabled } from "@/lib/voice-audio";
 
 /**
  * The minimum a voice must carry to be chosen among. `SpeechSynthesisVoice`
@@ -166,17 +166,24 @@ function speakNow(text: string, voiceName: string): void {
 let currentClip: HTMLAudioElement | null = null;
 
 /**
- * Play a pack-voice clip from Storage, falling back to the browser voice if the
- * clip is missing, the network is down, or autoplay is blocked. `voiceName`
- * falls back to "" (Auto) so the browser path picks its own best voice rather
- * than looking for a browser voice named after the (nonexistent) pack.
+ * Play a pack-voice clip, in two tiers, falling back to the browser voice last.
+ *
+ *   1. The CDN object (packAudioUrl) — instant for anything already seeded or
+ *      cached (all kana, plus any word heard before).
+ *   2. /api/tts (packApiUrl) — the on-demand route: it synthesizes a missing
+ *      word with Azure, caches it into the bucket, and returns it, so the next
+ *      play is a tier-1 hit. Only reached when tier 1 404s.
+ *   3. The browser's own Japanese voice — when neither is available (offline,
+ *      unconfigured, autoplay blocked).
+ *
+ * Each `<audio>` reports a 404/decode failure via `error` and an autoplay refusal
+ * via a rejected `play()`; either advances to the next tier. Tiers run inside the
+ * click's sticky activation, so the tier-2 play is still allowed to make sound.
  */
 function speakPack(text: string, voiceId: string): void {
-  const url = packAudioUrl(voiceId, text);
-  if (!url) {
-    speakBrowser(text, "");
-    return;
-  }
+  const tiers = [packAudioUrl(voiceId, text), packApiUrl(voiceId, text)].filter(
+    (u): u is string => !!u,
+  );
   if (currentClip) {
     currentClip.pause();
     currentClip = null;
@@ -184,19 +191,24 @@ function speakPack(text: string, voiceId: string): void {
   // speechSynthesis and an <audio> clip are separate outputs; cancel any
   // in-flight utterance so a fallback from the previous card doesn't overlap.
   speechSynthesis.cancel();
-  const clip = new Audio(url);
-  currentClip = clip;
-  let fellBack = false;
-  const fallback = () => {
-    if (fellBack) return;
-    fellBack = true;
-    if (currentClip === clip) currentClip = null;
-    speakBrowser(text, "");
+  const playFrom = (i: number): void => {
+    if (i >= tiers.length) {
+      speakBrowser(text, "");
+      return;
+    }
+    const clip = new Audio(tiers[i]);
+    currentClip = clip;
+    let advanced = false;
+    const next = () => {
+      if (advanced) return;
+      advanced = true;
+      if (currentClip === clip) currentClip = null;
+      playFrom(i + 1);
+    };
+    clip.addEventListener("error", next, { once: true });
+    clip.play().catch(next);
   };
-  // A missing object (404) or a decode failure surfaces as `error`; autoplay
-  // refusal rejects `play()`. Either way, drop to the browser voice.
-  clip.addEventListener("error", fallback, { once: true });
-  clip.play().catch(fallback);
+  playFrom(0);
 }
 
 /** Speak Japanese text with the configured voice ("" = auto). A pack voice
@@ -204,7 +216,9 @@ function speakPack(text: string, voiceId: string): void {
  * speechSynthesis. */
 export function speak(text: string, voiceName: string): void {
   if (typeof window === "undefined") return;
-  if (isPackVoice(voiceName)) {
+  // Only take the pack path when it's actually configured (bucket set); a pack
+  // voice selected without a bucket just uses the browser voice, no dead request.
+  if (isPackVoice(voiceName) && packVoicesEnabled()) {
     speakPack(text, voiceName);
     return;
   }
