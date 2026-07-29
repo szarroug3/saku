@@ -635,6 +635,22 @@ function EntryView({ entry }: { entry: LibEntry }) {
         );
       })}
 
+      {/* KEIGO's concept reference — the politeness-levels idea behind the
+          specific honorific/humble verbs above. It rides in the SAME Links box
+          as every other kind's "Read about it" (it used to be a bespoke card of
+          its own), so a keigo page's outgoing link is found where the reader
+          already looks. */}
+      {isKeigo && keigoSet ? (
+        <LinkRow label="Read about it">
+          <Link
+            href={entryHref(grammarConceptEntry("keigo-registers"))}
+            className="text-[13px] text-accent no-underline"
+          >
+            {grammarConceptRow("keigo-registers")?.name} →
+          </Link>
+        </LinkRow>
+      ) : null}
+
       {/* THERE IS NO "no outside link" MESSAGE, and this is the decision that
           `noLinkReason` does not get to override. 7 of the 12 clusters have
           `link: null`, and 52 of the 81 patterns are in no cluster at all — so
@@ -1042,23 +1058,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </div>
       ) : null}
 
-      {/* THE POLITENESS-LEVELS CONCEPT, on every keigo page. The set above teaches
-          the SPECIFIC honorific and humble verbs; this row sends the reader to the
-          idea behind them — the three registers and how whose action it is decides
-          which you use. Keigo has no Links card (like a verb pair), so this rides
-          in a card of its own rather than a Links row. */}
-      {isKeigo && keigoSet ? (
-        <Card>
-          <Lbl>Read about it</Lbl>
-          <Link
-            href={entryHref(grammarConceptEntry("keigo-registers"))}
-            className="text-[13px] text-accent no-underline"
-          >
-            {grammarConceptRow("keigo-registers")?.name} →
-          </Link>
-        </Card>
-      ) : null}
-
       {/* The generic table, now serving grammar and anything new. No rows, no
           section: a headed box containing a header row and nothing else reads as
           broken. */}
@@ -1110,10 +1109,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ) : null}
 
       {/* Links for the kinds whose layout above did not already place it — a
-          mark, and anything new. A verb pair is excluded: it has no parts, no
-          words that contain it, and no glyph to confuse with another, so its
-          links row would be an empty card. */}
-      {!isKana && !isKanji && !isWord && !isGrammar && !isTransitivity && !isKeigo ? (
+          mark, keigo, and anything new. A verb pair is excluded: it has no parts,
+          no words that contain it, and no glyph to confuse with another, so its
+          links row would be an empty card. Keigo is NOT excluded: it carries a
+          "Read about it" row (the politeness-levels concept), so its box has
+          content — this is where that link now lives, in the same box every other
+          kind uses, rather than the bespoke card it used to get. */}
+      {!isKana && !isKanji && !isWord && !isGrammar && !isTransitivity ? (
         <div className={mark ? "mt-6" : ""}>
           <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
         </div>
