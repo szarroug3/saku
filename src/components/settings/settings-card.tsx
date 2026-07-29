@@ -265,6 +265,16 @@ export function SettingsCard() {
     setVoices(jaVoices());
     return onVoicesChanged(() => setVoices(jaVoices()));
   }, []);
+  // Whether pack voices are configured. Resolved POST-MOUNT (not during render)
+  // even though it only reads a NEXT_PUBLIC env: in dev the client bundle can
+  // hold a stale inline of that var while the server sees the current one, so
+  // reading it during render would render the picker differently on server vs.
+  // client and trip a hydration mismatch. Same post-mount pattern as `voices`.
+  const [packEnabled, setPackEnabled] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPackEnabled(packVoicesEnabled());
+  }, []);
 
   // Only the fonts this machine actually has. A given machine tends to have
   // only some of the eight, and an uninstalled font doesn't fail — it renders as
@@ -313,7 +323,7 @@ export function SettingsCard() {
   const currentVoice =
     cfg.voiceName &&
     (voices.some((v) => v.name === cfg.voiceName) ||
-      (isPackVoice(cfg.voiceName) && packVoicesEnabled()))
+      (isPackVoice(cfg.voiceName) && packEnabled))
       ? cfg.voiceName
       : "";
 
@@ -541,7 +551,7 @@ export function SettingsCard() {
         </Row>
 
         <Row label="Speech voice" info={voiceInfo(platform)}>
-          {voices.length || packVoicesEnabled() ? (
+          {voices.length || packEnabled ? (
             <>
               <Chip on={currentVoice === ""} onClick={() => pickVoice("")}>
                 Auto
@@ -549,7 +559,7 @@ export function SettingsCard() {
               {/* PACK VOICES first — the whole reason they exist is to beat the
                   device's own voice, so they lead. Only shown when configured
                   (a Storage bucket is set); otherwise this list is browser-only. */}
-              {packVoicesEnabled() &&
+              {packEnabled &&
                 PACK_VOICES.map((p) => (
                   <Chip
                     key={p.id}
