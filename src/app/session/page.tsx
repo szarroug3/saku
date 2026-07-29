@@ -10,7 +10,7 @@
 
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { RestScreen } from "@/components/session/rest-screen";
 import { SessionComplete } from "@/components/session/session-complete";
@@ -133,8 +133,17 @@ export default function SessionPage() {
 
   // No session (deep link, or a refresh with nothing stored) → Home. Wait for
   // the restore, or a refresh mid-rest would bounce you off your own break.
+  //
+  // EXCEPT when we just pressed "Complete session": finishSession nulls the
+  // session AND pushes /learn, and this guard firing on that null would replace
+  // /learn with Home (the bug: a finished session dumped you on the landing page
+  // instead of the next lesson). `finishingRef` lets finishSession own its own
+  // navigation. Discard still relies on this guard for its Home redirect, and it
+  // does not set the flag, so it is unaffected. The flag needs no reset: /learn
+  // unmounts this page, and a fresh session remounts it with the ref back to false.
+  const finishingRef = useRef(false);
   useEffect(() => {
-    if (restored && !session) router.replace("/");
+    if (restored && !session && !finishingRef.current) router.replace("/");
   }, [restored, session, router]);
 
   // Drilling belongs to /quiz. This is the other half of that same guard:
@@ -356,7 +365,12 @@ export default function SessionPage() {
             finishSession();
             startSession(facts, teach, what);
           }}
-          onDone={finishSession}
+          onDone={() => {
+            // finishSession pushes /learn; flag it so the "no session → Home"
+            // guard above doesn't clobber that with a Home redirect.
+            finishingRef.current = true;
+            finishSession();
+          }}
         />
       </div>
     </>
