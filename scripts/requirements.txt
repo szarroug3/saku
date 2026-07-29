@@ -1,0 +1,8 @@
+# Python tooling for the voice seeder (scripts/seed-voice.mjs). Installed into a
+# repo-local venv by `pnpm run voice:setup` (see scripts/setup-voice.mjs). Not a
+# runtime dependency — the app never runs Python; this only generates the clips
+# that get uploaded to Supabase Storage.
+#
+# Pinned to v7.2+ (compatible release): patches/minor updates within v7 keep the
+# CLI flags stable while still picking up fixes for Microsoft's rotating token.
+edge-tts~=7.2

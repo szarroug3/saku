@@ -6,7 +6,10 @@
 // and to resume after an interruption.
 //
 // PREREQUISITES
-//   - edge-tts on PATH (pipx install edge-tts), or EDGE_TTS_BIN=/path/to/edge-tts
+//   - uv installed (brew install uv, or https://astral.sh/uv). edge-tts is run
+//     THROUGH uv, which installs it (pinned in scripts/requirements.txt) into a
+//     cached env on first use — no venv to manage, nothing to remember on a fresh
+//     clone. Or set EDGE_TTS_BIN=/path/to/edge-tts to use a binary directly.
 //   - a PUBLIC Storage bucket created in the Supabase Dashboard, its name in
 //     NEXT_PUBLIC_VOICE_AUDIO_BUCKET
 //   - SUPABASE_SERVICE_ROLE_KEY set (upload bypasses RLS)
@@ -33,6 +36,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -47,7 +51,25 @@ const arg = (name, def) => {
 
 const voiceId = arg("id", "keita-soothing");
 const set = arg("set", "kana");
-const edgeBin = process.env.EDGE_TTS_BIN || "edge-tts";
+const reqPath = fileURLToPath(new URL("./requirements.txt", import.meta.url));
+
+// Run edge-tts through uv (installs the pinned package into a cached env on
+// first use), unless EDGE_TTS_BIN points at a binary directly.
+const edgeArgs = (out, text) => [
+  "--voice", voice,
+  `--rate=${rate}`,
+  `--pitch=${pitch}`,
+  "--text", text,
+  "--write-media", out,
+];
+const runEdge = (out, text) =>
+  process.env.EDGE_TTS_BIN
+    ? execFileSync(process.env.EDGE_TTS_BIN, edgeArgs(out, text), { stdio: "ignore" })
+    : execFileSync(
+        "uv",
+        ["run", "--with-requirements", reqPath, "edge-tts", ...edgeArgs(out, text)],
+        { stdio: "ignore" },
+      );
 
 // --voice/--rate/--pitch are explicit; if the id is a registered pack, its
 // settings fill any that were omitted, so `--id keita-soothing` alone works.
@@ -87,6 +109,19 @@ function speakables(name) {
 // the browser fallback. Dedup in case the set already contains it.
 const texts = [...new Set([VOICE_PREVIEW, ...speakables(set)])];
 const supabase = createClient(url, key, { auth: { persistSession: false } });
+// Fail early with a clear message if uv is missing (unless a direct binary is set).
+if (!process.env.EDGE_TTS_BIN) {
+  try {
+    execFileSync("uv", ["--version"], { stdio: "ignore" });
+  } catch {
+    console.error(
+      "uv not found. Install it (brew install uv, or https://astral.sh/uv/), " +
+        "or set EDGE_TTS_BIN to an edge-tts binary.",
+    );
+    process.exit(1);
+  }
+}
+
 const tmp = mkdtempSync(join(tmpdir(), "seed-voice-"));
 
 console.log(
@@ -111,11 +146,7 @@ try {
 
     const out = join(tmp, "clip.mp3");
     try {
-      execFileSync(
-        edgeBin,
-        ["--voice", voice, `--rate=${rate}`, `--pitch=${pitch}`, "--text", text, "--write-media", out],
-        { stdio: "ignore" },
-      );
+      runEdge(out, text);
     } catch (e) {
       console.error(`  edge-tts failed for "${text}": ${e.message}`);
       failed++;
