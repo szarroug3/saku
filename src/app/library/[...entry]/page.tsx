@@ -260,7 +260,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // The recipe, not just its id. Everything a pattern page shows that no other
   // page shows — the formula, the hosts, which production facts exist — hangs
   // off this one object, and a null here is simply "not a grammar entry".
-  const pattern = recipeOf(entry);
+  // Memoized on the entry so the recipe is a stable, compiler-tracked reference:
+  // familyCluster below keys its memo on this, and the compiler can only preserve
+  // that if the value it depends on is one it tracks rather than a bare call.
+  const pattern = useMemo(() => recipeOf(entry), [entry]);
   const isGrammar = pattern !== null;
   // WHICH HOSTS ARE SCORED IS NOT DECIDED HERE ANY MORE. It used to be, to
   // build a chip per production host in the header. Those scores are now a
@@ -271,7 +274,14 @@ function EntryView({ entry }: { entry: LibEntry }) {
    * pattern in no cluster (52 of the 81), and a cluster with no recipe members
    * at all (は/が, に/で, transitivity — map-only, and a pattern cannot be in one
    * of those since they name no members). */
-  const familyCluster = pattern?.cluster ? (clusterById(pattern.cluster) ?? null) : null;
+  // clusterById is a Map lookup, so the cluster it returns is a stable reference
+  // the memo below can track. Keying on the bare lookup result instead left the
+  // compiler unable to prove the value held still, so it declined to preserve
+  // familyMembers' memoization.
+  const familyCluster = useMemo(
+    () => (pattern?.cluster ? (clusterById(pattern.cluster) ?? null) : null),
+    [pattern],
+  );
   const familyMembers = useMemo(
     () => (familyCluster ? membersOf(familyCluster) : []),
     [familyCluster],
@@ -322,7 +332,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
       : (keigoSet.words[0]?.word ?? "")
     : "";
 
-  const wordRow = isWord ? vocabRow(entry.glyph) : undefined;
+  // vocabRow is a single Map lookup, so the reference it returns is already
+  // stable across renders, but the compiler cannot prove that of a bare call.
+  // Memoizing on the glyph (a primitive) makes wordRow a value the compiler can
+  // track, so the pieces/forms memos below may key on it without the compiler
+  // giving up on preserving their memoization.
+  const wordRow = useMemo(
+    () => (isWord ? vocabRow(entry.glyph) : undefined),
+    [isWord, entry.glyph],
+  );
   // null for four words in five, and the word branch renders nothing at all in
   // that case. A single Map lookup: the choosing happened at build time, in
   // scripts/build-word-examples.ts.
