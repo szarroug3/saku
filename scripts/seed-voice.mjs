@@ -26,6 +26,8 @@
 //   --rate <r>      prosody rate, e.g. -10% (default +0%).
 //   --pitch <p>     prosody pitch, e.g. -12Hz (default +0Hz).
 //   --set <name>    which strings to seed (default: kana; only kana today).
+//   --force         regenerate + re-upload every clip, even ones already in the
+//                   bucket (use after a prosody/synthesis change).
 //
 // If --id names a voice already registered in PACK_VOICES, --voice/--rate/--pitch
 // default to that entry's settings, so `--id keita-soothing` alone works. To seed
@@ -51,6 +53,10 @@ const arg = (name, def) => {
 
 const voiceId = arg("id", "keita-soothing");
 const set = arg("set", "kana");
+// --force regenerates and re-uploads every clip even if it already exists. Use
+// it after changing a voice's prosody or a synthesis fix, since the idempotent
+// skip is keyed on the text (not the audio) and would otherwise keep the old clip.
+const force = args.includes("--force");
 const reqPath = fileURLToPath(new URL("./requirements.txt", import.meta.url));
 
 // Run edge-tts through uv (installs the pinned package into a cached env on
@@ -147,10 +153,12 @@ try {
     const folder = path.slice(0, path.lastIndexOf("/"));
     const file = path.slice(path.lastIndexOf("/") + 1);
 
-    const { data: existing } = await supabase.storage.from(bucket).list(folder, { search: file });
-    if (existing?.some((f) => f.name === file)) {
-      skipped++;
-      continue;
+    if (!force) {
+      const { data: existing } = await supabase.storage.from(bucket).list(folder, { search: file });
+      if (existing?.some((f) => f.name === file)) {
+        skipped++;
+        continue;
+      }
     }
 
     const out = join(tmp, "clip.mp3");
