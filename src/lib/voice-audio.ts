@@ -37,8 +37,8 @@ export interface PackVoice {
  * documentary feel (the settings a listening test landed on). */
 export const PACK_VOICES: readonly PackVoice[] = [
   {
-    id: "keita-soothing",
-    label: "Keita (soothing)",
+    id: "keita",
+    label: "Keita",
     source: { voice: "ja-JP-KeitaNeural", rate: "-10%", pitch: "-12Hz" },
   },
   {

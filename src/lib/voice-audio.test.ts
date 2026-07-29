@@ -20,13 +20,13 @@ test("voiceKey is deterministic 16-hex and text-sensitive", () => {
 
 test("voiceObjectPath is voices/<id>/<key>.mp3", () => {
   assert.equal(
-    voiceObjectPath("keita-soothing", "あ"),
-    `voices/keita-soothing/${voiceKey("あ")}.mp3`,
+    voiceObjectPath("keita", "あ"),
+    `voices/keita/${voiceKey("あ")}.mp3`,
   );
 });
 
 test("isPackVoice matches only registered pack ids", () => {
-  assert.ok(isPackVoice("keita-soothing"));
+  assert.ok(isPackVoice("keita"));
   assert.ok(!isPackVoice(""));
   assert.ok(!isPackVoice("Kyoko"));
   assert.ok(PACK_VOICES.every((v) => packVoice(v.id) === v));
@@ -40,13 +40,13 @@ test("packAudioUrl is null unconfigured, a public URL when configured", () => {
 
   delete process.env.NEXT_PUBLIC_SUPABASE_URL;
   delete process.env.NEXT_PUBLIC_VOICE_AUDIO_BUCKET;
-  assert.equal(packAudioUrl("keita-soothing", "あ"), null);
+  assert.equal(packAudioUrl("keita", "あ"), null);
 
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://proj.supabase.co";
   process.env.NEXT_PUBLIC_VOICE_AUDIO_BUCKET = "tts-voice";
   assert.equal(
-    packAudioUrl("keita-soothing", "あ"),
-    `https://proj.supabase.co/storage/v1/object/public/tts-voice/${voiceObjectPath("keita-soothing", "あ")}`,
+    packAudioUrl("keita", "あ"),
+    `https://proj.supabase.co/storage/v1/object/public/tts-voice/${voiceObjectPath("keita", "あ")}`,
   );
 
   restore("NEXT_PUBLIC_SUPABASE_URL", savedUrl);

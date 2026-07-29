@@ -20,7 +20,7 @@
 //     --import ./src/lib/conjugate/test-hooks.mjs scripts/seed-voice.mjs
 //
 // OPTIONS
-//   --id <folder>   storage folder + voiceName, e.g. keita-soothing (default),
+//   --id <folder>   storage folder + voiceName, e.g. keita (default),
 //                   thomas-calm. This is what Settings persists and speech.ts reads.
 //   --voice <name>  edge-tts voice, e.g. ja-JP-KeitaNeural, en-GB-ThomasNeural.
 //   --rate <r>      prosody rate, e.g. -10% (default +0%).
@@ -30,7 +30,7 @@
 //                   bucket (use after a prosody/synthesis change).
 //
 // If --id names a voice already registered in PACK_VOICES, --voice/--rate/--pitch
-// default to that entry's settings, so `--id keita-soothing` alone works. To seed
+// default to that entry's settings, so `--id keita` alone works. To seed
 // a brand-new voice, pass them explicitly:
 //   ... scripts/seed-voice.mjs --id thomas-calm --voice en-GB-ThomasNeural --rate=-12% --pitch=-15Hz
 
@@ -51,7 +51,7 @@ const arg = (name, def) => {
   return i >= 0 && args[i + 1] ? args[i + 1] : def;
 };
 
-const voiceId = arg("id", "keita-soothing");
+const voiceId = arg("id", "keita");
 const set = arg("set", "kana");
 // --force regenerates and re-uploads every clip even if it already exists. Use
 // it after changing a voice's prosody or a synthesis fix, since the idempotent
@@ -78,7 +78,7 @@ const runEdge = (out, text) =>
       );
 
 // --voice/--rate/--pitch are explicit; if the id is a registered pack, its
-// settings fill any that were omitted, so `--id keita-soothing` alone works.
+// settings fill any that were omitted, so `--id keita` alone works.
 const registered = packVoice(voiceId);
 const voice = arg("voice", registered?.source.voice);
 const rate = arg("rate", registered?.source.rate ?? "+0%");
