@@ -38,9 +38,11 @@ test("the asked kanji is highlighted and the rest of the word is dimmed", async 
   const glyph = await startQuizDrill(page);
 
   // A highlighted glyph is drawn at full --text with a glow; a dimmed one at
-  // --text-muted with 0.6 opacity (see drill-halo.tsx). The word therefore
-  // renders as per-character spans, and exactly the asked kanji is the lit one.
-  const chars = glyph.locator("span");
+  // --text-muted with 0.6 opacity (see drill-halo.tsx PromptGlyph). The word
+  // renders as one whitespace-nowrap wrapper span holding a span PER CHARACTER;
+  // target those per-character spans (not every span under .kq-glyph, which also
+  // counts the wrapper), and exactly the asked kanji is the lit one.
+  const chars = glyph.locator("span.whitespace-nowrap > span");
   await expect(chars).toHaveCount(2);
   const lit = chars.filter({ hasText: "病" });
   const dim = chars.filter({ hasText: "院" });

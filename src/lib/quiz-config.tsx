@@ -37,6 +37,7 @@ import {
   allPairResponses,
   askFromAudioPrompts,
   deriveAudioPrompts,
+  normalizeAsk,
 } from "@/lib/ask-config";
 import type { QuizConfig } from "@/types";
 
@@ -133,6 +134,15 @@ function normalizeConfig(saved: unknown): QuizConfig {
       if (wasListenSentence) audioPrompts = true;
       cfg.audioPrompts = audioPrompts;
       cfg.ask = askFromAudioPrompts(audioPrompts);
+      // TEST SEAM: a stored `askOverride` pins the exact AskConfig, bypassing the
+      // derive-from-audioPrompts regeneration above. The app has no UI that writes
+      // it, so a real config never carries one; the e2e seed fixtures set it so a
+      // spec can pin a direction / style / response that the simplified config
+      // otherwise rolls per card. Read off the raw stored value, never a field on
+      // QuizConfig, so it cannot leak into the real model.
+      if (rawObj.askOverride) {
+        cfg.ask = normalizeAsk(rawObj.askOverride);
+      }
       // Missed cards requeue by default; only an explicit stored false turns it
       // off. Absent (older config) means on.
       cfg.requeue = rawObj.requeue === false ? false : true;

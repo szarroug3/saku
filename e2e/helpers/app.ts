@@ -1,7 +1,8 @@
 import { test as base, expect, type Page } from "@playwright/test";
 
+import { defaultAsk } from "@/lib/ask-config";
 import { factInfo } from "@/lib/facts";
-import type { FactId } from "@/types";
+import type { AskConfig, FactId } from "@/types";
 
 /**
  * Test fixtures for the app.
@@ -112,6 +113,44 @@ function historyWith(seen: string[], claims: string[]): string {
   return JSON.stringify({ sessions: [], facts: {}, seen: seenRecord, claims: claimsRecord });
 }
 
+/**
+ * Translate a ConfigSeed into the stored `askOverride` the app's normalizeConfig
+ * honors (see the TEST SEAM there). The simplified config regenerates `ask` from
+ * a single audioPrompts boolean, so a spec can no longer pin a direction / style
+ * through config alone; this rebuilds the intended AskConfig from either an
+ * explicit `ask` (the ask() helper) or the deprecated direction()/style() fields
+ * and stashes it as `askOverride`, which survives the load. Call sites keep using
+ * the same seed helpers.
+ *
+ * Direction is inferred from which SOURCE is enabled: `japanese` ⇒ jp→en,
+ * `english` ⇒ en→jp. Style is the source's `answers` (typed | mc). Response
+ * (definition | romaji) is left to the FACT, which enabledFormsFor filters by.
+ */
+export function withAskOverride(cfg: ConfigSeed): ConfigSeed {
+  if (cfg.askOverride) return cfg;
+  const explicit = cfg.ask;
+  if (explicit && typeof explicit === "object") {
+    return { ...cfg, askOverride: explicit };
+  }
+  const dirs = cfg.dirs as { jp2en: boolean; en2jp: boolean } | undefined;
+  const sJp = cfg.styleJp2en as "typed" | "mc" | undefined;
+  const sEn = cfg.styleEn2jp as "typed" | "mc" | undefined;
+  if (!dirs && !sJp && !sEn) return cfg;
+  const base = defaultAsk();
+  const jpOn = dirs ? dirs.jp2en : true;
+  const enOn = dirs ? dirs.en2jp : true;
+  const askOverride: AskConfig = {
+    japanese: {
+      ...base.japanese,
+      responses: jpOn ? base.japanese.responses : [],
+      answers: jpOn ? [sJp ?? "typed"] : [],
+    },
+    sentence: base.sentence,
+    english: { answers: enOn ? [sEn ?? "typed"] : [] },
+  };
+  return { ...cfg, askOverride };
+}
+
 export const test = base.extend<{
   /** Seed the signed-out localStorage (history + config), then navigate. Call
    * before the first goto. */
@@ -136,7 +175,7 @@ export const test = base.extend<{
           }
           window.localStorage.setItem("kanaquiz-cfg", v.cfg);
         },
-        { history: historyWith(seen, claims), cfg: JSON.stringify(cfg) },
+        { history: historyWith(seen, claims), cfg: JSON.stringify(withAskOverride(cfg)) },
       );
     });
   },
@@ -170,7 +209,10 @@ export function answerBox(page: Page) {
 
 /** The multiple-choice option buttons for the current card. */
 export function optionButtons(page: Page) {
-  return page.locator("button.min-w-\\[74px\\]");
+  // The MC option buttons in the drill's 3-col board (drill-screen.tsx). The
+  // board moved to a uniform grid in b9dad93, dropping the old `min-w-[74px]`
+  // row styling for `min-h-[60px]` cells; this selector tracks that shape.
+  return page.locator("button.min-h-\\[60px\\]");
 }
 
 /**

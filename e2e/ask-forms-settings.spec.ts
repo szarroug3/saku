@@ -56,15 +56,22 @@ test.describe("Unreachable settings combinations", () => {
     await startQuizDrill(page);
 
     await expect(page.getByRole("button", { name: "Play the word again" })).toBeVisible();
-    await expect(page.locator(".kq-glyph")).toHaveCount(0);
+    // The listening card still renders the halo's .kq-glyph, but it is the
+    // speaker button standing in for the hidden glyph, so it carries no text
+    // rather than being absent (halo redesign). Assert it is empty, not gone.
+    await expect(page.locator(".kq-glyph")).toHaveText("");
     await expect(optionButtons(page)).not.toHaveCount(0);
   });
 
   test("kanji reading with audio produces no cards (kanji reading not listenable)", async ({
     page,
   }) => {
-    // Kanji reading fact with audio should produce no forms
-    // because kanji readings are not listenable
+    // Kanji reading fact with audio produces no forms because kanji readings are
+    // not listenable (enabledFormsFor drops the audio prompt via
+    // isKanjiReadingFact), and audio is the only prompt selected. With nothing
+    // askable the run never begins: Practice keeps Start disabled rather than
+    // launching an empty drill, so the empty-state UI to assert is the disabled
+    // Start, not a drill end screen (which is unreachable here).
     await seedQuiz(page, {
       seen: [firstKanjiReading],
       cfg: {
@@ -76,18 +83,20 @@ test.describe("Unreachable settings combinations", () => {
         }),
       },
     });
-    await startQuizDrill(page);
+    await page.goto("/practice");
 
-    // Should reach the end with no cards asked
-    const endMessage = page.getByText(/no more|done|finished/i);
-    await expect(endMessage).toBeVisible({ timeout: 5000 });
+    const start = page.getByRole("button", { name: "Start", exact: true });
+    await expect(start).toBeDisabled();
   });
 
   test("grammar meaning with audio produces no cards (grammar not listenable)", async ({
     page,
   }) => {
-    // Grammar meaning fact with audio should produce no forms
-    // because grammar patterns are not listenable
+    // Grammar meaning with audio produces no forms: grammar patterns are not
+    // listenable (listenKind is null), so the audio prompt is dropped, and the
+    // ask() helper leaves the Sentence source off, so no sentence-definition
+    // board is offered either. Nothing is askable, so Practice keeps Start
+    // disabled rather than launching an empty drill.
     await seedQuiz(page, {
       seen: [grammarFact],
       cfg: {
@@ -99,18 +108,21 @@ test.describe("Unreachable settings combinations", () => {
         }),
       },
     });
-    await startQuizDrill(page);
+    await page.goto("/practice");
 
-    // Should reach the end with no cards asked
-    const endMessage = page.getByText(/no more|done|finished/i);
-    await expect(endMessage).toBeVisible({ timeout: 5000 });
+    const start = page.getByRole("button", { name: "Start", exact: true });
+    await expect(start).toBeDisabled();
   });
 
-  test("kana en→jp with only Type it selected produces no cards (MC-only)", async ({
+  test("kana en→jp with only Type it selected still produces one MC card (kana en→jp is MC-only)", async ({
     page,
   }) => {
-    // Kana glyphs are MC-only for en→jp (kana reading is the prompt, typing it back is trivial)
-    // Selecting only "Type it" should produce no forms
+    // Kana en→jp is MC-only: the romaji is the prompt, so typing it back would
+    // grade the prompt. The kana matrix in enabledFormsFor pins the English
+    // source's form to answer "mc" whenever the source is on, regardless of the
+    // learner's typed/mc choice, so selecting only "Type it" does NOT empty the
+    // run: it produces exactly one kana-picking card. The old "no cards" premise
+    // predates the ask being honored.
     await seedQuiz(page, {
       seen: [kanaFact(kanaChar)],
       cfg: {
@@ -125,9 +137,9 @@ test.describe("Unreachable settings combinations", () => {
     });
     await startQuizDrill(page);
 
-    // Should reach the end with no cards asked
-    const endMessage = page.getByText(/no more|done|finished/i);
-    await expect(endMessage).toBeVisible({ timeout: 5000 });
+    // The card is the see-romaji, pick-kana MC board, so option buttons are
+    // present rather than an empty end screen.
+    await expect(optionButtons(page)).not.toHaveCount(0);
   });
 });
 
@@ -146,9 +158,15 @@ test.describe("Multiple settings paths to same format (text vs audio)", () => {
     });
     await startQuizDrill(page);
 
-    // Should show a card with text prompt
-    const prompt = page.locator('[class*="prompt"]').first();
-    await expect(prompt).toBeVisible();
+    // A TEXT reading card shows the written word in the halo glyph and asks for
+    // its romaji in a typed box. The distinguishing signal from the audio form
+    // (next test) is that the glyph carries the word rather than being the empty
+    // speaker stand-in, and there is no "Play the word again" speaker.
+    await expect(page.locator(".kq-glyph").first()).not.toHaveText("");
+    await expect(
+      page.getByRole("button", { name: "Play the word again" }),
+    ).toHaveCount(0);
+    await expect(page.getByRole("textbox")).toBeVisible();
   });
 
   test("word reading with audio prompt shows a card (different FORM)", async ({
@@ -188,18 +206,13 @@ test.describe("Multiple settings paths to same format (text vs audio)", () => {
     });
     await startQuizDrill(page);
 
-    // First card should be text or audio, complete it
-    const firstPrompt = page.locator('[class*="prompt"]').first();
-    await expect(firstPrompt).toBeVisible();
-
-    // Type answer to proceed
-    const answerBox = page.getByRole("textbox").first();
-    await answerBox.fill("test");
-    await page.keyboard.press("Enter");
-
-    // Second card should be the other prompt type
-    // Both should be visible in the session
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Both enabled forms are TYPED jp→en reading cards that differ only in
+    // whether the word is shown (text) or played (audio), so the card that
+    // appears carries a typed answer box either way. Endless rolls ONE form per
+    // showing, so this asserts a valid typed reading card started rather than
+    // trying to force both forms into one deterministic run (which would need
+    // coverage mode and a multi-card walk).
+    await expect(page.getByRole("textbox")).toBeVisible();
   });
 
   test("word meaning with text and audio selected shows both FORMS", async ({
@@ -218,9 +231,12 @@ test.describe("Multiple settings paths to same format (text vs audio)", () => {
     });
     await startQuizDrill(page);
 
-    // Should show multiple choice questions
-    const options = page.locator('button[role="option"]');
-    await expect(options).toHaveCount(4, { timeout: 5000 });
+    // Both enabled forms (text and audio) are definition MC cards, so whichever
+    // one endless rolls, the drill shows an MC board. The option buttons are
+    // button.min-h-[60px] (the optionButtons helper), not role="option", and the
+    // board size is variable (buildMcOptions pads only as far as it has honest
+    // distractors), so assert the board is present rather than a fixed count.
+    await expect(optionButtons(page)).not.toHaveCount(0);
   });
 });
 
@@ -243,10 +259,11 @@ test.describe("Settings enforcement", () => {
     });
     await startQuizDrill(page);
 
-    // Should only show definition cards (multiple choice)
-    // Reading cards should be dropped
-    const options = page.locator('button[role="option"]');
-    await expect(options.first()).toBeVisible();
+    // Definition-only drops the reading fact (jp2enResponse of a word reading is
+    // romaji, which is not selected), leaving only the meaning fact as a
+    // definition MC card. The board buttons are button.min-h-[60px] (the
+    // optionButtons helper), not role="option".
+    await expect(optionButtons(page).first()).toBeVisible();
   });
 
   test("selecting romaji-only narrows to reading facts, drops meaning facts", async ({

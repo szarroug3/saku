@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
-import type { ConfigSeed } from "./app";
+import { withAskOverride, type ConfigSeed } from "./app";
 
 /**
  * QUIZ-surface seeding + locators, kept apart from helpers/app.ts so the two
@@ -82,7 +82,7 @@ export async function seedQuiz(page: Page, seed: QuizSeed = {}): Promise<void> {
       }
       window.localStorage.setItem("kanaquiz-cfg", v.cfg);
     },
-    { history: historyBlob(seed), cfg: JSON.stringify(seed.cfg ?? {}) },
+    { history: historyBlob(seed), cfg: JSON.stringify(withAskOverride(seed.cfg ?? {})) },
   );
 }
 

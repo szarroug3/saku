@@ -18,8 +18,11 @@ import { wordMeaningFactId } from "@/data/vocab";
  * leaked the answer would be the worst possible regression here, so every case
  * asserts the answer's ABSENCE as well as the nudge's presence.
  *
- * The hint lives in one slot directly above the answer control (drill-screen.tsx),
- * holding the button before it is taken and the hint itself afterward.
+ * The hint lives in one column below the answer control (drill-screen.tsx): a
+ * flex-col that holds the Skip/Hint button row before the hint is taken and the
+ * rendered hint itself afterward. Matching that column keeps the assertions
+ * agnostic to which shape the hint takes (formula pieces, a text line, an
+ * image), which differ by card.
  */
 
 const JP2EN_TYPED = {
@@ -28,9 +31,10 @@ const JP2EN_TYPED = {
   ...style("jp2en", "typed"),
 };
 
-/** The hint slot — button before, hint after. */
+/** The hint column — the Skip/Hint button row before it is taken, the rendered
+ * hint after. One locator for every hint shape (see the file header). */
 function hintSlot(page: Parameters<typeof hintButton>[0]) {
-  return page.locator("span.min-h-7").first();
+  return page.locator("span.flex-col.items-center.gap-3").first();
 }
 
 test("a kanji-in-word reading card gets the FORMULA hint, not the asked reading", async ({
@@ -83,8 +87,10 @@ test("the '?' key takes the hint just like the button", async ({ page }) => {
   await page.keyboard.press("?");
   const slot = hintSlot(page);
   await expect(slot).toContainText("電 is electricity, 話 is tale");
-  // The button is gone once the hint is taken — nothing to press twice.
-  await expect(hintButton(page)).toHaveCount(0);
+  // The button stays but goes DISABLED once the hint is taken (drill-screen.tsx
+  // renders it with `disabled={q.hinted}`), so there is nothing to press twice —
+  // and takeHint's own `q.hinted` guard makes a second "?" inert too.
+  await expect(hintButton(page)).toBeDisabled();
 });
 
 test("multiple choice offers NO hint", async ({ page }) => {
@@ -97,7 +103,9 @@ test("multiple choice offers NO hint", async ({ page }) => {
     cfg: { ...STEADY_CFG, ...ask({ jpAnswers: ["mc"] }) },
   });
   await startQuizDrill(page);
-  // The board is up (options rendered), and there is no Hint button on it.
-  await expect(page.locator("button.min-w-\\[74px\\]").first()).toBeVisible();
+  // The board is up (options rendered), and there is no Hint button on it. The
+  // MC board moved to a uniform grid of min-h-[60px] cells (drill-screen.tsx),
+  // so the old min-w-[74px] row styling is gone.
+  await expect(page.locator("button.min-h-\\[60px\\]").first()).toBeVisible();
   await expect(hintButton(page)).toHaveCount(0);
 });

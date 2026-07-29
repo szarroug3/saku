@@ -7,15 +7,18 @@ import { patternMeaningFactId } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
 
 /**
- * PRACTICE PAGE — START BAR ENFORCEMENT (task 30 + enforcement).
+ * PRACTICE PAGE START BAR ENFORCEMENT (task 30 + enforcement).
  *
- * Verifies that the Start bar on /practice shows the correct disabled reason
- * when settings won't produce any cards for the selected material. Before this
- * enforcement, "audio-only with kana" would show "You're solid on all of these"
- * — now it says why.
+ * Verifies that the Start bar on /practice never falsely says "you're solid"
+ * when the chosen settings make no cards for the selected material. When an
+ * audio-only ask lands on a fact that has no audio question (a kanji reading, a
+ * grammar meaning), the run has zero questions: questionCount is 0, so the bar
+ * reports "Nothing is selected" and Start stays disabled. Kana is the exception,
+ * because audio dictation IS a real kana question (hear the kana, pick it back),
+ * so audio-only with kana is reachable and Start enables.
  *
- * The tests navigate to /practice, check the reason text in the start bar,
- * and do NOT click Start (the button is disabled when the reason is shown).
+ * The tests navigate to /practice and read the start bar; they do NOT click
+ * Start when it is disabled.
  */
 
 const kanaChar = "あ";
@@ -26,9 +29,9 @@ const firstKanjiReading = READING_INDEX.keys().next().value as string;
 const grammarFact = patternMeaningFactId(RECIPES[0].id);
 
 // ---------------------------------------------------------------------------
-// Unreachable settings → specific diagnostic message
+// Audio-only asks: no questions on a non-listenable fact, a real one on kana
 
-test("audio-only with kana shows unreachable message, not 'solid'", async ({
+test("audio-only with kana is reachable (kana dictation), Start enabled", async ({
   page,
 }) => {
   await seedQuiz(page, {
@@ -40,17 +43,13 @@ test("audio-only with kana shows unreachable message, not 'solid'", async ({
   });
   await page.goto("/practice");
 
-  // The start bar should show the unreachable diagnostic — not "solid"
-  const bar = page.locator(".kq-band").last();
-  await expect(bar).toContainText("Audio");
-  await expect(bar).not.toContainText("solid");
-
-  // Start is disabled
+  // Kana keeps a real audio question (hear the kana, pick it back), so an
+  // audio-only ask on kana is NOT a dead end and Start stays available.
   const start = page.getByRole("button", { name: "Start", exact: true });
-  await expect(start).toBeDisabled();
+  await expect(start).toBeEnabled();
 });
 
-test("audio-only with kanji reading shows unreachable message, not 'solid'", async ({
+test("audio-only with kanji reading makes no questions, not 'solid'", async ({
   page,
 }) => {
   await seedQuiz(page, {
@@ -62,15 +61,17 @@ test("audio-only with kanji reading shows unreachable message, not 'solid'", asy
   });
   await page.goto("/practice");
 
+  // A kanji reading has no audio question, so audio-only makes zero cards. The
+  // bar must report the empty run, never falsely claim the material is solid.
   const bar = page.locator(".kq-band").last();
-  await expect(bar).toContainText("Audio");
+  await expect(bar).toContainText("Nothing is selected");
   await expect(bar).not.toContainText("solid");
 
   const start = page.getByRole("button", { name: "Start", exact: true });
   await expect(start).toBeDisabled();
 });
 
-test("audio-only with grammar fact shows unreachable message, not 'solid'", async ({
+test("audio-only with grammar fact makes no questions, not 'solid'", async ({
   page,
 }) => {
   await seedQuiz(page, {
@@ -82,8 +83,10 @@ test("audio-only with grammar fact shows unreachable message, not 'solid'", asyn
   });
   await page.goto("/practice");
 
+  // A grammar meaning has no audio question either, so audio-only makes zero
+  // cards and the bar reports the empty run rather than a false "solid".
   const bar = page.locator(".kq-band").last();
-  await expect(bar).toContainText("Audio");
+  await expect(bar).toContainText("Nothing is selected");
   await expect(bar).not.toContainText("solid");
 
   const start = page.getByRole("button", { name: "Start", exact: true });

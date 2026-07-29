@@ -79,7 +79,11 @@ test("an audio → meaning card asks for the meaning and hints the written word,
   // The hint on a listening MEANING card reveals WHICH word was heard (電話) plus
   // its per-kanji meanings — never the English gloss the card is grading.
   await hintButton(page).click();
-  const slot = page.locator("span.min-h-7").first();
+  // The hint renders in the column below the answer control (drill-screen.tsx) —
+  // the flex-col holding the Skip/Hint buttons and then the taken hint. A
+  // listening MEANING card's hint is the WRITTEN FORM (電話) plus its per-kanji
+  // meanings, so the column shows both and never the English gloss.
+  const slot = page.locator("span.flex-col.items-center.gap-3").first();
   await expect(slot).toContainText(word);
   await expect(slot).toContainText("電 is electricity, 話 is tale");
   await expect(slot).not.toContainText("telephone");

@@ -49,8 +49,15 @@ test("missing あ with お is reported as a pattern on the results screen", asyn
   await page.getByRole("button", { name: "End quiz" }).click();
   await expect(page).toHaveURL(/\/results$/);
 
-  // The Patterns section names the pair and says it happened once this run.
+  // The Patterns section names the pair and says it happened once this run. The
+  // pair is not one text node: pattern-rows.tsx draws each glyph in its own span
+  // with a "kana" sublabel beneath and the ↔ in a span between them, so match the
+  // pair block (min-w-[112px]) that holds both kana rather than an "あ ↔ お" run.
   await expect(page.getByText("Patterns", { exact: true })).toBeVisible();
-  await expect(page.getByText("あ ↔ お")).toBeVisible();
+  const pair = page
+    .locator("span.min-w-\\[112px\\]")
+    .filter({ hasText: "あ" })
+    .filter({ hasText: "お" });
+  await expect(pair).toBeVisible();
   await expect(page.getByText(/^Mixed up once$/)).toBeVisible();
 });

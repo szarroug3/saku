@@ -5,10 +5,11 @@ import { test, expect, STEADY_CFG } from "./helpers/app";
  *
  * The Start button is disabled when:
  * 1. count = 0 (no facts selected)
- * 2. howBroken (mode-specific invalid config):
- *    - Drill: askIsEmpty (all sources disabled)
- *    - Pairs: no pairResponses selected
- *    - Grid: no gridResponses selected
+ * 2. howBroken: for Drill, askIsEmpty (all ask sources disabled). Pairs and Grid
+ *    used to break on an empty pair/grid response set, but normalizeConfig now
+ *    pins pairResponses/gridResponses to the FULL set unconditionally (config
+ *    simplification 7271b87), so a stored empty value is discarded and that
+ *    branch can no longer be reached from a seed. Pairs/Grid start given facts.
  * 3. nothingToAsk (count > 0 but plannedCount = 0, a budget issue)
  *
  * All other configurations enable the Start button.
@@ -71,8 +72,9 @@ const DRILL_INVALID_EMPTY_ASK = {
   },
 };
 
-// Pairs with no response types selected (invalid).
-const PAIRS_INVALID_NO_RESPONSES = {
+// Pairs with an empty stored pairResponses. normalizeConfig discards this and
+// pins the full set, so it is NOT invalid any more; Start still starts.
+const PAIRS_EMPTY_RESPONSES = {
   ...STEADY_CFG,
   mode: "pairs",
   pairResponses: [],
@@ -84,8 +86,9 @@ const PAIRS_INVALID_NO_RESPONSES = {
   },
 };
 
-// Grid with no response types selected (invalid).
-const GRID_INVALID_NO_RESPONSES = {
+// Grid with an empty stored gridResponses. normalizeConfig discards this and
+// pins the full set, so it is NOT invalid any more; Start still starts.
+const GRID_EMPTY_RESPONSES = {
   ...STEADY_CFG,
   mode: "grid",
   pairResponses: ["definition", "romaji", "sentence"],
@@ -166,17 +169,20 @@ test.describe("Practice: Start button availability", () => {
       await expect(startButton).not.toBeDisabled();
     });
 
-    test("Start is disabled when no pair responses are selected", async ({
+    test("Start stays enabled when the stored pair responses are empty (full set is pinned)", async ({
       page,
       seed,
     }) => {
+      // Match-pairs no longer has a per-mode response chooser: normalizeConfig
+      // pins pairResponses to the full set, so a stored empty value is discarded
+      // and Start still starts given facts. Was: empty pairResponses disabled Start.
       await seed({
         seen: HIRAGANA_FACTS,
-        cfg: PAIRS_INVALID_NO_RESPONSES,
+        cfg: PAIRS_EMPTY_RESPONSES,
       });
       await page.goto("/practice");
       const startButton = page.locator("button:has-text('Start')");
-      await expect(startButton).toBeDisabled();
+      await expect(startButton).not.toBeDisabled();
     });
 
     test("Start is disabled when no facts are selected", async ({ page, seed }) => {
@@ -220,17 +226,20 @@ test.describe("Practice: Start button availability", () => {
       await expect(startButton).not.toBeDisabled();
     });
 
-    test("Start is disabled when no grid responses are selected", async ({
+    test("Start stays enabled when the stored grid responses are empty (full set is pinned)", async ({
       page,
       seed,
     }) => {
+      // Grid pins gridResponses to the full set the same way, so a stored empty
+      // value is discarded and Start still starts given facts. Was: empty
+      // gridResponses disabled Start.
       await seed({
         seen: HIRAGANA_FACTS,
-        cfg: GRID_INVALID_NO_RESPONSES,
+        cfg: GRID_EMPTY_RESPONSES,
       });
       await page.goto("/practice");
       const startButton = page.locator("button:has-text('Start')");
-      await expect(startButton).toBeDisabled();
+      await expect(startButton).not.toBeDisabled();
     });
 
     test("Start is disabled when no facts are selected", async ({ page, seed }) => {
@@ -295,30 +304,33 @@ test.describe("Practice: Start button availability", () => {
       await expect(startButton).toBeDisabled();
     });
 
-    test("Pairs with no responses shows disabled reason", async ({
+    test("Pairs with no facts shows 'Nothing is selected'", async ({
       page,
       seed,
     }) => {
+      // The empty-pair-responses reason is gone (responses are pinned full). The
+      // reachable pairs disabled reason now is an empty selection: no facts means
+      // no playable board, questionCount is 0, so the bar says nothing is selected.
       await seed({
-        seen: HIRAGANA_FACTS,
-        cfg: PAIRS_INVALID_NO_RESPONSES,
+        seen: [],
+        cfg: PAIRS_VALID,
       });
       await page.goto("/practice");
-      const startButton = page.locator("button:has-text('Start')");
-      await expect(startButton).toBeDisabled();
+      await expect(page.locator("text=Nothing is selected")).toBeVisible();
     });
 
-    test("Grid with no responses shows disabled reason", async ({
+    test("Grid with no facts shows 'Nothing is selected'", async ({
       page,
       seed,
     }) => {
+      // Likewise for Grid: with no facts selected, gridFacts is empty and the
+      // reachable disabled reason is the empty selection, not any response set.
       await seed({
-        seen: HIRAGANA_FACTS,
-        cfg: GRID_INVALID_NO_RESPONSES,
+        seen: [],
+        cfg: GRID_VALID,
       });
       await page.goto("/practice");
-      const startButton = page.locator("button:has-text('Start')");
-      await expect(startButton).toBeDisabled();
+      await expect(page.locator("text=Nothing is selected")).toBeVisible();
     });
   });
 
