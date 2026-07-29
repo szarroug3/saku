@@ -300,6 +300,7 @@ interface DrillHandlers {
   onMount(): void;
   onUnmount(): void;
   onTimerCfgChange(): void;
+  onAudioOff(): void;
 }
 
 /** The ring only wakes for the last few seconds — and if the whole timer is
@@ -444,6 +445,14 @@ export function DrillScreen() {
   const rt = active ? (active.runtime as unknown as DrillRuntime) : null;
   const limited =
     !!active && (active.forceCoverage || active.snapshot.length === "limited");
+  // AUDIO PROMPTS, LIVE. The run snapshots its ask-config at start (builder
+  // settings are frozen so a card cannot change shape under the learner), but
+  // the mid-drill Audio-prompts toggle is the one exception the accessibility
+  // escape hatch needs: turning it off must stop listening cards NOW, mid-run.
+  // usableForms reads this to strip audio from the effective ask, and onAudioOff
+  // redraws the card on screen. Text is always on, so stripping audio never
+  // empties a pool.
+  const audioOff = !!active && ready && !cfg.audioPrompts;
 
   // ---------- engine (fresh closures each render; legacy port) ----------
 
@@ -524,7 +533,11 @@ export function DrillScreen() {
       rt.forms = rt.forms.concat(rt.pool.map(() => null));
     }
     const f = rt.deck[rt.pos];
-    const pinned = rt.forms[rt.pos] ?? null;
+    const pinnedRaw = rt.forms[rt.pos] ?? null;
+    // A PINNED listening slot (coverage rounds fix the exact form in the deck)
+    // is dropped when audio is off, so it redraws from usableForms as a text
+    // form — the toggle reaches even the forms coverage baked into the deck.
+    const pinned = pinnedRaw && audioOff && pinnedRaw.listen ? null : pinnedRaw;
     rt.pos++;
     rt.asked++;
     // A subject may pin the direction (transitivity is only askable en2jp) and
@@ -554,6 +567,16 @@ export function DrillScreen() {
         dir: "jp2en",
         answer: "typed",
       };
+    presentCard(f, form);
+  }
+
+  /** Build and show the card for fact `f` in `form` — direction, typed/MC,
+   * grammar vehicle, options, the audio flag, then the stat and timer. Split out
+   * of nextQuestion so onAudioOff can REDRAW the current fact as a text card
+   * without advancing the deck. statForShowing is idempotent, so redrawing the
+   * same fact does not double-count it. */
+  function presentCard(f: FactId, form: CardForm) {
+    if (!rt || !active) return;
     const listen = form.listen;
     const dir = form.dir;
     const styleTyped = !formIsMc(f, form);
@@ -660,9 +683,45 @@ export function DrillScreen() {
     force();
   }
 
+  /** The mid-drill Audio-prompts toggle went OFF. Future cards already come as
+   * text (usableForms strips audio below), but the card ON SCREEN was drawn as a
+   * listening card — replace it with a fresh text card for the SAME fact so the
+   * learner is unblocked without leaving the drill. No-op unless it is still an
+   * unanswered listening card. */
+  function onAudioOff() {
+    if (!rt || !rt.q || rt.waiting || finishedRef.current) return;
+    if (!rt.q.listen) return;
+    const f = rt.q.f;
+    const available = usableForms(f);
+    const form = available[Math.floor(Math.random() * available.length)] ?? {
+      source: "japanese" as const,
+      response: jp2enResponse(f),
+      listen: false,
+      dir: "jp2en" as const,
+      answer: "typed" as const,
+    };
+    presentCard(f, form);
+  }
+
   function usableForms(f: FactId): CardForm[] {
     if (!active) return [];
-    return enabledFormsFor(f, active.snapshot.ask).filter(
+    // Strip audio from the effective ask when the live toggle is off, so no
+    // further listening card is drawn (base snapshot ask otherwise).
+    const baseAsk = active.snapshot.ask;
+    const ask = audioOff
+      ? {
+          ...baseAsk,
+          japanese: {
+            ...baseAsk.japanese,
+            prompts: baseAsk.japanese.prompts.filter((p) => p !== "audio"),
+          },
+          sentence: {
+            ...baseAsk.sentence,
+            prompts: baseAsk.sentence.prompts.filter((p) => p !== "audio"),
+          },
+        }
+      : baseAsk;
+    return enabledFormsFor(f, ask).filter(
       (candidate) =>
         !(
           candidate.source === "japanese" &&
@@ -1061,6 +1120,7 @@ export function DrillScreen() {
       onMount,
       onUnmount,
       onTimerCfgChange,
+      onAudioOff,
     };
   });
 
@@ -1102,6 +1162,19 @@ export function DrillScreen() {
     if (!prev || (prev.timer === cfg.timer && prev.sec === cfg.timerSec)) return;
     handlersRef.current?.onTimerCfgChange();
   }, [ready, cfg.timer, cfg.timerSec]);
+
+  // React live to the Audio-prompts toggle going OFF (drawer or Settings tab):
+  // replace the listening card on screen with a text card and stop drawing more.
+  // Value-diffed so hydration echoes don't fire it, and only on the off edge —
+  // turning audio back on simply lets future cards be audio again.
+  const prevAudio = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!ready) return;
+    const prev = prevAudio.current;
+    prevAudio.current = cfg.audioPrompts;
+    if (prev === null || prev === cfg.audioPrompts) return;
+    if (!cfg.audioPrompts) handlersRef.current?.onAudioOff();
+  }, [ready, cfg.audioPrompts]);
 
   // Document-level keys (Enter to advance/submit, 1–9 for MC), legacy style.
   useEffect(() => {
