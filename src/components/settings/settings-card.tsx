@@ -57,6 +57,7 @@ import { postDelete } from "@/lib/progress-fetch";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession } from "@/lib/quiz-session";
 import { jaVoices, onVoicesChanged, speak } from "@/lib/speech";
+import { PACK_VOICES, VOICE_PREVIEW, isPackVoice, packVoicesEnabled } from "@/lib/voice-audio";
 
 /** Kana shown on every font chip in place of the font's name. あ and き are
  * the two faces diverge on hardest: Mincho gives あ a wedge-tipped brush
@@ -303,12 +304,15 @@ export function SettingsCard() {
 
   const pickVoice = (name: string) => {
     update({ voiceName: name });
-    speak("こんにちは", name);
+    speak(VOICE_PREVIEW, name);
   };
 
-  // Voice pill selection: fall back to Auto if the saved voice is gone.
+  // Voice pill selection: fall back to Auto if the saved voice is gone. A pack
+  // voice (Storage clips, not a browser voice) is valid even though it is not in
+  // `voices`, so accept it too rather than snapping the selection back to Auto.
   const currentVoice =
-    cfg.voiceName && voices.some((v) => v.name === cfg.voiceName)
+    cfg.voiceName &&
+    (voices.some((v) => v.name === cfg.voiceName) || isPackVoice(cfg.voiceName))
       ? cfg.voiceName
       : "";
 
@@ -536,11 +540,24 @@ export function SettingsCard() {
         </Row>
 
         <Row label="Speech voice" info={voiceInfo(platform)}>
-          {voices.length ? (
+          {voices.length || packVoicesEnabled() ? (
             <>
               <Chip on={currentVoice === ""} onClick={() => pickVoice("")}>
                 Auto
               </Chip>
+              {/* PACK VOICES first — the whole reason they exist is to beat the
+                  device's own voice, so they lead. Only shown when configured
+                  (a Storage bucket is set); otherwise this list is browser-only. */}
+              {packVoicesEnabled() &&
+                PACK_VOICES.map((p) => (
+                  <Chip
+                    key={p.id}
+                    on={currentVoice === p.id}
+                    onClick={() => pickVoice(p.id)}
+                  >
+                    {p.label}
+                  </Chip>
+                ))}
               {voices.map((v) => (
                 <Chip
                   key={v.name}

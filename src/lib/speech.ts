@@ -2,6 +2,8 @@
 // Note: browsers only refresh the installed-voice list on a full restart,
 // and Siri voices are never exposed to the web speech API.
 
+import { isPackVoice, packAudioUrl } from "@/lib/voice-audio";
+
 /**
  * The minimum a voice must carry to be chosen among. `SpeechSynthesisVoice`
  * has more, but `pickAutoVoice` reads only these, and typing the input this
@@ -158,9 +160,60 @@ function speakNow(text: string, voiceName: string): void {
   speechSynthesis.speak(u);
 }
 
-/** Speak Japanese text with the configured voice ("" = auto). */
+/** The pack clip currently playing, if any — stopped before the next one so two
+ * rapid taps don't overlap (the speechSynthesis path does the same via
+ * `speechSynthesis.cancel()`). */
+let currentClip: HTMLAudioElement | null = null;
+
+/**
+ * Play a pack-voice clip from Storage, falling back to the browser voice if the
+ * clip is missing, the network is down, or autoplay is blocked. `voiceName`
+ * falls back to "" (Auto) so the browser path picks its own best voice rather
+ * than looking for a browser voice named after the (nonexistent) pack.
+ */
+function speakPack(text: string, voiceId: string): void {
+  const url = packAudioUrl(voiceId, text);
+  if (!url) {
+    speakBrowser(text, "");
+    return;
+  }
+  if (currentClip) {
+    currentClip.pause();
+    currentClip = null;
+  }
+  // speechSynthesis and an <audio> clip are separate outputs; cancel any
+  // in-flight utterance so a fallback from the previous card doesn't overlap.
+  speechSynthesis.cancel();
+  const clip = new Audio(url);
+  currentClip = clip;
+  let fellBack = false;
+  const fallback = () => {
+    if (fellBack) return;
+    fellBack = true;
+    if (currentClip === clip) currentClip = null;
+    speakBrowser(text, "");
+  };
+  // A missing object (404) or a decode failure surfaces as `error`; autoplay
+  // refusal rejects `play()`. Either way, drop to the browser voice.
+  clip.addEventListener("error", fallback, { once: true });
+  clip.play().catch(fallback);
+}
+
+/** Speak Japanese text with the configured voice ("" = auto). A pack voice
+ * (see voice-audio.ts) plays a pre-generated clip; everything else goes through
+ * speechSynthesis. */
 export function speak(text: string, voiceName: string): void {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  if (typeof window === "undefined") return;
+  if (isPackVoice(voiceName)) {
+    speakPack(text, voiceName);
+    return;
+  }
+  speakBrowser(text, voiceName);
+}
+
+/** The speechSynthesis path — the browser's own Japanese voice. */
+function speakBrowser(text: string, voiceName: string): void {
+  if (!("speechSynthesis" in window)) return;
   // Some browsers (notably Safari/WebKit) expose an empty voice list at first
   // interaction and hydrate it moments later via `voiceschanged`. Speaking
   // before hydration uses the browser fallback voice; replay then sounds
