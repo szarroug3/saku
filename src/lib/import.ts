@@ -168,6 +168,48 @@ function romajiEntry(raw: string): EntryId | null {
   return reading ? (kanaIndex().get(reading) ?? null) : null;
 }
 
+// ---------- English headwords ----------
+//
+// A file can also say what a word MEANS rather than how it is written or said:
+// "person" for 人, the import twin of typing a meaning into the Library search.
+// So a row that misses both the direct index and the romaji sound gets one last
+// try: match it to the word whose gloss IS that meaning. Words only, and a whole
+// SENSE must equal the query, not a loose substring, so "person" brings in the
+// word for person and not "the person next to you".
+
+let MEANING_INDEX: Map<string, EntryId> | null = null;
+
+/**
+ * English sense → the word that means it. A gloss can pack several senses in one
+ * string ("life, birth, raw"), so each is split on commas and semicolons and
+ * every trimmed sense is keyed. First-wins in vocab order, index()'s own
+ * everyday-first tie-break, so "person" lands on the common word, not a rare
+ * synonym. Words only, like kanaIndex: a list names words, not kanji-as-units.
+ */
+function meaningIndex(): Map<string, EntryId> {
+  if (MEANING_INDEX) return MEANING_INDEX;
+  const map = new Map<string, EntryId>();
+  for (const w of VOCAB) {
+    const id = wordEntry(w.keb);
+    for (const gloss of w.glosses) {
+      for (const sense of gloss.toLowerCase().split(/[,;]/)) {
+        const s = sense.trim();
+        if (s && !map.has(s)) map.set(s, id);
+      }
+    }
+  }
+  MEANING_INDEX = map;
+  return map;
+}
+
+/** The word an English meaning resolves to, or null. The last fallback readList
+ * runs, after the direct index and the romaji sound both miss. */
+function englishEntry(raw: string): EntryId | null {
+  const q = raw.trim().toLowerCase();
+  if (!q || !/[a-z]/.test(q)) return null;
+  return meaningIndex().get(q) ?? null;
+}
+
 // ---------- row repair ----------
 
 /** 食べる[たべる] → 食べる. Anki's furigana field format, and the single most
@@ -245,18 +287,21 @@ function explain(raw: string): { why: string; suggest: ImportRow["suggest"] } {
 // ---------- parsing ----------
 
 /**
- * The headword column of a line.
+ * The cells of a line — every comma/tab-separated value, each its own candidate.
  *
- * CSV and TSV both, and no dialect configuration: the first field is the word.
- * Anki exports a tab-separated file whose first column is the front of the
- * card, and a "one word per line" text file is the degenerate case of the same
- * rule. Quotes are stripped because a CSV writer adds them; nothing else about
- * RFC 4180 matters here, because we read ONE field and discard the rest of the
- * line unread — that is the same rule as "an import adds no content".
+ * CSV and TSV both, and no dialect configuration: a line is split on the
+ * delimiter and EACH value is a headword we look up independently. A "one word
+ * per line" text file is the degenerate case — no delimiter, one cell. Quotes
+ * are stripped because a CSV writer adds them; nothing else about RFC 4180
+ * matters here. This means a "word,gloss" export treats the gloss as its own
+ * cell too, which simply fails to match and lands in the "didn't match" table —
+ * the same rule as "an import adds no content", shown honestly.
  */
-function headword(line: string): string {
-  const field = line.split(/[\t,]/)[0] ?? "";
-  return field.trim().replace(/^"(.*)"$/, "$1").trim();
+function cells(line: string): string[] {
+  return line
+    .split(/[\t,]/)
+    .map((field) => field.trim().replace(/^"(.*)"$/, "$1").trim())
+    .filter((cell) => cell !== "");
 }
 
 /**
@@ -277,22 +322,25 @@ export function readList(text: string): ImportReport {
   for (const line of text.split(/\r?\n/)) {
     // Anki writes a leading `#` comment block on plain-text exports.
     if (line.startsWith("#")) continue;
-    const raw = headword(line);
-    if (!raw && !line.trim()) continue;
 
-    // Direct lookup first — a real kana/kanji headword is never slowed or
-    // reinterpreted — then romaji-for-a-sound as a fallback for a deck typed
-    // without an IME.
-    const entry = index().get(raw) ?? romajiEntry(raw);
-    if (entry) {
-      rows.push({ raw, entry, why: null, suggest: null });
-      if (!seen.has(entry)) {
-        seen.add(entry);
-        entries.push(entry);
+    // Each comma/tab-separated cell is its own item, matched through the same
+    // path. A line with no delimiter is a single cell, so one word per line is
+    // unchanged. Blank cells are dropped, so a blank line yields nothing.
+    for (const raw of cells(line)) {
+      // Direct lookup first — a real kana/kanji headword is never slowed or
+      // reinterpreted — then romaji-for-a-sound as a fallback for a deck typed
+      // without an IME.
+      const entry = index().get(raw) ?? romajiEntry(raw) ?? englishEntry(raw);
+      if (entry) {
+        rows.push({ raw, entry, why: null, suggest: null });
+        if (!seen.has(entry)) {
+          seen.add(entry);
+          entries.push(entry);
+        }
+      } else {
+        const { why, suggest } = explain(raw);
+        rows.push({ raw, entry: null, why, suggest });
       }
-    } else {
-      const { why, suggest } = explain(raw);
-      rows.push({ raw, entry: null, why, suggest });
     }
   }
 
