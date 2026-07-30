@@ -36,6 +36,33 @@ describe("readList — matching and de-duplication", () => {
     assert.equal(readList("先生,a note").rows[0].entry, "word:先生");
     assert.equal(readList('"先生"\tx').rows[0].entry, "word:先生");
   });
+
+  test("a romaji headword matches by its sound — a deck typed without an IME", () => {
+    // "shito" is しと is 使徒, the same resolution the Library search makes; a
+    // headword with no Japanese in it used to be dismissed as an English note.
+    const shito = readList("shito");
+    assert.equal(shito.rows[0].entry, "word:使徒", "shito → 使徒 by reading");
+    assert.equal(shito.rows[0].why, null);
+    assert.deepEqual(shito.entries, ["word:使徒"]);
+
+    // A kana WORD is reached the same way — あなた's glyph is its reading.
+    assert.equal(readList("anata").rows[0].entry, "word:あなた");
+  });
+
+  test("a real kana/kanji headword still matches directly, unchanged", () => {
+    // The direct index is the primary path; romaji is only a fallback, so an
+    // exact glyph resolves exactly as before.
+    assert.equal(readList("先生").rows[0].entry, "word:先生");
+    assert.equal(readList("しと").rows[0].entry, "word:使徒");
+  });
+
+  test("a keyboard mash is not romaji-for-a-sound, so it stays unmatched", () => {
+    // "qwerty" does not convert cleanly to kana, so it fails the isKanaOnly gate
+    // and lands in unmatched, an English note like any other.
+    const row = readList("qwerty").rows[0];
+    assert.equal(row.entry, null);
+    assert.match(row.why ?? "", /English/);
+  });
 });
 
 describe("readList — every failure is explained, none rewritten", () => {

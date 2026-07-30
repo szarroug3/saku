@@ -48,6 +48,7 @@ import { KANJI } from "@/data/kanji";
 import { kanjiEntry } from "@/data/kanji";
 import { VOCAB, wordEntry } from "@/data/vocab";
 import { CHAR_INDEX, kanaEntry } from "@/data/characters";
+import { isKanaOnly, toHiragana, toKana } from "@/lib/romaji";
 import type { EntryId } from "@/types";
 
 /** One row of the file, and what became of it. */
@@ -99,6 +100,72 @@ function index(): Map<string, EntryId> {
   for (const c of Object.keys(CHAR_INDEX)) if (!map.has(c)) map.set(c, kanaEntry(c));
   INDEX = map;
   return map;
+}
+
+// ---------- romaji headwords ----------
+//
+// A deck typed without an IME writes "shito" and "anata", not 使徒 and あなた —
+// romaji standing in for a pronunciation, exactly what the quiz grades a typed
+// answer by and what the Library search resolves. So a row that misses the index
+// directly gets one more try: read it as romaji, and if it converts CLEANLY to
+// kana, look that sound up the way search does.
+//
+// This is a FALLBACK, never the primary path — a real kana/kanji headword still
+// resolves through index() first and is neither slowed nor reinterpreted. Only a
+// miss reaches here, and only a miss that is romaji-for-a-sound gets a match.
+
+let KANA_INDEX: Map<string, EntryId> | null = null;
+
+/**
+ * Kana reading → entry, keyed by the hiragana a romaji headword converts to.
+ * The relation search matches romaji on: a word by its READING (使徒 → しと), a
+ * kana word or character by its glyph (あなた, し). Every key is folded to
+ * hiragana so a katakana reading (コーヒー) is reachable from romaji all the same.
+ *
+ * First-wins, in the same source order index() uses — words before kana — so an
+ * ambiguous sound lands on the everyday WORD and never a bare character, and two
+ * words that share a reading (はし → 橋, 箸) resolve to the first in vocab order,
+ * which is index()'s own tie-break for `reb`. Kanji are deliberately absent: a
+ * single sound names dozens of them (せい is 生, 声, 星 …), and a romaji row is a
+ * word the writer meant, not "the kanji as a unit of study" — the same call the
+ * word-before-kanji ordering in index() already makes.
+ */
+function kanaIndex(): Map<string, EntryId> {
+  if (KANA_INDEX) return KANA_INDEX;
+  const map = new Map<string, EntryId>();
+  for (const w of VOCAB) {
+    const key = toHiragana(w.reb);
+    if (!map.has(key)) map.set(key, wordEntry(w.keb));
+  }
+  for (const c of Object.keys(CHAR_INDEX)) {
+    const key = toHiragana(c);
+    if (!map.has(key)) map.set(key, kanaEntry(c));
+  }
+  KANA_INDEX = map;
+  return map;
+}
+
+/**
+ * A headword read as romaji, rendered as the kana it means — or null when it is
+ * not romaji-for-a-sound. Mirrors search's `romajiReading`: lowercase, require a
+ * latin letter, run the shared converter once, and accept ONLY when the result
+ * is all kana. That last gate is what rejects real English — toKana leaves the
+ * letters it cannot spell in place ("water" → わてr), so "water" fails isKanaOnly
+ * and is still an English note, while "shito" (→ しと) passes. Folded to hiragana
+ * so it compares against the folded keys above.
+ */
+function romajiReading(raw: string): string | null {
+  const lower = raw.toLowerCase();
+  if (!/[a-z]/.test(lower)) return null;
+  const kana = toKana(lower);
+  return isKanaOnly(kana) ? toHiragana(kana) : null;
+}
+
+/** The entry a romaji headword resolves to, or null. The fallback readList runs
+ * after the direct index misses. */
+function romajiEntry(raw: string): EntryId | null {
+  const reading = romajiReading(raw);
+  return reading ? (kanaIndex().get(reading) ?? null) : null;
 }
 
 // ---------- row repair ----------
@@ -213,7 +280,10 @@ export function readList(text: string): ImportReport {
     const raw = headword(line);
     if (!raw && !line.trim()) continue;
 
-    const entry = index().get(raw) ?? null;
+    // Direct lookup first — a real kana/kanji headword is never slowed or
+    // reinterpreted — then romaji-for-a-sound as a fallback for a deck typed
+    // without an IME.
+    const entry = index().get(raw) ?? romajiEntry(raw);
     if (entry) {
       rows.push({ raw, entry, why: null, suggest: null });
       if (!seen.has(entry)) {
