@@ -141,3 +141,90 @@ describe("searchByType — the All tab's results, grouped by type", () => {
     }
   });
 });
+
+describe("romaji search — a query typed as sound finds the JP pronunciation", () => {
+  // Helper: every glyph that matched, with the section that placed it.
+  const hits = (q: string) => searchAll(q).map((h) => `${h.entry.glyph}:${h.why}`);
+
+  test('"shito" finds 使徒, which is read しと, as an exact hit', () => {
+    // The owner's example. 使徒's reading is kana (しと), so before romaji search
+    // the only way to reach it was to type the kana or the kanji — romaji found
+    // nothing. Now the query converts to しと and lands the exact reading.
+    const exact = search("shito")
+      .filter((s) => s.why === "exact")
+      .flatMap((s) => s.hits.map((h) => h.entry.glyph));
+    assert.ok(exact.includes("使徒"), `使徒 should be an exact romaji hit, got ${exact}`);
+  });
+
+  test('"kore" finds これ, glyph and reading alike', () => {
+    // これ is a kana word — its glyph IS kana, so "kore" → これ matches the glyph
+    // itself, not just a reading. This case returned nothing at all before.
+    assert.ok(hits("kore").includes("これ:exact"), "kore must reach これ");
+  });
+
+  test("romaji folds script — kore reaches the katakana コレラ by prefix", () => {
+    // これ converts to hiragana; the entry's reading may be katakana. Folding both
+    // to hiragana is what lets a hiragana query answer a katakana reading.
+    assert.ok(hits("kore").includes("コレラ:prefix"), "kore should prefix コレラ");
+  });
+
+  test('"shi" still finds the kana し (existing non-romaji matches survive)', () => {
+    // し's readings are stored AS romaji ("shi", "si"), so this hit predates
+    // romaji search and must keep working — the new path is purely additive.
+    const shi = searchAll("shi");
+    assert.ok(
+      shi.some((h) => h.entry.glyph === "し" && h.entry.kind === "kana"),
+      "the kana し must still answer shi",
+    );
+  });
+
+  test("an English query keeps its meaning match and is NOT hijacked as romaji", () => {
+    // "water" is romaji-shaped but converts to わてr (a stray latin r), so the
+    // isKanaOnly gate drops it off the romaji path and it stays an English query.
+    const water = searchAll("water");
+    assert.ok(
+      water.some((h) => h.why === "meaning"),
+      "water must still find its meaning",
+    );
+  });
+
+  test("a nonsense romaji query returns nothing", () => {
+    // Converts to kana no entry is read as — the honest empty result, not a pile
+    // of loose containment hits.
+    assert.deepEqual(searchAll("burupero"), []);
+  });
+});
+
+describe("meaning search — a partial English PHRASE finds a gloss", () => {
+  const meaningHits = (q: string) =>
+    searchAll(q)
+      .filter((h) => h.why === "meaning")
+      .map((h) => h.entry.glyph);
+
+  test('"line (of" finds 行 — punctuation and spaces no longer break the match', () => {
+    // 行's gloss is "line (of text), row, verse". The query used to be compared
+    // intact against single gloss tokens, so anything with a space or "(" found
+    // nothing. Now the query is tokenized the same way and matched as a run.
+    assert.ok(meaningHits("line (of").includes("行"), "line (of must reach 行");
+  });
+
+  test('"line of text" and "line of te" both find 行', () => {
+    assert.ok(meaningHits("line of text").includes("行"), "full phrase");
+    // The last query token matches as a prefix, so a half-typed word still lands.
+    assert.ok(meaningHits("line of te").includes("行"), "prefix on the last token");
+  });
+
+  test('"raw" still does NOT match a gloss containing "drawer" (word boundary kept)', () => {
+    // 奥's gloss is "back (of a drawer, ...)". "raw" is a whole token and never a
+    // loose substring of "drawer", so the word-boundary guarantee survives.
+    assert.ok(
+      !meaningHits("raw").includes("奥"),
+      "raw must not match 奥 through drawer",
+    );
+  });
+
+  test('a single-word prefix still works — "tele" finds telephone (電話)', () => {
+    // The length-one case of the run match, unchanged from before.
+    assert.ok(meaningHits("tele").includes("電話"), "tele must still find 電話");
+  });
+});

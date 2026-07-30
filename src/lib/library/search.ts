@@ -41,6 +41,7 @@ import {
   type Kind,
   type LibEntry,
 } from "@/lib/library/entries";
+import { isKanaOnly, toHiragana, toKana } from "@/lib/romaji";
 
 /** Why a row is in the list. The section IS the ranking's explanation. */
 export type MatchKind = "exact" | "prefix" | "meaning" | "inside" | "form";
@@ -123,11 +124,15 @@ const MATCH_RANK: Record<MatchKind, number> = Object.fromEntries(
  */
 function collectHits(q: string, lower: string, opts: SearchOpts): Hit[] {
   const pinned = opts.pinned;
+  // The romaji query as the kana a reader meant by it — computed ONCE, not per
+  // entry, since it depends only on the query. null when the query is not
+  // romaji-for-a-pronunciation, which leaves classify on its original paths.
+  const romaji = romajiReading(lower);
   const hits: Hit[] = [];
   for (const entry of LIB_ENTRIES) {
     if (opts.kind && entry.kind !== opts.kind) continue;
     if (opts.keep && !opts.keep(entry)) continue;
-    const why = classify(entry, q, lower);
+    const why = classify(entry, q, lower, romaji);
     if (!why) continue;
     hits.push({
       entry,
@@ -250,7 +255,12 @@ export function searchAll(query: string, opts: SearchOpts = {}): Hit[] {
  * an entry appears in exactly one section, because "生 is both the exact hit and
  * inside 学生" is not two answers, it is one answer and one distraction.
  */
-function classify(entry: LibEntry, q: string, lower: string): MatchKind | null {
+function classify(
+  entry: LibEntry,
+  q: string,
+  lower: string,
+  romaji: string | null,
+): MatchKind | null {
   // A grammar pattern is written with a leading (or middle) 〜 placeholder —
   // 〜てから, 〜は〜より. Nobody types the 〜, so the JP comparisons run over both
   // strings with it stripped: "てから" then EXACTLY matches 〜てから, and surfaces
@@ -280,10 +290,23 @@ function classify(entry: LibEntry, q: string, lower: string): MatchKind | null {
   if (entry.readings.some((r) => r === q || r.toLowerCase() === lower)) {
     return "exact";
   }
+  // The same "you typed how it sounds", but typed as ROMAJI for a JP reading —
+  // "shito" for 使徒 (しと), "kore" for これ. `romaji` is the query already
+  // converted to kana (or null when it isn't romaji-for-a-reading); we compare it
+  // to the entry's kana the way the line above compares raw kana, folding the
+  // entry to hiragana so a katakana reading (コーヒー) still answers. A kana
+  // entry's readings are romaji, not kana, so they can't collide here — those are
+  // matched by the literal-romaji line above.
+  if (romaji && matchesRomaji(entry, glyphBare, romaji, (a, b) => a === b)) {
+    return "exact";
+  }
   if (entry.glyph.startsWith(q) || (qBare !== "" && glyphBare.startsWith(qBare))) {
     return "prefix";
   }
   if (entry.readings.some((r) => r.startsWith(q) || r.toLowerCase().startsWith(lower))) {
+    return "prefix";
+  }
+  if (romaji && matchesRomaji(entry, glyphBare, romaji, (a, b) => a.startsWith(b))) {
     return "prefix";
   }
   if (matchesMeaning(entry, lower)) return "meaning";
@@ -299,22 +322,89 @@ function stripTilde(s: string): string {
 }
 
 /**
- * English matching, on WORD BOUNDARIES and not substrings.
+ * A romaji query rendered as the kana a reader meant by it, or null when the
+ * query is not romaji standing in for a pronunciation.
+ *
+ * The app already grades romaji answers with this exact converter, so a learner
+ * who types "shito" without an IME should be able to FIND 使徒 the same way they
+ * can answer it. We run the query through toKana once and hand the result to the
+ * kana comparisons classify already does.
+ *
+ * The isKanaOnly gate is load-bearing. A real English query is romaji-shaped too
+ * ("water"), but toKana leaves the letters it can't spell in place ("water" →
+ * わてr), so only a query that converts CLEANLY to kana travels this path —
+ * exactly the set someone typed as sound. Folded to hiragana so the kana we hand
+ * back compares equal against a katakana reading downstream.
+ */
+function romajiReading(lower: string): string | null {
+  if (!/[a-z]/.test(lower)) return null;
+  const kana = toKana(lower);
+  return isKanaOnly(kana) ? toHiragana(kana) : null;
+}
+
+/** Does the entry's kana (its glyph or any reading, folded to hiragana) relate
+ * to the romaji-derived `romaji` under `cmp` — whole-string for exact, prefix
+ * for prefix? Mirrors the raw-kana glyph/reading tests so romaji is just another
+ * spelling of the same comparison, and never runs for a query that isn't romaji.
+ */
+function matchesRomaji(
+  entry: LibEntry,
+  glyphBare: string,
+  romaji: string,
+  cmp: (kana: string, romaji: string) => boolean,
+): boolean {
+  if (glyphBare !== "" && cmp(toHiragana(glyphBare), romaji)) return true;
+  return entry.readings.some((r) => cmp(toHiragana(r), romaji));
+}
+
+/**
+ * English matching, on WORD BOUNDARIES and not substrings — and now on PHRASES.
  *
  * "raw" must not match "drawer", and a plain `includes` does. The glosses are
- * short phrases ("life, birth, raw"), so splitting on non-letters and comparing
- * whole tokens is both cheaper and better than a regex — and a token that STARTS
- * with the query still counts, so "tele" finds "telephone" while "raw" does not
- * find "drawer".
+ * short phrases ("life, birth, raw"), so both the gloss and the QUERY are split
+ * on the same non-letter boundary into tokens, which is cheaper and better than a
+ * regex. A single-token query matches when a gloss token STARTS with it, so
+ * "tele" finds "telephone" while "raw" does not find "drawer".
+ *
+ * WHY THE QUERY IS TOKENIZED TOO. It used to be compared INTACT against each
+ * single gloss token, so any query with a space or punctuation — "line (of",
+ * "line of text" — could never equal a one-word token and found nothing, even
+ * against the gloss "line (of text), row, verse" that literally contains it. Now
+ * a multi-token query matches when its tokens are a CONSECUTIVE run of the
+ * gloss's tokens: every token before the last exactly, the last as a prefix (so
+ * "line of te" still reaches "...text"). A single token is just the length-one
+ * case of that, so the old behavior is preserved exactly.
  */
 function matchesMeaning(entry: LibEntry, lower: string): boolean {
   if (!lower || !/[a-z]/.test(lower)) return false;
+  const qTokens = lower.split(/[^a-z0-9]+/).filter(Boolean);
+  if (qTokens.length === 0) return false;
   // The glosses, plus a grammar entry's cluster title — "seems" finds the whole
   // evidential family, not just the one member whose gloss happens to say it.
   for (const m of [...entry.meanings, ...(entry.searchAlso ?? [])]) {
-    for (const token of m.toLowerCase().split(/[^a-z0-9]+/)) {
-      if (token && token.startsWith(lower)) return true;
+    const gTokens = m.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    if (phraseRun(gTokens, qTokens)) return true;
+  }
+  return false;
+}
+
+/** Do `qTokens` appear as a consecutive run inside `gTokens` — every query token
+ * before the last matching a gloss token exactly, the last allowed to be a
+ * prefix? This is what keeps the word boundary ("raw" is a whole token, never a
+ * loose substring of "drawer") while letting a partial phrase land. */
+function phraseRun(gTokens: string[], qTokens: string[]): boolean {
+  const last = qTokens.length - 1;
+  for (let i = 0; i + last < gTokens.length; i++) {
+    let ok = true;
+    for (let j = 0; j < qTokens.length; j++) {
+      const g = gTokens[i + j];
+      const matched = j === last ? g.startsWith(qTokens[j]) : g === qTokens[j];
+      if (!matched) {
+        ok = false;
+        break;
+      }
     }
+    if (ok) return true;
   }
   return false;
 }
