@@ -24,7 +24,7 @@ import {
   type Bit,
 } from "@/components/results/summary";
 import { TriageSection } from "@/components/results/triage-board";
-import { Card, PageTitle } from "@/components/ui";
+import { Btn, Card, PageTitle } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { analyzeRun } from "@/lib/confusions";
 import { weakestFacts } from "@/lib/decks";
@@ -34,6 +34,7 @@ import { useQuizSession, type ResultsPayload } from "@/lib/quiz-session";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { emptySelection, resolve } from "@/lib/selection";
 import { useHistory } from "@/lib/use-history";
+import { useLists } from "@/lib/use-lists";
 import type { FactId, QuizMode } from "@/types";
 
 const EMPTY_ANALYSIS = { patterns: [], progress: [] };
@@ -101,6 +102,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   const { history } = useHistory();
   const writes = useHistoryWrites();
   const confirm = useConfirm();
+  const { save } = useLists();
   const { active, abandonQuiz, startQuiz } = useQuizSession();
 
   const metric = "firstTry" as const;
@@ -108,6 +110,11 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   // Fixed at mount: a just-finished quiz shows time-of-day like the legacy
   // finish screen; anything older (reopened sessions) shows the full date.
   const [recent] = useState(() => Date.now() - results.ts < 60_000);
+
+  // "Save as a list" flips this on success so the button can't fire twice. The
+  // id is derived from the timestamp, so a second save would be idempotent
+  // anyway — this is just what the person sees.
+  const [savedAsList, setSavedAsList] = useState(false);
 
   const { summaryOnly } = results;
   const graduateRuns = cfg.graduateRuns;
@@ -216,6 +223,23 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   const rerunFacts = (): FactId[] =>
     resolve({ ...emptySelection(), session: results.ts }, history);
 
+  /** Turn this finished session into a saved list, so its exact items can be
+   * drilled again later. A past session is a DERIVED list whose query selects
+   * the session by timestamp — the same rule Rerun resolves, now given a name.
+   * The id is `session-<ts>`, so saving twice writes the same list rather than
+   * a duplicate. */
+  const saveAsList = async () => {
+    await save({
+      kind: "derived",
+      id: `session-${results.ts}`,
+      name: `Session ${new Date(results.ts).toLocaleDateString()}`,
+      created: Date.now(),
+      query: { ...emptySelection(), session: results.ts },
+      origin: "session",
+    });
+    setSavedAsList(true);
+  };
+
   return (
     <>
       <PageTitle
@@ -234,6 +258,13 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
           ) : null}
           <Line bits={summary.counts} className="text-[13px] text-text-muted" />
         </span>
+        <Btn
+          className="ml-auto shrink-0 self-start disabled:cursor-default disabled:opacity-45"
+          disabled={savedAsList}
+          onClick={() => void saveAsList()}
+        >
+          {savedAsList ? "Saved as a list" : "Save as a list"}
+        </Btn>
       </Card>
 
       <PatternSection
