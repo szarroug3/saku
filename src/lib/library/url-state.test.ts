@@ -29,6 +29,7 @@ import {
   ALL_TAB,
   DEFAULT_KIND,
   DEFAULT_STATE,
+  DEFAULT_TAB,
   kindFromParams,
   libraryUrl,
   queryFromParams,
@@ -72,12 +73,14 @@ describe("kindFromParams", () => {
 });
 
 describe("tabFromParams — subjects plus the All tab", () => {
-  test("reads the All tab, and round-trips it through a URL", () => {
+  test("reads the All tab, still honoring an explicit ?kind=all link", () => {
+    // An old link or a hand-typed URL can still carry ?kind=all, and it reads as
+    // the All tab.
     assert.equal(tabFromParams(params("?kind=all")), ALL_TAB);
-    const url = libraryUrl({ kind: ALL_TAB, query: "" });
-    assert.equal(url, "/library?kind=all");
-    const search = url.slice(url.indexOf("?"));
-    assert.equal(tabFromParams(params(search)), ALL_TAB);
+    // But All is the default tab now, so libraryUrl omits it: the bare /library
+    // IS the All tab, and reading that empty URL back returns All.
+    assert.equal(libraryUrl({ kind: ALL_TAB, query: "" }), "/library");
+    assert.equal(tabFromParams(params("")), ALL_TAB);
   });
 
   test("every subject still reads through, and is NOT the All tab", () => {
@@ -87,10 +90,16 @@ describe("tabFromParams — subjects plus the All tab", () => {
     }
   });
 
-  test("All is an ADDITION, not the default — a plain URL still opens on kana", () => {
-    assert.equal(tabFromParams(params("")), DEFAULT_KIND);
-    assert.notEqual(DEFAULT_KIND, ALL_TAB);
-    assert.equal(libraryUrl({ kind: DEFAULT_KIND, query: "" }), "/library");
+  test("All IS the default tab — a plain URL opens on All", () => {
+    assert.equal(tabFromParams(params("")), DEFAULT_TAB);
+    assert.equal(DEFAULT_TAB, ALL_TAB);
+    // The default tab is omitted, so All round-trips as the bare /library.
+    assert.equal(libraryUrl({ kind: DEFAULT_TAB, query: "" }), "/library");
+    // Kana is no longer the default, so it now carries an explicit ?kind=.
+    assert.equal(
+      libraryUrl({ kind: DEFAULT_KIND, query: "" }),
+      `/library?kind=${DEFAULT_KIND}`,
+    );
   });
 
   test("a fallback is a fallback, not a throw", () => {
@@ -122,12 +131,12 @@ describe("libraryUrl", () => {
   test("the default state stays a plain /library", () => {
     // So mounting the page cannot rewrite the address bar to something the user
     // never asked for, and Back is never spent undoing our own tidying.
-    assert.equal(libraryUrl({ kind: KANA_SUBJECT, query: "" }), "/library");
+    assert.equal(libraryUrl({ kind: ALL_TAB, query: "" }), "/library");
   });
 
   test("carries whichever halves are not default", () => {
     assert.equal(libraryUrl({ kind: KANJI_SUBJECT, query: "" }), "/library?kind=kanji");
-    assert.equal(libraryUrl({ kind: KANA_SUBJECT, query: "shi" }), "/library?q=shi");
+    assert.equal(libraryUrl({ kind: ALL_TAB, query: "shi" }), "/library?q=shi");
   });
 
   test("a kind and a query survive together", () => {
@@ -146,17 +155,18 @@ describe("libraryUrl", () => {
   });
 
   test("the all filter is omitted, the two narrowings are carried", () => {
-    // All is the default, so it stays out of the URL like an empty query does.
+    // The default state stays out of the URL like an empty query does. Uses the
+    // default TAB (All) as the kind so only the state param is under test here.
     assert.equal(
-      libraryUrl({ kind: KANA_SUBJECT, query: "", state: "all" }),
+      libraryUrl({ kind: ALL_TAB, query: "", state: "all" }),
       "/library",
     );
     assert.equal(
-      libraryUrl({ kind: KANA_SUBJECT, query: "", state: "known" }),
+      libraryUrl({ kind: ALL_TAB, query: "", state: "known" }),
       "/library?state=known",
     );
     assert.equal(
-      libraryUrl({ kind: KANA_SUBJECT, query: "", state: "unknown" }),
+      libraryUrl({ kind: ALL_TAB, query: "", state: "unknown" }),
       "/library?state=unknown",
     );
   });

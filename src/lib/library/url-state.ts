@@ -32,15 +32,11 @@ export const QUERY_PARAM = "q";
 /** The knowledge-state filter: `known`, `unknown`, or absent for all. */
 export const STATE_PARAM = "state";
 
-/** The shelf a Library with no opinion in its URL opens on — the lightest
- * first paint, and what the page defaulted to before the URL carried it.
- *
- * NOT the All tab, on purpose. All spans every subject and is the heaviest paint
- * the Library can make (words alone are 12,553); making it the default would
- * hand the reference screen its worst first paint on every visit. All is an
- * ADDITION — the first tab you can choose — while the plain `/library` still
- * opens on the lightest shelf. (Flagged for Sam: promote All to default only if
- * the capped browse proves cheap enough.) */
+/** The SUBJECT a per-kind lookup falls back to when a URL names no real kind.
+ * This is only the fallback for `kindFromParams`, which must return a real
+ * `Kind` for a shelf lookup, so it cannot be the All tab. It is NOT what a plain
+ * `/library` opens on: that is `DEFAULT_TAB` below. Kept as the lightest shelf so
+ * a garbage `?kind=` still renders something cheap rather than the heaviest view. */
 export const DEFAULT_KIND: Kind = KANA_SUBJECT;
 
 /**
@@ -55,6 +51,14 @@ export const ALL_TAB = "all" as const;
  * from the URL and branches — a real `Kind` looks its shelf up; `ALL_TAB` spans
  * every subject (browse) and buckets a search by type. */
 export type LibraryTab = Kind | typeof ALL_TAB;
+
+/** What a plain `/library` opens on: All, every subject at once. Promoted from
+ * the lightest shelf (kana) now the capped browse (all-tab.ts) is cheap enough
+ * to be the default first paint. It is a TAB, not a `Kind`, which is exactly why
+ * it is separate from `DEFAULT_KIND`: the subject-lookup fallback must stay a
+ * real `Kind`, but the tab the page opens on can be All. Omitted from the URL by
+ * libraryUrl, so the bare `/library` IS the All tab. */
+export const DEFAULT_TAB: LibraryTab = ALL_TAB;
 
 /**
  * The knowledge filter, in one of three states. `all` is the default and, like
@@ -103,8 +107,13 @@ export function kindFromParams(params: ReadableParams): Kind {
  * `Kind` (a shelf lookup, a fact subject) are not handed a value they cannot use.
  */
 export function tabFromParams(params: ReadableParams): LibraryTab {
-  if (params.get(KIND_PARAM) === ALL_TAB) return ALL_TAB;
-  return kindFromParams(params);
+  const raw = params.get(KIND_PARAM);
+  if (raw === ALL_TAB) return ALL_TAB;
+  // A real subject is itself; anything else (missing, misspelled, hostile) opens
+  // on the default tab, which is All. This no longer delegates to kindFromParams,
+  // whose own fallback is a real Kind (kana) for shelf lookups, not the tab the
+  // page defaults to.
+  return KINDS.find((k) => k === raw) ?? DEFAULT_TAB;
 }
 
 /** What the search box should contain. Absent reads as empty, never "null". */
@@ -153,9 +162,10 @@ export function libraryUrl({
   state?: KnowledgeFilter;
 }): string {
   const params = new URLSearchParams();
-  // ALL_TAB is not DEFAULT_KIND, so it writes `?kind=all` and round-trips
-  // through tabFromParams like any subject.
-  if (kind !== DEFAULT_KIND) params.set(KIND_PARAM, kind);
+  // The default tab (All) is omitted, so it round-trips as the bare `/library`.
+  // Every other tab writes its `?kind=`, including kana now that it is a chosen
+  // shelf rather than the default.
+  if (kind !== DEFAULT_TAB) params.set(KIND_PARAM, kind);
   if (query !== "") params.set(QUERY_PARAM, query);
   if (state !== DEFAULT_STATE) params.set(STATE_PARAM, state);
   const qs = params.toString();
