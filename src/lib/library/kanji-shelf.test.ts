@@ -12,18 +12,33 @@
 //      duplicate — in every mode.
 //   2. THE TILES COME OUT IN THE WRONG ORDER. The whole point is that reading
 //      the shelf is reading the queue, so concatenating the sections must
-//      reproduce kanjiTeachOrder EXACTLY, not merely contain the same glyphs.
-//      This is the half that a "does it have 2,136 things" test misses.
+//      reproduce the STUDY ORDER exactly, not merely contain the same glyphs.
+//      For the range modes that order is now the curriculum CLIMB
+//      (curriculumPosition), not kanjiTeachOrder — so 人 opens the shelf, kanji 1
+//      on the Learn card. `grade` still concatenates to its own grade-teach
+//      order. This is the half that a "does it have 2,136 things" test misses.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { KANJI, kanjiTeachOrder } from "@/data/kanji";
+import { curriculumPosition } from "@/lib/curriculum-order";
 import { KANJI_CHUNK, kanjiCuts } from "@/lib/library/kanji-shelf";
 import type { NewKanjiOrder } from "@/types";
 
 const MODES: readonly NewKanjiOrder[] = ["everyday", "grade", "newspaper"];
 const TOTAL = 2136;
+
+/** The study order the shelf reads in, per mode. `grade` keeps its grade-teach
+ * order; the range modes read in the climb — every jōyō kanji sorted by where
+ * the Learn feed reaches it (curriculumPosition, unique per glyph and covering
+ * all 2,136, so both range modes yield this one order). */
+function expectedOrder(mode: NewKanjiOrder): string[] {
+  if (mode === "grade") return [...kanjiTeachOrder("grade")];
+  return [...kanjiTeachOrder(mode)].sort(
+    (a, b) => curriculumPosition(a) - curriculumPosition(b),
+  );
+}
 
 describe("kanjiCuts", () => {
   test("the whole jōyō set is 2,136, in every order", () => {
@@ -44,12 +59,12 @@ describe("kanjiCuts", () => {
         for (const k of KANJI) assert.ok(have.has(k.c), `missing ${k.c}`);
       });
 
-      test("concatenating the sections reproduces the teach order", () => {
-        assert.deepEqual(flat, [...kanjiTeachOrder(mode)]);
+      test("concatenating the sections reproduces the study order", () => {
+        assert.deepEqual(flat, expectedOrder(mode));
       });
 
       test("the first section starts with the order's first kanji", () => {
-        assert.equal(cuts[0].glyphs[0], kanjiTeachOrder(mode)[0]);
+        assert.equal(cuts[0].glyphs[0], expectedOrder(mode)[0]);
       });
 
       test("section ids are unique", () => {
@@ -72,6 +87,15 @@ describe("kanjiCuts", () => {
       assert.equal(cuts[0].label, "1–50");
       assert.equal(cuts[1].label, "51–100");
       assert.equal(cuts[42].label, "2101–2136");
+    }
+  });
+
+  test("人 opens the range modes — kanji 1 on the Learn card", () => {
+    // 人 is spine item 0 (see curriculum-order.ts), so the climb puts it first
+    // where frequency once buried it.
+    assert.equal(curriculumPosition("人"), 0);
+    for (const mode of ["everyday", "newspaper"] as const) {
+      assert.equal(kanjiCuts(mode)[0].glyphs[0], "人");
     }
   });
 

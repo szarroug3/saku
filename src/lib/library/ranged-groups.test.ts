@@ -8,9 +8,11 @@
 // or the shelf lies. The CHUNKING must tile the whole ordered list — no gap, no
 // overlap, no duplicate, and a label that names the real span — because a shelf
 // headed "51–100" that skips a word is worse than no label. The ORDER must be the
-// teaching order it claims: `wordRank` ascends by beginnerRank (the bug it
-// replaces opened the words shelf with あべこべ), and both ranks push an item the
-// order does not place to the very END, never rank 0.
+// teaching order it claims: `wordClimbRank` opens the words shelf on the
+// curriculum climb (人 first, kanji/word 1 on the Learn card) with `wordRank`
+// (beginnerRank) as the tail's tie-break, `curriculumRank` is the spine's order,
+// and every rank pushes an item the order does not place to the very END, never
+// rank 0.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -18,7 +20,13 @@ import { describe, test } from "node:test";
 import { KANJI_SUBJECT } from "../../data/kanji.ts";
 import { vocabRow } from "../../data/vocab.ts";
 import { curriculumPosition } from "../curriculum-order.ts";
-import { curriculumRank, GROUP_SIZE, rangedGroups, wordRank } from "./ranged-groups.ts";
+import {
+  curriculumRank,
+  GROUP_SIZE,
+  rangedGroups,
+  wordClimbRank,
+  wordRank,
+} from "./ranged-groups.ts";
 import { type LibEntry } from "./entries.ts";
 import type { EntryId } from "../../types/index.ts";
 
@@ -123,6 +131,38 @@ describe("wordRank is the beginner's teaching order", () => {
     const flat = groups.flatMap((g) => g.entries.map((e) => e.glyph));
     assert.equal(flat[0], "何");
     assert.equal(flat[flat.length - 1], "＊not-a-word＊");
+  });
+});
+
+describe("wordClimbRank is the words' curriculum climb", () => {
+  test("人 sorts first — spine item 0, word 1 on the Learn card", () => {
+    // 人 is a curriculum word AND spine item 0, so the climb puts it first where
+    // frequency (beginnerRank 1157) once buried it.
+    assert.equal(curriculumPosition("人"), 0);
+    assert.equal(wordClimbRank(word("人")), 0);
+  });
+
+  test("a spine word ranks at its spine position", () => {
+    const p = curriculumPosition("電話");
+    assert.ok(p >= 0, "電話 must be on the spine, or this pins nothing");
+    assert.equal(wordClimbRank(word("電話")), p);
+  });
+
+  test("a word the spine never teaches trails every spine word, in beginnerRank order", () => {
+    // Real vocab the spine does not weave in: no spine position, but a
+    // beginnerRank that orders the tail. あの人 (10325) precedes いざこざ (10345).
+    const off = word("あの人");
+    const later = word("いざこざ");
+    assert.equal(curriculumPosition("あの人"), -1);
+    assert.equal(curriculumPosition("いざこざ"), -1);
+    // Both land after a spine word (人, rank 0), and keep beginnerRank order.
+    assert.ok(wordClimbRank(off) > wordClimbRank(word("人")));
+    assert.ok(wordClimbRank(off) < wordClimbRank(later));
+
+    // And the whole thing composes: 人 opens the shelf, the tail follows.
+    const groups = rangedGroups([later, off, word("人")], wordClimbRank, 50);
+    const flat = groups.flatMap((g) => g.entries.map((e) => e.glyph));
+    assert.deepEqual(flat, ["人", "あの人", "いざこざ"]);
   });
 });
 

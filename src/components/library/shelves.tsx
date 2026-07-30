@@ -82,7 +82,7 @@ import { counterShelfSections } from "@/lib/library/counter-shelf";
 import { keigoShelfSections } from "@/lib/library/keigo-shelf";
 import { kanjiCuts } from "@/lib/library/kanji-shelf";
 import { filterSections, type ShelfSection } from "@/lib/library/shelf-view";
-import { curriculumRank, rangedGroups, wordRank } from "@/lib/library/ranged-groups";
+import { curriculumRank, rangedGroups, wordClimbRank } from "@/lib/library/ranged-groups";
 import { sectionState, type Selection } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
 import type { KnowledgeFilter } from "@/lib/library/url-state";
@@ -253,15 +253,17 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
           ),
         },
       ];
-    // EVERY word, in the beginner's teaching order, cut into ranges of
-    // GROUP_SIZE ("1–50", "51–100") like the kanji shelf's hundreds — and shown
-    // WHOLE, all 12,553, not the old top-120 "Everyday words" card. The ranges
-    // flow through the generic deferred section render below and inherit its
-    // select-all header. See ranged-groups.ts for the order and chunking.
+    // EVERY word, in the curriculum CLIMB — the order the Learn feed teaches, so
+    // 人 opens the shelf (word 1 on the Learn card) instead of frequency burying
+    // it — cut into ranges of GROUP_SIZE ("1–50", "51–100") like the kanji
+    // shelf's hundreds, and shown WHOLE, all 12,553, not the old top-120
+    // "Everyday words" card. The ranges flow through the generic deferred section
+    // render below and inherit its select-all header. See ranged-groups.ts for
+    // the climb rank (spine order first, beginnerRank tail) and chunking.
     case VOCAB_SUBJECT:
       return rangedGroups(
         VOCAB.flatMap((w) => resolve(wordEntry(w.keb))),
-        wordRank,
+        wordClimbRank,
       );
     // Numbers and counters, cut into the groups the track teaches (see
     // counter-shelf.ts). Rendered as TILES like kana and kanji, not rows: a

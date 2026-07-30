@@ -31,23 +31,29 @@
 //
 // WHERE THE ORDER COMES FROM
 // ==========================
-// Two teaching orders, because two subjects sit at different depths of the same
-// curriculum:
+// Both browsable subjects now read in the curriculum CLIMB — the order the Learn
+// feed actually reaches them — so the shelves agree with the Learn card, where
+// 人 is radical 1's kanji 1 and word 1:
 //
 //   - `curriculumRank` — a glyph's position in CURRICULUM_SEQUENCE, the single
 //     spine every radical, kanji and word is woven into (see
-//     lib/curriculum-order.ts). Used for RADICALS: 214 shapes, each taught at the
-//     moment the first character needs it, which is the order this ranks them in.
-//   - `wordRank` — `beginnerRank`, the words' own complete teaching order. The
-//     spine only weaves in the ~6,200 curriculum words, so `curriculumRank` would
-//     tie the other ~6,300 at the very end in raw data order (あべこべ, あやふや
-//     …). `beginnerRank` is dense over all 12,553 and orders the curriculum words
-//     in the SAME sequence the spine does, so it reproduces the spine for the
-//     words it covers and ramps cleanly through the rest. It is the same key
-//     `search`, `usedAsPartIn` and WordsWith already sort words by, so the
-//     Library tells one story about which word comes first.
+//     lib/curriculum-order.ts). Used straight for RADICALS: 214 shapes, each
+//     taught at the moment the first character needs it, which is the order this
+//     ranks them in.
+//   - `wordClimbRank` — the words' climb: `curriculumRank` first, so the ~6,200
+//     spine words come in the exact sequence the Learn feed teaches (人 opens the
+//     shelf), and `wordRank` as the SECONDARY key for the several thousand words
+//     the spine never weaves in (VOCAB is ~12,553, the spine teaches ~6,213).
+//     Those tail words share no spine position, so ranked on the spine alone they
+//     would all tie at the very end in raw data order (あべこべ, あやふや …);
+//     banding them strictly after the spine and then ordering by beginnerRank
+//     keeps the ramp `wordRank` always gave them.
+//   - `wordRank` — `beginnerRank`, the words' own complete 1..12,553 teaching
+//     order. No longer the words shelf's primary order, but still its tie-break
+//     tail, and still the key `search`, `usedAsPartIn` and WordsWith sort by, so
+//     the Library tells one story about which word comes first.
 //
-// UNRANKED SORTS LAST, never first. Both ranks fall back to +Infinity for a
+// UNRANKED SORTS LAST, never first. Every rank falls back to +Infinity for a
 // glyph the order does not place, so an unranked item lands past every ranked one
 // instead of at rank 0 — which is precisely how あべこべ once opened the words
 // shelf. Ties (and the all-unranked case) fall back to input order, so the cut is
@@ -58,7 +64,7 @@
 // whole ordered list with no gap, no overlap and no duplicate, and the order is
 // the teaching order it claims to be.
 
-import { curriculumPosition } from "@/lib/curriculum-order";
+import { CURRICULUM_SEQUENCE, curriculumPosition } from "@/lib/curriculum-order";
 import { vocabRow } from "@/data/vocab";
 import type { LibEntry } from "@/lib/library/entries";
 import type { ShelfSection } from "@/lib/library/shelf-view";
@@ -77,6 +83,13 @@ export const GROUP_SIZE = 50;
 const UNRANKED = Number.POSITIVE_INFINITY;
 
 /**
+ * How long the spine is, so a non-spine word can be banded strictly after every
+ * spine word (see `wordClimbRank`) without a magic number: a spine position is
+ * always < SPINE_SIZE, so SPINE_SIZE + anything can never slip in front of one.
+ */
+const SPINE_SIZE = CURRICULUM_SEQUENCE.length;
+
+/**
  * Where a radical or kanji sits in the curriculum spine — its
  * `curriculumPosition`, with anything the spine does not teach pushed past the
  * end. One item per glyph in the spine, so the rank is unambiguous.
@@ -93,6 +106,26 @@ export function curriculumRank(entry: LibEntry): number {
  */
 export function wordRank(entry: LibEntry): number {
   return vocabRow(entry.glyph)?.beginnerRank ?? UNRANKED;
+}
+
+/**
+ * A word's place in the curriculum CLIMB — the words shelf's order, so it reads
+ * in the sequence the Learn feed teaches instead of by frequency. A composite
+ * rank (not a comparator) so it flows through the same `rangedGroups(entries,
+ * rank)` the radicals shelf takes:
+ *
+ *   - A word the spine weaves in ranks at its spine position (`curriculumRank`).
+ *     人 is spine item 0, so it opens the shelf, matching the Learn card's
+ *     "word 1" — where before frequency buried it.
+ *   - A word the spine never teaches has no spine position, so it is banded
+ *     strictly after every spine word (SPINE_SIZE + …) and ordered within that
+ *     tail by `wordRank` (beginnerRank), the sensible ramp it always had, rather
+ *     than tying at the end in raw data order.
+ */
+export function wordClimbRank(entry: LibEntry): number {
+  const spine = curriculumRank(entry);
+  if (spine !== UNRANKED) return spine;
+  return SPINE_SIZE + wordRank(entry);
 }
 
 /**
