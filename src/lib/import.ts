@@ -180,24 +180,71 @@ function romajiEntry(raw: string): EntryId | null {
 let MEANING_INDEX: Map<string, EntryId> | null = null;
 
 /**
- * English sense → the word that means it. A gloss can pack several senses in one
- * string ("life, birth, raw"), so each is split on commas and semicolons and
- * every trimmed sense is keyed. First-wins in vocab order, index()'s own
- * everyday-first tie-break, so "person" lands on the common word, not a rare
- * synonym. Words only, like kanaIndex: a list names words, not kanji-as-units.
+ * English gloss → the word that means it. Each entry in `glosses` is already ONE
+ * sense ("person", "you", "to shoot (a gun, person, etc.)"), so the WHOLE gloss
+ * is the key, never a comma-split fragment of it. Splitting on commas was the bug
+ * that made "person" resolve to 撃つ "to shoot (a gun, person, etc.)" instead of
+ * 人: the comma there is inside a parenthetical, not a sense boundary. A gloss
+ * DOES pack several senses comma-separated ("water, (cold) water"; "life, birth,
+ * raw"), so we split on top-level commas and semicolons only, the ones NOT inside
+ * parentheses, and key each whole sense. So "water" reaches 水 but "person" never
+ * reaches 撃つ.
+ *
+ * When several words share a sense, the MOST EVERYDAY wins (lowest beginnerRank),
+ * not the first in data order, so "person" is 人 and not 者. Words only, like
+ * kanaIndex: a list names words, not kanji-as-units.
  */
+function senses(gloss: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of gloss) {
+    if (ch === "(" || ch === "[") depth++;
+    else if (ch === ")" || ch === "]") depth = Math.max(0, depth - 1);
+    if ((ch === "," || ch === ";") && depth === 0) {
+      out.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out.map((s) => s.trim().toLowerCase()).filter(Boolean);
+}
+
+/** A sense with its parenthetical qualifiers dropped: "water (esp. cold water)"
+ * becomes "water", so a plain query reaches 水 and not just the compound 水分
+ * whose sense happens to be the bare word. The paren CONTENT is discarded, never
+ * indexed, which is also why "person" inside 撃つ's "to shoot (a gun, person...)"
+ * can never key it. */
+function bareSense(sense: string): string {
+  return sense
+    .replace(/[([][^)\]]*[)\]]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/[.,;]+$/, "")
+    .trim();
+}
+
 function meaningIndex(): Map<string, EntryId> {
   if (MEANING_INDEX) return MEANING_INDEX;
-  const map = new Map<string, EntryId>();
+  const best = new Map<string, { id: EntryId; rank: number }>();
+  const keep = (key: string, id: EntryId, rank: number) => {
+    if (!key) return;
+    const cur = best.get(key);
+    if (!cur || rank < cur.rank) best.set(key, { id, rank });
+  };
   for (const w of VOCAB) {
     const id = wordEntry(w.keb);
+    const rank = w.beginnerRank;
     for (const gloss of w.glosses) {
-      for (const sense of gloss.toLowerCase().split(/[,;]/)) {
-        const s = sense.trim();
-        if (s && !map.has(s)) map.set(s, id);
+      for (const sense of senses(gloss)) {
+        keep(sense, id, rank);
+        keep(bareSense(sense), id, rank);
       }
     }
   }
+  const map = new Map<string, EntryId>();
+  for (const [k, v] of best) map.set(k, v.id);
   MEANING_INDEX = map;
   return map;
 }
