@@ -30,6 +30,8 @@ import { plural } from "@/lib/words";
 import { Btn, Hint, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
+import { entryOf } from "@/lib/facts";
+import { useLists } from "@/lib/use-lists";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
@@ -80,12 +82,16 @@ function RunRow({
   onToggle,
   onContinue,
   onDiscard,
+  onMakeList,
+  madeList,
 }: {
   run: RunInfo;
   selected: boolean;
   onToggle: (shift: boolean) => void;
   onContinue: () => void;
   onDiscard: () => void;
+  onMakeList: () => void;
+  madeList: boolean;
 }) {
   const answered = progressText(run);
   return (
@@ -127,10 +133,17 @@ function RunRow({
         </span>
       </span>
       <span className="flex flex-none items-center gap-2">
+        {/* Save this run's material as a list you can drill again. Idempotent by
+         * run id, so a second click re-saves the same list; once saved, the
+         * button relaxes to "Saved" so the row confirms it took. */}
+        <SmallBtn onClick={onMakeList} disabled={madeList}>
+          {madeList ? "Saved" : "Make a list"}
+        </SmallBtn>
+        <SmallBtn onClick={onDiscard}>Discard ✕</SmallBtn>
+        {/* Continue sits to the right of Discard, the primary action last. */}
         <Btn sel onClick={onContinue}>
           Continue
         </Btn>
-        <SmallBtn onClick={onDiscard}>Discard ✕</SmallBtn>
       </span>
     </div>
   );
@@ -159,7 +172,12 @@ function NoRuns() {
 export function CurrentSessions() {
   const confirm = useConfirm();
   const { runs, continueRun, discardRun } = useQuizSession();
+  const { save } = useLists();
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  // Which rows have been turned into a saved list this visit, keyed by the same
+  // run id every other per-row bit of state keys on, so only the clicked row
+  // flips to "Saved".
+  const [madeLists, setMadeLists] = useState<Set<string>>(new Set());
   // The last row you toggled, for Shift-range selection. A ref, not state: it
   // only ever seeds the NEXT click, so changing it should not re-render.
   const anchorRef = useRef<string | null>(null);
@@ -232,6 +250,28 @@ export function CurrentSessions() {
     });
   };
 
+  // Turn one run into a saved FIXED list of its material. A run in progress is
+  // NOT a committed session record, so a derived `{ session: ts }` rule would
+  // resolve to nothing (resolve reads history.sessions, which this run is not in
+  // yet). So we snapshot the run's facts, fold them to the ENTRIES a list names,
+  // and store that set. Keyed by run id so a second click re-saves the same list
+  // rather than piling up duplicates.
+  const makeList = (run: RunInfo) => {
+    void (async () => {
+      const entries = [...new Set(run.facts.map((f) => entryOf(f)))];
+      if (!entries.length) return;
+      await save({
+        kind: "fixed",
+        id: `run-${run.id}`,
+        name: run.what,
+        created: Date.now(),
+        entries,
+        origin: "manual",
+      });
+      setMadeLists((prev) => new Set(prev).add(run.id));
+    })();
+  };
+
   const discardSelected = () => {
     void (async () => {
       if (!picked.size) return;
@@ -257,6 +297,8 @@ export function CurrentSessions() {
       onToggle={(shift) => selectRow(r.id, shift)}
       onContinue={() => continueRun(r.id)}
       onDiscard={() => discardOne(r.id)}
+      onMakeList={() => makeList(r)}
+      madeList={madeLists.has(r.id)}
     />
   );
 
@@ -274,7 +316,7 @@ export function CurrentSessions() {
       {others.length ? (
         <section>
           <h2 className="mb-1.5 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
-            Quizzes and Library sessions
+            Practice
           </h2>
           <div className="flex flex-col gap-2">{others.map(renderRow)}</div>
         </section>
