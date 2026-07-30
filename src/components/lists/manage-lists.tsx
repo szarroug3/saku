@@ -140,6 +140,14 @@ export function ManageLists() {
         sub="Every list you have: decks you imported, lists you named, searches and sessions you saved. Rename, drill, or clear them out."
       />
 
+      {/* Where lists come from lives with the lists: the import screen is a
+          click away from the shelf it fills, not buried in Settings. */}
+      <p className="mb-3.5">
+        <Link href="/lists/import">
+          <Btn>Import a list →</Btn>
+        </Link>
+      </p>
+
       {!loaded ? null : lists.length === 0 ? (
         <Card>
           <p className="text-[13px]">You don&rsquo;t have any lists yet.</p>

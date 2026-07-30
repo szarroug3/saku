@@ -1,10 +1,12 @@
 "use client";
 
-// Import a list — the door that did not exist.
+// Import a list — where lists come from, so it lives with the lists.
 //
 // The design has said for a while that lists are imported from files the user
-// provides, and no screen did it. This is that screen, and it is deliberately
-// two states and no wizard: pick a file, see what didn't match, press Import.
+// provides, and no screen did it. This is that screen, and it lives in the list
+// view because that is where a person goes to see and build their lists. It is
+// deliberately two states and no wizard: pick a file, see what didn't match,
+// press Import.
 //
 // It shows you the failures BEFORE anything is added, because that is the only
 // part you might need to do something about. What matched is a number; what
@@ -80,12 +82,14 @@ export default function ImportPage() {
 
       {done ? (
         <Card>
-          <span className="text-[15px] font-semibold">
+          <span className="block text-[15px] font-semibold">
             “{done}” is now one of your lists.
           </span>
-          <Hint>
-            It is on Home under List, and you can add to it from anywhere.
-          </Hint>
+          <span className="mt-1 block">
+            <Hint>
+              It is on Home under List, and you can add to it from anywhere.
+            </Hint>
+          </span>
           <span className="mt-2.5 block">
             <Link href="/">
               <Btn sel>Go and drill it</Btn>
@@ -96,41 +100,39 @@ export default function ImportPage() {
 
       {!report ? (
         <>
-          <Card>
-            <div
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const f = e.dataTransfer.files[0];
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const f = e.dataTransfer.files[0];
+              if (f) void take(f);
+            }}
+            className="flex flex-col items-center rounded-lg border border-dashed border-border px-4 py-8 text-center"
+          >
+            <span className="text-[30px] leading-none opacity-50">＋</span>
+            <span className="mt-2 text-sm">Drop a file here</span>
+            <Hint>a .csv / .tsv / .txt with one word per line</Hint>
+            <span className="mt-3.5">
+              <Btn onClick={() => fileRef.current?.click()}>Choose a file</Btn>
+            </span>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,.tsv,.txt,.text"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
                 if (f) void take(f);
               }}
-              className="flex flex-col items-center rounded-lg border border-dashed border-border px-4 py-8 text-center"
-            >
-              <span className="text-[30px] leading-none opacity-50">＋</span>
-              <span className="mt-2 text-sm">Drop a file here</span>
-              <Hint>a .csv / .tsv / .txt with one word per line</Hint>
-              <span className="mt-3.5">
-                <Btn onClick={() => fileRef.current?.click()}>Choose a file</Btn>
-              </span>
-              <input
-                ref={fileRef}
-                type="file"
-                accept=".csv,.tsv,.txt,.text"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void take(f);
-                }}
-              />
-            </div>
-            {error ? (
-              <span className="mt-2.5 block text-[13px] text-danger">{error}</span>
-            ) : null}
-          </Card>
-          <Card>
+            />
+          </div>
+          {error ? (
+            <span className="mt-2.5 block text-[13px] text-danger">{error}</span>
+          ) : null}
+          <Card className="mt-3.5">
             <Hint>
               You can also build a list without a file: search on Home and drill
-              what comes back.
+              what comes back, or add items to a list from the Library.
             </Hint>
           </Card>
         </>
@@ -139,7 +141,9 @@ export default function ImportPage() {
           <Card>
             <span className="text-[15px] font-semibold">{filename}</span>
             <Hint>
-              {report.rows.length} rows · nothing has been added yet.
+              {" · "}
+              {report.rows.length} {report.rows.length === 1 ? "row" : "rows"} ·
+              nothing has been added yet.
             </Hint>
             {/* One bar, two numbers, no legend to decode. */}
             <span className="mt-2.5 mb-2 flex h-1.5 overflow-hidden rounded-full">
@@ -155,11 +159,13 @@ export default function ImportPage() {
             <span className="flex flex-wrap gap-3.5 text-[13px] text-text-muted">
               <span>
                 <i className="mr-1.5 inline-block size-2 rounded-full bg-success align-middle" />
-                {report.matched.length} matched the dictionary
+                {report.matched.length}
+                {" matched the dictionary"}
               </span>
               <span>
                 <i className="mr-1.5 inline-block size-2 rounded-full bg-warning align-middle" />
-                {report.unmatched.length} didn&apos;t
+                {report.unmatched.length}
+                {" didn’t match"}
               </span>
             </span>
           </Card>
@@ -246,7 +252,7 @@ export default function ImportPage() {
               {report.entries.length} distinct{" "}
               {report.entries.length === 1 ? "thing" : "things"}
               {report.entries.length !== report.matched.length
-                ? ` · ${report.matched.length - report.entries.length} duplicate rows folded`
+                ? ` · ${report.matched.length - report.entries.length} duplicate ${report.matched.length - report.entries.length === 1 ? "row" : "rows"} folded`
                 : ""}
               {report.entries.length
                 ? ` · ${report.entries
@@ -259,8 +265,13 @@ export default function ImportPage() {
 
           <div className="kq-band sticky bottom-0 -mx-3 mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-accent px-3 py-2.5">
             <span className="text-[13px] text-text-muted">
-              Add <b className="text-text">{report.entries.length} things</b> as a
-              list called <b className="text-text">{name.trim() || nameFromFile(filename)}</b>
+              Add{" "}
+              <b className="text-text">
+                {report.entries.length}{" "}
+                {report.entries.length === 1 ? "thing" : "things"}
+              </b>{" "}
+              as a list called{" "}
+              <b className="text-text">{name.trim() || nameFromFile(filename)}</b>
               {report.unmatched.length ? ` · ${report.unmatched.length} left out` : ""}
             </span>
             <span className="ml-auto flex flex-none items-center gap-2">
