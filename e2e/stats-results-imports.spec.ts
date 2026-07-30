@@ -134,21 +134,20 @@ test("/results renders the board from a stored session", async ({ page }) => {
   await expect(page.getByText(/Drill · \d+ questions/)).toBeVisible();
 });
 
-test("/settings renders its controls and the import door", async ({ page }) => {
+test("/settings renders its controls", async ({ page }) => {
   await page.goto("/settings");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Settings");
   // The settings card's first group and control.
   await expect(page.getByText("Appearance")).toBeVisible();
   await expect(page.getByText("Theme")).toBeVisible();
-  // The import door, from the "Your lists" section.
-  await expect(
-    page.getByRole("link", { name: /Import a list/ }),
-  ).toBeVisible();
+  // Import used to live here; it moved to the list view. Settings no longer
+  // carries an import door.
+  await expect(page.getByRole("link", { name: /Import a list/ })).toHaveCount(0);
 });
 
-test("/settings/import renders the import controls", async ({ page }) => {
-  await page.goto("/settings/import");
+test("/lists/import renders the import controls", async ({ page }) => {
+  await page.goto("/lists/import");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Import a list",
