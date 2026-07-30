@@ -8,15 +8,23 @@ import type { ReactNode } from "react";
 // app/page.tsx only when there is no session; the sign-in button is passed in
 // (a client island) so this stays a plain server component.
 
+// The tracks the curriculum actually teaches, in the order the lesson feed opens
+// them (kana, then the radical/kanji/word spine, then the post-kana tracks). Kept
+// in step with home-feed.tsx: verb pairs (the transitivity track) and sentence
+// ordering are real tracks and belong here. Pitch is last because it rides along
+// on words rather than being a track of its own, but it is still something we
+// teach, so it earns a chip.
 const TRACKS: Array<{ en: string; jp: string }> = [
   { en: "Hiragana", jp: "ひらがな" },
   { en: "Katakana", jp: "カタカナ" },
   { en: "Radicals", jp: "部首" },
   { en: "Kanji", jp: "漢字" },
   { en: "Vocabulary", jp: "単語" },
-  { en: "Grammar", jp: "文法" },
-  { en: "Keigo", jp: "敬語" },
   { en: "Counters", jp: "数え方" },
+  { en: "Grammar", jp: "文法" },
+  { en: "Verb pairs", jp: "自他動詞" },
+  { en: "Keigo", jp: "敬語" },
+  { en: "Sentence ordering", jp: "語順" },
   { en: "Pitch", jp: "アクセント" },
 ];
 

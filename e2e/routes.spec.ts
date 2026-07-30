@@ -158,3 +158,22 @@ test("/ renders the landing for a signed-out visitor", async ({ page }) => {
     page.getByRole("link", { name: /start learning without an account/i }),
   ).toBeVisible();
 });
+
+/**
+ * The landing's "Everything, in the right order" list is the one hand-kept
+ * inventory of what the app teaches, and it had drifted: vocabulary was there
+ * but the verb-pairs and sentence-ordering tracks were not. This pins the chips
+ * that regression added back, so the list can't quietly fall behind the lesson
+ * feed (home-feed.tsx) again.
+ */
+test("the landing lists the real curriculum tracks", async ({ page }) => {
+  await page.goto("/");
+  const path = page.locator("section", {
+    hasText: "Everything, in the right order",
+  });
+  // Each chip renders its Japanese and English joined (単語Vocabulary), so match
+  // the English as a substring rather than the chip's exact text.
+  for (const track of ["Vocabulary", "Counters", "Verb pairs", "Sentence ordering"]) {
+    await expect(path.getByText(track)).toBeVisible();
+  }
+});
