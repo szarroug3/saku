@@ -286,47 +286,42 @@ export default function ImportPage() {
             <>
               <Lbl>What&apos;s going in</Lbl>
               <Card>
-                {/* Checked by default. Uncheck anything you don't want, and it
-                    is left out of the import. */}
-                {report.entries.map((e) => {
-                  const on = included.has(e);
-                  const entry = libEntry(e);
-                  const glyph = glyphOf(e);
-                  // The kana reading, shown only when it adds something the glyph
-                  // does not: a kana word reads as itself (あなた), so repeating it
-                  // would be noise.
-                  const reading = entry?.readings[0];
-                  const type = entry ? KIND_LABEL[entry.kind] : "";
-                  // What it means, the definition the owner asked to see.
-                  const meaning = entry?.meanings.join(", ") ?? "";
-                  return (
-                    <label
-                      key={e}
-                      className="flex cursor-pointer items-center gap-2.5 py-1 text-[13px]"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={on}
-                        onChange={() => toggle(e)}
-                        className="size-4 accent-accent"
-                      />
-                      <span className="font-kana text-[15px] text-text">{glyph}</span>
-                      {reading && reading !== glyph ? (
-                        <span className="text-text-muted">{reading}</span>
-                      ) : null}
-                      {type ? (
-                        <span className="shrink-0 rounded bg-card px-1.5 py-0.5 text-[11px] text-text-muted">
+                {/* One grid for the whole list so every row's columns line up:
+                    glyph, reading, type, then meaning. Each row is a
+                    display:contents label, so its five cells land on the shared
+                    tracks and clicking anywhere on the row toggles its checkbox.
+                    Checked by default; uncheck to leave one out. */}
+                <div className="grid grid-cols-[auto_auto_auto_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 text-[13px]">
+                  {report.entries.map((e) => {
+                    const on = included.has(e);
+                    const entry = libEntry(e);
+                    const glyph = glyphOf(e);
+                    // The kana reading, blank when it just repeats the glyph (a
+                    // kana word reads as itself); the empty cell keeps the columns
+                    // after it aligned.
+                    const reading = entry?.readings[0];
+                    const type = entry ? KIND_LABEL[entry.kind] : "";
+                    const meaning = entry?.meanings.join(", ") ?? "";
+                    return (
+                      <label key={e} className="contents cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={() => toggle(e)}
+                          className="size-4 accent-accent"
+                        />
+                        <span className="font-kana text-[15px] text-text">{glyph}</span>
+                        <span className="text-text-muted">
+                          {reading && reading !== glyph ? reading : ""}
+                        </span>
+                        <span className="justify-self-start rounded bg-card px-1.5 py-0.5 text-[11px] text-text-muted">
                           {type}
                         </span>
-                      ) : null}
-                      {meaning ? (
-                        <span className="min-w-0 flex-1 truncate text-text-muted">
-                          {meaning}
-                        </span>
-                      ) : null}
-                    </label>
-                  );
-                })}
+                        <span className="min-w-0 truncate text-text-muted">{meaning}</span>
+                      </label>
+                    );
+                  })}
+                </div>
                 {/* The count that matters is ENTRIES, not rows: a file listing 生
                     twice is one thing to drill, and saying "2,000" over a list of
                     1,983 would be the screen lying in its last sentence. */}
