@@ -381,21 +381,34 @@ function LibraryBody() {
 
   const resultSections = useMemo(() => {
     if (!q) return [];
+    // SEARCH SHOWS EVERYTHING IT FOUND. No per-section cap: the owner wants a
+    // search to render every match, not the first 8 with a "+N more" footer. So
+    // `perSection` is unbounded and every section's `hits` holds all of them.
+    // (A broad query — a single kana like で — can now paint a lot of rows; that
+    // is the deliberate choice.)
+    //
     // `tab === ALL_TAB` (not `isAll`) so TypeScript narrows `tab` to a real Kind
     // in the else branch, where `search` needs one.
     if (tab === ALL_TAB) {
-      return searchByType(q, { pinned, keep }).map((s) => ({
+      return searchByType(q, {
+        pinned,
+        keep,
+        perSection: Number.MAX_SAFE_INTEGER,
+      }).map((s) => ({
         key: s.kind as string,
         label: s.label,
         hits: s.hits,
-        more: s.more,
       }));
     }
-    return search(q, { kind: tab, pinned, keep }).map((s) => ({
+    return search(q, {
+      kind: tab,
+      pinned,
+      keep,
+      perSection: Number.MAX_SAFE_INTEGER,
+    }).map((s) => ({
       key: s.why as string,
       label: s.label,
       hits: s.hits,
-      more: s.more,
     }));
   }, [q, tab, pinned, keep]);
 
@@ -419,8 +432,8 @@ function LibraryBody() {
   }, []);
 
   // WHAT A SHIFT-CLICK RANGE MAY REACH — the ids currently ON SCREEN, in display
-  // order. Search view flattens its result sections (only the shown hits, never
-  // the "+N more" it withholds); the browse shelf hands off to `visibleShelfIds`,
+  // order. Search view flattens its result sections (which now show every hit);
+  // the browse shelf hands off to `visibleShelfIds`,
   // which mirrors the shelf's own render (word cap, knowledge filter, section
   // caps). Either way it excludes everything hidden, so a range is bounded by
   // what you can see. The order is the flattened top-to-bottom reading order
@@ -460,14 +473,14 @@ function LibraryBody() {
   //   a selection .... the drill you BUILT — the union of everything toggled,
   //                    across kinds. This wins over everything else: once you
   //                    are assembling a selection, the bar is about it.
-  //   searching ...... the results. ALL of them, not the 8 per section the page
-  //                    had room for: you asked for で and the bar means で.
+  //   searching ...... the results. The sections already show every hit, and the
+  //                    bar means the same set: you asked for で and the bar means で.
   //   a single kind .. that whole shelf (the shipped "drill all of Kanji").
   const slice = useMemo(() => {
     if (selected.size > 0) return selectionSlice(selected, LIB_ENTRIES);
     if (q) {
       // The bar means every search hit under the same scope as the visible
-      // results (including the hidden +N rows), reusing the computed hit set.
+      // results, reusing the computed hit set.
       return { label: q, entries: allHits.map((h) => h.entry.id) };
     }
     // All browse with nothing selected: the bar is the whole library (the "drill
@@ -675,10 +688,10 @@ function LibraryBody() {
               <Card key={s.key}>
                 <Lbl>
                   {s.label}
-                  {s.more > 0 ? (
+                  {s.hits.length > 0 ? (
                     <span className="ml-1.5 font-normal normal-case tracking-normal">
                       <Hint>
-                        · {s.hits.length + s.more} matches
+                        · {s.hits.length} matches
                         {pinned.size > 0 ? " · your lists first" : ""}
                       </Hint>
                     </span>
@@ -695,15 +708,6 @@ function LibraryBody() {
                     onToggleSelect={(shift) => onToggleEntry(h.entry.id, shift)}
                   />
                 ))}
-                {s.more > 0 ? (
-                  <p className="pt-2.5">
-                    <Hint>
-                      ＋ {s.more} more like this. Narrow the search, or use the
-                      shelf chips. The bar below already means all{" "}
-                      {s.hits.length + s.more}.
-                    </Hint>
-                  </p>
-                ) : null}
               </Card>
             ))
           )
