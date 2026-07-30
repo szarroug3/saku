@@ -216,7 +216,7 @@ export function SliceBar({
             </>
           ) : null}
         </div>
-        <div className="flex flex-none flex-wrap items-center gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <Btn
             sel={adding}
             onClick={() => setAdding((v) => !v)}

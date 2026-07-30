@@ -354,7 +354,7 @@ export function PracticeSelector({
   return (
     <div className="kq-material mb-3.5 rounded-xl border border-border bg-card p-3.5">
       {/* SCOPE — which slice of what you know. */}
-      <div className="mb-3 flex gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         {SCOPES.map((s) => (
           <ScopeButton
             key={s.id}
