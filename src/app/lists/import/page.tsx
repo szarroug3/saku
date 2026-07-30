@@ -19,10 +19,12 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 
-import { Btn, Card, Hint, Lbl, PageTitle, PrimaryBtn } from "@/components/ui";
+import { Btn, Card, Hint, Lbl, PageTitle } from "@/components/ui";
 import { glyphOf } from "@/lib/facts";
+import { KIND_LABEL, libEntry } from "@/lib/library/entries";
 import { applySuggestion, readList, type ImportReport } from "@/lib/import";
 import { useLists } from "@/lib/use-lists";
+import type { EntryId } from "@/types";
 
 /** "core2k.csv" → "Core2k". A default you can overwrite, not a decision. */
 function nameFromFile(filename: string): string {
@@ -38,7 +40,30 @@ export default function ImportPage() {
   const [showAll, setShowAll] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // True while a file is dragged over the drop zone, so it can read as a solid
+  // filled target instead of the resting dashed outline.
+  const [dragging, setDragging] = useState(false);
+  // The ids we'll actually import: starts as everything that matched, and the
+  // checklist lets you drop any before pressing Import. Reset with every report
+  // so a second file doesn't inherit the first file's un-checks.
+  const [included, setIncluded] = useState<Set<EntryId>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Every report change (new file, applied suggestion, cancel) resets the
+  // checklist to "all in", so this is the one place that sets report.
+  const putReport = (r: ImportReport | null) => {
+    setReport(r);
+    setIncluded(new Set(r?.entries ?? []));
+  };
+
+  const toggle = (id: EntryId) => {
+    setIncluded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const take = async (file: File) => {
     setError(null);
@@ -54,24 +79,31 @@ export default function ImportPage() {
     const text = await file.text();
     setFilename(file.name);
     setName(nameFromFile(file.name));
-    setReport(readList(text));
+    putReport(readList(text));
     setShowAll(false);
   };
 
   const doImport = async () => {
-    if (!report?.entries.length) return;
+    if (!report) return;
+    const chosen = report.entries.filter((e) => included.has(e));
+    if (!chosen.length) return;
     const listName = name.trim() || nameFromFile(filename);
     await save({
       kind: "fixed",
       id: `import-${Date.now()}`,
       name: listName,
       created: Date.now(),
-      entries: report.entries,
+      entries: chosen,
       origin: "import",
     });
     setDone(listName);
-    setReport(null);
+    putReport(null);
   };
+
+  // The count that drives the bar and the button: only the checked entries.
+  const checkedCount = report
+    ? report.entries.filter((e) => included.has(e)).length
+    : 0;
 
   return (
     <>
@@ -101,13 +133,26 @@ export default function ImportPage() {
       {!report ? (
         <>
           <div
-            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
             onDrop={(e) => {
               e.preventDefault();
+              setDragging(false);
               const f = e.dataTransfer.files[0];
               if (f) void take(f);
             }}
-            className="flex flex-col items-center rounded-lg border border-dashed border-border px-4 py-8 text-center"
+            className={`flex flex-col items-center rounded-lg border px-4 py-8 text-center ${
+              dragging
+                ? "border-solid border-accent bg-accent-bg"
+                : "border-dashed border-border"
+            }`}
           >
             <span className="text-[30px] leading-none opacity-50">＋</span>
             <span className="mt-2 text-sm">Drop a file here</span>
@@ -131,8 +176,8 @@ export default function ImportPage() {
           ) : null}
           <Card className="mt-3.5">
             <Hint>
-              You can also build a list without a file: search on Home and drill
-              what comes back, or add items to a list from the Library.
+              You can also build a list without a file: search the Library and
+              add what you find to a list.
             </Hint>
           </Card>
         </>
@@ -210,7 +255,7 @@ export default function ImportPage() {
                               sel
                               className="!px-2 !py-0.5 !text-[11px]"
                               onClick={() =>
-                                setReport(applySuggestion(report, row.raw))
+                                putReport(applySuggestion(report, row.raw))
                               }
                             >
                               Use {row.suggest.text}
@@ -237,48 +282,88 @@ export default function ImportPage() {
             </>
           ) : null}
 
+          {report.entries.length ? (
+            <>
+              <Lbl>What&apos;s going in</Lbl>
+              <Card>
+                {/* Checked by default. Uncheck anything you don't want, and it
+                    is left out of the import. */}
+                {report.entries.map((e) => {
+                  const on = included.has(e);
+                  const entry = libEntry(e);
+                  const glyph = glyphOf(e);
+                  // The kana reading, shown only when it adds something the glyph
+                  // does not: a kana word reads as itself (あなた), so repeating it
+                  // would be noise.
+                  const reading = entry?.readings[0];
+                  const type = entry ? KIND_LABEL[entry.kind] : "";
+                  // What it means, the definition the owner asked to see.
+                  const meaning = entry?.meanings.join(", ") ?? "";
+                  return (
+                    <label
+                      key={e}
+                      className="flex cursor-pointer items-center gap-2.5 py-1 text-[13px]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={() => toggle(e)}
+                        className="size-4 accent-accent"
+                      />
+                      <span className="font-kana text-[15px] text-text">{glyph}</span>
+                      {reading && reading !== glyph ? (
+                        <span className="text-text-muted">{reading}</span>
+                      ) : null}
+                      {type ? (
+                        <span className="shrink-0 rounded bg-card px-1.5 py-0.5 text-[11px] text-text-muted">
+                          {type}
+                        </span>
+                      ) : null}
+                      {meaning ? (
+                        <span className="min-w-0 flex-1 truncate text-text-muted">
+                          {meaning}
+                        </span>
+                      ) : null}
+                    </label>
+                  );
+                })}
+                {/* The count that matters is ENTRIES, not rows: a file listing 生
+                    twice is one thing to drill, and saying "2,000" over a list of
+                    1,983 would be the screen lying in its last sentence. */}
+                <Hint>
+                  {report.entries.length} distinct{" "}
+                  {report.entries.length === 1 ? "thing" : "things"}
+                  {report.entries.length !== report.matched.length
+                    ? ` · ${report.matched.length - report.entries.length} duplicate ${report.matched.length - report.entries.length === 1 ? "row" : "rows"} folded`
+                    : ""}
+                </Hint>
+              </Card>
+            </>
+          ) : null}
+
           <Lbl>Name</Lbl>
-          <Card>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={nameFromFile(filename)}
-              className="kq-material w-[280px] rounded-lg border border-border bg-card px-3 py-1.5 text-[13px] text-text outline-none focus:border-accent"
-            />
-            {/* The count that matters is ENTRIES, not rows: a file listing 生
-                twice is one thing to drill, and saying "2,000" over a list of
-                1,983 would be the screen lying in its last sentence. */}
-            <Hint>
-              {report.entries.length} distinct{" "}
-              {report.entries.length === 1 ? "thing" : "things"}
-              {report.entries.length !== report.matched.length
-                ? ` · ${report.matched.length - report.entries.length} duplicate ${report.matched.length - report.entries.length === 1 ? "row" : "rows"} folded`
-                : ""}
-              {report.entries.length
-                ? ` · ${report.entries
-                    .slice(0, 6)
-                    .map(glyphOf)
-                    .join(" ")}${report.entries.length > 6 ? " …" : ""}`
-                : ""}
-            </Hint>
-          </Card>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={nameFromFile(filename)}
+            className="kq-material w-[280px] rounded-lg border border-border bg-card px-3 py-1.5 text-[13px] text-text outline-none focus:border-accent"
+          />
 
           <div className="kq-band sticky bottom-0 -mx-3 mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-accent px-3 py-2.5">
             <span className="text-[13px] text-text-muted">
               Add{" "}
               <b className="text-text">
-                {report.entries.length}{" "}
-                {report.entries.length === 1 ? "thing" : "things"}
+                {checkedCount} {checkedCount === 1 ? "thing" : "things"}
               </b>{" "}
               as a list called{" "}
               <b className="text-text">{name.trim() || nameFromFile(filename)}</b>
               {report.unmatched.length ? ` · ${report.unmatched.length} left out` : ""}
             </span>
             <span className="ml-auto flex flex-none items-center gap-2">
-              <Btn onClick={() => setReport(null)}>Cancel</Btn>
-              <PrimaryBtn onClick={doImport} disabled={!report.entries.length}>
-                Import {report.entries.length}
-              </PrimaryBtn>
+              <Btn onClick={() => putReport(null)}>Cancel</Btn>
+              <Btn go onClick={doImport} disabled={!checkedCount}>
+                Import {checkedCount}
+              </Btn>
             </span>
           </div>
         </>
