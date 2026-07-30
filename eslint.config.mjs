@@ -6,6 +6,21 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    // A leading underscore is our "deliberately unused" marker: stub params
+    // that keep an API shape (_history, _range, _count) and the like. Honor
+    // that convention so the intent reads as intent, not as a lint miss.
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  {
     // Playwright fixtures pass a callback named `use` (`async ({ page }, use)
     // => { await use(...) }`). React 19 added a `use` hook, so the react-hooks
     // plugin false-positives on those calls as "a hook called outside a

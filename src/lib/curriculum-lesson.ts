@@ -79,7 +79,6 @@
 // the gate, so `wordTeachable` is now an invariant the tests check. It is no
 // longer a filter any scheduler runs.
 
-import { freshFacts, nextGroup } from "@/lib/budget";
 import { effectiveState } from "@/lib/claims";
 import { teFormLearned } from "@/lib/grammar-lesson";
 import { ruVerbKind } from "@/lib/word-forms";

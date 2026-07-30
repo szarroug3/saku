@@ -13,7 +13,6 @@ import assert from "node:assert/strict";
 import { kanaFact } from "@/data/characters";
 import {
   patternMeaningFactId,
-  patternProductionFactId,
   teEndingProductionFactId,
 } from "@/data/grammar";
 import { meaningFactId, readingFactId } from "@/data/kanji";

@@ -31,7 +31,6 @@ import { kanaFact } from "../data/characters.ts";
 import { kanjiTeachOrder, meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { TRACK_INTROS } from "../data/track-intros.ts";
-import { ROLE_ORDER } from "./character-role.ts";
 import { CURRICULUM_SEQUENCE, type CurriculumRole } from "./curriculum-order.ts";
 import { characterRoles } from "./character-role.ts";
 import {

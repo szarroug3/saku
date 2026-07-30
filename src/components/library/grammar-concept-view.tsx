@@ -18,7 +18,7 @@ import {
   IntroBody,
   IntroExamples,
 } from "@/components/lesson/phase-intro-view";
-import { Card, Lbl } from "@/components/ui";
+import { Card } from "@/components/ui";
 import type { GrammarConcept } from "@/data/grammar-concepts";
 
 export function GrammarConceptView({ concept }: { concept: GrammarConcept }) {

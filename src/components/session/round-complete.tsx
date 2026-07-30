@@ -25,7 +25,6 @@
 import { useState } from "react";
 
 import {
-  boxKeysForFact,
   factOfBoxKey,
   missedBoxKeysForFacts,
   type BoxKey,

@@ -22,8 +22,6 @@ const HIRAGANA_FACTS = HIRAGANA.map((k) => `kana:${k}/reading`);
 // Some kanji for testing English and drill modes.
 const KANJI_FACTS = ["kanji:亜/meaning", "kanji:唖/meaning"];
 
-const WORDS_FACTS = ["word:空/word", "word:青/word"];
-
 // Default drill config with hiragana selected (asking for romaji since kana don't have "definition").
 const DRILL_VALID = {
   ...STEADY_CFG,

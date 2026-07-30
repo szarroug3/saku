@@ -91,9 +91,6 @@ function meaningFacts(glyph: string, roles: readonly CurriculumRole[]): FactId[]
   return facts;
 }
 
-/** A written form containing at least one kanji. */
-const HAS_KANJI = /\p{Script=Han}/u;
-
 /**
  * WHERE EACH CARD FIRES: the first item the role is the POINT of, and not merely
  * the first item the role is true of.

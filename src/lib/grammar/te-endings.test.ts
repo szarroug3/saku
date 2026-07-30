@@ -31,7 +31,6 @@ import {
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
 import { factInfo, factsOf } from "@/lib/facts";
 import { buildCoverageDeck } from "@/lib/ask-forms";
-import { VERB_VEHICLES } from "@/lib/grammar/vehicles";
 import { wordMeaningFactId } from "@/data/vocab";
 import {
   ENDING_ANCHOR,
