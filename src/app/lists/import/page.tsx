@@ -35,7 +35,7 @@ function nameFromFile(filename: string): string {
 
 export default function ImportPage() {
   const { lists, save } = useLists();
-  const { startSession } = useQuizSession();
+  const { startQuiz } = useQuizSession();
   const writes = useHistoryWrites();
   const [report, setReport] = useState<ImportReport | null>(null);
   const [filename, setFilename] = useState("");
@@ -111,11 +111,12 @@ export default function ImportPage() {
   // it has shown) and drill them directly; startSession routes to the drill.
   const drillDone = () => {
     // Entries expand to the facts a drill actually asks (a word's reading and
-    // meaning), the same expansion the list view's Drill makes.
+    // meaning), the same expansion the list view's Drill makes. A one-off quiz
+    // (startQuiz), not a curriculum session, so it lands under Practice.
     const facts = doneEntries.flatMap((e) => factsOf(e));
     if (!facts.length) return;
     writes.markSeen(facts);
-    startSession(facts, [], done ?? "Imported list", "lesson", facts);
+    startQuiz(facts, { what: done ?? "Imported list" });
   };
 
   // The count that drives the bar and the button: only the checked entries.
