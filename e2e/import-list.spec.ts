@@ -1,4 +1,17 @@
-import { test, expect } from "./helpers/app";
+import { test, expect, drillReady } from "./helpers/app";
+
+/** Import a three-word list and land on the done screen. Shared setup for the
+ * two drill tests below. */
+async function importThree(page: import("@playwright/test").Page) {
+  await page.goto("/lists/import");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "my-words.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("車\n時間\n電話\n"),
+  });
+  await page.getByRole("button", { name: /^Import 3$/ }).click();
+  await expect(page.getByText(/is now one of your lists/)).toBeVisible();
+}
 
 /**
  * IMPORTING A LIST FROM A FILE, END TO END — from the list view, where import
@@ -75,6 +88,29 @@ test("comma-separated values each become their own item", async ({ page, seed })
   // in the didn't-match list rather than being silently dropped as an extra field.
   await expect(page.getByText("3 matched the dictionary")).toBeVisible();
   await expect(page.getByText("qwerty")).toBeVisible();
+});
+
+/**
+ * THE IMPORTED LIST CAN BE DRILLED, from the done screen's "Go and drill it" and
+ * from the list view's Drill button. Both must reach a real drill with questions,
+ * not a round that immediately reports zero and offers only a retry.
+ */
+test("'Go and drill it' drills the imported list", async ({ page, seed }) => {
+  await seed({});
+  await importThree(page);
+  await page.getByRole("button", { name: /Go and drill it/i }).click();
+  await page.waitForURL("**/quiz");
+  // A real question is on screen, not a 0-question round-complete fork.
+  await drillReady(page);
+});
+
+test("a list drills from the list view", async ({ page, seed }) => {
+  await seed({});
+  await importThree(page);
+  await page.goto("/lists");
+  await page.getByRole("button", { name: "Drill", exact: true }).first().click();
+  await page.waitForURL("**/quiz");
+  await drillReady(page);
 });
 
 /**
