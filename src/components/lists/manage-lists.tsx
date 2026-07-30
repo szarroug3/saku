@@ -77,7 +77,7 @@ export function ManageLists() {
   const { lists, loaded, rename, remove, removeFrom } = useLists();
   const { history } = useHistory();
   const { cfg } = useQuizConfig();
-  const { startSession } = useQuizSession();
+  const { startQuiz } = useQuizSession();
   const writes = useHistoryWrites();
   const confirm = useConfirm();
 
@@ -92,12 +92,13 @@ export function ManageLists() {
   }, [lists, history]);
 
   const drill = (list: SavedList) => {
-    // Quiz the whole list, the "Quiz me" path: mark its facts seen (the app only
-    // quizzes what it has shown) and drill them directly. NOT the review planner
-    // (planSession): that draws only what you are already shaky on, which is
-    // nothing in a freshly imported deck where every item is still new, so Drill
-    // did nothing at all on an import. startSession shuffles and caps by the
-    // Length setting in beginLeg, so the run is still randomized and bounded.
+    // Quiz the whole list as a one-off QUIZ (startQuiz), not a curriculum session
+    // (startSession with origin "lesson"): a list drill is practice, so it belongs
+    // under Practice on the Current sessions page, not with the course lessons.
+    // Mark its facts seen first (the app only quizzes what it has shown) and drill
+    // them directly, so a freshly imported deck (all new) still quizzes rather
+    // than falling to the review planner, which draws only what you are shaky on
+    // and would find nothing new.
     const facts = resolve(
       { ...emptySelection(), list: list.id },
       history,
@@ -105,10 +106,8 @@ export function ManageLists() {
       cfg.accuracyMetric,
     );
     if (!facts.length) return;
-    // The marks this drill ADDS, so a discard un-sees exactly them (seededSeen).
-    const seeded = facts.filter((f) => history.seen?.[f] === undefined);
     writes.markSeen(facts);
-    startSession(facts, [], list.name, "lesson", seeded);
+    startQuiz(facts, { what: list.name });
   };
 
   const del = async (list: SavedList) => {
@@ -232,17 +231,17 @@ function ListCard({
             <h2 className="min-w-0 truncate text-[15px] font-semibold text-text">
               {list.name}
             </h2>
-            {writable ? (
-              <SmallBtn
-                onClick={() => {
-                  setDraft(list.name);
-                  setEditing(true);
-                }}
-                aria-label={`Rename ${list.name}`}
-              >
-                Rename
-              </SmallBtn>
-            ) : null}
+            {/* Rename works on every list, derived included: renaming only
+                changes the label, never the rule that fills a derived list. */}
+            <SmallBtn
+              onClick={() => {
+                setDraft(list.name);
+                setEditing(true);
+              }}
+              aria-label={`Rename ${list.name}`}
+            >
+              Rename
+            </SmallBtn>
           </div>
         )}
         <span className="flex-none text-xs text-text-muted">
@@ -256,8 +255,8 @@ function ListCard({
       {!writable ? (
         <p className="mt-1">
           <Hint>
-            This one builds itself from a rule, so there&rsquo;s nothing to
-            rename around. Drill it or clear it out.
+            This one builds itself from a rule, so you can&rsquo;t pick its items
+            by hand. You can still rename it, drill it, or clear it out.
           </Hint>
         </p>
       ) : null}
