@@ -22,6 +22,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Agent worktrees live under .claude/worktrees and carry their own source
+    // and .next. Bare `eslint` (the `lint` script) would otherwise walk into
+    // them and drown real output in thousands of build-artifact problems. CI
+    // lints `src` and never sees these; this keeps local `pnpm lint` honest.
+    ".claude/**",
   ]),
 ]);
 
