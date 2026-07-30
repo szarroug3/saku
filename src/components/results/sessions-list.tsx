@@ -22,6 +22,8 @@ import { Hint, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatAccuracy } from "@/lib/accuracy";
 import { postDelete } from "@/lib/progress-fetch";
+import { emptySelection } from "@/lib/selection";
+import { useLists } from "@/lib/use-lists";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
 import type { QuizSessionRecord } from "@/types";
@@ -49,12 +51,16 @@ function SessionRow({
   onToggle,
   onOpen,
   onDelete,
+  onMakeList,
+  madeList,
 }: {
   record: QuizSessionRecord;
   selected: boolean;
   onToggle: () => void;
   onOpen: () => void;
   onDelete: () => void;
+  onMakeList: () => void;
+  madeList: boolean;
 }) {
   const d = new Date(record.ts);
   const when = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {
@@ -119,14 +125,23 @@ function SessionRow({
       </span>
 
       <span className="flex items-center gap-2">
+        {/* One score. The strict/forgiving split was about how leniently a retry
+            counted; the app grades first-try only now, so there is one number. */}
         <span className="tabular-nums text-text-muted">
-          Forgiving{" "}
+          Score{" "}
           <span className="text-text">
             {formatAccuracy(record.forgivingPct)}
-          </span>{" "}
-          · Strict{" "}
-          <span className="text-text">{formatAccuracy(record.strictPct)}</span>
+          </span>
         </span>
+        <SmallBtn
+          onClick={(e) => {
+            e.stopPropagation();
+            onMakeList();
+          }}
+          disabled={madeList}
+        >
+          {madeList ? "Saved" : "Make a list"}
+        </SmallBtn>
         <button
           type="button"
           title="Delete this session"
@@ -175,7 +190,29 @@ export function SessionsList() {
   const confirm = useConfirm();
   const { history, loaded, refresh } = useHistory();
   const { viewStoredSession } = useQuizSession();
+  const { save } = useLists();
   const [picked, setPicked] = useState<Set<string | number>>(new Set());
+  // Which finished sessions this visit has turned into a list, keyed like the
+  // rows so only the saved one flips to "Saved".
+  const [madeLists, setMadeLists] = useState<Set<string | number>>(new Set());
+
+  // Save a finished session as a DERIVED list: a rule that re-selects it by its
+  // timestamp. Unlike an in-progress run, a finished session IS in history, so
+  // resolve({ session: ts }) finds it and the list drills the same material.
+  // Idempotent by ts so re-clicking re-saves the same list.
+  const makeList = (record: QuizSessionRecord) => {
+    void (async () => {
+      await save({
+        kind: "derived",
+        id: `session-${record.ts}`,
+        name: `Session ${new Date(record.ts).toLocaleDateString()}`,
+        created: Date.now(),
+        query: { ...emptySelection(), session: record.ts },
+        origin: "session",
+      });
+      setMadeLists((prev) => new Set(prev).add(rowKey(record)));
+    })();
+  };
 
   // Newest first: the run you just did is the one you want to reopen.
   const sessions = history.sessions.slice().sort((a, b) => b.ts - a.ts);
@@ -217,6 +254,8 @@ export function SessionsList() {
             onToggle={() => togglePicked(rowKey(s))}
             onOpen={() => viewStoredSession(s)}
             onDelete={() => void deleteSessions([rowKey(s)], false)}
+            onMakeList={() => makeList(s)}
+            madeList={madeLists.has(rowKey(s))}
           />
         ))}
       </div>
