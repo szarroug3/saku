@@ -21,8 +21,8 @@ import Link from "next/link";
 
 import { Btn, Card, Hint, PageTitle, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { KANA_GROUP_FACTS } from "@/lib/lesson";
-import { planFacts, planSession } from "@/lib/budget";
+import { useHistoryWrites } from "@/lib/history-writes";
+import { japaneseFontClass } from "@/lib/japanese-text";
 import { factInfo } from "@/lib/facts";
 import { entryHref } from "@/lib/library/href";
 import { libEntry, type LibEntry } from "@/lib/library/entries";
@@ -78,12 +78,8 @@ export function ManageLists() {
   const { history } = useHistory();
   const { cfg } = useQuizConfig();
   const { startSession } = useQuizSession();
+  const writes = useHistoryWrites();
   const confirm = useConfirm();
-
-  // One clock for the visit, like every other screen that resolves a selection:
-  // the plan a Drill builds and the counts a card shows must agree about what is
-  // solid, and two Date.now() calls a render apart cannot promise that.
-  const [now] = useState(() => Date.now());
 
   // Entries for every list, cut once per (lists, history). Derived lists cost a
   // resolve() each; fixed ones are free. Keyed here so a rename or a single
@@ -96,28 +92,23 @@ export function ManageLists() {
   }, [lists, history]);
 
   const drill = (list: SavedList) => {
-    // The What-to-drill "List" row's own path: name the list in a selection,
-    // resolve it, and let the budget draw the run. random:true because this is a
-    // user-built selection — the owner's rule, "randomize everything, nothing by
-    // rote". startSession then routes to the drill itself.
+    // Quiz the whole list, the "Quiz me" path: mark its facts seen (the app only
+    // quizzes what it has shown) and drill them directly. NOT the review planner
+    // (planSession): that draws only what you are already shaky on, which is
+    // nothing in a freshly imported deck where every item is still new, so Drill
+    // did nothing at all on an import. startSession shuffles and caps by the
+    // Length setting in beginLeg, so the run is still randomized and bounded.
     const facts = resolve(
       { ...emptySelection(), list: list.id },
       history,
       lists,
       cfg.accuracyMetric,
     );
-    const plan = planSession({
-      candidates: facts,
-      history,
-      groups: KANA_GROUP_FACTS,
-      length:
-        cfg.length === "limited" && cfg.limType === "count"
-          ? cfg.limCount
-          : null,
-      random: true,
-      now,
-    });
-    startSession(planFacts(plan), plan.teach, list.name);
+    if (!facts.length) return;
+    // The marks this drill ADDS, so a discard un-sees exactly them (seededSeen).
+    const seeded = facts.filter((f) => history.seen?.[f] === undefined);
+    writes.markSeen(facts);
+    startSession(facts, [], list.name, "lesson", seeded);
   };
 
   const del = async (list: SavedList) => {
@@ -283,7 +274,7 @@ function ListCard({
             return (
               <div
                 key={id}
-                className="relative rounded-[10px] border border-border bg-card px-1.5 pb-2 pt-2.5 text-center"
+                className="relative rounded-[10px] border border-border bg-card px-1.5 pb-2 pt-2.5 text-center [container-type:inline-size]"
               >
                 {writable ? (
                   <button
@@ -300,7 +291,16 @@ function ListCard({
                   className="block no-underline"
                   aria-label={`Open ${entry.glyph}`}
                 >
-                  <div className="text-[26px] leading-[1.25] text-text">
+                  {/* Shrink-to-fit on one line, like the Library tiles: the
+                      glyph is sized in cqi against the tile so a long word
+                      (あなた) shrinks instead of wrapping past the border. */}
+                  <div
+                    className={`select-none whitespace-nowrap leading-[1.25] text-text ${japaneseFontClass(entry.glyph)}`}
+                    style={{
+                      ["--chars" as string]: [...entry.glyph].length,
+                      fontSize: "clamp(12px, calc(90cqi / var(--chars)), 26px)",
+                    }}
+                  >
                     {entry.glyph}
                   </div>
                   <div className="truncate text-xs text-text-muted">
