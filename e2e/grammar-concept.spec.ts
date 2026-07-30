@@ -26,6 +26,29 @@ for (const concept of GRAMMAR_CONCEPTS) {
   });
 }
 
+/**
+ * The loop above proves each concept page SERVES and shows its title. This proves
+ * the three concepts authored fresh (no te-form lesson prose to reuse) actually
+ * TEACH on the page — a stub with only a heading would pass the loop while saying
+ * nothing. Pin the substantive tokens that ARE each concept: the group names, the
+ * canonical example words, the honorific/humble verbs. The te-form's depth is its
+ * lesson's, covered elsewhere; these three stood up on their own.
+ */
+const CONCEPT_CONTENT: Array<{ id: string; mustShow: string[] }> = [
+  { id: "verb-classes", mustShow: ["godan", "ichidan", "する", "くる"] },
+  { id: "adjective-types", mustShow: ["たかい", "しずか", "きれい"] },
+  { id: "keigo-registers", mustShow: ["めしあがる", "いただく"] },
+];
+
+for (const { id, mustShow } of CONCEPT_CONTENT) {
+  test(`the ${id} concept page teaches, not just titles`, async ({ page }) => {
+    await page.goto(entryHref(grammarConceptEntry(id)));
+    for (const token of mustShow) {
+      await expect(page.locator("body")).toContainText(token);
+    }
+  });
+}
+
 test("a て-verb pattern lists its concept links under ONE 'Read about it'", async ({
   page,
 }) => {
