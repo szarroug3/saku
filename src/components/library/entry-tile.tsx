@@ -352,14 +352,18 @@ export function EntryRow({
           // `whitespace-nowrap` (no width, no truncate) lets it take exactly the
           // width the WIDEST pattern needs and keeps every pattern on one line.
           // Off the grid (grammar in the flat search list) it falls back to a
-          // fixed 150px. Every other kind keeps the fixed, truncated 64px cell: a
-          // kanji or word glyph is one or two characters and wants the tidy column.
+          // fixed 150px. Every other kind sizes to its glyph up to a 120px cap
+          // (`flex-none` with no set width, so the basis is the content): a
+          // one/two-character kanji stays tidy, and a 3-4 kana word (しとしと, 使徒)
+          // gets the room the old fixed 64px cell clipped to "しと…". The meaning
+          // column keeps `min-w-0 flex-1`, so on a narrow row IT truncates and the
+          // glyph wins the space; only a glyph past the 120px cap truncates.
           className={`${
             entry.kind === GRAMMAR_SUBJECT
               ? grid
                 ? "whitespace-nowrap pr-2"
                 : "w-[150px] flex-none pr-2"
-              : "w-[64px] flex-none truncate"
+              : "max-w-[120px] flex-none truncate"
           } text-[19px] ${japaneseFontClass(entry.glyph)}`}
         >
           {entry.glyph}
