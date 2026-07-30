@@ -16,14 +16,15 @@
 // against the dictionary already in the bundle, and only the resulting list of
 // entry ids is POSTed. The file itself never leaves the machine.
 
-import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { Btn, Card, Hint, Lbl, PageTitle } from "@/components/ui";
-import { glyphOf } from "@/lib/facts";
+import { factsOf, glyphOf } from "@/lib/facts";
 import { KIND_LABEL, libEntry } from "@/lib/library/entries";
 import { applySuggestion, readList, type ImportReport } from "@/lib/import";
+import { useHistoryWrites } from "@/lib/history-writes";
 import { useLists } from "@/lib/use-lists";
+import { useQuizSession } from "@/lib/quiz-session";
 import type { EntryId } from "@/types";
 
 /** "core2k.csv" → "Core2k". A default you can overwrite, not a decision. */
@@ -34,11 +35,15 @@ function nameFromFile(filename: string): string {
 
 export default function ImportPage() {
   const { lists, save } = useLists();
+  const { startSession } = useQuizSession();
+  const writes = useHistoryWrites();
   const [report, setReport] = useState<ImportReport | null>(null);
   const [filename, setFilename] = useState("");
   const [name, setName] = useState("");
   const [showAll, setShowAll] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  // The list just imported, kept so "Go and drill it" can quiz exactly it.
+  const [doneEntries, setDoneEntries] = useState<EntryId[]>([]);
   const [error, setError] = useState<string | null>(null);
   // True while a file is dragged over the drop zone, so it can read as a solid
   // filled target instead of the resting dashed outline.
@@ -97,7 +102,20 @@ export default function ImportPage() {
       origin: "import",
     });
     setDone(listName);
+    setDoneEntries(chosen);
     putReport(null);
+  };
+
+  // "Go and drill it": quiz the freshly imported list right now, the same path
+  // the list view's Drill takes. Mark the entries seen (the app only quizzes what
+  // it has shown) and drill them directly; startSession routes to the drill.
+  const drillDone = () => {
+    // Entries expand to the facts a drill actually asks (a word's reading and
+    // meaning), the same expansion the list view's Drill makes.
+    const facts = doneEntries.flatMap((e) => factsOf(e));
+    if (!facts.length) return;
+    writes.markSeen(facts);
+    startSession(facts, [], done ?? "Imported list", "lesson", facts);
   };
 
   // The count that drives the bar and the button: only the checked entries.
@@ -119,13 +137,13 @@ export default function ImportPage() {
           </span>
           <span className="mt-1 block">
             <Hint>
-              It is on Home under List, and you can add to it from anywhere.
+              It is in your Lists, and you can add to it from anywhere.
             </Hint>
           </span>
           <span className="mt-2.5 block">
-            <Link href="/">
-              <Btn sel>Go and drill it</Btn>
-            </Link>
+            <Btn sel onClick={drillDone}>
+              Go and drill it
+            </Btn>
           </span>
         </Card>
       ) : null}
