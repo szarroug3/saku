@@ -121,7 +121,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "named for the て or で the verb ends in once you build it.",
       },
       {
-        text: "Japanese verbs fall into two main groups, and the group decides the change. The larger group is called う-verbs: start from the dictionary form (the plain form you look a verb up by), drop its last kana, and add the ending that matches.",
+        text: "Japanese verbs fall into two main groups, and the group decides the change. The larger group is called う-verbs (you may also see them called godan): start from the dictionary form (the plain form you look a verb up by), drop its last kana, and add the ending that matches.",
       },
       {
         text: "The name is from the kana chart, not the spelling: an う-verb ends in a kana from the う-row (う, く, ぐ, す, つ, ぬ, ぶ, む, or る), so かく and はなす are う-verbs too, not only verbs ending in う.",
@@ -139,6 +139,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         note: "The っ in って is a small っ, not a full-size つ.",
       },
       { label: "", verb: "まつ", drop: "つ", add: "って" },
+      { label: "", verb: "とる", drop: "る", add: "って" },
       { label: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んで" },
       { label: "", verb: "あそぶ", drop: "ぶ", add: "んで" },
       { label: "", verb: "しぬ", drop: "ぬ", add: "んで" },
@@ -155,7 +156,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     title: "The other group, る-verbs, just drop る and add て.",
     body: [
       {
-        text: "The second group is called る-verbs. These are simpler: drop the final る and add て. Unlike う-verbs, る-verbs only change to て, never で.",
+        text: "The second group is called る-verbs (you may also see them called ichidan). These are simpler: drop the final る and add て. Unlike う-verbs, る-verbs only change to て, never で.",
       },
     ],
     buildRules: [

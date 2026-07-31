@@ -362,7 +362,10 @@ export function IntroBuildTable({
   const hasRight = hasNotes || hasGloss;
   const headCell = "px-4 py-2.5 font-semibold";
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
+    // overflow-x-auto, not overflow-hidden: on a narrow phone the columns are
+    // wider than the screen, so the table scrolls sideways inside its own frame
+    // rather than clipping the last column off the edge.
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full border-collapse text-left" lang="ja">
         <thead>
           <tr
@@ -462,7 +465,10 @@ export function IntroDeriveTable({
   const headCell = "px-4 py-2.5 font-semibold";
   const jpCell = "whitespace-nowrap px-4 py-3 align-baseline font-kana text-[17px] text-text";
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
+    // overflow-x-auto, not overflow-hidden: on a narrow phone the columns are
+    // wider than the screen, so the table scrolls sideways inside its own frame
+    // rather than clipping the last column off the edge.
+    <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full border-collapse text-left" lang="ja">
         <thead>
           <tr
