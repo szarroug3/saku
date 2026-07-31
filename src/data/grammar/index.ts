@@ -102,6 +102,60 @@ export function verbAttachForm(r: Recipe): Form | null | undefined {
 }
 
 /**
+ * The four verb-conjugation FORMS taught as their own grammar lessons, each with
+ * a Library page of its own: the て/で-form, the ない-form, the た-form and the
+ * stem. Each is a recipe with `add: ""` (see recipes.ts) whose production is
+ * "make the form" — the same shape te-sequence has always had, now extended to
+ * the other three.
+ *
+ * NAMED, NOT COMPUTED, because `add: ""` does NOT pick them out: te-cause, te-mo,
+ * the potential/passive/causative and 〜ば/〜たら all add nothing either, and none
+ * of those has a form lesson or a form page. This is the closed set of the four
+ * that do, and it is the ONE source of truth both the Library shelf (which heads
+ * a form's section with its recipe) and PatternTeach (which links a pattern to
+ * its form's page instead of reprinting the conjugation) read from.
+ */
+export const FORM_RECIPE_IDS: readonly string[] = [
+  "te-sequence",
+  "nai-form",
+  "ta-form",
+  "stem-form",
+];
+
+const FORM_RECIPE_ID_SET: ReadonlySet<string> = new Set(FORM_RECIPE_IDS);
+
+/** Is this recipe one of the four form recipes? A form recipe KEEPS its full
+ * conjugation build table on its Library page; a PATTERN built on a form links to
+ * that page instead (see PatternTeach). Takes a recipe or a bare id. */
+export function isFormRecipe(r: Recipe | string): boolean {
+  return FORM_RECIPE_ID_SET.has(typeof r === "string" ? r : r.id);
+}
+
+/** The verb form a form recipe BUILDS → the recipe's id, for the forms that have
+ * a page (て/で, ない, た, stem). Keyed on the verb attach form so callers can turn
+ * "this pattern is built on the て-form" into "link to te-sequence" without a
+ * second hand-kept table. Forms with no page (the plain form, the potential, 〜ば,
+ * …) are simply absent. */
+export const FORM_RECIPE_BY_FORM: ReadonlyMap<Form, string> = new Map(
+  FORM_RECIPE_IDS.map((id) => [verbAttachForm(recipe(id)!) as Form, id]),
+);
+
+/**
+ * The form recipe a PATTERN should link to instead of reprinting the form's build
+ * table — the page for its verb attach form — or undefined.
+ *
+ * Undefined in the two cases a link would be wrong: the recipe IS a form recipe
+ * (it owns the build table, it does not link to itself), or its verb form has no
+ * page (the plain/dictionary form, the potential, 〜ば, …), or it has no verb host
+ * at all (a noun pattern). See PatternTeach for the one caller.
+ */
+export function formEntryFor(r: Recipe): string | undefined {
+  if (isFormRecipe(r)) return undefined;
+  const f = verbAttachForm(r);
+  return f ? FORM_RECIPE_BY_FORM.get(f) : undefined;
+}
+
+/**
  * Does this recipe CONJUGATE a verb — i.e. hang off a verb form that is not the
  * bare dictionary form?
  *

@@ -5,23 +5,21 @@
 // ========================
 // `grammarRank` is the key the grammar shelf sorts on so it reads in TEACHING
 // order — the pattern below the one you are on is the pattern you study next
-// (see grammar-order.ts and the GRAMMAR_SUBJECT branch of shelfSections). Three
-// things have to hold:
+// (see grammar-order.ts, and grammar-shelf.ts which cuts the shelf by form and
+// orders each section by this rank). Three things have to hold:
 //
 //   1. It ranks EVERY recipe, not just the drillable ones — the shelf shows all
-//      96, recognition-only patterns included, and each needs a place.
+//      of them, recognition-only patterns included, and each needs a place.
 //   2. For the drillable subset the order it produces IS the curriculum's own
 //      order (CURRICULUM_PATTERNS). This is the pin against drift: grammar-order
 //      re-derives the sort keys (te-sequence first, level tier, authored tail)
 //      rather than importing grammar-lesson's private ones, so this test is what
 //      guarantees the two never diverge.
-//   3. The shelf's per-level ordering — RECIPES of a level, sorted by
-//      grammarRank, which is exactly what shelfSections does — reads in lesson
-//      order: te-sequence leads N5, and within each level the drillable patterns
-//      appear in curriculum order.
-//
-// shelfSections itself lives in a .tsx the test runner cannot load, so these
-// tests reproduce its one line of ordering logic over the same inputs.
+//   3. The rank is LEVEL-MONOTONE and lesson-ordered — te-sequence leads, and
+//      within a level the patterns appear in curriculum order. The shelf is cut
+//      by FORM now, not by level (see grammar-shelf.test.ts for that cut), but a
+//      section still orders its patterns by this rank, so its within-level
+//      behaviour is what these tests pin.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -34,9 +32,10 @@ import {
   grammarRank,
 } from "@/lib/library/grammar-order";
 
-/** The shelf's own ordering, for one level: every recipe of that level, sorted
- * by grammarRank. This is the exact expression the GRAMMAR_SUBJECT branch of
- * shelfSections maps over — kept in step so this test pins what the shelf does. */
+/** Every recipe of one level, sorted by grammarRank. Not the shelf's cut any
+ * more (the shelf is cut by form), but the per-level order grammarRank produces —
+ * the invariant grammar-shelf.ts leans on when it orders each form section by the
+ * same rank. */
 function shelfLevel(level: Level): string[] {
   return RECIPES.filter((r) => r.level === level)
     .slice()
@@ -83,8 +82,8 @@ describe("the shelf order IS the lesson order (no drift)", () => {
   });
 });
 
-describe("the grammar shelf is ordered by grammarRank within each level section", () => {
-  test("every level section is non-empty and the three cover all recipes", () => {
+describe("grammarRank is level-monotone and keeps the lesson order per level", () => {
+  test("every level is non-empty and the three cover all recipes", () => {
     const n5 = shelfLevel("N5");
     const n4 = shelfLevel("N4");
     const n3 = shelfLevel("N3");
@@ -92,24 +91,24 @@ describe("the grammar shelf is ordered by grammarRank within each level section"
     assert.equal(n5.length + n4.length + n3.length, RECIPES.length, "all patterns appear");
   });
 
-  test("te-sequence heads the N5 section", () => {
+  test("te-sequence leads the N5 patterns", () => {
     assert.equal(shelfLevel("N5")[0], "te-sequence");
   });
 
-  test("within each level the shelf keeps the lesson order", () => {
+  test("within each level the rank keeps the lesson order", () => {
     const recipeById = new Map(RECIPES.map((r) => [r.id, r]));
     const lessonOrder = CURRICULUM_LESSONS.map((l) => l.primaryPattern);
     for (const lv of ["N5", "N4", "N3"] as const) {
       const wanted = lessonOrder.filter((id) => recipeById.get(id)?.level === lv);
-      assert.deepEqual(shelfLevel(lv), wanted, `${lv} shelf order diverges from the lessons`);
+      assert.deepEqual(shelfLevel(lv), wanted, `${lv} order diverges from the lessons`);
     }
   });
 
-  test("a shelf row sorts by grammarRank, so its ranks only ever increase", () => {
+  test("sorted by grammarRank a level's ranks only ever increase", () => {
     for (const lv of ["N5", "N4", "N3"] as const) {
       const ranks = shelfLevel(lv).map((id) => grammarRank(id));
       for (let i = 1; i < ranks.length; i += 1) {
-        assert.ok(ranks[i] > ranks[i - 1], `${lv} row is not strictly rank-ascending`);
+        assert.ok(ranks[i] > ranks[i - 1], `${lv} is not strictly rank-ascending`);
       }
     }
   });

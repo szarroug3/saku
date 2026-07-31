@@ -25,13 +25,26 @@
 // pages are a lesson's worth of walk; a Library entry card wants the one build
 // panel, and autoPatternPage yields it in the same shape as every other pattern
 // (te-sequence → the て-form conjugation table; 〜ている → the derivation table).
-// So the card is uniform across all 96 patterns rather than special-cased for
-// two of them.
+//
+// A PATTERN DOES NOT REPRINT ITS FORM'S CONJUGATION ANY MORE
+// ==========================================================
+// The four verb forms — the て/で-form, the ない-form, the た-form, the stem — now
+// each have a Library page of their own, headed by the full conjugation build
+// table (te-sequence and its three siblings, the form recipes, KEEP it). A
+// PATTERN built on one of those forms (〜てから on the て-form, 〜ないでください on
+// the ない-form) is "build that form, then add a tail" — so it no longer shows the
+// form's whole conjugation table. It shows only its OWN step, the derive table
+// (Verb · Form · Pattern · Meaning), and links to the form's page to build the
+// form. `formEntryFor` (data/grammar) is the shared source of truth for which
+// patterns this applies to; a pattern on a form with no page (the potential, 〜ば,
+// the plain form) is unaffected and keeps whatever autoPatternPage gives it.
 //
 // THE FOUR WRAP PATTERNS (〜たり〜たり, 〜しか〜ない, 〜は〜より, 〜ほうが〜より) have a
 // build LINE but an empty table — autoPatternPage's apply step refuses wraps. The
 // build line carries the card; IntroBody renders it, and the (absent) table
 // simply does not appear. No empty box, no note about the gap.
+
+import Link from "next/link";
 
 import {
   IntroBody,
@@ -40,10 +53,21 @@ import {
 } from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
 import { autoPatternPage } from "@/data/grammar/auto-page";
+import { formEntryFor, patternEntry, verbAttachForm } from "@/data/grammar";
 import type { Recipe } from "@/data/grammar/recipes";
+import { FORM_LABEL } from "@/lib/grammar/formula";
+import { entryHref } from "@/lib/library/href";
 
 export function PatternTeach({ pattern }: { pattern: Recipe }) {
   const page = autoPatternPage(pattern);
+  // The form page this pattern builds on, if any — set only for a PATTERN whose
+  // verb form has a page of its own (te/nai/ta/stem), never for a form recipe
+  // itself. When set, the pattern links to the form instead of reprinting its
+  // conjugation, so the build table is dropped even where autoPatternPage
+  // produced one (〜て cause is the case that does).
+  const formEntry = formEntryFor(pattern);
+  const form = verbAttachForm(pattern);
+  const formLabel = form ? FORM_LABEL[form] : null;
   return (
     <Card className="h-full">
       <Lbl>How to build it</Lbl>
@@ -53,11 +77,27 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
           top of that wraps the prose early. */}
       <div className="mt-3 space-y-5">
         <IntroBody body={page.body} measure="" />
-        {page.buildRules?.length ? (
+        {/* The form's full conjugation table, ONLY on the form recipe's own page.
+            A pattern built on the form links to it (below) rather than reprinting
+            it, so its build table is suppressed here. */}
+        {!formEntry && page.buildRules?.length ? (
           <IntroBuildTable rules={page.buildRules} heads={page.buildHeads} />
         ) : null}
         {page.deriveRules?.length ? (
           <IntroDeriveTable rows={page.deriveRules} heads={page.deriveHeads} />
+        ) : null}
+        {/* The link to build the form — the conjugation this pattern no longer
+            reprints lives on that page. Styled like every other outgoing accent
+            link on an entry page. */}
+        {formEntry && formLabel ? (
+          <p>
+            <Link
+              href={entryHref(patternEntry(formEntry))}
+              className="text-[13px] text-accent no-underline"
+            >
+              Build the {formLabel} →
+            </Link>
+          </p>
         ) : null}
       </div>
     </Card>
