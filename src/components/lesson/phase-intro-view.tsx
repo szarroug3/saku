@@ -338,6 +338,18 @@ function smallKanaNote(text: string): string | null {
   return null;
 }
 
+/** The inline speaker that rides on a build-table equation's before and after —
+ * HearButton at a size that sits inside the 17px kana without crowding it. */
+function Say({ glyph, voice }: { glyph: string; voice: string }) {
+  return (
+    <HearButton
+      glyph={glyph}
+      voiceName={voice}
+      className="ml-1 mr-0.5 !px-1 !py-0 align-middle"
+    />
+  );
+}
+
 export function IntroBuildTable({
   rules,
   heads,
@@ -351,10 +363,11 @@ export function IntroBuildTable({
   // column (right, muted) each appear only when some row uses them, so a plain
   // single-verb table is not left with empty columns. Every build table carries
   // the same heading row so the related te-form pages read as one format.
+  const { cfg } = useQuizConfig();
   const rows = rules.map((r) => {
     const stem = r.drop ? r.verb.slice(0, r.verb.length - r.drop.length) : r.verb;
     const result = r.to ?? stem + (r.add ?? "");
-    return { r, stem, note: r.note ?? smallKanaNote(result) };
+    return { r, stem, result, note: r.note ?? smallKanaNote(result) };
   });
   const hasLabels = rules.some((r) => r.label);
   const hasNotes = rows.some((x) => x.note);
@@ -379,7 +392,7 @@ export function IntroBuildTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ r, stem, note }) => (
+          {rows.map(({ r, stem, result, note }) => (
             <tr key={r.verb} className="border-b border-border/60 last:border-0">
               {hasLabels ? (
                 <td className="whitespace-nowrap px-4 py-3 align-baseline font-kana text-[14px] text-text">
@@ -394,16 +407,21 @@ export function IntroBuildTable({
                   // whole: する → して. Same table frame, honest shape.
                   <>
                     {r.verb}
+                    <Say glyph={r.verb} voice={cfg.voiceName} />
                     <span className="text-text-muted"> → </span>
                     <span className="text-accent">{r.to}</span>
+                    <Say glyph={r.to} voice={cfg.voiceName} />
                   </>
                 ) : (
                   // A drop and/or an add, each shown only when present: a plain
                   // te-form row drops and adds (かう − う + って → かって); an
                   // add-only row just adds (たべて + いる → たべている); a drop-only
-                  // row just drops (たべる − る → たべ).
+                  // row just drops (たべる − る → たべ). A Hear button sits on the
+                  // dictionary verb (before) and on the built result (after), so
+                  // the sound of the change is a tap away on each side.
                   <>
                     {r.verb}
+                    <Say glyph={r.verb} voice={cfg.voiceName} />
                     {r.drop ? <span className="text-text-muted"> − {r.drop}</span> : null}
                     {r.add ? (
                       <>
@@ -414,6 +432,7 @@ export function IntroBuildTable({
                     <span className="text-text-muted"> → </span>
                     {stem}
                     {r.add ? <span className="text-accent">{r.add}</span> : null}
+                    <Say glyph={result} voice={cfg.voiceName} />
                   </>
                 )}
               </td>
