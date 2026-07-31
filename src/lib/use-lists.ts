@@ -1,14 +1,25 @@
 "use client";
 
-// Client-side access to /api/lists. Mirrors use-history.ts deliberately — same
-// shape, same refresh, same degradation when the server is unreachable — so
-// there is one pattern for "server-owned JSON a screen reads" rather than two.
+// Client access to the app's saved lists — a thin read of the ListsProvider
+// (src/lib/lists-provider.tsx), plus the pure helpers a caller uses to reason
+// about a list it already holds. The fetch and the state used to live here, so
+// every one of the eight call sites ran its own GET /api/lists on mount; they
+// moved to the provider, mounted once above the app, and this is now a
+// useContext over that one copy.
 
-import { useCallback, useEffect, useState } from "react";
+import { useContext } from "react";
 
-import { deleteList as deleteListWrite, postList } from "@/lib/progress-fetch";
-import { loadLocalLists } from "@/lib/store/local-progress";
+import { ListsContext } from "@/lib/lists-provider";
 import type { EntryId, SavedList } from "@/types";
+
+/** Read the shared lists and their mutators. Loud when there is no ListsProvider
+ * above — a screen rendering outside the app shell is a tree bug, and a silent
+ * second fetch would hide it. */
+export function useLists() {
+  const ctx = useContext(ListsContext);
+  if (!ctx) throw new Error("useLists must be used within a ListsProvider");
+  return ctx;
+}
 
 /**
  * Can you add to it? The one question the two kinds answer differently, asked
@@ -24,116 +35,6 @@ export function isWritable(
   list: SavedList,
 ): list is Extract<SavedList, { kind: "fixed" }> {
   return list.kind === "fixed";
-}
-
-export function useLists() {
-  const [lists, setLists] = useState<SavedList[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  const refresh = useCallback(async () => {
-    try {
-      const res = await fetch("/api/lists", { cache: "no-store" });
-      if (res.ok) {
-        setLists((await res.json()).lists ?? []);
-      } else {
-        // DRAIN THE BODY on the non-ok paths. An unread response body leaves the
-        // fetch in-flight until GC, which is invisible in the app but stalls
-        // anything waiting on the network to go idle (Playwright's networkidle,
-        // for one) — and signed out, the 401 below is the COMMON path, not a rare
-        // one. Reading the small body to completion lets the request finish.
-        await res.text().catch(() => {});
-        // 401 = signed out: read this browser's local lists, the mirror of what
-        // useHistory does. Signed-out list edits fall back to localStorage (see
-        // progress-fetch.ts), and this is where they come back into view.
-        if (res.status === 401) setLists(loadLocalLists());
-      }
-    } catch {
-      // server unreachable — keep whatever we have
-    } finally {
-      setLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Fetch-on-mount; state updates land after the awaited response.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void refresh();
-  }, [refresh]);
-
-  // Every write below goes through progress-fetch, so a signed-out edit that the
-  // server answers with 401 is applied to this browser's local lists instead of
-  // vanishing, and the refresh() that follows re-reads whichever store answered
-  // (server when signed in, local on 401). One reroute, at the hook every list
-  // mutation already funnels through.
-  const save = useCallback(
-    async (list: SavedList) => {
-      await postList(list);
-      await refresh();
-    },
-    [refresh],
-  );
-
-  /** Add entries to a FIXED list. The server refuses derived ones; the UI does
-   * not offer them. See SavedList's doc for why that is the model and not a
-   * quirk. */
-  const addTo = useCallback(
-    async (id: string, entries: EntryId[]) => {
-      await postList({ addTo: id, entries });
-      await refresh();
-    },
-    [refresh],
-  );
-
-  /** Drop entries from a FIXED list — the toggle's "off" half, and the per-entry
-   * remove on the manage screen. The server refuses derived lists (see
-   * removeFromList); the UI only ever calls this for writable ones. */
-  const removeFrom = useCallback(
-    async (id: string, entries: EntryId[]) => {
-      await postList({ removeFrom: id, entries });
-      await refresh();
-    },
-    [refresh],
-  );
-
-  /** Relabel a list. Allowed on either kind — a name is not a member — but the
-   * manage screen only OFFERS it for writable lists, matching where a person
-   * expects to be able to rename. */
-  const rename = useCallback(
-    async (id: string, name: string) => {
-      await postList({ rename: id, name });
-      await refresh();
-    },
-    [refresh],
-  );
-
-  /** Delete a whole list. NOT the same as removeFrom — this drops the list
-   * itself, entries and all. */
-  const remove = useCallback(
-    async (id: string) => {
-      await deleteListWrite(id);
-      await refresh();
-    },
-    [refresh],
-  );
-
-  /** Mint a new fixed list from a slice. `origin: "manual"` — a list you named
-   * here and a deck you imported are the same object and differ only in where
-   * their first members came from. */
-  const create = useCallback(
-    async (name: string, entries: readonly EntryId[]) => {
-      await save({
-        kind: "fixed",
-        id: `list-${Date.now().toString(36)}`,
-        name: name.trim(),
-        created: Date.now(),
-        entries: [...entries],
-        origin: "manual",
-      });
-    },
-    [save],
-  );
-
-  return { lists, loaded, refresh, save, addTo, removeFrom, rename, remove, create };
 }
 
 /**

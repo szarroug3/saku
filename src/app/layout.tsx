@@ -13,6 +13,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { currentUserId } from "@/lib/auth";
 import { loadProgressSeeds } from "@/lib/history";
 import { HistoryProvider } from "@/lib/history-provider";
+import { loadLists } from "@/lib/lists";
+import { ListsProvider } from "@/lib/lists-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { SettingsProvider } from "@/lib/settings-provider";
 import { QuizSessionProvider } from "@/lib/quiz-session";
@@ -146,6 +148,17 @@ async function seedSessionState(userId: string) {
   }
 }
 
+/** The saved-lists seed, or null if it could not be read — same contract as the
+ * others. Null hands the question to the client (its localStorage lists on a
+ * signed-out 401) rather than failing the whole shell. */
+async function seedLists(userId: string) {
+  try {
+    return (await loadLists(userId)).lists;
+  } catch {
+    return null;
+  }
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -169,13 +182,14 @@ export default async function RootLayout({
   // as history: reconcile providers against the server copy on first paint,
   // instead of waiting on a client fetch. Signed-out visitors have no account to
   // read, so all three are null and local browser caches take over.
-  const [initialHistory, initialSettings, initialSessionState] =
+  const [initialHistory, initialSettings, initialSessionState, initialLists] =
     userId === null
-      ? [null, null, null]
+      ? [null, null, null, null]
       : await Promise.all([
           seedHistory(userId),
           seedSettings(userId),
           seedSessionState(userId),
+          seedLists(userId),
         ]);
   // Read the sidebar's collapsed state server-side so it renders at the right
   // width on the first paint instead of loading expanded and snapping closed.
@@ -219,11 +233,12 @@ export default async function RootLayout({
                 userId={userId}
                 initialSession={initialSessionState}
               >
-                {/* No ListsProvider: lists live on the server now (lists.json,
-                    beside history.json) and `useLists` fetches them the way
-                    `useHistory` does. There is no app-wide list STATE left to
-                    provide — which is what the localStorage version predicted
-                    would happen to it. */}
+                {/* One lists copy for the whole app, seeded above. `useLists`
+                    used to fetch per mount (eight call sites, two on one Library
+                    open); this shares one read, the same move HistoryProvider
+                    made. Inside the quiz providers so a run saved as a list and
+                    the screens that show it read the same copy. */}
+                <ListsProvider userId={userId} initial={initialLists}>
                 <TooltipProvider delayDuration={200}>
                   {/* Inside the quiz providers, because what it asks about
                       ("discard the quiz in progress?") is their state. */}
@@ -312,6 +327,7 @@ export default async function RootLayout({
                     </div>
                   </ConfirmProvider>
                 </TooltipProvider>
+                </ListsProvider>
               </QuizSessionProvider>
             </QuizConfigProvider>
           </HistoryProvider>
