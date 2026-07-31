@@ -30,7 +30,7 @@ import { plural } from "@/lib/words";
 import { Btn, Hint, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
-import { entryOf } from "@/lib/facts";
+import { fixedRunList } from "@/lib/session-list";
 import { useLists } from "@/lib/use-lists";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
@@ -258,16 +258,9 @@ export function CurrentSessions() {
   // rather than piling up duplicates.
   const makeList = (run: RunInfo) => {
     void (async () => {
-      const entries = [...new Set(run.facts.map((f) => entryOf(f)))];
-      if (!entries.length) return;
-      await save({
-        kind: "fixed",
-        id: `run-${run.id}`,
-        name: run.what,
-        created: Date.now(),
-        entries,
-        origin: "manual",
-      });
+      const list = fixedRunList(run.id, run.what, run.facts);
+      if (!list) return;
+      await save(list);
       setMadeLists((prev) => new Set(prev).add(run.id));
     })();
   };

@@ -33,6 +33,7 @@ import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ResultsPayload } from "@/lib/quiz-session";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { emptySelection, resolve } from "@/lib/selection";
+import { deriveSessionList } from "@/lib/session-list";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
 import type { FactId, QuizMode } from "@/types";
@@ -229,14 +230,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
    * The id is `session-<ts>`, so saving twice writes the same list rather than
    * a duplicate. */
   const saveAsList = async () => {
-    await save({
-      kind: "derived",
-      id: `session-${results.ts}`,
-      name: `Session ${new Date(results.ts).toLocaleDateString()}`,
-      created: Date.now(),
-      query: { ...emptySelection(), session: results.ts },
-      origin: "session",
-    });
+    await save(deriveSessionList(results.ts));
     setSavedAsList(true);
   };
 

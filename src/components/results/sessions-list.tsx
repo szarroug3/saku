@@ -22,7 +22,7 @@ import { Hint, SmallBtn } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatAccuracy } from "@/lib/accuracy";
 import { postDelete } from "@/lib/progress-fetch";
-import { emptySelection } from "@/lib/selection";
+import { deriveSessionList } from "@/lib/session-list";
 import { useLists } from "@/lib/use-lists";
 import { useQuizSession } from "@/lib/quiz-session";
 import { useHistory } from "@/lib/use-history";
@@ -202,14 +202,7 @@ export function SessionsList() {
   // Idempotent by ts so re-clicking re-saves the same list.
   const makeList = (record: QuizSessionRecord) => {
     void (async () => {
-      await save({
-        kind: "derived",
-        id: `session-${record.ts}`,
-        name: `Session ${new Date(record.ts).toLocaleDateString()}`,
-        created: Date.now(),
-        query: { ...emptySelection(), session: record.ts },
-        origin: "session",
-      });
+      await save(deriveSessionList(record.ts));
       setMadeLists((prev) => new Set(prev).add(rowKey(record)));
     })();
   };
