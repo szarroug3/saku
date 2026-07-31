@@ -129,6 +129,25 @@ function useScrolled(): boolean {
   return scrolled;
 }
 
+// A shelf's sections and entries, cut LAZILY and cached at module scope. It used
+// to build every kind up front on Library mount — including the 12,553-word sort
+// — even when the default Kana tab never renders them. `shelfSections(k,
+// "everyday")` depends only on the shipped tables (the knowledge filter is
+// applied later, at render), so the cut is the same for every learner and every
+// mount: compute each kind on first use and keep it for the app's lifetime.
+const SHELF_CACHE = new Map<Kind, { sections: ShelfSection[]; entries: LibEntry[] }>();
+function shelfFor(k: Kind): { sections: ShelfSection[]; entries: LibEntry[] } {
+  let v = SHELF_CACHE.get(k);
+  if (!v) {
+    v = {
+      sections: shelfSections(k, "everyday"),
+      entries: [...(LIB_ENTRIES_BY_KIND.get(k) ?? [])],
+    };
+    SHELF_CACHE.set(k, v);
+  }
+  return v;
+}
+
 function LibraryBody() {
   const { history, refresh } = useHistory();
   const { cfg } = useQuizConfig();
@@ -412,24 +431,9 @@ function LibraryBody() {
     }));
   }, [q, tab, pinned, keep]);
 
-  // Every shelf, cut once. Built for all three kinds up front (cheap array work,
-  // no DOM) so switching the kind filter — or the "All" view that shows all
-  // three — is a lookup, not a re-cut. Only the kinds actually shown get their
-  // tiles rendered, which is where the real cost is.
-  //
-  // The kanji shelf is sectioned by the "everyday" teaching order — the one the
-  // curriculum actually teaches in.
-  const shelvesByKind = useMemo(() => {
-    const m = new Map<Kind, { sections: ShelfSection[]; entries: LibEntry[] }>();
-    for (const k of KINDS) {
-      const entries = LIB_ENTRIES_BY_KIND.get(k) ?? [];
-      m.set(k, {
-        sections: shelfSections(k, "everyday"),
-        entries: [...entries],
-      });
-    }
-    return m;
-  }, []);
+  // Shelves are cut lazily per shown kind now — see shelfFor above. The kanji
+  // shelf is sectioned by the "everyday" teaching order, the one the curriculum
+  // actually teaches in.
 
   // WHAT A SHIFT-CLICK RANGE MAY REACH — the ids currently ON SCREEN, in display
   // order. Search view flattens its result sections (which now show every hit);
@@ -445,14 +449,14 @@ function LibraryBody() {
     // teaching order — so a Shift-range follows the same top-to-bottom reading
     // the eye does across the stacked shelves.
     if (tab === ALL_TAB) {
-      return allTabBrowseKinds(keep, (k) => shelvesByKind.get(k)!.sections).flatMap(
+      return allTabBrowseKinds(keep, (k) => shelfFor(k).sections).flatMap(
         (k) =>
-          visibleShelfIds(k, shelvesByKind.get(k)!.sections, keep),
+          visibleShelfIds(k, shelfFor(k).sections, keep),
       );
     }
-    const sh = shelvesByKind.get(tab)!;
+    const sh = shelfFor(tab);
     return visibleShelfIds(tab, sh.sections, keep);
-  }, [q, resultSections, tab, shelvesByKind, keep]);
+  }, [q, resultSections, tab, keep]);
 
   // A CLICK ON A TILE OR ROW. Without Shift it toggles the entry and drops the
   // anchor there. With Shift, IF there is a live anchor still on screen, it adds
@@ -489,12 +493,12 @@ function LibraryBody() {
       const entries = keep ? LIB_ENTRIES.filter(keep) : LIB_ENTRIES;
       return { label: "Everything", entries: entries.map((e) => e.id) };
     }
-    const entries = shelvesByKind.get(tab)!.entries;
+    const entries = shelfFor(tab).entries;
     return {
       label: KIND_LABEL[tab],
       entries: (keep ? entries.filter(keep) : entries).map((e) => e.id),
     };
-  }, [selected, q, tab, keep, shelvesByKind, allHits]);
+  }, [selected, q, tab, keep, allHits]);
 
   // Sentence rules are reference entries backed by a learn-track completion
   // marker rather than ordinary entry facts. Add those markers (and the same
@@ -719,7 +723,7 @@ function LibraryBody() {
           (() => {
             const kinds = allTabBrowseKinds(
               keep,
-              (k) => shelvesByKind.get(k)!.sections,
+              (k) => shelfFor(k).sections,
             );
             if (kinds.length === 0) {
               return (
@@ -743,7 +747,7 @@ function LibraryBody() {
                 </div>
                 <Shelf
                   kind={k}
-                  sections={shelvesByKind.get(k)!.sections}
+                  sections={shelfFor(k).sections}
                   selected={selected}
                   onToggleEntry={onToggleEntry}
                   onToggleSection={onToggleSection}
@@ -760,7 +764,7 @@ function LibraryBody() {
           })()
         ) : (
           (() => {
-            const sh = shelvesByKind.get(tab)!;
+            const sh = shelfFor(tab);
             return (
               <Shelf
                 key={tab}
