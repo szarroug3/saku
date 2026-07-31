@@ -9,7 +9,7 @@
 // does not teach anyone what voicing is. Two screens, one control.
 
 import { SoundIcon } from "@/components/ui";
-import { speak } from "@/lib/speech";
+import { prefetchClip, speak } from "@/lib/speech";
 
 export function HearButton({
   glyph,
@@ -24,6 +24,10 @@ export function HearButton({
     <button
       type="button"
       onClick={() => speak(glyph, voiceName)}
+      // Warm the clip while the pointer is on its way, so the synth is done by
+      // the click. Only the button you aim at fetches; hover on touch is a no-op.
+      onPointerEnter={() => prefetchClip(glyph, voiceName)}
+      onFocus={() => prefetchClip(glyph, voiceName)}
       aria-label={`Hear ${glyph}`}
       className={`inline-flex cursor-pointer items-center justify-center rounded-md border border-border bg-card px-2 py-0.5 text-[12px] leading-none text-text-muted hover:bg-panel hover:text-text ${className}`}
     >

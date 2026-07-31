@@ -165,6 +165,42 @@ function speakNow(text: string, voiceName: string): void {
  * `speechSynthesis.cancel()`). */
 let currentClip: HTMLAudioElement | null = null;
 
+/** Clips warmed this session, so a second hover/tap on the same word doesn't
+ * re-fetch. A prefetch that fails drops back out so a later attempt can retry. */
+const prefetched = new Set<string>();
+
+/**
+ * Warm a pack clip before it is played — call it on HOVER/FOCUS of a Hear
+ * button, not on mount, so only the clip a pointer is aiming at is fetched (a
+ * dense page does not fire a hundred synth requests at Azure at once).
+ *
+ * If the CDN object is already there (every kana, or a word heard before) the
+ * GET just fills the browser cache; if it is not (an on-demand word) this hits
+ * /api/tts to synthesize and cache it, so the ~0.6s synthesis is paid while the
+ * pointer is still travelling rather than on the click. Fire-and-forget, silent
+ * on failure, and a no-op unless pack voices are on and this is a pack voice.
+ */
+export function prefetchClip(text: string, voiceName: string): void {
+  if (typeof window === "undefined") return;
+  if (!text || !isPackVoice(voiceName) || !packVoicesEnabled()) return;
+  const key = `${voiceName} ${text}`;
+  if (prefetched.has(key)) return;
+  prefetched.add(key);
+  const cdn = packAudioUrl(voiceName, text);
+  const api = packApiUrl(voiceName, text);
+  void (async () => {
+    try {
+      if (cdn) {
+        const hit = await fetch(cdn);
+        if (hit.ok) return; // seeded already; the browser has cached it now
+      }
+      if (api) await fetch(api); // synthesize + cache (miss), or 302 (hit)
+    } catch {
+      prefetched.delete(key);
+    }
+  })();
+}
+
 /**
  * Play a pack-voice clip, in two tiers, falling back to the browser voice last.
  *

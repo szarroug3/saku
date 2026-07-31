@@ -47,7 +47,7 @@ import type { EntryStanding } from "@/lib/library/standing";
 // it has a reading" property is testable (the runner cannot load JSX).
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { subLabel } from "@/lib/library/sub-label";
-import { speak } from "@/lib/speech";
+import { prefetchClip, speak } from "@/lib/speech";
 import type { VerbPair } from "@/data/transitivity";
 
 /** Whether an entry has a pronunciation worth a 🔊.
@@ -119,6 +119,10 @@ function HearButton({
         e.stopPropagation();
         speak(entry.glyph, voice);
       }}
+      // Warm the clip on the way in, so a click plays a clip that is already
+      // synthesized. Only the hovered tile fetches; no burst on a full shelf.
+      onPointerEnter={() => prefetchClip(entry.glyph, voice)}
+      onFocus={() => prefetchClip(entry.glyph, voice)}
       aria-label={`Hear ${entryName(entry)}`}
       className={`inline-flex items-center justify-center cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text ${className ?? ""}`}
     >
