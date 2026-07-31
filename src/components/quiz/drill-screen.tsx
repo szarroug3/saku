@@ -82,7 +82,7 @@ import {
 import { isKatakana, toKana } from "@/lib/romaji";
 import { quizInstruction } from "@/lib/quiz-instruction";
 import { presentationPhrase } from "@/lib/question-presentation";
-import { speak } from "@/lib/speech";
+import { prefetchClips, speak } from "@/lib/speech";
 import { useHistory } from "@/lib/use-history";
 import { anchorForFact, isReadingFact, quizzableFacts } from "@/lib/word-unlock";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -1013,6 +1013,20 @@ export function DrillScreen() {
         rt.pool = facts.filter((f) => usableForms(f).length > 0);
         rt.deck = buildDeck(rt.pool, { ...cfg, ...active.snapshot });
         rt.forms = rt.deck.map(() => null);
+      }
+      // Warm every clip this deck can speak, up front and rate-limited, so a
+      // listening card's audio is ready before it appears instead of being
+      // synthesized on the spot. Only when audio prompts are on (a text-only run
+      // speaks nothing), and over the DISTINCT facts (rt.pool), not the shuffled
+      // deck's repeats. prefetchClips is a no-op unless a pack voice is in use.
+      if (cfg.audioPrompts) {
+        const texts = rt.pool
+          .map((f) => {
+            const info = factInfo(f);
+            return info ? speechForFact(info) : "";
+          })
+          .filter((t): t is string => !!t);
+        prefetchClips(texts, cfg.voiceName);
       }
       rt.pos = 0;
       rt.asked = 0;

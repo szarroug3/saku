@@ -180,25 +180,63 @@ const prefetched = new Set<string>();
  * pointer is still travelling rather than on the click. Fire-and-forget, silent
  * on failure, and a no-op unless pack voices are on and this is a pack voice.
  */
-export function prefetchClip(text: string, voiceName: string): void {
-  if (typeof window === "undefined") return;
+async function warmOne(text: string, voiceName: string): Promise<void> {
   if (!text || !isPackVoice(voiceName) || !packVoicesEnabled()) return;
   const key = `${voiceName} ${text}`;
   if (prefetched.has(key)) return;
   prefetched.add(key);
   const cdn = packAudioUrl(voiceName, text);
   const api = packApiUrl(voiceName, text);
-  void (async () => {
-    try {
-      if (cdn) {
-        const hit = await fetch(cdn);
-        if (hit.ok) return; // seeded already; the browser has cached it now
-      }
-      if (api) await fetch(api); // synthesize + cache (miss), or 302 (hit)
-    } catch {
-      prefetched.delete(key);
+  try {
+    if (cdn) {
+      const hit = await fetch(cdn);
+      if (hit.ok) return; // seeded already; the browser has cached it now
     }
-  })();
+    if (api) await fetch(api); // synthesize + cache (miss), or 302 (hit)
+  } catch {
+    prefetched.delete(key); // let a later attempt retry
+  }
+}
+
+export function prefetchClip(text: string, voiceName: string): void {
+  if (typeof window === "undefined") return;
+  void warmOne(text, voiceName);
+}
+
+// A small rate-limited queue for warming MANY clips at once — a quiz priming
+// every word it will speak. At most MAX_WARMING run together, so a long deck
+// does not fire fifty synth requests at Azure in one burst; the rest wait their
+// turn and trickle in while the learner works through the earlier cards.
+const warmQueue: Array<() => Promise<void>> = [];
+let warming = 0;
+const MAX_WARMING = 2;
+function pumpWarmQueue(): void {
+  while (warming < MAX_WARMING && warmQueue.length) {
+    const job = warmQueue.shift()!;
+    warming += 1;
+    void job().finally(() => {
+      warming -= 1;
+      pumpWarmQueue();
+    });
+  }
+}
+
+/**
+ * Warm a batch of clips through the rate-limited queue — call at the start of a
+ * quiz with every word it will speak, so each is ready before its card comes up.
+ * Deduped and gated exactly like prefetchClip (already-warm clips are skipped for
+ * free), so calling it again with an overlapping set costs nothing extra.
+ */
+export function prefetchClips(texts: readonly string[], voiceName: string): void {
+  if (typeof window === "undefined") return;
+  if (!isPackVoice(voiceName) || !packVoicesEnabled()) return;
+  const seen = new Set<string>();
+  for (const text of texts) {
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    warmQueue.push(() => warmOne(text, voiceName));
+  }
+  pumpWarmQueue();
 }
 
 /**
