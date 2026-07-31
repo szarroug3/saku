@@ -15,20 +15,35 @@ export function HearButton({
   glyph,
   voiceName,
   className = "",
+  // When the button sits inside a click target of its own (a Library tile is
+  // itself a toggle), swallow the click and the pointerenter so aiming at the
+  // speaker never also fires the surface behind it.
+  stopPropagation = false,
+  // Override the announced name when the glyph is not the whole story (a Library
+  // entry reads out its full name, not just its lead glyph).
+  label,
 }: {
   glyph: string;
   voiceName: string;
   className?: string;
+  stopPropagation?: boolean;
+  label?: string;
 }) {
   return (
     <button
       type="button"
-      onClick={() => speak(glyph, voiceName)}
+      onClick={(e) => {
+        if (stopPropagation) e.stopPropagation();
+        speak(glyph, voiceName);
+      }}
       // Warm the clip while the pointer is on its way, so the synth is done by
       // the click. Only the button you aim at fetches; hover on touch is a no-op.
-      onPointerEnter={() => prefetchClip(glyph, voiceName)}
+      onPointerEnter={(e) => {
+        if (stopPropagation) e.stopPropagation();
+        prefetchClip(glyph, voiceName);
+      }}
       onFocus={() => prefetchClip(glyph, voiceName)}
-      aria-label={`Hear ${glyph}`}
+      aria-label={label ?? `Hear ${glyph}`}
       className={`inline-flex cursor-pointer items-center justify-center rounded-md border border-border bg-card px-2 py-0.5 text-[12px] leading-none text-text-muted hover:bg-panel hover:text-text ${className}`}
     >
       <SoundIcon className="size-[14px]" />

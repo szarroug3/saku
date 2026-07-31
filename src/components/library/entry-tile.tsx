@@ -29,8 +29,8 @@
 
 import Link from "next/link";
 
+import { HearButton } from "@/components/lesson/hear-button";
 import { StandingChip } from "@/components/library/standing-chip";
-import { SoundIcon } from "@/components/ui";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
 import { KEIGO_SUBJECT } from "@/data/keigo";
@@ -47,7 +47,6 @@ import type { EntryStanding } from "@/lib/library/standing";
 // it has a reading" property is testable (the runner cannot load JSX).
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { subLabel } from "@/lib/library/sub-label";
-import { prefetchClip, speak } from "@/lib/speech";
 import type { VerbPair } from "@/data/transitivity";
 
 /** Whether an entry has a pronunciation worth a 🔊.
@@ -98,37 +97,6 @@ function toneClass(s: EntryStanding): string {
     default:
       return "border-border";
   }
-}
-
-/** The small 🔊 target. Its own component because the tile and the row want the
- * identical affordance, and because it must swallow the click so SELECT (the
- * body around it) does not also fire. */
-function HearButton({
-  entry,
-  voice,
-  className,
-}: {
-  entry: LibEntry;
-  voice: string;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        speak(entry.glyph, voice);
-      }}
-      // Warm the clip on the way in, so a click plays a clip that is already
-      // synthesized. Only the hovered tile fetches; no burst on a full shelf.
-      onPointerEnter={() => prefetchClip(entry.glyph, voice)}
-      onFocus={() => prefetchClip(entry.glyph, voice)}
-      aria-label={`Hear ${entryName(entry)}`}
-      className={`inline-flex items-center justify-center cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text ${className ?? ""}`}
-    >
-      <SoundIcon className="size-[13px]" />
-    </button>
-  );
 }
 
 /** The small ↗ target — opens the entry page. A `Link`, so it is a real
@@ -216,7 +184,14 @@ export function EntryTile({
       </div>
       <div className="truncate text-xs text-text-muted">{subLabel(entry)}</div>
       <div className="mt-1.5 flex items-center justify-center gap-1.5">
-        {speakable(entry) ? <HearButton entry={entry} voice={voice} /> : null}
+        {speakable(entry) ? (
+          <HearButton
+            glyph={entry.glyph}
+            voiceName={voice}
+            stopPropagation
+            label={`Hear ${entryName(entry)}`}
+          />
+        ) : null}
         <ViewLink entry={entry} />
       </div>
     </div>
@@ -406,41 +381,19 @@ export function EntryRow({
         ) : null}
       </span>
       {speakable(entry) ? (
-        <HearButton entry={entry} voice={voice} className="flex-none" />
+        <HearButton
+          glyph={entry.glyph}
+          voiceName={voice}
+          stopPropagation
+          label={`Hear ${entryName(entry)}`}
+          className="flex-none"
+        />
       ) : null}
       <ViewLink entry={entry} className="flex-none" />
       <span className="flex-none">
         <StandingCell standing={standing} />
       </span>
     </div>
-  );
-}
-
-/** The 🔊 for one verb of a pair. Like HearButton, but a pair row has TWO things
- * to say — the two verbs — so each side gets its own speaker keyed to its own
- * word, instead of the row's single glyph (which a pair does not have). Swallows
- * the click so it never also toggles SELECT. */
-function HearWord({
-  word,
-  voice,
-  className,
-}: {
-  word: string;
-  voice: string;
-  className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        speak(word, voice);
-      }}
-      aria-label={`Hear ${word}`}
-      className={`inline-flex flex-none items-center justify-center cursor-pointer rounded-md border border-border bg-card px-1.5 py-0.5 text-[11px] leading-none text-text-muted hover:bg-panel hover:text-text ${className ?? ""}`}
-    >
-      <SoundIcon className="size-[13px]" />
-    </button>
   );
 }
 
@@ -462,7 +415,12 @@ function PairCell({
         <span className="truncate font-kana text-[17px]">{side.word}</span>
         <span className="truncate text-xs text-text-muted">{side.reading}</span>
         {tail ? <span className="truncate text-xs text-text-muted">· {tail}</span> : null}
-        <HearWord word={side.word} voice={voice} />
+        <HearButton
+          glyph={side.word}
+          voiceName={voice}
+          stopPropagation
+          className="flex-none"
+        />
       </div>
       <span className="mt-0.5 block truncate text-xs text-text-muted">{side.en}</span>
     </div>
