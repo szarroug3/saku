@@ -345,7 +345,9 @@ describe("the pattern total is the whole authored table", () => {
     // real lesson with a real (meaning) question.
     assert.equal(GRAMMAR_CURRICULUM_TOTAL, CURRICULUM_PATTERNS.length);
     assert.equal(GRAMMAR_CURRICULUM_TOTAL, RECIPES.length);
-    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 96);
+    // 99: the 96 patterns plus the three standalone form recipes (nai-form,
+    // ta-form, stem-form). The て-form was already a recipe (te-sequence).
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 99);
     // The drillable set is a strict subset — production is the second half of
     // some lessons' quiz, not the gate on whether a pattern is taught.
     assert.ok(DRILLABLE.length < GRAMMAR_CURRICULUM_TOTAL);
@@ -368,9 +370,9 @@ describe("the pattern total is the whole authored table", () => {
   test("the total is the number of sittings the track cuts into", () => {
     // Deterministic from the curriculum: form lessons solo, pattern runs in <=3.
     assert.equal(GRAMMAR_SITTINGS.length, GRAMMAR_SITTINGS_TOTAL);
-    // 44 sittings for the whole 96-pattern table: the solo form lessons plus the
-    // pattern runs cut into bundles of <=3.
-    assert.equal(GRAMMAR_SITTINGS_TOTAL, 44);
+    // 45 sittings for the whole 99-recipe table: the solo form lessons (now
+    // including nai-form/ta-form/stem-form) plus the pattern runs cut into <=3.
+    assert.equal(GRAMMAR_SITTINGS_TOTAL, 45);
     // Every pattern lands in exactly one sitting — the sittings partition the
     // whole curriculum, none dropped and none double-counted.
     const covered = GRAMMAR_SITTINGS.flat();
@@ -406,9 +408,9 @@ describe("sittings: form lessons solo, pattern lessons bundle up to three", () =
   const FORM_LESSON_PATTERNS = [
     "te-sequence",
     "te-iru",
-    "nai-request",
-    "ta-koto-ga-aru",
-    "ni-iku",
+    "nai-form",
+    "ta-form",
+    "stem-form",
     "mashou",
     "tara",
     "potential",
@@ -557,8 +559,17 @@ describe("every form a pattern uses is taught before the pattern uses it", () =>
       if (!hit || !isProducible(hit.r)) return;
       // add empty = the form is the whole pattern (the potential, たら, ば, ...).
       if (!hit.a?.form || hit.a.form === "dictionary" || hit.a.add) return;
-      // te-sequence and 〜ている are hand-authored, with their own build pages.
-      if (hit.r.id === "te-sequence" || hit.r.id === "te-iru") return;
+      // The authored form lessons carry their own multi-page build tables (some
+      // split the rule across two pages, so the LAST page alone is under 5 rows).
+      if (
+        hit.r.id === "te-sequence" ||
+        hit.r.id === "te-iru" ||
+        hit.r.id === "nai-form" ||
+        hit.r.id === "ta-form" ||
+        hit.r.id === "stem-form"
+      ) {
+        return;
+      }
       const page = [...lesson.pages].reverse().find((p) => p.kind === "teach");
       const card = page?.kind === "teach" ? page.card : undefined;
       assert.ok(

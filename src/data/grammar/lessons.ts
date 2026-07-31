@@ -216,11 +216,15 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     id: "gl-te-use",
     setId: "",
     eyebrow: "Using the て/で-form",
-    title: "The て/で-form links ideas, and the last verb sets the tense.",
+    title: "The て/で-form asks casually, or links ideas.",
     body: [
       {
+        lead: "By itself,",
+        text: 'it is a casual request or command: 待って "wait!", 見て "look!", ちょっと来て "come here a sec". It is 〜てください with the ください dropped, so it is the informal way to ask someone to do something.',
+      },
+      {
         lead: "It connects.",
-        text: 'The て/で-form joins one action or situation to the next. Depending on the sentence it can feel like "and", "and then", "so", "because", or "while", and the context tells you which.',
+        text: 'Joined to more, the て/で-form links one action or situation to the next. The same form covers "and", "and then", "so", "because", and "while"; the context tells you which, so one shape does the work of several English words.',
       },
       {
         lead: "The final verb carries the rest.",
@@ -332,6 +336,42 @@ const LESSON_TE_IRU: GrammarLessonDef = {
 };
 
 // ---------------------------------------------------------------------------
+// THE OTHER FORM LESSONS — ない, た, stem.
+//
+// Each is its own sitting, taught before any pattern that uses the form, exactly
+// as lesson 1 teaches the て-form. They are recipes (nai-form / ta-form /
+// stem-form in recipes.ts) with add "", so the drill is "make the form" and the
+// lesson flows through the same planner and quiz as any pattern — no special
+// tracking. The authored pages are the form-intro tables (form-intros.ts), which
+// no longer prepend onto a pattern (FORM_INTROS below drops these three). `drills`
+// are the form recipe's own facts (its meaning plus its production). */
+// ---------------------------------------------------------------------------
+
+const LESSON_NAI_FORM: GrammarLessonDef = {
+  id: "nai-form",
+  title: "The ない-form",
+  pages: NAI_FORM_PAGES.map((card) => ({ kind: "teach", card })),
+  drills: patternFacts("nai-form"),
+  primaryPattern: "nai-form",
+};
+
+const LESSON_TA_FORM: GrammarLessonDef = {
+  id: "ta-form",
+  title: "The た-form",
+  pages: TA_FORM_PAGES.map((card) => ({ kind: "teach", card })),
+  drills: patternFacts("ta-form"),
+  primaryPattern: "ta-form",
+};
+
+const LESSON_STEM_FORM: GrammarLessonDef = {
+  id: "stem-form",
+  title: "The stem",
+  pages: STEM_FORM_PAGES.map((card) => ({ kind: "teach", card })),
+  drills: patternFacts("stem-form"),
+  primaryPattern: "stem-form",
+};
+
+// ---------------------------------------------------------------------------
 // THE CURRICULUM, AS LESSONS.
 //
 // Same order the track has always taught in: te-form first, then N5 before N4,
@@ -378,10 +418,11 @@ const ORDERED: readonly Recipe[] = [...RECIPES].sort(
  * it is first used — the way lesson 1 teaches the て-form before the て-patterns.
  * (The て-form and stem→ます chain past this: te-sequence/te-iru are authored, and
  * the te-family all sits under lesson 1's form.) */
+// ない, た and stem are NOT here any more: each is its own form lesson now (a
+// recipe with its own pages), so prepending its pages onto the first pattern
+// would teach the form twice. masu and volitional have no form lesson yet, so
+// they still ride on the first pattern that uses them.
 const FORM_INTROS: readonly { form: Form; pages: readonly PhaseIntro[] }[] = [
-  { form: "nai", pages: NAI_FORM_PAGES },
-  { form: "ta", pages: TA_FORM_PAGES },
-  { form: "stem", pages: STEM_FORM_PAGES },
   { form: "masu", pages: MASU_FORM_PAGES },
   { form: "volitional", pages: VOLITIONAL_FORM_PAGES },
 ];
@@ -421,12 +462,16 @@ function autoLesson(r: Recipe): GrammarLessonDef {
  * the rest are terse pattern lessons until authored. This is the denominator on
  * the lesson card ("lesson N of X"), and it is accurate to the number of
  * lessons because it IS the list of lessons. */
-export const CURRICULUM_LESSONS: readonly GrammarLessonDef[] = ORDERED.map((r) =>
-  r.id === "te-sequence"
-    ? LESSON_TE_FORM
-    : r.id === "te-iru"
-      ? LESSON_TE_IRU
-      : autoLesson(r),
+const AUTHORED_LESSONS: Readonly<Record<string, GrammarLessonDef>> = {
+  "te-sequence": LESSON_TE_FORM,
+  "te-iru": LESSON_TE_IRU,
+  "nai-form": LESSON_NAI_FORM,
+  "ta-form": LESSON_TA_FORM,
+  "stem-form": LESSON_STEM_FORM,
+};
+
+export const CURRICULUM_LESSONS: readonly GrammarLessonDef[] = ORDERED.map(
+  (r) => AUTHORED_LESSONS[r.id] ?? autoLesson(r),
 );
 
 /** Fact -> the lesson that teaches it. Built once from every lesson's drills, so

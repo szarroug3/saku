@@ -559,6 +559,18 @@ export const RECIPES: readonly Recipe[] = [
 
   // --- ない-form ----------------------------------------------------------
   {
+    // The ない-form itself, taught before any pattern that uses it (see the form
+    // lesson in lessons.ts). Bare form, add "" — its production fact is "make the
+    // ない-form", the same shape te-sequence uses for the て-form. The plain
+    // negative is a real standalone form ("たべない" = doesn't eat), so it earns a
+    // gloss and a meaning of its own, not only a build table.
+    id: "nai-form",
+    pattern: "〜ない",
+    gloss: "plain negative, “doesn’t / won’t do X”",
+    level: "N5",
+    attach: [{ host: "verb", form: "nai", add: "" }],
+  },
+  {
     id: "nai-request",
     pattern: "〜ないでください",
     gloss: "please don't do X",
@@ -647,6 +659,16 @@ export const RECIPES: readonly Recipe[] = [
 
   // --- た-form ------------------------------------------------------------
   {
+    // The た-form itself — the plain past — taught before the た-patterns. Same
+    // 音便 as the て-form with た/だ for て/で, which the lesson leans on as a
+    // memory hook. Bare form, add "": its production is "make the た-form".
+    id: "ta-form",
+    pattern: "〜た",
+    gloss: "plain past, “did X”",
+    level: "N5",
+    attach: [{ host: "verb", form: "ta", add: "" }],
+  },
+  {
     id: "ta-koto-ga-aru",
     pattern: "〜たことがある",
     gloss: "have done X before",
@@ -708,6 +730,17 @@ export const RECIPES: readonly Recipe[] = [
   },
 
   // --- stem (連用形) -------------------------------------------------------
+  {
+    // The stem itself — the connecting base — taught before the stem-patterns.
+    // It has no standalone written shape (it "holds the verb ready"), so its glyph
+    // is a labelled placeholder; the build table carries the real forms (かき,
+    // たべ). Bare form, add "": its production is "make the stem".
+    id: "stem-form",
+    pattern: "〜(stem)",
+    gloss: "the connecting stem",
+    level: "N5",
+    attach: [{ host: "verb", form: "stem", add: "" }],
+  },
   {
     id: "nagara",
     pattern: "〜ながら",

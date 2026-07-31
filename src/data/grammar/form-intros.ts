@@ -19,7 +19,13 @@ export const NAI_FORM_PAGES: readonly PhaseIntro[] = [
     setId: "",
     eyebrow: "The ない-form",
     title: "The ない-form is the plain “not” form.",
-    body: [{ text: "For an う-verb, the last kana shifts to its あ-row before ない." }],
+    body: [
+      {
+        lead: "What it is for.",
+        text: 'On its own it says a verb is not happening: たべない "doesn\'t / won\'t eat", いかない "not going". It is the casual counterpart of 〜ません, and the base a lot of patterns build on (〜ないでください, 〜なくてもいい).',
+      },
+      { text: "For an う-verb, the last kana shifts to its あ-row before ない." },
+    ],
     buildRules: [
       { label: "う", verb: "かう", drop: "う", add: "わない", note: "う shifts to わ, not あ." },
       { label: "く", verb: "かく", drop: "く", add: "かない" },
@@ -56,7 +62,12 @@ export const TA_FORM_PAGES: readonly PhaseIntro[] = [
     title: "The た-form is the plain past, “did”.",
     body: [
       {
-        text: "Built just like the て/で-form you already know, but ending in た or だ. る-verbs drop る, and いく is the one exception.",
+        lead: "What it is for.",
+        text: 'The plain past: たべた "ate", いった "went". The casual past tense, and the base for 〜たことがある (have done) and 〜たら (if / when).',
+      },
+      {
+        lead: "Memory hook:",
+        text: "it is built exactly like the て/で-form, with た/だ where て/で went (かって→かった, のんで→のんだ). Know the て-form and you already know this. る-verbs drop る, and いく is the one exception.",
       },
     ],
     buildRules: [
