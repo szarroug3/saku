@@ -15,7 +15,6 @@ import type {
   EnglishSentenceResponse,
   PromptFormat,
   PairResponse,
-  QuizConfig,
   ResponseKind,
 } from "@/types";
 
@@ -292,11 +291,6 @@ export function enabledDirs(ask: AskConfig): { jp2en: boolean; en2jp: boolean } 
       sentenceAsksRomaji(ask),
     en2jp: englishAsks(ask) || englishSentenceAsks(ask),
   };
-}
-
-/** Read a QuizConfig's ask, tolerating a value that predates the field. */
-export function askOf(cfg: Pick<QuizConfig, "ask">): AskConfig {
-  return cfg.ask ?? defaultAsk();
 }
 
 /** The full pair-relationship set — pairs mode always drills every relationship

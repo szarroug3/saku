@@ -402,14 +402,3 @@ export function whatSentence(
   if (!showCount) return head;
   return `${head} · ${count.toLocaleString()} question${count === 1 ? "" : "s"}`;
 }
-
-/** Every subject that has any material, in registry order — the subject chips
- * are data, not a hardcoded three. */
-export function allSubjects(): string[] {
-  const seen: string[] = [];
-  for (const f of ALL_FACTS) {
-    const s = factInfo(f)?.subject;
-    if (s && !seen.includes(s)) seen.push(s);
-  }
-  return seen;
-}
