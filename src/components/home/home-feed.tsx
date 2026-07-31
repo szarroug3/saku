@@ -44,10 +44,7 @@ import { NextCurriculumLesson } from "@/components/lesson/next-curriculum-lesson
 import { NextLesson } from "@/components/lesson/next-lesson";
 import { NextTransitivityLesson } from "@/components/lesson/next-transitivity-lesson";
 import { NextKeigoLesson } from "@/components/lesson/next-keigo-lesson";
-import {
-  NextSentenceOrderingLesson,
-  type SentenceOrderingLesson,
-} from "@/components/lesson/next-sentence-ordering-lesson";
+import { NextSentenceOrderingLesson } from "@/components/lesson/next-sentence-ordering-lesson";
 import { PageTitle } from "@/components/ui";
 import {
   lessonWords,
@@ -60,7 +57,6 @@ import {
   nextGrammarLesson,
   nextGrammarLock,
 } from "@/lib/grammar-lesson";
-import { patternMeaningFactId } from "@/data/grammar";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { COUNTERS_PER_LESSON_DEFAULT, nextCounterLesson } from "@/lib/counter-lesson";
 import {
@@ -78,17 +74,13 @@ import { entryOf, factInfo } from "@/lib/facts";
 import { COUNTER_ENTRIES } from "@/data/counters";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { useHistory } from "@/lib/use-history";
+import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import {
-  sentenceTierDone,
-  sentenceTierMarkerFact,
-} from "@/lib/sentence-ordering-progress";
+  nextSentenceOrderingLesson,
+  sentenceLessonFacts,
+} from "@/lib/sentence-ordering-plan";
 import type { FactId, HistoryFile } from "@/types";
-import {
-  SENTENCE_ORDERING_TIERS,
-  readableAssemblyForTier,
-  tierAssemblyFacts,
-} from "@/data/assembly";
-import { effectiveState } from "@/lib/claims";
+import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 
 // The eight track keys a run can belong to. For every track but the two vocab
 // ones this IS the fact's subject string; counters and words share the `word`
@@ -104,75 +96,6 @@ type TrackKey =
   | "transitivity"
   | "keigo"
   | "sentence-ordering";
-
-const SENTENCE_ORDERING_PER_LESSON = 12;
-
-function sentenceLessonFacts(
-  tier: (typeof SENTENCE_ORDERING_TIERS)[number],
-  history: HistoryFile,
-): FactId[] {
-  const facts = tierAssemblyFacts(tier, history);
-  if (facts.length > 0) return facts;
-  // Fallback marker so the tier can still be surfaced/completed even when no
-  // pattern meaning fact can be resolved for its readable examples.
-  return [sentenceTierMarkerFact(tier.id)];
-}
-
-function sentenceTierUnlocked(tier: (typeof SENTENCE_ORDERING_TIERS)[number], history: HistoryFile): boolean {
-  const readable = readableAssemblyForTier(tier, history);
-  if (readable.length < tier.minReadable) return false;
-
-  // Grammar prereq: at least one of this tier's patterns must have been
-  // taught in the grammar track (seen, claimed or tested). The simple tier
-  // has no prereqs.
-  if (tier.grammarPrereqs.length > 0) {
-    const prereqMet = tier.grammarPrereqs.some((id) => {
-      const fid = patternMeaningFactId(id);
-      const st = effectiveState(
-        history.facts[fid],
-        history.claims?.[fid],
-        history.seen?.[fid],
-      );
-      return st.lastTested > 0;
-    });
-    if (!prereqMet) return false;
-  }
-
-  return true;
-}
-
-/**
- * Pure function: find the next unlocked sentence-ordering tier lesson, or null.
- *
- * Extracted from the component so the React Compiler can handle the for-loop
- * control flow without skipping memoization of the surrounding useMemo.
- */
-function nextSentenceOrderingLesson(
-  kanaComplete: boolean,
-  history: HistoryFile,
-): SentenceOrderingLesson | null {
-  if (!kanaComplete) return null;
-
-  for (let i = 0; i < SENTENCE_ORDERING_TIERS.length; i++) {
-    const tier = SENTENCE_ORDERING_TIERS[i];
-    // Sentence track is intentionally linear: you do not skip into a later tier
-    // while an earlier one is still unavailable or unfinished.
-    if (!sentenceTierUnlocked(tier, history)) return null;
-
-    const facts = sentenceLessonFacts(tier, history);
-
-    if (sentenceTierDone(tier.id, facts, history)) continue;
-
-    return {
-      facts: facts.slice(0, SENTENCE_ORDERING_PER_LESSON),
-      lessonNumber: i + 1,
-      totalLessons: SENTENCE_ORDERING_TIERS.length,
-      tierId: tier.id,
-      tierLabel: tier.label,
-    };
-  }
-  return null;
-}
 
 // Which track an in-progress run belongs to, read from its FACTS rather than
 // re-derived from a cursor. A curriculum lesson is single-subject, so the first
