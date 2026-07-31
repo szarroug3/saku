@@ -16,7 +16,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { withEntriesAdded, withEntriesRemoved, withName } from "./list-ops.ts";
-import { listToggle } from "./use-lists.ts";
+import { listToggle } from "./list-membership.ts";
 import type { EntryId, SavedList } from "../types/index.ts";
 
 const e = (s: string) => s as EntryId;
