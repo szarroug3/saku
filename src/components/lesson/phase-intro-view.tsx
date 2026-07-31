@@ -466,6 +466,11 @@ export function IntroBuildTable({
  * "go in order to write" — with the suffix the pattern adds accented in the
  * Pattern column. The Form column drops out when the pattern attaches to the word
  * unchanged (a noun, a plain dictionary form).
+ *
+ * Each Japanese cell carries a speaker, like the build table's equations: the
+ * dictionary verb, its intermediate form, and the finished pattern are three
+ * sounds a learner wants to hear said, not just read. The verbs on these pages
+ * are kana, so there is always something safe to speak.
  */
 export function IntroDeriveTable({
   rows,
@@ -474,6 +479,7 @@ export function IntroDeriveTable({
   rows: readonly IntroDeriveRow[];
   heads?: { verb?: string; form?: string; pattern?: string };
 }) {
+  const { cfg } = useQuizConfig();
   const hasForm = rows.some((r) => r.form);
   // The Meaning column earns its place only when the gloss VARIES per row (X
   // filled by each verb: "go to write" / "go to read"). A particle pattern gives
@@ -507,8 +513,16 @@ export function IntroDeriveTable({
             const stem = suffix ? r.result.slice(0, r.result.length - suffix.length) : r.result;
             return (
               <tr key={r.verb} className="border-b border-border/60 last:border-0">
-                <td className={jpCell}>{r.verb}</td>
-                {hasForm ? <td className={jpCell}>{r.form ?? ""}</td> : null}
+                <td className={jpCell}>
+                  {r.verb}
+                  <Say glyph={r.verb} voice={cfg.voiceName} />
+                </td>
+                {hasForm ? (
+                  <td className={jpCell}>
+                    {r.form ?? ""}
+                    {r.form ? <Say glyph={r.form} voice={cfg.voiceName} /> : null}
+                  </td>
+                ) : null}
                 <td className={jpCell}>
                   {suffix ? (
                     <>
@@ -518,6 +532,7 @@ export function IntroDeriveTable({
                   ) : (
                     r.result
                   )}
+                  <Say glyph={r.result} voice={cfg.voiceName} />
                 </td>
                 {hasGloss ? (
                   <td
