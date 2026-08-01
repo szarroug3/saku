@@ -679,27 +679,17 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </LinkRow>
       ) : null}
 
-      {/* THERE IS NO "no outside link" MESSAGE, and this is the decision that
-          `noLinkReason` does not get to override. 7 of the 12 clusters have
-          `link: null`, and 52 of the 81 patterns are in no cluster at all — so
-          "we have nothing for you" would be the message on nearly every pattern
-          page in the app. A slot that is empty almost everywhere is not a
-          finding, it is furniture, and the cluster page (which is ABOUT one
-          cluster, where the gap is genuinely about that cluster) is the right
-          place for that argument. `noLinkReason` stays in clusters.ts as
-          documentation of the bet nobody could make. Here the row is absent. */}
-      {familyCluster?.link ? (
-        <LinkRow label="Read about it">
-          <a
-            href={familyCluster.link.url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-[13px] text-accent no-underline"
-          >
-            {familyCluster.link.label}
-          </a>
-        </LinkRow>
-      ) : null}
+      {/* NO FAMILY EXTERNAL LINK HERE. A cluster's outside reference (Tae Kim on
+          conditionals, Tofugu on ので) is family-level material: it is about all
+          four ways to say "if", not about ば alone. It lives on the cluster page,
+          which is ABOUT the whole family, and the "Family → all N side by side"
+          row above routes there in one hop — so surfacing it again on every
+          member page only duplicates a link the reader is one click from. Same
+          reasoning keeps `noLinkReason`'s "we have nothing" argument on the
+          cluster page too: 7 of 12 clusters have `link: null` and 52 of 81
+          patterns are in no cluster at all, so an "outside reading" slot is empty
+          almost everywhere and belongs where its absence is genuinely a finding.
+          Both stay in clusters.ts as data; neither renders a member row here. */}
 
       <LinkRow label="Your lists">
         {mine.length ? (
@@ -1003,23 +993,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {isGrammar && pattern ? (
         <>
           {/* ONE FORMAT for every form and pattern: PatternTeach returns two boxes
-              — an intro and a build box — and the Links box sits full width at the
-              foot. The build tables (a form's conjugation, or a pattern's whole
-              conjugation grouped the same way) are wide, so the boxes stack and take
-              the full width rather than sharing a half-row. PatternTeach renders the
-              SAME PhaseIntro the lesson teaches with, so the two cannot drift. See
-              pattern-teach.tsx. */}
+              — an intro and a build box. The build tables (a form's conjugation, or
+              a pattern's whole conjugation grouped the same way) are wide, so the
+              boxes stack and take the full width rather than sharing a half-row.
+              PatternTeach renders the SAME PhaseIntro the lesson teaches with, so
+              the two cannot drift. See pattern-teach.tsx. */}
           <div className="mb-3.5 flex flex-col gap-3.5 [&>*]:mb-0">
             <PatternTeach pattern={pattern} />
           </div>
-          <div className="mb-3.5">
-            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
-          </div>
 
-          {/* FULL WIDTH AT THE FOOT, like the kana family and the kanji
-              readings, and for the same reason: the obligation seven is four
-              columns of Japanese and inside a half it would reflow everything
-              above it.
+          {/* FULL WIDTH, like the kana family and the kanji readings, and for the
+              same reason: the obligation seven is four columns of Japanese and
+              inside a half it would reflow everything above it. It sits ABOVE the
+              Links box, so the teaching (this pattern, then the ways it competes
+              with its siblings) is the body and Links is the footer beneath it.
 
               ABSENT, not empty, in two cases. A pattern in no cluster (52 of
               the 81) has no family, and a cluster with a single member would
@@ -1035,12 +1022,19 @@ function EntryView({ entry }: { entry: LibEntry }) {
             <PatternFamily
               members={familyMembers}
               current={pattern}
+              feel={familyCluster.feel}
               facts={liveFacts}
               claims={claims}
               metric={cfg.accuracyMetric}
               now={now}
             />
           ) : null}
+
+          {/* LINKS AT THE FOOT. Outgoing navigation is the last thing on the page,
+              under the teaching and the family table, not wedged between them. */}
+          <div className="mb-3.5 mt-3.5">
+            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+          </div>
         </>
       ) : null}
 

@@ -51,6 +51,7 @@ import type { AccuracyMetric, HistoryFile } from "@/types";
 export function PatternFamily({
   members,
   current,
+  feel,
   facts,
   claims,
   metric,
@@ -60,6 +61,9 @@ export function PatternFamily({
   /** The recipe whose page this is. Marked, not filtered out: a family with the
    * member you are reading about missing is not that family. */
   current: Recipe;
+  /** The family's `feel` note — how the members differ, so the reader knows which
+   * to reach for. Shown under the table. */
+  feel?: string;
   facts: HistoryFile["facts"];
   claims: Claims;
   metric: AccuracyMetric;
@@ -138,11 +142,20 @@ export function PatternFamily({
         </table>
       </div>
 
-      {/* NO FEEL NOTE HERE. `feel` is authored per FAMILY, and this component
-          renders on 29 individual pattern pages, so a family note on a member's
-          page can spend all of itself on a different member: on 〜かもしれない
-          it described 〜そう and never named 〜かもしれない at all. It lives on
-          the cluster page, which is the page about the whole family. */}
+      {/* How to choose. `feel` is authored per FAMILY — it describes how the
+          members differ, so on a member's page it can lead with a sibling rather
+          than the pattern you are reading about (on 〜かもしれない it opens on
+          〜そう). Shown anyway, and framed as a family note ("Which one?"),
+          because a reader who has just been handed a table of near-synonyms is
+          exactly the one asking which to use — the same question the cluster
+          page answers. Where the answer is really a matter of exposure, the
+          authored `feel` says so; the component stays generic. */}
+      {feel ? (
+        <div className="mt-4">
+          <Lbl>Which one?</Lbl>
+          <p className="text-[13px] leading-relaxed text-text-muted">{feel}</p>
+        </div>
+      ) : null}
     </Card>
   );
 }

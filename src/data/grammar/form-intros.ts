@@ -297,7 +297,7 @@ export const PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
     title: "Something is done to the subject.",
     body: [
       {
-        text: 'The subject has the action done TO it, often "is X-ed (by someone)": わらう (laugh) becomes わらわれる (be laughed at).',
+        text: 'Often "is X-ed (by someone)": わらう (laugh) becomes わらわれる (be laughed at).',
       },
       {
         text: "An う-verb shifts its last kana to the あ-row and adds れる; an る-verb adds られる. する and くる are irregular.",
@@ -316,7 +316,7 @@ export const POTENTIAL_FORM_PAGES: readonly PhaseIntro[] = [
     title: "Can do, or is able to do.",
     body: [
       {
-        text: 'Says you CAN do something: たべる (eat) becomes たべられる (can eat), のむ (drink) becomes のめる (can drink).',
+        text: 'たべる (eat) becomes たべられる (can eat); のむ (drink) becomes のめる (can drink).',
       },
       {
         text: "An う-verb shifts its last kana to the え-row and adds る; an る-verb adds られる. する becomes できる, くる becomes こられる.",
@@ -335,7 +335,7 @@ export const CAUSATIVE_FORM_PAGES: readonly PhaseIntro[] = [
     title: "Make or let someone do.",
     body: [
       {
-        text: 'Make or let someone do something: たべる (eat) becomes たべさせる (make / let eat).',
+        text: 'たべる (eat) becomes たべさせる (make / let someone eat).',
       },
       {
         text: "An う-verb shifts its last kana to the あ-row and adds せる; an る-verb adds させる. する and くる are irregular.",
@@ -354,7 +354,7 @@ export const CAUSATIVE_PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
     title: "Be made to do something.",
     body: [
       {
-        text: 'Be MADE to do something: たべる (eat) becomes たべさせられる (be made to eat). It is the causative and the passive stacked.',
+        text: 'たべる (eat) becomes たべさせられる (be made to eat). It is the causative and the passive stacked.',
       },
       {
         text: "Build the causative, then make that passive. An う-verb ends in 〜せられる; an る-verb in 〜させられる.",
@@ -373,7 +373,7 @@ export const BA_FORM_PAGES: readonly PhaseIntro[] = [
     title: "A general or hypothetical “if”.",
     body: [
       {
-        text: 'A general or hypothetical "if": たべれば (if [someone] eats), やすければ (if it is cheap).',
+        text: 'たべれば means "if [someone] eats"; やすければ, "if it is cheap".',
       },
       {
         text: "An う-verb shifts its last kana to the え-row and adds ば; an る-verb drops る and adds れば.",
