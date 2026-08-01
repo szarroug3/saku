@@ -63,6 +63,7 @@ export function SliceBar({
   quizFacts,
   quizMode,
   teachPlan,
+  progressReady = true,
 }: {
   slice: Slice;
   facts: Record<FactId, FactAggregate>;
@@ -102,6 +103,9 @@ export function SliceBar({
   /** A subject-specific lesson launch. Sentence rules teach one coherent tier
    * at a time instead of merging ten lesson walks into one. */
   teachPlan?: SliceTeachPlan;
+  /** False when this browser's signed-out history cannot be read until the
+   * client starts. Never present actions calculated from a fake empty history. */
+  progressReady?: boolean;
 }) {
   const { startSession, startQuiz, startQuizInMode } = useQuizSession();
   const [adding, setAdding] = useState(false);
@@ -110,6 +114,13 @@ export function SliceBar({
   // Practice already closes by showing the editor inline, closed here for the
   // launch points that used to bypass it. See QuizPreStart below.
   const [quizzing, setQuizzing] = useState(false);
+
+  // Signed-out history lives in localStorage, which the server cannot read.
+  // Until the provider has restored it, every progress-derived sentence and
+  // action would be calculated from a fake empty history (briefly offering
+  // “Teach me” to someone who already knows the whole slice). Render the bar
+  // once, from real data, instead of rendering and then correcting it.
+  if (!progressReady) return null;
 
   const plan = drillPlan(slice, facts, claims, now, includeSolid);
   // Teach first, then probe — the order the session should MEET them, which is

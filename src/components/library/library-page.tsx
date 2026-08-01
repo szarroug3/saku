@@ -24,7 +24,6 @@ import { Shelf, shelfSections } from "@/components/library/shelves";
 import { visibleShelfIds, type ShelfSection } from "@/lib/library/shelf-view";
 import { SliceBar } from "@/components/library/slice-bar";
 import { StickySearch } from "@/components/library/sticky-search";
-import { Dock } from "@/components/dock";
 import { Card, Chip, GhostBtn, Hint, Lbl, PageTitle } from "@/components/ui";
 import {
   SENTENCE_ORDERING_TIERS,
@@ -156,7 +155,7 @@ export function LibraryPageClient({
    * response. URL changes after mount are mirrored into local state below. */
   initialSearch: string;
 }) {
-  const { history, refresh } = useHistory();
+  const { history, loaded: historyLoaded, refresh } = useHistory();
   const { cfg } = useQuizConfig();
   const { lists } = useLists();
 
@@ -808,9 +807,11 @@ export function LibraryPageClient({
         )}
       </div>
 
-      {/* THE FROZEN FOOTER BOX. The slice bar, docked below the frame so it stays
-          put while the shelves scroll. Its own box (kq-band), frozen in place. */}
-      <Dock slot="bottom">
+      {/* THE FROZEN FOOTER BOX. Keep the slice bar in this server-rendered tree
+          and make it sticky directly. Portalling it into the shell after mount
+          meant the initial response placed it after every shelf, outside the
+          viewport, and hydration visibly brought it into view. */}
+      <div className="sticky bottom-0 z-20">
         <SliceBar
           slice={slice}
           facts={history.facts}
@@ -823,8 +824,9 @@ export function LibraryPageClient({
           quizFacts={sentenceRuleActions?.quizFacts}
           quizMode={sentenceRuleActions ? "assembly" : undefined}
           teachPlan={sentenceRuleActions?.teachPlan}
+          progressReady={historyLoaded}
         />
-      </Dock>
+      </div>
 
       <AttributionLink />
     </>

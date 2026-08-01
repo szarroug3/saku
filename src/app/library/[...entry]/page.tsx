@@ -186,7 +186,7 @@ export default function EntryPage({
 }
 
 function EntryView({ entry }: { entry: LibEntry }) {
-  const { history, refresh } = useHistory();
+  const { history, loaded: historyLoaded, refresh } = useHistory();
   const { cfg } = useQuizConfig();
   const { lists } = useLists();
   const [now] = useState(() => Date.now());
@@ -1164,6 +1164,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
         now={now}
         onClaim={claim}
         claimFacts={sentenceRuleClaimFacts}
+        progressReady={historyLoaded}
       />
 
       <AttributionLink />

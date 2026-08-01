@@ -225,6 +225,11 @@ test("the complete library and current-session nav are present before hydration"
   await page.goto("/library?kind=kana");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Library");
   await expect(page.getByPlaceholder(/Search anything/)).toBeVisible();
+  // Browser-only progress is unknowable in the server response. The action bar
+  // waits for that real history rather than flashing actions computed from an
+  // empty stand-in.
+  await expect(page.getByRole("button", { name: /Add to list/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Teach me/ })).toHaveCount(0);
   await expect(page.getByText("あ", { exact: true })).toBeVisible();
   // Not merely the two formerly eager sections: the final kana section is real
   // server HTML too. This fails if distant shelves regress to hydration-time
@@ -267,8 +272,17 @@ test("the complete library and current-session nav are present before hydration"
       const { x, y, width, height } = node.getBoundingClientRect();
       return { x, y, width, height };
     });
+  const hydratedBar = await hydratedPage
+    .getByRole("button", { name: /Add to list/ })
+    .evaluate((node) => {
+      const bar = node.closest(".kq-band");
+      if (!bar) throw new Error("Library action bar is missing its band");
+      const { x, y, width, height } = bar.getBoundingClientRect();
+      return { x, y, width, height };
+    });
   expect(hydratedY).toBe(serverY);
   expect(hydratedSearch).toEqual(serverSearch);
+  expect(hydratedBar.height).toBeGreaterThan(0);
 
   await context.close();
   await hydratedContext.close();
