@@ -262,70 +262,10 @@ export const VERB_TYPES_CONCEPT_PAGES: readonly PhaseIntro[] = [
   TE_FORM_PAGES.find((p) => p.id === "gl-verb-types")!,
 ];
 
-// ---------------------------------------------------------------------------
-// LESSON 2 — 〜ている.
-//
-// Builds directly on lesson 1: 〜ている is the て/で-form plus いる. Two pages: what
-// it means and how to build it (one page — the meaning and the build are the same
-// small move, so they share a page), then connecting ongoing actions (chain
-// て-forms, end with 〜ている). The build table reuses lesson 1's equation frame as
-// an add-only step (て-form + いる), including the する/くる irregulars.
-// ---------------------------------------------------------------------------
-
-const TE_IRU_PAGES: PhaseIntro[] = [
-  {
-    id: "gl-teiru-meaning",
-    setId: "",
-    eyebrow: "Grammar",
-    title: "〜ている: an action in progress.",
-    body: [
-      {
-        text: 'Put a verb in its て/で-form, then add いる. It says the action is happening or ongoing, often "am/is/are …-ing" in English.',
-      },
-      {
-        text: "The first part stays in its て/で-form; adding いる is what gives the whole thing its ongoing meaning.",
-      },
-    ],
-    buildRules: [
-      { verb: "たべて", add: "いる", gloss: "is eating" },
-      { verb: "のんで", add: "いる", gloss: "is drinking" },
-      { verb: "して", add: "いる", gloss: "is doing" },
-      { verb: "きて", add: "いる", gloss: "is coming" },
-    ],
-  },
-  {
-    id: "gl-teiru-connect",
-    setId: "",
-    eyebrow: "Using 〜ている",
-    title: "Chain て/で-forms, and end with 〜ている.",
-    body: [
-      {
-        text: "As you saw with the て/で-form, it can connect ideas. To connect ongoing actions, put the earlier verbs in their て/で-form and end the chain with 〜ている.",
-      },
-      {
-        lead: "Each verb before the last",
-        text: "takes the plain て/で-form; only the final verb takes 〜ている. Build each one, then put them together.",
-      },
-    ],
-    buildRules: [
-      { verb: "たべる", to: "たべて", gloss: "eat" },
-      { verb: "のむ", to: "のんで", gloss: "drink" },
-      { verb: "はなす", to: "はなしている", gloss: "talk" },
-    ],
-    buildFooter: {
-      chain: "たべて、のんで、はなしている",
-      gloss: "is eating, drinking, and talking",
-    },
-  },
-];
-
-const LESSON_TE_IRU: GrammarLessonDef = {
-  id: "te-iru",
-  title: "〜ている",
-  pages: TE_IRU_PAGES.map((card) => ({ kind: "teach", card })),
-  drills: patternFacts("te-iru"),
-  primaryPattern: "te-iru",
-};
+// 〜ている has no authored lesson any more: it is a normal pattern, taught with the
+// generated build page like the rest and bundled up to three at a time (it is no
+// longer a solo sitting). The chain build-up it used to show now lives on lesson
+// 1's て-form page, so it is not repeated here.
 
 // ---------------------------------------------------------------------------
 // THE OTHER FORM LESSONS — ない, た, stem.
@@ -433,8 +373,8 @@ const ORDERED: readonly Recipe[] = [...RECIPES].sort(
 /** A form and the intro pages that teach it. The intro rides the FIRST pattern
  * in teaching order that is built on that form, so the form is taught just before
  * it is first used — the way lesson 1 teaches the て-form before the て-patterns.
- * (The て-form and stem→ます chain past this: te-sequence/te-iru are authored, and
- * the te-family all sits under lesson 1's form.) */
+ * (The て-form chains past this: te-sequence is authored, and the whole te-family
+ * sits under lesson 1's form.) */
 // ない, た and stem are NOT here any more: each is its own form lesson now (a
 // recipe with its own pages), so prepending its pages onto the first pattern
 // would teach the form twice. masu and volitional have no form lesson yet, so
@@ -481,7 +421,6 @@ function autoLesson(r: Recipe): GrammarLessonDef {
  * lessons because it IS the list of lessons. */
 const AUTHORED_LESSONS: Readonly<Record<string, GrammarLessonDef>> = {
   "te-sequence": LESSON_TE_FORM,
-  "te-iru": LESSON_TE_IRU,
   "nai-form": LESSON_NAI_FORM,
   "ta-form": LESSON_TA_FORM,
   "stem-form": LESSON_STEM_FORM,

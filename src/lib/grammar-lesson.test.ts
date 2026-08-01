@@ -370,9 +370,10 @@ describe("the pattern total is the whole authored table", () => {
   test("the total is the number of sittings the track cuts into", () => {
     // Deterministic from the curriculum: form lessons solo, pattern runs in <=3.
     assert.equal(GRAMMAR_SITTINGS.length, GRAMMAR_SITTINGS_TOTAL);
-    // 45 sittings for the whole 99-recipe table: the solo form lessons (now
-    // including nai-form/ta-form/stem-form) plus the pattern runs cut into <=3.
-    assert.equal(GRAMMAR_SITTINGS_TOTAL, 45);
+    // 44 sittings for the whole 99-recipe table: the solo form lessons (te-form,
+    // nai-form, ta-form, stem-form, and the later form debuts) plus the pattern
+    // runs cut into <=3. 〜ている is a normal bundled pattern now, not solo.
+    assert.equal(GRAMMAR_SITTINGS_TOTAL, 44);
     // Every pattern lands in exactly one sitting — the sittings partition the
     // whole curriculum, none dropped and none double-counted.
     const covered = GRAMMAR_SITTINGS.flat();
@@ -407,7 +408,6 @@ describe("sittings: form lessons solo, pattern lessons bundle up to three", () =
   // te-sequence.
   const FORM_LESSON_PATTERNS = [
     "te-sequence",
-    "te-iru",
     "nai-form",
     "ta-form",
     "stem-form",

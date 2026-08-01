@@ -315,8 +315,8 @@ function lessonHost(lesson: GrammarLessonDef): Host | null {
 // given form — for the forms below, the ones a beginner meets as a new shape. The
 // FIRST user only: 〜てcause redundantly re-renders a て build table, but て was
 // introduced back at lesson 1, so te-cause is NOT a form lesson and bundles like
-// any other ending. 〜ている is added by id: it debuts the ている aspect even though
-// its verb sits at the already-taught て-form.
+// any other ending. 〜ている is likewise a normal bundled pattern: it sits at the
+// already-taught て-form, so it debuts no new shape.
 // ---------------------------------------------------------------------------
 
 /** The verb forms whose DEBUT lesson stands alone. `dictionary` is absent on
@@ -346,15 +346,11 @@ function verbAttachForm(lesson: GrammarLessonDef): string | undefined {
 }
 
 /** The ids of the form lessons — the ones taught solo. Walk the curriculum once
- * and flag the first lesson to introduce each form; add 〜ている by id. */
+ * and flag the first lesson to introduce each form. */
 const FORM_LESSON_IDS: ReadonlySet<string> = (() => {
   const ids = new Set<string>();
   const seen = new Set<string>();
   for (const lesson of CURRICULUM_LESSONS) {
-    if (lesson.id === "te-iru") {
-      ids.add(lesson.id);
-      continue;
-    }
     const form = verbAttachForm(lesson);
     if (form && FORM_LESSON_FORMS.has(form) && !seen.has(form)) ids.add(lesson.id);
     if (form) seen.add(form);
