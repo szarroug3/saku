@@ -28,16 +28,17 @@
 //
 // THE PROSE IS THE LESSON'S, NOT A SECOND COPY
 // ============================================
-// `cards` points at the very PhaseIntro objects the te-form lesson teaches with
-// (TE_FORM_CONCEPT_PAGES in src/data/grammar/lessons.ts): gl-te-intro "Grammar is
-// how words fit together" and gl-te-use "The て/で-form links ideas, and the last
-// verb sets the tense". The entry page renders those objects through the lesson's
-// own IntroBody, so the concept page and the lesson say the same words and cannot
-// drift. `summary` and `body` below are the small amount that is genuinely new:
-// the one-line shelf note (and page sub-heading), and a short-answer fallback for
-// a concept that ever ships with no card.
+// The verb-classes concept's `cards` point at the very PhaseIntro the lesson
+// teaches the two verb groups with (VERB_TYPES_CONCEPT_PAGES in
+// src/data/grammar/lessons.ts): the gl-verb-types "Godan and Ichidan" page. The
+// entry page renders that object through the lesson's own IntroBody, so the
+// concept page and the lesson say the same words and cannot drift. `summary` and
+// `body` below are the small amount that is genuinely new: the one-line shelf note
+// (and page sub-heading), and a short-answer fallback for a concept that ever
+// ships with no card. (The て-form no longer has a concept page — the te-sequence
+// form recipe's own Library entry carries its full teaching now.)
 
-import { TE_FORM_CONCEPT_PAGES } from "@/data/grammar/lessons";
+import { VERB_TYPES_CONCEPT_PAGES } from "@/data/grammar/lessons";
 import type { PhaseIntro } from "@/data/phase-intros";
 import { entryId } from "@/lib/fact-id";
 import type { EntryId } from "@/types";
@@ -82,90 +83,15 @@ export interface GrammarConcept {
 // ---------------------------------------------------------------------------
 // AUTHORED CONCEPT PAGES — for the concepts with no lesson to reuse.
 //
-// The て-form concept points at the lesson's own pages (TE_FORM_CONCEPT_PAGES),
-// so it cannot drift from what the lesson teaches. The three concepts below have
-// no single lesson that teaches the idea whole — verb classes govern EVERY
-// conjugation, not one form; adjectives have no lesson yet; keigo is taught set
-// by set, not as the register model. So their pages are authored here, in the
-// same voice the lessons use: kana-only examples (a learner meeting these has
-// little kanji), a build/derive table where the change is worth seeing, and no
-// em dashes. There is only ever one copy, here, so there is nothing to drift
-// from.
+// The verb-classes concept points at the lesson's own Verb Types page
+// (VERB_TYPES_CONCEPT_PAGES), so it cannot drift from what lesson 1 teaches. The
+// two concepts below have no single lesson that teaches the idea whole —
+// adjectives have no lesson yet; keigo is taught set by set, not as the register
+// model. So their pages are authored here, in the same voice the lessons use:
+// kana-only examples (a learner meeting these has little kanji), a build/derive
+// table where the change is worth seeing, and no em dashes. There is only ever one
+// copy, here, so there is nothing to drift from.
 // ---------------------------------------------------------------------------
-
-/** The verb-classes concept's pages: every verb is one of two groups (plus the
- * two irregulars), and the group decides how EVERY form is built. Generalised
- * from the て-form lesson's class pages beyond the て-form. */
-const VERB_CLASS_CONCEPT_PAGES: readonly PhaseIntro[] = [
-  {
-    id: "gc-class-intro",
-    setId: "",
-    title: "A verb's group decides how it changes.",
-    body: [
-      { lead: "Japanese verbs change shape.", text: "Each verb belongs to one of two groups, and the group decides how every one of its shapes is built." },
-      { text: "You learn this once and it pays off everywhere. The negative, the past, the て-form, the polite form: all of them follow from which group the verb is in." },
-      { lead: "There are also two irregular verbs,", text: "する and くる, which follow no group and are learned by heart. Every other verb is one of the two groups." },
-    ],
-  },
-  {
-    id: "gc-class-u",
-    setId: "",
-    title: "う-verbs drop their last kana and add an ending.",
-    body: [
-      { text: "The larger group is called う-verbs (you may also see them called godan). Their dictionary form ends in a う-row kana: う, く, ぐ, す, つ, ぬ, ぶ, む, or る." },
-      { text: "To build a form, drop that last kana and add the ending, the same move as the て-form. Which ending you add is set by the form you are building." },
-    ],
-    buildRules: [
-      { label: "negative", verb: "かく", drop: "く", add: "かない" },
-      { label: "polite", verb: "かく", drop: "く", add: "きます" },
-      { label: "て-form", verb: "かく", drop: "く", add: "いて" },
-    ],
-    buildHeads: { label: "Form" },
-  },
-  {
-    id: "gc-class-ru",
-    setId: "",
-    title: "る-verbs just drop る.",
-    body: [
-      { text: "The second group is called る-verbs (you may also see them called ichidan). These are simpler: drop the final る and add the ending straight on." },
-      { text: "Nothing shifts across rows. The part before る stays the same in every form, so once you know one form you can see the rest." },
-    ],
-    buildRules: [
-      { label: "negative", verb: "たべる", drop: "る", add: "ない" },
-      { label: "polite", verb: "たべる", drop: "る", add: "ます" },
-      { label: "て-form", verb: "たべる", drop: "る", add: "て" },
-    ],
-    buildHeads: { label: "Form" },
-  },
-  {
-    id: "gc-class-which",
-    setId: "",
-    title: "A verb ending in る can belong to either group.",
-    body: [
-      { text: "The spelling alone does not tell you which group a る verb is in. かえる (to return) is an う-verb, so its negative is かえらない. たべる (to eat) is an る-verb, so its negative is たべない." },
-      { text: "You learn each verb's group along with the verb, and the app tags it for you. With practice you will start to recognise which group a verb belongs to." },
-    ],
-    buildRules: [
-      { label: "う-verb", verb: "かえる", to: "かえらない" },
-      { label: "る-verb", verb: "たべる", to: "たべない" },
-    ],
-    buildHeads: { label: "Group" },
-  },
-  {
-    id: "gc-class-irregular",
-    setId: "",
-    title: "する and くる follow no rule, so you learn them by heart.",
-    body: [
-      { text: "する (to do) and くる (to come) are the only two irregular verbs. They never follow the う-verb or る-verb rules, so every form is learned on its own rather than built from a group." },
-      { text: "There are only two of them, and they are among the most common verbs you will meet, so they become familiar quickly." },
-    ],
-    buildRules: [
-      { label: "polite", verb: "する", to: "します" },
-      { label: "polite", verb: "くる", to: "きます" },
-    ],
-    buildHeads: { label: "Form" },
-  },
-];
 
 /** The adjective-types concept's pages: Japanese has two kinds of adjective, and
  * which kind a word is decides whether it conjugates itself or leans on です.
@@ -269,36 +195,14 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
 /**
  * The grammar concepts.
  *
- * The て-form points at the lesson's own conceptual pages (what a form is, then
- * て as a connector and the last verb carrying the tense), so it cannot drift.
- * The other three are foundational ideas with no single lesson to reuse, authored
- * here in the same voice: verb classes (which govern all conjugation), adjective
- * types, and the keigo registers. The build mechanics stay on the pattern entries
- * themselves; these pages are the ideas.
+ * verb-classes points at lesson 1's own Verb Types page, so it cannot drift. The
+ * other two are foundational ideas with no single lesson to reuse, authored here
+ * in the same voice: adjective types and the keigo registers. The build mechanics
+ * stay on the pattern (and form) entries themselves; these pages are the ideas.
+ * The て-form used to have a concept page here; it was removed once the te-sequence
+ * form recipe grew its own Library entry carrying the full teaching.
  */
 export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
-  {
-    id: "te-form",
-    name: "The て-form",
-    summary:
-      "What a conjugation form is, how the て-form connects actions, and how the last verb sets the tense.",
-    body: [
-      "A conjugation form is a shape a verb takes to do a grammatical job. The て-form is the connecting shape: it joins one action or situation to the next.",
-      "Depending on the sentence it reads as and, and then, so, because, or while, and the context tells you which. The て-form itself says nothing about when something happened or whether it is polite. The last verb in the chain does.",
-    ],
-    searchAlso: [
-      "te-form",
-      "te form",
-      "connecting form",
-      "connector",
-      "conjugation form",
-      "what is a form",
-      "how verbs connect",
-      "chaining actions",
-    ],
-    related: ["verb-classes"],
-    cards: TE_FORM_CONCEPT_PAGES,
-  },
   {
     id: "verb-classes",
     name: "う-verbs and る-verbs",
@@ -320,8 +224,8 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
       "how verbs conjugate",
       "irregular verbs",
     ],
-    related: ["te-form"],
-    cards: VERB_CLASS_CONCEPT_PAGES,
+    related: [],
+    cards: VERB_TYPES_CONCEPT_PAGES,
   },
   {
     id: "adjective-types",

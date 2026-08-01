@@ -83,7 +83,7 @@ import {
   GRAMMAR_SUBJECT,
   conjugatesVerb,
   hostsAdjective,
-  isTeFormRecipe,
+  isFormRecipe,
   patternMeaningFactId,
 } from "@/data/grammar";
 import {
@@ -596,24 +596,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
       {/* CONCEPT REFERENCES — the foundational idea pages behind this pattern,
           grouped under ONE "Read about it" heading (not one heading per link).
-          Each link appears on the family it explains: the て-form on every
-          verb-form-て pattern (isTeFormRecipe); the verb classes on every pattern
-          that CONJUGATES a verb (conjugatesVerb, so a plain-dictionary pattern is
-          left out); the two adjective kinds on every pattern that HOSTS an
-          adjective (hostsAdjective). See data/grammar for each predicate. */}
-      {isGrammar &&
-      pattern &&
-      (isTeFormRecipe(pattern) || conjugatesVerb(pattern) || hostsAdjective(pattern)) ? (
+          Each link appears on the family it explains: the verb classes on every
+          pattern that CONJUGATES a verb (conjugatesVerb, so a plain-dictionary
+          pattern is left out); the two adjective kinds on every pattern that HOSTS
+          an adjective (hostsAdjective). The て-form no longer has a concept page —
+          a pattern built on it links "Build the て-form" from its build card
+          instead (see pattern-teach.tsx). See data/grammar for each predicate. */}
+      {isGrammar && pattern && (conjugatesVerb(pattern) || hostsAdjective(pattern)) ? (
         <LinkRow label="Read about it">
           <div className="flex flex-col items-start gap-1">
-            {isTeFormRecipe(pattern) ? (
-              <Link
-                href={entryHref(grammarConceptEntry("te-form"))}
-                className="text-[13px] text-accent no-underline"
-              >
-                {grammarConceptRow("te-form")?.name} →
-              </Link>
-            ) : null}
             {conjugatesVerb(pattern) ? (
               <Link
                 href={entryHref(grammarConceptEntry("verb-classes"))}
@@ -997,7 +988,21 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ) : null}
 
       {/* ================= GRAMMAR ================= */}
-      {isGrammar && pattern ? (
+      {isGrammar && pattern && isFormRecipe(pattern.id) ? (
+        <>
+          {/* A FORM entry (the て/で-form, ない, た, stem) teaches the form itself:
+              PatternTeach returns one box per teaching page — for the て-form that
+              is "what it is for" and "how to build it" as two stacked boxes. The
+              build tables are wide, so the boxes take the full width and the links
+              move to the foot, rather than sharing a 1.45fr/1fr row. */}
+          <div className="mb-3.5 flex flex-col gap-3.5 [&>*]:mb-0">
+            <PatternTeach pattern={pattern} />
+          </div>
+          <div className="mb-3.5">
+            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
+          </div>
+        </>
+      ) : isGrammar && pattern ? (
         <>
           {/* THE BUILD CARD TAKES THE WIDER HALF, in the same 1.45fr/1fr row where
               a kana puts its mnemonic and a kanji its strokes. It needs the space

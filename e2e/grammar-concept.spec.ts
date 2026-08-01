@@ -57,8 +57,11 @@ test("a て-verb pattern lists its concept links under ONE 'Read about it'", asy
   // single 'Read about it' label, not one label each.
   await page.goto(entryHref(patternEntry("te-kara")));
   await expect(page.getByText("Read about it", { exact: true })).toHaveCount(1);
-  await expect(page.getByRole("link", { name: /The て-form/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /う-verbs and る-verbs/ })).toBeVisible();
+  // The て-form has no concept page any more; the pattern points at the form's own
+  // entry via a "Build the …-form" link in its build card instead (the standalone
+  // "The て-form" concept link is gone — see the unit test).
+  await expect(page.getByRole("link", { name: /Build the .*form/ })).toBeVisible();
 });
 
 test("the て-form's Library page teaches what it is for, not only how to build it", async ({

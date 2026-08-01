@@ -6,8 +6,9 @@ import {
   GRAMMAR_CONCEPT_SUBJECT,
   grammarConceptEntry,
   grammarConceptFor,
+  grammarConceptRow,
 } from "@/data/grammar-concepts";
-import { TE_FORM_CONCEPT_PAGES } from "@/data/grammar/lessons";
+import { VERB_TYPES_CONCEPT_PAGES } from "@/data/grammar/lessons";
 import { RECIPES } from "@/data/grammar/recipes";
 import {
   conjugatesVerb,
@@ -55,10 +56,10 @@ describe("the grammar concept is a real, resolvable reference entry", () => {
     }
   });
 
-  test("the て-form concept exists, at the stable id the link points to", () => {
-    const entry = libEntry(grammarConceptEntry("te-form"));
-    assert.ok(entry, "the te-form concept resolves to no entry");
-    assert.equal(entry.name, "The て-form");
+  test("there is no te-form concept — the form recipe carries its own teaching", () => {
+    // The て-form's Library page is the te-sequence form recipe's own entry now, so
+    // the standalone concept was removed. Its id must resolve to nothing.
+    assert.equal(grammarConceptRow("te-form"), undefined);
   });
 
   test("a concept has no gradeable facts, like a mark or a term", () => {
@@ -116,19 +117,19 @@ describe("the grammar concept is a real, resolvable reference entry", () => {
 });
 
 describe("a concept points at the lesson's own prose, so the two cannot drift", () => {
-  test("the te-form concept renders the lesson's own conceptual pages", () => {
-    const te = GRAMMAR_CONCEPTS.find((c) => c.id === "te-form");
-    assert.ok(te, "no te-form concept");
-    // The te-form concept REUSES the lesson's exported pages — same objects, so a
-    // copy edit to the lesson lands here too. That drift guarantee applies only to
-    // a concept that points at a lesson; the authored concepts below own their
-    // prose outright (one copy, in grammar-concepts.ts, nothing to drift from).
-    assert.deepEqual(te.cards, TE_FORM_CONCEPT_PAGES);
-    assert.ok(te.cards.length >= 2, "the concept teaches fewer than two pages");
-    for (const card of te.cards) {
+  test("the verb-classes concept renders the lesson's own Verb Types page", () => {
+    const vc = GRAMMAR_CONCEPTS.find((c) => c.id === "verb-classes");
+    assert.ok(vc, "no verb-classes concept");
+    // verb-classes REUSES the lesson's exported Verb Types page — same object, so a
+    // copy edit to lesson 1 lands here too. That drift guarantee applies only to a
+    // concept that points at a lesson; the authored concepts below own their prose
+    // outright (one copy, in grammar-concepts.ts, nothing to drift from).
+    assert.deepEqual(vc.cards, VERB_TYPES_CONCEPT_PAGES);
+    assert.ok(vc.cards.length >= 1, "the concept teaches no pages");
+    for (const card of vc.cards) {
       assert.ok(
-        TE_FORM_CONCEPT_PAGES.includes(card),
-        `te-form names ${card.id}, which is not a lesson page it may reuse`,
+        VERB_TYPES_CONCEPT_PAGES.includes(card),
+        `verb-classes names ${card.id}, which is not a lesson page it may reuse`,
       );
     }
   });
@@ -146,30 +147,17 @@ describe("a concept points at the lesson's own prose, so the two cannot drift", 
     }
   });
 
-  test("the concept covers what a form is, and the connector idea", () => {
-    // A light content check that the two source pages are the conceptual ones,
-    // not a build table: the intro teaches "form", the use page teaches
-    // connecting and the last verb carrying the tense.
-    const te = GRAMMAR_CONCEPTS.find((c) => c.id === "te-form");
-    assert.ok(te);
-    const prose = te.cards
-      .flatMap((card) => card.body.map((p) => `${p.lead ?? ""} ${p.text}`))
-      .join(" ");
-    assert.match(prose, /form/i);
-    assert.match(prose, /connect|link/i);
-    assert.match(prose, /last verb/i);
-  });
 });
 
-describe("the te-family grammar entries link to the concept", () => {
-  // The page's Links card shows a "Read about it → The て-form" row for
-  // exactly the verb-form-て patterns (isTeFormRecipe). This asserts the predicate
-  // the page branches on: te-sequence is in, a non-て pattern is out.
-  test("te-sequence is a te-form recipe, so it gets the link", () => {
+describe("the 〜て family is detected as te-form recipes", () => {
+  // isTeFormRecipe drives which patterns hang off the て-form (their build card
+  // links "Build the て-form" to the form's own entry). This asserts the predicate:
+  // te-sequence is in, a non-て pattern is out.
+  test("te-sequence is a te-form recipe", () => {
     const te = RECIPES.find((r) => r.id === "te-sequence");
     assert.ok(te, "te-sequence recipe is missing");
     assert.ok(isTeFormRecipe(te), "te-sequence is not detected as a te-form recipe");
-    // And its Library entry exists to carry the link.
+    // And its Library entry exists to carry the teaching.
     assert.ok(libEntry(patternEntry("te-sequence")), "te-sequence has no entry");
   });
 
@@ -183,15 +171,6 @@ describe("the te-family grammar entries link to the concept", () => {
     // conditional patterns share the 音便 but are not the て-form.
     const taForm = RECIPES.find((r) => r.id === "ta-form" || r.id === "ta-past");
     if (taForm) assert.ok(!isTeFormRecipe(taForm), "a た pattern was mistaken for て");
-  });
-
-  test("the link target is the concept's stable href", () => {
-    // The exact href the page builds for the row — a broken target here is a
-    // dead link that type-checks.
-    assert.equal(
-      entryHref(grammarConceptEntry("te-form")),
-      "/library/grammar-concept/te-form",
-    );
   });
 });
 
@@ -281,14 +260,10 @@ describe("the keigo entries can reach the politeness-levels concept", () => {
   });
 });
 
-describe("the two foundational concepts cross-link to each other", () => {
-  test("te-form and verb-classes each point at the other", () => {
-    const te = GRAMMAR_CONCEPTS.find((c) => c.id === "te-form")!;
-    const vc = GRAMMAR_CONCEPTS.find((c) => c.id === "verb-classes")!;
-    assert.ok(te.related?.includes("verb-classes"), "te-form does not link verb-classes");
-    assert.ok(vc.related?.includes("te-form"), "verb-classes does not link te-form");
-  });
-
+describe("concept cross-links resolve", () => {
+  // The て-form concept was removed, so verb-classes no longer cross-links to it;
+  // there are no concept-to-concept links today. This pins that whatever `related`
+  // holds always names a real, resolvable concept.
   test("every related id names a real, resolvable concept", () => {
     for (const c of GRAMMAR_CONCEPTS) {
       for (const rel of c.related ?? []) {

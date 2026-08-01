@@ -67,11 +67,14 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
   // lesson walks (minus lesson-1 scaffolding; see formLibraryPages). A PATTERN
   // built on a form falls through to the build-or-link behaviour below.
   if (isFormRecipe(pattern.id)) {
+    // One box PER teaching page: for the て-form that is "what it is for" and
+    // "how to build it" as two separate cards; for the single-page forms it is
+    // one card. The entry page stacks them and drops the links below.
     return (
-      <Card className="h-full">
-        <div className="space-y-7">
-          {formLibraryPages(pattern.id).map((p) => (
-            <div key={p.id} className="space-y-4">
+      <>
+        {formLibraryPages(pattern.id).map((p) => (
+          <Card key={p.id} className="h-full">
+            <div className="space-y-4">
               {p.eyebrow ? <Lbl>{p.eyebrow}</Lbl> : null}
               <p className="text-[15px] font-medium text-text">{p.title}</p>
               <IntroBody body={p.body} measure="" />
@@ -83,9 +86,9 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
               ))}
               {p.buildFooter ? <IntroBuildFooter footer={p.buildFooter} /> : null}
             </div>
-          ))}
-        </div>
-      </Card>
+          </Card>
+        ))}
+      </>
     );
   }
 

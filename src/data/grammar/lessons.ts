@@ -187,7 +187,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "Drop the verb's last kana and add the ending that matches. Some endings use て and some use で; the ending decides which, and they mean the same, so you never choose between them.",
       },
       {
-        text: "いく is an exception: everywhere else it is a normal う-verb, but its て-form takes って, not いて. する and くる are irregular: they follow no group's rule, so you learn their conjugations by heart.",
+        text: "いく is an exception: everywhere else it is a normal う-verb, but its て-form changes to って, not いて. する and くる are irregular: they follow no group's rule, so you learn their conjugations by heart.",
       },
     ],
     buildTables: [
@@ -250,19 +250,16 @@ const LESSON_TE_FORM: GrammarLessonDef = {
 };
 
 /**
- * The two CONCEPTUAL te-form pages, exported for the Library's grammar-concept
- * reference (src/data/grammar-concepts.ts).
+ * The Verb Types page (godan / ichidan), exported for the Library's verb-classes
+ * concept reference (src/data/grammar-concepts.ts).
  *
- * `gl-te-intro` (what a conjugation form is) and `gl-te-form-use` (て as a casual
- * request and as a connector) are the two pages that teach the て-form as an IDEA
- * rather than a build table. The concept entry renders THESE objects, so the
- * reference page and the lesson say the same words and cannot drift — the same
- * pointer-not-a-copy arrangement marks and terms make. Selected by id off
- * TE_FORM_PAGES rather than re-authored; the ids are stable, so the lookup is
- * total. */
-export const TE_FORM_CONCEPT_PAGES: readonly PhaseIntro[] = [
-  TE_FORM_PAGES.find((p) => p.id === "gl-te-intro")!,
-  TE_FORM_PAGES.find((p) => p.id === "gl-te-form-use")!,
+ * The concept renders THIS object — the same `gl-verb-types` page lesson 1 teaches
+ * the two verb groups with — so the reference page and the lesson say the same
+ * words and cannot drift, the pointer-not-a-copy arrangement marks and terms make.
+ * The て-form no longer has a concept page of its own: its Library entry (the
+ * te-sequence form recipe) now carries the full teaching. */
+export const VERB_TYPES_CONCEPT_PAGES: readonly PhaseIntro[] = [
+  TE_FORM_PAGES.find((p) => p.id === "gl-verb-types")!,
 ];
 
 // ---------------------------------------------------------------------------
