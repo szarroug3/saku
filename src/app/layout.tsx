@@ -18,6 +18,7 @@ import { ListsProvider } from "@/lib/lists-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { SettingsProvider } from "@/lib/settings-provider";
 import { QuizSessionProvider } from "@/lib/quiz-session";
+import { CURRENT_RUN_COUNT_COOKIE } from "@/lib/settings-keys";
 import { isSupabaseStore } from "@/lib/store/mode";
 import { ThemeProvider } from "@/lib/theme";
 import type * as Theme from "@/lib/theme";
@@ -193,8 +194,16 @@ export default async function RootLayout({
         ]);
   // Read the sidebar's collapsed state server-side so it renders at the right
   // width on the first paint instead of loading expanded and snapping closed.
+  const cookieStore = await cookies();
   const sidebarCollapsed =
-    (await cookies()).get("saku-sidebar-collapsed")?.value === "1";
+    cookieStore.get("saku-sidebar-collapsed")?.value === "1";
+  const runCountCookie = Number(
+    cookieStore.get(CURRENT_RUN_COUNT_COOKIE)?.value ?? "0",
+  );
+  const initialRunCount =
+    Number.isSafeInteger(runCountCookie) && runCountCookie > 0
+      ? runCountCookie
+      : 0;
   return (
     // suppressHydrationWarning: the script below rewrites these two attributes
     // before React hydrates, so the client <html> legitimately differs from
@@ -266,6 +275,7 @@ export default async function RootLayout({
                         signedIn={signedIn}
                         authEnabled={authEnabled}
                         initialCollapsed={sidebarCollapsed}
+                        initialRunCount={initialRunCount}
                       />
                       <main className="relative flex min-w-0 max-w-[1400px] flex-1 flex-col gap-3.5">
                         {/* GLOBAL BANNER DOCK, above the page's own top dock. The

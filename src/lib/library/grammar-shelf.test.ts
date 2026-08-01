@@ -19,7 +19,11 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { RECIPES } from "@/data/grammar/recipes";
+import {
+  RECIPES,
+  isPrimaryPatternRecipe,
+  patternGroup,
+} from "@/data/grammar/recipes";
 import { patternEntry, verbAttachForm } from "@/data/grammar";
 import { cluster } from "@/data/grammar/clusters";
 import { grammarRank } from "@/lib/library/grammar-order";
@@ -96,10 +100,18 @@ describe("the shelf cut tiles the whole shelf", () => {
     const entries = grammarShelfSections().flatMap((section) => section.entries);
     const byId = new Map(entries.map((entry) => [entry.id, entry]));
 
-    for (const recipe of RECIPES) {
+    for (const recipe of RECIPES.filter(isPrimaryPatternRecipe)) {
       const entry = byId.get(patternEntry(recipe.id));
       assert.ok(entry, `${recipe.id} appears on the shelf`);
-      assert.equal(entry.sub, recipe.cluster ? cluster(recipe.cluster)?.title ?? "" : "");
+      const titles = [
+        ...new Set(
+          patternGroup(recipe.id).flatMap((sense) => {
+            const title = sense.cluster ? cluster(sense.cluster)?.title : undefined;
+            return title ? [title] : [];
+          }),
+        ),
+      ];
+      assert.equal(entry.sub, titles.join(" · "));
       assert.doesNotMatch(entry.sub, /N[1-5] pattern/);
     }
   });
@@ -111,10 +123,14 @@ describe("the shelf cut tiles the whole shelf", () => {
         seen.set(entry.id, (seen.get(entry.id) ?? 0) + 1);
       }
     }
-    // Exactly the recipes, each once.
-    assert.equal(seen.size, RECIPES.length, "every recipe is shown");
+    // Exactly one entry per written pattern, each once. Independently quizzed
+    // senses are consolidated under that entry.
+    const primary = RECIPES.filter(isPrimaryPatternRecipe);
+    assert.equal(seen.size, primary.length, "every written pattern is shown");
     for (const count of seen.values()) assert.equal(count, 1, "no duplicates");
-    for (const r of RECIPES) assert.ok(seen.has(patternEntry(r.id)), `${r.id} appears`);
+    for (const r of primary) assert.ok(seen.has(patternEntry(r.id)), `${r.id} appears`);
+    assert.ok(!seen.has(patternEntry("passive")), "〜られる is not duplicated");
+    assert.ok(!seen.has(patternEntry("kara-source")), "〜から is not duplicated");
   });
 
   test("within a section the patterns run in teaching order", () => {

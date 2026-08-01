@@ -90,6 +90,10 @@ export default defineConfig({
     env: {
       NEXT_PUBLIC_SUPABASE_URL: "",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+      // Do not let `next build` overwrite a concurrently running dev server's
+      // `.next` artifacts. Both `build` and `start` read this through
+      // next.config.ts, so the E2E server owns an isolated output directory.
+      NEXT_DIST_DIR: ".next-e2e",
     },
   },
 });

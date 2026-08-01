@@ -242,6 +242,11 @@ function buildDirect(word: string, cls: WordClass, form: Form): ConjugateResult 
     }
 
     case "adjective": {
+      // いい is irregular only when its ending changes. Before a noun it stays
+      // いい (いい店), rather than exposing its よ stem as よい店.
+      if (cls === "adj-ix" && form === "prenominal") {
+        return { ok: true, value: word };
+      }
       const stemRule = def.stemRules.find((r) => word.endsWith(r.endsWith));
       if (!stemRule) {
         return fail(

@@ -315,6 +315,19 @@ export function Shelf({
    * the work; this only picks the words when it removes everything. */
   filter?: KnowledgeFilter;
 }) {
+  // Shelves arrive open so their contents remain part of the server-rendered
+  // first paint. A disclosure only removes the body after the learner asks;
+  // selection remains a separate action on the labelled button beside it.
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleCollapsed = (sectionId: string) => {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(sectionId)) next.delete(sectionId);
+      else next.add(sectionId);
+      return next;
+    });
+  };
+
   const tile = (entry: LibEntry) => (
     <EntryTile
       key={entry.id}
@@ -410,6 +423,7 @@ export function Shelf({
         const state = sectionState(selected, ids);
         const onCount = ids.filter((id) => selected.has(id)).length;
         const shown = section.entries;
+        const expanded = !collapsed.has(section.id);
         return (
           <DeferredShelfSection
             key={section.id}
@@ -424,6 +438,20 @@ export function Shelf({
               // groups in the first place.
               <Card className="kq-defer">
             <div className="mb-2 flex items-center gap-2">
+              <button
+                type="button"
+                aria-expanded={expanded}
+                aria-label={`${expanded ? "Collapse" : "Expand"} ${section.label}`}
+                onClick={() => toggleCollapsed(section.id)}
+                className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-xl leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <span
+                  aria-hidden
+                  className={`block transition-transform ${expanded ? "rotate-90" : ""}`}
+                >
+                  ›
+                </span>
+              </button>
               {/* Tri-state header, and each state NAMES ITS OWN text colour in
                   the same string as its border/fill — no shared `text-*` for a
                   branch's colour to lose to on stylesheet order (the cx hazard
@@ -453,7 +481,7 @@ export function Shelf({
                 </Hint>
               ) : null}
             </div>
-            {asRows ? (
+            {expanded ? asRows ? (
               kind === TRANSITIVITY_SUBJECT ? (
                 <div className="flex flex-col">
                   <VerbPairHeader />
@@ -480,7 +508,7 @@ export function Shelf({
               <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
                 {shown.map(tile)}
               </div>
-            )}
+            ) : null}
               </Card>
             )}
           />

@@ -145,6 +145,12 @@ describe("the curriculum is ALL patterns, N5 before N4", () => {
     assert.equal(lesson.cards.length, 1);
     assert.equal(lesson.cards[0].id, "prenominal-form");
     assert.equal(lesson.cards[0].level, "N5");
+    assert.ok(
+      lesson.facts.includes(patternProductionFactId("prenominal-form", "adj-i")),
+    );
+    assert.ok(
+      lesson.facts.includes(patternProductionFactId("prenominal-form", "adj-na")),
+    );
   });
 
   test("a lesson's facts are the taught patterns' meaning + production facts", () => {
@@ -305,14 +311,14 @@ describe("the pattern total is the whole authored table", () => {
     // Deterministic from the curriculum: form lessons solo, pattern runs in <=3.
     assert.equal(GRAMMAR_SITTINGS.length, GRAMMAR_SITTINGS_TOTAL);
     // Solo form lessons plus the remaining pattern runs cut into groups of <=3.
-    assert.equal(GRAMMAR_SITTINGS_TOTAL, 46);
-    // Every pattern lands in exactly one sitting — the sittings partition the
-    // whole curriculum, none dropped and none double-counted.
+    assert.equal(GRAMMAR_SITTINGS_TOTAL, 45);
+    // Every lesson lands in exactly one sitting. A shared written pattern may
+    // carry several meaning facts, but it is taught in one lesson.
     const covered = GRAMMAR_SITTINGS.flat();
-    assert.equal(covered.length, CURRICULUM_PATTERNS.length);
+    assert.equal(covered.length, CURRICULUM_LESSONS.length);
     assert.deepEqual(
       [...covered].sort((a, b) => a - b),
-      CURRICULUM_PATTERNS.map((_, i) => i),
+      CURRICULUM_LESSONS.map((_, i) => i),
     );
   });
 
@@ -347,7 +353,6 @@ describe("sittings: form lessons solo, pattern lessons bundle up to three", () =
     "masu-form",
     "tara",
     "potential",
-    "passive",
     "causative",
     "causative-passive",
     "volitional-form",
@@ -372,6 +377,12 @@ describe("sittings: form lessons solo, pattern lessons bundle up to three", () =
     for (const id of FORM_LESSON_PATTERNS) {
       assert.deepEqual(sittingPatterns(id), [id], `${id} should be solo`);
     }
+  });
+
+  test("the two 〜られる meanings share the potential/passive form lesson", () => {
+    const lesson = CURRICULUM_LESSONS.find((candidate) => candidate.id === "potential")!;
+    assert.deepEqual(lesson.recipeIds, ["potential", "passive"]);
+    assert.deepEqual(sittingPatterns("potential"), ["potential"]);
   });
 
   test("no bundle spans a form lesson, and every sitting is at most three", () => {
@@ -403,7 +414,7 @@ describe("sittings: form lessons solo, pattern lessons bundle up to three", () =
       if (!lesson) break;
       assert.equal(lesson.position.from, lesson.position.to, "a sitting is one item");
       assert.equal(lesson.position.from, lastSitting + 1, "the sitting advances by one");
-      assert.ok(lesson.cards.length >= 1 && lesson.cards.length <= 3);
+      assert.ok(lesson.cards.length >= 1 && lesson.cards.length <= 4);
       for (const c of lesson.cards) {
         assert.ok(!seen.includes(c.id), `${c.id} was re-taught`);
         seen.push(c.id);

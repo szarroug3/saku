@@ -124,6 +124,7 @@ import {
   libEntry,
   readingRowsOf,
   recipeOf,
+  recipesOf,
   type LibEntry,
 } from "@/lib/library/entries";
 import { characterRole } from "@/lib/character-role";
@@ -271,6 +272,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // familyCluster below keys its memo on this, and the compiler can only preserve
   // that if the value it depends on is one it tracks rather than a bare call.
   const pattern = useMemo(() => recipeOf(entry), [entry]);
+  const patterns = useMemo(() => recipesOf(entry), [entry]);
   const isGrammar = pattern !== null;
   // WHICH HOSTS ARE SCORED IS NOT DECIDED HERE ANY MORE. It used to be, to
   // build a chip per production host in the header. Those scores are now a
@@ -456,19 +458,24 @@ function EntryView({ entry }: { entry: LibEntry }) {
           has at most four facts and names each of them. */}
       {isGrammar && pattern ? (
         <>
-          <span className="flex items-center gap-1.5 text-[11px] text-text-muted">
-            Meaning{" "}
-            <StandingChip
-              standing={
-                standingOf(
-                  liveFacts[patternMeaningFactId(pattern.id)],
-                  claims[patternMeaningFactId(pattern.id)],
-                  cfg.accuracyMetric,
-                  now,
-                ).standing
-              }
-            />
-          </span>
+          {patterns.map((sensePattern) => (
+            <span
+              key={sensePattern.id}
+              className="flex items-center gap-1.5 text-[11px] text-text-muted"
+            >
+              {sensePattern.sense ? `Meaning · ${sensePattern.sense}` : "Meaning"}{" "}
+              <StandingChip
+                standing={
+                  standingOf(
+                    liveFacts[patternMeaningFactId(sensePattern.id)],
+                    claims[patternMeaningFactId(sensePattern.id)],
+                    cfg.accuracyMetric,
+                    now,
+                  ).standing
+                }
+              />
+            </span>
+          ))}
           {/* AND NOTHING ELSE. The production standings used to sit here too,
               one chip per host, which gave 〜すぎる four chips and a header row
               so wide the title had nowhere to go — the min-w floor on the gloss
@@ -995,7 +1002,9 @@ function EntryView({ entry }: { entry: LibEntry }) {
               PatternTeach renders the SAME PhaseIntro the lesson teaches with, so
               the two cannot drift. See pattern-teach.tsx. */}
           <div className="mb-3.5 flex flex-col gap-3.5 [&>*]:mb-0">
-            <PatternTeach pattern={pattern} />
+            {patterns.map((sensePattern) => (
+              <PatternTeach key={sensePattern.id} pattern={sensePattern} />
+            ))}
           </div>
 
           {/* FULL WIDTH, like the kana family and the kanji readings, and for the

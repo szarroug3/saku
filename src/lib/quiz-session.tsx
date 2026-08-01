@@ -90,7 +90,11 @@ import {
   readSyncMeta,
   writeSyncMeta,
 } from "@/lib/session-state-sync";
-import { OLD_SESSION_KEY, SESSION_KEY } from "@/lib/settings-keys";
+import {
+  CURRENT_RUN_COUNT_COOKIE,
+  OLD_SESSION_KEY,
+  SESSION_KEY,
+} from "@/lib/settings-keys";
 import { migratedGet } from "@/lib/storage-migrate";
 import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
@@ -1537,6 +1541,15 @@ export function QuizSessionProvider({
     }
     return out;
   }, [active, session, progress, parked]);
+
+  // The sidebar is server-rendered, while signed-out run snapshots live in
+  // localStorage. Mirror only the COUNT into a cookie so its conditional
+  // Current sessions link is present on the next first paint; `runs` remains
+  // the authority as soon as restoration finishes.
+  useEffect(() => {
+    if (!restored) return;
+    document.cookie = `${CURRENT_RUN_COUNT_COOKIE}=${runs.length}; path=/; max-age=31536000; samesite=lax`;
+  }, [restored, runs.length]);
 
   // ---------- finishing a leg ----------
 

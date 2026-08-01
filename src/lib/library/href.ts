@@ -58,7 +58,7 @@ import { MARKS, markEntry } from "@/data/marks";
 import { GRAMMAR_CONCEPTS, grammarConceptEntry } from "@/data/grammar-concepts";
 import { TERMS, termEntry } from "@/data/terms";
 import { patternEntry } from "@/data/grammar";
-import { RECIPES } from "@/data/grammar/recipes";
+import { RECIPES, primaryPatternRecipe } from "@/data/grammar/recipes";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { pairEntry } from "@/data/transitivity-facts";
 import { KEIGO_SETS, keigoSetEntry } from "@/data/keigo";
@@ -66,10 +66,17 @@ import { LIB_ENTRIES, type LibEntry } from "@/lib/library/entries";
 
 const ENTRY_PATH = new Map<EntryId, string>();
 const SLUG_TO_ENTRY = new Map<string, EntryId>();
+const ENTRY_ALIAS: ReadonlyMap<EntryId, EntryId> = new Map(
+  RECIPES.map((r) => [
+    patternEntry(r.id),
+    patternEntry(primaryPatternRecipe(r.id)?.id ?? r.id),
+  ]),
+);
 
 /** Where an entry's page lives. */
 export function entryHref(id: EntryId): string {
-  return ENTRY_PATH.get(id) ?? `/library/${encodeURIComponent(id)}`;
+  const canonical = ENTRY_ALIAS.get(id) ?? id;
+  return ENTRY_PATH.get(canonical) ?? `/library/${encodeURIComponent(canonical)}`;
 }
 
 /**
@@ -128,7 +135,8 @@ export function radicalHref(glyph: string): string {
  * `libEntry()`, which is a lookup and answers undefined for a stranger.
  */
 export function entryFromParam(param: string): EntryId {
-  return glyphFromParam(param) as EntryId;
+  const id = glyphFromParam(param) as EntryId;
+  return ENTRY_ALIAS.get(id) ?? id;
 }
 
 /**
@@ -170,6 +178,12 @@ function buildEntryPathIndex(): void {
     claimed.add(`${segment}/${slug}`);
     ENTRY_PATH.set(entry.id, `/library/${segment}/${slug}`);
     SLUG_TO_ENTRY.set(`${segment}/${slug}`, entry.id);
+  }
+  // Old sense-specific grammar URLs keep working, but resolve to the written
+  // pattern's one consolidated page.
+  for (const r of RECIPES) {
+    const canonical = ENTRY_ALIAS.get(patternEntry(r.id)) ?? patternEntry(r.id);
+    SLUG_TO_ENTRY.set(`grammar/${r.id}`, canonical);
   }
 }
 

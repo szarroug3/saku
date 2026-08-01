@@ -65,19 +65,12 @@ function shape(fact: FactId) {
 }
 
 describe("question matrix §5: grammar", () => {
-  test("every meaning fact has text meaning recall plus reverse pattern MC", () => {
+  test("every pattern definition is multiple choice in both directions", () => {
     assert.ok(meanings.length > 0);
     for (const fact of meanings) {
       assert.deepEqual(
         shape(fact),
         [
-          {
-            source: "japanese",
-            response: "definition",
-            listen: false,
-            dir: "jp2en",
-            control: "typed",
-          },
           {
             source: "japanese",
             response: "definition",

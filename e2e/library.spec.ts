@@ -183,6 +183,56 @@ test("the library shelf renders and links into entries", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
 });
 
+test("each Library shelf can collapse and reopen", async ({ page }) => {
+  await page.goto("/library?kind=kana");
+
+  const firstEntry = page.locator('a[href="/library/hiragana/a"]');
+  const collapse = page.getByRole("button", {
+    name: /Collapse Hiragana · vowels あ/i,
+  });
+  await expect(collapse).toHaveAttribute("aria-expanded", "true");
+  await expect(firstEntry).toBeVisible();
+
+  await collapse.click();
+  const expand = page.getByRole("button", {
+    name: /Expand Hiragana · vowels あ/i,
+  });
+  await expect(expand).toHaveAttribute("aria-expanded", "false");
+  await expect(firstEntry).toHaveCount(0);
+
+  await expand.click();
+  await expect(firstEntry).toBeVisible();
+});
+
+test("the complete library and current-session nav are present before hydration", async ({
+  browser,
+  baseURL,
+}) => {
+  // A regression in the URL-state plumbing put the entire page behind
+  // `Suspense fallback={null}`. On every reload the sidebar arrived alone,
+  // followed by shelves and then the docked controls. No JavaScript is the
+  // strict proof that title, controls, and shelf all ship in the first response.
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+  await context.addCookies([
+    {
+      name: "saku-current-run-count",
+      value: "2",
+      url: baseURL!,
+    },
+  ]);
+  const page = await context.newPage();
+
+  await page.goto("/library?kind=kana");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Library");
+  await expect(page.getByPlaceholder(/Search anything/)).toBeVisible();
+  await expect(page.getByText("あ", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Current sessions/ })).toContainText(
+    "2",
+  );
+
+  await context.close();
+});
+
 /**
  * THE FILTER CHIPS SURVIVE A TRIP THROUGH A DETAIL PAGE — including a
  * back → forward → back dance.

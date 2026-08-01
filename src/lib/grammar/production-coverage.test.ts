@@ -21,6 +21,7 @@ import { formLibraryPages } from "@/data/grammar/lessons";
 import { factInfo, factsOf } from "@/lib/facts";
 import { buildCoverageDeck } from "@/lib/ask-forms";
 import { grammarVehicleFor } from "@/lib/engine/question";
+import { apply } from "@/lib/grammar/apply";
 import { recipeAllows } from "@/lib/grammar/vehicles";
 import { CLASS_ANCHOR } from "./te-endings";
 import type { AskConfig, HistoryFile } from "@/types";
@@ -43,10 +44,12 @@ function productionFacts(recipeId: string) {
 }
 
 describe("one production skill per conjugation class", () => {
-  test("the adjective noun form scores the な-adjective change", () => {
-    const fact = patternProductionFactId("prenominal-form", "adj-na");
-    assert.deepEqual(productionFacts("prenominal-form"), [fact]);
-    assert.equal(factInfo(fact)?.glyph, "静かな");
+  test("the adjective noun form scores both adjective class rules", () => {
+    const iFact = patternProductionFactId("prenominal-form", "adj-i");
+    const naFact = patternProductionFactId("prenominal-form", "adj-na");
+    assert.deepEqual(productionFacts("prenominal-form"), [iFact, naFact]);
+    assert.equal(factInfo(iFact)?.glyph, "高いみせ");
+    assert.equal(factInfo(naFact)?.glyph, "静かなみせ");
   });
 
   test("a た pattern mints all ten classes plus its three irregular verbs", () => {
@@ -83,6 +86,37 @@ describe("one production skill per conjugation class", () => {
     const covered = new Set(deck.filter((f) => grammarProduction(f)));
     for (const cls of CLASSES) assert.ok(covered.has(classProductionFactId(id, cls)), cls);
     assert.ok(forms.every((form) => !("bucket" in form)));
+  });
+});
+
+describe("every supported adjective class is a separate quiz skill", () => {
+  test("all drillable adjective hosts mint their class fact", () => {
+    for (const r of RECIPES.filter(isProducible)) {
+      for (const host of ["adj-i", "adj-na"] as const) {
+        if (!r.attach.some((a) => a.host === host)) continue;
+        assert.ok(
+          factInfo(patternProductionFactId(r.id, host)),
+          `${r.id} is missing ${host}`,
+        );
+      }
+    }
+  });
+
+  test("いい gets its own fact exactly where its result is irregular", () => {
+    for (const r of RECIPES.filter(isProducible)) {
+      if (!r.attach.some((a) => a.host === "adj-i")) continue;
+      const real = apply(r, "いい", "adj-ix");
+      const regular = apply(r, "いい", "adj-i");
+      const irregular =
+        real.ok &&
+        real.value !== "いい" &&
+        (!regular.ok || regular.value !== real.value);
+      assert.equal(
+        !!factInfo(specialVerbProductionFactId(r.id, "ii")),
+        irregular,
+        r.id,
+      );
+    }
   });
 });
 

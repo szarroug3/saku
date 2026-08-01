@@ -91,7 +91,14 @@ import {
   radicalMeaningFactId,
 } from "@/data/radicals";
 import { cluster } from "@/data/grammar/clusters";
-import { RECIPES, isProducible, patternLabel, type Recipe } from "@/data/grammar/recipes";
+import {
+  RECIPES,
+  isPrimaryPatternRecipe,
+  isProducible,
+  patternGroup,
+  patternLabel,
+  type Recipe,
+} from "@/data/grammar/recipes";
 import { VERB_PAIRS } from "@/data/transitivity";
 import {
   TRANSITIVITY_SUBJECT,
@@ -622,18 +629,30 @@ function build(): LibEntry[] {
   // pronunciation (see the tile, which omits 🔊 for these). They sort last in
   // browse order, after every word.
   RECIPES.forEach((r, i) => {
-    const c = r.cluster ? cluster(r.cluster) : undefined;
+    if (!isPrimaryPatternRecipe(r)) return;
+    const senses = patternGroup(r.id);
+    const clusterTitles = [
+      ...new Set(
+        senses.flatMap((sense) => {
+          const title = sense.cluster ? cluster(sense.cluster)?.title : undefined;
+          return title ? [title] : [];
+        }),
+      ),
+    ];
     out.push({
       id: patternEntry(r.id),
       kind: GRAMMAR_SUBJECT,
-      glyph: patternLabel(r),
+      glyph: senses.length > 1 ? r.pattern : patternLabel(r),
       readings: [],
-      meanings: [r.gloss],
-      searchAlso: c ? [c.title] : undefined,
+      meanings: senses.map((sense) => sense.gloss),
+      searchAlso: [
+        ...senses.flatMap((sense) => (sense.sense ? [sense.sense] : [])),
+        ...clusterTitles,
+      ],
       // JLPT level is internal curriculum metadata, not a useful explanation
       // of what the row is. Keep a meaningful family cue ("after", "must",
       // and so on) where one exists; otherwise the sub-line is simply absent.
-      sub: c?.title ?? "",
+      sub: clusterTitles.join(" · "),
       // A LOW weight, below kanji — the one kind that outranks it. This is the
       // owner's "make sure search surfaces grammar properly" as a number: when
       // you type "must", the seven obligation PATTERNS are the answer, and a
@@ -753,7 +772,7 @@ function build(): LibEntry[] {
  * same RECIPES walk `build()` uses, so it cannot name an entry that walk did
  * not mint. */
 const RECIPE_OF_ENTRY: ReadonlyMap<EntryId, Recipe> = new Map(
-  RECIPES.map((r) => [patternEntry(r.id), r]),
+  RECIPES.filter(isPrimaryPatternRecipe).map((r) => [patternEntry(r.id), r]),
 );
 
 /**
@@ -775,6 +794,13 @@ export function clusterOf(entry: LibEntry): string | null {
  */
 export function recipeOf(entry: LibEntry): Recipe | null {
   return RECIPE_OF_ENTRY.get(entry.id) ?? null;
+}
+
+/** Every independently meaningful recipe shown on this written pattern's one
+ * reference page. Non-grammar entries have no recipes. */
+export function recipesOf(entry: LibEntry): readonly Recipe[] {
+  const primary = RECIPE_OF_ENTRY.get(entry.id);
+  return primary ? patternGroup(primary.id) : [];
 }
 
 // ---------- the links ----------
@@ -1304,12 +1330,12 @@ function counterFactRows(entry: LibEntry): FactRow[] {
 // to disagree about it.
 
 function grammarFactRows(entry: LibEntry): FactRow[] {
-  const r = RECIPE_OF_ENTRY.get(entry.id);
-  if (!r) return [];
-  const rows: FactRow[] = [
-    {
+  const recipes = recipesOf(entry);
+  const rows: FactRow[] = [];
+  for (const r of recipes) {
+    rows.push({
       id: patternMeaningFactId(r.id),
-      label: "Meaning",
+      label: r.sense ? `Meaning (${r.sense})` : "Meaning",
       answer: r.gloss,
       askedIn: [],
       unattested: false,
@@ -1317,36 +1343,35 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       // A pattern is a shape, not a sound — 〜てから has no one pronunciation,
       // which is why the page's Hear-it button is omitted for grammar too.
       speak: null,
-    },
-  ];
-  // ONE ROW PER VERB CLASS. Every conjugating recipe scores the nine godan
-  // endings and ichidan separately, so the Library must link to those actual
-  // facts rather than the former five 音便 buckets or one unqualified row-shift
-  // fact. The anchor is the same one the fact is baked on.
-  if (isProducible(r) && conjugatesVerb(r)) {
-    for (const anchor of CLASS_ANCHOR) {
-      const id = classProductionFactId(r.id, anchor.cls);
-      const info = factInfo(id);
-      if (!info) continue;
-      rows.push({
-        id,
-        label: `Build it (${anchor.ending || "る-verb"})`,
-        answer: `${anchor.surface} → ${info.glyph}`,
-        askedIn: [],
-        unattested: false,
-        origin: null,
-        speak: null,
-      });
+    });
+    // ONE ROW PER VERB CLASS. Every conjugating recipe scores the nine godan
+    // endings and ichidan separately, so the Library must link to those actual
+    // facts rather than the former five 音便 buckets or one unqualified row-shift
+    // fact. The anchor is the same one the fact is baked on.
+    if (isProducible(r) && conjugatesVerb(r)) {
+      for (const anchor of CLASS_ANCHOR) {
+        const id = classProductionFactId(r.id, anchor.cls);
+        const info = factInfo(id);
+        if (!info) continue;
+        rows.push({
+          id,
+          label: `Build it (${anchor.ending || "る-verb"})`,
+          answer: `${anchor.surface} → ${info.glyph}`,
+          askedIn: [],
+          unattested: false,
+          origin: null,
+          speak: null,
+        });
+      }
     }
-  }
-  // ONE ROW PER PRODUCTION FACT, which is one per host that carries one. The
-  // page is a list of the entry's FACTS, so a pattern with a separate adjective
-  // fact has to show it — otherwise the split exists in the scheduler and the
-  // one screen that promises to enumerate what is scored still says there is a
-  // single "Build it". The label names the host for the same reason.
-  //
-  const hosts = isProducible(r) ? productionHosts(r) : [];
-  {
+
+    // ONE ROW PER PRODUCTION FACT, which is one per host that carries one. The
+    // page is a list of the entry's FACTS, so a pattern with a separate adjective
+    // fact has to show it — otherwise the split exists in the scheduler and the
+    // one screen that promises to enumerate what is scored still says there is a
+    // single "Build it". The label names the host for the same reason.
+    //
+    const hosts = isProducible(r) ? productionHosts(r) : [];
     for (const host of hosts) {
       const ex = buildExample(r, host);
       if (!ex) continue;
@@ -1366,8 +1391,8 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
         speak: null,
       });
     }
+    if (isProducible(r)) pushSpecialWordRows(r, rows);
   }
-  if (isProducible(r)) pushSpecialWordRows(r, rows);
   return rows;
 }
 

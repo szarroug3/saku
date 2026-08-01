@@ -103,6 +103,21 @@ test("legacy one-segment params still decode to entry ids", () => {
   assert.equal(entryFromParam(encodeURIComponent(id)), id);
 });
 
+test("shared written patterns use one canonical page, including old URLs", () => {
+  assert.equal(
+    entryHref(patternEntry("passive")),
+    entryHref(patternEntry("potential")),
+  );
+  assert.equal(
+    entryFromSlug("grammar", "passive"),
+    patternEntry("potential"),
+  );
+  assert.equal(
+    entryFromParam(encodeURIComponent(patternEntry("kara-source"))),
+    patternEntry("kara-reason"),
+  );
+});
+
 test("a slug that names nothing comes back null rather than throwing", () => {
   assert.equal(entryFromSlug("kanji", "nope"), null);
   assert.equal(entryFromSlug("nonsense", "生"), null);

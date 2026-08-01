@@ -6,10 +6,11 @@
 // scroll and into its own box outside the main frame; in kiri that also keeps
 // the bar off the frosted frame, so scrolling re-blends nothing under it.
 //
-// Client-only by nature: the dock targets are server-rendered in the shell, but
-// the portal can only attach after mount (there is no document on the server).
-// The pages that dock — the Library header and its slice bar — are already
-// client trees under a Suspense boundary, so nothing is lost by attaching late.
+// The portal can only attach after mount (there is no document on the server),
+// but its content must not disappear until then. Render it in place for SSR and
+// the hydration paint, then move that same content into the frozen shell slot.
+// This is especially visible on the Library: its shelves are server-rendered,
+// so returning null here made them flash before the title, search, and filters.
 
 import { useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -30,7 +31,7 @@ export function Dock({
   children: ReactNode;
 }) {
   const mounted = useSyncExternalStore(noop, onClient, onServer);
-  if (!mounted) return null;
+  if (!mounted) return children;
   const el = document.getElementById(`kq-dock-${slot}`);
-  return el ? createPortal(children, el) : null;
+  return el ? createPortal(children, el) : children;
 }

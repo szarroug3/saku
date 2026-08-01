@@ -35,7 +35,7 @@ import { productionHosts } from "@/data/grammar";
 const byId = (id: string) => recipe(id)!;
 
 describe("the baked example is a QUESTION, not the word retyped", () => {
-  test("no producible recipe bakes its example on a trivial attachment", () => {
+  test("only adjective class coverage may bake a trivial attachment", () => {
     // THE BUG, AS A GUARD. A trivial attachment (bare word or dictionary form,
     // no trim) transforms nothing, so building it is typing. `isVacuous` refuses
     // a recipe where EVERY attachment is like that; this refuses a recipe that
@@ -44,10 +44,12 @@ describe("the baked example is a QUESTION, not the word retyped", () => {
       for (const host of productionHosts(r)) {
         const at = r.attach.find((a) => a.host === host);
         assert.ok(at, `${r.id} has a production fact for ${host} and no attachment for it`);
-        assert.ok(
-          !isTrivialAttachment(at),
-          `${r.id}/${host} bakes its production on an attachment that transforms nothing`,
-        );
+        if (isTrivialAttachment(at)) {
+          assert.ok(
+            host === "adj-i" || host === "adj-na",
+            `${r.id}/${host} bakes a non-adjective trivial attachment`,
+          );
+        }
       }
     }
   });
@@ -132,8 +134,8 @@ describe("a production fact per HOST, where the hosts are different rules", () =
   });
 });
 
-describe("the open case: a な-adjective stem IS its dictionary form", () => {
-  test("only these two production answers are the vehicle plus a fixed string", () => {
+describe("production answers that retain the whole vehicle", () => {
+  test("only the noun-description rule and three adjective attachment rules do so", () => {
     // NOT A PASSING GRADE — a standing note in test form, and the reason it is a
     // test is that it is the one thing here nobody can settle by reading code.
     //
@@ -159,7 +161,12 @@ describe("the open case: a な-adjective stem IS its dictionary form", () => {
         if (ex && ex.form === ex.lemma + at.add) retyped.push(`${r.id}/${host}`);
       }
     }
-    assert.deepEqual(retyped, ["sugiru/adj-na", "sou-appearance/adj-na"]);
+    assert.deepEqual(retyped, [
+      "prenominal-form/adj-i",
+      "sugiru/adj-na",
+      "sou-appearance/adj-na",
+      "node/adj-i",
+    ]);
   });
 });
 

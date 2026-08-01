@@ -58,6 +58,9 @@ export const INTRO_SHOWN = "shown";
 // ---------- quiz session snapshot (src/lib/quiz-session.tsx) ----------
 export const SESSION_KEY = "saku-session";
 export const OLD_SESSION_KEY = "kanaquiz-session";
+/** A server-readable hint used only to render the conditional sidebar link on
+ * first paint. The provider replaces it with the authoritative restored count. */
+export const CURRENT_RUN_COUNT_COOKIE = "saku-current-run-count";
 
 // ---------- in-progress session SYNC metadata (src/lib/quiz-session.tsx) ----------
 // The device's own view of the synced run: its stable id and the ms timestamp of

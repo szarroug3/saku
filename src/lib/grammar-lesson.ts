@@ -239,7 +239,8 @@ function nextLessonAt(
 ): { lesson: GrammarLessonDef; index: number } | null {
   for (let i = 0; i < CURRICULUM_LESSONS.length; i++) {
     const lesson = CURRICULUM_LESSONS[i];
-    if (isFresh(patternMeaningFactId(lesson.primaryPattern), history)) {
+    const recipeIds = lesson.recipeIds ?? [lesson.primaryPattern];
+    if (recipeIds.some((id) => isFresh(patternMeaningFactId(id), history))) {
       return { lesson, index: i };
     }
   }
@@ -395,7 +396,8 @@ export function nextGrammarLesson(
   for (const idx of members) {
     if (idx < startIndex) continue; // earlier members are already met, behind us
     const lesson = CURRICULUM_LESSONS[idx];
-    if (!isFresh(patternMeaningFactId(lesson.primaryPattern), history)) continue;
+    const recipeIds = lesson.recipeIds ?? [lesson.primaryPattern];
+    if (!recipeIds.some((id) => isFresh(patternMeaningFactId(id), history))) continue;
     chosen.push(lesson);
   }
   if (chosen.length === 0) return null;
@@ -403,8 +405,10 @@ export function nextGrammarLesson(
   const cards: GrammarCard[] = [];
   const facts: FactId[] = [];
   for (const lesson of chosen) {
-    const recipe = RECIPE_BY_ID.get(lesson.primaryPattern);
-    if (recipe) cards.push(toCard(recipe));
+    for (const id of lesson.recipeIds ?? [lesson.primaryPattern]) {
+      const recipe = RECIPE_BY_ID.get(id);
+      if (recipe) cards.push(toCard(recipe));
+    }
     facts.push(...lesson.drills);
   }
 

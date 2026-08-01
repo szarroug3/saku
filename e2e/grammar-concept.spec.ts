@@ -179,15 +179,22 @@ test("every form page puts instructions between its section heading and table", 
   for (const recipeId of FORM_RECIPE_IDS) {
     await page.goto(entryHref(patternEntry(recipeId)));
     for (const section of formLibraryPages(recipeId).flatMap((intro) => intro.buildSections ?? [])) {
-      const heading = page.getByRole("heading", { name: section.title, exact: true }).first();
-      const renderedSection = section.hideTitle
-        ? page
-            .getByText(section.body[0].text, { exact: false })
-            .first()
-            .locator("xpath=ancestor::section[1]")
-        : heading.locator("..");
+      // Shared written patterns now put every sense on the same page. Potential
+      // and passive both have a "Verbs" section, so find the section by its
+      // own instruction instead of blindly taking the page's first heading.
+      const renderedSection = page
+        .getByText(section.body[0].text, { exact: false })
+        .first()
+        .locator("xpath=ancestor::section[1]");
+      const heading = renderedSection.getByRole("heading", {
+        name: section.title,
+        exact: true,
+      });
       if (section.hideTitle) {
-        await expect(heading, `${recipeId}/${section.title} hidden heading`).toHaveCount(0);
+        await expect(
+          page.getByRole("heading", { name: section.title, exact: true }),
+          `${recipeId}/${section.title} hidden heading`,
+        ).toHaveCount(0);
       } else {
         await expect(heading, `${recipeId}/${section.title} heading`).toHaveClass(/text-accent/);
       }
@@ -200,6 +207,14 @@ test("every form page puts instructions between its section heading and table", 
       );
     }
   }
+});
+
+test("one shared-pattern page teaches every definition", async ({ page }) => {
+  await page.goto("/library/grammar/passive");
+  await expect(page).toHaveURL(/\/library\/grammar\/passive$/);
+  await expect(page.locator("body")).toContainText("can do X");
+  await expect(page.locator("body")).toContainText("is X-ed (by someone)");
+  await expect(page.getByRole("heading", { name: "Verbs", exact: true })).toHaveCount(2);
 });
 
 test("the grammar-concept shelf lists the concepts and shows no speaker", async ({

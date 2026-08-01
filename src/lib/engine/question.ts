@@ -735,6 +735,11 @@ const wordQuestions: QuestionType = {
  * was meant to leave alone. Everything that needs the answer asks here.
  */
 export function mcOnlyIn(fact: FactId, dir: Direction): boolean {
+  // A pattern can have several equally natural English readings, and the same
+  // written pattern can carry several independently taught senses. Definitions
+  // are therefore recognition in both directions. Production remains typed:
+  // it is a different grammar fact even though both share this QuestionType.
+  if (grammarMeaning(fact)) return true;
   const flag = questionsFor(fact).mcOnly;
   return flag === true || flag === dir;
 }
@@ -1087,10 +1092,10 @@ function selectionShowing(
 
 const grammarQuestions: QuestionType = {
   id: "grammar",
-  // An English gloss can have more than one natural Japanese realization.
-  // Reverse MEANING recall is therefore recognition-only: choose the taught
-  // pattern, never type a supposedly unique translation. Production facts are
-  // fixed jp2en and do not reach this direction.
+  // The fact-aware rule in mcOnlyIn makes MEANING recognition-only in both
+  // directions. Keep this reverse-direction guard too: production facts are
+  // fixed jp2en, while any future grammar fact asked en2jp should not demand a
+  // supposedly unique Japanese translation.
   mcOnly: "en2jp",
   prompt(fact, dir, ctx) {
     const prod = grammarProduction(fact);

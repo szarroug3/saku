@@ -26,7 +26,13 @@
 // teach pages; the interim is honest (one tile is one page), never a stub.
 
 import { patternEntry } from "@/data/grammar";
-import { RECIPES, type Level, type Recipe } from "@/data/grammar/recipes";
+import {
+  RECIPES,
+  isPrimaryPatternRecipe,
+  patternGroup,
+  type Level,
+  type Recipe,
+} from "@/data/grammar/recipes";
 import { autoPatternPage } from "@/data/grammar/auto-page";
 import {
   BA_FORM_PAGES,
@@ -71,6 +77,10 @@ export interface GrammarLessonDef {
   /** The recipe this lesson is built around, for the card tile and the host
    * gate. Every lesson today has one. */
   primaryPattern: string;
+  /** Every independently quizzed meaning taught on this written pattern.
+   * Usually one; ambiguous patterns such as 〜られる carry both senses in one
+   * lesson and one Library page. */
+  readonly recipeIds?: readonly string[];
 }
 
 /** Every fact a recipe teaches, read off the registry (never parsed) — its
@@ -369,9 +379,8 @@ const LESSON_TE_FORM: GrammarLessonDef = {
 };
 
 /** Grammar lesson 1: what a form is, the two adjective classes, and the first
- * adjective form. Its production drill is the one real change before a noun:
- * a な-adjective adds な. The い-adjective row is explanatory but unscored
- * because its form is identical to the dictionary word. */
+ * adjective form. Its production drills cover both class rules: an い-adjective
+ * stays unchanged and a な-adjective adds な. */
 const LESSON_PRENOMINAL_FORM: GrammarLessonDef = {
   id: "prenominal-form",
   title: "Adjectives before nouns",
@@ -566,6 +575,7 @@ function autoLesson(r: Recipe): GrammarLessonDef {
     pages: [{ kind: "teach", card: autoPatternPage(r) }],
     drills: patternFacts(r.id),
     primaryPattern: r.id,
+    recipeIds: [r.id],
   };
 }
 
@@ -589,9 +599,22 @@ const AUTHORED_LESSONS: Readonly<Record<string, GrammarLessonDef>> = {
   "tara": LESSON_TARA,
 };
 
-export const CURRICULUM_LESSONS: readonly GrammarLessonDef[] = ORDERED.map(
-  (r) => AUTHORED_LESSONS[r.id] ?? autoLesson(r),
-);
+export const CURRICULUM_LESSONS: readonly GrammarLessonDef[] = ORDERED.filter(
+  isPrimaryPatternRecipe,
+).map((primary) => {
+  const recipes = patternGroup(primary.id);
+  const members = recipes.map((r) => AUTHORED_LESSONS[r.id] ?? autoLesson(r));
+  return {
+    id: primary.id,
+    title: primary.pattern,
+    pages: members.flatMap((lesson) => lesson.pages),
+    // All same-pattern facts now belong to the canonical Library entry, so this
+    // one lookup includes every sense and every production rule exactly once.
+    drills: patternFacts(primary.id),
+    primaryPattern: primary.id,
+    recipeIds: recipes.map((r) => r.id),
+  };
+});
 
 /** Fact -> the lesson that teaches it. Built once from every lesson's drills, so
  * the walk can recover a lesson from the flat teach set the session hands it. */

@@ -1,4 +1,4 @@
-import { test, expect, STEADY_CFG } from "./helpers/app";
+import { test, expect, optionButtons, STEADY_CFG } from "./helpers/app";
 import { seedQuiz, ask, startQuizDrill } from "./helpers/quiz";
 
 import { patternMeaningFactId } from "@/data/grammar";
@@ -59,4 +59,21 @@ test("a reference pattern is drilled by meaning, not production", async ({
   await expect(page.locator(".kq-glyph").first()).toContainText(
     new RegExp(`${kana}|${glossWord}`),
   );
+});
+
+test("pattern definitions stay multiple choice when Type it is selected", async ({
+  page,
+}) => {
+  const recipe = REFERENCE!;
+  await seedQuiz(page, {
+    seen: [patternMeaningFactId(recipe.id)],
+    cfg: {
+      ...STEADY_CFG,
+      ...ask({ jpPrompts: ["text"], jpResponses: ["definition"], jpAnswers: ["typed"] }),
+    },
+  });
+  await startQuizDrill(page);
+
+  await expect(optionButtons(page).first()).toBeVisible();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
 });

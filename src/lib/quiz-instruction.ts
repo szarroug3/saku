@@ -94,7 +94,6 @@ export function quizInstruction(
   // string that was the sub-label.
   const prod = grammarProduction(fact);
   if (prod) {
-    const form = `${patternLabel(prod.recipe)} form`;
     // NAME THE CLASS OF AN UNKNOWN CLASS WORD. 食べる and 帰る are both drawn in
     // kana (たべる, かえる) because she has not met them, and 〜る alone does not
     // say whether the conjugation is ichidan or godan. Adjectives have the same
@@ -108,6 +107,12 @@ export function quizInstruction(
         ? ruVerbKindOf(vehicle.surface, vehicle.cls) ?? adjectiveKindOf(vehicle.cls)
         : null;
     const noun = kind ?? "word";
+    if (prod.recipe.id === "prenominal-form") {
+      return mode === "mc"
+        ? `Which of these shows this ${noun} describing みせ?`
+        : `Type this ${noun} describing みせ.`;
+    }
+    const form = `${patternLabel(prod.recipe)} form`;
     return mode === "mc"
       ? `Which of these is how this ${noun} is said in the ${form}?`
       : `Type how this ${noun} is said in the ${form}.`;

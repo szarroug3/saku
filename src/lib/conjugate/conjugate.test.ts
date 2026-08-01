@@ -716,6 +716,7 @@ describe("adjectives conjugate too", () => {
     eq("高い", "adj-i", "tara", "高かったら");
     eq("高い", "adj-i", "polite", "高いです");
     eq("面白い", "adj-i", "nai", "面白くない");
+    eq("いい", "adj-ix", "prenominal", "いい");
   });
 
   test("adj-na (6,253 entries) — what conjugates is the copula", () => {

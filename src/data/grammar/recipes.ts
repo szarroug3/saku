@@ -432,11 +432,14 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜な",
     gloss: "describe a noun",
     level: "N5",
-    attach: [{ host: "adj-na", form: "prenominal", add: "" }],
+    attach: [
+      { host: "adj-i", form: "prenominal", add: "みせ" },
+      { host: "adj-na", form: "prenominal", add: "みせ" },
+    ],
     note:
       "The foundational adjective form. A な-adjective adds な before a noun " +
       "(静か → 静かな); an い-adjective already has its noun-describing shape and " +
-      "does not change, so only the な-adjective transformation is scored.",
+      "does not change. Both class rules are scored.",
   },
 
   // --- て-form -------------------------------------------------------------
@@ -1550,8 +1553,40 @@ export const RECIPES: readonly Recipe[] = [
 
 const BY_ID: ReadonlyMap<string, Recipe> = new Map(RECIPES.map((r) => [r.id, r]));
 
+/** Recipes grouped by the Japanese pattern the learner sees. A written pattern
+ * gets one lesson and one Library page even when it has several meanings; the
+ * individual recipes remain separate facts because each definition is still
+ * independently gradeable. */
+const PATTERN_GROUP_BY_ID: ReadonlyMap<string, readonly Recipe[]> = (() => {
+  const byPattern = new Map<string, Recipe[]>();
+  for (const r of RECIPES) {
+    const group = byPattern.get(r.pattern);
+    if (group) group.push(r);
+    else byPattern.set(r.pattern, [r]);
+  }
+  const byId = new Map<string, readonly Recipe[]>();
+  for (const group of byPattern.values()) {
+    for (const r of group) byId.set(r.id, group);
+  }
+  return byId;
+})();
+
 export function recipe(id: string): Recipe | undefined {
   return BY_ID.get(id);
+}
+
+export function patternGroup(recipeId: string): readonly Recipe[] {
+  return PATTERN_GROUP_BY_ID.get(recipeId) ?? [];
+}
+
+/** The stable representative used by the one lesson/Library page for a written
+ * pattern. Authored order decides it, so existing first-sense URLs stay valid. */
+export function primaryPatternRecipe(recipeId: string): Recipe | undefined {
+  return patternGroup(recipeId)[0];
+}
+
+export function isPrimaryPatternRecipe(r: Recipe): boolean {
+  return primaryPatternRecipe(r.id)?.id === r.id;
 }
 
 export function recipesInCluster(cluster: string): Recipe[] {

@@ -80,7 +80,7 @@ describe("the shelf order IS the lesson order (no drift)", () => {
     // future edit re-deriving a sort that drifts from the lessons.
     assert.deepEqual(
       GRAMMAR_TEACHING_ORDER.map((r) => r.id),
-      CURRICULUM_LESSONS.map((l) => l.primaryPattern),
+      CURRICULUM_LESSONS.flatMap((l) => l.recipeIds ?? [l.primaryPattern]),
     );
   });
 });
@@ -100,7 +100,9 @@ describe("grammarRank is level-monotone and keeps the lesson order per level", (
 
   test("within each level the rank keeps the lesson order", () => {
     const recipeById = new Map(RECIPES.map((r) => [r.id, r]));
-    const lessonOrder = CURRICULUM_LESSONS.map((l) => l.primaryPattern);
+    const lessonOrder = CURRICULUM_LESSONS.flatMap(
+      (l) => l.recipeIds ?? [l.primaryPattern],
+    );
     for (const lv of ["N5", "N4", "N3"] as const) {
       const wanted = lessonOrder.filter((id) => recipeById.get(id)?.level === lv);
       assert.deepEqual(shelfLevel(lv), wanted, `${lv} order diverges from the lessons`);

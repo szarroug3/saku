@@ -97,6 +97,7 @@ export function Sidebar({
   signedIn,
   authEnabled,
   initialCollapsed,
+  initialRunCount,
 }: {
   /** Whether there is a session (always true in file mode). Decides Sign in vs
    * Sign out, and hides the nav on the signed-out landing at /. */
@@ -107,6 +108,9 @@ export function Sidebar({
   /** The collapsed state the server read from the cookie, so the first render is
    * already the right width — no expanded-then-snap-closed flash. */
   initialCollapsed: boolean;
+  /** Server-readable hint for the conditional Current sessions link. The
+   * provider's restored run list replaces it immediately after hydration. */
+  initialRunCount: number;
 }) {
   const pathname = usePathname();
   // Finished quizzes, for the "Recent sessions" entry. It rides directly under
@@ -119,9 +123,9 @@ export function Sidebar({
   // have going so you can continue or discard any of them; it appears only while
   // at least one run is live, so it too never points at an empty room.
   const { history } = useHistory();
-  const { runs } = useQuizSession();
+  const { restored, runs } = useQuizSession();
   const hasRecent = history.sessions.length > 0;
-  const runCount = runs.length;
+  const runCount = restored ? runs.length : initialRunCount;
 
   // Collapsed shrinks the bar to a thin rail so the page gets the width back.
   // Seeded from the server's cookie read, so the first paint is already correct.

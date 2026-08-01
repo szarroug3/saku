@@ -56,6 +56,7 @@ import type { EntryId, FactId, FactInfo } from "../../types/index.ts";
 import {
   RECIPES,
   isProducible,
+  primaryPatternRecipe,
   isTrivialAttachment,
   patternLabel,
   recipe,
@@ -321,21 +322,28 @@ export function classProductionFactId(recipeId: string, cls: WordClass): FactId 
  * user could meet it.
  *
  * Verb production is omitted here because it is minted per class. Every
- * non-trivial non-verb attachment keeps its own separately scored fact.
+ * supported adjective class keeps its own fact, even when its shape stays
+ * unchanged before a suffix; other non-verb hosts are scored only when their
+ * form transforms.
  */
 export function productionHosts(r: Recipe): Host[] {
   // VERB IS NO LONGER A HOST FACT — it splits per conjugation class in
   // buildGrammarFacts (9 godan + ichidan + irregulars). So this returns only the
-  // NON-verb hosts the recipe conjugates non-trivially: an adjective (高くて,
-  // 高ければ, 高かったら) or, rarely, a noun. 〜すぎる on 高い is 高すぎる, a rule apart
-  // from its verb one, so it is its own scored fact.
+  // NON-verb hosts: every adjective type a pattern supports, or a transformed
+  // noun host. 〜すぎる on 高い is 高すぎる, a rule apart from its verb one, so it
+  // is its own scored fact. 高いので keeps 高い unchanged but still gets the
+  // adj-i fact because the quiz must cover every supported adjective type.
   //
-  // Trivial hosts are excluded on the usual ground: 高い + ので is the word
-  // retyped, real Japanese the cluster page prints but not a question.
+  // Trivial noun hosts remain excluded. Adjective hosts are deliberately kept:
+  // class coverage, including "do not change this type", is the lesson.
   return HOST_ORDER.filter(
     (h) =>
       h !== "verb" &&
-      r.attach.some((a) => a.host === h && !isTrivialAttachment(a)),
+      r.attach.some(
+        (a) =>
+          a.host === h &&
+          (h === "adj-i" || h === "adj-na" || !isTrivialAttachment(a)),
+      ),
   );
 }
 
@@ -372,10 +380,11 @@ function buildGrammarFacts(): FactInfo[] {
   const facts: FactInfo[] = [];
   for (const r of RECIPES) {
     const mId = patternMeaningFactId(r.id);
+    const libraryEntry = patternEntry(primaryPatternRecipe(r.id)?.id ?? r.id);
     MEANING_OF.set(mId, r.id);
     facts.push({
       id: mId,
-      entry: patternEntry(r.id),
+      entry: libraryEntry,
       glyph: patternLabel(r),
       answers: [r.gloss],
       subject: GRAMMAR_SUBJECT,
@@ -411,7 +420,7 @@ function buildGrammarFacts(): FactInfo[] {
         });
         facts.push({
           id: pId,
-          entry: patternEntry(r.id),
+          entry: libraryEntry,
           glyph: form,
           answers: form === kanaForm ? [form] : [form, kanaForm],
           subject: GRAMMAR_SUBJECT,
@@ -449,7 +458,7 @@ function buildGrammarFacts(): FactInfo[] {
       });
       facts.push({
         id: pId,
-        entry: patternEntry(r.id),
+        entry: libraryEntry,
         glyph: ex.form,
         answers: ex.form === ex.kanaForm ? [ex.form] : [ex.form, ex.kanaForm],
         subject: GRAMMAR_SUBJECT,
@@ -496,7 +505,7 @@ function mintSpecialWordFacts(
     });
     facts.push({
       id: pId,
-      entry: patternEntry(r.id),
+      entry: patternEntry(primaryPatternRecipe(r.id)?.id ?? r.id),
       glyph: form,
       answers: form === kanaForm ? [form] : [form, kanaForm],
       subject: GRAMMAR_SUBJECT,

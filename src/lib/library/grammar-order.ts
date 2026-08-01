@@ -31,9 +31,12 @@ const RECIPE_BY_ID: ReadonlyMap<string, Recipe> = new Map(RECIPES.map((r) => [r.
 
 /** Every recipe, in the lessons' own teaching order. Derived from
  * CURRICULUM_LESSONS so it IS the lesson order, not a re-derivation of it. */
-export const GRAMMAR_TEACHING_ORDER: readonly Recipe[] = CURRICULUM_LESSONS.map(
-  (l) => RECIPE_BY_ID.get(l.primaryPattern),
-).filter((r): r is Recipe => Boolean(r));
+export const GRAMMAR_TEACHING_ORDER: readonly Recipe[] = CURRICULUM_LESSONS.flatMap(
+  (lesson) =>
+    (lesson.recipeIds ?? [lesson.primaryPattern])
+      .map((id) => RECIPE_BY_ID.get(id))
+      .filter((r): r is Recipe => Boolean(r)),
+);
 
 const RANK_BY_ID: ReadonlyMap<string, number> = new Map(
   GRAMMAR_TEACHING_ORDER.map((r, i) => [r.id, i]),
