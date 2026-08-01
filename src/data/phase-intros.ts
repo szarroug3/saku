@@ -156,11 +156,6 @@ export interface IntroBuildRule {
    * (する → して). When set, the row renders as `verb → to` and `drop`/`add` are
    * ignored — the honest shape for a form you memorise rather than build. */
   to?: string;
-  /** The form the pattern's suffix attaches to, shown in a DASHED outline (the
-   * て-form for a て-pattern: かって). When set, the row renders as `[base] + add →
-   * to`, teaching a pattern as "the form you already know, plus a suffix" rather
-   * than repeating the whole conjugation. Takes precedence over drop/add. */
-  base?: string;
   /** An English meaning for the built form, shown in a right-hand "Meaning"
    * column — used where the table doubles as a meaning demonstration (たべている ·
    * is eating), not just a build rule. The column appears only when some row
@@ -265,6 +260,13 @@ export interface PhaseIntro {
     readonly rules: readonly IntroBuildRule[];
     readonly heads?: { label?: string; change?: string; note?: string; gloss?: string };
   }[];
+  /**
+   * A build FORMULA for a pattern's "how to build it": the form it hangs off shown
+   * in a dashed outline, then + the suffix — [ない-form] + でください. `base` is the
+   * form's name ("ない-form"), `add` the suffix. Rendered in place of the build
+   * blurb, so the summary reads as the recipe itself before the example tables.
+   */
+  buildFormula?: { base: string; add: string };
   /**
    * A derivation table for a PATTERN page: the dictionary verb, the form the
    * pattern attaches to, and the finished pattern — かく · かき · かきにいく. Shows

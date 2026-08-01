@@ -72,7 +72,11 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
           <div className="space-y-6">
             <div className="flex flex-col gap-6 @xl:flex-row @xl:items-start @xl:gap-8">
               <div className="min-w-0 flex-1">
-                <IntroBody body={intro.body} />
+                {intro.buildFormula ? (
+                  <IntroBuildFormula base={intro.buildFormula.base} add={intro.buildFormula.add} />
+                ) : (
+                  <IntroBody body={intro.body} />
+                )}
               </div>
               {intro.examples?.length ? (
                 <div className="@xl:w-[20rem] @xl:shrink-0">
@@ -397,10 +401,7 @@ export function IntroBuildTable({
         </thead>
         <tbody>
           {rows.map(({ r, stem, result, note }) => (
-            <tr
-              key={r.verb ?? r.base ?? r.to}
-              className="border-b border-border/60 last:border-0"
-            >
+            <tr key={r.verb ?? r.to} className="border-b border-border/60 last:border-0">
               {hasLabels ? (
                 <td className="whitespace-nowrap px-4 py-3 align-baseline font-kana text-[14px] text-text">
                   {r.label ?? ""}
@@ -409,28 +410,7 @@ export function IntroBuildTable({
               <td
                 className={`${hasRight ? "" : "w-full "}whitespace-nowrap px-4 py-3 align-baseline font-kana text-[17px] text-text`}
               >
-                {r.base ? (
-                  // A PATTERN row: the form the suffix hangs off (the て-form) in a
-                  // dashed outline, then + the suffix → the finished pattern —
-                  // "[かって] + いる → かっている". Teaches a pattern as the form you
-                  // already know plus a tail, not a whole new conjugation.
-                  <>
-                    <span className="rounded border border-dashed border-text-muted/50 px-1.5 py-0.5">
-                      {r.base}
-                    </span>
-                    <Say glyph={r.base} voice={cfg.voiceName} />
-                    {r.add ? (
-                      <>
-                        <span className="text-text-muted"> + </span>
-                        <span className="text-accent">{r.add}</span>
-                      </>
-                    ) : null}
-                    <span className="text-text-muted"> → </span>
-                    {r.base}
-                    {r.add ? <span className="text-accent">{r.add}</span> : null}
-                    <Say glyph={r.to ?? r.base + (r.add ?? "")} voice={cfg.voiceName} />
-                  </>
-                ) : r.to ? (
+                {r.to ? (
                   // An irregular verb follows no drop/add rule, so it is shown
                   // whole: する → して. Same table frame, honest shape.
                   <>
@@ -509,6 +489,23 @@ export function IntroBuildTableGroup({
       </p>
       <IntroBuildTable rules={rules} heads={heads} />
     </div>
+  );
+}
+
+/** A pattern's build FORMULA: the form it hangs off in a dashed outline, then +
+ * the suffix — [ない-form] + でください. The visual "how to build it", shown in place
+ * of a prose blurb so the recipe reads at a glance before the example tables. */
+export function IntroBuildFormula({ base, add }: { base: string; add: string }) {
+  return (
+    <p className="flex flex-wrap items-center gap-2 text-[17px] text-text">
+      <span className="rounded-md border border-dashed border-text-muted/60 px-2.5 py-1">
+        {base}
+      </span>
+      <span className="text-text-muted">+</span>
+      <span lang="ja" className="font-kana text-accent">
+        {add}
+      </span>
+    </p>
   );
 }
 

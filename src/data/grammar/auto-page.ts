@@ -238,7 +238,6 @@ const PATTERN_TABLE_GROUPS: {
 function patternRuleTables(
   r: Recipe,
 ): { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] {
-  const attach = r.attach.find((a) => a.host === "verb") ?? r.attach[0];
   const tables: { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] = [];
   for (const g of PATTERN_TABLE_GROUPS) {
     const rules: IntroBuildRule[] = [];
@@ -246,25 +245,7 @@ function patternRuleTables(
       if (!recipeAllows(r, v.word)) continue;
       const built = apply(r, v.word, v.cls);
       if (!built.ok || built.value === v.word) continue;
-      // The base form the pattern's suffix hangs off — the て-form for a て-pattern
-      // (かって). Shown dashed, then + the suffix → the result, so the row reads as
-      // "the form you know, plus a suffix". Falls back to whole verb → result when
-      // the pattern TRIMS the form (nakute-mo-ii) so the result no longer opens with
-      // the bare form.
-      const base =
-        attach?.form && attach.form !== "dictionary"
-          ? conjugate(v.word, v.cls, attach.form as Form)
-          : null;
-      if (base?.ok && base.value !== v.word && built.value.startsWith(base.value)) {
-        rules.push({
-          label: v.label,
-          base: base.value,
-          add: built.value.slice(base.value.length),
-          to: built.value,
-        });
-      } else {
-        rules.push({ label: v.label, verb: v.word, to: built.value });
-      }
+      rules.push({ label: v.label, verb: v.word, to: built.value });
     }
     if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
   }
@@ -394,6 +375,14 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
   const verbSuffix =
     host === "verb" && !!attach?.form && attach.form !== "dictionary" && !!attach.add;
   const buildTables = verbSuffix && !r.wrap?.close?.length ? patternRuleTables(r) : [];
+  // The "how to build it" formula: the form in a dashed box, then + the suffix —
+  // [ない-form] + でください. Shown in place of the build blurb for a verb-suffix
+  // pattern with a clean tail; a pattern that TRIMS the form (nakute-mo-ii) keeps
+  // the prose, since "[ない-form] + くてもいい" would hide the trim.
+  const buildFormula =
+    verbSuffix && !attach?.trim && !r.wrap?.close?.length && formLabel && add
+      ? { base: formLabel, add }
+      : undefined;
   // A wrap builds its own worked pair (apply refuses two-slot patterns); a plain
   // pattern derives one row per example verb.
   const wrapRows = r.wrap?.close?.length ? wrapDeriveRows(r) : [];
@@ -408,6 +397,7 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     eyebrow: "Grammar",
     title: `${r.pattern}: ${heroFromGloss(r.gloss)}`,
     body: [{ text: build }],
+    ...(buildFormula ? { buildFormula } : {}),
     ...(ruleRows.length
       ? { buildRules: ruleRows, buildHeads: { label: "Ending" } }
       : buildTables.length

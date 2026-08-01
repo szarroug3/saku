@@ -47,6 +47,7 @@
 import {
   IntroBody,
   IntroBuildFooter,
+  IntroBuildFormula,
   IntroBuildTable,
   IntroBuildTableGroup,
   IntroDeriveTable,
@@ -104,7 +105,11 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
       <Card className="h-full">
         <Lbl>How to build it</Lbl>
         <div className="mt-3">
-          <IntroBody body={page.body} measure="" />
+          {page.buildFormula ? (
+            <IntroBuildFormula base={page.buildFormula.base} add={page.buildFormula.add} />
+          ) : (
+            <IntroBody body={page.body} measure="" />
+          )}
         </div>
       </Card>
       {hasBuild ? (
