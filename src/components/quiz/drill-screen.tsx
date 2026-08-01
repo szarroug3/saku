@@ -1290,6 +1290,7 @@ export function DrillScreen() {
           rt.q.dir,
           anchorForFact(rt.q.f, history) ?? undefined,
           rt.q.listen && rt.q.form.source === "japanese",
+          rt.q.grammarVehicle ?? undefined,
         )
       : null;
   const hintDrawn = useDrawnImage(hint?.kind === "image" ? hint.src : null);
@@ -1344,7 +1345,7 @@ export function DrillScreen() {
   // worse than saying nothing.
   const instruction = q.recognition
     ? "Pick the sentence's meaning."
-    : quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed");
+    : quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed", q.grammarVehicle ?? undefined);
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   // The card already decided its shape at ask time: MC options were built (or

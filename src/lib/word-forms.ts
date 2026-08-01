@@ -118,8 +118,21 @@ function isAdjective(cls: WordClass): boolean {
  * is the honest answer, and it leaves them ungated too.
  */
 export function ruVerbKind(w: VocabRow): "う-verb" | "る-verb" | null {
-  if (!w.keb.endsWith("る")) return null;
-  const cls = wordClassOf(w);
+  return ruVerbKindOf(w.keb, wordClassOf(w));
+}
+
+/**
+ * `ruVerbKind` keyed on a (surface, class) pair rather than a whole VocabRow —
+ * the shape the grammar drill's vehicle carries (see GrammarVehicle). Same rule,
+ * one source of truth: only a る-ending surface is ambiguous, v1 / v1-s are
+ * る-verbs, every other v5* is a う-verb, and the irregulars whose form ends in
+ * る (来る, する) are neither and get null.
+ */
+export function ruVerbKindOf(
+  surface: string,
+  cls: WordClass | null,
+): "う-verb" | "る-verb" | null {
+  if (!surface.endsWith("る")) return null;
   if (cls === "v1" || cls === "v1-s") return "る-verb";
   if (cls && cls.startsWith("v5")) return "う-verb";
   return null;

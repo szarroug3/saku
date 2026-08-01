@@ -285,28 +285,69 @@ describe("the known-word gate filters the pool", () => {
     }
   });
 
-  test("knowing NO pool verb still rolls a vehicle — an unambiguous unknown one", () => {
+  test("knowing NO pool verb still rolls a vehicle — never an irregular one", () => {
     // The bug this whole change fixes: a beginner who has met none of the pool
     // used to get null here, and the production item was silently not asked.
     const r = recipe("te-kara")!;
     for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
       const v = pickVehicle(r, seq([x]), "verb", () => false);
       assert.ok(v, "should still roll a vehicle when nothing is known");
-      // Only a plain non-る godan a learner can conjugate from spelling.
-      assert.ok(!v!.surface.endsWith("る"), `${v!.surface} ends in る`);
-      assert.notEqual(v!.cls, "v5k-s", "行く is unpredictable when unknown");
-      assert.notEqual(v!.cls, "v5u-s", "問う is unpredictable when unknown");
+      // Never an irregular whose 音便 no class label can fix — 行く / 問う, and the
+      // する / 来る skills. A る-verb IS eligible now (the instruction names its
+      // class); it simply does not win te-kara's earliest-taught ordering here.
+      for (const bad of ["行く", "問う", "する", "来る"]) {
+        assert.notEqual(v!.surface, bad, `rolled the irregular ${bad}`);
+      }
     }
   });
 
-  test("an UNKNOWN る-ending / 行く / する verb is NEVER rolled", () => {
+  test("an UNKNOWN IRREGULAR verb is NEVER rolled on a free pick", () => {
+    // The irregulars only — 行く / 問う (irregular 音便) and する / 来る (their own
+    // memorized skills). A る-verb is NOT here any more: its class is unguessable
+    // from spelling, but the instruction states it ("this る-verb"), so it is fair
+    // game. The irregulars have no such rescue and stay out of a free pick; する /
+    // 来る reach a card only through their own @suru / @kuru verb bucket.
     const r = recipe("te-kara")!;
-    const banned = new Set(["行く", "食べる", "見る", "起きる", "帰る", "する", "来る"]);
-    // Sweep the rng so every eligible option gets a chance to be picked.
+    const banned = new Set(["行く", "問う", "する", "来る"]);
     for (let i = 0; i < 200; i++) {
       const v = pickVehicle(r, seq([i / 200]), "verb", () => false);
       assert.ok(v);
-      assert.ok(!banned.has(v!.surface), `rolled the unpredictable ${v!.surface}`);
+      assert.ok(!banned.has(v!.surface), `rolled the irregular ${v!.surface}`);
+    }
+  });
+
+  test("a CLASS bucket rolls an unknown る-verb — the instruction names its class", () => {
+    // The row-shift form fix (ます / ない / ば…). A v1 (ichidan) or v5r (godan-る)
+    // coverage card can only be built on a る-verb, and a verb-less learner knows
+    // none — so it used to fall back to 行く, kanji AND the wrong class. Now the
+    // る-verb is dealt in kana; the drill names it "る-verb" / "う-verb" so the
+    // conjugation is determined. See quiz-instruction.ts.
+    const r = recipe("masu-form")!;
+    for (const [cls, ending] of [
+      ["v1", "る"],
+      ["v5r", "る"],
+    ] as const) {
+      const v = pickVehicle(r, Math.random, "verb", () => false, { kind: "class", cls });
+      assert.ok(v, `${cls} bucket rolled nothing for a verb-less learner`);
+      assert.equal(v!.cls, cls);
+      assert.ok(v!.surface.endsWith(ending));
+    }
+  });
+
+  test("a VERB bucket rolls its pinned irregular even unknown — nothing else is legal", () => {
+    // The other side of the rule above, and the fix for the te-form lesson bug.
+    // @iku/@suru/@kuru pin the fact to ONE irregular verb and the fact IS that
+    // verb's exception — there is no safer verb to fall back to. The general sweep
+    // above passes NO bucket, so it still refuses 行く; a VERB bucket keeps it,
+    // because dropping to null strands the card on its baked KANJI lemma. The
+    // caller (grammarVehicleFor) then draws it in kana via known:false.
+    const r = recipe("te-sequence")!;
+    for (const [surface] of [["行く"], ["する"], ["来る"]] as const) {
+      const v = pickVehicle(r, Math.random, "verb", () => false, {
+        kind: "verb",
+        surface,
+      });
+      assert.equal(v?.surface, surface, `${surface} bucket rolled nothing`);
     }
   });
 

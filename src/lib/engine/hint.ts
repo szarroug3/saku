@@ -44,11 +44,18 @@
 //     nor its built output.
 
 import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
-import { GRAMMAR_SUBJECT, grammarMeaning, grammarProduction } from "@/data/grammar";
+import {
+  GRAMMAR_SUBJECT,
+  grammarMeaning,
+  grammarProduction,
+  isFormRecipe,
+} from "@/data/grammar";
 import { KANJI_SUBJECT, READING_INDEX, kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { FORM_LABEL, attachesTo, recipeFormula } from "@/lib/grammar/formula";
+import { ruVerbKindOf } from "@/lib/word-forms";
+import type { GrammarVehicle } from "./question";
 import { factInfo } from "@/lib/facts";
 import { teachableParts } from "@/lib/kanji-parts";
 import { readingFormula, type ReadingFormula } from "@/lib/reading-formula";
@@ -105,6 +112,7 @@ export function hintFor(
   dir: Direction,
   inWord?: string,
   listen = false,
+  vehicle?: GrammarVehicle,
 ): Hint | null {
   const info = factInfo(fact);
   if (!info) return null;
@@ -116,7 +124,7 @@ export function hintFor(
     case VOCAB_SUBJECT:
       return wordHint(fact, info.glyph, dir, listen);
     case GRAMMAR_SUBJECT:
-      return grammarHint(fact);
+      return grammarHint(fact, vehicle);
     default:
       return null;
   }
@@ -287,28 +295,47 @@ function componentMeanings(glyph: string): string | null {
  * Direction-insensitive. Neither line names the pattern or its gloss, so neither
  * can be the answer whichever half of the pair is the question.
  */
-function grammarHint(fact: FactId): Hint | null {
+/**
+ * The FORM half of a production hint — "uses the て-form" — or null when there is
+ * nothing honest to name.
+ *
+ * Null for a FORM recipe: te-sequence IS the て-form, nai-form the ない-form, so
+ * "uses the て-form" on a card that ASKS for the て-form restates the question
+ * rather than nudging toward it. The recipes that USE a form (〜てから uses the
+ * て-form to build 行ってから) are not form recipes and keep their hint.
+ *
+ * Null too for the dictionary form ("uses the just as it is" is not a sentence,
+ * and a pattern that reshapes nothing has told you nothing) and for a form with
+ * no step to name — a な-adjective's stem IS the adjective (静か → 静か), so its
+ * label is the dictionary form's own words and there is nothing to say.
+ */
+function formHintText(
+  prod: NonNullable<ReturnType<typeof grammarProduction>>,
+): string | null {
+  if (isFormRecipe(prod.recipe)) return null;
+  const f = recipeFormula(prod.recipe).opening.find((o) => o.host === prod.host);
+  const label = f?.formLabel;
+  if (!label || label === FORM_LABEL.dictionary) return null;
+  return `uses the ${label}`;
+}
+
+function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
   const prod = grammarProduction(fact);
   if (prod) {
-    // The formula for THIS fact's host: 〜そう on a verb uses the stem and on an
-    // い-adjective trims the い, and those are separate facts precisely because
-    // they are separate rules.
-    const f = recipeFormula(prod.recipe).opening.find((o) => o.host === prod.host);
-    // No form label is a real answer — 〜ば and 〜たら ARE forms the engine
-    // produces, with no step to name. Nothing to say, so nothing is said.
-    //
-    // "just as it is" is dropped too, and not for grammar: it is the label for
-    // the dictionary form, so "uses the just as it is" is not a sentence, and a
-    // pattern that asks nothing of the word has told you nothing anyway.
-    //
-    // LIVE, on the な-adjective half of 〜すぎる and 〜そう. A な-adjective's stem
-    // IS the adjective (静か → 静か), so its label is the dictionary form's own
-    // words — see FORM_LABEL_BY_HOST — and there is no step to name. The fact is
-    // still producible and still scored: 静かすぎる is a real thing to build. It
-    // is the HINT that has nothing to add, which is what this branch is for.
-    const label = f?.formLabel;
-    if (!label || label === FORM_LABEL.dictionary) return null;
-    return { kind: "text", text: `uses the ${label}` };
+    // TWO nudges, either or both. The FORM nudge is "uses the て-form"; the CLASS
+    // nudge is "食べる is a る-verb". They are combined into one line, and the hint
+    // is whatever survives — null when neither has anything to say.
+    const formText = formHintText(prod);
+    // The class of a KNOWN る-verb, as an extra reminder. An UNKNOWN る-verb
+    // already carries its class in the instruction (quiz-instruction.ts), so it
+    // is NOT repeated here; a known one is not named there (she has met it), so
+    // the reminder rides in the hint instead. Absent for a non-る verb (spelling
+    // gives its class) and, of course, when there is no vehicle.
+    const kind =
+      vehicle && vehicle.known ? ruVerbKindOf(vehicle.surface, vehicle.cls) : null;
+    const classText = kind ? `${vehicle!.surface} is a ${kind}` : null;
+    const text = [formText, classText].filter(Boolean).join(". ");
+    return text ? { kind: "text", text } : null;
   }
   const mean = grammarMeaning(fact);
   if (!mean) return null;

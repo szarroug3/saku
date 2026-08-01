@@ -12,7 +12,11 @@ import { describe, test } from "node:test";
 
 import { questionsFor, grammarVehicleFor, type GrammarVehicle } from "./question";
 import { buildMcOptions, checkTyped } from "./index";
-import { patternProductionFactId, GRAMMAR_SUBJECT } from "@/data/grammar";
+import {
+  patternProductionFactId,
+  specialVerbProductionFactId,
+  GRAMMAR_SUBJECT,
+} from "@/data/grammar";
 import { factInfo } from "@/lib/facts";
 import {
   ADJ_I_VEHICLES,
@@ -86,9 +90,14 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
     }
   });
 
-  test("the reveal is the answer on the chosen verb", () => {
+  test("the reveal is the answer on the chosen verb, in BOTH scripts", () => {
     const qt = questionsFor(TAI);
-    assert.equal(qt.answerReveal?.(TAI, "en2jp", { grammarVehicle: TABERU }), "食べたい");
+    // Both are graded correct, so both are shown. A KNOWN vehicle led with kanji
+    // (the script its prompt used), the kana in parentheses.
+    assert.equal(
+      qt.answerReveal?.(TAI, "en2jp", { grammarVehicle: TABERU }),
+      "食べたい（たべたい）",
+    );
     // No vehicle → null, so the drill falls back to the baked answer.
     assert.equal(qt.answerReveal?.(TAI, "en2jp", {}), null);
     assert.equal(factInfo(TAI)?.answers[0], "行きたい");
@@ -134,8 +143,10 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
     const qt = questionsFor(TAI);
     // Prompt glyph is the kana reading, never the kanji surface.
     assert.equal(qt.prompt(TAI, "en2jp", KAKU_UNKNOWN).glyph, "かく");
-    // Reveal is the kana-built form.
-    assert.equal(qt.answerReveal?.(TAI, "en2jp", KAKU_UNKNOWN), "かきたい");
+    // Reveal shows BOTH scripts (both are accepted). An unknown filler was drawn
+    // in kana, so the kana form leads and the kanji rides in parentheses — the
+    // learner sees what she typed AND the written form it maps to.
+    assert.equal(qt.answerReveal?.(TAI, "en2jp", KAKU_UNKNOWN), "かきたい（書きたい）");
     // Distractor option labels are all built on the kana reading of 書く: every
     // conjugation of かく starts with か and, crucially, carries NO kanji — the
     // learner has not met 書, so no option may show it.
@@ -149,6 +160,50 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
     assert.ok(checkTyped(TAI, "かきたい", "en2jp", KAKU_UNKNOWN));
     assert.ok(checkTyped(TAI, "書きたい", "en2jp", KAKU_UNKNOWN));
   });
+});
+
+describe("the te-form IRREGULARS never show a learner unlearned kanji", () => {
+  // The regression Sam hit in te-form lesson 1. 行く / する / 来る are the te-form's
+  // memorized exceptions, each its own production fact PINNED to exactly that verb
+  // (@iku/@suru/@kuru). A day-one learner knows none of them, and the fact cannot
+  // be asked on any other verb — so the "safe to guess" fallback pool is empty. It
+  // used to return NO vehicle there, stranding the card on its baked KANJI lemma:
+  // the prompt showed 行く and a miss revealed 行って, both in kanji never taught.
+  // Now the pinned verb is dealt in KANA, with the kanji only alongside the reveal.
+  const DAY_ONE = knowing(); // no claims, no showings — the first grammar lesson
+
+  const CASES = [
+    { q: "iku", kana: "いく", kanaAns: "いって", kanjiAns: "行って" },
+    { q: "suru", kana: "する", kanaAns: "して", kanjiAns: "して" },
+    { q: "kuru", kana: "くる", kanaAns: "きて", kanjiAns: "来て" },
+  ] as const;
+
+  for (const c of CASES) {
+    test(`@${c.q}: kana prompt, kana-led reveal, both scripts graded`, () => {
+      const fact = specialVerbProductionFactId("te-sequence", c.q);
+      const v = grammarVehicleFor(fact, DAY_ONE, () => 0);
+      assert.ok(v, `@${c.q} rolled no vehicle — the card falls back to kanji`);
+      assert.equal(v!.known, false, "an unmet verb must be drawn as unknown (kana)");
+      const ctx = { grammarVehicle: v! };
+      const qt = questionsFor(fact);
+      // The prompt is kana, never a kanji the learner has not met.
+      const glyph = qt.prompt(fact, "en2jp", ctx).glyph;
+      assert.equal(glyph, c.kana);
+      assert.ok(
+        !/[一-鿿]/.test(String(glyph)),
+        `${String(glyph)} shows kanji on a day-one card`,
+      );
+      // A miss reveals kana first (what she types), the kanji in parentheses when
+      // it differs — both are accepted, so both are shown.
+      const expected =
+        c.kanaAns === c.kanjiAns ? c.kanaAns : `${c.kanaAns}（${c.kanjiAns}）`;
+      assert.equal(qt.answerReveal?.(fact, "en2jp", ctx), expected);
+      // Grading accepts kana AND kanji — the invariant that neither script is
+      // ever marked wrong.
+      assert.ok(checkTyped(fact, c.kanaAns, "en2jp", ctx), "kana rejected");
+      assert.ok(checkTyped(fact, c.kanjiAns, "en2jp", ctx), "kanji rejected");
+    });
+  }
 });
 
 describe("a split production fact is drilled on ITS OWN host", () => {

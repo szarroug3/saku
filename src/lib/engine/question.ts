@@ -1317,7 +1317,19 @@ const grammarQuestions: QuestionType = {
     const v = variedVehicle(prod.recipe, ctx, prod.host, prod.bucket);
     if (!v) return null;
     const built = builtOn(prod.recipe, v);
-    return built ? (v.known ? built.form : built.kanaForm) : null;
+    // BOTH SCRIPTS, because both are graded correct (check accepts form AND
+    // kanaForm). Showing only one hid a right answer: a learner who typed 行って
+    // saw the reveal print いって, or the reverse, with no sign the other was fine.
+    // The script the card SHOWED leads — kanji for a known vehicle (食べて…), kana
+    // for an unknown filler drawn in kana (いって…) — and the other rides in
+    // parentheses. When they coincide (a pure-kana result like して) there is only
+    // one form and it prints alone.
+    if (!built) return null;
+    return built.form === built.kanaForm
+      ? built.form
+      : v.known
+        ? `${built.form}（${built.kanaForm}）`
+        : `${built.kanaForm}（${built.form}）`;
   },
 };
 

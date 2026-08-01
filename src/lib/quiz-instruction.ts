@@ -45,8 +45,10 @@ import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { grammarProduction } from "@/data/grammar";
 import { patternLabel } from "@/data/grammar/recipes";
 import { answerIsJapanese } from "@/lib/engine/question";
+import type { GrammarVehicle } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
 import { isReadingFact } from "@/lib/word-unlock";
+import { ruVerbKindOf } from "@/lib/word-forms";
 import type { Direction, FactId } from "@/types";
 
 /** How the instruction names the thing you are being asked to produce.
@@ -79,6 +81,7 @@ export function quizInstruction(
   fact: FactId,
   dir: Direction,
   mode: "mc" | "typed",
+  vehicle?: GrammarVehicle,
 ): string | null {
   if (!factInfo(fact)) return null;
 
@@ -92,9 +95,19 @@ export function quizInstruction(
   const prod = grammarProduction(fact);
   if (prod) {
     const form = `${patternLabel(prod.recipe)} form`;
+    // NAME THE CLASS OF AN UNKNOWN る-VERB. 食べる and 帰る are both drawn in kana
+    // (たべる, かえる) because she has not met them, and 〜る alone does not say
+    // whether the conjugation is ichidan or godan — so the vehicle pool would not
+    // deal one at all unless the card names it. Here it does: "this る-verb" /
+    // "this う-verb" is the one fact spelling withholds, and with it the answer is
+    // fully determined. A KNOWN verb keeps the plain "word" (its class rides in
+    // the hint instead), and every non-る vehicle is unambiguous already.
+    const kind =
+      vehicle && !vehicle.known ? ruVerbKindOf(vehicle.surface, vehicle.cls) : null;
+    const noun = kind ?? "word";
     return mode === "mc"
-      ? `Which of these is how this word is said in the ${form}?`
-      : `Type how this word is said in the ${form}.`;
+      ? `Which of these is how this ${noun} is said in the ${form}?`
+      : `Type how this ${noun} is said in the ${form}.`;
   }
 
   // Transitivity and keigo fold the register/role that used to sit in a grey

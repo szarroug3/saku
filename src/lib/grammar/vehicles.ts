@@ -39,7 +39,7 @@
 
 import { apply } from "./apply.ts";
 import { vocabRow } from "../../data/vocab.ts";
-import { isIntransitive, isTransitive } from "../word-forms.ts";
+import { isIntransitive, isTransitive, ruVerbKindOf } from "../word-forms.ts";
 import { vehicleInBucket, type VehicleBucket } from "./te-endings.ts";
 import type { Host, Recipe, Transitivity } from "../../data/grammar/recipes.ts";
 import type { WordClass } from "../conjugate/index.ts";
@@ -311,26 +311,36 @@ export function vehiclesFor(
 }
 
 /**
- * Is this vehicle SAFE to show a learner who has NOT met it — i.e. can she
- * predict its conjugation from spelling alone?
+ * May this vehicle be shown to a learner who has NOT met it — i.e. can she
+ * conjugate it, given what the card tells her?
  *
- * Non-verb hosts (adj, noun) are always safe: they carry no 音便 the learner
- * has to guess. (The い-adj / な-adj ambiguity is a separate, tiny edge case and
- * is deliberately not blocked here.)
+ * Non-verb hosts (adj, noun) are always fine: they carry no 音便 to guess. (The
+ * い-adj / な-adj ambiguity is a separate, tiny edge case, deliberately not
+ * blocked here.)
  *
- * A VERB is safe only when it is a plain godan with a NON-る ending. Everything
- * that ends in る is out — a る-ending surface could be ichidan (食べる), godan
- * (帰る), or irregular (する/来る), and nothing in the spelling says which, so its
- * て-form is unpredictable. Two non-る verbs are out too, for the same reason at
- * one remove: 行く (v5k-s) and 問う (v5u-s) look like ordinary godan but carry an
- * irregular 音便 (行って not 行いて, 問うて not 問って). What is left — v5u, v5k,
- * v5g, v5s, v5t, v5n, v5b, v5m — a learner CAN conjugate from the ending alone.
+ * A る-ending verb WHOSE CLASS WE CAN NAME is fine, and this is the part that
+ * changed. A bare 食べる / 帰る is spelling-ambiguous — ichidan or godan, nothing
+ * in 〜る says which — but the drill NAMES it: the instruction reads "this る-verb"
+ * / "this う-verb" for an unknown vehicle (see quiz-instruction.ts), which is the
+ * one fact spelling withholds. With the class stated, the conjugation is fully
+ * determined, so a labelable る-verb (ichidan, or a regular godan-る) is dealt in
+ * kana like any other filler. `ruVerbKindOf` is the one place that label is
+ * decided, so this and the instruction can never disagree about which verbs it
+ * covers.
  *
- * KNOWN verbs are exempt from this test entirely (see `pickVehicle`): once she
- * has learned 食べる its class is known, so its て-form is no longer a guess.
+ * Out: 行く (v5k-s) and 問う (v5u-s) look godan but carry an irregular 音便 (行って
+ * not 行いて) that no class label fixes, and する / 来る are their own memorized
+ * skills — none may be dealt on a free pick. する/来る still reach a card through
+ * their own VERB bucket (@suru/@kuru), which names the exception outright.
+ *
+ * KNOWN verbs skip this test entirely (see `pickVehicle`): once she has met 食べる
+ * its class is no longer a guess, so its class rides in the HINT, not here.
  */
-export function unambiguousWhenUnknown(v: Vehicle): boolean {
+export function showableWhenUnknown(v: Vehicle): boolean {
   if (v.host !== "verb") return true;
+  // A る-verb we can label ("る-verb" / "う-verb") is conjugable once named.
+  if (ruVerbKindOf(v.surface, v.cls)) return true;
+  // Otherwise only a plain godan whose non-る ending already gives its class.
   return !v.surface.endsWith("る") && v.cls !== "v5k-s" && v.cls !== "v5u-s";
 }
 
@@ -348,12 +358,13 @@ export function unambiguousWhenUnknown(v: Vehicle): boolean {
  * a production item drilled on a known word tests the pattern, not vocabulary.
  * But a production fact must never become UNASKABLE just because she has met
  * none of the pool: so when she knows none, fall back to the vehicles she can
- * still conjugate from spelling (`unambiguousWhenUnknown`) and show those in
- * kana (the caller's job). That keeps the item askable from lesson one while
- * never asking her to produce a 音便 she has no way to predict (an unknown
- * る-verb, 行く, する…). Without a `known` predicate every legal vehicle is
- * eligible (a cluster page's worked examples). Null only when the resulting
- * pool is empty.
+ * still conjugate given what the card names (`showableWhenUnknown`) and show
+ * those in kana (the caller's job). That keeps the item askable from lesson one
+ * while never asking her to produce a 音便 she has no way to predict (行く, 問う).
+ * A る-verb IS now eligible — the instruction states its class — but 行く / する /
+ * 来る stay out of a free pick. Without a `known` predicate every legal vehicle is
+ * eligible (a cluster page's worked examples). Null only when the resulting pool
+ * is empty.
  */
 export function pickVehicle(
   r: Recipe,
@@ -370,7 +381,22 @@ export function pickVehicle(
   let options: Vehicle[];
   if (known) {
     const knownOpts = all.filter((v) => known(v.surface));
-    options = knownOpts.length > 0 ? knownOpts : all.filter(unambiguousWhenUnknown);
+    if (knownOpts.length > 0) {
+      options = knownOpts;
+    } else {
+      const safe = all.filter(showableWhenUnknown);
+      // A VERB bucket pins the fact to ONE irregular verb — 行く / する / 来る, the
+      // @iku/@suru/@kuru production facts — and the fact IS that verb's exception:
+      // there is no other verb it can be asked on. `showableWhenUnknown` strips
+      // it (its 音便 is irregular, and no class label fixes it), and with nothing left the
+      // caller stranded the card on its BAKED KANJI lemma — 行く shown to a learner
+      // who has not met it, and 行って revealed the same way. Keep the pinned verb
+      // instead; grammarVehicleFor returns it with `known: false`, so it draws in
+      // KANA (いく → いって) exactly as every other unknown filler does. The te-form
+      // lesson teaches these three as the irregulars, so drilling them is the point,
+      // never a kanji the learner cannot read.
+      options = safe.length > 0 ? safe : bucket?.kind === "verb" ? all : [];
+    }
   } else {
     options = all;
   }
