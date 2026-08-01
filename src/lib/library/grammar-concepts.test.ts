@@ -13,7 +13,7 @@ import { RECIPES } from "@/data/grammar/recipes";
 import {
   conjugatesVerb,
   hostsAdjective,
-  isTeFormRecipe,
+  verbAttachForm,
   patternEntry,
 } from "@/data/grammar";
 import { KEIGO_SETS, keigoSetEntry } from "@/data/keigo";
@@ -149,28 +149,24 @@ describe("a concept points at the lesson's own prose, so the two cannot drift", 
 
 });
 
-describe("the 〜て family is detected as te-form recipes", () => {
-  // isTeFormRecipe drives which patterns hang off the て-form (their build card
-  // links "Build the て-form" to the form's own entry). This asserts the predicate:
-  // te-sequence is in, a non-て pattern is out.
+describe("the 〜て family is identified from its verb attachment", () => {
   test("te-sequence is a te-form recipe", () => {
     const te = RECIPES.find((r) => r.id === "te-sequence");
     assert.ok(te, "te-sequence recipe is missing");
-    assert.ok(isTeFormRecipe(te), "te-sequence is not detected as a te-form recipe");
+    assert.equal(verbAttachForm(te), "te");
     // And its Library entry exists to carry the teaching.
     assert.ok(libEntry(patternEntry("te-sequence")), "te-sequence has no entry");
   });
 
   test("the whole 〜て family is detected, and only verb-form-て patterns", () => {
-    const teFamily = RECIPES.filter((r) => isTeFormRecipe(r)).map((r) => r.id);
-    // te-sequence, te-cause, te-request and the rest of the verb 〜て patterns.
+    const teFamily = RECIPES.filter((r) => verbAttachForm(r) === "te").map((r) => r.id);
+    // te-sequence, te-request and the rest of the verb 〜て patterns.
     assert.ok(teFamily.includes("te-sequence"));
-    assert.ok(teFamily.includes("te-cause"));
     assert.ok(teFamily.length >= 3, "the te family looks too small");
     // A pattern with no verb て attachment must not get the row: た-form /
     // conditional patterns share the 音便 but are not the て-form.
     const taForm = RECIPES.find((r) => r.id === "ta-form" || r.id === "ta-past");
-    if (taForm) assert.ok(!isTeFormRecipe(taForm), "a た pattern was mistaken for て");
+    if (taForm) assert.notEqual(verbAttachForm(taForm), "te");
   });
 });
 
@@ -213,7 +209,7 @@ describe("the verb-conjugating grammar entries link to う-verbs and る-verbs",
     assert.ok(family.length >= 10, "the verb-form family looks too small");
     // Sanity: the whole te-form family conjugates a verb, so verb-classes reaches
     // at least everywhere the te-form concept does.
-    for (const r of RECIPES.filter((x) => isTeFormRecipe(x))) {
+    for (const r of RECIPES.filter((x) => verbAttachForm(x) === "te")) {
       assert.ok(conjugatesVerb(r), `${r.id} is a te recipe but not verb-conjugating`);
     }
     // A pattern whose verb attachment is the bare dictionary form (no class
@@ -239,9 +235,8 @@ describe("the adjective-hosting grammar entries link to い/な-adjectives", () 
     assert.ok(family.includes("node"));
     assert.ok(family.some((id) => id.startsWith("sou")));
     assert.ok(family.length >= 3, "the adjective family looks too small");
-    // te-sequence hosts only a verb, so it must not get the adjective row.
-    const teSeq = RECIPES.find((r) => r.id === "te-sequence")!;
-    assert.ok(!hostsAdjective(teSeq), "te-sequence should not host an adjective");
+    const teKara = RECIPES.find((r) => r.id === "te-kara")!;
+    assert.ok(!hostsAdjective(teKara), "te-kara should not host an adjective");
   });
 });
 

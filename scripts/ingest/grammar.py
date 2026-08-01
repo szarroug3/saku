@@ -160,8 +160,8 @@ NOUNISH = {"pos1_in": ("名詞", "代名詞", "固有名詞")}
 #
 # NOT every recipe gets one:
 #   - potential / passive are morphologically identical (see docstring).
-#   - the bare-て recipes (te-sequence, te-cause) are the same token run and
-#     differ only by meaning; matching them would label sentences at random.
+#   - bare て (te-sequence) has several context-dependent meanings, so matching
+#     it would label a sentence's particular sense at random.
 # Those are listed in NO_SIGNATURE with a reason, which is a claim we make
 # once here rather than a zero someone has to explain later.
 # ---------------------------------------------------------------------------
@@ -553,9 +553,8 @@ NO_SIGNATURE = {
     "causative": "させる is distinguishable, but the corpus items would need a role filter "
     "to be usable; out of scope for this pass.",
     "causative-passive": "See `causative`.",
-    "te-sequence": "Bare て. Same token run as te-cause; they differ only by meaning, "
-    "so labelling either would be labelling at random.",
-    "te-cause": "See `te-sequence`.",
+    "te-sequence": "Bare て has several context-dependent meanings, so assigning "
+    "one from tokens alone would be labelling at random.",
     "te-aru": "てある vs ている overlap in the tagger's 有る/居る split more than is safe.",
     "te-iku": "ていく's 行く collides with the ikenai signatures; needs disambiguation.",
     "te-kuru": "See `te-iku`.",

@@ -31,7 +31,7 @@ import { radicalMeaningFactId } from "@/data/radicals";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { sideFactId, transitivitySide } from "@/data/transitivity-facts";
 import { wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
-import { patternProductionFactId } from "@/data/grammar";
+import { classProductionFactId, patternProductionFactId } from "@/data/grammar";
 import { buildMcOptions } from "@/lib/engine";
 import { en2jpTypeable, fixedDirOf } from "@/lib/engine/question";
 import { ALL_FACTS } from "@/lib/facts";
@@ -188,44 +188,62 @@ describe("a production card names the class of an unknown る-verb", () => {
   // so the instruction says it — which is what lets the vehicle pool deal one at
   // all (see vehicles.ts / word-forms.ruVerbKindOf). A known verb, or a non-る
   // one, keeps the plain "word".
-  const TAI = patternProductionFactId("tai");
+  const TAI_I = classProductionFactId("tai", "v1");
+  const TAI_R = classProductionFactId("tai", "v5r");
   const ICHIDAN_UNKNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: false } as const;
   const GODAN_RU_UNKNOWN = { surface: "帰る", kana: "かえる", cls: "v5r", known: false } as const;
 
   test("an unknown ichidan verb is called a る-verb", () => {
     assert.equal(
-      quizInstruction(TAI, "en2jp", "typed", ICHIDAN_UNKNOWN),
+      quizInstruction(TAI_I, "en2jp", "typed", ICHIDAN_UNKNOWN),
       "Type how this る-verb is said in the 〜たい form.",
     );
   });
 
   test("an unknown godan-る verb is called a う-verb", () => {
     assert.equal(
-      quizInstruction(TAI, "en2jp", "typed", GODAN_RU_UNKNOWN),
+      quizInstruction(TAI_R, "en2jp", "typed", GODAN_RU_UNKNOWN),
       "Type how this う-verb is said in the 〜たい form.",
     );
   });
 
   test("a KNOWN る-verb keeps the plain 'word' — its class rides in the hint", () => {
     assert.equal(
-      quizInstruction(TAI, "en2jp", "typed", { ...ICHIDAN_UNKNOWN, known: true }),
+      quizInstruction(TAI_I, "en2jp", "typed", { ...ICHIDAN_UNKNOWN, known: true }),
       "Type how this word is said in the 〜たい form.",
     );
   });
 
   test("no vehicle, and a non-る verb, both stay 'word'", () => {
     assert.equal(
-      quizInstruction(TAI, "en2jp", "typed"),
+      quizInstruction(TAI_I, "en2jp", "typed"),
       "Type how this word is said in the 〜たい form.",
     );
     assert.equal(
-      quizInstruction(TAI, "en2jp", "typed", {
+      quizInstruction(classProductionFactId("tai", "v5k"), "en2jp", "typed", {
         surface: "書く",
         kana: "かく",
         cls: "v5k",
         known: false,
       }),
       "Type how this word is said in the 〜たい form.",
+    );
+  });
+
+  test("unknown adjectives are named by type", () => {
+    const adjI = patternProductionFactId("sugiru", "adj-i");
+    const adjNa = patternProductionFactId("node", "adj-na");
+    assert.equal(
+      quizInstruction(adjI, "en2jp", "typed", {
+        surface: "高い", kana: "たかい", cls: "adj-i", known: false,
+      }),
+      "Type how this い-adjective is said in the 〜すぎる form.",
+    );
+    assert.equal(
+      quizInstruction(adjNa, "en2jp", "typed", {
+        surface: "静か", kana: "しずか", cls: "adj-na", known: false,
+      }),
+      "Type how this な-adjective is said in the 〜ので form.",
     );
   });
 });

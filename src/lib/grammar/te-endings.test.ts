@@ -1,72 +1,28 @@
 // Run:
 //   node --import ./src/lib/conjugate/test-hooks.mjs --test src/lib/grammar/te-endings.test.ts
 //
-// THE PER-ENDING て-FORM DRILL.
-//
-// The te-form's production used to be ONE fact (行く → 行って), so a full-coverage
-// round asked the learner to build the て-form of a single verb. It now splits
-// into one fact per 音便 ending — って, いて, いで, んで, して — so a round asks one
-// verb of EACH ending. These tests pin the four things that split rests on:
-//
-//   1. the five facts exist, baked on the right verb, and the plain
-//      grammar:te-sequence/production fact is gone (replaced, not doubled);
-//   2. each fact rolls a vehicle of ITS ending, and — the whole reason る has no
-//      fact — never an unknown る-verb or a する/来る/行く irregular;
-//   3. grading accepts the built form in BOTH kanji and kana (never mark correct
-//      Japanese wrong);
-//   4. the te-form lesson deck carries exactly one production card per ending.
+// The て-form has one fact per conjugation class, even where several classes
+// share the same surface ending. Remembering む → んで does not score ぬ → んで.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
   TE_FORM_RECIPE_ID,
+  classProductionFactId,
   grammarProduction,
-  patternEntry,
   patternMeaningFactId,
   patternProductionFactId,
   specialVerbProductionFactId,
-  teEndingProductionFactId,
 } from "@/data/grammar";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
-import { factInfo, factsOf } from "@/lib/facts";
+import { factInfo } from "@/lib/facts";
 import { buildCoverageDeck } from "@/lib/ask-forms";
-import { wordMeaningFactId } from "@/data/vocab";
-import {
-  ENDING_ANCHOR,
-  TE_ENDINGS,
-  endingBucketOf,
-  type TeEnding,
-} from "./te-endings";
 import { grammarVehicleFor, questionsFor } from "@/lib/engine/question";
+import { CLASS_ANCHOR } from "./te-endings";
 import type { AskConfig, FactId, HistoryFile } from "@/types";
 
-const AT = Date.UTC(2026, 0, 1);
-
-/** The built て-form each ending's fact must carry, in kanji and kana. This is
- * the answer the drill grades against, so it is pinned literally rather than
- * recomputed — a re-cut of the conjugation data that changed one of these would
- * be changing the fact's meaning and should trip a test. */
-const EXPECTED: Record<TeEnding, { form: string; kana: string }> = {
-  "te-utsu": { form: "買って", kana: "かって" },
-  "te-ku": { form: "書いて", kana: "かいて" },
-  "te-gu": { form: "泳いで", kana: "およいで" },
-  "te-mbn": { form: "飲んで", kana: "のんで" },
-  "te-su": { form: "話して", kana: "はなして" },
-};
-
-function history(over: Partial<HistoryFile> = {}): HistoryFile {
-  return { sessions: [], facts: {}, claims: {}, ...over };
-}
-
-/** A history in which one word is "known" — a claim, which is what wordKnown
- * reads. Mirrors /api/claim and the grammar-lesson tests. */
-function knowing(keb: string): HistoryFile {
-  return history({
-    claims: { [wordMeaningFactId(keb)]: AT } as HistoryFile["claims"],
-  });
-}
-
+const EMPTY: HistoryFile = { sessions: [], facts: {}, claims: {} };
 const ALL: AskConfig = {
   japanese: {
     prompts: ["text", "audio"],
@@ -77,224 +33,81 @@ const ALL: AskConfig = {
   english: { answers: ["typed", "mc"] },
 };
 
-describe("the five per-ending te-form facts", () => {
-  test("each ending's fact exists, baked on its representative verb", () => {
-    for (const ending of TE_ENDINGS) {
-      const id = teEndingProductionFactId(TE_FORM_RECIPE_ID, ending);
-      const info = factInfo(id);
-      assert.ok(info, `${ending}: no fact in the registry`);
-      const want = EXPECTED[ending];
-      assert.equal(info!.glyph, want.form, `${ending}: glyph`);
-      assert.deepEqual(
-        new Set(info!.answers),
-        new Set([want.form, want.kana]),
-        `${ending}: answers accept kanji AND kana`,
+const EXPECTED: Record<string, string> = {
+  v5u: "買って",
+  v5t: "待って",
+  v5r: "帰って",
+  v5m: "飲んで",
+  v5b: "遊んで",
+  v5n: "死んで",
+  v5k: "書いて",
+  v5g: "泳いで",
+  v5s: "話して",
+  v1: "食べて",
+};
+
+describe("the ten regular te-form class facts", () => {
+  test("each fact is baked on its class anchor and remains independently addressable", () => {
+    for (const anchor of CLASS_ANCHOR) {
+      const id = classProductionFactId(TE_FORM_RECIPE_ID, anchor.cls);
+      assert.equal(factInfo(id)?.glyph, EXPECTED[anchor.cls], anchor.cls);
+      const production = grammarProduction(id);
+      assert.equal(production?.lemma, anchor.surface);
+      assert.deepEqual(production?.bucket, { kind: "class", cls: anchor.cls });
+    }
+    assert.notEqual(
+      classProductionFactId(TE_FORM_RECIPE_ID, "v5m"),
+      classProductionFactId(TE_FORM_RECIPE_ID, "v5n"),
+    );
+  });
+
+  test("each fact rolls a vehicle of exactly its own class", () => {
+    for (const anchor of CLASS_ANCHOR) {
+      const vehicle = grammarVehicleFor(
+        classProductionFactId(TE_FORM_RECIPE_ID, anchor.cls),
+        EMPTY,
+        () => 0,
       );
+      assert.ok(vehicle, anchor.cls);
+      assert.equal(vehicle.cls, anchor.cls);
+      assert.equal(vehicle.known, false);
     }
   });
 
-  test("the plain te-sequence production fact is REPLACED, not doubled", () => {
-    // Replacing is the whole point: the lesson references the per-ending set, and
-    // nothing should still schedule the old single "build the て-form" fact.
-    const plain = patternProductionFactId(TE_FORM_RECIPE_ID);
-    assert.equal(factInfo(plain), undefined);
-    assert.equal(grammarProduction(plain), null);
-  });
-
-  test("grammarProduction resolves each fact to its ending bucket and anchor verb", () => {
-    for (const ending of TE_ENDINGS) {
-      const prod = grammarProduction(teEndingProductionFactId(TE_FORM_RECIPE_ID, ending));
-      assert.ok(prod, `${ending}: not a production fact`);
-      assert.deepEqual(prod!.bucket, { kind: "ending", ending });
-      assert.equal(prod!.host, "verb");
-      assert.equal(prod!.lemma, ENDING_ANCHOR[ending].surface);
-    }
+  test("grading accepts the built form in kanji and kana", () => {
+    const id = classProductionFactId(TE_FORM_RECIPE_ID, "v5u");
+    const qt = questionsFor(id);
+    const ctx = {
+      grammarVehicle: { surface: "買う", kana: "かう", cls: "v5u" as const, known: true },
+    };
+    assert.equal(qt.check(id, "jp2en", "買って", ctx), true);
+    assert.equal(qt.check(id, "jp2en", "かって", ctx), true);
+    assert.equal(qt.check(id, "jp2en", "待って", ctx), false);
   });
 });
 
-describe("endingBucketOf keys on the class, and refuses る and the irregulars", () => {
-  test("every drillable ending maps its godan classes and nothing else", () => {
-    assert.equal(endingBucketOf("v5u"), "te-utsu");
-    assert.equal(endingBucketOf("v5t"), "te-utsu");
-    assert.equal(endingBucketOf("v5k"), "te-ku");
-    assert.equal(endingBucketOf("v5g"), "te-gu");
-    assert.equal(endingBucketOf("v5m"), "te-mbn");
-    assert.equal(endingBucketOf("v5b"), "te-mbn");
-    assert.equal(endingBucketOf("v5n"), "te-mbn");
-    assert.equal(endingBucketOf("v5s"), "te-su");
-  });
-
-  test("る-ending and the irregulars are NO bucket — they never roll", () => {
-    // The spelling-ambiguous and lexical-irregular classes: a godan る (帰る), an
-    // ichidan る (食べる/見る), the 行く exception, and する/来る. None is a per-ending
-    // skill, so each maps to null and can never be picked as a vehicle.
-    for (const cls of ["v5r", "v1", "v5k-s", "vs-i", "vs-s", "vk", "v5u-s"] as const) {
-      assert.equal(endingBucketOf(cls), null, cls);
-    }
-    assert.equal(endingBucketOf(null), null);
-  });
-});
-
-describe("the vehicle rolled for a per-ending fact matches its ending", () => {
-  const NEVER = new Set(["帰る", "食べる", "見る", "起きる", "行く", "する", "来る"]);
-
-  test("empty history: rolls a predictable verb of the right ending, never a る-verb or irregular", () => {
-    for (const ending of TE_ENDINGS) {
-      const fact = teEndingProductionFactId(TE_FORM_RECIPE_ID, ending);
-      for (let i = 0; i < 80; i++) {
-        const v = grammarVehicleFor(fact, history());
-        assert.ok(v, `${ending}: no vehicle rolled`);
-        assert.equal(
-          endingBucketOf(v!.cls),
-          ending,
-          `${ending}: rolled ${v!.surface} (${v!.cls}), wrong ending`,
-        );
-        assert.ok(
-          !NEVER.has(v!.surface),
-          `${ending}: rolled the forbidden ${v!.surface}`,
-        );
-        assert.ok(
-          !v!.surface.endsWith("る"),
-          `${ending}: rolled a る-verb ${v!.surface}`,
-        );
-        // No known verb → shown in kana (the caller draws the filler in kana).
-        assert.equal(v!.known, false);
-      }
-    }
-  });
-
-  test("a known verb of the ending is preferred and shown in its own script", () => {
-    // 待つ is a te-utsu verb; once known it should win over the 買う anchor and be
-    // shown known (kanji), because a production item on a known word tests the
-    // pattern, not vocabulary.
-    const fact = teEndingProductionFactId(TE_FORM_RECIPE_ID, "te-utsu");
-    const seen = new Set<string>();
-    for (let i = 0; i < 80; i++) {
-      const v = grammarVehicleFor(fact, knowing("待つ"));
-      assert.ok(v);
-      assert.equal(endingBucketOf(v!.cls), "te-utsu");
-      seen.add(v!.surface);
-    }
-    assert.ok(seen.has("待つ"), "the known te-utsu verb was never rolled");
-    // Every roll is a known verb, so all are shown in their own script.
-    const known = grammarVehicleFor(fact, knowing("待つ"));
-    assert.equal(known!.surface, "待つ");
-    assert.equal(known!.known, true);
-  });
-});
-
-describe("grading never marks correct Japanese wrong", () => {
-  const grammar = questionsFor(teEndingProductionFactId(TE_FORM_RECIPE_ID, "te-utsu"));
-
-  test("both the kanji and kana built forms grade true for a rolled vehicle", () => {
-    for (const ending of TE_ENDINGS) {
-      const anchor = ENDING_ANCHOR[ending];
-      const fact = teEndingProductionFactId(TE_FORM_RECIPE_ID, ending);
-      const qt = questionsFor(fact);
-      // Show the anchor as a KNOWN vehicle; both scripts of the built form count.
-      const ctx = {
-        grammarVehicle: {
-          surface: anchor.surface,
-          kana: anchor.kana,
-          cls: anchor.cls,
-          known: true,
-        },
-      };
-      const want = EXPECTED[ending];
-      assert.ok(
-        qt.check(fact, "jp2en", want.form, ctx),
-        `${ending}: kanji form ${want.form} graded wrong`,
-      );
-      assert.ok(
-        qt.check(fact, "jp2en", want.kana, ctx),
-        `${ending}: kana form ${want.kana} graded wrong`,
-      );
-    }
-  });
-
-  test("a wrong ending's form does NOT grade true", () => {
-    const fact = teEndingProductionFactId(TE_FORM_RECIPE_ID, "te-utsu");
-    // 書いて is the answer to te-ku, not to te-utsu built on 買う (買って).
-    assert.equal(grammar.check(fact, "jp2en", "書いて", {
-      grammarVehicle: { surface: "買う", kana: "かう", cls: "v5u", known: true },
-    }), false);
-  });
-});
-
-describe("the te-form lesson deck carries one production card per ending", () => {
+describe("the te-form lesson covers every production skill", () => {
   const lesson = CURRICULUM_LESSONS.find((l) => l.primaryPattern === TE_FORM_RECIPE_ID)!;
+  const expected = new Set<FactId>([
+    patternMeaningFactId(TE_FORM_RECIPE_ID),
+    ...CLASS_ANCHOR.map((a) => classProductionFactId(TE_FORM_RECIPE_ID, a.cls)),
+    ...["iku", "suru", "kuru"].map((q) => specialVerbProductionFactId(TE_FORM_RECIPE_ID, q)),
+    patternProductionFactId(TE_FORM_RECIPE_ID, "adj-i"),
+    patternProductionFactId(TE_FORM_RECIPE_ID, "adj-na"),
+    specialVerbProductionFactId(TE_FORM_RECIPE_ID, "ii"),
+  ]);
 
-  test("its drills are the meaning fact, the five per-ending facts, and @iku/@suru/@kuru", () => {
-    const expected = new Set<FactId>([
-      patternMeaningFactId(TE_FORM_RECIPE_ID),
-      ...TE_ENDINGS.map((e) => teEndingProductionFactId(TE_FORM_RECIPE_ID, e)),
-      ...["iku", "suru", "kuru"].map((q) =>
-        specialVerbProductionFactId(TE_FORM_RECIPE_ID, q),
-      ),
-    ]);
+  test("its drills are definition, ten classes, three irregular verbs, and three adjectives", () => {
+    assert.equal(lesson.drills.length, 17);
     assert.deepEqual(new Set(lesson.drills), expected);
   });
 
-  test("buildCoverageDeck expands to the five endings plus the three irregular verbs", () => {
+  test("the real coverage deck preserves all sixteen production facts", () => {
     const { deck } = buildCoverageDeck(lesson.drills, ALL);
-    const prod = new Set(deck.filter((f) => grammarProduction(f)));
-    assert.deepEqual(
-      prod,
-      new Set([
-        ...TE_ENDINGS.map((e) => teEndingProductionFactId(TE_FORM_RECIPE_ID, e)),
-        ...["iku", "suru", "kuru"].map((q) =>
-          specialVerbProductionFactId(TE_FORM_RECIPE_ID, q),
-        ),
-      ]),
-    );
-    assert.equal(prod.size, 8); // 5 音便 + 行く + する + 来る
-    // The meaning fact is also asked, so the deck is not production-only.
-    assert.ok(deck.includes(patternMeaningFactId(TE_FORM_RECIPE_ID)));
-  });
-});
-
-// The whole point of the generalization: the ending split is NOT special to
-// te-sequence. Any recipe whose verb attachment is the て-form drills the same
-// five endings, each carrying its OWN full pattern (書いてから, not 書いて).
-describe("the ending split generalizes to a second te-pattern (te-kara)", () => {
-  const EXPECTED_KARA: Record<TeEnding, string> = {
-    "te-utsu": "買ってから",
-    "te-ku": "書いてから",
-    "te-gu": "泳いでから",
-    "te-mbn": "飲んでから",
-    "te-su": "話してから",
-  };
-
-  test("te-kara mints five per-ending facts, each the full pattern, and no plain one", () => {
-    for (const ending of TE_ENDINGS) {
-      const id = teEndingProductionFactId("te-kara", ending);
-      const info = factInfo(id);
-      assert.ok(info, `te-kara ${ending}: no fact in the registry`);
-      assert.equal(info!.glyph, EXPECTED_KARA[ending], `te-kara ${ending}: glyph`);
-      const prod = grammarProduction(id);
-      assert.ok(prod, `te-kara ${ending}: not resolved as production`);
-      assert.deepEqual(prod!.bucket, { kind: "ending", ending });
-      assert.equal(prod!.recipe.id, "te-kara");
+    const production = new Set(deck.filter((f) => grammarProduction(f)));
+    assert.equal(production.size, 16);
+    for (const id of expected) {
+      if (id !== patternMeaningFactId(TE_FORM_RECIPE_ID)) assert.ok(production.has(id), id);
     }
-    // Replaced, not doubled: no unqualified grammar:te-kara/production survives.
-    assert.equal(factInfo(patternProductionFactId("te-kara")), undefined);
-    assert.equal(grammarProduction(patternProductionFactId("te-kara")), null);
-  });
-
-  test("its deck yields the five distinct endings plus @iku/@suru/@kuru, and meaning", () => {
-    const drills = factsOf(patternEntry("te-kara"));
-    const { deck } = buildCoverageDeck(drills, ALL);
-    // Deduped by fact — the deck repeats each fact once per card kind (typed, MC).
-    const prod = new Set(deck.filter((f) => grammarProduction(f)));
-    const endingBuckets = new Set(
-      [...prod]
-        .map((f) => grammarProduction(f)!.bucket)
-        .filter((b) => b?.kind === "ending")
-        .map((b) => (b as { ending: TeEnding }).ending),
-    );
-    assert.deepEqual(endingBuckets, new Set(TE_ENDINGS));
-    // 五 endings + 行く/する/来る — te-kara has no verb restriction, so all three.
-    assert.equal(prod.size, 8);
-    assert.ok(deck.includes(patternMeaningFactId("te-kara")));
   });
 });

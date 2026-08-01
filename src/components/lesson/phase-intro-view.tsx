@@ -98,6 +98,7 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
               <IntroDeriveTable rows={intro.deriveRules} heads={intro.deriveHeads} />
             ) : null}
             {intro.buildFooter ? <IntroBuildFooter footer={intro.buildFooter} /> : null}
+            {intro.bodyAfterBuild?.length ? <IntroBody body={intro.bodyAfterBuild} /> : null}
             {intro.transitivityPairs?.length ? (
               <TransitivityPairsTable rows={intro.transitivityPairs} />
             ) : null}
@@ -138,39 +139,44 @@ export function IntroBody({
   return (
     <div className={`space-y-4 ${measure}`}>
       {body.map((p, i) => (
-        <div key={i} className="flex items-start gap-3">
-          {/* The mark the paragraph is about, at a size you can actually see it
-              at. ゛ and ゜ are two specks in a run of body text, which is no way
-              to introduce the thing the whole card is about. Given a fixed slot
-              so the two paragraphs line up under each other and read as a pair
-              of marks rather than a pair of sentences. */}
-          {p.mark ? (
-            <span
-              aria-hidden
-              className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-panel"
-            >
-              {/* Nudged down: a bare mark sits at the top of its em box, so
-                  centring the box is not centring the glyph. */}
-              <span className="translate-y-[0.3em] font-kana text-[22px] font-light leading-none text-text">
-                {p.mark}
-              </span>
-            </span>
+        <div key={i}>
+          {p.heading ? (
+            <h3 className="mb-3 text-[18px] font-medium leading-snug text-accent">{p.heading}</h3>
           ) : null}
-          <p className="text-[15px] leading-relaxed text-text">
-            {p.lead ? <span className="font-medium text-accent">{p.lead} </span> : null}
-            {p.accent && p.text.includes(p.accent)
-              ? (() => {
-                  const i = p.text.indexOf(p.accent!);
-                  return (
-                    <>
-                      {p.text.slice(0, i)}
-                      <span className="text-accent">{p.accent}</span>
-                      {p.text.slice(i + p.accent!.length)}
-                    </>
-                  );
-                })()
-              : p.text}
-          </p>
+          <div className="flex items-start gap-3">
+            {/* The mark the paragraph is about, at a size you can actually see it
+                at. ゛ and ゜ are two specks in a run of body text, which is no way
+                to introduce the thing the whole card is about. Given a fixed slot
+                so the two paragraphs line up under each other and read as a pair
+                of marks rather than a pair of sentences. */}
+            {p.mark ? (
+              <span
+                aria-hidden
+                className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-panel"
+              >
+                {/* Nudged down: a bare mark sits at the top of its em box, so
+                    centring the box is not centring the glyph. */}
+                <span className="translate-y-[0.3em] font-kana text-[22px] font-light leading-none text-text">
+                  {p.mark}
+                </span>
+              </span>
+            ) : null}
+            <p className="text-[15px] leading-relaxed text-text">
+              {p.lead ? <span className="font-medium text-accent">{p.lead} </span> : null}
+              {p.accent && p.text.includes(p.accent)
+                ? (() => {
+                    const i = p.text.indexOf(p.accent!);
+                    return (
+                      <>
+                        {p.text.slice(0, i)}
+                        <span className="text-accent">{p.accent}</span>
+                        {p.text.slice(i + p.accent!.length)}
+                      </>
+                    );
+                  })()
+                : p.text}
+            </p>
+          </div>
         </div>
       ))}
     </div>

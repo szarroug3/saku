@@ -152,9 +152,10 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     id: "gl-te-form-use",
     setId: "",
     eyebrow: "The て/で-form",
-    title: "Asks casually, or links ideas.",
+    title: "One form, several meanings.",
     body: [
       {
+        heading: "As a verb",
         lead: "By itself,",
         text: 'the て/で-form is a casual request or command: まって "wait!", みて "look!", ちょっときて "come here a sec".',
       },
@@ -179,14 +180,20 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       chain: "たべて、のんで、はなしている",
       gloss: "is eating, drinking, and talking",
     },
+    bodyAfterBuild: [
+      {
+        heading: "As an adjective",
+        text: "Adjectives use the て/で-form to link descriptions or give a reason. They have their own forms: an い-adjective changes い to くて, いい changes to よくて, and a な-adjective adds で.",
+      },
+    ],
   },
   {
-    // PAGE 4 — how to build it, every class on one page: the godan endings, the
-    // ichidan rule, the いく exception, and the two irregulars.
-    id: "gl-te-build",
+    // PAGE 4 — how to build verbs: every godan ending, the one ichidan rule,
+    // and the three exceptional or irregular verbs.
+    id: "gl-te-build-verbs",
     setId: "",
     eyebrow: "Building the て/で-form",
-    title: "Build it: drop the ending, add a new ending.",
+    title: "Build verbs: change the ending.",
     body: [
       {
         text: "Drop the verb's last kana and add the ending that matches. Some endings use て and some use で; the ending decides which, and they mean the same, so you never choose between them.",
@@ -219,13 +226,10 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       },
       {
         title: "Ichidan (る-verbs)",
-        rules: [
-          { verb: "たべる", drop: "る", add: "て" },
-          { verb: "みる", drop: "る", add: "て" },
-        ],
+        rules: [{ verb: "たべる", drop: "る", add: "て" }],
       },
       {
-        title: "Exceptions and irregulars",
+        title: "Irregular verbs",
         rules: [
           { label: "exception", verb: "いく", drop: "く", add: "って" },
           { label: "irregular", verb: "する", to: "して" },
@@ -235,17 +239,43 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       },
     ],
   },
+  {
+    // PAGE 5 — adjective building follows the verb rules as its own section,
+    // so the two word types do not share one undifferentiated table stack.
+    id: "gl-te-build-adjectives",
+    setId: "",
+    eyebrow: "Building the て/で-form",
+    title: "Build adjectives: Change the ending.",
+    body: [],
+    buildTables: [
+      {
+        title: "Adjectives",
+        rules: [
+          { label: "い", verb: "たかい", drop: "い", add: "くて" },
+          { label: "な", verb: "しずか", drop: "", add: "で" },
+        ],
+        heads: { label: "Ending" },
+      },
+      {
+        title: "Irregular adjectives",
+        rules: [
+          {
+            label: "exception",
+            verb: "いい",
+            to: "よくて",
+          },
+        ],
+        heads: { label: "" },
+      },
+    ],
+  },
 ];
 
 /** Lesson 1, fully authored: the te-form pages, then the te-sequence drill it
  * sets up. `drills` are te-sequence's own facts — the meaning fact plus ONE
- * production fact per ending (って, んで, いて, いで, して; see te-endings.ts). The
- * te-form's production splits by ending rather than carrying a single "build the
- * て-form" fact, so a full-coverage round now asks the learner to build the
- * て-form of one verb of EACH ending, not one verb total. patternFacts reads
- * exactly this set off the registry (the plain production fact no longer exists),
- * so it stays in sync by construction. る-ending verbs are excluded on purpose —
- * their class is not predictable from spelling. */
+ * production fact per regular class, exceptional verb, and adjective type.
+ * patternFacts reads exactly this set off the registry, so the lesson stays in
+ * sync with the separately scored skills by construction. */
 const LESSON_TE_FORM: GrammarLessonDef = {
   id: "te-form",
   title: "The て/で-form",
@@ -344,13 +374,14 @@ const LESSON_VOLITIONAL_FORM = formLesson(
  * The て-form's lesson opens with two pages that are lesson-1 scaffolding rather
  * than facts about the form (the "what a form is" intro and the Verb Types page),
  * so its Library entry skips those and shows only the form's own pages: what it is
- * for, then how to build it. The other three forms have no scaffolding — their
- * whole lesson IS the form — so the Library shows all of it.
+ * for, then separate verb and adjective build sections. The other forms have no
+ * scaffolding — their whole lesson IS the form — so the Library shows all of it.
  */
 const FORM_LIBRARY_PAGES: Readonly<Record<string, readonly PhaseIntro[]>> = {
   "te-sequence": [
     TE_FORM_PAGES.find((p) => p.id === "gl-te-form-use")!,
-    TE_FORM_PAGES.find((p) => p.id === "gl-te-build")!,
+    TE_FORM_PAGES.find((p) => p.id === "gl-te-build-verbs")!,
+    TE_FORM_PAGES.find((p) => p.id === "gl-te-build-adjectives")!,
   ],
   "nai-form": NAI_FORM_PAGES,
   "ta-form": TA_FORM_PAGES,
@@ -378,7 +409,7 @@ export function formLibraryPages(recipeId: string): readonly PhaseIntro[] {
 // CURRICULUM_PATTERNS rather than imported, because that file imports THIS one
 // and the dependency runs one way). te-sequence becomes the authored L1; every
 // other recipe becomes a one-page `pattern` lesson for now — the same terse tile
-// the track showed before, one concept per sitting. All 96 recipes are taught: a
+// the track showed before, one concept per sitting. Every recipe is taught: a
 // producible pattern drills its production, a non-producible one drills its
 // meaning only (its lesson's drills are [meaning] by construction).
 // ---------------------------------------------------------------------------
@@ -400,7 +431,7 @@ function leadRank(r: Recipe): number {
   return LESSON_LEAD[r.id] ?? 2;
 }
 
-// ALL 96 recipes are taught, not only the 56 producible ones. A producible
+// ALL recipes are taught, not only the producible ones. A producible
 // recipe carries a production drill; a non-producible one (a vacuous pattern
 // like 〜と思う, an order-free wrap like 〜たり〜たり, or 〜しか〜ない) carries only
 // its meaning fact, so its lesson drills MEANING alone (autoLesson reads factsOf,

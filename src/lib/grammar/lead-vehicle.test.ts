@@ -27,7 +27,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { patternProductionFactId } from "@/data/grammar";
+import { classProductionFactId } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
 import { questionsFor, type GrammarVehicle, type PromptContext } from "@/lib/engine/question";
 import { buildRow } from "@/lib/grammar/build";
@@ -50,7 +50,9 @@ function ctxFor(surface: string): PromptContext {
 }
 
 function gradedByAnyDirection(id: string, given: string, ctx: PromptContext): boolean {
-  const fact = patternProductionFactId(id, "verb");
+  const cls = ctx.grammarVehicle?.cls;
+  const regular = cls && ["v5u", "v5t", "v5r", "v5m", "v5b", "v5n", "v5k", "v5g", "v5s", "v1"].includes(cls);
+  const fact = classProductionFactId(id, regular ? cls! : "v5k");
   return DIRS.some((d) => questionsFor(fact).check(fact, d, given, ctx));
 }
 

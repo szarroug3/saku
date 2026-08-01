@@ -165,7 +165,7 @@ export interface Recipe {
    * the drill can find out about them separately.
    *
    * Two rows are not like that, and this field is where they say so. 〜ても and
-   * 〜てもいい on an い-adjective are te-cause's rule (い → くて) plus a fixed
+   * 〜てもいい on an い-adjective are the bare て-form's rule (い → くて) plus a fixed
    * string — 高くて, then も or もいい. Minting adjective facts for them would
    * score ONE rule three times and call the result three numbers, which is the
    * same error as scoring two rules once: a figure true of nothing. The owner
@@ -177,7 +177,6 @@ export interface Recipe {
    * checked. A test asserts the named recipe exists, is producible, and really
    * does carry a fact for every host this row is handing off.
    */
-  readonly sharedProductionWith?: string;
   /**
    * Which verbs this pattern will take, when the host is not the whole story.
    *
@@ -356,8 +355,11 @@ export function isOrderFree(r: Recipe): boolean {
 export interface GrammarIntro {
   /** A plain-language paragraph introducing the form. */
   readonly blurb: string;
-  /** The build rules, rendered one per line as an equation. */
-  readonly rules: readonly TeFormRule[];
+  /** The build rules, grouped exactly like the Library's conjugation table. */
+  readonly tables: readonly {
+    readonly title: string;
+    readonly rules: readonly TeFormRule[];
+  }[];
 }
 
 /** One conjugation rule, shown as "verb - drop + add -> result". The example
@@ -381,22 +383,51 @@ const TE_FORM_INTRO: GrammarIntro = {
     "The て-form is how one verb links to what comes after it. It is the base " +
     "that many patterns are built on, so it is important to get it right from " +
     "the beginning. You make it from the plain verb by changing its ending.",
-  rules: [
-    { ending: "ends in る (a ru-verb)", verb: "たべる", drop: "る", add: "て" },
-    { ending: "ends in う, つ, or る", verb: "かう", drop: "う", add: "って" },
-    { ending: "ends in く", verb: "かく", drop: "く", add: "いて" },
-    { ending: "ends in ぐ", verb: "およぐ", drop: "ぐ", add: "いで" },
-    { ending: "ends in む, ぶ, or ぬ", verb: "のむ", drop: "む", add: "んで" },
-    { ending: "ends in す", verb: "はなす", drop: "す", add: "して" },
-    { ending: "the one exception", verb: "いく", drop: "く", add: "って" },
+  tables: [
+    {
+      title: "Godan (う-verbs)",
+      rules: [
+        { ending: "う・つ・る", verb: "かう", drop: "う", add: "って" },
+        { ending: "", verb: "まつ", drop: "つ", add: "って" },
+        { ending: "", verb: "とる", drop: "る", add: "って" },
+        { ending: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んで" },
+        { ending: "", verb: "あそぶ", drop: "ぶ", add: "んで" },
+        { ending: "", verb: "しぬ", drop: "ぬ", add: "んで" },
+        { ending: "く", verb: "かく", drop: "く", add: "いて" },
+        { ending: "ぐ", verb: "およぐ", drop: "ぐ", add: "いで" },
+        { ending: "す", verb: "はなす", drop: "す", add: "して" },
+      ],
+    },
+    {
+      title: "Ichidan (る-verbs)",
+      rules: [{ ending: "", verb: "たべる", drop: "る", add: "て" }],
+    },
+    {
+      title: "Irregular verbs",
+      rules: [
+        { ending: "exception", verb: "いく", drop: "く", add: "って" },
+        { ending: "irregular", verb: "する", drop: "する", add: "して" },
+        { ending: "irregular", verb: "くる", drop: "くる", add: "きて" },
+      ],
+    },
+    {
+      title: "Adjectives",
+      rules: [
+        { ending: "い", verb: "たかい", drop: "い", add: "くて" },
+        { ending: "な", verb: "しずか", drop: "", add: "で" },
+      ],
+    },
+    {
+      title: "Irregular adjectives",
+      rules: [
+        { ending: "exception", verb: "いい", drop: "いい", add: "よくて" },
+      ],
+    },
   ],
 };
 
 export const RECIPES: readonly Recipe[] = [
-  // --- て-form: three different things wearing one coat --------------------
-  // The classic "one vendor entry, several facts" case. A textbook teaches
-  // "the て-form" once; it is at least three unrelated jobs, and a learner who
-  // knows the て-form still does not know any of them.
+  // --- て-form -------------------------------------------------------------
   {
     id: "te-request",
     pattern: "〜てください",
@@ -408,7 +439,7 @@ export const RECIPES: readonly Recipe[] = [
     id: "te-sequence",
     intro: TE_FORM_INTRO,
     pattern: "〜て",
-    gloss: "do X, and then",
+    gloss: "do X, and then / because X",
     level: "N5",
     attach: [
       { host: "verb", form: "te", add: "" },
@@ -417,22 +448,9 @@ export const RECIPES: readonly Recipe[] = [
     ],
     note:
       "Bare て — the FORM lesson, so it teaches the て-form of adjectives (高くて, " +
-      "静かで) alongside verbs, not only verbs. Same string as te-cause and " +
-      "te-request, different job — which is why they are three rows. A SELECTION " +
-      "question can never distinguish these three from the blank alone; only " +
-      "production is honest here.",
-  },
-  {
-    id: "te-cause",
-    pattern: "〜て",
-    gloss: "because X (unintentional)",
-    level: "N4",
-    attach: [
-      { host: "verb", form: "te", add: "" },
-      { host: "adj-i", form: "te", add: "" },
-      { host: "adj-na", form: "te", add: "" },
-    ],
-    note: "遅れて / 寒くて / 静かで. See te-sequence.",
+      "静かで) alongside verbs, not only verbs. Bare て can link events or give " +
+      "a reason; those meanings share this one form entry because the words alone " +
+      "do not distinguish them.",
   },
   {
     id: "te-permission",
@@ -444,11 +462,9 @@ export const RECIPES: readonly Recipe[] = [
       { host: "adj-i", form: "te", add: "もいい" },
     ],
     note:
-      "A て-form pattern (see isTeFormRecipe), so its production splits by ENDING " +
-      "on the VERB — 買ってもいい, 書いてもいい, … — and it carries NO adjective " +
-      "production fact. 高くてもいい is te-cause's い → くて rule plus もいい, and " +
-      "the 〜て family drills the verb 音便 endings only; the adjective form is " +
-      "not scored as its own production question on any te-pattern.",
+      "A て-form pattern, so its production splits by verb class — 買ってもいい, " +
+      "待ってもいい, 帰ってもいい, … — while 高くてもいい is tracked separately " +
+      "as its い-adjective rule.",
   },
   {
     id: "te-prohibition",
@@ -557,10 +573,8 @@ export const RECIPES: readonly Recipe[] = [
       { host: "adj-i", form: "te", add: "も" },
     ],
     note:
-      "Same shape as te-permission: a て-form pattern whose production splits by " +
-      "ENDING on the verb (買っても, 書いても, …), with no adjective production " +
-      "fact. 高くても is te-cause's い → くて plus も; the 〜て family scores the " +
-      "verb 音便 endings only.",
+      "Same shape as te-permission: its verb production splits by class, and its " +
+      "い-adjective production is tracked separately.",
   },
 
   // --- ない-form ----------------------------------------------------------

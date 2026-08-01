@@ -241,31 +241,40 @@ function GrammarIntroPanel({ item }: { item: LessonItem }) {
   return (
     <LessonPanel title="The て-form">
       <p className="text-[14px] leading-relaxed text-text-muted">{intro.blurb}</p>
-      <div className="mt-3 space-y-1.5">
-        {intro.rules.map((r) => {
-          const stem = r.verb.slice(0, r.verb.length - r.drop.length);
-          return (
-            <div
-              key={r.verb}
-              className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-md border border-border bg-card px-3 py-1.5"
-            >
-              <span className="min-w-[9.5rem] text-[12px] text-text-muted">
-                {r.ending}
-              </span>
-              <span className="text-[17px] text-text" lang="ja">
-                {r.verb}
-                <span className="text-text-muted">
-                  {" "}
-                  − {r.drop} +{" "}
-                </span>
-                <span className="text-accent">{r.add}</span>
-                <span className="text-text-muted"> → </span>
-                {stem}
-                <span className="text-accent">{r.add}</span>
-              </span>
+      <div className="mt-3 space-y-4">
+        {intro.tables.map((table) => (
+          <div key={table.title}>
+            <p className="mb-1.5 text-[12px] font-semibold text-text-muted">
+              {table.title}
+            </p>
+            <div className="space-y-1.5">
+              {table.rules.map((r) => {
+                const stem = r.verb.slice(0, r.verb.length - r.drop.length);
+                return (
+                  <div
+                    key={`${table.title}-${r.verb}`}
+                    className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-md border border-border bg-card px-3 py-1.5"
+                  >
+                    <span className="min-w-[9.5rem] text-[12px] text-text-muted">
+                      {r.ending}
+                    </span>
+                    <span className="text-[17px] text-text" lang="ja">
+                      {r.verb}
+                      <span className="text-text-muted">
+                        {" "}
+                        − {r.drop} +{" "}
+                      </span>
+                      <span className="text-accent">{r.add}</span>
+                      <span className="text-text-muted"> → </span>
+                      {stem}
+                      <span className="text-accent">{r.add}</span>
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </LessonPanel>
   );

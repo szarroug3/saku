@@ -38,12 +38,8 @@ const meanings = grammarFacts.filter((fact) => grammarMeaning(fact));
 const productions = grammarFacts.filter((fact) => grammarProduction(fact));
 
 function shape(fact: FactId) {
-  // DISTINCT card shapes. A row-shift grammar production fact expands into one
-  // card per ending BUCKET (かきます, かいます … on one mastery fact — see
-  // productionCoverageBuckets), so its forms repeat each shape once per bucket.
-  // The bucket does not change the source/response/dir/control this test is
-  // about, so collapse on that shape: the question is which SHAPES a fact is
-  // asked in, not how many verbs a coverage round rolls.
+  // DISTINCT card shapes. Conjugation classes are distinct facts, while this
+  // helper asks only which presentation shapes any one fact supports.
   const seen = new Set<string>();
   const out: Array<{
     source: string;

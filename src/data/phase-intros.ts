@@ -87,6 +87,10 @@ const NO_SCRIPT = "";
  * the point without reading the sentence.
  */
 export interface IntroPara {
+  /** An optional section heading immediately above this paragraph. This lets one
+   * teaching card explain two uses of the same form without flattening them into
+   * one uninterrupted run of prose. */
+  heading?: string;
   mark?: string;
   lead?: string;
   text: string;
@@ -228,6 +232,10 @@ export interface PhaseIntro {
   /** One line, the whole point of the card. */
   title: string;
   body: IntroPara[];
+  /** Prose shown after this card's worked build table/footer. Used when the
+   * worked example belongs to the first of two named sections, so the second
+   * section begins only after that evidence instead of above it. */
+  bodyAfterBuild?: IntroPara[];
   /**
    * Worked examples for the rule, shown beside the prose on the Library page (see
    * mark-view.tsx) and below it in the teach walk. Optional: the kana marks carry

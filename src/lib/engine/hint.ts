@@ -54,7 +54,7 @@ import { KANJI_SUBJECT, READING_INDEX, kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
 import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
 import { FORM_LABEL, attachesTo, recipeFormula } from "@/lib/grammar/formula";
-import { ruVerbKindOf } from "@/lib/word-forms";
+import { adjectiveKindOf, ruVerbKindOf } from "@/lib/word-forms";
 import type { GrammarVehicle } from "./question";
 import { factInfo } from "@/lib/facts";
 import { teachableParts } from "@/lib/kanji-parts";
@@ -332,7 +332,9 @@ function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
     // the reminder rides in the hint instead. Absent for a non-る verb (spelling
     // gives its class) and, of course, when there is no vehicle.
     const kind =
-      vehicle && vehicle.known ? ruVerbKindOf(vehicle.surface, vehicle.cls) : null;
+      vehicle && vehicle.known
+        ? ruVerbKindOf(vehicle.surface, vehicle.cls) ?? adjectiveKindOf(vehicle.cls)
+        : null;
     const classText = kind ? `${vehicle!.surface} is a ${kind}` : null;
     const text = [formText, classText].filter(Boolean).join(". ");
     return text ? { kind: "text", text } : null;

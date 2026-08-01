@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Codex and some terminals export NO_COLOR, while Playwright enables colour for
+// its child processes. Node warns whenever both flags are present, even though
+// Playwright resolves the conflict consistently. Drop the inherited opt-out
+// before the web server and workers are spawned so test output stays quiet.
+delete process.env.NO_COLOR;
+
 /**
  * E2E config.
  *
@@ -17,8 +23,11 @@ const PORT = 3249;
 
 export default defineConfig({
   testDir: "./e2e",
+  // Run separate spec files concurrently. Tests within one file remain ordered,
+  // while each worker still gets Playwright's isolated browser context and
+  // localStorage state through the seed fixture described above.
   fullyParallel: false,
-  workers: 1,
+  workers: 4,
   forbidOnly: !!process.env.CI,
   retries: 0,
   // A plain `pnpm run test:e2e` reports exactly as it always has: one line per
@@ -61,7 +70,7 @@ export default defineConfig({
   // the Practice pool reads 0, and no button does anything. `next start` has no
   // HMR socket and hydrates normally.
   webServer: {
-    command: `npx next build && npx next start -p ${PORT}`,
+    command: `pnpm exec next build && pnpm exec next start -p ${PORT}`,
     url: `http://127.0.0.1:${PORT}/`,
     reuseExistingServer: false,
     // A cold production build of this app is not fast.

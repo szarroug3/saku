@@ -27,9 +27,8 @@ import { describe, test } from "node:test";
 import { KANA_SUBJECT, kanaFact } from "@/data/characters";
 import {
   GRAMMAR_SUBJECT,
+  classProductionFactId,
   patternMeaningFactId,
-  patternProductionFactId,
-  teEndingProductionFactId,
 } from "@/data/grammar";
 import { KANJI_SUBJECT, meaningFactId, readingFactId } from "@/data/kanji";
 import { VOCAB_SUBJECT, wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
@@ -48,7 +47,7 @@ describe("the seven card kinds", () => {
   const ROWS: [string, FactId, Direction, boolean][] = [
     ["kanji reading (せい)", readingFactId("生", "先生"), "jp2en", true],
     ["word reading (せんせい)", wordReadingFactId("先生"), "jp2en", true],
-    ["grammar production (買ってから)", teEndingProductionFactId("te-kara", "te-utsu"), "jp2en", true],
+    ["grammar production (買ってから)", classProductionFactId("te-kara", "v5u"), "jp2en", true],
     ["kana (a)", kanaFact("あ"), "jp2en", false],
     ["kanji meaning (life)", meaningFactId("生"), "jp2en", false],
     ["word meaning (teacher)", wordMeaningFactId("先生"), "jp2en", false],
@@ -207,7 +206,7 @@ describe("no card can be answered by typing its own prompt", () => {
     // recipe that leaves the vehicle unchanged is not producible. Uses 〜たい, a
     // verb-only pattern that takes the る-verb 食べる — a te-form pattern is now
     // per-ending and never rolls a る-verb (see te-endings.ts).
-    const fact = patternProductionFactId("tai");
+    const fact = classProductionFactId("tai", "v1");
     const qt = questionsFor(fact);
     const ctx = { grammarVehicle: TABERU };
     const shown = qt.prompt(fact, "jp2en", ctx).glyph;

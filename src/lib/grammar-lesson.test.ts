@@ -21,15 +21,15 @@ import { describe, test } from "node:test";
 import { CURRICULUM_LESSONS } from "../data/grammar/lessons.ts";
 import { KANA_GROUP_FACTS, nextLesson } from "./lesson.ts";
 import {
+  classProductionFactId,
+  conjugatesVerb,
   patternMeaningFactId,
   patternProductionFactId,
   productionHosts,
   specialVerbProductionFactId,
-  teEndingProductionFactId,
-  usesSoundChange,
 } from "../data/grammar/index.ts";
 import { factInfo } from "./facts.ts";
-import { TE_ENDINGS } from "./grammar/te-endings.ts";
+import { CLASS_ANCHOR } from "./grammar/te-endings.ts";
 import {
   DRILLABLE,
   RECIPES,
@@ -173,34 +173,18 @@ describe("the curriculum is ALL patterns, N5 before N4", () => {
     for (const card of lesson.cards) {
       const r = recipe(card.id)!;
       expected.add(patternMeaningFactId(r.id));
-      // A te-form pattern splits production by ENDING, not host (see te-endings.ts):
-      // up to five facts, one per 音便. productionHosts is [] for the whole 〜て
-      // family, so its facts come from the ending list instead. Guarded by
-      // factInfo so a pattern that refuses an ending's anchor (〜てある drops 泳ぐ)
-      // contributes only the endings it actually minted.
-      // A 音便 pattern (て/た/たら) splits production by ENDING, not host (see
-      // te-endings.ts): up to five facts, one per 音便. productionHosts is [] for
-      // the whole 音便 set, so its facts come from the ending list instead. Guarded
-      // by factInfo so a pattern that refuses an ending's anchor (〜てある drops 泳ぐ)
-      // contributes only the endings it actually minted.
-      if (usesSoundChange(r)) {
-        for (const ending of TE_ENDINGS) {
-          const id = teEndingProductionFactId(r.id, ending);
+      if (conjugatesVerb(r)) {
+        for (const anchor of CLASS_ANCHOR) {
+          const id = classProductionFactId(r.id, anchor.cls);
           if (factInfo(id)) expected.add(id);
         }
-      } else {
-        // Every other drillable pattern carries a production fact per HOST it
-        // teaches a separate rule for — usually one (the verb), three for 〜そう.
-        // Derived from productionHosts rather than assumed to be one, because a
-        // lesson that seeded only the verb fact would leave the adjective rule
-        // unmet forever: the lesson is where a fact is first introduced.
-        for (const host of productionHosts(r)) {
-          expected.add(patternProductionFactId(r.id, host));
-        }
+      }
+      for (const host of productionHosts(r)) {
+        expected.add(patternProductionFactId(r.id, host));
       }
       // Plus the irregular-verb facts (@iku / @suru / @kuru) the pattern carries,
       // where 行く / する / 来る are special on its form — a memorized skill each.
-      for (const q of ["iku", "suru", "kuru"]) {
+      for (const q of ["iku", "suru", "kuru", "aru", "ii"]) {
         const id = specialVerbProductionFactId(r.id, q);
         if (factInfo(id)) expected.add(id);
       }
@@ -337,18 +321,17 @@ describe("lesson sizing is fixed by the grouping, not the count", () => {
 
 // GRAMMAR_CURRICULUM_TOTAL is the PATTERN total, a separate denominator from the
 // sitting count the lesson card's position now uses (see the "sittings" describe).
-// Every recipe is taught, so it counts the whole 96-recipe table.
+// Every recipe is taught, so it counts the whole authored table.
 describe("the pattern total is the whole authored table", () => {
-  test("the total is all 96 authored recipes, drillable and not alike", () => {
+  test("the total is every authored recipe, drillable and not alike", () => {
     // Every recipe is taught now: a producible one by meaning + production, a
     // non-producible one by meaning multiple choice. So the denominator counts
     // the whole table — the 40 non-producible patterns included, since each is a
     // real lesson with a real (meaning) question.
     assert.equal(GRAMMAR_CURRICULUM_TOTAL, CURRICULUM_PATTERNS.length);
     assert.equal(GRAMMAR_CURRICULUM_TOTAL, RECIPES.length);
-    // 99: the 96 patterns plus the three standalone form recipes (nai-form,
-    // ta-form, stem-form). The て-form was already a recipe (te-sequence).
-    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 101);
+    // The two context-dependent bare-て meanings share one recipe and lesson.
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 100);
     // The drillable set is a strict subset — production is the second half of
     // some lessons' quiz, not the gate on whether a pattern is taught.
     assert.ok(DRILLABLE.length < GRAMMAR_CURRICULUM_TOTAL);
@@ -371,10 +354,8 @@ describe("the pattern total is the whole authored table", () => {
   test("the total is the number of sittings the track cuts into", () => {
     // Deterministic from the curriculum: form lessons solo, pattern runs in <=3.
     assert.equal(GRAMMAR_SITTINGS.length, GRAMMAR_SITTINGS_TOTAL);
-    // 44 sittings for the whole 99-recipe table: the solo form lessons (te-form,
-    // nai-form, ta-form, stem-form, and the later form debuts) plus the pattern
-    // runs cut into <=3. 〜ている is a normal bundled pattern now, not solo.
-    assert.equal(GRAMMAR_SITTINGS_TOTAL, 46);
+    // Solo form lessons plus the remaining pattern runs cut into groups of <=3.
+    assert.equal(GRAMMAR_SITTINGS_TOTAL, 45);
     // Every pattern lands in exactly one sitting — the sittings partition the
     // whole curriculum, none dropped and none double-counted.
     const covered = GRAMMAR_SITTINGS.flat();
@@ -442,14 +423,6 @@ describe("sittings: form lessons solo, pattern lessons bundle up to three", () =
     }
   });
 
-  test("te-cause is NOT solo — て was already introduced by lesson 1", () => {
-    // te-cause redundantly renders a て build table, but て debuts at te-sequence,
-    // so te-cause is a pattern lesson and bundles.
-    const members = sittingPatterns("te-cause");
-    assert.ok(members.length > 1, "te-cause should bundle");
-    assert.ok(members.includes("te-cause"));
-  });
-
   test("no bundle spans a form lesson, and every sitting is at most three", () => {
     const formSet = new Set(FORM_LESSON_PATTERNS);
     for (const sitting of GRAMMAR_SITTINGS) {
@@ -470,7 +443,7 @@ describe("sittings: form lessons solo, pattern lessons bundle up to three", () =
     // Learn a word of every host so nothing locks, then walk: claim each sitting's
     // patterns and take the next. The position must advance by exactly one sitting
     // each step, every card must be a fresh pattern, and the walk must reach the
-    // last sitting having shown all 96 patterns.
+    // last sitting having shown every pattern.
     const hostWords = ["verb", "adj-i", "adj-na", "noun"]
       .map((h) => CURRICULUM_WORDS.find((w) => wordHost(w) === h))
       .filter((w): w is NonNullable<typeof w> => Boolean(w));
@@ -562,7 +535,7 @@ describe("every form a pattern uses is taught before the pattern uses it", () =>
       if (!hit.a?.form || hit.a.form === "dictionary" || hit.a.add) return;
       // The form recipes are authored, and grouped into titled `buildTables` rather
       // than a single `buildRules` table, so this per-page-count check does not
-      // apply to them (te-cause, an add-"" USE of the て-form, is the one left).
+      // apply to them.
       if (isFormRecipe(hit.r.id)) return;
       const page = [...lesson.pages].reverse().find((p) => p.kind === "teach");
       const card = page?.kind === "teach" ? page.card : undefined;

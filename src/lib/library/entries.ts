@@ -56,19 +56,17 @@ import {
 } from "@/data/vocab";
 import {
   GRAMMAR_SUBJECT,
+  SPECIAL_ADJ_ROWS,
   SPECIAL_VERB_ROWS,
+  classProductionFactId,
+  conjugatesVerb,
   patternEntry,
   patternMeaningFactId,
   patternProductionFactId,
   productionHosts,
   specialVerbProductionFactId,
-  teEndingProductionFactId,
-  usesSoundChange,
 } from "@/data/grammar";
-import {
-  ENDING_LABEL,
-  TE_ENDINGS,
-} from "@/lib/grammar/te-endings";
+import { CLASS_ANCHOR } from "@/lib/grammar/te-endings";
 import { MARK_SUBJECT, MARKS, markEntry } from "@/data/marks";
 import {
   GRAMMAR_CONCEPT_SUBJECT,
@@ -933,9 +931,8 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
     case MARK_SUBJECT:
     case SENTENCE_RULE_KIND:
       return null;
-    // A pattern is not resolved by its glyph — 〜て is te-sequence AND te-cause,
-    // so a glyph names no single grammar entry. Grammar links are minted from a
-    // recipe id, never from a glyph, so nothing asks for this.
+    // A pattern is not resolved by its glyph — many grammar rows can share a
+    // visible shape, so links are minted from a recipe id, never from a glyph.
     case GRAMMAR_SUBJECT:
       return null;
     // A pair has no glyph at all — `glyph` is the empty string — so nothing
@@ -1319,29 +1316,25 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       speak: null,
     },
   ];
-  // A 音便 pattern's production splits by ENDING, not host (see te-endings.ts): up
-  // to five facts, one per 音便, each baked on a representative verb of that ending
-  // carrying the full pattern (書いてから, 書いたことがある). It carries no host-keyed
-  // production fact, so its rows are enumerated here rather than by the host loop
-  // below — otherwise the page that promises to list what is scored would show
-  // none of them. Applies to the whole 〜て family AND the た/たら patterns.
-  if (isProducible(r) && usesSoundChange(r)) {
-    for (const ending of TE_ENDINGS) {
-      const id = teEndingProductionFactId(r.id, ending);
+  // ONE ROW PER VERB CLASS. Every conjugating recipe scores the nine godan
+  // endings and ichidan separately, so the Library must link to those actual
+  // facts rather than the former five 音便 buckets or one unqualified row-shift
+  // fact. The anchor is the same one the fact is baked on.
+  if (isProducible(r) && conjugatesVerb(r)) {
+    for (const anchor of CLASS_ANCHOR) {
+      const id = classProductionFactId(r.id, anchor.cls);
       const info = factInfo(id);
       if (!info) continue;
       rows.push({
         id,
-        label: `Build it (${ENDING_LABEL[ending]})`,
-        answer: info.glyph,
+        label: `Build it (${anchor.ending || "る-verb"})`,
+        answer: `${anchor.surface} → ${info.glyph}`,
         askedIn: [],
         unattested: false,
         origin: null,
         speak: null,
       });
     }
-    pushSpecialVerbRows(r, rows);
-    return rows;
   }
   // ONE ROW PER PRODUCTION FACT, which is one per host that carries one. The
   // page is a list of the entry's FACTS, so a pattern with a separate adjective
@@ -1349,9 +1342,6 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
   // one screen that promises to enumerate what is scored still says there is a
   // single "Build it". The label names the host for the same reason.
   //
-  // A row-shift verb fact stays ONE row here — the full-coverage round drills its
-  // endings on that single mastery fact, so the page shows the one "Build it" and
-  // the per-ending coverage is a quiz behaviour, not extra facts.
   const hosts = isProducible(r) ? productionHosts(r) : [];
   {
     for (const host of hosts) {
@@ -1362,7 +1352,10 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
         // The host is named only when there is something to tell apart. One
         // production fact needs no qualifier, and adding "(verb)" to all 45 of
         // them to be uniform would be noise on every page to serve five.
-        label: hosts.length > 1 ? `Build it (${HOST_LABEL[host]})` : "Build it",
+        label:
+          conjugatesVerb(r) || hosts.length > 1
+            ? `Build it (${HOST_LABEL[host]})`
+            : "Build it",
         answer: `${ex.lemma} → ${ex.form}`,
         askedIn: [],
         unattested: false,
@@ -1371,16 +1364,13 @@ function grammarFactRows(entry: LibEntry): FactRow[] {
       });
     }
   }
-  if (isProducible(r)) pushSpecialVerbRows(r, rows);
+  if (isProducible(r)) pushSpecialWordRows(r, rows);
   return rows;
 }
 
-/** Append a "Build it (行く/する/来る)" row for each irregular-verb production fact
- * the pattern carries — 行って for 〜て, します for 〜ます — so the entry page lists
- * the special-verb skills the quiz drills alongside the ending / host rows. Only
- * the facts that exist (factInfo) are shown: 〜ば carries none, 〜てある only @suru. */
-function pushSpecialVerbRows(r: Recipe, rows: FactRow[]): void {
-  for (const sv of SPECIAL_VERB_ROWS) {
+/** Append the exceptional verb and adjective production facts this pattern owns. */
+function pushSpecialWordRows(r: Recipe, rows: FactRow[]): void {
+  for (const sv of [...SPECIAL_VERB_ROWS, ...SPECIAL_ADJ_ROWS]) {
     const id = specialVerbProductionFactId(r.id, sv.qualifier);
     const info = factInfo(id);
     if (!info) continue;

@@ -4,11 +4,10 @@ import { describe, test } from "node:test";
 import { kanaFact } from "@/data/characters";
 import { READING_INDEX, meaningFactId as kanjiMeaningFactId, KANJI } from "@/data/kanji";
 import {
-  isTeFormRecipe,
+  classProductionFactId,
   patternMeaningFactId,
-  patternProductionFactId,
 } from "@/data/grammar";
-import { RECIPES, isProducible } from "@/data/grammar/recipes";
+import { RECIPES } from "@/data/grammar/recipes";
 import { KEIGO_SETS, keigoWordFactId } from "@/data/keigo";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { sideFactId } from "@/data/transitivity-facts";
@@ -26,12 +25,7 @@ const word = VOCAB.find((w) => !isKanaWord(w))!;
 const reading = wordReadingFactId(word.keb);
 const meaning = wordMeaningFactId(word.keb);
 const firstKanjiReading = READING_INDEX.keys().next().value!;
-// A te-form pattern carries no plain production fact (its production splits by
-// ending), so this picks the first producible NON-te recipe, whose unqualified
-// production fact does exist.
-const grammarProductionFact = patternProductionFactId(
-  RECIPES.find((r) => isProducible(r) && !isTeFormRecipe(r))!.id,
-);
+const grammarProductionFact = classProductionFactId("tai", "v5k");
 const keigoFact = keigoWordFactId(KEIGO_SETS[0], KEIGO_SETS[0].words[0]);
 const transitivityFact = sideFactId(VERB_PAIRS[0], "happens");
 

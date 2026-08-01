@@ -35,8 +35,14 @@ import {
   type Host,
   type Recipe,
 } from "@/data/grammar/recipes";
-import { patternProductionFactId, productionHosts } from "@/data/grammar";
+import {
+  classProductionFactId,
+  conjugatesVerb,
+  patternProductionFactId,
+  productionHosts,
+} from "@/data/grammar";
 import { apply } from "@/lib/grammar/apply";
+import { CLASS_ANCHOR, type VehicleBucket } from "@/lib/grammar/te-endings";
 import { wordKnown } from "@/lib/grammar/readable";
 import {
   vehiclesFor,
@@ -104,19 +110,31 @@ export function pickSubstitution(
 ): SubstitutionItem | null {
   const known = (surface: string) => wordKnown(surface, history);
   // Gather every (recipe, host) with at least two known, distinct-form vehicles.
-  const eligible: { r: Recipe; host: Host; pool: BuiltVehicle[] }[] = [];
+  const eligible: { r: Recipe; host: Host; fact: FactId; pool: BuiltVehicle[] }[] = [];
   for (const r of DRILLABLE) {
     if (!isProducible(r)) continue;
-    for (const host of productionHosts(r)) {
+    const addPool = (host: Host, fact: FactId, bucket?: VehicleBucket) => {
       const built: BuiltVehicle[] = [];
       const forms = new Set<string>();
-      for (const v of vehiclesFor(r, host, known)) {
+      for (const v of vehiclesFor(r, host, known, bucket)) {
         const b = build(r, v);
         if (!b || forms.has(b.form)) continue;
         forms.add(b.form);
         built.push(b);
       }
-      if (built.length >= 2) eligible.push({ r, host, pool: built });
+      if (built.length >= 2) eligible.push({ r, host, fact, pool: built });
+    };
+    if (conjugatesVerb(r)) {
+      for (const anchor of CLASS_ANCHOR) {
+        addPool(
+          "verb",
+          classProductionFactId(r.id, anchor.cls),
+          { kind: "class", cls: anchor.cls },
+        );
+      }
+    }
+    for (const host of productionHosts(r)) {
+      addPool(host, patternProductionFactId(r.id, host));
     }
   }
   if (eligible.length === 0) return null;
@@ -129,11 +147,10 @@ export function pickSubstitution(
   // can never be the target's accepted answer. Assert it cheaply anyway.
   if (!demo || !target || demo.form === target.form) return null;
 
-  const fact = patternProductionFactId(choice.r.id, choice.host);
   return {
     recipeId: choice.r.id,
     host: choice.host,
-    fact,
+    fact: choice.fact,
     label: patternLabel(choice.r),
     demo,
     target,

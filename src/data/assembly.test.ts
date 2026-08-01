@@ -51,7 +51,7 @@ describe("sentence-ordering follows the grammar teaching order", () => {
 
     // The sentence-ordering tiers sequence on the PRODUCIBLE teaching order — the
     // patterns the grammar track actually drills. CURRICULUM_PATTERNS now holds
-    // all 96 recipes (the non-producible ones are taught by meaning too), but a
+    // all recipes (the non-producible ones are taught by meaning too), but a
     // meaning-only pattern does not move a tier's unlock: the `reported` tier's
     // prereqs (to-omou, rashii, kamoshirenai, deshou) are all non-producible, and
     // it sits last because none of them is a drilled prerequisite. Filtering to

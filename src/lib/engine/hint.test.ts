@@ -12,10 +12,9 @@ import assert from "node:assert/strict";
 
 import { kanaFact } from "@/data/characters";
 import {
+  classProductionFactId,
   patternMeaningFactId,
-  patternProductionFactId,
   specialVerbProductionFactId,
-  teEndingProductionFactId,
 } from "@/data/grammar";
 import { meaningFactId, readingFactId } from "@/data/kanji";
 import { wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
@@ -145,7 +144,7 @@ test("a grammar production hints with the form it builds on", () => {
   // 買ってから. te-kara's production is per-ending now, so this asks its te-utsu
   // fact — the hint is the same "uses the て-form" for every ending.
   const text = textOf(
-    hintFor(teEndingProductionFactId("te-kara", "te-utsu"), "jp2en"),
+    hintFor(classProductionFactId("te-kara", "v5u"), "jp2en"),
     "〜てから's production",
   );
   assert.equal(text, "uses the て-form");
@@ -159,7 +158,7 @@ test("a FORM recipe's production has NO hint — it would restate the question",
   // nothing. The te-form IRREGULARS are the same skill (produce 行って), so they
   // are silent too. A pattern that USES the form (te-kara, above) still hints.
   assert.equal(
-    hintFor(teEndingProductionFactId("te-sequence", "te-utsu"), "jp2en"),
+    hintFor(classProductionFactId("te-sequence", "v5u"), "jp2en"),
     null,
   );
   assert.equal(
@@ -175,7 +174,7 @@ test("a KNOWN る-verb adds its class to the hint, on top of the form nudge", ()
   const KNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: true } as const;
   assert.equal(
     textOf(
-      hintFor(patternProductionFactId("tai"), "en2jp", undefined, false, KNOWN),
+      hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, KNOWN),
       "tai + known 食べる",
     ),
     "uses the stem. 食べる is a る-verb",
@@ -186,7 +185,7 @@ test("an UNKNOWN る-verb's class is NOT in the hint — the instruction carries
   const UNKNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: false } as const;
   assert.equal(
     textOf(
-      hintFor(patternProductionFactId("tai"), "en2jp", undefined, false, UNKNOWN),
+      hintFor(classProductionFactId("tai", "v1"), "en2jp", undefined, false, UNKNOWN),
       "tai + unknown 食べる",
     ),
     "uses the stem",
@@ -199,7 +198,7 @@ test("a FORM recipe + KNOWN る-verb hints with the class ALONE", () => {
   const KNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: true } as const;
   assert.equal(
     textOf(
-      hintFor(patternProductionFactId("nai-form"), "en2jp", undefined, false, KNOWN),
+      hintFor(classProductionFactId("nai-form", "v1"), "en2jp", undefined, false, KNOWN),
       "nai-form + known 食べる",
     ),
     "食べる is a る-verb",

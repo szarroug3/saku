@@ -13,6 +13,7 @@ import { describe, test } from "node:test";
 import { questionsFor, grammarVehicleFor, type GrammarVehicle } from "./question";
 import { buildMcOptions, checkTyped } from "./index";
 import {
+  classProductionFactId,
   patternProductionFactId,
   specialVerbProductionFactId,
   GRAMMAR_SUBJECT,
@@ -32,7 +33,8 @@ import type { HistoryFile } from "@/types";
 // production fact — that per-ending seam is covered in te-endings.test.ts — so a
 // non-te verb pattern (〜たい, baked on 行きたい) is the representative for the
 // generic varied-vehicle machinery, which is host/legality-shaped, not te-shaped.
-const TAI = patternProductionFactId("tai");
+const TAI = classProductionFactId("tai", "v1");
+const TAI_M = classProductionFactId("tai", "v5m");
 const TABERU: GrammarVehicle = { surface: "食べる", kana: "たべる", cls: "v1", known: true };
 
 const NOW = 1_700_000_000_000;
@@ -60,7 +62,7 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
   test("prompt shows the SHOWING's verb, not the baked 行く", () => {
     const qt = questionsFor(TAI);
     const fixed = qt.prompt(TAI, "en2jp");
-    assert.equal(fixed.glyph, "行く"); // unchanged when no vehicle is threaded
+    assert.equal(fixed.glyph, "食べる");
     const varied = qt.prompt(TAI, "en2jp", { grammarVehicle: TABERU });
     assert.equal(varied.glyph, "食べる");
     // The form name is no longer a sub-label; it folds into the instruction
@@ -69,14 +71,13 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
   });
 
   test("check grades against the vehicle it prompted on", () => {
-    // With 食べる threaded, 食べたい is right and 行きたい is wrong — the exact
-    // inversion of the old fixed-vehicle grading.
+    // With 食べる threaded, 食べたい is right and another class is wrong.
     const ctx = { grammarVehicle: TABERU };
     assert.ok(checkTyped(TAI, "食べたい", "en2jp", ctx));
     assert.ok(checkTyped(TAI, "たべたい", "en2jp", ctx)); // kana too
     assert.ok(!checkTyped(TAI, "行きたい", "en2jp", ctx));
     // No vehicle: the baked answer still grades, unchanged.
-    assert.ok(checkTyped(TAI, "行きたい", "en2jp"));
+    assert.ok(checkTyped(TAI, "食べたい", "en2jp"));
   });
 
   test("option labels are the distractor patterns built on the SAME verb", () => {
@@ -100,7 +101,7 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
     );
     // No vehicle → null, so the drill falls back to the baked answer.
     assert.equal(qt.answerReveal?.(TAI, "en2jp", {}), null);
-    assert.equal(factInfo(TAI)?.answers[0], "行きたい");
+    assert.equal(factInfo(TAI)?.answers[0], "食べたい");
   });
 
   test("MC board: distinct labels, exactly one correct, all on one verb", () => {
@@ -125,11 +126,11 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
 
   test("an illegal ctx vehicle collapses to the fixed baked behaviour", () => {
     // A noun can't take 〜たい. Threading one must not break the item — it falls
-    // back to 行く rather than emitting a bad form.
+    // back to the class anchor rather than emitting a bad form.
     const bad = { grammarVehicle: { surface: "本", kana: "ほん", cls: null, known: true } };
     const qt = questionsFor(TAI);
-    assert.equal(qt.prompt(TAI, "en2jp", bad).glyph, "行く");
-    assert.ok(checkTyped(TAI, "行きたい", "en2jp", bad));
+    assert.equal(qt.prompt(TAI, "en2jp", bad).glyph, "食べる");
+    assert.ok(checkTyped(TAI, "食べたい", "en2jp", bad));
   });
 
   test("an UNKNOWN filler vehicle is shown and revealed in KANA, graded either script", () => {
@@ -140,25 +141,26 @@ describe("grammar production varies on the ctx vehicle (#50)", () => {
     const KAKU_UNKNOWN = {
       grammarVehicle: { surface: "書く", kana: "かく", cls: "v5k", known: false },
     } as const;
-    const qt = questionsFor(TAI);
+    const fact = classProductionFactId("tai", "v5k");
+    const qt = questionsFor(fact);
     // Prompt glyph is the kana reading, never the kanji surface.
-    assert.equal(qt.prompt(TAI, "en2jp", KAKU_UNKNOWN).glyph, "かく");
+    assert.equal(qt.prompt(fact, "en2jp", KAKU_UNKNOWN).glyph, "かく");
     // Reveal shows BOTH scripts (both are accepted). An unknown filler was drawn
     // in kana, so the kana form leads and the kanji rides in parentheses — the
     // learner sees what she typed AND the written form it maps to.
-    assert.equal(qt.answerReveal?.(TAI, "en2jp", KAKU_UNKNOWN), "かきたい（書きたい）");
+    assert.equal(qt.answerReveal?.(fact, "en2jp", KAKU_UNKNOWN), "かきたい（書きたい）");
     // Distractor option labels are all built on the kana reading of 書く: every
     // conjugation of かく starts with か and, crucially, carries NO kanji — the
     // learner has not met 書, so no option may show it.
-    for (const opt of qt.distractors(TAI, 5, KAKU_UNKNOWN)) {
+    for (const opt of qt.distractors(fact, 5, KAKU_UNKNOWN)) {
       const label = qt.optionLabel?.(opt, "en2jp", KAKU_UNKNOWN);
       assert.ok(label, "an unknown-vehicle distractor has no label");
       assert.ok(label!.startsWith("か"), `${label} is not built on かく`);
       assert.ok(!/[一-鿿]/.test(label!), `${label} shows kanji for an unknown vehicle`);
     }
     // The grader accepts the kana answer AND the kanji answer — both are correct.
-    assert.ok(checkTyped(TAI, "かきたい", "en2jp", KAKU_UNKNOWN));
-    assert.ok(checkTyped(TAI, "書きたい", "en2jp", KAKU_UNKNOWN));
+    assert.ok(checkTyped(fact, "かきたい", "en2jp", KAKU_UNKNOWN));
+    assert.ok(checkTyped(fact, "書きたい", "en2jp", KAKU_UNKNOWN));
   });
 });
 
@@ -207,7 +209,7 @@ describe("the te-form IRREGULARS never show a learner unlearned kanji", () => {
 });
 
 describe("a split production fact is drilled on ITS OWN host", () => {
-  const SUGIRU_V = patternProductionFactId("sugiru");
+  const SUGIRU_V = classProductionFactId("sugiru", "v5k");
   const SUGIRU_I = patternProductionFactId("sugiru", "adj-i");
   const TAKAI: GrammarVehicle = { surface: "高い", kana: "たかい", cls: "adj-i", known: true };
   const IKU: GrammarVehicle = { surface: "行く", kana: "いく", cls: "v5k-s", known: true };
@@ -216,15 +218,12 @@ describe("a split production fact is drilled on ITS OWN host", () => {
     // If these ever collapse to one id the split is undone and one score is
     // being kept for two rules — silently, because everything still renders.
     assert.notEqual(SUGIRU_V, SUGIRU_I);
-    assert.equal(factInfo(SUGIRU_V)?.glyph, "行きすぎる");
+    assert.equal(factInfo(SUGIRU_V)?.glyph, "書きすぎる");
     assert.equal(factInfo(SUGIRU_I)?.glyph, "高すぎる");
   });
 
-  test("the verb fact keeps the UNQUALIFIED id — the one history already holds", () => {
-    // The whole reason the primary host is unqualified. A user's existing
-    // `grammar:sugiru/production` record has answers behind it that were given
-    // on 行く, and it must go on meaning that.
-    assert.equal(String(SUGIRU_V), "grammar:sugiru/production");
+  test("the verb class and adjective host use distinct qualified ids", () => {
+    assert.equal(String(SUGIRU_V), "grammar:sugiru/production@v5k");
     assert.equal(String(SUGIRU_I), "grammar:sugiru/production@adj-i");
   });
 
@@ -242,7 +241,7 @@ describe("a split production fact is drilled on ITS OWN host", () => {
     const qt = questionsFor(SUGIRU_I);
     assert.equal(qt.prompt(SUGIRU_I, "en2jp", { grammarVehicle: IKU }).glyph, "高い");
     assert.equal(qt.prompt(SUGIRU_I, "en2jp", { grammarVehicle: TAKAI }).glyph, "高い");
-    assert.equal(qt.prompt(SUGIRU_V, "en2jp", { grammarVehicle: TAKAI }).glyph, "行く");
+    assert.equal(qt.prompt(SUGIRU_V, "en2jp", { grammarVehicle: TAKAI }).glyph, "書く");
   });
 
   test("grading follows the same boundary", () => {
@@ -293,7 +292,7 @@ describe("grammarVehicleFor prefers known vehicles, fills with predictable unkno
     // pattern, not whether she can conjugate an unknown word.
     const knows = knowing("読む");
     for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
-      const v = grammarVehicleFor(TAI, knows, () => x);
+      const v = grammarVehicleFor(TAI_M, knows, () => x);
       assert.equal(v?.surface, "読む");
       assert.equal(v?.known, true);
     }
@@ -306,16 +305,14 @@ describe("grammarVehicleFor prefers known vehicles, fills with predictable unkno
 
   test("knowing no pool word still rolls a vehicle — unknown, predictable, kana-shown", () => {
     // The BUG: this used to yield null and the production item was not asked.
-    // Now it rolls a plain non-る godan the learner can conjugate from spelling,
-    // marked known:false so every showing surface is drawn in kana.
+    // Now it rolls an unknown vehicle of this fact's class, marked known:false
+    // so every showing surface is drawn in kana and the instruction names it.
     const NOBODY: HistoryFile = { sessions: [], facts: {} };
     for (const x of [0, 0.25, 0.5, 0.75, 0.99]) {
       const v = grammarVehicleFor(TAI, NOBODY, () => x);
       assert.ok(v, "should still roll a vehicle for a total beginner");
       assert.equal(v!.known, false);
-      assert.ok(!v!.surface.endsWith("る"), `${v!.surface} is an unpredictable る-verb`);
-      assert.notEqual(v!.cls, "v5k-s");
-      assert.notEqual(v!.cls, "v5u-s");
+      assert.equal(v!.cls, "v1");
     }
   });
 

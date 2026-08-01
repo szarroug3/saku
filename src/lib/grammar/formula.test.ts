@@ -16,7 +16,7 @@ import { describe, test } from "node:test";
 
 import { attachesTo, FORM_LABEL, HOST_LABEL, recipeFormula } from "./formula";
 import { RECIPES, isProducible, type Recipe } from "../../data/grammar/recipes";
-import { productionHosts, usesSoundChange } from "../../data/grammar/index";
+import { conjugatesVerb, productionHosts } from "../../data/grammar/index";
 import { formsFor } from "../conjugate/index";
 
 function byId(id: string): Recipe {
@@ -200,23 +200,15 @@ describe("production hosts against formula rows", () => {
     }
   });
 
-  test("the mixed patterns really do have unscored rows: node and the 音便 family", () => {
-    // The empty-cell case has two sources, and both are principled. 〜ので (node)
-    // is the vacuous kind the header describes: its verb / adj-i rows transform
-    // nothing, so those cells stay blank while its adj-na row is scored. The rest
-    // are the WHOLE 音便 set (て/た/たら) — those score per ENDING, not per host (see
-    // te-endings.ts / usesSoundChange), so every 音便 pattern's host formula rows
-    // carry no chip while its per-ending facts are enumerated on the entry page.
+  test("the mixed pattern really has unscored rows: node", () => {
     const mixed = RECIPES.filter((r) => {
       if (!isProducible(r)) return false;
       const scored = new Set(productionHosts(r));
+      if (conjugatesVerb(r)) scored.add("verb");
       const rows = recipeFormula(r).opening;
       return rows.some((f) => !scored.has(f.host));
     }).map((r) => r.id);
-    const soundChange = RECIPES.filter(
-      (r) => isProducible(r) && usesSoundChange(r),
-    ).map((r) => r.id);
-    assert.deepEqual(mixed.toSorted(), ["node", ...soundChange].toSorted());
+    assert.deepEqual(mixed, ["node"]);
   });
 
   test("a wrap never carries a score column", () => {

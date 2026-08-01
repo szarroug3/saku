@@ -73,7 +73,7 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
           <Card key={p.id} className="h-full">
             <div className="space-y-4">
               {p.eyebrow ? <Lbl>{p.eyebrow}</Lbl> : null}
-              <p className="text-[15px] font-medium text-text">{p.title}</p>
+              <h2 className="text-[15px] font-medium text-text">{p.title}</h2>
               <IntroBody body={p.body} measure="" />
               {p.buildRules?.length ? (
                 <IntroBuildTable rules={p.buildRules} heads={p.buildHeads} />
@@ -82,6 +82,7 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
                 <IntroBuildTableGroup key={i} title={t.title} rules={t.rules} heads={t.heads} />
               ))}
               {p.buildFooter ? <IntroBuildFooter footer={p.buildFooter} /> : null}
+              {p.bodyAfterBuild?.length ? <IntroBody body={p.bodyAfterBuild} measure="" /> : null}
             </div>
           </Card>
         ))}

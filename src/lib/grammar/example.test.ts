@@ -27,7 +27,6 @@ import { apply } from "./apply";
 import {
   DRILLABLE,
   RECIPES,
-  isProducible,
   isTrivialAttachment,
   recipe,
 } from "../../data/grammar/recipes";
@@ -89,32 +88,22 @@ describe("the baked example is a QUESTION, not the word retyped", () => {
 
 describe("a production fact per HOST, where the hosts are different rules", () => {
   test("the host-split patterns carry a fact for each of their hosts", () => {
-    // Neither te-cause NOR tara is here any more: both are 音便 patterns (see
-    // usesSoundChange), so their production splits by ENDING on the verb, not by
-    // host, and productionHosts is [] for them. These three are the non-音便
-    // patterns whose adjective form is a genuinely different rule from their verb
-    // form — ば and 〜ます-less stem / 〜そう where there is no sound change to fold.
+    // Verb facts are tracked by conjugation class and therefore do not appear in
+    // productionHosts. This list covers the separate non-verb transformations.
     const expected: Record<string, string[]> = {
-      "sou-appearance": ["verb", "adj-i", "adj-na"],
-      sugiru: ["verb", "adj-i", "adj-na"],
-      ba: ["verb", "adj-i"],
+      "sou-appearance": ["adj-i", "adj-na"],
+      sugiru: ["adj-i", "adj-na"],
+      ba: ["adj-i"],
     };
     for (const [id, hosts] of Object.entries(expected)) {
       assert.deepEqual(productionHosts(byId(id)), hosts, id);
     }
   });
 
-  test("the 〜て family carries NO host production fact — it splits by ending", () => {
-    // te-cause / te-permission / te-mo used to carry host-keyed production facts
-    // (and te-permission / te-mo deferred their adj-i rule to te-cause). The 〜て
-    // family now drills the verb sound-change endings only, so every one has
-    // productionHosts [] and no sharedProductionWith deferral remains. Its
-    // adjective (高くて) is not separately scored.
-    for (const id of ["te-cause", "te-permission", "te-mo"]) {
-      const r = byId(id);
-      assert.deepEqual(productionHosts(r), [], id);
-      assert.equal(r.sharedProductionWith, undefined, id);
-    }
+  test("each 〜て pattern scores the adjective forms it actually attaches to", () => {
+    assert.deepEqual(productionHosts(byId("te-sequence")), ["adj-i", "adj-na"]);
+    assert.deepEqual(productionHosts(byId("te-permission")), ["adj-i"]);
+    assert.deepEqual(productionHosts(byId("te-mo")), ["adj-i"]);
   });
 
   test("た/たら split the VERB by ending but keep their adjective conditional", () => {
@@ -126,31 +115,11 @@ describe("a production fact per HOST, where the hosts are different rules", () =
     assert.deepEqual(productionHosts(byId("ta-koto-ga-aru")), [], "ta-koto-ga-aru");
   });
 
-  test("a deferral names a recipe that really does cover the host", () => {
-    // The claim `sharedProductionWith` makes is not "no split here" but "that
-    // rule is scored THERE" — so the named recipe has to exist, be producible,
-    // and actually carry a fact for every host this row hands off.
-    for (const r of RECIPES) {
-      if (!r.sharedProductionWith) continue;
-      const owner = recipe(r.sharedProductionWith);
-      assert.ok(owner, `${r.id} defers to ${r.sharedProductionWith}, which does not exist`);
-      assert.ok(isProducible(owner), `${r.id} defers to a recipe with no production facts`);
-      const covered = new Set(productionHosts(owner));
-      for (const a of r.attach) {
-        if (isTrivialAttachment(a) || a.host === primaryHost(r)) continue;
-        assert.ok(
-          covered.has(a.host),
-          `${r.id} hands off its ${a.host} rule to ${owner.id}, which has no ${a.host} fact`,
-        );
-      }
-    }
-  });
-
   test("each host's fact bakes that host's own answer", () => {
     assert.equal(buildExample(byId("sugiru"), "adj-i")?.form, "高すぎる");
     assert.equal(buildExample(byId("sugiru"), "verb")?.form, "行きすぎる");
     assert.equal(buildExample(byId("ba"), "adj-i")?.form, "高ければ");
-    assert.equal(buildExample(byId("te-cause"), "adj-na")?.form, "静かで");
+    assert.equal(buildExample(byId("te-sequence"), "adj-na")?.form, "静かで");
   });
 
   test("no two facts of one pattern bake the same string", () => {

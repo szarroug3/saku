@@ -24,12 +24,11 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { teEndingProductionFactId } from "@/data/grammar";
+import { classProductionFactId } from "@/data/grammar";
 import { RECIPES } from "@/data/grammar/recipes";
 import { questionsFor, type GrammarVehicle, type PromptContext } from "@/lib/engine/question";
 import { buildExample } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
-import { endingBucketOf } from "@/lib/grammar/te-endings";
 import {
   VERB_VEHICLES,
   transitivityAllows,
@@ -57,7 +56,8 @@ function ctxFor(surface: string): PromptContext {
  * the card falls back to that fact's baked answer (書いてある). */
 function factFor(ctx: PromptContext) {
   const cls = ctx.grammarVehicle?.cls ?? null;
-  return teEndingProductionFactId("te-aru", endingBucketOf(cls) ?? "te-ku");
+  const regular = cls && ["v5u", "v5t", "v5r", "v5m", "v5b", "v5n", "v5k", "v5g", "v5s", "v1"].includes(cls);
+  return classProductionFactId("te-aru", regular ? cls! : "v5k");
 }
 
 function grade(given: string, ctx: PromptContext): boolean {

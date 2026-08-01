@@ -20,10 +20,9 @@ import { describe, test } from "node:test";
 
 import {
   GRAMMAR_SUBJECT,
+  classProductionFactId,
   patternEntry,
   patternMeaningFactId,
-  patternProductionFactId,
-  teEndingProductionFactId,
 } from "@/data/grammar";
 import { buildDeck, buildMcOptions, checkTyped, questionsFor } from "@/lib/engine";
 import { factInfo } from "@/lib/facts";
@@ -110,7 +109,7 @@ describe("a selected pattern DRILLS", () => {
     const mean = patternMeaningFactId("te-kara");
     assert.equal(questionsFor(mean).id, "grammar");
     // te-kara's production is per-ending now; the per-ending fact must route too.
-    const prod = teEndingProductionFactId("te-kara", "te-utsu");
+    const prod = classProductionFactId("te-kara", "v5u");
     assert.equal(questionsFor(prod).id, "grammar");
   });
 
@@ -149,20 +148,20 @@ describe("a selected pattern DRILLS", () => {
     // 〜たい, a non-te verb pattern still baked on the fixed 行く (行きたい). te-form
     // production is per-ending and baked on the ending's godan anchor, exercised
     // in te-endings.test.ts; this checks the generic host-baked production path.
-    const fact = patternProductionFactId("tai");
+    const fact = classProductionFactId("tai", "v5k");
     // 行きたい is [stem] + たい (行く → 行き), so this proves the engine picks the
     // stem, not just string-concatenation onto the dictionary form.
-    assert.ok(checkTyped(fact, "行きたい", "en2jp"), "kanji surface is accepted");
-    assert.ok(checkTyped(fact, "いきたい", "en2jp"), "kana reading is accepted");
-    assert.ok(!checkTyped(fact, "行くたい", "en2jp"), "the naive (wrong) form is rejected");
+    assert.ok(checkTyped(fact, "書きたい", "en2jp"), "kanji surface is accepted");
+    assert.ok(checkTyped(fact, "かきたい", "en2jp"), "kana reading is accepted");
+    assert.ok(!checkTyped(fact, "書くたい", "en2jp"), "the naive (wrong) form is rejected");
   });
 
   test("PRODUCTION distractors are other forms of the SAME verb", () => {
-    const fact = patternProductionFactId("tai");
+    const fact = classProductionFactId("tai", "v5k");
     const opts = buildMcOptions(fact);
     // Every option is a form of 行く (the fixed verb), one of which is 行きたい.
     for (const o of opts) {
-      assert.match(factInfo(o)!.glyph, /^行/, "options are all forms of 行く");
+      assert.match(factInfo(o)!.glyph, /^書/, "options are all forms of 書く");
     }
     assert.ok(opts.includes(fact));
     // And none shares the answer string — no two-right-answers board.
@@ -178,8 +177,8 @@ describe("a selected pattern DRILLS", () => {
       patternMeaningFactId("te-kara"),
       // A per-ending te-form production fact is exactly the kind that must not
       // fall back to a zero-answer card, so it is included here on purpose.
-      teEndingProductionFactId("te-kara", "te-utsu"),
-      patternProductionFactId("tai"),
+      classProductionFactId("te-kara", "v5u"),
+      classProductionFactId("tai", "v5k"),
       patternMeaningFactId("nakya"),
     ];
     for (const f of buildDeck(facts, {

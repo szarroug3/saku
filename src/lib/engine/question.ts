@@ -30,10 +30,12 @@ import { distractorsFor } from "@/data/confusable";
 import { crossScriptLookalikes } from "@/data/cross-script";
 import {
   GRAMMAR_SUBJECT,
+  classProductionFactId,
   grammarMeaning,
   grammarProduction,
   patternMeaningFactId,
   patternProductionFactId,
+  specialVerbProductionFactId,
 } from "@/data/grammar";
 import { RECIPES, isProducible, patternLabel, type Host } from "@/data/grammar/recipes";
 import { buildExample } from "@/lib/grammar/example";
@@ -881,13 +883,9 @@ function variedVehicle(
 ): GrammarVehicle | null {
   const v = ctx?.grammarVehicle;
   if (!v || !apply(r, v.surface, v.cls).ok) return null;
-  // A vehicle of the WRONG BUCKET is treated exactly like an illegal one for a
-  // pinned fact: the te-su fact grades against a す verb and the @suru fact against
-  // する, so a stale ctx carrying the wrong verb (a remount, a serialized runtime
-  // from before the split) is dropped and the showing falls back to the fact's own
-  // baked anchor. A row-shift fact passes no bucket here (its per-ending coverage
-  // lives on the card, and grading builds on whatever legal verb was rolled), so
-  // this is a no-op for it — the recipeAllows/host checks below are its guard.
+  // A vehicle of the WRONG BUCKET is treated exactly like an illegal one: a v5s
+  // fact grades a v5s verb and an @suru fact grades する. A stale ctx carrying a
+  // different class or word falls back to the fact's baked anchor.
   if (bucket !== undefined && !vehicleInBucket(v, bucket)) return null;
   // A VEHICLE THE RECIPE DOES NOT TAKE IS AN ILLEGAL ONE, even though it builds.
   // apply() is happy to conjugate 行く into 行ってある — the 音便 is right and the
@@ -917,8 +915,23 @@ function hostOf(v: GrammarVehicle): Host {
  * Existence is checked against the REGISTRY rather than recomputed, because
  * "which hosts split" is data/grammar/index.ts's decision and a second opinion
  * about it here is a second place for it to be wrong. */
-function productionFactOn(recipeId: string, host: Host): FactId | null {
-  const id = patternProductionFactId(recipeId, host);
+function productionFactOn(recipeId: string, v: GrammarVehicle): FactId | null {
+  const host = hostOf(v);
+  const special =
+    v.surface === "行く" ? "iku"
+      : v.surface === "する" ? "suru"
+        : v.surface === "来る" ? "kuru"
+          : v.surface === "ある" ? "aru"
+            : v.surface === "いい" ? "ii"
+              : null;
+  if (special) {
+    const id = specialVerbProductionFactId(recipeId, special);
+    return factInfo(id) ? id : null;
+  }
+  const id =
+    host === "verb" && v.cls
+      ? classProductionFactId(recipeId, v.cls)
+      : patternProductionFactId(recipeId, host);
   return factInfo(id) ? id : null;
 }
 
@@ -959,7 +972,6 @@ export function grammarVehicleFor(
   fact: FactId,
   history: HistoryFile,
   rng: Rng = Math.random,
-  cardBucket?: VehicleBucket,
 ): GrammarVehicle | null {
   const prod = grammarProduction(fact);
   if (!prod) return null;
@@ -968,19 +980,14 @@ export function grammarVehicleFor(
   // rolling a verb for the adj-i fact would ask the other fact's question and
   // record the answer against this one.
   const isKnown = (surface: string) => wordKnown(surface, history);
-  // PINNED TO A BUCKET. The FACT's own bucket comes first — a 音便 ending fact
-  // (te-su → a す verb) or an @iku/@suru/@kuru fact (that one verb). A ROW-SHIFT
-  // fact has none, so the CARD supplies one: the full-coverage round expands the
-  // single mastery fact into one card per ending (productionCoverageBuckets) and
-  // hands the class bucket here, so this showing rolls a verb of exactly that
-  // ending. Absent both, an ordinary free pick (endless mode, one random verb).
-  const bucket = cardBucket ?? prod.bucket;
+  // The fact's bucket pins the showing to exactly its conjugation class or its
+  // exceptional word. Non-conjugating noun facts remain free within their host.
   const picked: Vehicle | null = pickVehicle(
     prod.recipe,
     rng,
     prod.host,
     isKnown,
-    bucket,
+    prod.bucket,
   );
   return picked
     ? {
@@ -1224,12 +1231,10 @@ const grammarQuestions: QuestionType = {
           const d = builtOn(r, v);
           if (!d || (answerShown && shown(d) === answerShown)) continue;
           // The distractor's fact is the one for THIS vehicle's host, and it has
-          // to be a fact that exists: 〜ても builds fine on 高い but has no adj-i
-          // production fact (it defers to te-cause — see sharedProductionWith),
-          // so offering `production@adj-i` for it would put an id on the board
-          // that resolves to nothing. Its verb fact is not a substitute; that is
-          // a different question with a different answer.
-          const dFact = productionFactOn(r.id, hostOf(v));
+          // to be a fact that exists. Offering an unregistered host id would put
+          // an option on the board that resolves to nothing; a fact for another
+          // host is not a substitute.
+          const dFact = productionFactOn(r.id, v);
           if (!dFact) continue;
           out.push(dFact);
           if (out.length >= n) break;
@@ -1242,7 +1247,13 @@ const grammarQuestions: QuestionType = {
         if (r.id === prod.recipe.id || !isProducible(r)) continue;
         const ex = buildExample(r, prod.host);
         if (!ex || ex.lemma !== prod.lemma) continue;
-        const dFact = productionFactOn(r.id, prod.host);
+        const anchor: GrammarVehicle = {
+          surface: prod.lemma,
+          kana: prod.lemma,
+          cls: prod.bucket?.kind === "class" ? prod.bucket.cls : null,
+          known: true,
+        };
+        const dFact = productionFactOn(r.id, anchor);
         if (!dFact) continue;
         out.push(dFact);
         if (out.length >= n) break;

@@ -148,6 +148,7 @@ export const VERB_VEHICLES: readonly Vehicle[] = [
   verb("買う", "かう", "v5u"),
   verb("する", "する", "vs-i"),
   verb("来る", "くる", "vk"),
+  verb("ある", "ある", "v5r-i"),
 ];
 
 /** The verb every pattern is DEMONSTRATED on when it takes 行く: the cluster
@@ -287,13 +288,9 @@ export function vehiclesFor(
     // caller asking "what can this recipe be built on at all".
     if (onHost !== undefined && host !== onHost) continue;
     for (const v of POOL[host]) {
-      // A BUCKETED production showing wants a verb of exactly its bucket: a
-      // 音便 ending fact (te-utsu) a う/つ verb, a row-shift class bucket (v5r)
-      // exactly a 帰る-class verb, a special-verb bucket (する) that one verb. For
-      // the 音便 case vehicleInBucket keys on the class, so it still refuses every
-      // る-ending verb and the 行く/する/来る irregulars — the learner cannot
-      // predict their て-form from spelling. Absent (no bucket) this is a no-op and
-      // every other pattern's vehicle pool is unchanged.
+      // A bucketed showing wants exactly its scored class or exceptional word.
+      // This is what keeps v5m and v5n separate even when their visible ending is
+      // the same, and keeps いい off the regular い-adjective fact.
       if (bucket !== undefined && !vehicleInBucket(v, bucket)) continue;
       // THE ONE CONSTRAINT apply() CANNOT SEE. Everything else this function
       // refuses, it refuses by building and looking — see the header. 〜てある

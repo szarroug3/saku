@@ -110,7 +110,6 @@ describe("SELECTION — the distractor rules are the safety argument", () => {
     // てから frame despite the glosses differing. This is the bug that was
     // found by printing an item rather than trusting the count.
     assert.equal(isValidDistractor(recipe("te-kara")!, recipe("te-sequence")!), false);
-    assert.equal(isValidDistractor(recipe("te-kara")!, recipe("te-cause")!), false);
     // Same shape: ても is a truncation of てもいい and てもらう.
     assert.equal(isValidDistractor(recipe("te-permission")!, recipe("te-mo")!), false);
     assert.equal(isValidDistractor(recipe("te-morau")!, recipe("te-mo")!), false);

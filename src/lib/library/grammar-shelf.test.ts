@@ -55,6 +55,17 @@ describe("the grammar shelf is cut by form", () => {
     }
   });
 
+  test("the context-dependent bare 〜て meanings share one shelf entry", () => {
+    const section = grammarShelfSections().find((candidate) => candidate.id === "form-te")!;
+    const bareTe = section.entries
+      .map((entry) => RECIPE_OF_ENTRY.get(entry.id)!)
+      .filter((recipe) => recipe.pattern === "〜て");
+    assert.equal(bareTe.length, 1);
+    assert.equal(bareTe[0].id, "te-sequence");
+    assert.match(bareTe[0].gloss, /and then/);
+    assert.match(bareTe[0].gloss, /because/);
+  });
+
   test("'Other patterns' trails and holds the plain-form and no-verb patterns", () => {
     const sections = grammarShelfSections();
     const other = sections[sections.length - 1];

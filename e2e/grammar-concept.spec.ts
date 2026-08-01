@@ -70,8 +70,30 @@ test("the て-form's Library page teaches what it is for, not only how to build 
   // lesson shows: what the form is for (a casual request), then how to build it.
   await page.goto(entryHref(patternEntry("te-sequence")));
   await expect(page.getByText(/casual request/i)).toBeVisible();
+  await expect(page.getByText("Asks casually, or links ideas.", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "One form, several meanings." })).toBeVisible();
+  const verbHeading = page.getByRole("heading", { name: "As a verb", exact: true });
+  const adjectiveHeading = page.getByRole("heading", { name: "As an adjective", exact: true });
+  await expect(verbHeading).toHaveClass(/text-accent/);
+  await expect(adjectiveHeading).toHaveClass(/text-accent/);
+  await expect(page.getByRole("heading", { name: "Build verbs: change the ending." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build adjectives: Change the ending." })).toBeVisible();
   // The build table is still there (the う→って row).
   await expect(page.getByText("かって").first()).toBeVisible();
+  // Its production tables expose every kind of separately scored skill: the
+  // regular verb groups, each irregular verb, and all three adjective rows.
+  for (const heading of ["Godan (う-verbs)", "Ichidan (る-verbs)", "Irregular verbs", "Adjectives", "Irregular adjectives"]) {
+    await expect(page.getByText(heading, { exact: true }).first()).toBeVisible();
+  }
+  for (const form of ["たかくて", "よくて", "しずかで"]) {
+    await expect(page.locator("body")).toContainText(form);
+  }
+  const irregularAdjectives = page
+    .getByText("Irregular adjectives", { exact: true })
+    .first()
+    .locator("..");
+  await expect(irregularAdjectives.getByRole("columnheader", { name: "Note" })).toHaveCount(0);
+  await expect(page.getByText("いい uses よ as its stem.", { exact: true })).toHaveCount(0);
 });
 
 test("the grammar-concept shelf lists the concepts and shows no speaker", async ({

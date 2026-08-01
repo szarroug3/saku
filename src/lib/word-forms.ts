@@ -138,6 +138,16 @@ export function ruVerbKindOf(
   return null;
 }
 
+/** The adjective class in the learner-facing terms used by grammar tables and
+ * drill instructions. Unlike る-verbs, the label is useful for every unknown
+ * adjective: it tells the learner whether to apply the い or な paradigm. */
+export function adjectiveKindOf(
+  cls: WordClass | null,
+): "い-adjective" | "な-adjective" | null {
+  if (cls === "adj-i" || cls === "adj-ix") return "い-adjective";
+  return cls === "adj-na" ? "な-adjective" : null;
+}
+
 /**
  * ONLY VERBS AND い-ADJECTIVES GET A FORMS SECTION.
  *

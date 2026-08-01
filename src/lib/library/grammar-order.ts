@@ -15,7 +15,7 @@
 // track pins it second, right behind the bare て-form it builds on, while a
 // level-only sort left it in its authored spot), and reading the shelf in a
 // different order than you are taught is the confusion this removes. Every recipe
-// is in CURRICULUM_LESSONS now (all 96 are taught), so the map covers the whole
+// is in CURRICULUM_LESSONS now (all recipes are taught), so the map covers the whole
 // shelf, recognition-only patterns included.
 //
 // The shelf keeps its N5 / N4 / N3 section headers and sorts the entries WITHIN

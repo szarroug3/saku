@@ -4,7 +4,7 @@
 // That refusal is about JAPANESE and it stands. This file still publishes a
 // GRAMMAR_CURRICULUM_TOTAL, because "how many patterns does this track teach"
 // is a question about the app rather than the subject — the distinction, and
-// why the answer is all 96 authored recipes, is argued at that constant.
+// why the answer is every authored recipe, is argued at that constant.
 //
 // WHY THIS IS word-lesson.ts, NOT kanji-lesson.ts
 // ===============================================
@@ -97,7 +97,7 @@ function teFormFirst(r: Recipe): number {
 }
 
 /**
- * The patterns the track teaches, in teaching order: ALL 96 recipes, N5 before
+ * The patterns the track teaches, in teaching order: every recipe, N5 before
  * N4 before N3, stable within a level.
  *
  * Computed once — it is a property of the data, not of the user. Every recipe is
@@ -115,7 +115,7 @@ export const CURRICULUM_PATTERNS: readonly Recipe[] = [...RECIPES].sort(
 
 /**
  * How many patterns the track teaches — the denominator on the lesson card.
- * All 96 authored RECIPES.
+ * All authored RECIPES.
  *
  * WHY THE WHOLE TABLE NOW, AND NOT ONLY THE DRILLABLE 56
  * =====================================================
@@ -298,7 +298,7 @@ function lessonHost(lesson: GrammarLessonDef): Host | null {
 }
 
 // ---------------------------------------------------------------------------
-// SITTINGS: how the 96 lessons are grouped into what a learner meets at once.
+// SITTINGS: how the grammar lessons are grouped into what a learner meets at once.
 //
 // A NEW FORM IS TAUGHT ALONE; ADDING AN ENDING BUNDLES
 // ====================================================
@@ -313,9 +313,7 @@ function lessonHost(lesson: GrammarLessonDef): Host | null {
 // ===============================
 // The FIRST lesson, in teaching order, whose primary pattern's verb attaches at a
 // given form — for the forms below, the ones a beginner meets as a new shape. The
-// FIRST user only: 〜てcause redundantly re-renders a て build table, but て was
-// introduced back at lesson 1, so te-cause is NOT a form lesson and bundles like
-// any other ending. 〜ている is likewise a normal bundled pattern: it sits at the
+// FIRST user only: 〜ている is a normal bundled pattern because it sits at the
 // already-taught て-form, so it debuts no new shape.
 // ---------------------------------------------------------------------------
 

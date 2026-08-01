@@ -26,12 +26,12 @@ import { describe, test } from "node:test";
 
 import { SETS } from "@/data/characters";
 import {
-  isTeFormRecipe,
+  classProductionFactId,
   patternProductionFactId,
-  teEndingProductionFactId,
+  specialVerbProductionFactId,
 } from "@/data/grammar";
 import { RECIPES, isProducible } from "@/data/grammar/recipes";
-import { endingBucketOf } from "@/lib/grammar/te-endings";
+import { CLASS_ANCHOR } from "@/lib/grammar/te-endings";
 import { factInfo } from "@/lib/facts";
 import { apply, hostOfClass } from "@/lib/grammar/apply";
 import {
@@ -160,23 +160,24 @@ const CASES: Case[] = (() => {
       label: `${r.id} on ${v.surface}`,
     });
   };
+  const regularClasses = new Set(CLASS_ANCHOR.map((a) => a.cls));
   for (const r of RECIPES) {
     if (!isProducible(r)) continue;
-    // A te-form pattern's production fact is keyed on the ENDING, not the host
-    // (see te-endings.ts), and the vehicle must be a godan verb of that ending —
-    // so a る-verb / irregular never rolls. This is the same seam the drill uses
-    // and the P0 (romaji forgiveness on a て-form) lives on it.
-    if (isTeFormRecipe(r)) {
-      for (const v of VEHICLES) {
-        const ending = endingBucketOf(v.cls);
-        if (!ending) continue;
-        push(teEndingProductionFactId(r.id, ending), r, v);
-      }
-      continue;
-    }
     for (const v of VEHICLES) {
       const host = v.cls === null ? "noun" : hostOfClass(v.cls);
-      push(patternProductionFactId(r.id, host), r, v);
+      const qualifier =
+        v.surface === "行く" ? "iku"
+          : v.surface === "する" ? "suru"
+            : v.surface === "来る" ? "kuru"
+              : v.surface === "ある" ? "aru"
+                : v.surface === "いい" ? "ii"
+                  : null;
+      const fact = qualifier
+        ? specialVerbProductionFactId(r.id, qualifier)
+        : host === "verb" && v.cls && regularClasses.has(v.cls)
+          ? classProductionFactId(r.id, v.cls)
+          : patternProductionFactId(r.id, host);
+      push(fact, r, v);
     }
   }
   return out;
@@ -281,10 +282,10 @@ describe("a varied-vehicle production answer, graded with the ctx the drill send
   test("no vehicle in the ctx: the baked path, unchanged", () => {
     // The fix must not have moved the OTHER path. A production fact with no
     // ctx grades against its baked answers exactly as before.
-    // te-request's per-ending te-utsu fact is baked on 買う (see ENDING_ANCHOR),
+    // te-request's v5u fact is baked on 買う,
     // so its own answers are 買ってください / かってください — the fixed vehicle the
     // no-ctx path grades against.
-    const fact = teEndingProductionFactId("te-request", "te-utsu");
+    const fact = classProductionFactId("te-request", "v5u");
     const answers = factInfo(fact)?.answers ?? [];
     assert.deepEqual(answers.slice(0, 2), ["買ってください", "かってください"]);
     for (const a of answers) {

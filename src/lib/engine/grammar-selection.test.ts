@@ -105,7 +105,7 @@ describe("grammarSelectionFor — the card carries its fact", () => {
     // filter: sweep every pattern's board and check nothing reading は or が got
     // there by any route.
     let boards = 0;
-    for (const r of ["te-kara", "wo", "made", "tai", "te-cause"]) {
+    for (const r of ["te-kara", "wo", "made", "tai", "te-sequence"]) {
       const sel = grammarSelectionFor(patternMeaningFactId(r), OMNISCIENT, seeded(11));
       if (!sel) continue;
       boards++;

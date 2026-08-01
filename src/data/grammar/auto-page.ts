@@ -192,7 +192,11 @@ function standaloneRuleRows(form: Form): IntroBuildRule[] {
 const PATTERN_TABLE_GROUPS: {
   title: string;
   heads?: { label?: string };
-  verbs: { label: string; word: string; cls: WordClass }[];
+  /** When true, a row shows only where the word conjugates IRREGULARLY for this
+   * recipe — i.e. differently from `regular`. Keeps 行く off 〜ます (行きます is the
+   * plain rule) while keeping it on the て-form (行って). */
+  irregular?: boolean;
+  verbs: { label: string; word: string; cls: WordClass; regular?: WordClass; note?: string }[];
 }[] = [
   {
     title: "Godan (う-verbs)",
@@ -210,19 +214,45 @@ const PATTERN_TABLE_GROUPS: {
     ],
   },
   {
+    // ONE example: every ichidan verb conjugates identically (drop る), so a
+    // second row teaches nothing the first did not.
     title: "Ichidan (る-verbs)",
+    verbs: [{ label: "", word: "たべる", cls: "v1" }],
+  },
+  {
+    title: "Irregular verbs",
+    heads: { label: "" },
+    irregular: true,
     verbs: [
-      { label: "", word: "たべる", cls: "v1" },
-      { label: "", word: "みる", cls: "v1" },
+      { label: "exception", word: "いく", cls: "v5k-s", regular: "v5k" },
+      { label: "irregular", word: "する", cls: "vs-i", regular: "v1" },
+      { label: "irregular", word: "くる", cls: "vk", regular: "v1" },
+      { label: "exception", word: "ある", cls: "v5r-i", regular: "v5r" },
     ],
   },
   {
-    title: "Exceptions and irregulars",
-    heads: { label: "" },
+    // The ADJECTIVE forms, where the pattern conjugates one: い-adjective (高くて),
+    // the いい exception (よくて — its stem is よ, not い), and な-adjective (静かで).
+    // Self-filtering: a row shows only where apply transforms the word, so a
+    // verb-only pattern gets no adjective table and 〜ば (adj-i only) shows no な row.
+    title: "Adjectives",
+    heads: { label: "Ending" },
     verbs: [
-      { label: "exception", word: "いく", cls: "v5k-s" },
-      { label: "irregular", word: "する", cls: "vs-i" },
-      { label: "irregular", word: "くる", cls: "vk" },
+      { label: "い", word: "高い", cls: "adj-i", regular: "adj-i" },
+      { label: "な", word: "静か", cls: "adj-na", regular: "adj-na" },
+    ],
+  },
+  {
+    title: "Irregular adjectives",
+    heads: { label: "" },
+    irregular: true,
+    verbs: [
+      {
+        label: "exception",
+        word: "いい",
+        cls: "adj-ix",
+        regular: "adj-i",
+      },
     ],
   },
 ];
@@ -245,7 +275,14 @@ function patternRuleTables(
       if (!recipeAllows(r, v.word)) continue;
       const built = apply(r, v.word, v.cls);
       if (!built.ok || built.value === v.word) continue;
-      rules.push({ label: v.label, verb: v.word, to: built.value });
+      // An irregular row appears only where the word actually breaks its regular
+      // rule: 行く shows on the て-form (行って ≠ 行いて) but not on 〜ます (行きます is
+      // the plain rule). Compared on the same word conjugated as its regular class.
+      if (g.irregular && v.regular) {
+        const reg = apply(r, v.word, v.regular);
+        if (reg.ok && reg.value === built.value) continue;
+      }
+      rules.push({ label: v.label, verb: v.word, to: built.value, note: v.note });
     }
     if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
   }

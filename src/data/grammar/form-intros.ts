@@ -8,51 +8,75 @@
 // introduces — the っ of った — is flagged automatically. Kana examples, verified
 // against the conjugation engine.
 
-import { conjugate, type Form, type WordClass } from "@/lib/conjugate";
+import type { WordClass } from "@/lib/conjugate";
+import { apply } from "@/lib/grammar/apply";
+import { recipe } from "@/data/grammar/recipes";
+import { recipeAllows } from "@/lib/grammar/vehicles";
 import type { IntroBuildRule, PhaseIntro } from "@/data/phase-intros";
 
 // ---------------------------------------------------------------------------
-// GENERATED FORM TABLES — for the standalone conjugation forms (passive,
-// potential, causative, causative-passive, 〜ば, 〜たら). Unlike the hand-authored
-// て/ない/た/stem tables above, these are built straight off the conjugation
-// engine so they cannot drift, grouped the same way: Godan / Ichidan / Irregulars.
+// GENERATED FORM TABLES — shared by every foundational form page. They are built
+// straight off the recipe engine so the lesson cannot drift from its scored facts,
+// grouped as Godan / Ichidan / Irregular verbs / Adjectives.
 // ---------------------------------------------------------------------------
 
 const FORM_TABLE_VERBS: {
   title: string;
   heads?: { label?: string };
   irregular?: boolean;
-  verbs: { label: string; word: string; cls: WordClass }[];
+  verbs: { label: string; word: string; cls: WordClass; regular?: WordClass }[];
 }[] = [
   {
     title: "Godan (う-verbs)",
     heads: { label: "Ending" },
     verbs: [
-      { label: "う", word: "かう", cls: "v5u" },
-      { label: "つ", word: "まつ", cls: "v5t" },
-      { label: "る", word: "とる", cls: "v5r" },
-      { label: "む", word: "のむ", cls: "v5m" },
-      { label: "ぶ", word: "あそぶ", cls: "v5b" },
-      { label: "ぬ", word: "しぬ", cls: "v5n" },
+      { label: "う・つ・る", word: "かう", cls: "v5u" },
+      { label: "", word: "まつ", cls: "v5t" },
+      { label: "", word: "とる", cls: "v5r" },
+      { label: "む・ぶ・ぬ", word: "のむ", cls: "v5m" },
+      { label: "", word: "あそぶ", cls: "v5b" },
+      { label: "", word: "しぬ", cls: "v5n" },
       { label: "く", word: "かく", cls: "v5k" },
       { label: "ぐ", word: "およぐ", cls: "v5g" },
       { label: "す", word: "はなす", cls: "v5s" },
     ],
   },
   {
+    // ONE example: every ichidan verb conjugates identically (drop る), so a
+    // second row teaches nothing the first did not.
     title: "Ichidan (る-verbs)",
-    verbs: [
-      { label: "", word: "たべる", cls: "v1" },
-      { label: "", word: "みる", cls: "v1" },
-    ],
+    verbs: [{ label: "", word: "たべる", cls: "v1" }],
   },
   {
-    title: "Irregulars",
+    title: "Irregular verbs",
     heads: { label: "" },
     irregular: true,
     verbs: [
-      { label: "irregular", word: "する", cls: "vs-i" },
-      { label: "irregular", word: "くる", cls: "vk" },
+      { label: "exception", word: "いく", cls: "v5k-s", regular: "v5k" },
+      { label: "irregular", word: "する", cls: "vs-i", regular: "v1" },
+      { label: "irregular", word: "くる", cls: "vk", regular: "v1" },
+      { label: "exception", word: "ある", cls: "v5r-i", regular: "v5r" },
+    ],
+  },
+  {
+    // The ADJECTIVE forms, where this form conjugates one: い-adjective (高くて),
+    // the いい exception (よくて — stem よ, not い), and な-adjective (静かで). Self-
+    // filtering through `apply`: a form that does not touch adjectives (〜ます)
+    // conjugates none of these, so the table is absent; 〜ば touches only い, so its
+    // な row drops out.
+    title: "Adjectives",
+    heads: { label: "Ending" },
+    verbs: [
+      { label: "い", word: "たかい", cls: "adj-i" },
+      { label: "な", word: "しずか", cls: "adj-na" },
+    ],
+  },
+  {
+    title: "Irregular adjectives",
+    heads: { label: "" },
+    irregular: true,
+    verbs: [
+      { label: "exception", word: "いい", cls: "adj-ix", regular: "adj-i" },
     ],
   },
 ];
@@ -67,25 +91,47 @@ function prefixLen(a: string, b: string): number {
  * representative verb conjugated to the form, the change diffed off the shared
  * prefix (drop the tail, add the new one). Irregulars (する, くる) are shown whole. */
 function formRuleTables(
-  form: Form,
+  recipeId: string,
 ): { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] {
+  const r = recipe(recipeId);
+  if (!r) return [];
   const tables: { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] = [];
   for (const g of FORM_TABLE_VERBS) {
     const rules: IntroBuildRule[] = [];
     for (const v of g.verbs) {
-      const c = conjugate(v.word, v.cls, form);
+      // apply (not raw conjugate) so the recipe's OWN attachments decide which
+      // rows exist: 〜ば conjugates い-adjectives (高ければ) but not な (静か uses なら,
+      // a different pattern), so its な row drops out here rather than showing a
+      // form the pattern does not own.
+      if (!recipeAllows(r, v.word)) continue;
+      const c = apply(r, v.word, v.cls);
       if (!c.ok || c.value === v.word) continue;
+      // An irregular row shows only where it actually breaks its regular rule:
+      // 行く on the て/た-form (行って ≠ 行いて), but not on 〜ます (行きます is plain);
+      // する/来る everywhere except ば (すれば coincides with the ichidan rule).
+      if (v.regular) {
+        const reg = apply(r, v.word, v.regular);
+        if (reg.ok && reg.value === c.value) continue;
+      }
       const p = prefixLen(v.word, c.value);
+      const note = FORM_RULE_NOTES[`${recipeId}:${v.cls}`];
       if (g.irregular || p === 0) {
-        rules.push({ label: v.label || "irregular", verb: v.word, to: c.value });
+        rules.push({ label: v.label || "irregular", verb: v.word, to: c.value, note });
       } else {
-        rules.push({ label: v.label, verb: v.word, drop: v.word.slice(p), add: c.value.slice(p) });
+        rules.push({ label: v.label, verb: v.word, drop: v.word.slice(p), add: c.value.slice(p), note });
       }
     }
     if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
   }
   return tables;
 }
+
+/** Notes that teach something the generated equation cannot show by itself. */
+const FORM_RULE_NOTES: Readonly<Record<string, string>> = {
+  "nai-form:v5u": "う shifts to わ, not あ.",
+  "nai-form:v5r-i": "ある's negative is just ない, not あらない.",
+  "ta-form:v5u": "The っ in った is a small っ, not a full-size つ.",
+};
 
 /** The ない-form — the plain negative. One page (a form has little to say): what it
  * is for, then the build grouped Godan / Ichidan / Exceptions. */
@@ -104,39 +150,7 @@ export const NAI_FORM_PAGES: readonly PhaseIntro[] = [
         text: "For an う-verb, the last kana shifts to its あ-row before ない. An る-verb just drops る and adds ない.",
       },
     ],
-    buildTables: [
-      {
-        title: "Godan (う-verbs)",
-        heads: { label: "Ending" },
-        rules: [
-          { label: "う", verb: "かう", drop: "う", add: "わない", note: "う shifts to わ, not あ." },
-          { label: "つ", verb: "まつ", drop: "つ", add: "たない" },
-          { label: "る", verb: "とる", drop: "る", add: "らない" },
-          { label: "む", verb: "のむ", drop: "む", add: "まない" },
-          { label: "ぶ", verb: "あそぶ", drop: "ぶ", add: "ばない" },
-          { label: "ぬ", verb: "しぬ", drop: "ぬ", add: "なない" },
-          { label: "く", verb: "かく", drop: "く", add: "かない" },
-          { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "がない" },
-          { label: "す", verb: "はなす", drop: "す", add: "さない" },
-        ],
-      },
-      {
-        title: "Ichidan (る-verbs)",
-        rules: [
-          { verb: "たべる", drop: "る", add: "ない" },
-          { verb: "みる", drop: "る", add: "ない" },
-        ],
-      },
-      {
-        title: "Exceptions and irregulars",
-        heads: { label: "" },
-        rules: [
-          { label: "irregular", verb: "する", to: "しない" },
-          { label: "irregular", verb: "くる", to: "こない" },
-          { label: "irregular", verb: "ある", to: "ない", note: "ある's negative is just ない, not あらない." },
-        ],
-      },
-    ],
+    buildTables: formRuleTables("nai-form"),
   },
 ];
 
@@ -159,39 +173,7 @@ export const TA_FORM_PAGES: readonly PhaseIntro[] = [
         text: "it is built exactly like the て/で-form, with た/だ where て/で went (かって→かった, のんで→のんだ). Know the て-form and you already know this. いく is the same exception, and する / くる are the irregulars.",
       },
     ],
-    buildTables: [
-      {
-        title: "Godan (う-verbs)",
-        heads: { label: "Ending" },
-        rules: [
-          { label: "う・つ・る", verb: "かう", drop: "う", add: "った", note: "The っ in った is a small っ, not a full-size つ." },
-          { label: "", verb: "まつ", drop: "つ", add: "った" },
-          { label: "", verb: "とる", drop: "る", add: "った" },
-          { label: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んだ" },
-          { label: "", verb: "あそぶ", drop: "ぶ", add: "んだ" },
-          { label: "", verb: "しぬ", drop: "ぬ", add: "んだ" },
-          { label: "く", verb: "かく", drop: "く", add: "いた" },
-          { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "いだ" },
-          { label: "す", verb: "はなす", drop: "す", add: "した" },
-        ],
-      },
-      {
-        title: "Ichidan (る-verbs)",
-        rules: [
-          { verb: "たべる", drop: "る", add: "た" },
-          { verb: "みる", drop: "る", add: "た" },
-        ],
-      },
-      {
-        title: "Exceptions and irregulars",
-        heads: { label: "" },
-        rules: [
-          { label: "exception", verb: "いく", drop: "く", add: "った" },
-          { label: "irregular", verb: "する", to: "した" },
-          { label: "irregular", verb: "くる", to: "きた" },
-        ],
-      },
-    ],
+    buildTables: formRuleTables("ta-form"),
   },
 ];
 
@@ -211,7 +193,7 @@ export const MASU_FORM_PAGES: readonly PhaseIntro[] = [
         text: "From it come 〜ましょう (let's), 〜ませんか (won't you) and 〜ましょうか (shall I): swap ます for the ending.",
       },
     ],
-    buildTables: formRuleTables("masu"),
+    buildTables: formRuleTables("masu-form"),
   },
 ];
 
@@ -231,7 +213,7 @@ export const VOLITIONAL_FORM_PAGES: readonly PhaseIntro[] = [
         text: "An う-verb shifts its last kana to the お-row and adds う; an る-verb adds よう.",
       },
     ],
-    buildTables: formRuleTables("volitional"),
+    buildTables: formRuleTables("volitional-form"),
   },
 ];
 
@@ -252,38 +234,7 @@ export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
         text: "For an う-verb, the last kana simply switches to its い-row. An る-verb just drops る.",
       },
     ],
-    buildTables: [
-      {
-        title: "Godan (う-verbs)",
-        heads: { label: "Ending" },
-        rules: [
-          { label: "う", verb: "かう", drop: "う", add: "い" },
-          { label: "つ", verb: "まつ", drop: "つ", add: "ち" },
-          { label: "る", verb: "とる", drop: "る", add: "り" },
-          { label: "む", verb: "のむ", drop: "む", add: "み" },
-          { label: "ぶ", verb: "あそぶ", drop: "ぶ", add: "び" },
-          { label: "ぬ", verb: "しぬ", drop: "ぬ", add: "に" },
-          { label: "く", verb: "かく", drop: "く", add: "き" },
-          { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "ぎ" },
-          { label: "す", verb: "はなす", drop: "す", add: "し" },
-        ],
-      },
-      {
-        title: "Ichidan (る-verbs)",
-        rules: [
-          { verb: "たべる", drop: "る", add: "" },
-          { verb: "みる", drop: "る", add: "" },
-        ],
-      },
-      {
-        title: "Exceptions and irregulars",
-        heads: { label: "" },
-        rules: [
-          { label: "irregular", verb: "する", to: "し" },
-          { label: "irregular", verb: "くる", to: "き" },
-        ],
-      },
-    ],
+    buildTables: formRuleTables("stem-form"),
   },
 ];
 
@@ -360,7 +311,7 @@ export const CAUSATIVE_PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
         text: "Build the causative, then make that passive. An う-verb ends in 〜せられる; an る-verb in 〜させられる.",
       },
     ],
-    buildTables: formRuleTables("causativePassive"),
+    buildTables: formRuleTables("causative-passive"),
   },
 ];
 
