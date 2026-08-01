@@ -83,6 +83,9 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
             {intro.buildRules?.length ? (
               <IntroBuildTable rules={intro.buildRules} heads={intro.buildHeads} />
             ) : null}
+            {intro.buildTables?.map((t, i) => (
+              <IntroBuildTableGroup key={i} title={t.title} rules={t.rules} heads={t.heads} />
+            ))}
             {intro.deriveRules?.length ? (
               <IntroDeriveTable rows={intro.deriveRules} heads={intro.deriveHeads} />
             ) : null}
@@ -456,6 +459,30 @@ export function IntroBuildTable({
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/** A titled build table — one of several stacked on a page via `buildTables`. The
+ * title heads the table (Godan, Ichidan, Exceptions and irregulars) so a page can
+ * group distinct rules under their own headings instead of lumping them into one
+ * long table. Exported so the Library form page renders the same grouped tables
+ * the lesson shows. */
+export function IntroBuildTableGroup({
+  title,
+  rules,
+  heads,
+}: {
+  title: string;
+  rules: readonly IntroBuildRule[];
+  heads?: { label?: string; change?: string; note?: string; gloss?: string };
+}) {
+  return (
+    <div className="space-y-2.5">
+      <p lang="en" className="text-[13px] font-semibold text-text">
+        {title}
+      </p>
+      <IntroBuildTable rules={rules} heads={heads} />
     </div>
   );
 }

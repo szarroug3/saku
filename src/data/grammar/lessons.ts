@@ -117,10 +117,10 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     id: "gl-verb-types",
     setId: "",
     eyebrow: "Verb Types",
-    title: "Japanese verbs fall into two groups.",
+    title: "Godan and Ichidan.",
     body: [
       {
-        text: "Before you change a verb's shape you need its group. Every Japanese verb is an う-verb, an る-verb, or one of two irregulars, and the group decides how the verb changes.",
+        text: "Before you conjugate a verb, you need to figure out what group it's in. Every Japanese verb is an う-verb, an る-verb, or one of two irregulars, and the group decides how the verb changes.",
       },
       {
         lead: "う-verbs (godan)",
@@ -135,7 +135,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       },
       {
         lead: "する and くる",
-        text: "belong to neither group. They are the two irregular verbs, and you learn their shapes by heart.",
+        text: "belong to neither group. They are the two irregular verbs, and you learn their conjugations by heart.",
       },
     ],
   },
@@ -154,14 +154,15 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: 'the て/で-form is a casual request or command: まって "wait!", みて "look!", ちょっときて "come here a sec".',
       },
       {
-        text: 'It can also act as a connector. Joined to another verb it links actions, and can mean "and", "and then", "so", "because", or "while", with the context deciding which.',
+        lead: "It can also act as a connector.",
+        text: 'Joined to another verb it links actions, and can mean "and", "and then", "so", "because", or "while", with the context deciding which.',
       },
       {
-        lead: "It carries no tense of its own.",
-        text: "The form does not say when something happened or how polite it is. Whatever verb ends the sentence sets that. Chain several て/で-forms and end with one final verb, and only that last verb changes the tense.",
+        lead: "When used as a connector,",
+        text: "the form doesn't indicate what tense the words are in or the politeness. Whatever verb ends the sentence indicates that. Chain several て/で-forms and end with one final verb, and only that last verb changes the tense and politeness.",
       },
       {
-        text: "In たべて、のんで、はなしている, the last verb, はなしている, is where the tense lives. Don't worry about how it is built for now; just understand that it is what tells you the tense, and the て/で-forms before it stay the same.",
+        text: "In たべて、のんで、はなしている, the last verb, はなしている, is where the tense and politeness are indicated. Don't worry about how it is built for now; just understand that it is what tells you the tense, and the て/で-forms before it stay the same no matter how the last verb is built.",
       },
     ],
     buildRules: [
@@ -180,37 +181,54 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     id: "gl-te-build",
     setId: "",
     eyebrow: "Building the て/で-form",
-    title: "Build it: drop the ending, add て or で.",
+    title: "Build it: drop the ending, add a new ending.",
     body: [
       {
         text: "Drop the verb's last kana and add the ending that matches. Some endings use て and some use で; the ending decides which, and they mean the same, so you never choose between them.",
       },
       {
-        text: "An う-verb (godan) changes by its ending. An る-verb (ichidan) just drops る and adds て. いく is the one exception, and する and くる are the two irregulars.",
+        text: "いく is an exception: everywhere else it is a normal う-verb, but its て-form takes って, not いて. する and くる are irregular: they follow no group's rule, so you learn their conjugations by heart.",
       },
     ],
-    buildRules: [
+    buildTables: [
       {
-        label: "う・つ・る",
-        verb: "かう",
-        drop: "う",
-        add: "って",
-        note: "The っ in って is a small っ, not a full-size つ.",
+        title: "Godan (う-verbs)",
+        rules: [
+          {
+            label: "う・つ・る",
+            verb: "かう",
+            drop: "う",
+            add: "って",
+            note: "The っ in って is a small っ, not a full-size つ.",
+          },
+          { label: "", verb: "まつ", drop: "つ", add: "って" },
+          { label: "", verb: "とる", drop: "る", add: "って" },
+          { label: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んで" },
+          { label: "", verb: "あそぶ", drop: "ぶ", add: "んで" },
+          { label: "", verb: "しぬ", drop: "ぬ", add: "んで" },
+          { label: "く", verb: "かく", drop: "く", add: "いて" },
+          { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "いで" },
+          { label: "す", verb: "はなす", drop: "す", add: "して" },
+        ],
+        heads: { label: "Ending" },
       },
-      { label: "", verb: "まつ", drop: "つ", add: "って" },
-      { label: "", verb: "とる", drop: "る", add: "って" },
-      { label: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んで" },
-      { label: "", verb: "あそぶ", drop: "ぶ", add: "んで" },
-      { label: "", verb: "しぬ", drop: "ぬ", add: "んで" },
-      { label: "く", verb: "かく", drop: "く", add: "いて" },
-      { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "いで" },
-      { label: "す", verb: "はなす", drop: "す", add: "して" },
-      { label: "る-verb (ichidan)", verb: "たべる", drop: "る", add: "て" },
-      { label: "exception", verb: "いく", drop: "く", add: "って" },
-      { label: "irregular", verb: "する", to: "して" },
-      { label: "irregular", verb: "くる", to: "きて" },
+      {
+        title: "Ichidan (る-verbs)",
+        rules: [
+          { verb: "たべる", drop: "る", add: "て" },
+          { verb: "みる", drop: "る", add: "て" },
+        ],
+      },
+      {
+        title: "Exceptions and irregulars",
+        rules: [
+          { label: "exception", verb: "いく", drop: "く", add: "って" },
+          { label: "irregular", verb: "する", to: "して" },
+          { label: "irregular", verb: "くる", to: "きて" },
+        ],
+        heads: { label: "" },
+      },
     ],
-    buildHeads: { label: "Ending" },
   },
 ];
 

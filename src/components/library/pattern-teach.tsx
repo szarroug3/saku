@@ -50,6 +50,7 @@ import {
   IntroBody,
   IntroBuildFooter,
   IntroBuildTable,
+  IntroBuildTableGroup,
   IntroDeriveTable,
 } from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
@@ -77,6 +78,9 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
               {p.buildRules?.length ? (
                 <IntroBuildTable rules={p.buildRules} heads={p.buildHeads} />
               ) : null}
+              {p.buildTables?.map((t, i) => (
+                <IntroBuildTableGroup key={i} title={t.title} rules={t.rules} heads={t.heads} />
+              ))}
               {p.buildFooter ? <IntroBuildFooter footer={p.buildFooter} /> : null}
             </div>
           ))}

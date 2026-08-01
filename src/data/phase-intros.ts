@@ -248,6 +248,18 @@ export interface PhaseIntro {
    */
   buildHeads?: { label?: string; change?: string; note?: string; gloss?: string };
   /**
+   * SEVERAL titled build tables on one page, when a single table would lump
+   * distinct groups together. The て-form's build page uses this: a Godan table,
+   * an Ichidan table, and an Exceptions-and-irregulars table, each under its own
+   * heading, rather than one long table with mixed labels. Rendered in place of
+   * `buildRules` (a page uses one or the other, not both).
+   */
+  buildTables?: readonly {
+    readonly title: string;
+    readonly rules: readonly IntroBuildRule[];
+    readonly heads?: { label?: string; change?: string; note?: string; gloss?: string };
+  }[];
+  /**
    * A derivation table for a PATTERN page: the dictionary verb, the form the
    * pattern attaches to, and the finished pattern — かく · かき · かきにいく. Shows
    * the whole chain from the word you look up to the pattern, so a learner sees
