@@ -77,7 +77,56 @@ test("every library kind mints a working href", async ({ page }) => {
       page.getByRole("heading", { level: 1 }),
       `kind ${kind} at ${href} rendered no heading`,
     ).toHaveCount(1);
+
+    // Links has one stable home on every entry: exactly once, after the entry's
+    // content and immediately before the common action bar.
+    const links = page.getByText("Links", { exact: true });
+    await expect(links, `${kind} should render one Links footer`).toHaveCount(1);
+    const addToList = page.getByRole("button", { name: /Add to list/ });
+    await expect(addToList).toBeVisible();
+    expect(
+      await links.evaluate((node, action) =>
+        Boolean(node.compareDocumentPosition(action as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
+      await addToList.elementHandle()),
+      `${kind}'s Links footer should precede the action bar`,
+    ).toBe(true);
   }
+});
+
+test("a word has one clear Forms panel with its class in the header and audio on each form", async ({
+  page,
+}) => {
+  await page.goto("/library/word/知る");
+
+  const header = page.locator(".kq-material").first();
+  await expect(header.getByText("う-verb", { exact: true })).toBeVisible();
+  await expect(page.getByText("Forms", { exact: true })).toHaveCount(1);
+
+  const forms = page.locator("section").filter({ has: page.getByText("Forms", { exact: true }) });
+  await expect(forms).toHaveCount(1);
+  await expect(forms).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(forms.getByRole("button", { name: "Hear 知る", exact: true })).toBeVisible();
+  await expect(forms.getByRole("button", { name: "Hear 知った", exact: true })).toBeVisible();
+
+  const sentence = page.getByText("In a sentence", { exact: true });
+  const formsBox = await forms.boundingBox();
+  const sentenceBox = await sentence.boundingBox();
+  expect(formsBox).not.toBeNull();
+  expect(sentenceBox).not.toBeNull();
+  expect(sentenceBox!.y).toBeGreaterThan(formsBox!.y + formsBox!.height);
+});
+
+test("a な-adjective word page shows its form before a noun", async ({ page }) => {
+  await page.goto("/library/word/静か");
+
+  const header = page.locator(".kq-material").first();
+  await expect(header.getByText("な-adjective", { exact: true })).toBeVisible();
+  const forms = page.locator("section").filter({
+    has: page.getByText("Forms", { exact: true }),
+  });
+  await expect(forms.getByText("before a noun", { exact: true })).toBeVisible();
+  await expect(forms.getByText("静かな", { exact: true })).toBeVisible();
+  await expect(forms.getByRole("button", { name: "Hear 静かな", exact: true })).toBeVisible();
 });
 
 /**

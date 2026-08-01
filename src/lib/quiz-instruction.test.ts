@@ -183,11 +183,11 @@ describe("every card says what it wants", () => {
   });
 });
 
-describe("a production card names the class of an unknown る-verb", () => {
-  // A る-ending verb drawn in kana (たべる, かえる) does not say ichidan or godan,
-  // so the instruction says it — which is what lets the vehicle pool deal one at
-  // all (see vehicles.ts / word-forms.ruVerbKindOf). A known verb, or a non-る
-  // one, keeps the plain "word".
+describe("a production card names the class of an unknown class word", () => {
+  // A る-ending verb drawn in kana does not say ichidan or godan, and an
+  // adjective's spelling does not reliably say い or な. The instruction supplies
+  // that class for an unknown word. A known word keeps plain "word" because its
+  // class moves to the optional hint.
   const TAI_I = classProductionFactId("tai", "v1");
   const TAI_R = classProductionFactId("tai", "v5r");
   const ICHIDAN_UNKNOWN = { surface: "食べる", kana: "たべる", cls: "v1", known: false } as const;
@@ -244,6 +244,15 @@ describe("a production card names the class of an unknown る-verb", () => {
         surface: "静か", kana: "しずか", cls: "adj-na", known: false,
       }),
       "Type how this な-adjective is said in the 〜ので form.",
+    );
+  });
+
+  test("a KNOWN adjective keeps the plain 'word' — its class rides in the hint", () => {
+    assert.equal(
+      quizInstruction(patternProductionFactId("node", "adj-na"), "en2jp", "typed", {
+        surface: "嫌い", kana: "きらい", cls: "adj-na", known: true,
+      }),
+      "Type how this word is said in the 〜ので form.",
     );
   });
 });

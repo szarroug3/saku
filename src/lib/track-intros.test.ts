@@ -145,7 +145,7 @@ describe("a track intro comes before that track's first lesson", () => {
       const steps = lessonSteps(SAMPLE[track], BLANK);
       assert.ok(steps.length > 0, `${track} produced no steps`);
       assert.equal(steps[0].type, "intro");
-      // Grammar's opening lesson is authored (lesson 1, the て/で-form), and its
+      // Grammar's opening adjective-form lesson is authored, and its
       // own first page IS the track's introduction — "Grammar is how words fit
       // together" — so it leads with that rather than the generic track-grammar
       // card (which the Library still renders for the track's reference page).

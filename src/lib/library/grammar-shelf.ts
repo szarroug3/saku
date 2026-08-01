@@ -9,7 +9,7 @@
 // tail", so they belong together, under the て-form that heads them.
 //
 // EACH FORM'S OWN RECIPE HEADS ITS SECTION, for free: the sections run in
-// TEACHING order and the four form recipes (te-sequence / nai-form / ta-form /
+// TEACHING order and the foundational form recipes (prenominal / te / nai / ta /
 // stem-form) are each taught before their patterns, so sorting a form's members
 // by teaching rank lands the form recipe first. No special heading step.
 //
@@ -23,10 +23,10 @@
 //
 // It lives in a .ts, not beside the JSX in shelves.tsx, so the test runner (no
 // JSX) can hold the properties that matter: every pattern lands in exactly one
-// section, the four forms lead in teaching order, and each is headed by its
+// section, the forms lead in teaching order, and each is headed by its
 // recipe.
 
-import { RECIPES, type Recipe } from "@/data/grammar/recipes";
+import { RECIPES, isTrivialAttachment, type Recipe } from "@/data/grammar/recipes";
 import { patternEntry, verbAttachForm } from "@/data/grammar";
 import { FORM_LABEL } from "@/lib/grammar/formula";
 import { grammarRank } from "@/lib/library/grammar-order";
@@ -50,7 +50,11 @@ type SectionKey = Form | typeof OTHER;
  */
 function sectionKeyOf(r: Recipe): SectionKey {
   const f = verbAttachForm(r);
-  return f && f !== "dictionary" ? f : OTHER;
+  if (f && f !== "dictionary") return f;
+  const adjectiveForm = r.attach.find(
+    (a) => a.host !== "verb" && a.form && a.form !== "dictionary" && !isTrivialAttachment(a),
+  )?.form;
+  return adjectiveForm ?? OTHER;
 }
 
 /** What a form section is called: the form's name, with the て-form spelled
@@ -58,6 +62,7 @@ function sectionKeyOf(r: Recipe): SectionKey {
  * form reads as FORM_LABEL already names it ("ない-form", "potential form",
  * "stem"). */
 function sectionLabel(key: Form): string {
+  if (key === "prenominal") return "〜な form";
   return key === "te" ? "て/で-form" : FORM_LABEL[key];
 }
 

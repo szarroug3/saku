@@ -11,18 +11,14 @@
 //
 // THE UNIT IS A PAIR, AND THE GATE IS "BOTH VERBS LEARNED"
 // =======================================================
-// This is the transitivity mirror of grammar's HOST GATE. A grammar pattern
-// needs a real learned word of the type it attaches to before it means anything
-// (learnedHosts in grammar-lesson.ts); a transitivity pair needs BOTH of its own
-// verbs to be learned vocabulary before the distinction between them is a
+// Unlike Grammar, which supplies its own examples and never waits on Words, a
+// transitivity pair needs BOTH of its own verbs to be learned vocabulary before the distinction between them is a
 // question the learner can even parse. So a pair unlocks exactly when its
 // happens-verb and its doIt-verb are both no-longer-fresh vocab meanings.
 //
 // INTERLEAVED, NOT BLOCKING
 // =========================
-// Grammar's gate BLOCKS the whole set: if the next pattern's host is unmet, the
-// lesson is null and a lock card shows, because grammar is taught in one fixed
-// order and simply waits. Transitivity instead INTERLEAVES: the 66 pairs depend
+// Transitivity INTERLEAVES: the 66 pairs depend
 // on 132 different verbs that are learned at wildly different times, so blocking
 // on the first not-yet-unlocked pair would stall the entire track behind one
 // stray verb. So a locked pair is SKIPPED, not blocked on, and the track always

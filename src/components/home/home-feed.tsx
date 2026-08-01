@@ -53,9 +53,7 @@ import {
 } from "@/lib/curriculum-lesson";
 import {
   GRAMMAR_PER_LESSON_DEFAULT,
-  hasStartedGrammarTrack,
   nextGrammarLesson,
-  nextGrammarLock,
 } from "@/lib/grammar-lesson";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { COUNTERS_PER_LESSON_DEFAULT, nextCounterLesson } from "@/lib/counter-lesson";
@@ -162,12 +160,10 @@ export function HomeFeed() {
     [lesson, history, cfg.lessonMinCost, cfg.lessonMaxCost],
   );
 
-  // The one thing that can HOLD the spine rather than pace it: a る-ending verb
-  // (知る) met before the て-form. Its class can't be told from its spelling, so
-  // the words track waits for grammar lesson 1 before teaching it, then names
-  // the class. This is the words-track twin of grammarLock — there a pattern
-  // waits on a word, here a word waits on a pattern. Null once the て-form is
-  // learned, and the spine flows on untouched.
+  // Class-sensitive words can wait for their grammar introduction: adjectives
+  // wait for lesson 1 and ambiguous る-ending verbs for lesson 2 (the て-form).
+  // The spine skips them until their prerequisite is met, so this legacy lock
+  // surface remains null while the rest of the curriculum keeps flowing.
   const curriculumLock = useMemo(
     () =>
       lesson
@@ -191,23 +187,11 @@ export function HomeFeed() {
     [lesson, history],
   );
 
-  // The grammar track opens after kana is done, and each grammar lesson waits
-  // on a word of the type its patterns attach to: 〜てから needs a learned verb,
-  // 〜ので a な-adjective (see nextGrammarLesson). So the track stays hidden until
-  // kana is done AND the first patterns are teachable; once opened, a later
-  // lesson whose word type the learner lacks shows a locked card rather than
-  // vanishing — the words track's lock model, for grammar.
+  // The grammar track opens as soon as kana is done and never depends on Words.
+  // Every grammar lesson supplies the examples it needs itself.
   const grammarLesson = useMemo(
     () => (lesson ? null : nextGrammarLesson(history, GRAMMAR_PER_LESSON_DEFAULT)),
     [lesson, history],
-  );
-  const grammarLock = useMemo(
-    () => (lesson ? null : nextGrammarLock(history, GRAMMAR_PER_LESSON_DEFAULT)),
-    [lesson, history],
-  );
-  const grammarTrackStarted = useMemo(
-    () => hasStartedGrammarTrack(history),
-    [history],
   );
 
   // The transitivity track opens after kana is done and teaches verb pairs one
@@ -542,7 +526,6 @@ export function HomeFeed() {
     // card, and the learner is one grammar lesson from continuing.
     !curriculumLock &&
     !grammarLessonShown &&
-    !(grammarLock && grammarTrackStarted) &&
     !transitivityLessonShown &&
     !counterLessonShown &&
     !keigoLessonShown &&
@@ -632,15 +615,11 @@ export function HomeFeed() {
         />
       ) : null}
 
-      {/* The grammar track's next lesson — the fourth card, opened once kana is
-          done. A pattern is taught teach-then-drill (its facts ARE the session,
-          like kanji's). When the next patterns need a word type the learner
-          hasn't met, the card locks (naming the type) instead of disappearing,
-          but only after the track has opened — like the words track. */}
-      {grammarLessonShown || (grammarLock && grammarTrackStarted) ? (
+      {/* The grammar track's next lesson — opened once kana is done and never
+          gated by vocabulary. Its own pages carry every example it needs. */}
+      {grammarLessonShown ? (
         <NextGrammarLesson
           lesson={grammarLessonShown}
-          lock={grammarTrackStarted ? grammarLock : null}
           onStart={startLesson}
           onClaim={(facts) => {
             claim(facts);

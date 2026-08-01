@@ -38,7 +38,10 @@
 // ships with no card. (The て-form no longer has a concept page — the te-sequence
 // form recipe's own Library entry carries its full teaching now.)
 
-import { VERB_TYPES_CONCEPT_PAGES } from "@/data/grammar/lessons";
+import {
+  ADJECTIVE_TYPES_CONCEPT_PAGES,
+  VERB_TYPES_CONCEPT_PAGES,
+} from "@/data/grammar/lessons";
 import type { PhaseIntro } from "@/data/phase-intros";
 import { entryId } from "@/lib/fact-id";
 import type { EntryId } from "@/types";
@@ -85,69 +88,15 @@ export interface GrammarConcept {
 //
 // The verb-classes concept points at the lesson's own Verb Types page
 // (VERB_TYPES_CONCEPT_PAGES), so it cannot drift from what lesson 1 teaches. The
-// two concepts below have no single lesson that teaches the idea whole —
-// adjectives have no lesson yet; keigo is taught set by set, not as the register
-// model. So their pages are authored here, in the same voice the lessons use:
+// The adjective concept uses the lesson's shared class-identification page on
+// its own. The old three-card conjugation appendix repeated that page and the
+// form-specific grammar entries, turning a class reference into a wall of prose.
+// Keigo is taught set by set,
+// not as the register model, so its pages are authored here:
 // kana-only examples (a learner meeting these has little kanji), a build/derive
 // table where the change is worth seeing, and no em dashes. There is only ever one
 // copy, here, so there is nothing to drift from.
 // ---------------------------------------------------------------------------
-
-/** The adjective-types concept's pages: Japanese has two kinds of adjective, and
- * which kind a word is decides whether it conjugates itself or leans on です.
- * Authored fresh, grounded in how the app conjugates adj-i vs adj-na. */
-const ADJECTIVE_TYPE_CONCEPT_PAGES: readonly PhaseIntro[] = [
-  {
-    id: "gc-adj-intro",
-    setId: "",
-    title: "Adjectives come in two kinds.",
-    body: [
-      { lead: "い-adjectives", text: "end in い, like たかい (expensive) and やすい (cheap). They conjugate themselves: they carry their own negative, past, and て-form." },
-      { lead: "な-adjectives", text: "do not conjugate, like しずか (quiet) and べんり (convenient). They take な before a noun and lean on です, だった, and で for tense and connection." },
-      { text: "Which kind a word is decides everything that attaches to it, so you learn a word's kind along with the word." },
-    ],
-  },
-  {
-    id: "gc-adj-i",
-    setId: "",
-    title: "い-adjectives change their own ending.",
-    body: [
-      { text: "Drop the final い and add the ending. たかい becomes たかくない for the negative, たかかった for the past, and たかくて to connect to what follows." },
-      { text: "So an い-adjective works a lot like a verb: the word itself carries the tense, with no です needed to make it grammatical." },
-    ],
-    buildRules: [
-      { label: "negative", verb: "たかい", drop: "い", add: "くない" },
-      { label: "past", verb: "たかい", drop: "い", add: "かった" },
-      { label: "て-form", verb: "たかい", drop: "い", add: "くて" },
-    ],
-    buildHeads: { label: "Form" },
-  },
-  {
-    id: "gc-adj-na",
-    setId: "",
-    title: "な-adjectives take な, and lean on です.",
-    body: [
-      { text: "A な-adjective does not change its own shape. Before a noun it takes な, as in しずかなへや (a quiet room).", accent: "しずかな" },
-      { text: "For tense and connection it borrows です, だった, and で, so しずかです is polite, しずかだった is past, and しずかで connects to what follows. The adjective itself stays しずか throughout." },
-    ],
-    buildRules: [
-      { label: "before a noun", verb: "しずか", to: "しずかなへや" },
-      { label: "polite", verb: "しずか", to: "しずかです" },
-      { label: "past", verb: "しずか", to: "しずかだった" },
-      { label: "connecting", verb: "しずか", to: "しずかで" },
-    ],
-    buildHeads: { label: "Use" },
-  },
-  {
-    id: "gc-adj-exceptions",
-    setId: "",
-    title: "A few look like い but are な-adjectives.",
-    body: [
-      { text: "Most words ending in い are い-adjectives, but a handful are not. きれい (pretty, clean) and きらい (disliked) end in い and yet behave as な-adjectives: きれいなはな, きれいです.", accent: "きれいな" },
-      { text: "There are only a few of these, so you learn them as exceptions. The app tags each word's kind, so you never have to guess." },
-    ],
-  },
-];
 
 /** The keigo-registers concept's pages: the three-register politeness model, from
  * the header of src/data/keigo.ts. Authored fresh; the Keigo shelf teaches the
@@ -207,7 +156,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
     id: "verb-classes",
     name: "う-verbs and る-verbs",
     summary:
-      "Every verb is one of two groups (plus two irregulars), and the group decides how every form is built.",
+      "Every verb is one of two groups (with some exceptions), and the group decides how every form is built.",
     body: [
       "Japanese verbs fall into two groups, う-verbs and る-verbs, plus the two irregular verbs する and くる. A verb's group decides how every one of its forms is conjugated.",
       "An う-verb drops its last kana and adds the ending. An る-verb just drops its final る and adds the ending. A verb ending in る can be either group, so you learn each verb's group along with the verb.",
@@ -233,8 +182,8 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
     summary:
       "い-adjectives conjugate themselves; な-adjectives take な and lean on です for tense and connection.",
     body: [
-      "Japanese adjectives come in two kinds. い-adjectives end in い and conjugate themselves: たかい becomes たかくない, たかかった, たかくて. な-adjectives do not conjugate: they take な before a noun and lean on です, だった, and で.",
-      "Most words ending in い are い-adjectives, but a few common ones like きれい and きらい are な-adjectives despite ending in い, so they are learned as exceptions.",
+      "Japanese adjectives come in two kinds. い-adjectives usually end in い and conjugate themselves. な-adjectives have no reliable kana ending; the な in their name is what they add before a noun.",
+      "Spelling is only a clue. Common な-adjectives such as きれい and きらい end in い, so an adjective's class is learned with the word.",
     ],
     searchAlso: [
       "adjective types",
@@ -245,7 +194,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
       "keiyoushi",
       "how adjectives conjugate",
     ],
-    cards: ADJECTIVE_TYPE_CONCEPT_PAGES,
+    cards: ADJECTIVE_TYPES_CONCEPT_PAGES,
   },
   {
     id: "keigo-registers",

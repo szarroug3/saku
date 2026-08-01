@@ -187,8 +187,14 @@ describe("lessonSections — a section per role, up the ladder", () => {
     // one tile saying 食 is た. The example sentence is gone from every lesson,
     // this one included; the Library still carries it.
     const sections = lessonSections(step(wordEntry("食べる"), "食べる", "word"));
-    assert.deepEqual(sections, ["word-forms"]);
+    assert.deepEqual(sections, ["word-class", "word-forms"]);
     assert.ok(!sections.includes("word-sense"), "its header already says both");
+  });
+
+  test("a な-adjective gets its class and forms sections", () => {
+    const sections = lessonSections(step(wordEntry("嫌い"), "嫌い", "word"));
+    assert.deepEqual(sections, ["word-class", "word-forms"]);
+    assert.equal(roleHasSections("word", sections), true);
   });
 
   test("学生 is two kanji, so it keeps the breakdown and nothing else changes", () => {

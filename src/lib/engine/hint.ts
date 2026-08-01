@@ -316,21 +316,22 @@ function formHintText(
   const f = recipeFormula(prod.recipe).opening.find((o) => o.host === prod.host);
   const label = f?.formLabel;
   if (!label || label === FORM_LABEL.dictionary) return null;
-  return `uses the ${label}`;
+  return label.startsWith("the ") ? `uses ${label}` : `uses the ${label}`;
 }
 
 function grammarHint(fact: FactId, vehicle?: GrammarVehicle): Hint | null {
   const prod = grammarProduction(fact);
   if (prod) {
     // TWO nudges, either or both. The FORM nudge is "uses the て-form"; the CLASS
-    // nudge is "食べる is a る-verb". They are combined into one line, and the hint
+    // nudge is "食べる is a る-verb" or "嫌い is a な-adjective". They are
+    // combined into one line, and the hint
     // is whatever survives — null when neither has anything to say.
     const formText = formHintText(prod);
-    // The class of a KNOWN る-verb, as an extra reminder. An UNKNOWN る-verb
-    // already carries its class in the instruction (quiz-instruction.ts), so it
-    // is NOT repeated here; a known one is not named there (she has met it), so
-    // the reminder rides in the hint instead. Absent for a non-る verb (spelling
-    // gives its class) and, of course, when there is no vehicle.
+    // The class of a KNOWN ambiguous verb or adjective, as an extra reminder. An
+    // UNKNOWN class word already carries its class in the instruction
+    // (quiz-instruction.ts), so it is NOT repeated here; a known one is not named
+    // there (she has met it), so the reminder rides in the hint instead. Absent
+    // for a non-る verb (spelling gives its class) and when there is no vehicle.
     const kind =
       vehicle && vehicle.known
         ? ruVerbKindOf(vehicle.surface, vehicle.cls) ?? adjectiveKindOf(vehicle.cls)

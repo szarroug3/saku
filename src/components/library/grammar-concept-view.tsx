@@ -15,7 +15,8 @@
 // same reframing term-view.tsx makes.
 
 import {
-  IntroBody,
+  IntroBodyWithAnchoredExamples,
+  IntroBuildTableGroup,
   IntroExamples,
 } from "@/components/lesson/phase-intro-view";
 import { Card } from "@/components/ui";
@@ -40,6 +41,12 @@ export function GrammarConceptView({ concept }: { concept: GrammarConcept }) {
 
       {concept.cards.map((card) => {
         if (card.body.length === 0) return null;
+        // The adjective intro is deliberately the lesson's own page, whose
+        // title differs from the Library entry only by a final period. Repeating
+        // it as an h2 directly beneath the identical h1 made the reference page
+        // look like two pages stacked together. Other cards keep their title.
+        const repeatsEntryTitle =
+          card.title.replace(/[.!?]+$/, "") === concept.name.replace(/[.!?]+$/, "");
         return (
           // Prose in one Card, its worked examples in a Card beside it, on the
           // container query the mark and term pages settled: the Library column
@@ -52,15 +59,38 @@ export function GrammarConceptView({ concept }: { concept: GrammarConcept }) {
                     card is built around, so dropping it would leave two sections
                     with no way to tell them apart. The accent kicker is dropped;
                     the page title already says what this is about. */}
-                <h2 className="mb-3 text-[17px] font-medium leading-snug text-text">
-                  {card.title}
-                </h2>
+                {!repeatsEntryTitle ? (
+                  <h2 className="mb-3 text-[17px] font-medium leading-snug text-text">
+                    {card.title}
+                  </h2>
+                ) : null}
                 {/* No `measure` cap: the prose already sits in a sized column,
                     and a second cap on top of it is the early wrap the mark pages
                     had. */}
-                <IntroBody body={card.body} measure="" />
+                <IntroBodyWithAnchoredExamples intro={card} measure="max-w-[88ch]" />
+                {card.buildTables?.length ? (
+                  <div className="mt-6 space-y-6">
+                    {card.buildTables.map((table, index) => (
+                      <IntroBuildTableGroup
+                        key={index}
+                        title={table.title}
+                        rules={table.rules}
+                        heads={table.heads}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                {card.examples?.length &&
+                card.examplesAfterBodyIndex === undefined &&
+                card.examplesPlacement === "below" ? (
+                  <div className="mt-4">
+                    <IntroExamples examples={card.examples} />
+                  </div>
+                ) : null}
               </Card>
-              {card.examples?.length ? (
+              {card.examples?.length &&
+              card.examplesAfterBodyIndex === undefined &&
+              card.examplesPlacement !== "below" ? (
                 <Card className="@xl:w-[20rem] @xl:shrink-0">
                   <IntroExamples examples={card.examples} bare />
                 </Card>

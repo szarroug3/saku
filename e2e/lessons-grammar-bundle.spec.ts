@@ -1,4 +1,4 @@
-import { test, expect, seenKanaAndVerb, lessonCard } from "./helpers/lessons";
+import { test, expect, KANA_FACTS, lessonCard } from "./helpers/lessons";
 
 import { nextGrammarLesson } from "@/lib/grammar-lesson";
 import { patternMeaningFactId } from "@/data/grammar";
@@ -9,19 +9,19 @@ import type { HistoryFile } from "@/types";
  *
  * A new FORM lesson is taught alone, but a run of pattern lessons — adding an
  * ending to a form you already know — comes up to three at a time (Sam's sizing
- * rule). Claiming kana, a verb, and the first SOLO sitting (te-sequence, the
- * て-form) leaves the next sitting the first pattern BUNDLE: 〜ている / 〜てください /
+ * rule). Claiming kana and the first two SOLO form sittings leaves the
+ * next sitting the first pattern BUNDLE: 〜ている / 〜てください /
  * 〜てもいい, all three at once (〜ている is a normal bundled pattern now). The seed is
  * taken from the scheduler, so it moves with the curriculum.
  */
 
 const BUNDLE_SEED = [
-  ...seenKanaAndVerb(),
+  ...KANA_FACTS,
+  patternMeaningFactId("prenominal-form"),
   patternMeaningFactId("te-sequence"),
 ];
 
-// CLAIMED, not seen: the grammar host gate opens on a LEARNED verb, and skipping
-// a met pattern needs its meaning claimed.
+// Claimed so the two met form lessons are skipped by the scheduler.
 const HISTORY = {
   sessions: [],
   facts: {},

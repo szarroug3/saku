@@ -630,7 +630,10 @@ function build(): LibEntry[] {
       readings: [],
       meanings: [r.gloss],
       searchAlso: c ? [c.title] : undefined,
-      sub: c ? `${r.level} pattern · ${c.title}` : `${r.level} pattern`,
+      // JLPT level is internal curriculum metadata, not a useful explanation
+      // of what the row is. Keep a meaningful family cue ("after", "must",
+      // and so on) where one exists; otherwise the sub-line is simply absent.
+      sub: c?.title ?? "",
       // A LOW weight, below kanji — the one kind that outranks it. This is the
       // owner's "make sure search surfaces grammar properly" as a number: when
       // you type "must", the seven obligation PATTERNS are the answer, and a

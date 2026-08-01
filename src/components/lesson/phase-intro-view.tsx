@@ -1,5 +1,7 @@
 "use client";
 
+import { Fragment } from "react";
+
 // A teaching card: the step of the walk that explains a CONCEPT rather than a
 // character. See src/data/phase-intros.ts for what it says and why it exists.
 //
@@ -30,18 +32,31 @@ import type {
 } from "@/data/phase-intros";
 
 export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
+  if (intro.sectionTitle && intro.buildSections?.length) {
+    return (
+      <div className="space-y-7">
+        {intro.buildSections.map((section, index) => (
+          <IntroBuildSection key={index} {...section} />
+        ))}
+      </div>
+    );
+  }
   return (
     <div>
       {/* What kind of step this is. "Before you go on" for a rule that
           interrupts a run of characters; a track intro overrides it, because
           nothing has gone on yet for it to come before. */}
-      <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-accent">
-        {intro.eyebrow ?? "Before you go on"}
-      </p>
+      {!intro.sectionTitle ? (
+        <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-accent">
+          {intro.eyebrow ?? "Before you go on"}
+        </p>
+      ) : null}
 
       {/* The claim, at hero size. One sentence; everything below it is the
           working. */}
-      <h2 className="mt-3 max-w-[26ch] text-[34px] font-light leading-[1.2] tracking-[-0.4px] text-text">
+      <h2
+        className={`${intro.sectionTitle ? "text-accent" : "mt-3 text-text"} max-w-[26ch] text-[34px] font-light leading-[1.2] tracking-[-0.4px]`}
+      >
         {intro.title}
       </h2>
 
@@ -79,24 +94,44 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
                     trim={intro.buildFormula.trim}
                   />
                 ) : (
-                  <IntroBody body={intro.body} />
+                  <IntroBodyWithAnchoredExamples intro={intro} />
                 )}
               </div>
-              {intro.examples?.length ? (
+              {intro.examples?.length &&
+              intro.examplesAfterBodyIndex === undefined &&
+              intro.examplesPlacement !== "below" ? (
                 <div className="@xl:w-[20rem] @xl:shrink-0">
                   <IntroExamples examples={intro.examples} />
                 </div>
               ) : null}
             </div>
+            {intro.examples?.length &&
+            intro.examplesAfterBodyIndex === undefined &&
+            intro.examplesPlacement === "below" ? (
+              <IntroExamples examples={intro.examples} />
+            ) : null}
             {intro.buildRules?.length ? (
               <IntroBuildTable rules={intro.buildRules} heads={intro.buildHeads} />
             ) : null}
             {intro.buildTables?.map((t, i) => (
               <IntroBuildTableGroup key={i} title={t.title} rules={t.rules} heads={t.heads} />
             ))}
+            {intro.buildSections?.map((section, index) => (
+              <IntroBuildSection key={index} {...section} />
+            ))}
             {intro.deriveRules?.length ? (
               <IntroDeriveTable rows={intro.deriveRules} heads={intro.deriveHeads} />
             ) : null}
+            {intro.deriveTables?.map((table, index) => (
+              <IntroDeriveTableGroup
+                key={index}
+                title={table.title}
+                instruction={table.instruction}
+                formula={table.formula}
+                rows={table.rules}
+                heads={table.heads}
+              />
+            ))}
             {intro.buildFooter ? <IntroBuildFooter footer={intro.buildFooter} /> : null}
             {intro.bodyAfterBuild?.length ? <IntroBody body={intro.bodyAfterBuild} /> : null}
             {intro.transitivityPairs?.length ? (
@@ -177,6 +212,65 @@ export function IntroBody({
                 : p.text}
             </p>
           </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Intro prose with a worked example anchored after one specific paragraph.
+ * Most pages keep prose and examples beside each other; adjective classes needs
+ * its equation immediately after the な-adjective rule it demonstrates. */
+export function IntroBodyWithAnchoredExamples({
+  intro,
+  measure,
+}: {
+  intro: PhaseIntro;
+  measure?: string;
+}) {
+  const after = intro.examplesAfterBodyIndex;
+  if (after === undefined || !intro.examples?.length) {
+    return <IntroBody body={intro.body} measure={measure} />;
+  }
+  return (
+    <div>
+      <IntroBody body={intro.body.slice(0, after + 1)} measure={measure} />
+      <AnchoredIntroExamples examples={intro.examples} />
+      <IntroBody body={intro.body.slice(after + 1)} measure={measure} />
+    </div>
+  );
+}
+
+/** A short equation that belongs to the paragraph directly above it. This is
+ * intentionally one inline row rather than the standalone Examples panel used
+ * for a whole page's evidence. */
+function AnchoredIntroExamples({ examples }: { examples: readonly IntroExample[] }) {
+  const accentedText = (text: string, accent?: string) => {
+    if (!accent || !text.includes(accent)) return text;
+    const index = text.indexOf(accent);
+    return (
+      <>
+        {text.slice(0, index)}
+        <span className="text-accent">{accent}</span>
+        {text.slice(index + accent.length)}
+      </>
+    );
+  };
+  return (
+    <div className="my-4 space-y-2 text-[15px] leading-relaxed">
+      {examples.map((ex, i) => (
+        <div key={i} className="flex flex-wrap items-baseline gap-x-1.5" lang="ja">
+          <span lang="en" className="font-medium text-accent">
+            {examples.length === 1 ? "Example:" : `Example ${i + 1}:`}
+          </span>
+          <span className="text-text">{accentedText(ex.from, ex.accentFrom)}</span>
+          <span className="text-text">{ex.op ?? "="}</span>
+          <span className="font-medium text-text">{accentedText(ex.to, ex.accentTo)}</span>
+          {ex.reading ? <span className="text-[13px] text-text">({ex.reading})</span> : null}
+          <span className="text-text">·</span>
+          <span lang="en" className="text-[13px] text-text">
+            {ex.gloss}
+          </span>
         </div>
       ))}
     </div>
@@ -392,6 +486,17 @@ export function IntroBuildTable({
   const hasGloss = rules.some((r) => r.gloss);
   const hasRight = hasNotes || hasGloss;
   const headCell = "px-4 py-2.5 font-semibold";
+  const accented = (text: string, accent: string | false | undefined, fallback: boolean) => {
+    if (accent === false) return text;
+    if (!accent) return fallback ? <span className="text-accent">{text}</span> : text;
+    const parts = text.split(accent);
+    return parts.map((part, index) => (
+      <Fragment key={`${part}-${index}`}>
+        {index > 0 ? <span className="text-accent">{accent}</span> : null}
+        {part}
+      </Fragment>
+    ));
+  };
   return (
     // overflow-x-auto, not overflow-hidden: on a narrow phone the columns are
     // wider than the screen, so the table scrolls sideways inside its own frame
@@ -424,11 +529,11 @@ export function IntroBuildTable({
                   // An irregular verb follows no drop/add rule, so it is shown
                   // whole: する → して. Same table frame, honest shape.
                   <>
-                    {r.verb}
-                    <Say glyph={r.verb ?? ""} voice={cfg.voiceName} />
+                    {accented(r.verb ?? "", r.accent, false)}
+                    {r.audio !== false ? <Say glyph={r.verb ?? ""} voice={cfg.voiceName} /> : null}
                     <span className="text-text-muted"> → </span>
-                    <span className="text-accent">{r.to}</span>
-                    <Say glyph={r.to} voice={cfg.voiceName} />
+                    {accented(r.to, r.accent, true)}
+                    {r.audio !== false ? <Say glyph={r.to} voice={cfg.voiceName} /> : null}
                   </>
                 ) : (
                   // A drop and/or an add, each shown only when present: a plain
@@ -502,6 +607,50 @@ export function IntroBuildTableGroup({
   );
 }
 
+/** One complete form-building section: word-type heading, its instruction and
+ * optional compact formula, then the examples that demonstrate the rule. */
+export function IntroBuildSection({
+  title,
+  hideTitle = false,
+  body,
+  formula,
+  rules,
+  heads,
+  tables,
+  footer,
+}: {
+  title: string;
+  hideTitle?: boolean;
+  body: readonly IntroPara[];
+  formula?: { base: string; add?: string; trim?: string };
+  rules?: readonly IntroBuildRule[];
+  heads?: { label?: string; change?: string; note?: string; gloss?: string };
+  tables?: readonly {
+    title: string;
+    rules: readonly IntroBuildRule[];
+    heads?: { label?: string; change?: string; note?: string; gloss?: string };
+  }[];
+  footer?: { chain: string; gloss: string };
+}) {
+  return (
+    <section className="space-y-4">
+      {!hideTitle ? <h3 className="text-[17px] font-semibold text-accent">{title}</h3> : null}
+      <IntroBody body={body} measure="" />
+      {formula ? <IntroBuildFormula {...formula} /> : null}
+      {rules?.length ? <IntroBuildTable rules={rules} heads={heads} /> : null}
+      {tables?.map((table, index) => (
+        <IntroBuildTableGroup
+          key={index}
+          title={table.title}
+          rules={table.rules}
+          heads={table.heads}
+        />
+      ))}
+      {footer ? <IntroBuildFooter footer={footer} /> : null}
+    </section>
+  );
+}
+
 /** A pattern's build FORMULA: the form it hangs off in a dashed outline, then +
  * the suffix — [ない-form] + でください. The visual "how to build it", shown in place
  * of a prose blurb so the recipe reads at a glance before the example tables. */
@@ -511,7 +660,7 @@ export function IntroBuildFormula({
   trim,
 }: {
   base: string;
-  add: string;
+  add?: string;
   trim?: string;
 }) {
   return (
@@ -524,10 +673,14 @@ export function IntroBuildFormula({
           − {trim}
         </span>
       ) : null}
-      <span className="text-text-muted">+</span>
-      <span lang="ja" className="font-kana text-accent">
-        {add}
-      </span>
+      {add ? (
+        <>
+          <span className="text-text-muted">+</span>
+          <span lang="ja" className="font-kana text-accent">
+            {add}
+          </span>
+        </>
+      ) : null}
     </p>
   );
 }
@@ -620,6 +773,31 @@ export function IntroDeriveTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** A host-specific derivation section, used when one pattern accepts several
+ * kinds of words. Mirrors the titled groups in the て-form build pages. */
+export function IntroDeriveTableGroup({
+  title,
+  instruction,
+  formula,
+  rows,
+  heads,
+}: {
+  title: string;
+  instruction?: string;
+  formula?: { base: string; add?: string; trim?: string };
+  rows: readonly IntroDeriveRow[];
+  heads?: { verb?: string; form?: string; pattern?: string };
+}) {
+  return (
+    <section className="space-y-3.5">
+      <h3 className="text-[17px] font-semibold text-accent">{title}</h3>
+      {instruction ? <p className="text-[15px] leading-relaxed text-text">{instruction}</p> : null}
+      {formula ? <IntroBuildFormula {...formula} /> : null}
+      <IntroDeriveTable rows={rows} heads={heads} />
+    </section>
   );
 }
 

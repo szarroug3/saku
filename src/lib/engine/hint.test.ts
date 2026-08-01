@@ -14,6 +14,7 @@ import { kanaFact } from "@/data/characters";
 import {
   classProductionFactId,
   patternMeaningFactId,
+  patternProductionFactId,
   specialVerbProductionFactId,
 } from "@/data/grammar";
 import { meaningFactId, readingFactId } from "@/data/kanji";
@@ -189,6 +190,37 @@ test("an UNKNOWN る-verb's class is NOT in the hint — the instruction carries
       "tai + unknown 食べる",
     ),
     "uses the stem",
+  );
+});
+
+test("a KNOWN adjective adds its class to the hint", () => {
+  const KNOWN = { surface: "静か", kana: "しずか", cls: "adj-na", known: true } as const;
+  assert.equal(
+    textOf(
+      hintFor(
+        patternProductionFactId("te-sequence", "adj-na"),
+        "en2jp",
+        undefined,
+        false,
+        KNOWN,
+      ),
+      "te-sequence + known 静か",
+    ),
+    "静か is a な-adjective",
+  );
+});
+
+test("an UNKNOWN adjective's class is NOT repeated in the hint", () => {
+  const UNKNOWN = { surface: "静か", kana: "しずか", cls: "adj-na", known: false } as const;
+  assert.equal(
+    hintFor(
+      patternProductionFactId("te-sequence", "adj-na"),
+      "en2jp",
+      undefined,
+      false,
+      UNKNOWN,
+    ),
+    null,
   );
 });
 

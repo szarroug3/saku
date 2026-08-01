@@ -42,8 +42,7 @@ import {
   packLessons,
   packUnits,
 } from "./curriculum-lesson.ts";
-import { learnedHosts } from "./grammar-lesson.ts";
-import { ruVerbKind } from "./word-forms.ts";
+import { adjectiveKind, ruVerbKind } from "./word-forms.ts";
 import { applyClaims, applyDropSeen, applySeen } from "./history-ops.ts";
 import { readingsProvedBy } from "./word-unlock.ts";
 import { compositePositionLabel } from "./lesson-position.ts";
@@ -512,8 +511,8 @@ describe("start-then-discard does not advance the frontier; start-then-complete 
 // THE CROSS-TRACK GATE. A る-ending verb's class (godan vs ichidan) cannot be
 // read off its spelling, so the words track holds the first one back until the
 // て-form (grammar lesson 1) is learned and the word lesson can name the class.
-// This is the mirror of the grammar track's host gate — there a pattern waits on
-// a word, here a word waits on a pattern. Pinned as properties of the data (the
+// Grammar itself never waits on Words; this dependency points only from a class
+// lesson to the word whose class it makes understandable. Pinned as properties of the data (the
 // first gated verb is found, never typed) so it survives the sequence changing.
 describe("a る-ending verb waits on the て-form", () => {
   const TE_FORM = patternMeaningFactId("te-sequence");
@@ -533,6 +532,7 @@ describe("a る-ending verb waits on the て-form", () => {
 
   test("the curriculum teaches one, and its written form ends in る", () => {
     assert.ok(gated, "no る-ending verb in the curriculum — the gate guards nothing");
+    assert.equal(gated.glyph, "知る", "the first ambiguous る-ending verb changed");
     assert.ok(gated.glyph.endsWith("る"), `${gated.glyph} does not end in る`);
   });
 
@@ -597,19 +597,6 @@ describe("a る-ending verb waits on the て-form", () => {
     );
   });
 
-  test("no deadlock: a verb is learned before the gate, so the て-form is completable first", () => {
-    // The て-form's own host gate needs a learned VERB (grammar-lesson.ts). If the
-    // first verb the curriculum teaches were itself gated, the two tracks would
-    // wait on each other forever. It is not: an earlier, non-る verb (言う) is
-    // learned by the time the lock is raised, so the learner can always finish the
-    // て-form and pass the lock.
-    const h = history(reachedTheVerb());
-    assert.ok(
-      learnedHosts(h).has("verb"),
-      "the learner already has a verb to build the て-form on",
-    );
-  });
-
   test("later る-verbs are not gated once the て-form is learned", () => {
     // The gate is on the て-form, not on each verb: learning it opens every
     // remaining る-verb at once. Find the SECOND gated-shape verb and confirm it
@@ -642,5 +629,49 @@ describe("a る-ending verb waits on the て-form", () => {
       lesson.cards.some((c) => c.glyph === second),
       `${second} teaches without being held back`,
     );
+  });
+});
+
+describe("adjective words wait on the adjective-class introduction", () => {
+  const PRENOMINAL_FORM = patternMeaningFactId("prenominal-form");
+  const gated = (() => {
+    for (const group of GROUPS) {
+      for (const item of group.items) {
+        if (!item.roles.includes("word")) continue;
+        const row = vocabRow(item.glyph);
+        if (row && adjectiveKind(row) !== null) return { glyph: item.glyph, group };
+      }
+    }
+    return null;
+  })();
+
+  function reachedTheAdjective(): FactId[] {
+    assert.ok(gated);
+    const out: FactId[] = [];
+    for (const group of GROUPS) {
+      for (const item of group.items) {
+        if (item.glyph !== gated.glyph) out.push(...item.facts);
+      }
+      if (group === gated.group) break;
+    }
+    return out;
+  }
+
+  test("the shipped curriculum contains an adjective for the gate to protect", () => {
+    assert.ok(gated, "no adjective word occurs in the curriculum");
+  });
+
+  test("the adjective is skipped before lesson 1 and restored after it", () => {
+    assert.ok(gated);
+    const before = nextCurriculumLesson(history(reachedTheAdjective()), RANGE);
+    assert.ok(before, "the spine should keep teaching past the held adjective");
+    assert.ok(!before.cards.some((card) => card.glyph === gated.glyph));
+
+    const after = nextCurriculumLesson(
+      history([...reachedTheAdjective(), PRENOMINAL_FORM]),
+      RANGE,
+    );
+    assert.ok(after, "the adjective should become teachable after lesson 1");
+    assert.ok(after.cards.some((card) => card.glyph === gated.glyph));
   });
 });

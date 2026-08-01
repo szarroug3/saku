@@ -118,6 +118,7 @@ import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { knownLookalikes } from "@/lib/kanji-lookalikes";
 import { characterRole } from "@/lib/character-role";
+import { WordClassNote } from "@/components/lesson/word-class-note";
 import type { LessonItem } from "@/lib/lesson-items";
 import {
   canHearItem,
@@ -130,7 +131,7 @@ import {
   roleHasSections,
   wordTypeOf,
 } from "@/lib/lesson-roles";
-import { formsOfWord, ruVerbKind } from "@/lib/word-forms";
+import { formsOfWord } from "@/lib/word-forms";
 import { libEntry, recipeOf } from "@/lib/library/entries";
 import { piecesOf } from "@/lib/library/word-pieces";
 import { entryHref } from "@/lib/library/href";
@@ -574,12 +575,6 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // then the Radical block stays just its heading and its line.
   const radicalMeaning = radicalMeaningOf(item);
   const forms = word ? formsOfWord(word) : null;
-  // The verb-type note, only for a verb whose written form ends in る — the one
-  // shape whose class (う-verb vs る-verb) the spelling does not give away. 知る
-  // is a う-verb, 食べる a る-verb, and the card says which so the learner is not
-  // left to guess from the ending. Null for every unambiguous verb (言う, 話す)
-  // and every non-verb, so this is silent for all but the case it exists for.
-  const verbClass = word ? ruVerbKind(word) : null;
   const grammarSub = item.kind === "grammar" && pattern ? attachesTo(pattern) : undefined;
   const grammarExample = useGrammarExample(
     item.kind === "grammar" && pattern ? pattern.id : null,
@@ -738,24 +733,10 @@ export function LessonItemView({ item }: { item: LessonItem }) {
             {sections.has("word-sense") && word ? (
               <WordSensePanel word={word} voiceName={cfg.voiceName} />
             ) : null}
-            {/* The verb type, for a る-ending verb only. It sits just above the
-                forms because the type is exactly what governs them: a う-verb
-                keeps its る and changes the ending around it (知って), a る-verb
-                drops the る (食べて). A quiet aside, so it names the type without
-                competing with the fan below it. */}
-            {verbClass ? (
-              <p className="text-[13px] leading-relaxed text-text-muted">
-                It ends in{" "}
-                <span className="font-kana" lang="ja">
-                  る
-                </span>
-                ,{verbClass === "う-verb" ? " but" : " and"} it is a{" "}
-                <span className="font-medium text-text">{verbClass}</span>:{" "}
-                {verbClass === "う-verb"
-                  ? "the る stays and the ending changes around it."
-                  : "the る drops to build the other forms."}
-              </p>
-            ) : null}
+            {/* The class that governs the forms below: shared with the Library
+                so an adjective or ambiguous る-ending verb is identified the
+                same way wherever the learner meets the word. */}
+            {sections.has("word-class") && word ? <WordClassNote word={word} /> : null}
             {sections.has("word-forms") && word && forms ? (
               <WordFormFan dictionary={word.keb} groups={forms} />
             ) : null}

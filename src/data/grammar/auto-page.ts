@@ -61,6 +61,27 @@ const EXAMPLES: Record<Host, ExampleWord[]> = {
   ],
 };
 
+const HOST_SECTION_TITLE: Record<Host, string> = {
+  verb: "Verbs",
+  "adj-i": "い-adjectives",
+  "adj-na": "な-adjectives",
+  noun: "Nouns",
+};
+
+const HOST_COLUMN_TITLE: Record<Host, string> = {
+  verb: "Verb",
+  "adj-i": "Adjective",
+  "adj-na": "Adjective",
+  noun: "Noun",
+};
+
+const HOST_FORMULA_LABEL: Record<Host, string> = {
+  verb: "verb",
+  "adj-i": "い-adjective",
+  "adj-na": "な-adjective",
+  noun: "noun",
+};
+
 /** The verb/adj/noun a pattern is best shown on: its primary production host, or
  * verb when it names none. */
 function pageHost(r: Recipe): Host {
@@ -124,7 +145,7 @@ function appliedGloss(gloss: string, ex: ExampleWord): string {
 /** The derivation rows for a pattern on a host: for each accepted example, the
  * dictionary verb, the form the pattern attaches to (omitted where the word is
  * taken unchanged), the finished pattern, and what the finished pattern means. */
-function deriveRows(r: Recipe, host: Host): IntroDeriveRow[] {
+function deriveRows(r: Recipe, host: Host, limit = 3): IntroDeriveRow[] {
   const attach = r.attach.find((a) => a.host === host) ?? r.attach[0];
   if (!attach) return [];
   const rows: IntroDeriveRow[] = [];
@@ -138,9 +159,56 @@ function deriveRows(r: Recipe, host: Host): IntroDeriveRow[] {
       if (c.ok && c.value !== ex.word) form = c.value;
     }
     rows.push({ verb: ex.word, form, result: built.value, gloss: appliedGloss(r.gloss, ex) });
-    if (rows.length >= 3) break;
+    if (rows.length >= limit) break;
   }
   return rows;
+}
+
+/** The instruction and compact formula for one host on a mixed pattern page.
+ * Each section says what happens to THAT kind of word instead of relying on a
+ * generic sentence above all the tables. */
+function hostBuild(r: Recipe, host: Host): {
+  instruction: string;
+  formula: { base: string; add?: string; trim?: string };
+} {
+  const attachment = r.attach.find((candidate) => candidate.host === host)!;
+  const word = HOST_FORMULA_LABEL[host];
+  const article = /^[aeiouい]/i.test(word) ? "an" : "a";
+  const add = attachment.add ?? "";
+  const trim = attachment.trim;
+
+  if (!attachment.form || attachment.form === "dictionary") {
+    return {
+      instruction: trim
+        ? `Take ${article} ${word}, remove ${trim}, then add ${add}.`
+        : add
+          ? `Take ${article} ${word}, just as it is, and add ${add}.`
+        : `Use ${article} ${word} just as it is.`,
+      formula: { base: word, ...(trim ? { trim } : {}), ...(add ? { add } : {}) },
+    };
+  }
+
+  const form = FORM_LABEL[attachment.form];
+  const formPhrase = /^the /.test(form) ? form : `its ${form}`;
+  const instruction = trim
+    ? `Put ${article} ${word} into ${formPhrase}, remove ${trim}, then add ${add}.`
+    : add
+      ? `Put ${article} ${word} into ${formPhrase}, then add ${add}.`
+    : `Put ${article} ${word} into ${formPhrase}.`;
+  if (attachment.form === "prenominal") {
+    return {
+      instruction,
+      formula: { base: word, add: ["な", add].filter(Boolean).join(" + ") },
+    };
+  }
+  return {
+    instruction,
+    formula: {
+      base: form,
+      ...(trim ? { trim } : {}),
+      ...(add ? { add } : {}),
+    },
+  };
 }
 
 /** The representative verbs an ending-change rule is shown across: one per godan
@@ -395,7 +463,6 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
   }
   // A wrap has a second slot the single-slot line above cannot describe.
   if (r.wrap?.close?.length) build = wrapBuild(r);
-
   // When the form IS the whole pattern (nothing added: the potential, passive,
   // causative, たら, ば), the verb→result derivation would repeat itself, since the
   // form and the result are the same word. Teach the conjugation instead, with the
@@ -423,6 +490,31 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
   // pattern derives one row per example verb.
   const wrapRows = r.wrap?.close?.length ? wrapDeriveRows(r) : [];
   const deriveRules = wrapRows.length ? wrapRows : deriveRows(r, host);
+  const deriveTables = (wrapRows.length ? [host] : [...new Set(r.attach.map((a) => a.host))])
+        .map((sectionHost) => {
+          const attachment = r.attach.find((a) => a.host === sectionHost);
+          // One row is enough here: the formula already states the rule, and a
+          // pattern page gives each distinct word class its own section.
+          const rules = wrapRows.length ? wrapRows : deriveRows(r, sectionHost, 1);
+          const sectionBuild = wrapRows.length ? null : hostBuild(r, sectionHost);
+          const form = attachment?.form;
+          const formHead =
+            form && form !== "dictionary"
+              ? form === "prenominal"
+                ? "〜な form"
+                : FORM_LABEL[form]
+              : undefined;
+          return {
+            title: HOST_SECTION_TITLE[sectionHost],
+            instruction: sectionBuild?.instruction ?? build,
+            ...(sectionBuild?.formula ? { formula: sectionBuild.formula } : {}),
+            rules,
+            heads: { verb: HOST_COLUMN_TITLE[sectionHost], form: formHead },
+          };
+        })
+        .filter((table) => table.rules.length > 0);
+
+  if (deriveTables.length) build = "";
 
   // The header LEADS with the written pattern — "〜てから: After doing X." — so a
   // learner gets used to reading the pattern in its 〜て… form, then a human
@@ -434,10 +526,14 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     title: `${r.pattern}: ${heroFromGloss(r.gloss)}`,
     body: [{ text: build }],
     ...(buildFormula ? { buildFormula } : {}),
-    ...(ruleRows.length
-      ? { buildRules: ruleRows, buildHeads: { label: "Ending" } }
-      : buildTables.length
-        ? { buildTables }
-        : { deriveRules, deriveHeads: { form: formLabel ?? undefined } }),
+    ...(deriveTables.length
+      ? { deriveTables }
+      : ruleRows.length
+        ? { buildRules: ruleRows, buildHeads: { label: "Ending" } }
+        : buildTables.length
+          ? { buildTables }
+          : deriveRules.length
+            ? { deriveRules, deriveHeads: { form: formLabel ?? undefined } }
+            : {}),
   };
 }

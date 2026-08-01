@@ -48,9 +48,11 @@ import {
   IntroBody,
   IntroBuildFooter,
   IntroBuildFormula,
+  IntroBuildSection,
   IntroBuildTable,
   IntroBuildTableGroup,
   IntroDeriveTable,
+  IntroDeriveTableGroup,
 } from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
 import { autoPatternPage } from "@/data/grammar/auto-page";
@@ -70,21 +72,28 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
     return (
       <>
         {formLibraryPages(pattern.id).map((p) => (
-          <Card key={p.id} className="h-full">
-            <div className="space-y-4">
-              {p.eyebrow ? <Lbl>{p.eyebrow}</Lbl> : null}
-              <h2 className="text-[15px] font-medium text-text">{p.title}</h2>
-              <IntroBody body={p.body} measure="" />
-              {p.buildRules?.length ? (
-                <IntroBuildTable rules={p.buildRules} heads={p.buildHeads} />
-              ) : null}
-              {p.buildTables?.map((t, i) => (
-                <IntroBuildTableGroup key={i} title={t.title} rules={t.rules} heads={t.heads} />
-              ))}
-              {p.buildFooter ? <IntroBuildFooter footer={p.buildFooter} /> : null}
-              {p.bodyAfterBuild?.length ? <IntroBody body={p.bodyAfterBuild} measure="" /> : null}
-            </div>
-          </Card>
+          <div key={p.id} className="space-y-7">
+            {!p.sectionTitle && !p.hideLibraryIntro ? (
+              <Card className="h-full">
+                <div className="space-y-4">
+                  {p.eyebrow ? <Lbl>{p.eyebrow}</Lbl> : null}
+                  <h2 className="text-[15px] font-medium text-text">{p.title}</h2>
+                  <IntroBody body={p.body} measure="" />
+                </div>
+              </Card>
+            ) : null}
+            {p.buildSections?.map((section, index) => (
+              <IntroBuildSection key={index} {...section} />
+            ))}
+            {p.buildRules?.length ? (
+              <IntroBuildTable rules={p.buildRules} heads={p.buildHeads} />
+            ) : null}
+            {p.buildTables?.map((t, i) => (
+              <IntroBuildTableGroup key={i} title={t.title} rules={t.rules} heads={t.heads} />
+            ))}
+            {p.buildFooter ? <IntroBuildFooter footer={p.buildFooter} /> : null}
+            {p.bodyAfterBuild?.length ? <IntroBody body={p.bodyAfterBuild} measure="" /> : null}
+          </div>
         ))}
       </>
     );
@@ -99,38 +108,51 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
   const hasBuild = !!(
     page.buildTables?.length ||
     page.buildRules?.length ||
-    page.deriveRules?.length
+    page.deriveRules?.length ||
+    page.deriveTables?.length
   );
   return (
     <>
-      <Card className="h-full">
-        <Lbl>How to build it</Lbl>
-        <div className="mt-3">
-          {page.buildFormula ? (
-            <IntroBuildFormula
-              base={page.buildFormula.base}
-              add={page.buildFormula.add}
-              trim={page.buildFormula.trim}
-            />
-          ) : (
-            <IntroBody body={page.body} measure="" />
-          )}
-        </div>
-      </Card>
-      {hasBuild ? (
+      {!page.deriveTables?.length ? (
         <Card className="h-full">
-          <div className="space-y-5">
-            {page.buildTables?.map((t, i) => (
-              <IntroBuildTableGroup key={i} title={t.title} rules={t.rules} heads={t.heads} />
-            ))}
-            {page.buildRules?.length ? (
-              <IntroBuildTable rules={page.buildRules} heads={page.buildHeads} />
-            ) : null}
-            {page.deriveRules?.length ? (
-              <IntroDeriveTable rows={page.deriveRules} heads={page.deriveHeads} />
-            ) : null}
+          <Lbl>How to build it</Lbl>
+          <div className="mt-3">
+            {page.buildFormula ? (
+              <IntroBuildFormula
+                base={page.buildFormula.base}
+                add={page.buildFormula.add}
+                trim={page.buildFormula.trim}
+              />
+            ) : (
+              <IntroBody body={page.body} measure="" />
+            )}
           </div>
         </Card>
+      ) : null}
+      {hasBuild ? (
+        // The tables already have their own border. Keeping them directly on
+        // the page avoids a framed table nested inside a second empty frame.
+        <div className="space-y-7">
+          {page.buildTables?.map((t, i) => (
+            <IntroBuildTableGroup key={i} title={t.title} rules={t.rules} heads={t.heads} />
+          ))}
+          {page.buildRules?.length ? (
+            <IntroBuildTable rules={page.buildRules} heads={page.buildHeads} />
+          ) : null}
+          {page.deriveRules?.length ? (
+            <IntroDeriveTable rows={page.deriveRules} heads={page.deriveHeads} />
+          ) : null}
+          {page.deriveTables?.map((table, index) => (
+            <IntroDeriveTableGroup
+              key={index}
+              title={table.title}
+              instruction={table.instruction}
+              formula={table.formula}
+              rows={table.rules}
+              heads={table.heads}
+            />
+          ))}
+        </div>
       ) : null}
     </>
   );

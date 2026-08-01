@@ -65,12 +65,12 @@ import { StandingChip } from "@/components/library/standing-chip";
 import { TermLink } from "@/components/library/term-link";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
 import { WordExampleView } from "@/components/library/word-example-view";
-import { WordFormsView } from "@/components/library/word-forms-view";
 import { WordsWith } from "@/components/library/words-with";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { Callout } from "@/components/lesson/callout";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
+import { WordClassNote } from "@/components/lesson/word-class-note";
 import { Card, Hint, Lbl, SoundIcon } from "@/components/ui";
 import { KANA_SUBJECT, glyphVariantFor } from "@/data/characters";
 import {
@@ -140,7 +140,12 @@ import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
 import { useQuizConfig } from "@/lib/quiz-config";
-import { formsOfWord, isIntransitive, INTRANSITIVE_NOTE } from "@/lib/word-forms";
+import {
+  formsOfWord,
+  isIntransitive,
+  INTRANSITIVE_NOTE,
+  wordFormKind,
+} from "@/lib/word-forms";
 import { readingAnchors } from "@/lib/word-unlock";
 import type { FactId } from "@/types";
 
@@ -506,6 +511,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
   const pieces = useMemo(() => (wordRow ? piecesOf(wordRow) : null), [wordRow]);
   const forms = useMemo(() => (wordRow ? formsOfWord(wordRow) : null), [wordRow]);
+  const formKind = useMemo(() => (wordRow ? wordFormKind(wordRow) : null), [wordRow]);
   /** The word's kanji that have pages of their own — the "Shares" row below. */
   const kanjiPieces = useMemo(
     () =>
@@ -614,7 +620,9 @@ function EntryView({ entry }: { entry: LibEntry }) {
                 href={entryHref(patternEntry(formEntryFor(pattern)!))}
                 className="text-[13px] text-accent no-underline"
               >
-                The {FORM_LABEL[verbAttachForm(pattern)!]} →
+                {formEntryFor(pattern) === "prenominal-form"
+                  ? "Describe a noun"
+                  : `The ${FORM_LABEL[verbAttachForm(pattern)!]}`} →
               </Link>
             ) : null}
             {conjugatesVerb(pattern) ? (
@@ -766,7 +774,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
             // A keigo set drops the sub-line entirely: the gray "Keigo · eat /
             // drink" restated the meaning now in the title and the shelf named
             // in the breadcrumb, so it was the header saying its own name back.
-            isKeigo
+            isWord && formKind
+              ? (
+                  <span className="inline-flex rounded-full border border-border px-2 py-0.5 text-[11px] text-text-muted">
+                    {formKind}
+                  </span>
+                )
+              : isKeigo
               ? null
               : isGrammar && pattern
               ? attachesTo(pattern)
@@ -839,25 +853,14 @@ function EntryView({ entry }: { entry: LibEntry }) {
               <KanaContextView ctx={contextRules} />
             </Card>
           ) : null}
-          {/* ONE ROW, ONE HEIGHT. Every two-column row on this page (here, the
-              kanji strokes, the word's pieces, the grammar recipe) drops
-              `items-start` so both boxes take the row's height and read as a
-              pair rather than as two unrelated boxes of different sizes. The
-              Card's own `mb-3.5` is zeroed inside the grid — the gap and the
-              row's own bottom margin already do that spacing, and a margin on a
-              stretched item would end it short of its neighbour. Below 860px
-              the grid is one column, so each item is its own row and stretching
-              means nothing: heights go back to content. */}
-          {/* Only the 46 base glyphs in each script have stroke assets. For a
-              voiced kana or a combination, HowItsWritten is absent; the Links
-              card is then the only child and takes the whole row instead of
-              leaving the wider column blank. */}
-          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*:only-child]:col-span-full [&>*]:mb-0 [&>*]:h-full">
+          {/* Only the 46 base glyphs in each script have stroke assets. Links
+              now has one fixed home at the bottom of every entry page, so the
+              writing card takes this row on its own. */}
+          <div className="mb-3.5 [&>*]:mb-0">
             <HowItsWritten
               item={{ entry: entry.id, glyph: entry.glyph, kind: "kana", facts: [] }}
               alwaysOpen
             />
-            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
           {/* FULL WIDTH AT THE FOOT — は needs five cells, and inside a column it
               would reflow everything above it. */}
@@ -901,15 +904,13 @@ function EntryView({ entry }: { entry: LibEntry }) {
               onSpeak={say}
             />
           ) : null}
-          {/* Strokes take the wider half: five frames plus the animation do not
-              fit an even split. The pairing is what stops the page being a stack
-              of full-width boxes. */}
-          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
+          {/* Links now sits at the page foot, so the stroke reference uses the
+              full row instead of leaving a former Links column empty. */}
+          <div className="mb-3.5 [&>*]:mb-0">
             <HowItsWritten
               item={{ entry: entry.id, glyph: entry.glyph, kind: "kanji", facts: [] }}
               alwaysOpen
             />
-            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
           {words.length > 0 ? (
             <WordsWith
@@ -959,33 +960,28 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* ================= WORD ================= */}
       {isWord ? (
         <>
-          <div className="mb-3.5 grid grid-cols-2 gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
-            {/* Absent, not empty, for a jukujikun (大人/おとな) and an all-kana
-                word: there is no per-kanji reading to show, and inventing one
-                would be a fact that cannot be graded. A single-kanji word (何,
-                可) DOES show it — the one piece is a clickable link into that
-                kanji's page, which is worth a card even when the "split" is the
-                word itself. */}
-            {pieces ? <WordBuiltFrom pieces={pieces} /> : <div />}
-            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
-          </div>
-          {wordRow && forms ? <WordFormFan dictionary={wordRow.keb} groups={forms} /> : null}
-          {/* THE SENTENCE SITS BETWEEN THE PIECES AND THE FORMS, and full width
+          {/* Absent, not empty, for a jukujikun (大人/おとな) and an all-kana
+              word. Links has moved to the common footer, so Built from no
+              longer shares a row with navigation. */}
+          {pieces ? <WordBuiltFrom pieces={pieces} /> : null}
+          {wordRow ? <WordClassNote word={wordRow} className="mb-3.5" /> : null}
+          {wordRow && forms ? (
+            <WordFormFan
+              dictionary={wordRow.keb}
+              groups={forms}
+              onSpeak={say}
+              className="mb-3.5"
+            />
+          ) : null}
+          {/* THE SENTENCE FOLLOWS THE FORMS, and is full width
               because a sentence in a half-column wraps to four ribboned lines.
               The order is the word getting steadily more useful: what it is made
-              of, then it being used, then the table of what it turns into.
-              It goes ABOVE the forms rather than at the foot for the same reason
-              the forms table goes at the foot — that table is reference, long
-              and scanned rather than read, and three lines of high-value
-              Japanese buried under it would be found by nobody.
+              of, what class it belongs to, the forms it takes, then a real use.
+              The forms panel owns its bottom margin so the two cards never touch.
 
               ABSENT, not empty, for the four words in five with no corpus
               sentence. No card, no heading, no line about the gap. */}
           {example ? <WordExampleView example={example} /> : null}
-          {/* NO FORMS SECTION AT ALL when there are none — which is two thirds of
-              the vocabulary, so absence has to look finished rather than
-              truncated. */}
-          {forms ? <WordFormsView groups={forms} onSpeak={say} /> : null}
         </>
       ) : null}
 
@@ -1030,11 +1026,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
             />
           ) : null}
 
-          {/* LINKS AT THE FOOT. Outgoing navigation is the last thing on the page,
-              under the teaching and the family table, not wedged between them. */}
-          <div className="mb-3.5 mt-3.5">
-            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
-          </div>
         </>
       ) : null}
 
@@ -1126,18 +1117,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </Card>
       ) : null}
 
-      {/* Links for the kinds whose layout above did not already place it — a
-          mark, keigo, and anything new. A verb pair is excluded: it has no parts,
-          no words that contain it, and no glyph to confuse with another, so its
-          links row would be an empty card. Keigo is NOT excluded: it carries a
-          "Read about it" row (the politeness-levels concept), so its box has
-          content — this is where that link now lives, in the same box every other
-          kind uses, rather than the bespoke card it used to get. */}
-      {!isKana && !isKanji && !isWord && !isGrammar && !isTransitivity ? (
-        <div className={mark ? "mt-6" : ""}>
-          <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
-        </div>
-      ) : null}
+      {/* ONE LINKS FOOTER FOR EVERY LIBRARY KIND. Navigation now has one stable
+          position: after all reference/teaching content and immediately before
+          the page actions. This also prevents a kind-specific layout from
+          accidentally rendering it twice. */}
+      <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
 
       {/* THE "Compare similar patterns" CARD IS GONE. It was a whole card
           holding one sentence whose only content was a link to the cluster

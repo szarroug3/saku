@@ -80,8 +80,8 @@
 // longer a filter any scheduler runs.
 
 import { effectiveState } from "@/lib/claims";
-import { teFormLearned } from "@/lib/grammar-lesson";
-import { ruVerbKind } from "@/lib/word-forms";
+import { adjectivePrenominalLearned, teFormLearned } from "@/lib/grammar-lesson";
+import { adjectiveKind, ruVerbKind } from "@/lib/word-forms";
 import {
   PREREQUISITE_ONLY,
   kanjiRow,
@@ -441,9 +441,8 @@ export interface CurriculumLesson {
   over: boolean;
 }
 
-/** The lock on the next curriculum lesson: a る-ending verb the spine will not
- * teach until the て-form is learned. The words-track twin of GrammarLock, which
- * names the word type a pattern is waiting on. */
+/** Legacy lock shape. Class-gated words are skipped until their grammar lesson
+ * is learned, so the Words track never blocks on one. */
 export interface CurriculumLock {
   /** The written form held back — 知る — so the card can name the verb the
    * learner is one grammar lesson away from. */
@@ -479,7 +478,7 @@ export function nextCurriculumLesson(
   const facts = cards.flatMap((it) => it.facts);
   // frontierGroup already guarantees teachable cards here, so this only guards
   // the degenerate case of a teachable item that carries no facts. A group whose
-  // sole remaining items are held-back る-verbs was skipped by the frontier, not
+  // sole remaining items are held-back class words was skipped by the frontier, not
   // handed here (see frontierGroup — skip-and-return, not a lock).
   if (!facts.length) return null;
 
@@ -515,10 +514,10 @@ function itemIsMet(it: CurriculumLessonItem, history: HistoryFile): boolean {
 
 /** The first lesson with anything TEACHABLE left in it — the frontier of the
  * climb — or null when nothing is teachable (curriculum done, or the only things
- * left are held-back る-verbs waiting on the て-form).
+ * left are class words waiting on the first grammar lesson).
  *
  * SKIP-AND-RETURN, not a hard lock. A group whose only unlearned items are
- * gated る-verbs is stepped over, so the words track keeps moving through
+ * gated class words is stepped over, so the words track keeps moving through
  * everything else while the て-form is still unlearned. The moment the て-form is
  * learned, `teachableCards` stops holding those verbs back, and the frontier
  * returns to the earliest group that still has one — 知る gets taught then, in
@@ -531,8 +530,7 @@ function frontierGroup(
 }
 
 /**
- * A word item the words track holds back until the て-form is learned: a verb
- * whose written form ends in る.
+ * The grammar prerequisite for a class-sensitive word lesson.
  *
  * A る-ending verb's class (godan vs ichidan) cannot be read off its spelling,
  * and the word lesson wants to TEACH which it is (see ruVerbKind and the note on
@@ -540,25 +538,37 @@ function frontierGroup(
  * て-form, the first place the two classes visibly diverge (知って vs 食べて). So
  * the first such verb, 知る, is held back until grammar lesson 1 is done. A verb
  * ending in any other kana is unambiguous and never gated; a non-verb is not
- * gated; the irregular る-verbs (来る, する) have no class to teach and ruVerbKind
- * returns null for them, so they pass too. */
-function isGatedRuVerb(it: CurriculumLessonItem): boolean {
-  if (!it.roles.includes("word")) return false;
+ * gated. Adjectives wait too: い is only a clue (きれい is a な-adjective), and
+ * a な-adjective such as しずか has no dictionary-form class ending at all. Their
+ * word lessons wait for the first grammar lesson, which introduces adjective
+ * types. Ambiguous る-ending verbs wait for grammar lesson 2, the て/で-form,
+ * whose verb-types page introduces their split.
+ * Irregular る-verbs (来る, する) have no class to teach and pass through. */
+function classWordGate(it: CurriculumLessonItem): "adjective" | "ru-verb" | null {
+  if (!it.roles.includes("word")) return null;
   const row = vocabRow(it.glyph);
-  return row ? ruVerbKind(row) !== null : false;
+  if (!row) return null;
+  if (adjectiveKind(row) !== null) return "adjective";
+  if (ruVerbKind(row) !== null) return "ru-verb";
+  return null;
 }
 
 /** The unmet items of a lesson that are teachable RIGHT NOW: the frontier's
- * unlearned items, minus any る-ending verb held back because the て-form is not
- * learned yet. Once the て-form is learned nothing is held back and this is the
+ * unlearned items, minus class words held back because the first grammar lesson
+ * is not learned yet. Once it is learned nothing is held back and this is the
  * plain remainder, exactly as before the gate existed. */
 function teachableCards(
   group: CurriculumLessonGroup,
   history: HistoryFile,
 ): CurriculumLessonItem[] {
   const unmet = group.items.filter((it) => !itemIsMet(it, history));
-  if (teFormLearned(history)) return unmet;
-  return unmet.filter((it) => !isGatedRuVerb(it));
+  const adjectivesReady = adjectivePrenominalLearned(history);
+  const ruVerbsReady = teFormLearned(history);
+  if (adjectivesReady && ruVerbsReady) return unmet;
+  return unmet.filter((it) => {
+    const gate = classWordGate(it);
+    return gate === null || (gate === "adjective" ? adjectivesReady : ruVerbsReady);
+  });
 }
 
 /**
@@ -566,9 +576,8 @@ function teachableCards(
  * it. This export stays so the home feed's call site is untouched, but with
  * skip-and-return (see frontierGroup) there is never a lock — the frontier moves
  * past a gated verb, so the learner is never stopped, and 知る simply surfaces
- * later, once the て-form is learned. Kept as a function (not deleted) because
- * the mirror `nextGrammarLock` on the grammar side is real, and a caller reading
- * both should see the shapes match.
+ * later, once the て-form is learned. Kept as a function so the home feed's
+ * existing no-lock call site remains explicit.
  */
 export function nextCurriculumLock(
   _history: HistoryFile,

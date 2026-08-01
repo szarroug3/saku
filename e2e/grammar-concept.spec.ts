@@ -1,7 +1,8 @@
 import { test, expect } from "./helpers/app";
 
 import { GRAMMAR_CONCEPTS, grammarConceptEntry } from "@/data/grammar-concepts";
-import { patternEntry } from "@/data/grammar";
+import { FORM_RECIPE_IDS, patternEntry } from "@/data/grammar";
+import { formLibraryPages } from "@/data/grammar/lessons";
 import { entryHref } from "@/lib/library/href";
 
 /**
@@ -36,7 +37,7 @@ for (const concept of GRAMMAR_CONCEPTS) {
  */
 const CONCEPT_CONTENT: Array<{ id: string; mustShow: string[] }> = [
   { id: "verb-classes", mustShow: ["godan", "ichidan", "する", "くる"] },
-  { id: "adjective-types", mustShow: ["たかい", "しずか", "きれい"] },
+  { id: "adjective-types", mustShow: ["たかい", "しずか", "きれい", "嫌い"] },
   { id: "keigo-registers", mustShow: ["めしあがる", "いただく"] },
 ];
 
@@ -48,6 +49,48 @@ for (const { id, mustShow } of CONCEPT_CONTENT) {
     }
   });
 }
+
+test("the adjective concept is one concise class guide, without a repeated title", async ({
+  page,
+}) => {
+  await page.goto(entryHref(grammarConceptEntry("adjective-types")));
+  await expect(page.getByText("い-adjectives and な-adjectives.", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "い-adjectives change their own ending." })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "な-adjectives take な, and lean on です." })).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("The app tags each word's kind");
+  await expect(page.getByRole("table")).toHaveCount(0);
+});
+
+test("the adjective noun form has its own Library entry", async ({ page }) => {
+  await page.goto(entryHref(patternEntry("prenominal-form")));
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("describe a noun");
+  await expect(page.getByText("The 〜な form", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Describe a noun." })).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("lets an adjective describe a noun");
+  await expect(page.getByRole("heading", { name: "Adjectives", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Adjective Types", { exact: true })).toHaveCount(0);
+  const beforeANoun = page.getByRole("heading", { name: "Before a noun", exact: true });
+  await expect(beforeANoun).toHaveCount(1);
+  const adjectiveTable = beforeANoun.locator("xpath=ancestor::section[1]").getByRole("table");
+  await expect(adjectiveTable.getByRole("columnheader", { name: "Meaning" })).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Grammar is how words fit together." }),
+  ).toHaveCount(0);
+});
+
+test("the Grammar shelf starts with the 〜な form", async ({ page }) => {
+  await page.goto("/library?kind=grammar");
+  const naForm = page.getByRole("button", { name: "〜な form", exact: true });
+  const teForm = page.getByRole("button", { name: "て/で-form", exact: true });
+  await expect(naForm).toBeVisible();
+  await expect(teForm).toBeVisible();
+  expect(
+    await naForm.evaluate((node, other) =>
+      Boolean(node.compareDocumentPosition(other as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
+    await teForm.elementHandle()),
+  ).toBe(true);
+  await expect(page.getByText(/N[1-5] pattern/)).toHaveCount(0);
+});
 
 test("a て-verb pattern lists its concept links under ONE 'Read about it'", async ({
   page,
@@ -61,6 +104,36 @@ test("a て-verb pattern lists its concept links under ONE 'Read about it'", asy
   // The form it builds on (the て-form's own entry) is linked from the Links box,
   // above the verb-classes reference. There is no standalone te-form CONCEPT page.
   await expect(page.getByRole("link", { name: /The .*-form/ })).toBeVisible();
+  const verbs = page.getByRole("heading", { name: "Verbs", exact: true });
+  await expect(verbs).toHaveClass(/text-accent/);
+  const section = verbs.locator("..");
+  await expect(section.getByText(/Put a verb into its て-form, then add から/)).toBeVisible();
+  await expect(section.locator(".border-dashed")).toContainText("て-form");
+  await expect(section.getByRole("table")).toHaveCount(1);
+  await expect(page.getByText("How to build it", { exact: true })).toHaveCount(0);
+});
+
+test("a mixed verb and adjective pattern separates its build sections", async ({ page }) => {
+  await page.goto(entryHref(patternEntry("node")));
+
+  for (const heading of ["Verbs", "い-adjectives", "な-adjectives"]) {
+    const sectionHeading = page.getByRole("heading", { name: heading, exact: true });
+    await expect(sectionHeading).toBeVisible();
+    await expect(sectionHeading.locator("..").getByRole("table")).toHaveCount(1);
+    await expect(sectionHeading.locator("..").getByRole("row")).toHaveCount(2);
+  }
+
+  const verbTable = page
+    .getByRole("heading", { name: "Verbs", exact: true })
+    .locator("..")
+    .getByRole("table");
+  expect(await verbTable.evaluate((node) => node.closest(".kq-material") === null)).toBe(true);
+  await expect(page.getByText("How to build it", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".border-dashed").filter({ hasText: "verb" })).toBeVisible();
+  await expect(page.locator(".border-dashed").filter({ hasText: "い-adjective" })).toBeVisible();
+  await expect(page.locator(".border-dashed").filter({ hasText: "な-adjective" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Describe a noun →", exact: true })).toBeVisible();
+  await expect(page.getByText("The just as it is", { exact: false })).toHaveCount(0);
 });
 
 test("the て-form's Library page teaches what it is for, not only how to build it", async ({
@@ -72,12 +145,16 @@ test("the て-form's Library page teaches what it is for, not only how to build 
   await expect(page.getByText(/casual request/i)).toBeVisible();
   await expect(page.getByText("Asks casually, or links ideas.", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "One form, several meanings." })).toBeVisible();
-  const verbHeading = page.getByRole("heading", { name: "As a verb", exact: true });
-  const adjectiveHeading = page.getByRole("heading", { name: "As an adjective", exact: true });
-  await expect(verbHeading).toHaveClass(/text-accent/);
-  await expect(adjectiveHeading).toHaveClass(/text-accent/);
-  await expect(page.getByRole("heading", { name: "Build verbs: change the ending." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Build adjectives: Change the ending." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "As a verb", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "As an adjective", exact: true })).toHaveCount(0);
+  await expect(page.getByText(/a verb in the て\/で-form is a casual request/)).toBeVisible();
+  await expect(page.getByText(/works with both verbs and adjectives/)).toBeVisible();
+  await expect(page.getByText(/The final predicate does/)).toBeVisible();
+  const verbs = page.getByRole("heading", { name: "Verbs", exact: true });
+  const adjectives = page.getByRole("heading", { name: "Adjectives", exact: true });
+  await expect(verbs).toHaveClass(/text-accent/);
+  await expect(adjectives).toHaveClass(/text-accent/);
+  await expect(page.getByText("Building the て/で-form", { exact: true })).toHaveCount(0);
   // The build table is still there (the う→って row).
   await expect(page.getByText("かって").first()).toBeVisible();
   // Its production tables expose every kind of separately scored skill: the
@@ -94,6 +171,35 @@ test("the て-form's Library page teaches what it is for, not only how to build 
     .locator("..");
   await expect(irregularAdjectives.getByRole("columnheader", { name: "Note" })).toHaveCount(0);
   await expect(page.getByText("いい uses よ as its stem.", { exact: true })).toHaveCount(0);
+});
+
+test("every form page puts instructions between its section heading and table", async ({
+  page,
+}) => {
+  for (const recipeId of FORM_RECIPE_IDS) {
+    await page.goto(entryHref(patternEntry(recipeId)));
+    for (const section of formLibraryPages(recipeId).flatMap((intro) => intro.buildSections ?? [])) {
+      const heading = page.getByRole("heading", { name: section.title, exact: true }).first();
+      const renderedSection = section.hideTitle
+        ? page
+            .getByText(section.body[0].text, { exact: false })
+            .first()
+            .locator("xpath=ancestor::section[1]")
+        : heading.locator("..");
+      if (section.hideTitle) {
+        await expect(heading, `${recipeId}/${section.title} hidden heading`).toHaveCount(0);
+      } else {
+        await expect(heading, `${recipeId}/${section.title} heading`).toHaveClass(/text-accent/);
+      }
+      await expect(
+        renderedSection,
+        `${recipeId}/${section.title} instruction`,
+      ).toContainText(section.body[0].text);
+      await expect(renderedSection.getByRole("table")).toHaveCount(
+        section.rules?.length ? 1 : section.tables?.length ?? 0,
+      );
+    }
+  }
 });
 
 test("the grammar-concept shelf lists the concepts and shows no speaker", async ({

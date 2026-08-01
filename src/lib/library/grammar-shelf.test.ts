@@ -21,6 +21,7 @@ import { describe, test } from "node:test";
 
 import { RECIPES } from "@/data/grammar/recipes";
 import { patternEntry, verbAttachForm } from "@/data/grammar";
+import { cluster } from "@/data/grammar/clusters";
 import { grammarRank } from "@/lib/library/grammar-order";
 import { grammarShelfSections } from "@/lib/library/grammar-shelf";
 
@@ -28,17 +29,17 @@ import { grammarShelfSections } from "@/lib/library/grammar-shelf";
 const RECIPE_OF_ENTRY = new Map(RECIPES.map((r) => [patternEntry(r.id), r]));
 
 describe("the grammar shelf is cut by form", () => {
-  test("the four form sections lead, in teaching order, headed by their recipe", () => {
+  test("the foundational form sections lead in teaching order, headed by their recipe", () => {
     const sections = grammarShelfSections();
-    const lead = sections.slice(0, 4);
+    const lead = sections.slice(0, 5);
     assert.deepEqual(
       lead.map((s) => s.label),
-      ["て/で-form", "ない-form", "た-form", "stem"],
-      "the four forms lead in teaching order",
+      ["〜な form", "て/で-form", "ない-form", "た-form", "stem"],
+      "the foundational forms lead in teaching order",
     );
     assert.deepEqual(
       lead.map((s) => s.entries[0].id),
-      ["te-sequence", "nai-form", "ta-form", "stem-form"].map(patternEntry),
+      ["prenominal-form", "te-sequence", "nai-form", "ta-form", "stem-form"].map(patternEntry),
       "each form section is headed by its own form recipe",
     );
   });
@@ -50,7 +51,10 @@ describe("the grammar shelf is cut by form", () => {
       for (const entry of section.entries) {
         const r = RECIPE_OF_ENTRY.get(entry.id);
         assert.ok(r, `${entry.id} resolves to a recipe`);
-        assert.equal(verbAttachForm(r), form, `${r.id} is a ${form} pattern`);
+        const forms = r.attach
+          .filter((a) => a.form && a.form !== "dictionary")
+          .map((a) => a.form);
+        assert.ok(forms.some((candidate) => candidate === form), `${r.id} is a ${form} pattern`);
       }
     }
   });
@@ -88,6 +92,18 @@ describe("the grammar shelf is cut by form", () => {
 });
 
 describe("the shelf cut tiles the whole shelf", () => {
+  test("rows omit the unexplained JLPT pattern label", () => {
+    const entries = grammarShelfSections().flatMap((section) => section.entries);
+    const byId = new Map(entries.map((entry) => [entry.id, entry]));
+
+    for (const recipe of RECIPES) {
+      const entry = byId.get(patternEntry(recipe.id));
+      assert.ok(entry, `${recipe.id} appears on the shelf`);
+      assert.equal(entry.sub, recipe.cluster ? cluster(recipe.cluster)?.title ?? "" : "");
+      assert.doesNotMatch(entry.sub, /N[1-5] pattern/);
+    }
+  });
+
   test("every pattern appears in exactly one section", () => {
     const seen = new Map<string, number>();
     for (const section of grammarShelfSections()) {

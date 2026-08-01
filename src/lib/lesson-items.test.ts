@@ -29,7 +29,6 @@ import { lessonRoles } from "./lesson-roles.ts";
 import {
   GRAMMAR_PER_LESSON_DEFAULT,
   nextGrammarLesson,
-  wordHost,
 } from "./grammar-lesson.ts";
 import { nextCurriculumLesson } from "./curriculum-lesson.ts";
 import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
@@ -37,25 +36,12 @@ import { RADICAL_TEACHING_ORDER } from "./radical-order.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { nextLesson } from "./lesson.ts";
-import { CURRICULUM_WORDS } from "./word-lesson.ts";
 import { wordMeaningFactId } from "../data/vocab.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 /** A learner who has done nothing — so every track's FIRST lesson is what the
  * curriculum modules return. */
 const FRESH: HistoryFile = { sessions: [], facts: {} };
-
-/** A learner who has learned one verb — the host the head of the grammar
- * curriculum attaches to, so nextGrammarLesson has a teachable lesson to hand
- * out (it is now host-gated: no learned verb means the 〜て family is locked). */
-const FIRST_VERB = CURRICULUM_WORDS.find((w) => wordHost(w) === "verb")!;
-const GRAMMAR_READY: HistoryFile = {
-  sessions: [],
-  facts: {},
-  claims: {
-    [wordMeaningFactId(FIRST_VERB.keb)]: Date.UTC(2026, 0, 1),
-  } as HistoryFile["claims"],
-};
 
 /** The teach facts of each track's first lesson, the way a session would carry
  * them. */
@@ -69,7 +55,7 @@ const TEACH_SETS: Record<string, FactId[]> = {
   // Radicals, kanji and words come off one spine now, so one fixture covers all
   // three: the head of the curriculum is whatever mix the packer cut first.
   curriculum: nextCurriculumLesson(FRESH, LESSON_RANGE_DEFAULT)!.facts,
-  grammar: nextGrammarLesson(GRAMMAR_READY, GRAMMAR_PER_LESSON_DEFAULT)!.facts,
+  grammar: nextGrammarLesson(FRESH, GRAMMAR_PER_LESSON_DEFAULT)!.facts,
 };
 
 describe("itemsFromFacts — the step model", () => {

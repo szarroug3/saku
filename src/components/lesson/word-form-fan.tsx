@@ -1,7 +1,6 @@
 "use client";
 
-// "The part that changes" — every form of a word, drawn as a FAN off the
-// dictionary form.
+// "Forms" — every form of a word, drawn as a FAN off the dictionary form.
 //
 // THIS IS A CORRECTION, AND IT IS THE POINT OF THE CARD
 // ====================================================
@@ -39,15 +38,17 @@
 // teaching the grammar track's material on the vocabulary track's screen. The
 // card says this is the part that changes, and stops.
 //
-// NO SPEAKERS ON THE BRANCHES either, though the Library's forms table has them.
-// The word's own speaker is in the header two inches above, and nineteen more
-// would make a card whose subject is a SHAPE look like a card about sound.
+// Speakers are opt-in. The Library passes `onSpeak`, because this fan is now its
+// one forms reference and every form should be hearable there. The lesson omits
+// it: that card is teaching the shape of the change, not presenting a reference
+// table of pronunciations.
 //
 // ABSENT for two thirds of the vocabulary, which is nouns. The caller drops the
 // component; an empty "the part that changes" over a noun would read as data
 // that failed to load.
 
 import { LessonPanel } from "@/components/lesson/lesson-panel";
+import { SoundIcon } from "@/components/ui";
 import { stemSplit } from "@/lib/word-fan";
 import type { BuiltGroup } from "@/lib/word-forms";
 
@@ -62,13 +63,30 @@ function Branch({ dictionary, value }: { dictionary: string; value: string }) {
   );
 }
 
+function HearForm({ value, onSpeak }: { value: string; onSpeak: (text: string) => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={`Hear ${value}`}
+      onClick={() => onSpeak(value)}
+      className="inline-flex cursor-pointer items-center border-none bg-transparent p-0 text-text-muted hover:text-text"
+    >
+      <SoundIcon className="size-[13px]" />
+    </button>
+  );
+}
+
 export function WordFormFan({
   dictionary,
   groups,
+  onSpeak,
+  className = "",
 }: {
   /** The root — the form every branch is built from, printed once. */
   dictionary: string;
   groups: readonly BuiltGroup[];
+  onSpeak?: (text: string) => void;
+  className?: string;
 }) {
   // The dictionary form IS the root, so it does not also hang off the spine as
   // a branch of itself. Dropping it here rather than in `formsOfWord` keeps the
@@ -80,7 +98,11 @@ export function WordFormFan({
   if (!branches.length) return null;
 
   return (
-    <LessonPanel title="The part that changes">
+    <LessonPanel
+      className={className}
+      title="Forms"
+      transparent={!!onSpeak}
+    >
       {/* THE ROOT AND THE SPINE. `items-stretch` so the spine's border runs the
           full height of the branch column whatever it holds; the root is
           vertically centred against it, which is what makes the arrangement
@@ -90,9 +112,12 @@ export function WordFormFan({
       <div className="flex items-stretch gap-4 max-[640px]:flex-col max-[640px]:gap-2">
         <div className="flex flex-none items-center max-[640px]:justify-start">
           <div>
-            <p className="font-kana text-[26px] leading-none text-text">
-              {dictionary}
-            </p>
+            <div className="flex items-center gap-2">
+              {onSpeak ? <HearForm value={dictionary} onSpeak={onSpeak} /> : null}
+              <p className="font-kana text-[26px] leading-none text-text">
+                {dictionary}
+              </p>
+            </div>
             <p className="mt-1.5 text-[11px] text-text-muted">the word itself</p>
           </div>
         </div>
@@ -108,7 +133,7 @@ export function WordFormFan({
                 <p className="mb-1 text-[11px] text-text-muted">{g.title}</p>
                 <div className="flex flex-col gap-0.5">
                   {g.rows.map((r) => (
-                    <div key={r.form} className="flex items-baseline gap-2">
+                    <div key={r.form} className="flex items-center gap-2">
                       {/* The tick is this branch's OWN connector back to the
                           spine, drawn per row and pointing left. Nothing in this
                           card points from one form to the next. */}
@@ -121,6 +146,7 @@ export function WordFormFan({
                       <span className="w-[104px] flex-none text-[11px] text-text-muted">
                         {r.label}
                       </span>
+                      {onSpeak ? <HearForm value={r.value} onSpeak={onSpeak} /> : null}
                       <Branch dictionary={dictionary} value={r.value} />
                     </div>
                   ))}

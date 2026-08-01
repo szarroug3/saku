@@ -148,16 +148,41 @@ export function adjectiveKindOf(
   return cls === "adj-na" ? "な-adjective" : null;
 }
 
-/**
- * ONLY VERBS AND い-ADJECTIVES GET A FORMS SECTION.
- *
- * な-adjectives are excluded on purpose. 静か conjugates through the copula
- * (静かです / 静かだった), which is a pattern about だ rather than a shape of 静か,
- * and printing it as "forms of 静か" would teach the wrong owner for the change.
- * It is grammar, and it is scored on the grammar side.
- */
-export function hasForms(cls: WordClass): boolean {
-  return cls !== "adj-na";
+/** The learner-facing adjective class for a dictionary word. Kept beside
+ * `ruVerbKind` because word lessons, Library pages, and the curriculum gate all
+ * need the same answer from the same JMdict classification. */
+export function adjectiveKind(w: VocabRow): "い-adjective" | "な-adjective" | null {
+  return adjectiveKindOf(wordClassOf(w));
+}
+
+export type WordFormKind =
+  | "う-verb"
+  | "る-verb"
+  | "irregular verb"
+  | "い-adjective"
+  | "な-adjective";
+
+/** The class badge shown beside a word's Forms heading. Unlike `ruVerbKind`,
+ * this names every conjugating word: non-る godan verbs still say う-verb, and
+ * irregular verbs get an honest label rather than being forced into either
+ * regular paradigm. */
+export function wordFormKind(w: VocabRow): WordFormKind | null {
+  const cls = wordClassOf(w);
+  const adjective = adjectiveKindOf(cls);
+  if (adjective) return adjective;
+  if (cls === "v1" || cls === "v1-s") return "る-verb";
+  if (cls?.startsWith("v5")) return "う-verb";
+  if (cls === "vs-i" || cls === "vs-s" || cls === "vk" || cls === "vz") {
+    return "irregular verb";
+  }
+  return null;
+}
+
+/** Every conjugating class gets a Forms section. For a な-adjective this makes
+ * the newly taught noun-describing form visible on its own word page
+ * (静か → 静かな), alongside the copula-backed sentence forms. */
+export function hasForms(_cls: WordClass): boolean {
+  return true;
 }
 
 /**

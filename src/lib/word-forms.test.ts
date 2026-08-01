@@ -16,12 +16,14 @@ import { VOCAB, vocabRow } from "@/data/vocab";
 import { SUPPORTED_CLASSES } from "@/lib/conjugate";
 import {
   POS_TO_CLASS,
+  adjectiveKind,
   formsOfWord,
   groupsFor,
   hasForms,
   isIntransitive,
   ruVerbKind,
   wordClassOf,
+  wordFormKind,
 } from "@/lib/word-forms";
 import { formsFor } from "@/lib/conjugate";
 
@@ -93,6 +95,36 @@ test("ruVerbKind names the class only for the ambiguous る-ending verbs", () =>
   if (noun) assert.equal(ruVerbKind(noun), null, `${noun.keb} is not a verb`);
 });
 
+test("adjectiveKind names the class spelling cannot reliably provide", () => {
+  const kind = (keb: string) => {
+    const row = vocabRow(keb);
+    assert.ok(row, `${keb} is not in vocab.json — the fixture is stale`);
+    return adjectiveKind(row);
+  };
+
+  assert.equal(kind("高い"), "い-adjective");
+  assert.equal(kind("いい"), "い-adjective");
+  assert.equal(kind("静か"), "な-adjective");
+  assert.equal(kind("嫌い"), "な-adjective");
+  assert.equal(kind("先生"), null);
+});
+
+test("wordFormKind names every class shown beside the Forms heading", () => {
+  const kind = (keb: string) => {
+    const row = vocabRow(keb);
+    assert.ok(row, `${keb} is not in vocab.json — the fixture is stale`);
+    return wordFormKind(row);
+  };
+
+  assert.equal(kind("書く"), "う-verb");
+  assert.equal(kind("知る"), "う-verb");
+  assert.equal(kind("食べる"), "る-verb");
+  assert.equal(kind("する"), "irregular verb");
+  assert.equal(kind("高い"), "い-adjective");
+  assert.equal(kind("静か"), "な-adjective");
+  assert.equal(kind("先生"), null);
+});
+
 test("行く conjugates with its irregular 音便 — the silent failure, made visible", () => {
   // The payoff of the case above. A v5k misclassification produces 行いて, which
   // is not a word; the special class produces 行って. Only this assertion tells
@@ -120,10 +152,23 @@ test("a する-noun is not conjugated directly", () => {
   assert.equal(wordClassOf(row), null);
 });
 
-test("な-adjectives are excluded from Forms, い-adjectives are not", () => {
-  assert.equal(hasForms("adj-na"), false);
+test("both adjective classes have Forms", () => {
+  assert.equal(hasForms("adj-na"), true);
   assert.equal(hasForms("adj-i"), true);
   assert.equal(hasForms("adj-ix"), true);
+});
+
+test("a な-adjective shows the form it uses before a noun", () => {
+  const row = vocabRow("静か");
+  assert.ok(row);
+  const groups = formsOfWord(row);
+  assert.ok(groups);
+  const describing = groups.find((group) => group.title === "Describing and modifying");
+  assert.ok(describing);
+  assert.equal(
+    describing.rows.find((form) => form.label === "before a noun")?.value,
+    "静かな",
+  );
 });
 
 test("every form the engine builds for a class appears in exactly one group", () => {

@@ -82,11 +82,11 @@ function patternFacts(recipeId: string): FactId[] {
 }
 
 // ---------------------------------------------------------------------------
-// LESSON 1 — the て/で-form.
+// FOUNDATIONAL LESSON PAGES — adjective noun form first, then the て/で-form.
 //
 // The class-split the owner locked: intro (what a form is) -> う-verbs ->
 // る-verbs -> telling them apart -> いく exception -> する/くる irregulars ->
-// what it does. Verbs are kana-only: a learner at grammar lesson 1 has little
+// what it does. Verbs are kana-only: a learner at the start of grammar has little
 // kanji, and the point of every page is the ending, which the kana already show.
 // Example verbs carry `say` wherever the change is audible (a sound change), and
 // stay silent where it is purely written (る-verbs), the same rule the kana
@@ -102,7 +102,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     body: [
       { lead: "Japanese verbs change shape.", text: "Each shape is called a form." },
       {
-        text: "Some forms can end a sentence. Others prepare the verb for whatever comes next.",
+        text: "Adjectives can change shape too. Some forms can end a sentence. Others prepare a word for whatever comes next.",
       },
       {
         lead: "A pattern",
@@ -110,9 +110,9 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       },
       {
         lead: "Not every form is a tense.",
-        text: "A form might show time, a negative, or politeness, or it might just make the verb ready for another piece.",
+        text: "A form might show time, a negative, or politeness, or it might just make a word ready for another piece.",
       },
-      { text: "You learn a form once, then reuse it with many verbs and patterns." },
+      { text: "You learn a form once, then reuse it with many words and patterns." },
     ],
   },
   {
@@ -145,8 +145,80 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     ],
   },
   {
-    // PAGE 3 — what the て/で-form is FOR, with the chain build-up. No conjugation
-    // rules here (those are page 4). The chain ends in a verb the learner cannot
+    // PAGE 3 — Adjective Types. Unlike the verb groups, the な class is not a
+    // literal dictionary-form ending, so spelling is only a clue. Teach the
+    // before-a-noun diagnostic here before any adjective conjugation table asks
+    // the learner to understand an い / な label.
+    id: "gl-adjective-types",
+    setId: "",
+    eyebrow: "Adjective Types",
+    title: "い-adjectives and な-adjectives.",
+    body: [
+      {
+        text: "Before you use an adjective, you need to know which of the two adjective classes it belongs to. The class is a property of the word, just like a verb's group.",
+      },
+      {
+        lead: "い-adjectives",
+        text: "usually end in い, like たかい and やすい. Before a noun they do not change: たかいみせ (an expensive shop). Their final い changes when they use other forms.",
+      },
+      {
+        lead: "な-adjectives",
+        text: "have no reliable kana ending. Examples include しずか, べんり, and げんき. They are called な-adjectives because they add な before a noun.",
+      },
+      {
+        lead: "Spelling alone does not always identify the class.",
+        text: "Some な-adjectives end in い even when there is no separate い after a kanji, including きれい. You learn the class with the word.",
+      },
+      {
+        lead: "A useful clue:",
+        text: "When a word is written with kanji followed by a separate い, like 高い, it is usually an い-adjective. This is not a guarantee: 嫌い has the same visible pattern but is a な-adjective.",
+      },
+    ],
+  },
+  {
+    // PAGE 4 — the first adjective FORM, separate from the class-identification
+    // concept above. This page owns both the meaning the following quiz asks for
+    // and the build table; the adjective-types Library page stays a class guide.
+    id: "gl-prenominal-form",
+    setId: "",
+    eyebrow: "The 〜な form",
+    title: "Describe a noun.",
+    hideLibraryIntro: true,
+    body: [
+      {
+        lead: "The 〜な form",
+        text: "lets an adjective describe a noun.",
+      },
+    ],
+    buildSections: [{
+      title: "Adjectives",
+      hideTitle: true,
+      body: [{
+        heading: "Before a noun",
+        text: "An い-adjective does not change, while a な-adjective adds な.",
+      }],
+      heads: { label: "Type", change: "Change" },
+      rules: [
+          {
+            label: "い-adjective",
+            verb: "たかい (expensive) + みせ (shop)",
+            to: "たかいみせ",
+            accent: false,
+            audio: false,
+          },
+          {
+            label: "な-adjective",
+            verb: "しずか (quiet) + な + みせ (shop)",
+            to: "しずかなみせ",
+            accent: "な",
+            audio: false,
+          },
+      ],
+    }],
+  },
+  {
+    // PAGE 5 — what the て/で-form is FOR, with the chain build-up. No conjugation
+    // rules here (those are the next pages). The chain ends in a verb the learner cannot
     // build yet; the copy tells them not to worry about it, only that the LAST
     // verb carries the tense.
     id: "gl-te-form-use",
@@ -155,54 +227,56 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     title: "One form, several meanings.",
     body: [
       {
-        heading: "As a verb",
         lead: "By itself,",
-        text: 'the て/で-form is a casual request or command: まって "wait!", みて "look!", ちょっときて "come here a sec".',
+        text: 'a verb in the て/で-form is a casual request or command: まって "wait!", みて "look!", ちょっときて "come here a sec".',
       },
       {
-        lead: "It can also act as a connector.",
-        text: 'Joined to another verb it links actions, and can mean "and", "and then", "so", "because", or "while", with the context deciding which.',
+        lead: "As a connector,",
+        text: 'the て/で-form works with both verbs and adjectives. With verbs it links actions and can mean "and", "and then", "so", "because", or "while". With adjectives it links descriptions or gives a reason, often meaning "and" or "because". Context decides the exact connection.',
       },
       {
         lead: "When used as a connector,",
-        text: "the form doesn't indicate what tense the words are in or the politeness. Whatever verb ends the sentence indicates that. Chain several て/で-forms and end with one final verb, and only that last verb changes the tense and politeness.",
+        text: "the form doesn't indicate the sentence's tense or politeness. The final predicate does. That final predicate may be a verb or an adjective, and the earlier て/で-forms stay the same when it changes.",
       },
       {
-        text: "In たべて、のんで、はなしている, the last verb, はなしている, is where the tense and politeness are indicated. Don't worry about how it is built for now; just understand that it is what tells you the tense, and the て/で-forms before it stay the same no matter how the last verb is built.",
+        text: "In たべて、のんで、はなしている, the final predicate, はなしている, is where the tense and politeness are indicated. In たかくて、べんりです, the final predicate, べんりです, does that job. Don't worry about how either ending is built yet; the point is that the earlier connector forms do not change with it.",
       },
     ],
-    buildRules: [
-      { verb: "たべる", to: "たべて", gloss: "eat" },
-      { verb: "のむ", to: "のんで", gloss: "drink" },
-      { verb: "はなす", to: "はなして", gloss: "talk" },
-    ],
-    buildFooter: {
-      chain: "たべて、のんで、はなしている",
-      gloss: "is eating, drinking, and talking",
-    },
-    bodyAfterBuild: [
-      {
-        heading: "As an adjective",
-        text: "Adjectives use the て/で-form to link descriptions or give a reason. They have their own forms: an い-adjective changes い to くて, いい changes to よくて, and a な-adjective adds で.",
+    buildSections: [{
+      title: "Connector example",
+      body: [{
+        text: "Each connector stays in the て/で-form. The final predicate carries the tense and politeness.",
+      }],
+      rules: [
+        { verb: "たべる", to: "たべて", gloss: "eat" },
+        { verb: "のむ", to: "のんで", gloss: "drink" },
+        { verb: "はなす", to: "はなして", gloss: "talk" },
+      ],
+      footer: {
+        chain: "たべて、のんで、はなしている",
+        gloss: "is eating, drinking, and talking",
       },
-    ],
+    }],
   },
   {
-    // PAGE 4 — how to build verbs: every godan ending, the one ichidan rule,
+    // PAGE 6 — how to build verbs: every godan ending, the one ichidan rule,
     // and the three exceptional or irregular verbs.
     id: "gl-te-build-verbs",
     setId: "",
-    eyebrow: "Building the て/で-form",
-    title: "Build verbs: change the ending.",
-    body: [
-      {
-        text: "Drop the verb's last kana and add the ending that matches. Some endings use て and some use で; the ending decides which, and they mean the same, so you never choose between them.",
-      },
-      {
-        text: "いく is an exception: everywhere else it is a normal う-verb, but its て-form changes to って, not いて. する and くる are irregular: they follow no group's rule, so you learn their conjugations by heart.",
-      },
-    ],
-    buildTables: [
+    title: "Verbs",
+    sectionTitle: true,
+    body: [],
+    buildSections: [{
+      title: "Verbs",
+      body: [
+        {
+          text: "Drop the verb's last kana and add the ending that matches. Some endings use て and some use で; the ending decides which, and they mean the same, so you never choose between them.",
+        },
+        {
+          text: "いく is an exception: everywhere else it is a normal う-verb, but its て-form changes to って, not いて. する and くる are irregular: they follow no group's rule, so you learn their conjugations by heart.",
+        },
+      ],
+      tables: [
       {
         title: "Godan (う-verbs)",
         rules: [
@@ -237,24 +311,28 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         ],
         heads: { label: "" },
       },
-    ],
+      ],
+    }],
   },
   {
-    // PAGE 5 — adjective building follows the verb rules as its own section,
+    // PAGE 7 — adjective building follows the verb rules as its own section,
     // so the two word types do not share one undifferentiated table stack.
     id: "gl-te-build-adjectives",
     setId: "",
-    eyebrow: "Building the て/で-form",
-    title: "Build adjectives: Change the ending.",
+    title: "Adjectives",
+    sectionTitle: true,
     body: [],
-    buildTables: [
+    buildSections: [{
+      title: "Adjectives",
+      body: [{ text: "Change the adjective's ending according to its type." }],
+      tables: [
       {
         title: "Adjectives",
         rules: [
-          { label: "い", verb: "たかい", drop: "い", add: "くて" },
-          { label: "な", verb: "しずか", drop: "", add: "で" },
+          { label: "い-adjective", verb: "たかい", drop: "い", add: "くて" },
+          { label: "な-adjective", verb: "しずか", drop: "", add: "で" },
         ],
-        heads: { label: "Ending" },
+        heads: { label: "Type" },
       },
       {
         title: "Irregular adjectives",
@@ -267,7 +345,8 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         ],
         heads: { label: "" },
       },
-    ],
+      ],
+    }],
   },
 ];
 
@@ -279,22 +358,48 @@ const TE_FORM_PAGES: PhaseIntro[] = [
 const LESSON_TE_FORM: GrammarLessonDef = {
   id: "te-form",
   title: "The て/で-form",
-  pages: TE_FORM_PAGES.map((card) => ({ kind: "teach", card })),
+  pages: TE_FORM_PAGES.filter(
+    (card) =>
+      card.id !== "gl-te-intro" &&
+      card.id !== "gl-adjective-types" &&
+      card.id !== "gl-prenominal-form",
+  ).map((card) => ({ kind: "teach", card })),
   drills: patternFacts("te-sequence"),
   primaryPattern: "te-sequence",
+};
+
+/** Grammar lesson 1: what a form is, the two adjective classes, and the first
+ * adjective form. Its production drill is the one real change before a noun:
+ * a な-adjective adds な. The い-adjective row is explanatory but unscored
+ * because its form is identical to the dictionary word. */
+const LESSON_PRENOMINAL_FORM: GrammarLessonDef = {
+  id: "prenominal-form",
+  title: "Adjectives before nouns",
+  pages: TE_FORM_PAGES.filter((card) =>
+    ["gl-te-intro", "gl-adjective-types", "gl-prenominal-form"].includes(card.id),
+  ).map((card) => ({ kind: "teach", card })),
+  drills: patternFacts("prenominal-form"),
+  primaryPattern: "prenominal-form",
 };
 
 /**
  * The Verb Types page (godan / ichidan), exported for the Library's verb-classes
  * concept reference (src/data/grammar-concepts.ts).
  *
- * The concept renders THIS object — the same `gl-verb-types` page lesson 1 teaches
+ * The concept renders THIS object — the same `gl-verb-types` page lesson 2 teaches
  * the two verb groups with — so the reference page and the lesson say the same
  * words and cannot drift, the pointer-not-a-copy arrangement marks and terms make.
  * The て-form no longer has a concept page of its own: its Library entry (the
  * te-sequence form recipe) now carries the full teaching. */
 export const VERB_TYPES_CONCEPT_PAGES: readonly PhaseIntro[] = [
   TE_FORM_PAGES.find((p) => p.id === "gl-verb-types")!,
+];
+
+/** The same adjective-class introduction used by the adjective-types Library
+ * concept. The detailed reference can add conjugation examples after it, but the
+ * answer to "which class is this word?" is taught once, here. */
+export const ADJECTIVE_TYPES_CONCEPT_PAGES: readonly PhaseIntro[] = [
+  TE_FORM_PAGES.find((p) => p.id === "gl-adjective-types")!,
 ];
 
 // 〜ている has no authored lesson any more: it is a normal pattern, taught with the
@@ -306,7 +411,7 @@ export const VERB_TYPES_CONCEPT_PAGES: readonly PhaseIntro[] = [
 // THE OTHER FORM LESSONS — ない, た, stem.
 //
 // Each is its own sitting, taught before any pattern that uses the form, exactly
-// as lesson 1 teaches the て-form. They are recipes (nai-form / ta-form /
+// as lesson 2 teaches the て-form. They are recipes (nai-form / ta-form /
 // stem-form in recipes.ts) with add "", so the drill is "make the form" and the
 // lesson flows through the same planner and quiz as any pattern — no special
 // tracking. The authored pages are the form-intro tables (form-intros.ts), which
@@ -378,6 +483,10 @@ const LESSON_VOLITIONAL_FORM = formLesson(
  * scaffolding — their whole lesson IS the form — so the Library shows all of it.
  */
 const FORM_LIBRARY_PAGES: Readonly<Record<string, readonly PhaseIntro[]>> = {
+  // The general Grammar page belongs to the track's first lesson, not to a
+  // reference entry. The form's Library entry gets its own meaning-and-build
+  // page instead of reusing the adjective-class concept page.
+  "prenominal-form": TE_FORM_PAGES.filter((p) => p.id === "gl-prenominal-form"),
   "te-sequence": [
     TE_FORM_PAGES.find((p) => p.id === "gl-te-form-use")!,
     TE_FORM_PAGES.find((p) => p.id === "gl-te-build-verbs")!,
@@ -423,12 +532,13 @@ function levelRank(level: Level): number {
  * level/authored order behind them. This is the first slice of the draft's
  * family re-cut; the rest of the ordering is still the recipe table's. */
 const LESSON_LEAD: Readonly<Record<string, number>> = {
-  "te-sequence": 0,
-  "te-iru": 1,
+  "prenominal-form": 0,
+  "te-sequence": 1,
+  "te-iru": 2,
 };
 
 function leadRank(r: Recipe): number {
-  return LESSON_LEAD[r.id] ?? 2;
+  return LESSON_LEAD[r.id] ?? 3;
 }
 
 // ALL recipes are taught, not only the producible ones. A producible
@@ -464,6 +574,7 @@ function autoLesson(r: Recipe): GrammarLessonDef {
  * the lesson card ("lesson N of X"), and it is accurate to the number of
  * lessons because it IS the list of lessons. */
 const AUTHORED_LESSONS: Readonly<Record<string, GrammarLessonDef>> = {
+  "prenominal-form": LESSON_PRENOMINAL_FORM,
   "te-sequence": LESSON_TE_FORM,
   "nai-form": LESSON_NAI_FORM,
   "ta-form": LESSON_TA_FORM,

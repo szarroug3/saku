@@ -29,4 +29,11 @@ describe("word-form fan", () => {
     assert.match(SOURCE, /border-l border-border/);
     assert.doesNotMatch(NO_COMMENTS, /→/);
   });
+
+  test("is the single Forms display, with optional Library speakers", () => {
+    assert.match(SOURCE, /title="Forms"/);
+    assert.match(SOURCE, /onSpeak \? <HearForm/);
+    assert.match(SOURCE, /transparent=\{!!onSpeak\}/);
+    assert.doesNotMatch(NO_COMMENTS, /The part that changes/);
+  });
 });

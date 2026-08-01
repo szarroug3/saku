@@ -89,6 +89,7 @@ export function verbAttachForm(r: Recipe): Form | null | undefined {
  * conjugation) read from.
  */
 export const FORM_RECIPE_IDS: readonly string[] = [
+  "prenominal-form",
   "te-sequence",
   "nai-form",
   "ta-form",
@@ -108,35 +109,44 @@ export const FORM_RECIPE_IDS: readonly string[] = [
 
 const FORM_RECIPE_ID_SET: ReadonlySet<string> = new Set(FORM_RECIPE_IDS);
 
-/** Is this recipe one of the four form recipes? A form recipe KEEPS its full
+/** Is this recipe one of the standalone form recipes? A form recipe KEEPS its full
  * conjugation build table on its Library page; a PATTERN built on a form links to
  * that page instead (see PatternTeach). Takes a recipe or a bare id. */
 export function isFormRecipe(r: Recipe | string): boolean {
   return FORM_RECIPE_ID_SET.has(typeof r === "string" ? r : r.id);
 }
 
-/** The verb form a form recipe BUILDS → the recipe's id, for the forms that have
- * a page (て/で, ない, た, stem). Keyed on the verb attach form so callers can turn
- * "this pattern is built on the て-form" into "link to te-sequence" without a
- * second hand-kept table. Forms with no page (the plain form, the potential, 〜ば,
- * …) are simply absent. */
+/** A form a form recipe BUILDS → the recipe's id. Most are verb forms; the
+ * adjective-only prenominal form maps here too so patterns such as 〜ので can
+ * point back to the lesson that introduced な. */
 export const FORM_RECIPE_BY_FORM: ReadonlyMap<Form, string> = new Map(
-  FORM_RECIPE_IDS.map((id) => [verbAttachForm(recipe(id)!) as Form, id]),
+  FORM_RECIPE_IDS.flatMap((id) => {
+    const r = recipe(id)!;
+    const form = verbAttachForm(r) ?? r.attach.find((a) => a.form != null)?.form;
+    return form ? [[form, id] as const] : [];
+  }),
 );
 
 /**
  * The form recipe a PATTERN should link to instead of reprinting the form's build
- * table — the page for its verb attach form — or undefined.
+ * table, or undefined.
  *
- * Undefined in the two cases a link would be wrong: the recipe IS a form recipe
- * (it owns the build table, it does not link to itself), or its verb form has no
- * page (the plain/dictionary form, the potential, 〜ば, …), or it has no verb host
- * at all (a noun pattern). See PatternTeach for the one caller.
+ * Undefined when the recipe owns the form page itself or none of its transformed
+ * attachment forms has a page. See PatternTeach for the one caller.
  */
 export function formEntryFor(r: Recipe): string | undefined {
   if (isFormRecipe(r)) return undefined;
   const f = verbAttachForm(r);
-  return f ? FORM_RECIPE_BY_FORM.get(f) : undefined;
+  if (f) {
+    const verbForm = FORM_RECIPE_BY_FORM.get(f);
+    if (verbForm) return verbForm;
+  }
+  for (const attachment of r.attach) {
+    if (!attachment.form || isTrivialAttachment(attachment)) continue;
+    const formRecipe = FORM_RECIPE_BY_FORM.get(attachment.form);
+    if (formRecipe) return formRecipe;
+  }
+  return undefined;
 }
 
 /**

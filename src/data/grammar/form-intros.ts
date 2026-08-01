@@ -1,9 +1,9 @@
 // Form-intro pages: the foundational verb forms a family of patterns is built
-// on, taught just before the first pattern that uses them — the way lesson 1
+// on, taught just before the first pattern that uses them — the way lesson 2
 // teaches the て/で-form before the て-patterns. A pattern lesson whose form has
 // not been introduced yet prepends these pages (see lessons.ts).
 //
-// Same table as lesson 1: Ending · Change · Note, the change shown as an
+// Same table as the て-form lesson: Ending · Change · Note, the change shown as an
 // equation (drop the last kana, add the ending) so the small kana a form
 // introduces — the っ of った — is flagged automatically. Kana examples, verified
 // against the conjugation engine.
@@ -12,7 +12,7 @@ import type { WordClass } from "@/lib/conjugate";
 import { apply } from "@/lib/grammar/apply";
 import { recipe } from "@/data/grammar/recipes";
 import { recipeAllows } from "@/lib/grammar/vehicles";
-import type { IntroBuildRule, PhaseIntro } from "@/data/phase-intros";
+import type { IntroBuildRule, IntroPara, PhaseIntro } from "@/data/phase-intros";
 
 // ---------------------------------------------------------------------------
 // GENERATED FORM TABLES — shared by every foundational form page. They are built
@@ -126,6 +126,34 @@ function formRuleTables(
   return tables;
 }
 
+type FormTable = ReturnType<typeof formRuleTables>[number];
+
+/** Split a generated form table stack into the same word-type sections every
+ * pattern page uses: heading, instruction, then the relevant grouped tables. */
+function formBuildSections(
+  recipeId: string,
+  verbs: readonly IntroPara[],
+  adjectives?: readonly IntroPara[],
+): NonNullable<PhaseIntro["buildSections"]> {
+  const tables = formRuleTables(recipeId);
+  const adjectiveTables = tables.filter((table) => /adjective/i.test(table.title));
+  const verbTables = tables.filter((table) => !/adjective/i.test(table.title));
+  const sections: {
+    title: string;
+    body: readonly IntroPara[];
+    tables: readonly FormTable[];
+  }[] = [];
+  if (verbTables.length) sections.push({ title: "Verbs", body: verbs, tables: verbTables });
+  if (adjectiveTables.length) {
+    sections.push({
+      title: "Adjectives",
+      body: adjectives ?? [{ text: "Change the adjective's ending according to its type." }],
+      tables: adjectiveTables,
+    });
+  }
+  return sections;
+}
+
 /** Notes that teach something the generated equation cannot show by itself. */
 const FORM_RULE_NOTES: Readonly<Record<string, string>> = {
   "nai-form:v5u": "う shifts to わ, not あ.",
@@ -146,11 +174,10 @@ export const NAI_FORM_PAGES: readonly PhaseIntro[] = [
         lead: "On its own,",
         text: 'the ない-form says a verb is not happening: たべない "doesn\'t / won\'t eat", いかない "not going".',
       },
-      {
-        text: "For an う-verb, the last kana shifts to its あ-row before ない. An る-verb just drops る and adds ない.",
-      },
     ],
-    buildTables: formRuleTables("nai-form"),
+    buildSections: formBuildSections("nai-form", [{
+      text: "For an う-verb, the last kana shifts to its あ-row before ない. An る-verb just drops る and adds ない.",
+    }]),
   },
 ];
 
@@ -168,12 +195,17 @@ export const TA_FORM_PAGES: readonly PhaseIntro[] = [
         lead: "On its own,",
         text: 'the た-form is the casual past: たべた "ate", いった "went".',
       },
-      {
-        lead: "Memory hook:",
-        text: "it is built exactly like the て/で-form, with た/だ where て/で went (かって→かった, のんで→のんだ). Know the て-form and you already know this. いく is the same exception, and する / くる are the irregulars.",
-      },
     ],
-    buildTables: formRuleTables("ta-form"),
+    buildSections: formBuildSections(
+      "ta-form",
+      [{
+        lead: "Memory hook:",
+        text: "Build it exactly like the て/で-form, with た/だ where て/で went (かって→かった, のんで→のんだ). いく is the same exception, and する / くる are the irregulars.",
+      }],
+      [{
+        text: "An い-adjective changes its final い to かった. A な-adjective adds だった. いい changes to よかった.",
+      }],
+    ),
   },
 ];
 
@@ -193,7 +225,9 @@ export const MASU_FORM_PAGES: readonly PhaseIntro[] = [
         text: "From it come 〜ましょう (let's), 〜ませんか (won't you) and 〜ましょうか (shall I): swap ます for the ending.",
       },
     ],
-    buildTables: formRuleTables("masu-form"),
+    buildSections: formBuildSections("masu-form", [{
+      text: "Put the verb into its stem and add ます.",
+    }]),
   },
 ];
 
@@ -209,11 +243,10 @@ export const VOLITIONAL_FORM_PAGES: readonly PhaseIntro[] = [
       {
         text: "The casual counterpart to 〜ましょう: たべよう (let's eat), のもう (let's drink). Add と思う for 〜(よ)うと思う (thinking of X-ing).",
       },
-      {
-        text: "An う-verb shifts its last kana to the お-row and adds う; an る-verb adds よう.",
-      },
     ],
-    buildTables: formRuleTables("volitional-form"),
+    buildSections: formBuildSections("volitional-form", [{
+      text: "An う-verb shifts its last kana to the お-row and adds う; an る-verb adds よう.",
+    }]),
   },
 ];
 
@@ -230,11 +263,10 @@ export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
       {
         text: "Unlike the other forms, the stem is never used alone. It just holds the verb ready, and a pattern gives it meaning: 〜ます (polite), 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
       },
-      {
-        text: "For an う-verb, the last kana simply switches to its い-row. An る-verb just drops る.",
-      },
     ],
-    buildTables: formRuleTables("stem-form"),
+    buildSections: formBuildSections("stem-form", [{
+      text: "For an う-verb, the last kana simply switches to its い-row. An る-verb just drops る.",
+    }]),
   },
 ];
 
@@ -250,11 +282,10 @@ export const PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
       {
         text: 'Often "is X-ed (by someone)": わらう (laugh) becomes わらわれる (be laughed at).',
       },
-      {
-        text: "An う-verb shifts its last kana to the あ-row and adds れる; an る-verb adds られる. する and くる are irregular.",
-      },
     ],
-    buildTables: formRuleTables("passive"),
+    buildSections: formBuildSections("passive", [{
+      text: "An う-verb shifts its last kana to the あ-row and adds れる; an る-verb adds られる. する and くる are irregular.",
+    }]),
   },
 ];
 
@@ -269,11 +300,10 @@ export const POTENTIAL_FORM_PAGES: readonly PhaseIntro[] = [
       {
         text: 'たべる (eat) becomes たべられる (can eat); のむ (drink) becomes のめる (can drink).',
       },
-      {
-        text: "An う-verb shifts its last kana to the え-row and adds る; an る-verb adds られる. する becomes できる, くる becomes こられる.",
-      },
     ],
-    buildTables: formRuleTables("potential"),
+    buildSections: formBuildSections("potential", [{
+      text: "An う-verb shifts its last kana to the え-row and adds る; an る-verb adds られる. する becomes できる, くる becomes こられる.",
+    }]),
   },
 ];
 
@@ -288,11 +318,10 @@ export const CAUSATIVE_FORM_PAGES: readonly PhaseIntro[] = [
       {
         text: 'たべる (eat) becomes たべさせる (make / let someone eat).',
       },
-      {
-        text: "An う-verb shifts its last kana to the あ-row and adds せる; an る-verb adds させる. する and くる are irregular.",
-      },
     ],
-    buildTables: formRuleTables("causative"),
+    buildSections: formBuildSections("causative", [{
+      text: "An う-verb shifts its last kana to the あ-row and adds せる; an る-verb adds させる. する and くる are irregular.",
+    }]),
   },
 ];
 
@@ -307,11 +336,10 @@ export const CAUSATIVE_PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
       {
         text: 'たべる (eat) becomes たべさせられる (be made to eat). It is the causative and the passive stacked.',
       },
-      {
-        text: "Build the causative, then make that passive. An う-verb ends in 〜せられる; an る-verb in 〜させられる.",
-      },
     ],
-    buildTables: formRuleTables("causative-passive"),
+    buildSections: formBuildSections("causative-passive", [{
+      text: "Build the causative, then make that passive. An う-verb ends in 〜せられる; an る-verb in 〜させられる.",
+    }]),
   },
 ];
 
@@ -326,11 +354,16 @@ export const BA_FORM_PAGES: readonly PhaseIntro[] = [
       {
         text: 'たべれば means "if [someone] eats"; やすければ, "if it is cheap".',
       },
-      {
-        text: "An う-verb shifts its last kana to the え-row and adds ば; an る-verb drops る and adds れば.",
-      },
     ],
-    buildTables: formRuleTables("ba"),
+    buildSections: formBuildSections(
+      "ba",
+      [{
+        text: "An う-verb shifts its last kana to the え-row and adds ば; an る-verb drops る and adds れば.",
+      }],
+      [{
+        text: "An い-adjective changes its final い to ければ. いい changes to よければ.",
+      }],
+    ),
   },
 ];
 
@@ -341,12 +374,19 @@ export const TARA_FORM_PAGES: readonly PhaseIntro[] = [
     setId: "",
     eyebrow: "The たら-conditional",
     title: "“If” or “when”.",
-    body: [
-      {
+    body: [{
+      text: 'たべたら means "if / when [someone] eats"; やすかったら means "if it is cheap".',
+    }],
+    buildSections: formBuildSections(
+      "tara",
+      [{
         lead: "Memory hook:",
-        text: 'it is just the た-form plus ら: たべた (ate) becomes たべたら (if / when [someone] eats). If you know the た-form you already know this.',
-      },
-    ],
-    buildTables: formRuleTables("tara"),
+        text: "Put the verb into its た-form and add ら. If you know the た-form, you already know this.",
+      }],
+      [{
+        lead: "Memory hook:",
+        text: "Put the adjective into its た-form and add ら.",
+      }],
+    ),
   },
 ];

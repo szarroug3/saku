@@ -73,7 +73,7 @@ import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role"
 import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
 import { libEntry } from "@/lib/library/entries";
-import { formsOfWord } from "@/lib/word-forms";
+import { adjectiveKind, formsOfWord, ruVerbKind } from "@/lib/word-forms";
 
 /** The kinds that name a role. A step on one of these tracks plays that role
  * even when the glyph tables have never heard of its glyph. */
@@ -272,6 +272,7 @@ export const SECTION_ORDER = [
   "kanji-meaning",
   "kanji-parts",
   "word-sense",
+  "word-class",
   "word-forms",
   "word-built-from",
   "grammar-build",
@@ -290,6 +291,7 @@ const SECTION_ROLE: Partial<Record<LessonSection, RoleName>> = {
   "kanji-meaning": "kanji",
   "kanji-parts": "kanji",
   "word-sense": "word",
+  "word-class": "word",
   "word-forms": "word",
   "word-built-from": "word",
 };
@@ -344,6 +346,7 @@ export function lessonSections(item: LessonItem): LessonSection[] {
 
   if (word) {
     if (roles.includes("kanji") || roles.includes("radical")) out.add("word-sense");
+    if (ruVerbKind(word) !== null || adjectiveKind(word) !== null) out.add("word-class");
     if (formsOfWord(word)?.length) out.add("word-forms");
     // "Built from" only when there are pieces to see. 電車 is 電 でん plus 車
     // しゃ and the box is the answer to which character is making which sound;

@@ -9,11 +9,14 @@ import { describe, test } from "node:test";
 
 import {
   classProductionFactId,
+  FORM_RECIPE_IDS,
   grammarProduction,
   patternEntry,
+  patternProductionFactId,
   specialVerbProductionFactId,
 } from "@/data/grammar";
 import { RECIPES, isProducible } from "@/data/grammar/recipes";
+import { autoPatternPage } from "@/data/grammar/auto-page";
 import { formLibraryPages } from "@/data/grammar/lessons";
 import { factInfo, factsOf } from "@/lib/facts";
 import { buildCoverageDeck } from "@/lib/ask-forms";
@@ -40,6 +43,12 @@ function productionFacts(recipeId: string) {
 }
 
 describe("one production skill per conjugation class", () => {
+  test("the adjective noun form scores the な-adjective change", () => {
+    const fact = patternProductionFactId("prenominal-form", "adj-na");
+    assert.deepEqual(productionFacts("prenominal-form"), [fact]);
+    assert.equal(factInfo(fact)?.glyph, "静かな");
+  });
+
   test("a た pattern mints all ten classes plus its three irregular verbs", () => {
     const id = "ta-koto-ga-aru";
     const expected = new Set([
@@ -102,8 +111,104 @@ describe("irregular facts exist only where the engine finds an exception", () =>
 
 describe("form tables mirror the separately scored production groups", () => {
   function tables(recipeId: string) {
-    return formLibraryPages(recipeId).flatMap((page) => page.buildTables ?? []);
+    return formLibraryPages(recipeId).flatMap((page) => [
+      ...(page.buildTables ?? []),
+      ...(page.buildSections ?? []).flatMap((section) => section.tables ?? []),
+    ]);
   }
+
+  test("every form table lives under a heading and its instruction", () => {
+    for (const recipeId of FORM_RECIPE_IDS) {
+      const pages = formLibraryPages(recipeId);
+      assert.ok(pages.length > 0, `${recipeId} has Library teaching`);
+      for (const page of pages) {
+        assert.equal(page.buildRules, undefined, `${page.id} has an unsectioned table`);
+        assert.equal(page.buildTables, undefined, `${page.id} has unsectioned table groups`);
+        for (const section of page.buildSections ?? []) {
+          assert.ok(section.title, `${page.id} section has a heading`);
+          assert.ok(section.body.length > 0, `${page.id}/${section.title} has an instruction`);
+          assert.ok(
+            section.rules?.length || section.tables?.length,
+            `${page.id}/${section.title} has a table`,
+          );
+        }
+      }
+    }
+  });
+
+  test("every generated pattern table lives under a heading and its instruction", () => {
+    for (const recipe of RECIPES) {
+      const page = autoPatternPage(recipe);
+      assert.equal(page.buildRules, undefined, `${recipe.id} has an unsectioned build table`);
+      assert.equal(page.buildTables, undefined, `${recipe.id} has unsectioned build groups`);
+      assert.equal(page.deriveRules, undefined, `${recipe.id} has an unsectioned pattern table`);
+      for (const section of page.deriveTables ?? []) {
+        assert.ok(section.title, `${recipe.id} section has a heading`);
+        assert.ok(section.instruction, `${recipe.id}/${section.title} has an instruction`);
+        assert.ok(section.rules.length > 0, `${recipe.id}/${section.title} has a table`);
+      }
+    }
+  });
+
+  test("a pattern that replaces a form ending shows the removal in its section", () => {
+    const mashou = RECIPES.find((candidate) => candidate.id === "mashou")!;
+    const section = autoPatternPage(mashou).deriveTables?.[0];
+    assert.deepEqual(section?.formula, {
+      base: "ます-form",
+      trim: "ます",
+      add: "ましょう",
+    });
+    assert.match(section?.instruction ?? "", /remove ます, then add ましょう/);
+  });
+
+  test("the adjective noun-form Library page has its own meaning and build page", () => {
+    assert.deepEqual(
+      formLibraryPages("prenominal-form").map((page) => page.id),
+      ["gl-prenominal-form"],
+    );
+    const page = formLibraryPages("prenominal-form")[0];
+    assert.match(page.title, /Describe a noun/);
+    assert.deepEqual(page.buildSections?.map((section) => section.title), ["Adjectives"]);
+    assert.equal(page.buildSections?.[0].body[0].heading, "Before a noun");
+    assert.equal(page.buildSections?.[0].rules?.length, 2);
+  });
+
+  test("mixed verb and adjective pattern pages separate every word class", () => {
+    const node = RECIPES.find((candidate) => candidate.id === "node")!;
+    const page = autoPatternPage(node);
+
+    assert.deepEqual(page.deriveTables?.map((table) => table.title), [
+      "Verbs",
+      "い-adjectives",
+      "な-adjectives",
+    ]);
+    assert.equal(page.deriveRules, undefined);
+    assert.equal(page.deriveTables?.[0].heads?.verb, "Verb");
+    assert.equal(page.deriveTables?.[1].heads?.verb, "Adjective");
+    assert.equal(page.deriveTables?.[2].heads?.form, "〜な form");
+    assert.deepEqual(page.deriveTables?.map((table) => table.rules.length), [1, 1, 1]);
+    assert.deepEqual(page.deriveTables?.[0].formula, { base: "verb", add: "ので" });
+    assert.deepEqual(page.deriveTables?.[2].formula, {
+      base: "な-adjective",
+      add: "な + ので",
+    });
+    assert.match(page.deriveTables?.[0].instruction ?? "", /verb.*add ので/);
+    assert.match(page.deriveTables?.[2].instruction ?? "", /before a noun.*add ので/);
+    assert.match(page.deriveTables?.[0].rules[0].result ?? "", /ので$/);
+    assert.match(page.deriveTables?.[1].rules[0].result ?? "", /ので$/);
+    assert.match(page.deriveTables?.[2].rules[0].result ?? "", /なので$/);
+  });
+
+  test("mixed-host pages keep their sections even when the verb changes form", () => {
+    const ba = RECIPES.find((candidate) => candidate.id === "ba")!;
+    const page = autoPatternPage(ba);
+
+    assert.deepEqual(page.deriveTables?.map((table) => table.title), [
+      "Verbs",
+      "い-adjectives",
+    ]);
+    assert.equal(page.buildRules, undefined);
+  });
 
   test("て separates regular and irregular adjective tables", () => {
     const byTitle = new Map(tables("te-sequence").map((table) => [table.title, table.rules]));
@@ -111,7 +216,12 @@ describe("form tables mirror the separately scored production groups", () => {
     assert.equal(byTitle.get("Ichidan (る-verbs)")?.length, 1);
     assert.equal(byTitle.get("Irregular verbs")?.length, 3);
     assert.equal(byTitle.get("Adjectives")?.length, 2);
-    assert.deepEqual(byTitle.get("Adjectives")?.map((row) => row.label), ["い", "な"]);
+    assert.deepEqual(byTitle.get("Adjectives")?.map((row) => row.label), [
+      "い-adjective",
+      "な-adjective",
+    ]);
+    const adjectiveTable = tables("te-sequence").find((table) => table.title === "Adjectives");
+    assert.equal(adjectiveTable?.heads?.label, "Type");
     assert.equal(byTitle.get("Irregular adjectives")?.length, 1);
     assert.equal(byTitle.get("Irregular adjectives")?.[0]?.label, "exception");
     assert.ok(
@@ -131,17 +241,24 @@ describe("form tables mirror the separately scored production groups", () => {
       [...pages[0].body, ...(pages[0].bodyAfterBuild ?? [])].flatMap(
         (paragraph) => paragraph.heading ?? [],
       ),
-      ["As a verb", "As an adjective"],
+      [],
     );
-    assert.deepEqual(pages[1].buildTables?.map((table) => table.title), [
+    assert.match(pages[0].body[0].text, /a verb in the て\/で-form/);
+    assert.match(pages[0].body[1].text, /both verbs and adjectives/);
+    assert.match(pages[0].body[2].text, /final predicate/);
+    assert.deepEqual(pages[1].buildSections?.[0].tables?.map((table) => table.title), [
       "Godan (う-verbs)",
       "Ichidan (る-verbs)",
       "Irregular verbs",
     ]);
-    assert.deepEqual(pages[2].buildTables?.map((table) => table.title), [
+    assert.deepEqual(pages[2].buildSections?.[0].tables?.map((table) => table.title), [
       "Adjectives",
       "Irregular adjectives",
     ]);
+    assert.equal(pages[1].title, "Verbs");
+    assert.equal(pages[1].sectionTitle, true);
+    assert.equal(pages[2].title, "Adjectives");
+    assert.equal(pages[2].sectionTitle, true);
   });
 
   test("た includes adjective rows and ない includes the scored ある exception", () => {

@@ -76,8 +76,8 @@ describe("sentence-ordering follows the grammar teaching order", () => {
     assert.deepEqual(
       ordered.map(({ id }) => id),
       [
-        "request",
         "sequential",
+        "request",
         "desire",
         "conditional",
         "causal",

@@ -34,15 +34,19 @@ import type { ReactNode } from "react";
 export function LessonPanel({
   title,
   className = "",
+  transparent = false,
   children,
 }: {
-  title: string;
+  title: ReactNode;
   className?: string;
+  transparent?: boolean;
   children: ReactNode;
 }) {
   return (
     <section
-      className={`flex flex-col rounded-lg border border-border bg-panel px-3.5 py-3 ${className}`}
+      className={`flex flex-col rounded-lg border border-border ${
+        transparent ? "bg-transparent" : "bg-panel"
+      } px-3.5 py-3 ${className}`}
     >
       <p className="text-[13px] font-medium">{title}</p>
       <div className="mt-2 flex flex-1 flex-col">{children}</div>

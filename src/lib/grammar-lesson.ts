@@ -18,7 +18,7 @@
 //
 // WHAT THE TRACK TEACHES
 // ======================
-// ALL 96 patterns. A DRILLABLE pattern — one `isProducible` says can carry a
+// ALL authored patterns. A DRILLABLE pattern — one `isProducible` says can carry a
 // production question with ONE answer — is taught by meaning AND production. A
 // non-producible pattern (a wrap like 〜しか〜ない, or a vacuous one like 〜は〜より
 // whose "production" is just retyping) carries only a MEANING fact, so it is
@@ -46,14 +46,10 @@
 // migrate, because there is no cursor.
 
 import { effectiveState } from "@/lib/claims";
-import { primaryHost } from "@/lib/grammar/example";
 import type { LessonPosition } from "@/lib/lesson-position";
-import { wordClassOf } from "@/lib/word-forms";
-import { CURRICULUM_WORDS } from "@/lib/word-lesson";
 import { GRAMMAR_SUBJECT, patternMeaningFactId } from "@/data/grammar";
-import { RECIPES, type Host, type Level, type Recipe } from "@/data/grammar/recipes";
+import { RECIPES, type Level, type Recipe } from "@/data/grammar/recipes";
 import { CURRICULUM_LESSONS, type GrammarLessonDef } from "@/data/grammar/lessons";
-import { wordMeaningFactId, type VocabRow } from "@/data/vocab";
 import type { FactId, HistoryFile } from "@/types";
 
 /**
@@ -87,13 +83,14 @@ function levelRank(level: Level): number {
   return level === "N5" ? 0 : level === "N4" ? 1 : 2;
 }
 
-/** te-sequence -- the bare te-form -- leads the whole track: it is the
- * conjugation every other te-pattern (te-request, te-kara, te-iru...) is built
- * on, and it is the one lesson that carries an introduction (Recipe.intro), so a
- * beginner meets it as grammar lesson 1 (Sam's call). Everything else keeps its
- * level/authored order behind it. */
-function teFormFirst(r: Recipe): number {
-  return r.id === "te-sequence" ? 0 : 1;
+/** The adjective noun form introduces forms and adjective classes before the
+ * て/で-form needs either idea. These two foundational forms lead the track in
+ * that order; everything else keeps its level/authored order behind them. */
+function foundationRank(r: Recipe): number {
+  if (r.id === "prenominal-form") return 0;
+  if (r.id === "te-sequence") return 1;
+  if (r.id === "te-iru") return 2;
+  return 3;
 }
 
 /**
@@ -110,7 +107,7 @@ function teFormFirst(r: Recipe): number {
  */
 export const CURRICULUM_PATTERNS: readonly Recipe[] = [...RECIPES].sort(
   (a, b) =>
-    teFormFirst(a) - teFormFirst(b) || levelRank(a.level) - levelRank(b.level),
+    foundationRank(a) - foundationRank(b) || levelRank(a.level) - levelRank(b.level),
 );
 
 /**
@@ -155,25 +152,31 @@ function isFresh(fact: FactId, history: HistoryFile): boolean {
   return state.lastTested === 0;
 }
 
-/** The て/で-form — grammar lesson 1, the recipe every other te-pattern builds
- * on (see teFormFirst). Named once here so the words track, which holds a
- * る-ending verb back until this is learned, reads the id from grammar rather
+/** The て/で-form — grammar lesson 2, the recipe every other te-pattern builds
+ * on (see teFormFirst). Named once here so the words track, which holds words
+ * with an unintroduced conjugation class back until this is learned, reads the id from grammar rather
  * than spelling it out itself. */
 export const TE_FORM_RECIPE = "te-sequence";
+export const ADJECTIVE_PRENOMINAL_RECIPE = "prenominal-form";
 
 /**
  * Has the learner learned the て-form yet?
  *
  * True once its meaning fact is no longer fresh — tested, claimed, or "quiz
  * me"'d — the exact "learned, not merely on screen" signal every gate in the
- * app reads. The WORDS track reads this (see nextCurriculumLock): a る-ending
- * verb's class cannot be told from its spelling, so the spine holds the first
- * one back (知る) until the て-form lesson is done and the word lesson can then
- * name the class. This is the mirror of the grammar track's own host gate —
- * there a pattern waits on a word, here a word waits on a pattern.
+ * app reads. The WORDS track reads this for conjugating words whose class needs
+ * the lesson's introduction: ambiguous る-ending verbs. The Words track holds
+ * them back until grammar lesson 2 is done and their word lessons can name the
+ * class. Grammar itself never waits on vocabulary.
  */
 export function teFormLearned(history: HistoryFile): boolean {
   return !isFresh(patternMeaningFactId(TE_FORM_RECIPE), history);
+}
+
+/** Has the learner completed the first grammar lesson, which introduces the
+ * adjective classes and the な form used before a noun? */
+export function adjectivePrenominalLearned(history: HistoryFile): boolean {
+  return !isFresh(patternMeaningFactId(ADJECTIVE_PRENOMINAL_RECIPE), history);
 }
 
 /** One pattern, ready to render on a lesson card. */
@@ -202,7 +205,7 @@ export interface GrammarLesson {
    * A sitting is what the learner meets at once: one form lesson, or a bundle of
    * up to three pattern lessons (see GRAMMAR_SITTINGS). It is the honest unit for
    * "lesson N of X" now that a card can hold more than one pattern: counting the
-   * 96 patterns would put a span like "3–7 of 96" on a card that is really one
+   * a pattern span would put several numbers on a card that is really one
    * sitting. `from === to` always: the item IS the current sitting, so the span
    * is a single number and `total` is the sitting count. The pattern total (96)
    * is still exported as GRAMMAR_CURRICULUM_TOTAL for callers that count patterns
@@ -213,53 +216,6 @@ export interface GrammarLesson {
 
 function toCard(r: Recipe): GrammarCard {
   return { id: r.id, pattern: r.pattern, sense: r.sense, gloss: r.gloss, level: r.level };
-}
-
-/**
- * The word type a vocab row is, in the grammar track's terms — the same four
- * hosts a recipe attaches to (see the `Host` doc in recipes.ts). Derived from
- * the conjugation class the row's JMdict tags resolve to: an adjective class is
- * an adjective host, any verb class is a verb, and everything else (nouns,
- * する-nouns, adverbs, particles) is a noun as far as a pattern is concerned.
- *
- * This is deliberately COARSER than the engine's WordClass — a pattern cares
- * whether it may attach at all (verb vs adjective vs noun), not which
- * conjugation table drives the attachment.
- */
-export function wordHost(w: VocabRow): Host {
-  const cls = wordClassOf(w);
-  if (cls === "adj-i" || cls === "adj-ix") return "adj-i";
-  if (cls === "adj-na") return "adj-na";
-  if (cls) return "verb";
-  return "noun";
-}
-
-/** The host a pattern must be taught on — the one its example is built on, so
- * the one the learner needs a real word of before the lesson means anything.
- * See `primaryHost`. */
-function requiredHost(r: Recipe): Host | null {
-  return primaryHost(r);
-}
-
-/**
- * The word types the learner has actually COMPLETED — a word of that host whose
- * lesson was finished or explicitly claimed. Both actions write a claim for the
- * word's meaning. A `seen` marker does not count: Start writes that immediately
- * so the open lesson can resume, before the learner has learned anything.
- * 〜てから therefore needs a completed VERB behind it, and 〜ので a completed
- * な-adjective, before the pattern has anything to stand on.
- *
- * Scans the words curriculum (the only words the app teaches) and stops early
- * once all four hosts are accounted for.
- */
-export function learnedHosts(history: HistoryFile): Set<Host> {
-  const hosts = new Set<Host>();
-  for (const w of CURRICULUM_WORDS) {
-    if (!history.claims?.[wordMeaningFactId(w.keb)]) continue;
-    hosts.add(wordHost(w));
-    if (hosts.size >= 4) break;
-  }
-  return hosts;
 }
 
 /** Has the learner met any grammar pattern at all? The words track's
@@ -288,13 +244,6 @@ function nextLessonAt(
     }
   }
   return null;
-}
-
-/** The host the lesson's primary pattern must be taught on, or null when it
- * needs none. */
-function lessonHost(lesson: GrammarLessonDef): Host | null {
-  const recipe = RECIPE_BY_ID.get(lesson.primaryPattern);
-  return recipe ? requiredHost(recipe) : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -358,7 +307,7 @@ const FORM_LESSON_IDS: ReadonlySet<string> = (() => {
 
 /** Is this lesson taught by itself? */
 function isFormLesson(lesson: GrammarLessonDef): boolean {
-  return FORM_LESSON_IDS.has(lesson.id);
+  return lesson.id === "prenominal-form" || FORM_LESSON_IDS.has(lesson.id);
 }
 
 /** How many pattern lessons ride in one bundle. A form lesson is always solo; a
@@ -395,7 +344,7 @@ export const GRAMMAR_SITTINGS: readonly (readonly number[])[] = (() => {
 })();
 
 /** How many sittings the track cuts into — the denominator on the lesson card
- * ("lesson N of X"). Counts SITTINGS, not the 96 patterns: a form lesson is one
+ * ("lesson N of X"). Counts SITTINGS, not patterns: a form lesson is one
  * sitting and a pattern bundle is one sitting, so this is smaller than the
  * pattern total. */
 export const GRAMMAR_SITTINGS_TOTAL = GRAMMAR_SITTINGS.length;
@@ -420,19 +369,9 @@ const SITTING_OF_LESSON: readonly number[] = (() => {
  * lessons of its bundle (up to three) otherwise. `cards` are the sitting's
  * patterns and `facts` the union of their drills.
  *
- * THE HOST GATE. A pattern needs a real word of the type it attaches to (see
- * `requiredHost`). The gate is applied PER LESSON as the sitting is built:
- *   - If the first (teachable) lesson of the sitting is host-locked, the whole
- *     lesson is LOCKED and this returns null — the caller shows the locked card
- *     (nextGrammarLock) instead, exactly as before.
- *   - If a LATER lesson in a pattern bundle needs a host not yet met, the bundle
- *     simply stops before it. A not-yet-reached pattern must not lock the ones
- *     ahead of it in the same sitting; the learner still gets the teachable head
- *     of the bundle, and the blocked pattern becomes the head of a future
- *     sitting where its own lock (if still unmet) applies.
- *
- * Null also means the curriculum is finished (no fresh patterns left). Either
- * way there is no teachable lesson, and the card falls back to lock or nothing.
+ * There is deliberately no vocabulary host gate. Every teaching page carries
+ * its own examples, so Grammar proceeds after kana regardless of progress in
+ * Words. Null means only that the grammar curriculum is finished.
  *
  * PURE OF KANA. Like the other tracks, this does not know whether kana is done;
  * that gate is the caller's (see src/app/page.tsx).
@@ -450,20 +389,13 @@ export function nextGrammarLesson(
 
   const sittingNo = SITTING_OF_LESSON[startIndex];
   const members = GRAMMAR_SITTINGS[sittingNo];
-  const learned = learnedHosts(history);
-
   // Build the sitting from its still-fresh lessons at or after the teachable
-  // head, applying the host gate per lesson.
+  // head. Vocabulary progress never filters or truncates it.
   const chosen: GrammarLessonDef[] = [];
   for (const idx of members) {
     if (idx < startIndex) continue; // earlier members are already met, behind us
     const lesson = CURRICULUM_LESSONS[idx];
     if (!isFresh(patternMeaningFactId(lesson.primaryPattern), history)) continue;
-    const host = lessonHost(lesson);
-    if (host !== null && !learned.has(host)) {
-      if (chosen.length === 0) return null; // head is host-locked: lock the card
-      break; // a later bundle member is blocked: stop before it, keep the head
-    }
     chosen.push(lesson);
   }
   if (chosen.length === 0) return null;
@@ -485,31 +417,6 @@ export function nextGrammarLesson(
       total: GRAMMAR_SITTINGS_TOTAL,
     },
   };
-}
-
-/** The locked grammar card's data: which word types the next set still needs. */
-export interface GrammarLock {
-  /** The hosts the next set requires that the learner has not met yet, in
-   * HOST_ORDER, deduped. Empty is impossible — a lock with nothing missing is
-   * not a lock, and nextGrammarLock returns null for that. */
-  hosts: Host[];
-}
-
-/**
- * The lock on the next grammar set, or null when it is teachable (or there is
- * nothing next). The mirror of nextWordLock: same next set, and it reports what
- * is standing in the way rather than what to teach.
- */
-export function nextGrammarLock(
-  history: HistoryFile,
-  _count?: number,
-): GrammarLock | null {
-  const next = nextLessonAt(history);
-  if (!next) return null;
-
-  const host = lessonHost(next.lesson);
-  if (host === null || learnedHosts(history).has(host)) return null;
-  return { hosts: [host] };
 }
 
 /** The subject these lessons belong to. Re-exported so a caller holding a

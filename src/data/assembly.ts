@@ -312,7 +312,7 @@ export interface AssemblyTier {
  * ordered from structurally simplest to most complex, so the learner always
  * encounters simple particle-marked SOV sentences first. Every tier after that
  * follows the first point at which one of its prerequisite patterns appears in
- * CURRICULUM_PATTERNS (src/lib/grammar-lesson.ts): requests, sequence,
+ * CURRICULUM_PATTERNS (src/lib/grammar-lesson.ts): sequence, requests,
  * contrast/negative linking, desire, conditionals, cause, giving/receiving,
  * obligation, then reported stance.
  */
@@ -326,18 +326,18 @@ export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
     grammarPrereqs: [],
   },
   {
-    id: "request",
-    label: "Requests and proposals",
-    patterns: ["te-request", "nai-request", "mashou"],
-    minReadable: 3,
-    grammarPrereqs: ["te-request", "nai-request", "mashou"],
-  },
-  {
     id: "sequential",
     label: "Te-form links and helpers",
     patterns: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
     minReadable: 3,
     grammarPrereqs: ["te-kara", "te-iru", "te-shimau", "te-oku", "te-miru"],
+  },
+  {
+    id: "request",
+    label: "Requests and proposals",
+    patterns: ["te-request", "nai-request", "mashou"],
+    minReadable: 3,
+    grammarPrereqs: ["te-request", "nai-request", "mashou"],
   },
   {
     id: "desire",

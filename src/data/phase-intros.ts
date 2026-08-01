@@ -113,11 +113,16 @@ export interface IntroPara {
 export interface IntroExample {
   /** The left of the formula — "生 + きる", "時 + 時", or a plain word "生きる". */
   from: string;
+  /** A piece of `from` to highlight when the equation is teaching that exact
+   * addition, such as the な inserted before a noun. */
+  accentFrom?: string;
   /** The operator between the two sides. "=" for a word built from parts (the
    *  default), "→" for one form becoming another. */
   op?: "=" | "→";
   /** The right of the formula — the finished word or form: "生きる", "生きた". */
   to: string;
+  /** A piece of `to` to highlight in the completed result. */
+  accentTo?: string;
   /** The reading of `to`, shown in parentheses. Omitted where it adds nothing
    *  (a form change that keeps the same kanji reading). */
   reading?: string;
@@ -160,6 +165,13 @@ export interface IntroBuildRule {
    * (する → して). When set, the row renders as `verb → to` and `drop`/`add` are
    * ignored — the honest shape for a form you memorise rather than build. */
   to?: string;
+  /** Highlight only this part of a whole-result row. `false` keeps the whole
+   * equation neutral. When omitted, the whole result keeps the usual accent
+   * used for irregular forms. */
+  accent?: string | false;
+  /** Whether this row gets pronunciation buttons. Phrase-building comparisons
+   * containing English glosses set this false; ordinary conjugation rows omit it. */
+  audio?: boolean;
   /** An English meaning for the built form, shown in a right-hand "Meaning"
    * column — used where the table doubles as a meaning demonstration (たべている ·
    * is eating), not just a build rule. The column appears only when some row
@@ -231,6 +243,12 @@ export interface PhaseIntro {
   eyebrow?: string;
   /** One line, the whole point of the card. */
   title: string;
+  /** This page is one word-type section of a larger form explanation. Its title
+   * is the accented section label, with no separate eyebrow above it. */
+  sectionTitle?: boolean;
+  /** The Library entry header already states this page's title and meaning, so
+   * its intro card can be omitted there while the lesson keeps the full intro. */
+  hideLibraryIntro?: boolean;
   body: IntroPara[];
   /** Prose shown after this card's worked build table/footer. Used when the
    * worked example belongs to the first of two named sections, so the second
@@ -243,6 +261,13 @@ export interface PhaseIntro {
    * glyphless writing rules — 々, rendaku, okurigana — use this.
    */
   examples?: readonly IntroExample[];
+  /** Put worked examples under the prose instead of beside it. Used when the
+   * example is the immediate next line of one paragraph, not a separate evidence
+   * column for the whole page. */
+  examplesPlacement?: "beside" | "below";
+  /** Zero-based body-paragraph index after which the example box is inserted.
+   * More precise than `below` when later notes must continue after the example. */
+  examplesAfterBodyIndex?: number;
   /**
    * A build table: the rule as a list of equations (`かう − う + って → かって`),
    * the dropped kana greyed and the added one accented. Used by the grammar
@@ -268,6 +293,25 @@ export interface PhaseIntro {
     readonly rules: readonly IntroBuildRule[];
     readonly heads?: { label?: string; change?: string; note?: string; gloss?: string };
   }[];
+  /** Build material grouped by the kind of word it applies to. Every grammar
+   * table is presented through one of these sections: accented heading,
+   * instruction (and optional formula), then the table or table groups. */
+  buildSections?: readonly {
+    readonly title: string;
+    /** Omit the visible heading when the whole lesson already names this one
+     * word type, while retaining the section's semantic name in the data. */
+    readonly hideTitle?: boolean;
+    readonly body: readonly IntroPara[];
+    readonly formula?: { base: string; add?: string; trim?: string };
+    readonly rules?: readonly IntroBuildRule[];
+    readonly heads?: { label?: string; change?: string; note?: string; gloss?: string };
+    readonly tables?: readonly {
+      readonly title: string;
+      readonly rules: readonly IntroBuildRule[];
+      readonly heads?: { label?: string; change?: string; note?: string; gloss?: string };
+    }[];
+    readonly footer?: { chain: string; gloss: string };
+  }[];
   /**
    * A build FORMULA for a pattern's "how to build it": the form it hangs off shown
    * in a dashed outline, then + the suffix — [ない-form] + でください. `base` is the
@@ -288,6 +332,16 @@ export interface PhaseIntro {
   /** Column headings for a derivation table. `form` names the middle column
    * (て-form, stem, …); `verb`/`pattern` default to "Verb"/"Pattern". */
   deriveHeads?: { verb?: string; form?: string; pattern?: string };
+  /** Several host-specific derivation tables on one page. A pattern that works
+   * with both verbs and adjectives keeps those rules in separate titled
+   * sections instead of presenting one host as if it were the whole pattern. */
+  deriveTables?: readonly {
+    readonly title: string;
+    readonly instruction?: string;
+    readonly formula?: { base: string; add?: string; trim?: string };
+    readonly rules: readonly IntroDeriveRow[];
+    readonly heads?: { verb?: string; form?: string; pattern?: string };
+  }[];
   /**
    * A closing line under a build table that puts the rows together — the chain
    * the steps build toward (たべて、のんで、はなしている) with its meaning. Used by

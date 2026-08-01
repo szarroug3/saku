@@ -95,13 +95,14 @@ export function quizInstruction(
   const prod = grammarProduction(fact);
   if (prod) {
     const form = `${patternLabel(prod.recipe)} form`;
-    // NAME THE CLASS OF AN UNKNOWN る-VERB. 食べる and 帰る are both drawn in kana
-    // (たべる, かえる) because she has not met them, and 〜る alone does not say
-    // whether the conjugation is ichidan or godan — so the vehicle pool would not
-    // deal one at all unless the card names it. Here it does: "this る-verb" /
-    // "this う-verb" is the one fact spelling withholds, and with it the answer is
-    // fully determined. A KNOWN verb keeps the plain "word" (its class rides in
-    // the hint instead), and every non-る vehicle is unambiguous already.
+    // NAME THE CLASS OF AN UNKNOWN CLASS WORD. 食べる and 帰る are both drawn in
+    // kana (たべる, かえる) because she has not met them, and 〜る alone does not
+    // say whether the conjugation is ichidan or godan. Adjectives have the same
+    // problem: きらい ends in い but is a な-adjective, while 静か has no visible
+    // class ending at all. The instruction supplies the fact spelling withholds:
+    // "this る-verb", "this う-verb", "this い-adjective", or
+    // "this な-adjective". A KNOWN word keeps the plain "word" because its class
+    // rides in the hint instead. Unambiguous non-る verbs stay plain too.
     const kind =
       vehicle && !vehicle.known
         ? ruVerbKindOf(vehicle.surface, vehicle.cls) ?? adjectiveKindOf(vehicle.cls)

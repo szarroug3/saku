@@ -44,9 +44,7 @@ export type ConfigSeed = Record<string, unknown>;
 export type SeedOptions = {
   /** Fact ids to mark as "quiz me", making them the drillable pool. */
   seen?: string[];
-  /** Fact ids to mark CLAIMED ("I already know this"). A claim is what the
-   * grammar host gate reads (learnedHosts), so a track that opens on a LEARNED
-   * word — grammar needs a learned verb — is seeded with claims, not seen. */
+  /** Fact ids to mark CLAIMED ("I already know this"). */
   claims?: string[];
   /** Partial QuizConfig merged over the app defaults. */
   cfg?: ConfigSeed;

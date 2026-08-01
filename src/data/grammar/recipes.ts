@@ -363,7 +363,7 @@ export interface GrammarIntro {
 }
 
 /** One conjugation rule, shown as "verb - drop + add -> result". The example
- * verbs are KANA-ONLY so a beginner at grammar lesson 1 (little kanji yet) can
+ * verbs are KANA-ONLY so a beginner near the start of grammar (little kanji yet) can
  * read them; the rendered result accents the `add` piece. */
 export interface TeFormRule {
   /** The ending(s) this rule covers, for the line's label. */
@@ -376,8 +376,7 @@ export interface TeFormRule {
   readonly add: string;
 }
 
-/** The te-form's lesson intro (Recipe.intro). It leads the whole track, so it is
- * the one place a form is explained rather than just drilled. */
+/** The te-form's recipe intro. The richer authored lesson pages expand it. */
 const TE_FORM_INTRO: GrammarIntro = {
   blurb:
     "The て-form is how one verb links to what comes after it. It is the base " +
@@ -427,6 +426,19 @@ const TE_FORM_INTRO: GrammarIntro = {
 };
 
 export const RECIPES: readonly Recipe[] = [
+  // --- adjective form before a noun ---------------------------------------
+  {
+    id: "prenominal-form",
+    pattern: "〜な",
+    gloss: "describe a noun",
+    level: "N5",
+    attach: [{ host: "adj-na", form: "prenominal", add: "" }],
+    note:
+      "The foundational adjective form. A な-adjective adds な before a noun " +
+      "(静か → 静かな); an い-adjective already has its noun-describing shape and " +
+      "does not change, so only the な-adjective transformation is scored.",
+  },
+
   // --- て-form -------------------------------------------------------------
   {
     id: "te-request",

@@ -3,7 +3,6 @@ import { test, expect, type Page } from "./app";
 import { curriculum, type CurriculumLessonGroup } from "@/lib/curriculum-lesson";
 import { KANA_GROUPS } from "@/lib/lesson";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
-import { wordMeaningFactId } from "@/data/vocab";
 import type { FactId } from "@/types";
 
 /**
@@ -60,13 +59,6 @@ export function seenToReachKana(kanaGlyph: string): FactId[] {
   );
   if (idx < 0) throw new Error(`no kana group teaches "${kanaGlyph}"`);
   return KANA_GROUPS.slice(0, idx).flatMap((g) => g.facts);
-}
-
-/** Kana complete AND one verb (言う) met — the state that opens the head of the
- * grammar track, whose first patterns all attach to a verb. Mirrors the
- * grammar-lesson unit test's `kanaAndVerb`. */
-export function seenKanaAndVerb(): FactId[] {
-  return [...KANA_FACTS, wordMeaningFactId("言う")];
 }
 
 /**

@@ -8,10 +8,14 @@ import {
   grammarConceptFor,
   grammarConceptRow,
 } from "@/data/grammar-concepts";
-import { VERB_TYPES_CONCEPT_PAGES } from "@/data/grammar/lessons";
+import {
+  ADJECTIVE_TYPES_CONCEPT_PAGES,
+  VERB_TYPES_CONCEPT_PAGES,
+} from "@/data/grammar/lessons";
 import { RECIPES } from "@/data/grammar/recipes";
 import {
   conjugatesVerb,
+  formEntryFor,
   hostsAdjective,
   verbAttachForm,
   patternEntry,
@@ -134,6 +138,27 @@ describe("a concept points at the lesson's own prose, so the two cannot drift", 
     }
   });
 
+  test("the adjective-types concept starts with the lesson's class-identification page", () => {
+    const adjectives = GRAMMAR_CONCEPTS.find((c) => c.id === "adjective-types");
+    assert.ok(adjectives, "no adjective-types concept");
+    assert.equal(adjectives.cards[0], ADJECTIVE_TYPES_CONCEPT_PAGES[0]);
+    assert.equal(adjectives.cards[0].id, "gl-adjective-types");
+    assert.deepEqual(adjectives.cards, ADJECTIVE_TYPES_CONCEPT_PAGES);
+    assert.match(adjectives.cards[0].body.map((paragraph) => paragraph.text).join(" "), /きれい/);
+    assert.match(
+      adjectives.cards[0].body.map((paragraph) => paragraph.text).join(" "),
+      /When a word is written with kanji followed by a separate い.*usually an い-adjective.*嫌い.*な-adjective/,
+    );
+    assert.equal(adjectives.cards[0].body.at(-1)?.lead, "A useful clue:");
+    assert.equal(adjectives.cards[0].examples, undefined);
+    assert.equal(adjectives.cards[0].buildTables, undefined);
+    assert.doesNotMatch(
+      adjectives.cards[0].body.map((paragraph) => paragraph.text).join(" "),
+      /the app tags it for you/,
+    );
+    assert.match(adjectives.cards[0].body.map((paragraph) => paragraph.text).join(" "), /before a noun/);
+  });
+
   test("every concept has real, titled, non-empty teaching pages", () => {
     for (const c of GRAMMAR_CONCEPTS) {
       assert.ok(c.cards.length >= 1, `${c.id} teaches no pages`);
@@ -168,6 +193,12 @@ describe("the 〜て family is identified from its verb attachment", () => {
     const taForm = RECIPES.find((r) => r.id === "ta-form" || r.id === "ta-past");
     if (taForm) assert.notEqual(verbAttachForm(taForm), "te");
   });
+});
+
+test("a な-adjective pattern links back to the noun-describing form", () => {
+  const node = RECIPES.find((r) => r.id === "node");
+  assert.ok(node);
+  assert.equal(formEntryFor(node), "prenominal-form");
 });
 
 describe("the three new concepts resolve and carry a readable slug", () => {

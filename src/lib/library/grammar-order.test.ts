@@ -54,9 +54,12 @@ describe("grammarRank ranks every pattern in teaching order", () => {
     assert.ok(grammarRank("no-such-pattern") > grammarRank(RECIPES[RECIPES.length - 1].id));
   });
 
-  test("te-sequence leads the whole order", () => {
-    assert.equal(GRAMMAR_TEACHING_ORDER[0].id, "te-sequence");
-    assert.equal(grammarRank("te-sequence"), 0);
+  test("the adjective noun form leads the whole order, before the te-form", () => {
+    assert.deepEqual(
+      GRAMMAR_TEACHING_ORDER.slice(0, 2).map((r) => r.id),
+      ["prenominal-form", "te-sequence"],
+    );
+    assert.equal(grammarRank("prenominal-form"), 0);
   });
 
   test("the order is level-monotone: N5 then N4 then N3, never back", () => {
@@ -91,8 +94,8 @@ describe("grammarRank is level-monotone and keeps the lesson order per level", (
     assert.equal(n5.length + n4.length + n3.length, RECIPES.length, "all patterns appear");
   });
 
-  test("te-sequence leads the N5 patterns", () => {
-    assert.equal(shelfLevel("N5")[0], "te-sequence");
+  test("the adjective noun form leads the N5 patterns", () => {
+    assert.equal(shelfLevel("N5")[0], "prenominal-form");
   });
 
   test("within each level the rank keeps the lesson order", () => {
