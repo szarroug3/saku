@@ -368,7 +368,8 @@ export function IntroBuildTable({
   // the same heading row so the related te-form pages read as one format.
   const { cfg } = useQuizConfig();
   const rows = rules.map((r) => {
-    const stem = r.drop ? r.verb.slice(0, r.verb.length - r.drop.length) : r.verb;
+    const verb = r.verb ?? "";
+    const stem = r.drop ? verb.slice(0, verb.length - r.drop.length) : verb;
     const result = r.to ?? stem + (r.add ?? "");
     return { r, stem, result, note: r.note ?? smallKanaNote(result) };
   });
@@ -396,7 +397,10 @@ export function IntroBuildTable({
         </thead>
         <tbody>
           {rows.map(({ r, stem, result, note }) => (
-            <tr key={r.verb} className="border-b border-border/60 last:border-0">
+            <tr
+              key={r.verb ?? r.base ?? r.to}
+              className="border-b border-border/60 last:border-0"
+            >
               {hasLabels ? (
                 <td className="whitespace-nowrap px-4 py-3 align-baseline font-kana text-[14px] text-text">
                   {r.label ?? ""}
@@ -405,12 +409,33 @@ export function IntroBuildTable({
               <td
                 className={`${hasRight ? "" : "w-full "}whitespace-nowrap px-4 py-3 align-baseline font-kana text-[17px] text-text`}
               >
-                {r.to ? (
+                {r.base ? (
+                  // A PATTERN row: the form the suffix hangs off (the て-form) in a
+                  // dashed outline, then + the suffix → the finished pattern —
+                  // "[かって] + いる → かっている". Teaches a pattern as the form you
+                  // already know plus a tail, not a whole new conjugation.
+                  <>
+                    <span className="rounded border border-dashed border-text-muted/50 px-1.5 py-0.5">
+                      {r.base}
+                    </span>
+                    <Say glyph={r.base} voice={cfg.voiceName} />
+                    {r.add ? (
+                      <>
+                        <span className="text-text-muted"> + </span>
+                        <span className="text-accent">{r.add}</span>
+                      </>
+                    ) : null}
+                    <span className="text-text-muted"> → </span>
+                    {r.base}
+                    {r.add ? <span className="text-accent">{r.add}</span> : null}
+                    <Say glyph={r.to ?? r.base + (r.add ?? "")} voice={cfg.voiceName} />
+                  </>
+                ) : r.to ? (
                   // An irregular verb follows no drop/add rule, so it is shown
                   // whole: する → して. Same table frame, honest shape.
                   <>
                     {r.verb}
-                    <Say glyph={r.verb} voice={cfg.voiceName} />
+                    <Say glyph={r.verb ?? ""} voice={cfg.voiceName} />
                     <span className="text-text-muted"> → </span>
                     <span className="text-accent">{r.to}</span>
                     <Say glyph={r.to} voice={cfg.voiceName} />
@@ -424,7 +449,7 @@ export function IntroBuildTable({
                   // the sound of the change is a tap away on each side.
                   <>
                     {r.verb}
-                    <Say glyph={r.verb} voice={cfg.voiceName} />
+                    <Say glyph={r.verb ?? ""} voice={cfg.voiceName} />
                     {r.drop ? <span className="text-text-muted"> − {r.drop}</span> : null}
                     {r.add ? (
                       <>

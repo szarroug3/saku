@@ -508,9 +508,9 @@ describe("every form a pattern uses is taught before the pattern uses it", () =>
   // "gl-te-" (the 6th character is i, not the hyphen), so 〜ている stays out.
   const FORM_TAUGHT_BY: readonly { prefix: string; form: string }[] = [
     { prefix: "gl-te-", form: "te" },
-    { prefix: "gl-nai", form: "nai" },
-    { prefix: "gl-ta-form", form: "ta" },
-    { prefix: "gl-stem-form", form: "stem" },
+    { prefix: "gl-nai-", form: "nai" },
+    { prefix: "gl-ta-", form: "ta" },
+    { prefix: "gl-stem-", form: "stem" },
     { prefix: "gl-masu-form", form: "masu" },
     { prefix: "gl-volitional-form", form: "volitional" },
   ];

@@ -10,50 +10,62 @@
 
 import type { PhaseIntro } from "@/data/phase-intros";
 
-/** The ない-form — the plain negative. A different idea from the て-form (the last
- * kana shifts to its あ-row, then + ない), so two pages: the う-verb shift, then
- * る-verbs and the irregulars. */
+/** The ない-form — the plain negative. One page (a form has little to say): what it
+ * is for, then the build grouped Godan / Ichidan / Exceptions. */
 export const NAI_FORM_PAGES: readonly PhaseIntro[] = [
   {
-    id: "gl-nai-u",
+    id: "gl-nai-form",
     setId: "",
     eyebrow: "The ない-form",
     title: "The ない-form is the plain “not” form.",
     body: [
       {
-        lead: "What it is for.",
-        text: 'On its own it says a verb is not happening: たべない "doesn\'t / won\'t eat", いかない "not going". It is the casual counterpart of 〜ません, and the base a lot of patterns build on (〜ないでください, 〜なくてもいい).',
+        lead: "On its own,",
+        text: 'the ない-form says a verb is not happening: たべない "doesn\'t / won\'t eat", いかない "not going".',
       },
-      { text: "For an う-verb, the last kana shifts to its あ-row before ない." },
+      {
+        text: "For an う-verb, the last kana shifts to its あ-row before ない. An る-verb just drops る and adds ない.",
+      },
     ],
-    buildRules: [
-      { label: "う", verb: "かう", drop: "う", add: "わない", note: "う shifts to わ, not あ." },
-      { label: "く", verb: "かく", drop: "く", add: "かない" },
-      { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "がない" },
-      { label: "む", verb: "のむ", drop: "む", add: "まない" },
-      { label: "す", verb: "はなす", drop: "す", add: "さない" },
+    buildTables: [
+      {
+        title: "Godan (う-verbs)",
+        heads: { label: "Ending" },
+        rules: [
+          { label: "う", verb: "かう", drop: "う", add: "わない", note: "う shifts to わ, not あ." },
+          { label: "つ", verb: "まつ", drop: "つ", add: "たない" },
+          { label: "る", verb: "とる", drop: "る", add: "らない" },
+          { label: "む", verb: "のむ", drop: "む", add: "まない" },
+          { label: "ぶ", verb: "あそぶ", drop: "ぶ", add: "ばない" },
+          { label: "ぬ", verb: "しぬ", drop: "ぬ", add: "なない" },
+          { label: "く", verb: "かく", drop: "く", add: "かない" },
+          { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "がない" },
+          { label: "す", verb: "はなす", drop: "す", add: "さない" },
+        ],
+      },
+      {
+        title: "Ichidan (る-verbs)",
+        rules: [
+          { verb: "たべる", drop: "る", add: "ない" },
+          { verb: "みる", drop: "る", add: "ない" },
+        ],
+      },
+      {
+        title: "Exceptions and irregulars",
+        heads: { label: "" },
+        rules: [
+          { label: "irregular", verb: "する", to: "しない" },
+          { label: "irregular", verb: "くる", to: "こない" },
+          { label: "irregular", verb: "ある", to: "ない", note: "ある's negative is just ない, not あらない." },
+        ],
+      },
     ],
-    buildHeads: { label: "Ending" },
-  },
-  {
-    id: "gl-nai-ru-irregular",
-    setId: "",
-    eyebrow: "The ない-form",
-    title: "る-verbs drop る; a few verbs are irregular.",
-    body: [{ text: "For an る-verb, drop る and add ない. A few common verbs are irregular." }],
-    buildRules: [
-      { label: "る-verb", verb: "たべる", drop: "る", add: "ない" },
-      { label: "irregular", verb: "する", to: "しない" },
-      { label: "irregular", verb: "くる", to: "こない" },
-      { label: "irregular", verb: "ある", to: "ない", note: "ある's negative is just ない, not あらない." },
-    ],
-    buildHeads: { label: "Verb type" },
   },
 ];
 
-/** The た-form — the plain past. The same 音便 as the て-form, so one page with the
- * same ending table (た/だ in place of て/で). The っ of った is flagged, like the
- * て-form's って. */
+/** The た-form — the plain past. The same 音便 as the て-form (た/だ in place of
+ * て/で), so it leans on the て-form as a memory hook. One page: what it is for,
+ * then the build grouped Godan / Ichidan / Exceptions. */
 export const TA_FORM_PAGES: readonly PhaseIntro[] = [
   {
     id: "gl-ta-form",
@@ -62,22 +74,47 @@ export const TA_FORM_PAGES: readonly PhaseIntro[] = [
     title: "The た-form is the plain past, “did”.",
     body: [
       {
-        lead: "What it is for.",
-        text: 'The plain past: たべた "ate", いった "went". The casual past tense, and the base for 〜たことがある (have done) and 〜たら (if / when).',
+        lead: "On its own,",
+        text: 'the た-form is the casual past: たべた "ate", いった "went".',
       },
       {
         lead: "Memory hook:",
-        text: "it is built exactly like the て/で-form, with た/だ where て/で went (かって→かった, のんで→のんだ). Know the て-form and you already know this. る-verbs drop る, and いく is the one exception.",
+        text: "it is built exactly like the て/で-form, with た/だ where て/で went (かって→かった, のんで→のんだ). Know the て-form and you already know this. いく is the same exception, and する / くる are the irregulars.",
       },
     ],
-    buildRules: [
-      { label: "う・つ・る", verb: "かう", drop: "う", add: "った" },
-      { label: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んだ" },
-      { label: "く", verb: "かく", drop: "く", add: "いた" },
-      { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "いだ" },
-      { label: "す", verb: "はなす", drop: "す", add: "した" },
+    buildTables: [
+      {
+        title: "Godan (う-verbs)",
+        heads: { label: "Ending" },
+        rules: [
+          { label: "う・つ・る", verb: "かう", drop: "う", add: "った", note: "The っ in った is a small っ, not a full-size つ." },
+          { label: "", verb: "まつ", drop: "つ", add: "った" },
+          { label: "", verb: "とる", drop: "る", add: "った" },
+          { label: "む・ぶ・ぬ", verb: "のむ", drop: "む", add: "んだ" },
+          { label: "", verb: "あそぶ", drop: "ぶ", add: "んだ" },
+          { label: "", verb: "しぬ", drop: "ぬ", add: "んだ" },
+          { label: "く", verb: "かく", drop: "く", add: "いた" },
+          { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "いだ" },
+          { label: "す", verb: "はなす", drop: "す", add: "した" },
+        ],
+      },
+      {
+        title: "Ichidan (る-verbs)",
+        rules: [
+          { verb: "たべる", drop: "る", add: "た" },
+          { verb: "みる", drop: "る", add: "た" },
+        ],
+      },
+      {
+        title: "Exceptions and irregulars",
+        heads: { label: "" },
+        rules: [
+          { label: "exception", verb: "いく", drop: "く", add: "った" },
+          { label: "irregular", verb: "する", to: "した" },
+          { label: "irregular", verb: "くる", to: "きた" },
+        ],
+      },
     ],
-    buildHeads: { label: "Ending" },
   },
 ];
 
@@ -145,7 +182,8 @@ export const VOLITIONAL_FORM_PAGES: readonly PhaseIntro[] = [
 ];
 
 /** The stem — the verb with ます taken off (the last kana shifts to its い-row, or
- * る drops). One page, same ending table. */
+ * る drops). One page: what it is for, then the build grouped Godan / Ichidan /
+ * Exceptions. */
 export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
   {
     id: "gl-stem-form",
@@ -154,23 +192,43 @@ export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
     title: "The stem is a verb's connecting base.",
     body: [
       {
-        text: "The stem is the shape a verb takes to join onto something else. On its own it does nothing; it just holds the verb ready for whatever comes next, similar to the て/で-form.",
-      },
-      {
-        text: "A lot of patterns attach to it: 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
+        text: "Unlike the other forms, the stem is never used alone. It just holds the verb ready, and a pattern gives it meaning: 〜ます (polite), 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
       },
       {
         text: "For an う-verb, the last kana simply switches to its い-row. An る-verb just drops る.",
       },
     ],
-    buildRules: [
-      { label: "う", verb: "かう", drop: "う", add: "い" },
-      { label: "く", verb: "かく", drop: "く", add: "き" },
-      { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "ぎ" },
-      { label: "む", verb: "のむ", drop: "む", add: "み" },
-      { label: "す", verb: "はなす", drop: "す", add: "し" },
-      { label: "る-verb", verb: "たべる", drop: "る", add: "" },
+    buildTables: [
+      {
+        title: "Godan (う-verbs)",
+        heads: { label: "Ending" },
+        rules: [
+          { label: "う", verb: "かう", drop: "う", add: "い" },
+          { label: "つ", verb: "まつ", drop: "つ", add: "ち" },
+          { label: "る", verb: "とる", drop: "る", add: "り" },
+          { label: "む", verb: "のむ", drop: "む", add: "み" },
+          { label: "ぶ", verb: "あそぶ", drop: "ぶ", add: "び" },
+          { label: "ぬ", verb: "しぬ", drop: "ぬ", add: "に" },
+          { label: "く", verb: "かく", drop: "く", add: "き" },
+          { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "ぎ" },
+          { label: "す", verb: "はなす", drop: "す", add: "し" },
+        ],
+      },
+      {
+        title: "Ichidan (る-verbs)",
+        rules: [
+          { verb: "たべる", drop: "る", add: "" },
+          { verb: "みる", drop: "る", add: "" },
+        ],
+      },
+      {
+        title: "Exceptions and irregulars",
+        heads: { label: "" },
+        rules: [
+          { label: "irregular", verb: "する", to: "し" },
+          { label: "irregular", verb: "くる", to: "き" },
+        ],
+      },
     ],
-    buildHeads: { label: "Ending" },
   },
 ];

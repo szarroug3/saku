@@ -143,8 +143,9 @@ export interface IntroExample {
 export interface IntroBuildRule {
   /** The ending(s) this row covers, e.g. "う・つ・る". Omitted for a single verb. */
   label?: string;
-  /** The dictionary-form verb, kana-only for a beginner: "かう". */
-  verb: string;
+  /** The dictionary-form verb, kana-only for a beginner: "かう". Omitted on a
+   * `base` row, which starts from the form rather than the dictionary verb. */
+  verb?: string;
   /** The kana dropped from the end of `verb`: "う". Omitted for an add-only step
    * (a て-form plus いる), where nothing is removed. */
   drop?: string;
@@ -155,6 +156,11 @@ export interface IntroBuildRule {
    * (する → して). When set, the row renders as `verb → to` and `drop`/`add` are
    * ignored — the honest shape for a form you memorise rather than build. */
   to?: string;
+  /** The form the pattern's suffix attaches to, shown in a DASHED outline (the
+   * て-form for a て-pattern: かって). When set, the row renders as `[base] + add →
+   * to`, teaching a pattern as "the form you already know, plus a suffix" rather
+   * than repeating the whole conjugation. Takes precedence over drop/add. */
+  base?: string;
   /** An English meaning for the built form, shown in a right-hand "Meaning"
    * column — used where the table doubles as a meaning demonstration (たべている ·
    * is eating), not just a build rule. The column appears only when some row

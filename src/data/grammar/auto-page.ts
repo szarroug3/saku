@@ -238,6 +238,7 @@ const PATTERN_TABLE_GROUPS: {
 function patternRuleTables(
   r: Recipe,
 ): { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] {
+  const attach = r.attach.find((a) => a.host === "verb") ?? r.attach[0];
   const tables: { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] = [];
   for (const g of PATTERN_TABLE_GROUPS) {
     const rules: IntroBuildRule[] = [];
@@ -245,7 +246,25 @@ function patternRuleTables(
       if (!recipeAllows(r, v.word)) continue;
       const built = apply(r, v.word, v.cls);
       if (!built.ok || built.value === v.word) continue;
-      rules.push({ label: v.label, verb: v.word, to: built.value });
+      // The base form the pattern's suffix hangs off — the て-form for a て-pattern
+      // (かって). Shown dashed, then + the suffix → the result, so the row reads as
+      // "the form you know, plus a suffix". Falls back to whole verb → result when
+      // the pattern TRIMS the form (nakute-mo-ii) so the result no longer opens with
+      // the bare form.
+      const base =
+        attach?.form && attach.form !== "dictionary"
+          ? conjugate(v.word, v.cls, attach.form as Form)
+          : null;
+      if (base?.ok && base.value !== v.word && built.value.startsWith(base.value)) {
+        rules.push({
+          label: v.label,
+          base: base.value,
+          add: built.value.slice(base.value.length),
+          to: built.value,
+        });
+      } else {
+        rules.push({ label: v.label, verb: v.word, to: built.value });
+      }
     }
     if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
   }
