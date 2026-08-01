@@ -1,4 +1,11 @@
-import { test, expect, drillReady, type Page } from "./helpers/app";
+import {
+  test,
+  expect,
+  drillReady,
+  answerBox,
+  optionButtons,
+  type Page,
+} from "./helpers/app";
 
 /**
  * THE SESSION MUST ALWAYS BE ESCAPABLE.
@@ -195,7 +202,13 @@ test("two open tabs in one drill do not write to each other in a loop", async ({
   expect(await writes(page)).toBeLessThan(5);
   expect(await writes(tabB)).toBeLessThan(5);
 
-  // And the drill still WORKS in the surviving tab: the runtime must move.
+  // And the drill still WORKS in the surviving tab: the runtime must move when
+  // you answer. Answer WHATEVER card is up — the day-one kana quiz mixes typed
+  // and multiple-choice cards, and an MC card has no text box, so assuming one
+  // is what made this flake (box.fill timed out whenever the card on top was
+  // MC). Then POLL for the runtime to move rather than sleeping a fixed second:
+  // a wrong answer bumps q.tries at once, so the change is a state to wait for,
+  // not a duration to guess.
   const pulse = async () =>
     await page.evaluate((key: string) => {
       const s = JSON.parse(localStorage.getItem(key) ?? "null");
@@ -203,11 +216,16 @@ test("two open tabs in one drill do not write to each other in a loop", async ({
       return `${rt.asked}/${rt.resolved}/${rt.q?.tries}`;
     }, SESSION_KEY);
   const before = await pulse();
-  const box = page.locator('input[placeholder^="Type"]').first();
-  await box.fill("a");
-  await box.press("Enter");
-  await page.waitForTimeout(1000);
-  expect(await pulse()).not.toBe(before);
+  const box = answerBox(page).first();
+  const option = optionButtons(page).first();
+  await expect(box.or(option)).toBeVisible();
+  if (await answerBox(page).count()) {
+    await box.fill("a");
+    await box.press("Enter");
+  } else {
+    await option.click();
+  }
+  await expect.poll(pulse, { timeout: 5000 }).not.toBe(before);
 });
 
 /**

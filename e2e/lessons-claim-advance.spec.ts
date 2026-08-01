@@ -8,6 +8,7 @@ import {
   startPractice,
   answerBox,
   requeuedPill,
+  type Page,
 } from "./helpers/app";
 
 /**
@@ -41,6 +42,27 @@ const CLAIM_GROUP_1 = "I already know these 5";
  * Mirrors quiz-live-standing.spec.ts's surface. */
 const LIBRARY_A = "/library?kind=kana&q=あ";
 
+/**
+ * Wait for the lesson claim to reach localStorage before loading a page that
+ * rebuilds standing from it.
+ *
+ * The "group 2 of" label proves the claim advanced the frontier IN MEMORY, but
+ * LIBRARY_A is a FRESH navigation that reads `saku-local-history` from scratch,
+ * and the write can lag the re-render by a frame. That race is rare — it only
+ * surfaced once in a full serial run and never in isolation — so this closes it
+ * by waiting on the persisted state rather than the render that triggered it.
+ */
+async function claimPersisted(page: Page) {
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const h = JSON.parse(localStorage.getItem("saku-local-history") ?? "{}");
+        return Object.keys(h.claims ?? {}).length;
+      }),
+    )
+    .toBeGreaterThan(0);
+}
+
 test("claiming the first group advances to the next lesson and marks the items claimed, not solid", async ({
   page,
   seed,
@@ -61,6 +83,7 @@ test("claiming the first group advances to the next lesson and marks the items c
   // The claimed items carry the CLAIMED standing per entry, never SOLID. Only a
   // real showing can make a fact solid, and the claim was a skip, so the row for
   // あ must read "claimed" and the word "solid" must be absent from that surface.
+  await claimPersisted(page);
   await page.goto(LIBRARY_A);
   await expect(page.getByText("claimed", { exact: true })).toBeVisible();
   await expect(page.getByText("solid", { exact: true })).toHaveCount(0);
@@ -90,6 +113,7 @@ test("a claimed item stops reading claimed the moment it is missed", async ({
   await expect(page.locator("body")).toContainText("group 2 of");
 
   // The claim landed as "claimed" in the Library.
+  await claimPersisted(page);
   await page.goto(LIBRARY_A);
   await expect(page.getByText("claimed", { exact: true })).toBeVisible();
 
