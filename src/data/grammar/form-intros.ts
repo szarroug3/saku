@@ -8,7 +8,84 @@
 // introduces — the っ of った — is flagged automatically. Kana examples, verified
 // against the conjugation engine.
 
-import type { PhaseIntro } from "@/data/phase-intros";
+import { conjugate, type Form, type WordClass } from "@/lib/conjugate";
+import type { IntroBuildRule, PhaseIntro } from "@/data/phase-intros";
+
+// ---------------------------------------------------------------------------
+// GENERATED FORM TABLES — for the standalone conjugation forms (passive,
+// potential, causative, causative-passive, 〜ば, 〜たら). Unlike the hand-authored
+// て/ない/た/stem tables above, these are built straight off the conjugation
+// engine so they cannot drift, grouped the same way: Godan / Ichidan / Irregulars.
+// ---------------------------------------------------------------------------
+
+const FORM_TABLE_VERBS: {
+  title: string;
+  heads?: { label?: string };
+  irregular?: boolean;
+  verbs: { label: string; word: string; cls: WordClass }[];
+}[] = [
+  {
+    title: "Godan (う-verbs)",
+    heads: { label: "Ending" },
+    verbs: [
+      { label: "う", word: "かう", cls: "v5u" },
+      { label: "つ", word: "まつ", cls: "v5t" },
+      { label: "る", word: "とる", cls: "v5r" },
+      { label: "む", word: "のむ", cls: "v5m" },
+      { label: "ぶ", word: "あそぶ", cls: "v5b" },
+      { label: "ぬ", word: "しぬ", cls: "v5n" },
+      { label: "く", word: "かく", cls: "v5k" },
+      { label: "ぐ", word: "およぐ", cls: "v5g" },
+      { label: "す", word: "はなす", cls: "v5s" },
+    ],
+  },
+  {
+    title: "Ichidan (る-verbs)",
+    verbs: [
+      { label: "", word: "たべる", cls: "v1" },
+      { label: "", word: "みる", cls: "v1" },
+    ],
+  },
+  {
+    title: "Irregulars",
+    heads: { label: "" },
+    irregular: true,
+    verbs: [
+      { label: "irregular", word: "する", cls: "vs-i" },
+      { label: "irregular", word: "くる", cls: "vk" },
+    ],
+  },
+];
+
+function prefixLen(a: string, b: string): number {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return i;
+}
+
+/** The three grouped build tables for a standalone conjugation FORM: each
+ * representative verb conjugated to the form, the change diffed off the shared
+ * prefix (drop the tail, add the new one). Irregulars (する, くる) are shown whole. */
+function formRuleTables(
+  form: Form,
+): { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] {
+  const tables: { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] = [];
+  for (const g of FORM_TABLE_VERBS) {
+    const rules: IntroBuildRule[] = [];
+    for (const v of g.verbs) {
+      const c = conjugate(v.word, v.cls, form);
+      if (!c.ok || c.value === v.word) continue;
+      const p = prefixLen(v.word, c.value);
+      if (g.irregular || p === 0) {
+        rules.push({ label: v.label || "irregular", verb: v.word, to: c.value });
+      } else {
+        rules.push({ label: v.label, verb: v.word, drop: v.word.slice(p), add: c.value.slice(p) });
+      }
+    }
+    if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
+  }
+  return tables;
+}
 
 /** The ない-form — the plain negative. One page (a form has little to say): what it
  * is for, then the build grouped Godan / Ichidan / Exceptions. */
@@ -230,5 +307,118 @@ export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
         ],
       },
     ],
+  },
+];
+
+/** The passive form (受身) — the subject has the action done to it. Its own form
+ * page: the meaning, then the conjugation grouped Godan / Ichidan / Irregulars. */
+export const PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
+  {
+    id: "gl-passive-form",
+    setId: "",
+    eyebrow: "The passive form",
+    title: "The passive: something is done to the subject.",
+    body: [
+      {
+        text: 'The subject has the action done TO it, often "is X-ed (by someone)": わらう (laugh) becomes わらわれる (be laughed at).',
+      },
+      {
+        text: "An う-verb shifts its last kana to the あ-row and adds れる; an る-verb adds られる. する and くる are irregular.",
+      },
+    ],
+    buildTables: formRuleTables("passive"),
+  },
+];
+
+/** The potential form (可能) — can / is able to do. */
+export const POTENTIAL_FORM_PAGES: readonly PhaseIntro[] = [
+  {
+    id: "gl-potential-form",
+    setId: "",
+    eyebrow: "The potential form",
+    title: "The potential: can do, is able to do.",
+    body: [
+      {
+        text: 'Says you CAN do something: たべる (eat) becomes たべられる (can eat), のむ (drink) becomes のめる (can drink).',
+      },
+      {
+        text: "An う-verb shifts its last kana to the え-row and adds る; an る-verb adds られる. する becomes できる, くる becomes こられる.",
+      },
+    ],
+    buildTables: formRuleTables("potential"),
+  },
+];
+
+/** The causative form (使役) — make or let someone do. */
+export const CAUSATIVE_FORM_PAGES: readonly PhaseIntro[] = [
+  {
+    id: "gl-causative-form",
+    setId: "",
+    eyebrow: "The causative form",
+    title: "The causative: make or let someone do.",
+    body: [
+      {
+        text: 'Make or let someone do something: たべる (eat) becomes たべさせる (make / let eat).',
+      },
+      {
+        text: "An う-verb shifts its last kana to the あ-row and adds せる; an る-verb adds させる. する and くる are irregular.",
+      },
+    ],
+    buildTables: formRuleTables("causative"),
+  },
+];
+
+/** The causative-passive form — be MADE to do (the causative and passive stacked). */
+export const CAUSATIVE_PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
+  {
+    id: "gl-causative-passive-form",
+    setId: "",
+    eyebrow: "The causative-passive form",
+    title: "The causative-passive: be made to do.",
+    body: [
+      {
+        text: 'Be MADE to do something: たべる (eat) becomes たべさせられる (be made to eat). It is the causative and the passive stacked.',
+      },
+      {
+        text: "Build the causative, then make that passive. An う-verb ends in 〜せられる; an る-verb in 〜させられる.",
+      },
+    ],
+    buildTables: formRuleTables("causativePassive"),
+  },
+];
+
+/** The ば-conditional — a general or hypothetical "if". */
+export const BA_FORM_PAGES: readonly PhaseIntro[] = [
+  {
+    id: "gl-ba-form",
+    setId: "",
+    eyebrow: "The ば-conditional",
+    title: "The ば-conditional: if.",
+    body: [
+      {
+        text: 'A general or hypothetical "if": たべれば (if [someone] eats), やすければ (if it is cheap).',
+      },
+      {
+        text: "An う-verb shifts its last kana to the え-row and adds ば; an る-verb drops る and adds れば.",
+      },
+    ],
+    buildTables: formRuleTables("ba"),
+  },
+];
+
+/** The たら-conditional — "if" or "when", built on the た-form. */
+export const TARA_FORM_PAGES: readonly PhaseIntro[] = [
+  {
+    id: "gl-tara-form",
+    setId: "",
+    eyebrow: "The たら-conditional",
+    title: "The たら-conditional: if / when.",
+    body: [
+      {
+        lead: "Memory hook:",
+        text: 'it is just the た-form plus ら: たべた (ate) becomes たべたら (if / when [someone] eats). If you know the た-form you already know this.',
+      },
+    ],
+    buildTables: formRuleTables("tara"),
   },
 ];

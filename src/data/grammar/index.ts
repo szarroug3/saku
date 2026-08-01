@@ -102,24 +102,33 @@ export function verbAttachForm(r: Recipe): Form | null | undefined {
 }
 
 /**
- * The four verb-conjugation FORMS taught as their own grammar lessons, each with
- * a Library page of its own: the て/で-form, the ない-form, the た-form and the
- * stem. Each is a recipe with `add: ""` (see recipes.ts) whose production is
- * "make the form" — the same shape te-sequence has always had, now extended to
- * the other three.
+ * The verb-conjugation FORMS taught as their own grammar lessons, each with a
+ * Library page of its own: the て/で-form, ない-form, た-form and stem, plus the
+ * standalone conjugations where the form IS the whole pattern (the passive,
+ * potential, causative, causative-passive, 〜ば, 〜たら). Each is a recipe with
+ * `add: ""` (see recipes.ts) whose production is "make the form".
  *
- * NAMED, NOT COMPUTED, because `add: ""` does NOT pick them out: te-cause, te-mo,
- * the potential/passive/causative and 〜ば/〜たら all add nothing either, and none
- * of those has a form lesson or a form page. This is the closed set of the four
- * that do, and it is the ONE source of truth both the Library shelf (which heads
- * a form's section with its recipe) and PatternTeach (which links a pattern to
- * its form's page instead of reprinting the conjugation) read from.
+ * NAMED, NOT COMPUTED, because `add: ""` does NOT pick them out: te-cause and
+ * te-mo add nothing either but are USES of the て-form, not forms of their own, so
+ * they link to the て-form's page rather than being one. This is the ONE source of
+ * truth both the Library shelf (which heads a form's section with its recipe) and
+ * PatternTeach (which links a pattern to its form's page instead of reprinting the
+ * conjugation) read from.
  */
 export const FORM_RECIPE_IDS: readonly string[] = [
   "te-sequence",
   "nai-form",
   "ta-form",
   "stem-form",
+  // Standalone conjugation forms — the form IS the whole pattern (no suffix), so
+  // each is its own form page (a conjugation the learner builds), not a pattern
+  // that says "put it in its X form" with nowhere to learn that form.
+  "passive",
+  "potential",
+  "causative",
+  "causative-passive",
+  "ba",
+  "tara",
 ];
 
 const FORM_RECIPE_ID_SET: ReadonlySet<string> = new Set(FORM_RECIPE_IDS);

@@ -29,10 +29,16 @@ import { patternEntry } from "@/data/grammar";
 import { RECIPES, type Level, type Recipe } from "@/data/grammar/recipes";
 import { autoPatternPage } from "@/data/grammar/auto-page";
 import {
+  BA_FORM_PAGES,
+  CAUSATIVE_FORM_PAGES,
+  CAUSATIVE_PASSIVE_FORM_PAGES,
   MASU_FORM_PAGES,
   NAI_FORM_PAGES,
+  PASSIVE_FORM_PAGES,
+  POTENTIAL_FORM_PAGES,
   STEM_FORM_PAGES,
   TA_FORM_PAGES,
+  TARA_FORM_PAGES,
   VOLITIONAL_FORM_PAGES,
 } from "@/data/grammar/form-intros";
 import { factsOf } from "@/lib/facts";
@@ -303,6 +309,29 @@ const LESSON_STEM_FORM: GrammarLessonDef = {
   primaryPattern: "stem-form",
 };
 
+/** A standalone conjugation form (passive, potential, causative, …) as its own
+ * lesson: the recipe id IS the form, its authored pages teach the conjugation. */
+function formLesson(id: string, title: string, pages: readonly PhaseIntro[]): GrammarLessonDef {
+  return {
+    id,
+    title,
+    pages: pages.map((card) => ({ kind: "teach" as const, card })),
+    drills: patternFacts(id),
+    primaryPattern: id,
+  };
+}
+
+const LESSON_PASSIVE = formLesson("passive", "The passive form", PASSIVE_FORM_PAGES);
+const LESSON_POTENTIAL = formLesson("potential", "The potential form", POTENTIAL_FORM_PAGES);
+const LESSON_CAUSATIVE = formLesson("causative", "The causative form", CAUSATIVE_FORM_PAGES);
+const LESSON_CAUSATIVE_PASSIVE = formLesson(
+  "causative-passive",
+  "The causative-passive form",
+  CAUSATIVE_PASSIVE_FORM_PAGES,
+);
+const LESSON_BA = formLesson("ba", "The ば-conditional", BA_FORM_PAGES);
+const LESSON_TARA = formLesson("tara", "The たら-conditional", TARA_FORM_PAGES);
+
 /**
  * The FORM-specific teaching pages a form recipe's Library entry renders, as one
  * stacked card — the same words the lesson teaches, so the two cannot drift.
@@ -321,6 +350,12 @@ const FORM_LIBRARY_PAGES: Readonly<Record<string, readonly PhaseIntro[]>> = {
   "nai-form": NAI_FORM_PAGES,
   "ta-form": TA_FORM_PAGES,
   "stem-form": STEM_FORM_PAGES,
+  "passive": PASSIVE_FORM_PAGES,
+  "potential": POTENTIAL_FORM_PAGES,
+  "causative": CAUSATIVE_FORM_PAGES,
+  "causative-passive": CAUSATIVE_PASSIVE_FORM_PAGES,
+  "ba": BA_FORM_PAGES,
+  "tara": TARA_FORM_PAGES,
 };
 
 /** The Library teaching pages for a form recipe, or empty for a non-form recipe. */
@@ -424,6 +459,12 @@ const AUTHORED_LESSONS: Readonly<Record<string, GrammarLessonDef>> = {
   "nai-form": LESSON_NAI_FORM,
   "ta-form": LESSON_TA_FORM,
   "stem-form": LESSON_STEM_FORM,
+  "passive": LESSON_PASSIVE,
+  "potential": LESSON_POTENTIAL,
+  "causative": LESSON_CAUSATIVE,
+  "causative-passive": LESSON_CAUSATIVE_PASSIVE,
+  "ba": LESSON_BA,
+  "tara": LESSON_TARA,
 };
 
 export const CURRICULUM_LESSONS: readonly GrammarLessonDef[] = ORDERED.map(

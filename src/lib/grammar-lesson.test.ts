@@ -36,6 +36,7 @@ import {
   isProducible,
   recipe,
 } from "../data/grammar/recipes.ts";
+import { isFormRecipe } from "../data/grammar/index.ts";
 import {
   CURRICULUM_PATTERNS,
   GRAMMAR_CURRICULUM_TOTAL,
@@ -559,17 +560,10 @@ describe("every form a pattern uses is taught before the pattern uses it", () =>
       if (!hit || !isProducible(hit.r)) return;
       // add empty = the form is the whole pattern (the potential, たら, ば, ...).
       if (!hit.a?.form || hit.a.form === "dictionary" || hit.a.add) return;
-      // The authored form lessons carry their own multi-page build tables (some
-      // split the rule across two pages, so the LAST page alone is under 5 rows).
-      if (
-        hit.r.id === "te-sequence" ||
-        hit.r.id === "te-iru" ||
-        hit.r.id === "nai-form" ||
-        hit.r.id === "ta-form" ||
-        hit.r.id === "stem-form"
-      ) {
-        return;
-      }
+      // The form recipes are authored, and grouped into titled `buildTables` rather
+      // than a single `buildRules` table, so this per-page-count check does not
+      // apply to them (te-cause, an add-"" USE of the て-form, is the one left).
+      if (isFormRecipe(hit.r.id)) return;
       const page = [...lesson.pages].reverse().find((p) => p.kind === "teach");
       const card = page?.kind === "teach" ? page.card : undefined;
       assert.ok(
