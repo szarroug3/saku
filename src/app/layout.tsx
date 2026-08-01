@@ -277,7 +277,7 @@ export default async function RootLayout({
                         initialCollapsed={sidebarCollapsed}
                         initialRunCount={initialRunCount}
                       />
-                      <main className="relative flex min-w-0 max-w-[1400px] flex-1 flex-col gap-3.5">
+                      <main className="relative flex min-w-0 max-w-[1400px] flex-1 flex-col">
                         {/* GLOBAL BANNER DOCK, above the page's own top dock. The
                             signed-out notice is a page-agnostic message and must sit
                             at the very top — but a page (the Library) docks its OWN
@@ -309,7 +309,7 @@ export default async function RootLayout({
                             className="kq-stage pointer-events-none absolute inset-0 rounded-2xl"
                             aria-hidden
                           />
-                          <div className="kq-scroll relative rounded-2xl px-3 pb-15 pt-3">
+                          <div className="kq-scroll relative overflow-x-clip rounded-2xl px-3 pb-15 pt-3">
                             {/* On every page: the screens that would otherwise show
                                 a learner's work as missing are exactly the ones this
                                 has to appear on. Renders nothing when nothing is

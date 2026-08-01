@@ -340,7 +340,7 @@ export function EntryRow({
           className={`${
             entry.kind === GRAMMAR_SUBJECT
               ? grid
-                ? "whitespace-nowrap pr-2"
+                ? "min-w-0 truncate whitespace-nowrap pr-2"
                 : "w-[150px] flex-none pr-2"
               : "max-w-[120px] flex-none truncate"
           } text-[19px] ${japaneseFontClass(entry.glyph)}`}
@@ -390,7 +390,7 @@ export function EntryRow({
         />
       ) : null}
       <ViewLink entry={entry} className="flex-none" />
-      <span className="flex-none">
+      <span className="flex-none max-[600px]:hidden">
         <StandingCell standing={standing} />
       </span>
     </div>
@@ -480,7 +480,7 @@ export function VerbPairRow({
           onToggleSelect(e.shiftKey);
         }
       }}
-      className={`grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 ${
+      className={`grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px] ${
         selected ? "bg-accent-bg" : "hover:bg-panel"
       }`}
     >
@@ -495,7 +495,7 @@ export function VerbPairRow({
       <PairCell side={pair.happens} voice={voice} />
       <PairCell side={pair.doIt} voice={voice} />
       <ViewLink entry={entry} className="flex-none" />
-      <span className="flex-none">
+      <span className="flex-none max-[600px]:hidden">
         <StandingCell standing={standing} />
       </span>
     </div>

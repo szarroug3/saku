@@ -1341,9 +1341,9 @@ body {
  * inputs and swatches too, and a layer on every one is its own perf problem
  * (layer explosion) and collides with the transform some of them animate on hover.
  * .kq-defer is exactly the Library's scrolling shelf sections — the one place a
- * page is a WALL of translucent cards over the mesh — and it is already the
- * content-visibility hook, so offscreen sections skip layout and paint while
- * remaining in the server HTML. One bounded layer per visible shelf is the fix.
+ * page is a WALL of translucent cards over the mesh. The class no longer uses
+ * content-visibility: its guessed intrinsic height made the document repeatedly
+ * resize as real shelf heights replaced the guesses after first paint.
  *
  * Scoped to kiri (the only theme with translucent glass over a mesh) and only
  * reproducible in a real browser, so this is verified on Chrome/Firefox, not in
@@ -1366,21 +1366,6 @@ body {
    * for ~25px between shelves. Unlayered, so it beats the Tailwind p-/mb- pair. */
   padding-block: 9px;
   margin-bottom: 7px;
-}
-
-/* "Skip me entirely while I'm scrolled offscreen." The Library stacks many Cards,
- * each a grid of translucent .kq-material tiles, and in kiri every one of those
- * tiles blends over the fixed page mesh. Removing the per-card backdrop-filter
- * (above) got the light screens like Settings under budget, but the Library keeps
- * hundreds of tiles in the DOM at once and painting the offscreen ones is the
- * cost that was left. content-visibility lets the browser drop layout AND paint
- * for a section that isn't in view; contain-intrinsic-size hands it a placeholder
- * height so the scrollbar doesn't lurch, and `auto` means "use the real height
- * once you've measured it once". Harmless in the other three themes (opaque cards,
- * no mesh) — it just trims their offscreen paint too. */
-.kq-defer {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 320px;
 }
 
 /* "I am a sticky band over the page's ground, and I must occlude."

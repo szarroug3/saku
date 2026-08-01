@@ -610,18 +610,18 @@ export function LibraryPageClient({
 
   return (
     <>
-      {/* THE FROZEN HEADER. Title, search and filter chips, lifted out of the
-          scroll into the shell's top dock so they stay put above the shelves.
+      {/* THE FROZEN HEADER. Title, search and filter chips stay inline so the
+          server response and hydrated page have the same DOM and geometry.
+          Making this block sticky directly avoids reparents through the shell
+          dock, which visibly moved the controls after every reload.
           The shelf rows are `sticky` within the same page scroll, so once you
           scroll they slide up THROUGH the header; `kq-band` (the ground rebuilt
           opaque for a sticky band) hides them under it. But at the very top there
           is nothing behind the header, and a band there is just a slab of ground
           colour sitting on the ground for no reason, so the band is gated on
           `scrolled`: transparent at rest, occluding only once there is something
-          to hide. Full-width (edge to edge of the dock); px-3 insets the content
-          to line up with the tiles, pb-2 gives the band a clean lower edge. */}
-      <Dock slot="top">
-        <div className={`px-3 pb-2${scrolled ? " kq-band" : ""}`}>
+          to hide. Full-width; pb-2 gives the band a clean lower edge. */}
+        <div className={`sticky top-0 z-20 pb-2${scrolled ? " kq-band" : ""}`}>
           <PageTitle
             title="Library"
             sub="Every character, reading and word the app knows."
@@ -673,7 +673,6 @@ export function LibraryPageClient({
         ) : null}
         </StickySearch>
         </div>
-      </Dock>
 
       {/* A plain div between the sticky field and the first Card, and it is
           load-bearing: graphite paints its lit hairline on

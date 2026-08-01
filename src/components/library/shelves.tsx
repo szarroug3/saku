@@ -383,8 +383,9 @@ export function Shelf({
           // IntersectionObserver wrapper emitted placeholders after the first
           // two sections and could only replace them after hydration, which is
           // why every reload visibly assembled the Library in two stages.
-          // `content-visibility: auto` on kq-defer still lets the browser skip
-          // offscreen layout and paint without withholding the content itself.
+          // The browser lays these sections out at their real height immediately;
+          // a guessed content-visibility placeholder caused a second geometry
+          // shift even after the HTML itself was made complete.
           <Card key={section.id} className="kq-defer">
             <div className="mb-2 flex items-center gap-2">
               <button
@@ -446,7 +447,7 @@ export function Shelf({
                   // cells land on these shared tracks: checkbox, pattern, explanation,
                   // open, standing. The explanation's `min-w-0` lets it truncate on
                   // mobile rather than push the row wide.
-                  <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3">
+                  <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3 max-[600px]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
                     {shown.map((entry) => row(entry, true))}
                   </div>
                 ) : (

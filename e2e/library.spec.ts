@@ -234,7 +234,44 @@ test("the complete library and current-session nav are present before hydration"
     "2",
   );
 
+  const serverY = await page
+    .getByText("ピョ", { exact: true })
+    .evaluate((node) => node.getBoundingClientRect().y);
+  const serverSearch = await page
+    .getByPlaceholder(/Search anything/)
+    .evaluate((node) => {
+      const { x, y, width, height } = node.getBoundingClientRect();
+      return { x, y, width, height };
+    });
+
+  // The old content-visibility placeholder gave every distant section a fake
+  // 320px body. Hydration measured more sections and collapsed those guesses,
+  // moving the final kana by hundreds of pixels even though no box was visible.
+  const hydratedContext = await browser.newContext({ baseURL });
+  await hydratedContext.addCookies([
+    {
+      name: "saku-current-run-count",
+      value: "2",
+      url: baseURL!,
+    },
+  ]);
+  const hydratedPage = await hydratedContext.newPage();
+  await hydratedPage.goto("/library?kind=kana");
+  await hydratedPage.waitForLoadState("networkidle");
+  const hydratedY = await hydratedPage
+    .getByText("ピョ", { exact: true })
+    .evaluate((node) => node.getBoundingClientRect().y);
+  const hydratedSearch = await hydratedPage
+    .getByPlaceholder(/Search anything/)
+    .evaluate((node) => {
+      const { x, y, width, height } = node.getBoundingClientRect();
+      return { x, y, width, height };
+    });
+  expect(hydratedY).toBe(serverY);
+  expect(hydratedSearch).toEqual(serverSearch);
+
   await context.close();
+  await hydratedContext.close();
 });
 
 /**
