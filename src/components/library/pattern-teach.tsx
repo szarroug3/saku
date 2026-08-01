@@ -48,17 +48,43 @@ import Link from "next/link";
 
 import {
   IntroBody,
+  IntroBuildFooter,
   IntroBuildTable,
   IntroDeriveTable,
 } from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
 import { autoPatternPage } from "@/data/grammar/auto-page";
-import { formEntryFor, patternEntry, verbAttachForm } from "@/data/grammar";
+import { formEntryFor, isFormRecipe, patternEntry, verbAttachForm } from "@/data/grammar";
+import { formLibraryPages } from "@/data/grammar/lessons";
 import type { Recipe } from "@/data/grammar/recipes";
 import { FORM_LABEL } from "@/lib/grammar/formula";
 import { entryHref } from "@/lib/library/href";
 
 export function PatternTeach({ pattern }: { pattern: Recipe }) {
+  // A FORM recipe (the て/で-form, ない, た, stem) shows the form's OWN teaching —
+  // what it is for AND how to build it — as one stacked card, the same pages the
+  // lesson walks (minus lesson-1 scaffolding; see formLibraryPages). A PATTERN
+  // built on a form falls through to the build-or-link behaviour below.
+  if (isFormRecipe(pattern.id)) {
+    return (
+      <Card className="h-full">
+        <div className="space-y-7">
+          {formLibraryPages(pattern.id).map((p) => (
+            <div key={p.id} className="space-y-4">
+              {p.eyebrow ? <Lbl>{p.eyebrow}</Lbl> : null}
+              <p className="text-[15px] font-medium text-text">{p.title}</p>
+              <IntroBody body={p.body} measure="" />
+              {p.buildRules?.length ? (
+                <IntroBuildTable rules={p.buildRules} heads={p.buildHeads} />
+              ) : null}
+              {p.buildFooter ? <IntroBuildFooter footer={p.buildFooter} /> : null}
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
   const page = autoPatternPage(pattern);
   // The form page this pattern builds on, if any — set only for a PATTERN whose
   // verb form has a page of its own (te/nai/ta/stem), never for a form recipe

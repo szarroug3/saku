@@ -61,6 +61,17 @@ test("a て-verb pattern lists its concept links under ONE 'Read about it'", asy
   await expect(page.getByRole("link", { name: /う-verbs and る-verbs/ })).toBeVisible();
 });
 
+test("the て-form's Library page teaches what it is for, not only how to build it", async ({
+  page,
+}) => {
+  // The form entry (te-sequence) is a single page carrying the SAME teaching the
+  // lesson shows: what the form is for (a casual request), then how to build it.
+  await page.goto(entryHref(patternEntry("te-sequence")));
+  await expect(page.getByText(/casual request/i)).toBeVisible();
+  // The build table is still there (the う→って row).
+  await expect(page.getByText("かって").first()).toBeVisible();
+});
+
 test("the grammar-concept shelf lists the concepts and shows no speaker", async ({
   page,
 }) => {

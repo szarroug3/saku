@@ -111,23 +111,82 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     ],
   },
   {
-    id: "gl-te-u-verbs",
+    // PAGE 2 — Verb Types. The godan/ichidan split, taught ONCE here and named
+    // with both words so later form lessons can lean on the terms. No て-form
+    // building on this page: the classes come first, the conjugation follows.
+    id: "gl-verb-types",
     setId: "",
-    eyebrow: "Building the て/で-form",
-    title: "Most verbs are う-verbs, and their ending decides the change.",
+    eyebrow: "Verb Types",
+    title: "Japanese verbs fall into two groups.",
     body: [
       {
-        lead: "This is the て/で-form,",
-        text: "named for the て or で the verb ends in once you build it.",
+        text: "Before you change a verb's shape you need its group. Every Japanese verb is an う-verb, an る-verb, or one of two irregulars, and the group decides how the verb changes.",
       },
       {
-        text: "Japanese verbs fall into two main groups, and the group decides the change. The larger group is called う-verbs (you may also see them called godan): start from the dictionary form (the plain form you look a verb up by), drop its last kana, and add the ending that matches.",
+        lead: "う-verbs (godan)",
+        text: "are the larger group. An う-verb ends in a kana from the う-row (う, く, ぐ, す, つ, ぬ, ぶ, む, or る), so かう, かく and はなす are all う-verbs.",
       },
       {
-        text: "The name is from the kana chart, not the spelling: an う-verb ends in a kana from the う-row (う, く, ぐ, す, つ, ぬ, ぶ, む, or る), so かく and はなす are う-verbs too, not only verbs ending in う.",
+        lead: "る-verbs (ichidan)",
+        text: "end in る, like たべる and みる.",
       },
       {
-        text: "Some endings use て and some use で. Which one you get is fixed by the verb's ending. They are the same form with the same meaning, so you never choose between them.",
+        text: "The spelling alone does not always tell them apart, because some verbs that end in る are う-verbs. かえる (to return) is an う-verb, while たべる (to eat) is an る-verb. You learn each verb's group with the verb, and the app tags it for you.",
+      },
+      {
+        lead: "する and くる",
+        text: "belong to neither group. They are the two irregular verbs, and you learn their shapes by heart.",
+      },
+    ],
+  },
+  {
+    // PAGE 3 — what the て/で-form is FOR, with the chain build-up. No conjugation
+    // rules here (those are page 4). The chain ends in a verb the learner cannot
+    // build yet; the copy tells them not to worry about it, only that the LAST
+    // verb carries the tense.
+    id: "gl-te-form-use",
+    setId: "",
+    eyebrow: "The て/で-form",
+    title: "The て/で-form asks casually, or links ideas.",
+    body: [
+      {
+        lead: "By itself,",
+        text: 'the て/で-form is a casual request or command: まって "wait!", みて "look!", ちょっときて "come here a sec".',
+      },
+      {
+        text: 'It can also act as a connector. Joined to another verb it links actions, and can mean "and", "and then", "so", "because", or "while", with the context deciding which.',
+      },
+      {
+        lead: "It carries no tense of its own.",
+        text: "The form does not say when something happened or how polite it is. Whatever verb ends the sentence sets that. Chain several て/で-forms and end with one final verb, and only that last verb changes the tense.",
+      },
+      {
+        text: "In たべて、のんで、はなしている, the last verb, はなしている, is where the tense lives. Don't worry about how it is built for now; just understand that it is what tells you the tense, and the て/で-forms before it stay the same.",
+      },
+    ],
+    buildRules: [
+      { verb: "たべる", to: "たべて", gloss: "eat" },
+      { verb: "のむ", to: "のんで", gloss: "drink" },
+      { verb: "はなす", to: "はなして", gloss: "talk" },
+    ],
+    buildFooter: {
+      chain: "たべて、のんで、はなしている",
+      gloss: "is eating, drinking, and talking",
+    },
+  },
+  {
+    // PAGE 4 — how to build it, every class on one page: the godan endings, the
+    // ichidan rule, the いく exception, and the two irregulars.
+    id: "gl-te-build",
+    setId: "",
+    eyebrow: "Building the て/で-form",
+    title: "Build it: drop the ending, add て or で.",
+    body: [
+      {
+        text: "Drop the verb's last kana and add the ending that matches. Some endings use て and some use で; the ending decides which, and they mean the same, so you never choose between them.",
+      },
+      {
+        text: "An う-verb (godan) changes by its ending. An る-verb (ichidan) just drops る and adds て. いく is the one exception, and する and くる are the two irregulars.",
       },
     ],
     buildRules: [
@@ -146,94 +205,12 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       { label: "く", verb: "かく", drop: "く", add: "いて" },
       { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "いで" },
       { label: "す", verb: "はなす", drop: "す", add: "して" },
+      { label: "る-verb (ichidan)", verb: "たべる", drop: "る", add: "て" },
+      { label: "exception", verb: "いく", drop: "く", add: "って" },
+      { label: "irregular", verb: "する", to: "して" },
+      { label: "irregular", verb: "くる", to: "きて" },
     ],
     buildHeads: { label: "Ending" },
-  },
-  {
-    id: "gl-te-ru-verbs",
-    setId: "",
-    eyebrow: "Building the て/で-form",
-    title: "The other group, る-verbs, just drop る and add て.",
-    body: [
-      {
-        text: "The second group is called る-verbs (you may also see them called ichidan). These are simpler: drop the final る and add て. Unlike う-verbs, る-verbs only change to て, never で.",
-      },
-    ],
-    buildRules: [
-      { verb: "たべる", drop: "る", add: "て" },
-      { verb: "みる", drop: "る", add: "て" },
-    ],
-  },
-  {
-    id: "gl-te-which-class",
-    setId: "",
-    eyebrow: "Building the て/で-form",
-    title: "A verb ending in る can belong to either group.",
-    body: [
-      {
-        text: "The spelling alone does not tell you which group a る verb is in. かえる (to return) is an う-verb, so it becomes かえって. たべる (to eat) is an る-verb, so it becomes たべて.",
-      },
-      {
-        text: "You learn each verb's group along with the verb, and the app tags it for you. With practice you will start to recognise which group a verb belongs to.",
-      },
-    ],
-    buildRules: [
-      { label: "う-verb", verb: "かえる", drop: "る", add: "って" },
-      { label: "る-verb", verb: "たべる", drop: "る", add: "て" },
-    ],
-    buildHeads: { label: "Verb type" },
-  },
-  {
-    id: "gl-te-iku",
-    setId: "",
-    eyebrow: "Building the て/で-form",
-    title: "いく (to go) is the one exception.",
-    body: [
-      { text: "A verb ending in く normally takes いて. いく does not: its て-form is いって." },
-      {
-        text: "いく breaks the rule only some of the time. In most forms it acts like any く-verb. The て-form is one of the few where it does not.",
-      },
-    ],
-    buildRules: [{ verb: "いく", drop: "く", add: "って" }],
-  },
-  {
-    id: "gl-te-irregular",
-    setId: "",
-    eyebrow: "Building the て/で-form",
-    title: "する and くる follow no rule, so you learn them by heart.",
-    body: [
-      {
-        text: "する (to do) and くる (to come) are the only two irregular verbs. Unlike いく, which is regular in most forms, these two never follow the う-verb or る-verb rules, so every form is learned by heart.",
-      },
-      { text: "For the て-form: する becomes して, and くる becomes きて." },
-    ],
-    buildRules: [
-      { verb: "する", to: "して" },
-      { verb: "くる", to: "きて" },
-    ],
-  },
-  {
-    id: "gl-te-use",
-    setId: "",
-    eyebrow: "Using the て/で-form",
-    title: "The て/で-form asks casually, or links ideas.",
-    body: [
-      {
-        lead: "By itself,",
-        text: 'it is a casual request or command: 待って "wait!", 見て "look!", ちょっと来て "come here a sec". It is 〜てください with the ください dropped, so it is the informal way to ask someone to do something.',
-      },
-      {
-        lead: "It connects.",
-        text: 'Joined to more, the て/で-form links one action or situation to the next. The same form covers "and", "and then", "so", "because", and "while"; the context tells you which, so one shape does the work of several English words.',
-      },
-      {
-        lead: "The final verb carries the rest.",
-        text: "The form itself does not say when something happened or whether it is polite. The last verb does. たべて、ねます means eat and then sleep; たべて、ねました means ate and then slept.",
-      },
-      {
-        text: "Don't worry about how that last verb is built. Just notice that the first verb, たべて, stays the same in both, and only the last verb changes.",
-      },
-    ],
   },
 ];
 
@@ -258,16 +235,16 @@ const LESSON_TE_FORM: GrammarLessonDef = {
  * The two CONCEPTUAL te-form pages, exported for the Library's grammar-concept
  * reference (src/data/grammar-concepts.ts).
  *
- * `gl-te-intro` (what a conjugation form is) and `gl-te-use` (て as a connector,
- * and the last verb carrying the tense and politeness) are the two pages that
- * teach the て-form as an IDEA rather than a build table. The concept entry
- * renders THESE objects, so the reference page and the lesson say the same words
- * and cannot drift — the same pointer-not-a-copy arrangement marks and terms
- * make. Selected by id off TE_FORM_PAGES rather than re-authored; the ids are
- * stable, so the lookup is total. */
+ * `gl-te-intro` (what a conjugation form is) and `gl-te-form-use` (て as a casual
+ * request and as a connector) are the two pages that teach the て-form as an IDEA
+ * rather than a build table. The concept entry renders THESE objects, so the
+ * reference page and the lesson say the same words and cannot drift — the same
+ * pointer-not-a-copy arrangement marks and terms make. Selected by id off
+ * TE_FORM_PAGES rather than re-authored; the ids are stable, so the lookup is
+ * total. */
 export const TE_FORM_CONCEPT_PAGES: readonly PhaseIntro[] = [
   TE_FORM_PAGES.find((p) => p.id === "gl-te-intro")!,
-  TE_FORM_PAGES.find((p) => p.id === "gl-te-use")!,
+  TE_FORM_PAGES.find((p) => p.id === "gl-te-form-use")!,
 ];
 
 // ---------------------------------------------------------------------------
@@ -370,6 +347,31 @@ const LESSON_STEM_FORM: GrammarLessonDef = {
   drills: patternFacts("stem-form"),
   primaryPattern: "stem-form",
 };
+
+/**
+ * The FORM-specific teaching pages a form recipe's Library entry renders, as one
+ * stacked card — the same words the lesson teaches, so the two cannot drift.
+ *
+ * The て-form's lesson opens with two pages that are lesson-1 scaffolding rather
+ * than facts about the form (the "what a form is" intro and the Verb Types page),
+ * so its Library entry skips those and shows only the form's own pages: what it is
+ * for, then how to build it. The other three forms have no scaffolding — their
+ * whole lesson IS the form — so the Library shows all of it.
+ */
+const FORM_LIBRARY_PAGES: Readonly<Record<string, readonly PhaseIntro[]>> = {
+  "te-sequence": [
+    TE_FORM_PAGES.find((p) => p.id === "gl-te-form-use")!,
+    TE_FORM_PAGES.find((p) => p.id === "gl-te-build")!,
+  ],
+  "nai-form": NAI_FORM_PAGES,
+  "ta-form": TA_FORM_PAGES,
+  "stem-form": STEM_FORM_PAGES,
+};
+
+/** The Library teaching pages for a form recipe, or empty for a non-form recipe. */
+export function formLibraryPages(recipeId: string): readonly PhaseIntro[] {
+  return FORM_LIBRARY_PAGES[recipeId] ?? [];
+}
 
 // ---------------------------------------------------------------------------
 // THE CURRICULUM, AS LESSONS.

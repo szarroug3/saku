@@ -553,8 +553,9 @@ export function IntroDeriveTable({
 
 /** The closing line under a build table: the chain its rows build toward, the
  * Japanese accented and its meaning beneath, set apart so it reads as the result
- * of the steps above rather than another step. */
-function IntroBuildFooter({ footer }: { footer: { chain: string; gloss: string } }) {
+ * of the steps above rather than another step. Exported so the Library form page
+ * can render the same chain the lesson shows. */
+export function IntroBuildFooter({ footer }: { footer: { chain: string; gloss: string } }) {
   return (
     <div className="rounded-lg border border-border bg-panel/40 px-4 py-3">
       <p lang="ja" className="font-kana text-[17px] text-accent">
