@@ -897,6 +897,15 @@ export const RECIPES: readonly Recipe[] = [
 
   // --- ます-form ----------------------------------------------------------
   {
+    // The ます-form itself — the polite present — taught before the patterns that
+    // trim ます off it (〜ましょう / 〜ませんか / 〜ましょうか). Its own form page.
+    id: "masu-form",
+    pattern: "〜ます",
+    gloss: "polite present",
+    level: "N5",
+    attach: [{ host: "verb", form: "masu", add: "" }],
+  },
+  {
     id: "mashou",
     pattern: "〜ましょう",
     gloss: "let's X",
@@ -1031,6 +1040,15 @@ export const RECIPES: readonly Recipe[] = [
   },
 
   // --- volitional ---------------------------------------------------------
+  {
+    // The volitional form itself — the plain "let's / I'll" — taught before the
+    // pattern built on it (〜(よ)うと思う). Its own form page.
+    id: "volitional-form",
+    pattern: "〜(よ)う",
+    gloss: "let's / I'll (plain)",
+    level: "N4",
+    attach: [{ host: "verb", form: "volitional", add: "" }],
+  },
   {
     id: "you-to-omou",
     pattern: "〜(よ)うと思う",

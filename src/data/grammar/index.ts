@@ -123,6 +123,8 @@ export const FORM_RECIPE_IDS: readonly string[] = [
   // Standalone conjugation forms — the form IS the whole pattern (no suffix), so
   // each is its own form page (a conjugation the learner builds), not a pattern
   // that says "put it in its X form" with nowhere to learn that form.
+  "masu-form",
+  "volitional-form",
   "passive",
   "potential",
   "causative",

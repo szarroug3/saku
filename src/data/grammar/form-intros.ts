@@ -94,7 +94,7 @@ export const NAI_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-nai-form",
     setId: "",
     eyebrow: "The ない-form",
-    title: "The ない-form is the plain “not” form.",
+    title: "The plain “not” form.",
     body: [
       {
         lead: "On its own,",
@@ -148,7 +148,7 @@ export const TA_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-ta-form",
     setId: "",
     eyebrow: "The た-form",
-    title: "The た-form is the plain past, “did”.",
+    title: "The plain past, “did”.",
     body: [
       {
         lead: "On its own,",
@@ -195,66 +195,43 @@ export const TA_FORM_PAGES: readonly PhaseIntro[] = [
   },
 ];
 
-/** The ます-form — the polite present. It is the stem (taught just before) plus
- * ます, so the ending table is the stem's い-row shift with ます added. Taught here
- * because 〜ましょう / 〜ませんか / 〜ましょうか all trim ます off it. */
+/** The ます-form — the polite present, the stem plus ます. Its own form page: what
+ * it is for, then the conjugation grouped Godan / Ichidan / Irregulars. */
 export const MASU_FORM_PAGES: readonly PhaseIntro[] = [
   {
     id: "gl-masu-form",
     setId: "",
     eyebrow: "The ます-form",
-    title: "The ます-form is the polite present.",
+    title: "The polite present.",
     body: [
       {
-        text: "It is the polite way to end a sentence, in place of the plain form. It is the stem you just learned plus ます.",
+        text: "The polite way to end a sentence, in place of the plain form. It is the stem plus ます: たべる (eat) becomes たべます.",
       },
       {
-        text: "So an う-verb shifts its last kana to the い-row before ます, and an る-verb drops る.",
-      },
-      {
-        text: "From it come 〜ましょう (let's), 〜ませんか (won't you), and 〜ましょうか (shall I): swap ます for the ending.",
+        text: "From it come 〜ましょう (let's), 〜ませんか (won't you) and 〜ましょうか (shall I): swap ます for the ending.",
       },
     ],
-    buildRules: [
-      { label: "う", verb: "かう", drop: "う", add: "います" },
-      { label: "く", verb: "かく", drop: "く", add: "きます" },
-      { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "ぎます" },
-      { label: "む", verb: "のむ", drop: "む", add: "みます" },
-      { label: "す", verb: "はなす", drop: "す", add: "します" },
-      { label: "る-verb", verb: "たべる", drop: "る", add: "ます" },
-    ],
-    buildHeads: { label: "Ending" },
+    buildTables: formRuleTables("masu"),
   },
 ];
 
-/** The volitional form — the plain "let's" / "I'll". The last kana shifts to its
- * お-row before う; an る-verb drops る and adds よう. The casual counterpart to
- * 〜ましょう, taught because 〜(よ)うと思う (thinking of doing) is built on it. */
+/** The volitional form — the plain "let's / I'll", the casual counterpart to
+ * 〜ましょう. Its own form page. */
 export const VOLITIONAL_FORM_PAGES: readonly PhaseIntro[] = [
   {
     id: "gl-volitional-form",
     setId: "",
     eyebrow: "The volitional form",
-    title: "The volitional form is the plain “let's / I'll”.",
+    title: "The plain “let's / I'll”.",
     body: [
       {
-        text: "It is the casual counterpart to 〜ましょう. Add と思う to it for 〜(よ)うと思う (I'm thinking of X-ing).",
+        text: "The casual counterpart to 〜ましょう: たべよう (let's eat), のもう (let's drink). Add と思う for 〜(よ)うと思う (thinking of X-ing).",
       },
       {
-        text: "For an う-verb, the last kana shifts to its お-row, then う. An る-verb drops る and adds よう.",
+        text: "An う-verb shifts its last kana to the お-row and adds う; an る-verb adds よう.",
       },
     ],
-    buildRules: [
-      { label: "う", verb: "かう", drop: "う", add: "おう" },
-      { label: "く", verb: "かく", drop: "く", add: "こう" },
-      { label: "ぐ", verb: "およぐ", drop: "ぐ", add: "ごう" },
-      { label: "む", verb: "のむ", drop: "む", add: "もう" },
-      { label: "す", verb: "はなす", drop: "す", add: "そう" },
-      { label: "る-verb", verb: "たべる", drop: "る", add: "よう" },
-      { label: "irregular", verb: "する", to: "しよう" },
-      { label: "irregular", verb: "くる", to: "こよう" },
-    ],
-    buildHeads: { label: "Ending" },
+    buildTables: formRuleTables("volitional"),
   },
 ];
 
@@ -266,7 +243,7 @@ export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-stem-form",
     setId: "",
     eyebrow: "The stem",
-    title: "The stem is a verb's connecting base.",
+    title: "A verb's connecting base.",
     body: [
       {
         text: "Unlike the other forms, the stem is never used alone. It just holds the verb ready, and a pattern gives it meaning: 〜ます (polite), 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
@@ -317,7 +294,7 @@ export const PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-passive-form",
     setId: "",
     eyebrow: "The passive form",
-    title: "The passive: something is done to the subject.",
+    title: "Something is done to the subject.",
     body: [
       {
         text: 'The subject has the action done TO it, often "is X-ed (by someone)": わらう (laugh) becomes わらわれる (be laughed at).',
@@ -336,7 +313,7 @@ export const POTENTIAL_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-potential-form",
     setId: "",
     eyebrow: "The potential form",
-    title: "The potential: can do, is able to do.",
+    title: "Can do, or is able to do.",
     body: [
       {
         text: 'Says you CAN do something: たべる (eat) becomes たべられる (can eat), のむ (drink) becomes のめる (can drink).',
@@ -355,7 +332,7 @@ export const CAUSATIVE_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-causative-form",
     setId: "",
     eyebrow: "The causative form",
-    title: "The causative: make or let someone do.",
+    title: "Make or let someone do.",
     body: [
       {
         text: 'Make or let someone do something: たべる (eat) becomes たべさせる (make / let eat).',
@@ -374,7 +351,7 @@ export const CAUSATIVE_PASSIVE_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-causative-passive-form",
     setId: "",
     eyebrow: "The causative-passive form",
-    title: "The causative-passive: be made to do.",
+    title: "Be made to do something.",
     body: [
       {
         text: 'Be MADE to do something: たべる (eat) becomes たべさせられる (be made to eat). It is the causative and the passive stacked.',
@@ -393,7 +370,7 @@ export const BA_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-ba-form",
     setId: "",
     eyebrow: "The ば-conditional",
-    title: "The ば-conditional: if.",
+    title: "A general or hypothetical “if”.",
     body: [
       {
         text: 'A general or hypothetical "if": たべれば (if [someone] eats), やすければ (if it is cheap).',
@@ -412,7 +389,7 @@ export const TARA_FORM_PAGES: readonly PhaseIntro[] = [
     id: "gl-tara-form",
     setId: "",
     eyebrow: "The たら-conditional",
-    title: "The たら-conditional: if / when.",
+    title: "“If” or “when”.",
     body: [
       {
         lead: "Memory hook:",

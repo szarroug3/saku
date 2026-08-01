@@ -376,12 +376,11 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     host === "verb" && !!attach?.form && attach.form !== "dictionary" && !!attach.add;
   const buildTables = verbSuffix && !r.wrap?.close?.length ? patternRuleTables(r) : [];
   // The "how to build it" formula: the form in a dashed box, then + the suffix —
-  // [ない-form] + でください. Shown in place of the build blurb for a verb-suffix
-  // pattern with a clean tail; a pattern that TRIMS the form (nakute-mo-ii) keeps
-  // the prose, since "[ない-form] + くてもいい" would hide the trim.
+  // [ない-form] + でください. A pattern that TRIMS the form first shows the drop too —
+  // [ます-form] − ます + ましょう — so the formula stays honest.
   const buildFormula =
-    verbSuffix && !attach?.trim && !r.wrap?.close?.length && formLabel && add
-      ? { base: formLabel, add }
+    verbSuffix && !r.wrap?.close?.length && formLabel && add
+      ? { base: formLabel, add, ...(attach?.trim ? { trim: attach.trim } : {}) }
       : undefined;
   // A wrap builds its own worked pair (apply refuses two-slot patterns); a plain
   // pattern derives one row per example verb.

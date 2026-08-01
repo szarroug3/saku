@@ -263,10 +263,11 @@ export interface PhaseIntro {
   /**
    * A build FORMULA for a pattern's "how to build it": the form it hangs off shown
    * in a dashed outline, then + the suffix — [ない-form] + でください. `base` is the
-   * form's name ("ない-form"), `add` the suffix. Rendered in place of the build
+   * form's name ("ない-form"), `add` the suffix, `trim` the tail the pattern drops
+   * off the form first ([ます-form] − ます + ましょう). Rendered in place of the build
    * blurb, so the summary reads as the recipe itself before the example tables.
    */
-  buildFormula?: { base: string; add: string };
+  buildFormula?: { base: string; add: string; trim?: string };
   /**
    * A derivation table for a PATTERN page: the dictionary verb, the form the
    * pattern attaches to, and the finished pattern — かく · かき · かきにいく. Shows

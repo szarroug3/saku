@@ -348,7 +348,7 @@ describe("the pattern total is the whole authored table", () => {
     assert.equal(GRAMMAR_CURRICULUM_TOTAL, RECIPES.length);
     // 99: the 96 patterns plus the three standalone form recipes (nai-form,
     // ta-form, stem-form). The て-form was already a recipe (te-sequence).
-    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 99);
+    assert.equal(GRAMMAR_CURRICULUM_TOTAL, 101);
     // The drillable set is a strict subset — production is the second half of
     // some lessons' quiz, not the gate on whether a pattern is taught.
     assert.ok(DRILLABLE.length < GRAMMAR_CURRICULUM_TOTAL);
@@ -374,7 +374,7 @@ describe("the pattern total is the whole authored table", () => {
     // 44 sittings for the whole 99-recipe table: the solo form lessons (te-form,
     // nai-form, ta-form, stem-form, and the later form debuts) plus the pattern
     // runs cut into <=3. 〜ている is a normal bundled pattern now, not solo.
-    assert.equal(GRAMMAR_SITTINGS_TOTAL, 44);
+    assert.equal(GRAMMAR_SITTINGS_TOTAL, 46);
     // Every pattern lands in exactly one sitting — the sittings partition the
     // whole curriculum, none dropped and none double-counted.
     const covered = GRAMMAR_SITTINGS.flat();
@@ -412,13 +412,13 @@ describe("sittings: form lessons solo, pattern lessons bundle up to three", () =
     "nai-form",
     "ta-form",
     "stem-form",
-    "mashou",
+    "masu-form",
     "tara",
     "potential",
     "passive",
     "causative",
     "causative-passive",
-    "you-to-omou",
+    "volitional-form",
     "ba",
   ];
 

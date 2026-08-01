@@ -42,7 +42,6 @@ import {
   VOLITIONAL_FORM_PAGES,
 } from "@/data/grammar/form-intros";
 import { factsOf } from "@/lib/facts";
-import type { Form } from "@/lib/conjugate";
 import type { PhaseIntro } from "@/data/phase-intros";
 import type { FactId } from "@/types";
 
@@ -153,7 +152,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
     id: "gl-te-form-use",
     setId: "",
     eyebrow: "The て/で-form",
-    title: "The て/で-form asks casually, or links ideas.",
+    title: "Asks casually, or links ideas.",
     body: [
       {
         lead: "By itself,",
@@ -331,6 +330,12 @@ const LESSON_CAUSATIVE_PASSIVE = formLesson(
 );
 const LESSON_BA = formLesson("ba", "The ば-conditional", BA_FORM_PAGES);
 const LESSON_TARA = formLesson("tara", "The たら-conditional", TARA_FORM_PAGES);
+const LESSON_MASU_FORM = formLesson("masu-form", "The ます-form", MASU_FORM_PAGES);
+const LESSON_VOLITIONAL_FORM = formLesson(
+  "volitional-form",
+  "The volitional form",
+  VOLITIONAL_FORM_PAGES,
+);
 
 /**
  * The FORM-specific teaching pages a form recipe's Library entry renders, as one
@@ -350,6 +355,8 @@ const FORM_LIBRARY_PAGES: Readonly<Record<string, readonly PhaseIntro[]>> = {
   "nai-form": NAI_FORM_PAGES,
   "ta-form": TA_FORM_PAGES,
   "stem-form": STEM_FORM_PAGES,
+  "masu-form": MASU_FORM_PAGES,
+  "volitional-form": VOLITIONAL_FORM_PAGES,
   "passive": PASSIVE_FORM_PAGES,
   "potential": POTENTIAL_FORM_PAGES,
   "causative": CAUSATIVE_FORM_PAGES,
@@ -405,47 +412,18 @@ const ORDERED: readonly Recipe[] = [...RECIPES].sort(
   (a, b) => leadRank(a) - leadRank(b) || levelRank(a.level) - levelRank(b.level),
 );
 
-/** A form and the intro pages that teach it. The intro rides the FIRST pattern
- * in teaching order that is built on that form, so the form is taught just before
- * it is first used — the way lesson 1 teaches the て-form before the て-patterns.
- * (The て-form chains past this: te-sequence is authored, and the whole te-family
- * sits under lesson 1's form.) */
-// ない, た and stem are NOT here any more: each is its own form lesson now (a
-// recipe with its own pages), so prepending its pages onto the first pattern
-// would teach the form twice. masu and volitional have no form lesson yet, so
-// they still ride on the first pattern that uses them.
-const FORM_INTROS: readonly { form: Form; pages: readonly PhaseIntro[] }[] = [
-  { form: "masu", pages: MASU_FORM_PAGES },
-  { form: "volitional", pages: VOLITIONAL_FORM_PAGES },
-];
-
-/** Recipe id → the form-intro pages to prepend to its lesson, for the one recipe
- * that first introduces each form. Computed off ORDERED so it always lands on the
- * head of the family, whatever the order re-cut. */
-const FORM_INTRO_AT: ReadonlyMap<string, readonly PhaseIntro[]> = (() => {
-  const m = new Map<string, readonly PhaseIntro[]>();
-  for (const fi of FORM_INTROS) {
-    const first = ORDERED.find((r) => r.attach.find((a) => a.host === "verb")?.form === fi.form);
-    if (first) m.set(first.id, fi.pages);
-  }
-  return m;
-})();
-
 /** A pattern with no hand-authored lesson, as a generated page: the 〜ている-page-1
  * shape (meaning line + build table), derived from the recipe by autoPatternPage.
- * Where this pattern is the first to use a form, the form's intro pages are
- * prepended so the form is taught before it is used. The te-form and 〜ている are
- * authored by hand; every other drillable pattern flows through here. */
+ * Every verb form now has its own form lesson taught before its patterns (see
+ * FORM_RECIPE_IDS), so nothing is prepended here any more — a pattern is just its
+ * own generated page. The te-form and 〜ている are authored by hand; every other
+ * drillable pattern flows through here. */
 function autoLesson(r: Recipe): GrammarLessonDef {
-  const facts = patternFacts(r.id);
-  const intro = (FORM_INTRO_AT.get(r.id) ?? []).map(
-    (card) => ({ kind: "teach" as const, card }),
-  );
   return {
     id: r.id,
     title: r.pattern,
-    pages: [...intro, { kind: "teach", card: autoPatternPage(r) }],
-    drills: facts,
+    pages: [{ kind: "teach", card: autoPatternPage(r) }],
+    drills: patternFacts(r.id),
     primaryPattern: r.id,
   };
 }
@@ -459,6 +437,8 @@ const AUTHORED_LESSONS: Readonly<Record<string, GrammarLessonDef>> = {
   "nai-form": LESSON_NAI_FORM,
   "ta-form": LESSON_TA_FORM,
   "stem-form": LESSON_STEM_FORM,
+  "masu-form": LESSON_MASU_FORM,
+  "volitional-form": LESSON_VOLITIONAL_FORM,
   "passive": LESSON_PASSIVE,
   "potential": LESSON_POTENTIAL,
   "causative": LESSON_CAUSATIVE,

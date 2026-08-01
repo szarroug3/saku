@@ -73,7 +73,11 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
             <div className="flex flex-col gap-6 @xl:flex-row @xl:items-start @xl:gap-8">
               <div className="min-w-0 flex-1">
                 {intro.buildFormula ? (
-                  <IntroBuildFormula base={intro.buildFormula.base} add={intro.buildFormula.add} />
+                  <IntroBuildFormula
+                    base={intro.buildFormula.base}
+                    add={intro.buildFormula.add}
+                    trim={intro.buildFormula.trim}
+                  />
                 ) : (
                   <IntroBody body={intro.body} />
                 )}
@@ -495,12 +499,25 @@ export function IntroBuildTableGroup({
 /** A pattern's build FORMULA: the form it hangs off in a dashed outline, then +
  * the suffix — [ない-form] + でください. The visual "how to build it", shown in place
  * of a prose blurb so the recipe reads at a glance before the example tables. */
-export function IntroBuildFormula({ base, add }: { base: string; add: string }) {
+export function IntroBuildFormula({
+  base,
+  add,
+  trim,
+}: {
+  base: string;
+  add: string;
+  trim?: string;
+}) {
   return (
     <p className="flex flex-wrap items-center gap-2 text-[17px] text-text">
       <span className="rounded-md border border-dashed border-text-muted/60 px-2.5 py-1">
         {base}
       </span>
+      {trim ? (
+        <span lang="ja" className="font-kana text-text-muted">
+          − {trim}
+        </span>
+      ) : null}
       <span className="text-text-muted">+</span>
       <span lang="ja" className="font-kana text-accent">
         {add}

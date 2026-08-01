@@ -106,7 +106,11 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
         <Lbl>How to build it</Lbl>
         <div className="mt-3">
           {page.buildFormula ? (
-            <IntroBuildFormula base={page.buildFormula.base} add={page.buildFormula.add} />
+            <IntroBuildFormula
+              base={page.buildFormula.base}
+              add={page.buildFormula.add}
+              trim={page.buildFormula.trim}
+            />
           ) : (
             <IntroBody body={page.body} measure="" />
           )}

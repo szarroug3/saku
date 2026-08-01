@@ -136,6 +136,6 @@ describe("the two shapes that do NOT hold it yet", () => {
     // like the kana one, and the same fix shape would serve it.
     // 99: the 96 patterns plus the three standalone form recipes (nai-form,
     // ta-form, stem-form), each of which carries a meaning card too.
-    assert.equal(inSubject(GRAMMAR_SUBJECT).length, 99);
+    assert.equal(inSubject(GRAMMAR_SUBJECT).length, 101);
   });
 });
