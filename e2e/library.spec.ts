@@ -226,6 +226,10 @@ test("the complete library and current-session nav are present before hydration"
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Library");
   await expect(page.getByPlaceholder(/Search anything/)).toBeVisible();
   await expect(page.getByText("あ", { exact: true })).toBeVisible();
+  // Not merely the two formerly eager sections: the final kana section is real
+  // server HTML too. This fails if distant shelves regress to hydration-time
+  // IntersectionObserver placeholders.
+  await expect(page.getByText("ピョ", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Current sessions/ })).toContainText(
     "2",
   );

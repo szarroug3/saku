@@ -1342,8 +1342,8 @@ body {
  * (layer explosion) and collides with the transform some of them animate on hover.
  * .kq-defer is exactly the Library's scrolling shelf sections — the one place a
  * page is a WALL of translucent cards over the mesh — and it is already the
- * content-visibility hook, so offscreen sections are not even rendered, let alone
- * layered. One bounded layer per visible shelf, which is the whole fix.
+ * content-visibility hook, so offscreen sections skip layout and paint while
+ * remaining in the server HTML. One bounded layer per visible shelf is the fix.
  *
  * Scoped to kiri (the only theme with translucent glass over a mesh) and only
  * reproducible in a real browser, so this is verified on Chrome/Firefox, not in

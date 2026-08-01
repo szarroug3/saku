@@ -40,7 +40,7 @@
 // depths of the same set.
 
 import Link from "next/link";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { KANA_SUBJECT, SETS } from "@/data/characters";
@@ -86,52 +86,6 @@ import { sectionState, type Selection } from "@/lib/library/selection";
 import { entryStanding } from "@/lib/library/standing";
 import type { KnowledgeFilter } from "@/lib/library/url-state";
 
-/**
- * Keep the whole shelf scrollable without constructing thousands of offscreen
- * tile components during the first render. A section mounts before it reaches
- * the viewport and stays mounted afterward, so scrolling is automatic and
- * there is no pagination or "show more" state.
- */
-function DeferredShelfSection({
-  eager,
-  estimatedHeight,
-  render,
-}: {
-  eager: boolean;
-  estimatedHeight: number;
-  render: () => ReactNode;
-}) {
-  const [mounted, setMounted] = useState(eager);
-  const placeholder = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (mounted) return;
-    const node = placeholder.current;
-    if (!node || typeof IntersectionObserver === "undefined") {
-      setMounted(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        setMounted(true);
-        observer.disconnect();
-      },
-      { rootMargin: "1600px 0px" },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [mounted]);
-
-  if (mounted) return render();
-  return (
-    <div
-      ref={placeholder}
-      aria-hidden
-      style={{ height: estimatedHeight }}
-    />
-  );
-}
 import { factsOf } from "@/lib/facts";
 import type { AccuracyMetric, EntryId, FactAggregate, NewKanjiOrder } from "@/types";
 
@@ -418,25 +372,20 @@ export function Shelf({
           <FilterEmpty filter={filter} />
         </Card>
       ) : null}
-      {shownSections.map((section, index) => {
+      {shownSections.map((section) => {
         const ids = section.entries.map((e) => e.id);
         const state = sectionState(selected, ids);
         const onCount = ids.filter((id) => selected.has(id)).length;
         const shown = section.entries;
         const expanded = !collapsed.has(section.id);
         return (
-          <DeferredShelfSection
-            key={section.id}
-            eager={index < 2}
-            estimatedHeight={Math.max(
-              240,
-              Math.min(4000, shown.length * 24),
-            )}
-            render={() => (
-              // kq-defer: after the section is mounted, skip its offscreen
-              // layout and paint. DeferredShelfSection avoids mounting distant
-              // groups in the first place.
-              <Card className="kq-defer">
+          // Every section is real server-rendered HTML. The previous
+          // IntersectionObserver wrapper emitted placeholders after the first
+          // two sections and could only replace them after hydration, which is
+          // why every reload visibly assembled the Library in two stages.
+          // `content-visibility: auto` on kq-defer still lets the browser skip
+          // offscreen layout and paint without withholding the content itself.
+          <Card key={section.id} className="kq-defer">
             <div className="mb-2 flex items-center gap-2">
               <button
                 type="button"
@@ -481,37 +430,37 @@ export function Shelf({
                 </Hint>
               ) : null}
             </div>
-            {expanded ? asRows ? (
-              kind === TRANSITIVITY_SUBJECT ? (
-                <div className="flex flex-col">
-                  <VerbPairHeader />
-                  {shown.map(pairRow)}
-                </div>
-              ) : kind === GRAMMAR_SUBJECT ? (
-                // ONE GRID FOR THE WHOLE LIST so the pattern column is `max-content`
-                // of the WIDEST pattern — every 〜ないでください, 〜たことがある and
-                // 〜たほうがいい gets the width it needs and sits on one line, while
-                // the explanation column (`minmax(0,1fr)`) takes the rest and stays
-                // aligned across rows. Each row is a `grid-cols-subgrid` band, so its
-                // cells land on these shared tracks: checkbox, pattern, explanation,
-                // open, standing. The explanation's `min-w-0` lets it truncate on
-                // mobile rather than push the row wide.
-                <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3">
-                  {shown.map((entry) => row(entry, true))}
-                </div>
+            {expanded ? (
+              asRows ? (
+                kind === TRANSITIVITY_SUBJECT ? (
+                  <div className="flex flex-col">
+                    <VerbPairHeader />
+                    {shown.map(pairRow)}
+                  </div>
+                ) : kind === GRAMMAR_SUBJECT ? (
+                  // ONE GRID FOR THE WHOLE LIST so the pattern column is `max-content`
+                  // of the WIDEST pattern — every 〜ないでください, 〜たことがある and
+                  // 〜たほうがいい gets the width it needs and sits on one line, while
+                  // the explanation column (`minmax(0,1fr)`) takes the rest and stays
+                  // aligned across rows. Each row is a `grid-cols-subgrid` band, so its
+                  // cells land on these shared tracks: checkbox, pattern, explanation,
+                  // open, standing. The explanation's `min-w-0` lets it truncate on
+                  // mobile rather than push the row wide.
+                  <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3">
+                    {shown.map((entry) => row(entry, true))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {shown.map((entry) => row(entry))}
+                  </div>
+                )
               ) : (
-                <div className="flex flex-col">
-                  {shown.map((entry) => row(entry))}
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+                  {shown.map(tile)}
                 </div>
               )
-            ) : (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
-                {shown.map(tile)}
-              </div>
             ) : null}
-              </Card>
-            )}
-          />
+          </Card>
         );
       })}
     </>
