@@ -48,9 +48,7 @@ import { HOST_ORDER, buildExample, primaryHost } from "../../lib/grammar/example
 import { apply } from "../../lib/grammar/apply.ts";
 import { recipeAllows, vehiclesFor } from "../../lib/grammar/vehicles.ts";
 import {
-  ENDING_ANCHOR,
-  ROW_SHIFT_CLASSES,
-  TE_ENDINGS,
+  CLASS_ANCHOR,
   type TeEnding,
   type VehicleBucket,
 } from "../../lib/grammar/te-endings.ts";
@@ -243,20 +241,33 @@ const ROW_SHIFT_FORMS: ReadonlySet<Form> = new Set<Form>([
  * in る: measured against it they are irregular on every producible form except
  * ば, where すれば/くれば happen to coincide with drop-る + れば.
  */
-interface SpecialVerb {
+interface SpecialWord {
   readonly surface: string;
   readonly kana: string;
   readonly cls: WordClass;
-  /** The fact-id qualifier: grammar:<recipe>/production@iku|suru|kuru. */
+  /** The fact-id qualifier: grammar:<recipe>/production@iku|suru|kuru|ii. */
   readonly qualifier: string;
-  /** The regular rule this verb is measured against — see the doc above. */
+  /** The regular rule this word is measured against — see the doc above. */
   readonly regular: WordClass;
+  /** The attachment host this word satisfies — verb for 行く/する/来る, adj-i for いい. */
+  readonly host: Host;
 }
 
-const SPECIAL_VERBS: readonly SpecialVerb[] = [
-  { surface: "行く", kana: "いく", cls: "v5k-s", qualifier: "iku", regular: "v5k" },
-  { surface: "する", kana: "する", cls: "vs-i", qualifier: "suru", regular: "v1" },
-  { surface: "来る", kana: "くる", cls: "vk", qualifier: "kuru", regular: "v1" },
+const SPECIAL_VERBS: readonly SpecialWord[] = [
+  { surface: "行く", kana: "いく", cls: "v5k-s", qualifier: "iku", regular: "v5k", host: "verb" },
+  { surface: "する", kana: "する", cls: "vs-i", qualifier: "suru", regular: "v1", host: "verb" },
+  { surface: "来る", kana: "くる", cls: "vk", qualifier: "kuru", regular: "v1", host: "verb" },
+];
+
+/**
+ * The irregular ADJECTIVE, いい — its own memorized skill, exactly like the three
+ * irregular verbs. Measured against the plain い-adjective rule (adj-i): いい comes
+ * out irregular wherever it conjugates, because its stem is よ, not い (よくて not
+ * いくて, よければ not いければ). Minted only where the recipe scores an い-adjective
+ * (productionHosts includes adj-i), so a verb-only form never carries it.
+ */
+const SPECIAL_ADJS: readonly SpecialWord[] = [
+  { surface: "いい", kana: "いい", cls: "adj-ix", qualifier: "ii", regular: "adj-i", host: "adj-i" },
 ];
 
 /** The irregular-verb production qualifiers and the label the Library prints for
@@ -279,7 +290,7 @@ export const SPECIAL_VERB_ROWS: readonly { qualifier: string; label: string }[] 
  * build here at all (a noun-only recipe, a form that leaves it untouched), which
  * is also correctly "no fact".
  */
-function specialVerbIrregular(r: Recipe, sv: SpecialVerb): boolean {
+function specialVerbIrregular(r: Recipe, sv: SpecialWord): boolean {
   // On the KANA reading, never the kanji surface. 来る's irregularity is in the
   // sound (きて, not the naive くて), and the kanji 来 masks it: 来て is the surface
   // string whether the reading is きて or a regular くて, so a surface comparison
@@ -347,6 +358,22 @@ export function teEndingProductionFactId(
 }
 
 /**
+ * A pattern's production fact for ONE conjugation CLASS — e.g.
+ * `grammar:te-kara/production@v5u`, `grammar:masu-form/production@v1`.
+ *
+ * The class is the axis every verb-hosting pattern now splits on: building the
+ * form of a う-verb and of a く-verb are two separate scored skills, so each class
+ * is its own gradeable fact (baked on that class's CLASS_ANCHOR verb). This is the
+ * ONE verb-production scheme for both 音便 and row-shift forms — it replaces the
+ * five collapsed 音便 endings AND the single row-shift mastery fact. 行く/する/来る
+ * are NOT classes here; where a form conjugates them irregularly they get their own
+ * `@iku/@suru/@kuru` verb fact (see `specialVerbProductionFactId`).
+ */
+export function classProductionFactId(recipeId: string, cls: WordClass): FactId {
+  return factId(patternEntry(recipeId), productionAspect(cls));
+}
+
+/**
  * The hosts a pattern carries a SEPARATE production fact for.
  *
  * WHY PRODUCTION SPLITS BY HOST AND NOT BY PATTERN
@@ -372,37 +399,23 @@ export function teEndingProductionFactId(
  * The primary host leads, and it is the one keeping the unqualified fact id.
  */
 export function productionHosts(r: Recipe): Host[] {
-  // A 音便 pattern (て/た/たら) does not split by host — it splits by ENDING (see
-  // teEndingProductionFactId), and only on the VERB. Its production facts are
-  // minted separately in buildGrammarFacts, so it carries NO host-keyed production
-  // fact and every host-based consumer (the Library build panel, guided
-  // substitution, the distractor loop) correctly sees zero here rather than a
-  // plain fact that no longer exists. This is why 〜て/〜ても/〜てもいい no longer
-  // carry an adjective production fact: the whole 〜て family is verb-ending drills.
-  // The row-shift forms are NOT here: they keep their single host-keyed mastery
-  // fact and instead expand it per-ending in coverage (productionCoverageBuckets).
-  if (usesSoundChange(r)) {
-    // The verb side splits by ENDING, so it carries no verb host fact. The 〜て
-    // family stops there: its adjective (高くて) is not separately scored, the
-    // whole family being verb-ending drills. But た/たら's adjective conditional
-    // (高かったら, 静かだったら) is its own formation, not a 音便, so those hosts
-    // keep their production fact alongside the verb's ending split.
-    if (isTeFormRecipe(r)) return [];
-    return HOST_ORDER.filter(
-      (h) => h !== "verb" && r.attach.some((a) => a.host === h && !isTrivialAttachment(a)),
-    );
-  }
-  const primary = primaryHost(r);
-  if (!primary) return [];
-  const rest = HOST_ORDER.filter(
+  // VERB IS NO LONGER A HOST FACT — it splits per conjugation class in
+  // buildGrammarFacts (9 godan + ichidan + irregulars). So this returns only the
+  // NON-verb hosts the recipe conjugates non-trivially: an adjective (高くて,
+  // 高ければ, 高かったら) or, rarely, a noun. 〜すぎる on 高い is 高すぎる, a rule apart
+  // from its verb one, so it is its own scored fact.
+  //
+  // A recipe that DEFERS its production keeps none: 〜ても's adjective is te-cause's
+  // 高くて (see `sharedProductionWith`), not a second scored copy — its verb rows
+  // (行っても) still stand on their own per-class facts, which are minted regardless
+  // of this. Trivial hosts are excluded on the usual ground: 高い + ので is the word
+  // retyped, real Japanese the cluster page prints but not a question.
+  if (r.sharedProductionWith) return [];
+  return HOST_ORDER.filter(
     (h) =>
-      h !== primary &&
-      // Trivial hosts are excluded on the same ground the whole production
-      // aspect is: 高い + ので is the word retyped. 〜ので's adj-i row is real
-      // Japanese and the cluster page prints it — it is just not a question.
+      h !== "verb" &&
       r.attach.some((a) => a.host === h && !isTrivialAttachment(a)),
   );
-  return r.sharedProductionWith ? [primary] : [primary, ...rest];
 }
 
 /**
@@ -509,33 +522,30 @@ function buildGrammarFacts(): FactInfo[] {
     // isProducible, not isVacuous: a fact the generator will always refuse is
     // a fact the scheduler would schedule forever and never be able to ask.
     if (!isProducible(r)) continue;
-    // A 音便 pattern (て/た/たら) splits its production into one fact PER ENDING
-    // (see te-endings.ts): building the て/た-form of a く verb and of a す verb are
-    // two separate 音便 skills, so each ending is its own gradeable fact, baked on a
-    // representative verb of that ending and carrying the FULL pattern (書いてから
-    // for te-kara, 書いたことがある for ta-koto-ga-aru). This REPLACES the plain
-    // grammar:<recipe>/production fact — productionHosts returns [] for every 音便
-    // pattern, so the host loop below emits nothing for them. It applies to the
-    // whole 〜て family AND the た/たら patterns, not just te-sequence.
-    if (usesSoundChange(r)) {
-      for (const ending of TE_ENDINGS) {
-        const anchor = ENDING_ANCHOR[ending];
-        // The recipe's own verb restriction still holds: 〜てある wants a verb
-        // somebody does to something, so its intransitive-anchor ending (泳ぐ) is
-        // skipped rather than baked into 泳いである — the same never-mark-correct-
-        // Japanese-wrong guard the vehicle pool applies. Absent a restriction
-        // (every other 音便 pattern) this is a no-op and all five endings mint.
-        if (!recipeAllows(r, anchor.surface)) continue;
-        const surface = apply(r, anchor.surface, anchor.cls);
-        if (!surface.ok || surface.value === anchor.surface) continue;
-        const kana = apply(r, anchor.kana, anchor.cls);
+    // VERB PRODUCTION SPLITS BY CLASS — the one scheme for every form. Building
+    // the form of a う-verb, a く-verb, an ichidan verb … are separate scored
+    // skills ("just because you remember む transforms one way does not mean you
+    // remember ぬ"), so each conjugation class the recipe legally transforms is its
+    // own gradeable fact, baked on that class's CLASS_ANCHOR verb (書いてから for
+    // te-kara's v5k, 食べます for masu-form's v1). This REPLACES both the collapsed
+    // 音便 endings (う・つ・る were one fact) and the row-shift mastery-fact-plus-
+    // coverage: 音便 and row-shift forms are now drilled identically, one fact per
+    // class. The recipe's own verb restriction still holds — 〜てある wants a verb
+    // done to something, so its 泳ぐ class is skipped rather than baked into
+    // 泳いである — via recipeAllows, the same guard the vehicle pool applies.
+    if (conjugatesVerb(r)) {
+      for (const a of CLASS_ANCHOR) {
+        if (!recipeAllows(r, a.surface)) continue;
+        const surface = apply(r, a.surface, a.cls);
+        if (!surface.ok || surface.value === a.surface) continue;
+        const kana = apply(r, a.kana, a.cls);
         const form = surface.value;
         const kanaForm = kana.ok ? kana.value : form;
-        const pId = teEndingProductionFactId(r.id, ending);
+        const pId = classProductionFactId(r.id, a.cls);
         PRODUCTION_OF.set(pId, {
           recipeId: r.id,
           host: "verb",
-          bucket: { kind: "ending", ending },
+          bucket: { kind: "class", cls: a.cls },
         });
         facts.push({
           id: pId,
@@ -546,24 +556,20 @@ function buildGrammarFacts(): FactInfo[] {
           meaning: r.gloss,
         });
       }
-      // Fall through to the host loop: for た/たら it mints the adjective
-      // conditional facts (productionHosts returns those non-verb hosts); for the
-      // 〜て family productionHosts is [], so the loop emits nothing and only the
-      // ending facts stand. The special verbs are minted once, below.
+      // The irregular verbs (行く/する/来る), minted only where THIS form conjugates
+      // them irregularly — 行って for the て-form, but nothing for 〜ます (行きます is
+      // regular). Their classes (v5k-s/vs-i/vk) are absent from CLASS_ANCHOR on
+      // purpose, so they never double the regular class facts above.
+      mintSpecialWordFacts(r, facts, SPECIAL_VERBS);
     }
-    // The built form on a FIXED representative verb — see lib/grammar/example.ts
-    // for why the word is fixed. Baking it here (rather than leaving a pattern
-    // placeholder for a per-prompt generator) is what makes the production fact
-    // gradeable through the ordinary `accepts` path: the glyph is the form, the
-    // answers are the form in kanji and in kana, and a generic screen reveals
-    // the real answer instead of a placeholder. The confound still stands — a
-    // production item tests the recipe AND the word's conjugation at once; see
-    // the note on `production` in src/lib/grammar/questions.ts.
-    //
-    // ONE PER HOST. 〜すぎる on a verb and 〜すぎる on an い-adjective are two
-    // rules and two answers (行きすぎる, 高すぎる), so they are two facts — see
-    // productionHosts for which patterns split and which decline to.
-    for (const host of productionHosts(r)) {
+    // NON-VERB hosts keep their own host fact. 〜すぎる on 高い is 高すぎる, a rule
+    // apart from the verb one, so its own scored fact; the verb host is handled
+    // per-class above and skipped here. buildExample bakes the fixed representative
+    // (see lib/grammar/example.ts) so the fact grades through the ordinary
+    // `accepts` path — glyph is the form, answers are its kanji and kana.
+    const hosts = productionHosts(r);
+    for (const host of hosts) {
+      if (host === "verb") continue;
       const ex = buildExample(r, host);
       if (!ex) continue;
       const pId = patternProductionFactId(r.id, host);
@@ -576,59 +582,44 @@ function buildGrammarFacts(): FactInfo[] {
         subject: GRAMMAR_SUBJECT,
         meaning: r.gloss,
       });
-      // A ROW-SHIFT verb fact is ONE mastery fact, but its full-coverage round
-      // drills every ending — one verb per godan ending plus the v5r and v1
-      // classes. That coverage is recorded here (the buckets the recipe can
-      // legally host) and expanded per CARD by the coverage layer, so 'solid' on
-      // 〜ます stays a single fact while the quiz still asks かきます, かいます, たべ
-      // ます … in one round. Only the verb host, and only the row-shift forms.
-      if (host === "verb" && ROW_SHIFT_FORMS.has(verbAttachForm(r) as Form)) {
-        const buckets = rowShiftCoverage(r);
-        if (buckets.length) COVERAGE_OF.set(pId, buckets);
-      }
     }
-    mintSpecialVerbFacts(r, facts);
+    // The irregular adjective いい (よくて / よければ), where this form scores an
+    // い-adjective at all — the same "separate memorized skill" the verb irregulars
+    // get. Gated on adj-i being a scored host, so a verb-only or deferring form
+    // never carries it.
+    if (hosts.includes("adj-i")) mintSpecialWordFacts(r, facts, SPECIAL_ADJS);
   }
   return facts;
 }
 
 /**
- * The class buckets a row-shift recipe's coverage round expands its ONE mastery
- * fact into — the ROW_SHIFT_CLASSES the recipe can legally build on, in ending
- * order. Computed off the vehicle pool (not assumed to be all ten) so a recipe
- * that restricts its verbs — 〜られる passive wants a transitive one — covers only
- * the endings it can actually host, exactly as the deal would.
+ * Mint the special-WORD production facts a recipe carries — @iku/@suru/@kuru for
+ * the irregular verbs, @ii for the irregular adjective いい — one per word that is
+ * IRREGULAR on this recipe's form (specialWordIrregular) AND that the recipe
+ * accepts (recipeAllows). 行く lands only on 音便 patterns; する/来る on every
+ * producible form except ば; いい wherever the form scores an い-adjective. Each is
+ * baked on its own word and pinned to a `verb` (single-word) bucket so its
+ * showings roll exactly that word — a separate memorized skill, never mixed into
+ * the class coverage.
  */
-function rowShiftCoverage(r: Recipe): VehicleBucket[] {
-  const classes = new Set(vehiclesFor(r, "verb").map((v) => v.cls));
-  return ROW_SHIFT_CLASSES.filter((c) => classes.has(c)).map((cls) => ({
-    kind: "class",
-    cls,
-  }));
-}
-
-/**
- * Mint the @iku / @suru / @kuru production facts a recipe carries — one per
- * irregular verb that is IRREGULAR on this recipe's form (specialVerbIrregular)
- * AND that the recipe accepts (recipeAllows). 行く lands only on 音便 patterns;
- * する/来る on every producible form except ば. Each is baked on its own verb and
- * pinned to a `verb` bucket so its showings roll exactly that verb — a separate
- * memorized skill, never mixed into the ending or class coverage.
- */
-function mintSpecialVerbFacts(r: Recipe, facts: FactInfo[]): void {
-  for (const sv of SPECIAL_VERBS) {
-    if (!recipeAllows(r, sv.surface)) continue;
-    if (!specialVerbIrregular(r, sv)) continue;
-    const surface = apply(r, sv.surface, sv.cls);
-    if (!surface.ok || surface.value === sv.surface) continue;
-    const kana = apply(r, sv.kana, sv.cls);
+function mintSpecialWordFacts(
+  r: Recipe,
+  facts: FactInfo[],
+  words: readonly SpecialWord[],
+): void {
+  for (const sw of words) {
+    if (!recipeAllows(r, sw.surface)) continue;
+    if (!specialVerbIrregular(r, sw)) continue;
+    const surface = apply(r, sw.surface, sw.cls);
+    if (!surface.ok || surface.value === sw.surface) continue;
+    const kana = apply(r, sw.kana, sw.cls);
     const form = surface.value;
     const kanaForm = kana.ok ? kana.value : form;
-    const pId = specialVerbProductionFactId(r.id, sv.qualifier);
+    const pId = specialVerbProductionFactId(r.id, sw.qualifier);
     PRODUCTION_OF.set(pId, {
       recipeId: r.id,
-      host: "verb",
-      bucket: { kind: "verb", surface: sv.surface },
+      host: sw.host,
+      bucket: { kind: "verb", surface: sw.surface },
     });
     facts.push({
       id: pId,
@@ -682,20 +673,19 @@ export function grammarProduction(
   const hit = PRODUCTION_OF.get(fact);
   const r = hit ? recipe(hit.recipeId) : undefined;
   if (!r || !hit) return null;
-  // A BUCKETED fact (a 音便 ending or an irregular verb) is baked on its bucket's
-  // own verb, not the fixed 行く buildExample would hand back — 行く is the いく
-  // EXCEPTION and would be the wrong (and wrong-ending) fallback for, say, the す
-  // fact. So the lemma and the bucket both come from the bucket, and the showing's
-  // vehicle filter (grammarVehicleFor) uses the bucket to pick the right verb.
-  // A class bucket never reaches a FACT (row-shift coverage lives on the card), so
-  // only ending / verb buckets are seen here.
+  // A BUCKETED fact (a conjugation class or an irregular verb) is baked on its
+  // bucket's own verb, not the fixed 行く buildExample would hand back — 行く is the
+  // いく EXCEPTION and the wrong (and wrong-class) fallback for, say, the す fact. So
+  // the lemma comes from the bucket: a class bucket's CLASS_ANCHOR verb, a verb
+  // bucket's own surface. grammarVehicleFor then uses the bucket to pick the verb.
   if (hit.bucket) {
+    const b = hit.bucket;
     const lemma =
-      hit.bucket.kind === "ending"
-        ? ENDING_ANCHOR[hit.bucket.ending].surface
-        : hit.bucket.kind === "verb"
-          ? hit.bucket.surface
-          : ""; // class buckets are card-level, never stored on a fact
+      b.kind === "class"
+        ? (CLASS_ANCHOR.find((a) => a.cls === b.cls)?.surface ?? "")
+        : b.kind === "verb"
+          ? b.surface
+          : "";
     return { recipe: r, lemma, host: hit.host, bucket: hit.bucket };
   }
   const ex = buildExample(r, hit.host);

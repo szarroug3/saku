@@ -194,3 +194,35 @@ export const ROW_SHIFT_CLASSES: readonly WordClass[] = [
   "v5r",
   "v1",
 ];
+
+/**
+ * ONE REPRESENTATIVE VERB per drillable class — the canonical N5 verb every
+ * form's per-class production fact is baked on, and the one its Library table
+ * row shows. In CLASS ORDER (the nine godan endings, then ichidan), which is the
+ * order both the quiz coverage and the table follow.
+ *
+ * This is now the single source for "which verb stands in for class X": the
+ * former ENDING_ANCHOR (five 音便 buckets) and FORM_TABLE_VERBS (a second copy)
+ * both collapse into it, because every form — 音便 and row-shift alike — splits
+ * its production the SAME way now: one scored skill per class. 行く/する/来る are
+ * NOT here; they are irregular verbs with their own `verb` buckets, minted only
+ * where a form actually conjugates them irregularly (see mintSpecialVerbFacts).
+ */
+export const CLASS_ANCHOR: readonly {
+  readonly cls: WordClass;
+  /** The ending kana this class conjugates on — the table's "Ending" column. "" for ichidan. */
+  readonly ending: string;
+  readonly surface: string;
+  readonly kana: string;
+}[] = [
+  { cls: "v5u", ending: "う", surface: "買う", kana: "かう" },
+  { cls: "v5t", ending: "つ", surface: "待つ", kana: "まつ" },
+  { cls: "v5r", ending: "る", surface: "帰る", kana: "かえる" },
+  { cls: "v5m", ending: "む", surface: "飲む", kana: "のむ" },
+  { cls: "v5b", ending: "ぶ", surface: "遊ぶ", kana: "あそぶ" },
+  { cls: "v5n", ending: "ぬ", surface: "死ぬ", kana: "しぬ" },
+  { cls: "v5k", ending: "く", surface: "書く", kana: "かく" },
+  { cls: "v5g", ending: "ぐ", surface: "泳ぐ", kana: "およぐ" },
+  { cls: "v5s", ending: "す", surface: "話す", kana: "はなす" },
+  { cls: "v1", ending: "", surface: "食べる", kana: "たべる" },
+];

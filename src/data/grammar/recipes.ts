@@ -410,11 +410,17 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜て",
     gloss: "do X, and then",
     level: "N5",
-    attach: [{ host: "verb", form: "te", add: "" }],
+    attach: [
+      { host: "verb", form: "te", add: "" },
+      { host: "adj-i", form: "te", add: "" },
+      { host: "adj-na", form: "te", add: "" },
+    ],
     note:
-      "Bare て. Same string as te-cause and te-request, different job — which " +
-      "is why they are three rows. A SELECTION question can never distinguish " +
-      "these three from the blank alone; only production is honest here.",
+      "Bare て — the FORM lesson, so it teaches the て-form of adjectives (高くて, " +
+      "静かで) alongside verbs, not only verbs. Same string as te-cause and " +
+      "te-request, different job — which is why they are three rows. A SELECTION " +
+      "question can never distinguish these three from the blank alone; only " +
+      "production is honest here.",
   },
   {
     id: "te-cause",
@@ -666,7 +672,11 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜た",
     gloss: "plain past, “did X”",
     level: "N5",
-    attach: [{ host: "verb", form: "ta", add: "" }],
+    attach: [
+      { host: "verb", form: "ta", add: "" },
+      { host: "adj-i", form: "ta", add: "" },
+      { host: "adj-na", form: "ta", add: "" },
+    ],
   },
   {
     id: "ta-koto-ga-aru",
