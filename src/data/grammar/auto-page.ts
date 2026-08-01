@@ -186,6 +186,72 @@ function standaloneRuleRows(form: Form): IntroBuildRule[] {
   return rows;
 }
 
+/** The verb set the grouped pattern tables are built across — the same verbs the
+ * hand-authored て-form build page uses, so a pattern's tables read as the て-form's
+ * carried through to the finished pattern. Grouped Godan / Ichidan / Exceptions. */
+const PATTERN_TABLE_GROUPS: {
+  title: string;
+  heads?: { label?: string };
+  verbs: { label: string; word: string; cls: WordClass }[];
+}[] = [
+  {
+    title: "Godan (う-verbs)",
+    heads: { label: "Ending" },
+    verbs: [
+      { label: "う・つ・る", word: "かう", cls: "v5u" },
+      { label: "", word: "まつ", cls: "v5t" },
+      { label: "", word: "とる", cls: "v5r" },
+      { label: "む・ぶ・ぬ", word: "のむ", cls: "v5m" },
+      { label: "", word: "あそぶ", cls: "v5b" },
+      { label: "", word: "しぬ", cls: "v5n" },
+      { label: "く", word: "かく", cls: "v5k" },
+      { label: "ぐ", word: "およぐ", cls: "v5g" },
+      { label: "す", word: "はなす", cls: "v5s" },
+    ],
+  },
+  {
+    title: "Ichidan (る-verbs)",
+    verbs: [
+      { label: "", word: "たべる", cls: "v1" },
+      { label: "", word: "みる", cls: "v1" },
+    ],
+  },
+  {
+    title: "Exceptions and irregulars",
+    heads: { label: "" },
+    verbs: [
+      { label: "exception", word: "いく", cls: "v5k-s" },
+      { label: "irregular", word: "する", cls: "vs-i" },
+      { label: "irregular", word: "くる", cls: "vk" },
+    ],
+  },
+];
+
+/**
+ * A verb pattern's full conjugation, grouped the way the て-form build page groups
+ * it (Godan / Ichidan / Exceptions), each verb built THROUGH to the finished
+ * pattern — かう → かっている, たべる → たべている, する → している. Shown whole via `to`
+ * because a pattern is several steps (drop the ending, add the form, add the
+ * suffix) and the step-by-step mechanics live on the form's own page. A group with
+ * no buildable verb (the recipe refuses them) is dropped; empty overall means the
+ * caller falls back to the derivation table. */
+function patternRuleTables(
+  r: Recipe,
+): { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] {
+  const tables: { title: string; rules: IntroBuildRule[]; heads?: { label?: string } }[] = [];
+  for (const g of PATTERN_TABLE_GROUPS) {
+    const rules: IntroBuildRule[] = [];
+    for (const v of g.verbs) {
+      if (!recipeAllows(r, v.word)) continue;
+      const built = apply(r, v.word, v.cls);
+      if (!built.ok || built.value === v.word) continue;
+      rules.push({ label: v.label, verb: v.word, to: built.value });
+    }
+    if (rules.length) tables.push({ title: g.title, rules, heads: g.heads });
+  }
+  return tables;
+}
+
 /** Sentence-case a gloss for the hero line: "after doing X" → "After doing X." */
 function heroFromGloss(gloss: string): string {
   const g = gloss.trim();
@@ -302,6 +368,13 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
   const standalone =
     host === "verb" && !!attach?.form && attach.form !== "dictionary" && !attach.add;
   const ruleRows = standalone ? standaloneRuleRows(attach.form as Form) : [];
+  // A VERB pattern that adds a suffix to a form (〜ている, 〜てから, 〜ないでください)
+  // shows its whole conjugation grouped Godan / Ichidan / Exceptions, the て-form's
+  // tables carried through to the finished pattern. Empty for a non-verb pattern
+  // (a noun/adjective one), which falls back to the derivation table below.
+  const verbSuffix =
+    host === "verb" && !!attach?.form && attach.form !== "dictionary" && !!attach.add;
+  const buildTables = verbSuffix && !r.wrap?.close?.length ? patternRuleTables(r) : [];
   // A wrap builds its own worked pair (apply refuses two-slot patterns); a plain
   // pattern derives one row per example verb.
   const wrapRows = r.wrap?.close?.length ? wrapDeriveRows(r) : [];
@@ -318,6 +391,8 @@ export function autoPatternPage(r: Recipe): PhaseIntro {
     body: [{ text: build }],
     ...(ruleRows.length
       ? { buildRules: ruleRows, buildHeads: { label: "Ending" } }
-      : { deriveRules, deriveHeads: { form: formLabel ?? undefined } }),
+      : buildTables.length
+        ? { buildTables }
+        : { deriveRules, deriveHeads: { form: formLabel ?? undefined } }),
   };
 }

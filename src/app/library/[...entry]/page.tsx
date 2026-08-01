@@ -82,9 +82,11 @@ import { KanaContextView } from "@/components/lesson/kana-context-view";
 import {
   GRAMMAR_SUBJECT,
   conjugatesVerb,
+  formEntryFor,
   hostsAdjective,
-  isFormRecipe,
+  patternEntry,
   patternMeaningFactId,
+  verbAttachForm,
 } from "@/data/grammar";
 import {
   GRAMMAR_CONCEPT_SUBJECT,
@@ -125,7 +127,7 @@ import {
   type LibEntry,
 } from "@/lib/library/entries";
 import { characterRole } from "@/lib/character-role";
-import { attachesTo } from "@/lib/grammar/formula";
+import { attachesTo, FORM_LABEL } from "@/lib/grammar/formula";
 import { entryFromParam, entryFromSlug, entryHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
 import { mixupsOf } from "@/lib/library/mixups";
@@ -596,15 +598,25 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
       {/* CONCEPT REFERENCES — the foundational idea pages behind this pattern,
           grouped under ONE "Read about it" heading (not one heading per link).
-          Each link appears on the family it explains: the verb classes on every
-          pattern that CONJUGATES a verb (conjugatesVerb, so a plain-dictionary
-          pattern is left out); the two adjective kinds on every pattern that HOSTS
-          an adjective (hostsAdjective). The て-form no longer has a concept page —
-          a pattern built on it links "Build the て-form" from its build card
-          instead (see pattern-teach.tsx). See data/grammar for each predicate. */}
-      {isGrammar && pattern && (conjugatesVerb(pattern) || hostsAdjective(pattern)) ? (
+          The form this pattern builds on (the て-form's own entry, etc.) leads,
+          then the verb classes on every pattern that CONJUGATES a verb
+          (conjugatesVerb, so a plain-dictionary pattern is left out), then the two
+          adjective kinds on every pattern that HOSTS an adjective (hostsAdjective).
+          formEntryFor is null for a form recipe itself, so a form never links to
+          itself. See data/grammar for each predicate. */}
+      {isGrammar &&
+      pattern &&
+      (formEntryFor(pattern) || conjugatesVerb(pattern) || hostsAdjective(pattern)) ? (
         <LinkRow label="Read about it">
           <div className="flex flex-col items-start gap-1">
+            {formEntryFor(pattern) && verbAttachForm(pattern) ? (
+              <Link
+                href={entryHref(patternEntry(formEntryFor(pattern)!))}
+                className="text-[13px] text-accent no-underline"
+              >
+                The {FORM_LABEL[verbAttachForm(pattern)!]} →
+              </Link>
+            ) : null}
             {conjugatesVerb(pattern) ? (
               <Link
                 href={entryHref(grammarConceptEntry("verb-classes"))}
@@ -988,37 +1000,19 @@ function EntryView({ entry }: { entry: LibEntry }) {
       ) : null}
 
       {/* ================= GRAMMAR ================= */}
-      {isGrammar && pattern && isFormRecipe(pattern.id) ? (
+      {isGrammar && pattern ? (
         <>
-          {/* A FORM entry (the て/で-form, ない, た, stem) teaches the form itself:
-              PatternTeach returns one box per teaching page — for the て-form that
-              is "what it is for" and "how to build it" as two stacked boxes. The
-              build tables are wide, so the boxes take the full width and the links
-              move to the foot, rather than sharing a 1.45fr/1fr row. */}
+          {/* ONE FORMAT for every form and pattern: PatternTeach returns two boxes
+              — an intro and a build box — and the Links box sits full width at the
+              foot. The build tables (a form's conjugation, or a pattern's whole
+              conjugation grouped the same way) are wide, so the boxes stack and take
+              the full width rather than sharing a half-row. PatternTeach renders the
+              SAME PhaseIntro the lesson teaches with, so the two cannot drift. See
+              pattern-teach.tsx. */}
           <div className="mb-3.5 flex flex-col gap-3.5 [&>*]:mb-0">
             <PatternTeach pattern={pattern} />
           </div>
           <div className="mb-3.5">
-            <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
-          </div>
-        </>
-      ) : isGrammar && pattern ? (
-        <>
-          {/* THE BUILD CARD TAKES THE WIDER HALF, in the same 1.45fr/1fr row where
-              a kana puts its mnemonic and a kanji its strokes. It needs the space
-              for the same reason they do: the build blurb and its worked table are
-              a line of Japanese plus a few rows, and squeezed into an even split
-              they reflow into a ribbon. The pairing is what stops the page being a
-              stack of full-width boxes.
-
-              PatternTeach is the LESSON'S build, not a Library-only formula: it
-              renders autoPatternPage(pattern) — the same PhaseIntro the grammar
-              lesson teaches this pattern with — through the same IntroBody /
-              IntroBuildTable / IntroDeriveTable blocks. So a learner sees one
-              build (kana verbs, grammatical meanings), here and in the lesson, and
-              the two cannot drift. See pattern-teach.tsx. */}
-          <div className="mb-3.5 grid grid-cols-[1.45fr_1fr] gap-3.5 max-[860px]:grid-cols-1 [&>*]:mb-0 [&>*]:h-full">
-            <PatternTeach pattern={pattern} />
             <EntryLinks mixups={mixups}>{linkRows}</EntryLinks>
           </div>
 

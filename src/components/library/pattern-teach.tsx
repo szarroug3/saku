@@ -44,8 +44,6 @@
 // build line carries the card; IntroBody renders it, and the (absent) table
 // simply does not appear. No empty box, no note about the gap.
 
-import Link from "next/link";
-
 import {
   IntroBody,
   IntroBuildFooter,
@@ -55,11 +53,9 @@ import {
 } from "@/components/lesson/phase-intro-view";
 import { Card, Lbl } from "@/components/ui";
 import { autoPatternPage } from "@/data/grammar/auto-page";
-import { formEntryFor, isFormRecipe, patternEntry, verbAttachForm } from "@/data/grammar";
+import { isFormRecipe } from "@/data/grammar";
 import { formLibraryPages } from "@/data/grammar/lessons";
 import type { Recipe } from "@/data/grammar/recipes";
-import { FORM_LABEL } from "@/lib/grammar/formula";
-import { entryHref } from "@/lib/library/href";
 
 export function PatternTeach({ pattern }: { pattern: Recipe }) {
   // A FORM recipe (the て/で-form, ない, た, stem) shows the form's OWN teaching —
@@ -92,47 +88,40 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
     );
   }
 
+  // A PATTERN: the same two-box shape a form uses — an intro box (the one-line
+  // build summary) and a build box (its whole conjugation, grouped Godan /
+  // Ichidan / Exceptions like the て-form, carried through to the finished
+  // pattern). The link to the form it builds on rides in the entry's Links box,
+  // not here. A wrap (〜たり〜たり) has no table, so only the intro box shows.
   const page = autoPatternPage(pattern);
-  // The form page this pattern builds on, if any — set only for a PATTERN whose
-  // verb form has a page of its own (te/nai/ta/stem), never for a form recipe
-  // itself. When set, the pattern links to the form instead of reprinting its
-  // conjugation, so the build table is dropped even where autoPatternPage
-  // produced one (〜て cause is the case that does).
-  const formEntry = formEntryFor(pattern);
-  const form = verbAttachForm(pattern);
-  const formLabel = form ? FORM_LABEL[form] : null;
+  const hasBuild = !!(
+    page.buildTables?.length ||
+    page.buildRules?.length ||
+    page.deriveRules?.length
+  );
   return (
-    <Card className="h-full">
-      <Lbl>How to build it</Lbl>
-      {/* The build blurb, then its table — the same order and the same two blocks
-          the lesson's PhaseIntroView stacks (see phase-intro-view.tsx). `measure`
-          is dropped because the card is already a sized half-column; a 64ch cap on
-          top of that wraps the prose early. */}
-      <div className="mt-3 space-y-5">
-        <IntroBody body={page.body} measure="" />
-        {/* The form's full conjugation table, ONLY on the form recipe's own page.
-            A pattern built on the form links to it (below) rather than reprinting
-            it, so its build table is suppressed here. */}
-        {!formEntry && page.buildRules?.length ? (
-          <IntroBuildTable rules={page.buildRules} heads={page.buildHeads} />
-        ) : null}
-        {page.deriveRules?.length ? (
-          <IntroDeriveTable rows={page.deriveRules} heads={page.deriveHeads} />
-        ) : null}
-        {/* The link to build the form — the conjugation this pattern no longer
-            reprints lives on that page. Styled like every other outgoing accent
-            link on an entry page. */}
-        {formEntry && formLabel ? (
-          <p>
-            <Link
-              href={entryHref(patternEntry(formEntry))}
-              className="text-[13px] text-accent no-underline"
-            >
-              Build the {formLabel} →
-            </Link>
-          </p>
-        ) : null}
-      </div>
-    </Card>
+    <>
+      <Card className="h-full">
+        <Lbl>How to build it</Lbl>
+        <div className="mt-3">
+          <IntroBody body={page.body} measure="" />
+        </div>
+      </Card>
+      {hasBuild ? (
+        <Card className="h-full">
+          <div className="space-y-5">
+            {page.buildTables?.map((t, i) => (
+              <IntroBuildTableGroup key={i} title={t.title} rules={t.rules} heads={t.heads} />
+            ))}
+            {page.buildRules?.length ? (
+              <IntroBuildTable rules={page.buildRules} heads={page.buildHeads} />
+            ) : null}
+            {page.deriveRules?.length ? (
+              <IntroDeriveTable rows={page.deriveRules} heads={page.deriveHeads} />
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
+    </>
   );
 }
