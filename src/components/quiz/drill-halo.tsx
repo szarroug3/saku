@@ -46,14 +46,9 @@ export type HaloState =
 /** Ring geometry, from the comp: a 176px halo whose band is the 84–88px
  * annulus, with the glyph at 78px inside it. */
 const HALO_PX = 176;
-const HOLE_PX = 84;
 export const GLYPH_PX = 78;
 
-const RING_MASK = `radial-gradient(circle, transparent ${HOLE_PX}px, #000 ${HOLE_PX + 1}px)`;
-
-// The usable inner box for a WRAPPING text prompt inside the ring. The hole is
-// radius 84 (diameter 168); a multi-line block insets from the band and stays
-// clear of the ring's curve at the top and bottom. A lone glyph never fills it,
+// The usable inner box for a WRAPPING text prompt. A lone glyph never fills it,
 // so a single character still renders big and on one line.
 const FIT_W = 150;
 const FIT_H = 138;
@@ -109,21 +104,12 @@ function useFitFontSize(maxSize: number, key: string) {
 }
 
 const HALO_CSS = `
-@property --kq-sweep {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 0%;
-}
-@keyframes kq-drain { from { --kq-sweep: 100%; } to { --kq-sweep: 0%; } }
-@keyframes kq-fill  { from { --kq-sweep: 0%; }   to { --kq-sweep: 100%; } }
-@keyframes kq-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-@keyframes kq-flash { 0% { opacity: 1; } 55% { opacity: 0.25; } 100% { opacity: 0; } }
 @keyframes kq-glyph-in {
   from { opacity: 0; transform: scale(0.94); }
   to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .kq-halo, .kq-ring, .kq-glyph, .kq-base {
+  .kq-halo, .kq-glyph, .kq-base {
     animation: none !important;
     transition: none !important;
   }
@@ -149,67 +135,9 @@ function baseGlow(state: HaloState): string {
   }
 }
 
-interface RingSpec {
-  key: string;
-  color: string;
-  sweep: string;
-  animation: string;
-}
-
-/** The masked conic arc for a non-resting state, or null while resting. */
-function ringSpec(
-  state: HaloState,
-  cardKey: string,
-  timerLeft: number,
-  drainWindow: number,
-): RingSpec | null {
-  switch (state) {
-    case "draining": {
-      const left = Math.max(0, Math.min(drainWindow, timerLeft));
-      return {
-        // Re-mounts each tick; the negative delay skips to where the last
-        // one left off, so the sweep is continuous across restarts.
-        key: `drain-${cardKey}-${left}`,
-        color: "var(--warning)",
-        sweep: `${(100 * left) / drainWindow}%`,
-        animation: `kq-drain ${drainWindow}s linear ${left - drainWindow}s forwards`,
-      };
-    }
-    case "right":
-      return {
-        key: `right-${cardKey}`,
-        color: "var(--accent)",
-        sweep: "100%",
-        animation: "kq-fill 340ms ease-out forwards",
-      };
-    case "wrong":
-      return {
-        key: `wrong-${cardKey}`,
-        color: "var(--danger)",
-        sweep: "100%",
-        animation: "kq-pulse 460ms ease-in-out 2",
-      };
-    case "wrong-flash":
-      return {
-        key: `flash-${cardKey}`,
-        color: "var(--danger)",
-        sweep: "100%",
-        animation: "kq-flash 720ms ease-out forwards",
-      };
-    default:
-      return null;
-  }
-}
 
 export interface DrillHaloProps {
   state: HaloState;
-  /** `${asked}-${tries}` — the parent keys the halo by this, so entry
-   * animations (and the shake) replay on every new card and every attempt. */
-  cardKey: string;
-  /** Seconds left on the countdown; only read while draining. */
-  timerLeft: number;
-  /** Length of the drain window in seconds — min(5, timerSec). */
-  drainWindow: number;
   /** The character (jp2en) or the romaji prompt (en2jp). For a kanji-reading
    * card this is the WHOLE WORD (電話), so the reading is asked in context; see
    * `highlight`. */
@@ -255,9 +183,6 @@ export interface DrillHaloProps {
 
 export function DrillHalo({
   state,
-  cardKey,
-  timerLeft,
-  drainWindow,
   glyph,
   highlight,
   font,
@@ -271,7 +196,6 @@ export function DrillHalo({
   compactSentenceFrame = false,
   reading,
 }: DrillHaloProps) {
-  const ring = ringSpec(state, cardKey, timerLeft, drainWindow);
   const wrong = state === "wrong" || state === "wrong-flash";
   const square = !!sentenceFrame;
 
@@ -293,7 +217,7 @@ export function DrillHalo({
     >
       <style>{HALO_CSS}</style>
       <div
-        className={`kq-base absolute inset-0 ${square ? "rounded-2xl" : "rounded-full"}`}
+        className="kq-base absolute inset-0 rounded-2xl"
         style={{
           background: `radial-gradient(circle, ${mix("--accent", 9)}, transparent 68%)`,
           border: "1px solid var(--border)",
@@ -301,22 +225,6 @@ export function DrillHalo({
           transition: "box-shadow .3s",
         }}
       />
-      {!square && ring ? (
-        <div
-          key={ring.key}
-          className="kq-ring absolute inset-0 rounded-full"
-          style={{
-            // The untravelled part of the band is the hairline track, so the
-            // arc always reads against something.
-            background: `conic-gradient(${ring.color} var(--kq-sweep), var(--border) 0)`,
-            maskImage: RING_MASK,
-            WebkitMaskImage: RING_MASK,
-            animation: ring.animation,
-            // Also the reduced-motion (and no-@property) resting value.
-            ["--kq-sweep" as string]: ring.sweep,
-          }}
-        />
-      ) : null}
       {square ? (
         <div
           className={`kq-glyph relative text-center ${

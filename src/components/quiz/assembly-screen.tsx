@@ -545,9 +545,6 @@ export function AssemblyScreen() {
         <DrillHalo
           key={`${item.id}-${card.tries}`}
           state={haloState}
-          cardKey={`${item.id}-${card.tries}`}
-          timerLeft={0}
-          drainWindow={0}
           glyph=""
           font="inherit"
           fontSize={30}
