@@ -156,12 +156,7 @@ function feedbackSpec(
       return { key: `feedback-${cardKey}`, color: "var(--accent)",      strokeDashoffset: PERIMETER, animation: "kq-stroke-fill 500ms ease-out forwards" };
     case "wrong":
     case "wrong-flash": {
-      // Freeze dashoffset at wherever the drain was; only the stroke color transitions to red.
-      const left = drainWindow > 0 && timerLeft <= drainWindow
-        ? Math.max(0, timerLeft)
-        : 0;
-      const frozenDash = drainWindow > 0 ? Math.round(PERIMETER * left / drainWindow) : 0;
-      return { key: `feedback-${cardKey}`, color: "oklch(58% 0.22 25)", strokeDashoffset: frozenDash, animation: "none" };
+      return { key: `feedback-${cardKey}`, color: "oklch(58% 0.22 25)", strokeDashoffset: PERIMETER, animation: "kq-stroke-fill 300ms ease-out forwards" };
     }
     default:
       return null;

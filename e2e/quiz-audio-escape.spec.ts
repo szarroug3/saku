@@ -25,7 +25,7 @@ import { wordReadingFactId } from "@/data/vocab";
 
 const word = "電話";
 
-/** Open the mid-drill gear and turn Audio prompts off. */
+/** Open the mid-drill gear, turn Audio prompts off, and save. */
 async function turnAudioOff(page: Page) {
   await page.getByRole("button", { name: "Mid-drill settings" }).click();
   const row = page.getByText("Audio prompts").locator("..");
@@ -33,6 +33,7 @@ async function turnAudioOff(page: Page) {
   await expect(toggle).toHaveText("On");
   await toggle.click();
   await expect(toggle).toHaveText("Off");
+  await page.getByRole("button", { name: "Save" }).click();
 }
 
 test("turning Audio off replaces the listening card on screen with a text card", async ({
@@ -93,8 +94,6 @@ test("after turning Audio off, no further listening card is drawn in the run", a
   await startQuizDrill(page);
 
   await turnAudioOff(page);
-  // Close the gear so it doesn't sit over the card.
-  await page.getByRole("button", { name: "Mid-drill settings" }).click();
 
   // Walk every coverage slot. The speaker never shows — every card is text.
   for (let i = 0; i < 4; i++) {

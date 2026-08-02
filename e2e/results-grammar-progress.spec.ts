@@ -142,9 +142,11 @@ test("results shows grammar split rows, label formatting, making-progress status
   await expect(page.getByText("No miss this run")).toBeVisible();
   await expect(page.getByText(/Currently getting there, \d+ to clear it/)).toBeVisible();
   await expect(page.getByLabel("last ten runs").first().locator("span")).toHaveCount(10);
-  await expect(page.getByRole("button", { name: "Clear now" })).toHaveCount(1);
-  await page.getByRole("button", { name: "Clear now" }).click();
-  await expect(page.getByRole("button", { name: "Clear now" })).toHaveCount(0);
+  // FactProgressSection renders after PatternSection, so its Clear now is last.
+  const factClearBtn = page.locator("button").filter({ hasText: "Clear now" }).last();
+  await expect(factClearBtn).toBeVisible();
+  await factClearBtn.click();
+  await expect(factClearBtn).toHaveCount(0);
   await expect(page.getByText("Cleared")).toBeVisible();
 
   // Grammar rows split by label (not collapsed into one ~て row).
