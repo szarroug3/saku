@@ -204,16 +204,10 @@ export function DrillHalo({
       // The shake replays because the parent re-mounts this component on
       // every attempt — the same trick the grid screen's cards use.
       className={`kq-halo relative grid place-items-center ${wrong ? "animate-gshake" : ""}`}
-      style={
-        square
-          ? {
-              width: compactSentenceFrame
-                ? "min(84vw, 360px)"
-                : "min(92vw, 440px)",
-              minHeight: compactSentenceFrame ? 132 : HALO_PX,
-            }
-          : { width: HALO_PX, height: HALO_PX }
-      }
+      style={{
+        width: compactSentenceFrame ? "min(84vw, 360px)" : "min(92vw, 440px)",
+        minHeight: compactSentenceFrame ? 132 : HALO_PX,
+      }}
     >
       <style>{HALO_CSS}</style>
       <div
