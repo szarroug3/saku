@@ -1835,18 +1835,20 @@ export function DrillScreen() {
           ) : null}
         </span>
 
-        {!rt.waiting || q.hinted ? (
+        {/* Always rendered so the drawer below doesn't shift when waiting starts. */}
+        <span
+          className={`flex flex-col items-center gap-3${rt.waiting && !q.hinted ? " invisible pointer-events-none" : ""}`}
+          aria-hidden={rt.waiting && !q.hinted ? true : undefined}
+        >
           <span className="flex flex-col items-center gap-3">
             <span className="flex items-center justify-center gap-3">
-              {!rt.waiting ? (
-                <Btn
-                  className="w-20"
-                  onClick={skipQuestion}
-                  title="Skip — ask this again later"
-                >
-                  Skip
-                </Btn>
-              ) : null}
+              <Btn
+                className="w-20"
+                onClick={skipQuestion}
+                title="Skip — ask this again later"
+              >
+                Skip
+              </Btn>
               {hintReady ? (
                 <Btn
                   className="w-20"
@@ -1906,7 +1908,7 @@ export function DrillScreen() {
               )
             ) : null}
           </span>
-        ) : null}
+        </span>
       </div>
 
       {drawerOpen ? <DrillDrawer /> : null}
