@@ -48,10 +48,17 @@ import {
 } from "@/lib/engine";
 import { entryOf, factInfo } from "@/lib/facts";
 import { gridBoards } from "@/lib/grid-facts";
+import { presentationPhrase } from "@/lib/question-presentation";
 import { isResponseCaption } from "@/lib/quiz-boards";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
-import type { FactId, GridResponse, QuizConfig, SessionStats } from "@/types";
+import type {
+  FactId,
+  GridResponse,
+  QuizConfig,
+  SessionStats,
+  ShowingPresentation,
+} from "@/types";
 
 import { GridHud } from "./grid-hud";
 
@@ -136,6 +143,22 @@ function setCardValue(g: GridRuntime, f: FactId, value: string): void {
   g.cards[f].value = value;
 }
 
+/** Grid always asks by showing Japanese and typing the answer. Persisting this
+ * on fact stats lets results render the real prompt phrase rather than the
+ * generic ASKED fallback. */
+function gridShowing(): ShowingPresentation {
+  return { dir: "jp2en", mode: "typed", listen: false };
+}
+
+function recordMissedPhrase(st: SessionStats[FactId], phrase: string, said: string): void {
+  const list = st.missedPhrases ?? (st.missedPhrases = []);
+  if (!list.includes(phrase)) list.push(phrase);
+  const cleaned = said.trim();
+  if (!cleaned || cleaned === "--") return;
+  const map = st.saidByPhrase ?? (st.saidByPhrase = {});
+  map[phrase] = cleaned;
+}
+
 type CheckOutcome =
   | "noop" // empty input or already locked
   | "right" // correct — locked green
@@ -145,9 +168,18 @@ type CheckOutcome =
 /** Legacy grid check(): score the card's current input against LIVE cfg. */
 function checkCard(g: GridRuntime, f: FactId, cfg: QuizConfig): CheckOutcome {
   const card = g.cards[f];
-  const v = card.value.trim().toLowerCase();
+  const typed = card.value.trim();
+  const v = typed.toLowerCase();
   if (!v || card.state !== "open") return "noop";
   const st = g.stats[f];
+  const shown = gridShowing();
+  st.shown = shown;
+  const showns = st.showns ?? (st.showns = []);
+  const shownKey = `${shown.dir}|${shown.mode}|${shown.listen ? 1 : 0}`;
+  if (!showns.some((s) => `${s.dir}|${s.mode}|${s.listen ? 1 : 0}` === shownKey)) {
+    showns.push(shown);
+  }
+  const phrase = presentationPhrase(f, shown);
   // A grid cell shows the thing and asks for its answer, which is jp2en by
   // construction — there is no direction control on this screen.
   const ok = checkTyped(f, card.value, "jp2en");
@@ -172,6 +204,7 @@ function checkCard(g: GridRuntime, f: FactId, cfg: QuizConfig): CheckOutcome {
   }
   g.streak = 0;
   st.misses++;
+  recordMissedPhrase(st, phrase, typed);
   card.tries++;
   // `confused` is keyed by ENTRY — the thing you said instead, not one of its
   // facts. See FactSessionDetail. Scanned against the CURRENT board's cards —
