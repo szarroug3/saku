@@ -502,7 +502,7 @@ export function DrillScreen() {
   }
 
   function tick() {
-    if (!rt || !rt.q || rt.waiting) return;
+    if (!rt || !rt.q || rt.waiting || drawerOpen) return;
     rt.timerLeft = Math.max(0, (rt.timerLeft ?? 0) - 1);
     if (rt.timerLeft <= 0) {
       submit("(time)");
@@ -1549,6 +1549,7 @@ export function DrillScreen() {
           state={haloState}
           timerLeft={rt.timerLeft ?? 0}
           drainWindow={drainWindow}
+          paused={drawerOpen}
           // A kanji-reading card shows the WHOLE WORD (電話) so the reading is
           // asked in context, with this card's kanji lit and the rest dimmed (see
           // `highlight`). Every other card shows its own glyph. The word is
@@ -1911,7 +1912,7 @@ export function DrillScreen() {
         </span>
       </div>
 
-      {drawerOpen ? <DrillDrawer /> : null}
+      {drawerOpen ? <DrillDrawer onClose={() => setDrawerOpen(false)} /> : null}
     </div>
   );
 }

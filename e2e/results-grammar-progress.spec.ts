@@ -142,6 +142,10 @@ test("results shows grammar split rows, label formatting, making-progress status
   await expect(page.getByText("No miss this run")).toBeVisible();
   await expect(page.getByText(/Currently getting there, \d+ to clear it/)).toBeVisible();
   await expect(page.getByLabel("last ten runs").first().locator("span")).toHaveCount(10);
+  await expect(page.getByRole("button", { name: "Clear now" })).toHaveCount(1);
+  await page.getByRole("button", { name: "Clear now" }).click();
+  await expect(page.getByRole("button", { name: "Clear now" })).toHaveCount(0);
+  await expect(page.getByText("Cleared")).toBeVisible();
 
   // Grammar rows split by label (not collapsed into one ~て row).
   await expect(page.getByText("~て · godan · う")).toBeVisible();

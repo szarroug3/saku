@@ -41,6 +41,7 @@ import { deriveSessionList } from "@/lib/session-list";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
 import { SOLID_PCT, standingOf } from "@/lib/library/standing";
+import { addClearedFact } from "@/components/results/clear-state";
 import type { FactId, QuizMode } from "@/types";
 
 const EMPTY_ANALYSIS = { patterns: [], progress: [] };
@@ -291,11 +292,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
 
   const clearFactNow = (fact: FactId): void => {
     if (!clearableFacts.has(fact)) return;
-    setClearedProgressFacts((prev) => {
-      const next = new Set(prev);
-      next.add(fact);
-      return next;
-    });
+    setClearedProgressFacts((prev) => addClearedFact(prev, fact));
     writes.claim([fact]);
   };
 

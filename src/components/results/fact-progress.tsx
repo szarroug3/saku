@@ -8,6 +8,7 @@ import { grammarMeaning, grammarProduction } from "@/data/grammar";
 import { patternLabel } from "@/data/grammar/recipes";
 import { useHistory } from "@/lib/use-history";
 import { wordKnown } from "@/lib/word-unlock";
+import { clearActionLabel } from "@/components/results/clear-state";
 import type { FactId } from "@/types";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
@@ -200,7 +201,7 @@ export function FactProgressSection({
         </span>
         {isCleared?.(fact) ? (
           <span className="rounded-full bg-success/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.07em] text-success">
-            Cleared
+            {clearActionLabel(true)}
           </span>
         ) : (
           <button
@@ -211,7 +212,7 @@ export function FactProgressSection({
               onClear(fact);
             }}
           >
-            Clear now
+            {clearActionLabel(false)}
           </button>
         )}
       </span>

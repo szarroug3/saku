@@ -48,6 +48,13 @@ export type HaloState =
 const HALO_PX = 176;
 export const GLYPH_PX = 78;
 
+// SVG path tracing the halo rectangle starting at top-center, clockwise.
+// viewBox is 440×176 (max container size); vector-effect keeps stroke at 2px on any width.
+const HALO_PATH =
+  "M 220,0 H 424 A 16,16 0 0,1 440,16 V 160 A 16,16 0 0,1 424,176 H 16 A 16,16 0 0,1 0,160 V 16 A 16,16 0 0,1 16,0 H 220";
+// 2*(408+144) + 2π*16 ≈ 1205
+const PERIMETER = 1205;
+
 // The usable inner box for a WRAPPING text prompt. A lone glyph never fills it,
 // so a single character still renders big and on one line.
 const FIT_W = 150;
@@ -104,10 +111,9 @@ function useFitFontSize(maxSize: number, key: string) {
 }
 
 const HALO_CSS = `
-@keyframes kq-drain-bar  { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-@keyframes kq-border-in  { from { opacity: 0; } to { opacity: 1; } }
-@keyframes kq-border-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
-@keyframes kq-border-flash { 0% { opacity: 1; } 55% { opacity: 0.25; } 100% { opacity: 0; } }
+@keyframes kq-stroke-fill   { from { stroke-dashoffset: 1205; } to { stroke-dashoffset: 0; } }
+@keyframes kq-stroke-fill-a { from { stroke-dashoffset: 1205; } to { stroke-dashoffset: 0; } }
+@keyframes kq-stroke-fill-b { from { stroke-dashoffset: 1205; } to { stroke-dashoffset: 0; } }
 @keyframes kq-glyph-in {
   from { opacity: 0; transform: scale(0.94); }
   to   { opacity: 1; transform: none; }
@@ -123,11 +129,11 @@ const HALO_CSS = `
 interface FeedbackSpec {
   key: string;
   color: string;
+  strokeDashoffset: number;
   animation: string;
-  drain?: boolean;
 }
 
-/** Rectangle equivalent of the old conic ring: a drain strip or a border overlay. */
+/** SVG stroke feedback: fills outline clockwise from top-center for timer/correct, pulses for wrong. */
 function feedbackSpec(
   state: HaloState,
   cardKey: string,
@@ -137,20 +143,26 @@ function feedbackSpec(
   switch (state) {
     case "draining": {
       const left = Math.max(0, Math.min(drainWindow, timerLeft));
+      // Alternate a/b so changing the name restarts the animation each tick without remounting.
+      const name = left % 2 === 0 ? "kq-stroke-fill-a" : "kq-stroke-fill-b";
       return {
-        key: `drain-${cardKey}-${left}`,
-        color: "var(--warning)",
-        // Negative delay skips to where the bar already is, same trick as the old ring.
-        animation: `kq-drain-bar ${drainWindow}s linear ${left - drainWindow}s forwards`,
-        drain: true,
+        key: `feedback-${cardKey}`,
+        color: "var(--accent)",
+        strokeDashoffset: PERIMETER,
+        animation: `${name} ${drainWindow}s linear ${left - drainWindow}s forwards`,
       };
     }
     case "right":
-      return { key: `right-${cardKey}`, color: "var(--accent)",  animation: "kq-border-in 340ms ease-out forwards" };
+      return { key: `feedback-${cardKey}`, color: "var(--accent)",      strokeDashoffset: PERIMETER, animation: "kq-stroke-fill 500ms ease-out forwards" };
     case "wrong":
-      return { key: `wrong-${cardKey}`, color: "var(--danger)",  animation: "kq-border-pulse 460ms ease-in-out 2" };
-    case "wrong-flash":
-      return { key: `flash-${cardKey}`,  color: "var(--danger)",  animation: "kq-border-flash 720ms ease-out forwards" };
+    case "wrong-flash": {
+      // Freeze dashoffset at wherever the drain was; only the stroke color transitions to red.
+      const left = drainWindow > 0 && timerLeft <= drainWindow
+        ? Math.max(0, timerLeft)
+        : 0;
+      const frozenDash = drainWindow > 0 ? Math.round(PERIMETER * left / drainWindow) : 0;
+      return { key: `feedback-${cardKey}`, color: "oklch(58% 0.22 25)", strokeDashoffset: frozenDash, animation: "none" };
+    }
     default:
       return null;
   }
@@ -163,13 +175,11 @@ function mix(token: string, pct: number): string {
 /** The base circle's outer glow — the only thing that changes when resting. */
 function baseGlow(state: HaloState): string {
   switch (state) {
-    case "draining":
-      return `0 0 26px ${mix("--warning", 30)}`;
     case "right":
       return `0 0 34px ${mix("--accent", 45)}`;
     case "wrong":
     case "wrong-flash":
-      return `0 0 30px ${mix("--danger", 38)}`;
+      return `0 0 30px oklch(58% 0.22 25 / 45%)`;
     default:
       return `0 0 26px -8px ${mix("--accent", 55)}`;
   }
@@ -225,6 +235,8 @@ export interface DrillHaloProps {
   compactSentenceFrame?: boolean;
   /** Optional pronunciation shown inside the halo beneath the main glyph. */
   reading?: ReactNode;
+  /** Pause the outline animation while the settings drawer is open. */
+  paused?: boolean;
 }
 
 export function DrillHalo({
@@ -244,16 +256,14 @@ export function DrillHalo({
   sentenceFrameLang = "ja",
   compactSentenceFrame = false,
   reading,
+  paused = false,
 }: DrillHaloProps) {
-  const wrong = state === "wrong" || state === "wrong-flash";
   const square = !!sentenceFrame;
   const feedback = feedbackSpec(state, cardKey, timerLeft, drainWindow);
 
   return (
     <div
-      // The shake replays because the parent re-mounts this component on
-      // every attempt — the same trick the grid screen's cards use.
-      className={`kq-halo relative grid place-items-center ${wrong ? "animate-gshake" : ""}`}
+      className="kq-halo relative grid place-items-center"
       style={{
         width: compactSentenceFrame ? "min(84vw, 360px)" : "min(92vw, 440px)",
         minHeight: compactSentenceFrame ? 132 : HALO_PX,
@@ -269,20 +279,32 @@ export function DrillHalo({
           transition: "box-shadow .3s",
         }}
       />
-      {feedback?.drain ? (
-        // Drain strip at bottom: scaleX from current position to 0 over the window.
-        <div
+      {feedback ? (
+        <svg
           key={feedback.key}
-          className="kq-ring absolute bottom-0 left-0 right-0 h-[3px] origin-left rounded-b-2xl"
-          style={{ backgroundColor: feedback.color, animation: feedback.animation }}
-        />
-      ) : feedback ? (
-        // Colored border overlay for right/wrong states.
-        <div
-          key={feedback.key}
-          className="kq-ring pointer-events-none absolute inset-0 rounded-2xl"
-          style={{ border: `2px solid ${feedback.color}`, animation: feedback.animation }}
-        />
+          className="kq-ring pointer-events-none absolute inset-0 overflow-visible"
+          width="100%"
+          height="100%"
+          viewBox="0 0 440 176"
+          preserveAspectRatio="none"
+        >
+          <path
+            d={HALO_PATH}
+            fill="none"
+            strokeWidth="2"
+            vectorEffect="non-scaling-stroke"
+            strokeDasharray={PERIMETER}
+            strokeDashoffset={feedback.strokeDashoffset}
+            style={{
+              stroke: feedback.color,
+              // Append play-state inside the shorthand to avoid the shorthand/longhand React warning.
+              animation: paused && feedback.animation !== "none"
+                ? `${feedback.animation} paused`
+                : feedback.animation,
+              transition: "stroke 250ms ease-out",
+            }}
+          />
+        </svg>
       ) : null}
       {square ? (
         <div
