@@ -88,7 +88,7 @@ describe("PRODUCTION — anchored on the first-learned verb (#50)", () => {
   function inferCls(lemma: string) {
     const cls: Record<string, string> = {
       行く: "v5k-s", 食べる: "v1", 見る: "v1", 起きる: "v1", 書く: "v5k",
-      泳ぐ: "v5g", 話す: "v5s", 待つ: "v5t", 死ぬ: "v5n", 遊ぶ: "v5b",
+      言う: "v5u", 泳ぐ: "v5g", 話す: "v5s", 待つ: "v5t", 死ぬ: "v5n", 遊ぶ: "v5b",
       飲む: "v5m", 読む: "v5m", 帰る: "v5r", 買う: "v5u", する: "vs-i", 来る: "vk",
     };
     return cls[lemma] as never;

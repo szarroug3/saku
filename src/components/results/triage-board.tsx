@@ -98,6 +98,7 @@ export function TriageSection({
   onRedrill,
   onRerun,
   onDrillWeakest,
+  extraSelectedFacts,
 }: {
   facts: RunFacts;
   stats: SessionStats;
@@ -107,6 +108,7 @@ export function TriageSection({
   onRedrill: (facts: FactId[]) => void;
   onRerun: () => void;
   onDrillWeakest: () => void;
+  extraSelectedFacts?: ReadonlySet<FactId>;
 }) {
   const allBoxes = new Set(boxKeysForFacts(facts.facts, stats));
   const needsWorkBoxes = new Set(missedBoxKeysForFacts(facts.facts, stats));
@@ -134,8 +136,11 @@ export function TriageSection({
     .map((box) => factOfBoxKey(box))
     .filter((f): f is FactId => !!f);
   const pickedFacts = [...new Set(selectedFacts)];
+  const progressFacts = [...(extraSelectedFacts ?? new Set<FactId>())];
+  const mergedFacts = [...new Set([...pickedFacts, ...progressFacts])];
+  const extraCount = progressFacts.filter((fact) => !pickedFacts.includes(fact)).length;
 
-  const n = selected.size;
+  const n = selected.size + extraCount;
   // A perfect run breaks the button: "Redrill 0 selected" is meaningless when
   // the run produced nothing to drill. The honest next step isn't here, it's
   // harder material — so the primary changes rather than sitting there greyed.
@@ -143,17 +148,19 @@ export function TriageSection({
 
   return (
     <>
-      <Board
-        label="Needs work"
-        facts={facts.facts}
-        stats={stats}
-        visibleBoxes={needsWorkBoxes}
-        hideFirstTry={false}
-        solidTone={false}
-        selected={selected}
-        onToggle={toggle}
-        onSetVisible={setVisible}
-      />
+      {needsWorkBoxes.size > 0 ? (
+        <Board
+          label="Needs work"
+          facts={facts.facts}
+          stats={stats}
+          visibleBoxes={needsWorkBoxes}
+          hideFirstTry={false}
+          solidTone={false}
+          selected={selected}
+          onToggle={toggle}
+          onSetVisible={setVisible}
+        />
+      ) : null}
       <Board
         label="Solid"
         facts={facts.facts}
@@ -182,7 +189,7 @@ export function TriageSection({
             <PrimaryBtn
               className="flex-1"
               disabled={!n}
-              onClick={() => onRedrill(pickedFacts)}
+              onClick={() => onRedrill(mergedFacts)}
             >
               Redrill {n} selected
             </PrimaryBtn>

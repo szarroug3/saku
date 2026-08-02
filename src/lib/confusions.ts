@@ -47,6 +47,7 @@
 // agnostic (and testable without the whole character table). It is the only
 // thing here that knows facts and entries are related at all.
 
+import { STANDING_RUN_WINDOW } from "@/lib/aggregate";
 import type { EntryId, FactId, HistoryFile, SessionStats } from "@/types";
 
 /** Resolves a fact to the entry it belongs to — src/lib/facts.ts `entryOf`. */
@@ -482,4 +483,27 @@ export function analyzeRun(
         p.key.localeCompare(q.key),
     );
   return { patterns, progress };
+}
+
+/**
+ * Last qualifying runs for one pair, oldest to newest.
+ * `true` means the run showed either entry and had no mix-up for this pair.
+ */
+export function pairRecentRuns(
+  history: HistoryFile,
+  key: PairKey,
+  opts: { entryOf: EntryOf; excludeTs?: number; window?: number },
+): boolean[] {
+  const [a, b] = pairEntries(key);
+  const window = opts.window ?? STANDING_RUN_WINDOW;
+  const out: boolean[] = [];
+  for (const run of slices(history, {
+    entryOf: opts.entryOf,
+    excludeTs: opts.excludeTs,
+  })) {
+    if (!qualifies(run.shown, a, b)) continue;
+    const mixed = (run.pairs.get(key)?.total ?? 0) > 0;
+    out.push(!mixed);
+  }
+  return out.slice(-window);
 }

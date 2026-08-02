@@ -15,6 +15,7 @@
 import { useMemo, useState } from "react";
 
 import { AccuracyRing } from "@/components/home/accuracy-ring";
+import { FactProgressSection } from "@/components/results/fact-progress";
 import { PatternSection } from "@/components/results/pattern-rows";
 import {
   deriveRun,
@@ -24,10 +25,11 @@ import {
   type Bit,
 } from "@/components/results/summary";
 import { TriageSection } from "@/components/results/triage-board";
-import { Btn, Card, PageTitle } from "@/components/ui";
+import { Btn, Card, Lbl, PageTitle } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { pairEntries } from "@/lib/confusions";
 import { analyzeRun } from "@/lib/confusions";
+import { pairRecentRuns } from "@/lib/confusions";
 import { weakestFacts } from "@/lib/decks";
 import { entryOf } from "@/lib/facts";
 import { factsOf } from "@/lib/facts";
@@ -38,9 +40,26 @@ import { emptySelection, resolve } from "@/lib/selection";
 import { deriveSessionList } from "@/lib/session-list";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
+import { SOLID_PCT, standingOf } from "@/lib/library/standing";
 import type { FactId, QuizMode } from "@/types";
 
 const EMPTY_ANALYSIS = { patterns: [], progress: [] };
+
+function pctOf(runs: boolean[]): number {
+  if (!runs.length) return 0;
+  const hits = runs.filter(Boolean).length;
+  return (100 * hits) / runs.length;
+}
+
+function runsToReach(runs: boolean[], targetPct: number): number {
+  if (pctOf(runs) >= targetPct) return 0;
+  let next = [...runs];
+  for (let i = 1; i <= 50; i++) {
+    next = [...next, true].slice(-10);
+    if (pctOf(next) >= targetPct) return i;
+  }
+  return 50;
+}
 
 function modeName(m: QuizMode): string {
   return m === "pairs"
@@ -243,6 +262,113 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     writes.clearMixup(key);
   };
 
+  // Facts that were unstable before this run (shaky/getting there) and are
+  // now clean can be cleared individually from the triage board.
+  const factProgressRows = useMemo(() => {
+    const out: Array<{ fact: FactId; runs: boolean[] }> = [];
+    for (const fact of facts.solid) {
+      const priorStanding = standingOf(
+        prior.facts[fact],
+        prior.claims?.[fact],
+        metric,
+        results.ts,
+      ).standing;
+      if (priorStanding === "shaky" || priorStanding === "getting-there") {
+        const runs = [
+          ...(prior.facts[fact]?.recentRuns ?? []).map((run) => run.firstTry),
+          true,
+        ].slice(-10);
+        if (runsToReach(runs, SOLID_PCT) === 0) continue;
+        out.push({ fact, runs });
+      }
+    }
+    return out;
+  }, [facts.solid, metric, prior.facts, prior.claims, results.ts]);
+  const clearableFacts = useMemo(
+    () => new Set<FactId>(factProgressRows.map((row) => row.fact)),
+    [factProgressRows],
+  );
+
+  const clearFactNow = (fact: FactId): void => {
+    if (!clearableFacts.has(fact)) return;
+    writes.claim([fact]);
+  };
+
+  const triageFacts = useMemo(
+    () => facts.facts.filter((fact) => !clearableFacts.has(fact)),
+    [facts.facts, clearableFacts],
+  );
+  const triageRun = useMemo(
+    () => ({ ...facts, facts: triageFacts, solid: facts.solid.filter((fact) => !clearableFacts.has(fact)) }),
+    [facts, triageFacts, clearableFacts],
+  );
+  const visiblePairProgressRows = useMemo(
+    () =>
+      analysis.progress.filter((row) => {
+        const runs = [
+          ...pairRecentRuns(history, row.key, {
+            entryOf,
+            excludeTs: results.ts,
+          }),
+          true,
+        ].slice(-10);
+        return runsToReach(runs, SOLID_PCT) > 0;
+      }),
+    [analysis.progress, history, results.ts],
+  );
+  const hasAnyProgress = visiblePairProgressRows.length > 0 || factProgressRows.length > 0;
+  const [selectedProgress, setSelectedProgress] = useState<Set<FactId>>(new Set());
+
+  const progressPairFacts = useMemo(() => {
+    const out = new Map<string, FactId[]>();
+    for (const row of visiblePairProgressRows) {
+      const [a, b] = pairEntries(row.key);
+      out.set(row.key, [...new Set([...factsOf(a), ...factsOf(b)])]);
+    }
+    return out;
+  }, [visiblePairProgressRows]);
+
+  const progressPairRuns = useMemo(() => {
+    const out = new Map<string, boolean[]>();
+    for (const row of visiblePairProgressRows) {
+      out.set(row.key, [
+        ...pairRecentRuns(history, row.key, {
+          entryOf,
+          excludeTs: results.ts,
+        }),
+        true,
+      ].slice(-10));
+    }
+    return out;
+  }, [visiblePairProgressRows, history, results.ts]);
+
+  const toggleProgressPair = (key: string) => {
+    const pairFacts = progressPairFacts.get(key) ?? [];
+    if (!pairFacts.length) return;
+    setSelectedProgress((prev) => {
+      const next = new Set(prev);
+      const allOn = pairFacts.every((fact) => next.has(fact));
+      for (const fact of pairFacts) {
+        if (allOn) next.delete(fact);
+        else next.add(fact);
+      }
+      return next;
+    });
+  };
+
+  const isProgressPairSelected = (key: string): boolean => {
+    const pairFacts = progressPairFacts.get(key) ?? [];
+    return pairFacts.length > 0 && pairFacts.every((fact) => selectedProgress.has(fact));
+  };
+
+  const toggleProgressFact = (fact: FactId) => {
+    setSelectedProgress((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(fact)) next.add(fact);
+      return next;
+    });
+  };
+
   return (
     <>
       <PageTitle
@@ -277,20 +403,39 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         graduateRuns={graduateRuns}
         worstKey={worstKey}
       />
-      <PatternSection
-        label="Progress"
-        rows={analysis.progress}
-        stats={stats}
-        graduateRuns={graduateRuns}
-        worstKey={worstKey}
-        onClear={clearNow}
-      />
+      {hasAnyProgress ? <Lbl>Making progress</Lbl> : null}
+      {hasAnyProgress ? (
+        <div className="mb-3.5 flex flex-col gap-1.5">
+          <PatternSection
+            label="Progress"
+            rows={visiblePairProgressRows}
+            stats={stats}
+            graduateRuns={graduateRuns}
+            worstKey={worstKey}
+            onClear={clearNow}
+            showLabel={false}
+            showContainer={false}
+            isSelected={isProgressPairSelected}
+            onToggle={toggleProgressPair}
+            runsByKey={progressPairRuns}
+          />
+          <FactProgressSection
+            rows={factProgressRows}
+            onClear={clearFactNow}
+            showLabel={false}
+            showContainer={false}
+            isSelected={(fact) => selectedProgress.has(fact)}
+            onToggle={toggleProgressFact}
+          />
+        </div>
+      ) : null}
 
       <TriageSection
         key="firstTry"
-        facts={facts}
+        facts={triageRun}
         stats={stats}
         weakest={weakest}
+        extraSelectedFacts={selectedProgress}
         onRedrill={(picked) => void startFacts(picked, "The misses", true)}
         // Rerun is not a special case and has no code of its own: a past
         // session is a named list of keys, so "run that again" is Drill on a

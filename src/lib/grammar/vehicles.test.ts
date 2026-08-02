@@ -361,6 +361,15 @@ describe("the known-word gate filters the pool", () => {
     }
   });
 
+  test("a KNOWN v5u verb can be picked for the te-form v5u bucket", () => {
+    const r = recipe("te-kara")!;
+    const known = (s: string) => s === "言う";
+    for (const x of [0, 0.2, 0.5, 0.8]) {
+      const v = pickVehicle(r, seq([x]), "verb", known, { kind: "class", cls: "v5u" });
+      assert.equal(v?.surface, "言う");
+    }
+  });
+
   test("pickVehicle is still null for a wrap (nothing legal to pick)", () => {
     // Null now means only "no legal vehicle at all", not "knows nothing".
     assert.equal(pickVehicle(recipe("shika-nai")!, () => 0, undefined, () => false), null);

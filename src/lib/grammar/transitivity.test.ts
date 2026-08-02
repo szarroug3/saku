@@ -130,7 +130,7 @@ describe("no recipe is served a vehicle it forbids", () => {
     // Nine of the sixteen survive, across five conjugation classes. A pattern
     // narrowed to one or two vehicles would be a pattern that cannot be
     // practised, and the number is asserted rather than assumed.
-    assert.equal(dealt.length, 9);
+    assert.equal(dealt.length, 10);
     assert.ok(new Set(dealt.map((v) => v.cls)).size >= 4);
   });
 

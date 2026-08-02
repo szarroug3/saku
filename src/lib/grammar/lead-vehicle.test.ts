@@ -78,17 +78,17 @@ describe("〜に行く does not send you somewhere in order to go", () => {
     assert.ok(pool.includes("食べる"));
   });
 
-  test("食べに行く leads the page, the fact and the cluster row", () => {
+  test("言いに行く leads the page, the fact and the cluster row", () => {
     assert.ok(NI_IKU);
     const f = recipeFormula(NI_IKU).opening[0];
     assert.ok(f);
-    assert.equal(f.worked[0]?.from, "食べる");
-    assert.equal(f.worked[0]?.to, "食べに行く");
+    assert.equal(f.worked[0]?.from, "言う");
+    assert.equal(f.worked[0]?.to, "言いに行く");
     assert.deepEqual(f.worked.filter((w) => w.from === "行く"), []);
     // The lead on the page and the answer the drill scores are the same word.
-    assert.equal(buildExample(NI_IKU)?.lemma, "食べる");
-    assert.equal(buildExample(NI_IKU)?.form, "食べに行く");
-    assert.equal(buildRow(NI_IKU)?.built, "食べに行く");
+    assert.equal(buildExample(NI_IKU)?.lemma, "言う");
+    assert.equal(buildExample(NI_IKU)?.form, "言いに行く");
+    assert.equal(buildRow(NI_IKU)?.built, "言いに行く");
   });
 
   test("the slot is still 'any verb' — this restriction is not a kind of verb", () => {

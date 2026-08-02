@@ -133,6 +133,7 @@ function verb(surface: string, kana: string, cls: WordClass): Vehicle {
  */
 export const VERB_VEHICLES: readonly Vehicle[] = [
   verb("行く", "いく", "v5k-s"), // て-form irregular
+  verb("言う", "いう", "v5u"),
   verb("食べる", "たべる", "v1"),
   verb("見る", "みる", "v1"),
   verb("起きる", "おきる", "v1"),

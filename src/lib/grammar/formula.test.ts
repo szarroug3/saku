@@ -74,7 +74,7 @@ describe("worked examples are the engine, and they span classes", () => {
     // generalisation it is no longer showing.
     assert.deepEqual(
       worked.map((w) => `${w.from} → ${w.to}`),
-      ["行く → 行ってから", "食べる → 食べてから", "書く → 書いてから"],
+      ["行く → 行ってから", "言う → 言ってから", "食べる → 食べてから"],
     );
   });
 

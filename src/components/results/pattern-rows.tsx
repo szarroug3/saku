@@ -27,11 +27,32 @@
 import { Lbl } from "@/components/ui";
 import { reading } from "@/components/results/summary";
 import { factsOf, factInfo, glyphOf } from "@/lib/facts";
+import {
+  GETTING_THERE_PCT,
+  SOLID_PCT,
+  STANDING_LABEL,
+} from "@/lib/library/standing";
 import type { PairRow } from "@/lib/confusions";
 import type { SessionStats } from "@/types";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
+}
+
+function pctOf(runs: boolean[]): number {
+  if (!runs.length) return 0;
+  const hits = runs.filter(Boolean).length;
+  return (100 * hits) / runs.length;
+}
+
+function runsToReach(runs: boolean[], targetPct: number): number {
+  if (pctOf(runs) >= targetPct) return 0;
+  let next = [...runs];
+  for (let i = 1; i <= 50; i++) {
+    next = [...next, true].slice(-10);
+    if (pctOf(next) >= targetPct) return i;
+  }
+  return 50;
 }
 
 function s(n: number): string {
@@ -152,25 +173,40 @@ function Tag({ state }: { state: PairRow["state"] }) {
   );
 }
 
-/** Runs to graduation, as dots. The counter IS the promise: this many more and
- * the pair stops being brought up. */
-function Dots({ done, total }: { done: number; total: number }) {
-  return (
+function runPips(runs: boolean[]) {
+  const lastTen = runs.slice(-10);
+  const padded: Array<boolean | null> = [
+    ...Array.from({ length: Math.max(0, 10 - lastTen.length) }, () => null),
+    ...lastTen,
+  ];
+  return padded.map((ok, i) => (
     <span
-      className="ml-auto flex flex-none gap-[3px]"
-      aria-label={`${done} of ${total} clean runs`}
-    >
-      {Array.from({ length: total }, (_, i) => (
-        <span
-          key={i}
-          className={cx(
-            "h-[5px] w-[5px] rounded-full",
-            i < done ? "bg-success" : "bg-border",
-          )}
-        />
-      ))}
-    </span>
-  );
+      key={i}
+      style={{
+        backgroundColor:
+          ok === null
+            ? "color-mix(in srgb, var(--text-muted) 24%, transparent)"
+            : ok
+              ? "var(--success)"
+              : "var(--danger)",
+      }}
+      className={cx(
+        "h-[5px] w-[5px] rounded-full",
+      )}
+    />
+  ));
+}
+
+function progressText(runs: boolean[]): string {
+  const toShaky = runsToReach(runs, GETTING_THERE_PCT);
+  const toClear = runsToReach(runs, SOLID_PCT);
+  if (toClear === 0) {
+    return `Currently ${STANDING_LABEL.solid}`;
+  }
+  if (toShaky > 0) {
+    return `Currently ${STANDING_LABEL.shaky}, ${toShaky} to getting there, ${toClear} to clear it`;
+  }
+  return `Currently ${STANDING_LABEL["getting-there"]}, ${toClear} to clear it`;
 }
 
 export function PatternRow({
@@ -179,6 +215,9 @@ export function PatternRow({
   graduateRuns,
   wasWorst,
   onClear,
+  selected,
+  onToggle,
+  runs,
 }: {
   row: PairRow;
   stats: SessionStats;
@@ -188,15 +227,41 @@ export function PatternRow({
   wasWorst?: boolean;
   /** Offered only after this quiz supplied a clean run for the pair. */
   onClear?: () => void;
+  selected?: boolean;
+  onToggle?: () => void;
+  runs?: boolean[];
 }) {
   const [first, second] = lines(row, stats, graduateRuns, !!wasWorst);
+  const clickable = !!onToggle;
   return (
     <div
-      className={cx(
-        "flex items-center gap-2.5 rounded-[10px] border px-2.5 py-2",
-        TONE[row.state],
-      )}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={onToggle}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onToggle?.();
+              }
+            }
+          : undefined
+      }
+      aria-pressed={clickable ? selected : undefined}
+      className={cx("w-full text-left", clickable && "cursor-pointer")}
     >
+      <div
+      className={cx(
+        "relative flex items-center gap-2.5 rounded-[10px] border px-2.5 py-2",
+        selected ? "border-accent bg-accent-bg" : TONE[row.state],
+      )}
+      >
+      {selected ? (
+        <span aria-hidden="true" className="absolute right-1 top-0.5 text-[9px] text-accent">
+          ✓
+        </span>
+      ) : null}
       <span className="min-w-[112px] flex-none">
         <span className="flex items-center justify-center gap-2">
           <span className="flex min-w-[42px] flex-col items-center">
@@ -222,7 +287,11 @@ export function PatternRow({
       </span>
       <span className="flex min-w-0 flex-col">
         <span className="text-[13px] leading-snug">{first}</span>
-        {second ? (
+        {row.state === "improving" ? (
+          <span className="text-[11px] leading-snug text-text-muted">
+            {progressText(runs ?? [])}
+          </span>
+        ) : second ? (
           <span className="text-[11px] leading-snug text-text-muted">
             {second}
           </span>
@@ -230,12 +299,17 @@ export function PatternRow({
       </span>
       {row.state === "improving" ? (
         <span className="ml-auto flex flex-none flex-col items-end gap-1">
-          <Dots done={row.record.cleanStreak} total={graduateRuns} />
+          <span className="ml-auto flex flex-none gap-[3px]" aria-label="last ten runs">
+            {runPips(runs ?? [])}
+          </span>
           {onClear ? (
             <button
               type="button"
               className="text-[11px] font-medium text-accent hover:underline"
-              onClick={onClear}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+              }}
             >
               Clear now
             </button>
@@ -244,6 +318,7 @@ export function PatternRow({
       ) : (
         <Tag state={row.state} />
       )}
+      </div>
     </div>
   );
 }
@@ -256,6 +331,11 @@ export function PatternSection({
   graduateRuns,
   worstKey,
   onClear,
+  showLabel = true,
+  showContainer = true,
+  isSelected,
+  onToggle,
+  runsByKey,
 }: {
   label: string;
   rows: PairRow[];
@@ -263,27 +343,38 @@ export function PatternSection({
   graduateRuns: number;
   worstKey?: string;
   onClear?: (key: string) => void;
+  showLabel?: boolean;
+  showContainer?: boolean;
+  isSelected?: (key: string) => boolean;
+  onToggle?: (key: string) => void;
+  runsByKey?: Map<string, boolean[]>;
 }) {
   if (!rows.length) return null;
+  const items = rows.map((row) => (
+    <PatternRow
+      key={row.key}
+      row={row}
+      stats={stats}
+      graduateRuns={graduateRuns}
+      wasWorst={row.key === worstKey}
+      selected={isSelected?.(row.key)}
+      onToggle={onToggle ? () => onToggle(row.key) : undefined}
+      runs={runsByKey?.get(row.key)}
+      onClear={
+        row.state === "improving" && onClear
+          ? () => onClear(row.key)
+          : undefined
+      }
+    />
+  ));
   return (
     <>
-      <Lbl>{label}</Lbl>
-      <div className="mb-3.5 flex flex-col gap-1.5">
-        {rows.map((row) => (
-          <PatternRow
-            key={row.key}
-            row={row}
-            stats={stats}
-            graduateRuns={graduateRuns}
-            wasWorst={row.key === worstKey}
-            onClear={
-              row.state === "improving" && onClear
-                ? () => onClear(row.key)
-                : undefined
-            }
-          />
-        ))}
-      </div>
+      {showLabel ? <Lbl>{label}</Lbl> : null}
+      {showContainer ? (
+        <div className="mb-3.5 flex flex-col gap-1.5">{items}</div>
+      ) : (
+        items
+      )}
     </>
   );
 }
