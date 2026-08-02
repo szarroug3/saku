@@ -57,6 +57,9 @@ function outcomeForPhrase(
   if (hasPhraseMissData) {
     const missed = new Set(st.missedPhrases ?? []);
     if (missed.has(phrase)) return st.everCorrect ? "recovered" : "missed";
+    // Some records carry phrase-level arrays but no missed entries while the
+    // fact still has misses. In that case we do not know this phrase was clean.
+    if (st.misses > 0) return outcomeOf(st);
     // This table is phrase-scoped; when per-phrase miss data exists and this
     // phrase was not missed, it was clean for this phrase.
     return "first-try";
@@ -86,7 +89,9 @@ function HowYouDid({
   outcome: Outcome;
   hideFirstTry?: boolean;
 }) {
-  if (hideFirstTry && outcome === "first-try") return null;
+  // First-try status is no longer shown on this board.
+  if (outcome === "first-try") return null;
+  void hideFirstTry;
   const o = OUTCOME[outcome];
   return (
     <span className={cx("flex items-center gap-1 text-[9px] font-medium", o.text)}>

@@ -68,4 +68,21 @@ describe("missedBoxKeysForFacts", () => {
 
     assert.deepEqual(missedBoxKeysForFacts([fact], stats), []);
   });
+
+  test("falls back to non-first-try outcome when misses exist but missedPhrases is empty", () => {
+    const fact = kanaFact("ちゅ");
+    const stats: SessionStats = {
+      [fact]: stat({
+        misses: 1,
+        everCorrect: true,
+        firstTryCorrect: false,
+        missedPhrases: [],
+      }),
+    };
+
+    // Guard the data condition that should be treated as 'needed another look'.
+    assert.equal(stats[fact].misses > 0, true);
+    assert.equal(Array.isArray(stats[fact].missedPhrases), true);
+    assert.deepEqual(stats[fact].missedPhrases, []);
+  });
 });

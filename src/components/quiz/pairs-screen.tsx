@@ -268,13 +268,18 @@ function pickCell(p: PairsRuntime, i: number): PickResult {
   p.pick = null;
   if (first.id === cell.id) {
     const st = statFor(p.stats, cell.fact);
-    st.everCorrect = true;
+    // Strict scoring: only an untouched first match counts as correct.
+    const clean = st.misses === 0;
+    if (clean) {
+      st.everCorrect = true;
+      st.correct = (st.correct ?? 0) + 1;
+    }
     // A board shows each pair exactly once (`seen++` once, at deal), so the
     // flag and its countable twin agree here by construction — the count is
     // kept anyway so `firstTryCount` means the same thing on every screen and
     // whatever pools it can do so without asking which mode wrote it.
-    if (st.firstTryCorrect === null) st.firstTryCorrect = st.misses === 0;
-    if (st.misses === 0) st.firstTryCount = (st.firstTryCount ?? 0) + 1;
+    if (st.firstTryCorrect === null) st.firstTryCorrect = clean;
+    if (clean) st.firstTryCount = (st.firstTryCount ?? 0) + 1;
     // Only a pair that was never mismatched on this board extends the streak
     // — a mismatch below has already zeroed it, so finding it afterwards
     // doesn't restore it.

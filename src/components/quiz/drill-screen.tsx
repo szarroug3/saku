@@ -762,7 +762,8 @@ export function DrillScreen() {
       // forgiving numerator all advance in one call so they cannot drift into
       // different units — which is exactly what they had done. See
       // src/lib/drill-stats.ts.
-      resolveShowing(st, credit, true, showingOf(q));
+      // Strict scoring: a retry success still resolves this showing as wrong.
+      resolveShowing(st, credit, credit, showingOf(q));
       // Only a clean first try extends the streak — a miss below has already
       // zeroed it, so getting there on the retry doesn't restore it.
       if (q.tries === 0) rt.streak = (rt.streak ?? 0) + 1;

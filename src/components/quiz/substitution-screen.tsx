@@ -91,8 +91,11 @@ function submitCard(
   }
   if (ok) {
     if (card.tries === 0) rt.streak++;
-    st.everCorrect = true;
-    st.correct++;
+    // Strict scoring: a retry success is still scored wrong.
+    if (card.tries === 0) {
+      st.everCorrect = true;
+      st.correct = (st.correct ?? 0) + 1;
+    }
     card.state = "right";
     return "right";
   }

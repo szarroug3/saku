@@ -102,8 +102,11 @@ function submitCard(
   if (ok) {
     if (card.tries === 0) rt.streak++;
     for (const f of card.item.facts) {
-      rt.stats[f].everCorrect = true;
-      rt.stats[f].correct++;
+      // Strict scoring: retry success does not count as correct.
+      if (card.tries === 0) {
+        rt.stats[f].everCorrect = true;
+        rt.stats[f].correct = (rt.stats[f].correct ?? 0) + 1;
+      }
     }
     card.state = "right";
     return "right";
