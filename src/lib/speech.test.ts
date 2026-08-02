@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { pickAutoVoice, type VoiceLike } from "./speech.ts";
+import { pickAutoVoice, speak, type VoiceLike } from "./speech.ts";
 
 function v(name: string, extra: Partial<VoiceLike> = {}): VoiceLike {
   return { name, lang: "ja-JP", localService: true, ...extra };
@@ -79,5 +79,48 @@ describe("pickAutoVoice", () => {
 
   test("returns undefined for an empty list — nothing installed, degrade to silence", () => {
     assert.equal(pickAutoVoice([]), undefined);
+  });
+});
+
+describe("speak duplicate guard", () => {
+  test("drops a rapid duplicate of the same text+voice", () => {
+    const calls: string[] = [];
+    const fake = {
+      getVoices: () => [],
+      cancel: () => {},
+      speak: (_u: unknown) => calls.push("speak"),
+      addEventListener: (_: string, fn: () => void) => fn(),
+      removeEventListener: () => {},
+    } as unknown as SpeechSynthesis;
+
+    class FakeUtterance {
+      lang = "";
+      voice: unknown = null;
+      rate = 1;
+      constructor(_text: string) {}
+    }
+
+    const g = globalThis as unknown as {
+      window?: Window & typeof globalThis;
+      speechSynthesis?: SpeechSynthesis;
+      SpeechSynthesisUtterance?: typeof SpeechSynthesisUtterance;
+    };
+    const prevWindow = g.window;
+    const prevSynth = g.speechSynthesis;
+    const prevUtter = g.SpeechSynthesisUtterance;
+
+    g.window = { ...(g.window ?? {}), speechSynthesis: fake } as Window & typeof globalThis;
+    g.speechSynthesis = fake;
+    g.SpeechSynthesisUtterance = FakeUtterance as unknown as typeof SpeechSynthesisUtterance;
+
+    try {
+      speak("でんわ", "");
+      speak("でんわ", "");
+      assert.equal(calls.length, 1);
+    } finally {
+      g.window = prevWindow;
+      g.speechSynthesis = prevSynth;
+      g.SpeechSynthesisUtterance = prevUtter;
+    }
   });
 });

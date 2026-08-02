@@ -5,6 +5,28 @@
 import { isPackVoice, packApiUrl, packAudioUrl, packVoicesEnabled } from "@/lib/voice-audio";
 
 /**
+ * Duplicate-speak guard for intermittent double-trigger races.
+ *
+ * Listening cards should auto-play once when shown, but in rare lifecycle races
+ * (remount + hydration timing, duplicate effect fire, etc.) the same
+ * voice+text request can be issued twice within a few milliseconds, which
+ * sounds like overlapping speech. This guard drops only near-instant repeats;
+ * normal replay taps remain unaffected.
+ */
+const SPEAK_DEDUPE_MS = 250;
+let lastSpeakKey = "";
+let lastSpeakAt = 0;
+
+function shouldSkipDuplicateSpeak(text: string, voiceName: string): boolean {
+  const now = Date.now();
+  const key = `${voiceName}\u0000${text}`;
+  if (key === lastSpeakKey && now - lastSpeakAt < SPEAK_DEDUPE_MS) return true;
+  lastSpeakKey = key;
+  lastSpeakAt = now;
+  return false;
+}
+
+/**
  * The minimum a voice must carry to be chosen among. `SpeechSynthesisVoice`
  * has more, but `pickAutoVoice` reads only these, and typing the input this
  * thin is what lets it be tested with plain objects and no browser.
@@ -290,6 +312,7 @@ function speakPack(text: string, voiceId: string): void {
  * speechSynthesis. */
 export function speak(text: string, voiceName: string): void {
   if (typeof window === "undefined") return;
+  if (shouldSkipDuplicateSpeak(text, voiceName)) return;
   // Only take the pack path when it's actually configured (bucket set); a pack
   // voice selected without a bucket just uses the browser voice, no dead request.
   if (isPackVoice(voiceName) && packVoicesEnabled()) {
