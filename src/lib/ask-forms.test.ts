@@ -60,7 +60,7 @@ describe("enabledFormsFor", () => {
     assert.equal(enabledFormsFor(meaning, definitionOnly).length, 4);
   });
 
-  test("kana supports exactly its three approved question shapes", () => {
+  test("kana supports exactly its approved question shapes", () => {
     const fact = kanaFact("あ");
     const forms = enabledFormsFor(fact, ALL);
     assert.deepEqual(forms, [
@@ -79,20 +79,6 @@ describe("enabledFormsFor", () => {
         answer: "mc",
       },
       {
-        source: "japanese",
-        response: "japanese",
-        listen: true,
-        dir: "en2jp",
-        answer: "typed",
-      },
-      {
-        source: "japanese",
-        response: "japanese",
-        listen: true,
-        dir: "en2jp",
-        answer: "mc",
-      },
-      {
         source: "english",
         response: "japanese",
         listen: false,
@@ -103,16 +89,14 @@ describe("enabledFormsFor", () => {
 
     const shapes = new Set(
       forms.map((form) =>
-        form.listen
-          ? "hear-kana"
-          : form.dir === "jp2en"
+        form.dir === "jp2en"
             ? "see-kana"
             : "see-romaji",
       ),
     );
     assert.deepEqual(
       shapes,
-      new Set(["see-kana", "hear-kana", "see-romaji"]),
+      new Set(["see-kana", "see-romaji"]),
     );
     assert.equal(
       forms.some(
@@ -122,32 +106,19 @@ describe("enabledFormsFor", () => {
       false,
       "visible Romaji → kana must never become typed",
     );
-    assert.equal(
-      forms.some(
-        (form) =>
-          form.dir === "en2jp" && form.listen && !formIsMc(fact, form),
-      ),
-      true,
-      "audio → kana must retain its typed form",
-    );
-
     for (const kana of ALL_FACTS.filter((candidate) =>
       candidate.startsWith("kana:"),
     )) {
       const generated = enabledFormsFor(kana, ALL);
       assert.deepEqual(
         generated.map((form) =>
-          form.listen
-            ? "hear-kana"
-            : form.dir === "jp2en"
+          form.dir === "jp2en"
               ? "see-kana"
               : "see-romaji",
         ),
         [
           "see-kana",
           "see-kana",
-          "hear-kana",
-          "hear-kana",
           "see-romaji",
         ],
         `${kana} must expose only the approved kana matrix`,
@@ -155,7 +126,7 @@ describe("enabledFormsFor", () => {
     }
   });
 
-  test("kana audio produces typed and picked kana forms", () => {
+  test("kana audio produces no forms", () => {
     const audioOnly: AskConfig = {
       ...ALL,
       japanese: {
@@ -166,10 +137,7 @@ describe("enabledFormsFor", () => {
       english: { answers: [] },
     };
     const forms = enabledFormsFor(kanaFact("あ"), audioOnly);
-    assert.equal(forms.length, 2);
-    assert.ok(forms.every((form) => form.listen && form.dir === "en2jp"));
-    assert.equal(formIsMc(kanaFact("あ"), forms[0]), false);
-    assert.equal(formIsMc(kanaFact("あ"), forms[1]), true);
+    assert.deepEqual(forms, []);
   });
 
   test("kanji reading facts never get audio forms", () => {
@@ -341,7 +309,7 @@ describe("Unreachable Planned forms (settings selected but forms not generated)"
     assert.deepEqual(forms, [], "Grammar meaning with audio should produce no forms");
   });
 
-  test("kana audio is emitted as kana production", () => {
+  test("kana audio is silently dropped", () => {
     const kanaChar = kanaFact("あ");
     const audioOnly: AskConfig = {
       japanese: {
@@ -353,15 +321,7 @@ describe("Unreachable Planned forms (settings selected but forms not generated)"
       english: { answers: [] },
     };
     const forms = enabledFormsFor(kanaChar, audioOnly);
-    assert.deepEqual(forms, [
-      {
-        source: "japanese",
-        response: "japanese",
-        listen: true,
-        dir: "en2jp",
-        answer: "mc",
-      },
-    ]);
+    assert.deepEqual(forms, []);
   });
 
   test("kanji reading audio is silently dropped (kanji reading not listenable)", () => {

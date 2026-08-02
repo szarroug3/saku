@@ -15,8 +15,7 @@
 //                    separate code path.
 //
 // SUPPORTED, not merely enabled. A config may ask for Audio, but most non-word
-// facts have no audio form and a meaning fact has no romaji response. Kana is
-// the explicit exception: its closed matrix includes audio dictation. Each
+// facts have no audio form and a meaning fact has no romaji response. Each
 // candidate form is checked
 // against what the FACT can actually be asked (fixedDirOf / listenKind /
 // en2jpTypeable / mcOnlyIn — the same predicates the drill already trusts) and
@@ -60,8 +59,7 @@ import type {
  *
  * `answer` is the learner's chosen format and an INTENT — a subject constraint
  * can still force multiple choice (visible kana en→jp, an un-typeable en→jp
- * answer). Audio → typed kana is the deliberate exception. Use `formIsMc` for
- * the resolved truth; the drill does.
+ * answer). Use `formIsMc` for the resolved truth; the drill does.
  */
 export interface CardForm {
   /** Which settings card produced this form. Sentence forms use a corpus
@@ -133,18 +131,12 @@ export function jp2enResponse(fact: FactId): "definition" | "romaji" {
  * en→jp answer, or the subject is multiple-choice-only in this direction. */
 export function formIsMc(fact: FactId, form: CardForm): boolean {
   const styleTyped = form.answer === "typed";
-  // Kana has two en→jp productions with deliberately different controls:
-  // hearing /a/ may be answered by typing あ, while seeing the Romaji `a`
-  // must be recognition-only. The question type's broad en→jp MC constraint
-  // protects the latter; this explicit listening form is the one exception.
-  const typedKanaDictation =
-    styleTyped && isKanaFact(fact) && form.listen && form.dir === "en2jp";
   const romajiUnanswerable =
     styleTyped && form.dir === "en2jp" && !en2jpTypeable(fact);
   return !(
     styleTyped &&
     !romajiUnanswerable &&
-    (typedKanaDictation || !mcOnlyIn(fact, form.dir))
+    !mcOnlyIn(fact, form.dir)
   );
 }
 
@@ -187,7 +179,7 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
  * product of (Prompt Format × Response × Answer Format) for each source the fact
  * belongs to, minus the combinations the fact can't carry:
  *
- *   - audio only for a listenable word, plus explicit kana dictation,
+ *   - audio only for a listenable word,
  *   - a jp→en response the fact doesn't have (no definition on a reading, no
  *     romaji on a meaning),
  *   - a direction the subject pins away.
@@ -198,16 +190,12 @@ function dedup(fact: FactId, forms: CardForm[]): CardForm[] {
 export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
   if (!factInfo(fact)) return [];
 
-  // Kana deliberately has exactly three question shapes:
+  // Kana deliberately has exactly two question shapes:
   //   1. see kana   → type or pick Romaji
-  //   2. hear kana  → type or pick kana
-  //   3. see Romaji → pick kana
+  //   2. see Romaji → pick kana
   //
-  // The shared source model normally equates Japanese prompts with jp→en and
-  // English prompts with en→jp. Kana dictation is the useful exception:
-  // Japanese AUDIO is the prompt, but the answer is the Japanese glyph. Keep
-  // it here as an explicit closed matrix so no generic fact form can create a
-  // fourth kana question.
+  // Audio is disabled for kana because several kana pairs are acoustically
+  // ambiguous in TTS, which makes dictation unfair.
   if (isKanaFact(fact)) {
     const forms: CardForm[] = [];
     if (ask.japanese.responses.includes("romaji")) {
@@ -218,17 +206,6 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
             response: "romaji",
             listen: false,
             dir: "jp2en",
-            answer,
-          });
-        }
-      }
-      if (ask.japanese.prompts.includes("audio")) {
-        for (const answer of ask.japanese.answers) {
-          forms.push({
-            source: "japanese",
-            response: "japanese",
-            listen: true,
-            dir: "en2jp",
             answer,
           });
         }
@@ -435,17 +412,13 @@ export function configIsReachable(
     return { isReachable: false, reason: "All sources disabled" };
   }
 
-  // Explain an audio-only configuration that produced no form. This is reached
-  // after enabledFormsFor has already allowed kana dictation, so a kana/audio
-  // configuration with the correct reading response never lands here.
+  // Explain an audio-only configuration that produced no form.
   const audioOnly =
     ask.japanese.prompts.length === 1 &&
     ask.japanese.prompts[0] === "audio" &&
     hasJapaneseSetting;
   if (audioOnly) {
-    const anyListenable = facts.some(
-      (f) => listenKind(f) !== null || isKanaFact(f),
-    );
+    const anyListenable = facts.some((f) => listenKind(f) !== null);
     if (!anyListenable) {
       return {
         isReachable: false,

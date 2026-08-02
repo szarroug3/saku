@@ -11,11 +11,9 @@ import { RECIPES } from "@/data/grammar/recipes";
  *
  * Verifies that the Start bar on /practice never falsely says "you're solid"
  * when the chosen settings make no cards for the selected material. When an
- * audio-only ask lands on a fact that has no audio question (a kanji reading, a
- * grammar meaning), the run has zero questions: questionCount is 0, so the bar
- * reports "Nothing is selected" and Start stays disabled. Kana is the exception,
- * because audio dictation IS a real kana question (hear the kana, pick it back),
- * so audio-only with kana is reachable and Start enables.
+ * audio-only ask lands on a fact that has no audio question (kana, a kanji
+ * reading, a grammar meaning), the run has zero questions: questionCount is 0,
+ * so the bar reports "Nothing is selected" and Start stays disabled.
  *
  * The tests navigate to /practice and read the start bar; they do NOT click
  * Start when it is disabled.
@@ -29,9 +27,9 @@ const firstKanjiReading = READING_INDEX.keys().next().value as string;
 const grammarFact = patternMeaningFactId(RECIPES[0].id);
 
 // ---------------------------------------------------------------------------
-// Audio-only asks: no questions on a non-listenable fact, a real one on kana
+// Audio-only asks: no questions on non-listenable facts
 
-test("audio-only with kana is reachable (kana dictation), Start enabled", async ({
+test("audio-only with kana makes no questions, not 'solid'", async ({
   page,
 }) => {
   await seedQuiz(page, {
@@ -43,10 +41,12 @@ test("audio-only with kana is reachable (kana dictation), Start enabled", async 
   });
   await page.goto("/practice");
 
-  // Kana keeps a real audio question (hear the kana, pick it back), so an
-  // audio-only ask on kana is NOT a dead end and Start stays available.
+  const bar = page.locator(".kq-band").last();
+  await expect(bar).toContainText("Nothing is selected");
+  await expect(bar).not.toContainText("solid");
+
   const start = page.getByRole("button", { name: "Start", exact: true });
-  await expect(start).toBeEnabled();
+  await expect(start).toBeDisabled();
 });
 
 test("audio-only with kanji reading makes no questions, not 'solid'", async ({

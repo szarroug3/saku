@@ -39,7 +39,7 @@ const firstKanjiReading = READING_INDEX.keys().next().value!;
 const grammarFact = patternMeaningFactId(RECIPES[0].id);
 
 test.describe("Unreachable settings combinations", () => {
-  test("kana with audio produces a kana-picking listening card", async ({
+  test("kana with audio produces no cards", async ({
     page,
   }) => {
     await seedQuiz(page, {
@@ -53,14 +53,9 @@ test.describe("Unreachable settings combinations", () => {
         }),
       },
     });
-    await startQuizDrill(page);
-
-    await expect(page.getByRole("button", { name: "Play the word again" })).toBeVisible();
-    // The listening card still renders the halo's .kq-glyph, but it is the
-    // speaker button standing in for the hidden glyph, so it carries no text
-    // rather than being absent (halo redesign). Assert it is empty, not gone.
-    await expect(page.locator(".kq-glyph")).toHaveText("");
-    await expect(optionButtons(page)).not.toHaveCount(0);
+    await page.goto("/practice");
+    const start = page.getByRole("button", { name: "Start", exact: true });
+    await expect(start).toBeDisabled();
   });
 
   test("kanji reading with audio produces no cards (kanji reading not listenable)", async ({
