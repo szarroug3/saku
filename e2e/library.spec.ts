@@ -312,7 +312,7 @@ test("filter chips still work after a back/forward/back through a detail page", 
     page.getByRole("button", { name, exact: true });
 
   await page.goto("/library?kind=kanji");
-  await page.getByText("Kanji", { exact: true }).scrollIntoViewIfNeeded();
+  await chip("Kanji").scrollIntoViewIfNeeded();
   await page.mouse.wheel(0, 1200);
   await expect(page.locator('a[href="/library/kanji/生"]').first()).toBeVisible();
 
