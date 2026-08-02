@@ -128,6 +128,9 @@ interface DrillQuestion {
    * so it rides the serialized runtime.
    */
   listen: boolean;
+  /** Guard against duplicate autoplay for the same listening card under
+   * remount/effect replay paths. */
+  listenPlayed?: boolean;
   /**
    * The verb this grammar PRODUCTION showing is built on — rolled once at ask
    * time so a remount doesn't re-pick it, exactly like `font` and `mc`. null
@@ -664,6 +667,7 @@ export function DrillScreen() {
       recognition,
       katakana: isKatakana(revealFor(f, dir, ctx)),
       listen,
+      listenPlayed: false,
       // A new showing has not been hinted. Written here rather than backfilled,
       // so there is exactly one place a showing's hint state begins.
       hinted: false,
@@ -1207,6 +1211,9 @@ export function DrillScreen() {
   const listenPlayFact = rt?.q?.listen ? rt.q.f : null;
   useEffect(() => {
     if (listenPlayKey == null || !listenPlayFact) return;
+    const live = rt?.q;
+    if (!live || !live.listen || live.listenPlayed) return;
+    live.listenPlayed = true;
     const current = rt?.q;
     const info = factInfo(listenPlayFact);
     const text =
