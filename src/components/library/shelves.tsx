@@ -40,7 +40,7 @@
 // depths of the same set.
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { KANA_SUBJECT, SETS } from "@/data/characters";
@@ -289,6 +289,7 @@ export function Shelf({
       voice={voice}
       mnemonic={mnemonicOf(kind, entry)}
       standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
+      showStatus={false}
       selected={selected.has(entry.id)}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
@@ -310,6 +311,7 @@ export function Shelf({
       note={entry.sub}
       grid={grid}
       standing={entryStanding(factsOf(entry.id), facts, claims, metric, now)}
+      showStatus={false}
       selected={selected.has(entry.id)}
       onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
     />
@@ -331,6 +333,7 @@ export function Shelf({
         pair={pair}
         voice={voice}
         standing={entryStanding(knownFactsOf(entry), facts, claims, metric, now)}
+        showStatus={false}
         selected={selected.has(entry.id)}
         onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
       />
@@ -364,6 +367,44 @@ export function Shelf({
   // needs to say why it is empty rather than show nothing.
   const shelfEmpty = shownSections.length === 0;
 
+  /**
+   * Defer heavy section-body mount until the section is near viewport.
+   * Keep the first two sections eager so the top of the shelf paints instantly.
+   */
+  function DeferredSectionBody({
+    eager,
+    children,
+  }: {
+    eager: boolean;
+    children: React.ReactNode;
+  }) {
+    const ref = useRef<HTMLDivElement | null>(null);
+    const [mounted, setMounted] = useState(eager);
+
+    useEffect(() => {
+      if (mounted) return;
+      const node = ref.current;
+      if (!node) return;
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            setMounted(true);
+            io.disconnect();
+          }
+        },
+        { rootMargin: "700px 0px" },
+      );
+      io.observe(node);
+      return () => io.disconnect();
+    }, [mounted]);
+
+    return (
+      <div ref={ref}>
+        {mounted ? children : <div className="h-10" aria-hidden="true" />}
+      </div>
+    );
+  }
+
   return (
     <>
       {kind === GRAMMAR_SUBJECT ? <GrammarClustersCard /> : null}
@@ -372,7 +413,7 @@ export function Shelf({
           <FilterEmpty filter={filter} />
         </Card>
       ) : null}
-      {shownSections.map((section) => {
+      {shownSections.map((section, index) => {
         const ids = section.entries.map((e) => e.id);
         const state = sectionState(selected, ids);
         const onCount = ids.filter((id) => selected.has(id)).length;
@@ -432,34 +473,36 @@ export function Shelf({
               ) : null}
             </div>
             {expanded ? (
-              asRows ? (
-                kind === TRANSITIVITY_SUBJECT ? (
-                  <div className="flex flex-col">
-                    <VerbPairHeader />
-                    {shown.map(pairRow)}
-                  </div>
-                ) : kind === GRAMMAR_SUBJECT ? (
-                  // ONE GRID FOR THE WHOLE LIST so the pattern column is `max-content`
-                  // of the WIDEST pattern — every 〜ないでください, 〜たことがある and
-                  // 〜たほうがいい gets the width it needs and sits on one line, while
-                  // the explanation column (`minmax(0,1fr)`) takes the rest and stays
-                  // aligned across rows. Each row is a `grid-cols-subgrid` band, so its
-                  // cells land on these shared tracks: checkbox, pattern, explanation,
-                  // open, standing. The explanation's `min-w-0` lets it truncate on
-                  // mobile rather than push the row wide.
-                  <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3 max-[600px]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
-                    {shown.map((entry) => row(entry, true))}
-                  </div>
+              <DeferredSectionBody eager={index < 2}>
+                {asRows ? (
+                  kind === TRANSITIVITY_SUBJECT ? (
+                    <div className="flex flex-col">
+                      <VerbPairHeader />
+                      {shown.map(pairRow)}
+                    </div>
+                  ) : kind === GRAMMAR_SUBJECT ? (
+                    // ONE GRID FOR THE WHOLE LIST so the pattern column is `max-content`
+                    // of the WIDEST pattern — every 〜ないでください, 〜たことがある and
+                    // 〜たほうがいい gets the width it needs and sits on one line, while
+                    // the explanation column (`minmax(0,1fr)`) takes the rest and stays
+                    // aligned across rows. Each row is a `grid-cols-subgrid` band, so its
+                    // cells land on these shared tracks: checkbox, pattern, explanation,
+                    // open, standing. The explanation's `min-w-0` lets it truncate on
+                    // mobile rather than push the row wide.
+                    <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3 max-[600px]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+                      {shown.map((entry) => row(entry, true))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      {shown.map((entry) => row(entry))}
+                    </div>
+                  )
                 ) : (
-                  <div className="flex flex-col">
-                    {shown.map((entry) => row(entry))}
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+                    {shown.map(tile)}
                   </div>
-                )
-              ) : (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
-                  {shown.map(tile)}
-                </div>
-              )
+                )}
+              </DeferredSectionBody>
             ) : null}
           </Card>
         );

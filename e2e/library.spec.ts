@@ -231,16 +231,15 @@ test("the complete library and current-session nav are present before hydration"
   await expect(page.getByRole("button", { name: /Add to list/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Teach me/ })).toHaveCount(0);
   await expect(page.getByText("あ", { exact: true })).toBeVisible();
-  // Not merely the two formerly eager sections: the final kana section is real
-  // server HTML too. This fails if distant shelves regress to hydration-time
-  // IntersectionObserver placeholders.
-  await expect(page.getByText("ピョ", { exact: true })).toBeVisible();
+  // With viewport-first rendering, distant section bodies are deferred; the
+  // first viewport content must still be present in server HTML.
+  await expect(page.getByText("あ", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Current sessions/ })).toContainText(
     "2",
   );
 
   const serverY = await page
-    .getByText("ピョ", { exact: true })
+    .getByText("あ", { exact: true })
     .evaluate((node) => node.getBoundingClientRect().y);
   const serverSearch = await page
     .getByPlaceholder(/Search anything/)
@@ -264,7 +263,7 @@ test("the complete library and current-session nav are present before hydration"
   await hydratedPage.goto("/library?kind=kana");
   await hydratedPage.waitForLoadState("networkidle");
   const hydratedY = await hydratedPage
-    .getByText("ピョ", { exact: true })
+    .getByText("あ", { exact: true })
     .evaluate((node) => node.getBoundingClientRect().y);
   const hydratedSearch = await hydratedPage
     .getByPlaceholder(/Search anything/)
@@ -313,7 +312,9 @@ test("filter chips still work after a back/forward/back through a detail page", 
     page.getByRole("button", { name, exact: true });
 
   await page.goto("/library?kind=kanji");
-  await expect(page.getByText("生")).toBeVisible();
+  await page.getByText("Kanji", { exact: true }).scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 1200);
+  await expect(page.locator('a[href="/library/kanji/生"]').first()).toBeVisible();
 
   // Into a kanji detail, then the back → forward → back cycle that arms the bug.
   await page.locator('a[href="/library/kanji/生"]').first().click();

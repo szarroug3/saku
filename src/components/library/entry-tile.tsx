@@ -99,6 +99,10 @@ function toneClass(s: EntryStanding): string {
   }
 }
 
+function neutralToneClass(): string {
+  return "border-border";
+}
+
 /** The small ↗ target — opens the entry page. A `Link`, so it is a real
  * navigation (middle-click, cmd-click work); `stopPropagation` keeps the click
  * off SELECT. */
@@ -123,6 +127,7 @@ export function EntryTile({
   mnemonic,
   voice,
   selected,
+  showStatus = true,
   onToggleSelect,
 }: {
   entry: LibEntry;
@@ -130,6 +135,7 @@ export function EntryTile({
   mnemonic?: string;
   voice: string;
   selected: boolean;
+  showStatus?: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   return (
@@ -148,7 +154,9 @@ export function EntryTile({
       // unmissable; unselected keeps the standing tone. `cursor-pointer` +
       // `select-none` because the whole body is the toggle.
       className={`relative cursor-pointer select-none rounded-[10px] border px-1.5 pb-2 pt-2.5 text-center [container-type:inline-size] ${
-        selected ? "border-accent bg-accent-bg" : `bg-card ${toneClass(standing)}`
+        selected
+          ? "border-accent bg-accent-bg"
+          : `bg-card ${showStatus ? toneClass(standing) : neutralToneClass()}`
       }`}
       title={mnemonic}
     >
@@ -248,6 +256,7 @@ export function EntryRow({
   voice,
   selected,
   grid = false,
+  showStatus = true,
   onToggleSelect,
 }: {
   entry: LibEntry;
@@ -256,6 +265,7 @@ export function EntryRow({
   note?: string;
   voice: string;
   selected: boolean;
+  showStatus?: boolean;
   /** Lay the row out as a `grid-cols-subgrid` band of a shared parent grid,
    * instead of a self-contained flex row. The grammar shelf turns this on so
    * every pattern column sizes to the WIDEST pattern and the explanations align
@@ -390,9 +400,11 @@ export function EntryRow({
         />
       ) : null}
       <ViewLink entry={entry} className="flex-none" />
-      <span className="flex-none max-[600px]:hidden">
-        <StandingCell standing={standing} />
-      </span>
+      {showStatus ? (
+        <span className="flex-none max-[600px]:hidden">
+          <StandingCell standing={standing} />
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -459,6 +471,7 @@ export function VerbPairRow({
   standing,
   voice,
   selected,
+  showStatus = true,
   onToggleSelect,
 }: {
   entry: LibEntry;
@@ -466,6 +479,7 @@ export function VerbPairRow({
   standing: EntryStanding;
   voice: string;
   selected: boolean;
+  showStatus?: boolean;
   onToggleSelect(shiftKey: boolean): void;
 }) {
   return (
@@ -495,9 +509,11 @@ export function VerbPairRow({
       <PairCell side={pair.happens} voice={voice} />
       <PairCell side={pair.doIt} voice={voice} />
       <ViewLink entry={entry} className="flex-none" />
-      <span className="flex-none max-[600px]:hidden">
-        <StandingCell standing={standing} />
-      </span>
+      {showStatus ? (
+        <span className="flex-none max-[600px]:hidden">
+          <StandingCell standing={standing} />
+        </span>
+      ) : null}
     </div>
   );
 }
