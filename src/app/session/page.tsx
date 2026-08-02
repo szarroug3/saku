@@ -22,6 +22,7 @@ import {
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
 import { SmallBtn } from "@/components/ui";
+import { preloadQuizScreen } from "@/components/quiz/quiz-mode-screen";
 import { useHistory } from "@/lib/use-history";
 import { factInfo } from "@/lib/facts";
 import { browserStore, markConceptCardsShown, shownIntros } from "@/lib/intro-shown";
@@ -169,6 +170,41 @@ export default function SessionPage() {
     }
     if (restored) recoverLostLeg();
   }, [session?.phase, active, restored, recoverLostLeg, router]);
+
+  const preloadPhase = session?.phase;
+  const preloadFacts = session?.facts;
+  const preloadSnapshot = session?.snapshot;
+
+  // The /quiz route itself is prefetched by QuizSessionProvider, but each mode
+  // is now its own chunk so a lesson does not eagerly pay for every quiz UI.
+  // Warm the one this session will actually use while the learner is reading
+  // the lesson or waiting out the rest timer. Idle scheduling keeps that work
+  // from competing with the lesson's first paint; the timeout guarantees it
+  // still happens on a busy page.
+  useEffect(() => {
+    if (
+      !preloadFacts ||
+      !preloadSnapshot ||
+      (preloadPhase !== "teaching" && preloadPhase !== "resting")
+    ) {
+      return;
+    }
+
+    const preload = () => {
+      // A speculative network failure must not interrupt the lesson. The
+      // dynamic screen loader will make its normal request again on navigation.
+      void preloadQuizScreen({
+        facts: preloadFacts,
+        snapshot: preloadSnapshot,
+      }).catch(() => undefined);
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(preload, { timeout: 1_500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(preload, 250);
+    return () => window.clearTimeout(id);
+  }, [preloadPhase, preloadFacts, preloadSnapshot]);
 
   if (!session || session.phase === "drilling") return null;
 

@@ -3,17 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { AssemblyScreen } from "@/components/quiz/assembly-screen";
-import { DrillScreen } from "@/components/quiz/drill-screen";
-import { GridScreen } from "@/components/quiz/grid-screen";
-import { PairsScreen } from "@/components/quiz/pairs-screen";
-import { SentenceListenScreen } from "@/components/quiz/sentence-listen-screen";
-import { SubstitutionScreen } from "@/components/quiz/substitution-screen";
+import { QuizModeScreen } from "@/components/quiz/quiz-mode-screen";
 import { useQuizSession } from "@/lib/quiz-session";
-import {
-  englishSentenceAsksOrdering,
-} from "@/lib/ask-config";
-import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 
 // The active-quiz route: renders the screen for the quiz's SNAPSHOT mode
 // (never cfg.mode — changing Mode on Home mid-quiz must not flip a running
@@ -39,28 +30,5 @@ export default function QuizPage() {
     router.replace(session ? "/session" : "/");
   }, [restored, active, session, results, router]);
   if (!active) return null;
-  const sentenceOnlyDrill =
-    active.snapshot.mode === "drill" &&
-    active.facts.length > 0 &&
-    active.facts.every(isSentenceTierMarkerFact) &&
-    englishSentenceAsksOrdering(active.snapshot.ask);
-
-  switch (active.snapshot.mode) {
-    case "drill":
-      return active.runtime.sentencePhase === true || sentenceOnlyDrill ? (
-        <AssemblyScreen />
-      ) : (
-        <DrillScreen />
-      );
-    case "pairs":
-      return <PairsScreen />;
-    case "grid":
-      return <GridScreen />;
-    case "assembly":
-      return <AssemblyScreen />;
-    case "substitution":
-      return <SubstitutionScreen />;
-    case "listen-sentence":
-      return <SentenceListenScreen />;
-  }
+  return <QuizModeScreen active={active} />;
 }
