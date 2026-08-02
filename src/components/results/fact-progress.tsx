@@ -88,6 +88,7 @@ function grammarDisplayLabel(fact: FactId, history: ReturnType<typeof useHistory
 export function FactProgressSection({
   rows,
   onClear,
+  isCleared,
   showLabel = true,
   showContainer = true,
   isSelected,
@@ -95,6 +96,7 @@ export function FactProgressSection({
 }: {
   rows: Array<{ fact: FactId; runs: boolean[] }>;
   onClear: (fact: FactId) => void;
+  isCleared?: (fact: FactId) => boolean;
   showLabel?: boolean;
   showContainer?: boolean;
   isSelected?: (fact: FactId) => boolean;
@@ -196,16 +198,22 @@ export function FactProgressSection({
         <span className="ml-auto flex flex-none gap-[3px]" aria-label="last ten runs">
           {runPips(runs)}
         </span>
-        <button
-          type="button"
-          className="text-[11px] font-medium text-accent hover:underline"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClear(fact);
-          }}
-        >
-          Clear now
-        </button>
+        {isCleared?.(fact) ? (
+          <span className="rounded-full bg-success/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.07em] text-success">
+            Cleared
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="text-[11px] font-medium text-accent hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear(fact);
+            }}
+          >
+            Clear now
+          </button>
+        )}
       </span>
       </div>
     </div>

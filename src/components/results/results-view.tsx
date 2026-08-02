@@ -291,6 +291,11 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
 
   const clearFactNow = (fact: FactId): void => {
     if (!clearableFacts.has(fact)) return;
+    setClearedProgressFacts((prev) => {
+      const next = new Set(prev);
+      next.add(fact);
+      return next;
+    });
     writes.claim([fact]);
   };
 
@@ -318,6 +323,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   );
   const hasAnyProgress = visiblePairProgressRows.length > 0 || factProgressRows.length > 0;
   const [selectedProgress, setSelectedProgress] = useState<Set<FactId>>(new Set());
+  const [clearedProgressFacts, setClearedProgressFacts] = useState<Set<FactId>>(new Set());
 
   const progressPairFacts = useMemo(() => {
     const out = new Map<string, FactId[]>();
@@ -422,6 +428,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
           <FactProgressSection
             rows={factProgressRows}
             onClear={clearFactNow}
+            isCleared={(fact) => clearedProgressFacts.has(fact)}
             showLabel={false}
             showContainer={false}
             isSelected={(fact) => selectedProgress.has(fact)}
