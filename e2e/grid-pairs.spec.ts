@@ -124,6 +124,51 @@ test("Grid mode grades a correct cell as right and locks it", async ({
   await expect(box).toBeDisabled();
 });
 
+test("Grid mode reveals the whole card when Tab moves between inputs", async ({
+  page,
+  seed,
+}) => {
+  await page.addInitScript(() => {
+    const calls: Array<{ card: boolean; block?: ScrollLogicalPosition }> = [];
+    Object.defineProperty(window, "__gridScrollCalls", { value: calls });
+    HTMLElement.prototype.scrollIntoView = function (
+      options?: boolean | ScrollIntoViewOptions,
+    ) {
+      const opts = typeof options === "object" ? options : undefined;
+      calls.push({
+        card: this.classList.contains("kq-gcard"),
+        block: opts?.block,
+      });
+    };
+  });
+  await enterBoard(page, seed, "grid");
+  const inputs = page.locator(".kq-grid-sheet input");
+  await expect(inputs).toHaveCount(KANA.length);
+
+  await inputs.first().focus();
+  await page.evaluate(() => {
+    (
+      window as unknown as Window & {
+        __gridScrollCalls: Array<{ card: boolean; block?: string }>;
+      }
+    ).__gridScrollCalls.length = 0;
+  });
+  await inputs.first().press("Tab");
+
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (
+            window as unknown as Window & {
+              __gridScrollCalls: Array<{ card: boolean; block?: string }>;
+            }
+          ).__gridScrollCalls,
+      ),
+    )
+    .toContainEqual({ card: true, block: "center" });
+});
+
 test("Match-pairs deals a Kana ↔ Romaji board carrying the full relationship set", async ({
   page,
   seed,

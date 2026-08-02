@@ -206,6 +206,22 @@ export function GridScreen() {
   const finishTimer = useRef<number | undefined>(undefined);
   const inputRefs = useRef(new Map<FactId, HTMLInputElement>());
 
+  /** Native Tab scrolling only reveals the input itself, which can leave the
+   * card's glyph hidden above the viewport (especially under the sticky HUD).
+   * Wait until the browser has moved focus, then center the whole focused card.
+   * Keeping this on Tab avoids moving the page when someone clicks a field. */
+  const revealTabbedCard = () => {
+    window.requestAnimationFrame(() => {
+      const focused = document.activeElement;
+      if (!(focused instanceof HTMLInputElement)) return;
+      if (!focused.classList.contains("kq-gcard-well")) return;
+      focused.closest<HTMLElement>(".kq-gcard")?.scrollIntoView({
+        block: "center",
+        inline: "nearest",
+      });
+    });
+  };
+
   const shake = (f: FactId) => {
     window.clearTimeout(shakeTimers.current[f]);
     const arm = () => {
@@ -439,6 +455,9 @@ export function GridScreen() {
                   onBlur={() => {
                     // blurSubmit is read at blur time, live from config.
                     if (cfg.blurSubmit) check(f, true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Tab") revealTabbedCard();
                   }}
                   className="kq-gcard-well w-full px-1 py-1.5 text-center text-sm"
                 />

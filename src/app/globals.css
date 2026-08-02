@@ -1712,10 +1712,11 @@ body {
    * are what turned the sheet into the black box the user reported. */
   --gcard-damp: transparent;
 
-  /* The well the answer is typed into. Ink-on-transparent rather than a flat
-   * colour, so it deepens whatever surface the card is currently wearing
-   * instead of fighting it — the one thing the old bg-black/50 got right. */
-  --gcard-well: color-mix(in srgb, var(--text) 7%, transparent);
+  /* The answer well is deliberately OPAQUE. A large grid used to composite
+   * the moving page ground through every translucent input while scrolling;
+   * using the theme's ground as the mix base gives the same quiet contrast
+   * without a wall of live see-through layers. */
+  --gcard-well: color-mix(in srgb, var(--text) 7%, var(--bg));
   --gcard-well-edge: color-mix(in srgb, var(--text) 12%, transparent);
 
   /* The HUD scrim (BUG 1). On the three themes whose page ground IS a flat
