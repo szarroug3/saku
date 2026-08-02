@@ -18,7 +18,65 @@ import {
   WordTable,
 } from "@/components/results/word-table";
 import { type RunFacts } from "@/components/results/summary";
-import type { FactId, SessionStats } from "@/types";
+import { factInfo, readingOfEntry } from "@/lib/facts";
+import { useHistory } from "@/lib/use-history";
+import { wordKnown } from "@/lib/word-unlock";
+import { grammarMeaning, grammarProduction } from "@/data/grammar";
+import { patternLabel } from "@/data/grammar/recipes";
+import type { EntryId, FactId, HistoryFile, SessionStats } from "@/types";
+
+const GODAN_ENDING: Record<string, string> = {
+  v5u: "う",
+  v5t: "つ",
+  v5r: "る",
+  v5m: "む",
+  v5b: "ぶ",
+  v5n: "ぬ",
+  v5k: "く",
+  v5g: "ぐ",
+  v5s: "す",
+};
+
+function grammarClassLabel(cls: string): string {
+  if (cls in GODAN_ENDING) return `godan · ${GODAN_ENDING[cls]}`;
+  if (cls === "v1") return "ichidan";
+  if (cls === "adj-i") return "i-adj";
+  if (cls === "adj-na") return "na-adj";
+  return cls;
+}
+
+function irregularVerbLabel(surface: string, history: HistoryFile): string {
+  const kanaBySurface: Record<string, string> = {
+    行く: "いく",
+    来る: "くる",
+    する: "する",
+    いい: "いい",
+  };
+  const kana = kanaBySurface[surface] ?? surface;
+  return wordKnown(surface, history) ? surface : kana;
+}
+
+function grammarHostLabel(host: string): string {
+  if (host === "adj-i") return "i-adj";
+  if (host === "adj-na") return "na-adj";
+  return host;
+}
+
+function grammarDisplayLabel(fact: FactId, history: HistoryFile): string | null {
+  const production = grammarProduction(fact);
+  if (production) {
+    const base = patternLabel(production.recipe).replace(/^〜/, "~");
+    const b = production.bucket;
+    if (b?.kind === "class") {
+      const cls = b.cls;
+      return `${base} · ${grammarClassLabel(cls)}`;
+    }
+    if (b?.kind === "verb") return `${base} · irregular · ${irregularVerbLabel(b.surface, history)}`;
+    return `${base} · ${grammarHostLabel(production.host)}`;
+  }
+  const meaning = grammarMeaning(fact);
+  return meaning ? patternLabel(meaning.recipe).replace(/^〜/, "~") : null;
+}
 
 function Board({
   label,
@@ -30,6 +88,7 @@ function Board({
   selected,
   onToggle,
   onSetVisible,
+  displayEntry,
 }: {
   label: string;
   facts: FactId[];
@@ -40,6 +99,7 @@ function Board({
   selected: Set<BoxKey>;
   onToggle: (box: BoxKey) => void;
   onSetVisible: (boxes: Set<BoxKey>, on: boolean) => void;
+  displayEntry?: (entry: EntryId, fact: FactId) => string;
 }) {
   if (!facts.length) return null;
   const n = [...visibleBoxes].filter((b) => selected.has(b)).length;
@@ -77,6 +137,7 @@ function Board({
           showOnly={visibleBoxes}
           hideFirstTry={hideFirstTry}
           solidTone={solidTone}
+          displayEntry={displayEntry}
           isSelected={(box) => selected.has(box)}
           onToggle={onToggle}
         />
@@ -110,6 +171,19 @@ export function TriageSection({
   onDrillWeakest: () => void;
   extraSelectedFacts?: ReadonlySet<FactId>;
 }) {
+  const { history } = useHistory();
+
+  const displayEntry = (entry: EntryId, fact: FactId): string => {
+    const info = factInfo(fact);
+    if (info?.subject === "grammar") {
+      return grammarDisplayLabel(fact, history) ?? info.glyph;
+    }
+    if (info?.subject === "word" && !wordKnown(info.glyph, history)) {
+      return readingOfEntry(entry);
+    }
+    return info?.glyph ?? entry;
+  };
+
   const allBoxes = new Set(boxKeysForFacts(facts.facts, stats));
   const needsWorkBoxes = new Set(missedBoxKeysForFacts(facts.facts, stats));
   const solidBoxes = new Set([...allBoxes].filter((b) => !needsWorkBoxes.has(b)));
@@ -127,7 +201,8 @@ export function TriageSection({
   const setVisible = (boxes: Set<BoxKey>, on: boolean) =>
     setSelected((prev) => {
       const next = new Set(prev);
-      for (const b of boxes) if (on) next.add(b);
+      for (const b of boxes)
+        if (on) next.add(b);
         else next.delete(b);
       return next;
     });
@@ -159,6 +234,7 @@ export function TriageSection({
           selected={selected}
           onToggle={toggle}
           onSetVisible={setVisible}
+          displayEntry={displayEntry}
         />
       ) : null}
       <Board
@@ -171,6 +247,7 @@ export function TriageSection({
         selected={selected}
         onToggle={toggle}
         onSetVisible={setVisible}
+        displayEntry={displayEntry}
       />
       <div className="flex flex-wrap gap-2">
         {nothingToFix ? (

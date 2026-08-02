@@ -232,6 +232,8 @@ export function PatternRow({
   runs?: boolean[];
 }) {
   const [first, second] = lines(row, stats, graduateRuns, !!wasWorst);
+  const glyphA = glyphOf(row.a);
+  const glyphB = glyphOf(row.b);
   const clickable = !!onToggle;
   return (
     <div
@@ -265,8 +267,8 @@ export function PatternRow({
       <span className="min-w-[112px] flex-none">
         <span className="flex items-center justify-center gap-2">
           <span className="flex min-w-[42px] flex-col items-center">
-            <span className="font-kana text-[17px] font-extralight leading-none tracking-[0.04em]">
-              {glyphOf(row.a)}
+            <span className="text-[12px] font-medium leading-snug sm:text-[13px] break-words text-center">
+              {glyphA}
             </span>
             <span className="mt-0.5 text-[10px] font-medium leading-none tracking-[0.03em] text-text-muted">
               {kindLabel(row.a)}
@@ -276,8 +278,8 @@ export function PatternRow({
             ↔
           </span>
           <span className="flex min-w-[42px] flex-col items-center">
-            <span className="font-kana text-[17px] font-extralight leading-none tracking-[0.04em]">
-              {glyphOf(row.b)}
+            <span className="text-[12px] font-medium leading-snug sm:text-[13px] break-words text-center">
+              {glyphB}
             </span>
             <span className="mt-0.5 text-[10px] font-medium leading-none tracking-[0.03em] text-text-muted">
               {kindLabel(row.b)}

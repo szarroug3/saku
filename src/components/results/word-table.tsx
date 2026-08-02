@@ -28,7 +28,8 @@ import {
   presentationPhrasesForFact,
   type BoxKey,
 } from "@/components/results/word-table-keys";
-import type { FactId, SessionStats } from "@/types";
+import { groupRowsByDisplayLabel } from "@/components/results/word-table-grouping";
+import type { EntryId, FactId, SessionStats } from "@/types";
 
 export type { BoxKey };
 export {
@@ -189,6 +190,7 @@ export function WordTable({
   showOnly,
   hideFirstTry,
   solidTone,
+  displayEntry,
 }: {
   facts: FactId[];
   stats: SessionStats;
@@ -200,12 +202,15 @@ export function WordTable({
   hideFirstTry?: boolean;
   /** Optional: tint unselected cells as solid/safe. */
   solidTone?: boolean;
+  /** Optional: custom row heading text (defaults to glyphOf(entry)). */
+  displayEntry?: (entry: EntryId, fact: FactId) => string;
 }) {
   const rows = groupByEntry(facts);
   if (!rows.length) return null;
+  const groupedRows = groupRowsByDisplayLabel(rows, glyphOf, displayEntry);
   return (
     <div className="flex flex-col gap-2">
-      {rows.map((row) => {
+      {groupedRows.map((row) => {
         const cells = row.facts.flatMap((f) =>
           presentationPhrasesForFact(f, stats)
             .map((phrase) => ({ fact: f, phrase, box: boxKeyOf(f, phrase) }))
@@ -214,7 +219,7 @@ export function WordTable({
         if (!cells.length) return null;
         return (
           <div
-            key={row.entry}
+            key={row.key}
             className="border-b border-border/70 pb-2 mb-2 last:border-b-0 last:pb-0 last:mb-0"
           >
             <div
@@ -223,15 +228,15 @@ export function WordTable({
               // right, so the boxes no longer lined up down the table. A fixed width
               // starts every row's boxes at the same x. `1fr` for the second track
               // keeps the whole thing inside its container — no horizontal overflow.
-              className="grid grid-cols-[72px_1fr] items-center gap-x-2.5 gap-y-1"
+              className="grid grid-cols-[120px_1fr] items-center gap-x-2.5 gap-y-1"
             >
               {/* The word, once, disambiguated by its noun so 人 the kanji and 人
                   the word read as two rows, not one repeated glyph. */}
               <div className="flex min-w-0 flex-col items-center justify-center py-1">
                 {/* `max-w-full` + `break-all` so a rare word wider than the fixed
                     column wraps inside it instead of spilling over the boxes. */}
-                <span aria-hidden="true" className="max-w-full break-all text-center font-kana text-[22px] font-extralight leading-none">
-                  {glyphOf(row.entry)}
+                <span aria-hidden="true" className="max-w-full whitespace-normal break-keep text-center text-[13px] font-medium leading-snug sm:text-[14px]">
+                  {row.heading}
                 </span>
                 <span className="mt-0.5 text-[8.5px] uppercase tracking-[0.06em] text-text-muted">
                   {nounFor(row.facts[0])}

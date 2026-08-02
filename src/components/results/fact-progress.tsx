@@ -4,6 +4,10 @@ import { Lbl } from "@/components/ui";
 import { glyphOfFact } from "@/components/results/summary";
 import { GETTING_THERE_PCT, SOLID_PCT, STANDING_LABEL } from "@/lib/library/standing";
 import { nounFor } from "@/lib/quiz-instruction";
+import { grammarMeaning, grammarProduction } from "@/data/grammar";
+import { patternLabel } from "@/data/grammar/recipes";
+import { useHistory } from "@/lib/use-history";
+import { wordKnown } from "@/lib/word-unlock";
 import type { FactId } from "@/types";
 
 function cx(...parts: Array<string | false | null | undefined>): string {
@@ -26,6 +30,61 @@ function runsToReach(runs: boolean[], targetPct: number): number {
   return 50;
 }
 
+const GODAN_ENDING: Record<string, string> = {
+  v5u: "う",
+  v5t: "つ",
+  v5r: "る",
+  v5m: "む",
+  v5b: "ぶ",
+  v5n: "ぬ",
+  v5k: "く",
+  v5g: "ぐ",
+  v5s: "す",
+};
+
+function grammarClassLabel(cls: string): string {
+  if (cls in GODAN_ENDING) return `godan · ${GODAN_ENDING[cls]}`;
+  if (cls === "v1") return "ichidan";
+  if (cls === "adj-i") return "i-adj";
+  if (cls === "adj-na") return "na-adj";
+  return cls;
+}
+
+function irregularVerbLabel(surface: string, known: boolean): string {
+  const kanaBySurface: Record<string, string> = {
+    行く: "いく",
+    来る: "くる",
+    する: "する",
+    いい: "いい",
+  };
+  const kana = kanaBySurface[surface] ?? surface;
+  return known ? surface : kana;
+}
+
+function grammarHostLabel(host: string): string {
+  if (host === "adj-i") return "i-adj";
+  if (host === "adj-na") return "na-adj";
+  return host;
+}
+
+function grammarDisplayLabel(fact: FactId, history: ReturnType<typeof useHistory>["history"]): string | null {
+  const production = grammarProduction(fact);
+  if (production) {
+    const base = patternLabel(production.recipe).replace(/^〜/, "~");
+    const b = production.bucket;
+    if (b?.kind === "class") {
+      const cls = b.cls;
+      return `${base} · ${grammarClassLabel(cls)}`;
+    }
+    if (b?.kind === "verb") {
+      return `${base} · irregular · ${irregularVerbLabel(b.surface, wordKnown(b.surface, history))}`;
+    }
+    return `${base} · ${grammarHostLabel(production.host)}`;
+  }
+  const meaning = grammarMeaning(fact);
+  return meaning ? patternLabel(meaning.recipe).replace(/^〜/, "~") : null;
+}
+
 export function FactProgressSection({
   rows,
   onClear,
@@ -41,6 +100,7 @@ export function FactProgressSection({
   isSelected?: (fact: FactId) => boolean;
   onToggle?: (fact: FactId) => void;
 }) {
+  const { history } = useHistory();
   if (!rows.length) return null;
   function progressText(runs: boolean[]): string {
     const toShaky = runsToReach(runs, GETTING_THERE_PCT);
@@ -81,6 +141,7 @@ export function FactProgressSection({
   const items = rows.map(({ fact, runs }) => {
     const clickable = !!onToggle;
     const selected = !!isSelected?.(fact);
+    const heading = grammarDisplayLabel(fact, history) ?? glyphOfFact(fact);
     return (
     <div
       key={fact}
@@ -116,8 +177,8 @@ export function FactProgressSection({
       <span className="min-w-[112px] flex-none">
         <span className="flex items-center justify-center gap-2">
           <span className="flex min-w-[42px] flex-col items-center">
-            <span className="font-kana text-[17px] font-extralight leading-none tracking-[0.04em]">
-              {glyphOfFact(fact)}
+            <span className="text-[12px] font-medium leading-snug sm:text-[13px] break-words text-center">
+              {heading}
             </span>
             <span className="mt-0.5 text-[10px] font-medium leading-none tracking-[0.03em] text-text-muted">
               {nounFor(fact)}
