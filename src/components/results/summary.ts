@@ -34,7 +34,7 @@ import type {
  * hero and the chip below it can't drift apart. */
 export function metricWords(metric: AccuracyMetric): string {
   void metric;
-  return "first try";
+  return "score";
 }
 
 function s(n: number): string {
@@ -396,10 +396,10 @@ function countBits(run: RunFacts, progress: PairRow[]): Bit[] {
     run.metric === "firstTry" ? run.questionsFirstTry : run.questionsEventually;
   const beaten = progress.length;
   return [
-    // A stored session counted nothing per fact, so "0 / 12 first try"
+    // A stored session counted nothing per fact, so "0 / 12 score"
     // would be an invention. Report the two percentages it did keep.
     run.stored
-      ? { t: `${run.stored.strictPct}% first try` }
+      ? { t: `${run.stored.strictPct}% score` }
       : { t: `${got} / ${run.questionsTotal} ${metricWords(run.metric)}` },
     ...(beaten
       ? [

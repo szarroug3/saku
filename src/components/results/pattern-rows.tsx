@@ -7,7 +7,7 @@
 //
 // THE UNIT IS THE RUN, SO THE WORDS ARE "THIS RUN"
 // ================================================
-// These rows used to say "today" — "Mixed up again today", "Right first try
+// These rows used to say "today" — "Mixed up again today", "No mix-up
 // today", "No mix-up today". Every one of them was false, and in both
 // directions. The lifecycle in confusions.ts counts RUNS: cleanStreak,
 // runsMixedUp and runsToLastMixUp are all tallies of sessions, and nothing
@@ -101,24 +101,9 @@ function lines(
         ]),
       ];
     case "improving": {
-      // "Right first try this run" is only sayable when it's true of both
-      // halves; the pair not being confused doesn't mean the characters were
-      // easy.
-      //
-      // The pair is keyed by ENTRY and `stats` by FACT, so the entry has to be
-      // expanded into its facts before it can be looked up. Testing `row.a in
-      // stats` directly would be the same silent bug `qualifies()` was built to
-      // prevent: it would be false for every pair, every fact would vacuously
-      // pass, and every improving row would claim "Right first try this run"
-      // whether or not you got it.
-      const clean = [row.a, row.b].every((e) =>
-        factsOf(e).every(
-          (f) => !(f in stats) || stats[f].firstTryCorrect === true,
-        ),
-      );
       const left = graduateRuns - record.cleanStreak;
       return [
-        clean ? "Right first try this run" : "No mix-up this run",
+        "No mix-up this run",
         join([
           wasWorst ? "was your worst pair" : null,
           `${record.cleanStreak} clean run${s(record.cleanStreak)}, ${left} to clear it`,
