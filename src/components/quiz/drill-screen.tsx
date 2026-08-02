@@ -1545,7 +1545,10 @@ export function DrillScreen() {
           // Re-mounts on every new card and every attempt, which is what
           // replays the entry sweep, the shake and the glyph cross-fade.
           key={`${rt.asked}-${q.tries}`}
+          cardKey={`${rt.asked}-${q.tries}`}
           state={haloState}
+          timerLeft={rt.timerLeft ?? 0}
+          drainWindow={drainWindow}
           // A kanji-reading card shows the WHOLE WORD (電話) so the reading is
           // asked in context, with this card's kanji lit and the rest dimmed (see
           // `highlight`). Every other card shows its own glyph. The word is

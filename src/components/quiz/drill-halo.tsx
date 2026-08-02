@@ -104,17 +104,57 @@ function useFitFontSize(maxSize: number, key: string) {
 }
 
 const HALO_CSS = `
+@keyframes kq-drain-bar  { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes kq-border-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes kq-border-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
+@keyframes kq-border-flash { 0% { opacity: 1; } 55% { opacity: 0.25; } 100% { opacity: 0; } }
 @keyframes kq-glyph-in {
   from { opacity: 0; transform: scale(0.94); }
   to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .kq-halo, .kq-glyph, .kq-base {
+  .kq-halo, .kq-ring, .kq-glyph, .kq-base {
     animation: none !important;
     transition: none !important;
   }
 }
 `;
+
+interface FeedbackSpec {
+  key: string;
+  color: string;
+  animation: string;
+  drain?: boolean;
+}
+
+/** Rectangle equivalent of the old conic ring: a drain strip or a border overlay. */
+function feedbackSpec(
+  state: HaloState,
+  cardKey: string,
+  timerLeft: number,
+  drainWindow: number,
+): FeedbackSpec | null {
+  switch (state) {
+    case "draining": {
+      const left = Math.max(0, Math.min(drainWindow, timerLeft));
+      return {
+        key: `drain-${cardKey}-${left}`,
+        color: "var(--warning)",
+        // Negative delay skips to where the bar already is, same trick as the old ring.
+        animation: `kq-drain-bar ${drainWindow}s linear ${left - drainWindow}s forwards`,
+        drain: true,
+      };
+    }
+    case "right":
+      return { key: `right-${cardKey}`, color: "var(--accent)",  animation: "kq-border-in 340ms ease-out forwards" };
+    case "wrong":
+      return { key: `wrong-${cardKey}`, color: "var(--danger)",  animation: "kq-border-pulse 460ms ease-in-out 2" };
+    case "wrong-flash":
+      return { key: `flash-${cardKey}`,  color: "var(--danger)",  animation: "kq-border-flash 720ms ease-out forwards" };
+    default:
+      return null;
+  }
+}
 
 function mix(token: string, pct: number): string {
   return `color-mix(in srgb, var(${token}) ${pct}%, transparent)`;
@@ -138,6 +178,12 @@ function baseGlow(state: HaloState): string {
 
 export interface DrillHaloProps {
   state: HaloState;
+  /** `${asked}-${tries}` — re-mounts the halo on every card/attempt so animations replay. */
+  cardKey: string;
+  /** Seconds left on the countdown; only read while draining. */
+  timerLeft: number;
+  /** Length of the drain window in seconds — min(5, timerSec). */
+  drainWindow: number;
   /** The character (jp2en) or the romaji prompt (en2jp). For a kanji-reading
    * card this is the WHOLE WORD (電話), so the reading is asked in context; see
    * `highlight`. */
@@ -183,6 +229,9 @@ export interface DrillHaloProps {
 
 export function DrillHalo({
   state,
+  cardKey,
+  timerLeft,
+  drainWindow,
   glyph,
   highlight,
   font,
@@ -198,6 +247,7 @@ export function DrillHalo({
 }: DrillHaloProps) {
   const wrong = state === "wrong" || state === "wrong-flash";
   const square = !!sentenceFrame;
+  const feedback = feedbackSpec(state, cardKey, timerLeft, drainWindow);
 
   return (
     <div
@@ -219,6 +269,21 @@ export function DrillHalo({
           transition: "box-shadow .3s",
         }}
       />
+      {feedback?.drain ? (
+        // Drain strip at bottom: scaleX from current position to 0 over the window.
+        <div
+          key={feedback.key}
+          className="kq-ring absolute bottom-0 left-0 right-0 h-[3px] origin-left rounded-b-2xl"
+          style={{ backgroundColor: feedback.color, animation: feedback.animation }}
+        />
+      ) : feedback ? (
+        // Colored border overlay for right/wrong states.
+        <div
+          key={feedback.key}
+          className="kq-ring pointer-events-none absolute inset-0 rounded-2xl"
+          style={{ border: `2px solid ${feedback.color}`, animation: feedback.animation }}
+        />
+      ) : null}
       {square ? (
         <div
           className={`kq-glyph relative text-center ${

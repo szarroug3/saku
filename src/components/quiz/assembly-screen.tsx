@@ -544,7 +544,10 @@ export function AssemblyScreen() {
       <div className="mx-auto mt-6 flex max-w-xl flex-col items-center">
         <DrillHalo
           key={`${item.id}-${card.tries}`}
+          cardKey={`${item.id}-${card.tries}`}
           state={haloState}
+          timerLeft={0}
+          drainWindow={0}
           glyph=""
           font="inherit"
           fontSize={30}
