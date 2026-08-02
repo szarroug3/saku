@@ -33,6 +33,12 @@ const HIRAGANA_START = 0x3041;
 const HIRAGANA_END = 0x309f;
 const KATAKANA_OFFSET = 0x60;
 
+const SMALL_TO_FULL_HIRAGANA: Readonly<Record<string, string>> = {
+  ゃ: "や",
+  ゅ: "ゆ",
+  ょ: "よ",
+};
+
 /** The combining marks NFD leaves behind. */
 const DAKUTEN = "゙";
 const HANDAKUTEN = "゚";
@@ -51,11 +57,31 @@ function isHiragana(ch: string): boolean {
   return cp !== undefined && cp >= HIRAGANA_START && cp <= HIRAGANA_END;
 }
 
-/** The katakana written for the same sound, when the app teaches it. */
-function twinOf(glyph: string): string | null {
+function katakanaOf(glyph: string): string | null {
   if (glyph.length !== 1 || !isHiragana(glyph)) return null;
   const twin = String.fromCodePoint((glyph.codePointAt(0) as number) + KATAKANA_OFFSET);
   return CHAR_INDEX[twin] ? twin : null;
+}
+
+/** The katakana written for the same sound, when the app teaches it. */
+function twinOf(glyph: string): string | null {
+  return katakanaOf(glyph);
+}
+
+function comboTwinOf(glyph: string): string | null {
+  const parts = Array.from(glyph);
+  if (parts.length !== 2 || !parts.every(isHiragana)) return null;
+  const twin = parts
+    .map((p) => String.fromCodePoint((p.codePointAt(0) as number) + KATAKANA_OFFSET))
+    .join("");
+  return twin.length === 2 && CHAR_INDEX[twin] ? twin : null;
+}
+
+function taughtLinkGlyph(glyph: string): string | null {
+  if (CHAR_INDEX[glyph]) return glyph;
+  const full = SMALL_TO_FULL_HIRAGANA[glyph];
+  if (full && CHAR_INDEX[full]) return full;
+  return null;
 }
 
 /** Every taught kana whose NFD decomposition is this glyph plus `mark`. */
@@ -101,7 +127,28 @@ function cell(title: string, glyphs: readonly string[]): FamilyCell | null {
  * that owns the map.
  */
 export function kanaFamily(glyph: string): readonly FamilyCell[] {
-  if (!isHiragana(glyph) || glyph.length !== 1) return [];
+  if (!isHiragana(glyph[0])) return [];
+
+  const comboParts = Array.from(glyph);
+  if (comboParts.length === 2 && comboParts.every(isHiragana)) {
+    const twin = comboTwinOf(glyph);
+    const builtFromMembers = comboParts
+      .map((part) => {
+        const linkGlyph = taughtLinkGlyph(part);
+        if (!linkGlyph) return null;
+        return { glyph: part, entry: kanaEntry(linkGlyph) };
+      })
+      .filter((m): m is { glyph: string; entry: EntryId } => m !== null);
+    const cells = [
+      builtFromMembers.length
+        ? ({ title: "Built from", members: builtFromMembers } as FamilyCell)
+        : null,
+      cell("Katakana", twin ? [twin] : []),
+    ];
+    return cells.filter((c): c is FamilyCell => c !== null);
+  }
+
+  if (glyph.length !== 1) return [];
   // A voiced form is not a base: ぎ decomposes, so it has a parent.
   if (glyph.normalize("NFD").length > 1) return [];
 

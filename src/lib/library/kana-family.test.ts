@@ -42,13 +42,18 @@ test("な has no voiced form, so no voiced cell", () => {
   assert.ok(!titles("な").includes("Voiced"));
 });
 
-test("a family MEMBER owns no map of its own", () => {
-  // ぎ, キ and きゃ are entries in their own right; the base kana's page is
-  // where the group is laid out, so these return nothing rather than listing
-  // their siblings from the middle.
+test("a voiced form and katakana member own no map of their own", () => {
+  // ぎ and キ are members in a base-kana family map; they do not own one.
   assert.deepEqual(kanaFamily("ぎ"), []);
   assert.deepEqual(kanaFamily("キ"), []);
-  assert.deepEqual(kanaFamily("きゃ"), []);
+});
+
+test("a hiragana combo links to its pieces and katakana counterpart", () => {
+  assert.deepEqual(members("きゃ", "Built from"), ["き", "ゃ"]);
+  assert.deepEqual(members("きゃ", "Katakana"), ["キャ"]);
+
+  assert.deepEqual(members("ぢゅ", "Built from"), ["ぢ", "ゅ"]);
+  assert.deepEqual(members("ぢゅ", "Katakana"), ["ヂュ"]);
 });
 
 test("every member resolves to a real entry", () => {
