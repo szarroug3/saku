@@ -26,9 +26,11 @@ import {
 import { TriageSection } from "@/components/results/triage-board";
 import { Btn, Card, PageTitle } from "@/components/ui";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { pairEntries } from "@/lib/confusions";
 import { analyzeRun } from "@/lib/confusions";
 import { weakestFacts } from "@/lib/decks";
 import { entryOf } from "@/lib/facts";
+import { factsOf } from "@/lib/facts";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ResultsPayload } from "@/lib/quiz-session";
 import { useHistoryWrites } from "@/lib/history-writes";
@@ -234,6 +236,13 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     setSavedAsList(true);
   };
 
+  const clearNow = (key: string) => {
+    const [a, b] = pairEntries(key);
+    const facts = [...new Set([...factsOf(a), ...factsOf(b)])];
+    if (facts.length) writes.claim(facts);
+    writes.clearMixup(key);
+  };
+
   return (
     <>
       <PageTitle
@@ -274,7 +283,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         stats={stats}
         graduateRuns={graduateRuns}
         worstKey={worstKey}
-        onClear={(key) => writes.clearMixup(key)}
+        onClear={clearNow}
       />
 
       <TriageSection

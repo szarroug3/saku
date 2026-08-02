@@ -140,6 +140,7 @@ export function standingOf(
   now: number,
 ): FactStanding {
   const seen = agg?.seen ?? 0;
+  const testedAt = agg?.lastTested ?? 0;
   const state = effectiveState(agg, claimedAt);
   const s = status(state, now);
 
@@ -155,6 +156,11 @@ export function standingOf(
   // material should.
   if (!seen && claimedAt && s !== "teach") return { standing: "claimed", seen };
   if (!seen) return { standing: "not-seen", seen };
+
+  // A newer explicit claim over previously tested material is treated as the
+  // learner deliberately marking it known now (the Clear now path in Results
+  // uses this). The next real test can still move it back out of solid.
+  if (claimedAt && claimedAt > testedAt) return { standing: "solid", seen };
 
   // A fact with showings behind it, lost to time: re-teach, not re-test.
   if (s === "teach") return { standing: "slipping", seen };

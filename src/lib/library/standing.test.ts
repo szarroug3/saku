@@ -103,6 +103,30 @@ describe("standingOf — 'solid' takes accuracy, not just recency", () => {
     assert.equal(s.standing, "shaky", "0% first-try, claim discarded");
   });
 
+  test("a newer claim over tested material reads solid immediately", () => {
+    const testedAt = NOW_T;
+    const claimedAt = NOW_T + MIN;
+    const agg = drilledJustNow(
+      { seen: 3, missed: 2, firstTry: 1, correct: 1 },
+      testedAt,
+    );
+    const s = standingOf(agg, claimedAt, METRIC_S, claimedAt);
+    assert.equal(s.standing, "solid");
+  });
+
+  test("a later real miss after claim drops back out of solid", () => {
+    const claimedAt = NOW_T;
+    const missAt = NOW_T + MIN;
+    const agg = emptyAggregate();
+    foldSession(
+      agg,
+      { seen: 1, missed: 1, firstTry: 0, correct: 0, firstTryHit: false },
+      missAt,
+    );
+    const s = standingOf(agg, claimedAt, METRIC_S, missAt);
+    assert.notEqual(s.standing, "solid");
+  });
+
   test("genuinely good accuracy, still fresh, IS solid — evidence earns the word", () => {
     const agg = drilledJustNow(
       { seen: 10, missed: 0, firstTry: 10, correct: 10 },
