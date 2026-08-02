@@ -51,15 +51,6 @@ function kindLabel(entry: string): string {
   return "entry";
 }
 
-/** The early-clear affordance is earned by a correct answer, not merely by
- * avoiding this particular confusion while getting the card wrong another
- * way or leaving it unanswered. */
-function landedThisRun(row: PairRow, stats: SessionStats): boolean {
-  return [row.a, row.b].some((entry) =>
-    factsOf(entry).some((fact) => stats[fact]?.everCorrect),
-  );
-}
-
 /** "nearly always ツ read as "shi"" — or "mixed up both ways", or nothing when
  * there aren't enough mix-ups to claim a direction at all. */
 function directionText(row: PairRow): string | null {
@@ -301,7 +292,7 @@ export function PatternSection({
             graduateRuns={graduateRuns}
             wasWorst={row.key === worstKey}
             onClear={
-              row.state === "improving" && landedThisRun(row, stats) && onClear
+              row.state === "improving" && onClear
                 ? () => onClear(row.key)
                 : undefined
             }
