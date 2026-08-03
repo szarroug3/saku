@@ -159,16 +159,6 @@ export const KEIGO_SETS: readonly KeigoSet[] = [
     formulaic: true,
   },
   {
-    id: "eat",
-    meaning: "eat / drink",
-    plain: [plain("食べる", "たべる"), plain("飲む", "のむ")],
-    words: [
-      honorific("meshiagaru", "召し上がる", "めしあがる"),
-      humble("itadaku_eat", "いただく", "いただく"),
-    ],
-    gate: ["食べる", "飲む"],
-  },
-  {
     id: "say",
     meaning: "say",
     plain: [plain("言う", "いう")],
@@ -178,6 +168,16 @@ export const KEIGO_SETS: readonly KeigoSet[] = [
       humble("moushiageru", "申し上げる", "もうしあげる", "more deferential"),
     ],
     gate: ["言う"],
+  },
+  {
+    id: "eat",
+    meaning: "eat / drink",
+    plain: [plain("食べる", "たべる"), plain("飲む", "のむ")],
+    words: [
+      honorific("meshiagaru", "召し上がる", "めしあがる"),
+      humble("itadaku_eat", "いただく", "いただく"),
+    ],
+    gate: ["食べる", "飲む"],
   },
   {
     id: "do",
