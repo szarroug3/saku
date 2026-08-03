@@ -25,6 +25,7 @@ export interface ProgressSeedRow {
   history: HistoryFile;
   settings: SettingsFile;
   session: SessionStateEnvelope;
+  lists: ListsFile;
 }
 
 function normalizeHistory(raw: unknown): HistoryFile {
@@ -45,14 +46,16 @@ export async function readProgressSeedRow(
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("progress")
-    .select("history, settings, session")
+    .select("history, settings, session, lists")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(`reading progress seed failed: ${error.message}`);
+  const rawLists = (data?.lists ?? {}) as Partial<ListsFile> | null;
   return {
     history: normalizeHistory(data?.history),
     settings: normalizeSettings(data?.settings),
     session: normalizeEnvelope(data?.session),
+    lists: { lists: rawLists?.lists ?? [] },
   };
 }
 

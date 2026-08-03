@@ -13,7 +13,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { currentUserId } from "@/lib/auth";
 import { loadProgressSeeds } from "@/lib/history";
 import { HistoryProvider } from "@/lib/history-provider";
-import { loadLists } from "@/lib/lists";
 import { ListsProvider } from "@/lib/lists-provider";
 import { QuizConfigProvider } from "@/lib/quiz-config";
 import { SettingsProvider } from "@/lib/settings-provider";
@@ -111,50 +110,11 @@ if(c!==${JSON.stringify(DEFAULT_ACCENT)}&&${JSON.stringify(
 )}.indexOf(c)>=0)d.setAttribute("data-accent",c);
 }catch(e){}})()`;
 
-/** The seed, or null if it could not be read.
- *
- * A history that exists and cannot be parsed is a 503 from /api/history, and it
- * must stay one: the layout is the app shell, and failing it would take down
- * every page including the ones that do not touch history at all. Null hands the
- * question back to the client, which asks the API and gets the real error with
- * the wording it already has for it. */
-async function seedHistory(userId: string) {
+/** All four progress-row seeds in one DB round-trip. Each field falls back to
+ * null on error so a partial Supabase failure cannot take down the whole shell. */
+async function seedAll(userId: string) {
   try {
-    return (await loadProgressSeeds(userId)).history;
-  } catch {
-    return null;
-  }
-}
-
-/** The settings seed, or null if it could not be read — the same contract as
- * seedHistory. A null hands the question to the client cache (the individual
- * localStorage keys) rather than failing the whole shell. */
-async function seedSettings(userId: string) {
-  try {
-    return (await loadProgressSeeds(userId)).settings;
-  } catch {
-    return null;
-  }
-}
-
-/** The in-progress session seed, or null if it could not be read — same contract
- * as seedHistory / seedSettings. A null hands the question to this device's own
- * localStorage snapshot (which is all a run needs to continue locally) rather
- * than failing the whole shell. */
-async function seedSessionState(userId: string) {
-  try {
-    return (await loadProgressSeeds(userId)).session;
-  } catch {
-    return null;
-  }
-}
-
-/** The saved-lists seed, or null if it could not be read — same contract as the
- * others. Null hands the question to the client (its localStorage lists on a
- * signed-out 401) rather than failing the whole shell. */
-async function seedLists(userId: string) {
-  try {
-    return (await loadLists(userId)).lists;
+    return await loadProgressSeeds(userId);
   } catch {
     return null;
   }
@@ -183,15 +143,11 @@ export default async function RootLayout({
   // as history: reconcile providers against the server copy on first paint,
   // instead of waiting on a client fetch. Signed-out visitors have no account to
   // read, so all three are null and local browser caches take over.
-  const [initialHistory, initialSettings, initialSessionState, initialLists] =
-    userId === null
-      ? [null, null, null, null]
-      : await Promise.all([
-          seedHistory(userId),
-          seedSettings(userId),
-          seedSessionState(userId),
-          seedLists(userId),
-        ]);
+  const seeds = userId === null ? null : await seedAll(userId);
+  const initialHistory = seeds?.history ?? null;
+  const initialSettings = seeds?.settings ?? null;
+  const initialSessionState = seeds?.session ?? null;
+  const initialLists = seeds?.lists.lists ?? null;
   // Read the sidebar's collapsed state server-side so it renders at the right
   // width on the first paint instead of loading expanded and snapping closed.
   const cookieStore = await cookies();
