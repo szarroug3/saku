@@ -33,7 +33,7 @@ import { HearButton } from "@/components/lesson/hear-button";
 import { StandingChip } from "@/components/library/standing-chip";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { GRAMMAR_CONCEPT_SUBJECT } from "@/data/grammar-concepts";
-import { KEIGO_SUBJECT } from "@/data/keigo";
+import { KEIGO_SUBJECT, type KeigoSet, type KeigoWord } from "@/data/keigo";
 import { MARK_SUBJECT } from "@/data/marks";
 import { TERM_SUBJECT } from "@/data/terms";
 import {
@@ -71,8 +71,7 @@ function speakable(entry: LibEntry): boolean {
     entry.kind !== MARK_SUBJECT &&
     entry.kind !== SENTENCE_RULE_KIND &&
     entry.kind !== TERM_SUBJECT &&
-    // Keigo verb sets have no single phrase to speak; formulaic sets (non-empty glyph) do.
-    (entry.kind !== KEIGO_SUBJECT || entry.glyph !== "")
+    entry.kind !== KEIGO_SUBJECT
   );
 }
 
@@ -411,10 +410,109 @@ export function EntryRow({
   );
 }
 
-/** One verb of a pair, as a shelf cell: the word, its reading, its own speaker,
- * and the English cue that points to THIS verb rather than its partner — the one
- * thing that tells the two apart. */
-function PairCell({
+/** One register column in a keigo set row: all words in that register with a
+ * speaker for the first, their readings, and the set meaning (honorific column). */
+function KeigoCell({
+  words,
+  meaning,
+  voice,
+}: {
+  words: readonly KeigoWord[];
+  meaning?: string;
+  voice: string;
+}) {
+  if (!words.length) return <div className="min-w-0" />;
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-1.5">
+        <span className="truncate font-kana text-[17px]">
+          {words.map((w) => w.word).join(" / ")}
+        </span>
+        <HearButton
+          glyph={words[0].word}
+          voiceName={voice}
+          stopPropagation
+          className="flex-none"
+        />
+      </div>
+      <span className="mt-0.5 block truncate text-xs text-text-muted">
+        {words.map((w) => w.reading).join(" / ")}
+        {meaning ? ` · ${meaning}` : ""}
+      </span>
+    </div>
+  );
+}
+
+export function KeigoSetHeader() {
+  return (
+    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] items-center gap-3 border-b border-border px-1 pb-1.5 pt-1 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px]">
+      <span className="h-4 w-4 flex-none" aria-hidden />
+      <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
+        Honorific · for what they do
+      </span>
+      <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
+        Humble · for what you do
+      </span>
+      <span aria-hidden />
+      <span className="max-[600px]:hidden" aria-hidden />
+    </div>
+  );
+}
+
+export function KeigoSetRow({
+  entry,
+  set,
+  standing,
+  voice,
+  selected,
+  showStatus = true,
+  onToggleSelect,
+}: {
+  entry: LibEntry;
+  set: KeigoSet;
+  standing: EntryStanding;
+  voice: string;
+  selected: boolean;
+  showStatus?: boolean;
+  onToggleSelect(shiftKey: boolean): void;
+}) {
+  const honorific = set.words.filter((w) => w.register === "honorific");
+  const humble = set.words.filter((w) => w.register === "humble");
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onClick={(e) => onToggleSelect(e.shiftKey)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggleSelect(e.shiftKey);
+        }
+      }}
+      className={`grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px] ${
+        selected ? "bg-accent-bg" : "hover:bg-panel"
+      }`}
+    >
+      <span
+        className={`flex h-4 w-4 flex-none items-center justify-center rounded text-[10px] leading-none ${
+          selected ? "bg-accent text-bg" : "border border-border text-transparent"
+        }`}
+        aria-hidden
+      >
+        ✓
+      </span>
+      <KeigoCell words={honorific} meaning={set.meaning} voice={voice} />
+      <KeigoCell words={humble} voice={voice} />
+      <ViewLink entry={entry} className="flex-none" />
+      {showStatus ? (
+        <span className="flex-none max-[600px]:hidden">
+          <StandingCell standing={standing} />
+        </span>
+      ) : null}
+    </div>
+  );
+}
   side,
   voice,
   tail,

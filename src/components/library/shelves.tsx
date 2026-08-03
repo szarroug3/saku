@@ -58,6 +58,7 @@ import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
+import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
 import { CLUSTERS } from "@/data/grammar/clusters";
 import { grammarShelfSections } from "@/lib/library/grammar-shelf";
 import {
@@ -65,6 +66,8 @@ import {
   EntryTile,
   VerbPairHeader,
   VerbPairRow,
+  KeigoSetHeader,
+  KeigoSetRow,
 } from "@/components/library/entry-tile";
 import { Card, Hint, Lbl } from "@/components/ui";
 import type { Claims } from "@/lib/claims";
@@ -79,7 +82,6 @@ import {
   type LibEntry,
 } from "@/lib/library/entries";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
-import { KEIGO_SUBJECT } from "@/data/keigo";
 import { counterShelfSections } from "@/lib/library/counter-shelf";
 import { keigoShelfSections } from "@/lib/library/keigo-shelf";
 import { kanjiCuts } from "@/lib/library/kanji-shelf";
@@ -361,6 +363,23 @@ export function Shelf({
     );
   };
 
+  const keigoRow = (entry: LibEntry) => {
+    const set = keigoSetForEntry(entry.id);
+    if (!set) return null;
+    return (
+      <KeigoSetRow
+        key={entry.id}
+        entry={entry}
+        set={set}
+        voice={voice}
+        standing={entryStanding(knownFactsOf(entry), facts, claims, metric, now)}
+        showStatus={false}
+        selected={selected.has(entry.id)}
+        onToggleSelect={(shift) => onToggleEntry(entry.id, shift)}
+      />
+    );
+  };
+
   // ROWS, NOT TILES, for grammar, marks AND verb pairs — the same argument all
   // three times. A tile is a 100px box built around a character; a grammar
   // pattern is a phrase, a mark is a NAME ("Long vowels"), and a verb pair is two
@@ -479,6 +498,11 @@ export function Shelf({
                 <div className="flex flex-col">
                   <VerbPairHeader />
                   {shown.map(pairRow)}
+                </div>
+              ) : kind === KEIGO_SUBJECT ? (
+                <div className="flex flex-col">
+                  <KeigoSetHeader />
+                  {shown.map(keigoRow)}
                 </div>
               ) : kind === GRAMMAR_SUBJECT ? (
                 <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3 max-[600px]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
