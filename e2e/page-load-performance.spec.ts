@@ -1,4 +1,5 @@
 import { test, expect } from "./helpers/app";
+import { kanaFact } from "@/data/characters";
 
 /**
  * Page load performance tests.
@@ -11,6 +12,7 @@ import { test, expect } from "./helpers/app";
  * - Main pages: home, learn, quiz, practice, settings, stats, library
  * - Library sub-pages: from kana, kanji, and grammar sections
  * - Grammar pages: sample grammar cluster
+ * - Heavy data scenarios: pages with 100+ facts loaded
  *
  * Load time is measured from navigation start to networkidle (all network
  * requests complete and no new ones initiated for at least 500ms).
@@ -180,3 +182,209 @@ for (const page of TEST_PAGES) {
     console.log(`✓ ${page.name}: ${loadTimeMs}ms (limit: ${page.maxLoadTimeMs}ms)`);
   });
 }
+
+/**
+ * HEAVY DATA SCENARIOS
+ *
+ * Test that pages with larger datasets (100+ facts) still load performantly.
+ * These scenarios are more representative of real usage after significant
+ * practice/study, and catch performance issues that only manifest with heavy
+ * data loads (e.g., large list rendering, complex calculations).
+ */
+
+// Helper to generate a large pool of fact IDs (kana characters)
+// Hiragana + Katakana = ~100 facts total
+function generateLargeFactPool(): string[] {
+  const HIRAGANA = [
+    "あ", "い", "う", "え", "お",
+    "か", "き", "く", "け", "こ",
+    "が", "ぎ", "ぐ", "げ", "ご",
+    "さ", "し", "す", "せ", "そ",
+    "ざ", "じ", "ず", "ぜ", "ぞ",
+    "た", "ち", "つ", "て", "と",
+    "だ", "ぢ", "づ", "で", "ど",
+    "な", "に", "ぬ", "ね", "の",
+    "は", "ひ", "ふ", "へ", "ほ",
+    "ば", "び", "ぶ", "べ", "ぼ",
+    "ぱ", "ぴ", "ぷ", "ぺ", "ぽ",
+    "ま", "み", "む", "め", "も",
+    "や", "ゆ", "よ",
+    "ら", "り", "る", "れ", "ろ",
+    "わ", "ゐ", "ゑ", "を", "ん",
+  ];
+  const KATAKANA = [
+    "ア", "イ", "ウ", "エ", "オ",
+    "カ", "キ", "ク", "ケ", "コ",
+    "ガ", "ギ", "グ", "ゲ", "ゴ",
+    "サ", "シ", "ス", "セ", "ソ",
+    "ザ", "ジ", "ズ", "ゼ", "ゾ",
+    "タ", "チ", "ツ", "テ", "ト",
+    "ダ", "ヂ", "ヅ", "デ", "ド",
+    "ナ", "ニ", "ヌ", "ネ", "ノ",
+    "ハ", "ヒ", "フ", "ヘ", "ホ",
+    "バ", "ビ", "ブ", "ベ", "ボ",
+    "パ", "ピ", "プ", "ペ", "ポ",
+    "マ", "ミ", "ム", "メ", "モ",
+    "ヤ", "ユ", "ヨ",
+    "ラ", "リ", "ル", "レ", "ロ",
+    "ワ", "ヰ", "ヱ", "ヲ", "ン",
+  ];
+
+  return [
+    ...HIRAGANA.map(c => kanaFact(c)),
+    ...KATAKANA.map(c => kanaFact(c)),
+  ];
+}
+
+const HEAVY_DATA_FACTS = generateLargeFactPool();
+
+test("Quiz selection page with 100+ facts loads within acceptable time", async ({
+  page: browserPage,
+  seed,
+}) => {
+  // Seed with large fact pool
+  await seed({ seen: HEAVY_DATA_FACTS });
+
+  const startTime = Date.now();
+
+  const response = await browserPage.goto("/quiz");
+
+  await browserPage.waitForLoadState("networkidle");
+
+  const loadTimeMs = Date.now() - startTime;
+
+  expect(response, "no response for /quiz").not.toBeNull();
+  expect(response!.status(), "bad status for /quiz").toBeLessThan(400);
+
+  await expect(
+    browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
+  ).toBeVisible({ timeout: 5000 });
+
+  // Heavier data should take a bit longer but still be reasonable
+  const maxLoadTime = 3500;
+  expect(loadTimeMs, `Quiz page with heavy data took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`).toBeLessThanOrEqual(
+    maxLoadTime,
+  );
+
+  console.log(`✓ Quiz page (heavy data, ${HEAVY_DATA_FACTS.length} facts): ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`);
+});
+
+test("Practice selector page with 100+ facts loads within acceptable time", async ({
+  page: browserPage,
+  seed,
+}) => {
+  await seed({ seen: HEAVY_DATA_FACTS });
+
+  const startTime = Date.now();
+
+  const response = await browserPage.goto("/practice");
+
+  await browserPage.waitForLoadState("networkidle");
+
+  const loadTimeMs = Date.now() - startTime;
+
+  expect(response, "no response for /practice").not.toBeNull();
+  expect(response!.status(), "bad status for /practice").toBeLessThan(400);
+
+  await expect(
+    browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
+  ).toBeVisible({ timeout: 5000 });
+
+  const maxLoadTime = 3500;
+  expect(loadTimeMs, `Practice page with heavy data took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`).toBeLessThanOrEqual(
+    maxLoadTime,
+  );
+
+  console.log(`✓ Practice page (heavy data, ${HEAVY_DATA_FACTS.length} facts): ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`);
+});
+
+test("Stats page with 100+ known facts loads within acceptable time", async ({
+  page: browserPage,
+  seed,
+}) => {
+  // For stats, we need facts that have been "seen" (practiced)
+  // This simulates a learner who has practiced many facts
+  await seed({ seen: HEAVY_DATA_FACTS });
+
+  const startTime = Date.now();
+
+  const response = await browserPage.goto("/stats");
+
+  await browserPage.waitForLoadState("networkidle");
+
+  const loadTimeMs = Date.now() - startTime;
+
+  expect(response, "no response for /stats").not.toBeNull();
+  expect(response!.status(), "bad status for /stats").toBeLessThan(400);
+
+  await expect(
+    browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
+  ).toBeVisible({ timeout: 5000 });
+
+  const maxLoadTime = 4000;
+  expect(loadTimeMs, `Stats page with heavy data took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`).toBeLessThanOrEqual(
+    maxLoadTime,
+  );
+
+  console.log(`✓ Stats page (heavy data, ${HEAVY_DATA_FACTS.length} facts): ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`);
+});
+
+test("Library root with 100+ known facts loads within acceptable time", async ({
+  page: browserPage,
+  seed,
+}) => {
+  // Library shows knowledge status for facts, so heavier data affects rendering
+  await seed({ seen: HEAVY_DATA_FACTS });
+
+  const startTime = Date.now();
+
+  const response = await browserPage.goto("/library");
+
+  await browserPage.waitForLoadState("networkidle");
+
+  const loadTimeMs = Date.now() - startTime;
+
+  expect(response, "no response for /library").not.toBeNull();
+  expect(response!.status(), "bad status for /library").toBeLessThan(400);
+
+  await expect(
+    browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
+  ).toBeVisible({ timeout: 5000 });
+
+  const maxLoadTime = 4000;
+  expect(loadTimeMs, `Library page with heavy data took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`).toBeLessThanOrEqual(
+    maxLoadTime,
+  );
+
+  console.log(`✓ Library page (heavy data, ${HEAVY_DATA_FACTS.length} facts): ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`);
+});
+
+test("Library all tab with 100+ known facts loads within acceptable time", async ({
+  page: browserPage,
+  seed,
+}) => {
+  // Library "all" tab with search/filtering on large dataset
+  await seed({ seen: HEAVY_DATA_FACTS });
+
+  const startTime = Date.now();
+
+  const response = await browserPage.goto("/library?kind=all");
+
+  await browserPage.waitForLoadState("networkidle");
+
+  const loadTimeMs = Date.now() - startTime;
+
+  expect(response, "no response for /library?kind=all").not.toBeNull();
+  expect(response!.status(), "bad status for /library?kind=all").toBeLessThan(400);
+
+  await expect(
+    browserPage.getByRole("navigation").getByRole("link", { name: "Library" }),
+  ).toBeVisible({ timeout: 5000 });
+
+  const maxLoadTime = 4500;
+  expect(loadTimeMs, `Library all tab with heavy data took ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`).toBeLessThanOrEqual(
+    maxLoadTime,
+  );
+
+  console.log(`✓ Library all tab (heavy data, ${HEAVY_DATA_FACTS.length} facts): ${loadTimeMs}ms (limit: ${maxLoadTime}ms)`);
+});
