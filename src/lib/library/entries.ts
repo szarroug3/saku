@@ -763,7 +763,7 @@ function build(): LibEntry[] {
         "keigo",
         set.meaning,
       ],
-      sub: set.formulaic ? "Keigo · set phrase" : `Keigo · ${set.meaning}`,
+      sub: `Keigo · ${set.meaning}`,
       weight: 800 + i,
     });
   });
