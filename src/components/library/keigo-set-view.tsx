@@ -72,21 +72,29 @@ export function KeigoSetView({
           <p className="mb-4 text-[15px] text-text">{set.meaning}</p>
         ) : null}
         {phrase ? (
-          <div className="rounded-lg border border-border bg-card p-5">
-            <div className="flex items-start justify-between gap-3">
-              <span className="font-kana text-[34px] font-extralight leading-none text-text">
-                {phrase.word}
-              </span>
-              <div className="flex items-center gap-2 pt-1">
-                <HearButton glyph={phrase.word} voiceName={voiceName} />
-                <span className="text-right font-kana text-[14px] text-text-muted">
-                  {phrase.reading}
+          showLead ? (
+            <div className="rounded-lg border border-border bg-card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <span className="font-kana text-[34px] font-extralight leading-none text-text">
+                  {phrase.word}
                 </span>
+                <div className="flex items-center gap-2 pt-1">
+                  <HearButton glyph={phrase.word} voiceName={voiceName} />
+                  <span className="text-right font-kana text-[14px] text-text-muted">
+                    {phrase.reading}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            // Library page: the header above already shows the phrase; just surface the audio.
+            <div className="flex items-center gap-2">
+              <HearButton glyph={phrase.word} voiceName={voiceName} />
+              <span className="font-kana text-[14px] text-text-muted">{phrase.reading}</span>
+            </div>
+          )
         ) : null}
-        <div className="mt-9 border-t border-border pt-7">
+        <div className={showLead ? "mt-9 border-t border-border pt-7" : "mt-3"}>
           <p className="text-[14px] leading-relaxed text-text-muted">
             This is a fixed greeting rather than a verb you change, so learn it as
             one whole phrase. It is the honorific welcome a shop says to a
