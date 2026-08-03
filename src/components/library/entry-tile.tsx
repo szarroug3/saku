@@ -422,6 +422,8 @@ function KeigoCell({
   voice: string;
 }) {
   if (!words.length) return <div className="min-w-0" />;
+  // Single-word cell: show word.use as contextual note (e.g. "more deferential", "for a fact").
+  const note = words.length === 1 ? (words[0].use ?? meaning) : meaning;
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-1.5">
@@ -437,7 +439,7 @@ function KeigoCell({
       </div>
       <span className="mt-0.5 block truncate text-xs text-text-muted">
         {words.map((w) => w.reading).join(" / ")}
-        {meaning ? ` · ${meaning}` : ""}
+        {note ? ` · ${note}` : ""}
       </span>
     </div>
   );
@@ -445,13 +447,16 @@ function KeigoCell({
 
 export function KeigoSetHeader() {
   return (
-    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] items-center gap-3 border-b border-border px-1 pb-1.5 pt-1 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px]">
+    <div className="grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px_90px] items-center gap-3 border-b border-border px-1 pb-1.5 pt-1 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px]">
       <span className="h-4 w-4 flex-none" aria-hidden />
       <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
         Honorific · for what they do
       </span>
       <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
         Humble · for what you do
+      </span>
+      <span className="truncate text-[11px] uppercase tracking-wide text-text-muted">
+        Humble · variant
       </span>
       <span aria-hidden />
       <span className="max-[600px]:hidden" aria-hidden />
@@ -490,7 +495,7 @@ export function KeigoSetRow({
           onToggleSelect(e.shiftKey);
         }
       }}
-      className={`grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px_90px] cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_28px] ${
+      className={`grid grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px_90px] cursor-pointer select-none items-center gap-3 border-b border-border px-1 py-2 text-text last:border-b-0 max-[600px]:grid-cols-[16px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_28px] ${
         selected ? "bg-accent-bg" : "hover:bg-panel"
       }`}
     >
@@ -503,7 +508,8 @@ export function KeigoSetRow({
         ✓
       </span>
       <KeigoCell words={honorific} meaning={set.meaning} voice={voice} />
-      <KeigoCell words={humble} voice={voice} />
+      <KeigoCell words={humble.slice(0, 1)} voice={voice} />
+      <KeigoCell words={humble.slice(1, 2)} voice={voice} />
       <ViewLink entry={entry} className="flex-none" />
       {showStatus ? (
         <span className="flex-none max-[600px]:hidden">
