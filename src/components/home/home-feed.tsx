@@ -103,18 +103,23 @@ type TrackKey =
 // falls through to a plain Start, the safe default.
 function trackOfRun(run: RunInfo): TrackKey | null {
   if (run.mode === "assembly") return "sentence-ordering";
+  // Scan all facts: some lessons (keigo) prepend prerequisite kanji/radical facts
+  // before their own facts, so the first fact is not always the track identifier.
+  for (const fact of run.facts) {
+    const subject = factInfo(fact)?.subject;
+    if (subject === "keigo") return "keigo";
+    if (subject === "grammar") return "grammar";
+    if (subject === "transitivity") return "transitivity";
+    if (subject === "kana") return "kana";
+  }
+  // Fall back to the first fact for word / kanji / radical / counter tracks.
   const fact = run.facts[0];
   if (!fact) return null;
   const subject = factInfo(fact)?.subject;
   if (subject === undefined) return null;
   if (subject === VOCAB_SUBJECT) {
-    // The entry set is the only thing that separates the two vocab tracks: both
-    // mint `word:…` facts, and a counter run must light up the counters card,
-    // not the words card, and vice versa.
     return COUNTER_ENTRIES.has(entryOf(fact)) ? "counter" : "word";
   }
-  // kana · kanji · radical · grammar · transitivity · keigo all key on their
-  // own subject, which is exactly the track key.
   return subject as TrackKey;
 }
 

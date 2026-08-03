@@ -212,6 +212,11 @@ export function IntroBody({
                 : p.text}
             </p>
           </div>
+          {p.examples?.length ? (
+            <div className="mt-4">
+              <IntroExamples examples={p.examples} />
+            </div>
+          ) : null}
         </div>
       ))}
     </div>
@@ -245,17 +250,6 @@ export function IntroBodyWithAnchoredExamples({
  * intentionally one inline row rather than the standalone Examples panel used
  * for a whole page's evidence. */
 function AnchoredIntroExamples({ examples }: { examples: readonly IntroExample[] }) {
-  const accentedText = (text: string, accent?: string) => {
-    if (!accent || !text.includes(accent)) return text;
-    const index = text.indexOf(accent);
-    return (
-      <>
-        {text.slice(0, index)}
-        <span className="text-accent">{accent}</span>
-        {text.slice(index + accent.length)}
-      </>
-    );
-  };
   return (
     <div className="my-4 space-y-2 text-[15px] leading-relaxed">
       {examples.map((ex, i) => (
@@ -298,6 +292,19 @@ function AnchoredIntroExamples({ examples }: { examples: readonly IntroExample[]
  * written distinction — stay silent, so the speaker means "there is something to
  * hear here" rather than decorating every line.
  */
+/** Highlights the accent substring in accent color, leaving the rest white. */
+function accentedText(text: string, accent?: string) {
+  if (!accent || !text.includes(accent)) return text;
+  const index = text.indexOf(accent);
+  return (
+    <>
+      {text.slice(0, index)}
+      <span className="text-accent">{accent}</span>
+      {text.slice(index + accent.length)}
+    </>
+  );
+}
+
 export function IntroExamples({
   examples,
   bare = false,
@@ -306,6 +313,7 @@ export function IntroExamples({
   bare?: boolean;
 }) {
   const { cfg } = useQuizConfig();
+  const hasAccent = examples.some((ex) => ex.accentTo || ex.accentFrom);
   const pairGloss = (gloss: string): [string, string] | null => {
     const inner = /\(([^)]+)\)/.exec(gloss)?.[1] ?? gloss;
     const bits = inner.split("→").map((s) => s.trim());
@@ -349,14 +357,14 @@ export function IntroExamples({
               </div>
             ) : (
               <div className="flex flex-wrap items-baseline gap-x-1.5">
-                <span className="text-text-muted">{ex.from}</span>
-                <span className="text-text-muted/70">{ex.op ?? "="}</span>
-                <span className="font-medium text-text">{ex.to}</span>
+                <span className={hasAccent ? "text-text" : "text-text-muted"}>{accentedText(ex.from, ex.accentFrom)}</span>
+                <span className={hasAccent ? "text-text" : "text-text-muted/70"}>{ex.op ?? "="}</span>
+                <span className="font-medium text-text">{accentedText(ex.to, ex.accentTo)}</span>
                 {ex.reading ? (
-                  <span className="text-[13px] text-text-muted">({ex.reading})</span>
+                  <span className={hasAccent ? "text-text" : "text-[13px] text-text-muted"}>({ex.reading})</span>
                 ) : null}
-                <span className="text-text-muted/70">·</span>
-                <span lang="en" className="text-[13px] text-text-muted">
+                <span className={hasAccent ? "text-text" : "text-text-muted/70"}>·</span>
+                <span lang="en" className={hasAccent ? "text-[13px] text-text" : "text-[13px] text-text-muted"}>
                   {ex.gloss}
                 </span>
                 {ex.say ? (

@@ -49,7 +49,6 @@ import {
   COUNTER_SOUND_CHANGE,
   DAKUTEN_H,
   DAKUTEN_K,
-  OKURIGANA_FIXED,
   OKURIGANA_INTRO,
   OKURIGANA_MOVING,
   PITCH_INTRO,
@@ -296,7 +295,7 @@ export const TERMS: readonly Term[] = [
     // Three cards for one rule: the whole idea, the tail that moves, the tail
     // that sits still. The lessons gate them one at a time; a reference page
     // wants all three at once.
-    cards: [OKURIGANA_INTRO, OKURIGANA_MOVING, OKURIGANA_FIXED],
+    cards: [OKURIGANA_INTRO, OKURIGANA_MOVING],
   },
   {
     id: "rendaku",

@@ -73,9 +73,11 @@ import {
   entryForGlyph,
   knownFactsOf,
   libEntry,
+  LIB_ENTRIES_BY_KIND,
   type Kind,
   type LibEntry,
 } from "@/lib/library/entries";
+import { PRIMITIVE_SUBJECT } from "@/data/components";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { counterShelfSections } from "@/lib/library/counter-shelf";
 import { keigoShelfSections } from "@/lib/library/keigo-shelf";
@@ -227,6 +229,15 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
         RADICALS.flatMap((r) => resolve(radicalEntry(r.glyph))),
         curriculumRank,
       );
+    // ONE SECTION, holding the 278 shapes that appear in kanji decompositions
+    // but are not kanji or radicals themselves. Grouped in ranges of 50, sorted
+    // by stroke count (fewest first). Shown whole — no cap.
+    case PRIMITIVE_SUBJECT:
+      return rangedGroups(
+        [...LIB_ENTRIES_BY_KIND.get(PRIMITIVE_SUBJECT) ?? []],
+        // weight = 900 + strokes; subtract 900 to rank by stroke count
+        (e) => e.weight - 900,
+      );
   }
 }
 
@@ -281,6 +292,15 @@ export function Shelf({
       return next;
     });
   };
+
+  // For kana: separate hiragana/katakana into collapsible script groups.
+  const [collapsedScripts, setCollapsedScripts] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleScript = (script: string) =>
+    setCollapsedScripts((prev) => {
+      const next = new Set(prev);
+      if (next.has(script)) next.delete(script); else next.add(script);
+      return next;
+    });
 
   const tile = (entry: LibEntry) => (
     <EntryTile
@@ -405,6 +425,80 @@ export function Shelf({
     );
   }
 
+  const sectionCard = (section: ShelfSection, index: number) => {
+    const ids = section.entries.map((e) => e.id);
+    const state = sectionState(selected, ids);
+    const onCount = ids.filter((id) => selected.has(id)).length;
+    const shown = section.entries;
+    const expanded = !collapsed.has(section.id);
+    return (
+      <Card key={section.id} className="kq-defer">
+        <div className="mb-2 flex items-center gap-2">
+          <button
+            type="button"
+            aria-expanded={expanded}
+            aria-label={`${expanded ? "Collapse" : "Expand"} ${section.label}`}
+            onClick={() => toggleCollapsed(section.id)}
+            className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-xl leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            <span
+              aria-hidden
+              className={`block transition-transform ${expanded ? "rotate-90" : ""}`}
+            >
+              ›
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleSection(ids)}
+            aria-pressed={state === "all"}
+            className={`cursor-pointer rounded-(--radius) border px-2 py-0.5 text-[13px] font-semibold uppercase tracking-[0.04em] ${
+              state === "all"
+                ? "border-accent bg-accent-bg text-accent"
+                : state === "some"
+                  ? "border-warning bg-warning-bg text-warning"
+                  : "border-transparent text-text-muted hover:border-border"
+            }`}
+          >
+            {section.label}
+          </button>
+          <span className="text-xs text-text-muted">
+            {section.entries.length}
+          </span>
+          {state !== "none" ? (
+            <Hint>
+              · {onCount} selected{state === "all" ? " (all)" : ""}
+            </Hint>
+          ) : null}
+        </div>
+        {expanded ? (
+          <DeferredSectionBody eager={index < 2}>
+            {asRows ? (
+              kind === TRANSITIVITY_SUBJECT ? (
+                <div className="flex flex-col">
+                  <VerbPairHeader />
+                  {shown.map(pairRow)}
+                </div>
+              ) : kind === GRAMMAR_SUBJECT ? (
+                <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3 max-[600px]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
+                  {shown.map((entry) => row(entry, true))}
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  {shown.map((entry) => row(entry))}
+                </div>
+              )
+            ) : (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+                {shown.map(tile)}
+              </div>
+            )}
+          </DeferredSectionBody>
+        ) : null}
+      </Card>
+    );
+  };
+
   return (
     <>
       {kind === GRAMMAR_SUBJECT ? <GrammarClustersCard /> : null}
@@ -413,100 +507,43 @@ export function Shelf({
           <FilterEmpty filter={filter} />
         </Card>
       ) : null}
-      {shownSections.map((section, index) => {
-        const ids = section.entries.map((e) => e.id);
-        const state = sectionState(selected, ids);
-        const onCount = ids.filter((id) => selected.has(id)).length;
-        const shown = section.entries;
-        const expanded = !collapsed.has(section.id);
-        return (
-          // Every section is real server-rendered HTML. The previous
-          // IntersectionObserver wrapper emitted placeholders after the first
-          // two sections and could only replace them after hydration, which is
-          // why every reload visibly assembled the Library in two stages.
-          // The browser lays these sections out at their real height immediately;
-          // a guessed content-visibility placeholder caused a second geometry
-          // shift even after the HTML itself was made complete.
-          <Card key={section.id} className="kq-defer">
-            <div className="mb-2 flex items-center gap-2">
-              <button
-                type="button"
-                aria-expanded={expanded}
-                aria-label={`${expanded ? "Collapse" : "Expand"} ${section.label}`}
-                onClick={() => toggleCollapsed(section.id)}
-                className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-xl leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                <span
-                  aria-hidden
-                  className={`block transition-transform ${expanded ? "rotate-90" : ""}`}
+      {kind === KANA_SUBJECT ? (
+        // Group kana sections under collapsible Hiragana / Katakana headers.
+        ["hiragana", "katakana"].map((script) => {
+          const scriptSections = shownSections.filter((s) =>
+            s.id.startsWith(script),
+          );
+          if (!scriptSections.length) return null;
+          const scriptExpanded = !collapsedScripts.has(script);
+          const label = script === "hiragana" ? "Hiragana" : "Katakana";
+          return (
+            <div key={script}>
+              <div className="flex items-center gap-2 px-1 pb-1 pt-2">
+                <button
+                  type="button"
+                  aria-expanded={scriptExpanded}
+                  onClick={() => toggleScript(script)}
+                  className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-xl leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
-                  ›
-                </span>
-              </button>
-              {/* Tri-state header, and each state NAMES ITS OWN text colour in
-                  the same string as its border/fill — no shared `text-*` for a
-                  branch's colour to lose to on stylesheet order (the cx hazard
-                  ui.tsx documents). Not the Chip component: Chip's `part` prop
-                  collides with the DOM `part` attribute and types as `undefined`,
-                  so the partial state is built here instead. */}
-              <button
-                type="button"
-                onClick={() => onToggleSection(ids)}
-                aria-pressed={state === "all"}
-                className={`cursor-pointer rounded-(--radius) border px-2 py-0.5 text-[13px] font-semibold uppercase tracking-[0.04em] ${
-                  state === "all"
-                    ? "border-accent bg-accent-bg text-accent"
-                    : state === "some"
-                      ? "border-warning bg-warning-bg text-warning"
-                      : "border-transparent text-text-muted hover:border-border"
-                }`}
-              >
-                {section.label}
-              </button>
-              <span className="text-xs text-text-muted">
-                {section.entries.length}
-              </span>
-              {state !== "none" ? (
-                <Hint>
-                  · {onCount} selected{state === "all" ? " (all)" : ""}
-                </Hint>
-              ) : null}
-            </div>
-            {expanded ? (
-              <DeferredSectionBody eager={index < 2}>
-                {asRows ? (
-                  kind === TRANSITIVITY_SUBJECT ? (
-                    <div className="flex flex-col">
-                      <VerbPairHeader />
-                      {shown.map(pairRow)}
-                    </div>
-                  ) : kind === GRAMMAR_SUBJECT ? (
-                    // ONE GRID FOR THE WHOLE LIST so the pattern column is `max-content`
-                    // of the WIDEST pattern — every 〜ないでください, 〜たことがある and
-                    // 〜たほうがいい gets the width it needs and sits on one line, while
-                    // the explanation column (`minmax(0,1fr)`) takes the rest and stays
-                    // aligned across rows. Each row is a `grid-cols-subgrid` band, so its
-                    // cells land on these shared tracks: checkbox, pattern, explanation,
-                    // open, standing. The explanation's `min-w-0` lets it truncate on
-                    // mobile rather than push the row wide.
-                    <div className="grid grid-cols-[auto_max-content_minmax(0,1fr)_auto_auto] gap-x-3 max-[600px]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto]">
-                      {shown.map((entry) => row(entry, true))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col">
-                      {shown.map((entry) => row(entry))}
-                    </div>
-                  )
-                ) : (
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
-                    {shown.map(tile)}
-                  </div>
+                  <span
+                    aria-hidden
+                    className={`block transition-transform ${scriptExpanded ? "rotate-90" : ""}`}
+                  >
+                    ›
+                  </span>
+                </button>
+                <Lbl>{label}</Lbl>
+              </div>
+              {scriptExpanded &&
+                scriptSections.map((section, index) =>
+                  sectionCard(section, index),
                 )}
-              </DeferredSectionBody>
-            ) : null}
-          </Card>
-        );
-      })}
+            </div>
+          );
+        })
+      ) : (
+        shownSections.map((section, index) => sectionCard(section, index))
+      )}
     </>
   );
 }

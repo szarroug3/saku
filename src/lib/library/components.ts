@@ -17,9 +17,9 @@
 // ====================
 // The 844 components split 482 kanji / 362 primitives (see data/components.ts),
 // and the two halves get their sections in different places — a kanji's on its
-// existing entry page, a primitive's on /radical/[radical]. Both call the same
-// three functions here, because "used as a part in" means exactly one thing and
-// must not be computed twice with two different sorts.
+// existing entry page, a primitive’s on /library/primitive/[glyph]. Both call
+// the same three functions here, because "used as a part in" means exactly one
+// thing and must not be computed twice with two different sorts.
 //
 // THE COUNTS ARE BIG AT THE TOP AND TINY IN THE TAIL: 氵 is a direct part of
 // 115 kanji, 口 of 104, 木 of 101; the median component is in a handful.

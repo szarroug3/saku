@@ -23,6 +23,7 @@
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { VOCAB_SUBJECT } from "@/data/vocab";
+import { PRIMITIVE_SUBJECT } from "@/data/components";
 import type { LibEntry } from "@/lib/library/entries";
 
 /** How the entry page joins a reading list, so a tile and the page it opens
@@ -52,6 +53,8 @@ export function subLabel(entry: LibEntry): string {
   if (entry.kind === VOCAB_SUBJECT && entry.meanings.length > 0) {
     return entry.meanings.join(MEANING_SEP);
   }
+  // A primitive is a shape with no meaning or reading — say what it is.
+  if (entry.kind === PRIMITIVE_SUBJECT) return "Kanji part";
   return entry.readings.length === 1
     ? entry.readings[0]
     : (entry.meanings[0] ?? "—");

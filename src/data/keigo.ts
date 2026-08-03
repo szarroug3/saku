@@ -230,7 +230,7 @@ export const KEIGO_SETS: readonly KeigoSet[] = [
     meaning: "welcome (a shop's greeting to a customer)",
     plain: [],
     words: [honorific("irasshaimase", "いらっしゃいませ", "いらっしゃいませ")],
-    gate: ["行く", "来る", "いる"],
+    gate: [],
     formulaic: true,
   },
 ];

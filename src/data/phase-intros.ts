@@ -99,6 +99,8 @@ export interface IntroPara {
    * so the eye sees which part is the adjective and which is the noun). First
    * occurrence only; ignored if it is not found in `text`. */
   accent?: string;
+  /** Worked examples anchored directly below this paragraph. */
+  examples?: readonly IntroExample[];
 }
 
 /**
@@ -808,63 +810,49 @@ export const RENDAKU: PhaseIntro = {
 export const OKURIGANA_INTRO: PhaseIntro = {
   id: "intro-okurigana",
   setId: NO_SCRIPT,
-  title: "The kanji does not finish the word.",
+  title: "The kanji does not always finish the word.",
   body: [
     {
       lead: "Words can have trailing kana.",
-      text: "This kana tail is called okurigana and is part of the word. One character can start several words. The tail is what tells them apart.",
+      text: "This kana tail is called okurigana and is part of the word. One kanji can start several words. The tail is what tells them apart.",
+      accent: "okurigana",
     },
     {
-      lead: "The tail even tells you the reading.",
-      text: "生 on its own can be read several ways. In 生きる, the tail is きる and 生 is read い. In 生まれる, the tail is まれる and 生 is read う. Same character, different tail, different sound.",
+      lead: "The tail affects the pronunciation.",
+      text: "生 on its own can be read several ways. In 生きる, the tail is きる and 生 is read い. In 生まれる, the tail is まれる and 生 is read う. Same kanji, different tail, different sound.",
     },
   ],
   examples: [
-    { from: "生 + きる", to: "生きる", reading: "いきる", gloss: "to live", say: "生きる" },
-    { from: "生 + まれる", to: "生まれる", reading: "うまれる", gloss: "to be born", say: "生まれる" },
+    { from: "生 + きる", accentFrom: "きる", to: "生きる", accentTo: "きる", reading: "いきる", gloss: "to live", say: "生きる" },
+    { from: "生 + まれる", accentFrom: "まれる", to: "生まれる", accentTo: "まれる", reading: "うまれる", gloss: "to be born", say: "生まれる" },
   ],
+  examplesPlacement: "below",
 };
 
 export const OKURIGANA_MOVING: PhaseIntro = {
   id: "intro-okurigana-moving",
   setId: NO_SCRIPT,
-  title: "Sometimes the tail moves.",
+  title: "Sometimes the tail moves. Sometimes it stays.",
   body: [
     {
-      lead: "On a verb or an い-adjective, the tail changes.",
-      text: "The okurigana is exactly the part that shifts when the word does a different job. The kanji holds still and the tail carries the change.",
+      lead: "On a verb or an adjective, the tail can change.",
+      text: "The okurigana is the part that shifts when the word changes tense or form. The kanji stays put; only the tail moves.",
+      examples: [
+        { from: "生きる", accentFrom: "きる", op: "→", to: "生きた", accentTo: "きた", gloss: "lived", say: "生きた" },
+        { from: "生きる", accentFrom: "きる", op: "→", to: "生きない", accentTo: "きない", gloss: "does not live", say: "生きない" },
+      ],
     },
     {
-      lead: "How it changes is grammar.",
-      text: "For now, just notice that the tail is the moving part. Which form to use, and when, comes later with grammar.",
+      lead: "Not every tail moves.",
+      text: "Plenty of words have okurigana that never changes. 答え is just 答え: the え sits on the end and stays put, no matter how the word is used.",
+      examples: [
+        { from: "答 + え", accentFrom: "え", to: "答え", accentTo: "え", reading: "こたえ", gloss: "answer", say: "答え" },
+      ],
     },
-  ],
-  examples: [
-    { from: "生きる", op: "→", to: "生きた", gloss: "lived", say: "生きた" },
-    { from: "生きる", op: "→", to: "生きない", gloss: "does not live", say: "生きない" },
-    { from: "高い", op: "→", to: "高かった", gloss: "was expensive", say: "高かった" },
   ],
 };
 
-export const OKURIGANA_FIXED: PhaseIntro = {
-  id: "intro-okurigana-fixed",
-  setId: NO_SCRIPT,
-  title: "Sometimes it just sits there.",
-  body: [
-    {
-      lead: "Not every tail moves.",
-      text: "Plenty of words carry a kana tail that never changes. 一つ (ひとつ, one) is just 一つ: the つ sits on the end and stays put, however the word is used.",
-    },
-    {
-      lead: "Compare a verb you have already seen.",
-      text: "A verb like 行く reshapes its tail as it works, but 一つ does none of that. It is the same kind of kana tail, only a fixed one, so read it as part of the word and leave it be.",
-    },
-  ],
-  examples: [
-    { from: "一 + つ", to: "一つ", reading: "ひとつ", gloss: "one (tail sits still)", say: "一つ" },
-    { from: "行く", op: "→", to: "行った", gloss: "went (tail moves)", say: "行った" },
-  ],
-};
+// OKURIGANA_FIXED merged into OKURIGANA_MOVING above.
 
 // TRANSITIVITY — the pair intro, this file's first card that is not a writing
 // rule. It opens the transitivity track: a handful of verbs come in twos, one
@@ -1082,7 +1070,6 @@ export const PHASE_INTROS: PhaseIntro[] = [
   RENDAKU,
   OKURIGANA_INTRO,
   OKURIGANA_MOVING,
-  OKURIGANA_FIXED,
   TRANSITIVITY_INTRO,
   COUNTER_SOUND_CHANGE,
   PITCH_INTRO,

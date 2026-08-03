@@ -88,6 +88,7 @@ export const HIRAGANA_TRACK: PhaseIntro = {
     {
       lead: "Each kana is one beat.",
       text: "Japanese is spoken in even beats of the same length, and each beat is called a mora. Every kana is one mora: さくら is three, さ・く・ら. This steady beat is the rhythm of the language, and later it is what a word's pitch is drawn over.",
+      accent: "mora",
     },
     {
       lead: "Hiragana is the set you are starting with.",

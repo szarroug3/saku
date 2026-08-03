@@ -141,7 +141,7 @@ export function entryFromParam(param: string): EntryId {
 
 /**
  * A path segment, decoded — the same unwrap `entryFromParam` does, without the
- * brand, for the radical route whose param is a bare glyph.
+ * brand, for the primitive page whose param is a bare glyph.
  *
  * `decodeURIComponent` throws on a malformed sequence ("%E0%A4%A") that a URL
  * bar can produce, so a bad escape comes back unchanged and reads as "no such

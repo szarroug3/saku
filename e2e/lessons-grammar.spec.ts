@@ -48,6 +48,15 @@ test("the grammar track's first sitting introduces adjective forms", async ({
     page.getByRole("heading", { name: "Grammar is how words fit together." }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Next", exact: true }).click();
+  // Two okurigana pages sit between the grammar intro and Adjective Types.
+  await expect(
+    page.getByRole("heading", { name: "The kanji does not always finish the word." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Sometimes the tail moves. Sometimes it stays." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.getByText("Adjective Types", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "い-adjectives and な-adjectives." }),

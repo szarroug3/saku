@@ -60,7 +60,6 @@ import {
   ITERATION_MARK,
   LONG_H,
   LONG_K,
-  OKURIGANA_FIXED,
   OKURIGANA_INTRO,
   OKURIGANA_MOVING,
   PUNCTUATION,
@@ -376,7 +375,7 @@ const RAW_MARKS: readonly Mark[] = [
     // moments rather than one — the whole idea, the tail that moves, and the
     // tail that sits still — so it carries all three cards. See the okurigana
     // note in phase-intros.ts and the word-gating in lesson-steps.ts.
-    intros: [OKURIGANA_INTRO, OKURIGANA_MOVING, OKURIGANA_FIXED],
+    intros: [OKURIGANA_INTRO, OKURIGANA_MOVING],
     rows: [],
     shelf: "writing",
   },

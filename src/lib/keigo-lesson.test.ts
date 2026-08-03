@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { KEIGO_SETS, keigoSetEntry, keigoWordFactId } from "../data/keigo.ts";
+import { meaningFactId } from "../data/kanji.ts";
 import { wordMeaningFactId } from "../data/vocab.ts";
 import { questionsFor } from "./engine/question.ts";
 import {
@@ -47,19 +48,31 @@ function learned(facts: readonly FactId[]): HistoryFile {
   };
 }
 
+// Kanji that appear in each set's forms and that the gate checks.
+// EAT: 召し上がる (召, 上); SAY: 申す, 申し上げる (申, 上).
+const EAT_KANJI = ["召", "上"].map((c) => meaningFactId(c));
+const SAY_KANJI = ["申", "上"].map((c) => meaningFactId(c));
+
 const EAT = KEIGO_SETS.find((s) => s.id === "eat")!;
 const SAY = KEIGO_SETS.find((s) => s.id === "say")!;
 
+const WELCOME = KEIGO_SETS.find((s) => s.id === "welcome")!
+
 describe("the track opens EARLY, on a plain verb the learner already knows", () => {
-  test("a blank learner has nothing to teach and has not started", () => {
-    assert.equal(nextKeigoLesson(BLANK, 3), null);
+  test("a blank learner sees welcome immediately; no other set is taught yet", () => {
+    // welcome has an empty gate so it opens as soon as kana is done (caller\u2019s gate).
+    const lesson = nextKeigoLesson(BLANK, 3);
+    assert.ok(lesson, "welcome did not open for a blank learner");
+    assert.equal(lesson.cards[0].entry, keigoSetEntry(WELCOME));
+    // A learner who has done nothing is not \u201cstarted\u201d on keigo (no met sets).
     assert.equal(hasStartedKeigoTrack(BLANK), false);
   });
 
   test("learning 食べる alone opens the eat / drink set — no other track needed", () => {
-    // The whole gate: one plain verb, learned as ordinary vocabulary. There is no
+    // The verb gate: one plain verb, learned as ordinary vocabulary. There is no
     // reference to transitivity, counters, or grammar anywhere in the unlock.
-    const history = learned([wordMeaningFactId("食べる")]);
+    // The kanji gate: forms like 召し上がる require knowing 召 and 上 first.
+    const history = learned([wordMeaningFactId("食べる"), ...EAT_KANJI]);
     assert.ok(keigoUnlocked(EAT, history));
     const lesson = nextKeigoLesson(history, 3);
     assert.ok(lesson, "the eat set did not open on 食べる");
@@ -68,12 +81,12 @@ describe("the track opens EARLY, on a plain verb the learner already knows", () 
   });
 
   test("any one of a set's plain verbs opens it (飲む opens eat too)", () => {
-    const history = learned([wordMeaningFactId("飲む")]);
+    const history = learned([wordMeaningFactId("飲む"), ...EAT_KANJI]);
     assert.ok(keigoUnlocked(EAT, history));
   });
 
   test("the position denominator is the whole curriculum", () => {
-    const history = learned([wordMeaningFactId("食べる")]);
+    const history = learned([wordMeaningFactId("食べる"), ...EAT_KANJI]);
     const lesson = nextKeigoLesson(history, 3)!;
     assert.equal(lesson.position.total, KEIGO_CURRICULUM_TOTAL);
     assert.equal(lesson.position.from, 1);
@@ -82,9 +95,12 @@ describe("the track opens EARLY, on a plain verb the learner already knows", () 
 
 describe("starting a word lesson is not completing its prerequisite", () => {
   test("a seen 食べる does not unlock the eat / drink set", () => {
+    // seen-but-not-claimed 食べる leaves eat locked; welcome still opens (empty gate).
     const history = met([wordMeaningFactId("食べる")]);
     assert.equal(keigoUnlocked(EAT, history), false);
-    assert.equal(nextKeigoLesson(history, 3), null);
+    const lesson = nextKeigoLesson(history, 3);
+    assert.ok(lesson, "welcome should still be offered");
+    assert.ok(lesson.cards.every((c) => c.meaning !== "eat / drink"), "eat opened on seen verb");
   });
 });
 
@@ -105,10 +121,10 @@ describe("RECOGNITION FIRST — the lesson teaches identification before practic
 
 describe("it interleaves rather than blocking", () => {
   test("a set whose plain verb is unmet is skipped, not blocked on", () => {
-    // 食べる learned but 言う not: the eat set is ready and the say set is not.
-    // A blocking track would stall on the say set; this one hands out eat and
-    // steps over say.
-    const history = learned([wordMeaningFactId("食べる")]);
+    // 食べる learned (+ its kanji) but 言う not: the eat set is ready and the say
+    // set is not. A blocking track would stall on the say set; this one hands out
+    // eat and steps over say.
+    const history = learned([wordMeaningFactId("食べる"), ...EAT_KANJI]);
     assert.ok(keigoUnlocked(EAT, history));
     assert.ok(!keigoUnlocked(SAY, history));
     const lesson = nextKeigoLesson(history, 9)!;
@@ -124,6 +140,8 @@ describe("it interleaves rather than blocking", () => {
     const history = learned([
       wordMeaningFactId("食べる"),
       wordMeaningFactId("言う"),
+      ...EAT_KANJI,
+      ...SAY_KANJI,
       ...eatFacts,
     ]);
     assert.ok(hasStartedKeigoTrack(history));

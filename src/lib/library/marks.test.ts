@@ -37,7 +37,6 @@ import {
   ITERATION_MARK,
   LONG_H,
   LONG_K,
-  OKURIGANA_FIXED,
   OKURIGANA_INTRO,
   OKURIGANA_MOVING,
   PHASE_INTROS,
@@ -294,23 +293,21 @@ describe("the Library shows the LESSON's explanation, not a copy of it", () => {
     assert.notEqual(LONG_H.title, LONG_K.title);
   });
 
-  test("okurigana carries its three cards, by reference and in order", () => {
-    // Okurigana is script-neutral like the three above, but the one rule is
-    // taught in three moments, so it carries all three cards — by reference, so
-    // the Library and the lessons render the same objects, and in the order the
-    // lessons gate them.
+  test("okurigana carries its two cards, by reference and in order", () => {
+    // Okurigana is script-neutral like the three above. The rule is now taught
+    // in two moments (the moving+fixed cards merged); it carries both by reference
+    // so the Library and the lessons render the same objects.
     const oku = MARKS.find((m) => m.id === "okurigana");
     assert.ok(oku, "the okurigana mark is missing from the shelf");
     assert.equal(oku.glyph, "", "okurigana grew a glyph it does not have");
     assert.deepEqual(oku.intros, [
       OKURIGANA_INTRO,
       OKURIGANA_MOVING,
-      OKURIGANA_FIXED,
     ]);
-    // Script-neutral: all three cards are NO_SCRIPT (setId ""), like 々.
+    // Script-neutral: all cards are NO_SCRIPT (setId ""), like 々.
     assert.deepEqual(
       oku.intros.map((i) => i.setId),
-      ["", "", ""],
+      ["", ""],
     );
     // It resolves and stays inert like every other mark: no readings, no facts.
     assert.deepEqual(entryOfMark("okurigana").readings, []);

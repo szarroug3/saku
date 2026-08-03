@@ -25,6 +25,7 @@ import { PreviewTile } from "@/components/lesson/preview-tile";
 import { WHY_TRACK } from "@/data/why";
 import type { TransitivityLesson } from "@/lib/transitivity-lesson";
 import { positionLabel } from "@/lib/lesson-position";
+import { entryHref } from "@/lib/library/href";
 import type { FactId } from "@/types";
 
 export function NextTransitivityLesson({
@@ -64,6 +65,7 @@ export function NextTransitivityLesson({
             key={card.entry}
             glyph={`${card.happens.word} · ${card.doIt.word}`}
             type="Verb pair"
+            href={entryHref(card.entry)}
             base={22}
           />
         ))}

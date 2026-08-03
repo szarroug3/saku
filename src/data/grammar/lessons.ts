@@ -48,7 +48,11 @@ import {
   VOLITIONAL_FORM_PAGES,
 } from "@/data/grammar/form-intros";
 import { factsOf } from "@/lib/facts";
-import type { PhaseIntro } from "@/data/phase-intros";
+import {
+  OKURIGANA_INTRO,
+  OKURIGANA_MOVING,
+  type PhaseIntro,
+} from "@/data/phase-intros";
 import type { FactId } from "@/types";
 
 /** One page of a grammar lesson: a concept card, or a terse pattern tile.
@@ -378,15 +382,18 @@ const LESSON_TE_FORM: GrammarLessonDef = {
   primaryPattern: "te-sequence",
 };
 
-/** Grammar lesson 1: what a form is, the two adjective classes, and the first
- * adjective form. Its production drills cover both class rules: an い-adjective
- * stays unchanged and a な-adjective adds な. */
+/** Grammar lesson 1: what a form is, the okurigana concept, the two adjective
+ * classes, and the first adjective form. */
 const LESSON_PRENOMINAL_FORM: GrammarLessonDef = {
   id: "prenominal-form",
   title: "Adjectives before nouns",
-  pages: TE_FORM_PAGES.filter((card) =>
-    ["gl-te-intro", "gl-adjective-types", "gl-prenominal-form"].includes(card.id),
-  ).map((card) => ({ kind: "teach", card })),
+  pages: [
+    { kind: "teach", card: TE_FORM_PAGES.find((p) => p.id === "gl-te-intro")! },
+    { kind: "teach", card: OKURIGANA_INTRO },
+    { kind: "teach", card: OKURIGANA_MOVING },
+    { kind: "teach", card: TE_FORM_PAGES.find((p) => p.id === "gl-adjective-types")! },
+    { kind: "teach", card: TE_FORM_PAGES.find((p) => p.id === "gl-prenominal-form")! },
+  ],
   drills: patternFacts("prenominal-form"),
   primaryPattern: "prenominal-form",
 };

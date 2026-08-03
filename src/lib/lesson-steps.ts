@@ -45,9 +45,6 @@ import {
   INTRO_AFTER,
   INTRO_BEFORE,
   ITERATION_MARK,
-  OKURIGANA_FIXED,
-  OKURIGANA_INTRO,
-  OKURIGANA_MOVING,
   PITCH_INTRO,
   RENDAKU,
   TRANSITIVITY_INTRO,
@@ -62,7 +59,6 @@ import { grammarLessonsForFacts } from "@/data/grammar/lessons";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
 import { spineIntroPlan } from "@/lib/spine-intros";
 import { startedTracks, trackOfItem } from "@/lib/track-open";
-import { wordClassOf } from "@/lib/word-forms";
 import type { FactId, HistoryFile } from "@/types";
 
 /** The tracks whose cards are anchored to a curriculum item instead of opened by
@@ -116,18 +112,6 @@ export function hasOkurigana(word: string): boolean {
   return false;
 }
 
-/** Does the word's tail MOVE — i.e. does it conjugate? A non-null conjugation
- * class (verb or い-adjective) means the okurigana is the part that changes;
- * null (a counter, a plain noun) means the tail is fixed. Resolved through the
- * app's own pos→class bridge (`wordClassOf`), because vocab.json stores JMdict's
- * EXPANDED pos names and `classFromTags` speaks the short codes — see the head of
- * word-forms.ts. A word with no vocab row cannot be shown to conjugate, so it
- * counts as fixed. */
-function tailMoves(word: string): boolean {
-  const row = vocabRow(word);
-  return row ? wordClassOf(row) !== null : false;
-}
-
 /** Each kana to its rendaku (voiced/semi-voiced) form: か→が, は→ば/ぱ. Only the
  * initial mora of a compound's second element voices, so only its first kana is
  * ever looked up here. */
@@ -173,9 +157,8 @@ export function hasRendaku(word: string): boolean {
  * Items in the order `itemsFromFacts` gives them — untouched — with at most one
  * card in front and any number behind (a script's last group closes on both its
  * long-vowel and its sokuon card), plus the two word-gated cards (々 and rendaku)
- * ahead of the first word that carries 々, and the three okurigana cards ahead of
- * the first word with a kana tail (intro), the first whose tail moves (moving),
- * and the first whose tail is fixed (fixed).
+ * ahead of the first word that carries 々, and the two word-gated cards (rendaku)
+ * ahead of the first word with rendaku.
  */
 export function lessonSteps(
   facts: readonly FactId[],
@@ -227,9 +210,12 @@ export function lessonSteps(
   // and skipped in the per-item track block below. See spine-intros.ts: on one
   // ordered curriculum a subject is not a track, and where a card goes depends on
   // what else the walk contains.
-  const spinePlan = history
-    ? spineIntroPlan(items, history, teachSet, shownIntros)
-    : new Map<number, PhaseIntro[]>();
+  // Spine intros belong to the curriculum; don't fire them inside a keigo
+  // lesson where the prereq kanji are context, not the lesson's subject.
+  const spinePlan =
+    history && !items.some((it) => it.kind === "keigo")
+      ? spineIntroPlan(items, history, teachSet, shownIntros)
+      : new Map<number, PhaseIntro[]>();
   // A converted kana is not taught on its own card. Its whole row is one
   // lesson — "voice the k and it becomes g" — so the first character of a row
   // to come past emits that row's card, at the position it would have had, and
@@ -243,12 +229,6 @@ export function lessonSteps(
   // rank 22) — far ahead of 々 — so it is a rule already in hand by the time 々's
   // own voicing turns up. See hasRendaku.
   let markedRendaku = false;
-  // Okurigana rides words the same way, over three cards each fired once: the
-  // idea at the first word with a kana tail, the moving card at the first whose
-  // tail conjugates, the fixed card at the first whose tail does not.
-  let markedOkurigana = false;
-  let markedOkuriganaMoving = false;
-  let markedOkuriganaFixed = false;
   // Transitivity rides the first pair item of the teach set — the moment the
   // pair contrast is in play — so its intro lands once, ahead of the first pair,
   // the same word-gated shape the rules above use. See phase-intros.ts.
@@ -310,23 +290,6 @@ export function lessonSteps(
     if (!markedRendaku && item.kind === "word" && hasRendaku(item.glyph)) {
       markedRendaku = true;
       steps.push({ type: "intro", key: RENDAKU.id, intro: RENDAKU });
-    }
-    if (item.kind === "word" && hasOkurigana(item.glyph)) {
-      // The idea leads, so when the first tail word is itself a moving word the
-      // intro and moving cards land together ahead of it, intro first.
-      if (!markedOkurigana) {
-        markedOkurigana = true;
-        steps.push({ type: "intro", key: OKURIGANA_INTRO.id, intro: OKURIGANA_INTRO });
-      }
-      const moves = tailMoves(item.glyph);
-      if (!markedOkuriganaMoving && moves) {
-        markedOkuriganaMoving = true;
-        steps.push({ type: "intro", key: OKURIGANA_MOVING.id, intro: OKURIGANA_MOVING });
-      }
-      if (!markedOkuriganaFixed && !moves) {
-        markedOkuriganaFixed = true;
-        steps.push({ type: "intro", key: OKURIGANA_FIXED.id, intro: OKURIGANA_FIXED });
-      }
     }
     if (!markedTransitivity && item.kind === "transitivity") {
       markedTransitivity = true;

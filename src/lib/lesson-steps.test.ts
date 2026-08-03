@@ -649,90 +649,33 @@ describe("hasOkurigana reads a kanji stem with a kana tail", () => {
   });
 });
 
-describe("okurigana rides the words that make it visible", () => {
-  // Three cards, three moments, each fired once in item order: the idea at the
-  // first word with a kana tail, the moving card at the first whose tail
-  // conjugates, the fixed card at the first whose tail does not. See
-  // lesson-steps.ts and the okurigana note in phase-intros.ts.
+describe("okurigana words no longer fire intro cards in the word walk", () => {
+  // The three okurigana cards (intro, moving, fixed) now live in grammar lesson 1
+  // (LESSON_PRENOMINAL_FORM) as pages 2–4. The word walk emits the word alone.
   const label = (s: ReturnType<typeof lessonSteps>[number]) =>
     s.type === "intro" ? s.intro.id : s.type === "item" ? s.item.glyph : s.type;
 
-  test("言う opens the idea and the moving card together, ahead of it", () => {
-    // 言う (rank 3) is the first curriculum word with a kana tail AND it
-    // conjugates, so the intro and moving cards land together in front of it,
-    // intro first — the intended overlap, not a bug.
+  test("言う gets no okurigana cards in the word walk", () => {
     const steps = lessonSteps([wordReadingFactId("言う")]);
-    assert.deepEqual(steps.map(label), [
-      "intro-okurigana",
-      "intro-okurigana-moving",
-      "言う",
-    ]);
-  });
-
-  test("a fixed-tail word opens the idea and the fixed card together", () => {
-    // 一つ (a counter) does not conjugate, so on its own it draws the idea and
-    // the fixed card — never the moving card, which has no moving word to ride.
-    const steps = lessonSteps([wordReadingFactId("一つ")]);
-    assert.deepEqual(steps.map(label), [
-      "intro-okurigana",
-      "intro-okurigana-fixed",
-      "一つ",
-    ]);
+    assert.deepEqual(steps.map(label), ["言う"]);
     assert.ok(
-      !steps.some((s) => s.type === "intro" && s.intro.id === "intro-okurigana-moving"),
-      "the moving card fired with no moving word",
+      !steps.some((s) => s.type === "intro" && s.intro.id.startsWith("intro-okurigana")),
+      "an okurigana card fired in the word walk",
     );
   });
 
-  test("intro then moving then fixed, each ahead of the word that earns it", () => {
-    // The full contrast in curriculum order: 言う (moving) draws intro+moving,
-    // then 一つ (fixed) draws the fixed card, and 高い (moving) and 先生 (no
-    // tail) add nothing more.
+  test("a batch of okurigana words emits no okurigana intro cards", () => {
     const steps = lessonSteps(
-      ["言う", "一つ", "高い", "先生"].map(wordReadingFactId),
+      ["生きる", "高い", "言う"].map(wordReadingFactId),
     );
-    assert.deepEqual(steps.map(label), [
-      "intro-okurigana",
-      "intro-okurigana-moving",
-      "言う",
-      "intro-okurigana-fixed",
-      "一つ",
-      "高い",
-      "先生",
-    ]);
+    assert.ok(
+      !steps.some((s) => s.type === "intro" && s.intro.id.startsWith("intro-okurigana")),
+      "an okurigana card fired in the word walk",
+    );
+    assert.deepEqual(steps.map(label), ["生きる", "高い", "言う"]);
   });
 
-  test("each card fires at most once across the whole walk", () => {
-    // A batch full of okurigana words — two moving, two fixed — still teaches
-    // each card exactly once, at the first word that earns it.
-    const steps = lessonSteps(
-      ["生きる", "高い", "一つ", "二つ", "言う"].map(wordReadingFactId),
-    );
-    const intros = steps
-      .filter((s) => s.type === "intro")
-      .map((s) => (s.type === "intro" ? s.intro.id : null));
-    assert.deepEqual(intros, [
-      "intro-okurigana",
-      "intro-okurigana-moving",
-      "intro-okurigana-fixed",
-    ]);
-    // And the first word (生きる, a moving verb) carries intro+moving ahead of
-    // it; the fixed card waits for 一つ.
-    assert.deepEqual(steps.map(label), [
-      "intro-okurigana",
-      "intro-okurigana-moving",
-      "生きる",
-      "高い",
-      "intro-okurigana-fixed",
-      "一つ",
-      "二つ",
-      "言う",
-    ]);
-  });
-
-  test("a word with no kana tail gets no okurigana card", () => {
-    // The gate is the tail, not the subject: 先生 is a word but teaches nothing
-    // about okurigana, so the walk is the item alone.
+  test("a word with no kana tail still gets no okurigana card", () => {
     const steps = lessonSteps([wordReadingFactId("先生")]);
     assert.deepEqual(steps.map(label), ["先生"]);
   });

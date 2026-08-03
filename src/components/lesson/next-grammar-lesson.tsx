@@ -24,9 +24,11 @@
 import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { PreviewTile } from "@/components/lesson/preview-tile";
+import { patternEntry } from "@/data/grammar";
 import { WHY_TRACK } from "@/data/why";
 import type { GrammarLesson } from "@/lib/grammar-lesson";
 import { positionLabel } from "@/lib/lesson-position";
+import { entryHref } from "@/lib/library/href";
 import type { FactId } from "@/types";
 
 export function NextGrammarLesson({
@@ -104,6 +106,7 @@ function TeachableLesson({
               key={card.id}
               glyph={card.pattern}
               type="Grammar"
+              href={entryHref(patternEntry(card.id))}
               base={24}
             />
           ))}

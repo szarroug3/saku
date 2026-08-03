@@ -88,8 +88,10 @@ import {
   isRadicalTaughtAsKanji,
   radicalEntry,
   radicalByGlyph,
+  radicalByWrittenForm,
   radicalMeaningFactId,
 } from "@/data/radicals";
+import { primitiveEntry, PRIMITIVE_SUBJECT, PRIMITIVE_STROKES, primitiveStrokes } from "@/data/components";
 import { cluster } from "@/data/grammar/clusters";
 import {
   RECIPES,
@@ -158,7 +160,8 @@ export type Kind =
   | typeof GRAMMAR_CONCEPT_SUBJECT
   | typeof TRANSITIVITY_SUBJECT
   | typeof KEIGO_SUBJECT
-  | typeof TERM_SUBJECT;
+  | typeof TERM_SUBJECT
+  | typeof PRIMITIVE_SUBJECT;
 
 /** Browse order, and it is teaching order: kana, then radicals, then the kanji
  * built around them, then the words kanji spell, then grammar, then the verb
@@ -196,6 +199,9 @@ export const KINDS: readonly Kind[] = [
   // the end. A term is a word you look up, not a first stop, and like a mark it
   // has no facts the scheduler ever asks about.
   TERM_SUBJECT,
+  // Kanji parts: shapes with no meaning or reading of their own, shown here so
+  // a learner can browse what each is a piece of.
+  PRIMITIVE_SUBJECT,
 ];
 
 /** What a shelf is called on screen. */
@@ -212,6 +218,7 @@ export const KIND_LABEL: Record<Kind, string> = {
   [TRANSITIVITY_SUBJECT]: "Verb pairs",
   [KEIGO_SUBJECT]: "Keigo",
   [TERM_SUBJECT]: "Terms",
+  [PRIMITIVE_SUBJECT]: "Kanji parts",
 };
 
 /**
@@ -757,13 +764,30 @@ function build(): LibEntry[] {
         set.meaning,
       ],
       sub: set.formulaic ? "Keigo · set phrase" : `Keigo · ${set.meaning}`,
-      // Above verb pairs (700+) and below kanji (1000+): a keigo verb's glyph can
-      // collide with its own vocabulary entry (召し上がる is also a word), and the
-      // set should lead for someone reaching for the politeness relationship.
-      // Data order breaks ties among sets.
       weight: 800 + i,
     });
   });
+
+  // Kanji parts: shapes that appear in the KanjiVG decomposition but are neither
+  // a jōyō kanji, a Kangxi radical, nor a variant form of either. 278 shapes.
+  // CDP-coded glyphs (non-Unicode characters referenced by database code) are
+  // excluded since they cannot render as characters.
+  for (const [glyph] of PRIMITIVE_STROKES) {
+    if (glyph.startsWith("CDP-")) continue;
+    if (kanjiRow(glyph)) continue;
+    if (variantTaughtKanji(glyph)) continue;
+    if (radicalByWrittenForm(glyph)) continue;
+    const strokes = primitiveStrokes(glyph) ?? 0;
+    out.push({
+      id: primitiveEntry(glyph),
+      kind: PRIMITIVE_SUBJECT,
+      glyph,
+      readings: [],
+      meanings: [],
+      sub: strokes === 1 ? "1 stroke" : `${strokes} strokes`,
+      weight: 900 + strokes,
+    });
+  }
 
   return out;
 }
@@ -846,11 +870,16 @@ export function appearsIn(entry: LibEntry): readonly string[] {
  * character (亻 of 人, 刂 of 刀), `id` points at that character so the learner
  * can meet it — the shape shown is still 亻, only the link resolves to 人.
  */
-export function madeOf(entry: LibEntry): Array<{ c: string; id: EntryId | null }> {
+export function madeOf(entry: LibEntry): Array<{ c: string; id: EntryId }> {
   if (entry.kind !== KANJI_SUBJECT) return [];
   return (kanjiRow(entry.glyph)?.comps ?? []).map((c) => {
-    const link = kanjiRow(c) ? c : variantTaughtKanji(c);
-    return { c, id: link ? kanjiEntry(link) : null };
+    const kanjiLink = kanjiRow(c) ? c : variantTaughtKanji(c);
+    if (kanjiLink) return { c, id: kanjiEntry(kanjiLink) };
+    // A component that is a Kangxi radical (not itself a kanji) links to its
+    // library page rather than the primitive /radical route.
+    const rad = radicalByWrittenForm(c);
+    if (rad) return { c, id: radicalEntry(rad.glyph) };
+    return { c, id: primitiveEntry(c) };
   });
 }
 
@@ -858,7 +887,7 @@ export function madeOf(entry: LibEntry): Array<{ c: string; id: EntryId | null }
  * tapping it goes, and the one-word meaning printed under it. */
 export interface BuiltPiece {
   readonly c: string;
-  readonly id: EntryId | null;
+  readonly id: EntryId;
   readonly meaning: string;
 }
 
@@ -866,9 +895,8 @@ export interface BuiltPiece {
  * The kanji page's "Built from" pieces — the FULL immediate decomposition, so
  * unlike the lesson's kanji-only `teachableParts` this KEEPS the radical and
  * variant pieces: 何 → 亻 person + 可 possible, 明 → 日 sun + 月 moon, 可 → 丁
- * street + 口 mouth. Every piece is a link (a variant like 亻 through to the
- * character it stands for, a bare primitive to its /radical page), and every
- * piece carries its meaning so the tile reads glyph-over-meaning.
+ * street + 口 mouth. Every piece links to its library page (kanji, radical, or
+ * primitive) and carries its meaning so the tile reads glyph-over-meaning.
  *
  * THE #32 FRAME-DEDUP APPLIES HERE. `madeOf` reads the raw KanjiVG comps, which
  * still double a split enclosure (可 → 丁,口,丁). `deframe` collapses that single
@@ -889,15 +917,15 @@ export function builtFrom(entry: LibEntry): BuiltPiece[] {
   }));
 }
 
-/** The meaning printed under a "Built from" piece. A kanji's own gloss from
- * `kanjiRow`; a variant form's (亻) from the taught character its id resolves to
- * (人 → "person"); a bare primitive's from its radical row. Empty string when
- * nothing has one — the tile then shows the glyph alone. */
-function builtPieceMeaning(c: string, id: EntryId | null): string {
+/** The meaning printed under a "Built from" piece. A kanji's own gloss; a
+ * variant form's from the taught character it resolves to; a radical or
+ * primitive's from its library entry if any. */
+function builtPieceMeaning(c: string, id: EntryId): string {
   const kanji = kanjiRow(c);
   if (kanji) return kanji.meanings[0] ?? "";
-  if (id) return libEntry(id)?.meanings[0] ?? "";
-  return radicalByGlyph(c)?.meaning ?? "";
+  const entry = libEntry(id);
+  if (entry?.kind === PRIMITIVE_SUBJECT) return "Kanji part";
+  return entry?.meanings[0] ?? "";
 }
 
 /**
@@ -944,6 +972,8 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
     // radical link this way. radical:水 and kanji:水 stay apart by subject.
     case RADICAL_SUBJECT:
       return radicalByGlyph(glyph) ? radicalEntry(glyph) : null;
+    case PRIMITIVE_SUBJECT:
+      return PRIMITIVE_STROKES.has(glyph) ? primitiveEntry(glyph) : null;
     case VOCAB_SUBJECT:
       return vocabRow(glyph) ? wordEntry(glyph) : null;
     // A counter is NOT resolved by its glyph, and for the same reason a bare
@@ -1103,6 +1133,9 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
     // drops the whole section, so this string never reaches a screen.
     case TERM_SUBJECT:
       return "Nothing to test";
+    // A primitive has no facts — it is a shape, not a character.
+    case PRIMITIVE_SUBJECT:
+      return "Nothing to test";
   }
 }
 
@@ -1228,6 +1261,7 @@ export function factRows(entry: LibEntry): FactRow[] {
     // read, not a question to mark, so the empty array is the shape of that and
     // the entry page's `rows.length > 0` guard drops the facts box entirely.
     case TERM_SUBJECT:
+    case PRIMITIVE_SUBJECT:
       return [];
   }
 }

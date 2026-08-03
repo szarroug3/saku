@@ -494,6 +494,22 @@ export function LibraryPageClient({
   const onToggleSection = (ids: readonly EntryId[]) =>
     setSelected((s) => toggleSectionIn(s, ids));
 
+  const [collapsedAllKinds, setCollapsedAllKinds] = useState<ReadonlySet<Kind>>(() => new Set());
+  const toggleAllKind = (k: Kind) =>
+    setCollapsedAllKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+
+  const [collapsedSearch, setCollapsedSearch] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleSearch = (key: string) =>
+    setCollapsedSearch((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+
   // WHAT THE BAR IS POINTING AT, in one place.
   //
   //   a selection .... the drill you BUILT — the union of everything toggled,
@@ -644,12 +660,8 @@ export function LibraryPageClient({
             {KIND_LABEL[k]}
           </Chip>
         ))}
-        {/* The knowledge filter, a group of its own — a hairline sets it apart
-            from the kind chips so "Kanji" and "Known" don't read as one row of
-            equals. Unlike the kinds, "All" IS a chip here: the two states are
-            narrowings and All is how you get back out of one. It governs the
-            shelf AND the search results below. */}
-        <span aria-hidden className="mx-0.5 h-4 w-px bg-border" />
+        {/* State filters on their own line. */}
+        <div className="w-full" />
         {STATE_CHIPS.map(({ value, label }) => (
           <Chip
             key={value}
@@ -709,8 +721,19 @@ export function LibraryPageClient({
               </p>
             </Card>
           ) : (
-            resultSections.map((s) => (
+            resultSections.map((s) => {
+              const expanded = !collapsedSearch.has(s.key);
+              return (
               <Card key={s.key}>
+                <div className="mb-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() => toggleSearch(s.key)}
+                    className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-xl leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    <span aria-hidden className={`block transition-transform ${expanded ? "rotate-90" : ""}`}>›</span>
+                  </button>
                 <Lbl>
                   {s.label}
                   {s.hits.length > 0 ? (
@@ -722,7 +745,8 @@ export function LibraryPageClient({
                     </span>
                   ) : null}
                 </Lbl>
-                {s.hits.map((h) => (
+                </div>
+                {expanded && s.hits.map((h) => (
                   <EntryRow
                     key={h.entry.id}
                     entry={h.entry}
@@ -734,7 +758,8 @@ export function LibraryPageClient({
                   />
                 ))}
               </Card>
-            ))
+              );
+            })
           )
         ) : tab === ALL_TAB ? (
           // THE ALL BROWSE — every subject with something to show, in teaching
@@ -758,14 +783,22 @@ export function LibraryPageClient({
                 </Card>
               );
             }
-            return kinds.map((k) => (
+            return kinds.map((k) => {
+              const expanded = !collapsedAllKinds.has(k);
+              return (
               <div key={k}>
-                {/* The subject's name over its block — on All the section
-                    headers below ("1–50") repeat across subjects and don't say
-                    which type you're looking at; this does. */}
-                <div className="px-1 pb-1 pt-2">
+                <div className="flex items-center gap-2 px-1 pb-1 pt-2">
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() => toggleAllKind(k)}
+                    className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-xl leading-none text-text-muted hover:bg-panel hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    <span aria-hidden className={`block transition-transform ${expanded ? "rotate-90" : ""}`}>›</span>
+                  </button>
                   <Lbl>{KIND_LABEL[k]}</Lbl>
                 </div>
+                {expanded && (
                 <Shelf
                   kind={k}
                   sections={shelfFor(k).sections}
@@ -779,9 +812,10 @@ export function LibraryPageClient({
                   voice={cfg.voiceName}
                   keep={keep}
                   filter={stateFilter}
-                />
+                />)}
               </div>
-            ));
+              );
+            });
           })()
         ) : (
           (() => {

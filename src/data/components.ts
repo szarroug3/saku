@@ -27,6 +27,8 @@
 // old stroke-artefacts (｜ a bare vertical, ノ a diagonal) are simply absent.
 
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
+import type { EntryId } from "../types/index.ts";
+import { entryId } from "../lib/fact-id.ts";
 
 /**
  * Stroke count for each component that is not itself a jōyō kanji.
@@ -50,4 +52,11 @@ export function isPrimitive(c: string): boolean {
 /** How many strokes a primitive takes, or undefined for a stranger. */
 export function primitiveStrokes(c: string): number | undefined {
   return PRIMITIVE_STROKES.get(c);
+}
+
+export const PRIMITIVE_SUBJECT = "primitive" as const;
+
+/** Library entry id for a primitive component (no kanji entry, no radical entry). */
+export function primitiveEntry(glyph: string): EntryId {
+  return entryId(PRIMITIVE_SUBJECT, glyph);
 }

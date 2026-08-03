@@ -24,6 +24,7 @@ import { PreviewTile } from "@/components/lesson/preview-tile";
 import { WHY_TRACK } from "@/data/why";
 import type { CounterLesson } from "@/lib/counter-lesson";
 import { positionLabel } from "@/lib/lesson-position";
+import { entryHref } from "@/lib/library/href";
 import type { FactId } from "@/types";
 
 export function NextCounterLesson({
@@ -65,6 +66,7 @@ export function NextCounterLesson({
             key={card.glyph}
             glyph={card.glyph}
             type={card.counter ? "Counter" : "Number"}
+            href={entryHref(card.entry)}
             base={26}
           />
         ))}

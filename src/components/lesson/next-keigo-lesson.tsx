@@ -23,7 +23,11 @@ import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { PreviewTile } from "@/components/lesson/preview-tile";
 import { WHY_TRACK } from "@/data/why";
+import { kanjiEntry } from "@/data/kanji";
+import { radicalEntry } from "@/data/radicals";
+import { characterRoleTitle } from "@/lib/character-role";
 import type { KeigoLesson } from "@/lib/keigo-lesson";
+import { entryHref } from "@/lib/library/href";
 import { positionLabel } from "@/lib/lesson-position";
 import type { FactId } from "@/types";
 
@@ -46,18 +50,23 @@ export function NextKeigoLesson({
   inSession?: boolean;
   onContinue?: () => void;
 }) {
-  const { position, cards } = lesson;
+  const { position, cards, prereqTiles } = lesson;
 
   return (
     <Card>
       <Lbl>Up next · {positionLabel("keigo sets", position)}</Lbl>
 
-      {/* A PREVIEW, not the lesson: each compact tile shows the Japanese the set
-          is anchored on — the plain verb the learner already knows, or, for a set
-          phrase with no plain verb, the phrase itself (いらっしゃいませ) — over a
-          quiet "Keigo" tag. Always Japanese, never the English meaning (the lesson
-          page carries that); the honorific/humble forms stay for the walk. */}
+      {/* All prereq pieces (radicals, kanji) and the keigo words in one row. */}
       <div className="mt-4 flex flex-wrap gap-2">
+        {prereqTiles.map((t) => (
+          <PreviewTile
+            key={t.glyph}
+            glyph={t.glyph}
+            type={characterRoleTitle(t.glyph) ?? t.type}
+            href={entryHref(t.type === "Kanji" ? kanjiEntry(t.glyph) : radicalEntry(t.glyph))}
+            base={20}
+          />
+        ))}
         {cards.map((card) => (
           <PreviewTile
             key={card.entry}
@@ -67,6 +76,7 @@ export function NextKeigoLesson({
                 : (card.words[0]?.word ?? "")
             }
             type="Keigo"
+            href={entryHref(card.entry)}
             base={20}
           />
         ))}

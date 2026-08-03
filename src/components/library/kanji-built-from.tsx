@@ -28,7 +28,7 @@ import Link from "next/link";
 import { Card, Lbl } from "@/components/ui";
 import { builtFrom } from "@/lib/library/entries";
 import type { LibEntry } from "@/lib/library/entries";
-import { entryHref, radicalHref } from "@/lib/library/href";
+import { entryHref } from "@/lib/library/href";
 
 export function KanjiBuiltFrom({ entry }: { entry: LibEntry }) {
   const pieces = builtFrom(entry);
@@ -41,10 +41,9 @@ export function KanjiBuiltFrom({ entry }: { entry: LibEntry }) {
         {pieces.map((p, i) => (
           <Link
             key={`${p.c}-${i}`}
-            // A piece with an entry (a kanji, or a variant resolving to its
-            // taught character) goes to that page; a bare primitive with none
-            // goes to its /radical page, which says what the shape is.
-            href={p.id ? entryHref(p.id) : radicalHref(p.c)}
+            // A piece with a kanji entry links there; a radical or primitive links
+            // to its own library page.
+            href={entryHref(p.id)}
             className="flex flex-col items-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-text no-underline hover:bg-panel"
           >
             <span className="text-[30px] leading-none">{p.c}</span>

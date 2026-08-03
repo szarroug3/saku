@@ -44,7 +44,7 @@ import {
   isKanaForm,
   type CounterForm,
 } from "@/data/counters";
-import type { FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId, HistoryFile } from "@/types";
 
 /**
  * How many counters a lesson teaches. A COUNT, not a cost — a counter is a word,
@@ -114,6 +114,8 @@ export function hasStartedCountersTrack(history: HistoryFile): boolean {
 
 /** One counter, ready to render on a lesson card. */
 export interface CounterCard {
+  /** The entry id — for the library link. */
+  entry: EntryId;
   /** How it looks — ひとつ, 三本. */
   glyph: string;
   /** Its reading, or null for a kana form (whose reading is the glyph itself, so
@@ -137,6 +139,7 @@ export interface CounterLesson {
 
 function toCard(form: CounterForm): CounterCard {
   return {
+    entry: counterEntry(form),
     glyph: form.glyph,
     reading: isKanaForm(form) ? null : form.reading,
     meaning: form.meaning,

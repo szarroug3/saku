@@ -29,6 +29,17 @@
 // this file existed: nothing, until a plain verb opens the first set.
 
 import { effectiveState } from "@/lib/claims";
+import { kanjiRow, meaningFactId, variantOriginal } from "@/data/kanji";
+import {
+  isRadicalTaughtAsKanji,
+  radicalByWrittenForm,
+  radicalMeaningFactId,
+  radicalOfKanji,
+  type RadicalRow,
+} from "@/data/radicals";
+import { kanjiKnown } from "@/lib/kanji-known";
+import { kanjiCost, radicalCost } from "@/lib/kanji-lesson";
+import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import type { LessonPosition } from "@/lib/lesson-position";
 import {
   KEIGO_SETS,
@@ -91,12 +102,13 @@ function setFresh(set: KeigoSet, history: HistoryFile): boolean {
 
 /**
  * Whether a set's gate is open: at least one of the plain verbs it replaces has
- * a completed lesson or was explicitly claimed. Both actions leave a claim on
- * the meaning fact. Merely starting the word lesson leaves only `seen`, which
- * must not unlock this set before the learner finishes. The formulaic phrase
- * gates on the go / come / be family (see KeigoSet.gate).
+ * a completed lesson or was explicitly claimed. An empty gate (formulaic phrases)
+ * is always open — kana completion is the only requirement, and that is the
+ * caller's gate. Kanji in the forms are now taught inside the lesson (prepended
+ * to the fact list so the spine plan schedules them first), not required upfront.
  */
 export function keigoUnlocked(set: KeigoSet, history: HistoryFile): boolean {
+  if (set.gate.length === 0) return true;
   return set.gate.some((keb) => !!history.claims?.[wordMeaningFactId(keb)]);
 }
 
@@ -134,10 +146,18 @@ export interface KeigoCard {
   words: readonly KeigoCardWord[];
 }
 
+/** One tile shown above the keigo preview — a kanji or radical this lesson teaches first. */
+export interface KeigoPrereqTile {
+  glyph: string;
+  type: "Kanji" | "Radical";
+}
+
 /** The next keigo lesson: the sets to teach, their facts, and where you are. */
 export interface KeigoLesson {
   cards: KeigoCard[];
   facts: FactId[];
+  /** Prerequisite tiles (radical pieces then kanji) this lesson teaches before the keigo forms. */
+  prereqTiles: readonly KeigoPrereqTile[];
   /** Where you are, in SETS — "1–3 of 9". */
   position: LessonPosition;
 }
@@ -160,6 +180,92 @@ function toCard(set: KeigoSet): KeigoCard {
   };
 }
 
+/** Internal: one item in the prereq collection buffer. */
+interface PrereqItem {
+  glyph: string;
+  type: "Kanji" | "Radical";
+  fact: FactId;
+  cost: number;
+}
+
+/**
+ * Collect the prereq tiles needed before kanji `c` can be taught: its unknown
+ * radical-only components (and those of any unknown kanji components, recursively),
+ * then `c` itself if unknown. Mirrors curriculum-order.ts's component walk.
+ *
+ * `seenKanji` / `seenRadicals` prevent duplicate emission across calls.
+ */
+function collectPrereqs(
+  c: string,
+  history: HistoryFile,
+  seenKanji: Set<string>,
+  seenRadicals: Set<string>,
+  out: PrereqItem[],
+): void {
+  if (seenKanji.has(c)) return;
+  seenKanji.add(c);
+  const row = kanjiRow(c);
+  if (!row) return;
+  // Already known — it and its components were taught by the curriculum earlier.
+  if (kanjiKnown(c, history)) return;
+
+  for (const part of row.comps) {
+    if (part === c) continue;
+    if (kanjiRow(part) !== undefined) {
+      collectPrereqs(part, history, seenKanji, seenRadicals, out);
+    } else {
+      const rad = radicalByWrittenForm(part);
+      if (rad && !isRadicalTaughtAsKanji(rad.num)) {
+        addRadicalIfNew(rad, history, seenRadicals, out);
+      } else {
+        const orig = variantOriginal(part);
+        if (orig !== undefined && orig !== c) {
+          if (kanjiRow(orig) !== undefined) {
+            collectPrereqs(orig, history, seenKanji, seenRadicals, out);
+          } else {
+            const origRad = radicalByWrittenForm(orig);
+            if (origRad && !isRadicalTaughtAsKanji(origRad.num)) {
+              addRadicalIfNew(origRad, history, seenRadicals, out);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Filed-under radical — may not appear in `comps`.
+  const filed = radicalOfKanji(c);
+  if (filed && !isRadicalTaughtAsKanji(filed.num)) {
+    // Skip when the radical is itself built from `c` (avoids the 王↔玉 cycle).
+    const filedRow = kanjiRow(filed.glyph);
+    if (!filedRow || !filedRow.comps.includes(c)) {
+      addRadicalIfNew(filed, history, seenRadicals, out);
+    }
+  }
+
+  out.push({ glyph: c, type: "Kanji", fact: meaningFactId(c), cost: kanjiCost(c) });
+}
+
+function addRadicalIfNew(
+  rad: RadicalRow,
+  history: HistoryFile,
+  seenRadicals: Set<string>,
+  out: PrereqItem[],
+): void {
+  if (seenRadicals.has(rad.glyph)) return;
+  seenRadicals.add(rad.glyph);
+  const fact = radicalMeaningFactId(rad.glyph);
+  const state = effectiveState(
+    history.facts[fact],
+    history.claims?.[fact],
+    history.seen?.[fact],
+  );
+  if (state.lastTested > 0) return;
+  out.push({ glyph: rad.glyph, type: "Radical", fact, cost: radicalCost(rad.num) });
+}
+
+const HAN = /\p{Script=Han}/u;
+
 /**
  * The next keigo lesson, or null when there is nothing teachable — either the
  * track is finished, or every remaining set is still locked behind a plain verb
@@ -168,7 +274,10 @@ function toCard(set: KeigoSet): KeigoCard {
  * Walk the curriculum in teaching order. A fully-met set is counted and skipped.
  * A fresh set that is still LOCKED (its plain verb unmet) is skipped WITHOUT
  * counting — it is not yet part of progress and must not block the sets behind
- * it. A fresh, unlocked set is taken, up to `count` of them.
+ * it. A fresh, unlocked set is taken, up to `count` of them — subject to the
+ * prereq cost budget: if a set's unknown kanji and their radical components would
+ * push the total teach-work over `LESSON_RANGE_DEFAULT.max`, it starts the next
+ * lesson instead. At least one set is always taken.
  *
  * PURE OF KANA. Like the other post-kana tracks, this does not know whether kana
  * is done; that gate is the caller's (see src/app/page.tsx).
@@ -180,22 +289,55 @@ export function nextKeigoLesson(
   const size = clampKeigoPerLesson(count);
   const rows: KeigoSet[] = [];
   let met = 0;
+
+  const seenKanji = new Set<string>();
+  const seenRadicals = new Set<string>();
+  const prereqItems: PrereqItem[] = [];
+  let totalPrereqCost = 0;
+
   for (const set of CURRICULUM_KEIGO) {
     if (!setFresh(set, history)) {
       met++;
       continue;
     }
     if (!keigoUnlocked(set, history)) continue;
+
+    // Tentatively collect this set's prereq pieces into a temp buffer.
+    const kanjiSnap = new Set(seenKanji);
+    const radSnap = new Set(seenRadicals);
+    const tempItems: PrereqItem[] = [];
+    for (const { word } of set.words) {
+      for (const c of word) {
+        if (!HAN.test(c)) continue;
+        collectPrereqs(c, history, seenKanji, seenRadicals, tempItems);
+      }
+    }
+    const addedCost = tempItems.reduce((n, p) => n + p.cost, 0);
+
+    // Budget check: if the new prereqs would overflow the lesson, roll back and stop.
+    // The first set is always taken regardless of cost (never leave an empty lesson).
+    if (rows.length > 0 && totalPrereqCost + addedCost > LESSON_RANGE_DEFAULT.max) {
+      seenKanji.clear();
+      for (const x of kanjiSnap) seenKanji.add(x);
+      seenRadicals.clear();
+      for (const x of radSnap) seenRadicals.add(x);
+      break;
+    }
+
+    prereqItems.push(...tempItems);
+    totalPrereqCost += addedCost;
     rows.push(set);
     if (rows.length >= size) break;
   }
+
   if (!rows.length) return null;
 
   const cards = rows.map(toCard);
-  const facts = rows.flatMap(setFacts);
+  const facts = [...prereqItems.map((p) => p.fact), ...rows.flatMap(setFacts)];
   return {
     cards,
     facts,
+    prereqTiles: prereqItems.map(({ glyph, type }) => ({ glyph, type })),
     position: {
       from: met + 1,
       to: met + cards.length,
