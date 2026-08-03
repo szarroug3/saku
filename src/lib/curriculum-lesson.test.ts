@@ -319,10 +319,10 @@ describe("the totals are counted off the data, never typed in", () => {
     assert.equal(CURRICULUM_TOTALS.word, CURRICULUM_WORDS.length);
   });
 
-  test("and today those counts are 90, 2,136 and 6,213", () => {
+  test("and today those counts are 90, 2,136 and 6,187", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 6213);
+    assert.equal(CURRICULUM_TOTALS.word, 6187);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -330,7 +330,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 6213, 6213);
+        assert.equal(g.position.word?.total ?? 6187, 6187);
       }
     }
   });

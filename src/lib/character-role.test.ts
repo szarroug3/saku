@@ -104,13 +104,14 @@ describe("characterRole", () => {
   });
 
   test("every one-character word in the curriculum is a jōyō kanji", () => {
-    // 595 of them, and the reason the badge's two kanji-less word sets cannot
+    // 582 of them (was 595 before number kanji were moved to the counters track),
+    // and the reason the badge's two kanji-less word sets cannot
     // happen today: the words track is written entirely in jōyō kanji, so the
     // word role never turns up without the kanji role beside it.
     const wordKanji = [...KANJI.map((k) => k.c)].filter((c) =>
       characterRoles(c).includes("word"),
     );
-    assert.equal(wordKanji.length, 595);
+    assert.equal(wordKanji.length, 582);
     for (const w of CURRICULUM_WORDS) {
       if ([...w.keb].length !== 1 || !/\p{Script=Han}/u.test(w.keb)) continue;
       assert.ok(kanjiRow(w.keb) !== undefined, `${w.keb} has a kanji card`);

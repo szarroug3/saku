@@ -49,10 +49,13 @@ describe("the curriculum is the JLPT core, in beginnerRank order", () => {
     for (const w of CURRICULUM_WORDS) {
       assert.ok(w.beginnerRank <= WORDS_CURRICULUM_MAX);
     }
-    // It is a strict prefix of the rank order: every word at or below the cut is
-    // in, every word above is out.
+    // A strict sub-set of the rank-bounded core: counter-track words (number
+    // kanji, counting words, etc.) are excluded even though they are in the core.
     const inCore = VOCAB.filter((w) => w.beginnerRank <= WORDS_CURRICULUM_MAX);
-    assert.equal(CURRICULUM_WORDS.length, inCore.length);
+    assert.ok(CURRICULUM_WORDS.length < inCore.length, "counter-track words are excluded");
+    for (const w of CURRICULUM_WORDS) {
+      assert.ok(inCore.some((c) => c.keb === w.keb), `${w.keb} should be in core`);
+    }
   });
 
   test("strictly ascending by beginnerRank — never reorders", () => {
@@ -127,7 +130,7 @@ describe("the word total is the material, and does not move", () => {
     // Equal today because beginnerRank is dense. They are different claims, and
     // the count is the one that stays right if a re-cut leaves a hole.
     assert.equal(WORDS_CURRICULUM_TOTAL, CURRICULUM_WORDS.length);
-    assert.equal(WORDS_CURRICULUM_TOTAL, 6213);
+    assert.equal(WORDS_CURRICULUM_TOTAL, 6187);
     assert.ok(WORDS_CURRICULUM_TOTAL <= WORDS_CURRICULUM_MAX);
   });
 });

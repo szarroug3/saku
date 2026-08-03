@@ -42,6 +42,7 @@
 
 import { kanjiKnown } from "@/lib/kanji-known";
 import { VOCAB, VOCAB_SUBJECT, type VocabRow } from "@/data/vocab";
+import { COUNTER_CURRICULUM } from "@/data/counters";
 import type { HistoryFile } from "@/types";
 
 // The words-per-lesson default and clamp live in the DATA-FREE
@@ -109,9 +110,36 @@ export function isKanaOnlyWord(w: VocabRow): boolean {
 /**
  * The words the track teaches, in teaching order: the JLPT core, by
  * beginnerRank. Computed once — it is a property of the data, not of the user.
+ *
+ * Excludes vocab entries that are owned by the counters track so learners don't
+ * see the same concept in two places: number kanji (一–万), native 〜つ counting
+ * words (一つ–九つ), people-counting forms (一人, 二人), and any kanji counter
+ * form in COUNTER_CURRICULUM.
  */
+
+// Kanji counter forms derive from COUNTER_CURRICULUM; kana-only forms (ひとつ,
+// いち …) are omitted here to avoid matching unrelated kana words (に, さん …).
+const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set(
+  COUNTER_CURRICULUM.filter((f) => f.glyph !== f.reading).map((f) => f.glyph),
+);
+
+// Number kanji and counting words that are already covered by the counters track.
+const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
+  // Standalone number kanji — counters track teaches the spoken forms
+  "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万",
+  // Native 〜つ counting words (counters track: ひとつ〜ここのつ)
+  "一つ", "二つ", "三つ", "四つ", "五つ", "六つ", "七つ", "八つ", "九つ",
+  // Irregular people-counting forms (counters track: ひとり, ふたり)
+  "一人", "二人",
+]);
+
 export const CURRICULUM_WORDS: readonly VocabRow[] = [...VOCAB]
-  .filter((w) => w.beginnerRank <= WORDS_CURRICULUM_MAX)
+  .filter(
+    (w) =>
+      w.beginnerRank <= WORDS_CURRICULUM_MAX &&
+      !COUNTER_TRACK_KEBS.has(w.keb) &&
+      !COUNTER_KANJI_GLYPHS.has(w.keb),
+  )
   .sort((a, b) => a.beginnerRank - b.beginnerRank);
 
 /**

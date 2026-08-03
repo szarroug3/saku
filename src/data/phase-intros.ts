@@ -811,12 +811,12 @@ export const OKURIGANA_INTRO: PhaseIntro = {
   title: "The kanji does not finish the word.",
   body: [
     {
-      lead: "This kana tail is called okurigana.",
-      text: "The kana written after a kanji is part of the word. One character can start several words, and the tail is what tells them apart.",
+      lead: "Words can have trailing kana.",
+      text: "This kana tail is called okurigana and is part of the word. One character can start several words. The tail is what tells them apart.",
     },
     {
-      lead: "The tail even settles the reading.",
-      text: "生 on its own can be read several ways, and the kana after it decide which. In 生きる the tail is きる and 生 is read い. In 生まれる the tail is まれる and 生 is read う. Same character, different tail, different sound.",
+      lead: "The tail even tells you the reading.",
+      text: "生 on its own can be read several ways. In 生きる, the tail is きる and 生 is read い. In 生まれる, the tail is まれる and 生 is read う. Same character, different tail, different sound.",
     },
   ],
   examples: [
@@ -1007,7 +1007,7 @@ export const PITCH_INTRO: PhaseIntro = {
     },
     {
       lead: "You are never asked to produce a pitch, and that is how the quiz stays fair.",
-      text: "The app never has you type or choose an accent. But it does use the mark to keep a meaning question honest: when the quiz asks what a word means, it shows the kanji AND the pronunciation together, so a same-sounding word like 箸 vs 橋 has one right answer, and the mark and the glyph tell you which word is meant. A word with no line simply has no pitch recorded, and that is fine.",
+      text: "We never ask you to type or choose an accent. But it does use the mark to keep a meaning question honest: when the quiz asks what a word means, it shows the kanji AND the pronunciation together, so a same-sounding word like 箸 vs 橋 has one right answer, and the mark and the glyph tell you which word is meant. A word with no line simply has no pitch recorded.",
     },
   ],
 };
