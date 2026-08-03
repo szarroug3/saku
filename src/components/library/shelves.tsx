@@ -501,7 +501,7 @@ export function Shelf({
                 </div>
               ) : kind === KEIGO_SUBJECT ? (
                 <div className="flex flex-col">
-                  <KeigoSetHeader />
+                  {section.id !== "keigo-phrases" && <KeigoSetHeader />}
                   {shown.map(keigoRow)}
                 </div>
               ) : kind === GRAMMAR_SUBJECT ? (
