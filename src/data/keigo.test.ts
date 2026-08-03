@@ -207,3 +207,34 @@ describe("distractors force the register contrast and never repeat an answer", (
     }
   });
 });
+
+describe("teaching order follows curriculum word order", () => {
+  test("welcome (empty gate) is always the first set", () => {
+    assert.equal(KEIGO_SETS[0].id, "welcome", "welcome must lead the curriculum");
+    assert.deepEqual(KEIGO_SETS[0].gate, []);
+  });
+
+  test("every non-welcome set's gate verbs exist in the vocabulary", () => {
+    // A gate verb with no vocab row would sort to Infinity and silently float to
+    // the end — fail loudly here instead.
+    for (const set of KEIGO_SETS) {
+      for (const keb of set.gate) {
+        assert.ok(vocabRow(keb), `gate verb "${keb}" in set "${set.id}" is not in VOCAB`);
+      }
+    }
+  });
+
+  test("sets are sorted by the minimum beginnerRank of their gate verbs", () => {
+    const rank = (set: (typeof KEIGO_SETS)[number]) =>
+      set.gate.length === 0
+        ? -Infinity
+        : Math.min(...set.gate.map((keb) => vocabRow(keb)?.beginnerRank ?? Infinity));
+
+    for (let i = 1; i < KEIGO_SETS.length; i++) {
+      assert.ok(
+        rank(KEIGO_SETS[i - 1]) <= rank(KEIGO_SETS[i]),
+        `set "${KEIGO_SETS[i - 1].id}" (rank ${rank(KEIGO_SETS[i - 1])}) should come before "${KEIGO_SETS[i].id}" (rank ${rank(KEIGO_SETS[i])})`,
+      );
+    }
+  });
+});
