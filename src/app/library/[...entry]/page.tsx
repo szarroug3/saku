@@ -1071,9 +1071,16 @@ function EntryView({ entry }: { entry: LibEntry }) {
           saying the same thing twice. The lesson keeps the lead (showLead
           defaults true) — there the view stands alone with no header. */}
       {isKeigo && keigoSet ? (
-        <div className="mb-3.5">
-          <KeigoSetView set={keigoSet} voiceName={cfg.voiceName} showLead={false} />
-        </div>
+        keigoSet.formulaic ? (
+          // Formulaic sets need an outer Card; verb sets already have bordered form boxes.
+          <Card className="mb-3.5">
+            <KeigoSetView set={keigoSet} voiceName={cfg.voiceName} showLead={false} />
+          </Card>
+        ) : (
+          <div className="mb-3.5">
+            <KeigoSetView set={keigoSet} voiceName={cfg.voiceName} showLead={false} />
+          </div>
+        )
       ) : null}
 
       {/* The generic table, now serving grammar and anything new. No rows, no
