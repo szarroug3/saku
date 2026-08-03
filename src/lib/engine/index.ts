@@ -27,6 +27,7 @@ export {
   mcOnlyIn,
   questionsFor,
   revealFor,
+  wordReadingCredit,
   grammarVehicleFor,
   grammarSelectionFor,
   type Prompt,

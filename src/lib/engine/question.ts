@@ -72,6 +72,7 @@ import {
   wordMeaningFactId,
   wordReadingFactId,
   wordReadingUnit,
+  wordUnitFacts,
 } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
 import {
@@ -85,7 +86,7 @@ import {
   productionCue,
 } from "@/data/keigo";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
-import { matchesEnglish } from "@/lib/engine/en-match";
+import { matchesEnglish, norm } from "@/lib/engine/en-match";
 import type { Direction, FactId, HistoryFile } from "@/types";
 
 /**
@@ -408,6 +409,52 @@ function checkJp2en(fact: FactId, given: string): boolean {
 function checkProduces(target: string, given: string): boolean {
   if (given.trim() === target) return true;
   return isKanaOnly(target) && romajiMatches(given, target);
+}
+
+/**
+ * On a TYPED word READING card, the fact to CREDIT and whether it is correct,
+ * redirecting credit to the reading the learner actually produced.
+ *
+ * WHY THIS IS NOT `checkTyped(fact, given, "jp2en")`. Two of a word's readings
+ * can share a meaning (年 is とし AND ねん, both "year"; 音 おと/おん "sound"), so
+ * a reading card that shows the kanji plus a definition has more than one right
+ * answer and the kanji cannot disambiguate. Grading against the card's own unit
+ * alone would mark the sibling reading wrong. So instead: if the learner spelled
+ * the reading of SOME unit of this word whose meaning OVERLAPS the shown unit's
+ * meaning, it is correct — and credit lands on the unit whose reading was typed,
+ * not the card's. A typed answer that is not a valid reading for the shown
+ * meaning (garbage, or a real reading that means something else — じょう "from the
+ * standpoint of" on the 上 "above" card) is a MISS, credited to the intended unit.
+ *
+ * Generalizes cleanly: for a single-reading word, or a multi-reading word whose
+ * units share no gloss, only the intended reading is valid, so the result is
+ * identical to today's jp2en check crediting the intended fact.
+ */
+export function wordReadingCredit(
+  fact: FactId,
+  given: string,
+): { fact: FactId; ok: boolean } {
+  const u = wordReadingUnit(fact);
+  // Not a word reading fact (e.g. a meaning fact, or a non-word fact). Defensive
+  // fallback to the normal jp2en check on the fact as given.
+  if (!u) return { fact, ok: checkJp2en(fact, given) };
+  const intended = new Set(u.unit.glosses.map(norm));
+  for (const wf of wordUnitFacts(u.keb)) {
+    // Kana words have no reading card, so no reading fact to credit.
+    if (!wf.reading) continue;
+    // Distinct units have distinct readings, so at most one unit's reb matches.
+    if (!checkProduces(wf.unit.reb, given)) continue;
+    // They spelled THIS reading. It is valid for the shown meaning iff it IS the
+    // intended unit or its glosses overlap the intended unit's glosses.
+    const valid =
+      wf.unit.reb === u.unit.reb ||
+      wf.unit.glosses.some((g) => intended.has(norm(g)));
+    // Correct → credit the unit they typed. Matched but not valid (a real reading
+    // meaning something else) → a miss on the intended unit.
+    return valid ? { fact: wf.reading, ok: true } : { fact, ok: false };
+  }
+  // No unit's reading matched what they typed (garbage) → miss on intended.
+  return { fact, ok: false };
 }
 
 /**

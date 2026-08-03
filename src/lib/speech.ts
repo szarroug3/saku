@@ -312,6 +312,11 @@ function speakPack(text: string, voiceId: string): void {
  * speechSynthesis. */
 export function speak(text: string, voiceName: string): void {
   if (typeof window === "undefined") return;
+  // Automation/e2e browsers set navigator.webdriver (Playwright does). No test
+  // asserts speech actually plays — the listening specs only check the speaker
+  // button and hidden-glyph behaviour — so silencing it keeps unattended e2e
+  // runs quiet without affecting real users (real browsers leave webdriver false).
+  if (typeof navigator !== "undefined" && navigator.webdriver) return;
   if (shouldSkipDuplicateSpeak(text, voiceName)) return;
   // Only take the pack path when it's actually configured (bucket set); a pack
   // voice selected without a bucket just uses the browser voice, no dead request.

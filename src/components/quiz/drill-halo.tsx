@@ -230,6 +230,16 @@ export interface DrillHaloProps {
   compactSentenceFrame?: boolean;
   /** Optional pronunciation shown inside the halo beneath the main glyph. */
   reading?: ReactNode;
+  /**
+   * Optional context line shown inside the halo beneath the main glyph (or the
+   * listening speaker) — a WORD card's other half of its reading-unit: the
+   * definition under a reading card, the reading (or, for a homophone collision,
+   * the written word) under a meaning card. The owner wants this INSIDE the box
+   * rather than on a muted line below the instruction, so it renders here for the
+   * lone-glyph AND the listening centre. Distinct from `reading` (pitch) so a
+   * visual homophone meaning card can keep its pitch line untouched.
+   */
+  context?: ReactNode;
   /** Pause the outline animation while the settings drawer is open. */
   paused?: boolean;
 }
@@ -251,6 +261,7 @@ export function DrillHalo({
   sentenceFrameLang = "ja",
   compactSentenceFrame = false,
   reading,
+  context,
   paused = false,
 }: DrillHaloProps) {
   const square = !!sentenceFrame;
@@ -319,16 +330,26 @@ export function DrillHalo({
       ) : listen ? (
         // The audio IS the question, so the centre is a speaker, not the glyph.
         // Pressing it replays the word; the crossFade keeps it arriving like the
-        // glyph it stands in for.
-        <button
-          type="button"
-          onClick={onListen}
-          aria-label="Play the word again"
-          className="kq-glyph relative flex size-26 cursor-pointer items-center justify-center rounded-full text-text-muted transition-colors hover:text-text"
+        // glyph it stands in for. A `context` line (e.g. a reading card's
+        // definition) sits beneath it, inside the box.
+        <span
+          className="kq-glyph relative flex flex-col items-center justify-center gap-1"
           style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
         >
-          <SoundIcon className="size-12" />
-        </button>
+          <button
+            type="button"
+            onClick={onListen}
+            aria-label="Play the word again"
+            className="relative flex size-26 cursor-pointer items-center justify-center rounded-full text-text-muted transition-colors hover:text-text"
+          >
+            <SoundIcon className="size-12" />
+          </button>
+          {context ? (
+            <span className="mt-2 px-4 text-center leading-snug whitespace-normal">
+              {context}
+            </span>
+          ) : null}
+        </span>
       ) : (
         <PromptGlyph
           glyph={glyph}
@@ -338,6 +359,7 @@ export function DrillHalo({
           maxFontSize={maxFontSize ?? fontSize}
           crossFade={crossFade}
           reading={reading}
+          context={context}
         />
       )}
     </div>
@@ -364,6 +386,7 @@ function PromptGlyph({
   maxFontSize,
   crossFade,
   reading,
+  context,
 }: {
   glyph: string;
   highlight?: string;
@@ -372,6 +395,7 @@ function PromptGlyph({
   maxFontSize: number;
   crossFade: boolean;
   reading?: ReactNode;
+  context?: ReactNode;
 }) {
   const { main, sub } = splitQualifier(glyph);
   // Re-fit whenever the prompt text or its font changes — that is one per card.
@@ -437,6 +461,11 @@ function PromptGlyph({
         </div>
       )}
       {reading ? <span className="leading-none">{reading}</span> : null}
+      {context ? (
+        <span className="mt-2 px-4 text-center leading-snug whitespace-normal">
+          {context}
+        </span>
+      ) : null}
     </span>
   );
 }

@@ -32,13 +32,14 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type ReactNode,
 } from "react";
 
 import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { Btn, SmallBtn } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
-import { VOCAB_SUBJECT, vocabRow, wordMeaningFactId } from "@/data/vocab";
+import { VOCAB_SUBJECT, isWordReadingFact, vocabRow, wordMeaningFactId } from "@/data/vocab";
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { answerGuide, confusionNote } from "@/lib/drill-guidance";
@@ -57,6 +58,7 @@ import {
   requeueGap,
   retriesAllowed,
   revealFor,
+  wordReadingCredit,
   shuffle,
   spread,
   type GrammarSelection,
@@ -805,13 +807,27 @@ export function DrillScreen() {
     // two options can carry the same text (two kanji meaning "life") and
     // comparing strings would mark a wrong click right. Typed answers go to the
     // subject's own checker.
+    // A TYPED answer on a word READING card can be right via a SIBLING reading
+    // that shares the shown meaning — 年+"year" accepts both とし and ねん, and the
+    // kanji cannot disambiguate. wordReadingCredit grades against every reading
+    // valid for the shown meaning and redirects stat CREDIT to the unit whose
+    // reading was actually typed; a miss (or a real reading meaning something
+    // else) stays on the intended unit. Only the stat credit moves — the reveal,
+    // phrase, streak, confusion and requeue all stay card-level on q.f.
+    const typed = recognitionPick === undefined && picked === undefined;
+    const credited =
+      typed && q.dir === "jp2en" && isWordReadingFact(q.f)
+        ? wordReadingCredit(q.f, given)
+        : null;
     const ok =
       recognitionPick !== undefined && q.recognition
         ? recognitionPick === q.recognition.correct
         : picked !== undefined
           ? picked === q.f
-          : checkTyped(q.f, given, q.dir, ctxFor(q));
-    const st = statForShowing(rt.stats, q.f);
+          : credited
+            ? credited.ok
+            : checkTyped(q.f, given, q.dir, ctxFor(q));
+    const st = statForShowing(rt.stats, credited?.fact ?? q.f);
     const phrase = presentationPhrase(q.f, showingOf(q));
     // A HINT FORFEITS "NAILED IT", and that is the whole of what it costs. Right
     // with a hint is the third outcome: seen, correct, not first-try — which is
@@ -1346,8 +1362,17 @@ export function DrillScreen() {
   // A kanji-reading card's formula hint is framed on the SAME word the prompt
   // shows it in (anchorForFact), so the hint is handed that word. Every other
   // hint ignores both extras.
+  // NO HINT ON A CARD BORN MULTIPLE CHOICE, but a TYPED card the learner
+  // converted with "Choices" keeps its hint. The exclusion is about the ANSWER
+  // being on the board (six printed options usually contain the hint), which is
+  // true of a card that was always MC; a Choices conversion is the learner's own
+  // move and must not also yank the Hint button (or a hint she had already
+  // revealed) out from under her — see FIX 3. So the gate fires only for a card
+  // that is MC and was NOT converted (choicesShown marks the conversion; a
+  // recognition/grammar-selection card born MC has it false, which is correct —
+  // those still get no hint via hintReady below).
   const hint =
-    active && rt?.q && !rt.q.mc
+    active && rt?.q && !(rt.q.mc && !rt.q.choicesShown)
       ? hintFor(
           rt.q.f,
           rt.q.dir,
@@ -1402,6 +1427,55 @@ export function DrillScreen() {
     if (!row) return null;
     const downstep = wordPitch(row.keb);
     return downstep == null ? null : { reading: row.reb, downstep };
+  })();
+  // A WORD card's context — the other half of its reading-unit — goes INSIDE the
+  // halo beneath the glyph (or the listening speaker), not on a muted line below
+  // the instruction. This is computed HERE, not in question.ts, because what the
+  // line says depends on `q.listen` and (for the collision case) `history`, which
+  // question.ts is deliberately kept ignorant of:
+  //   reading card         → the definition (never redundant with the glyph/audio)
+  //   visual meaning card   → the reading kana — except the ambiguous-homophone
+  //                           case, which shows it pitch-annotated via `promptPitch`
+  //                           (the `reading` slot) and so suppresses this line
+  //   audio meaning card    → NOTHING: the voice already IS the reading, so a kana
+  //                           context just repeats it. Only a reading shared by a
+  //                           word the learner knows (meaningMustShowGlyph) shows
+  //                           the WRITTEN word, so she can tell which same-sounding
+  //                           word is meant. Those ambiguous audio meaning cards
+  //                           are already filtered out of the deck upstream by the
+  //                           SAME predicate (usableForms / the coverage keep), so
+  //                           in practice this reaches the `null` arm; the glyph
+  //                           arm is belt-and-braces should that filter ever lift.
+  const wordInfo = factInfo(q.f);
+  const isWordCard = !!wordInfo && wordInfo.subject === VOCAB_SUBJECT;
+  const wordContext: ReactNode = (() => {
+    if (!isWordCard) return null;
+    if (isWordReadingFact(q.f)) {
+      // An AUDIO reading card is dictation — you HEAR the word and type the
+      // kana — so the meaning adds nothing and would wrongly imply "produce the
+      // reading from the meaning." Only the VISUAL reading card shows it.
+      if (q.listen) return null;
+      return prompt.context ? (
+        <span className="text-[15px] text-text">{prompt.context}</span>
+      ) : null;
+    }
+    // Meaning card.
+    if (q.listen) {
+      return meaningMustShowGlyph(q.f, history) ? (
+        <span
+          className="text-[20px] leading-none text-text"
+          style={{ fontFamily: q.font }}
+          lang="ja"
+        >
+          {prompt.glyph}
+        </span>
+      ) : null;
+    }
+    // Visual meaning card: the reading kana, unless the pitch line already shows it.
+    if (promptPitch) return null;
+    return prompt.context ? (
+      <span className="text-[15px] text-text">{prompt.context}</span>
+    ) : null;
   })();
   // `q.mc` is the truth about how this card is being ANSWERED, which is what the
   // instruction has to describe — "which of these" over a text box would be
@@ -1653,6 +1727,10 @@ export function DrillScreen() {
               />
             ) : undefined
           }
+          // A WORD card's context sits INSIDE the box beneath the glyph/speaker;
+          // its old muted sub-label below the instruction is suppressed (see the
+          // `!isWordCard` guard there).
+          context={wordContext ?? undefined}
         />
         {/* WHAT THIS CARD IS ASKING FOR — below the halo now, and WHITE, so it
             reads as the question rather than a muted hint above it. Every card
@@ -1685,6 +1763,7 @@ export function DrillScreen() {
             competing. */}
         {!selectionFrame &&
         !readingWord &&
+        !isWordCard &&
         prompt.context &&
         prompt.context !== "meaning" &&
         prompt.context !== "reading" &&

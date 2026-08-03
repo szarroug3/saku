@@ -34,7 +34,7 @@
 // show the glyph for that pair too — the written form is the only thing that
 // separates them at all.
 
-import { VOCAB, VOCAB_SUBJECT, vocabRow, wordMeaningFactId } from "@/data/vocab";
+import { VOCAB, VOCAB_SUBJECT, isWordReadingFact, vocabRow } from "@/data/vocab";
 import { wordKnown } from "@/lib/grammar/readable";
 import { factInfo } from "@/lib/facts";
 import type { FactId, HistoryFile } from "@/types";
@@ -102,10 +102,17 @@ export function collidesWithKnown(fact: FactId, history: HistoryFile): boolean {
  *
  * A reading fact returns false: its answer is the reading, which every homophone
  * shares, so hiding the glyph and playing the word is a fair reading question.
+ *
+ * MEANING-vs-READING is decided by membership, not by `wordMeaningFactId(glyph)
+ * === fact`. That equality only ever names the PRIMARY unit's unqualified id, so
+ * a qualified meaning unit (`word:日/meaning@にち`) failed it and was wrongly
+ * treated as not-a-meaning-card. A word fact is a reading OR a meaning, so "not a
+ * reading fact" is exactly "is a meaning fact" — the same membership discriminator
+ * `isWordReadingFact` was built to give (see its doc in data/vocab.ts).
  */
 export function meaningMustShowGlyph(fact: FactId, history: HistoryFile): boolean {
   const info = factInfo(fact);
   if (!info || info.subject !== VOCAB_SUBJECT) return false;
-  if (wordMeaningFactId(info.glyph) !== fact) return false;
+  if (isWordReadingFact(fact)) return false;
   return readingSharedByKnownWord(info.glyph, history);
 }
