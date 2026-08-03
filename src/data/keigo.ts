@@ -148,6 +148,16 @@ function humble(key: string, word: string, reading: string, use?: string): Keigo
  * greeting trails at the end.
  */
 export const KEIGO_SETS: readonly KeigoSet[] = [
+  // welcome has no gate and no plain-verb contrast, so it always unlocks first
+  // and serves as every learner's introduction to the track.
+  {
+    id: "welcome",
+    meaning: "welcome (a shop's greeting to a customer)",
+    plain: [],
+    words: [honorific("irasshaimase", "いらっしゃいませ", "いらっしゃいませ")],
+    gate: [],
+    formulaic: true,
+  },
   {
     id: "eat",
     meaning: "eat / drink",
@@ -224,14 +234,6 @@ export const KEIGO_SETS: readonly KeigoSet[] = [
       humble("zonjiageru", "存じ上げる", "ぞんじあげる", "for a person"),
     ],
     gate: ["知る"],
-  },
-  {
-    id: "welcome",
-    meaning: "welcome (a shop's greeting to a customer)",
-    plain: [],
-    words: [honorific("irasshaimase", "いらっしゃいませ", "いらっしゃいませ")],
-    gate: [],
-    formulaic: true,
   },
 ];
 

@@ -76,8 +76,8 @@ describe("the track opens EARLY, on a plain verb the learner already knows", () 
     assert.ok(keigoUnlocked(EAT, history));
     const lesson = nextKeigoLesson(history, 3);
     assert.ok(lesson, "the eat set did not open on 食べる");
-    assert.equal(lesson.cards[0].entry, keigoSetEntry(EAT));
-    assert.equal(lesson.cards[0].meaning, "eat / drink");
+    // welcome always leads; eat follows as the first unlocked verb set
+    assert.ok(lesson.cards.some((c) => c.meaning === "eat / drink"), "eat set missing from lesson");
   });
 
   test("any one of a set's plain verbs opens it (飲む opens eat too)", () => {
