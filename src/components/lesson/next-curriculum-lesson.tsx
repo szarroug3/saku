@@ -146,23 +146,32 @@ export function NextCurriculumLesson({
             be a second thing to read saying what the tiles already do, and the
             app's own entry page is the guide here. */}
         <div className="mt-4 flex flex-wrap gap-2">
-          {/* The role line is the same label the entry page uses: every role a
-              character plays, in one order — "Radical · Kanji · Word" for 山,
-              "Kanji · Word" for 何, "Radical" for a shape that is only ever a
-              part. A PREVIEW, so that role is all a tile shows — no meaning, no
-              reading, and the old "you need this for X" note is gone. */}
-          {cards.map((card) => (
-            <PreviewTile
-              key={card.glyph}
-              glyph={card.glyph}
-              // characterRoleTitle only knows single-character roles, so a
-              // multi-kana word (あなた) comes back null. On this track that can
-              // only be a word — radicals and kanji always have a role — so the
-              // honest fallback is "Word", never a blank label.
-              type={characterRoleTitle(card.glyph) ?? "Word"}
-              href={entryHref(tileEntry(card))}
-            />
-          ))}
+          {/* Simple words (all kanji pre-known, no new prereqs in this lesson)
+              come first; everything else follows in curriculum order so each
+              prereq tile appears before the item that depends on it. */}
+          {(() => {
+            const kanjiInLesson = new Set(
+              cards
+                .filter((c) => c.roles.includes("kanji") || c.roles.includes("radical"))
+                .map((c) => c.glyph),
+            );
+            const isSimple = (c: CurriculumLessonItem) =>
+              c.roles.length === 1 &&
+              c.roles[0] === "word" &&
+              ![...c.glyph].some((ch) => kanjiInLesson.has(ch));
+            const ordered = [
+              ...cards.filter(isSimple),
+              ...cards.filter((c) => !isSimple(c)),
+            ];
+            return ordered.map((card) => (
+              <PreviewTile
+                key={card.glyph}
+                glyph={card.glyph}
+                type={characterRoleTitle(card.glyph) ?? "Word"}
+                href={entryHref(tileEntry(card))}
+              />
+            ));
+          })()}
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-2">

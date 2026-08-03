@@ -156,8 +156,8 @@ export interface KeigoPrereqTile {
 export interface KeigoLesson {
   cards: KeigoCard[];
   facts: FactId[];
-  /** Prerequisite tiles (radical pieces then kanji) this lesson teaches before the keigo forms. */
-  prereqTiles: readonly KeigoPrereqTile[];
+  /** Prerequisite tiles per card, in the same order as `cards`. */
+  cardPrereqTiles: readonly (readonly KeigoPrereqTile[])[];
   /** Where you are, in SETS — "1–3 of 9". */
   position: LessonPosition;
 }
@@ -292,7 +292,7 @@ export function nextKeigoLesson(
 
   const seenKanji = new Set<string>();
   const seenRadicals = new Set<string>();
-  const prereqItems: PrereqItem[] = [];
+  const cardPrereqItems: PrereqItem[][] = [];
   let totalPrereqCost = 0;
 
   for (const set of CURRICULUM_KEIGO) {
@@ -324,7 +324,7 @@ export function nextKeigoLesson(
       break;
     }
 
-    prereqItems.push(...tempItems);
+    cardPrereqItems.push(tempItems);
     totalPrereqCost += addedCost;
     rows.push(set);
     if (rows.length >= size) break;
@@ -333,11 +333,17 @@ export function nextKeigoLesson(
   if (!rows.length) return null;
 
   const cards = rows.map(toCard);
-  const facts = [...prereqItems.map((p) => p.fact), ...rows.flatMap(setFacts)];
+  // Facts ordered per-card so the teach walk steps through each set's prereqs then its keigo words.
+  const facts = rows.flatMap((set, i) => [
+    ...cardPrereqItems[i].map((p) => p.fact),
+    ...setFacts(set),
+  ]);
   return {
     cards,
     facts,
-    prereqTiles: prereqItems.map(({ glyph, type }) => ({ glyph, type })),
+    cardPrereqTiles: cardPrereqItems.map((items) =>
+      items.map(({ glyph, type }) => ({ glyph, type }))
+    ),
     position: {
       from: met + 1,
       to: met + cards.length,

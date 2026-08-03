@@ -152,7 +152,7 @@ export const KEIGO_SETS: readonly KeigoSet[] = [
   // and serves as every learner's introduction to the track.
   {
     id: "welcome",
-    meaning: "welcome (a shop's greeting to a customer)",
+    meaning: "welcome",
     plain: [],
     words: [honorific("irasshaimase", "いらっしゃいませ", "いらっしゃいませ")],
     gate: [],

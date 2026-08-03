@@ -50,35 +50,36 @@ export function NextKeigoLesson({
   inSession?: boolean;
   onContinue?: () => void;
 }) {
-  const { position, cards, prereqTiles } = lesson;
+  const { position, cards, cardPrereqTiles } = lesson;
 
   return (
     <Card>
       <Lbl>Up next · {positionLabel("keigo sets", position)}</Lbl>
 
-      {/* All prereq pieces (radicals, kanji) and the keigo words in one row. */}
+      {/* Per card: its prereq pieces (radicals, kanji) then the keigo word tile. */}
       <div className="mt-4 flex flex-wrap gap-2">
-        {prereqTiles.map((t) => (
-          <PreviewTile
-            key={t.glyph}
-            glyph={t.glyph}
-            type={characterRoleTitle(t.glyph) ?? t.type}
-            href={entryHref(t.type === "Kanji" ? kanjiEntry(t.glyph) : radicalEntry(t.glyph))}
-            base={20}
-          />
-        ))}
-        {cards.map((card) => (
-          <PreviewTile
-            key={card.entry}
-            glyph={
-              card.plain.length
-                ? card.plain.map((p) => p.word).join(" / ")
-                : (card.words[0]?.word ?? "")
-            }
-            type="Keigo"
-            href={entryHref(card.entry)}
-            base={20}
-          />
+        {cards.map((card, i) => (
+          <div key={card.entry} className="contents">
+            {cardPrereqTiles[i].map((t) => (
+              <PreviewTile
+                key={t.glyph}
+                glyph={t.glyph}
+                type={characterRoleTitle(t.glyph) ?? t.type}
+                href={entryHref(t.type === "Kanji" ? kanjiEntry(t.glyph) : radicalEntry(t.glyph))}
+                base={20}
+              />
+            ))}
+            <PreviewTile
+              glyph={
+                card.plain.length
+                  ? card.plain.map((p) => p.word).join(" / ")
+                  : (card.words[0]?.word ?? "")
+              }
+              type="Keigo"
+              href={entryHref(card.entry)}
+              base={20}
+            />
+          </div>
         ))}
       </div>
 
