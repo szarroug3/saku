@@ -23,11 +23,10 @@ interface KeigoGroup {
 }
 
 const GROUPS: readonly KeigoGroup[] = [
-  // The verb sets lead: a plain verb with its honorific and humble forms is the
-  // heart of the track.
-  { id: "verbs", label: "Honorific and humble verbs", keep: (s) => !s.formulaic },
-  // The set phrases — いらっしゃいませ and any other fixed greeting — taught whole.
+  // Set phrases first: いらっしゃいませ has no gate so it unlocks first in the curriculum.
   { id: "phrases", label: "Set phrases", keep: (s) => !!s.formulaic },
+  // Verb sets follow in teaching order (KEIGO_SETS is sorted by gate verb beginnerRank).
+  { id: "verbs", label: "Honorific and humble verbs", keep: (s) => !s.formulaic },
 ];
 
 /**

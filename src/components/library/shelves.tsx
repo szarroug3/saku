@@ -57,6 +57,7 @@ import {
 import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
+import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
 import { CLUSTERS } from "@/data/grammar/clusters";
 import { grammarShelfSections } from "@/lib/library/grammar-shelf";
 import {
@@ -165,7 +166,7 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
         {
           id: "verb-pairs",
           label: "Verb pairs",
-          entries: VERB_PAIRS.flatMap((p) => resolve(pairEntry(p))),
+          entries: CURRICULUM_PAIRS.flatMap((p) => resolve(pairEntry(p))),
         },
       ];
     // ONE SECTION, holding every definition — marks' argument again. The whole
