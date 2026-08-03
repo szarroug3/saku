@@ -304,19 +304,31 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     () => ({ ...facts, facts: triageFacts, solid: facts.solid.filter((fact) => !clearableFacts.has(fact)) }),
     [facts, triageFacts, clearableFacts],
   );
+
+  // Compute pair runs for all progress rows once, then filter and reuse.
+  // This avoids calling pairRecentRuns twice per row (once to filter visibility,
+  // once to display runs), which is expensive when iterating through history.
+  const allProgressPairRuns = useMemo(() => {
+    const out = new Map<string, boolean[]>();
+    for (const row of analysis.progress) {
+      out.set(row.key, [
+        ...pairRecentRuns(history, row.key, {
+          entryOf,
+          excludeTs: results.ts,
+        }),
+        true,
+      ].slice(-10));
+    }
+    return out;
+  }, [analysis.progress, history, results.ts]);
+
   const visiblePairProgressRows = useMemo(
     () =>
       analysis.progress.filter((row) => {
-        const runs = [
-          ...pairRecentRuns(history, row.key, {
-            entryOf,
-            excludeTs: results.ts,
-          }),
-          true,
-        ].slice(-10);
+        const runs = allProgressPairRuns.get(row.key) ?? [];
         return runsToReach(runs, SOLID_PCT) > 0;
       }),
-    [analysis.progress, history, results.ts],
+    [analysis.progress, allProgressPairRuns],
   );
   const hasAnyProgress = visiblePairProgressRows.length > 0 || factProgressRows.length > 0;
   const [selectedProgress, setSelectedProgress] = useState<Set<FactId>>(new Set());
@@ -334,16 +346,11 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   const progressPairRuns = useMemo(() => {
     const out = new Map<string, boolean[]>();
     for (const row of visiblePairProgressRows) {
-      out.set(row.key, [
-        ...pairRecentRuns(history, row.key, {
-          entryOf,
-          excludeTs: results.ts,
-        }),
-        true,
-      ].slice(-10));
+      const runs = allProgressPairRuns.get(row.key);
+      if (runs) out.set(row.key, runs);
     }
     return out;
-  }, [visiblePairProgressRows, history, results.ts]);
+  }, [visiblePairProgressRows, allProgressPairRuns]);
 
   const toggleProgressPair = (key: string) => {
     const pairFacts = progressPairFacts.get(key) ?? [];
