@@ -142,3 +142,23 @@ describe("clampTransitivityPerLesson", () => {
     assert.equal(clampTransitivityPerLesson(NaN), TRANSITIVITY_PER_LESSON_DEFAULT);
   });
 });
+
+describe("teaching order follows curriculum word order", () => {
+  const wordRank = new Map(CURRICULUM_WORDS.map((w) => [w.keb, w.beginnerRank]));
+  const pairRank = (p: (typeof CURRICULUM_PAIRS)[number]) =>
+    Math.min(
+      wordRank.get(p.happens.word) ?? Infinity,
+      wordRank.get(p.doIt.word) ?? Infinity,
+    );
+
+  test("pairs are sorted by the minimum beginnerRank of their two verbs", () => {
+    for (let i = 1; i < CURRICULUM_PAIRS.length; i++) {
+      const prev = CURRICULUM_PAIRS[i - 1];
+      const curr = CURRICULUM_PAIRS[i];
+      assert.ok(
+        pairRank(prev) <= pairRank(curr),
+        `"${prev.happens.word}/${prev.doIt.word}" (rank ${pairRank(prev)}) should come before "${curr.happens.word}/${curr.doIt.word}" (rank ${pairRank(curr)})`,
+      );
+    }
+  });
+});

@@ -76,13 +76,24 @@ function pairInCurriculum(p: VerbPair): boolean {
   return CURRICULUM_KEBS.has(p.happens.word) && CURRICULUM_KEBS.has(p.doIt.word);
 }
 
+/** beginnerRank for each curriculum word, for sorting CURRICULUM_PAIRS below. */
+const WORD_RANK = new Map(CURRICULUM_WORDS.map((w) => [w.keb, w.beginnerRank]));
+
 /**
  * The pairs the track teaches, in teaching order: every pair whose both verbs
- * are in the words curriculum, in data order (the curated table's own order,
- * which groups familiar pairs first). A property of the data, computed once.
+ * are in the words curriculum, sorted by the minimum beginnerRank of the two
+ * verbs so the order automatically tracks the word curriculum.
  */
-export const CURRICULUM_PAIRS: readonly VerbPair[] =
-  VERB_PAIRS.filter(pairInCurriculum);
+export const CURRICULUM_PAIRS: readonly VerbPair[] = VERB_PAIRS.filter(
+  pairInCurriculum,
+).sort((a, b) => {
+  const rank = (p: VerbPair) =>
+    Math.min(
+      WORD_RANK.get(p.happens.word) ?? Infinity,
+      WORD_RANK.get(p.doIt.word) ?? Infinity,
+    );
+  return rank(a) - rank(b);
+});
 
 /**
  * How many pairs the track teaches — the denominator on the lesson card. 66,
