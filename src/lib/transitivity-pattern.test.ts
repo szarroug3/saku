@@ -57,7 +57,7 @@ describe("pairPattern over the curriculum", () => {
     const exceptions = CURRICULUM_PAIRS.flatMap((p, i) =>
       pairPattern(p.happens.reading, p.doIt.reading).isException ? [i + 1] : [],
     );
-    assert.deepEqual(exceptions, [5, 6, 8, 31, 52, 65]);
+    assert.deepEqual(exceptions, [1, 4, 6, 11, 14, 42]);
   });
 
   test("the three dominant rules cover most pairs", () => {

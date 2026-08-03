@@ -55,7 +55,6 @@ import {
   grammarConceptEntry,
 } from "@/data/grammar-concepts";
 import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
-import { VERB_PAIRS } from "@/data/transitivity";
 import { TRANSITIVITY_SUBJECT, pairEntry, pairForEntry } from "@/data/transitivity-facts";
 import { CURRICULUM_PAIRS } from "@/lib/transitivity-lesson";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
