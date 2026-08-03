@@ -38,9 +38,13 @@ function shape(fact: FactId) {
 }
 
 describe("question matrix §6.1: Keigo", () => {
-  test("every fact exposes exactly text/audio recognition and typed/MC production", () => {
+  test("every fact exposes exactly text/audio recognition and typed production", () => {
     assert.ok(KEIGO_FACTS.length > 0);
     for (const fact of KEIGO_FACTS) {
+      // Recognition stays MC-only (there is no typed sibling to defer to), so
+      // both the text and audio jp→en cards survive. Production had a typed and
+      // an MC card; the MC one is dropped by Rule B because the kana reading is
+      // typeable, leaving a single typed production card.
       assert.deepEqual(
         shape(fact.id),
         [
@@ -64,13 +68,6 @@ describe("question matrix §6.1: Keigo", () => {
             listen: false,
             dir: "en2jp",
             control: "typed",
-          },
-          {
-            source: "english",
-            response: "japanese",
-            listen: false,
-            dir: "en2jp",
-            control: "mc",
           },
         ],
         fact.id,

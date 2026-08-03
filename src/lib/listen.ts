@@ -25,7 +25,7 @@
 // ask-forms.ts: hear /a/ → produce あ. It does not use listenKind because its
 // target is the glyph rather than the fact's ordinary jp→en answer.
 
-import { VOCAB_SUBJECT, wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
+import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
 import type { FactId } from "@/types";
 
@@ -44,7 +44,9 @@ export type ListenKind = "romaji" | "meaning";
 export function listenKind(fact: FactId): ListenKind | null {
   const info = factInfo(fact);
   if (!info || info.subject !== VOCAB_SUBJECT) return null;
-  if (wordReadingFactId(info.glyph) === fact) return "romaji";
-  if (wordMeaningFactId(info.glyph) === fact) return "meaning";
-  return null;
+  // Every word fact is a reading fact or a meaning fact (buildVocabFacts mints
+  // only those two per unit) — so classify by reading-membership and any other
+  // word fact is a meaning fact. Using membership catches qualified units too:
+  // word:日/reading@にち is "romaji", word:日/meaning@にち is "meaning".
+  return isWordReadingFact(fact) ? "romaji" : "meaning";
 }

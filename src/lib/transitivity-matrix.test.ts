@@ -37,9 +37,13 @@ function shape(fact: FactId) {
 }
 
 describe("question matrix §6.2: verb pairs", () => {
-  test("every member exposes exactly text/audio role recognition and typed/MC production", () => {
+  test("every member exposes exactly text/audio role recognition and typed production", () => {
     assert.ok(TRANSITIVITY_FACTS.length > 0);
     for (const fact of TRANSITIVITY_FACTS) {
+      // Role recognition stays MC-only (no typed sibling), so both the text and
+      // audio jp→en cards survive. Production had a typed and an MC card; the MC
+      // one is dropped by Rule B because the kana reading is typeable, leaving a
+      // single typed production card.
       assert.deepEqual(
         shape(fact.id),
         [
@@ -63,13 +67,6 @@ describe("question matrix §6.2: verb pairs", () => {
             listen: false,
             dir: "en2jp",
             control: "typed",
-          },
-          {
-            source: "english",
-            response: "japanese",
-            listen: false,
-            dir: "en2jp",
-            control: "mc",
           },
         ],
         fact.id,

@@ -51,8 +51,7 @@ import {
   VOCAB_SUBJECT,
   vocabRow,
   wordEntry,
-  wordMeaningFactId,
-  wordReadingFactId,
+  wordUnitFacts,
 } from "@/data/vocab";
 import {
   GRAMMAR_SUBJECT,
@@ -1178,33 +1177,44 @@ export function factRows(entry: LibEntry): FactRow[] {
     case KANJI_SUBJECT:
       return kanjiFactRows(entry);
     // A word KEEPS its meaning row. The kanji table could drop one because what
-    // remained was still a table; here the two rows ARE the word — its reading
-    // and its meaning are separately scored, and dropping either leaves a
-    // one-row table that no longer says what the app tests.
+    // remained was still a table; here the reading and meaning rows ARE the word
+    // — separately scored, and dropping either leaves a table that no longer says
+    // what the app tests.
+    //
+    // ONE PAIR PER READING-UNIT, not just the primary: 日 shows its ひ (day) row
+    // and its か (day-counter) row, because each is its own scored skill (see
+    // wordUnitFacts). The label stays "Reading"/"Meaning" on every unit — the
+    // rows sit under the one word entry and the answer disambiguates which
+    // reading each is about. A kana word has no reading fact, so it is the
+    // meaning row alone, exactly as before.
     case VOCAB_SUBJECT:
-      return [
-        {
-          id: wordReadingFactId(entry.glyph),
-          label: "Reading",
-          answer: entry.readings[0] ?? "",
-          askedIn: [],
-          unattested: false,
-          origin: null,
-          // The word's own kana. Speaking the reading rather than the written
-          // form is the point: 先生 read aloud by a synthesiser is a coin flip,
-          // せんせい is not.
-          speak: entry.readings[0] ?? null,
-        },
-        {
-          id: wordMeaningFactId(entry.glyph),
+      return wordUnitFacts(entry.glyph).flatMap(({ unit, reading, meaning }) => {
+        const rows: FactRow[] = [];
+        if (reading) {
+          rows.push({
+            id: reading,
+            label: "Reading",
+            answer: unit.reb,
+            askedIn: [],
+            unattested: false,
+            origin: null,
+            // The word's own kana. Speaking the reading rather than the written
+            // form is the point: 先生 read aloud by a synthesiser is a coin flip,
+            // せんせい is not.
+            speak: unit.reb,
+          });
+        }
+        rows.push({
+          id: meaning,
           label: "Meaning",
-          answer: entry.meanings.join(", "),
+          answer: unit.glosses.join(", "),
           askedIn: [],
           unattested: false,
           origin: null,
           speak: null,
-        },
-      ];
+        });
+        return rows;
+      });
     case GRAMMAR_SUBJECT:
       return grammarFactRows(entry);
     // A counter is a word, so it prints a word's rows — but keyed on the form's

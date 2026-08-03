@@ -49,6 +49,10 @@ function shape(fact: FactId) {
   }));
 }
 
+// A kanji/radical MEANING keeps two cards. jp→en is a typed English recall; its
+// MC sibling is dropped (Rule B: the typed card carries the Show-choices button).
+// en→jp survives as MC because the glyph is the target and a glyph cannot be
+// romaji-typed, so it has no typed sibling to defer to.
 const MEANING_SHAPES = [
   {
     source: "japanese",
@@ -56,13 +60,6 @@ const MEANING_SHAPES = [
     listen: false,
     dir: "jp2en",
     control: "typed",
-  },
-  {
-    source: "japanese",
-    response: "definition",
-    listen: false,
-    dir: "jp2en",
-    control: "mc",
   },
   {
     source: "english",
@@ -73,6 +70,8 @@ const MEANING_SHAPES = [
   },
 ];
 
+// A kanji READING (anchored, jp→en only) is a typed card. Its MC sibling is
+// dropped by Rule B, leaving the single anchored text → kana typed control.
 const READING_SHAPES = [
   {
     source: "japanese",
@@ -81,17 +80,10 @@ const READING_SHAPES = [
     dir: "jp2en",
     control: "typed",
   },
-  {
-    source: "japanese",
-    response: "romaji",
-    listen: false,
-    dir: "jp2en",
-    control: "mc",
-  },
 ];
 
 describe("question matrix §2: kanji and radicals", () => {
-  test("every kanji and radical meaning has exactly the three documented forms", () => {
+  test("every kanji and radical meaning has exactly the two documented forms", () => {
     assert.ok(kanjiMeanings.length > 0);
     assert.ok(radicalFacts.length > 0);
     for (const fact of [...kanjiMeanings, ...radicalFacts]) {
@@ -99,7 +91,7 @@ describe("question matrix §2: kanji and radicals", () => {
     }
   });
 
-  test("every kanji reading has only anchored text → kana typed/MC", () => {
+  test("every kanji reading has only anchored text → kana typed", () => {
     assert.ok(kanjiReadings.length > 0);
     for (const fact of kanjiReadings) {
       assert.deepEqual(shape(fact), READING_SHAPES, fact);

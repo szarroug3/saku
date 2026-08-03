@@ -33,42 +33,29 @@
 // Nothing here re-derives the weld or the order. The sequence says what must be
 // true; this file only decides where the cuts fall.
 //
-// WHAT A WORD COSTS, AND WHY IT IS NOT A STROKE COUNT
-// ===================================================
-// The kanji cost model (kanjiCost / radicalCost in kanji-lesson.ts) measures
-// DRAW AND ASSEMBLY: how many known pieces to place, plus how many strokes are
-// left to draw from scratch. It is the right axis for a shape and it is the
-// wrong axis for a word. 電車 is 21 strokes and not one of them is new work: 電
-// and 車 are prerequisites, taught earlier in this same sequence, so by the time
-// the word arrives there is nothing left to learn to draw. Costing a word by its
-// strokes would price 電車 at four kanji and price あなた at nothing, and neither
-// number is about the work the learner actually does, which is attaching a
-// meaning and a reading to shapes they already have.
+// WHAT AN ITEM COSTS: READING-UNITS, NOT STROKES
+// ==============================================
+// The old cost model (kanjiCost / radicalCost in kanji-lesson.ts) measured DRAW
+// AND ASSEMBLY: how many known pieces to place, plus how many strokes are left to
+// draw from scratch. It is the right axis for learning to WRITE a shape and the
+// wrong axis for a lesson budget that is really counting how much there is to
+// KNOW. So the budget now costs an item in READING-UNITS, the owner's difficulty
+// model (see src/lib/difficulty.ts): 1 for a radical meaning, 1 for a kanji
+// meaning, and one per reading-unit for the word (a reading plus the union of the
+// glosses read that way — "day, days" under one reading is 1, 日's ひ and か are
+// 2). The number is summed across every role the item plays and is a property of
+// the glyph, the same whatever context prices it.
 //
-// So a word costs a FLAT amount, and the amount is not invented here. The app
-// already shipped two budgets for one sitting, and they are the two halves of
-// the answer:
+// A FOLDED ITEM PAYS FOR EVERY ROLE. 山 is a radical, a kanji and a word in one
+// item (see curriculum-order.ts), and teaching it is genuinely all of that work:
+// its facts go into the drill. So its cost is radical(1) + kanji(1) + its word's
+// reading-units, never one of the three. 日 is 1 + 1 + 2 = 4. This is exactly
+// rolesDifficulty over the item's own roles, so the packer and glyphDifficulty
+// price a glyph identically by construction.
 //
-//   the kanji track    a sitting is LESSON_RANGE_DEFAULT.max = 12 cost
-//   the words track    a sitting is WORDS_PER_LESSON_DEFAULT = 6 words
-//
-// Both were set by the owner, describing the same length of sitting in two
-// units, so the exchange rate between the units is already decided: 12 cost buys
-// 6 words, and one word is 2. WORD_COST is that division, so it is not a third
-// number to keep in step: a change to either default carries through, and the
-// two budgets cannot quietly fall out of agreement.
-//
-// The two defaults, not the live config. This is a conversion between units, not
-// a lesson length: a learner who drags the cost slider to 20 is asking for a
-// longer sitting, not for a word to become worth more of one.
-//
-// A FOLDED ITEM PAYS FOR BOTH ROLES. 山 is a radical, a kanji and a word in one
-// item (see curriculum-order.ts), and teaching it is genuinely the drawing work
-// AND the word: three facts go into the drill. So an item's cost is its shape
-// cost plus, when it carries the word role, WORD_COST. The shape cost follows
-// what the kanji track already did: a both-role character is priced as its
-// kanji (kanjiCost), never charged twice, and only a radical-only shape is
-// priced as a radical.
+// WORD_COST is kept for the settings math that still reads the two sitting-length
+// budgets against each other, but it no longer prices a word here: a word costs
+// its reading-unit count, not a flat exchange rate.
 //
 // THE WORD GATE IS GONE, BECAUSE THE ORDER ATE IT
 // ===============================================
@@ -92,10 +79,9 @@ import { radicalByGlyph, radicalMeaningFactId } from "@/data/radicals";
 import {
   isKanaWord,
   vocabRow,
-  wordMeaningFactId,
-  wordReadingFactId,
+  wordUnitFacts,
 } from "@/data/vocab";
-import { kanjiCost, radicalCost } from "@/lib/kanji-lesson";
+import { rolesDifficulty } from "@/lib/difficulty";
 import {
   CURRICULUM_SEQUENCE,
   type CurriculumItem,
@@ -110,12 +96,13 @@ import type { CompositePosition, LessonPosition } from "@/lib/lesson-position";
 import type { FactId, HistoryFile } from "@/types";
 
 /**
- * What one word costs a lesson, in the kanji track's cost units.
+ * The app's two sitting-length budgets divided into each other: 12 cost per
+ * sitting over 6 words per sitting is 2. Floored at 1.
  *
- * The app's two sitting-length budgets, divided into each other: 12 cost per
- * sitting over 6 words per sitting is 2. See the header for why it is a division
- * and not a declared number. Floored at 1 so a hand-edited default can never
- * price a word at nothing and let one lesson swallow the whole vocabulary.
+ * No longer what a word costs a lesson — that is now its reading-unit count (see
+ * costOf and src/lib/difficulty.ts). Kept as an export because the settings math
+ * still reconciles the two budgets through it, and removing it would silently
+ * change that number.
  */
 export const WORD_COST = Math.max(
   1,
@@ -226,32 +213,34 @@ function countsAsRadical(roles: readonly CurriculumRole[]): boolean {
  * The shape's meaning comes first when there is one, because that is what the
  * character IS; the word's meaning and reading follow. A both-role character
  * mints BOTH the kanji meaning fact and the radical meaning fact, so a radical
- * definition can still be quizzed when it differs from the kanji meaning. A
- * kana word has no reading fact, because it is its own reading (see
- * buildVocabFacts).
+ * definition can still be quizzed when it differs from the kanji meaning.
+ *
+ * The word role teaches EVERY reading-unit, not just the primary one: 日 is
+ * taught (and drilled) as both ひ (day) and か (a day-counter), each its own
+ * scored skill. `wordUnitFacts` is the one enumeration `buildVocabFacts` mints
+ * from, so this teaches exactly the registry's facts for the word. Meaning
+ * before reading within each unit, primary unit first; a kana word has no
+ * reading fact, because it is its own reading (see buildVocabFacts).
  */
 function factsOf(item: CurriculumItem): FactId[] {
   const facts: FactId[] = [];
   if (item.roles.includes("kanji")) facts.push(meaningFactId(item.glyph));
   if (item.roles.includes("radical")) facts.push(radicalMeaningFactId(item.glyph));
   if (item.roles.includes("word")) {
-    facts.push(wordMeaningFactId(item.glyph));
-    const row = vocabRow(item.glyph);
-    if (row && !isKanaWord(row)) facts.push(wordReadingFactId(item.glyph));
+    for (const { reading, meaning } of wordUnitFacts(item.glyph)) {
+      facts.push(meaning);
+      if (reading) facts.push(reading);
+    }
   }
   return facts;
 }
 
-/** What the item costs. The shape priced by the kanji track's own model, plus a
- * flat WORD_COST when the item is also a word. See the header. */
+/** What the item costs the lesson budget: its reading-unit difficulty, summed
+ * over every role it plays (radical 1, kanji 1, word one per reading-unit). The
+ * item's own `roles`, so this is glyphDifficulty for the same glyph by
+ * construction. See src/lib/difficulty.ts. */
 function costOf(item: CurriculumItem): number {
-  let cost = 0;
-  if (item.roles.includes("kanji")) cost += kanjiCost(item.glyph);
-  else if (item.roles.includes("radical")) {
-    cost += radicalCost(radicalByGlyph(item.glyph)?.num ?? 0);
-  }
-  if (item.roles.includes("word")) cost += WORD_COST;
-  return cost;
+  return rolesDifficulty(item.roles, item.glyph);
 }
 
 /** What to print under the glyph. The kanji's meaning when there is one, because

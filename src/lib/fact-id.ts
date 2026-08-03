@@ -47,6 +47,18 @@ export function readingAspect(inWord: string): string {
 }
 
 /**
+ * The aspect for a word's MEANING in one of its readings — `meaning@ひ`. A word
+ * with several readings means different things read different ways (日 is "day"
+ * read ひ, a day-counter read か), so "what does 日 mean?" needs to say which
+ * reading, exactly as a kanji reading needs to say which word. The PRIMARY
+ * reading keeps the bare `meaning` aspect (the key history already holds); the
+ * others qualify. Same additive split as `productionAspect`.
+ */
+export function meaningAspect(inReading: string): string {
+  return `meaning@${inReading}`;
+}
+
+/**
  * The aspect for PRODUCING a form, qualified by the host it is produced on.
  *
  * Same shape as `readingAspect` and for the same reason. "Build the 〜そう form"

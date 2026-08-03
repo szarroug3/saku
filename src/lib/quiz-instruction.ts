@@ -41,7 +41,7 @@
 
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
-import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
+import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { grammarProduction } from "@/data/grammar";
 import { patternLabel } from "@/data/grammar/recipes";
 import { answerIsJapanese } from "@/lib/engine/question";
@@ -205,5 +205,5 @@ export function isSound(fact: FactId, dir: Direction): boolean {
   if (dir === "jp2en") return true;
   const info = factInfo(fact);
   if (!info || info.subject !== VOCAB_SUBJECT) return false;
-  return wordReadingFactId(info.glyph) === fact;
+  return isWordReadingFact(fact);
 }

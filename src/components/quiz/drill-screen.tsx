@@ -58,6 +58,7 @@ import {
   retriesAllowed,
   revealFor,
   shuffle,
+  spread,
   type GrammarSelection,
   type GrammarVehicle,
   type PromptContext,
@@ -174,6 +175,27 @@ interface DrillQuestion {
    * is, which is already what "did not nail it" means everywhere in this app.
    */
   hinted: boolean;
+  /**
+   * Whether the learner pressed "Show choices" on this showing, converting the
+   * text box into the multiple-choice board for the same fact.
+   *
+   * Per SHOWING, exactly like `hinted` — set flat at construction so nextQuestion
+   * rebuilds it clean and a remount cannot carry a stale true. It COSTS the same
+   * as a hint and nothing more: the first-try "nailed it" credit (see submit),
+   * never a retry pip, never anything persisted. It is deliberately NOT `hinted`:
+   * `hinted` also disables the Hint button and opens the mnemonic drawer, and
+   * seeing the choices should do neither.
+   */
+  choicesShown: boolean;
+  /**
+   * The board "Show choices" would convert this text card into — precomputed
+   * ONCE here at ask time, not rebuilt in render (a typed card re-renders on
+   * every keystroke, and rebuilding would both waste work and reshuffle the
+   * options under the cursor). null when this card is already a board
+   * (mc/recognition) or when the fact yields ≤1 option, which is not a question;
+   * the button is hidden in both cases. Plain FactId[], so it rides the
+   * serialized runtime. */
+  choicesBoard: FactId[] | null;
   /**
    * The ENTRY a wrong answer on this showing named — what they said INSTEAD.
    * Null until a miss resolves one, and null for most misses (see
@@ -473,6 +495,27 @@ export function DrillScreen() {
     force();
   }
 
+  /** Show the multiple-choice board on a card currently shown as a text box,
+   * converting it in place. Mirrors takeHint's guards and, like a hint, FORFEITS
+   * the first-try credit and nothing else (see submit) — but through its own
+   * `choicesShown` flag, never `hinted`, so it neither disables the Hint button
+   * nor opens the mnemonic drawer. Idempotent, and refused once the card is a
+   * board or has resolved. Never touches `q.tries`: a pip is a separate cost. */
+  function showChoices() {
+    if (!rt || !rt.q || rt.waiting || finishedRef.current) return;
+    // Already a board (or a card that was drawn as one) — nothing to convert.
+    if (rt.q.mc || rt.q.recognition || rt.q.choicesShown) return;
+    // The board was precomputed at ask time; the ≤1 guard is defense in depth —
+    // a one-option board is not a question, so do nothing (no forfeit either).
+    const board = rt.q.choicesBoard;
+    if (!board || board.length <= 1) return;
+    rt.q.mc = board;
+    rt.q.mcFonts =
+      rt.q.dir === "en2jp" ? board.map(() => pickFont(cfg.fonts)) : null;
+    rt.q.choicesShown = true;
+    force();
+  }
+
   function stopCountdown() {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -532,7 +575,7 @@ export function DrillScreen() {
         endQuiz();
         return;
       }
-      rt.deck = rt.deck.concat(shuffle(rt.pool.slice()));
+      rt.deck = rt.deck.concat(spread(rt.pool.slice(), entryOf));
       rt.forms = rt.forms.concat(rt.pool.map(() => null));
     }
     const f = rt.deck[rt.pos];
@@ -654,6 +697,16 @@ export function DrillScreen() {
           ? null
           : buildMcOptions(f, dir, ctx, confusionKnownFacts(history));
     const mc = built && built.length > 1 ? built : null;
+    // The board "Show choices" would convert this text card into, built ONCE now
+    // with the SAME call the MC ask path uses above, so a click swaps the box for
+    // a board with no reshuffle and no per-keystroke rebuild. Only a typed card
+    // can convert (a card already MC/recognition is one), and a ≤1-option board
+    // is not a question, so both cases store null and hide the button.
+    const choicesBuilt = typedMode
+      ? buildMcOptions(f, dir, ctx, confusionKnownFacts(history))
+      : null;
+    const choicesBoard =
+      choicesBuilt && choicesBuilt.length > 1 ? choicesBuilt : null;
     rt.q = {
       f,
       form,
@@ -671,6 +724,10 @@ export function DrillScreen() {
       // A new showing has not been hinted. Written here rather than backfilled,
       // so there is exactly one place a showing's hint state begins.
       hinted: false,
+      // No choices have been shown on a new showing. Written flat here for the
+      // same reason `hinted` is: one place a showing's help state begins.
+      choicesShown: false,
+      choicesBoard,
       // Nothing has been said instead of this card's answer yet. Same rule.
       confused: null,
     };
@@ -760,7 +817,7 @@ export function DrillScreen() {
     // with a hint is the third outcome: seen, correct, not first-try — which is
     // an existing shape, not a new one (it is what a second-try success already
     // records), so nothing about the persisted file or the standings changes.
-    const credit = firstTryCredit(ok, q.tries, q.hinted);
+    const credit = firstTryCredit(ok, q.tries, q.hinted || q.choicesShown);
     if (ok) {
       // The showing RESOLVED. `seen`, the flag, the first-try count and the
       // forgiving numerator all advance in one call so they cannot drift into
@@ -1858,6 +1915,20 @@ export function DrillScreen() {
                   title="Hint (?)"
                 >
                   Hint
+                </Btn>
+              ) : null}
+              {/* Only on a card still shown as a text box (typedMode) that has a
+                  real board to offer (precomputed at ask time; null when ≤1
+                  option) and has not already been converted. Separate from Hint:
+                  it forfeits the same first-try credit but through choicesShown,
+                  not hinted, so it never opens the mnemonic drawer. */}
+              {typedMode && q.choicesBoard && !q.choicesShown ? (
+                <Btn
+                  className="w-20"
+                  onClick={showChoices}
+                  title="Show choices"
+                >
+                  Choices
                 </Btn>
               ) : null}
             </span>

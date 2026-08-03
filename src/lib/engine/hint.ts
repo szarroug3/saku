@@ -52,7 +52,7 @@ import {
 } from "@/data/grammar";
 import { KANJI_SUBJECT, READING_INDEX, kanjiRow } from "@/data/kanji";
 import { getMnemonic } from "@/data/mnemonics";
-import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
+import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { FORM_LABEL, attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { adjectiveKindOf, ruVerbKindOf } from "@/lib/word-forms";
 import type { GrammarVehicle } from "./question";
@@ -231,7 +231,7 @@ function wordHint(
 ): Hint | null {
   if (dir !== "jp2en") return null;
   // Reading facts decline outright, before any decomposition is attempted.
-  if (wordReadingFactId(glyph) === fact) return null;
+  if (isWordReadingFact(fact)) return null;
   // The component breakdown, built once and used by both showings — "電 is
   // electricity, 話 is tale" for a multi-kanji word, null otherwise (see
   // componentMeanings for the ≥2-kanji / every-kanji-or-none rules).

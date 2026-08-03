@@ -11,6 +11,7 @@ import {
   type PromptContext,
 } from "@/lib/engine/question";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
+import { spread } from "@/lib/engine/spread";
 import type {
   Direction,
   EntryId,
@@ -69,6 +70,10 @@ export function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
+// spread lives in ./spread (a zero-import leaf) so ask-forms can use it without
+// pulling this barrel; re-exported here so @/lib/engine consumers are unchanged.
+export { spread };
+
 /**
  * Build the starting deck for drill/pairs from the selected FACTS,
  * honoring length=limited + limType=count.
@@ -97,7 +102,12 @@ export function buildDeck(facts: FactId[], cfg: QuizConfig): FactId[] {
     }
     deck = deck.slice(0, cfg.limCount);
   }
-  return deck;
+  // Spread AFTER the count-fill: count mode concatenates whole shuffled copies
+  // of the fact list, so a fact's repeats share an entry and must be pushed
+  // apart too, not just its sibling cards. Keying on entryOf keeps any two cards
+  // of the same word (reading/meaning, and a word's per-reading cards) from
+  // landing adjacent.
+  return spread(deck, entryOf);
 }
 
 /** Random requeue gap: BEHAVIOR.requeueMin–requeueMax inclusive. */

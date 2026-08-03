@@ -30,9 +30,9 @@
 // ぬし are four genuine words), so the plural case stays and no "there is only
 // one" assumption is baked in anywhere below.
 //
-// One reading is still the one the quiz asks, and the foot says so whenever
-// there is more than one on show, because a screen that lists four readings and
-// then grades one of them without warning is a trap.
+// Every reading on show is a reading the quiz asks. Each one, with its meaning,
+// is its own scored skill, so listing all of them here promises nothing the
+// drill will not honour, and there is no "first reading only" caveat to print.
 
 import { HearButton } from "@/components/lesson/hear-button";
 import { LessonPanel } from "@/components/lesson/lesson-panel";
@@ -143,10 +143,6 @@ export function WordSensePanel({
           </tbody>
         </table>
       </div>
-      <p className="mt-auto pt-2.5 text-[11px] leading-relaxed text-text-muted/80">
-        The first reading is the one you will be asked for. The others are here
-        because you will meet them, not because they are on the quiz.
-      </p>
     </LessonPanel>
   );
 }

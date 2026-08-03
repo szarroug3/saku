@@ -129,21 +129,32 @@ test("jp2en typed: a kana reading is accepted in romaji", async ({
 
 /**
  * The other direction, where the learner must PRODUCE the Japanese. The app
- * live-converts romaji to kana in this box, so both spellings must land — and
- * the kana leg must work for someone typing with a real IME, who never sends
- * romaji at all.
+ * live-converts romaji to kana in this box (drill-screen's `romajiInput`, which
+ * is on for every en2jp typed card), so both spellings must land — and the kana
+ * leg must work for someone typing with a real IME, who never sends romaji at
+ * all.
  *
- * The vehicle is the WORD これ, not the character あ. These three cases used to
- * ride on `kana:あ/reading`, and that stopped being an honest home for them: a
- * kana CHARACTER asked en2jp used to be prompted with its own romaji ("a"), so
- * the romaji case below was literally "type the prompt back and be marked
- * right". That direction is no longer generated because Romaji is never a
- * prompt source (see kana-en2jp-mc.spec.ts).
+ * The vehicle is a KEIGO PRODUCTION fact, `keigo:eat/meshiagaru`, not a word.
+ * These three cases used to ride on `word:これ/meaning`, and a word stopped being
+ * an honest home for them: WORDS are jp→en only now (`wordQuestions.fixedDir =
+ * "jp2en"` in engine/question.ts), so a word fact no longer generates an en2jp
+ * typed card at all — the old これ card simply never appears, and every seed of it
+ * timed out waiting for a box that the config can no longer emit.
  *
- * これ keeps every claim intact and makes the romaji one true instead of
- * circular: it is prompted "this", it is answered これ, and "kore" is the
- * IME-less spelling of the ANSWER rather than a copy of the question. That is
- * exactly the forgiveness checkProduces exists to give, tested where it is real.
+ * Keigo production is a real, still-generated en2jp typed card and keeps every
+ * claim intact. Shown the English/register cue "eat / drink (honorific)", the
+ * learner produces the honorific verb, whose answer is the kana めしあがる. The
+ * card renders a TYPED box (not a board): keigo is `mcOnly: "jp2en"` only, and
+ * めしあがる is all kana so `en2jpTypeable` is true. "meshiagaru" is the IME-less
+ * spelling of the ANSWER, not a copy of the prompt (the prompt is English), so
+ * the romaji case is true forgiveness rather than typing the question back.
+ *
+ * One honesty note the brief itself missed: keigo's own grader does an EXACT
+ * kana/glyph match (see keigoQuestions.check), so the romaji here is forgiven by
+ * the box's live romaji→kana transform, not by the grader's romajiMatches. That
+ * is the same mechanism this comment has always described for en2jp, and the
+ * grader's romajiMatches leg is still exercised directly by the jp2en "meihaku"
+ * case above, where the box does NOT convert.
  */
 const PRODUCE_CFG = {
   ...STEADY_CFG,
@@ -151,7 +162,7 @@ const PRODUCE_CFG = {
   ...style("en2jp", "typed"),
 };
 
-const PRODUCE_FACT = "word:これ/meaning";
+const PRODUCE_FACT = "keigo:eat/meshiagaru";
 
 test("en2jp typed: the kana typed directly is accepted", async ({
   page,
@@ -159,7 +170,7 @@ test("en2jp typed: the kana typed directly is accepted", async ({
 }) => {
   await seed({ seen: [PRODUCE_FACT], cfg: PRODUCE_CFG });
   await startPractice(page);
-  await typeAnswer(page, "これ");
+  await typeAnswer(page, "めしあがる");
   await expectAccepted(page);
 });
 
@@ -169,7 +180,9 @@ test("en2jp typed: the same answer typed in romaji is accepted", async ({
 }) => {
   await seed({ seen: [PRODUCE_FACT], cfg: PRODUCE_CFG });
   await startPractice(page);
-  await typeAnswer(page, "kore");
+  // Latin typed into the live-converting box: "meshiagaru" becomes めしあがる in
+  // the field, and that spells the ANSWER, not the English prompt.
+  await typeAnswer(page, "meshiagaru");
   await expectAccepted(page);
 });
 
@@ -439,18 +452,23 @@ test("reveal on a no-confusables kanji, where MC falls back to a typed box, name
   await expect(r.prompt).toHaveText("one");
 });
 
-test("reveal after a wrong en2jp answer names the word that was asked for", async ({
+test("reveal after a wrong en2jp answer names the keigo verb that was asked for", async ({
   page,
   seed,
 }) => {
-  // "there in japanese = there". あそこ is all kana, so this one IS typed — and
-  // a typed card holds its reveal until Enter, so nothing here races a timer.
-  await seed({ seen: ["word:あそこ/meaning"], cfg: PRODUCE_CFG });
+  // The keigo production vehicle (see PRODUCE_FACT): shown the cue "eat / drink
+  // (honorific)", the answer is the honorific verb めしあがる. Its answer is all
+  // kana so this card IS typed — and a typed card holds its reveal until Enter,
+  // so nothing here races a timer. This used to seed `word:あそこ/meaning`, which
+  // no longer yields an en2jp card because words are jp→en only now.
+  await seed({ seen: [PRODUCE_FACT], cfg: PRODUCE_CFG });
   await startPractice(page);
   await typeAnswer(page, "ぬ");
 
   const r = reveal(page);
   await expect(r.box).toBeVisible();
-  await expect(r.answer).toHaveText("あそこ");
-  await expect(r.prompt).toHaveText("there");
+  // The miss must name what was ASKED (the verb), not re-print the English cue
+  // that was shown.
+  await expect(r.answer).toHaveText("めしあがる");
+  await expect(r.prompt).toHaveText("eat / drink (honorific)");
 });

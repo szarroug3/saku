@@ -16,7 +16,7 @@
 // from `nounFor`, the same word the drill instruction uses ("radical" for a
 // radical, the word the curriculum teaches it by), so the two never drift.
 
-import { VOCAB_SUBJECT, wordReadingFactId } from "@/data/vocab";
+import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { KANJI_SUBJECT } from "@/data/kanji";
 import { factInfo } from "@/lib/facts";
 import { nounFor } from "@/lib/quiz-instruction";
@@ -29,7 +29,8 @@ import type { FactId } from "@/types";
  * pattern) and the aspect would be noise.
  *
  * Decided by lookup, not by parsing the id: `isReadingFact` owns the kanji
- * reading facts, and a word's reading fact is the one `wordReadingFactId` mints.
+ * reading facts, and `isWordReadingFact` owns the word reading facts (primary
+ * and qualified alike, by membership — not the primary-only `wordReadingFactId`).
  * Anything else on a subject that HAS two aspects (kanji, word) is its meaning.
  */
 export function aspectOf(fact: FactId): "meaning" | "reading" | null {
@@ -38,7 +39,7 @@ export function aspectOf(fact: FactId): "meaning" | "reading" | null {
   // A word-anchored kanji reading (kanji:生/reading@学生).
   if (isReadingFact(fact)) return "reading";
   if (info.subject === VOCAB_SUBJECT) {
-    return wordReadingFactId(info.glyph) === fact ? "reading" : "meaning";
+    return isWordReadingFact(fact) ? "reading" : "meaning";
   }
   // A kanji's remaining (non-reading) fact is its meaning.
   if (info.subject === KANJI_SUBJECT) return "meaning";

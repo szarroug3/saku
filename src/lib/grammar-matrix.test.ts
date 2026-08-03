@@ -110,9 +110,12 @@ describe("question matrix §5: grammar", () => {
     }
   });
 
-  test("every production fact has only text-vehicle typed/MC production", () => {
+  test("every production fact has only text-vehicle typed production", () => {
     assert.ok(productions.length > 0);
     for (const fact of productions) {
+      // Production is jp→en only (the answer IS Japanese, so candidateDirs pins
+      // it there). It had a typed and an MC card; the MC one is dropped by Rule B
+      // because the produced kana form is typeable, leaving one typed card.
       assert.equal(answerIsJapanese(fact, "jp2en"), true, fact);
       assert.deepEqual(
         shape(fact),
@@ -123,13 +126,6 @@ describe("question matrix §5: grammar", () => {
             listen: false,
             dir: "jp2en",
             control: "typed",
-          },
-          {
-            source: "japanese",
-            response: "romaji",
-            listen: false,
-            dir: "jp2en",
-            control: "mc",
           },
         ],
         fact,

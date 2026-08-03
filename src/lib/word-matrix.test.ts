@@ -40,6 +40,12 @@ function shape(fact: FactId) {
   }));
 }
 
+// A word MEANING is asked only jp→en (Rule A: words are jp2en only, one card per
+// fact per reading-unit). The card shows the glyph and reading and asks the
+// English meaning. Text and Audio are its two prompts; the separate MC board is
+// gone (Rule B: a typed card carries the Show-choices button, so the redundant
+// MC sibling of a typed jp→en card is dropped). What survives is exactly the two
+// typed jp→en cards: visual and, because a word is listenable, audio.
 const JP_MEANING = [
   {
     source: "japanese",
@@ -51,69 +57,35 @@ const JP_MEANING = [
   {
     source: "japanese",
     response: "definition",
-    listen: false,
-    dir: "jp2en",
-    control: "mc",
-  },
-  {
-    source: "japanese",
-    response: "definition",
     listen: true,
     dir: "jp2en",
     control: "typed",
   },
-  {
-    source: "japanese",
-    response: "definition",
-    listen: true,
-    dir: "jp2en",
-    control: "mc",
-  },
 ];
 
-const KANJI_MEANING_SHAPES = [
-  ...JP_MEANING,
-  {
-    source: "english",
-    response: "japanese",
-    listen: false,
-    dir: "en2jp",
-    control: "mc",
-  },
-];
+// A WRITTEN word meaning is just those two jp→en typed cards. The old en→jp
+// "produce the written form" MC is gone by Rule A (no en2jp word card at all).
+const WRITTEN_MEANING_SHAPES = [...JP_MEANING];
 
+// A KANA-ONLY word carries the same two jp→en meaning cards PLUS the deliberate
+// audio-dictation exception (isKanaOnlyWordMeaningFact): hear これ, type これ. Its
+// MC sibling is dropped by Rule B because the kana target is typeable, leaving a
+// single typed dictation card. There is no en→jp English-recall card any more
+// (Rule A) and no separate reading fact.
 const KANA_MEANING_SHAPES = [
   ...JP_MEANING,
   {
-    source: "english",
-    response: "japanese",
-    listen: false,
-    dir: "en2jp",
-    control: "typed",
-  },
-  {
-    source: "english",
-    response: "japanese",
-    listen: false,
-    dir: "en2jp",
-    control: "mc",
-  },
-  {
     source: "japanese",
     response: "japanese",
     listen: true,
     dir: "en2jp",
     control: "typed",
-  },
-  {
-    source: "japanese",
-    response: "japanese",
-    listen: true,
-    dir: "en2jp",
-    control: "mc",
   },
 ];
 
+// A written word READING is asked only jp→en (Rule A): show the glyph and
+// definition, ask the kana reading. Text and Audio prompts give two typed cards;
+// the MC siblings are dropped by Rule B and the old en→jp cards by Rule A.
 const READING_SHAPES = [
   {
     source: "japanese",
@@ -125,37 +97,9 @@ const READING_SHAPES = [
   {
     source: "japanese",
     response: "romaji",
-    listen: false,
-    dir: "jp2en",
-    control: "mc",
-  },
-  {
-    source: "japanese",
-    response: "romaji",
     listen: true,
     dir: "jp2en",
     control: "typed",
-  },
-  {
-    source: "japanese",
-    response: "romaji",
-    listen: true,
-    dir: "jp2en",
-    control: "mc",
-  },
-  {
-    source: "english",
-    response: "japanese",
-    listen: false,
-    dir: "en2jp",
-    control: "typed",
-  },
-  {
-    source: "english",
-    response: "japanese",
-    listen: false,
-    dir: "en2jp",
-    control: "mc",
   },
 ];
 
@@ -176,15 +120,15 @@ describe("question matrix §3: words", () => {
     }
   });
 
-  test("every written word meaning has text/audio English recall and written-form MC", () => {
+  test("every written word meaning has exactly the two jp→en typed controls (text and audio)", () => {
     assert.ok(writtenWords.length > 0);
     for (const word of writtenWords) {
       const fact = wordMeaningFactId(word.keb);
-      assert.deepEqual(shape(fact), KANJI_MEANING_SHAPES, fact);
+      assert.deepEqual(shape(fact), WRITTEN_MEANING_SHAPES, fact);
     }
   });
 
-  test("every written word reading has exactly the six documented controls", () => {
+  test("every written word reading has exactly the two documented controls", () => {
     for (const word of writtenWords) {
       const fact = wordReadingFactId(word.keb);
       assert.deepEqual(shape(fact), READING_SHAPES, fact);

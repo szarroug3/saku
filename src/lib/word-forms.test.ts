@@ -17,11 +17,13 @@ import { SUPPORTED_CLASSES } from "@/lib/conjugate";
 import {
   POS_TO_CLASS,
   adjectiveKind,
+  adjectiveKindOf,
   formsOfWord,
   groupsFor,
   hasForms,
   isIntransitive,
   ruVerbKind,
+  ruVerbKindOf,
   wordClassOf,
   wordFormKind,
 } from "@/lib/word-forms";
@@ -225,4 +227,19 @@ test("POS_TO_CLASS names only strings that occur in vocab.json", () => {
   const seen = new Set(VOCAB.flatMap((w) => w.pos));
   const dead = Object.keys(POS_TO_CLASS).filter((p) => !seen.has(p));
   assert.deepEqual(dead, [], `pos strings in the map that vocab.json never uses: ${dead.join(" · ")}`);
+});
+
+test("an IRREGULAR verb/adjective class gets NO paradigm label — naming a rule that does not produce its form would mislead", () => {
+  // The drill labels an unknown vehicle by its class ("this う-verb" / "this
+  // い-adjective") so the learner knows how to conjugate. But the irregulars break
+  // their own paradigm's rule — ある's negative is ない (not あらない), いい's て-form
+  // is よくて (not いくて) — so a paradigm label would point at the wrong rule. They
+  // must return null, exactly as 行く/する/来る already do, and be taught by their
+  // reveal instead.
+  assert.equal(ruVerbKindOf("ある", "v5r-i"), null, "ある is an irregular godan-る");
+  assert.equal(adjectiveKindOf("adj-ix"), null, "いい is an irregular い-adjective");
+  // The regular classes still get their label, so a plain 高い / 帰る stays labelled.
+  assert.equal(ruVerbKindOf("帰る", "v5r"), "う-verb");
+  assert.equal(adjectiveKindOf("adj-i"), "い-adjective");
+  assert.equal(adjectiveKindOf("adj-na"), "な-adjective");
 });

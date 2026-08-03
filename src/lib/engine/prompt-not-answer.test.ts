@@ -25,7 +25,13 @@ import { describe, test } from "node:test";
 import { GRAMMAR_SUBJECT } from "../../data/grammar/index.ts";
 import { KANA_SUBJECT } from "../../data/characters.ts";
 import { KANJI_SUBJECT } from "../../data/kanji.ts";
-import { VOCAB_SUBJECT } from "../../data/vocab.ts";
+import {
+  VOCAB_SUBJECT,
+  readingUnits,
+  vocabRow,
+  wordUnitMeaningFactId,
+  wordUnitReadingFactId,
+} from "../../data/vocab.ts";
 import { ALL_FACTS, factInfo } from "../facts.ts";
 import { questionsFor } from "./question.ts";
 import type { Direction, FactId } from "@/types";
@@ -137,5 +143,62 @@ describe("the two shapes that do NOT hold it yet", () => {
     // The full grammar recipe table, including the standalone adjective noun
     // form, carries one meaning card per recipe.
     assert.equal(inSubject(GRAMMAR_SUBJECT).length, 101);
+  });
+});
+
+describe("a multi-reading word's cards show the other axis, and grade neither of it", () => {
+  // The per-unit word model gives a word more than one card, and the QUALIFIED
+  // non-primary units (word:日/reading@にち) are the new shape the VIOLATIONS walk
+  // above only reaches in bulk. Pinned here on a concrete multi-reading word so
+  // the invariant is spelled out for the shape, not just aggregated over 21.7k
+  // facts: each card shows the glyph and, as CONTEXT, the OTHER half of the unit,
+  // and the grader accepts neither the glyph nor that context — only the answer.
+  //
+  // 日 has two reading-units, ひ (day) and にち (Sunday); にち is the non-primary,
+  // qualified one. Derived from the row so the case survives the glosses moving.
+  const KEB = "日";
+  const units = readingUnits(vocabRow(KEB)!);
+  const nonPrimary = units[1]; // にち — qualified, the new-shape unit
+  const readingFact = wordUnitReadingFactId(KEB, nonPrimary.reb);
+  const meaningFact = wordUnitMeaningFactId(KEB, nonPrimary.reb);
+
+  test("the word really has a qualified second reading-unit to test", () => {
+    assert.ok(units.length >= 2, `${KEB} is no longer multi-reading — pick another`);
+    assert.ok(nonPrimary.reb !== units[0].reb, "the second unit repeats the primary");
+  });
+
+  test("the reading card shows the definition as context, and grades only the reading", () => {
+    // Reading card (day → ひ shape): glyph + the union of glosses read this way,
+    // asking for the kana. The context is the DEFINITION, not the reading, so
+    // showing it cannot leak the answer.
+    const q = questionsFor(readingFact);
+    const p = q.prompt(readingFact, "jp2en");
+    assert.equal(p.glyph, KEB, "the reading card shows the written word");
+    assert.equal(
+      p.context,
+      nonPrimary.glosses.join(", "),
+      "the reading card's context is the definition it is read as",
+    );
+    assert.ok(p.context !== nonPrimary.reb, "context must not BE the reading answer");
+    // Neither what it shows grades as what it wants.
+    assert.ok(!q.check(readingFact, "jp2en", p.glyph), "the glyph must not grade");
+    assert.ok(!q.check(readingFact, "jp2en", p.context ?? ""), "the context must not grade");
+    // And the real answer still does, so this is a live card and not a broken one.
+    assert.ok(q.check(readingFact, "jp2en", nonPrimary.reb), "the reading must grade");
+  });
+
+  test("the meaning card shows the reading as context, and grades only the meaning", () => {
+    // Meaning card (ひ → day shape): glyph + the reading kana, asking for the
+    // gloss. The context is the READING, not the meaning.
+    const q = questionsFor(meaningFact);
+    const p = q.prompt(meaningFact, "jp2en");
+    assert.equal(p.glyph, KEB, "the meaning card shows the written word");
+    assert.equal(p.context, nonPrimary.reb, "the meaning card's context is the reading");
+    assert.ok(!q.check(meaningFact, "jp2en", p.glyph), "the glyph must not grade");
+    assert.ok(!q.check(meaningFact, "jp2en", p.context ?? ""), "the reading must not grade");
+    assert.ok(
+      q.check(meaningFact, "jp2en", nonPrimary.glosses[0]),
+      "the meaning must grade",
+    );
   });
 });

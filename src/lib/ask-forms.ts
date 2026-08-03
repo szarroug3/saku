@@ -29,9 +29,9 @@
 import {
   VOCAB_SUBJECT,
   isKanaWord,
+  isWordReadingFact,
   vocabRow,
   wordMeaningFactId,
-  wordReadingFactId,
 } from "@/data/vocab";
 import { KANA_SUBJECT } from "@/data/characters";
 import { grammarMeaning } from "@/data/grammar";
@@ -44,7 +44,8 @@ import {
   fixedDirOf,
   mcOnlyIn,
 } from "@/lib/engine/question";
-import { factInfo } from "@/lib/facts";
+import { entryOf, factInfo } from "@/lib/facts";
+import { spread } from "@/lib/engine/spread";
 import { listenKind } from "@/lib/listen";
 import type {
   AnswerStyle,
@@ -72,15 +73,6 @@ export interface CardForm {
   listen: boolean;
   dir: Direction;
   answer: AnswerStyle;
-}
-
-/** Whether a word READING fact — its jp→en answer is a kana reading, and its
- * en→jp shows the meaning and produces that reading (a real, distinct card). */
-function isWordReadingFact(fact: FactId): boolean {
-  const info = factInfo(fact);
-  return (
-    !!info && info.subject === VOCAB_SUBJECT && wordReadingFactId(info.glyph) === fact
-  );
 }
 
 /** Whether this fact is a kanji reading fact (keyed on kanji+anchor word). */
@@ -150,6 +142,35 @@ function candidateDirs(fact: FactId): Direction[] {
   if (fixed) return [fixed];
   if (answerIsJapanese(fact, "jp2en") && !isWordReadingFact(fact)) return ["jp2en"];
   return ["jp2en", "en2jp"];
+}
+
+/** Drop the redundant multiple-choice card when a typed one asks the same thing.
+ *
+ * Within each (source · response · listen · dir) group, a genuinely-TYPED form
+ * (formIsMc=false) and its explicit MC sibling (formIsMc=true) used to survive
+ * as two cards — a text box AND a separate board for the identical fact. They
+ * are the same question. The typed card now carries a "Show choices" button that
+ * turns it into that very board in place (see drill-screen), so the standalone
+ * MC card is pure redundancy: drop every mc-RESOLVED form whose group also holds
+ * a typed-RESOLVED one, and keep the typed.
+ *
+ * A group that is ALL-mc keeps its card — that is the ONLY way to ask it, not a
+ * duplicate of anything: kana en→jp (mcOnly), a kanji/word meaning en→jp whose
+ * written target can't be typed, a grammar-meaning selection. There is no typed
+ * sibling to defer to, so nothing is dropped; the existing `dedup` still
+ * collapses such a group to one card.
+ *
+ * Pure, like everything else here — a filter on (fact, forms). */
+function dropRedundantMc(fact: FactId, forms: CardForm[]): CardForm[] {
+  const groupKey = (f: CardForm) =>
+    `${f.source}|${f.response}|${f.listen ? 1 : 0}|${f.dir}`;
+  const typedGroups = new Set<string>();
+  for (const f of forms) {
+    if (!formIsMc(fact, f)) typedGroups.add(groupKey(f));
+  }
+  return forms.filter(
+    (f) => !(formIsMc(fact, f) && typedGroups.has(groupKey(f))),
+  );
 }
 
 /** Dedup forms on their RESOLVED shape (listen · dir · mc) so intents that
@@ -311,7 +332,11 @@ export function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[] {
   // cards in full-coverage runs; keep sentence forms to definition-selection
   // until sentence-specific romaji grading/prompting is distinct.
 
-  return dedup(fact, out);
+  // Collapse each typed+MC pair to the typed card (which now carries the
+  // Show-choices button) BEFORE the resolved-shape dedup, so a config enabling
+  // both answer formats no longer emits a text card and a redundant board for
+  // the same fact.
+  return dedup(fact, dropRedundantMc(fact, out));
 }
 
 /** A coverage deck: cards and their pinned forms, index-aligned. The drill
@@ -342,8 +367,14 @@ export function buildCoverageDeck(
   for (const f of facts) {
     for (const form of enabledFormsFor(f, ask)) pairs.push({ f, form });
   }
-  shuffle(pairs);
-  return { deck: pairs.map((p) => p.f), forms: pairs.map((p) => p.form) };
+  // Shuffle FIRST (honouring the injected shuffle so tests can pin the input
+  // order), THEN spread so no two cards of the same entry sit adjacent. A fact's
+  // several forms all name one entry, so full coverage clumps them worse than a
+  // plain deck; spreading on entryOf(pair.f) pulls them apart. Spread keeps the
+  // fact and its form together because it reorders whole pairs, never the arrays
+  // independently.
+  const ordered = spread(shuffle(pairs), (p) => entryOf(p.f));
+  return { deck: ordered.map((p) => p.f), forms: ordered.map((p) => p.form) };
 }
 
 function fisherYates<T>(a: T[]): T[] {

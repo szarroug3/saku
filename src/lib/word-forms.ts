@@ -134,7 +134,11 @@ export function ruVerbKindOf(
 ): "う-verb" | "る-verb" | null {
   if (!surface.endsWith("る")) return null;
   if (cls === "v1" || cls === "v1-s") return "る-verb";
-  if (cls && cls.startsWith("v5")) return "う-verb";
+  // Only a REGULAR godan class gets the label. An IRREGULAR godan-る (ある, v5r-i,
+  // whose negative is ない not あらない) has a hyphenated class, and naming it a
+  // plain "う-verb" would point the learner at the wrong rule — so it gets no
+  // label, exactly like 行く/する/来る, and the reveal teaches its form.
+  if (cls && cls.startsWith("v5") && !cls.includes("-")) return "う-verb";
   return null;
 }
 
@@ -144,7 +148,12 @@ export function ruVerbKindOf(
 export function adjectiveKindOf(
   cls: WordClass | null,
 ): "い-adjective" | "な-adjective" | null {
-  if (cls === "adj-i" || cls === "adj-ix") return "い-adjective";
+  // adj-ix (いい) is the IRREGULAR い-adjective — its stem is よ, so the plain
+  // "い-adjective" rule (drop い, add くて → いくて) gives the wrong answer (よくて).
+  // Like the irregular verbs 行く/する/来る, it carries NO paradigm label: naming a
+  // rule that does not produce its form would mislead. The card says "this word"
+  // and the reveal teaches よくて, exactly as a memorized exception should.
+  if (cls === "adj-i") return "い-adjective";
   return cls === "adj-na" ? "な-adjective" : null;
 }
 
@@ -152,7 +161,13 @@ export function adjectiveKindOf(
  * `ruVerbKind` because word lessons, Library pages, and the curriculum gate all
  * need the same answer from the same JMdict classification. */
 export function adjectiveKind(w: VocabRow): "い-adjective" | "な-adjective" | null {
-  return adjectiveKindOf(wordClassOf(w));
+  const cls = wordClassOf(w);
+  // The word PAGE classifies いい (adj-ix) as an い-adjective — that is what its
+  // Forms section is, even though its stem is irregular. This is a different
+  // question from the DRILL's `adjectiveKindOf`, which returns null there because
+  // naming the paradigm would point at the wrong conjugation rule.
+  if (cls === "adj-ix") return "い-adjective";
+  return adjectiveKindOf(cls);
 }
 
 export type WordFormKind =
@@ -168,7 +183,9 @@ export type WordFormKind =
  * regular paradigm. */
 export function wordFormKind(w: VocabRow): WordFormKind | null {
   const cls = wordClassOf(w);
-  const adjective = adjectiveKindOf(cls);
+  // adj-ix (いい) is an い-adjective for the Forms heading (see `adjectiveKind`),
+  // even though the drill's `adjectiveKindOf` withholds the label.
+  const adjective = cls === "adj-ix" ? "い-adjective" : adjectiveKindOf(cls);
   if (adjective) return adjective;
   if (cls === "v1" || cls === "v1-s") return "る-verb";
   if (cls?.startsWith("v5")) return "う-verb";

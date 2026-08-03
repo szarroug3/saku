@@ -67,9 +67,11 @@ import {
   VOCAB,
   VOCAB_SUBJECT,
   isKanaWord,
+  isWordReadingFact,
   vocabRow,
   wordMeaningFactId,
   wordReadingFactId,
+  wordReadingUnit,
 } from "@/data/vocab";
 import { factInfo } from "@/lib/facts";
 import {
@@ -640,6 +642,12 @@ const kanjiQuestions: QuestionType = {
 
 const wordQuestions: QuestionType = {
   id: "word",
+  // Every word fact is asked jp2en only. The glyph is the prompt on BOTH cards
+  // of a reading-unit — a reading card shows glyph + definition and asks the
+  // reading, a meaning card shows glyph + reading and asks the meaning — so
+  // there is no distinct "produce the written word from English" (en2jp) card
+  // any more. A fixed dir makes the config emit exactly ONE card per fact.
+  fixedDir: "jp2en",
   optionLabel(fact, dir, ctx) {
     // On a listening reading card, kana options only ask the learner to match a
     // sound to itself. Typed recall still wants that kana; MC instead asks which
@@ -651,25 +659,31 @@ const wordQuestions: QuestionType = {
     return null;
   },
   prompt(fact, dir) {
-    // A word has two facts — how it is READ and what it MEANS — and they are
-    // different questions about the same glyph. The reading fact's answer is
-    // kana; the meaning fact's is English.
+    // A reading-unit has two facts — how it is READ and what it MEANS — and both
+    // show the same glyph, using the OTHER half of the unit as context. A reading
+    // card (day → ひ) shows the unit's definition; a meaning card (ひ → day) shows
+    // the unit's reading. `wordReadingUnit` reads that other half without parsing
+    // the id, so a qualified reading fact (word:日/reading@にち) is handled too.
     const reading = isWordReading(fact);
     if (dir === "jp2en") {
+      const glyph = glyphOfFact(fact);
+      const unit = wordReadingUnit(fact)?.unit ?? null;
+      // Reading card → the definition (union of glosses read this way, the
+      // fullest disambiguator between a word's readings). Meaning card → the
+      // reading kana. factInfo.meaning holds only glosses[0]; the join is the
+      // whole unit. On a kana word (reb === keb) the reading IS the shown glyph,
+      // so it is dropped rather than printed twice.
+      const meaningContext = unit && unit.reb !== glyph ? unit.reb : "";
       return {
-        glyph: glyphOfFact(fact),
+        glyph,
         jp: true,
-        context: reading ? "reading" : "meaning",
+        context: reading ? (unit?.glosses.join(", ") ?? "") : meaningContext,
         hint: null,
       };
     }
-    // en2jp. The READING fact is the typed en→jp gap: shown the English gloss,
-    // the learner produces the word's kana reading — which romaji can spell, so
-    // it is answerable with no IME (see en2jpTypeable). The glyph shown is the
-    // gloss; the answer to reveal is answerOf (the reading kana), which the
-    // generic reveal already prints. The MEANING fact keeps the older en→jp
-    // shape: shown the gloss, produce the WRITTEN word (先生), which carries
-    // kanji and so is offered as multiple choice (or IME), never a romaji box.
+    // en2jp is UNREACHABLE for words now: `fixedDir: "jp2en"` above pins every
+    // word fact to jp2en, so the config never emits an en2jp word card. The
+    // branch is kept (not deleted) to leave the shared en2jp machinery intact.
     if (reading) {
       return {
         glyph: factInfo(fact)?.meaning ?? "",
@@ -782,8 +796,7 @@ export function en2jpTypeable(fact: FactId): boolean {
 }
 
 function isWordReading(fact: FactId): boolean {
-  const info = factInfo(fact);
-  return !!info && wordReadingFactId(info.glyph) === fact;
+  return isWordReadingFact(fact);
 }
 
 /** Kana, kanji, or the citation mark 〜 — and no latin letter anywhere. Both

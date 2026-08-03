@@ -41,7 +41,7 @@
 
 import vocabJson from "./generated/vocab.json" with { type: "json" };
 import wordSensesJson from "./generated/word-senses.json" with { type: "json" };
-import { entryId, factId } from "../lib/fact-id.ts";
+import { entryId, factId, meaningAspect, readingAspect } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
 
 export const VOCAB_SUBJECT = "word";
@@ -249,6 +249,8 @@ export function wordEntry(keb: string): EntryId {
   return entryId(VOCAB_SUBJECT, keb);
 }
 
+/** The PRIMARY reading's fact (the first reading-unit). Unqualified, so every
+ * consumer that means "the word's reading" keeps working. */
 export function wordReadingFactId(keb: string): FactId {
   return factId(wordEntry(keb), "reading");
 }
@@ -257,57 +259,201 @@ export function wordMeaningFactId(keb: string): FactId {
   return factId(wordEntry(keb), "meaning");
 }
 
+/** A NON-primary reading-unit's fact, qualified by its reading (日's か-unit is
+ * `word:日/reading@か`). The primary unit uses the bare functions above. */
+export function wordUnitReadingFactId(keb: string, reb: string): FactId {
+  return factId(wordEntry(keb), readingAspect(reb));
+}
+
+export function wordUnitMeaningFactId(keb: string, reb: string): FactId {
+  return factId(wordEntry(keb), meaningAspect(reb));
+}
+
 /** A word written in kana is its own reading: keb === reb. これ, とても, もう. */
 export function isKanaWord(w: VocabRow): boolean {
   return w.keb === w.reb;
 }
 
 /**
- * Every vocabulary fact: 10,427 readings + 12,553 meanings.
+ * One READING of a word, with every meaning it carries when read that way.
  *
- * A word has ONE reading fact, unqualified — unlike a kanji, which never does.
- * That asymmetry is the model working, not an inconsistency: "what is 先生
- * read as" has exactly one answer, so it can be graded, while "what is 生 read
- * as" has nine and cannot.
+ * The unit the quiz asks and difficulty counts. JMdict senses repeat a reading
+ * — あの is "that" AND "well/um", both read あの — so raw senses are the wrong
+ * grain: "read あの, mean what?" would have two unrelated answers. Grouping by
+ * reading fixes it: one reading is one thing to learn, its meaning the union of
+ * every sense read that way. A word with one reading has one unit; 日 has two
+ * (ひ = day, か = a day-counter), each its own scored skill.
+ */
+export interface ReadingUnit {
+  readonly reb: string;
+  readonly glosses: readonly string[];
+}
+
+export function readingUnits(w: VocabRow): ReadingUnit[] {
+  const order: string[] = [];
+  const byReb = new Map<string, string[]>();
+  for (const s of w.senses) {
+    let gl = byReb.get(s.reb);
+    if (!gl) {
+      gl = [];
+      byReb.set(s.reb, gl);
+      order.push(s.reb);
+    }
+    for (const g of s.glosses) if (!gl.includes(g)) gl.push(g);
+  }
+  return order.map((reb) => ({ reb, glosses: byReb.get(reb)! }));
+}
+
+/** One reading-unit of a word paired with the fact ids it mints. `reading` is
+ * null for a kana word, whose reading IS the shown word and so carries no reading
+ * fact (see `buildVocabFacts`). */
+export interface WordUnitFacts {
+  readonly unit: ReadingUnit;
+  readonly reading: FactId | null;
+  readonly meaning: FactId;
+}
+
+/**
+ * Every reading-unit of a word, primary first, each paired with its reading and
+ * meaning fact ids — the PRIMARY unit's unqualified ids, the rest qualified by
+ * their reading (日's にち-unit → `word:日/meaning@にち`), exactly as
+ * `buildVocabFacts` mints them.
  *
- * A word with several readings still has ONE reading fact, on its primary. 人 is
- * asked ひと; じん and にん are shown on the lesson and never graded. Accepting
- * all three would grade "what is 人 read as" as though it had one answer when it
- * has three, and asking for a specific one of them needs a question that says
- * which, which is a question about a word 人 appears in. That question is the
- * kanji reading fact, and it already exists.
+ * The ONE enumeration of a word's facts. `buildVocabFacts` (which builds the
+ * registry), the lesson walk (`factsOf`) and the Library all read it, so none of
+ * them can drift about which facts a word teaches or how their ids are keyed.
+ * Empty for a keb the vocabulary does not carry.
+ */
+export function wordUnitFacts(keb: string): WordUnitFacts[] {
+  const row = vocabRow(keb);
+  if (!row) return [];
+  const kana = isKanaWord(row);
+  return readingUnits(row).map((unit, i) => {
+    const primary = i === 0;
+    return {
+      unit,
+      reading: kana
+        ? null
+        : primary
+          ? wordReadingFactId(keb)
+          : wordUnitReadingFactId(keb, unit.reb),
+      meaning: primary
+        ? wordMeaningFactId(keb)
+        : wordUnitMeaningFactId(keb, unit.reb),
+    };
+  });
+}
+
+/**
+ * Every fact a word mints, in mint order: per reading-unit (primary first) its
+ * reading fact (unless the word is kana) then its meaning fact. Derived from
+ * `wordUnitFacts`, so it is the SAME SET the registry holds for the word.
+ */
+export function wordFactIds(keb: string): FactId[] {
+  const out: FactId[] = [];
+  for (const u of wordUnitFacts(keb)) {
+    if (u.reading) out.push(u.reading);
+    out.push(u.meaning);
+  }
+  return out;
+}
+
+/** fact id → the reading-unit it asks about (both its reading and meaning fact
+ * map here). The question layer reads the OTHER half off this: a reading card
+ * shows the meaning as context, a meaning card shows the reading. Keeps the
+ * question from parsing the id or re-deriving the grouping. */
+const READING_UNIT_OF = new Map<FactId, { keb: string; unit: ReadingUnit }>();
+
+/** The reading-unit a word fact asks about — its reading (`reb`) and the union
+ * of meanings read that way — or null for a non-word fact. */
+export function wordReadingUnit(
+  fact: FactId,
+): { keb: string; unit: ReadingUnit } | null {
+  return READING_UNIT_OF.get(fact) ?? null;
+}
+
+/**
+ * Every word READING fact, primary AND qualified — the membership set that
+ * answers "is this fact a word's reading (vs its meaning)?" without parsing the
+ * id. Built in `buildVocabFacts` right beside `READING_UNIT_OF`, as each reading
+ * fact is minted.
  *
- * A KANA WORD HAS NO READING FACT, which is why the two counts differ. "What
+ * The one honest discriminator: `wordReadingFactId(keb)` only ever names the
+ * PRIMARY unit's unqualified id, so testing `wordReadingFactId(glyph) === fact`
+ * mis-classifies a qualified reading fact (`word:日/reading@にち`) as a meaning
+ * fact. Consumers that mean "which KIND of fact is this" must use this instead.
+ */
+const WORD_READING_FACTS = new Set<FactId>();
+
+/** Whether `fact` is a word's READING fact — primary or qualified. A word
+ * MEANING fact is false; so is any non-word fact. Membership, never parsing. */
+export function isWordReadingFact(fact: FactId): boolean {
+  return WORD_READING_FACTS.has(fact);
+}
+
+/**
+ * Every vocabulary fact: 23,171 in all — 10,522 readings + 12,649 meanings.
+ *
+ * COUNTED PER READING-UNIT, NOT PER WORD
+ * ======================================
+ * The grain is the reading-unit (see `readingUnits`), not the word: a word mints
+ * one meaning fact and (unless it is kana) one reading fact for EACH way it is
+ * read. So the meaning count, 12,649, is the number of reading-units across the
+ * vocabulary, not the 12,554 rows — 日 alone contributes two (ひ = day, か = a
+ * day-counter) and 人 three (ひと, じん, にん), each its own scored skill. じん and
+ * にん are graded now, as qualified facts (`word:人/reading@じん`); they are no
+ * longer merely shown. This is why meaning facts outnumber words.
+ *
+ * WHY READINGS ARE FEWER THAN MEANINGS
+ * ------------------------------------
+ * Every reading-unit carries a meaning fact, so meanings equal reading-units
+ * exactly. Readings fall short by 2,127: a KANA WORD HAS NO READING FACT. "What
  * is これ read as?" has the answer これ printed in the question — it is not a
- * question, and grading it teaches nothing. これ still carries its MEANING
- * fact ("this one"), which is the thing a learner actually has to know. This
- * is the same rule as the jukujikun `align === null` case: emit the fact that
- * can be graded, and decline to invent the one that cannot.
+ * question, and grading it teaches nothing. これ still carries its MEANING fact
+ * ("this one"), which is the thing a learner actually has to know. This is the
+ * same rule as the jukujikun `align === null` case: emit the fact that can be
+ * graded, and decline to invent the one that cannot.
+ *
+ * A word's reading fact is unqualified on its primary reading-unit and qualified
+ * on the rest — unlike a kanji, which mints no unqualified reading fact at all.
+ * That asymmetry is the model working: "what is 先生 read as" has exactly one
+ * answer, so it can be graded, while "what is 生 read as" has nine and cannot.
  */
 export const VOCAB_FACTS: FactInfo[] = buildVocabFacts();
 
 function buildVocabFacts(): FactInfo[] {
   const facts: FactInfo[] = [];
   for (const w of VOCAB) {
-    const meaning = w.glosses[0] ?? null;
-    if (!isKanaWord(w)) {
+    // The single enumeration `factsOf` and the Library also walk, so the registry
+    // cannot mint a fact those two never teach, nor miss one they do.
+    for (const { unit, reading, meaning } of wordUnitFacts(w.keb)) {
+      const def = unit.glosses[0] ?? null;
+      // The READING fact — asked "kanji + meaning → reading". Absent (null) for a
+      // kana word, whose reading IS the shown word (これ read as? — これ is printed).
+      if (reading) {
+        READING_UNIT_OF.set(reading, { keb: w.keb, unit });
+        WORD_READING_FACTS.add(reading);
+        facts.push({
+          id: reading,
+          entry: wordEntry(w.keb),
+          glyph: w.keb,
+          answers: [unit.reb],
+          subject: VOCAB_SUBJECT,
+          meaning: def,
+        });
+      }
+      // The MEANING fact — asked "kanji + reading → meaning", accepting any of the
+      // meanings read that way.
+      READING_UNIT_OF.set(meaning, { keb: w.keb, unit });
       facts.push({
-        id: wordReadingFactId(w.keb),
+        id: meaning,
         entry: wordEntry(w.keb),
         glyph: w.keb,
-        answers: [w.reb],
+        answers: unit.glosses,
         subject: VOCAB_SUBJECT,
-        meaning,
+        meaning: def,
       });
     }
-    facts.push({
-      id: wordMeaningFactId(w.keb),
-      entry: wordEntry(w.keb),
-      glyph: w.keb,
-      answers: w.glosses,
-      subject: VOCAB_SUBJECT,
-      meaning,
-    });
   }
   return facts;
 }

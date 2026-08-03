@@ -105,6 +105,7 @@ import { TRANSITIVITY_SUBJECT, pairForEntry } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
 import {
   VOCAB_SUBJECT,
+  readingUnits,
   vocabRow,
   wordMeaningFactId,
   wordReadingFactId,
@@ -409,8 +410,48 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* WORD: a row of chips, one per thing the app actually asks. A kana word
           has no reading fact (これ's reading is これ — not a question), so that
           chip is simply absent rather than showing a score for a fact that does
-          not exist. */}
-      {isWord ? (
+          not exist.
+
+          A MULTI-READING word (日 = ひ day, か day-counter) summarizes like the
+          kanji header instead: one Meaning chip on the primary unit, then the
+          COUNTS. The same refusal standing.ts makes for a kanji's readings holds
+          here. Averaging several separately-scored readings into one adjective
+          says less than "N need work", which is a count over a real population.
+          A per-unit Reading/Meaning chip apiece would also rebuild the header
+          row so wide the title has nowhere to go. The sense table below still
+          lists every unit's own standing. */}
+      {isWord && wordRow && readingUnits(wordRow).length > 1 ? (
+        <>
+          {/* PRIMARY meaning, computed exactly like the single-unit Meaning chip
+              below (the primary unit mints the unqualified meaning fact id). */}
+          <span className="flex items-center gap-1.5 text-[11px] text-text-muted">
+            Meaning{" "}
+            <StandingChip
+              standing={
+                standingOf(
+                  liveFacts[wordMeaningFactId(entry.glyph)],
+                  claims[wordMeaningFactId(entry.glyph)],
+                  cfg.accuracyMetric,
+                  now,
+                ).standing
+              }
+            />
+          </span>
+          {/* The SAME two counts as the kanji block, over ALL the word's facts
+              (standing aggregates every reading-unit's reading and meaning fact).
+              See the kanji comment above for why the unseen are subtracted out. */}
+          {standing.needWork - (standing.total - standing.seen) > 0 ? (
+            <span className="rounded-full border border-warning px-2 py-0.5 text-[11px] text-warning">
+              {standing.needWork - (standing.total - standing.seen)} need work
+            </span>
+          ) : null}
+          {standing.total - standing.seen > 0 ? (
+            <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-text-muted">
+              {standing.total - standing.seen} not seen
+            </span>
+          ) : null}
+        </>
+      ) : isWord ? (
         <>
           {liveFacts[wordReadingFactId(entry.glyph)] !== undefined ||
           factsOf(entry.id).includes(wordReadingFactId(entry.glyph)) ? (

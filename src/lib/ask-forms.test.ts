@@ -18,7 +18,7 @@ import {
   formIsMc,
   configIsReachable,
 } from "@/lib/ask-forms";
-import { ALL_FACTS } from "@/lib/facts";
+import { ALL_FACTS, entryOf } from "@/lib/facts";
 import type { AskConfig } from "@/types";
 
 const word = VOCAB.find((w) => !isKanaWord(w))!;
@@ -40,13 +40,17 @@ const ALL: AskConfig = {
 };
 
 describe("enabledFormsFor", () => {
-  test("a word reading covers text/audio × typed/MC plus both English forms", () => {
+  test("a word reading is two jp→en typed cards (text and audio)", () => {
+    // Rule A pins a word fact to jp→en (no en→jp word card), and Rule B drops the
+    // MC sibling of each typed card, so text and audio typed cards are all that
+    // remain — both from the Japanese source.
     const forms = enabledFormsFor(reading, ALL);
-    assert.equal(forms.length, 6);
-    assert.equal(forms.filter((f) => f.listen).length, 2);
+    assert.equal(forms.length, 2);
+    assert.equal(forms.filter((f) => f.listen).length, 1);
+    assert.ok(forms.every((f) => f.dir === "jp2en" && f.answer === "typed"));
     assert.deepEqual(
       new Set(forms.map((f) => f.source)),
-      new Set(["japanese", "english"]),
+      new Set(["japanese"]),
     );
   });
 
@@ -57,7 +61,9 @@ describe("enabledFormsFor", () => {
       english: { answers: [] },
     };
     assert.equal(enabledFormsFor(reading, definitionOnly).length, 0);
-    assert.equal(enabledFormsFor(meaning, definitionOnly).length, 4);
+    // Meaning under definition-only keeps its two jp→en typed cards (text and
+    // audio); the MC siblings are dropped by Rule B.
+    assert.equal(enabledFormsFor(meaning, definitionOnly).length, 2);
   });
 
   test("kana supports exactly its approved question shapes", () => {
@@ -180,6 +186,7 @@ describe("enabledFormsFor", () => {
 
 
   test("typed forms that resolve to MC are kept and rendered as MC", () => {
+    const kanjiMeaning = kanjiMeaningFactId(KANJI[0].c);
     const typedOnly: AskConfig = {
       japanese: {
         prompts: ["text"],
@@ -194,17 +201,16 @@ describe("enabledFormsFor", () => {
       },
       english: { answers: ["typed"] },
     };
-    // Facts that require MC for some directions (like a kanji-word meaning) should still
-    // generate forms when typed is selected — they render as MC. This ensures
-    // users see all available facts even when selecting typed-only.
-    const forms = enabledFormsFor(meaning, typedOnly);
+    // A kanji meaning en→jp has no typed sibling to defer to — the glyph target
+    // cannot be entered through the kana answer box (en2jpTypeable is false) — so
+    // Rule B does not drop it. The typed intent survives and resolves to MC,
+    // which is how a typed-only config still shows this fact as a usable board.
+    const forms = enabledFormsFor(kanjiMeaning, typedOnly);
     const enJpForms = forms.filter((f) => f.dir === "en2jp");
-    assert.ok(enJpForms.length > 0, "English should produce a form for a kanji word");
+    assert.ok(enJpForms.length > 0, "English should produce a form for a kanji glyph");
     for (const form of enJpForms) {
-      // The form is typed in intent, but resolves to MC because the written
-      // kanji target cannot be entered through the kana answer box.
       assert.equal(form.answer, "typed");
-      assert.equal(formIsMc(meaning, form), true);
+      assert.equal(formIsMc(kanjiMeaning, form), true);
     }
   });
 
@@ -274,22 +280,59 @@ describe("enabledFormsFor", () => {
 });
 
 describe("buildCoverageDeck", () => {
-  test("expands every fact into every enabled form and keeps pairs aligned", () => {
+  // buildCoverageDeck now runs its pairs through spread() (avoids two same-entry
+  // cards landing adjacent), and spread reorders using its own internal
+  // randomness that the injected shuffle does not reach. So an exact-order
+  // assertion is no longer valid; these tests assert the invariants instead —
+  // the whole product is present, and every card keeps its fact paired with its
+  // own form (spread reorders whole pairs, never the two arrays independently).
+  const formSig = (form: unknown) => JSON.stringify(form);
+
+  test("expands every fact into every enabled form and keeps each card's fact and form paired", () => {
     const expected = [
       ...enabledFormsFor(reading, ALL).map((form) => ({ f: reading, form })),
       ...enabledFormsFor(meaning, ALL).map((form) => ({ f: meaning, form })),
     ];
     const got = buildCoverageDeck([reading, meaning], ALL, (pairs) => pairs);
-    assert.deepEqual(got.deck, expected.map((p) => p.f));
-    assert.deepEqual(got.forms, expected.map((p) => p.form));
+    assert.equal(got.deck.length, expected.length);
+    assert.equal(got.forms.length, got.deck.length);
+    // Each card's form is one of its own fact's enabled forms (pairing kept).
+    for (let i = 0; i < got.deck.length; i++) {
+      assert.ok(
+        enabledFormsFor(got.deck[i], ALL).some(
+          (f) => formSig(f) === formSig(got.forms[i]),
+        ),
+        `card ${i} pairs a fact with a form it does not own`,
+      );
+    }
+    // The full product is present — spread neither drops nor duplicates a card.
+    const key = (f: string, form: unknown) => `${f}::${formSig(form)}`;
+    assert.deepEqual(
+      got.deck.map((f, i) => key(f, got.forms[i])).sort(),
+      expected.map((p) => key(p.f, p.form)).sort(),
+    );
     assert.ok(got.forms.some((f) => f.listen), "Audio must be in coverage");
   });
 
-  test("the injected shuffle moves a fact and its form as one card", () => {
-    const got = buildCoverageDeck([reading], ALL, (pairs) => pairs.reverse());
-    const expected = enabledFormsFor(reading, ALL).reverse();
-    assert.deepEqual(got.forms, expected);
-    assert.ok(got.deck.every((f) => f === reading));
+  test("a fact and its form move as one card, and distinct entries spread apart", () => {
+    // reading (a word) and firstKanjiReading are DIFFERENT entries, so a full
+    // spread is feasible: no two adjacent cards share an entry.
+    const got = buildCoverageDeck([reading, firstKanjiReading], ALL, (pairs) => pairs);
+    for (let i = 0; i < got.deck.length; i++) {
+      assert.ok(
+        enabledFormsFor(got.deck[i], ALL).some(
+          (f) => formSig(f) === formSig(got.forms[i]),
+        ),
+        `card ${i} pairs a fact with a form it does not own`,
+      );
+    }
+    for (let i = 1; i < got.deck.length; i++) {
+      assert.notEqual(
+        entryOf(got.deck[i]),
+        entryOf(got.deck[i - 1]),
+        "distinct-entry cards must not sit adjacent when a spread is feasible",
+      );
+    }
   });
 });
 
@@ -515,14 +558,18 @@ describe("configIsReachable diagnostic", () => {
     assert.equal(result.isReachable, true);
   });
 
-  test("english-only produces forms for en→jp facts", () => {
+  test("english-only produces forms for facts that still have an en→jp card", () => {
+    // A word reading is jp→en only now (Rule A), so english-only would leave it
+    // with no card. A keigo fact still has an en→jp production card, so
+    // english-only is reachable for it.
     const englishOnly: AskConfig = {
       japanese: { prompts: [], responses: [], answers: [] },
       sentence: { prompts: [], responses: [], answers: [] },
       english: { answers: ["mc"] },
     };
-    const result = configIsReachable([reading], englishOnly);
-    assert.equal(result.isReachable, true, "en→jp reading should be reachable");
+    assert.equal(enabledFormsFor(reading, englishOnly).length, 0);
+    const result = configIsReachable([keigoFact], englishOnly);
+    assert.equal(result.isReachable, true, "en→jp keigo production should be reachable");
   });
 
   test("romaji-only with only meaning facts is unreachable", () => {
@@ -580,50 +627,45 @@ describe("Grammar production fact (§5.2 Current)", () => {
   });
 });
 
-describe("Word meaning en→jp MC enforcement (§3.x — non-kana target)", () => {
-  // The doc marks word meaning en→jp as MC-only for kanji words because the
-  // written form (e.g. 先生) is not kana-only and therefore not typeable.
-  // ask-forms enforces this: a typed en→jp form for such a fact is MC-forced
-  // (en2jpTypeable returns false) and dropped by the dedup product rule.
-  test("word meaning en→jp: typed intent resolves to MC for words with kanji", () => {
-    const typedEnOnly: AskConfig = {
-      japanese: { prompts: [], responses: [], answers: [] },
-      sentence: { prompts: [], responses: [], answers: [] },
-      english: { answers: ["typed"] },
-    };
-    const forms = enabledFormsFor(meaning, typedEnOnly);
-    // The written form of a kanji word (e.g. 先生) is not kana-only, so the
-    // selected typed intent is resolved to the only safe control: MC.
-    assert.ok(
-      forms.some((f) => f.dir === "en2jp" && formIsMc(meaning, f)),
-      "en→jp typed intent should resolve to MC for a word with kanji",
-    );
+describe("Word facts are jp→en only (§3 — one card per fact, per reading-unit)", () => {
+  // Rule A: a word fact is asked ONLY in the jp→en direction (wordQuestions.fixedDir).
+  // The old "produce the written word from English" en→jp card is gone entirely, so
+  // neither a word MEANING nor a word READING emits any en→jp form, whatever the
+  // English answer format. The MC-enforcement for an un-typeable en→jp target now
+  // lives only on non-word subjects (kanji/radical meaning); see the kanji tests.
+  test("word meaning emits no en→jp card, typed OR mc", () => {
+    for (const answers of [["typed"], ["mc"], ["typed", "mc"]] as const) {
+      const englishOnly: AskConfig = {
+        japanese: { prompts: [], responses: [], answers: [] },
+        sentence: { prompts: [], responses: [], answers: [] },
+        english: { answers: [...answers] },
+      };
+      const forms = enabledFormsFor(meaning, englishOnly);
+      assert.equal(
+        forms.filter((f) => f.dir === "en2jp").length,
+        0,
+        `word meaning must not emit en→jp for english answers ${answers}`,
+      );
+    }
+    // The jp→en meaning card is still present under a full config.
+    assert.ok(enabledFormsFor(meaning, ALL).some((f) => f.dir === "jp2en"));
   });
 
-  test("word meaning en→jp: mc form IS emitted", () => {
-    const mcEnOnly: AskConfig = {
-      japanese: { prompts: [], responses: [], answers: [] },
-      sentence: { prompts: [], responses: [], answers: [] },
-      english: { answers: ["mc"] },
-    };
-    const forms = enabledFormsFor(meaning, mcEnOnly);
-    assert.ok(
-      forms.some((f) => f.dir === "en2jp" && formIsMc(meaning, f)),
-      "en→jp mc form should be emitted",
-    );
-  });
-
-  test("word reading en→jp: typed form IS emitted (kana reading is typeable)", () => {
-    const typedEnOnly: AskConfig = {
-      japanese: { prompts: [], responses: [], answers: [] },
-      sentence: { prompts: [], responses: [], answers: [] },
-      english: { answers: ["typed"] },
-    };
-    const forms = enabledFormsFor(reading, typedEnOnly);
-    assert.ok(
-      forms.some((f) => f.dir === "en2jp" && f.answer === "typed"),
-      "reading en→jp typed should be emitted (kana reading target is typeable)",
-    );
+  test("word reading emits no en→jp card, typed OR mc", () => {
+    for (const answers of [["typed"], ["mc"], ["typed", "mc"]] as const) {
+      const englishOnly: AskConfig = {
+        japanese: { prompts: [], responses: [], answers: [] },
+        sentence: { prompts: [], responses: [], answers: [] },
+        english: { answers: [...answers] },
+      };
+      assert.equal(
+        enabledFormsFor(reading, englishOnly).length,
+        0,
+        `word reading must not emit any form for english-only answers ${answers}`,
+      );
+    }
+    // The jp→en reading card is still present under a full config.
+    assert.ok(enabledFormsFor(reading, ALL).some((f) => f.dir === "jp2en"));
   });
 });
 
@@ -650,27 +692,25 @@ describe("Keigo fact (§6.1 Current)", () => {
     assert.equal(formIsMc(keigoFact, forms[0]), true);
   });
 
-  test("keigo en→jp emits typed kana and written-form MC production", () => {
+  test("keigo en→jp production collapses to one typed kana card", () => {
+    // Production had a typed and an MC card; Rule B drops the MC one because the
+    // kana reading is typeable, so only the typed production card survives.
     const forms = enabledFormsFor(keigoFact, ALL);
     const production = forms.filter((f) => f.dir === "en2jp");
-    assert.equal(production.length, 2);
-    assert.deepEqual(
-      production.map((form) => formIsMc(keigoFact, form)),
-      [false, true],
-    );
+    assert.equal(production.length, 1);
+    assert.equal(formIsMc(keigoFact, production[0]), false);
   });
 });
 
 describe("Transitivity fact (§6.2 Current)", () => {
-  test("transitivity produces typed and MC English-cue production", () => {
+  test("transitivity produces a single typed English-cue production card", () => {
+    // Production had a typed and an MC card; Rule B drops the MC one because the
+    // kana reading is typeable, so only the typed production card survives.
     const forms = enabledFormsFor(transitivityFact, ALL);
     const en2jp = forms.filter((f) => f.dir === "en2jp");
-    assert.equal(en2jp.length, 2);
+    assert.equal(en2jp.length, 1);
     assert.ok(en2jp.every((f) => !f.listen), "en→jp forms are never audio");
-    assert.deepEqual(
-      en2jp.map((form) => formIsMc(transitivityFact, form)),
-      [false, true],
-    );
+    assert.equal(formIsMc(transitivityFact, en2jp[0]), false);
   });
 
   test("transitivity Japanese text recognition is MC-only", () => {

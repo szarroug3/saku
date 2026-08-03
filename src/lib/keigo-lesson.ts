@@ -38,7 +38,7 @@ import {
   type RadicalRow,
 } from "@/data/radicals";
 import { kanjiKnown } from "@/lib/kanji-known";
-import { kanjiCost, radicalCost } from "@/lib/kanji-lesson";
+import { glyphDifficulty } from "@/lib/difficulty";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import type { LessonPosition } from "@/lib/lesson-position";
 import {
@@ -243,7 +243,15 @@ function collectPrereqs(
     }
   }
 
-  out.push({ glyph: c, type: "Kanji", fact: meaningFactId(c), cost: kanjiCost(c) });
+  // Priced by reading-units, the whole role-sum of the glyph, so a prereq kanji
+  // that is also a radical and a word (日 = 4) is budgeted at its full difficulty
+  // even though this tile only teaches its kanji meaning. See difficulty.ts and
+  // the owner's worked example. Its filed-under radical, when that radical is a
+  // separate glyph, is a different tile with its own reading-unit cost; the two
+  // never double-count the SAME glyph's role because glyphDifficulty(c) covers
+  // c's own radical role and addRadicalIfNew is skipped for a radical taught as
+  // this very kanji.
+  out.push({ glyph: c, type: "Kanji", fact: meaningFactId(c), cost: glyphDifficulty(c) });
 }
 
 function addRadicalIfNew(
@@ -261,7 +269,7 @@ function addRadicalIfNew(
     history.seen?.[fact],
   );
   if (state.lastTested > 0) return;
-  out.push({ glyph: rad.glyph, type: "Radical", fact, cost: radicalCost(rad.num) });
+  out.push({ glyph: rad.glyph, type: "Radical", fact, cost: glyphDifficulty(rad.glyph) });
 }
 
 const HAN = /\p{Script=Han}/u;
@@ -312,10 +320,17 @@ export function nextKeigoLesson(
         collectPrereqs(c, history, seenKanji, seenRadicals, tempItems);
       }
     }
-    const addedCost = tempItems.reduce((n, p) => n + p.cost, 0);
+    // A set's full difficulty is its prereq reading-units PLUS its own content:
+    // one register-form per keigo word (setFacts is one recognition fact each),
+    // so set.words.length is what the lesson pays to teach the set itself. Both
+    // halves are budgeted against the sitting, matching the owner's worked example
+    // where 言う's three register-forms count alongside their prereq glyphs.
+    const addedCost =
+      tempItems.reduce((n, p) => n + p.cost, 0) + set.words.length;
 
-    // Budget check: if the new prereqs would overflow the lesson, roll back and stop.
-    // The first set is always taken regardless of cost (never leave an empty lesson).
+    // Budget check: if this set's full difficulty would overflow the lesson, roll
+    // back and stop. The first set is always taken regardless of cost (never leave
+    // an empty lesson), so a single set heavier than the budget fills its own.
     if (rows.length > 0 && totalPrereqCost + addedCost > LESSON_RANGE_DEFAULT.max) {
       seenKanji.clear();
       for (const x of kanjiSnap) seenKanji.add(x);

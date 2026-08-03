@@ -30,7 +30,7 @@ import { describe, test } from "node:test";
 
 import { KANJI, kanjiRow, meaningFactId } from "../data/kanji.ts";
 import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
-import { VOCAB, vocabRow, wordMeaningFactId } from "../data/vocab.ts";
+import { VOCAB, readingUnits, vocabRow, wordMeaningFactId } from "../data/vocab.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { CURRICULUM_SEQUENCE } from "./curriculum-order.ts";
 import {
@@ -263,10 +263,12 @@ describe("the lesson length is a setting, and the packing honours it", () => {
   });
 });
 
-describe("what a word costs is the two budgets reconciled", () => {
+describe("what a word costs is its reading-units, summed across its roles", () => {
   test("WORD_COST is the cost budget divided by the words budget", () => {
-    // Not a third number to keep in step: 12 cost per sitting over 6 words per
-    // sitting is 2. See the module header.
+    // Not what a word costs any more (see below) and not a third number to keep
+    // in step either: it is only the two sitting-length budgets reconciled, 12
+    // cost per sitting over 6 words per sitting is 2. Kept so the settings math
+    // that reads both budgets has one name for their ratio. See the module header.
     assert.equal(
       WORD_COST,
       Math.round(LESSON_RANGE_DEFAULT.max / WORDS_PER_LESSON_DEFAULT),
@@ -274,29 +276,48 @@ describe("what a word costs is the two budgets reconciled", () => {
     assert.ok(WORD_COST >= 1);
   });
 
-  test("a word is priced flat, whatever it is written with", () => {
+  test("a word-only item costs one per reading-unit, not a flat price", () => {
     // A word is not a drawn shape: its kanji were taught earlier in this same
-    // sequence, so there is nothing left to learn to draw. Every word-only item
-    // costs the same, however many kanji its written form has.
+    // sequence, so there is nothing left to learn to draw. What is left to learn
+    // is its readings, one skill per reading-unit, so that is what it costs.
+    // Usually one (先生 reads one way), but a word read several ways costs one
+    // per reading (開ける costs 2), and the price tracks the row, not a constant.
     const wordOnly = GROUPS.flatMap((g) => g.items).filter(
       (it) => it.roles.length === 1 && it.roles[0] === "word",
     );
     assert.ok(wordOnly.length > 0);
-    for (const it of wordOnly) assert.equal(it.cost, WORD_COST, it.glyph);
+    for (const it of wordOnly) {
+      assert.equal(it.cost, readingUnits(vocabRow(it.glyph)!).length, it.glyph);
+    }
+    // The price is genuinely per-reading, not "1 dressed up": both a
+    // single-reading word (cost 1) and a multi-reading one (cost > 1) are in range.
+    assert.ok(wordOnly.some((it) => it.cost === 1), "no single-reading word-only item");
+    assert.ok(wordOnly.some((it) => it.cost > 1), "no multi-reading word-only item");
   });
 
-  test("a folded item pays for its shape AND its word", () => {
-    // 山 is a radical, a kanji and a word in one item, and teaching it is both
-    // jobs: three facts go into the drill, so the cost is the drawing plus the
-    // word, never one of the two.
+  test("a folded item pays for its shape AND every reading-unit of its word", () => {
+    // 人 is a radical, a kanji and a three-reading word in one item, and teaching
+    // it does all three jobs, so it costs one for each shape role it wears plus
+    // one per reading-unit — never just the shape, never just the word.
     const folded = GROUPS.flatMap((g) => g.items).filter(
       (it) => it.roles.includes("kanji") && it.roles.includes("word"),
     );
     assert.ok(folded.length > 0);
     for (const it of folded) {
-      assert.ok(it.cost > WORD_COST, `${it.glyph} was not charged for its shape`);
+      const shape = (it.roles.includes("radical") ? 1 : 0) + 1; // kanji always
+      assert.equal(
+        it.cost,
+        shape + readingUnits(vocabRow(it.glyph)!).length,
+        `${it.glyph} was not charged for its shape and every reading`,
+      );
       assert.ok(it.facts.length >= 2, `${it.glyph} teaches only one fact`);
     }
+    // And the rad+kanji+word fold really occurs, so the "+ radical" arm above is
+    // exercised and not dead.
+    assert.ok(
+      folded.some((it) => it.roles.includes("radical")),
+      "no radical+kanji+word fold in range",
+    );
   });
 
   test("a folded radical+kanji keeps the radical meaning fact", () => {
