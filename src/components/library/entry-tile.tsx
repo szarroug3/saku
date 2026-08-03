@@ -513,6 +513,11 @@ export function KeigoSetRow({
     </div>
   );
 }
+
+/** One verb of a pair, as a shelf cell: the word, its reading, its own speaker,
+ * and the English cue that points to THIS verb rather than its partner — the one
+ * thing that tells the two apart. */
+function PairCell({
   side,
   voice,
   tail,
