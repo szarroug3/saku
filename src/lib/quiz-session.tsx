@@ -250,8 +250,21 @@ interface QuizSessionContextValue {
    */
   saveNow(): void;
   /** Begin a one-off quiz over `facts` with the current cfg; navigates to
-   * /quiz. `what` names the run — see ActiveQuiz.what. */
-  startQuiz(facts: FactId[], opts?: { redrill?: boolean; what?: string }): void;
+   * /quiz. `what` names the run — see ActiveQuiz.what.
+   *
+   * `mode` and `coverage` let a caller pin the run's shape independently of the
+   * current cfg — a rerun of a finished session reproduces THAT session's mode
+   * and asks the whole set (full coverage), rather than inheriting whatever the
+   * builder is set to now. Without them the snapshot is the plain cfg. */
+  startQuiz(
+    facts: FactId[],
+    opts?: {
+      redrill?: boolean;
+      what?: string;
+      mode?: QuizMode;
+      coverage?: boolean;
+    },
+  ): void;
   /** Begin a one-off quiz in a specific mode, keeping all other snapshot fields
    * from current cfg. Used by Learn cards that launch a dedicated question type. */
   startQuizInMode(
@@ -1011,11 +1024,29 @@ export function QuizSessionProvider({
   );
 
   const startQuiz = useCallback(
-    (facts: FactId[], opts?: { redrill?: boolean; what?: string }) => {
+    (
+      facts: FactId[],
+      opts?: {
+        redrill?: boolean;
+        what?: string;
+        mode?: QuizMode;
+        coverage?: boolean;
+      },
+    ) => {
       if (!facts.length) return;
       // Don't overwrite what's running — set it aside, then open the new quiz.
       parkIfActive();
-      beginLeg(facts, opts?.what ?? countWhat(facts), snapshotOf(cfg), !!opts?.redrill);
+      // A rerun pins the finished session's shape: its own mode, and full
+      // coverage so the whole set is asked. Left unset, the snapshot is the
+      // plain cfg — the builder as it stands now. Without this pin, "Rerun full
+      // setup" ran whatever mode/length the Practice builder was last left on
+      // (e.g. Match pairs, or Endless) rather than the drill it is rerunning,
+      // which could yield a run with no cards for the material at all.
+      let snapshot = snapshotOf(cfg);
+      if (opts?.mode) snapshot = { ...snapshot, mode: opts.mode };
+      if (opts?.coverage)
+        snapshot = { ...snapshot, length: "limited", limType: "cov" };
+      beginLeg(facts, opts?.what ?? countWhat(facts), snapshot, !!opts?.redrill);
     },
     [cfg, beginLeg, parkIfActive],
   );

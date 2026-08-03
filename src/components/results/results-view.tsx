@@ -224,10 +224,14 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
    *
    * Async because `discardActive` is: the confirm is a dialog in the page, not
    * the browser's blocking one, so the answer arrives on a later tick. */
-  const startFacts = async (facts: FactId[], what: string, redrill?: boolean) => {
+  const startFacts = async (
+    facts: FactId[],
+    what: string,
+    opts?: { redrill?: boolean; mode?: QuizMode; coverage?: boolean },
+  ) => {
     if (!facts.length) return;
     if (!(await discardActive())) return;
-    startQuiz(facts, { redrill, what });
+    startQuiz(facts, { redrill: opts?.redrill, what, mode: opts?.mode, coverage: opts?.coverage });
   };
 
   /**
@@ -458,11 +462,20 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         stats={stats}
         weakest={weakest}
         extraSelectedFacts={selectedProgress}
-        onRedrill={(picked) => void startFacts(picked, "The misses", true)}
-        // Rerun is not a special case and has no code of its own: a past
-        // session is a named list of keys, so "run that again" is Drill on a
-        // slice — the same resolve() as everything else, with one field set.
-        onRerun={() => void startFacts(rerunFacts(), "That session")}
+        onRedrill={(picked) => void startFacts(picked, "The misses", { redrill: true })}
+        // Rerun reproduces the FINISHED session, not the current builder: it
+        // reruns that session's facts in that session's own mode (results.mode)
+        // at full coverage, so "Rerun full setup" means the same setup. Reading
+        // the mode/length off the live cfg instead let a Practice change (Match
+        // pairs, Endless, …) since the run silently rewrite what Rerun did — and
+        // a mode the material has no card for produced a 0-question run whose
+        // empty record then made the button do nothing.
+        onRerun={() =>
+          void startFacts(rerunFacts(), "That session", {
+            mode: results.mode,
+            coverage: true,
+          })
+        }
         onDrillWeakest={() => void startFacts(weakest, "The weakest")}
       />
     </>
