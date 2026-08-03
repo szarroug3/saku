@@ -70,7 +70,9 @@ function speakable(entry: LibEntry): boolean {
     entry.kind !== GRAMMAR_CONCEPT_SUBJECT &&
     entry.kind !== MARK_SUBJECT &&
     entry.kind !== SENTENCE_RULE_KIND &&
-    entry.kind !== TERM_SUBJECT
+    entry.kind !== TERM_SUBJECT &&
+    // Keigo verb sets have no single phrase to speak; formulaic sets (non-empty glyph) do.
+    (entry.kind !== KEIGO_SUBJECT || entry.glyph !== "")
   );
 }
 

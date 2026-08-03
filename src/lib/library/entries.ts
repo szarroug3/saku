@@ -753,7 +753,8 @@ function build(): LibEntry[] {
     out.push({
       id: keigoSetEntry(set),
       kind: KEIGO_SUBJECT,
-      glyph: "",
+      // Formulaic sets have one speakable phrase; verb sets have no single glyph.
+      glyph: set.formulaic ? (set.words[0]?.word ?? "") : "",
       name: set.words.map((w) => w.word).join(" / "),
       readings: set.words.map((w) => w.reading),
       meanings: set.words.map((w) => recognitionGloss(set, w)),
