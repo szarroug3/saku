@@ -39,6 +39,7 @@
 // src/data/vocab.ts.
 
 import { entryId, factId } from "../lib/fact-id.ts";
+import { vocabRow } from "./vocab.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
 
 /**
@@ -143,11 +144,11 @@ function humble(key: string, word: string, reading: string, use?: string): Keigo
  * before merge; keigo.test.ts pins every plain→honorific→humble mapping so a
  * future edit cannot silently corrupt a pairing.
  *
- * The order is teaching order: the eat / drink pair leads because 召し上がる /
- * いただく is the canonical honorific-vs-humble contrast, and the formulaic
- * greeting trails at the end.
+ * The TEACHING ORDER is derived, not authored: each set sorts by the minimum
+ * beginnerRank of its gate verbs so the order automatically tracks the word
+ * curriculum. welcome (gate=[]) is pinned first since it is always unlocked.
  */
-export const KEIGO_SETS: readonly KeigoSet[] = [
+export const KEIGO_SETS: readonly KeigoSet[] = ([
   // welcome has no gate and no plain-verb contrast, so it always unlocks first
   // and serves as every learner's introduction to the track.
   {
@@ -235,7 +236,14 @@ export const KEIGO_SETS: readonly KeigoSet[] = [
     ],
     gate: ["知る"],
   },
-];
+] as KeigoSet[]).sort((a, b) => {
+  // Empty gate (welcome) sorts first; otherwise sort by earliest gate verb.
+  if (a.gate.length === 0) return -1;
+  if (b.gate.length === 0) return 1;
+  const rank = (set: KeigoSet) =>
+    Math.min(...set.gate.map((keb) => vocabRow(keb)?.beginnerRank ?? Infinity));
+  return rank(a) - rank(b);
+});
 
 /** The entry a set's facts hang off — one entry per set, so the whole set is one
  * Library page and one teach card. */
