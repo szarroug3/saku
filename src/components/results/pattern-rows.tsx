@@ -218,6 +218,7 @@ export function PatternRow({
   selected,
   onToggle,
   runs,
+  isCleared,
 }: {
   row: PairRow;
   stats: SessionStats;
@@ -230,6 +231,7 @@ export function PatternRow({
   selected?: boolean;
   onToggle?: () => void;
   runs?: boolean[];
+  isCleared?: boolean;
 }) {
   const [first, second] = lines(row, stats, graduateRuns, !!wasWorst);
   const glyphA = glyphOf(row.a);
@@ -304,7 +306,11 @@ export function PatternRow({
           <span className="ml-auto flex flex-none gap-[3px]" aria-label="last ten runs">
             {runPips(runs ?? [])}
           </span>
-          {onClear ? (
+          {isCleared ? (
+            <span className="rounded-full bg-success/15 px-2 py-0.5 text-[9px] uppercase tracking-[0.07em] text-success">
+              Cleared
+            </span>
+          ) : onClear ? (
             <button
               type="button"
               className="text-[11px] font-medium text-accent hover:underline"
@@ -338,6 +344,7 @@ export function PatternSection({
   isSelected,
   onToggle,
   runsByKey,
+  isCleared,
 }: {
   label: string;
   rows: PairRow[];
@@ -350,6 +357,7 @@ export function PatternSection({
   isSelected?: (key: string) => boolean;
   onToggle?: (key: string) => void;
   runsByKey?: Map<string, boolean[]>;
+  isCleared?: (key: string) => boolean;
 }) {
   if (!rows.length) return null;
   const items = rows.map((row) => (
@@ -362,6 +370,7 @@ export function PatternSection({
       selected={isSelected?.(row.key)}
       onToggle={onToggle ? () => onToggle(row.key) : undefined}
       runs={runsByKey?.get(row.key)}
+      isCleared={isCleared?.(row.key)}
       onClear={
         row.state === "improving" && onClear
           ? () => onClear(row.key)

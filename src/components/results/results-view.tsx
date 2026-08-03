@@ -256,11 +256,20 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     setSavedAsList(true);
   };
 
+  const [clearedProgressPairs, setClearedProgressPairs] = useState<Set<string>>(new Set());
+  const [selectedProgress, setSelectedProgress] = useState<Set<FactId>>(new Set());
+  const [clearedProgressFacts, setClearedProgressFacts] = useState<Set<FactId>>(new Set());
+
   const clearNow = (key: string) => {
     const [a, b] = pairEntries(key);
     const facts = [...new Set([...factsOf(a), ...factsOf(b)])];
     if (facts.length) writes.claim(facts);
     writes.clearMixup(key);
+    setClearedProgressPairs((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
   };
 
   // Facts that were unstable before this run (shaky/getting there) and are
@@ -325,14 +334,13 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
   const visiblePairProgressRows = useMemo(
     () =>
       analysis.progress.filter((row) => {
+        // Show pairs that still need work, or pairs that have been explicitly cleared
+        if (clearedProgressPairs.has(row.key)) return true;
         const runs = allProgressPairRuns.get(row.key) ?? [];
         return runsToReach(runs, SOLID_PCT) > 0;
       }),
-    [analysis.progress, allProgressPairRuns],
+    [analysis.progress, allProgressPairRuns, clearedProgressPairs],
   );
-  const hasAnyProgress = visiblePairProgressRows.length > 0 || factProgressRows.length > 0;
-  const [selectedProgress, setSelectedProgress] = useState<Set<FactId>>(new Set());
-  const [clearedProgressFacts, setClearedProgressFacts] = useState<Set<FactId>>(new Set());
 
   const progressPairFacts = useMemo(() => {
     const out = new Map<string, FactId[]>();
@@ -351,6 +359,8 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
     }
     return out;
   }, [visiblePairProgressRows, allProgressPairRuns]);
+
+  const hasAnyProgress = visiblePairProgressRows.length > 0 || factProgressRows.length > 0;
 
   const toggleProgressPair = (key: string) => {
     const pairFacts = progressPairFacts.get(key) ?? [];
@@ -428,6 +438,7 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
             isSelected={isProgressPairSelected}
             onToggle={toggleProgressPair}
             runsByKey={progressPairRuns}
+            isCleared={(key) => clearedProgressPairs.has(key)}
           />
           <FactProgressSection
             rows={factProgressRows}
