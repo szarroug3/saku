@@ -26,8 +26,10 @@ export default defineConfig({
   // Run separate spec files concurrently. Tests within one file remain ordered,
   // while each worker still gets Playwright's isolated browser context and
   // localStorage state through the seed fixture described above.
+  // Increased workers from 4 to 6 for better parallelization without excessive
+  // browser context overhead.
   fullyParallel: false,
-  workers: 4,
+  workers: 6,
   forbidOnly: !!process.env.CI,
   retries: 0,
   // A plain `pnpm run test:e2e` reports exactly as it always has: one line per
