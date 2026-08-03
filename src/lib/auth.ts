@@ -17,6 +17,7 @@ import "server-only";
 
 import { isSupabaseStore } from "@/lib/store/mode";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { cache } from "react";
 
 export class AuthRequiredError extends Error {
   constructor() {
@@ -28,14 +29,14 @@ export class AuthRequiredError extends Error {
 /** The signed-in user's uuid, or null when there is no session — including when
  * Supabase is not configured, where nobody can be signed in. The one place the
  * session is read, so getUserId / currentUserId cannot answer differently. */
-async function sessionUserId(): Promise<string | null> {
+const sessionUserId = cache(async (): Promise<string | null> => {
   if (!isSupabaseStore()) return null;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user?.id ?? null;
-}
+});
 
 /** The current user's id, or throw AuthRequiredError when there is no session.
  * The write path wants the throw: a write with no account is a 401, not a save

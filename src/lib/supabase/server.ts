@@ -12,8 +12,10 @@ import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
-export async function createSupabaseServerClient() {
+// cache() memoizes per-request so multiple server functions share one client instance.
+export const createSupabaseServerClient = cache(async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,4 +38,4 @@ export async function createSupabaseServerClient() {
       },
     },
   );
-}
+});
