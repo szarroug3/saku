@@ -104,7 +104,6 @@ import { WordSensePanel } from "@/components/lesson/word-sense-panel";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
 import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
-import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { noteFor, glyphVariantFor } from "@/data/characters";
 import { contextPronunciation } from "@/data/kana-context";
 import { KanaContextView } from "@/components/lesson/kana-context-view";
@@ -118,7 +117,6 @@ import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { knownLookalikes } from "@/lib/kanji-lookalikes";
 import { characterRole } from "@/lib/character-role";
-import { WordClassNote } from "@/components/lesson/word-class-note";
 import type { LessonItem } from "@/lib/lesson-items";
 import {
   canHearItem,
@@ -131,7 +129,7 @@ import {
   roleHasSections,
   wordTypeOf,
 } from "@/lib/lesson-roles";
-import { formsOfWord } from "@/lib/word-forms";
+import { wordFormKind } from "@/lib/word-forms";
 import { libEntry, recipeOf } from "@/lib/library/entries";
 import { piecesOf } from "@/lib/library/word-pieces";
 import { entryHref } from "@/lib/library/href";
@@ -574,7 +572,6 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // Null when the step plays no radical role or the shape has none on file, and
   // then the Radical block stays just its heading and its line.
   const radicalMeaning = radicalMeaningOf(item);
-  const forms = word ? formsOfWord(word) : null;
   const grammarSub = item.kind === "grammar" && pattern ? attachesTo(pattern) : undefined;
   const grammarExample = useGrammarExample(
     item.kind === "grammar" && pattern ? pattern.id : null,
@@ -729,17 +726,23 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           </RoleBlock>
         ) : null}
         {roleHasSections("word", sectionList) ? (
-          <RoleBlock role="word" labelled={labelRoles}>
+          // The word's class rides on the heading — "Word · う-verb" — so the
+          // reader learns what kind of word it is where they learn it is a word.
+          // wordFormKind names every conjugating word; a non-conjugating word (a
+          // noun) has none, so wordTypeOf gives the fallback ("noun"), and the
+          // tag is always present and always specific.
+          <RoleBlock
+            role="word"
+            labelled={labelRoles}
+            tag={word ? (wordFormKind(word) ?? wordTypeOf(word)) : undefined}
+          >
             {sections.has("word-sense") && word ? (
               <WordSensePanel word={word} voiceName={cfg.voiceName} />
             ) : null}
-            {/* The class that governs the forms below: shared with the Library
-                so an adjective or ambiguous る-ending verb is identified the
-                same way wherever the learner meets the word. */}
-            {sections.has("word-class") && word ? <WordClassNote word={word} /> : null}
-            {sections.has("word-forms") && word && forms ? (
-              <WordFormFan dictionary={word.keb} groups={forms} />
-            ) : null}
+            {/* No Forms grid on the LESSON. The conjugation table is grammar, not
+                word teaching, and belongs to the Library entry page, which still
+                renders WordFormFan. Here the word block teaches the reading, the
+                meaning and the class, and the forms are a click away in reference. */}
             {/* No example sentence in a lesson. The Library entry page still
                 carries one, where you have come to read about the word; here the
                 page is already teaching the reading and the meaning, and a

@@ -38,21 +38,22 @@ import type { RoleName } from "@/lib/character-role";
 const ROLE_HEADING: Record<RoleName, { title: string; lead: string }> = {
   radical: {
     title: "Radical",
-    lead: "Other kanji are built on this shape. Learn it now and you will keep spotting it inside them later.",
+    lead: "Other kanji are built on this shape.",
   },
   kanji: {
     title: "Kanji",
-    lead: "This is a character in its own right, and one you will usually see inside a longer word.",
+    lead: "This is a character in its own right and will be used in longer words.",
   },
   word: {
     title: "Word",
-    lead: "This is also a full word on its own.",
+    lead: "This is a full word on its own.",
   },
 };
 
 export function RoleBlock({
   role,
   labelled,
+  tag,
   children,
 }: {
   role: RoleName;
@@ -60,6 +61,11 @@ export function RoleBlock({
    * role at all — a kana, a grammar pattern, a two-character word — whose
    * sections come back exactly as they were. */
   labelled: boolean;
+  /** A quiet suffix on the heading, "Radical" → no tag, "Word" → "Word · う-verb".
+   * Only the word block passes one: naming the word's class in the heading saves
+   * the reader hunting the note below for it. A middot and muted weight keep it a
+   * suffix on the one heading, not a second heading of its own. */
+  tag?: string;
   /** Optional, because the radical role is taught by its line alone. */
   children?: ReactNode;
 }) {
@@ -68,7 +74,10 @@ export function RoleBlock({
   return (
     <section className="space-y-3">
       <div>
-        <h3 className="text-[13px] font-semibold text-text">{title}</h3>
+        <h3 className="text-[13px] font-semibold text-text">
+          {title}
+          {tag ? <span className="font-normal text-text-muted"> · {tag}</span> : null}
+        </h3>
         <p className="mt-0.5 text-[12px] leading-snug text-text-muted">{lead}</p>
       </div>
       {children}

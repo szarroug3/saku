@@ -41,16 +41,6 @@ import { wordPitch } from "@/data/pitch";
 import type { VocabRow } from "@/data/vocab";
 import { standaloneSenses, wordTypeOf } from "@/lib/lesson-roles";
 
-/** What the panel is FOR, in one line, because the kanji block above it now has
- * a table of sounds too and the difference between the two is the whole point.
- * That one is the character welded into something longer; this one is the
- * character with nothing attached. Two lines, not one with a number swapped: a
- * word with four readings has a fact about it that a word with one does not. */
-const LEAD_ONE =
-  "Alone in a sentence, with no other character attached, it is said this one way.";
-const LEAD_MANY =
-  "Alone in a sentence, with no other character attached, it can be any of these, and the meaning turns on which you say.";
-
 export function WordSensePanel({
   word,
   voiceName,
@@ -76,7 +66,6 @@ export function WordSensePanel({
     const meaning = only.glosses.slice(0, 4).join(", ");
     return (
       <LessonPanel title="How you say it, and what it means">
-        <p className="mb-2.5 text-[12px] leading-snug text-text-muted">{LEAD_ONE}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <HearButton glyph={only.reb} voiceName={voiceName} />
           {drawsPitch(only.reb) ? (
@@ -101,7 +90,6 @@ export function WordSensePanel({
 
   return (
     <LessonPanel title="How you say it, and what it means">
-      <p className="mb-2.5 text-[12px] leading-snug text-text-muted">{LEAD_MANY}</p>
       <div className="-mx-1 overflow-x-auto px-1">
         <table className="w-full text-left text-[13px]">
           <thead>

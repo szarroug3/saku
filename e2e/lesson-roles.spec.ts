@@ -107,11 +107,14 @@ test("a folded character's lesson step teaches all three of its roles", async ({
   // it is gone — so their absence is the regression, not a cosmetic one.
   await expect(roleHeading(page, "Radical")).toBeVisible();
   await expect(roleHeading(page, "Kanji")).toBeVisible();
-  await expect(roleHeading(page, "Word")).toBeVisible();
+  // The Word heading now carries the word's class as a quiet suffix — 人 is a
+  // noun, so the heading reads "Word · noun". A conjugating word would say its
+  // paradigm here instead ("Word · う-verb"); see wordFormKind / wordTypeOf.
+  await expect(roleHeading(page, "Word · noun")).toBeVisible();
   await expect(page.getByRole("heading", { level: 3 })).toHaveText([
     "Radical",
     "Kanji",
-    "Word",
+    "Word · noun",
   ]);
 
   // Each block's line is its substance, and the radical block is nothing BUT its
@@ -119,7 +122,7 @@ test("a folded character's lesson step teaches all three of its roles", async ({
   await expect(page.locator("body")).toContainText(
     "Other kanji are built on this shape.",
   );
-  await expect(page.locator("body")).toContainText("This is also a full word on its own.");
+  await expect(page.locator("body")).toContainText("This is a full word on its own.");
   // The kanji block's own material: the character's meaning, whichever track the
   // step arrived on.
   await expect(page.locator("body")).toContainText("person");

@@ -288,8 +288,8 @@ describe("the headings, and the badge they replaced", () => {
     assert.equal(new Set(leads).size, 3, "and three different lines");
     // A whole sentence, not a character count. The floor used to be 40 chars,
     // which is a proxy for "somebody wrote this" and starts working against the
-    // copy the moment it gets tightened: "This is also a full word on its own."
-    // is 36 characters and says everything the role needs.
+    // copy the moment it gets tightened: "This is a full word on its own." is
+    // 31 characters and says everything the role needs.
     for (const l of leads) {
       assert.ok(l.trim().split(/\s+/).length >= 5, `"${l}" is a sentence`);
       assert.ok(l.trim().endsWith("."), `"${l}" is punctuated`);
