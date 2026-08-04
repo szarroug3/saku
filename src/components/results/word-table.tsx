@@ -16,7 +16,6 @@ import { nounFor } from "@/lib/quiz-instruction";
 import {
   confusedEntries,
   groupByEntry,
-  outcomeOf,
   type Outcome,
 } from "@/lib/results-grouping";
 import {
@@ -25,6 +24,7 @@ import {
   boxKeysForFacts,
   factOfBoxKey,
   missedBoxKeysForFacts,
+  outcomeForPhrase,
   presentationPhrasesForFact,
   type BoxKey,
 } from "@/components/results/word-table-keys";
@@ -47,27 +47,6 @@ function saidTextForPhrase(st: SessionStats[FactId] | undefined, phrase: string)
   const said = raw.trim();
   if (!said || said === "--") return null;
   return said;
-}
-
-function outcomeForPhrase(
-  st: SessionStats[FactId] | undefined,
-  phrase: string,
-): Outcome {
-  if (!st || st.seen === 0) return "unseen";
-  const hasPhraseMissData = Array.isArray(st.missedPhrases);
-  if (hasPhraseMissData) {
-    const missed = new Set(st.missedPhrases ?? []);
-    if (missed.has(phrase)) return st.everCorrect ? "recovered" : "missed";
-    // Some records carry phrase-level arrays but no missed entries while the
-    // fact still has misses. In that case we do not know this phrase was clean.
-    if (st.misses > 0) return outcomeOf(st);
-    // This table is phrase-scoped; when per-phrase miss data exists and this
-    // phrase was not missed, it was clean for this phrase.
-    return "first-try";
-  }
-  if (st.firstTryCorrect === true) return "first-try";
-  // Legacy/inferred sessions may lack phrase-level evidence.
-  return outcomeOf(st);
 }
 
 function cx(...parts: Array<string | false | null | undefined>): string {

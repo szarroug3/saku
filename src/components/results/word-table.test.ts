@@ -12,6 +12,7 @@ import { kanaFact } from "@/data/characters";
 import {
   boxKeyOf,
   missedBoxKeysForFacts,
+  outcomeForPhrase,
   presentationPhrasesForFact,
 } from "@/components/results/word-table-keys";
 import type { FactSessionDetail, SessionStats } from "@/types";
@@ -84,5 +85,60 @@ describe("missedBoxKeysForFacts", () => {
     assert.equal(stats[fact].misses > 0, true);
     assert.equal(Array.isArray(stats[fact].missedPhrases), true);
     assert.deepEqual(stats[fact].missedPhrases, []);
+  });
+});
+
+describe("outcomeForPhrase", () => {
+  test("a clean phrase reads first-try even when a SIBLING phrase was missed", () => {
+    // The reported bug: a fact asked several ways, one form missed, the fact
+    // therefore "recovered" overall — but the forms that were never missed must
+    // still read first-try, not borrow the fact's recovered status.
+    const st = stat({
+      seen: 3,
+      misses: 1,
+      everCorrect: true,
+      firstTryCorrect: false,
+      firstTryCount: 2,
+      correct: 2,
+      missedPhrases: ["B"],
+    });
+
+    assert.equal(outcomeForPhrase(st, "A"), "first-try");
+    assert.equal(outcomeForPhrase(st, "B"), "recovered");
+  });
+
+  test("a missed phrase reads missed when the fact never landed", () => {
+    const st = stat({
+      seen: 2,
+      misses: 2,
+      everCorrect: false,
+      firstTryCorrect: false,
+      firstTryCount: 0,
+      correct: 0,
+      missedPhrases: ["B"],
+    });
+
+    assert.equal(outcomeForPhrase(st, "A"), "first-try");
+    assert.equal(outcomeForPhrase(st, "B"), "missed");
+  });
+
+  test("empty miss data with a recorded miss falls back to the fact outcome", () => {
+    const st = stat({
+      seen: 2,
+      misses: 1,
+      everCorrect: true,
+      firstTryCorrect: false,
+      firstTryCount: 1,
+      correct: 1,
+      missedPhrases: [],
+    });
+
+    // Unattributable miss: no phrase to blame, so surface it via the fact.
+    assert.equal(outcomeForPhrase(st, "A"), "recovered");
+  });
+
+  test("an unseen stat reads unseen", () => {
+    const st = stat({ seen: 0, misses: 0, firstTryCorrect: null, firstTryCount: 0, correct: 0 });
+    assert.equal(outcomeForPhrase(st, "A"), "unseen");
   });
 });

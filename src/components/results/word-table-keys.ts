@@ -2,9 +2,40 @@
 // .ts module so Node's built-in test runner can import and test them directly.
 
 import { presentationPhrase } from "@/lib/question-presentation";
+import { outcomeOf, type Outcome } from "@/lib/results-grouping";
 import type { FactId, SessionStats } from "@/types";
 
 export type BoxKey = string;
+
+/**
+ * How one PRESENTATION FORM of a fact went — the per-phrase outcome the results
+ * table colours each cell from. Distinct from `outcomeOf`, which grades the
+ * whole fact: a fact asked three ways with one typo is "recovered" as a fact,
+ * but two of its three forms were first-try and must read that way.
+ *
+ * The rule: populated `missedPhrases` is authoritative PER PHRASE. A phrase in
+ * the set was missed (recovered if the fact ever landed, else missed); a phrase
+ * ABSENT from a non-empty set was clean here, regardless of a sibling phrase's
+ * miss. Only an EMPTY missed set paired with a recorded miss is unattributable
+ * — a miss the drill couldn't pin to a phrase — and only then do we fall back
+ * to the fact-level outcome so the miss still surfaces somewhere.
+ */
+export function outcomeForPhrase(
+  st: SessionStats[FactId] | undefined,
+  phrase: string,
+): Outcome {
+  if (!st || st.seen === 0) return "unseen";
+  const hasPhraseMissData = Array.isArray(st.missedPhrases);
+  if (hasPhraseMissData) {
+    const missed = new Set(st.missedPhrases ?? []);
+    if (missed.has(phrase)) return st.everCorrect ? "recovered" : "missed";
+    if (missed.size === 0 && st.misses > 0) return outcomeOf(st);
+    return "first-try";
+  }
+  if (st.firstTryCorrect === true) return "first-try";
+  // Legacy/inferred sessions may lack phrase-level evidence.
+  return outcomeOf(st);
+}
 
 export function boxKeyOf(fact: FactId, phrase: string): BoxKey {
   return JSON.stringify([fact, phrase]);
