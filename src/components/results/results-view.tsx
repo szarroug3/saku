@@ -462,21 +462,33 @@ export function ResultsView({ results }: { results: ResultsPayload }) {
         stats={stats}
         weakest={weakest}
         extraSelectedFacts={selectedProgress}
-        onRedrill={(picked) => void startFacts(picked, "The misses", { redrill: true })}
-        // Rerun reproduces the FINISHED session, not the current builder: it
-        // reruns that session's facts in that session's own mode (results.mode)
-        // at full coverage, so "Rerun full setup" means the same setup. Reading
-        // the mode/length off the live cfg instead let a Practice change (Match
-        // pairs, Endless, …) since the run silently rewrite what Rerun did — and
-        // a mode the material has no card for produced a 0-question run whose
-        // empty record then made the button do nothing.
+        // All three of these re-run in the SESSION's mode (results.mode), never
+        // the current Practice/Home builder's. The builder can drift after a run
+        // finishes (Match pairs, Endless, ...), and a mode the material has no
+        // card for produces a 0-question run whose empty record then makes the
+        // button do nothing. Passing results.mode pins each re-run to the drill
+        // it came from, so a drifted builder cannot corrupt it. Redrill already
+        // forces full coverage (forceCoverage in beginLeg), so it needs no
+        // coverage flag; Rerun and Drill weakest ask coverage explicitly so each
+        // is a finite pass over its set.
+        onRedrill={(picked) =>
+          void startFacts(picked, "The misses", {
+            redrill: true,
+            mode: results.mode,
+          })
+        }
         onRerun={() =>
           void startFacts(rerunFacts(), "That session", {
             mode: results.mode,
             coverage: true,
           })
         }
-        onDrillWeakest={() => void startFacts(weakest, "The weakest")}
+        onDrillWeakest={() =>
+          void startFacts(weakest, "The weakest", {
+            mode: results.mode,
+            coverage: true,
+          })
+        }
       />
     </>
   );
