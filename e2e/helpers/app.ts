@@ -318,3 +318,102 @@ export async function startPractice(page: Page) {
   await page.waitForURL("**/quiz");
   return drillReady(page);
 }
+
+/**
+ * Walk the day-one curriculum lesson (the five vowels) from /learn to a live
+ * drill, and stop on the first quiz card.
+ *
+ * The teach walk is the same one the end-to-end lesson test spells out card by
+ * card; here it is compressed to "click Next until only Quiz me is left", so a
+ * test that only cares about the round AFTER the drill doesn't re-assert the
+ * teach steps. The caller must have seeded an EMPTY history (so the curriculum
+ * offers hiragana group 1) plus a jp2en typed, limited-coverage config before
+ * calling — see the CFG the lesson specs share.
+ */
+export async function startVowelLessonDrill(page: Page): Promise<void> {
+  await page.goto("/learn");
+  await page.getByRole("button", { name: "Start", exact: true }).click();
+  await page.waitForURL("**/session");
+  // The track intro and each teach card carry a "Next"; the last card drops it
+  // for "Quiz me". Click through them all — the guard is only there so a copy
+  // change that leaves Next on screen can't spin this forever.
+  for (let guard = 0; guard < 20; guard++) {
+    const next = page.getByRole("button", { name: "Next", exact: true });
+    if ((await next.count()) === 0) break;
+    await next.click();
+  }
+  await page.getByRole("button", { name: "Quiz me", exact: true }).click();
+  await page.waitForURL("**/quiz");
+  await drillReady(page);
+}
+
+/**
+ * Answer the drill card on screen, correctly or wrongly, and advance.
+ *
+ * The correct path reuses answerTypedCorrectly's trick — look the answer up in
+ * the app's registry, submit, and wait on the old glyph node detaching, which
+ * for a right answer can only mean the next card was drawn (a correct answer
+ * never bumps `tries`, so the halo only remounts on a fresh question).
+ *
+ * The WRONG path is the miss-then-resolve flow the round-state specs need. With
+ * `retries: "none"` a wrong answer is out of retries at once: the showing
+ * resolves as missed and the card waits behind a Continue button (nothing
+ * auto-advances a miss any more). Clicking Continue is what moves the run on.
+ * The typed miss text is deliberately non-romaji ("xyz" by default) so the drill
+ * records it verbatim as the "said" value and never mistakes it for a real
+ * answer or a confusion.
+ *
+ * `last` says this is the final card of a coverage run: resolving it finishes
+ * the quiz and navigates, so we wait for `finishUrl` (the session loop for a
+ * lesson, /results for a plain practice run) instead of a next card.
+ */
+export async function answerDrillCard(
+  page: Page,
+  pool: readonly string[],
+  opts: {
+    wrong?: boolean;
+    wrongText?: string;
+    last?: boolean;
+    finishUrl?: string;
+  } = {},
+): Promise<void> {
+  const {
+    wrong = false,
+    wrongText = "xyz",
+    last = false,
+    finishUrl = "**/session",
+  } = opts;
+
+  const glyphLocator = page.locator(".kq-glyph").first();
+  await expect(glyphLocator).toBeVisible();
+  const glyphNode = await glyphLocator.elementHandle();
+  const glyph = (await glyphLocator.innerText()).trim();
+
+  const box = answerBox(page);
+  await expect(box).toBeVisible();
+
+  if (wrong) {
+    await box.fill(wrongText);
+    await box.press("Enter");
+    const cont = page.getByRole("button", { name: "Continue", exact: true });
+    await expect(cont).toBeVisible();
+    if (last) {
+      await Promise.all([page.waitForURL(finishUrl), cont.click()]);
+    } else {
+      await cont.click();
+      await page.waitForFunction((el) => !el?.isConnected, glyphNode);
+    }
+  } else {
+    const fact = pool.find((f) => factInfo(f as FactId)?.glyph === glyph);
+    const answer = fact ? factInfo(fact as FactId)?.answers[0] : undefined;
+    if (!answer) throw new Error(`no seeded fact renders the glyph "${glyph}"`);
+    await box.fill(answer);
+    await box.press("Enter");
+    if (last) {
+      await page.waitForURL(finishUrl);
+    } else {
+      await page.waitForFunction((el) => !el?.isConnected, glyphNode);
+    }
+  }
+  await glyphNode?.dispose();
+}
