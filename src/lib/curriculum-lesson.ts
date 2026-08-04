@@ -53,9 +53,8 @@
 // rolesDifficulty over the item's own roles, so the packer and glyphDifficulty
 // price a glyph identically by construction.
 //
-// WORD_COST is kept for the settings math that still reads the two sitting-length
-// budgets against each other, but it no longer prices a word here: a word costs
-// its reading-unit count, not a flat exchange rate.
+// A word no longer has a flat price: it costs its reading-unit count, summed
+// across its roles like every other item (see costOf and src/lib/difficulty.ts).
 //
 // THE WORD GATE IS GONE, BECAUSE THE ORDER ATE IT
 // ===============================================
@@ -87,27 +86,9 @@ import {
   type CurriculumItem,
   type CurriculumRole,
 } from "@/lib/curriculum-order";
-import {
-  LESSON_RANGE_DEFAULT,
-  WORDS_PER_LESSON_DEFAULT,
-  type LessonRange,
-} from "@/lib/lesson-sizing";
+import { type LessonRange } from "@/lib/lesson-sizing";
 import type { CompositePosition, LessonPosition } from "@/lib/lesson-position";
 import type { FactId, HistoryFile } from "@/types";
-
-/**
- * The app's two sitting-length budgets divided into each other: 12 cost per
- * sitting over 6 words per sitting is 2. Floored at 1.
- *
- * No longer what a word costs a lesson — that is now its reading-unit count (see
- * costOf and src/lib/difficulty.ts). Kept as an export because the settings math
- * still reconciles the two budgets through it, and removing it would silently
- * change that number.
- */
-export const WORD_COST = Math.max(
-  1,
-  Math.round(LESSON_RANGE_DEFAULT.max / WORDS_PER_LESSON_DEFAULT),
-);
 
 /** One item on a lesson card: a glyph, every role it plays, and what learning it
  * teaches. The spine's item, with the display and drill data joined on. */
@@ -132,7 +113,8 @@ export interface CurriculumLessonItem {
    * reading, so it has none to print.
    */
   reading: string | null;
-  /** What this item adds to the lesson's budget. See WORD_COST. */
+  /** What this item adds to the lesson's budget: its reading-unit cost, summed
+   * across every role it plays. See costOf and src/lib/difficulty.ts. */
   cost: number;
   /** The facts learning it teaches, in teach order: the shape's meaning first,
    * then the word's meaning and reading. */

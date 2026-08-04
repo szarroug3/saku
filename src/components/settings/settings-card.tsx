@@ -411,11 +411,10 @@ export function SettingsCard() {
       {/* THE WORDS-PER-LESSON STEPPER IS GONE. There is one lesson size now,
           because there is one track: radicals, kanji and words come off a single
           ordered spine and a lesson is cut by the cost above (see
-          curriculum-lesson.ts). A word is priced into that same budget at a flat
-          rate, taken from what these two sliders' DEFAULTS already agreed a
-          sitting was worth, so a second control would have been a second answer
-          to a question the first one already answers. The stored value and its
-          clamp stay on QuizConfig, where WORD_COST reads the default. */}
+          curriculum-lesson.ts). A word is priced into that same budget by its
+          reading-unit count, summed across its roles (see costOf and
+          src/lib/difficulty.ts), so a second control would have been a second
+          answer to a question the first one already answers. */}
 
       <Card>
         <Lbl>The drill</Lbl>

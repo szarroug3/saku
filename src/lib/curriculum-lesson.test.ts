@@ -35,7 +35,6 @@ import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { CURRICULUM_SEQUENCE } from "./curriculum-order.ts";
 import {
   CURRICULUM_TOTALS,
-  WORD_COST,
   curriculum,
   nextCurriculumLesson,
   nextCurriculumLock,
@@ -48,7 +47,6 @@ import { readingsProvedBy } from "./word-unlock.ts";
 import { compositePositionLabel } from "./lesson-position.ts";
 import {
   LESSON_RANGE_DEFAULT,
-  WORDS_PER_LESSON_DEFAULT,
   type LessonRange,
 } from "./lesson-sizing.ts";
 import { CURRICULUM_WORDS, wordTeachable } from "./word-lesson.ts";
@@ -264,18 +262,6 @@ describe("the lesson length is a setting, and the packing honours it", () => {
 });
 
 describe("what a word costs is its reading-units, summed across its roles", () => {
-  test("WORD_COST is the cost budget divided by the words budget", () => {
-    // Not what a word costs any more (see below) and not a third number to keep
-    // in step either: it is only the two sitting-length budgets reconciled, 12
-    // cost per sitting over 6 words per sitting is 2. Kept so the settings math
-    // that reads both budgets has one name for their ratio. See the module header.
-    assert.equal(
-      WORD_COST,
-      Math.round(LESSON_RANGE_DEFAULT.max / WORDS_PER_LESSON_DEFAULT),
-    );
-    assert.ok(WORD_COST >= 1);
-  });
-
   test("a word-only item costs one per reading-unit, not a flat price", () => {
     // A word is not a drawn shape: its kanji were taught earlier in this same
     // sequence, so there is nothing left to learn to draw. What is left to learn
