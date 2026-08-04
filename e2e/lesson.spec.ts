@@ -112,12 +112,12 @@ test("a new learner can take the first lesson through to its quiz", async ({
   // scoring and the session loop agree with each other — a unit test can prove
   // any one of them in isolation and still miss this.
   await expect(page.locator("body")).toContainText("round 1 of 3 · done");
-  await expect(page.locator("body")).toContainText("5 questions");
-  await expect(page.locator("body")).toContainText("5 right first try");
-  // The third number is `total - firstTry`, in the same unit (showings) as the
-  // other two, so the line adds up. It used to be a third independent count and
-  // read "5 questions · 4 right first try · 2 missed".
-  await expect(page.locator("body")).toContainText("0 needed another look");
+  await expect(page.locator("body")).toContainText("5 forms");
+  await expect(page.locator("body")).toContainText("5 solid");
+  // The summary counts DISTINCT FORMS, not showings: five forms, all first-try,
+  // so five Solid and none needing work. `needs work` is `total - solid`, so the
+  // line adds up by construction.
+  await expect(page.locator("body")).toContainText("0 needs work");
 });
 
 /**

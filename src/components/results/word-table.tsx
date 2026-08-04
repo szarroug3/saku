@@ -26,6 +26,8 @@ import {
   missedBoxKeysForFacts,
   outcomeForPhrase,
   presentationPhrasesForFact,
+  roundFormCounts,
+  roundFormsByOutcome,
   type BoxKey,
 } from "@/components/results/word-table-keys";
 import { groupRowsByDisplayLabel } from "@/components/results/word-table-grouping";
@@ -39,6 +41,8 @@ export {
   factOfBoxKey,
   missedBoxKeysForFacts,
   presentationPhrasesForFact,
+  roundFormCounts,
+  roundFormsByOutcome,
 };
 
 function saidTextForPhrase(st: SessionStats[FactId] | undefined, phrase: string): string | null {

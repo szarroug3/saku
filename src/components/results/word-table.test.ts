@@ -14,6 +14,7 @@ import {
   missedBoxKeysForFacts,
   outcomeForPhrase,
   presentationPhrasesForFact,
+  roundFormCounts,
 } from "@/components/results/word-table-keys";
 import type { FactSessionDetail, SessionStats } from "@/types";
 
@@ -85,6 +86,72 @@ describe("missedBoxKeysForFacts", () => {
     assert.equal(stats[fact].misses > 0, true);
     assert.equal(Array.isArray(stats[fact].missedPhrases), true);
     assert.deepEqual(stats[fact].missedPhrases, []);
+  });
+});
+
+describe("roundFormCounts", () => {
+  // The owner's example, pinned: a keigo-style item asked three distinct ways,
+  // two landed first try and one was missed. The header must read 3 FORMS, split
+  // 2 solid / 1 needs work — NOT the showing count, which turned the re-ask of
+  // the miss into a fourth (or fifth) "question".
+  test("a fact asked three ways with one miss is 3 forms: 2 solid, 1 needs work", () => {
+    const fact = kanaFact("ちゅ");
+    // Three distinct presentations → three distinct forms. Built as data so the
+    // test never hardcodes the exact phrase wording, only that there are three.
+    const showns = [
+      { dir: "jp2en", mode: "typed", listen: false },
+      { dir: "jp2en", mode: "mc", listen: false },
+      { dir: "en2jp", mode: "typed", listen: false },
+    ] as const;
+    const probe: SessionStats = {
+      [fact]: stat({ seen: 3, showns: [...showns] }),
+    };
+    const phrases = presentationPhrasesForFact(fact, probe);
+    assert.equal(phrases.length, 3, "fixture must produce three distinct forms");
+
+    const stats: SessionStats = {
+      [fact]: stat({
+        seen: 3,
+        misses: 1,
+        everCorrect: true,
+        firstTryCorrect: false,
+        firstTryCount: 2,
+        correct: 2,
+        showns: [...showns],
+        // Exactly one form missed; the other two were clean.
+        missedPhrases: [phrases[0]],
+      }),
+    };
+
+    assert.deepEqual(roundFormCounts([fact], stats), {
+      solid: 2,
+      needsWork: 1,
+      totalForms: 3,
+    });
+  });
+
+  test("a perfect fact is all solid, nothing needs work", () => {
+    const fact = kanaFact("ちゅ");
+    const stats: SessionStats = {
+      [fact]: stat({ seen: 1, misses: 0, everCorrect: true, firstTryCorrect: true }),
+    };
+    assert.deepEqual(roundFormCounts([fact], stats), {
+      solid: 1,
+      needsWork: 0,
+      totalForms: 1,
+    });
+  });
+
+  test("unseen forms are skipped: they belong to neither pile", () => {
+    const fact = kanaFact("ちゅ");
+    const stats: SessionStats = {
+      [fact]: stat({ seen: 0, misses: 0, everCorrect: false, firstTryCorrect: null, firstTryCount: 0, correct: 0 }),
+    };
+    assert.deepEqual(roundFormCounts([fact], stats), {
+      solid: 0,
+      needsWork: 0,
+      totalForms: 0,
+    });
   });
 });
 

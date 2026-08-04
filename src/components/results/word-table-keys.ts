@@ -77,6 +77,58 @@ export function boxKeysForFacts(
   return facts.flatMap((fact) => boxKeysForFact(fact, stats));
 }
 
+/**
+ * The round's SEEN forms, split by outcome — the unit the round-complete header
+ * and its two sections both count in.
+ *
+ * A FORM is one way a fact was asked (a `(fact, phrase)` pair), deduped by
+ * `presentationPhrasesForFact`. This counts FORMS, not SHOWINGS: a form asked,
+ * missed, and re-asked is ONE form here, whereas the old showing-based header
+ * counted the re-ask as a second question. That double-count is the exact bug
+ * this split fixes — a keigo item asked 3 ways with 1 miss is 3 forms (2 solid,
+ * 1 needs work), never "5 questions".
+ *
+ *   solid     — landed first try, nothing to redo.
+ *   needsWork — missed, or landed only after another look (recovered). The
+ *               actionable half: these are the retry candidates.
+ *
+ * `unseen` forms (a fact in the selection the round never reached) are skipped:
+ * nothing happened to them, so they belong to neither pile.
+ */
+export function roundFormsByOutcome(
+  facts: readonly FactId[],
+  stats: SessionStats,
+): { solid: BoxKey[]; needsWork: BoxKey[] } {
+  const solid: BoxKey[] = [];
+  const needsWork: BoxKey[] = [];
+  for (const fact of facts) {
+    const st = stats[fact];
+    for (const phrase of presentationPhrasesForFact(fact, stats)) {
+      const box = boxKeyOf(fact, phrase);
+      const outcome = outcomeForPhrase(st, phrase);
+      if (outcome === "first-try") solid.push(box);
+      else if (outcome === "recovered" || outcome === "missed") needsWork.push(box);
+      // "unseen" falls through: not part of the round that was played.
+    }
+  }
+  return { solid, needsWork };
+}
+
+/** The three numbers the round-complete header prints, in FORMS. `totalForms`
+ * is `solid + needsWork` by construction, so the line sums the way the old
+ * showing-based one was meant to. */
+export function roundFormCounts(
+  facts: readonly FactId[],
+  stats: SessionStats,
+): { solid: number; needsWork: number; totalForms: number } {
+  const { solid, needsWork } = roundFormsByOutcome(facts, stats);
+  return {
+    solid: solid.length,
+    needsWork: needsWork.length,
+    totalForms: solid.length + needsWork.length,
+  };
+}
+
 export function missedBoxKeysForFacts(
   facts: FactId[],
   stats: SessionStats,

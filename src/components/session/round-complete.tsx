@@ -13,20 +13,28 @@
 // emptiness rule starts at Complete round, because that is where the rest
 // starts and the rest is the only thing the rest is for.
 //
-// THE PICKER IS A TABLE, GROUPED BY WORD
-// ======================================
-// One row per word (entry), its facts as cells — the same WordTable the results
-// board uses, so both post-quiz screens read a miss the same way. Each cell says
-// how the card was ASKED ("hear it → type the meaning"), how it went, and, for a
-// miss, what you answered instead — never the answer itself: you are about to be
-// re-asked these. 何 can be here three times — heard and typed for its meaning,
-// seen and picked for its reading — and the cell is what tells them apart.
+// TWO SECTIONS, GROUPED BY OUTCOME
+// ================================
+// The body is split into NEEDS WORK and SOLID — the two piles the header counts.
+// The unit is the FORM: one way a fact was asked ("hear it → pick the meaning"),
+// not the SHOWING. A form missed and re-asked is one form, not two questions, so
+// a keigo item asked three ways with one miss reads "3 forms · 2 solid · 1 needs
+// work" — the double-count the old showing-based header carried is gone.
+//
+// Each section is the same WordTable the results board uses (a row per word, its
+// forms as cells), filtered to one outcome. Needs work comes FIRST because it is
+// the actionable half: those forms open pre-ticked and the Retry button re-asks
+// them. Every cell still says how the card was asked, how it went, and — for a
+// miss — what you answered instead, never the answer itself: you are about to be
+// re-asked these.
 
 import { useState } from "react";
 
 import {
   factOfBoxKey,
   missedBoxKeysForFacts,
+  roundFormCounts,
+  roundFormsByOutcome,
   type BoxKey,
   WordTable,
 } from "@/components/results/word-table";
@@ -66,8 +74,26 @@ export function RoundComplete({
   // now, and only `outstanding` reaches the picker. That split is the whole of
   // the "my perfect retry left no trace" fix: the round keeps its record, the
   // OFFER stops re-offering work you have already done.
-  const { selection, recovered, outstanding, total, firstTry, needAnother } =
+  const { selection, answered, recovered, outstanding } =
     roundCompleteView(session);
+
+  // The header, in FORMS: solid = landed first try, needsWork = missed or
+  // recovered, totalForms = the two summed. Counted over the ANSWERED facts
+  // (what the round played), never the full selection — an unreached form is not
+  // a miss. See roundFormCounts / roundFormsByOutcome for the form-vs-showing
+  // distinction this replaced.
+  const { solid, needsWork, totalForms } = roundFormCounts(
+    answered,
+    session.roundStats,
+  );
+
+  // The same forms as BOXES, so each section renders only its own outcome. The
+  // sets are derived from the identical classification the counts use, so the
+  // header and the two lists can never disagree.
+  const { solid: solidBoxList, needsWork: needsWorkBoxList } =
+    roundFormsByOutcome(answered, session.roundStats);
+  const solidBoxes = new Set(solidBoxList);
+  const needsWorkBoxes = new Set(needsWorkBoxList);
 
   // The OUTSTANDING misses open pre-ticked. So the default "Retry N" IS "retry
   // what's still open" — the same one tap the old dedicated button gave, now
@@ -78,6 +104,15 @@ export function RoundComplete({
   const [picked, setPicked] = useState<Set<BoxKey>>(
     () => new Set(missedBoxKeysForFacts(outstanding, session.roundStats)),
   );
+
+  // One toggle, shared by both sections — a tap lights or clears a form for the
+  // retry, whichever pile it lives in.
+  const toggle = (box: BoxKey) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(box)) next.add(box);
+      return next;
+    });
 
   const pickedFacts = [...picked]
     .map((box) => factOfBoxKey(box))
@@ -93,24 +128,25 @@ export function RoundComplete({
         <h1 className="text-[22px] font-light tracking-[-0.3px]">
           Round {session.round}
         </h1>
-        {/* Three numbers in ONE unit (showings), and the third is the first
-            two subtracted, so the line adds up by construction. It used to be
-            three different questions in one sentence and read "5 questions · 4
-            right first try · 2 missed". See roundCompleteView. */}
+        {/* Three numbers in ONE unit (distinct FORMS), and the total is the
+            other two summed, so the line adds up by construction. It used to
+            count showings and read "5 questions · 4 right first try · 2 missed"
+            for a round that only asked three distinct forms — the re-ask of a
+            miss counted as its own question. See roundFormCounts. */}
         <p className="mb-3 mt-0.5 text-[13px] text-text-muted">
-          {total} question{total === 1 ? "" : "s"} · {firstTry} right first try ·{" "}
-          {needAnother} needed another look
+          {totalForms} form{totalForms === 1 ? "" : "s"} · {solid} solid ·{" "}
+          {needsWork} needs work
         </p>
 
-        {/* One bar, two facts. No percentage: you can count the chips. */}
+        {/* One bar, two piles. No percentage: you can count the cells. */}
         <div className="mb-3.5 flex h-1.5 overflow-hidden rounded-full bg-panel">
-          {firstTry > 0 ? (
-            <span className="block h-full bg-success" style={{ flex: firstTry }} />
+          {solid > 0 ? (
+            <span className="block h-full bg-success" style={{ flex: solid }} />
           ) : null}
-          {needAnother > 0 ? (
+          {needsWork > 0 ? (
             <span
               className="block h-full bg-danger"
-              style={{ flex: needAnother }}
+              style={{ flex: needsWork }}
             />
           ) : null}
         </div>
@@ -123,32 +159,50 @@ export function RoundComplete({
           </p>
         ) : null}
 
-        <div className="border-t border-border pt-3">
-          <p className="text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
-            Pick what to retry
-          </p>
-          <p className="mb-3 mt-0.5">
-            <Hint>{retryHint(outstanding.length, recovered.length)}</Hint>
-          </p>
+        {/* NEEDS WORK first — the actionable pile. Each cell is a form you
+            missed or only got after another look: the phrase, how it went, and
+            what you answered instead (never the answer — it may be re-asked).
+            Outstanding misses open pre-ticked; recovered forms show here too but
+            open un-ticked, since the "Back on the retry" line already accounts
+            for them. Tapping a cell adds or drops it from the retry. */}
+        {needsWorkBoxes.size ? (
+          <div className="border-t border-border pt-3">
+            <p className="text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
+              Needs work
+            </p>
+            <p className="mb-3 mt-0.5">
+              <Hint>{retryHint(outstanding.length, recovered.length)}</Hint>
+            </p>
+            <WordTable
+              facts={answered}
+              stats={session.roundStats}
+              showOnly={needsWorkBoxes}
+              isSelected={(box) => picked.has(box)}
+              onToggle={toggle}
+            />
+          </div>
+        ) : null}
 
-          {/* One row per word, its facts as cells — the same table the results
-              board shows. Each cell says how the card was asked ("hear it →
-              type the meaning"), how it went, and, for a miss, what you answered
-              instead. Outstanding misses open pre-ticked; tapping a cell adds or
-              drops it from the retry. */}
-          <WordTable
-            facts={selection}
-            stats={session.roundStats}
-            isSelected={(box) => picked.has(box)}
-            onToggle={(box) =>
-              setPicked((prev) => {
-                const next = new Set(prev);
-                if (!next.delete(box)) next.add(box);
-                return next;
-              })
-            }
-          />
-        </div>
+        {/* SOLID — the quiet "you nailed these" list. First-try forms only, no
+            "said" and no status marker. Tappable through the same picker so you
+            can fold one back into a retry if you want, but it opens un-ticked
+            and adds nothing to Retry by default. */}
+        {solidBoxes.size ? (
+          <div className="mt-3.5 border-t border-border pt-3">
+            <p className="mb-3 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
+              Solid
+            </p>
+            <WordTable
+              facts={answered}
+              stats={session.roundStats}
+              showOnly={solidBoxes}
+              hideFirstTry
+              solidTone
+              isSelected={(box) => picked.has(box)}
+              onToggle={toggle}
+            />
+          </div>
+        ) : null}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Btn
