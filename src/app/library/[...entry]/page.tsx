@@ -71,6 +71,7 @@ import { Callout } from "@/components/lesson/callout";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { WordClassNote } from "@/components/lesson/word-class-note";
+import { WordSensePanel } from "@/components/lesson/word-sense-panel";
 import { Card, Hint, Lbl, SoundIcon } from "@/components/ui";
 import { KANA_SUBJECT, glyphVariantFor } from "@/data/characters";
 import {
@@ -1008,6 +1009,21 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* ================= WORD ================= */}
       {isWord ? (
         <>
+          {/* EVERY READING WITH ITS MEANING, when a word is read more than one
+              way. 大 is だい AND おお, 日 is ひ AND にち, and each reading-unit is
+              a fact the quiz mints and scores on its own (readingUnits /
+              wordUnitFacts). The header carries only the primary (だい, its sound
+              and its gloss), so without this the secondary readings were drilled
+              but never shown here — the same gap the lesson had. The shared panel
+              the teach walk uses draws them, bound ones marked "in compounds", so
+              the reference and the lesson cannot disagree about a word's readings.
+              A single-reading word (先生) has nothing this adds over the header,
+              so it is gated on there being more than one unit. */}
+          {wordRow && readingUnits(wordRow).length > 1 ? (
+            <div className="mb-3.5">
+              <WordSensePanel word={wordRow} voiceName={cfg.voiceName} />
+            </div>
+          ) : null}
           {/* Absent, not empty, for a jukujikun (大人/おとな) and an all-kana
               word. Links has moved to the common footer, so Built from no
               longer shares a row with navigation. */}

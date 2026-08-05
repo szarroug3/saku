@@ -44,7 +44,7 @@ import { kanaEntry } from "@/data/characters";
 import { kanjiEntry } from "@/data/kanji";
 import { patternEntry } from "@/data/grammar";
 import { radicalEntry } from "@/data/radicals";
-import { vocabRow, wordEntry } from "@/data/vocab";
+import { readingUnits, vocabRow, wordEntry } from "@/data/vocab";
 import type { LessonItem, LessonKind } from "@/lib/lesson-items";
 import { usedAsPartIn } from "@/lib/library/components";
 import { libEntry, readingRowsOf } from "@/lib/library/entries";
@@ -54,6 +54,8 @@ import {
   kanjiEntryOf,
   kanjiMeanings,
   radicalMeaningOf,
+  allReadingSenses,
+  isBoundReading,
   standaloneSenses,
   lessonRoles,
   lessonSections,
@@ -378,6 +380,58 @@ describe("standaloneSenses — which readings you can actually say by themselves
       const row = vocabRow(w)!;
       assert.deepEqual(standaloneSenses(row), row.senses);
     }
+  });
+});
+
+describe("allReadingSenses — every reading the quiz asks, so teaching matches drilling", () => {
+  test("the rows match readingUnits 1:1: same count, same reb, same order", () => {
+    // The panel and the Library both list these, and the quiz mints one fact per
+    // readingUnit. If these two ever diverge, the learner is drilled on a reading
+    // that was never taught (the old standaloneSenses bug) or shown one that is
+    // never asked. So they must agree, glyph for glyph.
+    for (const glyph of ["大", "人", "先生", "日", "主", "学生", "食べる", "ある"]) {
+      const row = vocabRow(glyph)!;
+      assert.deepEqual(
+        allReadingSenses(row).map((s) => s.reb),
+        readingUnits(row).map((u) => u.reb),
+        `${glyph} rows must equal its reading-units`,
+      );
+    }
+  });
+
+  test("大 shows BOTH だい and おお — the reading the quiz asks and the one it also asks", () => {
+    // The regression this whole change fixes: 大 mints a fact for おお, but the
+    // word block used to show だい alone.
+    assert.deepEqual(
+      allReadingSenses(vocabRow("大")!).map((s) => s.reb),
+      ["だい", "おお"],
+    );
+  });
+
+  test("人 shows all three where standaloneSenses kept only ひと", () => {
+    assert.deepEqual(
+      allReadingSenses(vocabRow("人")!).map((s) => s.reb),
+      ["ひと", "じん", "にん"],
+    );
+    assert.deepEqual(
+      standaloneSenses(vocabRow("人")!).map((s) => s.reb),
+      ["ひと"],
+    );
+  });
+});
+
+describe("isBoundReading — the readings shown but marked 'in compounds'", () => {
+  test("大's おお and 人's じん/にん are bound; the primary and 主's four are not", () => {
+    const senses = (glyph: string) =>
+      Object.fromEntries(allReadingSenses(vocabRow(glyph)!).map((s) => [s.reb, isBoundReading(s)]));
+    assert.equal(senses("大")["おお"], true);
+    assert.equal(senses("大")["だい"], false);
+    const hito = senses("人");
+    assert.equal(hito["ひと"], false);
+    assert.equal(hito["じん"], true);
+    assert.equal(hito["にん"], true);
+    // 主's four are all real standalone words, so none is marked.
+    for (const bound of Object.values(senses("主"))) assert.equal(bound, false);
   });
 });
 

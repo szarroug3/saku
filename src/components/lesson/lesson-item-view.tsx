@@ -63,10 +63,13 @@
 // definition of it as a word and how to say it." So the kanji block is its line
 // and its definition, and the word block is the sound and the sense.
 //
-// WHICH IS WHY THE SENSE TABLE LEFT THE WORD BLOCK. It listed ひと, じん and にん
-// under "Word", and that claims you can say じん by itself. You cannot; it only
-// ever turns up welded to something else. The word block keeps the readings that
-// stand alone, which is one for 人 and four for 主 (see `standaloneSenses`).
+// THE WORD BLOCK TEACHES EVERY READING THE QUIZ ASKS. For 人 that is ひと, じん
+// and にん, for 大 both だい and おお: each is a reading-unit the drill mints a
+// fact for (readingUnits / wordUnitFacts), so teaching fewer than all of them
+// left the learner drilled on readings they were never shown. The panel lists
+// them all (see `allReadingSenses`) and quietly marks the ones you only say
+// welded into a longer word — じん, にん, おお — "in compounds", so showing the
+// reading never claims you can utter it alone.
 //
 // AND THE BREAKDOWN IS FOR COMPOUNDS ONLY NOW. A word written with more than one
 // kanji has a real question hanging over it — which character is making which

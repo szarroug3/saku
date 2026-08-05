@@ -49,11 +49,17 @@
 // then the definition of it as a word and how to say it." So the kanji block is
 // a line and a definition, and there is no `kanji-readings` section.
 //
-// WHICH IS ALSO WHY THE SENSE TABLE LEFT THE WORD BLOCK. It sat under "Word"
-// listing ひと, じん and にん, which says you can say じん by itself. You cannot:
-// じん and にん are bound, they only ever occur welded into a longer word. What is
-// left in the word block is the readings that genuinely stand alone, which is
-// one for 人 and four for 主; see `standaloneSenses`.
+// THE WORD BLOCK SHOWS EVERY READING THE QUIZ ASKS. It lists ひと, じん and にん
+// for 人, だい and おお for 大 — each a reading-unit the drill mints a fact for
+// (readingUnits / wordUnitFacts in vocab.ts). For a while it showed only the
+// readings you can say alone (`standaloneSenses`, one for 人 and four for 主),
+// which read cleaner but taught the learner fewer readings than the drill went on
+// to test: じん, にん and おお were quizzed and never taught. The owner's call was
+// to teach all of them, so the panel enumerates every reading-unit (see
+// `allReadingSenses`) and marks the bound ones — じん, にん, おお — "in compounds",
+// so it never claims you can utter them alone. `standaloneSenses` stays, still
+// tested, for `isBoundReading`'s shared standsAlone predicate and any future
+// caller that genuinely wants the say-it-alone subset.
 //
 // AND THE BREAKDOWN NARROWED TO COMPOUNDS. `word-built-from` is the Library's
 // "Built from" box, asked for by name for the case it answers: 問題 is 問 もん
@@ -212,6 +218,38 @@ export function standaloneSenses(word: VocabRow): readonly WordSense[] {
   const [primary, ...rest] = word.senses;
   if (!primary) return [];
   return groupByReading([primary, ...rest.filter(standsAlone)]);
+}
+
+/**
+ * EVERY reading-unit of a word, one row per sound — the full set, bound readings
+ * included. `standaloneSenses` minus the `standsAlone` filter.
+ *
+ * WHY THE PANEL AND THE LIBRARY WANT THIS, NOT `standaloneSenses`. The quiz mints
+ * a fact for every reading of a word (see `readingUnits`/`wordUnitFacts` in
+ * vocab.ts): 大 is drilled on だい AND おお, 人 on ひと AND じん AND にん. Filtering
+ * to the readings you can utter alone dropped おお, じん and にん from what is
+ * TAUGHT while the drill kept asking them, so the learner met them first as a
+ * question they were never shown the answer to. The owner's call: teach every
+ * reading the quiz asks. So the word display enumerates all of them and matches
+ * `readingUnits` 1:1 (same count, same `reb`, same insertion order — both group
+ * by `reb`); `isBoundReading` lets a caller mark the ones you only say in
+ * compounds without hiding them.
+ */
+export function allReadingSenses(word: VocabRow): readonly WordSense[] {
+  return groupByReading(word.senses);
+}
+
+/**
+ * A reading you never say on its own — おお for 大, じん and にん for 人. The
+ * inverse of `standsAlone`, read off the same tags. It is shown anyway (the quiz
+ * asks it), so this exists only to let the display add a quiet "in compounds"
+ * marker beside it, keeping the learner from inferring they can utter it alone.
+ * The word's PRIMARY reading (senses[0], the one it is filed and drilled under)
+ * is the one you can say, so callers exempt the first row rather than trusting a
+ * tag heuristic on it.
+ */
+export function isBoundReading(sense: WordSense): boolean {
+  return !standsAlone(sense);
 }
 
 /**

@@ -16,30 +16,31 @@
 // form: the reading is unambiguous, and the character alone can be read several
 // ways.
 //
-// THE READINGS THAT STAND ALONE, AND ONLY THOSE
-// =============================================
-// This panel used to print all three of 人's readings — ひと, じん, にん — under
-// the "Word" heading. Two of them are not words. じん is the -ian suffix and にん
-// counts people; neither is ever said by itself, and a table filed under "Word"
-// claims they are. The owner's reading of it: "when it's used as a word, it's
-// said exactly one way hito". The sounds a character makes welded into something
-// longer are the kanji block's, where they now are.
+// EVERY READING THE QUIZ ASKS, BOUND ONES MARKED
+// ==============================================
+// This panel shows all of a word's reading-units — for 大 both だい and おお, for
+// 人 all of ひと, じん and にん — because those are exactly the readings the drill
+// mints a fact for (see `readingUnits`/`wordUnitFacts` in vocab.ts). It used to
+// ask `standaloneSenses`, which kept only the readings you can utter alone, so 大
+// taught だい and 人 taught ひと while the quiz went on asking おお, じん and にん:
+// the learner met those readings first as a question with an answer they had
+// never been shown. Teaching all of them closes that gap, and the rows here now
+// match `readingUnits` 1:1.
 //
-// So it asks `standaloneSenses`, which keeps every reading of the same word class
-// as the primary. That is one row for 人 and four for 主 (あるじ, おも, しゅ,
-// ぬし are four genuine words), so the plural case stays and no "there is only
-// one" assumption is baked in anywhere below.
-//
-// Every reading on show is a reading the quiz asks. Each one, with its meaning,
-// is its own scored skill, so listing all of them here promises nothing the
-// drill will not honour, and there is no "first reading only" caveat to print.
+// SOME OF THEM YOU ONLY SAY IN COMPOUNDS, and the panel says so quietly. おお is
+// a prefix, じん the -ian suffix, にん the people-counter: real readings, drilled,
+// but never uttered standing alone. `isBoundReading` flags them and the row wears
+// a muted "in compounds" tag, so showing the reading does not tell the learner
+// they can pronounce 大 as おお by itself. The PRIMARY reading (the one the word
+// is filed under) is always the one you can say, so the first row is never
+// marked.
 
 import { HearButton } from "@/components/lesson/hear-button";
 import { LessonPanel } from "@/components/lesson/lesson-panel";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { wordPitch } from "@/data/pitch";
 import type { VocabRow } from "@/data/vocab";
-import { standaloneSenses, wordTypeOf } from "@/lib/lesson-roles";
+import { allReadingSenses, isBoundReading, wordTypeOf } from "@/lib/lesson-roles";
 
 export function WordSensePanel({
   word,
@@ -48,7 +49,7 @@ export function WordSensePanel({
   word: VocabRow;
   voiceName: string;
 }) {
-  const senses = standaloneSenses(word);
+  const senses = allReadingSenses(word);
   const only = senses.length === 1 ? senses[0] : null;
 
   // The pitch overline is stored per WORD and validated against its PRIMARY
@@ -122,6 +123,16 @@ export function WordSensePanel({
                 </td>
                 <td className="py-2 pr-2 align-middle text-text-muted">
                   {wordTypeOf(s)}
+                  {/* A reading you only ever say welded into a longer word — おお
+                      for 大, じん/にん for 人. It is drilled and so it is shown, but
+                      the tag keeps the reader from thinking they can utter it on
+                      its own. Never on the first row: the primary is the reading
+                      the word is filed and said under. */}
+                  {i > 0 && isBoundReading(s) ? (
+                    <span className="ml-1.5 text-[10px] uppercase tracking-[0.06em] text-text-muted opacity-70">
+                      in compounds
+                    </span>
+                  ) : null}
                 </td>
                 <td className="py-2 align-middle text-text">
                   {s.glosses.slice(0, 4).join(", ")}
