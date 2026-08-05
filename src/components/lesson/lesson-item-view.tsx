@@ -741,7 +741,7 @@ export function LessonItemView({ item }: { item: LessonItem }) {
                 pieces, so this only renders where there is something to take
                 apart; the guard is for the never-null-here `kanjiCard` type. */}
             {sections.has("kanji-parts") && kanjiCard ? (
-              <KanjiBuiltFrom entry={kanjiCard} />
+              <KanjiBuiltFrom entry={kanjiCard} footnote={false} />
             ) : null}
           </RoleBlock>
         ) : null}

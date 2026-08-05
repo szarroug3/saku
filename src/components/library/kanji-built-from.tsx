@@ -30,7 +30,16 @@ import { builtFrom } from "@/lib/library/entries";
 import type { LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 
-export function KanjiBuiltFrom({ entry }: { entry: LibEntry }) {
+export function KanjiBuiltFrom({
+  entry,
+  // The one-line footnote is orientation for the Library, where "Built from" is
+  // reference; the lesson mounts the same box but has already said what the
+  // pieces are in its role sections, so it turns the line off.
+  footnote = true,
+}: {
+  entry: LibEntry;
+  footnote?: boolean;
+}) {
   const pieces = builtFrom(entry);
   if (!pieces.length) return null;
 
@@ -53,9 +62,11 @@ export function KanjiBuiltFrom({ entry }: { entry: LibEntry }) {
           </Link>
         ))}
       </div>
-      <p className="mt-2.5 text-xs text-text-muted">
-        Each piece is a shape you can meet on its own.
-      </p>
+      {footnote ? (
+        <p className="mt-2.5 text-xs text-text-muted">
+          Each piece is a shape you can meet on its own.
+        </p>
+      ) : null}
     </Card>
   );
 }
