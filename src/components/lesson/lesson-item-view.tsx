@@ -580,14 +580,14 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // box. Null for a word that cannot be split (the jukujikun, and any all-kana
   // word); the section gate has already asked whether it is worth splitting.
   const pieces = word ? piecesOf(word) : null;
-  // A word that is only a word says what it is up top: "noun · student". A
-  // character that is also a kanji spends its header on the character's meaning
-  // and teaches its word sense in the word section, which is the same condition
-  // the word-sense section is chosen by, asked once.
-  const headline =
-    word && !sections.has("word-sense")
-      ? `${wordTypeOf(word)} · ${(entry?.meanings?.[0] ?? "").trim()}`
-      : subtitle;
+  // The header line is the subtitle, full stop. This used to fork: a word that
+  // was ONLY a word had no word-sense box, so its header carried "noun · student"
+  // as the one place its class and meaning were said. Every word now gets the
+  // word-sense box (see lessonSections), so that fork is dead — `word &&
+  // !sections.has("word-sense")` can no longer be true — and headwordSubtitle
+  // already returns "" for a word, standing the header down so the box teaches
+  // it. Kana and grammar keep their own subtitle, unchanged.
+  const headline = subtitle;
 
   // A transitivity pair is neither a glyph nor a single fact, so it gets its own
   // card rather than the shared hero. This return is after every hook above, so
@@ -733,7 +733,16 @@ export function LessonItemView({ item }: { item: LessonItem }) {
           // tag is always present and always specific.
           <RoleBlock
             role="word"
-            labelled={labelRoles}
+            // ALWAYS LABELLED, unlike the radical and kanji blocks above. Those
+            // only ever render for a single-character glyph, so `labelRoles`
+            // (does the GLYPH play a character role) is the right gate for them.
+            // A word can be several characters (行く, 学生), for which
+            // `labelRoles` is false, and with the word-sense box now the whole
+            // body of a word-only step the "Word · {class}" heading is the only
+            // thing naming what the reader is looking at. Only words reach this
+            // block (via roleHasSections("word", …)), so labelling it outright is
+            // labelling every word.
+            labelled={true}
             tag={word ? (wordFormKind(word) ?? wordTypeOf(word)) : undefined}
           >
             {sections.has("word-sense") && word ? (

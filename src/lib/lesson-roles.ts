@@ -321,12 +321,16 @@ function splitsIntoKanji(word: VocabRow): boolean {
  * The sections a step shows, in SECTION_ORDER, with the empty ones already
  * dropped.
  *
- * `word-sense`, the reading-and-meaning panel, is the one section gated on
- * something other than data: a word that is only a word says both in its header
- * already (学生 prints "noun · student" beside its reading), so the panel would
- * say them twice. A character with a kanji card spends its header on the
- * character's meaning, and then the panel is the only place the word it also is
- * gets taught.
+ * `word-sense`, the reading-and-meaning panel, now belongs to EVERY word, not
+ * only the folded ones. It used to be gated on the step also playing a kanji or
+ * radical role, on the reasoning that a word which is ONLY a word said both in
+ * its header already (学生 printed "noun · student" beside its reading), so the
+ * panel would say them twice. But the header's other body was the conjugation
+ * Forms grid, and that left the lesson, so a word-only step with the panel
+ * withheld rendered an empty page under its header. The panel is the word's
+ * teaching now on every step: the header stands down (see headwordSubtitle,
+ * which returns "" for a word) and the sound and sense move into the box, the
+ * same place a folded word already taught them.
  *
  * `kanji-meaning` and `radical-note` USED TO BE gated on the step playing
  * several roles, on the reasoning that a lone kanji's definition is the headword
@@ -345,7 +349,7 @@ export function lessonSections(item: LessonItem): LessonSection[] {
   const out = new Set<LessonSection>();
 
   if (word) {
-    if (roles.includes("kanji") || roles.includes("radical")) out.add("word-sense");
+    out.add("word-sense");
     if (ruVerbKind(word) !== null || adjectiveKind(word) !== null) out.add("word-class");
     if (formsOfWord(word)?.length) out.add("word-forms");
     // "Built from" only when there are pieces to see. 電車 is 電 でん plus 車
@@ -436,6 +440,12 @@ export function wordTypeOf(word: Pick<VocabRow, "pos">): string {
   // "adverb (fukushi)". Testing for the verb first called 何 a verb.
   if (pos.includes("adjective")) return "adjective";
   if (pos.includes("adverb")) return "adverb";
+  // A する-noun (JMdict `vs`) is a NOUN that takes する, not a verb — you
+  // conjugate する, not the noun — even though JMdict also tags it with a
+  // transitive/intransitive verb, which can lead the list (勉強 leads with
+  // "intransitive verb"). Classify it by the noun it is, so the word tag reads
+  // "noun", not "verb". See the `vs IS NOT A VERB` note in src/data/vocab.ts.
+  if (word.pos.some((p) => p.toLowerCase().includes("aux. verb suru"))) return "noun";
   if (pos.includes("verb")) return "verb";
   if (pos.includes("particle")) return "particle";
   if (pos.includes("expression")) return "expression";
@@ -499,8 +509,11 @@ export function headwordSubtitle(item: LessonItem): string {
     const shape = kanjiEntryOf(item) ?? entry;
     return shape?.meanings.slice(0, 4).join(" · ") ?? "";
   }
-  if (!entry) return "";
-  return [entry.readings[0], entry.meanings.slice(0, 3).join(", ")]
-    .filter(Boolean)
-    .join(": ");
+  // A WORD THAT IS ONLY A WORD ALSO STANDS ITS HEADER DOWN. It used to print its
+  // reading and glosses here ("たべる: to eat"), the header being the one place a
+  // word-only step taught them. Every word now carries the word-sense box (see
+  // lessonSections), which says the reading with a speaker and the meaning under
+  // the "Word" heading, so printing them here too would say each twice. The
+  // header shows the bare glyph, mirroring the folded case above.
+  return "";
 }

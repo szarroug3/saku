@@ -108,9 +108,9 @@ describe("lessonSections — a section per role, up the ladder", () => {
     ]);
   });
 
-  test("問題 gets the breakdown, and it is the only extra a two-kanji word gets", () => {
+  test("問題 gets the sense box and the breakdown, the two a two-kanji word gets", () => {
     const sections = lessonSections(step(wordEntry("問題"), "問題", "word"));
-    assert.deepEqual(sections, ["word-built-from"]);
+    assert.deepEqual(sections, ["word-sense", "word-built-from"]);
     assert.equal(roleHasSections("word", sections), true);
   });
 
@@ -187,19 +187,22 @@ describe("lessonSections — a section per role, up the ladder", () => {
     // one tile saying 食 is た. The example sentence is gone from every lesson,
     // this one included; the Library still carries it.
     const sections = lessonSections(step(wordEntry("食べる"), "食べる", "word"));
-    assert.deepEqual(sections, ["word-class", "word-forms"]);
-    assert.ok(!sections.includes("word-sense"), "its header already says both");
+    assert.deepEqual(sections, ["word-sense", "word-class", "word-forms"]);
+    assert.ok(
+      sections.includes("word-sense"),
+      "every word teaches its sound and sense in the box now, word-only ones included",
+    );
   });
 
-  test("a な-adjective gets its class and forms sections", () => {
+  test("a な-adjective gets its sense, class and forms sections", () => {
     const sections = lessonSections(step(wordEntry("嫌い"), "嫌い", "word"));
-    assert.deepEqual(sections, ["word-class", "word-forms"]);
+    assert.deepEqual(sections, ["word-sense", "word-class", "word-forms"]);
     assert.equal(roleHasSections("word", sections), true);
   });
 
-  test("学生 is two kanji, so it keeps the breakdown and nothing else changes", () => {
+  test("学生 is a word-only word, so it gets the sense box, plus the two-kanji breakdown", () => {
     const sections = lessonSections(step(wordEntry("学生"), "学生", "word"));
-    assert.deepEqual(sections, ["word-built-from"]);
+    assert.deepEqual(sections, ["word-sense", "word-built-from"]);
   });
 
   test("a kana gets the stroke section and nothing else", () => {
@@ -507,8 +510,12 @@ describe("headwordSubtitle — one honest line for a character that is several t
     assert.equal(headwordSubtitle(step(radicalEntry("亅"), "亅", "radical")), "hook");
   });
 
-  test("a word that is only a word keeps its reading and its glosses", () => {
-    assert.equal(headwordSubtitle(step(wordEntry("食べる"), "食べる", "word")), "たべる: to eat");
+  test("a word that is only a word stands its header down: the sense box says it", () => {
+    // It used to print "たべる: to eat" here, the header being the one place a
+    // word-only step taught its reading and meaning. The word-sense box now
+    // carries both on every word (see lessonSections), so the header says none of
+    // it and shows the bare glyph, mirroring the folded case above.
+    assert.equal(headwordSubtitle(step(wordEntry("食べる"), "食べる", "word")), "");
   });
 
   test("a kana keeps its reading, a pattern its meaning", () => {
