@@ -78,7 +78,7 @@ import { vocabRow, type VocabRow, type WordSense } from "@/data/vocab";
 import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role";
 import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
-import { libEntry } from "@/lib/library/entries";
+import { builtFrom, libEntry } from "@/lib/library/entries";
 import { adjectiveKind, formsOfWord, ruVerbKind } from "@/lib/word-forms";
 
 /** The kinds that name a role. A step on one of these tracks plays that role
@@ -398,7 +398,14 @@ export function lessonSections(item: LessonItem): LessonSection[] {
   }
   if (roles.includes("kanji")) {
     if (kanjiMeanings(item).length) out.add("kanji-meaning");
-    if (teachableParts(item.glyph)) out.add("kanji-parts");
+    // "Built from" whenever the character decomposes into shapes at all — the
+    // FULL immediate breakdown the Library shows (`builtFrom`), radicals and
+    // primitives included, not the kanji-only `teachableParts`. 千 is 丿 slash +
+    // 十 ten, and 丿 is a radical with no kanji card, so the old all-kanji test
+    // returned nothing and the lesson hid a breakdown the Library entry showed.
+    // An atomic kanji (一) has no pieces and still adds nothing.
+    const kanji = kanjiEntryOf(item);
+    if (kanji && builtFrom(kanji).length) out.add("kanji-parts");
   }
   if (roles.includes("radical")) out.add("radical-note");
   if (item.kind === "grammar") {

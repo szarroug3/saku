@@ -166,13 +166,34 @@ describe("lessonSections — a section per role, up the ladder", () => {
     ]);
   });
 
+  test("THE BUG: 千 shows its parts, because the gate is the Library's full breakdown now", () => {
+    // 千 is 丿 slash + 十 ten, and 丿 is a RADICAL with no kanji card. The old gate
+    // (`teachableParts`) was all-or-nothing on every piece being a taught kanji,
+    // so it returned null and the lesson's kanji block showed no breakdown while
+    // the Library entry showed one. The gate is `builtFrom` having pieces now —
+    // radicals included — so the two agree.
+    assert.deepEqual(lessonSections(step(kanjiEntry("千"), "千", "kanji")), [
+      "kanji-meaning",
+      "kanji-parts",
+      "how-its-written",
+    ]);
+  });
+
+  test("an atomic kanji still shows no parts: 一 has nothing to take apart", () => {
+    const sections = lessonSections(step(kanjiEntry("一"), "一", "kanji"));
+    assert.ok(!sections.includes("kanji-parts"), "一 is one shape, no breakdown");
+  });
+
   test("A SINGLE-ROLE KANJI NOW KEEPS ITS DEFINITION, because its heading is the only label left", () => {
     // It used to be suppressed: the definition is also on the headword line, and
     // the badge in the corner already said "Kanji". The badge is gone, so the
     // block under the "Kanji" heading has to have something in it, and the
-    // definition is the thing the trim left standing.
+    // definition is the thing the trim left standing. 乞 also decomposes (𠂉 + 乙),
+    // and with the breakdown gate now the Library's full `builtFrom` it carries
+    // its parts too, the same as the entry page shows.
     assert.deepEqual(lessonSections(step(kanjiEntry("乞"), "乞", "kanji")), [
       "kanji-meaning",
+      "kanji-parts",
       "how-its-written",
     ]);
   });

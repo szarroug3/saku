@@ -99,11 +99,11 @@ import { Callout } from "@/components/lesson/callout";
 import { HearButton } from "@/components/lesson/hear-button";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { KanjiMeaningPanel } from "@/components/lesson/kanji-meaning-panel";
-import { KanjiPartsRow } from "@/components/lesson/kanji-parts-row";
 import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { RoleBlock } from "@/components/lesson/role-block";
 import { WordSensePanel } from "@/components/lesson/word-sense-panel";
+import { KanjiBuiltFrom } from "@/components/library/kanji-built-from";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
 import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
@@ -124,6 +124,7 @@ import type { LessonItem } from "@/lib/lesson-items";
 import {
   canHearItem,
   headwordSubtitle,
+  kanjiEntryOf,
   kanjiMeanings,
   lessonRoles,
   lessonSections,
@@ -571,6 +572,11 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   // The word's own row, looked up by GLYPH: a folded character carries the kanji
   // entry, and the word it also is lives under an entry of its own.
   const word = lessonWord(item);
+  // The character's kanji entry, looked up by glyph so a step that arrived on the
+  // radical or words track still finds it. It feeds the "Built from" breakdown,
+  // the SAME box the Library shows (KanjiBuiltFrom / builtFrom), so 千 shows 丿
+  // slash + 十 ten here as it does there. Null for a step with no kanji card.
+  const kanjiCard = kanjiEntryOf(item);
   // The shape's own meaning, for the Radical section — 亅 is "hook", 人 is "man".
   // Null when the step plays no radical role or the shape has none on file, and
   // then the Radical block stays just its heading and its line.
@@ -725,7 +731,18 @@ export function LessonItemView({ item }: { item: LessonItem }) {
             {sections.has("kanji-meaning") ? (
               <KanjiMeaningPanel meanings={kanjiMeanings(item)} />
             ) : null}
-            {sections.has("kanji-parts") ? <KanjiPartsRow glyph={item.glyph} /> : null}
+            {/* BUILT FROM IS THE LIBRARY'S BOX, NOT A LESSON-ONLY ONE. 千 is 丿
+                slash + 十 ten, and the owner asked the lesson to show the same
+                full breakdown the Library entry does — radicals and primitives
+                included, which the lesson's old kanji-only `teachableParts`
+                dropped. This is the identical KanjiBuiltFrom card the entry page
+                renders (the WordBuiltFrom pattern one block down), fed the kanji
+                entry the step teaches. The gate has already checked builtFrom has
+                pieces, so this only renders where there is something to take
+                apart; the guard is for the never-null-here `kanjiCard` type. */}
+            {sections.has("kanji-parts") && kanjiCard ? (
+              <KanjiBuiltFrom entry={kanjiCard} />
+            ) : null}
           </RoleBlock>
         ) : null}
         {roleHasSections("word", sectionList) ? (
