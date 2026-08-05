@@ -249,6 +249,33 @@ export function wordEntry(keb: string): EntryId {
   return entryId(VOCAB_SUBJECT, keb);
 }
 
+/**
+ * Is `glyph` a single Han character the dictionary teaches as a word on its own
+ * (十 ten, 羊 sheep, 史 history)?
+ *
+ * The membership question behind the word role for a folded character. A
+ * character the curriculum already teaches as a radical or a kanji that is ALSO
+ * a one-character dictionary word is taught WHOLE — its word is shown, drilled
+ * and priced, not just its shape. Both role gates (character-role.ts for the
+ * lesson display, curriculum-order.ts for the sequence and drill) read this one
+ * predicate, so the shown sections and the drilled facts cannot disagree about
+ * which characters carry the word role.
+ *
+ * Single Han character only. A kana (で, と) is a word but not the kind of thing
+ * a per-character role is about (no radical, no kanji card, no glyph page), and
+ * a multi-character written form (電車) is a scheduled word, not a per-character
+ * role — those stay gated on CURRICULUM_WORDS where they are asked. `[...glyph]`
+ * counts code points, so a one-kanji two-JS-unit glyph (𠮟) still measures as
+ * one.
+ */
+export function isSingleCharWordGlyph(glyph: string): boolean {
+  return (
+    [...glyph].length === 1 &&
+    /\p{Script=Han}/u.test(glyph) &&
+    vocabRow(glyph) !== undefined
+  );
+}
+
 /** The PRIMARY reading's fact (the first reading-unit). Unqualified, so every
  * consumer that means "the word's reading" keeps working. */
 export function wordReadingFactId(keb: string): FactId {

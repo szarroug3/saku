@@ -153,6 +153,7 @@ import {
   type RadicalRow,
 } from "@/data/radicals";
 import { RADICAL_TEACHING_ORDER } from "@/lib/radical-order";
+import { isSingleCharWordGlyph } from "@/data/vocab";
 import { CURRICULUM_WORDS, wordKanji } from "@/lib/word-lesson";
 
 /**
@@ -206,7 +207,14 @@ function rolesOf(glyph: string): CurriculumRole[] {
   // written form like 電車 is simply not in them.
   if (radicalByGlyph(glyph) !== undefined) roles.push("radical");
   if (kanjiRow(glyph) !== undefined) roles.push("kanji");
-  if (WORD_KEBS.has(glyph)) roles.push("word");
+  // The word role is granted to a scheduled word (WORD_KEBS, which covers the
+  // multi-character written forms like 電車) AND to any single Han character that
+  // is a dictionary word — so a character already ordered here as a radical or
+  // kanji that is ALSO a word on its own (十, 羊) gains its word facts and cost
+  // where it already sits, taught whole. This adds only the role: these
+  // characters carry no CURRICULUM_WORDS entry, so nothing schedules them as new
+  // word items and the sequence order is unchanged. See isSingleCharWordGlyph.
+  if (WORD_KEBS.has(glyph) || isSingleCharWordGlyph(glyph)) roles.push("word");
   return roles;
 }
 

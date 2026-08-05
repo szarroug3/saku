@@ -171,10 +171,12 @@ describe("lessonSections — a section per role, up the ladder", () => {
     // (`teachableParts`) was all-or-nothing on every piece being a taught kanji,
     // so it returned null and the lesson's kanji block showed no breakdown while
     // the Library entry showed one. The gate is `builtFrom` having pieces now —
-    // radicals included — so the two agree.
+    // radicals included — so the two agree. 千 is also the dictionary word せん, so
+    // it now carries the word-sense block too (taught whole; see character-role).
     assert.deepEqual(lessonSections(step(kanjiEntry("千"), "千", "kanji")), [
       "kanji-meaning",
       "kanji-parts",
+      "word-sense",
       "how-its-written",
     ]);
   });

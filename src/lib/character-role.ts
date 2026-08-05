@@ -22,7 +22,7 @@
 
 import { kanjiRow } from "@/data/kanji";
 import { radicalByGlyph } from "@/data/radicals";
-import { CURRICULUM_WORDS } from "@/lib/word-lesson";
+import { isSingleCharWordGlyph } from "@/data/vocab";
 
 /** The roles themselves, in the ONE order every label prints them: a radical is
  * the smallest thing, a kanji is built of radicals, a word is made of kanji. */
@@ -42,23 +42,6 @@ export type CharacterRole =
   | "radical · kanji · word";
 
 /**
- * The glyphs the words track teaches AS ONE-CHARACTER WORDS.
- *
- * Read off CURRICULUM_WORDS so this role agrees with what the words track will
- * actually hand you — a character carries the word role exactly when a word it
- * teaches is written as this single character and nothing more. Kana are left
- * out: で and と are one-character words, but a kana is not the kind of thing
- * this label is about (it has no radical, no kanji card, no Library glyph page),
- * and calling it a "Word" would put a role blob on the kana track. Computed once
- * at module load; it is a property of the data, not of the user.
- */
-const ONE_CHARACTER_WORDS: ReadonlySet<string> = new Set(
-  CURRICULUM_WORDS.map((w) => w.keb).filter(
-    (keb) => [...keb].length === 1 && /\p{Script=Han}/u.test(keb),
-  ),
-);
-
-/**
  * The roles a character plays, in ROLE_ORDER — empty for a character that plays
  * none (a kana, a multi-character word, a grammar pattern: nothing this label is
  * about).
@@ -69,7 +52,13 @@ export function characterRoles(glyph: string): RoleName[] {
   const roles: RoleName[] = [];
   if (radicalByGlyph(glyph) !== undefined) roles.push("radical");
   if (kanjiRow(glyph) !== undefined) roles.push("kanji");
-  if (ONE_CHARACTER_WORDS.has(glyph)) roles.push("word");
+  // A single Han character that is a dictionary word carries the word role, so a
+  // character the curriculum teaches as a radical/kanji that is ALSO a word on
+  // its own (十, 千, 羊) is taught whole. Kana and multi-character forms are
+  // excluded by the predicate; see isSingleCharWordGlyph. This used to read off
+  // CURRICULUM_WORDS (the scheduled word track) alone, which left ~93 such
+  // characters showing only their shape and never their word.
+  if (isSingleCharWordGlyph(glyph)) roles.push("word");
   return roles;
 }
 

@@ -323,13 +323,23 @@ describe("the totals are counted off the data, never typed in", () => {
     const radicalOnly = RADICALS.filter((r) => kanjiRow(r.glyph) === undefined);
     assert.equal(CURRICULUM_TOTALS.radical, radicalOnly.length);
     assert.equal(CURRICULUM_TOTALS.kanji, KANJI.length);
-    assert.equal(CURRICULUM_TOTALS.word, CURRICULUM_WORDS.length);
+    // The word total is the scheduled words UNION the single Han characters the
+    // dictionary teaches as words on their own (十, 羊 …), which are taught whole
+    // where their kanji already sits rather than scheduled as new word items. So
+    // it is CURRICULUM_WORDS plus the ~93 such characters not among them, counted
+    // off the tables, never typed in.
+    const singleCharWords = VOCAB.filter(
+      (w) => [...w.keb].length === 1 && /\p{Script=Han}/u.test(w.keb),
+    ).map((w) => w.keb);
+    const wordGlyphs = new Set([...CURRICULUM_WORDS.map((w) => w.keb), ...singleCharWords]);
+    assert.equal(CURRICULUM_TOTALS.word, wordGlyphs.size);
   });
 
-  test("and today those counts are 90, 2,136 and 6,187", () => {
+  test("and today those counts are 90, 2,136 and 6,280", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 6187);
+    // 6,187 scheduled words + 93 single-character dictionary words taught whole.
+    assert.equal(CURRICULUM_TOTALS.word, 6280);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -337,7 +347,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 6187, 6187);
+        assert.equal(g.position.word?.total ?? 6280, 6280);
       }
     }
   });

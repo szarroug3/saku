@@ -15,9 +15,9 @@ import {
   characterRoles,
   playsRadicalRole,
 } from "./character-role.ts";
-import { CURRICULUM_WORDS } from "./word-lesson.ts";
 import { RADICALS, radicalByGlyph } from "../data/radicals.ts";
 import { KANJI, kanjiRow } from "../data/kanji.ts";
+import { VOCAB, vocabRow } from "../data/vocab.ts";
 
 describe("characterRole", () => {
   test("a character that is radical, kanji and a word reads all three", () => {
@@ -83,36 +83,37 @@ describe("characterRole", () => {
   });
 
   test("the label agrees with plain membership, over every glyph in the data", () => {
-    const oneCharWords = new Set(
-      CURRICULUM_WORDS.map((w) => w.keb).filter(
-        (keb) => [...keb].length === 1 && /\p{Script=Han}/u.test(keb),
-      ),
-    );
+    // The word role is now every single Han character the dictionary teaches as a
+    // word on its own, not only the ones the words track schedules — derived here
+    // straight from vocabRow so it does not lean on the impl's own helper.
+    const isWordGlyph = (g: string) =>
+      [...g].length === 1 && /\p{Script=Han}/u.test(g) && vocabRow(g) !== undefined;
     const glyphs = new Set([
       ...RADICALS.map((r) => r.glyph),
       ...KANJI.map((k) => k.c),
-      ...oneCharWords,
+      ...VOCAB.filter((w) => isWordGlyph(w.keb)).map((w) => w.keb),
     ]);
     for (const g of glyphs) {
       const want: string[] = [];
       if (radicalByGlyph(g) !== undefined) want.push("radical");
       if (kanjiRow(g) !== undefined) want.push("kanji");
-      if (oneCharWords.has(g)) want.push("word");
+      if (isWordGlyph(g)) want.push("word");
       assert.deepEqual(characterRoles(g), want, `roles of ${g}`);
       assert.equal(characterRole(g), want.join(" · "), `label of ${g}`);
     }
   });
 
-  test("every one-character word in the curriculum is a jōyō kanji", () => {
-    // 582 of them (was 595 before number kanji were moved to the counters track),
-    // and the reason the badge's two kanji-less word sets cannot
-    // happen today: the words track is written entirely in jōyō kanji, so the
-    // word role never turns up without the kanji role beside it.
+  test("every one-character word is a jōyō kanji", () => {
+    // 675 single Han characters carry the word role now (was 582 when the role
+    // was gated on the scheduled words track alone; the 93 numbers/plain words
+    // like 十, 羊, 史 that are dictionary words but not scheduled words join it).
+    // The vocabulary is written entirely in jōyō kanji, so a one-character Han
+    // word always has a kanji card beside it: the word role never turns up alone.
     const wordKanji = [...KANJI.map((k) => k.c)].filter((c) =>
       characterRoles(c).includes("word"),
     );
-    assert.equal(wordKanji.length, 582);
-    for (const w of CURRICULUM_WORDS) {
+    assert.equal(wordKanji.length, 675);
+    for (const w of VOCAB) {
       if ([...w.keb].length !== 1 || !/\p{Script=Han}/u.test(w.keb)) continue;
       assert.ok(kanjiRow(w.keb) !== undefined, `${w.keb} has a kanji card`);
     }

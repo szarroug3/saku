@@ -32,6 +32,7 @@ import {
   radicalOfKanji,
 } from "../data/radicals.ts";
 import { CURRICULUM_WORDS, wordKanji } from "./word-lesson.ts";
+import { vocabRow } from "../data/vocab.ts";
 import {
   CURRICULUM_SEQUENCE,
   curriculumPosition,
@@ -258,11 +259,19 @@ describe("prerequisite invariants", () => {
       assert.equal(items.length, 1, `${w.keb} delivered ${items.length} times`);
       assert.ok(items[0]!.roles.includes("word"), `${w.keb} lacks the word role`);
     }
-    // And nothing wears the word role that is not a curriculum word.
+    // And nothing wears the word role that is neither a scheduled word nor a
+    // single Han character the dictionary teaches as a word on its own (十, 羊):
+    // those two are the whole of the word role now, and the single-character ones
+    // are taught whole where their kanji already sits, not scheduled anew.
     const kebs = new Set(CURRICULUM_WORDS.map((w) => w.keb));
+    const isSingleCharWord = (g: string) =>
+      [...g].length === 1 && /\p{Script=Han}/u.test(g) && vocabRow(g) !== undefined;
     for (const it of CURRICULUM_SEQUENCE) {
       if (!it.roles.includes("word")) continue;
-      assert.ok(kebs.has(it.glyph), `${it.glyph} claims the word role`);
+      assert.ok(
+        kebs.has(it.glyph) || isSingleCharWord(it.glyph),
+        `${it.glyph} claims the word role`,
+      );
     }
   });
 });
