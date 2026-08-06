@@ -249,15 +249,20 @@ const TAIL: readonly CounterForm[] = [
 /**
  * The whole counters curriculum, in teaching order.
  *
- * 〜つ leads (the escape hatch), then the Sino numbers, then 〜人, then the rest
- * of the numbers, then the phase-2 sound-change set, then the ungated tail.
- * counters.test.ts pins 〜つ ahead of the numbers so a reorder cannot break it.
+ * 〜つ leads (the escape hatch), then the WHOLE number system in one run — the
+ * Sino numbers 1-10, then 11 upward (where the compose rule is taught, see
+ * NUMBERS_COMPOSE) — so a learner finishes numbers before counting things with
+ * them. 〜人 follows as the first real counter, then the phase-2 sound-change set
+ * (本/匹/枚) and the ungated tail. 〜人 sat between 1-10 and 11 before, which put
+ * the compose rule a whole counter late; keeping the numbers contiguous fixes
+ * that. counters.test.ts pins 〜つ ahead of the numbers so a reorder cannot break
+ * the escape-hatch-first rule.
  */
 export const COUNTER_CURRICULUM: readonly CounterForm[] = [
   ...TSU,
   ...NUMBERS,
-  ...NIN,
   ...TENS_AND_UP,
+  ...NIN,
   ...HON,
   ...HIKI,
   ...MAI,
