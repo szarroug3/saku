@@ -1688,6 +1688,7 @@ export function DrillScreen() {
           // is never printed.
           glyph={readingWord ?? prompt.glyph}
           highlight={readingWord ? prompt.glyph : undefined}
+          jp={prompt.jp}
           font={q.font}
           // A single glyph keeps its base size (GLYPH_PX for the Japanese side,
           // 0.6× for latin answer text — the old distinction). A multi-char

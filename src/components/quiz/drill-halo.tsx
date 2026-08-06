@@ -198,10 +198,16 @@ export interface DrillHaloProps {
    * rest of the word is dimmed, so the word gives context without the highlighted
    * glyph's reading ever being shown. Unset elsewhere — the glyph renders plain. */
   highlight?: string;
+  /** Whether the prompt is Japanese. A Japanese prompt is a WORD with no spaces
+   * to break at (はなす, 電話), so it renders on ONE line at the caller's
+   * pre-fitted `fontSize` — never broken between characters. Only a latin cue,
+   * which has spaces, takes the wrapping path. */
+  jp?: boolean;
   /** The question's font, rolled once and kept in the runtime. */
   font: string;
-  /** The size for the SINGLE-LINE glyph paths (a lone glyph, and the
-   * highlighted kanji-reading word), pre-fitted by the caller. */
+  /** The size for the SINGLE-LINE glyph paths (a lone glyph, a Japanese word,
+   * and the highlighted kanji-reading word), pre-fitted by the caller with
+   * fitGlyphSize so a multi-character word already sits on one line. */
   fontSize: number;
   /** The BASE (unshrunk) size for a wrapping text prompt — GLYPH_PX for the
    * Japanese side, 0.6× for a latin cue. The prompt starts here and shrinks by
@@ -251,6 +257,7 @@ export function DrillHalo({
   drainWindow,
   glyph,
   highlight,
+  jp = false,
   font,
   fontSize,
   maxFontSize,
@@ -354,6 +361,7 @@ export function DrillHalo({
         <PromptGlyph
           glyph={glyph}
           highlight={highlight}
+          jp={jp}
           font={font}
           fontSize={fontSize}
           maxFontSize={maxFontSize ?? fontSize}
@@ -381,6 +389,7 @@ export function DrillHalo({
 function PromptGlyph({
   glyph,
   highlight,
+  jp,
   font,
   fontSize,
   maxFontSize,
@@ -390,6 +399,7 @@ function PromptGlyph({
 }: {
   glyph: string;
   highlight?: string;
+  jp?: boolean;
   font: string;
   fontSize: number;
   maxFontSize: number;
@@ -406,34 +416,44 @@ function PromptGlyph({
       className="kq-glyph relative flex flex-col items-center justify-center gap-1"
       style={{ animation: crossFade ? "kq-glyph-in 260ms ease-out" : undefined }}
     >
-      {highlight ? (
+      {jp || highlight ? (
+        // A Japanese prompt is a word with no spaces to break at, so it stays on
+        // ONE line at the caller's pre-fitted fontSize (fitGlyphSize already
+        // shrank a multi-char word to fit the ring across) — never broken
+        // between characters. The wrapping path below is only for a latin cue.
         <span
           // leading-[1.15] is the drill glyph's theme hook (see globals.css).
-          // whitespace-nowrap so the highlighted word stays on ONE line — the
-          // caller has already sized it (fitGlyphSize) to fit the hole across.
+          // whitespace-nowrap so the word stays on ONE line — the caller has
+          // already sized it (fitGlyphSize) to fit the hole across.
           className="block whitespace-nowrap leading-[1.15]"
           style={{ fontSize, fontFamily: font }}
         >
-          {/* The word, with the asked kanji lit and the rest dimmed: context
-              without a leak, since the highlighted glyph's reading is the
-              answer and is never shown. */}
-          {[...glyph].map((ch, i) =>
-            ch === highlight ? (
-              <span
-                key={i}
-                style={{
-                  color: "var(--text)",
-                  textShadow: `0 0 18px ${mix("--accent", 55)}`,
-                }}
-              >
-                {ch}
-              </span>
-            ) : (
-              <span key={i} style={{ color: "var(--text-muted)", opacity: 0.6 }}>
-                {ch}
-              </span>
-            ),
-          )}
+          {/* A highlighted reading word lights the asked kanji and dims the
+              rest: context without a leak, since the highlighted glyph's reading
+              is the answer and is never shown. A plain word (no highlight)
+              renders whole, at full brightness. */}
+          {highlight
+            ? [...glyph].map((ch, i) =>
+                ch === highlight ? (
+                  <span
+                    key={i}
+                    style={{
+                      color: "var(--text)",
+                      textShadow: `0 0 18px ${mix("--accent", 55)}`,
+                    }}
+                  >
+                    {ch}
+                  </span>
+                ) : (
+                  <span
+                    key={i}
+                    style={{ color: "var(--text-muted)", opacity: 0.6 }}
+                  >
+                    {ch}
+                  </span>
+                ),
+              )
+            : glyph}
         </span>
       ) : (
         <div
