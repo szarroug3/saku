@@ -252,8 +252,16 @@ export const COUNTERS_TRACK: PhaseIntro = {
       text: "A counter is a short word you add to a number to count a kind of thing: 本 for long thin objects, 人 for people. The number and the counter are said together as one word.",
     },
     {
+      lead: "Counters are for things; a bare number is for the number itself.",
+      text: "Counting specific things takes a counter: 本 for pens, 人 for people. A number with no counter is for the number as a number. Math, a phone number, a price, a page, a year. English blurs the two, since “one apple” and “the number one” are both “one”; Japanese keeps them apart, so いち is the number one and ひとつ or いっぽん do the counting.",
+    },
+    {
       lead: "〜つ is taught first, because it works when nothing else does.",
-      text: "ひとつ, ふたつ, みっつ count almost anything up to ten. When you do not know the right counter, this is the one to reach for, and you will still be understood.",
+      text: "ひとつ, ふたつ, みっつ count almost anything up to ten. When you don’t know the right counter, this one still works, and you’ll be understood.",
+    },
+    {
+      lead: "Past ten, you build numbers instead of memorising them.",
+      text: "じゅう is ten. にじゅう is two tens, 20; さんじゅう is 30. Put a ones digit on the end for the rest: にじゅういち is 21. Japanese has no surprise words the way English jumps to “twenty” and “thirty”, so once you know 1 to 10 and じゅう you can say every number up to 99. Only the big steps are their own words: 100 is ひゃく, 1,000 is せん, 10,000 is まん.",
     },
     {
       lead: "It gets you speaking early.",
