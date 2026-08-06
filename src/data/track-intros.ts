@@ -256,8 +256,8 @@ export const COUNTERS_TRACK: PhaseIntro = {
       text: "ひとつ, ふたつ, みっつ count almost anything up to ten. When you do not know the right counter, this is the one to reach for, and you will still be understood.",
     },
     {
-      lead: "It buys you the first useful sentences.",
-      text: "Prices, ages, how many people, ordering food. Those are numbers and counters, so a little of this track goes a long way early on.",
+      lead: "It gets you speaking early.",
+      text: "Prices, ages, how many people, ordering food all run on numbers and counters, so a little of this track goes a long way early on.",
     },
     {
       lead: "It’s taught now because it needs only kana to begin.",

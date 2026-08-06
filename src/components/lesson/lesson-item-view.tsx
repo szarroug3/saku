@@ -489,7 +489,7 @@ function CounterTeachView({
             <p className="mt-0.5 text-[12px] leading-snug text-text-muted">
               {isNumber
                 ? "This is a number."
-                : "This is a counting word — a number welded to what it counts."}
+                : "This is a counting word. It joins a number to the thing you count."}
             </p>
           </div>
           <WordSensePanel
