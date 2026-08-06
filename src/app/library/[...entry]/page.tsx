@@ -78,7 +78,7 @@ import {
   counterReadingFactId,
   isKanaForm as isKanaCounterForm,
 } from "@/data/counters";
-import { Card, Hint, Lbl, SoundIcon } from "@/components/ui";
+import { Card, FlatSurfaceProvider, Hint, Lbl, SoundIcon } from "@/components/ui";
 import { KANA_SUBJECT, glyphVariantFor } from "@/data/characters";
 import {
   SENTENCE_ORDERING_TIERS,
@@ -721,7 +721,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
   );
 
   return (
-    <>
+    // FLAT SECTIONS, whole page. Every section surface below (the "How you say
+    // it" panel, Built from, the readings table, Links, the verb-pair / keigo
+    // boxes, the generic facts table, even the glyph header card) reads this
+    // provider and drops its frosty `.kq-material` fill for a bordered,
+    // transparent block. The lesson teach view mounts the SAME components with no
+    // provider, so it keeps its bg-panel / bg-card frost untouched. Chips, pills
+    // and the sticky drill bar wear raw classes rather than <Card>, so they are
+    // deliberately left alone inside the flattened sections.
+    <FlatSurfaceProvider>
       <p className="mb-3 text-[11.5px] text-text-muted">
         <Link href="/library" className="text-text-muted no-underline">
           Library
@@ -1280,7 +1288,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
       />
 
       <AttributionLink />
-    </>
+    </FlatSurfaceProvider>
   );
 }
 

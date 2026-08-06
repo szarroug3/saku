@@ -11,6 +11,7 @@
 // the same copy — the shared-component rule the mnemonic hero already follows.
 
 import { HearButton } from "@/components/lesson/hear-button";
+import { useFlatSurface } from "@/components/ui";
 import type { VerbPair } from "@/data/transitivity";
 import { pairPattern } from "@/lib/transitivity-pattern";
 
@@ -37,8 +38,15 @@ function VerbSide({
   base: string;
   addition: string;
 }) {
+  // Flat (transparent, border kept) on the Library entry page; frosty bg-card in
+  // the lesson teach view, where no FlatSurfaceProvider sits above.
+  const flat = useFlatSurface();
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
+    <div
+      className={`rounded-lg border border-border p-5 ${
+        flat ? "bg-transparent" : "bg-card"
+      }`}
+    >
       <p className="text-[12px] uppercase tracking-wide text-text-muted">{role}</p>
       <div className="mt-2 flex items-start justify-between gap-3">
         <span className="font-kana text-[40px] font-extralight leading-none text-text">

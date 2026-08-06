@@ -37,6 +37,7 @@
 
 import { HearButton } from "@/components/lesson/hear-button";
 import { LessonPanel } from "@/components/lesson/lesson-panel";
+import { useFlatSurface } from "@/components/ui";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { StandingChip } from "@/components/library/standing-chip";
 import { wordPitch } from "@/data/pitch";
@@ -88,6 +89,7 @@ function SenseSentence({
   voiceName,
   readingStanding,
   meaningStanding,
+  transparent,
 }: {
   reb: string;
   kind: string;
@@ -97,9 +99,11 @@ function SenseSentence({
   voiceName: string;
   readingStanding: Standing | null;
   meaningStanding: Standing | null;
+  /** Flat look on the Library entry page — drops the panel's frosty fill. */
+  transparent: boolean;
 }) {
   return (
-    <LessonPanel title="How you say it, and what it means">
+    <LessonPanel title="How you say it, and what it means" transparent={transparent}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <HearButton glyph={reb} voiceName={voiceName} />
         {pitch != null ? (
@@ -144,6 +148,10 @@ export function WordSensePanel({
   standings?: (factId: FactId) => Standing | null;
   counter?: CounterSense;
 }) {
+  // On the Library entry page this panel renders FLAT (transparent fill, border
+  // kept); in the lesson teach view no provider sits above, so it stays bg-panel.
+  // Read once and handed to every LessonPanel this component draws.
+  const transparent = useFlatSurface();
   // A counter's single sense arrives pre-resolved — it has no VocabRow to
   // enumerate — and renders through the SAME one-reading layout a word does. No
   // pitch: a counted form carries no verified per-word pitch (pitch is keyed on a
@@ -158,6 +166,7 @@ export function WordSensePanel({
         voiceName={voiceName}
         readingStanding={counter.readingStanding}
         meaningStanding={counter.meaningStanding}
+        transparent={transparent}
       />
     );
   }
@@ -204,12 +213,13 @@ export function WordSensePanel({
         voiceName={voiceName}
         readingStanding={readingStanding(0)}
         meaningStanding={meaningStanding(0)}
+        transparent={transparent}
       />
     );
   }
 
   return (
-    <LessonPanel title="How you say it, and what it means">
+    <LessonPanel title="How you say it, and what it means" transparent={transparent}>
       <div className="-mx-1 overflow-x-auto px-1">
         <table className="w-full text-left text-[13px]">
           <thead>

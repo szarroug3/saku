@@ -11,6 +11,7 @@
 // knows how to draw a keigo set, and both screens mount it.
 
 import { HearButton } from "@/components/lesson/hear-button";
+import { useFlatSurface } from "@/components/ui";
 import type { KeigoSet, KeigoWord } from "@/data/keigo";
 
 /** One keigo verb: its written form big, a speaker with its reading, and the
@@ -26,8 +27,15 @@ function KeigoSide({
   note: string;
   voiceName: string;
 }) {
+  // Flat (transparent, border kept) on the Library entry page; frosty bg-card in
+  // the lesson teach view, where no FlatSurfaceProvider sits above.
+  const flat = useFlatSurface();
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
+    <div
+      className={`rounded-lg border border-border p-5 ${
+        flat ? "bg-transparent" : "bg-card"
+      }`}
+    >
       <p className="text-[12px] uppercase tracking-wide text-text-muted">{role}</p>
       <div className="mt-2 flex items-start justify-between gap-3">
         <span className="font-kana text-[34px] font-extralight leading-none text-text">

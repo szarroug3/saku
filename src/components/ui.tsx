@@ -4,7 +4,12 @@
 // app's look: cards, uppercase section labels, chip toggles, settings rows.
 // Every screen builds from these so the pages stay visually consistent.
 
-import { type ComponentProps, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  type ComponentProps,
+  type ReactNode,
+} from "react";
 
 import {
   Tooltip,
@@ -16,17 +21,63 @@ function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
+/**
+ * FLAT SECTION SURFACES, scoped by a provider rather than threaded as a prop.
+ *
+ * The Library entry page wants every section surface FLAT — border and radius
+ * kept, the translucent `.kq-material` fill dropped — but those sections are
+ * built by a dozen-odd different components that each render a <Card> of their
+ * own (KanjiReadings, EntryLinks, WordBuiltFrom, the readings table, …). Passing
+ * a `flat` prop would mean threading it through every one of those pass-through
+ * intermediaries. Instead the entry page wraps its content in
+ * <FlatSurfaceProvider> and Card reads the flag from context, so a card
+ * flattens by WHERE it is rendered, not by what each intermediary forwards.
+ *
+ * It is read ONLY by section containers — Card here, and the two hand-rolled
+ * section boxes in the verb-pair / keigo views, and the "How you say it" panel.
+ * Chips, pills, buttons and the sticky drill band wear their own raw classes
+ * rather than <Card>, so they keep their material: the owner wants outlined
+ * section blocks with their normal chips still inside, not a flattened page.
+ */
+const FlatSurfaceContext = createContext(false);
+
+export function FlatSurfaceProvider({ children }: { children: ReactNode }) {
+  return (
+    <FlatSurfaceContext.Provider value={true}>
+      {children}
+    </FlatSurfaceContext.Provider>
+  );
+}
+
+/** True when the surrounding surface should render FLAT (transparent fill,
+ * border kept). False everywhere no provider sits above — i.e. every screen but
+ * the Library entry page — so all other Cards keep their frost untouched. */
+export function useFlatSurface(): boolean {
+  return useContext(FlatSurfaceContext);
+}
+
 export function Card({
   children,
   className,
+  flat: flatProp,
 }: {
   children: ReactNode;
   className?: string;
+  /** Force the flat look on this one card. Usually granted instead by
+   * FlatSurfaceProvider (the Library entry page), so most callers never pass it. */
+  flat?: boolean;
 }) {
+  // Flat = the entry-page look: keep the border and radius, drop the frosty
+  // `.kq-material` fill (and its `bg-card`) for a transparent ground. "No fill"
+  // is `bg-transparent`, not a hardcoded colour, so the flat look holds in every
+  // theme. The flag comes from an explicit prop OR the surrounding provider.
+  const flat = flatProp || useFlatSurface();
   return (
     <div
       className={cx(
-        "kq-material mb-3.5 rounded-xl border border-border bg-card p-[18px]",
+        flat
+          ? "mb-3.5 rounded-xl border border-border bg-transparent p-[18px]"
+          : "kq-material mb-3.5 rounded-xl border border-border bg-card p-[18px]",
         className,
       )}
     >

@@ -264,9 +264,10 @@ export function HowItsWritten({
   // TWO MATERIALS, ONE COMPONENT. Inside the stepped lesson this is a section
   // NESTED in a card, so it wears nested-panel material: --panel, the smaller
   // radius, the tighter padding. On the Library entry page (the one and only
-  // alwaysOpen caller) it is a TOP-LEVEL box sitting directly beside a Card,
-  // and panel material next to card material reads as a different surface — so
-  // there it IS a Card, sharing the card token, radius, padding and frost.
+  // alwaysOpen caller) it is a TOP-LEVEL box sitting directly beside a Card, so
+  // there it IS a Card, sharing that surface's radius, padding and material — and
+  // since the entry page runs under FlatSurfaceProvider, that shared material is
+  // the flat, transparent one every other section there wears, not the frost.
   if (alwaysOpen) {
     return <Card className="flex h-full flex-col">{content}</Card>;
   }
