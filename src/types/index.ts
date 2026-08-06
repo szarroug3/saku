@@ -376,6 +376,11 @@ export interface Selection {
    * of the same resolve() as everything else.
    */
   session: number | null;
+  /** Narrow to facts FIRST LEARNED within this window (see HistoryFile.learnedAt).
+   *  from/to are ms epochs; null on either side = open-ended. Absent/null = no
+   *  date filter — the same "empty field = everything" rule every other Selection
+   *  field follows. Composes with states/types/list like any other narrowing. */
+  learned?: { from: number | null; to: number | null } | null;
 }
 
 /**
@@ -798,6 +803,15 @@ export interface HistoryFile {
    * SAID, not a thing you did.
    */
   seen?: Record<FactId, number>;
+  /** Per FACT: ms epoch the fact was FIRST learned — the earliest moment it
+   *  entered the knowledge base (first "quiz me", first claim, or first session
+   *  that tested it). WRITE-ONCE / KEEP-EARLIEST: unlike `seen`/`claims`, which
+   *  move their timestamp forward on re-record, this only ever moves earlier, so
+   *  it answers "when did I first meet this" for the Practice date filter.
+   *  Backfilled best-effort for history predating this field (see the normalizers
+   *  and deriveLearnedAt); a fact whose only sessions were evicted by the
+   *  200-session cap can only recover a learnedAt from `seen`/`claims`. */
+  learnedAt?: Record<FactId, number>;
   /**
    * Per FACT: lifetime counts, and what the model believes. Was `chars`, keyed
    * by the character itself — which gave 生 one accuracy slot for eleven

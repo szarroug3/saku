@@ -29,6 +29,18 @@ import { learnedSentenceTierIds } from "@/lib/sentence-ordering-progress";
 import { resolve } from "@/lib/selection";
 import { emptySelection } from "@/lib/selection-empty";
 import {
+  endOfDay,
+  matchesPrebuilt,
+  parseDateInput,
+  rangeLabel,
+  startOfDay,
+  thisMonthRange,
+  thisWeekRange,
+  todayRange,
+  toDateInputValue,
+  type DateRange,
+} from "@/lib/date-range";
+import {
   availableTypes,
   effectiveScope,
   pruneEmptyTypes,
@@ -315,6 +327,86 @@ export function PracticeSelector({
     );
   }, [sel, history, lists, metric, context]);
 
+  // ---- WHEN YOU LEARNED IT (date window) ----
+  // The active window, or null when the filter is off (both bounds null counts
+  // as off, mirroring resolve()). Which prebuilt it equals decides which chip
+  // lights; a window matching none of them is a "Custom…" window.
+  const activeLearned: DateRange | null =
+    sel.learned && (sel.learned.from != null || sel.learned.to != null)
+      ? sel.learned
+      : null;
+  const isToday = !!activeLearned && matchesPrebuilt(activeLearned, now, "today");
+  const isWeek = !!activeLearned && matchesPrebuilt(activeLearned, now, "week");
+  const isMonth = !!activeLearned && matchesPrebuilt(activeLearned, now, "month");
+  const isCustom = !!activeLearned && !isToday && !isWeek && !isMonth;
+
+  // A backwards custom window (From after To) is left INVALID, not silently
+  // swapped: while the learner edits one input the other is stale, so swapping
+  // would apply a range they never asked for. Invalid resolves to zero facts
+  // (see resolve — no date can be both ≥ from and ≤ to), and the footer says why
+  // instead of printing a nonsensical "Aug 6 – Aug 4".
+  const invalidRange =
+    !!activeLearned &&
+    activeLearned.from != null &&
+    activeLearned.to != null &&
+    activeLearned.from > activeLearned.to;
+  // No first-learn can be in the future, so neither input may exceed today.
+  const todayInput = toDateInputValue(now);
+
+  // Counts per prebuilt, resolved exactly like statusCounts: the CURRENT
+  // selection with only `learned` overridden, so each number is how much of the
+  // scope-and-status pool was first learned in that window.
+  const learnedCounts = useMemo(() => {
+    const base = { ...sel };
+    const countIn = (r: DateRange) =>
+      resolve({ ...base, learned: r }, history, lists, metric, 0, context).length;
+    return {
+      today: countIn(todayRange(now)),
+      week: countIn(thisWeekRange(now)),
+      month: countIn(thisMonthRange(now)),
+    };
+  }, [sel, history, lists, metric, context, now]);
+
+  // The custom panel is open when the learner opened it, or when a custom window
+  // is already active (so a persisted custom range shows its inputs on load).
+  const [customOpen, setCustomOpen] = useState<boolean>(() => isCustom);
+  const [customFrom, setCustomFrom] = useState<string>(() =>
+    isCustom && activeLearned?.from != null
+      ? toDateInputValue(activeLearned.from)
+      : "",
+  );
+  const [customTo, setCustomTo] = useState<string>(() =>
+    isCustom && activeLearned?.to != null ? toDateInputValue(activeLearned.to) : "",
+  );
+
+  // Set (or clear) the date window, pruning any now-empty type on the everything
+  // scope exactly as the Status chips do, so a Kind chip that drops to 0 under
+  // the new window doesn't stay lit.
+  const setLearned = useCallback(
+    (window: DateRange | null) => {
+      const next: Selection = { ...sel, learned: window };
+      onChange(
+        scope === "everything"
+          ? pruneEmptyTypes(next, presentTypesIn(next))
+          : next,
+      );
+    },
+    [sel, onChange, scope, presentTypesIn],
+  );
+
+  const applyCustom = (fromStr: string, toStr: string) => {
+    const fromMs = parseDateInput(fromStr);
+    const toMs = parseDateInput(toStr);
+    const window: DateRange | null =
+      fromMs == null && toMs == null
+        ? null
+        : {
+            from: fromMs != null ? startOfDay(fromMs) : null,
+            to: toMs != null ? endOfDay(toMs) : null,
+          };
+    setLearned(window);
+  };
+
   // A status chip with 0 should not remain selected after counts change.
   useEffect(() => {
     if (!sel.states.length) return;
@@ -396,6 +488,129 @@ export function PracticeSelector({
           {sel.states.length
             ? "Showing anything with one of the selected statuses."
             : "No status picked — every status is included."}
+        </p>
+      </div>
+
+      <div className="mt-3 border-t border-border pt-3">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+          When you learned it
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setCustomOpen(false);
+              setLearned(null);
+            }}
+            className={cx(
+              "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]",
+              !activeLearned
+                ? "border-accent bg-accent-bg text-accent"
+                : "border-border bg-card text-text hover:bg-panel",
+            )}
+          >
+            <span>Any time</span>
+          </button>
+          <StatusChip
+            label="Today"
+            count={learnedCounts.today}
+            on={isToday}
+            onClick={() => {
+              setCustomOpen(false);
+              setLearned(todayRange(now));
+            }}
+          />
+          <StatusChip
+            label="This week"
+            count={learnedCounts.week}
+            on={isWeek}
+            onClick={() => {
+              setCustomOpen(false);
+              setLearned(thisWeekRange(now));
+            }}
+          />
+          <StatusChip
+            label="This month"
+            count={learnedCounts.month}
+            on={isMonth}
+            onClick={() => {
+              setCustomOpen(false);
+              setLearned(thisMonthRange(now));
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              // Opening seeds the inputs from an active custom window; closing
+              // just hides the panel and leaves the window as it is.
+              if (customOpen) {
+                setCustomOpen(false);
+                return;
+              }
+              setCustomOpen(true);
+              if (isCustom && activeLearned) {
+                setCustomFrom(
+                  activeLearned.from != null
+                    ? toDateInputValue(activeLearned.from)
+                    : "",
+                );
+                setCustomTo(
+                  activeLearned.to != null
+                    ? toDateInputValue(activeLearned.to)
+                    : "",
+                );
+              }
+            }}
+            className={cx(
+              "flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[13px]",
+              isCustom
+                ? "border-accent bg-accent-bg text-accent"
+                : "border-border bg-card text-text hover:bg-panel",
+            )}
+          >
+            <span>Custom…</span>
+          </button>
+        </div>
+        {customOpen ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-1.5 text-[12px] text-text-muted">
+              From
+              <input
+                type="date"
+                value={customFrom}
+                max={todayInput}
+                onChange={(e) => {
+                  setCustomFrom(e.target.value);
+                  applyCustom(e.target.value, customTo);
+                }}
+                className="rounded border border-border bg-card px-2 py-1 text-[13px] text-text"
+              />
+            </label>
+            <label className="flex items-center gap-1.5 text-[12px] text-text-muted">
+              To
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom || undefined}
+                max={todayInput}
+                onChange={(e) => {
+                  setCustomTo(e.target.value);
+                  applyCustom(customFrom, e.target.value);
+                }}
+                className={cx(
+                  "rounded border bg-card px-2 py-1 text-[13px] text-text",
+                  invalidRange ? "border-danger" : "border-border",
+                )}
+              />
+            </label>
+          </div>
+        ) : null}
+        <p className={cx("mt-2 text-[12px]", invalidRange ? "text-danger" : "text-text-muted")}>
+          {invalidRange
+            ? "From is after To — set From on or before To to pick a range."
+            : activeLearned
+              ? `Showing things you first learned ${rangeLabel(activeLearned, now)}.`
+              : "No date picked — anything you've learned counts."}
         </p>
       </div>
 

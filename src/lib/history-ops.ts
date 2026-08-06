@@ -55,6 +55,35 @@ export function emptyHistory(): HistoryFile {
   return { sessions: [], facts: {} };
 }
 
+/** Best-effort first-learned map from the records history already has. For each
+ *  fact: the earliest of — the oldest session.ts whose .facts contains it, its
+ *  claims[f] stamp, its seen[f] stamp. Sessions are capped at 200 (see
+ *  applySession), so a fact whose early sessions were evicted may read later
+ *  than its true first-learn; that is acceptable and documented. */
+export function deriveLearnedAt(hist: HistoryFile): Record<FactId, number> {
+  const out: Record<FactId, number> = {};
+  const keep = (f: FactId, ts: number) => {
+    if (!Number.isFinite(ts)) return;
+    const cur = out[f];
+    if (cur == null || ts < cur) out[f] = ts;
+  };
+  // Sessions ascending so the first time we see a fact is its earliest session.
+  for (const s of [...hist.sessions].sort((a, b) => a.ts - b.ts)) {
+    for (const f of Object.keys(s.facts ?? {}) as FactId[]) keep(f, s.ts);
+  }
+  for (const [f, ts] of Object.entries(hist.claims ?? {})) keep(f as FactId, ts);
+  for (const [f, ts] of Object.entries(hist.seen ?? {})) keep(f as FactId, ts);
+  return out;
+}
+
+/** Fill in learnedAt for any fact missing one, WITHOUT disturbing existing
+ *  entries: a value already written going-forward is authoritative-earliest and
+ *  wins over the (possibly cap-truncated) derivation. */
+export function withBackfilledLearnedAt(hist: HistoryFile): HistoryFile {
+  const existing = hist.learnedAt ?? {};
+  return { ...hist, learnedAt: { ...deriveLearnedAt(hist), ...existing } };
+}
+
 /**
  * Record "I know these" for a set of facts, at `ts`.
  *
@@ -69,7 +98,15 @@ export function applyClaims(
 ): HistoryFile {
   const next = structuredClone(hist);
   next.claims ??= {};
-  for (const f of facts) next.claims[f] = ts;
+  next.learnedAt ??= {};
+  const stampLearned = (f: FactId, at: number) => {
+    const cur = next.learnedAt![f];
+    if (cur == null || at < cur) next.learnedAt![f] = at;
+  };
+  for (const f of facts) {
+    next.claims[f] = ts;
+    stampLearned(f, ts);
+  }
   return next;
 }
 
@@ -97,7 +134,15 @@ export function applySeen(
 ): HistoryFile {
   const next = structuredClone(hist);
   next.seen ??= {};
-  for (const f of facts) next.seen[f] = ts;
+  next.learnedAt ??= {};
+  const stampLearned = (f: FactId, at: number) => {
+    const cur = next.learnedAt![f];
+    if (cur == null || at < cur) next.learnedAt![f] = at;
+  };
+  for (const f of facts) {
+    next.seen[f] = ts;
+    stampLearned(f, ts);
+  }
   return next;
 }
 
@@ -160,9 +205,15 @@ export function applySession(
   const next = structuredClone(hist);
   next.sessions.push(session);
   next.sessions = next.sessions.slice(-200);
+  next.learnedAt ??= {};
+  const stampLearned = (f: FactId, at: number) => {
+    const cur = next.learnedAt![f];
+    if (cur == null || at < cur) next.learnedAt![f] = at;
+  };
   for (const [f, s] of Object.entries(session.facts ?? {})) {
     const key = f as keyof typeof next.facts;
     foldSession((next.facts[key] ??= emptyAggregate()), s, session.ts);
+    stampLearned(f as FactId, session.ts);
   }
   return next;
 }

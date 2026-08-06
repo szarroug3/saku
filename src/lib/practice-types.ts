@@ -159,19 +159,29 @@ export function scopeOf(sel: Selection): PracticeScope {
  * chooser, and vice versa.
  */
 export function withScope(sel: Selection, scope: PracticeScope): Selection {
+  // `learned` (the date window) survives every switch alongside `states`: it is
+  // a cross-scope narrowing the learner set on the always-shown date section, so
+  // moving between Everything/Lists/Custom must not silently drop it.
   switch (scope) {
     case "everything":
-      return { ...emptySelection(), types: sel.types, states: sel.states };
+      return {
+        ...emptySelection(),
+        types: sel.types,
+        states: sel.states,
+        learned: sel.learned,
+      };
     case "lists":
       return {
         ...emptySelection(),
         states: sel.states,
+        learned: sel.learned,
         list: sel.list,
       };
     case "custom":
       return {
         ...emptySelection(),
         states: sel.states,
+        learned: sel.learned,
         subjects: sel.subjects,
         session: sel.session,
         text: sel.text,

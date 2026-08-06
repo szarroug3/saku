@@ -46,6 +46,7 @@ import {
   applySeen,
   applySession,
   emptyHistory,
+  withBackfilledLearnedAt,
 } from "@/lib/history-ops";
 import {
   withEntriesAdded,
@@ -126,13 +127,16 @@ export function loadLocalHistory(): HistoryFile {
  * history rather than crashing a screen. */
 function normalizeHistory(h: Partial<HistoryFile>): HistoryFile {
   const sessions = Array.isArray(h.sessions) ? h.sessions : [];
-  return {
+  // Backfill learnedAt best-effort, mirroring the server normalizer, so a
+  // signed-out learner's local copy carries the same populated first-learned map.
+  return withBackfilledLearnedAt({
     sessions,
     facts: hydrateRecentRuns(h.facts ?? {}, sessions),
     claims: h.claims ?? {},
     seen: h.seen ?? {},
+    ...(h.learnedAt ? { learnedAt: h.learnedAt } : {}),
     ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),
-  };
+  });
 }
 
 /** Apply one op to the local history, persist it, and return the new file — the

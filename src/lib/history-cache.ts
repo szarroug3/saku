@@ -24,6 +24,7 @@
 // also prunes every other account's entry, so the copy does not outlive the sign
 // out that ended it.
 
+import { withBackfilledLearnedAt } from "@/lib/history-ops";
 import type { HistoryFile } from "@/types";
 
 /** Namespace for the per-account entries. Distinct from `saku-local-*`, which is
@@ -66,12 +67,15 @@ function normalize(value: unknown): HistoryFile | null {
   const h = value as Partial<HistoryFile>;
   if (!Array.isArray(h.sessions)) return null;
   if (h.facts && typeof h.facts !== "object") return null;
-  return {
+  // Backfill learnedAt best-effort, mirroring the server/local normalizers, so a
+  // cache-painted first frame carries the same populated first-learned map.
+  return withBackfilledLearnedAt({
     sessions: h.sessions,
     facts: h.facts ?? {},
     claims: h.claims ?? {},
     seen: h.seen ?? {},
-  };
+    ...(h.learnedAt ? { learnedAt: h.learnedAt } : {}),
+  });
 }
 
 /**

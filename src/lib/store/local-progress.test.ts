@@ -76,6 +76,9 @@ test("an empty browser reads as the day-one shell", () => {
     facts: {},
     claims: {},
     seen: {},
+    // normalizeHistory backfills learnedAt on every read (see
+    // withBackfilledLearnedAt); on an empty history that is an empty map.
+    learnedAt: {},
   });
   assert.deepEqual(loadLocalLists(), []);
 });

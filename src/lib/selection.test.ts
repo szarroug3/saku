@@ -131,3 +131,74 @@ describe("grammar is title-cased on the subject chip", () => {
     assert.equal(subjectWord("grammar"), "Grammar");
   });
 });
+
+describe("the learned-date window narrows on history.learnedAt", () => {
+  // Three known kana with distinct first-learned stamps. `knowing` puts them in
+  // the pool (seen ≥ 1); `learnedAt` is set separately so we can test in/out.
+  const [a, b, c] = KANA_IDS;
+  const base = knowing([a, b, c]);
+  const T_JAN = Date.UTC(2026, 0, 10);
+  const T_FEB = Date.UTC(2026, 1, 10);
+  const h: HistoryFile = {
+    ...base,
+    // c deliberately has NO learnedAt entry — an unknown first-learn.
+    learnedAt: { [a]: T_JAN, [b]: T_FEB } as Record<FactId, number>,
+  };
+
+  test("includes only facts whose learnedAt is inside [from, to]", () => {
+    const got = resolve(
+      { ...emptySelection(), learned: { from: Date.UTC(2026, 0, 1), to: Date.UTC(2026, 0, 31) } },
+      h,
+    );
+    assert.deepEqual(got.sort(), [a].sort(), "only the January fact");
+  });
+
+  test("a fact with no learnedAt is excluded when a window is active", () => {
+    const got = resolve(
+      { ...emptySelection(), learned: { from: Date.UTC(2025, 0, 1), to: Date.UTC(2027, 0, 1) } },
+      h,
+    );
+    assert.ok(!got.includes(c), "the un-stamped fact is out");
+    assert.deepEqual(got.sort(), [a, b].sort());
+  });
+
+  test("open-ended from-only includes everything at/after `from`", () => {
+    const got = resolve(
+      { ...emptySelection(), learned: { from: T_FEB, to: null } },
+      h,
+    );
+    assert.deepEqual(got.sort(), [b].sort(), "only Feb (Jan is before)");
+  });
+
+  test("open-ended to-only includes everything at/before `to`", () => {
+    const got = resolve(
+      { ...emptySelection(), learned: { from: null, to: T_JAN } },
+      h,
+    );
+    assert.deepEqual(got.sort(), [a].sort());
+  });
+
+  test("a backwards window (from after to) resolves to nothing, never everything", () => {
+    // The Practice UI leaves From-after-To INVALID rather than swapping it (a
+    // mid-edit swap would apply a range the learner never asked for), so this is
+    // the safety net: a backwards window must name zero facts, not the whole
+    // pool. No date can be both ≥ from and ≤ to when from > to.
+    const got = resolve(
+      { ...emptySelection(), learned: { from: T_FEB, to: T_JAN } },
+      h,
+    );
+    assert.deepEqual(got, [], "backwards window is empty");
+  });
+
+  test("an absent/all-null window is no filter", () => {
+    const all = resolve(emptySelection(), h).sort();
+    assert.deepEqual(
+      resolve({ ...emptySelection(), learned: null }, h).sort(),
+      all,
+    );
+    assert.deepEqual(
+      resolve({ ...emptySelection(), learned: { from: null, to: null } }, h).sort(),
+      all,
+    );
+  });
+});

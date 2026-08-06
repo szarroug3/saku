@@ -20,6 +20,7 @@
 // of (query, history, lists) and nothing else.
 
 import { activeWeaknessPairs } from "@/lib/confusions";
+import { rangeLabel } from "@/lib/date-range";
 import { ALL_FACTS, entryOf, factInfo, factsOf } from "@/lib/facts";
 import { matchesTypes, typeLabel } from "@/lib/practice-types";
 import { standingOf } from "@/lib/library/standing";
@@ -47,7 +48,8 @@ export function isEverything(sel: Selection): boolean {
     !sel.list &&
     !sel.states.length &&
     !sel.text.trim() &&
-    sel.session === null
+    sel.session === null &&
+    !(sel.learned && (sel.learned.from != null || sel.learned.to != null))
   );
 }
 
@@ -283,6 +285,15 @@ export function resolve(
     pool = pool.filter((f) => inSession.has(f));
   }
 
+  // The date window, read STRAIGHT off the stored learnedAt map — no derivation
+  // here, because the normalizers (Part A) guarantee learnedAt is populated on
+  // every history the app reads. A one-sided window (from-only / to-only) is
+  // honoured; an all-null window is treated as no filter.
+  const learned =
+    sel.learned && (sel.learned.from != null || sel.learned.to != null)
+      ? sel.learned
+      : null;
+
   const subjects = new Set(sel.subjects);
   const needle = sel.text.trim().toLowerCase();
   const mixups = sel.states.includes("mixup")
@@ -301,6 +312,12 @@ export function resolve(
     if (!matchesTypes(f, sel.types ?? [])) continue;
     if (!matchesText(f, needle)) continue;
     if (!matchesStates(f, sel.states, history, metric, mixups, now)) continue;
+    if (learned) {
+      const at = history.learnedAt?.[f];
+      if (at == null) continue; // unknown first-learn → excluded
+      if (learned.from != null && at < learned.from) continue;
+      if (learned.to != null && at > learned.to) continue;
+    }
     out.add(f);
   }
 
@@ -379,10 +396,11 @@ export function whatSentence(
   sel: Selection,
   count: number,
   lists: SavedList[] = [],
-  opts: { showCount?: boolean } = {},
+  opts: { showCount?: boolean; now?: number } = {},
 ): string {
   const showCount = opts.showCount ?? true;
   if (showCount && !count) return "Nothing selected";
+  const now = opts.now ?? Date.now();
   const bits: string[] = [];
 
   if (sel.list) {
@@ -394,6 +412,9 @@ export function whatSentence(
   for (const s of sel.subjects) bits.push(subjectWord(s));
   if (sel.states.length) bits.push(sel.states.map(stateWord).join(" or "));
   if (sel.text.trim()) bits.push(`“${sel.text.trim()}”`);
+  if (sel.learned && (sel.learned.from != null || sel.learned.to != null)) {
+    bits.push(`learned ${rangeLabel(sel.learned, now)}`);
+  }
 
   // Un-narrowed names your whole knowledge base, so say so: "Everything you
   // know", not "Everything" — the pool is what you've seen or claimed, never the

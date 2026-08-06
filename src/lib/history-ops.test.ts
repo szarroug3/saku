@@ -24,7 +24,9 @@ import {
   applyDropSeen,
   applySeen,
   applySession,
+  deriveLearnedAt,
   emptyHistory,
+  withBackfilledLearnedAt,
 } from "@/lib/history-ops";
 import type { FactId, HistoryFile, QuizSessionRecord } from "@/types";
 
@@ -208,4 +210,80 @@ test("a delete-driven rebuild matches the sum of what survives", () => {
   hist = applySession(hist, seedSession(3_000, "c"));
   const after = applyDeleteSessions(hist, ["b"], false);
   assert.equal(after.facts[fid("hira-a")].seen, 2, "two survivors, seen twice");
+});
+
+// ---------- learnedAt (first-learned, keep-earliest) ----------
+
+test("applySeen stamps learnedAt at the seen time", () => {
+  const h = applySeen(emptyHistory(), [fid("hira-a")], 100);
+  assert.equal(h.seen?.[fid("hira-a")], 100);
+  assert.equal(h.learnedAt?.[fid("hira-a")], 100);
+});
+
+test("applyClaims stamps learnedAt at the claim time", () => {
+  const h = applyClaims(emptyHistory(), [fid("hira-a")], 100);
+  assert.equal(h.claims?.[fid("hira-a")], 100);
+  assert.equal(h.learnedAt?.[fid("hira-a")], 100);
+});
+
+test("applySession stamps learnedAt at the session ts", () => {
+  const h = applySession(emptyHistory(), seedSession(500, "s1"));
+  assert.equal(h.learnedAt?.[fid("hira-a")], 500);
+});
+
+test("re-recording a LATER seen/claim does not move learnedAt forward", () => {
+  let h = applySeen(emptyHistory(), [fid("hira-a")], 100);
+  h = applySeen(h, [fid("hira-a")], 300);
+  assert.equal(h.seen?.[fid("hira-a")], 300, "seen moves forward");
+  assert.equal(h.learnedAt?.[fid("hira-a")], 100, "learnedAt keeps the earliest");
+
+  h = applyClaims(h, [fid("hira-a")], 400);
+  assert.equal(h.learnedAt?.[fid("hira-a")], 100, "a later claim doesn't move it");
+});
+
+test("an EARLIER session moves learnedAt earlier", () => {
+  let h = applySession(emptyHistory(), seedSession(300, "late"));
+  assert.equal(h.learnedAt?.[fid("hira-a")], 300);
+  h = applySession(h, seedSession(100, "early"));
+  assert.equal(h.learnedAt?.[fid("hira-a")], 100, "the earlier session wins");
+});
+
+test("deriveLearnedAt picks the earliest across sessions, claims and seen", () => {
+  const hist: HistoryFile = {
+    sessions: [seedSession(500, "s")],
+    facts: {},
+    claims: { [fid("hira-a")]: 200, [fid("kata-ka")]: 900 } as Record<
+      FactId,
+      number
+    >,
+    seen: { [fid("hira-a")]: 800 } as Record<FactId, number>,
+  };
+  const derived = deriveLearnedAt(hist);
+  // hira-a is in a session (500), a claim (200) and a seen (800) → earliest 200.
+  assert.equal(derived[fid("hira-a")], 200);
+  // kata-ka only has a claim.
+  assert.equal(derived[fid("kata-ka")], 900);
+});
+
+test("withBackfilledLearnedAt lets an existing learnedAt entry win", () => {
+  const hist: HistoryFile = {
+    sessions: [seedSession(500, "s")],
+    facts: {},
+    // Going-forward value is authoritative-earliest even though the session ts
+    // (500) is smaller — an existing entry is never overwritten by derivation.
+    learnedAt: { [fid("hira-a")]: 700 } as Record<FactId, number>,
+  };
+  const out = withBackfilledLearnedAt(hist);
+  assert.equal(out.learnedAt?.[fid("hira-a")], 700, "existing entry preserved");
+});
+
+test("withBackfilledLearnedAt fills a missing fact and tolerates empty history", () => {
+  const filled = withBackfilledLearnedAt({
+    sessions: [seedSession(500, "s")],
+    facts: {},
+  });
+  assert.equal(filled.learnedAt?.[fid("hira-a")], 500);
+
+  const empty = withBackfilledLearnedAt({ sessions: [], facts: {} });
+  assert.deepEqual(empty.learnedAt, {}, "empty history → empty map, no throw");
 });

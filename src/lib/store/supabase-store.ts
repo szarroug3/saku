@@ -16,6 +16,7 @@ import {
   type SessionStateEnvelope,
 } from "@/lib/session-state";
 import { hydrateRecentRuns } from "@/lib/aggregate";
+import { withBackfilledLearnedAt } from "@/lib/history-ops";
 import type { VersionedRead } from "@/lib/history-mutate";
 import { normalizeSettings } from "@/lib/settings-merge";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -31,13 +32,17 @@ export interface ProgressSeedRow {
 function normalizeHistory(raw: unknown): HistoryFile {
   const h = (raw ?? {}) as Partial<HistoryFile>;
   const sessions = Array.isArray(h.sessions) ? h.sessions : [];
-  return {
+  // Backfill learnedAt best-effort so every server read carries a populated map
+  // (existing entries win — see withBackfilledLearnedAt). This is where legacy
+  // history predating the field gets its first-learned stamps derived.
+  return withBackfilledLearnedAt({
     sessions,
     facts: hydrateRecentRuns(h.facts ?? {}, sessions),
     claims: h.claims ?? {},
     seen: h.seen ?? {},
+    ...(h.learnedAt ? { learnedAt: h.learnedAt } : {}),
     ...(h.clearedMixups ? { clearedMixups: h.clearedMixups } : {}),
-  };
+  });
 }
 
 export async function readProgressSeedRow(
