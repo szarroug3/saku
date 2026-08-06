@@ -104,14 +104,7 @@ import { exampleFor } from "@/data/word-examples";
 import { getMnemonic } from "@/data/mnemonics";
 import { TRANSITIVITY_SUBJECT, pairForEntry } from "@/data/transitivity-facts";
 import { KEIGO_SUBJECT, keigoSetForEntry } from "@/data/keigo";
-import {
-  VOCAB_SUBJECT,
-  readingUnits,
-  vocabRow,
-  wordMeaningFactId,
-  wordReadingFactId,
-} from "@/data/vocab";
-import { wordPitch } from "@/data/pitch";
+import { VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
 import { factsOf } from "@/lib/facts";
 import {
   appearsIn,
@@ -130,6 +123,7 @@ import {
   type LibEntry,
 } from "@/lib/library/entries";
 import { characterRole } from "@/lib/character-role";
+import { japaneseFontClass } from "@/lib/japanese-text";
 import { attachesTo, FORM_LABEL } from "@/lib/grammar/formula";
 import { entryFromParam, entryFromSlug, entryHref } from "@/lib/library/href";
 import { kanaFamily } from "@/lib/library/kana-family";
@@ -408,83 +402,12 @@ function EntryView({ entry }: { entry: LibEntry }) {
         </>
       ) : null}
 
-      {/* WORD: a row of chips, one per thing the app actually asks. A kana word
-          has no reading fact (これ's reading is これ — not a question), so that
-          chip is simply absent rather than showing a score for a fact that does
-          not exist.
-
-          A MULTI-READING word (日 = ひ day, か day-counter) summarizes like the
-          kanji header instead: one Meaning chip on the primary unit, then the
-          COUNTS. The same refusal standing.ts makes for a kanji's readings holds
-          here. Averaging several separately-scored readings into one adjective
-          says less than "N need work", which is a count over a real population.
-          A per-unit Reading/Meaning chip apiece would also rebuild the header
-          row so wide the title has nowhere to go. The sense table below still
-          lists every unit's own standing. */}
-      {isWord && wordRow && readingUnits(wordRow).length > 1 ? (
-        <>
-          {/* PRIMARY meaning, computed exactly like the single-unit Meaning chip
-              below (the primary unit mints the unqualified meaning fact id). */}
-          <span className="flex items-center gap-1.5 text-[11px] text-text-muted">
-            Meaning{" "}
-            <StandingChip
-              standing={
-                standingOf(
-                  liveFacts[wordMeaningFactId(entry.glyph)],
-                  claims[wordMeaningFactId(entry.glyph)],
-                  cfg.accuracyMetric,
-                  now,
-                ).standing
-              }
-            />
-          </span>
-          {/* The SAME two counts as the kanji block, over ALL the word's facts
-              (standing aggregates every reading-unit's reading and meaning fact).
-              See the kanji comment above for why the unseen are subtracted out. */}
-          {standing.needWork - (standing.total - standing.seen) > 0 ? (
-            <span className="rounded-full border border-warning px-2 py-0.5 text-[11px] text-warning">
-              {standing.needWork - (standing.total - standing.seen)} need work
-            </span>
-          ) : null}
-          {standing.total - standing.seen > 0 ? (
-            <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-text-muted">
-              {standing.total - standing.seen} not seen
-            </span>
-          ) : null}
-        </>
-      ) : isWord ? (
-        <>
-          {liveFacts[wordReadingFactId(entry.glyph)] !== undefined ||
-          factsOf(entry.id).includes(wordReadingFactId(entry.glyph)) ? (
-            <span className="flex items-center gap-1.5 text-[11px] text-text-muted">
-              Reading{" "}
-              <StandingChip
-                standing={
-                  standingOf(
-                    liveFacts[wordReadingFactId(entry.glyph)],
-                    claims[wordReadingFactId(entry.glyph)],
-                    cfg.accuracyMetric,
-                    now,
-                  ).standing
-                }
-              />
-            </span>
-          ) : null}
-          <span className="flex items-center gap-1.5 text-[11px] text-text-muted">
-            Meaning{" "}
-            <StandingChip
-              standing={
-                standingOf(
-                  liveFacts[wordMeaningFactId(entry.glyph)],
-                  claims[wordMeaningFactId(entry.glyph)],
-                  cfg.accuracyMetric,
-                  now,
-                ).standing
-              }
-            />
-          </span>
-        </>
-      ) : null}
+      {/* NO WORD CHIPS HERE ANY MORE. A word's header is now just its glyph on a
+          flat ground (see the isWord branch of the header), and its Reading and
+          Meaning standings moved INTO the "How you say it" table below, one pair
+          per reading-unit — so a single- and a multi-reading word are formatted
+          the same. The chips fragment is only ever handed to EntryHeader, which a
+          word no longer renders, so there is nothing to build here. */}
 
       {/* GRAMMAR: what it MEANS, and what it takes to BUILD it. Two questions
           the app scores separately, so two chips — a single pooled adjective
@@ -545,16 +468,18 @@ function EntryView({ entry }: { entry: LibEntry }) {
     entry.kind === GRAMMAR_SUBJECT ||
     entry.kind === GRAMMAR_CONCEPT_SUBJECT ||
     mark ||
-    !entry.glyph
+    !entry.glyph ||
+    // A WORD's header is now just the glyph. Its pronunciation lives in the
+    // "How you say it" table below, one speaker + pitch per reading-unit, so the
+    // header offers none — the same stance the kanji header already takes.
+    isWord
       ? null
-      : isWord && wordRow
-        ? { text: wordRow.reb, speak: wordRow.reb, pitch: wordPitch(wordRow.keb) }
-        : isKana
-          ? { text: entry.readings.join(" · "), speak: entry.glyph }
-          : // A kanji has no ONE pronunciation — that is the entire thesis of the
-            // readings table below — so the header offers none. Each reading has
-            // its own speaker in the row that names it.
-            null;
+      : isKana
+        ? { text: entry.readings.join(" · "), speak: entry.glyph }
+        : // A kanji has no ONE pronunciation — that is the entire thesis of the
+          // readings table below — so the header offers none. Each reading has
+          // its own speaker in the row that names it.
+          null;
 
   // ---- word-only material ----
 
@@ -785,6 +710,23 @@ function EntryView({ entry }: { entry: LibEntry }) {
         {entryName(entry)}
       </p>
 
+      {isWord ? (
+        // A WORD's header is JUST THE GLYPH on a flat ground — no frosted Card,
+        // no gloss, no standing chips, no pronunciation. Everything that used to
+        // sit here (the meaning, the reading + pitch, the Reading/Meaning chips)
+        // now lives in the "How you say it, and what it means" table below, per
+        // reading-unit, so a single- and a multi-reading word read the same. The
+        // intransitive note is the one header aside a word keeps, because it is a
+        // fact about the verb that has nowhere else to go; it renders flat too.
+        <div className="mb-3.5">
+          <div className={`${japaneseFontClass(entry.glyph)} text-[76px] leading-none`}>
+            {entry.glyph}
+          </div>
+          {wordRow && forms && isIntransitive(wordRow) ? (
+            <p className="mt-2 text-xs text-text-muted">{INTRANSITIVE_NOTE}</p>
+          ) : null}
+        </div>
+      ) : (
       <Card>
         <EntryHeader
           // A keigo set has no single glyph; its hero is the plain verb(s) it
@@ -858,6 +800,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
           <p className="mt-2 text-xs text-text-muted">{INTRANSITIVE_NOTE}</p>
         ) : null}
       </Card>
+      )}
 
       {/* ================= KANA ================= */}
       {isKana ? (
@@ -1009,25 +952,40 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {/* ================= WORD ================= */}
       {isWord ? (
         <>
-          {/* EVERY READING WITH ITS MEANING, when a word is read more than one
-              way. 大 is だい AND おお, 日 is ひ AND にち, and each reading-unit is
-              a fact the quiz mints and scores on its own (readingUnits /
-              wordUnitFacts). The header carries only the primary (だい, its sound
-              and its gloss), so without this the secondary readings were drilled
-              but never shown here — the same gap the lesson had. The shared panel
-              the teach walk uses draws them, bound ones marked "in compounds", so
-              the reference and the lesson cannot disagree about a word's readings.
-              A single-reading word (先生) has nothing this adds over the header,
-              so it is gated on there being more than one unit. */}
-          {wordRow && readingUnits(wordRow).length > 1 ? (
+          {/* BUILT FROM LEADS — the reading decomposition (何 → 亻/可, its pieces
+              and their readings) comes ABOVE the "How you say it" table now, so a
+              word reads shape-first: what it is built from, then how you say it
+              and what it means. Absent, not empty, for a jukujikun (大人/おとな)
+              and an all-kana word. Links has moved to the common footer, so Built
+              from no longer shares a row with navigation. */}
+          {pieces ? <WordBuiltFrom pieces={pieces} /> : null}
+          {/* EVERY READING WITH ITS MEANING, and its STANDING — mounted for EVERY
+              word now, single reading or many. A word's header is just its glyph,
+              so this table is where the reading (with speaker + pitch), the
+              meaning, AND the per-reading standing all live; a single-reading word
+              (行/ぎょう) shows the one-row sentence form the panel renders for one
+              reading. Each reading-unit is a fact the quiz mints and scores on its
+              own (readingUnits / wordUnitFacts). The shared panel the teach walk
+              uses draws them, bound ones marked "in compounds", so the reference
+              and the lesson cannot disagree about a word's readings. `standings`
+              is the Library-only lookup that adds the standing chips; the lesson
+              omits it and the panel renders exactly as before. */}
+          {wordRow ? (
             <div className="mb-3.5">
-              <WordSensePanel word={wordRow} voiceName={cfg.voiceName} />
+              <WordSensePanel
+                word={wordRow}
+                voiceName={cfg.voiceName}
+                standings={(factId) =>
+                  standingOf(
+                    liveFacts[factId],
+                    claims[factId],
+                    cfg.accuracyMetric,
+                    now,
+                  ).standing
+                }
+              />
             </div>
           ) : null}
-          {/* Absent, not empty, for a jukujikun (大人/おとな) and an all-kana
-              word. Links has moved to the common footer, so Built from no
-              longer shares a row with navigation. */}
-          {pieces ? <WordBuiltFrom pieces={pieces} /> : null}
           {wordRow ? <WordClassNote word={wordRow} className="mb-3.5" /> : null}
           {wordRow && forms ? (
             <WordFormFan

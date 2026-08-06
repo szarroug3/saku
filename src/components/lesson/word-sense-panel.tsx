@@ -38,19 +38,42 @@
 import { HearButton } from "@/components/lesson/hear-button";
 import { LessonPanel } from "@/components/lesson/lesson-panel";
 import { PitchReading } from "@/components/library/pitch-mark";
+import { StandingChip } from "@/components/library/standing-chip";
 import { wordPitch } from "@/data/pitch";
-import type { VocabRow } from "@/data/vocab";
+import { wordUnitFacts, type VocabRow } from "@/data/vocab";
 import { allReadingSenses, isBoundReading, wordTypeOf } from "@/lib/lesson-roles";
+import type { Standing } from "@/lib/library/standing";
+import type { FactId } from "@/types";
 
+// The Library shows how each reading is going right beside the reading; the
+// lesson teach view does not (it is teaching, not grading). So the standing is
+// an OPTIONAL lookup the caller supplies. When absent the panel renders exactly
+// as it always has — no chips, no extra column — which is what the lesson wants.
 export function WordSensePanel({
   word,
   voiceName,
+  standings,
 }: {
   word: VocabRow;
   voiceName: string;
+  standings?: (factId: FactId) => Standing | null;
 }) {
   const senses = allReadingSenses(word);
   const only = senses.length === 1 ? senses[0] : null;
+
+  // `allReadingSenses` matches `readingUnits`/`wordUnitFacts` 1:1 (same count,
+  // same reb, same order — all group by reading), so a sense at position i owns
+  // the reading and meaning fact ids at the same index here. The reading fact is
+  // null for a kana word, which mints no reading question.
+  const unitFacts = standings ? wordUnitFacts(word.keb) : null;
+  const readingStanding = (i: number): Standing | null => {
+    const id = unitFacts?.[i]?.reading;
+    return id && standings ? standings(id) : null;
+  };
+  const meaningStanding = (i: number): Standing | null => {
+    const id = unitFacts?.[i]?.meaning;
+    return id && standings ? standings(id) : null;
+  };
 
   // The pitch overline is stored per WORD and validated against its PRIMARY
   // reading (word.reb) — the same reading the drill reveal and the Library header
@@ -81,9 +104,20 @@ export function WordSensePanel({
           <span className="text-[11px] uppercase tracking-[0.06em] text-text-muted">
             {wordTypeOf(only)}
           </span>
+          {/* The reading's standing rides beside the reading it is about — the
+              same place the multi-row table puts it. Absent in the lesson, where
+              no lookup is passed. */}
+          {readingStanding(0) ? <StandingChip standing={readingStanding(0)!} /> : null}
         </div>
         {meaning ? (
-          <p className="mt-2 text-[14px] leading-relaxed text-text">{meaning}</p>
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-relaxed text-text">
+            <span>{meaning}</span>
+            {meaningStanding(0) ? <StandingChip standing={meaningStanding(0)!} /> : null}
+          </p>
+        ) : meaningStanding(0) ? (
+          <p className="mt-2">
+            <StandingChip standing={meaningStanding(0)!} />
+          </p>
         ) : null}
       </LessonPanel>
     );
@@ -107,8 +141,9 @@ export function WordSensePanel({
               <tr key={i} className="border-b border-border last:border-b-0">
                 <td className="py-2 pr-2 align-middle">
                   {/* The speaker sits WITH the thing it speaks, to its left, the
-                      same rule the readings table and the entry header follow. */}
-                  <span className="flex items-center gap-2">
+                      same rule the readings table and the entry header follow.
+                      The reading's standing (Library only) rides after it. */}
+                  <span className="flex flex-wrap items-center gap-2">
                     <HearButton glyph={s.reb} voiceName={voiceName} />
                     {drawsPitch(s.reb) ? (
                       <PitchReading
@@ -119,6 +154,9 @@ export function WordSensePanel({
                     ) : (
                       <span className="font-kana text-[15px]">{s.reb}</span>
                     )}
+                    {readingStanding(i) ? (
+                      <StandingChip standing={readingStanding(i)!} />
+                    ) : null}
                   </span>
                 </td>
                 <td className="py-2 pr-2 align-middle text-text-muted">
@@ -135,7 +173,12 @@ export function WordSensePanel({
                   ) : null}
                 </td>
                 <td className="py-2 align-middle text-text">
-                  {s.glosses.slice(0, 4).join(", ")}
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span>{s.glosses.slice(0, 4).join(", ")}</span>
+                    {meaningStanding(i) ? (
+                      <StandingChip standing={meaningStanding(i)!} />
+                    ) : null}
+                  </span>
                 </td>
               </tr>
             ))}
