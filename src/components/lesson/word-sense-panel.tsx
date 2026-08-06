@@ -55,6 +55,7 @@ import { StandingChip } from "@/components/library/standing-chip";
 import { wordPitch } from "@/data/pitch";
 import { wordUnitFacts, type VocabRow } from "@/data/vocab";
 import { allReadingSenses, isBoundReading, wordTypeOf } from "@/lib/lesson-roles";
+import { wordFormKind } from "@/lib/word-forms";
 import type { Standing } from "@/lib/library/standing";
 import type { FactId } from "@/types";
 
@@ -226,9 +227,15 @@ export function WordSensePanel({
   // stays plain. Display only, never graded. See pitch-mark.tsx / src/data/pitch.ts.
   const pitch = wordPitch(word.keb);
 
+  // A conjugating word names its paradigm in the Kind column — う-verb, る-verb,
+  // い-/な-adjective, irregular verb — the same class badge the lesson's role tag
+  // shows, so "verb" is never the whole answer when a finer one exists. It is a
+  // property of the WORD, not a single reading, so every row carries it; a
+  // non-conjugating word (a noun) falls back to the reading-unit's plain type.
+  const formKind = wordFormKind(word);
   const rows: SenseRow[] = senses.map((s, i) => ({
     reb: s.reb,
-    kind: wordTypeOf(s),
+    kind: formKind ?? wordTypeOf(s),
     // Never on the first row: the primary is the reading the word is filed and
     // said under, and is always sayable alone.
     bound: i > 0 && isBoundReading(s),
