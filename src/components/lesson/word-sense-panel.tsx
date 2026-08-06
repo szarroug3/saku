@@ -49,15 +49,123 @@ import type { FactId } from "@/types";
 // lesson teach view does not (it is teaching, not grading). So the standing is
 // an OPTIONAL lookup the caller supplies. When absent the panel renders exactly
 // as it always has — no chips, no extra column — which is what the lesson wants.
+// A counter/number is NOT a VocabRow — it is a hand-authored counted form with
+// exactly one reading and one meaning (see src/data/counters.ts), and its facts
+// are keyed on the form's own ids, not the vocab-keb minters wordUnitFacts uses.
+// So a counter cannot flow through the `word` path; it hands the panel this
+// already-resolved single sense instead, and the panel renders it with the SAME
+// one-reading "sentence" layout a single-reading word gets (SenseSentence). This
+// is the small adapter the brief prefers over forking the component: one panel,
+// one "How you say it, and what it means" heading, counter honesty on the ids.
+export interface CounterSense {
+  /** The reading to show and speak — いっぽん, or the glyph itself for a kana
+   * form (ひとつ). */
+  readonly reading: string;
+  /** The muted tag in the reading row — "counter" or "number", the counter's
+   * analogue of a word's part-of-speech. */
+  readonly kind: string;
+  /** The plain-language gloss — "one long thin object". */
+  readonly meaning: string;
+  /** How the reading is going. Null for a kana form, which mints no reading fact
+   * (its reading IS the glyph), the same rule a kana word follows. */
+  readonly readingStanding: Standing | null;
+  /** How the meaning is going. Always present — every counter form has a meaning
+   * fact. */
+  readonly meaningStanding: Standing | null;
+}
+
+/**
+ * ONE reading, rendered as a sentence rather than a table — the shared shape a
+ * single-reading word and a counter both use. A header row over a single data
+ * row is furniture around one fact, so this stays flat. Extracted so the word
+ * and counter callers cannot draw the same one-reading case two different ways.
+ */
+function SenseSentence({
+  reb,
+  kind,
+  meaning,
+  pitch,
+  voiceName,
+  readingStanding,
+  meaningStanding,
+}: {
+  reb: string;
+  kind: string;
+  meaning: string;
+  /** The downstep to draw the pitch overline at, or null for no verified pitch. */
+  pitch: number | null;
+  voiceName: string;
+  readingStanding: Standing | null;
+  meaningStanding: Standing | null;
+}) {
+  return (
+    <LessonPanel title="How you say it, and what it means">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <HearButton glyph={reb} voiceName={voiceName} />
+        {pitch != null ? (
+          <PitchReading
+            reading={reb}
+            downstep={pitch}
+            className="font-kana text-[24px] leading-none text-text"
+          />
+        ) : (
+          <span className="font-kana text-[24px] leading-none text-text">{reb}</span>
+        )}
+        <span className="text-[11px] uppercase tracking-[0.06em] text-text-muted">
+          {kind}
+        </span>
+        {/* The reading's standing rides beside the reading it is about — the
+            same place the multi-row table puts it. Absent in the lesson, where
+            no lookup is passed. */}
+        {readingStanding ? <StandingChip standing={readingStanding} /> : null}
+      </div>
+      {meaning ? (
+        <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-relaxed text-text">
+          <span>{meaning}</span>
+          {meaningStanding ? <StandingChip standing={meaningStanding} /> : null}
+        </p>
+      ) : meaningStanding ? (
+        <p className="mt-2">
+          <StandingChip standing={meaningStanding} />
+        </p>
+      ) : null}
+    </LessonPanel>
+  );
+}
+
 export function WordSensePanel({
   word,
   voiceName,
   standings,
+  counter,
 }: {
-  word: VocabRow;
+  word?: VocabRow;
   voiceName: string;
   standings?: (factId: FactId) => Standing | null;
+  counter?: CounterSense;
 }) {
+  // A counter's single sense arrives pre-resolved — it has no VocabRow to
+  // enumerate — and renders through the SAME one-reading layout a word does. No
+  // pitch: a counted form carries no verified per-word pitch (pitch is keyed on a
+  // vocab keb, which a counter has none of).
+  if (counter) {
+    return (
+      <SenseSentence
+        reb={counter.reading}
+        kind={counter.kind}
+        meaning={counter.meaning}
+        pitch={null}
+        voiceName={voiceName}
+        readingStanding={counter.readingStanding}
+        meaningStanding={counter.meaningStanding}
+      />
+    );
+  }
+  // Every other caller drives the panel from a VocabRow. The optional-`word`
+  // signature exists only so the counter branch above can omit it; a word caller
+  // always passes one, so this guard never fires for them.
+  if (!word) return null;
+
   const senses = allReadingSenses(word);
   const only = senses.length === 1 ? senses[0] : null;
 
@@ -87,39 +195,16 @@ export function WordSensePanel({
   // data is furniture around one fact, so the single-reading case keeps the shape
   // this panel has always had.
   if (only) {
-    const meaning = only.glosses.slice(0, 4).join(", ");
     return (
-      <LessonPanel title="How you say it, and what it means">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <HearButton glyph={only.reb} voiceName={voiceName} />
-          {drawsPitch(only.reb) ? (
-            <PitchReading
-              reading={only.reb}
-              downstep={pitch!}
-              className="font-kana text-[24px] leading-none text-text"
-            />
-          ) : (
-            <span className="font-kana text-[24px] leading-none text-text">{only.reb}</span>
-          )}
-          <span className="text-[11px] uppercase tracking-[0.06em] text-text-muted">
-            {wordTypeOf(only)}
-          </span>
-          {/* The reading's standing rides beside the reading it is about — the
-              same place the multi-row table puts it. Absent in the lesson, where
-              no lookup is passed. */}
-          {readingStanding(0) ? <StandingChip standing={readingStanding(0)!} /> : null}
-        </div>
-        {meaning ? (
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-relaxed text-text">
-            <span>{meaning}</span>
-            {meaningStanding(0) ? <StandingChip standing={meaningStanding(0)!} /> : null}
-          </p>
-        ) : meaningStanding(0) ? (
-          <p className="mt-2">
-            <StandingChip standing={meaningStanding(0)!} />
-          </p>
-        ) : null}
-      </LessonPanel>
+      <SenseSentence
+        reb={only.reb}
+        kind={wordTypeOf(only)}
+        meaning={only.glosses.slice(0, 4).join(", ")}
+        pitch={drawsPitch(only.reb) ? pitch : null}
+        voiceName={voiceName}
+        readingStanding={readingStanding(0)}
+        meaningStanding={meaningStanding(0)}
+      />
     );
   }
 

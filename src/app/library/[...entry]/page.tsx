@@ -72,6 +72,12 @@ import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { WordClassNote } from "@/components/lesson/word-class-note";
 import { WordSensePanel } from "@/components/lesson/word-sense-panel";
+import {
+  counterForm,
+  counterMeaningFactId,
+  counterReadingFactId,
+  isKanaForm as isKanaCounterForm,
+} from "@/data/counters";
 import { Card, Hint, Lbl, SoundIcon } from "@/components/ui";
 import { KANA_SUBJECT, glyphVariantFor } from "@/data/characters";
 import {
@@ -351,6 +357,20 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // scripts/build-word-examples.ts.
   const example = isWord ? exampleFor(entry.glyph) : null;
 
+  // The counted form behind this entry, if it is a counter — its glyph, reading,
+  // meaning and phase (see src/data/counters.ts). A counter renders the SAME shape
+  // as a word now: a glyph-only flat header and the "How you say it, and what it
+  // means" panel below. It carries exactly one reading and one meaning, and a kana
+  // form (ひとつ) has NO reading fact — its reading is the glyph, so there is
+  // nothing to grade, the same rule a kana word follows. undefined for every
+  // non-counter entry and for a counter id this track did not mint.
+  const counterFormData = isCounter ? counterForm(entry.id) : undefined;
+  const counterReadFact =
+    counterFormData && !isKanaCounterForm(counterFormData)
+      ? counterReadingFactId(counterFormData)
+      : null;
+  const counterMeanFact = counterFormData ? counterMeaningFactId(counterFormData) : null;
+
   const chips = (
     <>
       {/* KANJI: the meaning's own chip, then COUNTS. An entry with many facts
@@ -526,7 +546,17 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // radical arm for the same reason it keeps grammar's — other callers still
   // enumerate what is scored — this page just no longer prints it.
   const genericRows =
-    isKana || isKanji || isWord || isGrammar || isRadical || isTransitivity || isKeigo
+    isKana ||
+    isKanji ||
+    isWord ||
+    isGrammar ||
+    isRadical ||
+    isTransitivity ||
+    isKeigo ||
+    // A counter now prints the word-style "How you say it, and what it means"
+    // panel below (see the counter branch), so the generic facts table it used to
+    // fall through to would be the same reading + meaning said twice.
+    isCounter
       ? []
       : factRows(entry);
 
@@ -710,7 +740,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
         {entryName(entry)}
       </p>
 
-      {isWord ? (
+      {isWord || isCounter ? (
         // A WORD's header is JUST THE GLYPH on a flat ground — no frosted Card,
         // no gloss, no standing chips, no pronunciation. Everything that used to
         // sit here (the meaning, the reading + pitch, the Reading/Meaning chips)
@@ -718,6 +748,16 @@ function EntryView({ entry }: { entry: LibEntry }) {
         // reading-unit, so a single- and a multi-reading word read the same. The
         // intransitive note is the one header aside a word keeps, because it is a
         // fact about the verb that has nowhere else to go; it renders flat too.
+        //
+        // A COUNTER wears the same header — the owner's rule is "counters are just
+        // special words, so they should look the same". Its reading, meaning and
+        // standing move into the same panel below. The intransitive note is
+        // word-only (wordRow is undefined for a counter), so nothing extra prints.
+        // Dropped from the old counter header: the frosted Card, and the muted
+        // "Counter" / "Number" sub — the reading row's "counter" / "number" Kind
+        // tag now carries that, the same way a word's part-of-speech does. The one
+        // thing lost is the sub's link to the "counter" glossary term; the tag is
+        // plain text, matching how words print their part-of-speech.
         <div className="mb-3.5">
           <div className={`${japaneseFontClass(entry.glyph)} text-[76px] leading-none`}>
             {entry.glyph}
@@ -1005,6 +1045,56 @@ function EntryView({ entry }: { entry: LibEntry }) {
               sentence. No card, no heading, no line about the gap. */}
           {example ? <WordExampleView example={example} /> : null}
         </>
+      ) : null}
+
+      {/* ================= COUNTER / NUMBER ================= */}
+      {/* "The counter/number pages should look the same, they're just special
+          words." So a counter renders the word page's body: the "How you say it,
+          and what it means" panel, carrying the reading (with a speaker), the
+          meaning, and the per-fact standing — the same panel the words track
+          teaches with and the word entry page shows, fed the counter's OWN facts.
+          A counted form (三本 · さんぼん) shows both a reading and a meaning
+          standing; a kana form (ひとつ) shows the meaning standing alone, its
+          reading being the glyph with nothing to grade.
+
+          NO "Built from" here, and it is a deliberate omission. A word's "Built
+          from" splits its READING across its kanji (先 せん · 生 せい) off the
+          ingest's verified per-kanji alignment; a counter carries no such
+          alignment, and the one sound this shelf exists to teach is the shift a
+          naive split gets wrong (本 → ぼん). Inventing a reading-per-kanji
+          breakdown would be exactly the mis-split word-pieces.ts refuses, so the
+          section is absent rather than guessed — the same stance a jukujikun word
+          takes when it cannot be split. */}
+      {isCounter && counterFormData ? (
+        <div className="mb-3.5">
+          <WordSensePanel
+            voiceName={cfg.voiceName}
+            counter={{
+              reading: counterFormData.reading,
+              // "counter" for a counted form, "number" for a bare number (に, ひゃく)
+              // — the counter's analogue of a word's part-of-speech tag. Plain
+              // text, the way a word prints "noun".
+              kind: counterFormData.counter === "" ? "number" : "counter",
+              meaning: counterFormData.meaning,
+              readingStanding: counterReadFact
+                ? standingOf(
+                    liveFacts[counterReadFact],
+                    claims[counterReadFact],
+                    cfg.accuracyMetric,
+                    now,
+                  ).standing
+                : null,
+              meaningStanding: counterMeanFact
+                ? standingOf(
+                    liveFacts[counterMeanFact],
+                    claims[counterMeanFact],
+                    cfg.accuracyMetric,
+                    now,
+                  ).standing
+                : null,
+            }}
+          />
+        </div>
       ) : null}
 
       {/* ================= GRAMMAR ================= */}
