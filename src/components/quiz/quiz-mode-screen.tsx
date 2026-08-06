@@ -17,6 +17,8 @@ const screenLoaders = {
   substitution: () => import("@/components/quiz/substitution-screen"),
   "listen-sentence": () =>
     import("@/components/quiz/sentence-listen-screen"),
+  "number-reading": () =>
+    import("@/components/quiz/number-reading-screen"),
 } satisfies Record<QuizScreenKind, () => Promise<unknown>>;
 
 const DrillScreen = dynamic(() =>
@@ -37,6 +39,11 @@ const SubstitutionScreen = dynamic(() =>
 const SentenceListenScreen = dynamic(() =>
   screenLoaders["listen-sentence"]().then(
     (module) => module.SentenceListenScreen,
+  ),
+);
+const NumberReadingScreen = dynamic(() =>
+  screenLoaders["number-reading"]().then(
+    (module) => module.NumberReadingScreen,
   ),
 );
 
@@ -61,5 +68,7 @@ export function QuizModeScreen({ active }: { active: ActiveQuiz }) {
       return <SubstitutionScreen />;
     case "listen-sentence":
       return <SentenceListenScreen />;
+    case "number-reading":
+      return <NumberReadingScreen />;
   }
 }

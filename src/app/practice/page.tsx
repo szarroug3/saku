@@ -51,7 +51,14 @@ import {
 } from "@/lib/sentence-ordering-progress";
 import { useHistory } from "@/lib/use-history";
 import { useLists } from "@/lib/use-lists";
-import type { Selection } from "@/types";
+import type { FactId, Selection } from "@/types";
+
+// Number reading is PROCEDURAL: it generates its own round and ignores the
+// selected pool entirely (like substitution ignores active.facts). It still
+// needs a non-empty facts array to launch a leg, so it rides a single synthetic
+// id the screen never reads. The round size is fixed by the screen's config.
+const NUMBER_READING_FACTS: FactId[] = ["number-reading:round" as FactId];
+const NUMBER_READING_COUNT = 10;
 
 export default function PracticePage() {
   const { cfg, set } = useQuizConfig();
@@ -160,6 +167,11 @@ export default function PracticePage() {
         count: hasSubstitutionMaterial(history) ? ordinaryFacts.length || 1 : 0,
       };
     }
+    // Number reading generates its own round from a fixed config — it needs no
+    // selection and always has material, so it launches on the synthetic id.
+    if (cfg.mode === "number-reading") {
+      return { facts: NUMBER_READING_FACTS, count: NUMBER_READING_COUNT };
+    }
     const cap =
       cfg.length === "limited" && cfg.limType === "count" ? cfg.limCount : null;
     if (cfg.mode === "pairs") {
@@ -221,6 +233,7 @@ export default function PracticePage() {
     }
     if (cfg.mode === "pairs") return planned.count;
     if (cfg.mode === "grid") return planned.facts.length;
+    if (cfg.mode === "number-reading") return planned.count;
 
     if (cfg.length === "limited" && cfg.limType === "cov") {
       return buildCoverageDeck(planned.facts, cfg.ask).deck.length;

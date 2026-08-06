@@ -33,6 +33,12 @@ export function QuizOptionsFields() {
         >
           Substitution
         </Chip>
+        <Chip
+          on={cfg.mode === "number-reading"}
+          onClick={() => update({ mode: "number-reading" })}
+        >
+          Numbers
+        </Chip>
       </Row>
 
       {cfg.mode === "drill" || cfg.mode === "pairs" ? (

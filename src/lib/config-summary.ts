@@ -31,6 +31,7 @@ const MODE_LABEL: Record<Exclude<QuizConfig["mode"], "drill">, string> = {
   assembly: "Build sentences",
   substitution: "Substitution",
   "listen-sentence": "Listen to sentences",
+  "number-reading": "Numbers",
 };
 
 // The one user-facing ask knob (audioPrompts). Text is always on; the summary

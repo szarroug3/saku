@@ -11,7 +11,8 @@ export type QuizScreenKind =
   | "grid"
   | "assembly"
   | "substitution"
-  | "listen-sentence";
+  | "listen-sentence"
+  | "number-reading";
 
 /** Resolve the actual screen, including sentence-ordering drills that use the
  * assembly UI even though their stored quiz mode is `drill`. */
