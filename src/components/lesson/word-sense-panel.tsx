@@ -34,6 +34,18 @@
 // they can pronounce 大 as おお by itself. The PRIMARY reading (the one the word
 // is filed under) is always the one you can say, so the first row is never
 // marked.
+//
+// ONE TABLE, ALWAYS
+// =================
+// Every word and counter renders as the SAME Reading | Kind | Means table — a
+// single-reading word (天) is a one-row table, not a sentence, so it reads the
+// same as a multi-reading word (大). The owner's call: "all word pages should be
+// formatted the same even if they have only one pronunciation." A counter/number
+// is NOT a VocabRow — it is a hand-authored counted form with exactly one reading
+// and one meaning (see src/data/counters.ts), and its facts are keyed on the
+// form's own ids, not the vocab-keb minters wordUnitFacts uses. So a counter
+// cannot flow through the `word` path; it hands the panel this already-resolved
+// single sense, which the panel turns into a one-row table like any other.
 
 import { HearButton } from "@/components/lesson/hear-button";
 import { LessonPanel } from "@/components/lesson/lesson-panel";
@@ -48,16 +60,7 @@ import type { FactId } from "@/types";
 
 // The Library shows how each reading is going right beside the reading; the
 // lesson teach view does not (it is teaching, not grading). So the standing is
-// an OPTIONAL lookup the caller supplies. When absent the panel renders exactly
-// as it always has — no chips, no extra column — which is what the lesson wants.
-// A counter/number is NOT a VocabRow — it is a hand-authored counted form with
-// exactly one reading and one meaning (see src/data/counters.ts), and its facts
-// are keyed on the form's own ids, not the vocab-keb minters wordUnitFacts uses.
-// So a counter cannot flow through the `word` path; it hands the panel this
-// already-resolved single sense instead, and the panel renders it with the SAME
-// one-reading "sentence" layout a single-reading word gets (SenseSentence). This
-// is the small adapter the brief prefers over forking the component: one panel,
-// one "How you say it, and what it means" heading, counter honesty on the ids.
+// an OPTIONAL lookup the caller supplies. When absent the panel renders no chips.
 export interface CounterSense {
   /** The reading to show and speak — いっぽん, or the glyph itself for a kana
    * form (ひとつ). */
@@ -75,64 +78,96 @@ export interface CounterSense {
   readonly meaningStanding: Standing | null;
 }
 
-/**
- * ONE reading, rendered as a sentence rather than a table — the shared shape a
- * single-reading word and a counter both use. A header row over a single data
- * row is furniture around one fact, so this stays flat. Extracted so the word
- * and counter callers cannot draw the same one-reading case two different ways.
- */
-function SenseSentence({
-  reb,
-  kind,
-  meaning,
-  pitch,
-  voiceName,
-  readingStanding,
-  meaningStanding,
-  transparent,
-}: {
+/** One row of the say-it table — a reading, its kind, its meaning, and (Library
+ * only) the standing of each. A word builds one per reading-unit; a counter
+ * builds a single one. */
+interface SenseRow {
   reb: string;
   kind: string;
+  /** The muted "in compounds" tag on a bound, non-primary reading (おお, じん,
+   * にん). The primary reading is always sayable alone, so it is never marked. */
+  bound: boolean;
   meaning: string;
   /** The downstep to draw the pitch overline at, or null for no verified pitch. */
   pitch: number | null;
-  voiceName: string;
   readingStanding: Standing | null;
   meaningStanding: Standing | null;
+}
+
+/** The ONE shape every word and counter uses: a Reading | Kind | Means table.
+ * A single-reading word (or a counter) is a one-row table, so every page reads
+ * the same whether it has one reading or several. */
+function SenseTable({
+  rows,
+  voiceName,
+  transparent,
+}: {
+  rows: readonly SenseRow[];
+  voiceName: string;
   /** Flat look on the Library entry page — drops the panel's frosty fill. */
   transparent: boolean;
 }) {
   return (
     <LessonPanel title="How you say it, and what it means" transparent={transparent}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <HearButton glyph={reb} voiceName={voiceName} />
-        {pitch != null ? (
-          <PitchReading
-            reading={reb}
-            downstep={pitch}
-            className="font-kana text-[24px] leading-none text-text"
-          />
-        ) : (
-          <span className="font-kana text-[24px] leading-none text-text">{reb}</span>
-        )}
-        <span className="text-[11px] uppercase tracking-[0.06em] text-text-muted">
-          {kind}
-        </span>
-        {/* The reading's standing rides beside the reading it is about — the
-            same place the multi-row table puts it. Absent in the lesson, where
-            no lookup is passed. */}
-        {readingStanding ? <StandingChip standing={readingStanding} /> : null}
+      <div className="-mx-1 overflow-x-auto px-1">
+        <table className="w-full text-left text-[13px]">
+          <thead>
+            <tr className="border-b border-border text-[11px] font-medium text-text-muted">
+              <th className="py-1.5 pr-2 font-medium">Reading</th>
+              <th className="py-1.5 pr-2 font-medium">Kind</th>
+              <th className="py-1.5 font-medium">Means</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Keyed on position, because a reading is not unique within a
+                form: コート is a coat and a tennis court, one sound, two rows. */}
+            {rows.map((r, i) => (
+              <tr key={i} className="border-b border-border last:border-b-0">
+                <td className="py-2 pr-2 align-middle">
+                  {/* The speaker sits WITH the thing it speaks, to its left, the
+                      same rule the readings table and the entry header follow.
+                      The reading's standing (Library only) rides after it. */}
+                  <span className="flex flex-wrap items-center gap-2">
+                    <HearButton glyph={r.reb} voiceName={voiceName} />
+                    {r.pitch != null ? (
+                      <PitchReading
+                        reading={r.reb}
+                        downstep={r.pitch}
+                        className="font-kana text-[15px]"
+                      />
+                    ) : (
+                      <span className="font-kana text-[15px]">{r.reb}</span>
+                    )}
+                    {r.readingStanding ? (
+                      <StandingChip standing={r.readingStanding} />
+                    ) : null}
+                  </span>
+                </td>
+                <td className="py-2 pr-2 align-middle text-text-muted">
+                  {r.kind}
+                  {/* A reading you only ever say welded into a longer word — おお
+                      for 大, じん/にん for 人. It is drilled and so it is shown, but
+                      the tag keeps the reader from thinking they can utter it on
+                      its own. */}
+                  {r.bound ? (
+                    <span className="ml-1.5 text-[10px] uppercase tracking-[0.06em] text-text-muted opacity-70">
+                      in compounds
+                    </span>
+                  ) : null}
+                </td>
+                <td className="py-2 align-middle text-text">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span>{r.meaning}</span>
+                    {r.meaningStanding ? (
+                      <StandingChip standing={r.meaningStanding} />
+                    ) : null}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      {meaning ? (
-        <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-relaxed text-text">
-          <span>{meaning}</span>
-          {meaningStanding ? <StandingChip standing={meaningStanding} /> : null}
-        </p>
-      ) : meaningStanding ? (
-        <p className="mt-2">
-          <StandingChip standing={meaningStanding} />
-        </p>
-      ) : null}
     </LessonPanel>
   );
 }
@@ -150,47 +185,39 @@ export function WordSensePanel({
 }) {
   // On the Library entry page this panel renders FLAT (transparent fill, border
   // kept); in the lesson teach view no provider sits above, so it stays bg-panel.
-  // Read once and handed to every LessonPanel this component draws.
   const transparent = useFlatSurface();
+
   // A counter's single sense arrives pre-resolved — it has no VocabRow to
-  // enumerate — and renders through the SAME one-reading layout a word does. No
+  // enumerate — and becomes a one-row table like any single-reading word. No
   // pitch: a counted form carries no verified per-word pitch (pitch is keyed on a
   // vocab keb, which a counter has none of).
   if (counter) {
-    return (
-      <SenseSentence
-        reb={counter.reading}
-        kind={counter.kind}
-        meaning={counter.meaning}
-        pitch={null}
-        voiceName={voiceName}
-        readingStanding={counter.readingStanding}
-        meaningStanding={counter.meaningStanding}
-        transparent={transparent}
-      />
-    );
+    const row: SenseRow = {
+      reb: counter.reading,
+      kind: counter.kind,
+      bound: false,
+      meaning: counter.meaning,
+      pitch: null,
+      readingStanding: counter.readingStanding,
+      meaningStanding: counter.meaningStanding,
+    };
+    return <SenseTable rows={[row]} voiceName={voiceName} transparent={transparent} />;
   }
+
   // Every other caller drives the panel from a VocabRow. The optional-`word`
   // signature exists only so the counter branch above can omit it; a word caller
   // always passes one, so this guard never fires for them.
   if (!word) return null;
 
   const senses = allReadingSenses(word);
-  const only = senses.length === 1 ? senses[0] : null;
 
   // `allReadingSenses` matches `readingUnits`/`wordUnitFacts` 1:1 (same count,
   // same reb, same order — all group by reading), so a sense at position i owns
   // the reading and meaning fact ids at the same index here. The reading fact is
   // null for a kana word, which mints no reading question.
   const unitFacts = standings ? wordUnitFacts(word.keb) : null;
-  const readingStanding = (i: number): Standing | null => {
-    const id = unitFacts?.[i]?.reading;
-    return id && standings ? standings(id) : null;
-  };
-  const meaningStanding = (i: number): Standing | null => {
-    const id = unitFacts?.[i]?.meaning;
-    return id && standings ? standings(id) : null;
-  };
+  const standingFor = (id: FactId | null | undefined): Standing | null =>
+    id && standings ? standings(id) : null;
 
   // The pitch overline is stored per WORD and validated against its PRIMARY
   // reading (word.reb) — the same reading the drill reveal and the Library header
@@ -198,88 +225,18 @@ export function WordSensePanel({
   // word (何's なん beside its primary なに) has no verified pitch of its own and
   // stays plain. Display only, never graded. See pitch-mark.tsx / src/data/pitch.ts.
   const pitch = wordPitch(word.keb);
-  const drawsPitch = (reb: string) => pitch != null && reb === word.reb;
 
-  // ONE reading is a sentence, not a table. A header row over a single row of
-  // data is furniture around one fact, so the single-reading case keeps the shape
-  // this panel has always had.
-  if (only) {
-    return (
-      <SenseSentence
-        reb={only.reb}
-        kind={wordTypeOf(only)}
-        meaning={only.glosses.slice(0, 4).join(", ")}
-        pitch={drawsPitch(only.reb) ? pitch : null}
-        voiceName={voiceName}
-        readingStanding={readingStanding(0)}
-        meaningStanding={meaningStanding(0)}
-        transparent={transparent}
-      />
-    );
-  }
+  const rows: SenseRow[] = senses.map((s, i) => ({
+    reb: s.reb,
+    kind: wordTypeOf(s),
+    // Never on the first row: the primary is the reading the word is filed and
+    // said under, and is always sayable alone.
+    bound: i > 0 && isBoundReading(s),
+    meaning: s.glosses.slice(0, 4).join(", "),
+    pitch: pitch != null && s.reb === word.reb ? pitch : null,
+    readingStanding: standingFor(unitFacts?.[i]?.reading),
+    meaningStanding: standingFor(unitFacts?.[i]?.meaning),
+  }));
 
-  return (
-    <LessonPanel title="How you say it, and what it means" transparent={transparent}>
-      <div className="-mx-1 overflow-x-auto px-1">
-        <table className="w-full text-left text-[13px]">
-          <thead>
-            <tr className="border-b border-border text-[11px] font-medium text-text-muted">
-              <th className="py-1.5 pr-2 font-medium">Reading</th>
-              <th className="py-1.5 pr-2 font-medium">Kind</th>
-              <th className="py-1.5 font-medium">Means</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Keyed on position, because a reading is not unique within a
-                form: コート is a coat and a tennis court, one sound, two rows. */}
-            {senses.map((s, i) => (
-              <tr key={i} className="border-b border-border last:border-b-0">
-                <td className="py-2 pr-2 align-middle">
-                  {/* The speaker sits WITH the thing it speaks, to its left, the
-                      same rule the readings table and the entry header follow.
-                      The reading's standing (Library only) rides after it. */}
-                  <span className="flex flex-wrap items-center gap-2">
-                    <HearButton glyph={s.reb} voiceName={voiceName} />
-                    {drawsPitch(s.reb) ? (
-                      <PitchReading
-                        reading={s.reb}
-                        downstep={pitch!}
-                        className="font-kana text-[15px]"
-                      />
-                    ) : (
-                      <span className="font-kana text-[15px]">{s.reb}</span>
-                    )}
-                    {readingStanding(i) ? (
-                      <StandingChip standing={readingStanding(i)!} />
-                    ) : null}
-                  </span>
-                </td>
-                <td className="py-2 pr-2 align-middle text-text-muted">
-                  {wordTypeOf(s)}
-                  {/* A reading you only ever say welded into a longer word — おお
-                      for 大, じん/にん for 人. It is drilled and so it is shown, but
-                      the tag keeps the reader from thinking they can utter it on
-                      its own. Never on the first row: the primary is the reading
-                      the word is filed and said under. */}
-                  {i > 0 && isBoundReading(s) ? (
-                    <span className="ml-1.5 text-[10px] uppercase tracking-[0.06em] text-text-muted opacity-70">
-                      in compounds
-                    </span>
-                  ) : null}
-                </td>
-                <td className="py-2 align-middle text-text">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span>{s.glosses.slice(0, 4).join(", ")}</span>
-                    {meaningStanding(i) ? (
-                      <StandingChip standing={meaningStanding(i)!} />
-                    ) : null}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </LessonPanel>
-  );
+  return <SenseTable rows={rows} voiceName={voiceName} transparent={transparent} />;
 }
