@@ -8,11 +8,14 @@
 // row Continues (swaps that run into focus, parking whatever was focused) or
 // Discards (drops it, unscored).
 //
-// TWO GROUPS, because they answer different questions:
+// THREE GROUPS, because they answer different questions:
 //   • CURRICULUM LESSONS at the top — sessions the Home track started
 //     (kind "session", origin "lesson"). These are "where am I in the course".
-//   • EVERYTHING ELSE below — one-off quizzes and Library "Teach me" runs. These
-//     are "what did I go and drill on my own".
+//   • LIBRARY LESSONS — teach→drill runs started off a Library entry's "Teach
+//     me" (kind "session", origin "library"). Still teaching, but a detour you
+//     chose, not the course. Kept out of Practice so a Teaching row never sits
+//     under a "Practice" heading.
+//   • PRACTICE below — the one-off quizzes you drilled on your own (kind "quiz").
 //
 // A badge on every row says which KIND it is — "Teaching" for a session (it has
 // a teach -> drill -> rest loop), "Quiz" for a one-off - so the two never blur
@@ -184,20 +187,25 @@ export function CurrentSessions() {
 
   if (!runs.length) return <NoRuns />;
 
-  // Curriculum lessons answer "where am I in the course"; everything else is
-  // "what did I go and drill on my own". Splitting them keeps each list about
-  // one question. Order within each is already newest-first (runs is).
+  // Three groups, each answering a different question. Curriculum lessons are
+  // "where am I in the course"; Library lessons are a teach→drill run you started
+  // off a Library entry ("Teach me"), which is still teaching but not the course;
+  // Practice is the one-off quizzes you drilled on your own. A Library teach run
+  // is a session (origin "library"), so it used to fall in with the quizzes and
+  // read as "Practice" even though its badge said Teaching — the split fixes that.
+  // Order within each is already newest-first (runs is).
   const lessons = runs.filter(
     (r) => r.kind === "session" && (r.origin ?? "lesson") === "lesson",
   );
-  const others = runs.filter(
-    (r) => !(r.kind === "session" && (r.origin ?? "lesson") === "lesson"),
+  const libraryLessons = runs.filter(
+    (r) => r.kind === "session" && r.origin === "library",
   );
+  const others = runs.filter((r) => r.kind !== "session");
 
-  // The rows as they appear on screen, top to bottom — lessons then others.
-  // Shift-range selection reads its indices off THIS order, so a range spans the
-  // section break exactly as the eye would draw it.
-  const ordered = [...lessons, ...others];
+  // The rows as they appear on screen, top to bottom. Shift-range selection reads
+  // its indices off THIS order, so a range spans the section breaks exactly as
+  // the eye would draw it.
+  const ordered = [...lessons, ...libraryLessons, ...others];
 
   // Toggle one row, or — with Shift held and a previous row remembered — select
   // every row between that anchor and this one (inclusive). Shift always SELECTS
@@ -303,6 +311,15 @@ export function CurrentSessions() {
             Curriculum lessons
           </h2>
           <div className="flex flex-col gap-2">{lessons.map(renderRow)}</div>
+        </section>
+      ) : null}
+
+      {libraryLessons.length ? (
+        <section>
+          <h2 className="mb-1.5 text-[9.5px] uppercase tracking-[0.13em] text-text-muted">
+            Library lessons
+          </h2>
+          <div className="flex flex-col gap-2">{libraryLessons.map(renderRow)}</div>
         </section>
       ) : null}
 
