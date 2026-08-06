@@ -34,7 +34,7 @@ import {
   TRANSITIVITY_SUBJECT,
   transitivitySide,
 } from "@/data/transitivity-facts";
-import { VOCAB_SUBJECT, vocabRow } from "@/data/vocab";
+import { VOCAB_SUBJECT, vocabRow, wordReadingUnit } from "@/data/vocab";
 import type { FactInfo } from "@/types";
 
 /**
@@ -54,11 +54,18 @@ export function speechForFact(info: FactInfo, anchor?: string): string | null {
       // choose among a kanji verb's possible readings.
       return transitivitySide(info.id)?.reading ?? null;
     case VOCAB_SUBJECT:
-      // Speak the READING, not the written word. 先生's surface reads せんせい
-      // either way, but 何 written is free to come out か (an on'yomi TTS
-      // prefers) instead of the taught なに — the reading pins the one sound the
-      // card means. A kana word has keb === reb, so this is a no-op for it.
-      return vocabRow(info.glyph)?.reb ?? info.glyph;
+      // Speak the READING OF THIS UNIT, not the word's primary reading. A word
+      // mints a fact per reading-unit (人 → ひと, じん, にん), and the audio card
+      // for the にん unit must play にん — playing the primary ひと would voice one
+      // reading while grading another, marking a correct transcription wrong.
+      // wordReadingUnit maps every word fact (reading OR meaning, primary OR
+      // qualified) to its unit, so a meaning card plays its unit's reading too.
+      // Falls back to the primary reb, then the glyph. 何 written is free to come
+      // out か (an on'yomi TTS prefers); the reading pins the one taught sound. A
+      // kana word has keb === reb, so this is a no-op for it.
+      return (
+        wordReadingUnit(info.id)?.unit.reb ?? vocabRow(info.glyph)?.reb ?? info.glyph
+      );
     case KANJI_SUBJECT:
       // Reading fact → speak the word that carries the reading (先生), never the
       // bare 生. Meaning fact → no anchor → no sound. And when that word is a
