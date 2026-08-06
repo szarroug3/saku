@@ -372,6 +372,19 @@ export function isSoundChangeEntry(entry: EntryId): boolean {
   return !!form && form.phase === 2 && SHIFTING_COUNTERS.has(form.counter);
 }
 
+/** A BARE number past ten — the first of these is where the composition rule
+ * becomes true (you can build it from 1-10 and じゅう), so the NUMBERS_COMPOSE
+ * phase intro is word-gated on it in lesson-steps.ts. `counter === ""` keeps it
+ * to bare numbers (not a counted form), and the ≥ 11 value keeps it past the
+ * 1-10 the rule builds ON. The keys are counter:num:<value> (see NUMBERS /
+ * TENS_AND_UP). */
+export function isComposedNumberEntry(entry: EntryId): boolean {
+  const form = BY_ENTRY.get(entry);
+  if (!form || form.counter !== "") return false;
+  const m = /^counter:num:(\d+)$/.exec(form.key);
+  return !!m && Number(m[1]) >= 11;
+}
+
 const BY_ENTRY: ReadonlyMap<EntryId, CounterForm> = new Map(
   COUNTER_CURRICULUM.map((f) => [counterEntry(f), f]),
 );

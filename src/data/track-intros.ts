@@ -260,10 +260,6 @@ export const COUNTERS_TRACK: PhaseIntro = {
       text: "ひとつ, ふたつ, みっつ count almost anything up to ten. When you don’t know the right counter, this one still works, and you’ll be understood.",
     },
     {
-      lead: "Past ten, you build numbers instead of memorising them.",
-      text: "じゅう is ten. にじゅう is two tens, 20; さんじゅう is 30. Put a ones digit on the end for the rest: にじゅういち is 21. Japanese has no surprise words the way English jumps to “twenty” and “thirty”, so once you know 1 to 10 and じゅう you can say every number up to 99. Only the big steps are their own words: 100 is ひゃく, 1,000 is せん, 10,000 is まん.",
-    },
-    {
       lead: "It gets you speaking early.",
       text: "Prices, ages, how many people, ordering food all run on numbers and counters, so a little of this track goes a long way early on.",
     },

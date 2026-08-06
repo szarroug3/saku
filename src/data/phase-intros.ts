@@ -947,6 +947,42 @@ export const COUNTER_SOUND_CHANGE: PhaseIntro = {
   ],
 };
 
+// HOW NUMBERS COMBINE — the tens rule, taught the moment the learner first meets
+// a number past ten. Word-gated in lesson-steps.ts on isComposedNumberEntry, so
+// it lands AFTER 1-10 are known and BEFORE the first built number, which is where
+// "you can build the rest yourself" is true rather than hypothetical. It replaces
+// the same rule's old home in the counters TRACK intro, which fired once when the
+// track unlocked — before any number had been taught, so the reader met the
+// build rule before the pieces it builds from. A once-ever concept card (id in
+// CONCEPT_CARD_IDS). Script-neutral (NO_SCRIPT): a number is a sound, not a
+// spelling of one script. The READINGS in `examples` are verified data
+// (number-reading.ts / counters.ts); the prose is the owner's to finalize.
+export const NUMBERS_COMPOSE: PhaseIntro = {
+  id: "intro-numbers-compose",
+  setId: NO_SCRIPT,
+  title: "Past ten, you build numbers instead of memorising them.",
+  body: [
+    {
+      lead: "The tens are a digit in front of じゅう.",
+      text: "じゅう is ten, にじゅう is two tens (20), さんじゅう is 30. There are no new words the way English jumps to “twenty” and “thirty”: every ten is a digit you already know, plus じゅう.",
+    },
+    {
+      lead: "For the numbers between, add a ones digit on the end.",
+      text: "にじゅういち is 21, よんじゅうなな is 47. Once you know 1 to 10 and じゅう, you can say every number up to 99 without learning another word.",
+    },
+    {
+      lead: "Only the big steps are their own words.",
+      text: "100 is ひゃく, 1,000 is せん, 10,000 is まん. Those you learn; everything in between you build from them.",
+    },
+  ],
+  examples: [
+    { from: "に + じゅう", to: "20", reading: "にじゅう", gloss: "twenty", say: "にじゅう" },
+    { from: "さん + じゅう", to: "30", reading: "さんじゅう", gloss: "thirty", say: "さんじゅう" },
+    { from: "にじゅう + いち", to: "21", reading: "にじゅういち", gloss: "twenty-one", say: "にじゅういち" },
+    { from: "よんじゅう + なな", to: "47", reading: "よんじゅうなな", gloss: "forty-seven", say: "よんじゅうなな" },
+  ],
+};
+
 // PITCH ACCENT — a pronunciation card, and this file's first card about how a
 // word SOUNDS rather than how it is written.
 // =========================================================================

@@ -49,10 +49,11 @@ import {
   RENDAKU,
   TRANSITIVITY_INTRO,
   COUNTER_SOUND_CHANGE,
+  NUMBERS_COMPOSE,
   type PhaseIntro,
 } from "@/data/phase-intros";
 import { wordPitch } from "@/data/pitch";
-import { isSoundChangeEntry } from "@/data/counters";
+import { isSoundChangeEntry, isComposedNumberEntry } from "@/data/counters";
 import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow, wordReadingFactId } from "@/data/vocab";
 import { grammarLessonsForFacts } from "@/data/grammar/lessons";
@@ -248,6 +249,11 @@ export function lessonSteps(
   // with no history (a test naming a teach set) gets the pre-track walk, and only
   // the app, which always passes history and the shown set, ever fires it.
   let markedPitch = shownIntros.has(PITCH_INTRO.id) || !history;
+  // The tens rule rides the first number past ten (see isComposedNumberEntry),
+  // so it lands after 1-10 are known and before the first built number. Once
+  // ever, like the pitch card: it is a concept whose id is in CONCEPT_CARD_IDS,
+  // and a learner who has read it is never shown it again.
+  let markedNumbers = shownIntros.has(NUMBERS_COMPOSE.id) || !history;
   items.forEach((item, index) => {
     // THE CONCEPT CARDS GO FIRST, ahead of everything else this item might owe:
     // ahead of its conversion row, ahead of any rule card. A learner meeting
@@ -298,6 +304,10 @@ export function lessonSteps(
     if (!markedSoundChange && isSoundChangeEntry(item.entry)) {
       markedSoundChange = true;
       steps.push({ type: "intro", key: COUNTER_SOUND_CHANGE.id, intro: COUNTER_SOUND_CHANGE });
+    }
+    if (!markedNumbers && isComposedNumberEntry(item.entry)) {
+      markedNumbers = true;
+      steps.push({ type: "intro", key: NUMBERS_COMPOSE.id, intro: NUMBERS_COMPOSE });
     }
     // The overline is about to appear on this word, so teach it first. Gated on
     // the item TEACHING the word (its reading fact is in the step), NOT on

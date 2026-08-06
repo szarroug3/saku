@@ -16,12 +16,13 @@ import { describe, test } from "node:test";
 
 import {
   COUNTER_CURRICULUM,
+  counterEntry,
   counterKanjiPrereqs,
   counterMeaningFactId,
   isKanaForm,
 } from "../data/counters.ts";
 import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
-import { COUNTER_SOUND_CHANGE } from "../data/phase-intros.ts";
+import { COUNTER_SOUND_CHANGE, NUMBERS_COMPOSE } from "../data/phase-intros.ts";
 import { lessonSteps } from "./lesson-steps.ts";
 import {
   COUNTERS_CURRICULUM_TOTAL,
@@ -122,6 +123,36 @@ describe("the track opens with exactly one intro", () => {
     // fires here — that rides the first shifting phase-2 form.
     assert.ok(
       steps.every((s) => s.type !== "intro" || s.intro.id !== COUNTER_SOUND_CHANGE.id),
+    );
+  });
+});
+
+describe("the tens rule rides the first number past ten", () => {
+  const num = (glyph: string) => COUNTER_CURRICULUM.find((f) => f.glyph === glyph)!;
+
+  test("the compose card fires BEFORE the first built number (11), not on 1-10", () => {
+    // A walk holding a 1-10 number (ご, 5) then the first built number (じゅう
+    // いち, 11). The rule becomes true exactly at 11 — you can now build it from
+    // pieces — so its card must land after the 5 and before the 11.
+    const five = counterMeaningFactId(num("ご"));
+    const eleven = num("じゅういち");
+    const steps = lessonSteps([five, counterMeaningFactId(eleven)], history());
+    const introIdx = steps.findIndex(
+      (s) => s.type === "intro" && s.intro.id === NUMBERS_COMPOSE.id,
+    );
+    const elevenIdx = steps.findIndex(
+      (s) => s.type === "item" && s.key === counterEntry(eleven),
+    );
+    assert.ok(introIdx >= 0, "the compose card appears");
+    assert.ok(introIdx < elevenIdx, "and it comes before the 11 item");
+  });
+
+  test("it is shown once, then never again", () => {
+    const eleven = counterMeaningFactId(num("じゅういち"));
+    const steps = lessonSteps([eleven], history(), new Set([NUMBERS_COMPOSE.id]));
+    assert.ok(
+      steps.every((s) => s.type !== "intro" || s.intro.id !== NUMBERS_COMPOSE.id),
+      "a learner who has read it is not shown it again",
     );
   });
 });
