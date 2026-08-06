@@ -103,6 +103,11 @@ type TrackKey =
 // falls through to a plain Start, the safe default.
 function trackOfRun(run: RunInfo): TrackKey | null {
   if (run.mode === "assembly") return "sentence-ordering";
+  // A generative NUMBER unit is a counters-track lesson whose only fact is a
+  // marker pseudo-fact (no FactInfo to resolve a subject from), so it is
+  // recognised by its mode. Only lesson sessions reach here (see runForTrack), so
+  // this never captures a one-off Practice number-reading quiz.
+  if (run.mode === "number-reading") return "counter";
   // Scan all facts: some lessons (keigo) prepend prerequisite kanji/radical facts
   // before their own facts, so the first fact is not always the track identifier.
   for (const fact of run.facts) {
@@ -610,7 +615,38 @@ export function HomeFeed() {
       {counterLessonShown ? (
         <NextCounterLesson
           lesson={counterLessonShown}
-          onStart={startLesson}
+          // A generative NUMBER unit launches its number-reading round: the same
+          // teach-then-drill handlers, but startSession is handed the unit's mode
+          // and range config so the drill leg runs the round rather than a form
+          // drill (see counter-lesson.ts / quiz-session.tsx). An ordinary form
+          // lesson falls through to the shared startLesson.
+          onStart={(facts, { teach = true } = {}) => {
+            const unit = counterLessonShown.numberUnit;
+            if (!unit) {
+              startLesson(facts, { teach });
+              return;
+            }
+            // A NUMBER unit is a SOFT CHECKPOINT: beginning it — Start or Quiz me
+            // — CLAIMS its marker, so the scheduler advances to the next unit
+            // whether or not the practice round is finished. It has to be a claim,
+            // not a `seen` mark: the scheduler's `isFresh` reads lastTested, which
+            // a claim sets but a bare `seen` does not, so a seen-only marker left
+            // the unit stuck. Unlike a form lesson there is no rote material to
+            // learn on completion (the marker is a progression flag, not a
+            // drillable fact), so there is nothing to hold the advance for.
+            startTransition(() => {
+              claim(facts);
+              startSession(
+                facts,
+                teach ? facts : [],
+                undefined,
+                "lesson",
+                [],
+                unit.mode,
+                unit.config,
+              );
+            });
+          }}
           onClaim={(facts) => {
             claim(facts);
             closeIfClaimedAway(counterRun, facts);

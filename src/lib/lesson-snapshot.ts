@@ -12,8 +12,9 @@ import type { QuizSnapshot } from "@/lib/quiz-session-types";
  * the material it just taught (grammar production included — `ask` is always the
  * full set now, so a full-coverage drill reaches every form).
  *
- *   - `mode`   → "drill", EXCEPT the `assembly` pin: a sentence-ordering lesson
- *     keeps its closing assembly quiz.
+ *   - `mode`   → "drill", EXCEPT the `assembly` pin (a sentence-ordering lesson
+ *     keeps its closing assembly quiz) and the `number-reading` pin (a generative
+ *     NUMBER unit's lesson keeps its number-reading round instead of a form drill).
  *   - `length` → "limited" + `limType` "cov" (full coverage of the lesson set).
  *   - `ask`    → left ALONE, and this is now SAFE. `ask` is derived from the
  *     single `audioPrompts` toggle (askFromAudioPrompts), and TEXT IS ALWAYS ON,
@@ -35,7 +36,12 @@ export function forLessonOrigin(
   if (origin !== "lesson") return snap;
   return {
     ...snap,
-    mode: snap.mode === "assembly" ? "assembly" : "drill",
+    mode:
+      snap.mode === "assembly"
+        ? "assembly"
+        : snap.mode === "number-reading"
+          ? "number-reading"
+          : "drill",
     length: "limited",
     limType: "cov",
   };

@@ -38,13 +38,75 @@ import type { LessonPosition } from "@/lib/lesson-position";
 import {
   COUNTERS_SUBJECT,
   COUNTER_CURRICULUM,
+  NUMBER_UNIT_BIG_MARKER,
+  NUMBER_UNIT_TENS_MARKER,
   counterEntry,
   counterKanjiPrereqs,
   counterMeaningFactId,
   isKanaForm,
   type CounterForm,
 } from "@/data/counters";
+import { NUMBERS_BIG, NUMBERS_COMPOSE, type PhaseIntro } from "@/data/phase-intros";
+import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import type { EntryId, FactId, HistoryFile } from "@/types";
+
+/**
+ * A generative NUMBER unit — one scheduler step that teaches a range rule and
+ * then drills reading numbers in that range, instead of teaching rote forms.
+ *
+ * It is gated on a single MARKER pseudo-fact (see src/data/counters.ts): the unit
+ * is "done" once its marker is non-fresh in history (claimed on finishing the
+ * lesson, or marked seen by "Quiz me"). The teach walk renders `intro` as a
+ * formless one-card walk (src/lib/lesson-steps.ts detects the marker), and the
+ * drill runs in "number-reading" mode with `config` (src/components/quiz/
+ * number-reading-screen.tsx reads it off the carried ActiveQuiz).
+ */
+export interface NumberUnit {
+  readonly kind: "tens" | "big";
+  /** The marker fact that gates and records this unit. */
+  readonly marker: FactId;
+  /** The rule card shown as the unit's whole teach walk. */
+  readonly intro: PhaseIntro;
+  /** The generative round the drill leg runs. */
+  readonly config: NumberQuizConfig;
+  /** The drill mode — always number-reading for a unit. */
+  readonly mode: "number-reading";
+}
+
+/**
+ * The two generative units, in curriculum order: the compose rule + 11-99, then
+ * the big words + 100-9999. Inserted between the 1-10 numbers and 〜人. The "big"
+ * config caps at 9,999 so every hundreds/thousands sound shift is exercised; 万
+ * itself is taught in NUMBERS_BIG's copy rather than quizzed.
+ */
+export const NUMBER_UNITS: readonly NumberUnit[] = [
+  {
+    kind: "tens",
+    marker: NUMBER_UNIT_TENS_MARKER,
+    intro: NUMBERS_COMPOSE,
+    mode: "number-reading",
+    config: {
+      count: 10,
+      includeCounters: false,
+      counters: [],
+      numberMax: 99,
+      directions: ["read", "write"],
+    },
+  },
+  {
+    kind: "big",
+    marker: NUMBER_UNIT_BIG_MARKER,
+    intro: NUMBERS_BIG,
+    mode: "number-reading",
+    config: {
+      count: 10,
+      includeCounters: false,
+      counters: [],
+      numberMax: 9999,
+      directions: ["read", "write"],
+    },
+  },
+];
 
 /**
  * How many counters a lesson teaches. A COUNT, not a cost — a counter is a word,
@@ -69,8 +131,10 @@ export function clampCountersPerLesson(n: number): number {
  * without reaching into the data file. */
 export const CURRICULUM_COUNTERS: readonly CounterForm[] = COUNTER_CURRICULUM;
 
-/** How many counters the track teaches — the denominator on the lesson card. */
-export const COUNTERS_CURRICULUM_TOTAL = CURRICULUM_COUNTERS.length;
+/** How many steps the track teaches — the denominator on the lesson card. The
+ * forms PLUS the two generative NUMBER units, which each count as one step. */
+export const COUNTERS_CURRICULUM_TOTAL =
+  CURRICULUM_COUNTERS.length + NUMBER_UNITS.length;
 
 /** The facts a counter teaches — its meaning always, its reading unless it is a
  * kana form (whose reading is the glyph itself, so there is no reading fact; see
@@ -132,9 +196,23 @@ export interface CounterCard {
 export interface CounterLesson {
   cards: CounterCard[];
   facts: FactId[];
-  /** Where you are, in COUNTERS — "6-10 of 87". Items are counters, counted the
-   * way the words and grammar tracks count theirs; see lesson-position.ts. */
+  /** Where you are, in COUNTERS — "6-10 of 69". Items are counters (and the two
+   * generative units), counted the way the words and grammar tracks count theirs;
+   * see lesson-position.ts. */
   position: LessonPosition;
+  /**
+   * Set when this lesson is a generative NUMBER unit rather than a run of forms.
+   * The teach walk shows the unit's rule card only, and the drill runs in
+   * number-reading mode with `config` (the marker is the whole teach set, so
+   * finishing the lesson claims it and the scheduler advances). Absent for an
+   * ordinary form-teaching lesson.
+   */
+  numberUnit?: {
+    mode: "number-reading";
+    config: NumberQuizConfig;
+    marker: FactId;
+    intro: PhaseIntro;
+  };
 }
 
 function toCard(form: CounterForm): CounterCard {
@@ -147,31 +225,76 @@ function toCard(form: CounterForm): CounterCard {
   };
 }
 
-/** The next `size` fresh AND teachable counters, in teaching order. A met form
- * is skipped; a gated one (its number kanji not yet known) is stepped over and
- * picked up later, when the kanji track has paid for it — the interleaving the
- * file header describes. */
-function nextCounterSet(history: HistoryFile, count: number): CounterForm[] {
-  const size = clampCountersPerLesson(count);
-  const rows: CounterForm[] = [];
-  for (const f of CURRICULUM_COUNTERS) {
-    if (!isFresh(counterMeaningFactId(f), history)) continue;
-    if (!counterTeachable(f, history)) continue;
-    rows.push(f);
-    if (rows.length >= size) break;
+/** The bare number じゅう (10) — a real Library entry the unit preview cards link
+ * to, since a marker names no browsable page of its own. */
+const NUMBER_TEN_FORM = CURRICULUM_COUNTERS.find((f) => f.key === "counter:num:10")!;
+
+/** The Home preview card for a generative unit — one tile hinting the range. Its
+ * link points at じゅう (a real number page); the glyph is the range it drills. */
+function unitCard(unit: NumberUnit): CounterCard {
+  return {
+    entry: counterEntry(NUMBER_TEN_FORM),
+    glyph: unit.kind === "tens" ? "11–99" : "100+",
+    reading: null,
+    meaning: unit.intro.title,
+    counter: "",
+  };
+}
+
+/** Is this unit still un-taught? Its marker is fresh (never claimed, never marked
+ * seen) exactly while the range it covers has not been taught. */
+function unitFresh(unit: NumberUnit, history: HistoryFile): boolean {
+  return isFresh(unit.marker, history);
+}
+
+/** One step of the numbers-and-counters schedule: a form to teach, or a
+ * generative unit. */
+type ScheduleStep = { form: CounterForm } | { unit: NumberUnit };
+
+/**
+ * The whole schedule, in teaching order: the forms, with the two generative
+ * NUMBER units spliced in right after the bare 1-10 numbers and before 〜人 (the
+ * first counted counter). A pure function of the curriculum's order, built once.
+ */
+const SCHEDULE: readonly ScheduleStep[] = buildSchedule();
+
+function buildSchedule(): ScheduleStep[] {
+  const steps: ScheduleStep[] = [];
+  let unitsInserted = false;
+  for (const form of CURRICULUM_COUNTERS) {
+    // The units go once the bare numbers are behind us: 〜つ (counter "つ") and the
+    // Sino numbers (counter "") precede them, and the first counted counter (〜人)
+    // is where they land.
+    if (!unitsInserted && form.counter !== "" && form.counter !== "つ") {
+      for (const u of NUMBER_UNITS) steps.push({ unit: u });
+      unitsInserted = true;
+    }
+    steps.push({ form });
   }
-  return rows;
+  if (!unitsInserted) for (const u of NUMBER_UNITS) steps.push({ unit: u });
+  return steps;
+}
+
+/** How many schedule STEPS are behind the learner: forms met, plus units done. */
+function doneSteps(history: HistoryFile): number {
+  const metForms = CURRICULUM_COUNTERS.filter(
+    (f) => !isFresh(counterMeaningFactId(f), history),
+  ).length;
+  const doneUnits = NUMBER_UNITS.filter((u) => !unitFresh(u, history)).length;
+  return metForms + doneUnits;
 }
 
 /**
  * The next counters lesson, or null when nothing is teachable yet.
  *
- * Walk the curriculum in teaching order and take the next `count` forms that are
- * new (meaning not yet met) and teachable now (kana, or number kanji known).
- * Null is a real state, not an error, and it means one of two things the card
- * need not tell apart: the curriculum is finished, or the next forms are all
- * still gated behind kanji not yet learned. Either way nothing is shown, the
- * same rule every other track's card follows.
+ * Walk the schedule in teaching order collecting the next `count` forms that are
+ * new (meaning not met) and teachable now (kana, or number kanji known). A
+ * generative unit is a HARD BOUNDARY: forms already collected are taught first
+ * (stop at the unit), and when nothing is collected and the unit's marker is
+ * fresh, the unit itself is the lesson. A done unit is stepped over, exactly like
+ * a met form. Null means the curriculum is finished or the next forms are all
+ * still gated behind kanji not yet learned — the same "nothing is shown" every
+ * other track's card follows.
  *
  * PURE OF KANA. Like the other post-kana tracks, this does not know whether kana
  * is done; that gate is the caller's (see src/app/page.tsx).
@@ -180,16 +303,44 @@ export function nextCounterLesson(
   history: HistoryFile,
   count: number,
 ): CounterLesson | null {
-  const rows = nextCounterSet(history, count);
-  if (!rows.length) return null;
+  const size = clampCountersPerLesson(count);
+  const rows: CounterForm[] = [];
+  let dueUnit: NumberUnit | null = null;
+  for (const step of SCHEDULE) {
+    if ("unit" in step) {
+      if (rows.length) break; // teach the forms collected so far first
+      if (unitFresh(step.unit, history)) {
+        dueUnit = step.unit;
+        break;
+      }
+      continue; // unit already done — step over it
+    }
+    const form = step.form;
+    if (!isFresh(counterMeaningFactId(form), history)) continue;
+    if (!counterTeachable(form, history)) continue;
+    rows.push(form);
+    if (rows.length >= size) break;
+  }
 
-  // How many counters have been met, counted over the WHOLE curriculum rather
-  // than positionally from the front — the track skips gated forms, so its met
-  // set is not a contiguous run and "you have learned N" is the only honest
-  // count. The next forms are all fresh, so they are never in this total.
-  const met = CURRICULUM_COUNTERS.filter(
-    (f) => !isFresh(counterMeaningFactId(f), history),
-  ).length;
+  // Steps behind the learner, counted over the WHOLE schedule (forms are skipped
+  // when gated, so the met set is not a contiguous run and "you have done N" is
+  // the only honest count). The next lesson is all fresh, never in this total.
+  const done = doneSteps(history);
+
+  if (dueUnit) {
+    return {
+      cards: [unitCard(dueUnit)],
+      facts: [dueUnit.marker],
+      numberUnit: {
+        mode: dueUnit.mode,
+        config: dueUnit.config,
+        marker: dueUnit.marker,
+        intro: dueUnit.intro,
+      },
+      position: { from: done + 1, to: done + 1, total: COUNTERS_CURRICULUM_TOTAL },
+    };
+  }
+  if (!rows.length) return null;
 
   const cards = rows.map(toCard);
   const facts = rows.flatMap(counterFacts);
@@ -197,8 +348,8 @@ export function nextCounterLesson(
     cards,
     facts,
     position: {
-      from: met + 1,
-      to: met + cards.length,
+      from: done + 1,
+      to: done + cards.length,
       total: COUNTERS_CURRICULUM_TOTAL,
     },
   };

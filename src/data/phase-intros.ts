@@ -947,16 +947,15 @@ export const COUNTER_SOUND_CHANGE: PhaseIntro = {
   ],
 };
 
-// HOW NUMBERS COMBINE — the tens rule, taught the moment the learner first meets
-// a number past ten. Word-gated in lesson-steps.ts on isComposedNumberEntry, so
-// it lands AFTER 1-10 are known and BEFORE the first built number, which is where
-// "you can build the rest yourself" is true rather than hypothetical. It replaces
-// the same rule's old home in the counters TRACK intro, which fired once when the
-// track unlocked — before any number had been taught, so the reader met the
-// build rule before the pieces it builds from. A once-ever concept card (id in
-// CONCEPT_CARD_IDS). Script-neutral (NO_SCRIPT): a number is a sound, not a
+// HOW NUMBERS COMBINE — the tens rule, now the "tens" generative unit's rule
+// card. It is shown by the numbers scheduler's tens unit (src/lib/counter-lesson
+// .ts), right after 1-10 and before the generative 11-99 reading round, which is
+// where "you can build the rest yourself" is true rather than hypothetical. It is
+// no longer word-gated on a run of 11-99 forms (those forms are gone; the unit
+// owns showing this card). Still in CONCEPT_CARD_IDS so the reset sweep and the
+// settings mirror know it. Script-neutral (NO_SCRIPT): a number is a sound, not a
 // spelling of one script. The READINGS in `examples` are verified data
-// (number-reading.ts / counters.ts); the prose is the owner's to finalize.
+// (number-reading.ts); the prose is the owner's to finalize.
 export const NUMBERS_COMPOSE: PhaseIntro = {
   id: "intro-numbers-compose",
   setId: NO_SCRIPT,
@@ -980,6 +979,46 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
     { from: "さん + じゅう", to: "30", reading: "さんじゅう", gloss: "thirty", say: "さんじゅう" },
     { from: "にじゅう + いち", to: "21", reading: "にじゅういち", gloss: "twenty-one", say: "にじゅういち" },
     { from: "よんじゅう + なな", to: "47", reading: "よんじゅうなな", gloss: "forty-seven", say: "よんじゅうなな" },
+  ],
+};
+
+// THE BIG STEPS — 100 / 1,000 / 10,000, their sound shifts, and 万-grouping. The
+// "big" generative unit's rule card (src/lib/counter-lesson.ts), shown after the
+// tens unit and before the generative 100-9999 reading round. It teaches the
+// three base words the compose rule cannot build (ひゃく, せん, いちまん), the
+// hundreds/thousands hardening (300 さんびゃく, 8,000 はっせん), and that Japanese
+// groups in ten-thousands (100,000 = 十万) rather than reaching for a word for
+// "million". A once-ever concept card (id in CONCEPT_CARD_IDS). Script-neutral
+// (NO_SCRIPT). The READINGS in `examples` are verified against number-reading.ts;
+// the prose is the owner's to finalize. Mirrors NUMBERS_COMPOSE's structure.
+export const NUMBERS_BIG: PhaseIntro = {
+  id: "intro-numbers-big",
+  setId: NO_SCRIPT,
+  title: "The big steps are their own words. Everything between builds from them.",
+  body: [
+    {
+      lead: "Three words carry the big jumps.",
+      text: "100 is ひゃく, 1,000 is せん, 10,000 is いちまん. Learn those three and you can already say numbers into the tens of thousands, by putting a digit in front the same way にじゅう is two tens.",
+    },
+    {
+      lead: "A few of them shift sound, like the counters do.",
+      text: "300 is さんびゃく, 600 is ろっぴゃく and 800 is はっぴゃく, not さんひゃく. 3,000 is さんぜん and 8,000 is はっせん. It is the same hardening you met on 本 and 匹, arriving at the seam before ひゃく and せん.",
+    },
+    {
+      lead: "Japanese counts in ten-thousands, not thousands.",
+      text: "After まん there is no fresh word for “million”. 100,000 is 十万 じゅうまん, ten of the ten-thousands, and 1,000,000 is 百万, a hundred of them. You keep grouping by 万 rather than reaching for a bigger single word.",
+    },
+  ],
+  examples: [
+    { from: "百", to: "100", reading: "ひゃく", gloss: "hundred", say: "ひゃく" },
+    { from: "三 + 百", to: "300", reading: "さんびゃく", gloss: "three hundred (shift)", say: "さんびゃく" },
+    { from: "六 + 百", to: "600", reading: "ろっぴゃく", gloss: "six hundred (shift)", say: "ろっぴゃく" },
+    { from: "八 + 百", to: "800", reading: "はっぴゃく", gloss: "eight hundred (shift)", say: "はっぴゃく" },
+    { from: "千", to: "1,000", reading: "せん", gloss: "thousand", say: "せん" },
+    { from: "三 + 千", to: "3,000", reading: "さんぜん", gloss: "three thousand (shift)", say: "さんぜん" },
+    { from: "八 + 千", to: "8,000", reading: "はっせん", gloss: "eight thousand (shift)", say: "はっせん" },
+    { from: "万", to: "10,000", reading: "いちまん", gloss: "ten thousand", say: "いちまん" },
+    { from: "十 + 万", to: "100,000", reading: "じゅうまん", gloss: "hundred thousand (十万)", say: "じゅうまん" },
   ],
 };
 
@@ -1108,6 +1147,8 @@ export const PHASE_INTROS: PhaseIntro[] = [
   OKURIGANA_MOVING,
   TRANSITIVITY_INTRO,
   COUNTER_SOUND_CHANGE,
+  NUMBERS_COMPOSE,
+  NUMBERS_BIG,
   PITCH_INTRO,
 ];
 

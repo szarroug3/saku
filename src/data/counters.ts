@@ -155,34 +155,17 @@ const NIN: readonly CounterForm[] = [
   kana("counter:nin:10", "じゅうにん", "ten people", "人"),
 ];
 
-// ─── Phase 1d · 11–99, then 百 / 千 / 万 ────────────────────────────────────
-// The teens and tens are regular concatenation and taught in kana. Only the
-// three big base words (100, 1000, 10000) are shipped here; the compound
-// hundreds and thousands carry their own sound changes (三百 さんびゃく,
-// 八千 はっせん) and are deliberately left out rather than shipped as guesses —
-// see the task report.
-const TENS_AND_UP: readonly CounterForm[] = [
-  kana("counter:num:11", "じゅういち", "eleven (11)", ""),
-  kana("counter:num:12", "じゅうに", "twelve (12)", ""),
-  kana("counter:num:13", "じゅうさん", "thirteen (13)", ""),
-  kana("counter:num:14", "じゅうよん", "fourteen (14)", ""),
-  kana("counter:num:15", "じゅうご", "fifteen (15)", ""),
-  kana("counter:num:16", "じゅうろく", "sixteen (16)", ""),
-  kana("counter:num:17", "じゅうなな", "seventeen (17)", ""),
-  kana("counter:num:18", "じゅうはち", "eighteen (18)", ""),
-  kana("counter:num:19", "じゅうきゅう", "nineteen (19)", ""),
-  kana("counter:num:20", "にじゅう", "twenty (20)", ""),
-  kana("counter:num:30", "さんじゅう", "thirty (30)", ""),
-  kana("counter:num:40", "よんじゅう", "forty (40)", ""),
-  kana("counter:num:50", "ごじゅう", "fifty (50)", ""),
-  kana("counter:num:60", "ろくじゅう", "sixty (60)", ""),
-  kana("counter:num:70", "ななじゅう", "seventy (70)", ""),
-  kana("counter:num:80", "はちじゅう", "eighty (80)", ""),
-  kana("counter:num:90", "きゅうじゅう", "ninety (90)", ""),
-  kana("counter:num:100", "ひゃく", "hundred (100)", ""),
-  kana("counter:num:1000", "せん", "thousand (1,000)", ""),
-  kana("counter:num:10000", "まん", "ten thousand (10,000)", ""),
-];
+// ─── Phase 1d · 11 and up — TAUGHT GENERATIVELY, not as rote forms ─────────
+// The teens, tens, hundreds and thousands are NOT shipped as memorised forms
+// any more. They are regular concatenation (にじゅういち = に + じゅう + いち), so
+// drilling ~30 spelled-out kana rows taught the learner nothing the compose rule
+// does not. Instead the numbers curriculum now runs two GENERATIVE units after
+// 1-10 (see src/lib/counter-lesson.ts): a "tens" unit that teaches the compose
+// rule (NUMBERS_COMPOSE) and quizzes reading 11-99, and a "big" unit that teaches
+// 百 / 千 / 万 with their sound shifts (NUMBERS_BIG) and quizzes 100-9999. Each
+// unit is gated by a MARKER pseudo-fact below rather than by a run of forms; the
+// generative round itself is number-reading mode over the reading engine
+// (src/lib/number-reading.ts), which already ships every one of these readings.
 
 // ─── Phase 2 · 〜本, the h→p/b sound change ─────────────────────────────────
 // The canonical teacher of the shift: 1/6/8/10 → っ + ぽん (p), 3 → ぼん (b),
@@ -249,19 +232,17 @@ const TAIL: readonly CounterForm[] = [
 /**
  * The whole counters curriculum, in teaching order.
  *
- * 〜つ leads (the escape hatch), then the WHOLE number system in one run — the
- * Sino numbers 1-10, then 11 upward (where the compose rule is taught, see
- * NUMBERS_COMPOSE) — so a learner finishes numbers before counting things with
- * them. 〜人 follows as the first real counter, then the phase-2 sound-change set
- * (本/匹/枚) and the ungated tail. 〜人 sat between 1-10 and 11 before, which put
- * the compose rule a whole counter late; keeping the numbers contiguous fixes
- * that. counters.test.ts pins 〜つ ahead of the numbers so a reorder cannot break
- * the escape-hatch-first rule.
+ * 〜つ leads (the escape hatch), then the Sino numbers 1-10. Numbers past ten are
+ * NOT forms in this array — they are taught by the two generative NUMBER units
+ * (see src/lib/counter-lesson.ts and the NUMBER_UNIT markers below), which the
+ * scheduler runs after 1-10 and before 〜人. 〜人 follows as the first real
+ * counter, then the phase-2 sound-change set (本/匹/枚) and the ungated tail.
+ * counters.test.ts pins 〜つ ahead of the numbers so a reorder cannot break the
+ * escape-hatch-first rule.
  */
 export const COUNTER_CURRICULUM: readonly CounterForm[] = [
   ...TSU,
   ...NUMBERS,
-  ...TENS_AND_UP,
   ...NIN,
   ...HON,
   ...HIKI,
@@ -377,17 +358,42 @@ export function isSoundChangeEntry(entry: EntryId): boolean {
   return !!form && form.phase === 2 && SHIFTING_COUNTERS.has(form.counter);
 }
 
-/** A BARE number past ten — the first of these is where the composition rule
- * becomes true (you can build it from 1-10 and じゅう), so the NUMBERS_COMPOSE
- * phase intro is word-gated on it in lesson-steps.ts. `counter === ""` keeps it
- * to bare numbers (not a counted form), and the ≥ 11 value keeps it past the
- * 1-10 the rule builds ON. The keys are counter:num:<value> (see NUMBERS /
- * TENS_AND_UP). */
-export function isComposedNumberEntry(entry: EntryId): boolean {
-  const form = BY_ENTRY.get(entry);
-  if (!form || form.counter !== "") return false;
-  const m = /^counter:num:(\d+)$/.exec(form.key);
-  return !!m && Number(m[1]) >= 11;
+// ─── The two generative NUMBER units, gated by MARKER pseudo-facts ─────────
+// Numbers past ten are taught by two generative units rather than by rote forms
+// (see the Phase 1d note above and src/lib/counter-lesson.ts). Each unit is a
+// single scheduler step gated on one MARKER: a synthetic FactId that is claimable
+// (postClaim writes history.claims[marker]) and read by the counters scheduler's
+// isFresh as "range taught", but is NOT a real drill fact — it is deliberately
+// absent from COUNTER_FACTS / ALL_FACTS, so nothing ever tries to drill or render
+// it. Its string is namespaced (counter:gen:*) so it can never collide with a real
+// counter fact (word:counter:.../aspect). The scheduler and the completion path
+// share these ids through this registry.
+
+/** The "tens" unit's marker — claimed once the 11-99 compose range is taught. */
+export const NUMBER_UNIT_TENS_MARKER = "counter:gen:tens" as FactId;
+/** The "big" unit's marker — claimed once the 100-9999 range is taught. */
+export const NUMBER_UNIT_BIG_MARKER = "counter:gen:big" as FactId;
+
+/** Both unit markers, in curriculum order (tens, then big). */
+export const NUMBER_UNIT_MARKERS: readonly FactId[] = [
+  NUMBER_UNIT_TENS_MARKER,
+  NUMBER_UNIT_BIG_MARKER,
+];
+
+/** Is this fact one of the generative NUMBER-unit markers? The predicate the
+ * scheduler and the teach walk use to tell a marker from a real fact — a marker
+ * is not drillable and has no FactInfo, so callers that would otherwise resolve a
+ * fact to an item guard on this first. */
+export function isNumberUnitMarker(fact: FactId): boolean {
+  return fact === NUMBER_UNIT_TENS_MARKER || fact === NUMBER_UNIT_BIG_MARKER;
+}
+
+/** Which unit a marker names ("tens" | "big"), or null for a non-marker. Lets a
+ * consumer pick the unit's rule card / config without reaching into the id. */
+export function numberUnitKind(fact: FactId): "tens" | "big" | null {
+  if (fact === NUMBER_UNIT_TENS_MARKER) return "tens";
+  if (fact === NUMBER_UNIT_BIG_MARKER) return "big";
+  return null;
 }
 
 const BY_ENTRY: ReadonlyMap<EntryId, CounterForm> = new Map(

@@ -16,16 +16,20 @@ import { describe, test } from "node:test";
 
 import {
   COUNTER_CURRICULUM,
-  counterEntry,
+  NUMBER_UNIT_BIG_MARKER,
+  NUMBER_UNIT_MARKERS,
+  NUMBER_UNIT_TENS_MARKER,
   counterKanjiPrereqs,
   counterMeaningFactId,
   isKanaForm,
+  isNumberUnitMarker,
 } from "../data/counters.ts";
 import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
-import { COUNTER_SOUND_CHANGE, NUMBERS_COMPOSE } from "../data/phase-intros.ts";
+import { COUNTER_SOUND_CHANGE, NUMBERS_BIG, NUMBERS_COMPOSE } from "../data/phase-intros.ts";
 import { lessonSteps } from "./lesson-steps.ts";
 import {
   COUNTERS_CURRICULUM_TOTAL,
+  NUMBER_UNITS,
   counterTeachable,
   hasStartedCountersTrack,
   nextCounterLesson,
@@ -52,6 +56,14 @@ const phase1 = COUNTER_CURRICULUM.filter((f) => f.phase === 1);
 const phase1Met = phase1.map(counterMeaningFactId);
 const numberKanjiKnown = NUMBER_KANJI.map(kanjiMeaningFactId);
 const byGlyph = (g: string) => COUNTER_CURRICULUM.find((f) => f.glyph === g)!;
+
+// The bare numbers 1-10 plus 〜つ — everything the scheduler teaches BEFORE the
+// generative units. Claiming their meaning facts (and, where noted, the unit
+// markers) is how a test moves history past the numbers.
+const numbersDone = COUNTER_CURRICULUM.filter(
+  (f) => f.counter === "" || f.counter === "つ",
+).map(counterMeaningFactId);
+const bothMarkers = [...NUMBER_UNIT_MARKERS];
 
 describe("the gate: phase 1 kana-only, phase 2 on its number kanji", () => {
   test("every phase-1 form is teachable with no kanji known", () => {
@@ -86,20 +98,26 @@ describe("the schedule", () => {
     assert.equal(lesson!.position.total, COUNTERS_CURRICULUM_TOTAL);
   });
 
-  test("phase 1 done but no kanji known → nothing teachable (phase 2 gated)", () => {
-    const lesson = nextCounterLesson(claiming(phase1Met), 5);
+  test("phase 1 forms + units done but no kanji → nothing teachable (phase 2 gated)", () => {
+    // The two generative units sit between the numbers and 〜本, so getting to the
+    // phase-2 gate means claiming the phase-1 forms AND both unit markers.
+    const lesson = nextCounterLesson(claiming([...phase1Met, ...bothMarkers]), 5);
     assert.equal(lesson, null, "phase 2 is gated behind number kanji");
   });
 
-  test("phase 1 done AND number kanji known → phase 2 opens", () => {
-    const lesson = nextCounterLesson(claiming([...phase1Met, ...numberKanjiKnown]), 5);
+  test("phase 1 + units done AND number kanji known → phase 2 opens", () => {
+    const lesson = nextCounterLesson(
+      claiming([...phase1Met, ...bothMarkers, ...numberKanjiKnown]),
+      5,
+    );
     assert.ok(lesson, "phase 2 opens once the number kanji are learned");
+    assert.equal(lesson!.numberUnit, undefined, "a form lesson, not a unit");
     // 〜本 is the first phase-2 group, so 一本 leads, and it now carries a reading.
     assert.equal(lesson!.cards[0].glyph, "一本");
     assert.equal(lesson!.cards[0].reading, "いっぽん");
     for (const c of lesson!.cards) assert.ok(!isKanaForm(byGlyph(c.glyph)));
-    // Met is every learned counter, so the position starts after phase 1.
-    assert.equal(lesson!.position.from, phase1.length + 1);
+    // Position starts after every phase-1 form AND both units (each a step).
+    assert.equal(lesson!.position.from, phase1.length + NUMBER_UNITS.length + 1);
   });
 
   test("a learner with no counters history has not started the track", () => {
@@ -127,32 +145,100 @@ describe("the track opens with exactly one intro", () => {
   });
 });
 
-describe("the tens rule rides the first number past ten", () => {
-  const num = (glyph: string) => COUNTER_CURRICULUM.find((f) => f.glyph === glyph)!;
+describe("the rote 11-and-up forms are gone", () => {
+  test("no bare number past 10 is a curriculum form any more", () => {
+    const keys = new Set(COUNTER_CURRICULUM.map((f) => f.key));
+    for (const k of [
+      "counter:num:11",
+      "counter:num:19",
+      "counter:num:20",
+      "counter:num:90",
+      "counter:num:100",
+      "counter:num:1000",
+      "counter:num:10000",
+    ]) {
+      assert.ok(!keys.has(k), `${k} should be removed from the curriculum`);
+    }
+    // The bare numbers that remain stop at 10 — the rest are generated.
+    for (const f of COUNTER_CURRICULUM) {
+      const m = /^counter:num:(\d+)$/.exec(f.key);
+      if (m) assert.ok(Number(m[1]) <= 10, `${f.key} should be ≤ 10`);
+    }
+  });
+});
 
-  test("the compose card fires BEFORE the first built number (11), not on 1-10", () => {
-    // A walk holding a 1-10 number (ご, 5) then the first built number (じゅう
-    // いち, 11). The rule becomes true exactly at 11 — you can now build it from
-    // pieces — so its card must land after the 5 and before the 11.
-    const five = counterMeaningFactId(num("ご"));
-    const eleven = num("じゅういち");
-    const steps = lessonSteps([five, counterMeaningFactId(eleven)], history());
-    const introIdx = steps.findIndex(
-      (s) => s.type === "intro" && s.intro.id === NUMBERS_COMPOSE.id,
-    );
-    const elevenIdx = steps.findIndex(
-      (s) => s.type === "item" && s.key === counterEntry(eleven),
-    );
-    assert.ok(introIdx >= 0, "the compose card appears");
-    assert.ok(introIdx < elevenIdx, "and it comes before the 11 item");
+describe("the two generative NUMBER units", () => {
+  test("the markers are claimable pseudo-facts, never real drill forms", () => {
+    assert.ok(isNumberUnitMarker(NUMBER_UNIT_TENS_MARKER));
+    assert.ok(isNumberUnitMarker(NUMBER_UNIT_BIG_MARKER));
+    assert.deepEqual([...NUMBER_UNIT_MARKERS], [
+      NUMBER_UNIT_TENS_MARKER,
+      NUMBER_UNIT_BIG_MARKER,
+    ]);
+    // No curriculum form's fact is ever a marker.
+    for (const f of COUNTER_CURRICULUM) {
+      assert.ok(!isNumberUnitMarker(counterMeaningFactId(f)));
+    }
   });
 
-  test("it is shown once, then never again", () => {
-    const eleven = counterMeaningFactId(num("じゅういち"));
-    const steps = lessonSteps([eleven], history(), new Set([NUMBERS_COMPOSE.id]));
+  test("a unit's teach walk is its rule card ALONE (formless)", () => {
+    const tens = lessonSteps([NUMBER_UNIT_TENS_MARKER], history());
+    assert.equal(tens.length, 1);
+    assert.ok(tens[0].type === "intro" && tens[0].intro.id === NUMBERS_COMPOSE.id);
+    const big = lessonSteps([NUMBER_UNIT_BIG_MARKER], history());
+    assert.equal(big.length, 1);
+    assert.ok(big[0].type === "intro" && big[0].intro.id === NUMBERS_BIG.id);
+  });
+
+  test("the tens unit is due right after 1-10, in number-reading mode", () => {
+    const lesson = nextCounterLesson(claiming(numbersDone), 5);
+    assert.ok(lesson?.numberUnit, "a generative unit lesson, not a form lesson");
+    assert.equal(lesson!.numberUnit!.marker, NUMBER_UNIT_TENS_MARKER);
+    assert.equal(lesson!.numberUnit!.mode, "number-reading");
+    assert.equal(lesson!.numberUnit!.intro.id, NUMBERS_COMPOSE.id);
+    assert.equal(lesson!.numberUnit!.config.numberMax, 99);
+    assert.equal(lesson!.numberUnit!.config.includeCounters, false);
+    // Its teach set / facts are the marker, so finishing the lesson claims it.
+    assert.deepEqual(lesson!.facts, [NUMBER_UNIT_TENS_MARKER]);
+    // 20 bare-number/〜つ steps precede it; the unit is step 21.
+    assert.equal(lesson!.position.from, numbersDone.length + 1);
+    assert.equal(lesson!.position.total, COUNTERS_CURRICULUM_TOTAL);
+  });
+
+  test("claiming the tens marker advances the scheduler to the big unit", () => {
+    const lesson = nextCounterLesson(
+      claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER]),
+      5,
+    );
+    assert.ok(lesson?.numberUnit, "the big unit is now due");
+    assert.equal(lesson!.numberUnit!.marker, NUMBER_UNIT_BIG_MARKER);
+    assert.equal(lesson!.numberUnit!.intro.id, NUMBERS_BIG.id);
+    assert.equal(lesson!.numberUnit!.config.numberMax, 9999);
+    assert.deepEqual(lesson!.facts, [NUMBER_UNIT_BIG_MARKER]);
+    // One unit done now sits between the numbers and this one.
+    assert.equal(lesson!.position.from, numbersDone.length + 2);
+  });
+
+  test("claiming BOTH markers advances the scheduler to 〜人", () => {
+    const lesson = nextCounterLesson(
+      claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER, NUMBER_UNIT_BIG_MARKER]),
+      5,
+    );
+    assert.ok(lesson, "a lesson exists");
+    assert.equal(lesson!.numberUnit, undefined, "a form lesson, not a unit");
+    // 〜人 leads the first real counter (ひとり), the step after both units.
+    assert.equal(lesson!.cards[0].glyph, "ひとり");
+    assert.equal(lesson!.position.from, numbersDone.length + NUMBER_UNITS.length + 1);
+  });
+
+  test("the compose card is no longer word-gated on a form (the unit owns it)", () => {
+    // A plain numbers lesson (any bare-number meaning fact) must NOT drag the
+    // compose card in any more — it rides the tens unit, not a form.
+    const five = counterMeaningFactId(byGlyph("ご"));
+    const steps = lessonSteps([five], history());
     assert.ok(
       steps.every((s) => s.type !== "intro" || s.intro.id !== NUMBERS_COMPOSE.id),
-      "a learner who has read it is not shown it again",
+      "the compose card does not ride a bare-number form",
     );
   });
 });

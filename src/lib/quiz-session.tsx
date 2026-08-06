@@ -98,6 +98,7 @@ import {
 import { migratedGet } from "@/lib/storage-migrate";
 import { buildSessionRecord } from "@/lib/session-record";
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
+import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import { forLessonOrigin } from "@/lib/lesson-snapshot";
 import {
   mergeStats,
@@ -183,6 +184,14 @@ export interface ActiveQuiz {
   /** Optional box selection carried by a retry leg: each key is [fact, phrase].
    * When present, force-coverage keeps only these selected showings. */
   retryBoxes?: string[];
+  /**
+   * The generative NUMBER-reading config this leg runs, for a NUMBER unit lesson
+   * (snapshot.mode === "number-reading"). The number-reading screen reads it and
+   * scopes its round to this range; absent for a one-off Practice number quiz, and
+   * the screen then falls back to DEFAULT_CONFIG. Threaded from
+   * startSession/startQuiz(InMode) opts through beginLeg — see there.
+   */
+  numberQuiz?: NumberQuizConfig;
 }
 
 /** Sidebar progress chip: e.g. done=12 total=50 → "12/50"; total=null while
@@ -309,6 +318,7 @@ interface QuizSessionContextValue {
     origin?: SessionOrigin,
     seededSeen?: FactId[],
     mode?: QuizMode,
+    numberQuiz?: NumberQuizConfig,
   ): void;
   /** Re-ask a subset from the fork. Comes back to the same fork. */
   retryLeg(facts: FactId[], boxes?: string[]): void;
@@ -1004,6 +1014,7 @@ export function QuizSessionProvider({
       snapshot: QuizSnapshot,
       redrill: boolean,
       retryBoxes?: string[],
+      numberQuiz?: NumberQuizConfig,
     ) => {
       if (!facts.length) return;
       setActive({
@@ -1016,6 +1027,7 @@ export function QuizSessionProvider({
         snapshot,
         runtime: {},
         retryBoxes,
+        ...(numberQuiz && { numberQuiz }),
       });
       setProgress(null);
       router.push("/quiz");
@@ -1082,6 +1094,7 @@ export function QuizSessionProvider({
       origin: SessionOrigin = "lesson",
       seededSeen: FactId[] = [],
       mode?: QuizMode,
+      numberQuiz?: NumberQuizConfig,
     ) => {
       if (!facts.length) return;
       // The session state and its route are one transition. router.push already
@@ -1121,10 +1134,11 @@ export function QuizSessionProvider({
           totalStats: {},
           lastActiveAt: now,
           origin,
+          ...(numberQuiz && { numberQuiz }),
         });
         setResults(null);
         if (teaching) router.push("/session");
-        else beginLeg(facts, name, snapshot, false);
+        else beginLeg(facts, name, snapshot, false, undefined, numberQuiz);
       });
     },
     [cfg, beginLeg, router, parkIfActive],
@@ -1146,8 +1160,12 @@ export function QuizSessionProvider({
           ...snapshotOf(cfg),
           // The lesson owns its question type. Global Practice settings may
           // change answer details, but must not turn a sentence-ordering
-          // lesson's closing assembly quiz into an unrelated drill.
+          // lesson's closing assembly quiz into an unrelated drill, nor a NUMBER
+          // unit's generative round into a form drill.
           ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
+          ...(session.snapshot.mode === "number-reading" && {
+            mode: "number-reading" as const,
+          }),
         },
         session.origin,
       );
@@ -1159,7 +1177,7 @@ export function QuizSessionProvider({
         phase: "drilling",
         lastActiveAt: Date.now(),
       });
-      beginLeg(facts, what, snapshot, false);
+      beginLeg(facts, what, snapshot, false, undefined, session.numberQuiz);
     },
     [session, cfg, beginLeg],
   );
@@ -1170,7 +1188,7 @@ export function QuizSessionProvider({
       setSession({ ...session, phase: "drilling", lastActiveAt: Date.now() });
       // forceCoverage: a retry is one full pass over exactly these, whatever
       // the session's length setting says. You asked for these; you get these.
-      beginLeg(facts, "The misses", session.snapshot, true, boxes);
+      beginLeg(facts, "The misses", session.snapshot, true, boxes, session.numberQuiz);
     },
     [session, beginLeg],
   );
@@ -1322,8 +1340,12 @@ export function QuizSessionProvider({
     const snapshot = forLessonOrigin(
       {
         ...snapshotOf(cfg),
-        // Keep a dedicated lesson mode (notably sentence assembly) across rounds.
+        // Keep a dedicated lesson mode (sentence assembly, NUMBER-reading round)
+        // across rounds.
         ...(session.snapshot.mode === "assembly" && { mode: "assembly" as const }),
+        ...(session.snapshot.mode === "number-reading" && {
+          mode: "number-reading" as const,
+        }),
       },
       session.origin,
     );
@@ -1339,7 +1361,7 @@ export function QuizSessionProvider({
     });
     // THE SAME WHOLE SESSION — not the retried bits. This is the line the
     // whole design turns on.
-    beginLeg(session.facts, session.what, snapshot, false);
+    beginLeg(session.facts, session.what, snapshot, false, undefined, session.numberQuiz);
   }, [session, cfg, beginLeg]);
 
   const pauseSession = useCallback(() => {

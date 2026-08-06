@@ -58,6 +58,7 @@ export const CONCEPT_CARD_IDS: readonly string[] = [
   "track-kanji",
   "intro-pitch",
   "intro-numbers-compose",
+  "intro-numbers-big",
 ];
 
 /** The localStorage key for one intro's "already shown" flag (renamed

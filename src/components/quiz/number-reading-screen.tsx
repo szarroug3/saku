@@ -7,10 +7,20 @@
 // .numberReading mutated in place, and flushes with saveNow() on every change so
 // a refresh resumes the same round rather than re-rolling.
 //
-// EPHEMERAL — NO SRS WRITES. These items are generated, not curriculum facts, so
-// the round writes NOTHING to history: the end "Done" calls finishQuiz({}) with
-// empty stats, which computeResults short-circuits (!s.total) straight back to
-// "/", committing no record. The score is shown inline on this screen instead.
+// EPHEMERAL — NO SRS WRITES. These generated items are never curriculum facts, so
+// the round writes no per-item history. TWO LAUNCH CONTEXTS, told apart by whether
+// there is a SESSION:
+//
+//   PRACTICE (no session): a one-off quiz. "Done" calls finishQuiz({}) with empty
+//   stats, which computeResults short-circuits (!s.total) straight back to "/",
+//   committing no record. The score is shown inline here. Config is DEFAULT.
+//
+//   LESSON DRILL (a session with a NUMBER-unit marker as its teach set): the round
+//   is scoped by active.numberQuiz, and "Done" COMPLETES the session (endSession →
+//   Session complete → its Done → finishSession) so the marker teach set is claimed
+//   the same way any lesson's is, and the counters scheduler advances to the next
+//   unit. A generative round has no SRS facts, so closeRound banks an empty round
+//   (buildSessionRecord returns null) and no junk record is written.
 //
 // Two directions, both graded by the pure engine (lib/engine/number-quiz.ts):
 //   READ  — shown the digits (+ counter glyph, "3 本"), type the reading; live
@@ -76,14 +86,18 @@ interface NumRuntime {
   correct: number;
 }
 
-function buildRuntime(): NumRuntime {
-  const items = buildNumberRound(DEFAULT_CONFIG, Math.random);
+function buildRuntime(config: NumberQuizConfig): NumRuntime {
+  const items = buildNumberRound(config, Math.random);
   return { cards: items.map((item) => ({ item, value: "", state: "open" })), pos: 0, correct: 0 };
 }
 
 function ensureRuntime(active: ActiveQuiz): NumRuntime {
   const rt = active.runtime as { numberReading?: NumRuntime };
-  return (rt.numberReading ??= buildRuntime());
+  // A NUMBER-unit lesson carries a range-scoped config (active.numberQuiz); a
+  // one-off Practice quiz carries none and gets the full DEFAULT round. Built
+  // ONCE per leg and cached under runtime, so the round is stable across
+  // re-renders and a refresh resumes it rather than re-rolling.
+  return (rt.numberReading ??= buildRuntime(active.numberQuiz ?? DEFAULT_CONFIG));
 }
 
 // ---------- mutations (module-level, runtime passed in) ----------
@@ -116,7 +130,16 @@ function digitPrompt(item: NumberQuizItem): string {
 
 export function NumberReadingScreen() {
   const { cfg } = useQuizConfig();
-  const { active, finishQuiz, setProgress, saveNow } = useQuizSession();
+  const { active, session, finishQuiz, endSession, setProgress, saveNow } =
+    useQuizSession();
+  // A lesson drill runs inside a session (its teach set is a NUMBER-unit marker);
+  // a Practice quiz has no session. That is the whole distinction — see the file
+  // header. `finish` routes each to its own completion.
+  const inLesson = !!session;
+  const finish = () => {
+    if (inLesson) endSession();
+    else finishQuiz({});
+  };
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -162,7 +185,7 @@ export function NumberReadingScreen() {
           Numbers are practice only — nothing here changes your review schedule.
         </p>
         <div className="mt-6">
-          <Btn go onClick={() => finishQuiz({})}>
+          <Btn go onClick={finish}>
             Done
           </Btn>
         </div>
@@ -225,7 +248,7 @@ export function NumberReadingScreen() {
             ) : null}
           </span>
           <span className="flex items-center gap-1.5">
-            <SmallBtn onClick={() => finishQuiz({})}>End quiz</SmallBtn>
+            <SmallBtn onClick={finish}>End quiz</SmallBtn>
           </span>
         </div>
         <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">

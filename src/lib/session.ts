@@ -44,6 +44,7 @@ import { firstTryShowings } from "@/lib/first-try";
 import type { FactId, FactSessionDetail, SessionStats } from "@/types";
 
 import type { QuizSnapshot } from "@/lib/quiz-session-types";
+import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 
 export type SessionPhase =
   /** Round 1 only, and only when the budget put new material in the session:
@@ -162,6 +163,15 @@ export interface StudySession {
    * on sessions snapshotted before this field existed — read those as "lesson",
    * which is what every session was until the Library grew a one-off Quiz. */
   origin?: SessionOrigin;
+  /**
+   * The generative NUMBER-reading config this session's drill runs, when it is a
+   * NUMBER unit lesson (snapshot.mode === "number-reading"). Carried on the
+   * session so it survives the teach → drill hop and re-arms every round's leg
+   * (see startFirstRound / startNextRound in quiz-session.tsx). Absent for every
+   * other lesson; a Practice number-reading quiz carries none and the screen
+   * falls back to its DEFAULT_CONFIG.
+   */
+  numberQuiz?: NumberQuizConfig;
   /**
    * The seen marks this session's START laid down, kept so a DISCARD can take
    * them back and leave the frontier where it was.
