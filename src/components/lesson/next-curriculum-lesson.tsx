@@ -64,15 +64,16 @@ import { entryHref } from "@/lib/library/href";
 import type { EntryId } from "@/types";
 import type { FactId } from "@/types";
 
-/** Where a tile links. A character goes to its KANJI page when it has one, so a
- * both-role shape lands on the card that carries its readings and its "also
- * radical N" line; a radical-only shape goes to its radical page; a written form
- * that is only ever a word goes to the word. radical:気, kanji:気 and word:気 are
- * three entries, so the link is chosen by the roles, never by the glyph alone. */
+/** Where a tile links: the HIGHEST-LEVEL page the glyph has. A character that is
+ * a word goes to its word page, which is the whole thing a learner is climbing
+ * toward; failing that a kanji goes to its kanji page, and a bare shape to its
+ * radical page. radical:気, kanji:気 and word:気 are three entries, so the link is
+ * chosen by the roles, never by the glyph alone — and word wins because it is the
+ * fullest of the three, not because the glyph has kanji in it. */
 function tileEntry(item: CurriculumLessonItem): EntryId {
+  if (item.roles.includes("word")) return wordEntry(item.glyph);
   if (item.roles.includes("kanji")) return kanjiEntry(item.glyph);
-  if (item.roles.includes("radical")) return radicalEntry(item.glyph);
-  return wordEntry(item.glyph);
+  return radicalEntry(item.glyph);
 }
 
 /** Why a る-ending verb waits on the て-form — the lock card's pull, swapped in
