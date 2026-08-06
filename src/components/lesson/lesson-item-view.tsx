@@ -114,6 +114,7 @@ import { cluster, membersOf } from "@/data/grammar/clusters";
 import { getMnemonic } from "@/data/mnemonics";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { keigoSetForEntry } from "@/data/keigo";
+import { counterForm, type CounterForm } from "@/data/counters";
 import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
@@ -443,6 +444,73 @@ function PlainHeadword({
 }
 
 /**
+ * A number or counter step — に "two (2)", 三本 "three long things".
+ *
+ * It is NOT a vocab word and must never be looked up as one: a bare number often
+ * shares its kana with an unrelated particle (に the number vs に the particle),
+ * and a counted form has no dictionary entry at all. Resolving it off the glyph
+ * gave the wrong meaning or none, so this teaches the form's OWN sense — the
+ * reading and count meaning authored in counters.ts — through the same say-it
+ * panel a word uses, and nothing read off the glyph.
+ *
+ * The owner's rule: the numbers/counters TRACK shows only the number/counter
+ * definition, never a homograph word's meaning; the word track is where a word
+ * that happens to share the kana is taught in full.
+ */
+function CounterTeachView({
+  item,
+  form,
+  voiceName,
+}: {
+  item: LessonItem;
+  form: CounterForm;
+  voiceName: string;
+}) {
+  // "" is a bare number (いち, に, ひゃく); anything else is a counted form
+  // welded to what it counts (三本). Same split the reading row's Kind uses.
+  const isNumber = form.counter === "";
+  return (
+    <div>
+      <PlainHeadword
+        item={item}
+        titleRow=""
+        // The say-it panel below carries the reading with its own speaker, so the
+        // header stands down to the glyph alone — the rule a word follows too.
+        canHear={false}
+        hearGlyph={item.glyph}
+        voiceName={voiceName}
+      />
+      <SectionStack>
+        <section className="space-y-3">
+          <div>
+            <h3 className="text-[13px] font-semibold text-text">
+              {isNumber ? "Number" : "Counter"}
+            </h3>
+            <p className="mt-0.5 text-[12px] leading-snug text-text-muted">
+              {isNumber
+                ? "This is a number."
+                : "This is a counting word — a number welded to what it counts."}
+            </p>
+          </div>
+          <WordSensePanel
+            counter={{
+              reading: form.reading,
+              kind: isNumber ? "number" : "counter",
+              meaning: form.meaning,
+              // The lesson teaches, it does not grade, so no standing chips —
+              // the same as a word step, which passes no `standings` lookup.
+              readingStanding: null,
+              meaningStanding: null,
+            }}
+            voiceName={voiceName}
+          />
+        </section>
+      </SectionStack>
+    </div>
+  );
+}
+
+/**
  * The stack of sections under the hero, with a hairline between each.
  *
  * WHY A RULE AND NOT JUST A GAP. Once the sections are headed with one-word
@@ -606,6 +674,21 @@ export function LessonItemView({ item }: { item: LessonItem }) {
   }
   if (item.kind === "keigo") {
     return <KeigoTeachView item={item} voiceName={cfg.voiceName} />;
+  }
+  // A number/counter step carries the subject `word`, so it arrives as kind
+  // "word" and would otherwise be looked up in the dictionary off its glyph —
+  // finding a homograph particle (に) or nothing (いち). Its entry is namespaced
+  // to the counters track, so counterForm resolves ONLY a real counter form and
+  // never a plain word; when it does, the counter teaches its own sense.
+  const counterFormData = counterForm(item.entry);
+  if (counterFormData) {
+    return (
+      <CounterTeachView
+        item={item}
+        form={counterFormData}
+        voiceName={cfg.voiceName}
+      />
+    );
   }
 
   return (
