@@ -22,7 +22,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Btn, GhostBtn } from "@/components/ui";
+import { Btn, SmallBtn, SoundIcon } from "@/components/ui";
 import {
   buildNumberRound,
   gradeNumberItem,
@@ -30,10 +30,14 @@ import {
   type NumberQuizItem,
 } from "@/lib/engine/number-quiz";
 import type { CounterKind } from "@/lib/number-reading";
+import { pickFont } from "@/lib/config";
+import { fitGlyphSize } from "@/lib/glyph-fit";
 import { toKana } from "@/lib/romaji";
 import { speak } from "@/lib/speech";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type ActiveQuiz } from "@/lib/quiz-session";
+
+import { DrillHalo, GLYPH_PX, type HaloState } from "./drill-halo";
 
 /** The Practice-launch config. tsu is left out for now — it's memorization,
  * handled separately later. */
@@ -115,8 +119,10 @@ export function NumberReadingScreen() {
   const { active, finishQuiz, setProgress, saveNow } = useQuizSession();
   const [, bump] = useState(0);
   const rerender = () => bump((n) => n + 1);
-  const [shake, setShake] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // The prompt font, rolled ONCE per card (keyed by position) so it stays put
+  // across keystrokes and re-renders — the drill keeps its q.font the same way.
+  const fontRef = useRef<{ pos: number; font: string } | null>(null);
 
   const rt = active ? ensureRuntime(active) : null;
 
@@ -173,10 +179,6 @@ export function NumberReadingScreen() {
     const out = submitCard(rt, card);
     if (out === "noop") return;
     saveNow();
-    if (out !== "right") {
-      setShake(true);
-      window.setTimeout(() => setShake(false), 460);
-    }
     rerender();
   };
 
@@ -186,134 +188,170 @@ export function NumberReadingScreen() {
     rerender();
   };
 
-  const glyph = item.counter ? COUNTER_GLYPH[item.counter] : "";
+  // The prompt glyph the halo shows: the digits (+ counter) for READ, the kana
+  // reading for WRITE. jp on both so it renders on one pre-fitted line.
+  const haloGlyph = isRead ? digitPrompt(item) : item.reading;
+  const counterGlyph = item.counter ? COUNTER_GLYPH[item.counter] : "";
+
+  // The ring speaks the same three states the drill's does: still while you
+  // think, green when right, red when wrong. No timer here, so it never drains.
+  const haloState: HaloState =
+    card.state === "right" ? "right" : card.state === "wrong" ? "wrong" : "resting";
+
+  const isLast = rt.pos + 1 >= rt.cards.length;
+  const pct = total ? Math.round((100 * done) / total) : 0;
+
+  if (!fontRef.current || fontRef.current.pos !== rt.pos) {
+    fontRef.current = { pos: rt.pos, font: pickFont(cfg.fonts) };
+  }
+  const cardFont = fontRef.current.font;
 
   return (
-    <div className="mx-auto mt-6 max-w-xl">
-      <div className="mb-6 flex items-center justify-between text-sm text-text-muted">
-        <span className="rounded-full border border-border bg-accent-bg px-3 py-1 text-[13px] font-medium text-accent tabular-nums">
-          {rt.pos + 1} / {rt.cards.length}
-        </span>
-        <span className="tabular-nums" aria-hidden>
-          {rt.correct > 0 ? `✓ ${rt.correct}` : ""}
-        </span>
+    <div>
+      {/* The drill's top band, same layout every quiz uses — count pill(s) on
+          the left, End quiz on the right, a progress hairline below (see
+          pairs-hud / grid-hud). No gear: Numbers has no timer, streak or retries
+          to instrument, so there is nothing a settings drawer would hold. */}
+      <div className="kq-band sticky top-0 z-10 border-b border-border px-3 py-1.5">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="kq-material rounded-full border border-accent/40 bg-accent-bg px-3 py-1 text-[13px] font-semibold tabular-nums text-accent">
+              {done} / {total}
+            </span>
+            {rt.correct > 0 ? (
+              <span className="kq-material rounded-full border border-border px-2.5 py-0.5 text-[11px] tabular-nums text-text-muted">
+                ✓ {rt.correct}
+              </span>
+            ) : null}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <SmallBtn onClick={() => finishQuiz({})}>End quiz</SmallBtn>
+          </span>
+        </div>
+        <div className="h-(--bar-h) overflow-hidden rounded-full bg-panel">
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-200"
+            style={{
+              width: `${Math.min(100, pct)}%`,
+              boxShadow:
+                "0 0 8px color-mix(in srgb, var(--accent) 55%, transparent)",
+            }}
+          />
+        </div>
       </div>
 
-      <div
-        className={`kq-material rounded-2xl border bg-card p-8 shadow-card ${
-          card.state === "right"
-            ? "border-success"
-            : card.state === "wrong"
-              ? "border-danger"
-              : "border-border"
-        }`}
-      >
-        <div className="text-center">
-          <div className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-            {isRead ? "Read this" : "Write the number"}
-          </div>
+      <div className="flex flex-col items-center gap-4 pt-10 pb-4">
+        <DrillHalo
+          // Re-mounts per card so the glyph cross-fades in like the drill's.
+          key={rt.pos}
+          cardKey={`${rt.pos}`}
+          state={haloState}
+          timerLeft={0}
+          drainWindow={0}
+          glyph={haloGlyph}
+          jp
+          font={cardFont}
+          fontSize={fitGlyphSize(haloGlyph, true, GLYPH_PX)}
+          maxFontSize={GLYPH_PX}
+          crossFade={card.state === "open"}
+          // WRITE shows the reading you must count out, with the counter kanji
+          // beneath it in the halo's context slot. The reading stays READABLE —
+          // the 🔊 below just replays it, it doesn't hide it.
+          context={
+            !isRead && counterGlyph ? (
+              <span className="text-[20px] leading-none text-text" lang="ja">
+                {counterGlyph}
+              </span>
+            ) : undefined
+          }
+        />
 
-          {isRead ? (
-            <div className="mt-3 text-5xl font-semibold tabular-nums" lang="ja">
-              {digitPrompt(item)}
-            </div>
-          ) : (
-            <div className="mt-3">
-              <div className="text-4xl font-semibold" lang="ja">
-                {item.reading}
-              </div>
-              {glyph ? (
-                <div className="mt-1 text-sm text-text-muted" lang="ja">
-                  counter: {glyph}
-                </div>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => speak(item.reading, cfg.voiceName)}
-                aria-label="Hear it"
-                className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-sm hover:border-accent"
+        {/* WHAT THIS CARD IS ASKING FOR — white, below the halo, like the drill. */}
+        <p className="mt-1 text-center text-[15px] font-medium text-text">
+          {isRead ? "Read this number" : "Write the number"}
+        </p>
+
+        {/* WRITE: hear the reading again. The reading is already on the ring, so
+            this replays rather than reveals. */}
+        {!isRead ? (
+          <button
+            type="button"
+            onClick={() => speak(item.reading, cfg.voiceName)}
+            aria-label="Hear it"
+            className="kq-material flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm text-text-muted hover:border-accent"
+          >
+            <SoundIcon className="size-4" />
+            Hear it
+          </button>
+        ) : null}
+
+        {/* The drill's typed-answer field, in a tight column with the line that
+            says what goes in it. Stays mounted and shows the typed answer once
+            resolved (readOnly), the way the drill leaves its box at the reveal —
+            Enter then advances instead of re-grading. */}
+        <span className="flex flex-col items-center gap-1.5">
+          <input
+            key={rt.pos}
+            ref={inputRef}
+            autoFocus
+            value={card.value}
+            lang={isRead ? "ja" : undefined}
+            inputMode={isRead ? "text" : "numeric"}
+            autoComplete="off"
+            spellCheck={false}
+            readOnly={resolved}
+            aria-label={
+              isRead
+                ? `Read ${digitPrompt(item)}`
+                : `Write the number for ${item.reading}`
+            }
+            placeholder={isRead ? "Type the reading" : "Type the number"}
+            className={`kq-material w-[270px] rounded-lg border border-border bg-card px-3 py-2 text-center text-lg text-text outline-none focus:border-accent${
+              isRead ? "" : " tabular-nums"
+            }`}
+            onChange={(e) => {
+              if (resolved) return;
+              setValue(
+                card,
+                isRead ? toKana(e.target.value, { live: true }) : e.target.value,
+              );
+              rerender();
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              if (resolved) next();
+              else submit();
+            }}
+          />
+          <span className="text-[11px] text-text-muted">
+            {isRead
+              ? "romaji turns to kana · Enter to check"
+              : "digits · Enter to check"}
+          </span>
+        </span>
+
+        {/* The reveal + the way forward, the drill's shape: a miss names the
+            answer colour can't; a hit needs no words, the green ring said it.
+            Fixed min-height so the stage doesn't jump on resolve. */}
+        <div className="flex min-h-[56px] flex-col items-center justify-center gap-2">
+          {card.state === "wrong" ? (
+            <span className="text-sm">
+              <span className="text-text-muted">Answer</span>{" "}
+              <span className="text-text-muted">=</span>{" "}
+              <span
+                lang={isRead ? "ja" : undefined}
+                className="font-semibold text-danger"
               >
-                <span aria-hidden>🔊</span>
-                <span className="text-text-muted">Hear it</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className={`mt-6 ${shake ? "animate-gshake" : ""}`}>
+                {isRead ? item.reading : item.digits}
+              </span>
+            </span>
+          ) : null}
           {resolved ? (
-            <div
-              className={`rounded-xl border p-4 text-xl ${
-                card.state === "right"
-                  ? "border-success bg-success-bg"
-                  : "border-danger bg-danger-bg"
-              }`}
-            >
-              {card.state === "right" ? (
-                <span lang={isRead ? "ja" : undefined}>{card.value}</span>
-              ) : (
-                <span>
-                  <span className="text-text-muted">Answer: </span>
-                  <span lang={isRead ? "ja" : undefined} className="font-semibold">
-                    {isRead ? item.reading : item.digits}
-                  </span>
-                </span>
-              )}
-            </div>
-          ) : isRead ? (
-            <input
-              ref={inputRef}
-              value={card.value}
-              lang="ja"
-              inputMode="text"
-              autoComplete="off"
-              spellCheck={false}
-              aria-label={`Read ${digitPrompt(item)}`}
-              placeholder="Type the reading (romaji turns to kana)"
-              className="w-full rounded-xl border border-border bg-panel p-4 text-xl outline-none focus:border-accent"
-              onChange={(e) => {
-                setValue(card, toKana(e.target.value, { live: true }));
-                rerender();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  submit();
-                }
-              }}
-            />
-          ) : (
-            <input
-              ref={inputRef}
-              value={card.value}
-              inputMode="numeric"
-              autoComplete="off"
-              spellCheck={false}
-              aria-label={`Write the number for ${item.reading}`}
-              placeholder="Type the number"
-              className="w-full rounded-xl border border-border bg-panel p-4 text-xl tabular-nums outline-none focus:border-accent"
-              onChange={(e) => {
-                setValue(card, e.target.value);
-                rerender();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  submit();
-                }
-              }}
-            />
-          )}
-        </div>
-
-        <div className="mt-6 flex items-center justify-center gap-3">
-          {resolved ? (
-            <Btn go onClick={next}>
-              {rt.pos + 1 >= rt.cards.length ? "See score" : "Next"}
-            </Btn>
-          ) : (
-            <GhostBtn onClick={submit}>Submit</GhostBtn>
-          )}
+            <SmallBtn onClick={next} title="Continue (Enter)">
+              {isLast ? "See score" : "Continue"}
+            </SmallBtn>
+          ) : null}
         </div>
       </div>
     </div>
