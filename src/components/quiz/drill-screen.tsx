@@ -1527,7 +1527,15 @@ export function DrillScreen() {
   // worse than saying nothing.
   const instruction = q.recognition
     ? "Pick the sentence's meaning."
-    : quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed", q.grammarVehicle ?? undefined);
+    : q.numberItem
+      ? // A construction card asks for a count, not a word meaning — its generic
+        // instruction ("what does this word mean") would be a lie.
+        q.numberItem.direction === "read"
+        ? "Type the reading."
+        : q.numberItem.direction === "hear"
+          ? "Type the number you hear."
+          : "Type the number."
+      : quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed", q.grammarVehicle ?? undefined);
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   // The card already decided its shape at ask time: MC options were built (or
@@ -1556,7 +1564,16 @@ export function DrillScreen() {
   // What the box wants, in words. Same predicate as `romajiInput` above, via
   // one module — see lib/drill-guidance.ts for why it must not be a second
   // list. Null on multiple choice, which has no box to explain.
-  const guide = typedMode ? answerGuide(q.f, q.dir) : null;
+  // A construction card's box wants a reading (READ) or digits (WRITE / HEAR),
+  // never an English meaning — so it names its own guide rather than asking the
+  // subject, whose answer for a `word` fact is a gloss.
+  const guide = !typedMode
+    ? null
+    : q.numberItem
+      ? q.numberItem.direction === "read"
+        ? { placeholder: "Type kana, Enter to submit", note: "Romaji turns into kana as you type." }
+        : { placeholder: "Type the number, Enter to submit", note: "Answer with digits." }
+      : answerGuide(q.f, q.dir);
   // Two different lines, and only one of them is a preference. `context` is
   // part of the question — "in 人生" is what makes 生 gradeable — so the
   // setting cannot touch it. `hint` is kana's script tag, which is decoration.
