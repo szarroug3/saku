@@ -149,19 +149,43 @@ describe("column 3 — the build equation, with accent-coloured numeric annotati
     const three = rowsOf("nin", "Regular").find((r) => countOf(r.word) === 3)!;
     assert.deepEqual(three.build, [{ kana: "さん", value: "3" }, { kana: "にん" }]);
     assert.deepEqual(three.result, { kana: "さんにん", value: "3" });
-    // The result of every counter row is the engine reading with the count as total.
+    // Every counter row's result is the engine reading with the count as total.
+    // The additive equation is shown for every row EXCEPT 〜人's suppletive counts
+    // (ひとり / ふたり / よにん), which have no build to show.
+    const NIN_SUPPLETIVE = new Set(["一人", "二人", "四人"]);
     for (const kind of ["nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"] as const) {
       for (const g of groupsOf(kind)) {
         for (const r of g.examples) {
           const n = countOf(r.word);
           assert.equal(r.result.kana, counterReading(n, kind), `${kind} ${r.word} result`);
           assert.equal(r.result.value, String(n), `${kind} ${r.word} total`);
-          assert.equal(r.build.length, 2, `${kind} ${r.word} builds from number + counter`);
-          assert.equal(r.build[0].value, String(n), `${kind} ${r.word} number annotated`);
-          assert.equal(r.build[1].value, undefined, `${kind} ${r.word} counter piece bare`);
+          if (kind === "nin" && NIN_SUPPLETIVE.has(r.word)) {
+            assert.equal(r.build.length, 0, `${kind} ${r.word} is suppletive, no equation`);
+          } else {
+            assert.equal(r.build.length, 2, `${kind} ${r.word} builds from number + counter`);
+            assert.equal(r.build[0].value, String(n), `${kind} ${r.word} number annotated`);
+            assert.equal(r.build[1].value, undefined, `${kind} ${r.word} counter piece bare`);
+          }
         }
       }
     }
+  });
+
+  test("〜人's suppletive rows drop the fake additive equation (no number + にん)", () => {
+    // ひとり / ふたり / よにん are their own words: build is empty, so the view shows
+    // the count mapping straight to the word ("1 → ひとり"). NEVER a wrong "よん + にん".
+    for (const r of rowsOf("nin", "Irregular")) {
+      assert.deepEqual(r.build, [], `${r.word} shows no additive equation`);
+      assert.equal(r.result.kana, counterReading(countOf(r.word), "nin"), `${r.word} result`);
+      assert.equal(r.result.value, String(countOf(r.word)), `${r.word} total`);
+    }
+    // A regular 〜人 row still builds additively (さん + にん → さんにん).
+    const three = rowsOf("nin", "Regular").find((r) => r.word === "三人")!;
+    assert.deepEqual(three.build, [{ kana: "さん", value: "3" }, { kana: "にん" }]);
+    // A sound-shift counter keeps its equation even when irregular (いっぽん).
+    const one = rowsOf("hon", "Irregular").find((r) => r.word === "一本")!;
+    assert.deepEqual(one.build, [{ kana: "いち", value: "1" }, { kana: "ほん" }]);
+    assert.equal(one.result.kana, "いっぽん");
   });
 });
 

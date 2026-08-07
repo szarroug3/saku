@@ -124,6 +124,12 @@ interface CounterSpec {
   /** Override the generated "how it attaches" paragraph (people, whose low
    * counts are irregular and cannot be shown as the plain rule). */
   readonly attach?: IntroPara;
+  /** Set when the counter's irregular counts are their OWN words rather than a
+   * sound-shifted reading of number + counter — 〜人's ひとり / ふたり / よにん. Those
+   * rows drop the build equation (a "よん + にん" derivation would be a lie) and
+   * show the count mapping straight to the word instead. A sound-shift counter
+   * (本, 匹 …) leaves this unset: its equation genuinely shows the shift. */
+  readonly suppletive?: boolean;
 }
 
 /** counterReading, non-null asserted — every count 1..10 reads for every counter
@@ -160,17 +166,21 @@ function counterBase(kind: CounterKind): string {
 /** One counter row: the count with its English noun in column 1, the kanji word
  * with its reading in column 2, and the build "[number] (n) + [counter] → [full]
  * (n)" in column 3. The counter piece carries no numeric annotation; the number
- * and the result carry the count. For an irregular row the pieces are still the
- * naive number + counter, and the result is the actual shifted reading — the
- * equation SHOWS the shift the Irregular table exists to teach. */
-function counterRow(n: number, spec: CounterSpec, base: string): CountRow {
+ * and the result carry the count. For a SOUND-SHIFT irregular row the pieces are
+ * still the naive number + counter, and the result is the actual shifted reading,
+ * so the equation SHOWS the shift the Irregular table exists to teach.
+ *
+ * A SUPPLETIVE row (〜人's ひとり / ふたり / よにん) has no additive equation to show —
+ * the word is not number + counter at all — so its build is empty and the view
+ * renders the count mapping straight to the word ("1 → ひとり"). */
+function counterRow(n: number, spec: CounterSpec, base: string, suppletive: boolean): CountRow {
   const [singular, plural] = spec.noun;
   const reading = counterReading(n, spec.kind)!;
   return {
     label: `${n} ${n === 1 ? singular : plural}`,
     word: `${KANJI_DIGIT[n]}${spec.glyph}`,
     reading,
-    build: [{ kana: numberReading(n), value: String(n) }, { kana: base }],
+    build: suppletive ? [] : [{ kana: numberReading(n), value: String(n) }, { kana: base }],
     result: { kana: reading, value: String(n) },
   };
 }
@@ -188,7 +198,11 @@ function counterGroups(spec: CounterSpec): IntroCountGroup[] {
   const irregular: CountRow[] = [];
   for (let n = 1; n <= 10; n++) {
     if (counterReading(n, spec.kind) === null) continue;
-    (shifts.has(n) ? irregular : regular).push(counterRow(n, spec, base));
+    const isIrregular = shifts.has(n);
+    // A suppletive counter's irregular counts are their own words; its regular
+    // counts still build additively, so the flag rides only on the shifting rows.
+    const suppletive = spec.suppletive === true && isIrregular;
+    (isIrregular ? irregular : regular).push(counterRow(n, spec, base, suppletive));
   }
   const groups: IntroCountGroup[] = [{ title: "Regular", counter: true, examples: regular }];
   if (irregular.length) groups.push({ title: "Irregular", counter: true, examples: irregular });
@@ -270,6 +284,9 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     glyph: "人",
     name: "Counting people (〜人)",
     noun: ["person", "people"],
+    // ひとり / ふたり / よにん are their own words, not number + にん, so their rows
+    // show the count → word directly instead of a made-up additive equation.
+    suppletive: true,
     attach: {
       lead: "Put the number in front of 〜人.",
       text: "Most counts are the plain number said before it: 三人 is さんにん and 五人 is ごにん.",

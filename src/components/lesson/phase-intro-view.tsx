@@ -622,7 +622,11 @@ export function IntroBuildTableGroup({
 /** One "how it's built" cell — the build pieces joined with " + ", then " → ",
  * then the result. Each numeric piece prints its kana in text colour and its
  * value in parens accent-coloured (じゅう (10)); a bare piece (a counter reading
- * ほん) prints just its kana. */
+ * ほん) prints just its kana.
+ *
+ * A row with NO build pieces is suppletive (〜人's ひとり / ふたり / よにん): there is
+ * no derivation to show, so the cell is the count mapping straight to the word —
+ * "1 → ひとり", the count accented, no fake "+ にん". */
 function CountBuild({
   build,
   result,
@@ -636,6 +640,15 @@ function CountBuild({
       {p.value ? <span className="text-accent"> ({p.value})</span> : null}
     </>
   );
+  if (build.length === 0) {
+    return (
+      <>
+        {result.value ? <span className="text-accent">{result.value}</span> : null}
+        <span className="text-text-muted"> → </span>
+        {result.kana}
+      </>
+    );
+  }
   return (
     <>
       {build.map((p, i) => (
@@ -652,11 +665,16 @@ function CountBuild({
 
 /**
  * A table of worked COUNT rows — the number-construction pages' equivalent of the
- * grammar build table, in the same framed / hairline-separated / audio-bearing
- * style. Three columns: the number or count (with its English noun for a counter),
- * the word in kanji with its kana reading and a speaker, and the annotated build
+ * grammar build table, in the same hairline-separated / audio-bearing style.
+ * Three columns: the number or count (with its English noun for a counter), the
+ * word in kanji with its kana reading and a speaker, and the annotated build
  * equation. Unlike IntroBuildTable it carries a reading column and an accented
  * numeric build, which is why it is a sibling rather than the same component.
+ *
+ * FRAMELESS: no outer border box — the table sits directly on the page / Card,
+ * carried by its header row and the hairline separators between rows. Only the
+ * horizontal scroll wrapper remains, so a build column wider than a narrow phone
+ * scrolls sideways instead of clipping.
  */
 export function IntroCountTable({
   rows,
@@ -667,10 +685,7 @@ export function IntroCountTable({
 }) {
   const { cfg } = useQuizConfig();
   return (
-    // overflow-x-auto, not overflow-hidden: the build column can be wider than a
-    // narrow phone, so the table scrolls sideways inside its own frame rather than
-    // clipping — the same rule the grammar build table follows.
-    <div className="overflow-x-auto rounded-lg border border-border">
+    <div className="overflow-x-auto">
       <table className="w-full border-collapse text-left" lang="ja">
         <thead>
           <tr
