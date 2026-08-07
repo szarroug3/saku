@@ -123,7 +123,7 @@ function counterMax(counter: CounterKind): number {
 /** Build an item from (n, counter, direction), or null when the reading engine
  * refuses the pair (out of range). The reading and grading set come straight
  * from the engine — never hand-rolled here. */
-function makeItem(
+export function makeItem(
   n: number,
   counter: CounterKind | null,
   direction: NumberDirection,
@@ -258,6 +258,52 @@ export function buildNumberRound(
     if (item) items.push(item);
   }
   return items;
+}
+
+/**
+ * Roll ONE number-reading item for a construction-category drill showing.
+ *
+ * The fact-based Drill interleaves a generated count wherever a construction
+ * CATEGORY fact (〜本, the tens, …) comes up — one item per showing, frozen on
+ * the card (see drill-screen.tsx). This is that one item: a random count in the
+ * category's range and a random direction from its config, composed through
+ * `makeItem` so the reading and grading set are the engine's, never re-derived.
+ *
+ * Unlike `buildNumberRound` this is NOT irregular-first — a single showing is
+ * one draw, and the irregular-coverage guarantee is a property of a whole round
+ * (the lesson's number-reading leg keeps that). Returns null only when the
+ * config can name no readable item, which the caller treats as "skip".
+ */
+export function rollConstructionItem(
+  cfg: NumberQuizConfig,
+  rng: Rng,
+): NumberQuizItem | null {
+  const dirPool: readonly NumberDirection[] =
+    cfg.directions.length > 0 ? cfg.directions : (["read"] as const);
+  const dir = dirPool[Math.floor(rng() * dirPool.length)];
+  const canCount = cfg.includeCounters && cfg.counters.length > 0;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    if (canCount) {
+      const counter = cfg.counters[Math.floor(rng() * cfg.counters.length)];
+      const hi = Math.min(counterMax(counter), cfg.numberMax);
+      if (hi < 1) continue;
+      // Occasionally force an irregular count, so the sound shifts the category
+      // exists to teach actually surface in the drill and not only in the lesson
+      // round. The engine still owns the reading; this only steers which n.
+      const irregs = IRREGULAR_COUNTS[counter].filter((k) => k <= hi);
+      const n =
+        irregs.length && rng() < 0.5
+          ? irregs[Math.floor(rng() * irregs.length)]
+          : 1 + Math.floor(rng() * hi);
+      const item = makeItem(n, counter, dir);
+      if (item) return item;
+    } else {
+      const n = 1 + Math.floor(rng() * cfg.numberMax);
+      const item = makeItem(n, null, dir);
+      if (item) return item;
+    }
+  }
+  return null;
 }
 
 /** Normalize a typed WRITE answer: trim and fold full-width ０-９ to ASCII. */

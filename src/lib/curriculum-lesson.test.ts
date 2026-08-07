@@ -335,11 +335,13 @@ describe("the totals are counted off the data, never typed in", () => {
     assert.equal(CURRICULUM_TOTALS.word, wordGlyphs.size);
   });
 
-  test("and today those counts are 90, 2,136 and 6,280", () => {
+  test("and today those counts are 90, 2,136 and 6,281", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    // 6,187 scheduled words + 93 single-character dictionary words taught whole.
-    assert.equal(CURRICULUM_TOTALS.word, 6280);
+    // 6,188 scheduled words + 93 single-character dictionary words taught whole.
+    // (Up one from before the counters went generative: a counted noun form the
+    // counters track used to own as a rote form is now a plain word again.)
+    assert.equal(CURRICULUM_TOTALS.word, 6281);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -347,7 +349,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 6280, 6280);
+        assert.equal(g.position.word?.total ?? 6281, 6281);
       }
     }
   });

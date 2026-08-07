@@ -11,6 +11,7 @@ import {
   type PromptContext,
 } from "@/lib/engine/question";
 import { ALL_FACTS, entryOf, factInfo } from "@/lib/facts";
+import { isConstructionFact } from "@/data/counter-categories";
 import { spread } from "@/lib/engine/spread";
 import type {
   Direction,
@@ -234,6 +235,11 @@ export function buildMcOptions(
   ctx?: PromptContext,
   known: readonly FactId[] = [],
 ): FactId[] {
+  // A construction CATEGORY is typed-input only: its answer is a rolled count,
+  // and a board of other counts would give it away — worse, the backstop below
+  // would fabricate one from other `word` facts (vocab, other categories). Return
+  // a board of one so the drill keeps it typed and never offers choices.
+  if (isConstructionFact(fact)) return [fact];
   const qt = questionsFor(fact);
   const optionLimit = qt.maxOptions ?? BEHAVIOR.mcOptions;
   // What the option will READ AS in THIS card's render direction.

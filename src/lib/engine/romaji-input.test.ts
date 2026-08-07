@@ -32,6 +32,7 @@ import {
 } from "@/data/grammar";
 import { KANJI_SUBJECT, meaningFactId, readingFactId } from "@/data/kanji";
 import { VOCAB_SUBJECT, wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
+import { isConstructionFact } from "@/data/counter-categories";
 import { ALL_FACTS, factInfo } from "@/lib/facts";
 import { toKana } from "@/lib/romaji";
 import { answerIsJapanese, en2jpTypeable, questionsFor, type GrammarVehicle } from "./question";
@@ -75,6 +76,11 @@ describe("the seven card kinds", () => {
     for (const f of ALL_FACTS) {
       const info = factInfo(f);
       if (!info) continue;
+      // A construction CATEGORY's answer script is chosen PER SHOWING (kana for a
+      // read card, digits for a write card), so it belongs to neither the reading
+      // nor the meaning side of this fixed-showing split. Its input handling is
+      // pinned directly on the rolled item in drill-screen, not by this predicate.
+      if (isConstructionFact(f)) continue;
       const kind = `${info.subject}/${f.replace(/^[^:]*:/, "").replace(/^.*?\//, "").replace(/@.*$/, "")}`;
       (byKind.get(kind) ?? byKind.set(kind, new Set()).get(kind)!).add(
         answerIsJapanese(f, "jp2en"),

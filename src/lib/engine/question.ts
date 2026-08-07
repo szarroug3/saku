@@ -87,6 +87,11 @@ import {
 } from "@/data/keigo";
 import { isKanaOnly, romajiMatches } from "@/lib/romaji";
 import { matchesEnglish, norm } from "@/lib/engine/en-match";
+import { gradeNumberItem, type NumberQuizItem } from "@/lib/engine/number-quiz";
+import {
+  constructionCategory,
+  isConstructionFact,
+} from "@/data/counter-categories";
 import type { Direction, FactId, HistoryFile } from "@/types";
 
 /**
@@ -174,6 +179,15 @@ export interface PromptContext {
    * pattern, "meaning", glosses to choose between), unchanged.
    */
   grammarSelection?: GrammarSelection;
+  /**
+   * The per-showing generated count for a construction CATEGORY fact (〜本, the
+   * tens, …) — the number this card is asking the learner to read or write THIS
+   * time. Same discipline as `grammarVehicle`: the FACT is fixed ("can you count
+   * with 〜本"), the SHOWING is a freshly rolled item, rolled once at ask time and
+   * carried here so prompt, grading and reveal all agree on one count. Absent for
+   * every non-construction fact. See constructionQuestions and drill-screen.tsx.
+   */
+  numberItem?: NumberQuizItem;
 }
 
 /** A verb picked to carry a grammar production question this showing. Plain
@@ -1506,6 +1520,74 @@ const keigoQuestions: QuestionType = {
   },
 };
 
+// ---------- construction categories: the generative counters ----------
+//
+// A category fact (〜本, the tens) has no fixed answer — the drill rolls a count
+// for it per showing and carries it on `ctx.numberItem`. So every method reads
+// the showing off ctx, and the whole type is TYPED-INPUT ONLY: distractors is
+// empty and the drill never builds a board for it (see drill-screen.tsx), because
+// a multiple-choice "which reading is 三本" would give the answer away and defeat
+// the point. Grading, prompt and reveal all defer to the rolled item, so the
+// fact's baked `answers` (its category name) is never asked or shown.
+
+/** The counter kanji a category counts (本, 匹, …), or "" for a bare-number
+ * range (the tens/big categories, whose items carry no counter). Read off the
+ * category glyph (〜本 → 本), never parsed from the id. */
+function counterKanjiOf(fact: FactId): string {
+  return constructionCategory(fact)?.glyph.replace(/^〜/, "") ?? "";
+}
+
+/** What a construction card shows: the digits for a READ card (3, or 3 本 for a
+ * counter), or the kana reading for a WRITE / HEAR card (the number to type back
+ * as digits — HEAR plays it, WRITE prints it). */
+function constructionGlyph(item: NumberQuizItem, kanji: string): string {
+  if (item.direction === "read") {
+    return item.counter && kanji ? `${item.digits} ${kanji}` : item.digits;
+  }
+  return item.reading;
+}
+
+const constructionQuestions: QuestionType = {
+  id: "construction",
+  prompt(fact, _dir, ctx) {
+    const item = ctx?.numberItem;
+    // Defensive: a construction card is always asked with an item (drill-screen
+    // rolls one in presentCard). With none — a non-drill caller, a contract test
+    // — show the category glyph so the prompt is never blank.
+    if (!item) {
+      const cat = constructionCategory(fact);
+      return { glyph: cat?.glyph ?? glyphOfFact(fact), jp: true, context: null, hint: null };
+    }
+    return {
+      glyph: constructionGlyph(item, counterKanjiOf(fact)),
+      jp: true,
+      // READ shows a number and wants its reading; WRITE shows a reading and
+      // wants the number. The context names which way round, so the digits/kana
+      // are not an ambiguous prompt.
+      context: item.direction === "read" ? "reading" : "the number",
+      hint: null,
+    };
+  },
+  check(_fact, _dir, given, ctx) {
+    const item = ctx?.numberItem;
+    return item ? gradeNumberItem(item, given) : false;
+  },
+  // The count is the question, and the answer is one string — never a board. An
+  // empty distractor set makes buildMcOptions return short, so the drill keeps it
+  // typed; drill-screen also refuses to pre-build a choices board for it.
+  distractors() {
+    return [];
+  },
+  answerReveal(_fact, _dir, ctx) {
+    const item = ctx?.numberItem;
+    if (!item) return null;
+    // READ reveals the reading (三本 → さんぼん); WRITE / HEAR reveal the number
+    // (3), which is exactly what the grader accepts. The default reveal would
+    // print the fact's baked category name, which is not this showing's answer.
+    return item.direction === "read" ? item.reading : item.digits;
+  },
+};
+
 const BY_SUBJECT: Record<string, QuestionType> = {
   [KANA_SUBJECT]: kanaQuestions,
   [KANJI_SUBJECT]: kanjiQuestions,
@@ -1527,6 +1609,10 @@ const BY_SUBJECT: Record<string, QuestionType> = {
  * of a blank screen, and the missing registration is obvious.
  */
 export function questionsFor(fact: FactId): QuestionType {
+  // A construction category is a `word` fact (so it FILES under Counters) but it
+  // is asked nothing like a word — it has no fixed answer, only a rolled count.
+  // Routed ahead of the subject table, since subject alone can't tell it apart.
+  if (isConstructionFact(fact)) return constructionQuestions;
   const subject = factInfo(fact)?.subject ?? "";
   return BY_SUBJECT[subject] ?? kanaQuestions;
 }

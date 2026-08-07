@@ -44,11 +44,19 @@ import {
   wordMeaningFactId,
   wordReadingFactId,
 } from "../../data/vocab.ts";
+import { isConstructionFact } from "../../data/counter-categories.ts";
 import { ALL_FACTS, factInfo } from "../facts.ts";
 import { questionsFor, revealFor } from "./question.ts";
 import type { Direction, FactId } from "@/types";
 
 const DIRS: Direction[] = ["jp2en", "en2jp"];
+
+// Construction CATEGORY facts (〜本, the tens) have NO fixed showing: they are
+// asked only with a per-showing rolled count on ctx (see constructionQuestions),
+// exactly as grammar's varied vehicle is. This file walks the FIXED showing (no
+// ctx), which for a category is degenerate, so they are excluded here and covered
+// by their own reveal/grade assertions in counter-categories.test.ts.
+const FIXED_FACTS: FactId[] = ALL_FACTS.filter((f) => !isConstructionFact(f));
 
 interface Violation {
   fact: FactId;
@@ -78,7 +86,7 @@ interface Violation {
  */
 const VIOLATIONS: Violation[] = (() => {
   const out: Violation[] = [];
-  for (const fact of ALL_FACTS) {
+  for (const fact of FIXED_FACTS) {
     const qt = questionsFor(fact);
     for (const dir of DIRS) {
       const shown = qt.prompt(fact, dir).glyph.trim();
@@ -136,7 +144,7 @@ describe("the reveal is the answer, not merely something else", () => {
   test("every reveal is non-empty", () => {
     // A blank reveal is the same silence as printing the question back, and it
     // is what a `?? ""` fallback degrades to the moment a lookup misses.
-    const blank = ALL_FACTS.flatMap((f) =>
+    const blank = FIXED_FACTS.flatMap((f) =>
       DIRS.filter((d) => !revealFor(f, d).trim()).map((d) => `${f} ${d}`),
     );
     assert.deepEqual(blank, []);
@@ -152,7 +160,7 @@ describe("the reveal is the answer, not merely something else", () => {
   const REJECTED: Array<{ fact: FactId; dir: Direction; revealed: string }> =
     (() => {
       const out: Array<{ fact: FactId; dir: Direction; revealed: string }> = [];
-      for (const fact of ALL_FACTS) {
+      for (const fact of FIXED_FACTS) {
         const qt = questionsFor(fact);
         for (const dir of DIRS) {
           const revealed = revealFor(fact, dir);

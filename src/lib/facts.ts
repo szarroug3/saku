@@ -19,6 +19,7 @@
 
 import { KANA_FACTS } from "@/data/characters";
 import { COUNTER_FACTS } from "@/data/counters";
+import { CONSTRUCTION_CATEGORY_FACTS } from "@/data/counter-categories";
 import { KEIGO_FACTS } from "@/data/keigo";
 import { GRAMMAR_FACTS } from "@/data/grammar";
 import { KANJI_FACTS } from "@/data/kanji";
@@ -40,6 +41,10 @@ const SUBJECTS: FactInfo[][] = [
   // them to the counters track lives in src/data/counters.ts. Appended last so
   // ALL_FACTS' existing order and offsets are unchanged.
   COUNTER_FACTS,
+  // The generative construction CATEGORIES (〜本, the tens, …). Also subject
+  // `word` and in COUNTER_ENTRIES, so they drill under Counters; the drill rolls
+  // a count for them per showing (see src/data/counter-categories.ts).
+  CONSTRUCTION_CATEGORY_FACTS,
   // The keigo track's honorific/humble recognition facts. A real subject of its
   // own (`keigo`), not `word`: it asks a relationship, not a meaning. Appended
   // after counters, the same offset-preserving reason.

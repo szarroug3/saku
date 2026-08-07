@@ -48,13 +48,13 @@ import {
   PITCH_INTRO,
   RENDAKU,
   TRANSITIVITY_INTRO,
-  COUNTER_SOUND_CHANGE,
-  NUMBERS_COMPOSE,
-  NUMBERS_BIG,
   type PhaseIntro,
 } from "@/data/phase-intros";
 import { wordPitch } from "@/data/pitch";
-import { isSoundChangeEntry, isNumberUnitMarker, numberUnitKind } from "@/data/counters";
+import {
+  constructionIntroForMarker,
+  isConstructionMarker,
+} from "@/data/counter-categories";
 import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow, wordReadingFactId } from "@/data/vocab";
 import { grammarLessonsForFacts } from "@/data/grammar/lessons";
@@ -186,10 +186,14 @@ export function lessonSteps(
   // follows is the number-reading round (src/lib/counter-lesson.ts). Detected
   // ahead of everything else because the marker has no FactInfo for the generic
   // walk below to group.
-  const numberMarker = facts.find(isNumberUnitMarker);
-  if (numberMarker) {
-    const intro = numberUnitKind(numberMarker) === "big" ? NUMBERS_BIG : NUMBERS_COMPOSE;
-    return [{ type: "intro", key: intro.id, intro }];
+  const genMarker = facts.find(isConstructionMarker);
+  if (genMarker) {
+    const intro = constructionIntroForMarker(genMarker);
+    // The whole teach walk is the category's one rule card — the tens/big compose
+    // rules, or a counter's attach-and-shift card. The generated round follows in
+    // the drill leg (src/lib/counter-lesson.ts). A marker with no intro cannot
+    // happen (every marker maps to a category), but guard rather than crash.
+    return intro ? [{ type: "intro", key: intro.id, intro }] : [];
   }
 
   const grammarLessons = grammarLessonsForFacts(facts);
@@ -248,12 +252,6 @@ export function lessonSteps(
   // pair contrast is in play — so its intro lands once, ahead of the first pair,
   // the same word-gated shape the rules above use. See phase-intros.ts.
   let markedTransitivity = false;
-  // The counter sound-change rule rides the first phase-2 counted form whose
-  // reading shifts (本 or 匹), the same word-gated shape the rules above use: the
-  // moment the h→p/b change is first in play is the moment to explain it. 枚 is
-  // phase 2 but does not shift, so it never fires this — it is the contrast, not
-  // the rule. See isSoundChangeEntry in src/data/counters.ts.
-  let markedSoundChange = false;
   // The pitch card rides the first word carrying a verified pitch, so the overline
   // is taught before it is first drawn (on that word's reveal). ONCE EVER, not per
   // lesson: it is a concept card whose id lives in CONCEPT_CARD_IDS, so a learner
@@ -310,10 +308,9 @@ export function lessonSteps(
       markedTransitivity = true;
       steps.push({ type: "intro", key: TRANSITIVITY_INTRO.id, intro: TRANSITIVITY_INTRO });
     }
-    if (!markedSoundChange && isSoundChangeEntry(item.entry)) {
-      markedSoundChange = true;
-      steps.push({ type: "intro", key: COUNTER_SOUND_CHANGE.id, intro: COUNTER_SOUND_CHANGE });
-    }
+    // The counter sound-change rule is no longer form-gated here: each object
+    // counter is a generative CATEGORY that carries its own rule card (attach +
+    // sound shift) as its whole teach walk, detected by the marker branch above.
     // The overline is about to appear on this word, so teach it first. Gated on
     // the item TEACHING the word (its reading fact is in the step), NOT on
     // item.kind: a folded character like 何 leads as its kanji (kind "kanji") yet

@@ -38,15 +38,16 @@ import type { LessonPosition } from "@/lib/lesson-position";
 import {
   COUNTERS_SUBJECT,
   COUNTER_CURRICULUM,
-  NUMBER_UNIT_BIG_MARKER,
-  NUMBER_UNIT_TENS_MARKER,
   counterEntry,
   counterKanjiPrereqs,
   counterMeaningFactId,
   isKanaForm,
+  type ConstructionCategoryId,
   type CounterForm,
 } from "@/data/counters";
-import { NUMBERS_BIG, NUMBERS_COMPOSE, type PhaseIntro } from "@/data/phase-intros";
+import { CONSTRUCTION_CATEGORIES } from "@/data/counter-categories";
+import { numberConstructionEntry } from "@/data/number-construction";
+import { type PhaseIntro } from "@/data/phase-intros";
 import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import type { EntryId, FactId, HistoryFile } from "@/types";
 
@@ -62,51 +63,52 @@ import type { EntryId, FactId, HistoryFile } from "@/types";
  * number-reading-screen.tsx reads it off the carried ActiveQuiz).
  */
 export interface NumberUnit {
-  readonly kind: "tens" | "big";
+  /** Which construction category this unit teaches. */
+  readonly id: ConstructionCategoryId;
+  /** Coarse kind for the Home preview tile: the two bare-number ranges, or a
+   * counter. */
+  readonly kind: "tens" | "big" | "counter";
   /** The marker fact that gates and records this unit. */
   readonly marker: FactId;
   /** The rule card shown as the unit's whole teach walk. */
   readonly intro: PhaseIntro;
   /** The generative round the drill leg runs. */
   readonly config: NumberQuizConfig;
+  /** How the unit's material shows on screen — a range hint (十〜) or a counter
+   * (〜本). */
+  readonly glyph: string;
   /** The drill mode — always number-reading for a unit. */
   readonly mode: "number-reading";
 }
 
+function unitOf(cat: (typeof CONSTRUCTION_CATEGORIES)[number]): NumberUnit {
+  return {
+    id: cat.id,
+    kind: cat.id === "tens" ? "tens" : cat.id === "big" ? "big" : "counter",
+    marker: cat.marker,
+    intro: cat.intro,
+    config: cat.config,
+    glyph: cat.glyph,
+    mode: "number-reading",
+  };
+}
+
 /**
- * The two generative units, in curriculum order: the compose rule + 11-99, then
- * the big words + 100-9999. Inserted between the 1-10 numbers and 〜人. The "big"
- * config caps at 9,999 so every hundreds/thousands sound shift is exercised; 万
- * itself is taught in NUMBERS_BIG's copy rather than quizzed.
+ * Every generative unit, in curriculum order: the compose rule + 11-99, the big
+ * words + 100-9999, then one per counter (人, 本, 匹, 枚, then the tail). Each
+ * teaches a rule card and drills a generated round instead of rote forms. Sourced
+ * from CONSTRUCTION_CATEGORIES so a unit, its Library page and its drillable
+ * category fact all name the same thing.
  */
-export const NUMBER_UNITS: readonly NumberUnit[] = [
-  {
-    kind: "tens",
-    marker: NUMBER_UNIT_TENS_MARKER,
-    intro: NUMBERS_COMPOSE,
-    mode: "number-reading",
-    config: {
-      count: 10,
-      includeCounters: false,
-      counters: [],
-      numberMax: 99,
-      directions: ["read", "write", "hear"],
-    },
-  },
-  {
-    kind: "big",
-    marker: NUMBER_UNIT_BIG_MARKER,
-    intro: NUMBERS_BIG,
-    mode: "number-reading",
-    config: {
-      count: 10,
-      includeCounters: false,
-      counters: [],
-      numberMax: 9999,
-      directions: ["read", "write", "hear"],
-    },
-  },
-];
+export const GENERATIVE_UNITS: readonly NumberUnit[] =
+  CONSTRUCTION_CATEGORIES.map(unitOf);
+
+/** The two bare-number range units (tens, big). Kept as its own export because
+ * the number ranges precede every counter and a few callers/tests want just
+ * them. */
+export const NUMBER_UNITS: readonly NumberUnit[] = GENERATIVE_UNITS.filter(
+  (u) => u.kind !== "counter",
+);
 
 /**
  * How many counters a lesson teaches. A COUNT, not a cost — a counter is a word,
@@ -132,9 +134,10 @@ export function clampCountersPerLesson(n: number): number {
 export const CURRICULUM_COUNTERS: readonly CounterForm[] = COUNTER_CURRICULUM;
 
 /** How many steps the track teaches — the denominator on the lesson card. The
- * forms PLUS the two generative NUMBER units, which each count as one step. */
+ * memorised forms PLUS every generative unit (the two number ranges and each
+ * counter), which each count as one step. */
 export const COUNTERS_CURRICULUM_TOTAL =
-  CURRICULUM_COUNTERS.length + NUMBER_UNITS.length;
+  CURRICULUM_COUNTERS.length + GENERATIVE_UNITS.length;
 
 /** The facts a counter teaches — its meaning always, its reading unless it is a
  * kana form (whose reading is the glyph itself, so there is no reading fact; see
@@ -225,18 +228,13 @@ function toCard(form: CounterForm): CounterCard {
   };
 }
 
-/** The bare number じゅう (10) — a real Library entry the unit preview cards link
- * to, since a marker names no browsable page of its own. */
-const NUMBER_TEN_FORM = CURRICULUM_COUNTERS.find((f) => f.key === "counter:num:10")!;
-
-/** The Home preview card for a generative unit — one tile hinting the range. Its
- * link points at じゅう (a real number page); the glyph is the range it drills. */
+/** The Home preview card for a generative unit — one tile hinting the range or
+ * counter. Its link points at the unit's own construction page (a real Library
+ * entry), and the glyph is the range/counter it drills (十〜, 〜本). */
 function unitCard(unit: NumberUnit): CounterCard {
   return {
-    entry: counterEntry(NUMBER_TEN_FORM),
-    // A Japanese hint at the range, not a latin "11-99": 十〜 is "ten and up",
-    // 百〜 "a hundred and up", keeping the tile in the same script as every other.
-    glyph: unit.kind === "tens" ? "十〜" : "百〜",
+    entry: numberConstructionEntry(unit.id),
+    glyph: unit.glyph,
     reading: null,
     meaning: unit.intro.title,
     counter: "",
@@ -253,27 +251,46 @@ function unitFresh(unit: NumberUnit, history: HistoryFile): boolean {
  * generative unit. */
 type ScheduleStep = { form: CounterForm } | { unit: NumberUnit };
 
+/** The counter glyph each counter category counts, so the schedule can splice a
+ * category's kept irregular forms (ひとり…, はたち) right behind its rule unit. */
+const COUNTER_GLYPH_BY_ID: Partial<Record<ConstructionCategoryId, string>> = {
+  nin: "人",
+  hon: "本",
+  hiki: "匹",
+  mai: "枚",
+  ko: "個",
+  dai: "台",
+  satsu: "冊",
+  hai: "杯",
+  kai: "回",
+  sai: "歳",
+};
+
 /**
- * The whole schedule, in teaching order: the forms, with the two generative
- * NUMBER units spliced in right after the bare 1-10 numbers and before 〜人 (the
- * first counted counter). A pure function of the curriculum's order, built once.
+ * The whole schedule, in teaching order:
+ *   1. the bare-number forms — 〜つ (the escape hatch), then the Sino numbers 1-10.
+ *   2. the two number-range units (compose 11-99, then the big words 100-9999).
+ *   3. each counter, in page order (人, 本, 匹, 枚, then the tail): its rule unit,
+ *      followed by any memorised irregular forms it keeps (人's ひとり/ふたり/よにん,
+ *      歳's はたち). The regular counts are generated, never listed.
+ * A pure function of the curriculum's order and the category list, built once.
  */
 const SCHEDULE: readonly ScheduleStep[] = buildSchedule();
 
 function buildSchedule(): ScheduleStep[] {
   const steps: ScheduleStep[] = [];
-  let unitsInserted = false;
   for (const form of CURRICULUM_COUNTERS) {
-    // The units go once the bare numbers are behind us: 〜つ (counter "つ") and the
-    // Sino numbers (counter "") precede them, and the first counted counter (〜人)
-    // is where they land.
-    if (!unitsInserted && form.counter !== "" && form.counter !== "つ") {
-      for (const u of NUMBER_UNITS) steps.push({ unit: u });
-      unitsInserted = true;
-    }
-    steps.push({ form });
+    if (form.counter === "つ" || form.counter === "") steps.push({ form });
   }
-  if (!unitsInserted) for (const u of NUMBER_UNITS) steps.push({ unit: u });
+  for (const u of NUMBER_UNITS) steps.push({ unit: u });
+  for (const u of GENERATIVE_UNITS) {
+    if (u.kind !== "counter") continue;
+    steps.push({ unit: u });
+    const glyph = COUNTER_GLYPH_BY_ID[u.id];
+    for (const form of CURRICULUM_COUNTERS) {
+      if (glyph && form.counter === glyph) steps.push({ form });
+    }
+  }
   return steps;
 }
 
@@ -282,7 +299,7 @@ function doneSteps(history: HistoryFile): number {
   const metForms = CURRICULUM_COUNTERS.filter(
     (f) => !isFresh(counterMeaningFactId(f), history),
   ).length;
-  const doneUnits = NUMBER_UNITS.filter((u) => !unitFresh(u, history)).length;
+  const doneUnits = GENERATIVE_UNITS.filter((u) => !unitFresh(u, history)).length;
   return metForms + doneUnits;
 }
 

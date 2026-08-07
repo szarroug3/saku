@@ -34,6 +34,7 @@ import { wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
 import { classProductionFactId, patternProductionFactId } from "@/data/grammar";
 import { buildMcOptions } from "@/lib/engine";
 import { en2jpTypeable, fixedDirOf } from "@/lib/engine/question";
+import { isConstructionFact } from "@/data/counter-categories";
 import { ALL_FACTS } from "@/lib/facts";
 import { quizInstruction } from "@/lib/quiz-instruction";
 
@@ -44,6 +45,11 @@ describe("no card can be unanswerable", () => {
     // falls back to a text box when there are not, and that box cannot be filled.
     const broken: string[] = [];
     for (const fact of ALL_FACTS) {
+      // A construction CATEGORY (〜本, the tens) is always a TYPED card — its
+      // answer is a rolled count (kana reading or digits), never a board and
+      // never the fixed en2jp target this sweep models. It is answerable by
+      // construction (the drill rolls an item), so it is not "unanswerable".
+      if (isConstructionFact(fact)) continue;
       if (fixedDirOf(fact) === "jp2en") continue; // never asked en2jp at all
       if (en2jpTypeable(fact)) continue; // answerable with romaji
       if (buildMcOptions(fact).length > 1) continue; // answerable by picking

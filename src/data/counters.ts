@@ -139,114 +139,52 @@ const NUMBERS: readonly CounterForm[] = [
   kana("counter:num:10", "じゅう", "ten (10)", ""),
 ];
 
-// ─── Phase 1c · 〜人, counting people ──────────────────────────────────────
-// ひとり and ふたり are the irregulars that matter; 四人 is よにん, never
-// よんにん. The rest are regular number + にん. Kana, phase 1.
+// ─── Phase 1c · 〜人, counting people — ONLY the irregulars are memorised ───
+// ひとり, ふたり and よにん are their own words, so they are shipped as forms; the
+// rest of 〜人 is the plain number plus にん, which the 〜人 GENERATIVE category
+// builds (see counter-categories.ts). 四人 is よにん, never よんにん. Kana, phase 1.
 const NIN: readonly CounterForm[] = [
   kana("counter:nin:1", "ひとり", "one person", "人"),
   kana("counter:nin:2", "ふたり", "two people", "人"),
-  kana("counter:nin:3", "さんにん", "three people", "人"),
   kana("counter:nin:4", "よにん", "four people", "人"),
-  kana("counter:nin:5", "ごにん", "five people", "人"),
-  kana("counter:nin:6", "ろくにん", "six people", "人"),
-  kana("counter:nin:7", "しちにん", "seven people, also ななにん", "人"),
-  kana("counter:nin:8", "はちにん", "eight people", "人"),
-  kana("counter:nin:9", "きゅうにん", "nine people", "人"),
-  kana("counter:nin:10", "じゅうにん", "ten people", "人"),
 ];
 
-// ─── Phase 1d · 11 and up — TAUGHT GENERATIVELY, not as rote forms ─────────
-// The teens, tens, hundreds and thousands are NOT shipped as memorised forms
-// any more. They are regular concatenation (にじゅういち = に + じゅう + いち), so
-// drilling ~30 spelled-out kana rows taught the learner nothing the compose rule
-// does not. Instead the numbers curriculum now runs two GENERATIVE units after
-// 1-10 (see src/lib/counter-lesson.ts): a "tens" unit that teaches the compose
-// rule (NUMBERS_COMPOSE) and quizzes reading 11-99, and a "big" unit that teaches
-// 百 / 千 / 万 with their sound shifts (NUMBERS_BIG) and quizzes 100-9999. Each
-// unit is gated by a MARKER pseudo-fact below rather than by a run of forms; the
-// generative round itself is number-reading mode over the reading engine
-// (src/lib/number-reading.ts), which already ships every one of these readings.
+// ─── 11 and up, AND every object counter — TAUGHT GENERATIVELY ─────────────
+// The teens, tens, hundreds and thousands are NOT shipped as memorised forms,
+// and neither are the object counters (一本…十本, 一匹…十匹, 一枚…十枚, the tail).
+// They are regular composition — にじゅういち = に + じゅう + いち, さんぼん = さん +
+// (voiced)本 — so drilling spelled-out rows taught nothing the compose/attach
+// rule does not. Instead each is a GENERATIVE CATEGORY: a rule taught once, then
+// counts generated over the reading engine (src/lib/number-reading.ts, which
+// ships every one of these readings). Two number-range categories (tens, big)
+// and one per counter (人, 本, 匹, 枚, 個, 台, 冊, 杯, 回, 歳) — see
+// src/data/counter-categories.ts for the facts and src/data/number-construction.ts
+// for the pages. Each is gated by a MARKER pseudo-fact (counter:gen:*, below)
+// claimed when its rule lesson begins, not by a run of forms.
 
-// ─── Phase 2 · 〜本, the h→p/b sound change ─────────────────────────────────
-// The canonical teacher of the shift: 1/6/8/10 → っ + ぽん (p), 3 → ぼん (b),
-// everything else stays ほん (h). Every reading verified against a reference.
-const HON: readonly CounterForm[] = [
-  counted("counter:hon:1", "一本", "いっぽん", "one long thin object", "本", "一", 2),
-  counted("counter:hon:2", "二本", "にほん", "two long thin objects", "本", "二", 2),
-  counted("counter:hon:3", "三本", "さんぼん", "three long thin objects", "本", "三", 2),
-  counted("counter:hon:4", "四本", "よんほん", "four long thin objects", "本", "四", 2),
-  counted("counter:hon:5", "五本", "ごほん", "five long thin objects", "本", "五", 2),
-  counted("counter:hon:6", "六本", "ろっぽん", "six long thin objects", "本", "六", 2),
-  counted("counter:hon:7", "七本", "ななほん", "seven long thin objects", "本", "七", 2),
-  counted("counter:hon:8", "八本", "はっぽん", "eight long thin objects", "本", "八", 2),
-  counted("counter:hon:9", "九本", "きゅうほん", "nine long thin objects", "本", "九", 2),
-  counted("counter:hon:10", "十本", "じゅっぽん", "ten long thin objects, also じっぽん", "本", "十", 2),
-];
-
-// ─── Phase 2 · 〜匹, the same shift on small animals ────────────────────────
-// 1/6/8/10 → っ + ぴき (p), 3 → びき (b), else ひき (h). Same pattern as 本.
-const HIKI: readonly CounterForm[] = [
-  counted("counter:hiki:1", "一匹", "いっぴき", "one small animal", "匹", "一", 2),
-  counted("counter:hiki:2", "二匹", "にひき", "two small animals", "匹", "二", 2),
-  counted("counter:hiki:3", "三匹", "さんびき", "three small animals", "匹", "三", 2),
-  counted("counter:hiki:4", "四匹", "よんひき", "four small animals", "匹", "四", 2),
-  counted("counter:hiki:5", "五匹", "ごひき", "five small animals", "匹", "五", 2),
-  counted("counter:hiki:6", "六匹", "ろっぴき", "six small animals", "匹", "六", 2),
-  counted("counter:hiki:7", "七匹", "ななひき", "seven small animals", "匹", "七", 2),
-  counted("counter:hiki:8", "八匹", "はっぴき", "eight small animals", "匹", "八", 2),
-  counted("counter:hiki:9", "九匹", "きゅうひき", "nine small animals", "匹", "九", 2),
-  counted("counter:hiki:10", "十匹", "じゅっぴき", "ten small animals, also じっぴき", "匹", "十", 2),
-];
-
-// ─── Phase 2 · 〜枚, the clean contrast (regular, no shift) ─────────────────
-// 枚 begins with ま, not an h-row sound, so it never shifts: every form is
-// number + まい. Taught beside 本 and 匹 precisely to show a counter that does
-// NOT change.
-const MAI: readonly CounterForm[] = [
-  counted("counter:mai:1", "一枚", "いちまい", "one flat object", "枚", "一", 2),
-  counted("counter:mai:2", "二枚", "にまい", "two flat objects", "枚", "二", 2),
-  counted("counter:mai:3", "三枚", "さんまい", "three flat objects", "枚", "三", 2),
-  counted("counter:mai:4", "四枚", "よんまい", "four flat objects", "枚", "四", 2),
-  counted("counter:mai:5", "五枚", "ごまい", "five flat objects", "枚", "五", 2),
-  counted("counter:mai:6", "六枚", "ろくまい", "six flat objects", "枚", "六", 2),
-  counted("counter:mai:7", "七枚", "ななまい", "seven flat objects", "枚", "七", 2),
-  counted("counter:mai:8", "八枚", "はちまい", "eight flat objects", "枚", "八", 2),
-  counted("counter:mai:9", "九枚", "きゅうまい", "nine flat objects", "枚", "九", 2),
-  counted("counter:mai:10", "十枚", "じゅうまい", "ten flat objects", "枚", "十", 2),
-];
-
-// ─── Phase 3 · the long tail, ungated plain vocab ──────────────────────────
-// One representative form each — no new machinery. 二十歳 はたち is the one
-// irregular worth shipping (the special reading for "20 years old"). Only forms
-// whose reading is certain are here; the rest are learned in the wild.
+// ─── Phase 3 · the one memorised tail form ─────────────────────────────────
+// 二十歳 はたち is the special reading for "twenty years old" — it is not the
+// plain number plus 歳, so the 〜歳 category cannot build it and it ships as a
+// form. Every other tail count IS generated by its category.
 const TAIL: readonly CounterForm[] = [
-  counted("counter:ko:1", "一個", "いっこ", "one (small object)", "個", "一", 3),
-  counted("counter:dai:1", "一台", "いちだい", "one (machine or vehicle)", "台", "一", 3),
-  counted("counter:satsu:1", "一冊", "いっさつ", "one (book or volume)", "冊", "一", 3),
-  counted("counter:hai:1", "一杯", "いっぱい", "one cupful", "杯", "一", 3),
-  counted("counter:kai:1", "一回", "いっかい", "one time (once)", "回", "一", 3),
-  counted("counter:sai:1", "一歳", "いっさい", "one year old", "歳", "一", 3),
   counted("counter:sai:20", "二十歳", "はたち", "twenty years old", "歳", "二", 3),
 ];
 
 /**
  * The whole counters curriculum, in teaching order.
  *
- * 〜つ leads (the escape hatch), then the Sino numbers 1-10. Numbers past ten are
- * NOT forms in this array — they are taught by the two generative NUMBER units
- * (see src/lib/counter-lesson.ts and the NUMBER_UNIT markers below), which the
- * scheduler runs after 1-10 and before 〜人. 〜人 follows as the first real
- * counter, then the phase-2 sound-change set (本/匹/枚) and the ungated tail.
- * counters.test.ts pins 〜つ ahead of the numbers so a reorder cannot break the
- * escape-hatch-first rule.
+ * 〜つ leads (the escape hatch), then the Sino numbers 1-10. Numbers past ten,
+ * and every object counter, are NOT forms in this array — they are taught by the
+ * generative CATEGORIES (see src/data/counter-categories.ts and the counter:gen:*
+ * markers below), which the scheduler runs as rule-then-round units. The only
+ * forms left past the numbers are 〜人's three irregulars (ひとり/ふたり/よにん) and
+ * the one special tail reading (二十歳 はたち). counters.test.ts pins 〜つ ahead of
+ * the numbers so a reorder cannot break the escape-hatch-first rule.
  */
 export const COUNTER_CURRICULUM: readonly CounterForm[] = [
   ...TSU,
   ...NUMBERS,
   ...NIN,
-  ...HON,
-  ...HIKI,
-  ...MAI,
   ...TAIL,
 ];
 
@@ -322,10 +260,12 @@ function buildCounterFacts(): FactInfo[] {
  * it to route these words to the counters track intro instead of the general
  * words-track intro — the mechanism that makes this "vocab with a track label"
  * rather than a new subject.
+ *
+ * It carries BOTH the memorised forms' entries AND the generative categories'
+ * entries (constructionCategoryEntry): a category is a `word` fact that
+ * factType() must file under Counters, so its entry belongs to this label too.
+ * Defined below the category machinery so CONSTRUCTION_CATEGORY_ENTRIES exists.
  */
-export const COUNTER_ENTRIES: ReadonlySet<EntryId> = new Set(
-  COUNTER_CURRICULUM.map(counterEntry),
-);
 
 /** The meaning fact of a form — what a lesson teaches and a test names. */
 export function counterMeaningFactId(form: CounterForm): FactId {
@@ -346,50 +286,99 @@ export function counterForm(entry: EntryId): CounterForm | undefined {
   return BY_ENTRY.get(entry);
 }
 
-/** Does this entry carry the h→p/b sound change — a phase-2 form of a counter
- * whose reading shifts (本, 匹)? The gate for the sound-change rule card, fired
- * ahead of the first such form in the teach walk (see src/lib/lesson-steps.ts).
- * 枚 is phase 2 but does NOT shift, so it is excluded: it is the contrast, not
- * the rule. */
-const SHIFTING_COUNTERS: ReadonlySet<string> = new Set(["本", "匹"]);
+// ─── The generative CATEGORIES, gated by MARKER pseudo-facts ────────────────
+// Numbers past ten and every object counter are taught by generative categories
+// rather than by rote forms (see the note above and src/data/counter-categories.ts).
+// Each category is one scheduler step gated on one MARKER: a synthetic FactId that
+// is claimable (postClaim writes history.claims[marker]) and read by the counters
+// scheduler's isFresh as "range taught", but is NOT the drillable fact — it is
+// deliberately absent from COUNTER_FACTS / ALL_FACTS. Its string is namespaced
+// (counter:gen:*) so it can never collide with a real counter fact
+// (word:counter:.../aspect). The scheduler, the completion path and the known
+// tracker share these ids through this registry.
 
-export function isSoundChangeEntry(entry: EntryId): boolean {
-  const form = BY_ENTRY.get(entry);
-  return !!form && form.phase === 2 && SHIFTING_COUNTERS.has(form.counter);
+/**
+ * Every construction category, in teaching order: the two bare-number ranges
+ * (tens, big), then one per counter in the order the counter pages are shown
+ * (人, 本, 匹, 枚, then the tail 個, 台, 冊, 杯, 回, 歳). The ids match the
+ * NumberConstruction ids in src/data/number-construction.ts one-to-one, so a
+ * category, its Library page, its rule card and its drill config all name the
+ * same thing.
+ */
+export const CONSTRUCTION_CATEGORY_IDS = [
+  "tens",
+  "big",
+  "nin",
+  "hon",
+  "hiki",
+  "mai",
+  "ko",
+  "dai",
+  "satsu",
+  "hai",
+  "kai",
+  "sai",
+] as const;
+
+export type ConstructionCategoryId = (typeof CONSTRUCTION_CATEGORY_IDS)[number];
+
+/** The MARKER pseudo-fact that gates and records a category's teaching. Claimed
+ * when the category's rule lesson begins (see home-feed.tsx), read as "taught"
+ * by the scheduler and the known tracker. Namespaced counter:gen:<id>. */
+export function constructionMarker(id: string): FactId {
+  return `counter:gen:${id}` as FactId;
 }
 
-// ─── The two generative NUMBER units, gated by MARKER pseudo-facts ─────────
-// Numbers past ten are taught by two generative units rather than by rote forms
-// (see the Phase 1d note above and src/lib/counter-lesson.ts). Each unit is a
-// single scheduler step gated on one MARKER: a synthetic FactId that is claimable
-// (postClaim writes history.claims[marker]) and read by the counters scheduler's
-// isFresh as "range taught", but is NOT a real drill fact — it is deliberately
-// absent from COUNTER_FACTS / ALL_FACTS, so nothing ever tries to drill or render
-// it. Its string is namespaced (counter:gen:*) so it can never collide with a real
-// counter fact (word:counter:.../aspect). The scheduler and the completion path
-// share these ids through this registry.
+/** The DRILLABLE category fact's entry — a `word` entry (so it drills and scores
+ * as a word) namespaced counter:cat:<id>, kept distinct from the Library page's
+ * own `numbers:<id>` entry. In COUNTER_ENTRIES, so factType() files it under
+ * Counters (see src/lib/practice-types.ts). */
+export function constructionCategoryEntry(id: string): EntryId {
+  return entryId(COUNTERS_SUBJECT, `counter:cat:${id}`);
+}
+
+/** Every category entry, for the COUNTER_ENTRIES label and quick membership. */
+export const CONSTRUCTION_CATEGORY_ENTRIES: ReadonlySet<EntryId> = new Set(
+  CONSTRUCTION_CATEGORY_IDS.map(constructionCategoryEntry),
+);
+
+/** The track label — the memorised forms' entries and the categories' entries.
+ * See the doc above; defined here so CONSTRUCTION_CATEGORY_ENTRIES is in scope. */
+export const COUNTER_ENTRIES: ReadonlySet<EntryId> = new Set([
+  ...COUNTER_CURRICULUM.map(counterEntry),
+  ...CONSTRUCTION_CATEGORY_ENTRIES,
+]);
+
+/** The category id a counter:gen:* marker names, or null for a non-marker. The
+ * one place a marker string is turned back into a category, so the scheduler and
+ * the teach walk pick a category's rule card / config without reaching into the
+ * id. */
+export function constructionCategoryOfMarker(fact: FactId): ConstructionCategoryId | null {
+  for (const id of CONSTRUCTION_CATEGORY_IDS) {
+    if (constructionMarker(id) === fact) return id;
+  }
+  return null;
+}
 
 /** The "tens" unit's marker — claimed once the 11-99 compose range is taught. */
-export const NUMBER_UNIT_TENS_MARKER = "counter:gen:tens" as FactId;
+export const NUMBER_UNIT_TENS_MARKER = constructionMarker("tens");
 /** The "big" unit's marker — claimed once the 100-9999 range is taught. */
-export const NUMBER_UNIT_BIG_MARKER = "counter:gen:big" as FactId;
+export const NUMBER_UNIT_BIG_MARKER = constructionMarker("big");
 
-/** Both unit markers, in curriculum order (tens, then big). */
+/** Both bare-number unit markers, in curriculum order (tens, then big). */
 export const NUMBER_UNIT_MARKERS: readonly FactId[] = [
   NUMBER_UNIT_TENS_MARKER,
   NUMBER_UNIT_BIG_MARKER,
 ];
 
-/** Is this fact one of the generative NUMBER-unit markers? The predicate the
- * scheduler and the teach walk use to tell a marker from a real fact — a marker
- * is not drillable and has no FactInfo, so callers that would otherwise resolve a
- * fact to an item guard on this first. */
+/** Is this fact one of the generative NUMBER-range markers (tens / big)? Kept as
+ * the narrow bare-number predicate the lesson walk and tests already use; the
+ * general counter-category predicate is constructionCategoryOfMarker. */
 export function isNumberUnitMarker(fact: FactId): boolean {
   return fact === NUMBER_UNIT_TENS_MARKER || fact === NUMBER_UNIT_BIG_MARKER;
 }
 
-/** Which unit a marker names ("tens" | "big"), or null for a non-marker. Lets a
- * consumer pick the unit's rule card / config without reaching into the id. */
+/** Which bare-number unit a marker names ("tens" | "big"), or null. */
 export function numberUnitKind(fact: FactId): "tens" | "big" | null {
   if (fact === NUMBER_UNIT_TENS_MARKER) return "tens";
   if (fact === NUMBER_UNIT_BIG_MARKER) return "big";

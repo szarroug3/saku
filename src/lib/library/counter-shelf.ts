@@ -32,16 +32,20 @@ interface CounterGroup {
   readonly keep: (form: CounterForm) => boolean;
 }
 
+// The object counters (本, 匹, 枚, and the tail) are no longer rote-form sections:
+// each is a generative CATEGORY whose "How to build them" page (below) carries the
+// rule, so tiling 一本…十本 would only repeat what the page generates. The groups
+// that remain are the MEMORISED material a page cannot build: the native 〜つ escape
+// hatch, the Sino numbers 1-10, and the handful of irregulars (〜人's ひとり/ふたり/
+// よにん, 二十歳 はたち) that are their own words.
 const GROUPS: readonly CounterGroup[] = [
   // 〜つ leads, because it is the escape hatch taught first (see counters.ts).
   { id: "tsu", label: "Native numbers (〜つ)", keep: (f) => f.counter === "つ" },
-  // The bare Sino numbers — 1..10, the teens and tens, and the big base words.
+  // The bare Sino numbers 1..10, memorised before anything builds on them.
   { id: "numbers", label: "Numbers", keep: (f) => f.counter === "" },
+  // 〜人 keeps its three irregulars only; the regular counts are generated.
   { id: "nin", label: "People (〜人)", keep: (f) => f.counter === "人" },
-  { id: "hon", label: "Long things (〜本)", keep: (f) => f.counter === "本" },
-  { id: "hiki", label: "Small animals (〜匹)", keep: (f) => f.counter === "匹" },
-  { id: "mai", label: "Flat things (〜枚)", keep: (f) => f.counter === "枚" },
-  // The ungated tail: one representative form each, taught as plain vocabulary.
+  // The one memorised tail reading, 二十歳 はたち.
   { id: "tail", label: "More counters", keep: (f) => f.phase === 3 },
 ];
 

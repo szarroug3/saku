@@ -21,6 +21,7 @@
 
 import { activeWeaknessPairs } from "@/lib/confusions";
 import { rangeLabel } from "@/lib/date-range";
+import { knownConstructionFacts } from "@/data/counter-categories";
 import { ALL_FACTS, entryOf, factInfo, factsOf } from "@/lib/facts";
 import { matchesTypes, typeLabel } from "@/lib/practice-types";
 import { standingOf } from "@/lib/library/standing";
@@ -240,9 +241,17 @@ function knownFacts(history: HistoryFile): FactId[] {
   // word-unlock.ts), exactly as "quiz me" marks a kana group seen. So there is
   // no reading-specific branch here — a proved reading is seen material, and
   // that is the whole of it.
-  return ALL_FACTS.filter(
+  const base = ALL_FACTS.filter(
     (f) => (history.facts[f]?.seen ?? 0) > 0 || f in claims || f in seen,
   );
+  // A generative construction CATEGORY (〜本, the tens) becomes drillable the
+  // moment its rule was TAUGHT — its counter:gen:* marker claimed (on Start) or
+  // marked seen (on "Quiz me") — not when the category fact itself was answered
+  // (it never is directly; the drill rolls a count for it). The marker is not the
+  // fact, so this is the one join that turns a claimed marker into a known fact.
+  // A category fact already in `base` (drilled at least once) is not added twice —
+  // resolve() ends in a Set, so the union is free.
+  return [...base, ...knownConstructionFacts(history)];
 }
 
 /**

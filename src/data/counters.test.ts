@@ -1,9 +1,12 @@
 // Run: node --import ./src/lib/conjugate/test-hooks.mjs --test src/data/counters.test.ts
 //
-// The counters track is FACTUAL DATA (readings) plus one piece of STRUCTURE (the
-// track label). These tests pin both: the readings so a future regeneration or
-// reorder cannot silently break a known irregular, and the structure so the
-// "〜つ first, kana-gated phase 1, number-kanji-gated phase 2" design holds.
+// The counters track is FACTUAL DATA (the readings it still MEMORISES) plus one
+// piece of STRUCTURE (the track label and the generative categories). These tests
+// pin both: the memorised readings so a reorder cannot silently break a known
+// irregular, and the structure so the "〜つ first, kana-gated phase 1, then
+// generative categories" design holds. The regular counted readings (一本…, the
+// tens, …) are the ENGINE's to pin now (number-reading.test.ts); they are no
+// longer forms here.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -13,22 +16,22 @@ import {
   COUNTER_CURRICULUM,
   COUNTER_ENTRIES,
   COUNTER_FACTS,
+  CONSTRUCTION_CATEGORY_IDS,
+  CONSTRUCTION_CATEGORY_ENTRIES,
   SYSTEM_COUNTERS,
   TAIL_COUNTERS,
+  constructionCategoryEntry,
+  constructionCategoryOfMarker,
+  constructionMarker,
   counterEntry,
   counterKanjiPrereqs,
   isKanaForm,
-  isSoundChangeEntry,
   type CounterForm,
 } from "./counters.ts";
 import { VOCAB_SUBJECT } from "./vocab.ts";
-import { COUNTER_SOUND_CHANGE } from "./phase-intros.ts";
 import { TRACK_INTROS } from "./track-intros.ts";
 import { ALL_FACTS } from "../lib/facts.ts";
-import { lessonSteps } from "../lib/lesson-steps.ts";
-import type { FactId, HistoryFile } from "../types/index.ts";
 
-const BLANK: HistoryFile = { sessions: [], facts: {} };
 const byGlyph = (g: string): CounterForm =>
   COUNTER_CURRICULUM.find((f) => f.glyph === g)!;
 
@@ -48,7 +51,7 @@ describe("the track order teaches 〜つ before the numbers", () => {
   });
 });
 
-describe("the gating: kana-only phase 1, number-kanji phase 2", () => {
+describe("the memorised forms are kana phase-1, bar the one irregular tail reading", () => {
   test("every phase-1 form is kana and needs no kanji", () => {
     for (const f of COUNTER_CURRICULUM.filter((f) => f.phase === 1)) {
       assert.ok(isKanaForm(f), `${f.glyph} is phase 1 but not kana`);
@@ -60,59 +63,70 @@ describe("the gating: kana-only phase 1, number-kanji phase 2", () => {
     }
   });
 
-  test("every phase-2 form gates on its number kanji, and it is in the word", () => {
-    for (const f of COUNTER_CURRICULUM.filter((f) => f.phase === 2)) {
-      assert.ok(f.numberKanji, `${f.glyph} is phase 2 with no number kanji`);
-      assert.deepEqual(counterKanjiPrereqs(f), [f.numberKanji]);
-      assert.ok(
-        f.glyph.includes(f.numberKanji!),
-        `${f.glyph} does not contain its gating kanji ${f.numberKanji}`,
-      );
-    }
+  test("the object counters are no longer taught as rote forms", () => {
+    // The whole point of the conversion: no 一本…十本 rows, no per-counter form
+    // for 本/匹/枚 or the tail. The only counted (kanji) form left is the one
+    // special reading a category cannot build.
+    const counted = COUNTER_CURRICULUM.filter((f) => !isKanaForm(f));
+    assert.deepEqual(
+      counted.map((f) => f.glyph),
+      ["二十歳"],
+      "the only memorised counted form is 二十歳 はたち",
+    );
+  });
+
+  test("〜人 keeps only its three irregulars", () => {
+    const nin = COUNTER_CURRICULUM.filter((f) => f.counter === "人").map((f) => f.glyph);
+    assert.deepEqual(nin.sort(), ["ひとり", "ふたり", "よにん"].sort());
   });
 });
 
-describe("the counters that exist", () => {
-  test("the five system counters are all present", () => {
-    assert.deepEqual([...SYSTEM_COUNTERS].sort(), ["つ", "人", "匹", "枚", "本"].sort());
-    for (const c of SYSTEM_COUNTERS) {
+describe("the generative categories", () => {
+  test("there is one category per number range and per system/tail counter", () => {
+    assert.deepEqual(
+      [...CONSTRUCTION_CATEGORY_IDS],
+      ["tens", "big", "nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"],
+    );
+  });
+
+  test("every system counter bar 〜つ, and every tail counter, has a category", () => {
+    // 〜つ is native memorisation, not a generative construction, so it has no
+    // category; every other system counter (人 本 匹 枚) and every tail counter does.
+    const kindByGlyph: Record<string, string> = {
+      人: "nin", 本: "hon", 匹: "hiki", 枚: "mai",
+      個: "ko", 台: "dai", 冊: "satsu", 杯: "hai", 回: "kai", 歳: "sai",
+    };
+    for (const c of [...SYSTEM_COUNTERS, ...TAIL_COUNTERS]) {
+      if (c === "つ") continue;
+      const id = kindByGlyph[c];
+      assert.ok(id, `no category id mapped for counter ${c}`);
       assert.ok(
-        COUNTER_CURRICULUM.some((f) => f.counter === c),
-        `no forms for system counter ${c}`,
+        (CONSTRUCTION_CATEGORY_IDS as readonly string[]).includes(id),
+        `no category for counter ${c}`,
       );
     }
   });
 
-  test("the tail counters are all present as plain vocab", () => {
-    assert.equal(TAIL_COUNTERS.length, 6);
-    for (const c of TAIL_COUNTERS) {
-      assert.ok(
-        COUNTER_CURRICULUM.some((f) => f.counter === c && f.phase === 3),
-        `no tail form for counter ${c}`,
-      );
+  test("a marker round-trips to its category id, and non-markers do not", () => {
+    for (const id of CONSTRUCTION_CATEGORY_IDS) {
+      assert.equal(constructionCategoryOfMarker(constructionMarker(id)), id);
     }
+    assert.equal(
+      constructionCategoryOfMarker("word:先生/meaning" as never),
+      null,
+    );
   });
 });
 
-// FACTUAL DATA — pinned so a regeneration cannot silently break a reading. Every
-// value verified against a reference; these are the irregulars that matter (the
-// task names ひとり, ふたり, いっぽん, さんぼん, ろっぽん) plus the full h→p/b sets.
-describe("the readings are pinned", () => {
+// FACTUAL DATA — the readings this track still MEMORISES, pinned so a reorder
+// cannot silently break a known irregular. The regular counted readings live in
+// the engine and are pinned in number-reading.test.ts.
+describe("the memorised readings are pinned", () => {
   const PINNED: Readonly<Record<string, string>> = {
-    // 〜人 irregulars
     ひとり: "ひとり", // 一人
     ふたり: "ふたり", // 二人
-    // 〜本, the h→p/b teacher
-    一本: "いっぽん", 二本: "にほん", 三本: "さんぼん", 四本: "よんほん", 五本: "ごほん",
-    六本: "ろっぽん", 七本: "ななほん", 八本: "はっぽん", 九本: "きゅうほん", 十本: "じゅっぽん",
-    // 〜匹
-    一匹: "いっぴき", 三匹: "さんびき", 六匹: "ろっぴき", 八匹: "はっぴき", 十匹: "じゅっぴき",
-    // 〜枚, the regular contrast
-    一枚: "いちまい", 三枚: "さんまい",
-    // 四人 is よにん, never よんにん
-    よにん: "よにん",
-    // the tail irregular
-    二十歳: "はたち",
+    よにん: "よにん", // 四人 — never よんにん
+    二十歳: "はたち", // the special "twenty years old" reading
   };
 
   for (const [glyph, reading] of Object.entries(PINNED)) {
@@ -128,53 +142,30 @@ describe("the track label is a clean, collision-free set of word facts", () => {
     for (const f of COUNTER_FACTS) assert.equal(f.subject, VOCAB_SUBJECT);
   });
 
-  test("every curriculum entry is labelled as a counters-track entry", () => {
+  test("every curriculum entry, AND every category entry, is a counters-track entry", () => {
     for (const f of COUNTER_CURRICULUM) {
       assert.ok(COUNTER_ENTRIES.has(counterEntry(f)));
     }
-    assert.equal(COUNTER_ENTRIES.size, COUNTER_CURRICULUM.length);
+    for (const id of CONSTRUCTION_CATEGORY_IDS) {
+      assert.ok(COUNTER_ENTRIES.has(constructionCategoryEntry(id)));
+    }
+    // The label is exactly the forms plus the categories, no more.
+    assert.equal(
+      COUNTER_ENTRIES.size,
+      COUNTER_CURRICULUM.length + CONSTRUCTION_CATEGORY_ENTRIES.size,
+    );
   });
 
   test("counter fact ids are unique and do not collide with any existing fact", () => {
     const counterIds = COUNTER_FACTS.map((f) => f.id);
     assert.equal(new Set(counterIds).size, counterIds.length, "duplicate counter fact id");
-    const others = new Set<FactId>(ALL_FACTS);
-    // ALL_FACTS includes the counter facts, so each must appear exactly once.
     const all = ALL_FACTS.filter((id) => counterIds.includes(id));
     assert.equal(all.length, counterIds.length);
-    assert.ok(others.size === ALL_FACTS.length, "the registry has a duplicate id");
+    assert.equal(new Set(ALL_FACTS).size, ALL_FACTS.length, "the registry has a duplicate id");
   });
 
   test("the counters track has exactly one intro", () => {
     assert.ok(TRACK_INTROS.counters);
     assert.equal(TRACK_INTROS.counters.id, "track-counters");
-  });
-});
-
-describe("the sound-change rule card is gated on the first shifting form", () => {
-  test("本 and 匹 shift; 枚 and the kana forms do not", () => {
-    assert.ok(isSoundChangeEntry(counterEntry(byGlyph("三本"))));
-    assert.ok(isSoundChangeEntry(counterEntry(byGlyph("三匹"))));
-    assert.ok(!isSoundChangeEntry(counterEntry(byGlyph("三枚"))));
-    assert.ok(!isSoundChangeEntry(counterEntry(byGlyph("ひとつ"))));
-  });
-
-  test("teaching 三本 fires the sound-change card ahead of it", () => {
-    const fact = COUNTER_FACTS.find((f) => f.glyph === "三本" && String(f.id).endsWith("/meaning"))!.id;
-    const steps = lessonSteps([fact], BLANK);
-    const soundIdx = steps.findIndex(
-      (s) => s.type === "intro" && s.intro.id === COUNTER_SOUND_CHANGE.id,
-    );
-    const itemIdx = steps.findIndex((s) => s.type === "item" && s.item.glyph === "三本");
-    assert.ok(soundIdx >= 0, "sound-change card did not fire");
-    assert.ok(soundIdx < itemIdx, "sound-change card must come before the form");
-  });
-
-  test("a phase-1 counter lesson fires no sound-change card", () => {
-    const fact = COUNTER_FACTS.find((f) => f.glyph === "ひとつ")!.id;
-    const steps = lessonSteps([fact], BLANK);
-    assert.ok(
-      steps.every((s) => s.type !== "intro" || s.intro.id !== COUNTER_SOUND_CHANGE.id),
-    );
   });
 });

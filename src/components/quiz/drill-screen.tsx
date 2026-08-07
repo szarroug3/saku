@@ -66,6 +66,14 @@ import {
   type PromptContext,
 } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
+import {
+  rollConstructionItem,
+  type NumberQuizItem,
+} from "@/lib/engine/number-quiz";
+import {
+  constructionConfigForFact,
+  isConstructionFact,
+} from "@/data/counter-categories";
 import { entryOf, factInfo } from "@/lib/facts";
 import { speechForFact } from "@/lib/fact-speech";
 import { fitGlyphSize } from "@/lib/glyph-fit";
@@ -150,6 +158,15 @@ interface DrillQuestion {
    * glosses to choose between), unchanged. Plain data, so it rides the
    * serialized runtime. */
   grammarSelection: GrammarSelection | null;
+  /**
+   * The generated count a construction CATEGORY card (〜本, the tens) is asking
+   * THIS showing — rolled once at ask time exactly like `grammarVehicle`, so a
+   * remount neither re-rolls it nor re-plays its audio. It drives the whole
+   * showing: the prompt (digits or reading), the direction, the audio flag, the
+   * grading and the reveal all run off it (see engine/question.ts,
+   * constructionQuestions). null for every non-category card. Plain data, so it
+   * rides the serialized runtime. */
+  numberItem: NumberQuizItem | null;
   /** Japanese-sentence → English-meaning board (text or audio). Its options are strings rather
    * than FactIds, so it carries its own correct index. */
   recognition: RecognitionItem | null;
@@ -237,6 +254,7 @@ function ctxFor(q: DrillQuestion, anchor?: string): PromptContext {
     listen: q.listen,
     grammarVehicle: q.grammarVehicle ?? undefined,
     grammarSelection: q.grammarSelection ?? undefined,
+    numberItem: q.numberItem ?? undefined,
   };
 }
 
@@ -625,9 +643,27 @@ export function DrillScreen() {
    * same fact does not double-count it. */
   function presentCard(f: FactId, form: CardForm) {
     if (!rt || !active) return;
-    const listen = form.listen;
-    const dir = form.dir;
-    const styleTyped = !formIsMc(f, form);
+    // A construction CATEGORY fact rolls its per-showing count HERE, once, so the
+    // whole showing (prompt, direction, audio, grading, reveal) runs on ONE item
+    // and a remount can't swap it — the same freeze grammar's vehicle gets. Never
+    // in prompt()/check(), which are called separately and per-keystroke. The
+    // rolled item's direction drives everything: READ shows the number and wants
+    // its reading (typed kana), WRITE shows the reading and wants the number, HEAR
+    // plays the reading and wants the number (audio). A category is ALWAYS typed —
+    // a board would give the count away, and buildMcOptions refuses one for it.
+    const construction = isConstructionFact(f)
+      ? constructionConfigForFact(f)
+      : null;
+    const numberItem = construction
+      ? rollConstructionItem(construction, Math.random)
+      : null;
+    const listen = numberItem ? numberItem.direction === "hear" : form.listen;
+    const dir: Direction = numberItem
+      ? numberItem.direction === "write"
+        ? "en2jp"
+        : "jp2en"
+      : form.dir;
+    const styleTyped = numberItem ? true : !formIsMc(f, form);
     // Romaji only ever produces KANA. An en2jp typed card whose answer contains
     // a kanji (a kanji glyph, a kanji word like 先生) can't be answered by
     // typing romaji, so it is asked as multiple choice instead — never left as
@@ -683,6 +719,7 @@ export function DrillScreen() {
       listen,
       grammarVehicle: grammarVehicle ?? undefined,
       grammarSelection: grammarSelection ?? undefined,
+      numberItem: numberItem ?? undefined,
     };
     // The selection board comes PRE-BUILT and pre-shuffled: its options were
     // chosen per-sentence by the generator, which proved each one wrong for THIS
@@ -704,9 +741,12 @@ export function DrillScreen() {
     // a board with no reshuffle and no per-keystroke rebuild. Only a typed card
     // can convert (a card already MC/recognition is one), and a ≤1-option board
     // is not a question, so both cases store null and hide the button.
-    const choicesBuilt = typedMode
-      ? buildMcOptions(f, dir, ctx, confusionKnownFacts(history))
-      : null;
+    // A construction category never gets a "Show choices" board either — strictly
+    // typed-input, so the button stays hidden and no count is ever offered.
+    const choicesBuilt =
+      typedMode && !construction
+        ? buildMcOptions(f, dir, ctx, confusionKnownFacts(history))
+        : null;
     const choicesBoard =
       choicesBuilt && choicesBuilt.length > 1 ? choicesBuilt : null;
     rt.q = {
@@ -719,6 +759,7 @@ export function DrillScreen() {
       mcFonts: mc && dir === "en2jp" ? mc.map(() => pickFont(cfg.fonts)) : null,
       grammarVehicle,
       grammarSelection,
+      numberItem,
       recognition,
       katakana: isKatakana(revealFor(f, dir, ctx)),
       listen,
@@ -1289,9 +1330,13 @@ export function DrillScreen() {
     live.listenPlayed = true;
     const current = rt?.q;
     const info = factInfo(listenPlayFact);
-    const text =
-      current?.form.source === "sentence" &&
-      current.form.response === "definition"
+    // A construction HEAR card plays the ROLLED reading (さんぼん), not the fact's
+    // category glyph — speechForFact(info) would say the bare counter. The reading
+    // lives on the frozen item, so the audio matches exactly what is graded.
+    const text = current?.numberItem
+      ? current.numberItem.reading
+      : current?.form.source === "sentence" &&
+          current.form.response === "definition"
         ? current.recognition?.jp
         : info && speechForFact(info);
     if (text) speak(text, cfg.voiceName);
@@ -1499,7 +1544,15 @@ export function DrillScreen() {
   // convert "life" on a kanji meaning card into らいふ and mark it wrong. The
   // subject owns the answer, so the subject owns the question — see
   // `answerIsJapanese`, the one place this is decided.
-  const romajiInput = typedMode && answerIsJapanese(q.f, q.dir);
+  // A construction card overrides the answer script directly: READ wants the kana
+  // reading (romaji→kana box), WRITE and HEAR want the count as digits (a numeric
+  // box, no romaji conversion). Every other card asks the subject.
+  const romajiInput = q.numberItem
+    ? q.numberItem.direction === "read"
+    : typedMode && answerIsJapanese(q.f, q.dir);
+  // WRITE / HEAR answer with digits, so the box asks for a numeric keyboard —
+  // matching number-reading-screen.tsx.
+  const numericInput = !!q.numberItem && q.numberItem.direction !== "read";
   // What the box wants, in words. Same predicate as `romajiInput` above, via
   // one module — see lib/drill-guidance.ts for why it must not be a second
   // list. Null on multiple choice, which has no box to explain.
@@ -1712,8 +1765,9 @@ export function DrillScreen() {
           listen={q.listen}
           onListen={() => {
             const info = factInfo(q.f);
-            const text =
-              q.form.source === "sentence" && q.form.response === "definition"
+            const text = q.numberItem
+              ? q.numberItem.reading
+              : q.form.source === "sentence" && q.form.response === "definition"
                 ? q.recognition?.jp
                 : info && speechForFact(info);
             if (text) speak(text, cfg.voiceName);
@@ -1798,6 +1852,7 @@ export function DrillScreen() {
               autoFocus
               autoComplete="off"
               spellCheck={false}
+              inputMode={numericInput ? "numeric" : undefined}
               placeholder={guide?.placeholder}
               value={typed}
               readOnly={revealing}

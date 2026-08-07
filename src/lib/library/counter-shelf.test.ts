@@ -114,7 +114,7 @@ describe("the shelf exists and lists the counters", () => {
 
 describe("a counter entry resolves to a real Library page", () => {
   test("its URL round-trips to the same id", () => {
-    for (const glyph of ["一本", "ひとつ", "に", "二十歳"]) {
+    for (const glyph of ["ひとつ", "に", "よにん", "二十歳"]) {
       const id = counterEntry(byGlyph(glyph));
       assert.ok(libEntry(id), `${glyph} has a LibEntry`);
       const href = entryHref(id);
@@ -125,13 +125,15 @@ describe("a counter entry resolves to a real Library page", () => {
   });
 
   test("a counted form's page shows its reading; a kana form's does not", () => {
-    // 一本 · いっぽん — the reading is the whole point of viewing.
-    const hon = libEntry(counterEntry(byGlyph("一本")))!;
+    // 二十歳 · はたち — the special reading is the whole point of viewing. (The
+    // regular counted forms are generated now, so this is the one counted form
+    // left with a page of its own.)
+    const hon = libEntry(counterEntry(byGlyph("二十歳")))!;
     const honRows = factRows(hon);
     const reading = honRows.find((r) => r.label === "Reading");
-    assert.ok(reading, "一本 has a reading row");
-    assert.equal(reading!.answer, "いっぽん");
-    assert.equal(reading!.speak, "いっぽん", "the reading is spoken, not the kanji");
+    assert.ok(reading, "二十歳 has a reading row");
+    assert.equal(reading!.answer, "はたち");
+    assert.equal(reading!.speak, "はたち", "the reading is spoken, not the kanji");
     assert.equal(factsTitle(hon, honRows), "Reading and meaning");
 
     // ひとつ IS its reading, so there is no reading row — meaning alone.
