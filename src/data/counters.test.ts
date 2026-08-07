@@ -31,6 +31,7 @@ import {
 import { VOCAB_SUBJECT } from "./vocab.ts";
 import { TRACK_INTROS } from "./track-intros.ts";
 import { ALL_FACTS } from "../lib/facts.ts";
+import { counterReading } from "../lib/number-reading.ts";
 
 const byGlyph = (g: string): CounterForm =>
   COUNTER_CURRICULUM.find((f) => f.glyph === g)!;
@@ -75,9 +76,20 @@ describe("the memorised forms are kana phase-1, bar the one irregular tail readi
     );
   });
 
-  test("〜人 keeps only its three irregulars", () => {
+  test("〜人 ships NO rote forms — its irregulars are taught by the category", () => {
+    // ひとり/ふたり/よにん used to ship as rote kana forms. They are now taught by
+    // the 〜人 construction category (its Irregular table and irregular-first
+    // round), so the curriculum carries none of them.
     const nin = COUNTER_CURRICULUM.filter((f) => f.counter === "人").map((f) => f.glyph);
-    assert.deepEqual(nin.sort(), ["ひとり", "ふたり", "よにん"].sort());
+    assert.deepEqual(nin, []);
+  });
+
+  test("removing the 〜人 rote forms did not lose their readings — the engine keeps them", () => {
+    // The safety check on the removal: the three irregulars the category must
+    // still surface are exactly the engine's readings for counts 1, 2 and 4.
+    assert.equal(counterReading(1, "nin"), "ひとり");
+    assert.equal(counterReading(2, "nin"), "ふたり");
+    assert.equal(counterReading(4, "nin"), "よにん");
   });
 });
 
@@ -122,10 +134,10 @@ describe("the generative categories", () => {
 // cannot silently break a known irregular. The regular counted readings live in
 // the engine and are pinned in number-reading.test.ts.
 describe("the memorised readings are pinned", () => {
+  // The only rote reading left as a curriculum FORM is 二十歳 はたち — the one a
+  // category cannot build. (〜人's ひとり/ふたり/よにん are pinned against the engine
+  // above, since the category, not a rote form, now teaches them.)
   const PINNED: Readonly<Record<string, string>> = {
-    ひとり: "ひとり", // 一人
-    ふたり: "ふたり", // 二人
-    よにん: "よにん", // 四人 — never よんにん
     二十歳: "はたち", // the special "twenty years old" reading
   };
 

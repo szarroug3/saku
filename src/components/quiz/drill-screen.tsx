@@ -1529,9 +1529,12 @@ export function DrillScreen() {
     ? "Pick the sentence's meaning."
     : q.numberItem
       ? // A construction card asks for a count, not a word meaning — its generic
-        // instruction ("what does this word mean") would be a lie.
+        // instruction ("what does this word mean") would be a lie. A READ card
+        // wants the reading spelled out, so it mirrors the word track's exact
+        // phrasing for a reading card ("Type how this word is said." — see
+        // isSound in quiz-instruction.ts) rather than inventing its own line.
         q.numberItem.direction === "read"
-        ? "Type the reading."
+        ? "Type how this word is said."
         : q.numberItem.direction === "hear"
           ? "Type the number you hear."
           : "Type the number."

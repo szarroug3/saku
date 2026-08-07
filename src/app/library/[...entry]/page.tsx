@@ -1298,6 +1298,14 @@ function EntryView({ entry }: { entry: LibEntry }) {
         now={now}
         onClaim={claim}
         claimFacts={sentenceRuleClaimFacts}
+        // A construction page has no gradeable facts, so its "Quiz me" is the
+        // generative number-reading round, launched from this bar beside "Add to
+        // list" — the one-bar layout every other entry page uses.
+        constructionQuiz={
+          construction
+            ? { what: construction.name, config: construction.quizConfig }
+            : undefined
+        }
         progressReady={historyLoaded}
       />
 

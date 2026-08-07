@@ -74,16 +74,24 @@ function counterIntro(c: NumberConstruction): PhaseIntro {
     setId: "",
     title: c.name,
     body: [...c.body],
-    examples: [...c.examples],
-    examplesPlacement: "below",
+    countTables: c.exampleGroups,
   };
 }
 
 /** The rule card for a category id — the number ranges reuse the lesson's own
- * cards; a counter derives one from its page. */
+ * cards (kept by id so the scheduler and tests still name NUMBERS_COMPOSE /
+ * NUMBERS_BIG), but with their worked examples rendered as the same Regular /
+ * Irregular tables the Library page shows: the flat inline `examples` is dropped
+ * and the page's `exampleGroups` ride as `countTables`, so the lesson and the
+ * Library construction page stay in lockstep. A counter derives its card the
+ * same way from its own page. */
 function introFor(c: NumberConstruction): PhaseIntro {
-  if (c.id === "tens") return NUMBERS_COMPOSE;
-  if (c.id === "big") return NUMBERS_BIG;
+  if (c.id === "tens") {
+    return { ...NUMBERS_COMPOSE, examples: undefined, examplesPlacement: undefined, countTables: c.exampleGroups };
+  }
+  if (c.id === "big") {
+    return { ...NUMBERS_BIG, examples: undefined, examplesPlacement: undefined, countTables: c.exampleGroups };
+  }
   return counterIntro(c);
 }
 

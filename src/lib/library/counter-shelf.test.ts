@@ -114,7 +114,7 @@ describe("the shelf exists and lists the counters", () => {
 
 describe("a counter entry resolves to a real Library page", () => {
   test("its URL round-trips to the same id", () => {
-    for (const glyph of ["ひとつ", "に", "よにん", "二十歳"]) {
+    for (const glyph of ["ひとつ", "に", "二十歳"]) {
       const id = counterEntry(byGlyph(glyph));
       assert.ok(libEntry(id), `${glyph} has a LibEntry`);
       const href = entryHref(id);

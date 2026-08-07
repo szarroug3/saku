@@ -110,6 +110,9 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
             intro.examplesPlacement === "below" ? (
               <IntroExamples examples={intro.examples} />
             ) : null}
+            {intro.countTables?.map((group, index) => (
+              <IntroCountTableGroup key={index} title={group.title} examples={group.examples} />
+            ))}
             {intro.buildRules?.length ? (
               <IntroBuildTable rules={intro.buildRules} heads={intro.buildHeads} />
             ) : null}
@@ -611,6 +614,82 @@ export function IntroBuildTableGroup({
         {title}
       </p>
       <IntroBuildTable rules={rules} heads={heads} />
+    </div>
+  );
+}
+
+/**
+ * A titled table of worked COUNT examples — the number-construction pages'
+ * equivalent of the grammar build table, in the same framed / hairline-separated
+ * / audio-bearing style. Each row is one construction: the equation on the left
+ * (三 + 本 → 三本), its reading in parentheses and a speaker, and the English gloss
+ * in a Meaning column on the right. Unlike IntroBuildTable it carries a reading
+ * column, which is why it is a sibling rather than the same component.
+ */
+export function IntroCountTable({ examples }: { examples: readonly IntroExample[] }) {
+  const { cfg } = useQuizConfig();
+  return (
+    // overflow-x-auto, not overflow-hidden: the equation column can be wider than
+    // a narrow phone, so the table scrolls sideways inside its own frame rather
+    // than clipping — the same rule the grammar build table follows.
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full border-collapse text-left" lang="ja">
+        <thead>
+          <tr
+            lang="en"
+            className="border-b border-border bg-panel/40 text-[11px] uppercase tracking-[0.1em] text-text-muted"
+          >
+            <th className="px-4 py-2.5 font-semibold">Build</th>
+            <th className="px-4 py-2.5 font-semibold">Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          {examples.map((ex, i) => (
+            <tr key={i} className="border-b border-border/60 last:border-0">
+              <td className="whitespace-nowrap px-4 py-3 align-baseline text-[17px] text-text">
+                {ex.from}
+                <span className="text-text-muted"> → </span>
+                <span className="font-medium text-text">{ex.to}</span>
+                {ex.reading ? (
+                  <span className="text-text-muted"> ({ex.reading})</span>
+                ) : null}
+                {ex.say ? (
+                  <HearButton
+                    glyph={ex.say}
+                    voiceName={cfg.voiceName}
+                    className="ml-1.5 align-middle"
+                  />
+                ) : null}
+              </td>
+              <td
+                lang="en"
+                className="w-full min-w-[10rem] px-4 py-3 align-baseline text-[14px] leading-snug text-text"
+              >
+                {ex.gloss}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** A titled group of count examples — a "Regular" or "Irregular" table stacked
+ * on a construction page, mirroring IntroBuildTableGroup's titled build tables. */
+export function IntroCountTableGroup({
+  title,
+  examples,
+}: {
+  title: string;
+  examples: readonly IntroExample[];
+}) {
+  return (
+    <div className="space-y-2.5">
+      <p lang="en" className="text-[13px] font-semibold text-text">
+        {title}
+      </p>
+      <IntroCountTable examples={examples} />
     </div>
   );
 }

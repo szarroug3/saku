@@ -9,9 +9,10 @@
 // the number ranges (11-99, 100-9999) and every object counter (人, 本, 匹, 枚,
 // and the tail) — is a GENERATIVE UNIT (a rule card, then a generated round),
 // gated by a marker rather than a run of forms and needing no number kanji. The
-// only memorised material past the numbers is 〜人's three irregulars and 二十歳
-// はたち. These pin the ORDER, the single track intro, and that the rote forms
-// are gone.
+// only memorised material past the numbers is 二十歳 はたち, the one reading no
+// category can build (〜人's ひとり/ふたり/よにん are taught by the 〜人 category now,
+// not as rote forms). These pin the ORDER, the single track intro, and that the
+// rote forms are gone.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -228,17 +229,17 @@ describe("the generative units", () => {
     assert.equal(lesson!.position.from, numbersDone.length + NUMBER_UNITS.length + 1);
   });
 
-  test("〜人's three irregular forms are taught right after its unit", () => {
+  test("〜人 has NO rote form lesson — claiming it advances to the next counter unit", () => {
+    // ひとり/ふたり/よにん are no longer rote forms; the 〜人 category teaches them.
+    // So claiming the 〜人 marker steps straight to the next generative unit (〜本),
+    // with no run of memorised 〜人 forms in between.
     const lesson = nextCounterLesson(
       claiming([...numbersDone, ...bothMarkers, constructionMarker("nin")]),
       5,
     );
-    assert.ok(lesson, "a form lesson exists");
-    assert.equal(lesson!.numberUnit, undefined, "a form lesson, not a unit");
-    assert.deepEqual(
-      lesson!.cards.map((c) => c.glyph),
-      ["ひとり", "ふたり", "よにん"],
-    );
+    assert.ok(lesson, "a lesson exists");
+    assert.ok(lesson!.numberUnit, "a generative unit, not a form lesson");
+    assert.equal(lesson!.numberUnit!.marker, constructionMarker("hon"));
   });
 
   test("the compose card is no longer word-gated on a form (the unit owns it)", () => {

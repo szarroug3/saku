@@ -138,6 +138,20 @@ export interface IntroExample {
 }
 
 /**
+ * One titled group of worked count examples — a "Regular" or "Irregular" table
+ * of construction rows, mirroring grammar's Godan / Ichidan / Irregular split.
+ * Each row is an IntroExample (equation, arabic count / built form, reading,
+ * gloss, speaker); the group's title carries the regular-vs-shifting meaning that
+ * used to be flagged inline. Rendered by IntroCountTableGroup in phase-intro-view.
+ */
+export interface IntroCountGroup {
+  /** The group heading — "Regular" or "Irregular". */
+  readonly title: string;
+  /** The rows of this group. */
+  readonly examples: readonly IntroExample[];
+}
+
+/**
  * One row of the punctuation reference: a mark, its Japanese name, the English
  * mark it stands in for, and what it does. Punctuation is a catalogue rather than
  * a rule with worked examples, so it reads best as a table (see PunctuationTable
@@ -277,6 +291,13 @@ export interface PhaseIntro {
    * itself rather than a sentence describing it.
    */
   buildRules?: readonly IntroBuildRule[];
+  /**
+   * Worked count examples split into titled "Regular" / "Irregular" tables — the
+   * number-construction pages' equivalent of the grammar build tables. Present on
+   * the number-range and counter rule cards, rendered by IntroCountTableGroup
+   * beneath the prose in place of the single inline examples list.
+   */
+  countTables?: readonly IntroCountGroup[];
   /**
    * Column headings for a build table's heading row. `label` names the first
    * column (endings on one page, verb types on another) and so has no sensible
@@ -959,7 +980,7 @@ export const COUNTER_SOUND_CHANGE: PhaseIntro = {
 export const NUMBERS_COMPOSE: PhaseIntro = {
   id: "intro-numbers-compose",
   setId: NO_SCRIPT,
-  title: "Past ten, you build numbers instead of memorising them.",
+  title: "Past ten, you build numbers instead of memorizing them.",
   body: [
     {
       lead: "The tens are a digit in front of じゅう.",

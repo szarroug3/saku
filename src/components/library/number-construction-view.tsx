@@ -4,48 +4,28 @@
 //
 // It is the term/concept page's cousin (see term-view.tsx, grammar-concept-
 // view.tsx) and built from the same pieces: the lesson's own IntroBody for the
-// prose and IntroExamples for the worked table, so a reference page reads exactly
-// like the lesson rule card it mirrors. The prose sits in one Card; the example
-// table sits UNDERNEATH it, in its own Card, the way the phase-intro walk shows a
-// rule beside its evidence.
+// prose and the grammar-styled count tables (IntroCountTableGroup) for the worked
+// examples, so a reference page reads exactly like the lesson rule card it
+// mirrors. The prose sits in one Card; the example tables sit UNDERNEATH it, in
+// their own Card, split into "Regular" and "Irregular" the way the grammar pages
+// split regular conjugation from its exceptions.
 //
-// THE ONE THING IT DOES THAT A CONCEPT PAGE DOES NOT is offer a "Quiz me" button.
-// The category carries a NumberQuizConfig (the tens quiz numbers to 99, the 本
-// quiz counts 本), and the button launches a one-off number-reading round scoped
-// to it — the same generative carrier Practice uses, but with this page's config
-// instead of the default. It is a Practice-style one-off (no session), so the
-// round's "Done" returns to Home without writing any record; a construction page
-// stays read-only reference everywhere except this button.
+// IT NO LONGER OWNS ITS OWN "Quiz me" BUTTON. The action lives in the shared page
+// action bar (SliceBar) beside "Add to list", the same one-bar layout every other
+// Library entry page uses; the entry page threads this page's quizConfig to it.
 
 import {
   IntroBody,
-  IntroExamples,
+  IntroCountTableGroup,
 } from "@/components/lesson/phase-intro-view";
-import { Btn, Card } from "@/components/ui";
-import { useQuizSession } from "@/lib/quiz-session";
+import { Card } from "@/components/ui";
 import type { NumberConstruction } from "@/data/number-construction";
-import type { FactId } from "@/types";
-
-// Number reading is PROCEDURAL: it generates its own round and ignores the
-// launch pool entirely. It still needs a non-empty facts array to begin a leg,
-// so it rides one synthetic id the screen never reads — the same rider Practice
-// uses. The round's scope comes from the page's quizConfig, threaded onto the
-// leg's numberQuiz.
-const NUMBER_READING_FACTS: FactId[] = ["number-reading:round" as FactId];
 
 export function NumberConstructionView({
   construction,
 }: {
   construction: NumberConstruction;
 }) {
-  const { startQuizInMode } = useQuizSession();
-
-  const quizMe = () =>
-    startQuizInMode(NUMBER_READING_FACTS, "number-reading", {
-      what: construction.name,
-      numberQuiz: construction.quizConfig,
-    });
-
   return (
     <>
       {/* The prose, one Card, off the lesson's own IntroBody so a construction
@@ -55,22 +35,23 @@ export function NumberConstructionView({
         <IntroBody body={construction.body} measure="" />
       </Card>
 
-      {/* The worked example table, UNDERNEATH the prose in its own Card — the
-          evidence for the rule above it. `bare` drops IntroExamples' own frame so
-          it is not a box in a box; the Card is the box. */}
-      {construction.examples.length > 0 ? (
+      {/* The worked example tables, UNDERNEATH the prose in their own Card — the
+          evidence for the rule above it, split Regular / Irregular exactly like a
+          grammar build page. A category with no sound shift (the tens, 〜枚, 〜台)
+          carries only the Regular table. */}
+      {construction.exampleGroups.length > 0 ? (
         <Card className="mb-3.5">
-          <IntroExamples examples={construction.examples} bare />
+          <div className="space-y-4">
+            {construction.exampleGroups.map((group, index) => (
+              <IntroCountTableGroup
+                key={index}
+                title={group.title}
+                examples={group.examples}
+              />
+            ))}
+          </div>
         </Card>
       ) : null}
-
-      {/* Quiz me — launches the generative number-reading round scoped to this
-          category. The one action a read-only reference page offers. */}
-      <div className="mb-3.5">
-        <Btn go onClick={quizMe}>
-          Quiz me
-        </Btn>
-      </div>
     </>
   );
 }

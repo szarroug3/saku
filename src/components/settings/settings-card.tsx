@@ -517,7 +517,7 @@ export function SettingsCard() {
 
         <Row
           label="Fonts"
-          info="Cards use a random font from the ones you pick. Keep a few on so you don't just memorise one shape."
+          info="Cards use a random font from the ones you pick. Keep a few on so you don't just memorize one shape."
         >
           {installedFonts.map((font) => {
             const name = fontLabel(font);

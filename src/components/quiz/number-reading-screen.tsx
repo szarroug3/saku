@@ -319,9 +319,13 @@ export function NumberReadingScreen() {
   }
   const cardFont = fontRef.current.font;
 
-  // What this card is asking for — the drill's white instruction line.
+  // What this card is asking for — the drill's white instruction line. A READ
+  // card mirrors the word track's exact reading-card phrasing ("Type how this
+  // word is said." — see isSound in quiz-instruction.ts) instead of a bespoke
+  // "Read this number"; WRITE and HEAR ask for digits, so they keep their own
+  // sensible wording.
   const instruction = isRead
-    ? "Read this number"
+    ? "Type how this word is said."
     : isHear
       ? "Write the number you hear"
       : "Write the number";
