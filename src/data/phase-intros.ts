@@ -138,17 +138,59 @@ export interface IntroExample {
 }
 
 /**
- * One titled group of worked count examples — a "Regular" or "Irregular" table
- * of construction rows, mirroring grammar's Godan / Ichidan / Irregular split.
- * Each row is an IntroExample (equation, arabic count / built form, reading,
- * gloss, speaker); the group's title carries the regular-vs-shifting meaning that
- * used to be flagged inline. Rendered by IntroCountTableGroup in phase-intro-view.
+ * One piece of a construction row's "how it's built" equation. A piece is a run
+ * of kana with an OPTIONAL numeric annotation shown in parentheses and the accent
+ * colour: a numeric piece (じゅう, に, にひゃく) carries its VALUE ("10", "2",
+ * "2 × 100"); a counter reading (ほん, にん) is a bare piece with no annotation.
+ * Rendered by the count table in phase-intro-view.tsx: kana in text colour, the
+ * "(value)" in accent.
+ */
+export interface CountBuildPiece {
+  /** The kana of the piece — "じゅう", "に", "ほん". */
+  readonly kana: string;
+  /** The numeric annotation shown in parens, accent-coloured — "10", "2 × 10",
+   * "11". Absent for a non-numeric piece such as a counter reading. */
+  readonly value?: string;
+}
+
+/**
+ * One row of a construction table — the three columns the page shows: the number
+ * or count (`label`), the Japanese word as kanji with its kana reading in parens
+ * plus a speaker (`word` + `reading`), and the annotated build equation
+ * (`build` → `result`). Everything is DERIVED from the reading engines in
+ * number-construction.ts, never hardcoded, so a row can never state a reading the
+ * app does not also ship. Rendered by IntroCountTable in phase-intro-view.
+ */
+export interface CountRow {
+  /** Column 1 — the numeral for a number table ("11"), or the numeral plus the
+   * counter's English noun for a counter table ("3 people", "1 long thin object"). */
+  readonly label: string;
+  /** Column 2 — the word in kanji: "十一", "三十四", "三人", "二本". */
+  readonly word: string;
+  /** Column 2 — the reading of `word`, shown in parens and spoken by the speaker. */
+  readonly reading: string;
+  /** Column 3 — the pieces the word is built from, joined with " + ". */
+  readonly build: readonly CountBuildPiece[];
+  /** Column 3 — the result the pieces make, after the "→". */
+  readonly result: CountBuildPiece;
+}
+
+/**
+ * One titled group of worked count rows — a "Regular" or "Irregular" table,
+ * mirroring grammar's Godan / Ichidan / Irregular split. The group's title carries
+ * the regular-vs-shifting meaning, but is shown ONLY when a page has both groups;
+ * a page with a single group renders one untitled table (see IntroCountTables in
+ * phase-intro-view). `counter` picks the first column's header — "Counter" for a
+ * counter page, "Number" for a number range.
  */
 export interface IntroCountGroup {
   /** The group heading — "Regular" or "Irregular". */
   readonly title: string;
+  /** Whether this is a counter table (header "Counter") or a number range
+   * (header "Number"). */
+  readonly counter: boolean;
   /** The rows of this group. */
-  readonly examples: readonly IntroExample[];
+  readonly examples: readonly CountRow[];
 }
 
 /**

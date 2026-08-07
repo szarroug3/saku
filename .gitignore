@@ -63,3 +63,4 @@ history.json
 
 # Local work tracker — not shipped
 tasks/
+.worktrees/

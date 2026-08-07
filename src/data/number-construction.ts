@@ -33,8 +33,9 @@
 import {
   NUMBERS_BIG,
   NUMBERS_COMPOSE,
+  type CountBuildPiece,
+  type CountRow,
   type IntroCountGroup,
-  type IntroExample,
   type IntroPara,
 } from "@/data/phase-intros";
 import { counterIrregulars, type NumberQuizConfig } from "@/lib/engine/number-quiz";
@@ -65,9 +66,11 @@ export interface NumberConstruction {
   /** The teaching prose, as paragraphs, rendered through the lesson's own
    * IntroBody so a construction page reads exactly like a lesson rule card. */
   readonly body: readonly IntroPara[];
-  /** The worked examples, split into titled "Regular" / "Irregular" tables shown
+  /** The worked examples, split into "Regular" / "Irregular" groups shown
    * underneath the prose — the grammar regular-vs-irregular treatment. A page
-   * with no sound shifts (the tens, 〜枚, 〜台) carries only the Regular table. */
+   * with no sound shifts (the tens, 〜枚, 〜台) carries a single group, which the
+   * view renders as one untitled table (the title needs a shifting group beside
+   * it to earn its place). */
   readonly exampleGroups: readonly IntroCountGroup[];
   /** The generative number-reading round the page's "Quiz me" button launches,
    * scoped to this category (the tens quiz numbers to 99, the 本 quiz counts 本). */
@@ -80,10 +83,30 @@ export interface NumberConstruction {
 // COUNTER PAGES — derived from the reading engine.
 // ---------------------------------------------------------------------------
 
-/** Digit → its kanji, for the equation's left ("三 + 本") and result ("三本"). */
+/** Digit → its kanji. Used to spell the Word column: 三 in 三本, 十 in 十本. */
 const KANJI_DIGIT = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
-/** Digit → its English number word, for the gloss ("three long things"). */
-const EN_NUM = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+
+/** The full kanji spelling of an integer this file shows in the Word column — the
+ * tens (11-99) and the big bases (100 … 100000). Parallels numberReading but yields
+ * kanji: 十一, 三十四, 二百, 一万, 十万. */
+function numberKanji(n: number): string {
+  if (n < 100) {
+    const t = Math.floor(n / 10);
+    const o = n % 10;
+    const tens = t === 0 ? "" : t === 1 ? "十" : KANJI_DIGIT[t] + "十";
+    return tens + (o ? KANJI_DIGIT[o] : "");
+  }
+  if (n < 1000) {
+    const h = Math.floor(n / 100);
+    return h === 1 ? "百" : KANJI_DIGIT[h] + "百";
+  }
+  if (n < 10000) {
+    const th = Math.floor(n / 1000);
+    return th === 1 ? "千" : KANJI_DIGIT[th] + "千";
+  }
+  // 万 bases: 10000 = 一万, 100000 = 十万. The prefix is itself a kanji number.
+  return numberKanji(n / 10000) + "万";
+}
 
 /** One counter's whole page metadata: the glyph, the name, what it counts (for
  * the gloss), and its authored sound-behaviour paragraph(s). The attach
@@ -93,7 +116,8 @@ interface CounterSpec {
   /** The counter kanji — 人, 本, 匹 … */
   readonly glyph: string;
   readonly name: string;
-  /** What one of them is, and what many of them are — for the example gloss. */
+  /** What one of them is, and what many of them are — the first column's noun
+   * ("1 person" / "3 people", "1 long thin object" / "3 long thin objects"). */
   readonly noun: readonly [singular: string, plural: string];
   /** The sound-behaviour paragraph(s), authored per counter. */
   readonly sound: readonly IntroPara[];
@@ -117,30 +141,57 @@ function attachPara(kind: CounterKind, glyph: string): IntroPara {
   };
 }
 
+/** A counter's bare reading, DERIVED from the engine (never hardcoded): the tail
+ * of a regular count once its plain number prefix is stripped — にほん minus に is
+ * ほん, さんにん minus さん is にん. Picks the first non-shifting count so a sound
+ * change never contaminates the base. This is the "+ ほん" / "+ にん" piece the
+ * build equation appends after the number. */
+function counterBase(kind: CounterKind): string {
+  const shifts = new Set(counterIrregulars(kind));
+  for (let k = 2; k <= 10; k++) {
+    if (shifts.has(k)) continue;
+    const full = counterReading(k, kind);
+    const prefix = numberReading(k);
+    if (full && full.startsWith(prefix)) return full.slice(prefix.length);
+  }
+  return counterReading(1, kind) ?? "";
+}
+
+/** One counter row: the count with its English noun in column 1, the kanji word
+ * with its reading in column 2, and the build "[number] (n) + [counter] → [full]
+ * (n)" in column 3. The counter piece carries no numeric annotation; the number
+ * and the result carry the count. For an irregular row the pieces are still the
+ * naive number + counter, and the result is the actual shifted reading — the
+ * equation SHOWS the shift the Irregular table exists to teach. */
+function counterRow(n: number, spec: CounterSpec, base: string): CountRow {
+  const [singular, plural] = spec.noun;
+  const reading = counterReading(n, spec.kind)!;
+  return {
+    label: `${n} ${n === 1 ? singular : plural}`,
+    word: `${KANJI_DIGIT[n]}${spec.glyph}`,
+    reading,
+    build: [{ kana: numberReading(n), value: String(n) }, { kana: base }],
+    result: { kana: reading, value: String(n) },
+  };
+}
+
 /** The example tables for a counter — counts 1 to 10 split into a Regular table
  * and an Irregular table, the way grammar splits regular conjugation from its
  * exceptions. A count is irregular exactly when counterIrregulars() names it (the
- * sound shift the counter exists to teach); the title now carries what "(shift)"
- * used to say inline. A counter with no shifts (〜枚, 〜台) yields only Regular. */
+ * sound shift the counter exists to teach); the title carries what "(shift)" used
+ * to say inline, and is shown only when both tables exist. A counter with no
+ * shifts (〜枚, 〜台) yields only Regular, rendered untitled. */
 function counterGroups(spec: CounterSpec): IntroCountGroup[] {
   const shifts = new Set(counterIrregulars(spec.kind));
-  const [singular, plural] = spec.noun;
-  const regular: IntroExample[] = [];
-  const irregular: IntroExample[] = [];
+  const base = counterBase(spec.kind);
+  const regular: CountRow[] = [];
+  const irregular: CountRow[] = [];
   for (let n = 1; n <= 10; n++) {
-    const reading = counterReading(n, spec.kind);
-    if (reading === null) continue;
-    const row: IntroExample = {
-      from: `${KANJI_DIGIT[n]} + ${spec.glyph}`,
-      to: `${KANJI_DIGIT[n]}${spec.glyph}`,
-      reading,
-      gloss: `${EN_NUM[n]} ${n === 1 ? singular : plural}`,
-      say: reading,
-    };
-    (shifts.has(n) ? irregular : regular).push(row);
+    if (counterReading(n, spec.kind) === null) continue;
+    (shifts.has(n) ? irregular : regular).push(counterRow(n, spec, base));
   }
-  const groups: IntroCountGroup[] = [{ title: "Regular", examples: regular }];
-  if (irregular.length) groups.push({ title: "Irregular", examples: irregular });
+  const groups: IntroCountGroup[] = [{ title: "Regular", counter: true, examples: regular }];
+  if (irregular.length) groups.push({ title: "Irregular", counter: true, examples: irregular });
   return groups;
 }
 
@@ -151,33 +202,28 @@ function counterGroups(spec: CounterSpec): IntroCountGroup[] {
 // page splits the plain hundreds/thousands from the five that harden.
 // ---------------------------------------------------------------------------
 
-/** The arabic value with thousands separators — "300", "10,000", "100,000". */
-function arabic(n: number): string {
-  return n.toLocaleString("en-US");
+/** The build equation for a big base value — one annotated piece against its base
+ * word, then the total. The base word reads whole (にひゃく), so the piece is that
+ * whole reading annotated with its decomposition: 200 is "2 × 100", 100 is "100",
+ * 100000 is "10 × 10000". The result repeats the reading with the plain total. */
+function bigBuild(n: number): { build: CountBuildPiece[]; result: CountBuildPiece } {
+  const kana = numberReading(n);
+  let value: string;
+  if (n < 1000) {
+    const m = n / 100;
+    value = m === 1 ? "100" : `${m} × 100`;
+  } else if (n < 10000) {
+    const m = n / 1000;
+    value = m === 1 ? "1000" : `${m} × 1000`;
+  } else {
+    const m = n / 10000;
+    value = m === 1 ? "10000" : `${m} × 10000`;
+  }
+  return { build: [{ kana, value }], result: { kana, value: String(n) } };
 }
 
-/** The kanji equation for a big base value — "二 + 百", "百", "一 + 万", "十 + 万".
- * 100 and 1000 take no prefix digit; 万 keeps its 一 (10000 is 一 + 万). */
-function bigEquation(n: number): string {
-  if (n === 100) return "百";
-  if (n === 1000) return "千";
-  if (n === 10000) return "一 + 万";
-  if (n === 100000) return "十 + 万";
-  if (n < 1000) return `${KANJI_DIGIT[n / 100]} + 百`;
-  return `${KANJI_DIGIT[n / 1000]} + 千`;
-}
-
-/** The English gloss for a big base value — "two hundred", "eight thousand". */
-function bigGloss(n: number): string {
-  if (n === 10000) return "ten thousand";
-  if (n === 100000) return "one hundred thousand";
-  if (n < 1000) return `${EN_NUM[n / 100]} hundred`;
-  return `${EN_NUM[n / 1000]} thousand`;
-}
-
-function bigRow(n: number): IntroExample {
-  const reading = numberReading(n);
-  return { from: bigEquation(n), to: arabic(n), reading, gloss: bigGloss(n), say: reading };
+function bigRow(n: number): CountRow {
+  return { label: String(n), word: numberKanji(n), reading: numberReading(n), ...bigBuild(n) };
 }
 
 /** The big page's Regular then Irregular tables. Regular = the plain hundreds,
@@ -186,36 +232,32 @@ const BIG_REGULAR = [100, 200, 400, 500, 700, 1000, 2000, 4000, 5000, 7000, 1000
 const BIG_IRREGULAR = [300, 600, 800, 3000, 8000];
 
 const BIG_GROUPS: readonly IntroCountGroup[] = [
-  { title: "Regular", examples: BIG_REGULAR.map(bigRow) },
-  { title: "Irregular", examples: BIG_IRREGULAR.map(bigRow) },
+  { title: "Regular", counter: false, examples: BIG_REGULAR.map(bigRow) },
+  { title: "Irregular", counter: false, examples: BIG_IRREGULAR.map(bigRow) },
 ];
 
-/** The tens page's single Regular table — a representative spread 11-99, all
- * regular (past ten there is no sound shift). Readings come from numberReading();
- * the equation and gloss are the lesson's own NUMBERS_COMPOSE examples' framing. */
-function tensEquation(n: number): string {
+/** The tens page's single table — a representative spread 11-99, all regular
+ * (past ten there is no sound shift), so it renders untitled. The build is the
+ * tens word annotated with its make-up (じゅう is "10", にじゅう is "2 × 10") plus
+ * the ones word when present; the result is the whole reading with its total. */
+function tensBuild(n: number): { build: CountBuildPiece[]; result: CountBuildPiece } {
+  const t = Math.floor(n / 10);
   const o = n % 10;
-  if (o === 0) return `${numberReading(n / 10)} + じゅう`;
-  return `${numberReading(n - o)} + ${numberReading(o)}`;
+  const build: CountBuildPiece[] = [
+    { kana: numberReading(t * 10), value: t === 1 ? "10" : `${t} × 10` },
+  ];
+  if (o !== 0) build.push({ kana: numberReading(o), value: String(o) });
+  return { build, result: { kana: numberReading(n), value: String(n) } };
 }
 
-const TENS_SPREAD: readonly [n: number, gloss: string][] = [
-  [11, "eleven"],
-  [12, "twelve"],
-  [20, "twenty"],
-  [34, "thirty-four"],
-  [58, "fifty-eight"],
-  [99, "ninety-nine"],
-];
+function tensRow(n: number): CountRow {
+  return { label: String(n), word: numberKanji(n), reading: numberReading(n), ...tensBuild(n) };
+}
+
+const TENS_SPREAD: readonly number[] = [11, 12, 20, 34, 58, 99];
 
 const TENS_GROUPS: readonly IntroCountGroup[] = [
-  {
-    title: "Regular",
-    examples: TENS_SPREAD.map(([n, gloss]) => {
-      const reading = numberReading(n);
-      return { from: tensEquation(n), to: arabic(n), reading, gloss, say: reading };
-    }),
-  },
+  { title: "Regular", counter: false, examples: TENS_SPREAD.map(tensRow) },
 ];
 
 // The ten counters, in the shelf's teaching order: the taught-as-a-system set

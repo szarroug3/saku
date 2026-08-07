@@ -2,8 +2,12 @@
 //
 // The construction pages present their worked examples as grammar-style Regular /
 // Irregular tables (exampleGroups). These pin the SPLIT — which counts land in
-// which table — and that every reading is the engine's, so a page can never state
-// a reading the app does not ship, and that the old inline "(shift)" flag is gone.
+// which table — the three-column shape of every row (the number/count, the kanji
+// word with its engine reading, and the annotated build equation), and that every
+// reading is the engine's, so a page can never state a reading the app does not
+// ship. A page with a single group renders untitled: the "Regular" title only
+// earns its place when an Irregular table sits beside it (IntroCountTables owns
+// that render rule, so here we pin the group COUNT it keys off).
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -14,91 +18,190 @@ import { counterReading, numberReading } from "../lib/number-reading.ts";
 
 const groupsOf = (id: string) => numberConstructionRow(id)!.exampleGroups;
 const titles = (id: string) => groupsOf(id).map((g) => g.title);
-const arabics = (id: string, title: string) =>
+const rowsOf = (id: string, title: string) =>
   groupsOf(id)
     .find((g) => g.title === title)!
-    .examples.map((e) => e.to);
+    .examples;
+const labels = (id: string, title: string) => rowsOf(id, title).map((r) => r.label);
+/** The count a counter row is about, read back off its kanji word (十本 → 10). */
+const countOf = (word: string) => [..."一二三四五六七八九十"].indexOf(word[0]) + 1;
 
-describe("the number-range pages split Regular / Irregular", () => {
-  test("the tens page is one Regular table — no sound shifts past ten", () => {
+describe("a single-group page renders untitled; the title needs both groups", () => {
+  test("the tens page is one group — no sound shifts past ten", () => {
+    assert.equal(groupsOf("tens").length, 1);
     assert.deepEqual(titles("tens"), ["Regular"]);
   });
 
-  test("the big page splits the plain bases from the five that harden", () => {
-    assert.deepEqual(titles("big"), ["Regular", "Irregular"]);
-    assert.deepEqual(arabics("big", "Regular"), [
-      "100", "200", "400", "500", "700",
-      "1,000", "2,000", "4,000", "5,000", "7,000",
-      "10,000", "100,000",
-    ]);
-    assert.deepEqual(arabics("big", "Irregular"), ["300", "600", "800", "3,000", "8,000"]);
+  test("〜枚 and 〜台 have no shifts, so a single group", () => {
+    assert.equal(groupsOf("mai").length, 1);
+    assert.equal(groupsOf("dai").length, 1);
   });
 
-  test("every big row's reading is the engine's, never hardcoded", () => {
-    for (const g of groupsOf("big")) {
-      for (const ex of g.examples) {
-        const n = Number(ex.to.replaceAll(",", ""));
-        assert.equal(ex.reading, numberReading(n), `big ${ex.to} reading`);
-        assert.equal(ex.say, ex.reading, `big ${ex.to} has a speaker`);
-      }
-    }
+  test("the big page and 〜本 carry both groups, so their titles show", () => {
+    assert.deepEqual(titles("big"), ["Regular", "Irregular"]);
+    assert.deepEqual(titles("hon"), ["Regular", "Irregular"]);
   });
 });
 
-describe("the counter pages split by the engine's irregular counts", () => {
-  test("〜本 puts its shifting counts (1,3,6,8,10) in the Irregular table", () => {
-    assert.deepEqual(titles("hon"), ["Regular", "Irregular"]);
-    const irregularNs = groupsOf("hon")
-      .find((g) => g.title === "Irregular")!
-      .examples.map((e) => e.to);
-    assert.deepEqual(irregularNs, ["一本", "三本", "六本", "八本", "十本"]);
-    const regularNs = groupsOf("hon")
-      .find((g) => g.title === "Regular")!
-      .examples.map((e) => e.to);
-    assert.deepEqual(regularNs, ["二本", "四本", "五本", "七本", "九本"]);
+describe("column 1 — the number, or the count with its English noun", () => {
+  test("number tables show the bare numeral, no thousands separators", () => {
+    assert.deepEqual(labels("big", "Regular"), [
+      "100", "200", "400", "500", "700",
+      "1000", "2000", "4000", "5000", "7000",
+      "10000", "100000",
+    ]);
+    assert.deepEqual(labels("big", "Irregular"), ["300", "600", "800", "3000", "8000"]);
+    assert.deepEqual(labels("tens", "Regular"), ["11", "12", "20", "34", "58", "99"]);
   });
 
-  test("〜枚 and 〜台 have no shifts, so only a Regular table", () => {
-    assert.deepEqual(titles("mai"), ["Regular"]);
-    assert.deepEqual(titles("dai"), ["Regular"]);
+  test("counter tables show the numeral plus the noun, singular then plural", () => {
+    // 〜本 counts long thin objects; n === 1 is singular.
+    const one = rowsOf("hon", "Irregular").find((r) => countOf(r.word) === 1)!;
+    const two = rowsOf("hon", "Regular").find((r) => countOf(r.word) === 2)!;
+    assert.equal(one.label, "1 long thin object");
+    assert.equal(two.label, "2 long thin objects");
+    // 〜人 counts people.
+    const p1 = rowsOf("nin", "Irregular").find((r) => countOf(r.word) === 1)!;
+    const p3 = rowsOf("nin", "Regular").find((r) => countOf(r.word) === 3)!;
+    assert.equal(p1.label, "1 person");
+    assert.equal(p3.label, "3 people");
+  });
+});
+
+describe("column 2 — the kanji word, whose reading is always the engine's", () => {
+  test("number ranges spell the kanji and read from numberReading", () => {
+    const t = rowsOf("tens", "Regular");
+    assert.equal(t.find((r) => r.label === "11")!.word, "十一");
+    assert.equal(t.find((r) => r.label === "34")!.word, "三十四");
+    assert.equal(t.find((r) => r.label === "20")!.word, "二十");
+    const b = groupsOf("big").flatMap((g) => g.examples);
+    assert.equal(b.find((r) => r.label === "200")!.word, "二百");
+    assert.equal(b.find((r) => r.label === "10000")!.word, "一万");
+    assert.equal(b.find((r) => r.label === "100000")!.word, "十万");
+    for (const r of [...t, ...b]) {
+      assert.equal(r.reading, numberReading(Number(r.label)), `${r.label} reading`);
+    }
   });
 
-  test("〜人's Irregular table is exactly ひとり / ふたり / よにん", () => {
-    const irregular = groupsOf("nin").find((g) => g.title === "Irregular")!;
-    assert.deepEqual(
-      irregular.examples.map((e) => e.reading),
-      ["ひとり", "ふたり", "よにん"],
-    );
-  });
-
-  test("the split matches counterIrregulars, and readings come from the engine", () => {
+  test("counter rows spell 数 + counter and read from counterReading", () => {
     for (const kind of ["nin", "hon", "hiki", "ko", "satsu", "hai", "kai", "sai"] as const) {
-      const shifts = new Set(counterIrregulars(kind));
-      const groups = groupsOf(kind);
-      const irregular = groups.find((g) => g.title === "Irregular");
-      const regular = groups.find((g) => g.title === "Regular")!;
-      // Regular rows are counts NOT in the shift set; Irregular rows ARE.
-      for (const ex of regular.examples) {
-        const n = Number([..."一二三四五六七八九十"].indexOf(ex.to[0]) + 1);
-        assert.ok(!shifts.has(n), `${kind} ${ex.to} should be regular`);
-      }
-      if (irregular) {
-        for (const ex of irregular.examples) {
-          const n = [..."一二三四五六七八九十"].indexOf(ex.to[0]) + 1;
-          assert.ok(shifts.has(n), `${kind} ${ex.to} should be irregular`);
-          assert.equal(ex.reading, counterReading(n, kind), `${kind} ${ex.to} reading`);
+      for (const g of groupsOf(kind)) {
+        for (const r of g.examples) {
+          const n = countOf(r.word);
+          assert.equal(r.reading, counterReading(n, kind), `${kind} ${r.word} reading`);
         }
       }
     }
   });
 });
 
-describe("the inline (shift) flag is gone — the table title carries that now", () => {
-  test("no example gloss contains a (shift) marker anywhere", () => {
-    for (const id of ["tens", "big", "nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"]) {
+describe("column 3 — the build equation, with accent-coloured numeric annotations", () => {
+  test("a tens row is the tens word (annotated) plus the ones word, then the total", () => {
+    const eleven = rowsOf("tens", "Regular").find((r) => r.label === "11")!;
+    assert.deepEqual(eleven.build, [
+      { kana: "じゅう", value: "10" },
+      { kana: "いち", value: "1" },
+    ]);
+    assert.deepEqual(eleven.result, { kana: "じゅういち", value: "11" });
+    // A round ten is the tens piece alone, annotated N × 10.
+    const twenty = rowsOf("tens", "Regular").find((r) => r.label === "20")!;
+    assert.deepEqual(twenty.build, [{ kana: "にじゅう", value: "2 × 10" }]);
+    assert.deepEqual(twenty.result, { kana: "にじゅう", value: "20" });
+    const thirtyFour = rowsOf("tens", "Regular").find((r) => r.label === "34")!;
+    assert.deepEqual(thirtyFour.build, [
+      { kana: "さんじゅう", value: "3 × 10" },
+      { kana: "よん", value: "4" },
+    ]);
+  });
+
+  test("a big row is the base word annotated with its make-up, then the total", () => {
+    const rows = groupsOf("big").flatMap((g) => g.examples);
+    const at = (label: string) => rows.find((r) => r.label === label)!;
+    assert.deepEqual(at("100").build, [{ kana: "ひゃく", value: "100" }]);
+    assert.deepEqual(at("200").build, [{ kana: "にひゃく", value: "2 × 100" }]);
+    assert.deepEqual(at("2000").build, [{ kana: "にせん", value: "2 × 1000" }]);
+    assert.deepEqual(at("10000").build, [{ kana: "いちまん", value: "10000" }]);
+    assert.deepEqual(at("100000").build, [{ kana: "じゅうまん", value: "10 × 10000" }]);
+    assert.deepEqual(at("300").result, { kana: "さんびゃく", value: "300" });
+  });
+
+  test("every number row's result is the whole reading with the plain total, and each build piece is annotated", () => {
+    for (const id of ["tens", "big"]) {
       for (const g of groupsOf(id)) {
-        for (const ex of g.examples) {
-          assert.ok(!ex.gloss.includes("(shift)"), `${id} still flags (shift) inline`);
+        for (const r of g.examples) {
+          const n = Number(r.label);
+          assert.equal(r.result.kana, numberReading(n), `${id} ${r.label} result kana`);
+          assert.equal(r.result.value, String(n), `${id} ${r.label} result total`);
+          for (const piece of r.build) {
+            assert.ok(piece.value, `${id} ${r.label} build piece "${piece.kana}" is annotated`);
+          }
+        }
+      }
+    }
+  });
+
+  test("a counter row is [number (n)] + [counter] → [full (n)], counter piece unannotated", () => {
+    // 二本: に (2) + ほん → にほん (2). The base counter piece carries no value.
+    const two = rowsOf("hon", "Regular").find((r) => countOf(r.word) === 2)!;
+    assert.deepEqual(two.build, [{ kana: "に", value: "2" }, { kana: "ほん" }]);
+    assert.deepEqual(two.result, { kana: "にほん", value: "2" });
+    // 三人: さん (3) + にん → さんにん (3).
+    const three = rowsOf("nin", "Regular").find((r) => countOf(r.word) === 3)!;
+    assert.deepEqual(three.build, [{ kana: "さん", value: "3" }, { kana: "にん" }]);
+    assert.deepEqual(three.result, { kana: "さんにん", value: "3" });
+    // The result of every counter row is the engine reading with the count as total.
+    for (const kind of ["nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"] as const) {
+      for (const g of groupsOf(kind)) {
+        for (const r of g.examples) {
+          const n = countOf(r.word);
+          assert.equal(r.result.kana, counterReading(n, kind), `${kind} ${r.word} result`);
+          assert.equal(r.result.value, String(n), `${kind} ${r.word} total`);
+          assert.equal(r.build.length, 2, `${kind} ${r.word} builds from number + counter`);
+          assert.equal(r.build[0].value, String(n), `${kind} ${r.word} number annotated`);
+          assert.equal(r.build[1].value, undefined, `${kind} ${r.word} counter piece bare`);
+        }
+      }
+    }
+  });
+});
+
+describe("every table declares which header its first column takes", () => {
+  test("number ranges are Number tables, counters are Counter tables", () => {
+    for (const id of ["tens", "big"]) {
+      for (const g of groupsOf(id)) assert.equal(g.counter, false, `${id} is a number table`);
+    }
+    for (const kind of ["nin", "hon", "mai", "dai"]) {
+      for (const g of groupsOf(kind)) assert.equal(g.counter, true, `${kind} is a counter table`);
+    }
+  });
+});
+
+describe("the counter pages split by the engine's irregular counts", () => {
+  test("〜本 puts its shifting counts (1,3,6,8,10) in the Irregular table", () => {
+    const irregular = rowsOf("hon", "Irregular").map((r) => r.word);
+    assert.deepEqual(irregular, ["一本", "三本", "六本", "八本", "十本"]);
+    const regular = rowsOf("hon", "Regular").map((r) => r.word);
+    assert.deepEqual(regular, ["二本", "四本", "五本", "七本", "九本"]);
+  });
+
+  test("〜人's Irregular table is exactly ひとり / ふたり / よにん", () => {
+    assert.deepEqual(
+      rowsOf("nin", "Irregular").map((r) => r.reading),
+      ["ひとり", "ふたり", "よにん"],
+    );
+  });
+
+  test("the split matches counterIrregulars for every counter", () => {
+    for (const kind of ["nin", "hon", "hiki", "ko", "satsu", "hai", "kai", "sai"] as const) {
+      const shifts = new Set(counterIrregulars(kind));
+      const groups = groupsOf(kind);
+      for (const r of groups.find((g) => g.title === "Regular")!.examples) {
+        assert.ok(!shifts.has(countOf(r.word)), `${kind} ${r.word} should be regular`);
+      }
+      const irregular = groups.find((g) => g.title === "Irregular");
+      if (irregular) {
+        for (const r of irregular.examples) {
+          assert.ok(shifts.has(countOf(r.word)), `${kind} ${r.word} should be irregular`);
         }
       }
     }

@@ -16,7 +16,7 @@
 
 import {
   IntroBody,
-  IntroCountTableGroup,
+  IntroCountTables,
 } from "@/components/lesson/phase-intro-view";
 import { Card } from "@/components/ui";
 import type { NumberConstruction } from "@/data/number-construction";
@@ -38,18 +38,11 @@ export function NumberConstructionView({
       {/* The worked example tables, UNDERNEATH the prose in their own Card — the
           evidence for the rule above it, split Regular / Irregular exactly like a
           grammar build page. A category with no sound shift (the tens, 〜枚, 〜台)
-          carries only the Regular table. */}
+          carries a single untitled table. Titles show only when both groups exist;
+          IntroCountTables owns that rule so the Library and the lesson match. */}
       {construction.exampleGroups.length > 0 ? (
         <Card className="mb-3.5">
-          <div className="space-y-4">
-            {construction.exampleGroups.map((group, index) => (
-              <IntroCountTableGroup
-                key={index}
-                title={group.title}
-                examples={group.examples}
-              />
-            ))}
-          </div>
+          <IntroCountTables groups={construction.exampleGroups} />
         </Card>
       ) : null}
     </>

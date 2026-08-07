@@ -22,7 +22,10 @@ import { Fragment } from "react";
 import { HearButton } from "@/components/lesson/hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
 import type {
+  CountBuildPiece,
+  CountRow,
   IntroBuildRule,
+  IntroCountGroup,
   IntroDeriveRow,
   IntroExample,
   IntroPara,
@@ -110,9 +113,7 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
             intro.examplesPlacement === "below" ? (
               <IntroExamples examples={intro.examples} />
             ) : null}
-            {intro.countTables?.map((group, index) => (
-              <IntroCountTableGroup key={index} title={group.title} examples={group.examples} />
-            ))}
+            {intro.countTables?.length ? <IntroCountTables groups={intro.countTables} /> : null}
             {intro.buildRules?.length ? (
               <IntroBuildTable rules={intro.buildRules} heads={intro.buildHeads} />
             ) : null}
@@ -618,20 +619,57 @@ export function IntroBuildTableGroup({
   );
 }
 
+/** One "how it's built" cell — the build pieces joined with " + ", then " → ",
+ * then the result. Each numeric piece prints its kana in text colour and its
+ * value in parens accent-coloured (じゅう (10)); a bare piece (a counter reading
+ * ほん) prints just its kana. */
+function CountBuild({
+  build,
+  result,
+}: {
+  build: readonly CountBuildPiece[];
+  result: CountBuildPiece;
+}) {
+  const piece = (p: CountBuildPiece) => (
+    <>
+      {p.kana}
+      {p.value ? <span className="text-accent"> ({p.value})</span> : null}
+    </>
+  );
+  return (
+    <>
+      {build.map((p, i) => (
+        <Fragment key={i}>
+          {i > 0 ? <span className="text-text-muted"> + </span> : null}
+          {piece(p)}
+        </Fragment>
+      ))}
+      <span className="text-text-muted"> → </span>
+      {piece(result)}
+    </>
+  );
+}
+
 /**
- * A titled table of worked COUNT examples — the number-construction pages'
- * equivalent of the grammar build table, in the same framed / hairline-separated
- * / audio-bearing style. Each row is one construction: the equation on the left
- * (三 + 本 → 三本), its reading in parentheses and a speaker, and the English gloss
- * in a Meaning column on the right. Unlike IntroBuildTable it carries a reading
- * column, which is why it is a sibling rather than the same component.
+ * A table of worked COUNT rows — the number-construction pages' equivalent of the
+ * grammar build table, in the same framed / hairline-separated / audio-bearing
+ * style. Three columns: the number or count (with its English noun for a counter),
+ * the word in kanji with its kana reading and a speaker, and the annotated build
+ * equation. Unlike IntroBuildTable it carries a reading column and an accented
+ * numeric build, which is why it is a sibling rather than the same component.
  */
-export function IntroCountTable({ examples }: { examples: readonly IntroExample[] }) {
+export function IntroCountTable({
+  rows,
+  counter,
+}: {
+  rows: readonly CountRow[];
+  counter: boolean;
+}) {
   const { cfg } = useQuizConfig();
   return (
-    // overflow-x-auto, not overflow-hidden: the equation column can be wider than
-    // a narrow phone, so the table scrolls sideways inside its own frame rather
-    // than clipping — the same rule the grammar build table follows.
+    // overflow-x-auto, not overflow-hidden: the build column can be wider than a
+    // narrow phone, so the table scrolls sideways inside its own frame rather than
+    // clipping — the same rule the grammar build table follows.
     <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full border-collapse text-left" lang="ja">
         <thead>
@@ -639,33 +677,31 @@ export function IntroCountTable({ examples }: { examples: readonly IntroExample[
             lang="en"
             className="border-b border-border bg-panel/40 text-[11px] uppercase tracking-[0.1em] text-text-muted"
           >
-            <th className="px-4 py-2.5 font-semibold">Build</th>
-            <th className="px-4 py-2.5 font-semibold">Meaning</th>
+            <th className="px-4 py-2.5 font-semibold">{counter ? "Counter" : "Number"}</th>
+            <th className="px-4 py-2.5 font-semibold">Word</th>
+            <th className="px-4 py-2.5 font-semibold">How it&rsquo;s built</th>
           </tr>
         </thead>
         <tbody>
-          {examples.map((ex, i) => (
+          {rows.map((row, i) => (
             <tr key={i} className="border-b border-border/60 last:border-0">
-              <td className="whitespace-nowrap px-4 py-3 align-baseline text-[17px] text-text">
-                {ex.from}
-                <span className="text-text-muted"> → </span>
-                <span className="font-medium text-text">{ex.to}</span>
-                {ex.reading ? (
-                  <span className="text-text-muted"> ({ex.reading})</span>
-                ) : null}
-                {ex.say ? (
-                  <HearButton
-                    glyph={ex.say}
-                    voiceName={cfg.voiceName}
-                    className="ml-1.5 align-middle"
-                  />
-                ) : null}
-              </td>
               <td
                 lang="en"
-                className="w-full min-w-[10rem] px-4 py-3 align-baseline text-[14px] leading-snug text-text"
+                className="whitespace-nowrap px-4 py-3 align-baseline text-[14px] leading-snug text-text"
               >
-                {ex.gloss}
+                {row.label}
+              </td>
+              <td className="whitespace-nowrap px-4 py-3 align-baseline text-[17px] text-text">
+                <span className="font-medium text-text">{row.word}</span>
+                <span className="text-text-muted"> ({row.reading})</span>
+                <HearButton
+                  glyph={row.reading}
+                  voiceName={cfg.voiceName}
+                  className="ml-1.5 align-middle"
+                />
+              </td>
+              <td className="w-full whitespace-nowrap px-4 py-3 align-baseline text-[15px] text-text">
+                <CountBuild build={row.build} result={row.result} />
               </td>
             </tr>
           ))}
@@ -675,21 +711,48 @@ export function IntroCountTable({ examples }: { examples: readonly IntroExample[
   );
 }
 
-/** A titled group of count examples — a "Regular" or "Irregular" table stacked
- * on a construction page, mirroring IntroBuildTableGroup's titled build tables. */
+/** The count tables of a construction page or rule card, stacked. The "Regular" /
+ * "Irregular" titles are shown ONLY when a page has both groups (the grammar
+ * regular-vs-exception split); a page with a single group (the tens, 〜枚, 〜台)
+ * renders one untitled table. Both the Library page and the lesson rule card go
+ * through here, so the two surfaces cannot drift. */
+export function IntroCountTables({ groups }: { groups: readonly IntroCountGroup[] }) {
+  const showTitles = groups.length > 1;
+  return (
+    <div className="space-y-4">
+      {groups.map((group, index) =>
+        showTitles ? (
+          <IntroCountTableGroup
+            key={index}
+            title={group.title}
+            rows={group.examples}
+            counter={group.counter}
+          />
+        ) : (
+          <IntroCountTable key={index} rows={group.examples} counter={group.counter} />
+        ),
+      )}
+    </div>
+  );
+}
+
+/** A titled group of count rows — a "Regular" or "Irregular" table stacked on a
+ * construction page, mirroring IntroBuildTableGroup's titled build tables. */
 export function IntroCountTableGroup({
   title,
-  examples,
+  rows,
+  counter,
 }: {
   title: string;
-  examples: readonly IntroExample[];
+  rows: readonly CountRow[];
+  counter: boolean;
 }) {
   return (
     <div className="space-y-2.5">
       <p lang="en" className="text-[13px] font-semibold text-text">
         {title}
       </p>
-      <IntroCountTable examples={examples} />
+      <IntroCountTable rows={rows} counter={counter} />
     </div>
   );
 }
