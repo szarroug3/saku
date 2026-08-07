@@ -19,12 +19,12 @@ import {
   counterEntry,
 } from "../../data/counters.ts";
 import {
-  GRAMMAR_CONCEPT_SUBJECT,
-  NUMBER_COMPOSITION_CONCEPT_ID,
-  grammarConceptEntry,
-} from "../../data/grammar-concepts.ts";
+  NUMBER_CONSTRUCTIONS,
+  numberConstructionEntry,
+} from "../../data/number-construction.ts";
 import {
   COUNTER_KIND,
+  NUMBER_CONSTRUCTION_KIND,
   KINDS,
   KIND_LABEL,
   entryName,
@@ -59,12 +59,18 @@ describe("the shelf exists and lists the counters", () => {
     for (const id of counterIds) assert.ok(expected.has(id), `${id} is a counter entry`);
   });
 
-  test("every listed entry is a COUNTER_KIND LibEntry, bar the reference page", () => {
-    const referenceId = grammarConceptEntry(NUMBER_COMPOSITION_CONCEPT_ID);
+  test("every listed entry is a COUNTER_KIND LibEntry, bar the construction pages", () => {
+    const constructionIds = new Set(
+      NUMBER_CONSTRUCTIONS.map((c) => numberConstructionEntry(c.id)),
+    );
     for (const s of counterShelfSections()) {
       for (const e of s.entries) {
-        if (e.id === referenceId) {
-          assert.equal(e.kind, GRAMMAR_CONCEPT_SUBJECT, "the reference is a concept");
+        if (constructionIds.has(e.id)) {
+          assert.equal(
+            e.kind,
+            NUMBER_CONSTRUCTION_KIND,
+            "the reference pages are constructions",
+          );
           continue;
         }
         assert.equal(e.kind, COUNTER_KIND);
@@ -76,18 +82,33 @@ describe("the shelf exists and lists the counters", () => {
     assert.equal(inIndex.length, COUNTER_CURRICULUM.length);
   });
 
-  test("a 'How it works' reference leads the shelf and is not drillable", () => {
+  test("the 'how to build them' constructions lead the shelf and are not drillable", () => {
     const sections = counterShelfSections();
-    // It is the very first section, so the composition rule sits above the
-    // numbers it explains.
+    // The construction pages are the very first section, so the build rules sit
+    // above the numbers and counters they explain. Rendered as rows (asRows),
+    // since a named reference page reads across a line, not in a tile.
     const first = sections[0];
-    assert.equal(first.id, "counters-reference");
-    assert.equal(first.entries.length, 1);
-    const reference = first.entries[0];
-    assert.equal(reference.id, grammarConceptEntry(NUMBER_COMPOSITION_CONCEPT_ID));
-    assert.equal(entryName(reference), "How numbers compose");
-    // A reference is read, never asked: no gradeable facts, exactly like a term.
-    assert.deepEqual(factRows(reference), []);
+    assert.equal(first.id, "counters-constructions");
+    assert.equal(first.asRows, true);
+    assert.equal(first.entries.length, NUMBER_CONSTRUCTIONS.length);
+    // One page per construction, each resolving to its own entry.
+    for (const c of NUMBER_CONSTRUCTIONS) {
+      const entry = first.entries.find(
+        (e) => e.id === numberConstructionEntry(c.id),
+      );
+      assert.ok(entry, `${c.id} is not on the shelf`);
+      assert.equal(entry.kind, NUMBER_CONSTRUCTION_KIND);
+      // The row shows the page name (its meaning) beside the 十〜 / 〜本 plate;
+      // entryName leads with the plate, since the entry has one.
+      assert.equal(entry.name, c.name);
+      assert.equal(entry.meanings[0], c.name);
+      assert.equal(entryName(entry), c.glyph);
+      // A construction page is read, never asked: no gradeable facts, like a term.
+      assert.deepEqual(factRows(entry), []);
+    }
+    // The tens and big range pages lead, then the counters.
+    assert.equal(first.entries[0].name, "Numbers 11–99");
+    assert.equal(first.entries[1].name, "Hundreds and up");
   });
 });
 

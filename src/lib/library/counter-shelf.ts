@@ -17,9 +17,9 @@ import {
   type CounterForm,
 } from "@/data/counters";
 import {
-  NUMBER_COMPOSITION_CONCEPT_ID,
-  grammarConceptEntry,
-} from "@/data/grammar-concepts";
+  NUMBER_CONSTRUCTIONS,
+  numberConstructionEntry,
+} from "@/data/number-construction";
 import { libEntry } from "@/lib/library/entries";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 
@@ -64,15 +64,28 @@ export function counterShelfSections(): ShelfSection[] {
     }),
   })).filter((s) => s.entries.length > 0);
 
-  // A leading reference section: the one glyphless entry that teaches how the
-  // numbers below are BUILT (the composition rule), read and never drilled. It
-  // is a grammar-concept-shaped page (see grammar-concepts.ts) resolved by the
-  // same libEntry lookup the counters use, injected here so the rule sits at the
-  // top of the shelf it explains. Degrades to no section if the build has no
-  // entry for it, exactly as an empty counter group drops out.
-  const reference = libEntry(grammarConceptEntry(NUMBER_COMPOSITION_CONCEPT_ID));
-  const referenceSection: ShelfSection[] = reference
-    ? [{ id: "counters-reference", label: "How it works", entries: [reference] }]
+  // A leading reference section: the "how to build them" pages — the tens, the
+  // big base words, and one per counter — read and never drilled (each mints no
+  // facts and offers only a Quiz button). They are their own Library kind (see
+  // number-construction.ts) resolved by the same libEntry lookup the counters
+  // use, injected here so the rules sit at the top of the shelf they explain. It
+  // renders as ROWS (asRows): each page carries a 十〜 / 〜本 plate, so it is not
+  // glyphless, but a named reference page reads across a line, not in a tile. An
+  // entry with no build (degraded dictionaries) is skipped, exactly as an empty
+  // counter group drops out.
+  const constructions = NUMBER_CONSTRUCTIONS.flatMap((c) => {
+    const e = libEntry(numberConstructionEntry(c.id));
+    return e ? [e] : [];
+  });
+  const referenceSection: ShelfSection[] = constructions.length
+    ? [
+        {
+          id: "counters-constructions",
+          label: "How to build them",
+          entries: constructions,
+          asRows: true,
+        },
+      ]
     : [];
 
   return [...referenceSection, ...groups];

@@ -279,7 +279,7 @@ interface QuizSessionContextValue {
   startQuizInMode(
     facts: FactId[],
     mode: QuizMode,
-    opts?: { redrill?: boolean; what?: string },
+    opts?: { redrill?: boolean; what?: string; numberQuiz?: NumberQuizConfig },
   ): void;
   /**
    * The rest is over (or you skipped the lesson): begin round 1.
@@ -1067,12 +1067,23 @@ export function QuizSessionProvider({
     (
       facts: FactId[],
       mode: QuizMode,
-      opts?: { redrill?: boolean; what?: string },
+      opts?: { redrill?: boolean; what?: string; numberQuiz?: NumberQuizConfig },
     ) => {
       if (!facts.length) return;
       parkIfActive();
       const snap = { ...snapshotOf(cfg), mode };
-      beginLeg(facts, opts?.what ?? countWhat(facts), snap, !!opts?.redrill);
+      // A number-construction page's "Quiz me" passes its category's scoped
+      // config here; the number-reading screen reads active.numberQuiz and scopes
+      // its round to it (falling back to DEFAULT_CONFIG when absent, e.g. plain
+      // Practice). Threaded through beginLeg like a session's numberQuiz.
+      beginLeg(
+        facts,
+        opts?.what ?? countWhat(facts),
+        snap,
+        !!opts?.redrill,
+        undefined,
+        opts?.numberQuiz,
+      );
     },
     [cfg, beginLeg, parkIfActive],
   );

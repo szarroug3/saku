@@ -56,6 +56,10 @@ import type { EntryId } from "@/types";
 import { CHAR_INDEX, KANA_SUBJECT } from "@/data/characters";
 import { MARKS, markEntry } from "@/data/marks";
 import { GRAMMAR_CONCEPTS, grammarConceptEntry } from "@/data/grammar-concepts";
+import {
+  NUMBER_CONSTRUCTIONS,
+  numberConstructionEntry,
+} from "@/data/number-construction";
 import { TERMS, termEntry } from "@/data/terms";
 import { patternEntry } from "@/data/grammar";
 import { RECIPES, primaryPatternRecipe } from "@/data/grammar/recipes";
@@ -249,6 +253,12 @@ function buildSlugKeys(): Map<EntryId, string> {
   // its URL is its own stable id — /library/grammar-concept/te-form — the same
   // treatment a mark and a term get.
   for (const c of GRAMMAR_CONCEPTS) map.set(grammarConceptEntry(c.id), c.id);
+  // A construction page's glyph is a plate (十〜, 〜本), not a slug-safe unique
+  // key, so its URL is its own stable id — /library/numbers/tens, /library/
+  // numbers/hon — the same treatment a concept and a term get.
+  for (const c of NUMBER_CONSTRUCTIONS) {
+    map.set(numberConstructionEntry(c.id), c.id);
+  }
   for (const r of RECIPES) map.set(patternEntry(r.id), r.id);
   for (const p of VERB_PAIRS) {
     map.set(pairEntry(p), `${p.happens.word}-${p.doIt.word}`);

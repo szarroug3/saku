@@ -56,20 +56,6 @@ export function grammarConceptEntry(id: string): EntryId {
   return entryId(GRAMMAR_CONCEPT_SUBJECT, id);
 }
 
-/**
- * The one concept that is NOT about grammar: the composition rule behind
- * Japanese numbers, written as browsable reference. It reuses this module's
- * machinery — the same glyphless, factless, GrammarConceptView-rendered shape —
- * because that machinery is really "a prose reference page", not anything
- * grammar-specific. It lives in GRAMMAR_CONCEPTS so its Library route resolves
- * and renders exactly like any other concept, but it is INJECTED into the
- * "Numbers and counters" shelf (see counter-shelf.ts) and held OFF the Grammar
- * concepts shelf (see shelves.tsx) by this id, because a numbers page has no
- * business sitting next to the verb-class and keigo ideas. Shared here so the
- * inject site and the exclude site name the same string, never a copy.
- */
-export const NUMBER_COMPOSITION_CONCEPT_ID = "how-numbers-compose";
-
 /** One grammar-concept reference page. Shaped like a Term: no glyph (the title
  * IS the name), no facts, and a body that is the lesson's own prose (`cards`). */
 export interface GrammarConcept {
@@ -231,39 +217,6 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
       "teineigo",
     ],
     cards: KEIGO_REGISTER_CONCEPT_PAGES,
-  },
-  // NOT A GRAMMAR CONCEPT — a numbers reference reusing this shape. It has no
-  // lesson cards to point at, so it teaches through its own `body` prose (the
-  // `cards.length === 0` branch of GrammarConceptView renders those paragraphs).
-  // It is browsed on the "Numbers and counters" shelf, not here; see the id
-  // constant above.
-  {
-    id: NUMBER_COMPOSITION_CONCEPT_ID,
-    name: "How numbers compose",
-    summary: "Past ten, Japanese numbers are built, not memorised.",
-    body: [
-      "The tens are a digit in front of じゅう. じゅう is ten, にじゅう is two tens (20), さんじゅう is 30. There are no new words the way English jumps to “twenty” and “thirty”: every ten is a digit you already know, plus じゅう.",
-      "For the numbers between, add a ones digit on the end. にじゅういち is 21, よんじゅうなな is 47. Once you know 1 to 10 and じゅう, you can say every number up to 99 without learning another word.",
-      "The big jumps are three words of their own. 100 is ひゃく, 1,000 is せん, 10,000 is いちまん. Learn those three and everything between builds from them, a digit in front the same way にじゅう is two tens.",
-      "A few of them shift sound, like the counters do. 300 is さんびゃく, 600 is ろっぴゃく and 800 is はっぴゃく, not さんひゃく. 3,000 is さんぜん and 8,000 is はっせん. It is the same hardening you met on 本 and 匹.",
-      "Japanese counts in ten-thousands, not thousands. After まん there is no fresh word for “million”. 100,000 is 十万 じゅうまん, ten of the ten-thousands, and 1,000,000 is 百万, a hundred of them. You keep grouping by 万 instead of a bigger single word.",
-    ],
-    searchAlso: [
-      "how numbers work",
-      "number composition",
-      "compose numbers",
-      "building numbers",
-      "tens",
-      "hundreds",
-      "thousands",
-      "ten thousand",
-      "man",
-      "まん",
-      "じゅう",
-      "ひゃく",
-      "せん",
-    ],
-    cards: [],
   },
 ];
 

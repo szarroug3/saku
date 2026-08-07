@@ -72,6 +72,11 @@ import {
   GRAMMAR_CONCEPTS,
   grammarConceptEntry,
 } from "@/data/grammar-concepts";
+import {
+  NUMBER_CONSTRUCTION_SUBJECT,
+  NUMBER_CONSTRUCTIONS,
+  numberConstructionEntry,
+} from "@/data/number-construction";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   COUNTER_CURRICULUM,
@@ -138,6 +143,16 @@ import type { EntryId, FactId, FactInfo } from "@/types";
  * browse-only label, exactly the "track label" the ruling asked for.
  */
 export const COUNTER_KIND = "counter";
+/**
+ * The "how numbers and counts are built" reference pages' kind. Like COUNTER_KIND
+ * it is a browse-only label, not a fact subject: a construction page mints no
+ * facts (factRows returns []), so nothing downstream drills it. It is its OWN
+ * kind rather than reusing COUNTER_KIND so its URL and routing are its own
+ * (/library/numbers/tens), while its breadcrumb still reads "Numbers and
+ * counters" — the pages browse ON the counters shelf (injected by
+ * counterShelfSections), so shelfKindOf below sends the breadcrumb crumb there.
+ */
+export const NUMBER_CONSTRUCTION_KIND = NUMBER_CONSTRUCTION_SUBJECT;
 /** Sentence-ordering rules are marks internally, but they are a full learning
  * track rather than writing notation. Giving them a browse kind keeps their
  * Library shelf and search results separate from dakuten, punctuation, etc. */
@@ -154,6 +169,7 @@ export type Kind =
   | typeof KANJI_SUBJECT
   | typeof VOCAB_SUBJECT
   | typeof COUNTER_KIND
+  | typeof NUMBER_CONSTRUCTION_KIND
   | typeof SENTENCE_RULE_KIND
   | typeof GRAMMAR_SUBJECT
   | typeof GRAMMAR_CONCEPT_SUBJECT
@@ -211,6 +227,11 @@ export const KIND_LABEL: Record<Kind, string> = {
   [KANJI_SUBJECT]: "Kanji",
   [VOCAB_SUBJECT]: "Words",
   [COUNTER_KIND]: "Numbers and counters",
+  // A construction page's breadcrumb crumb reads under the counters shelf, the
+  // same label its pages browse on. It is deliberately NOT in KINDS (no shelf
+  // chip of its own — the pages live on the counters shelf); this label is what
+  // the breadcrumb prints, via shelfKindOf.
+  [NUMBER_CONSTRUCTION_KIND]: "Numbers and counters",
   [SENTENCE_RULE_KIND]: "Sentence rules",
   [GRAMMAR_SUBJECT]: "Grammar",
   [GRAMMAR_CONCEPT_SUBJECT]: "Grammar concepts",
@@ -219,6 +240,18 @@ export const KIND_LABEL: Record<Kind, string> = {
   [TERM_SUBJECT]: "Terms",
   [PRIMITIVE_SUBJECT]: "Kanji parts",
 };
+
+/**
+ * The shelf an entry's breadcrumb crumb should point at — its own kind, except
+ * for a construction page, whose pages BROWSE on the counters shelf rather than
+ * a shelf of their own. So a construction page's "Numbers and counters" crumb
+ * links to the counters shelf (where the reader actually finds it) instead of a
+ * /library?kind=numbers shelf that is not offered. Every other kind is its own
+ * shelf and maps to itself.
+ */
+export function shelfKindOf(kind: Kind): Kind {
+  return kind === NUMBER_CONSTRUCTION_KIND ? COUNTER_KIND : kind;
+}
 
 /**
  * Where a lesson's specific type differs from the shelf it lives on. A lesson
@@ -575,6 +608,28 @@ function build(): LibEntry[] {
       sub: c.summary,
       // Beside marks and terms (1): a reference entry worth leading with when a
       // query hits it, and never numerous enough to bury anything.
+      weight: 1,
+    });
+  }
+
+  // Number construction pages — the "how numbers and counts are BUILT" reference,
+  // built like a grammar concept (no readings — a rule is read, not spoken; its
+  // glyph is the 十〜 / 百〜 / 〜本 plate, shown on the shelf row and the page
+  // hero). No facts, minted by no one below: a construction page is read, and its
+  // only action is the Quiz me button. Search finds it by its name, its summary,
+  // or a searchAlso alias (the counter glyph, "hundreds", "man"…).
+  for (const c of NUMBER_CONSTRUCTIONS) {
+    out.push({
+      id: numberConstructionEntry(c.id),
+      kind: NUMBER_CONSTRUCTION_KIND,
+      glyph: c.glyph,
+      name: c.name,
+      readings: [],
+      meanings: [c.name],
+      searchAlso: c.searchAlso,
+      sub: c.summary,
+      // Beside marks, terms and concepts (1): a reference entry worth leading
+      // with when a query hits it, and never numerous enough to bury anything.
       weight: 1,
     });
   }
@@ -1012,6 +1067,13 @@ export function entryForGlyph(kind: Kind, glyph: string): EntryId | null {
     // Links row, and every link is minted from its own id (grammarConceptEntry).
     case GRAMMAR_CONCEPT_SUBJECT:
       return null;
+    // A construction page has a plate for a glyph (十〜, 〜本), not a unique
+    // character, and nothing links to one by glyph — it is reached from the
+    // counters shelf, from search, or from a related counter's page, and every
+    // link is minted from its own id (numberConstructionEntry). So this is never
+    // asked.
+    case NUMBER_CONSTRUCTION_KIND:
+      return null;
   }
 }
 
@@ -1115,6 +1177,11 @@ export function factsTitle(entry: LibEntry, rows: readonly FactRow[]): string {
     // does not: "what is a conjugation form" has no gradeable answer. The page's
     // `rows.length > 0` guard drops the whole section, so this never shows.
     case GRAMMAR_CONCEPT_SUBJECT:
+      return "Nothing to test";
+    // A construction page never has rows (see factRows), for the same reason a
+    // concept does not: how a number is built is read, not graded. The page's
+    // `rows.length > 0` guard drops the whole section, so this never shows.
+    case NUMBER_CONSTRUCTION_KIND:
       return "Nothing to test";
     // A pair's facts are chips on its own page, never this generic table (the
     // entry page excludes transitivity from genericRows), so this heading is not
@@ -1256,6 +1323,11 @@ export function factRows(entry: LibEntry): FactRow[] {
     // array is the shape of that and the entry page's `rows.length > 0` guard
     // drops the facts box entirely.
     case GRAMMAR_CONCEPT_SUBJECT:
+      return [];
+    // A CONSTRUCTION PAGE HAS NO FACTS AT ALL — like a concept, a mark or a term.
+    // How a number is built is read, not graded, so the empty array is the shape
+    // of that and the entry page's `rows.length > 0` guard drops the facts box.
+    case NUMBER_CONSTRUCTION_KIND:
       return [];
     // A pair's gradeable facts, one row per ASKABLE side. Not rendered by the
     // entry page (which draws the pair itself), but kept honest for any generic

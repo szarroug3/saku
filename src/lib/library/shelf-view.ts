@@ -9,6 +9,12 @@ export interface ShelfSection {
   readonly id: string;
   readonly label: string;
   readonly entries: readonly LibEntry[];
+  /** Force this section to render as ROWS even on an otherwise tile shelf. The
+   * counters shelf uses it for its leading "Constructions" section: those entries
+   * carry a 十〜 / 〜本 plate for a glyph, so they are not glyphless (which would
+   * pick rows on its own), but a named reference page reads across a line, not
+   * inside a 100px tile. Undefined everywhere else. */
+  readonly asRows?: boolean;
 }
 
 /** Apply a knowledge/status filter and remove sections it empties. */

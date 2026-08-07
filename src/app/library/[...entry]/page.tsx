@@ -55,6 +55,7 @@ import { KanaFamilyView } from "@/components/library/kana-family-view";
 import { KanjiReadings } from "@/components/library/kanji-readings";
 import { MarkView } from "@/components/library/mark-view";
 import { GrammarConceptView } from "@/components/library/grammar-concept-view";
+import { NumberConstructionView } from "@/components/library/number-construction-view";
 import { TermView } from "@/components/library/term-view";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternTeach } from "@/components/library/pattern-teach";
@@ -101,6 +102,7 @@ import {
   grammarConceptFor,
   grammarConceptRow,
 } from "@/data/grammar-concepts";
+import { numberConstructionFor } from "@/data/number-construction";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { KANJI_SUBJECT, kanjiRow, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
@@ -126,6 +128,7 @@ import {
   readingRowsOf,
   recipeOf,
   recipesOf,
+  shelfKindOf,
   type LibEntry,
 } from "@/lib/library/entries";
 import { characterRole } from "@/lib/character-role";
@@ -226,6 +229,10 @@ function EntryView({ entry }: { entry: LibEntry }) {
   // て-form). Its content renders in place of the recipe card, like a
   // mark or a term.
   const concept = grammarConceptFor(entry.id);
+  // The number-construction reference behind this entry's id, if it names one (a
+  // tens/big/per-counter "how to build it" page). Its content renders in place of
+  // the recipe/concept card, and it is the one reference kind with a Quiz button.
+  const construction = numberConstructionFor(entry.id);
   const mnemonic = getMnemonic(entry.glyph);
 
   // The two confusion lines. Both come out of here, and the history one is built
@@ -735,11 +742,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
           Library
         </Link>
         {" › "}
+        {/* `shelfKindOf`, not `entry.kind`: a construction page browses on the
+            counters shelf, so its "Numbers and counters" crumb links there rather
+            than to a shelf of its own that is not offered. Every other kind maps
+            to itself. */}
         <Link
-          href={`/library?kind=${entry.kind}`}
+          href={`/library?kind=${shelfKindOf(entry.kind)}`}
           className="text-text-muted no-underline"
         >
-          {KIND_LABEL[entry.kind]}
+          {KIND_LABEL[shelfKindOf(entry.kind)]}
         </Link>
         {" › "}
         {/* `entryName`, not the glyph. The last crumb is a NAME — it says which
@@ -1157,6 +1168,9 @@ function EntryView({ entry }: { entry: LibEntry }) {
       {mark ? <MarkView mark={mark} /> : null}
       {term ? <TermView term={term} /> : null}
       {concept ? <GrammarConceptView concept={concept} /> : null}
+      {construction ? (
+        <NumberConstructionView construction={construction} />
+      ) : null}
 
       {/* The pair itself — the shared card the teach walk draws, so the Library
           and the lesson cannot show a pair two different ways. It stands in for

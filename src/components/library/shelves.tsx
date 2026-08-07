@@ -52,7 +52,6 @@ import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   GRAMMAR_CONCEPT_SUBJECT,
   GRAMMAR_CONCEPTS,
-  NUMBER_COMPOSITION_CONCEPT_ID,
   grammarConceptEntry,
 } from "@/data/grammar-concepts";
 import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
@@ -73,6 +72,7 @@ import { Card, Hint, Lbl } from "@/components/ui";
 import type { Claims } from "@/lib/claims";
 import {
   COUNTER_KIND,
+  NUMBER_CONSTRUCTION_KIND,
   SENTENCE_RULE_KIND,
   entryForGlyph,
   knownFactsOf,
@@ -192,12 +192,9 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
         {
           id: "grammar-concepts",
           label: "Grammar concepts",
-          // The numbers-composition page is a grammar-concept-shaped reference,
-          // but it is ABOUT numbers, so it browses on "Numbers and counters"
-          // (injected there by counterShelfSections) and is held off this shelf.
-          entries: GRAMMAR_CONCEPTS.filter(
-            (c) => c.id !== NUMBER_COMPOSITION_CONCEPT_ID,
-          ).flatMap((c) => resolve(grammarConceptEntry(c.id))),
+          entries: GRAMMAR_CONCEPTS.flatMap((c) =>
+            resolve(grammarConceptEntry(c.id)),
+          ),
         },
       ];
     // EVERY word, in the curriculum CLIMB — the order the Learn feed teaches, so
@@ -218,6 +215,11 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
     // tile is for. The whole subject is 87 entries across seven small sections,
     // so every section shows whole — no cap, like radicals.
     case COUNTER_KIND:
+    // The construction pages have no shelf chip of their own — they browse ON
+    // the counters shelf (injected by counterShelfSections). This case exists so
+    // the switch stays exhaustive over Kind and a stray /library?kind=numbers URL
+    // resolves to the shelf the pages actually live on, rather than 404-ing.
+    case NUMBER_CONSTRUCTION_KIND:
       return counterShelfSections();
     // Keigo, cut into verb sets and set phrases (see keigo-shelf.ts). Rendered as
     // ROWS like verb pairs, not tiles: a set has no glyph, it is a plain verb and
@@ -455,10 +457,13 @@ export function Shelf({
     const shown = section.entries;
     const expanded = !collapsed.has(section.id);
     // A tile is a 100px box built around a glyph. A section whose entries have no
-    // glyph — the "How it works" reference injected at the top of the counters
-    // shelf — would tile as empty boxes with a caption, so it reads as ROWS even
-    // on a tile shelf, the same honest shape a mark or a term takes.
-    const sectionAsRows = asRows || section.entries.every((e) => !e.glyph);
+    // glyph would tile as empty boxes with a caption, so it reads as ROWS even on
+    // a tile shelf, the same honest shape a mark or a term takes. A section can
+    // also OPT into rows (section.asRows) when its entries carry a glyph but read
+    // better across a line — the counters shelf's leading "How to build them"
+    // reference, whose pages wear a 十〜 / 〜本 plate but are named references.
+    const sectionAsRows =
+      asRows || section.asRows || section.entries.every((e) => !e.glyph);
     return (
       <Card key={section.id} className="kq-defer">
         <div className="mb-2 flex items-center gap-2">
