@@ -22,6 +22,9 @@ import { Btn, Card, Lbl } from "@/components/ui";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { PreviewTile } from "@/components/lesson/preview-tile";
 import { WHY_TRACK } from "@/data/why";
+import { kanjiEntry } from "@/data/kanji";
+import { radicalEntry } from "@/data/radicals";
+import { characterRoleTitle } from "@/lib/character-role";
 import type { CounterLesson } from "@/lib/counter-lesson";
 import { positionLabel } from "@/lib/lesson-position";
 import { entryHref } from "@/lib/library/href";
@@ -49,26 +52,38 @@ export function NextCounterLesson({
   inSession?: boolean;
   onContinue?: () => void;
 }) {
-  const { cards, position } = lesson;
+  const { cards, position, cardPrereqTiles } = lesson;
   return (
     <Card>
       {/* "counters" names the track and the items both — unlike grammar, whose
           items are "patterns", a counter IS a counter. */}
       <Lbl>Up next · {positionLabel("counters", position)}</Lbl>
 
-      {/* A PREVIEW, not the lesson: each tile shows the glyph and a single greyed
-          type — "Counter" for a form of a counter (ひとつ, 三本), "Number" for a
-          bare number kanji. The reading and meaning are the lesson's material,
-          taught in the walk, so they are not shown here. */}
+      {/* A PREVIEW, not the lesson. Per card: its prereq pieces first — the
+          radicals and kanji this lesson teaches before the number/counter that
+          needs them (囗, 四, 個 …) — then the counter/number tile itself. A greyed
+          type reads "Counter" for a form of a counter (ひとつ, 三本), "Number" for a
+          bare number, "Kanji"/"Radical" for a prereq. Readings and meanings are
+          the lesson's material, taught in the walk, so they are not shown here. */}
       <div className="mt-4 flex flex-wrap gap-2">
-        {cards.map((card) => (
-          <PreviewTile
-            key={card.glyph}
-            glyph={card.glyph}
-            type={card.counter ? "Counter" : "Number"}
-            href={entryHref(card.entry)}
-            base={26}
-          />
+        {cards.map((card, i) => (
+          <div key={card.entry} className="contents">
+            {cardPrereqTiles[i].map((t) => (
+              <PreviewTile
+                key={t.glyph}
+                glyph={t.glyph}
+                type={characterRoleTitle(t.glyph) ?? t.type}
+                href={entryHref(t.type === "Kanji" ? kanjiEntry(t.glyph) : radicalEntry(t.glyph))}
+                base={26}
+              />
+            ))}
+            <PreviewTile
+              glyph={card.glyph}
+              type={card.counter ? "Counter" : "Number"}
+              href={entryHref(card.entry)}
+              base={26}
+            />
+          </div>
         ))}
       </div>
 

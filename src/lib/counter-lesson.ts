@@ -10,36 +10,47 @@
 // same way word-lesson.ts walks CURRICULUM_WORDS: a PURE function of history,
 // no cursor, the next handful of fresh, teachable forms in teaching order.
 //
-// THE GATE, PHASE BY PHASE
-// ========================
-// Phase 1 (〜つ, the Sino numbers, 〜人, 11-99/百千万) is all kana, so
-// counterKanjiPrereqs returns [] and every phase-1 form is teachable the moment
-// the track opens, right after hiragana. Phase 2 (〜本/〜匹/〜枚) is written with
-// a NUMBER kanji, so it gates on that kanji being known: 三本 waits until 三 is
-// learned. Phase 3 (the tail) is written with kanji too and gates the same way.
-// The gate is `counterTeachable`, and it is `counterKanjiPrereqs` checked
-// against `kanjiKnown` — the identical prerequisite the words track applies to a
-// kanji word's kanji.
+// THE NUMBER KANJI ARE TAUGHT IN-TRACK, KEIGO-STYLE
+// =================================================
+// The construction tables show kanji (十一, 三人, 三本), so the number kanji
+// (一..十) and each counter kanji (人 本 匹 …) must be TAUGHT, not assumed. This
+// track teaches them the exact way the keigo track teaches the kanji inside its
+// verbs: before the material that uses a kanji, the lesson teaches the smaller
+// radicals and kanji that kanji is built from (its full component chain), so a
+// new character reads as pieces the learner already knows. The shared walk is
+// `collectPrereqs` (src/lib/kanji-prereqs.ts), threaded across a sitting so a
+// piece is taught once.
 //
-// IT INTERLEAVES, IT DOES NOT LOCK
+// So there is NO number-kanji gate any more: a form or unit is always reachable,
+// and its unknown kanji ride along as PREREQ TILES prepended to the lesson's own
+// facts. The kana reading (いち) and the number kanji (一) are two taught items —
+// the reading teaches the sound, the kanji reuses its existing kanji meaning fact
+// (so it dedupes against the kanji track), and the construction rule card is
+// where 一 = いち is visually linked.
+//
+// COST-BUDGETED, NOT A FIXED COUNT
 // ================================
-// A form whose number kanji is not yet known is STEPPED OVER, not turned into a
-// lock card — the transitivity track's model, not the words track's. The number
-// kanji (一..十) are among the very first kanji taught, so phase 2 opens almost
-// as soon as the kanji track does, and a lock card naming "learn 三" would flash
-// and vanish within a lesson or two. So the card is either teaching the next
-// ready forms or absent, and a learner with no counters history sees exactly
-// what they saw before this file existed: nothing, until the track opens.
+// A number form now carries a variable amount of prereq work (一 pulls nothing,
+// 四 pulls 囗 儿, 六 pulls 亠 八 …), so a fixed "5 per lesson" is the wrong unit.
+// The sitting is cost-budgeted against LESSON_RANGE_DEFAULT.max the keigo way:
+// Σ prereq reading-units + the form's own content, always taking at least the
+// first step. A generative unit is its own lesson (a rule card + a generated
+// round), with its counter kanji's chain taught ahead of the rule card.
 
 import { effectiveState } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
-import { kanjiKnown } from "@/lib/kanji-known";
+import {
+  collectPrereqs,
+  toPrereqTiles,
+  type PrereqItem,
+  type PrereqTile,
+} from "@/lib/kanji-prereqs";
+import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import type { LessonPosition } from "@/lib/lesson-position";
 import {
   COUNTERS_SUBJECT,
   COUNTER_CURRICULUM,
   counterEntry,
-  counterKanjiPrereqs,
   counterMeaningFactId,
   isKanaForm,
   type ConstructionCategoryId,
@@ -110,23 +121,6 @@ export const NUMBER_UNITS: readonly NumberUnit[] = GENERATIVE_UNITS.filter(
   (u) => u.kind !== "counter",
 );
 
-/**
- * How many counters a lesson teaches. A COUNT, not a cost — a counter is a word,
- * uniform and indivisible, so the honest unit is how many you meet in a sitting,
- * the same call the words and grammar tracks make. There is deliberately no
- * Settings knob for it; the caller may pass a size but the app never asks the
- * user to set one.
- */
-export const COUNTERS_PER_LESSON_DEFAULT = 5;
-
-/** Clamp a passed count to a sane lesson size — whole, at least 1, capped so a
- * hand-edit can't ask for a 100-item teach screen. Same instinct as
- * clampWordsPerLesson and clampGrammarPerLesson. */
-export function clampCountersPerLesson(n: number): number {
-  const v = Math.round(Number.isFinite(n) ? n : COUNTERS_PER_LESSON_DEFAULT);
-  return Math.min(20, Math.max(1, v));
-}
-
 /** The forms the track teaches, in teaching order. It IS COUNTER_CURRICULUM —
  * the sequence is authored there (〜つ first, then the numbers, then the
  * counters built on them, then the tail) — re-exported so a consumer names it
@@ -159,16 +153,6 @@ function isFresh(fact: FactId, history: HistoryFile): boolean {
   return state.lastTested === 0;
 }
 
-/**
- * Is this counter teachable right now? A kana form (all of phase 1) always is;
- * a counted form is teachable only once its NUMBER kanji is known. This is the
- * approved gate: phase 1 needs kana alone (counterKanjiPrereqs is []), phase 2
- * and the tail need their number kanji learned — 三本 waits on 三.
- */
-export function counterTeachable(form: CounterForm, history: HistoryFile): boolean {
-  return counterKanjiPrereqs(form).every((c) => kanjiKnown(c, history));
-}
-
 /** Has the learner met any counter at all? The words track's
  * `hasStartedWordTrack`, for counters — used to decide whether a returning
  * learner has opened the track. */
@@ -199,9 +183,13 @@ export interface CounterCard {
 export interface CounterLesson {
   cards: CounterCard[];
   facts: FactId[];
+  /** Prerequisite tiles per card, in the same order as `cards`: the radicals and
+   * kanji this lesson teaches before the counter/number that needs them (mirrors
+   * KeigoLesson.cardPrereqTiles). Empty for a card that needs no new kanji. */
+  cardPrereqTiles: readonly (readonly PrereqTile[])[];
   /** Where you are, in COUNTERS — "6-10 of 69". Items are counters (and the two
    * generative units), counted the way the words and grammar tracks count theirs;
-   * see lesson-position.ts. */
+   * see lesson-position.ts. Prereq tiles are overhead and do NOT move this. */
   position: LessonPosition;
   /**
    * Set when this lesson is a generative NUMBER unit rather than a run of forms.
@@ -268,6 +256,56 @@ const COUNTER_GLYPH_BY_ID: Partial<Record<ConstructionCategoryId, string>> = {
   sai: "歳",
 };
 
+/** The Sino number kanji each phase-1b number form teaches as a prereq before its
+ * kana reading. The kana form (いち) teaches the SOUND; the kanji (一) is a
+ * separate taught item that reuses its EXISTING kanji meaning fact, so it dedupes
+ * against the kanji track and against a later number that shares a component.
+ * Keyed by the form's namespaced key so a glyph collision can never mis-hit. */
+const NUMBER_KANJI_BY_KEY: Readonly<Record<string, string>> = {
+  "counter:num:1": "一",
+  "counter:num:2": "二",
+  "counter:num:3": "三",
+  "counter:num:4": "四",
+  "counter:num:5": "五",
+  "counter:num:6": "六",
+  "counter:num:7": "七",
+  "counter:num:8": "八",
+  "counter:num:9": "九",
+  "counter:num:10": "十",
+};
+
+/** The kanji a generative UNIT teaches before its rule card: the counter kanji
+ * itself for a counter unit (人 本 匹 …), the big-word kanji for the `big` range.
+ * `tens` needs none (11-99 is the number kanji the number forms already taught).
+ * collectPrereqs pulls the FULL component chain of each (個 → 口 古 固, 杯 → 不,
+ * 百 → 白, …) — the owner's ruling: no capping, no deferring. */
+const UNIT_KANJI: Readonly<Record<ConstructionCategoryId, readonly string[]>> = {
+  tens: [],
+  big: ["百", "千", "万"],
+  nin: ["人"],
+  hon: ["本"],
+  hiki: ["匹"],
+  mai: ["枚"],
+  ko: ["個"],
+  dai: ["台"],
+  satsu: ["冊"],
+  hai: ["杯"],
+  kai: ["回"],
+  sai: ["歳"],
+};
+
+const HAN = /\p{Script=Han}/u;
+
+/** The kanji a FORM teaches as prereqs before its own facts: the Sino number
+ * kanji for a bare-number kana form, else any Han characters in its glyph. Only
+ * 二十歳 has Han in its glyph, and its 二 十 歳 are all taught by the numbers and
+ * the 〜歳 unit ahead of it, so collectPrereqs finds nothing new to add there. */
+function formKanji(form: CounterForm): readonly string[] {
+  const num = NUMBER_KANJI_BY_KEY[form.key];
+  if (num) return [num];
+  return [...form.glyph].filter((ch) => HAN.test(ch));
+}
+
 /**
  * The whole schedule, in teaching order:
  *   1. the bare-number forms — 〜つ (the escape hatch), then the Sino numbers 1-10.
@@ -307,52 +345,88 @@ function doneSteps(history: HistoryFile): number {
 }
 
 /**
- * The next counters lesson, or null when nothing is teachable yet.
+ * The next counters lesson, or null when the curriculum is finished.
  *
- * Walk the schedule in teaching order collecting the next `count` forms that are
- * new (meaning not met) and teachable now (kana, or number kanji known). A
- * generative unit is a HARD BOUNDARY: forms already collected are taught first
- * (stop at the unit), and when nothing is collected and the unit's marker is
- * fresh, the unit itself is the lesson. A done unit is stepped over, exactly like
- * a met form. Null means the curriculum is finished or the next forms are all
- * still gated behind kanji not yet learned — the same "nothing is shown" every
- * other track's card follows.
+ * Walk the schedule in teaching order. A met form and a done unit are stepped
+ * over. Fresh FORMS pack into one sitting the keigo way: each form's number-kanji
+ * prereqs are collected (shared seen-sets across the sitting so a component is
+ * taught once), and the sitting's cost — Σ prereq reading-units + each form's own
+ * content — is budgeted against LESSON_RANGE_DEFAULT.max; the first form is always
+ * taken, so a form heavier than the budget fills its own lesson. A generative UNIT
+ * is a HARD BOUNDARY and its own lesson: forms collected so far are taught first,
+ * and a due unit teaches its counter kanji's full component chain ahead of its
+ * rule card. Prereq tiles are OVERHEAD — they ride the facts but never move the
+ * "N of M" position, which counts content (forms + units) only.
  *
  * PURE OF KANA. Like the other post-kana tracks, this does not know whether kana
  * is done; that gate is the caller's (see src/app/page.tsx).
  */
-export function nextCounterLesson(
-  history: HistoryFile,
-  count: number,
-): CounterLesson | null {
-  const size = clampCountersPerLesson(count);
+export function nextCounterLesson(history: HistoryFile): CounterLesson | null {
+  const seenKanji = new Set<string>();
+  const seenRadicals = new Set<string>();
   const rows: CounterForm[] = [];
+  const rowPrereqs: PrereqItem[][] = [];
+  let totalCost = 0;
+
   let dueUnit: NumberUnit | null = null;
+  const unitPrereqs: PrereqItem[] = [];
+
   for (const step of SCHEDULE) {
     if ("unit" in step) {
       if (rows.length) break; // teach the forms collected so far first
-      if (unitFresh(step.unit, history)) {
-        dueUnit = step.unit;
-        break;
+      if (!unitFresh(step.unit, history)) continue; // already done — step over it
+      // The unit is due. It is its own lesson (a rule card + a generated round),
+      // with its counter kanji's full component chain taught ahead of the rule.
+      dueUnit = step.unit;
+      for (const c of UNIT_KANJI[step.unit.id]) {
+        collectPrereqs(c, history, seenKanji, seenRadicals, unitPrereqs);
       }
-      continue; // unit already done — step over it
+      break;
     }
     const form = step.form;
     if (!isFresh(counterMeaningFactId(form), history)) continue;
-    if (!counterTeachable(form, history)) continue;
+
+    // Tentatively collect this form's number-kanji prereqs into a temp buffer, so
+    // an over-budget form can roll the shared seen-sets back before it is dropped.
+    const kanjiSnap = new Set(seenKanji);
+    const radSnap = new Set(seenRadicals);
+    const tempItems: PrereqItem[] = [];
+    for (const c of formKanji(form)) {
+      collectPrereqs(c, history, seenKanji, seenRadicals, tempItems);
+    }
+    // A form's full difficulty is its prereq reading-units PLUS its own content:
+    // one per kana meaning fact (a bare number / 〜つ form is one), the mirror of
+    // keigo's set.words.length. Both halves budget against the sitting.
+    const addedCost =
+      tempItems.reduce((n, p) => n + p.cost, 0) + counterFacts(form).length;
+
+    // The first form is always taken (never an empty lesson); a later form that
+    // would overflow the budget rolls the seen-sets back and starts the next one.
+    if (rows.length > 0 && totalCost + addedCost > LESSON_RANGE_DEFAULT.max) {
+      seenKanji.clear();
+      for (const x of kanjiSnap) seenKanji.add(x);
+      seenRadicals.clear();
+      for (const x of radSnap) seenRadicals.add(x);
+      break;
+    }
+
+    rowPrereqs.push(tempItems);
+    totalCost += addedCost;
     rows.push(form);
-    if (rows.length >= size) break;
   }
 
-  // Steps behind the learner, counted over the WHOLE schedule (forms are skipped
-  // when gated, so the met set is not a contiguous run and "you have done N" is
-  // the only honest count). The next lesson is all fresh, never in this total.
+  // Steps behind the learner, counted over the WHOLE schedule (a met set is not a
+  // contiguous run, so "you have done N" is the only honest count). The next
+  // lesson is all fresh, never in this total. Prereq tiles never enter it.
   const done = doneSteps(history);
 
   if (dueUnit) {
     return {
       cards: [unitCard(dueUnit)],
-      facts: [dueUnit.marker],
+      // Prereqs first, then the marker: the teach walk shows the kanji/radical
+      // item cards, then the unit's rule card (see lesson-steps.ts).
+      facts: [...unitPrereqs.map((p) => p.fact), dueUnit.marker],
+      cardPrereqTiles: [toPrereqTiles(unitPrereqs)],
       numberUnit: {
         mode: dueUnit.mode,
         config: dueUnit.config,
@@ -365,10 +439,16 @@ export function nextCounterLesson(
   if (!rows.length) return null;
 
   const cards = rows.map(toCard);
-  const facts = rows.flatMap(counterFacts);
+  // Facts ordered per-card so the teach walk steps through each form's prereq
+  // kanji/radicals, then the form itself.
+  const facts = rows.flatMap((form, i) => [
+    ...rowPrereqs[i].map((p) => p.fact),
+    ...counterFacts(form),
+  ]);
   return {
     cards,
     facts,
+    cardPrereqTiles: rowPrereqs.map(toPrereqTiles),
     position: {
       from: done + 1,
       to: done + cards.length,

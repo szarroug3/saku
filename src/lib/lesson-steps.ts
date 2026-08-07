@@ -55,6 +55,7 @@ import {
   constructionIntroForMarker,
   isConstructionMarker,
 } from "@/data/counter-categories";
+import { COUNTER_ENTRIES } from "@/data/counters";
 import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow, wordReadingFactId } from "@/data/vocab";
 import { grammarLessonsForFacts } from "@/data/grammar/lessons";
@@ -179,21 +180,30 @@ export function lessonSteps(
   // in turn — a teach page is a concept card (the same PhaseIntro kana uses), a
   // pattern page is the terse recipe tile the track always showed. Anything that
   // is not a grammar lesson falls through to the kana-native walk below.
-  // A GENERATIVE NUMBER unit is a formless teach walk: its teach set is a single
-  // marker pseudo-fact (see src/data/counters.ts), which resolves to no glyph and
-  // no item. So the walk is just the unit's rule card — the tens unit shows the
-  // compose rule, the big unit shows the big-words rule — and the drill that
-  // follows is the number-reading round (src/lib/counter-lesson.ts). Detected
+  // A GENERATIVE NUMBER unit's teach set is a single marker pseudo-fact (see
+  // src/data/counters.ts), which resolves to no glyph and no item — SOMETIMES
+  // prepended with the counter kanji's prereq facts (its full component chain),
+  // which DO resolve to kanji/radical item cards. So the walk teaches those
+  // prereq item cards first, then the unit's one rule card — the tens/big compose
+  // rules, or a counter's attach-and-shift card — and the generated round follows
+  // in the drill leg (src/lib/counter-lesson.ts). The prereq kanji are context for
+  // the rule, not the lesson's own subject, so they get no spine or track cards,
+  // the same call a keigo lesson makes for the kanji inside its verbs. Detected
   // ahead of everything else because the marker has no FactInfo for the generic
   // walk below to group.
   const genMarker = facts.find(isConstructionMarker);
   if (genMarker) {
     const intro = constructionIntroForMarker(genMarker);
-    // The whole teach walk is the category's one rule card — the tens/big compose
-    // rules, or a counter's attach-and-shift card. The generated round follows in
-    // the drill leg (src/lib/counter-lesson.ts). A marker with no intro cannot
-    // happen (every marker maps to a category), but guard rather than crash.
-    return intro ? [{ type: "intro", key: intro.id, intro }] : [];
+    const prereqFacts = facts.filter((f) => f !== genMarker);
+    const steps: LessonStep[] = itemsFromFacts(prereqFacts).map((item) => ({
+      type: "item",
+      key: item.entry,
+      item,
+    }));
+    // A marker with no intro cannot happen (every marker maps to a category), but
+    // guard rather than crash.
+    if (intro) steps.push({ type: "intro", key: intro.id, intro });
+    return steps;
   }
 
   const grammarLessons = grammarLessonsForFacts(facts);
@@ -229,10 +239,15 @@ export function lessonSteps(
   // and skipped in the per-item track block below. See spine-intros.ts: on one
   // ordered curriculum a subject is not a track, and where a card goes depends on
   // what else the walk contains.
-  // Spine intros belong to the curriculum; don't fire them inside a keigo
-  // lesson where the prereq kanji are context, not the lesson's subject.
+  // Spine intros belong to the curriculum; don't fire them inside a keigo OR a
+  // counters lesson, where the prereq kanji are context for the material, not the
+  // lesson's own subject. A counters form lesson now prepends number-kanji prereq
+  // items (囗, 四, …) exactly the way a keigo lesson prepends its verbs' kanji.
+  const isContextKanjiLesson =
+    items.some((it) => it.kind === "keigo") ||
+    items.some((it) => COUNTER_ENTRIES.has(it.entry));
   const spinePlan =
-    history && !items.some((it) => it.kind === "keigo")
+    history && !isContextKanjiLesson
       ? spineIntroPlan(items, history, teachSet, shownIntros)
       : new Map<number, PhaseIntro[]>();
   // A converted kana is not taught on its own card. Its whole row is one

@@ -39,13 +39,15 @@
 // is built on them. COUNTER_CURRICULUM is that sequence, and the test file pins
 // 〜つ ahead of the numbers so a reorder cannot break it.
 //
-// PHASES AND GATING
-// =================
-// Phase 1 needs KANA only: every phase-1 form is written in kana, so it has no
-// kanji prerequisite (counterKanjiPrereqs returns []). Phase 2 is gated on the
-// NUMBER kanji being read: 三本 cannot be read until 三 can, so its prerequisite
-// is 三 (the counter kanji 本 is taught by this track, not required ahead of it).
-// Phase 3 is the ungated long tail, plain vocab with no new machinery.
+// PHASES, AND WHY NOTHING GATES ON KANJI ANY MORE
+// ===============================================
+// Phase 1 is written in kana (〜つ and the Sino numbers いち…じゅう). Phase 2/3 is
+// written with kanji, but the track now TEACHES those kanji in-track, keigo-style:
+// the number kanji (一…十) and each counter kanji ride into a lesson as prereq
+// tiles ahead of the material that uses them (see src/lib/counter-lesson.ts). So
+// there is no number-kanji GATE — a form is always reachable and its unknown kanji
+// are taught first. `counterKanjiPrereqs`/`numberKanji` survive as DATA (only
+// 二十歳 still carries a number kanji), no longer as a step-over gate.
 
 import { entryId, factId } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
@@ -207,13 +209,10 @@ export function isKanaForm(form: CounterForm): boolean {
 }
 
 /**
- * The kanji a form must be able to read before it can be taught.
- *
- * Phase 1 (kana) returns []: it gates on KANA only. Phase 2/3 returns the single
- * NUMBER kanji — 三 for 三本 — because that is what makes the form readable; the
- * counter kanji (本) is taught by this track, not required ahead of it. This is
- * the gate the task specifies ("phase 2 gated on the number kanji being
- * learned").
+ * The number kanji a form carries as DATA. A kana form has none; only 二十歳 still
+ * names one (二). It NO LONGER GATES teaching — the track teaches the number kanji
+ * in-track now (see src/lib/counter-lesson.ts), so this survives as a data
+ * accessor the tests pin, not as the step-over prerequisite it once was.
  */
 export function counterKanjiPrereqs(form: CounterForm): readonly string[] {
   return form.numberKanji ? [form.numberKanji] : [];

@@ -29,16 +29,12 @@
 // this file existed: nothing, until a plain verb opens the first set.
 
 import { effectiveState } from "@/lib/claims";
-import { kanjiRow, meaningFactId, variantOriginal } from "@/data/kanji";
 import {
-  isRadicalTaughtAsKanji,
-  radicalByWrittenForm,
-  radicalMeaningFactId,
-  radicalOfKanji,
-  type RadicalRow,
-} from "@/data/radicals";
-import { kanjiKnown } from "@/lib/kanji-known";
-import { glyphDifficulty } from "@/lib/difficulty";
+  collectPrereqs,
+  toPrereqTiles,
+  type PrereqItem,
+  type PrereqTile,
+} from "@/lib/kanji-prereqs";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import type { LessonPosition } from "@/lib/lesson-position";
 import {
@@ -146,11 +142,10 @@ export interface KeigoCard {
   words: readonly KeigoCardWord[];
 }
 
-/** One tile shown above the keigo preview — a kanji or radical this lesson teaches first. */
-export interface KeigoPrereqTile {
-  glyph: string;
-  type: "Kanji" | "Radical";
-}
+/** One tile shown above the keigo preview — a kanji or radical this lesson teaches
+ * first. It is the shared PrereqTile, kept re-exported under this name for the
+ * component that already imports it. */
+export type KeigoPrereqTile = PrereqTile;
 
 /** The next keigo lesson: the sets to teach, their facts, and where you are. */
 export interface KeigoLesson {
@@ -178,98 +173,6 @@ function toCard(set: KeigoSet): KeigoCard {
     plain: set.plain.map((p) => ({ word: p.keb, reading: p.reading })),
     words: set.words.map((w) => toCardWord(set, w)),
   };
-}
-
-/** Internal: one item in the prereq collection buffer. */
-interface PrereqItem {
-  glyph: string;
-  type: "Kanji" | "Radical";
-  fact: FactId;
-  cost: number;
-}
-
-/**
- * Collect the prereq tiles needed before kanji `c` can be taught: its unknown
- * radical-only components (and those of any unknown kanji components, recursively),
- * then `c` itself if unknown. Mirrors curriculum-order.ts's component walk.
- *
- * `seenKanji` / `seenRadicals` prevent duplicate emission across calls.
- */
-function collectPrereqs(
-  c: string,
-  history: HistoryFile,
-  seenKanji: Set<string>,
-  seenRadicals: Set<string>,
-  out: PrereqItem[],
-): void {
-  if (seenKanji.has(c)) return;
-  seenKanji.add(c);
-  const row = kanjiRow(c);
-  if (!row) return;
-  // Already known — it and its components were taught by the curriculum earlier.
-  if (kanjiKnown(c, history)) return;
-
-  for (const part of row.comps) {
-    if (part === c) continue;
-    if (kanjiRow(part) !== undefined) {
-      collectPrereqs(part, history, seenKanji, seenRadicals, out);
-    } else {
-      const rad = radicalByWrittenForm(part);
-      if (rad && !isRadicalTaughtAsKanji(rad.num)) {
-        addRadicalIfNew(rad, history, seenRadicals, out);
-      } else {
-        const orig = variantOriginal(part);
-        if (orig !== undefined && orig !== c) {
-          if (kanjiRow(orig) !== undefined) {
-            collectPrereqs(orig, history, seenKanji, seenRadicals, out);
-          } else {
-            const origRad = radicalByWrittenForm(orig);
-            if (origRad && !isRadicalTaughtAsKanji(origRad.num)) {
-              addRadicalIfNew(origRad, history, seenRadicals, out);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Filed-under radical — may not appear in `comps`.
-  const filed = radicalOfKanji(c);
-  if (filed && !isRadicalTaughtAsKanji(filed.num)) {
-    // Skip when the radical is itself built from `c` (avoids the 王↔玉 cycle).
-    const filedRow = kanjiRow(filed.glyph);
-    if (!filedRow || !filedRow.comps.includes(c)) {
-      addRadicalIfNew(filed, history, seenRadicals, out);
-    }
-  }
-
-  // Priced by reading-units, the whole role-sum of the glyph, so a prereq kanji
-  // that is also a radical and a word (日 = 4) is budgeted at its full difficulty
-  // even though this tile only teaches its kanji meaning. See difficulty.ts and
-  // the owner's worked example. Its filed-under radical, when that radical is a
-  // separate glyph, is a different tile with its own reading-unit cost; the two
-  // never double-count the SAME glyph's role because glyphDifficulty(c) covers
-  // c's own radical role and addRadicalIfNew is skipped for a radical taught as
-  // this very kanji.
-  out.push({ glyph: c, type: "Kanji", fact: meaningFactId(c), cost: glyphDifficulty(c) });
-}
-
-function addRadicalIfNew(
-  rad: RadicalRow,
-  history: HistoryFile,
-  seenRadicals: Set<string>,
-  out: PrereqItem[],
-): void {
-  if (seenRadicals.has(rad.glyph)) return;
-  seenRadicals.add(rad.glyph);
-  const fact = radicalMeaningFactId(rad.glyph);
-  const state = effectiveState(
-    history.facts[fact],
-    history.claims?.[fact],
-    history.seen?.[fact],
-  );
-  if (state.lastTested > 0) return;
-  out.push({ glyph: rad.glyph, type: "Radical", fact, cost: glyphDifficulty(rad.glyph) });
 }
 
 const HAN = /\p{Script=Han}/u;
@@ -356,9 +259,7 @@ export function nextKeigoLesson(
   return {
     cards,
     facts,
-    cardPrereqTiles: cardPrereqItems.map((items) =>
-      items.map(({ glyph, type }) => ({ glyph, type }))
-    ),
+    cardPrereqTiles: cardPrereqItems.map(toPrereqTiles),
     position: {
       from: met + 1,
       to: met + cards.length,

@@ -265,7 +265,11 @@ export const COUNTERS_TRACK: PhaseIntro = {
     },
     {
       lead: "It’s taught now because it needs only kana to begin.",
-      text: "The first counters are just kana, so they start right after hiragana. The counters that lean on kanji wait until those kanji are learned.",
+      text: "The first counters are just kana, so they start right after hiragana. The counters written with kanji come later in the track, and when one does, the lesson teaches that kanji first.",
+    },
+    {
+      lead: "Some pieces you learn here aren’t numbers or counters.",
+      text: "When a lesson introduces a number or counter kanji, it first teaches the smaller radicals and kanji that character is built from, so the new character reads as pieces you already know instead of a shape to memorize whole. 個, the counter for small objects, is built from 口, 古 and 固, so those come first and 個 then falls into place. A few of these building blocks, like 古 and 固, are whole kanji that just don’t count anything themselves.",
     },
   ],
 };
@@ -296,6 +300,10 @@ export const KEIGO_TRACK: PhaseIntro = {
     {
       lead: "Lowering yourself is called humble.",
       text: "You use a humble verb for your own actions, to step back from the person you are speaking to. It is only ever used for yourself.",
+    },
+    {
+      lead: "Some kanji come before the verbs that use them.",
+      text: "A keigo verb is often written with kanji you have not met. Before the verb, the lesson teaches those kanji and the smaller radicals they are built from, so the verb reads as pieces you already know rather than a set of new shapes. These pieces are not keigo themselves; they are just what this particular verb is spelled with.",
     },
   ],
 };

@@ -56,7 +56,7 @@ import {
   nextGrammarLesson,
 } from "@/lib/grammar-lesson";
 import { VOCAB_SUBJECT } from "@/data/vocab";
-import { COUNTERS_PER_LESSON_DEFAULT, nextCounterLesson } from "@/lib/counter-lesson";
+import { nextCounterLesson } from "@/lib/counter-lesson";
 import {
   TRANSITIVITY_PER_LESSON_DEFAULT,
   nextTransitivityLesson,
@@ -108,9 +108,13 @@ function trackOfRun(run: RunInfo): TrackKey | null {
   // recognised by its mode. Only lesson sessions reach here (see runForTrack), so
   // this never captures a one-off Practice number-reading quiz.
   if (run.mode === "number-reading") return "counter";
-  // Scan all facts: some lessons (keigo) prepend prerequisite kanji/radical facts
-  // before their own facts, so the first fact is not always the track identifier.
+  // Scan all facts: some lessons (keigo, and now counters) prepend prerequisite
+  // kanji/radical facts before their own facts, so the first fact is not always
+  // the track identifier. A counter is a `word` fact told apart by COUNTER_ENTRIES
+  // (see counters.ts), so it is matched by entry here, ahead of the plain-word
+  // fallback below that its prereq kanji would otherwise fall into.
   for (const fact of run.facts) {
+    if (COUNTER_ENTRIES.has(entryOf(fact))) return "counter";
     const subject = factInfo(fact)?.subject;
     if (subject === "keigo") return "keigo";
     if (subject === "grammar") return "grammar";
@@ -193,7 +197,7 @@ export function HomeFeed() {
   // of the words track: a counter is a `word` fact but not in VOCAB, so the two
   // schedulers never see each other's material.
   const counterLesson = useMemo(
-    () => (lesson ? null : nextCounterLesson(history, COUNTERS_PER_LESSON_DEFAULT)),
+    () => (lesson ? null : nextCounterLesson(history)),
     [lesson, history],
   );
 
@@ -456,7 +460,7 @@ export function HomeFeed() {
     nextCurriculumLesson(h, range),
   );
   const counterLessonShown = resumeShown(counterLesson, counterRun, (h) =>
-    nextCounterLesson(h, COUNTERS_PER_LESSON_DEFAULT),
+    nextCounterLesson(h),
   );
   const grammarLessonShown = resumeShown(grammarLesson, grammarRun, (h) =>
     nextGrammarLesson(h, GRAMMAR_PER_LESSON_DEFAULT),
