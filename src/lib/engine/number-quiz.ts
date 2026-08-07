@@ -186,13 +186,21 @@ export function buildNumberRound(
 ): NumberQuizItem[] {
   const anchors: Slot[] = [];
 
-  // Bare sound-shift numbers within range.
-  for (const v of BARE_SHIFTS) {
-    if (v <= cfg.numberMax) anchors.push({ n: v, counter: null });
-  }
-  // At least one ones-digit-4, -7, -9 for the branch readings.
-  for (const ones of [4, 7, 9]) {
-    anchors.push({ n: numberWithOnes(ones, cfg.numberMax, rng), counter: null });
+  // A round SCOPED TO COUNTERS attaches its counter to every item — a 〜人 round is
+  // people counts, never bare numbers, so it never shows "17" and asks for
+  // じゅうしち. Only a bare-number RANGE (tens/big, includeCounters false) draws the
+  // bare sound-shift and branch-reading anchors below. `canCount` is that scope.
+  const canCount = cfg.includeCounters && cfg.counters.length > 0;
+
+  if (!canCount) {
+    // Bare sound-shift numbers within range.
+    for (const v of BARE_SHIFTS) {
+      if (v <= cfg.numberMax) anchors.push({ n: v, counter: null });
+    }
+    // At least one ones-digit-4, -7, -9 for the branch readings.
+    for (const ones of [4, 7, 9]) {
+      anchors.push({ n: numberWithOnes(ones, cfg.numberMax, rng), counter: null });
+    }
   }
   // Each active counter's irregular counts.
   if (cfg.includeCounters) {
@@ -220,13 +228,14 @@ export function buildNumberRound(
   seen.clear();
   for (const s of slots) seen.add(slotKey(s));
 
-  // Fill remaining slots with random regular items, avoiding duplicates.
-  const canCount = cfg.includeCounters && cfg.counters.length > 0;
+  // Fill remaining slots with random regular items, avoiding duplicates. A
+  // counter-scoped round fills with COUNTED items only (canCount, decided above),
+  // so every item carries the counter glyph; a bare range fills with bare numbers.
   let attempts = 0;
   const maxAttempts = Math.max(200, cfg.count * 40);
   while (slots.length < cfg.count && attempts < maxAttempts) {
     attempts++;
-    const useCounter = canCount && rng() < 0.5;
+    const useCounter = canCount;
     let slot: Slot;
     if (useCounter) {
       const counter = cfg.counters[Math.floor(rng() * cfg.counters.length)];

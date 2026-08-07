@@ -103,6 +103,39 @@ describe("buildNumberRound — round shape", () => {
     }
   });
 
+  test("a counter-scoped round rolls ONLY counted items — never a bare number", () => {
+    // The people-counter bug: a 〜人 round must attach 人 to every item ("17 人",
+    // read じゅうしちにん), never show a bare "17". So a round scoped to a counter
+    // yields only that counter's counted items, with no bare-number slots.
+    for (const counter of ["nin", "hon", "mai", "sai"] as CounterKind[]) {
+      const cfg: NumberQuizConfig = {
+        count: 12,
+        includeCounters: true,
+        counters: [counter],
+        numberMax: 99,
+        directions: ["read", "write", "hear"],
+      };
+      const round = buildNumberRound(cfg, seeded(23));
+      assert.ok(round.length > 0, `${counter} round is empty`);
+      for (const it of round) {
+        assert.equal(it.counter, counter, `${counter} round emitted a ${it.counter ?? "bare"} item`);
+        assert.equal(it.kind, "counter");
+      }
+    }
+  });
+
+  test("a bare-number RANGE round still yields bare numbers (tens/big are correct)", () => {
+    const cfg: NumberQuizConfig = {
+      count: 12,
+      includeCounters: false,
+      counters: [],
+      numberMax: 99,
+      directions: ["read", "write", "hear"],
+    };
+    const round = buildNumberRound(cfg, seeded(23));
+    assert.ok(round.every((it) => it.counter === null));
+  });
+
   test("tsu is excluded from the default counter mix", () => {
     const cfg: NumberQuizConfig = {
       count: 40,

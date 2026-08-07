@@ -139,15 +139,14 @@ const NUMBERS: readonly CounterForm[] = [
   kana("counter:num:10", "じゅう", "ten (10)", ""),
 ];
 
-// ─── Phase 1c · 〜人, counting people — ONLY the irregulars are memorised ───
-// ひとり, ふたり and よにん are their own words, so they are shipped as forms; the
-// rest of 〜人 is the plain number plus にん, which the 〜人 GENERATIVE category
-// builds (see counter-categories.ts). 四人 is よにん, never よんにん. Kana, phase 1.
-const NIN: readonly CounterForm[] = [
-  kana("counter:nin:1", "ひとり", "one person", "人"),
-  kana("counter:nin:2", "ふたり", "two people", "人"),
-  kana("counter:nin:4", "よにん", "four people", "人"),
-];
+// ─── 〜人's irregulars are NOT rote forms any more ──────────────────────────
+// ひとり (一人), ふたり (二人) and よにん (四人) used to ship as memorised kana forms.
+// They are now taught by the 〜人 GENERATIVE category alone: its rule card shows
+// them in an "Irregular" table (counterReading(1|2|4, "nin") is exactly these) and
+// its generated round is irregular-first, so counts 1, 2 and 4 always surface. A
+// standalone rote copy would drill the same three words the category already
+// teaches, so they are gone from the curriculum. Everything else in 〜人 is the
+// plain number plus にん, which the category builds. See counter-categories.ts.
 
 // ─── 11 and up, AND every object counter — TAUGHT GENERATIVELY ─────────────
 // The teens, tens, hundreds and thousands are NOT shipped as memorised forms,
@@ -177,14 +176,15 @@ const TAIL: readonly CounterForm[] = [
  * and every object counter, are NOT forms in this array — they are taught by the
  * generative CATEGORIES (see src/data/counter-categories.ts and the counter:gen:*
  * markers below), which the scheduler runs as rule-then-round units. The only
- * forms left past the numbers are 〜人's three irregulars (ひとり/ふたり/よにん) and
- * the one special tail reading (二十歳 はたち). counters.test.ts pins 〜つ ahead of
- * the numbers so a reorder cannot break the escape-hatch-first rule.
+ * memorised form left past the numbers is the one special tail reading (二十歳
+ * はたち), which no category can build. 〜人's ひとり/ふたり/よにん are no longer rote
+ * forms either — the 〜人 category teaches them (see the note above). counters.test
+ * pins 〜つ ahead of the numbers so a reorder cannot break the escape-hatch-first
+ * rule.
  */
 export const COUNTER_CURRICULUM: readonly CounterForm[] = [
   ...TSU,
   ...NUMBERS,
-  ...NIN,
   ...TAIL,
 ];
 

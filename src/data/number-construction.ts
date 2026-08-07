@@ -33,11 +33,12 @@
 import {
   NUMBERS_BIG,
   NUMBERS_COMPOSE,
+  type IntroCountGroup,
   type IntroExample,
   type IntroPara,
 } from "@/data/phase-intros";
 import { counterIrregulars, type NumberQuizConfig } from "@/lib/engine/number-quiz";
-import { counterReading, type CounterKind } from "@/lib/number-reading";
+import { counterReading, numberReading, type CounterKind } from "@/lib/number-reading";
 import { entryId } from "@/lib/fact-id";
 import type { EntryId } from "@/types";
 
@@ -64,8 +65,10 @@ export interface NumberConstruction {
   /** The teaching prose, as paragraphs, rendered through the lesson's own
    * IntroBody so a construction page reads exactly like a lesson rule card. */
   readonly body: readonly IntroPara[];
-  /** The worked examples, shown as a table underneath the prose. */
-  readonly examples: readonly IntroExample[];
+  /** The worked examples, split into titled "Regular" / "Irregular" tables shown
+   * underneath the prose — the grammar regular-vs-irregular treatment. A page
+   * with no sound shifts (the tens, 〜枚, 〜台) carries only the Regular table. */
+  readonly exampleGroups: readonly IntroCountGroup[];
   /** The generative number-reading round the page's "Quiz me" button launches,
    * scoped to this category (the tens quiz numbers to 99, the 本 quiz counts 本). */
   readonly quizConfig: NumberQuizConfig;
@@ -114,26 +117,106 @@ function attachPara(kind: CounterKind, glyph: string): IntroPara {
   };
 }
 
-/** The example table for a counter — rows 1 to 10, each read off the engine, the
- * shifting counts flagged "(shift)" in the gloss the way NUMBERS_BIG flags its. */
-function counterExamples(spec: CounterSpec): IntroExample[] {
+/** The example tables for a counter — counts 1 to 10 split into a Regular table
+ * and an Irregular table, the way grammar splits regular conjugation from its
+ * exceptions. A count is irregular exactly when counterIrregulars() names it (the
+ * sound shift the counter exists to teach); the title now carries what "(shift)"
+ * used to say inline. A counter with no shifts (〜枚, 〜台) yields only Regular. */
+function counterGroups(spec: CounterSpec): IntroCountGroup[] {
   const shifts = new Set(counterIrregulars(spec.kind));
   const [singular, plural] = spec.noun;
-  const rows: IntroExample[] = [];
+  const regular: IntroExample[] = [];
+  const irregular: IntroExample[] = [];
   for (let n = 1; n <= 10; n++) {
     const reading = counterReading(n, spec.kind);
     if (reading === null) continue;
-    const shift = shifts.has(n) ? " (shift)" : "";
-    rows.push({
+    const row: IntroExample = {
       from: `${KANJI_DIGIT[n]} + ${spec.glyph}`,
       to: `${KANJI_DIGIT[n]}${spec.glyph}`,
       reading,
-      gloss: `${EN_NUM[n]} ${n === 1 ? singular : plural}${shift}`,
+      gloss: `${EN_NUM[n]} ${n === 1 ? singular : plural}`,
       say: reading,
-    });
+    };
+    (shifts.has(n) ? irregular : regular).push(row);
   }
-  return rows;
+  const groups: IntroCountGroup[] = [{ title: "Regular", examples: regular }];
+  if (irregular.length) groups.push({ title: "Irregular", examples: irregular });
+  return groups;
 }
+
+// ---------------------------------------------------------------------------
+// NUMBER-RANGE PAGES (tens, big) — the equations and readings are DERIVED from
+// numberReading(), never hardcoded, so a page can never state a reading the app
+// does not also ship. The tens page is all regular (no sound shifts); the big
+// page splits the plain hundreds/thousands from the five that harden.
+// ---------------------------------------------------------------------------
+
+/** The arabic value with thousands separators — "300", "10,000", "100,000". */
+function arabic(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
+/** The kanji equation for a big base value — "二 + 百", "百", "一 + 万", "十 + 万".
+ * 100 and 1000 take no prefix digit; 万 keeps its 一 (10000 is 一 + 万). */
+function bigEquation(n: number): string {
+  if (n === 100) return "百";
+  if (n === 1000) return "千";
+  if (n === 10000) return "一 + 万";
+  if (n === 100000) return "十 + 万";
+  if (n < 1000) return `${KANJI_DIGIT[n / 100]} + 百`;
+  return `${KANJI_DIGIT[n / 1000]} + 千`;
+}
+
+/** The English gloss for a big base value — "two hundred", "eight thousand". */
+function bigGloss(n: number): string {
+  if (n === 10000) return "ten thousand";
+  if (n === 100000) return "one hundred thousand";
+  if (n < 1000) return `${EN_NUM[n / 100]} hundred`;
+  return `${EN_NUM[n / 1000]} thousand`;
+}
+
+function bigRow(n: number): IntroExample {
+  const reading = numberReading(n);
+  return { from: bigEquation(n), to: arabic(n), reading, gloss: bigGloss(n), say: reading };
+}
+
+/** The big page's Regular then Irregular tables. Regular = the plain hundreds,
+ * thousands and myriads; Irregular = the five that harden at the seam. */
+const BIG_REGULAR = [100, 200, 400, 500, 700, 1000, 2000, 4000, 5000, 7000, 10000, 100000];
+const BIG_IRREGULAR = [300, 600, 800, 3000, 8000];
+
+const BIG_GROUPS: readonly IntroCountGroup[] = [
+  { title: "Regular", examples: BIG_REGULAR.map(bigRow) },
+  { title: "Irregular", examples: BIG_IRREGULAR.map(bigRow) },
+];
+
+/** The tens page's single Regular table — a representative spread 11-99, all
+ * regular (past ten there is no sound shift). Readings come from numberReading();
+ * the equation and gloss are the lesson's own NUMBERS_COMPOSE examples' framing. */
+function tensEquation(n: number): string {
+  const o = n % 10;
+  if (o === 0) return `${numberReading(n / 10)} + じゅう`;
+  return `${numberReading(n - o)} + ${numberReading(o)}`;
+}
+
+const TENS_SPREAD: readonly [n: number, gloss: string][] = [
+  [11, "eleven"],
+  [12, "twelve"],
+  [20, "twenty"],
+  [34, "thirty-four"],
+  [58, "fifty-eight"],
+  [99, "ninety-nine"],
+];
+
+const TENS_GROUPS: readonly IntroCountGroup[] = [
+  {
+    title: "Regular",
+    examples: TENS_SPREAD.map(([n, gloss]) => {
+      const reading = numberReading(n);
+      return { from: tensEquation(n), to: arabic(n), reading, gloss, say: reading };
+    }),
+  },
+];
 
 // The ten counters, in the shelf's teaching order: the taught-as-a-system set
 // (人 本 匹 枚) first, then the tail (個 台 冊 杯 回 歳). 〜つ is deliberately
@@ -285,7 +368,7 @@ function counterConstruction(spec: CounterSpec): NumberConstruction {
     summary: `How to say a count with 〜${spec.glyph}, and how its sound shifts.`,
     glyph: `〜${spec.glyph}`,
     body: [spec.attach ?? attachPara(spec.kind, spec.glyph), ...spec.sound],
-    examples: counterExamples(spec),
+    exampleGroups: counterGroups(spec),
     quizConfig: counterQuizConfig(spec.kind),
     searchAlso: [spec.kind, `〜${spec.glyph}`, spec.glyph, "counter", "counting"],
   };
@@ -299,10 +382,10 @@ function counterConstruction(spec: CounterSpec): NumberConstruction {
 const TENS: NumberConstruction = {
   id: "tens",
   name: "Numbers 11–99",
-  summary: "Past ten, you build numbers instead of memorising them.",
+  summary: "Past ten, you build numbers instead of memorizing them.",
   glyph: "十〜",
   body: NUMBERS_COMPOSE.body,
-  examples: NUMBERS_COMPOSE.examples ?? [],
+  exampleGroups: TENS_GROUPS,
   quizConfig: {
     count: 10,
     includeCounters: false,
@@ -327,7 +410,7 @@ const BIG: NumberConstruction = {
   summary: "The big steps are their own words. Everything between builds from them.",
   glyph: "百〜",
   body: NUMBERS_BIG.body,
-  examples: NUMBERS_BIG.examples ?? [],
+  exampleGroups: BIG_GROUPS,
   quizConfig: {
     count: 10,
     includeCounters: false,

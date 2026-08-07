@@ -38,7 +38,13 @@ import {
 import { useQuizSession } from "@/lib/quiz-session";
 import { claimableFacts, quizzableFacts } from "@/lib/word-unlock";
 import type { Claims } from "@/lib/claims";
+import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import type { FactAggregate, FactId, HistoryFile, QuizMode } from "@/types";
+
+// A number-reading round generates its own items and ignores the launch pool; it
+// just needs a non-empty facts array to begin a leg. This synthetic id is that
+// rider, the same one the construction pages used before the launch moved here.
+const NUMBER_READING_FACTS: FactId[] = ["number-reading:round" as FactId];
 
 interface SliceTeachPlan {
   facts: readonly FactId[];
@@ -63,6 +69,7 @@ export function SliceBar({
   quizFacts,
   quizMode,
   teachPlan,
+  constructionQuiz,
   progressReady = true,
 }: {
   slice: Slice;
@@ -103,6 +110,12 @@ export function SliceBar({
   /** A subject-specific lesson launch. Sentence rules teach one coherent tier
    * at a time instead of merging ten lesson walks into one. */
   teachPlan?: SliceTeachPlan;
+  /** A NUMBER-CONSTRUCTION page's generative "Quiz me". A construction entry mints
+   * no gradeable facts, so the ordinary Quiz/Teach buttons never appear; this
+   * launches its number-reading round (scoped by `config`) from the same action
+   * bar as "Add to list", the one-bar layout every other entry page uses. Absent
+   * for every non-construction slice. */
+  constructionQuiz?: { what: string; config: NumberQuizConfig };
   /** False when this browser's signed-out history cannot be read until the
    * client starts. Never present actions calculated from a fake empty history. */
   progressReady?: boolean;
@@ -271,6 +284,24 @@ export function SliceBar({
               already says "all N solid, nothing to ask"), so both buttons are
               HIDDEN, not shown disabled. `sliceIsDrillable` hides them on
               single-fact slices; `order.length` hides them on empty ones. */}
+          {/* A construction page's generative Quiz me — launches its number-
+              reading round straight (no pre-start config, which edits the drill
+              config a number round does not use). It sits here beside "Add to
+              list" so the construction page has the same one-bar layout as every
+              other entry page, instead of a button floating above the content. */}
+          {constructionQuiz ? (
+            <Btn
+              sel
+              onClick={() =>
+                startQuizInMode(NUMBER_READING_FACTS, "number-reading", {
+                  what: constructionQuiz.what,
+                  numberQuiz: constructionQuiz.config,
+                })
+              }
+            >
+              Quiz me
+            </Btn>
+          ) : null}
           {/* Quiz me — review what you KNOW. Gated on quizOrder (the met facts),
               so it is GONE, not shown empty, when you have met nothing here yet:
               a fresh shelf has nothing to quiz, only to teach. */}
