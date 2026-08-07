@@ -74,6 +74,7 @@
 
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph } from "@/data/radicals";
+import { variantsOf } from "@/data/variant-forms";
 import { vocabRow, type VocabRow, type WordSense } from "@/data/vocab";
 import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role";
 import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
@@ -307,6 +308,7 @@ function groupByReading(senses: readonly WordSense[]): readonly WordSense[] {
  * only thing that reads it. */
 export const SECTION_ORDER = [
   "radical-note",
+  "variant-forms",
   "kanji-meaning",
   "kanji-parts",
   "word-sense",
@@ -326,6 +328,7 @@ export type LessonSection = (typeof SECTION_ORDER)[number];
  * is written is true of the shape however many roles it plays. */
 const SECTION_ROLE: Partial<Record<LessonSection, RoleName>> = {
   "radical-note": "radical",
+  "variant-forms": "radical",
   "kanji-meaning": "kanji",
   "kanji-parts": "kanji",
   "word-sense": "word",
@@ -408,6 +411,12 @@ export function lessonSections(item: LessonItem): LessonSection[] {
     if (kanji && builtFrom(kanji).length) out.add("kanji-parts");
   }
   if (roles.includes("radical")) out.add("radical-note");
+  // The forms this character takes as a component — 人 → 亻, 心 → 忄 and ⺗. It
+  // belongs under the radical heading (a variant is the shape a piece takes by
+  // position), and it can pull that block onto a character that plays no radical
+  // role of its own: 真 is no radical, but it does appear as 眞 inside 塡, and
+  // that is worth saying where 真 is taught.
+  if (variantsOf(item.glyph).length > 0) out.add("variant-forms");
   if (item.kind === "grammar") {
     out.add("grammar-build");
     out.add("grammar-example");

@@ -98,12 +98,15 @@ describe("lessonRoles — every role the step teaches, not just the track it cam
 });
 
 describe("lessonSections — a section per role, up the ladder", () => {
-  test("人 teaches the shape, then the character, then the word, then how it's drawn", () => {
+  test("人 teaches the shape, its variant form, then the character, then the word, then how it's drawn", () => {
     // No breakdown: 人 is one character, so there is nothing to take apart. No
     // readings table either, in either block, and no example sentence; those are
-    // the Library's.
+    // the Library's. The variant-forms section rides under the radical heading:
+    // 人 is one of the characters that takes a component form (亻), so its lesson
+    // teaches that shape too.
     assert.deepEqual(lessonSections(FOLDED), [
       "radical-note",
+      "variant-forms",
       "kanji-meaning",
       "word-sense",
       "how-its-written",

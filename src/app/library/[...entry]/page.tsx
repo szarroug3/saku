@@ -73,6 +73,7 @@ import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { WordFormFan } from "@/components/lesson/word-form-fan";
 import { WordClassNote } from "@/components/lesson/word-class-note";
 import { WordSensePanel } from "@/components/lesson/word-sense-panel";
+import { VariantFormsPanel } from "@/components/lesson/variant-forms-panel";
 import {
   counterForm,
   counterMeaningFactId,
@@ -81,6 +82,7 @@ import {
 } from "@/data/counters";
 import { Card, FlatSurfaceProvider, Hint, Lbl, SoundIcon } from "@/components/ui";
 import { KANA_SUBJECT, glyphVariantFor } from "@/data/characters";
+import { variantsOf } from "@/data/variant-forms";
 import {
   SENTENCE_ORDERING_TIERS,
   tierAssemblyFacts,
@@ -939,6 +941,15 @@ function EntryView({ entry }: { entry: LibEntry }) {
               not empty, for an atomic kanji. Distinct from the word page's
               "Built from", which splits a word into its READING pieces. */}
           <KanjiBuiltFrom entry={entry} />
+          {/* ALSO WRITTEN AS — the forms this character takes as a component (人
+              also appears as 亻 on the left). The same panel the lesson mounts,
+              so the reference and the walk describe the shape identically.
+              Absent for a character with no variant form on file. */}
+          {variantsOf(entry.glyph).length > 0 ? (
+            <div className="mb-3.5">
+              <VariantFormsPanel forms={variantsOf(entry.glyph)} />
+            </div>
+          ) : null}
           {/* Readings: what the page is for — 生 is one glyph, eight readings
               keyed on the word each is read in, the only place in the app that
               table can be checked. ABSENT, not empty, for the 114 jōyō kanji

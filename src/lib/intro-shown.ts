@@ -43,7 +43,8 @@ import { migratedGet } from "@/lib/storage-migrate";
 
 /** The concept cards shown ONCE EVER, by intro id.
  *
- * The two spine cards ("What kanji are", "What a radical is") plus the
+ * The two spine cards ("What kanji are", "What a radical is"), the variant-forms
+ * card ("intro-variant-forms", a sibling of the radical card), and the
  * pitch-accent card ("intro-pitch"): all are once-ever introductions, so
  * something has to remember they have run, and this list is the registry the
  * remembering hangs off (shownIntros, the reset sweep, the settings mirror).
@@ -56,6 +57,7 @@ import { migratedGet } from "@/lib/storage-migrate";
 export const CONCEPT_CARD_IDS: readonly string[] = [
   "track-radical",
   "track-kanji",
+  "intro-variant-forms",
   "intro-pitch",
   "intro-numbers-compose",
   "intro-numbers-big",

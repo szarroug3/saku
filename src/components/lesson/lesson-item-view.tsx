@@ -102,12 +102,14 @@ import { KanjiMeaningPanel } from "@/components/lesson/kanji-meaning-panel";
 import { LessonPanel, PairedRow } from "@/components/lesson/lesson-panel";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { RoleBlock } from "@/components/lesson/role-block";
+import { VariantFormsPanel } from "@/components/lesson/variant-forms-panel";
 import { WordSensePanel } from "@/components/lesson/word-sense-panel";
 import { KanjiBuiltFrom } from "@/components/library/kanji-built-from";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
 import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
 import { noteFor, glyphVariantFor } from "@/data/characters";
+import { variantsOf } from "@/data/variant-forms";
 import { contextPronunciation } from "@/data/kana-context";
 import { KanaContextView } from "@/components/lesson/kana-context-view";
 import { cluster, membersOf } from "@/data/grammar/clusters";
@@ -800,6 +802,13 @@ export function LessonItemView({ item }: { item: LessonItem }) {
               <LessonPanel title="What it means">
                 <p className="text-[15px] leading-relaxed text-text">{radicalMeaning}</p>
               </LessonPanel>
+            ) : null}
+            {/* THE FORMS THIS CHARACTER TAKES AS A COMPONENT — 人 also appears as
+                亻 on the left. The same panel the Library entry mounts, so the
+                walk and the reference say it the same way. Absent when the
+                character has no variant form on file. */}
+            {sections.has("variant-forms") ? (
+              <VariantFormsPanel forms={variantsOf(item.glyph)} />
             ) : null}
           </RoleBlock>
         ) : null}

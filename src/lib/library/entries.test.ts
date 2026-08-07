@@ -56,6 +56,20 @@ test("builtFrom keeps radical pieces — 何 is 亻 + 可, each linked with a me
   assert.ok(p[1]!.meaning.length > 0, "可 should carry a meaning");
 });
 
+test("a variant piece carries its note — 何's 亻 says it is 人 in its left form", () => {
+  // Surface #2: the variant piece 亻 carries the character it stands for and where
+  // it sits, so the "Built from" tile can say 亻 is 人 in its left form. The plain
+  // piece 可 carries none.
+  const p = built("何");
+  const person = p[0]!;
+  assert.equal(person.c, "亻");
+  assert.ok(person.variant, "亻 should carry a variant note");
+  assert.equal(person.variant!.original, "人");
+  assert.equal(person.variant!.position, "left");
+  assert.equal(person.variant!.name, "にんべん");
+  assert.equal(p[1]!.variant, undefined, "the plain piece 可 carries no variant note");
+});
+
 test("builtFrom on 明 is 日 + 月, two taught kanji", () => {
   const p = built("明");
   assert.deepEqual(p.map((x) => x.c), ["日", "月"]);

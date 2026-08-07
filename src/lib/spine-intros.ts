@@ -1,4 +1,7 @@
-// The three concept cards the curriculum spine owes, and when each is due.
+// The concept cards the curriculum spine owes, and when each is due: the three
+// role cards ("What kanji are", "What a radical is", "What words add") planned
+// through ANCHOR_RULE, plus the variant-forms card, a non-role anchor that fires
+// ahead of the first item teaching a variant (see teachesVariant, spineIntroPlan).
 //
 // WHAT THIS HAS TAKEN THREE GOES TO GET RIGHT
 // ===========================================
@@ -55,10 +58,11 @@
 // already learned, so a learner starting from zero still gets each card where it
 // reads best and never three at once.
 
-import { meaningFactId } from "@/data/kanji";
+import { kanjiRow, meaningFactId, variantOriginal } from "@/data/kanji";
 import { radicalMeaningFactId } from "@/data/radicals";
 import { wordMeaningFactId } from "@/data/vocab";
-import { TRACK_INTROS } from "@/data/track-intros";
+import { variantsOf } from "@/data/variant-forms";
+import { TRACK_INTROS, VARIANT_INTRO } from "@/data/track-intros";
 import type { PhaseIntro } from "@/data/phase-intros";
 import { effectiveState } from "@/lib/claims";
 import { CURRICULUM_SEQUENCE, type CurriculumRole } from "@/lib/curriculum-order";
@@ -197,6 +201,24 @@ const ITEM_OF: ReadonlyMap<string, (typeof CURRICULUM_SEQUENCE)[number]> = new M
 );
 
 /**
+ * Does this item's step TEACH a variant form, on either surface?
+ *
+ * Surface #1: the character owns variant forms, so its lesson says so (人 → 亻).
+ * Surface #2: the character is built from a variant piece, so its "Built from"
+ * note does (体 shows 亻 is 人 in its left form). The variant concept card fires
+ * ahead of the first walk item either is true of, so a learner is told what a
+ * variant form is before meeting one.
+ *
+ * The built-from test reads the raw component list, a hair wider than the deframed
+ * pieces the tile actually shows; the cost of that is at worst the card firing one
+ * item early, which is the safe direction for a "here is what is coming" card.
+ */
+export function teachesVariant(glyph: string): boolean {
+  if (variantsOf(glyph).length > 0) return true;
+  return (kanjiRow(glyph)?.comps ?? []).some((c) => variantOriginal(c) !== undefined);
+}
+
+/**
  * WHERE EACH DUE CARD GOES IN ONE WALK: item index to the cards owed ahead of it.
  *
  * Planned over the whole walk at once, because choosing a card's position needs
@@ -253,6 +275,25 @@ export function spineIntroPlan(
     const due = plan.get(at);
     if (due) due.push(anchor.intro);
     else plan.set(at, [anchor.intro]);
+  }
+  // THE VARIANT CARD, a non-role anchor. It is not one of the three spine roles,
+  // so it rides its own predicate rather than ANCHOR_RULE: the first walk item
+  // that teaches a variant on either surface (see teachesVariant). Once ever,
+  // gated on `shown` alone — the teaching is folded into the base character's
+  // card and mints no fact, so there is nothing learned to fall back on, and the
+  // card simply waits for the first walk that reaches a variant. It is pushed
+  // last at its index, so when it shares the opening character with the kanji and
+  // radical cards it reads one rung further down: kanji, then radical, then the
+  // form a radical takes.
+  if (!shown.has(VARIANT_INTRO.id)) {
+    const at = walk.findIndex(
+      (step, i) => itemAt(i) !== undefined && teachesVariant(step.glyph),
+    );
+    if (at >= 0) {
+      const due = plan.get(at);
+      if (due) due.push(VARIANT_INTRO);
+      else plan.set(at, [VARIANT_INTRO]);
+    }
   }
   return plan;
 }

@@ -26,9 +26,41 @@
 import Link from "next/link";
 
 import { Card, Lbl } from "@/components/ui";
+import type { VariantPosition } from "@/data/variant-forms";
+import { japaneseFontClass } from "@/lib/japanese-text";
 import { builtFrom } from "@/lib/library/entries";
-import type { LibEntry } from "@/lib/library/entries";
+import type { BuiltPiece, LibEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
+
+/** How a variant piece's note names its position: 亻 is 人 in its "left form". */
+const POSITION_FORM: Readonly<Record<VariantPosition, string>> = {
+  left: "left form",
+  right: "right form",
+  top: "top form",
+  bottom: "bottom form",
+  nyo: "wrapping form",
+  tare: "hanging form",
+};
+
+/** The line under a variant tile: 亻 is 人 in its left form. Says which character
+ * the shape stands for, so a piece the learner cannot yet read is still anchored
+ * to one they can. The position-name rides along where it is verified. */
+function VariantNote({ variant }: { variant: NonNullable<BuiltPiece["variant"]> }) {
+  const form = variant.position ? POSITION_FORM[variant.position] : null;
+  return (
+    <span className="text-[11px] leading-tight text-text-muted">
+      <span className={japaneseFontClass(variant.original)}>{variant.original}</span>
+      {form ? ` in its ${form}` : "’s form"}
+      {variant.name ? (
+        <>
+          {" ("}
+          <span className={japaneseFontClass(variant.name)}>{variant.name}</span>
+          {")"}
+        </>
+      ) : null}
+    </span>
+  );
+}
 
 export function KanjiBuiltFrom({
   entry,
@@ -59,6 +91,7 @@ export function KanjiBuiltFrom({
             {p.meaning ? (
               <span className="text-[12px] text-text-muted">{p.meaning}</span>
             ) : null}
+            {p.variant ? <VariantNote variant={p.variant} /> : null}
           </Link>
         ))}
       </div>

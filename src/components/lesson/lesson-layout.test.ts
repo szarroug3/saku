@@ -40,6 +40,17 @@ describe("lesson layout wiring", () => {
     assert.doesNotMatch(LESSON, /<LessonReadings/);
   });
 
+  test("the variant-forms panel is mounted, gated on its section, ahead of the kanji block", () => {
+    // 人 also appears as 亻, and the lesson teaches that under the radical heading.
+    // Same panel the Library entry mounts, gated on the section set so it is
+    // absent for a character with no variant form. It sits in the radical block,
+    // which is above the kanji block, so it comes before KanjiBuiltFrom.
+    assert.match(LESSON, /sections\.has\("variant-forms"\)[\s\S]*<VariantFormsPanel/);
+    const iVariant = LESSON.indexOf("<VariantFormsPanel");
+    const iKanji = LESSON.indexOf("<KanjiBuiltFrom");
+    assert.ok(iVariant !== -1 && iVariant < iKanji);
+  });
+
   test("the word's breakdown stands alone, with no example beside it", () => {
     // The example sentence is the Library's now, so the breakdown has no partner
     // and needs no PairedRow to keep the row from going lopsided. It is gated on

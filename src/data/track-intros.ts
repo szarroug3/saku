@@ -217,6 +217,44 @@ export const WORD_TRACK: PhaseIntro = {
   ],
 };
 
+// VARIANT FORMS — the concept card, a sibling of the radical card and one rung
+// beside it. A character can change shape by where it sits inside a kanji (人 →
+// 亻, 水 → 氵, 心 → 忄), and the app already links the reshaped form back to the
+// character but never SAID the two are one. This card is the first thing that
+// does, so it fires once, ahead of the first item that teaches a variant at all
+// (see the variant anchor in src/lib/spine-intros.ts). It is not a track and so
+// is not in TRACK_INTROS; it is a once-ever concept card whose id lives in
+// CONCEPT_CARD_IDS (src/lib/intro-shown.ts).
+//
+// The `examples` are common, real jōyō kanji, each built from the form it shows:
+// 体 from 亻, 海 from 氵, 情 from 忄. They are illustrative rather than derived, the
+// way every other concept card here names its own examples.
+export const VARIANT_INTRO: PhaseIntro = {
+  id: "intro-variant-forms",
+  setId: "",
+  eyebrow: "What a variant form is",
+  title: "A character changes shape depending on where it sits inside a kanji.",
+  body: [
+    {
+      lead: "The character is the same; only its drawing changes.",
+      text: "人 is written 亻 when it stands on the left of a kanji, as in 体. It is still 人, it still means person, and it is still the character you learned. A piece is just redrawn to make room for what sits beside it.",
+    },
+    {
+      lead: "So a form is one less shape to learn, not one more.",
+      text: "亻, 氵 and 忄 are not new characters. Once you see that 亻 is 人, 氵 is 水 and 忄 is 心, a kanji built from them is built from pieces you already know.",
+    },
+    {
+      lead: "Where a form appears is a clue to which character it is.",
+      text: "A form keeps to a position: 亻 on the left, ⺗ underneath, 辶 wrapping the bottom. When a lesson meets one, it tells you the character it belongs to and where it sits, so you are never left to guess.",
+    },
+  ],
+  examples: [
+    { from: "人", op: "→", to: "亻", gloss: "on the left of 体, body" },
+    { from: "水", op: "→", to: "氵", gloss: "on the left of 海, sea" },
+    { from: "心", op: "→", to: "忄", gloss: "on the left of 情, feeling" },
+  ],
+};
+
 export const GRAMMAR_TRACK: PhaseIntro = {
   id: "track-grammar",
   setId: "",

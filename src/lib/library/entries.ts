@@ -46,6 +46,7 @@ import {
   type ReadingRow,
   variantTaughtKanji,
 } from "@/data/kanji";
+import { variantForm, type VariantPosition } from "@/data/variant-forms";
 import {
   VOCAB,
   VOCAB_SUBJECT,
@@ -943,6 +944,15 @@ export interface BuiltPiece {
   readonly c: string;
   readonly id: EntryId;
   readonly meaning: string;
+  /** Present only when the piece is a VARIANT form — 亻 for 人, 氵 for 水. It
+   * carries what the tile then says under the meaning: the character the shape is
+   * a form of, where it sits, and its position-name where one is verified. A
+   * plain piece (a kanji or a bare radical) has none. */
+  readonly variant?: {
+    readonly original: string;
+    readonly position?: VariantPosition;
+    readonly name?: string;
+  };
 }
 
 /**
@@ -964,11 +974,20 @@ export function builtFrom(entry: LibEntry): BuiltPiece[] {
   const pieces = madeOf(entry);
   if (!pieces.length) return [];
   const kept = deframe(pieces.map((p) => p.c)).length;
-  return pieces.slice(0, kept).map((p) => ({
-    c: p.c,
-    id: p.id,
-    meaning: builtPieceMeaning(p.c, p.id),
-  }));
+  return pieces.slice(0, kept).map((p) => {
+    const v = variantForm(p.c);
+    return {
+      c: p.c,
+      id: p.id,
+      meaning: builtPieceMeaning(p.c, p.id),
+      // A variant piece carries what the tile says under its meaning: 亻 is 人 in
+      // its left form. `variantForm` is defined only for the forms the `variants`
+      // map names, so a plain piece leaves this undefined.
+      ...(v
+        ? { variant: { original: v.original, position: v.position, name: v.name } }
+        : {}),
+    };
+  });
 }
 
 /** The meaning printed under a "Built from" piece. A kanji's own gloss; a

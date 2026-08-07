@@ -135,13 +135,15 @@ function parseStrokes(svg) {
  * 亻 = 2), which is how a non-jōyō component that has no KANJIDIC2 row still
  * gets a measured stroke count.
  *
- * Returns { self, comps: [{ element, original, strokes }] } where `comps` are
- * the depth-1 children in drawing order (duplicates kept: 林 is 木 + 木), or null
- * if the SVG carries no element hierarchy at all. */
+ * Returns { self, comps: [{ element, original, position, strokes }] } where
+ * `comps` are the depth-1 children in drawing order (duplicates kept: 林 is 木 +
+ * 木), or null if the SVG carries no element hierarchy at all. `position` is
+ * KanjiVG's `kvg:position` on the group (left/right/top/bottom/nyo/…), where the
+ * source records one — it says WHERE a variant form sits inside the host. */
 function parseComponents(svg) {
   const tokenRe = /<g\b([^>]*)>|<\/g>|<path\b/g;
   const stack = []; // one frame per open <g>, { nodeIdx: number | null }
-  const nodes = []; // { element, original, parentIdx, strokes }
+  const nodes = []; // { element, original, position, parentIdx, strokes }
   let m;
   while ((m = tokenRe.exec(svg))) {
     if (m[0] === "</g>") {
@@ -156,6 +158,7 @@ function parseComponents(svg) {
       let nodeIdx = null;
       if (element != null) {
         const original = /kvg:original="([^"]*)"/.exec(attrs)?.[1] ?? null;
+        const position = /kvg:position="([^"]*)"/.exec(attrs)?.[1] ?? null;
         // Parent in the ELEMENT tree = nearest open group that bears an element,
         // so intermediate non-element <g> wrappers do not shift the depth.
         let parentIdx = null;
@@ -166,7 +169,7 @@ function parseComponents(svg) {
           }
         }
         nodeIdx = nodes.length;
-        nodes.push({ element, original, parentIdx, strokes: 0 });
+        nodes.push({ element, original, position, parentIdx, strokes: 0 });
       }
       stack.push({ nodeIdx });
     }
@@ -175,7 +178,12 @@ function parseComponents(svg) {
   if (rootIdx < 0) return null;
   const comps = nodes
     .filter((n) => n.parentIdx === rootIdx)
-    .map((n) => ({ element: n.element, original: n.original, strokes: n.strokes }));
+    .map((n) => ({
+      element: n.element,
+      original: n.original,
+      position: n.position,
+      strokes: n.strokes,
+    }));
   return { self: nodes[rootIdx].element, comps };
 }
 
@@ -399,6 +407,13 @@ async function ingestKanji() {
 //   variants         { "亻":"人", "艹":"艸", … }  a component's kvg:original, so a
 //                    learner meeting the variant form 亻 can tap through to the
 //                    taught character 人. Only emitted where KanjiVG gives one.
+//   variantPositions { "亻":"left", "氵":"left", … }  where each variant form sits
+//                    inside its host, from kvg:position. The variant lesson uses
+//                    it to say WHERE the reshaped form appears ("on the left, as
+//                    in 体"). A form KanjiVG never positions is simply left out —
+//                    variant-forms.ts fills those from a small authored table.
+//                    When a form is seen in more than one position across hosts,
+//                    the most frequent wins (first-seen breaks a tie).
 //   primitiveStrokes { "亻":2, "匕":2, … }  stroke count for every component that
 //                    is NOT itself a jōyō kanji — its only measurable fact, since
 //                    no KANJIDIC2 row exists for it. From the path count under the
@@ -407,6 +422,11 @@ async function ingestKanji() {
 async function writeComponents(kept, got, jset) {
   const comps = {};
   const variants = {};
+  // variant element -> Map(position -> count seen across host kanji. The mode
+  // wins below, so a form drawn 40 times on the left and once oddly still reads
+  // "left". Insertion order (which breaks a count tie) is deterministic because
+  // `kept` is walked in a fixed order, not fetch-completion order.
+  const variantPositionCounts = new Map();
   // element -> stroke count. KanjiVG's granularity for a shape varies between
   // host characters — in some kanji a component's group holds every stroke, in
   // others a stroke is hoisted to a sibling — so we take the MAX seen, which is
@@ -422,9 +442,29 @@ async function writeComponents(kept, got, jset) {
     if (list.length) comps[g] = list;
     for (const c of tree.comps) {
       if (c.element === g) continue;
-      if (c.original) variants[c.element] = c.original;
+      if (c.original) {
+        variants[c.element] = c.original;
+        if (c.position) {
+          const counts = variantPositionCounts.get(c.element) ?? new Map();
+          counts.set(c.position, (counts.get(c.position) ?? 0) + 1);
+          variantPositionCounts.set(c.element, counts);
+        }
+      }
       strokeMax.set(c.element, Math.max(strokeMax.get(c.element) ?? 0, c.strokes));
     }
+  }
+  // Collapse each variant's position histogram to its most frequent value.
+  const variantPositions = {};
+  for (const [element, counts] of variantPositionCounts) {
+    let best = null;
+    let bestN = -1;
+    for (const [pos, n] of counts) {
+      if (n > bestN) {
+        best = pos;
+        bestN = n;
+      }
+    }
+    if (best) variantPositions[element] = best;
   }
   // Every component that is NOT itself a jōyō kanji gets a stroke count — its
   // only measurable fact, since no KANJIDIC2 row exists for it.
@@ -439,6 +479,7 @@ async function writeComponents(kept, got, jset) {
   const out = {
     comps: Object.fromEntries(kept.filter((g) => comps[g]).map((g) => [g, comps[g]])),
     variants: sortObj(variants),
+    variantPositions: sortObj(variantPositions),
     primitiveStrokes: sortObj(primitiveStrokes),
   };
   const file = resolve(GENDIR, "kanji-components.json");
@@ -458,6 +499,8 @@ async function writeComponents(kept, got, jset) {
     `wrote ${file} — ${Object.keys(out.comps).length} kanji with comps, ` +
       `${distinct.size} distinct components: (a) ${a} taught kanji, ` +
       `(b) ${b} variant-of-taught, (c) ${c} neither. ` +
+      `${Object.keys(variantPositions).length} of ${Object.keys(variants).length} ` +
+      `variants positioned. ` +
       `${Object.keys(primitiveStrokes).length} primitive stroke counts.`,
   );
 }
