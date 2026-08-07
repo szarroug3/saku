@@ -114,21 +114,6 @@ function readUrlState(search: string): LibraryUrlState {
   };
 }
 
-/** True once the page has scrolled at all. The docked header is sticky at the top
- * of the single page scroll, so any scroll at all slides the shelves up UNDER it;
- * at the very top nothing is behind it. The occluding band is gated on this so it
- * shows only when it has something to hide, not as a slab over the empty top. */
-function useScrolled(): boolean {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 1);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-  return scrolled;
-}
-
 // A shelf's sections and entries, cut LAZILY and cached at module scope. It used
 // to build every kind up front on Library mount — including the 12,553-word sort
 // — even when the default Kana tab never renders them. `shelfSections(k,
@@ -234,9 +219,6 @@ export function LibraryPageClient({
   // on every keystroke is a field that can drop characters; this one is
   // instant, and the URL catches up (see `commitQuery`).
   const [query, setQuery] = useState(urlQuery);
-  // Whether the shelves have scrolled up under the header, which is the only time
-  // the header needs to occlude (see the dock band below).
-  const scrolled = useScrolled();
   // The last query WE wrote to the URL. Anything else the URL says arrived from
   // outside — Back, Forward, a pasted link — and must win over what is in the
   // box. Without this the effect below would fight the debounce and undo the
@@ -624,19 +606,33 @@ export function LibraryPageClient({
   };
 
   return (
-    <>
-      {/* THE FROZEN HEADER. Title, search and filter chips stay inline so the
-          server response and hydrated page have the same DOM and geometry.
-          Making this block sticky directly avoids reparents through the shell
-          dock, which visibly moved the controls after every reload.
-          The shelf rows are `sticky` within the same page scroll, so once you
-          scroll they slide up THROUGH the header; `kq-band` (the ground rebuilt
-          opaque for a sticky band) hides them under it. But at the very top there
-          is nothing behind the header, and a band there is just a slab of ground
-          colour sitting on the ground for no reason, so the band is gated on
-          `scrolled`: transparent at rest, occluding only once there is something
-          to hide. Full-width; pb-2 gives the band a clean lower edge. */}
-        <div className={`sticky top-0 z-20 pb-2${scrolled ? " kq-band" : ""}`}>
+    // THE LIBRARY IS ITS OWN THREE-ROW FRAME, NOT PART OF THE PAGE SCROLL.
+    //
+    // The app's shell scrolls the window (see layout.tsx), and this page used to
+    // ride that: one window scroll, a `sticky top-0` header, and the shelves
+    // sliding up UNDER it — which is why the header had to occlude with a
+    // `kq-band` backdrop-filter that re-snapshotted the mesh every scroll frame.
+    // That per-frame snapshot was the kiri scroll lag.
+    //
+    // Instead this is a viewport-tall flex column: a fixed header, a middle
+    // region that is the ONLY thing that scrolls, and a fixed slice bar. Nothing
+    // ever passes behind the header or the bar (they are siblings of the scroll
+    // box, not over it), so there is nothing to occlude and NO backdrop-filter on
+    // the scroll path at all.
+    //
+    // The height math cancels the shell chrome we can't edit: kq-scroll wraps us
+    // in `pt-3 pb-15` and the flex row adds `py-6`, so `-mb-15` reclaims that
+    // 60px of dead space below the bar and the height is `100dvh` minus the
+    // remaining 24px (py-6 top) + 12px (pt-3) above and 24px (py-6) below = 60px.
+    // The whole document then equals the viewport: no window scroll to fight the
+    // frozen rows. Everything stays in this server-rendered tree (no portalling),
+    // so the SSR DOM and the hydrated DOM match and no control reflows on mount.
+    <div className="-mb-15 flex h-[calc(100dvh-60px)] flex-col">
+      {/* THE FROZEN HEADER. Title, search and filter chips. `shrink-0` keeps it
+          at its natural height at the top of the frame; it does not scroll and
+          nothing scrolls behind it, so it needs no occluding material. pb-2 sets
+          it off from the scroll region below. */}
+        <div className="shrink-0 pb-2">
           <PageTitle
             title="Library"
             sub="Every character, reading and word the app knows."
@@ -685,12 +681,17 @@ export function LibraryPageClient({
         </StickySearch>
         </div>
 
-      {/* A plain div between the sticky field and the first Card, and it is
-          load-bearing: graphite paints its lit hairline on
-          `[class~="sticky"] + [class~="rounded-xl"][class~="bg-card"]` — the
-          card following the drill HUD — so without this the first result Card
-          would silently wear the active-quiz detail. */}
-      <div>
+      {/* THE ONLY SCROLL REGION. It begins at the bottom of the frozen header
+          and ends at the top of the frozen slice bar, and its content is clipped
+          to that box — nothing passes behind the header or the bar. `flex-1
+          min-h-0` lets it take the remaining height and shrink below its content
+          so `overflow-y-auto` actually scrolls; `overflow-x-clip` keeps wide
+          shelves from bleeding sideways. `kq-scroll` gives it the app's thin
+          styled scrollbar. This div is also the load-bearing gap graphite needs:
+          it is NOT `sticky`, so the first result Card inside it never matches
+          graphite's `[class~="sticky"] + card` lit-hairline rule and so never
+          wears the active-quiz detail. */}
+      <div className="kq-scroll min-h-0 flex-1 overflow-x-clip overflow-y-auto">
         {q ? (
           resultSections.length === 0 ? (
             <Card>
@@ -839,13 +840,20 @@ export function LibraryPageClient({
             );
           })()
         )}
+        {/* The attribution credit rides at the END of the scrolling content, so
+            it sits below the last shelf/result instead of being pinned chrome —
+            the licence just needs it reachable on this screen, and here it is. */}
+        <AttributionLink />
       </div>
 
-      {/* THE FROZEN FOOTER BOX. Keep the slice bar in this server-rendered tree
-          and make it sticky directly. Portalling it into the shell after mount
-          meant the initial response placed it after every shelf, outside the
-          viewport, and hydration visibly brought it into view. */}
-      <div className="sticky bottom-0 z-20">
+      {/* THE FROZEN SLICE BAR. The last row of the frame, `shrink-0` so it keeps
+          its height at the bottom while the region above scrolls. It stays in
+          this server-rendered tree (no portalling — that used to place it after
+          every shelf on the first response and visibly snap into view on
+          hydration), and it needs no sticky positioning now: as a sibling below
+          the scroll box it is frozen by the layout, and nothing scrolls behind
+          it. */}
+      <div className="shrink-0">
         <SliceBar
           slice={slice}
           facts={history.facts}
@@ -861,8 +869,6 @@ export function LibraryPageClient({
           progressReady={historyLoaded}
         />
       </div>
-
-      <AttributionLink />
-    </>
+    </div>
   );
 }
