@@ -90,7 +90,7 @@ export const NUMBER_UNITS: readonly NumberUnit[] = [
       includeCounters: false,
       counters: [],
       numberMax: 99,
-      directions: ["read", "write"],
+      directions: ["read", "write", "hear"],
     },
   },
   {
@@ -103,7 +103,7 @@ export const NUMBER_UNITS: readonly NumberUnit[] = [
       includeCounters: false,
       counters: [],
       numberMax: 9999,
-      directions: ["read", "write"],
+      directions: ["read", "write", "hear"],
     },
   },
 ];
@@ -234,7 +234,9 @@ const NUMBER_TEN_FORM = CURRICULUM_COUNTERS.find((f) => f.key === "counter:num:1
 function unitCard(unit: NumberUnit): CounterCard {
   return {
     entry: counterEntry(NUMBER_TEN_FORM),
-    glyph: unit.kind === "tens" ? "11–99" : "100+",
+    // A Japanese hint at the range, not a latin "11-99": 十〜 is "ten and up",
+    // 百〜 "a hundred and up", keeping the tile in the same script as every other.
+    glyph: unit.kind === "tens" ? "十〜" : "百〜",
     reading: null,
     meaning: unit.intro.title,
     counter: "",

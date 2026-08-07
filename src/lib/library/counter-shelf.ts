@@ -16,6 +16,10 @@ import {
   counterEntry,
   type CounterForm,
 } from "@/data/counters";
+import {
+  NUMBER_COMPOSITION_CONCEPT_ID,
+  grammarConceptEntry,
+} from "@/data/grammar-concepts";
 import { libEntry } from "@/lib/library/entries";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 
@@ -51,7 +55,7 @@ const GROUPS: readonly CounterGroup[] = [
  * build has no entry for it, the same degradation every other shelf takes.
  */
 export function counterShelfSections(): ShelfSection[] {
-  return GROUPS.map((g) => ({
+  const groups = GROUPS.map((g) => ({
     id: `counters-${g.id}`,
     label: g.label,
     entries: COUNTER_CURRICULUM.filter(g.keep).flatMap((f) => {
@@ -59,4 +63,17 @@ export function counterShelfSections(): ShelfSection[] {
       return e ? [e] : [];
     }),
   })).filter((s) => s.entries.length > 0);
+
+  // A leading reference section: the one glyphless entry that teaches how the
+  // numbers below are BUILT (the composition rule), read and never drilled. It
+  // is a grammar-concept-shaped page (see grammar-concepts.ts) resolved by the
+  // same libEntry lookup the counters use, injected here so the rule sits at the
+  // top of the shelf it explains. Degrades to no section if the build has no
+  // entry for it, exactly as an empty counter group drops out.
+  const reference = libEntry(grammarConceptEntry(NUMBER_COMPOSITION_CONCEPT_ID));
+  const referenceSection: ShelfSection[] = reference
+    ? [{ id: "counters-reference", label: "How it works", entries: [reference] }]
+    : [];
+
+  return [...referenceSection, ...groups];
 }

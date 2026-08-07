@@ -128,6 +128,20 @@ describe("buildNumberRound — round shape", () => {
     assert.ok(round.some((it) => it.direction === "write"));
   });
 
+  test("all three directions are produced from a read/write/hear config", () => {
+    const cfg: NumberQuizConfig = {
+      count: 15,
+      includeCounters: true,
+      counters: ["hon", "hiki"],
+      numberMax: 9999,
+      directions: ["read", "write", "hear"],
+    };
+    const round = buildNumberRound(cfg, seeded(11));
+    assert.ok(round.some((it) => it.direction === "read"));
+    assert.ok(round.some((it) => it.direction === "write"));
+    assert.ok(round.some((it) => it.direction === "hear"));
+  });
+
   test("bare sound-shift anchors appear (300/600/800/3000/8000)", () => {
     const cfg: NumberQuizConfig = {
       count: 60,
@@ -218,5 +232,22 @@ describe("gradeNumberItem", () => {
     assert.ok(gradeNumberItem(item, " 3 "));
     assert.ok(gradeNumberItem(item, "３")); // full-width
     assert.ok(!gradeNumberItem(item, "4"));
+  });
+
+  test("HEAR grades against digits, exactly like WRITE", () => {
+    const item: NumberQuizItem = {
+      kind: "counter",
+      n: 3,
+      counter: "hon",
+      direction: "hear",
+      reading: "さんぼん",
+      accept: [],
+      digits: "3",
+    };
+    assert.ok(gradeNumberItem(item, "3"));
+    assert.ok(gradeNumberItem(item, "３")); // full-width
+    assert.ok(!gradeNumberItem(item, "4"));
+    // The reading is NOT accepted — HEAR wants the count, not the kana.
+    assert.ok(!gradeNumberItem(item, "さんぼん"));
   });
 });

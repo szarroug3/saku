@@ -19,9 +19,15 @@ import {
   counterEntry,
 } from "../../data/counters.ts";
 import {
+  GRAMMAR_CONCEPT_SUBJECT,
+  NUMBER_COMPOSITION_CONCEPT_ID,
+  grammarConceptEntry,
+} from "../../data/grammar-concepts.ts";
+import {
   COUNTER_KIND,
   KINDS,
   KIND_LABEL,
+  entryName,
   factRows,
   factsTitle,
   libEntry,
@@ -40,22 +46,48 @@ describe("the shelf exists and lists the counters", () => {
 
   test("the shelf lists every counter entry, exactly once", () => {
     const sections = counterShelfSections();
-    const ids = sections.flatMap((s) => s.entries.map((e) => e.id));
-    assert.equal(ids.length, COUNTER_CURRICULUM.length, "one tile per curriculum form");
-    assert.equal(new Set(ids).size, ids.length, "no entry listed twice");
+    // The counter forms — every listed entry EXCEPT the leading reference page,
+    // which is a glyphless concept, not a counter (see the reference test below).
+    const counterIds = sections
+      .flatMap((s) => s.entries)
+      .filter((e) => e.kind === COUNTER_KIND)
+      .map((e) => e.id);
+    assert.equal(counterIds.length, COUNTER_CURRICULUM.length, "one tile per curriculum form");
+    assert.equal(new Set(counterIds).size, counterIds.length, "no entry listed twice");
     const expected = new Set(COUNTER_CURRICULUM.map(counterEntry));
-    assert.equal(new Set(ids).size, expected.size);
-    for (const id of ids) assert.ok(expected.has(id), `${id} is a counter entry`);
+    assert.equal(new Set(counterIds).size, expected.size);
+    for (const id of counterIds) assert.ok(expected.has(id), `${id} is a counter entry`);
   });
 
-  test("every listed entry is a COUNTER_KIND LibEntry", () => {
+  test("every listed entry is a COUNTER_KIND LibEntry, bar the reference page", () => {
+    const referenceId = grammarConceptEntry(NUMBER_COMPOSITION_CONCEPT_ID);
     for (const s of counterShelfSections()) {
-      for (const e of s.entries) assert.equal(e.kind, COUNTER_KIND);
+      for (const e of s.entries) {
+        if (e.id === referenceId) {
+          assert.equal(e.kind, GRAMMAR_CONCEPT_SUBJECT, "the reference is a concept");
+          continue;
+        }
+        assert.equal(e.kind, COUNTER_KIND);
+      }
     }
-    // And they are in the global index under that kind, so search and slice see
-    // them.
+    // And the counters are in the global index under that kind, so search and
+    // slice see them.
     const inIndex = LIB_ENTRIES.filter((e) => e.kind === COUNTER_KIND);
     assert.equal(inIndex.length, COUNTER_CURRICULUM.length);
+  });
+
+  test("a 'How it works' reference leads the shelf and is not drillable", () => {
+    const sections = counterShelfSections();
+    // It is the very first section, so the composition rule sits above the
+    // numbers it explains.
+    const first = sections[0];
+    assert.equal(first.id, "counters-reference");
+    assert.equal(first.entries.length, 1);
+    const reference = first.entries[0];
+    assert.equal(reference.id, grammarConceptEntry(NUMBER_COMPOSITION_CONCEPT_ID));
+    assert.equal(entryName(reference), "How numbers compose");
+    // A reference is read, never asked: no gradeable facts, exactly like a term.
+    assert.deepEqual(factRows(reference), []);
   });
 });
 

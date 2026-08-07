@@ -969,10 +969,6 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
       lead: "For the numbers between, add a ones digit on the end.",
       text: "にじゅういち is 21, よんじゅうなな is 47. Once you know 1 to 10 and じゅう, you can say every number up to 99 without learning another word.",
     },
-    {
-      lead: "Only the big steps are their own words.",
-      text: "100 is ひゃく, 1,000 is せん, 10,000 is まん. Those you learn; everything in between you build from them.",
-    },
   ],
   examples: [
     { from: "に + じゅう", to: "20", reading: "にじゅう", gloss: "twenty", say: "にじゅう" },
@@ -980,6 +976,7 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
     { from: "にじゅう + いち", to: "21", reading: "にじゅういち", gloss: "twenty-one", say: "にじゅういち" },
     { from: "よんじゅう + なな", to: "47", reading: "よんじゅうなな", gloss: "forty-seven", say: "よんじゅうなな" },
   ],
+  examplesPlacement: "below",
 };
 
 // THE BIG STEPS — 100 / 1,000 / 10,000, their sound shifts, and 万-grouping. The
@@ -997,16 +994,16 @@ export const NUMBERS_BIG: PhaseIntro = {
   title: "The big steps are their own words. Everything between builds from them.",
   body: [
     {
-      lead: "Three words carry the big jumps.",
+      lead: "The big jumps are three words of their own.",
       text: "100 is ひゃく, 1,000 is せん, 10,000 is いちまん. Learn those three and you can already say numbers into the tens of thousands, by putting a digit in front the same way にじゅう is two tens.",
     },
     {
       lead: "A few of them shift sound, like the counters do.",
-      text: "300 is さんびゃく, 600 is ろっぴゃく and 800 is はっぴゃく, not さんひゃく. 3,000 is さんぜん and 8,000 is はっせん. It is the same hardening you met on 本 and 匹, arriving at the seam before ひゃく and せん.",
+      text: "300 is さんびゃく, 600 is ろっぴゃく and 800 is はっぴゃく, not さんひゃく. 3,000 is さんぜん and 8,000 is はっせん. It is the same hardening you met on 本 and 匹, landing at the seam before ひゃく and せん.",
     },
     {
       lead: "Japanese counts in ten-thousands, not thousands.",
-      text: "After まん there is no fresh word for “million”. 100,000 is 十万 じゅうまん, ten of the ten-thousands, and 1,000,000 is 百万, a hundred of them. You keep grouping by 万 rather than reaching for a bigger single word.",
+      text: "After まん there is no fresh word for “million”. 100,000 is 十万 じゅうまん, ten of the ten-thousands, and 1,000,000 is 百万, a hundred of them. You keep grouping by 万 instead of a bigger single word.",
     },
   ],
   examples: [
@@ -1020,6 +1017,7 @@ export const NUMBERS_BIG: PhaseIntro = {
     { from: "万", to: "10,000", reading: "いちまん", gloss: "ten thousand", say: "いちまん" },
     { from: "十 + 万", to: "100,000", reading: "じゅうまん", gloss: "hundred thousand (十万)", say: "じゅうまん" },
   ],
+  examplesPlacement: "below",
 };
 
 // PITCH ACCENT — a pronunciation card, and this file's first card about how a

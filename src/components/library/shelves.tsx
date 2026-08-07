@@ -52,6 +52,7 @@ import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   GRAMMAR_CONCEPT_SUBJECT,
   GRAMMAR_CONCEPTS,
+  NUMBER_COMPOSITION_CONCEPT_ID,
   grammarConceptEntry,
 } from "@/data/grammar-concepts";
 import { RADICAL_SUBJECT, RADICALS, radicalEntry } from "@/data/radicals";
@@ -191,9 +192,12 @@ export function shelfSections(kind: Kind, kanjiOrder: NewKanjiOrder): ShelfSecti
         {
           id: "grammar-concepts",
           label: "Grammar concepts",
-          entries: GRAMMAR_CONCEPTS.flatMap((c) =>
-            resolve(grammarConceptEntry(c.id)),
-          ),
+          // The numbers-composition page is a grammar-concept-shaped reference,
+          // but it is ABOUT numbers, so it browses on "Numbers and counters"
+          // (injected there by counterShelfSections) and is held off this shelf.
+          entries: GRAMMAR_CONCEPTS.filter(
+            (c) => c.id !== NUMBER_COMPOSITION_CONCEPT_ID,
+          ).flatMap((c) => resolve(grammarConceptEntry(c.id))),
         },
       ];
     // EVERY word, in the curriculum CLIMB — the order the Learn feed teaches, so
@@ -450,6 +454,11 @@ export function Shelf({
     const onCount = ids.filter((id) => selected.has(id)).length;
     const shown = section.entries;
     const expanded = !collapsed.has(section.id);
+    // A tile is a 100px box built around a glyph. A section whose entries have no
+    // glyph — the "How it works" reference injected at the top of the counters
+    // shelf — would tile as empty boxes with a caption, so it reads as ROWS even
+    // on a tile shelf, the same honest shape a mark or a term takes.
+    const sectionAsRows = asRows || section.entries.every((e) => !e.glyph);
     return (
       <Card key={section.id} className="kq-defer">
         <div className="mb-2 flex items-center gap-2">
@@ -492,7 +501,7 @@ export function Shelf({
         </div>
         {expanded ? (
           <DeferredSectionBody eager={index < 2}>
-            {asRows ? (
+            {sectionAsRows ? (
               kind === TRANSITIVITY_SUBJECT ? (
                 <div className="flex flex-col">
                   <VerbPairHeader />

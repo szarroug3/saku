@@ -357,14 +357,14 @@ export function IntroExamples({
               </div>
             ) : (
               <div className="flex flex-wrap items-baseline gap-x-1.5">
-                <span className={hasAccent ? "text-text" : "text-text-muted"}>{accentedText(ex.from, ex.accentFrom)}</span>
-                <span className={hasAccent ? "text-text" : "text-text-muted/70"}>{ex.op ?? "="}</span>
+                <span className="text-text">{accentedText(ex.from, ex.accentFrom)}</span>
+                <span className="text-text-muted/70">{ex.op ?? "="}</span>
                 <span className="font-medium text-text">{accentedText(ex.to, ex.accentTo)}</span>
                 {ex.reading ? (
-                  <span className={hasAccent ? "text-text" : "text-[13px] text-text-muted"}>({ex.reading})</span>
+                  <span className={hasAccent ? "text-text" : "text-[13px] text-text"}>({ex.reading})</span>
                 ) : null}
-                <span className={hasAccent ? "text-text" : "text-text-muted/70"}>·</span>
-                <span lang="en" className={hasAccent ? "text-[13px] text-text" : "text-[13px] text-text-muted"}>
+                <span className="text-text-muted/70">·</span>
+                <span lang="en" className="text-[13px] text-text">
                   {ex.gloss}
                 </span>
                 {ex.say ? (

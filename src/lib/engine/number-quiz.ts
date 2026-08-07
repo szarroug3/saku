@@ -28,6 +28,15 @@ import { romajiMatches } from "@/lib/romaji";
 /** Injectable random source — () => [0,1). Same shape as the grammar engine's. */
 export type Rng = () => number;
 
+/**
+ * The three ways a number showing can be asked — split like the drill asks a
+ * word (see the drill screen). READ shows the digits and wants the reading; WRITE
+ * shows the reading and wants the digits; HEAR plays the reading and wants the
+ * digits. HEAR is WRITE's audio twin: same answer (the count), but the prompt is
+ * the spoken word with the glyph hidden, the drill's listening card.
+ */
+export type NumberDirection = "read" | "write" | "hear";
+
 /** One number-reading showing. Plain data so it can ride the screen's
  * serialized runtime, exactly like SubstitutionItem. */
 export interface NumberQuizItem {
@@ -38,8 +47,9 @@ export interface NumberQuizItem {
   /** The counter for a counted form, or null for a bare number. */
   readonly counter: CounterKind | null;
   /** READ: shown digits, answer is the reading. WRITE: shown reading, answer is
-   * the digits. */
-  readonly direction: "read" | "write";
+   * the digits. HEAR: the reading is PLAYED (glyph hidden), answer is the digits
+   * — WRITE's audio twin, graded identically. */
+  readonly direction: NumberDirection;
   /** The primary kana reading (numberReading or counterReading). */
   readonly reading: string;
   /** Every acceptable answer for the READ direction (branch/spelling alternates
@@ -59,7 +69,7 @@ export interface NumberQuizConfig {
   /** Upper bound (inclusive) for bare numbers. */
   readonly numberMax: number;
   /** Directions the round may draw from. */
-  readonly directions: ("read" | "write")[];
+  readonly directions: NumberDirection[];
 }
 
 /**
@@ -116,7 +126,7 @@ function counterMax(counter: CounterKind): number {
 function makeItem(
   n: number,
   counter: CounterKind | null,
-  direction: "read" | "write",
+  direction: NumberDirection,
 ): NumberQuizItem | null {
   if (counter) {
     const reading = counterReading(n, counter);
@@ -235,12 +245,11 @@ export function buildNumberRound(
   }
 
   // Deal directions balanced across the allowed set, then shuffle the deal so
-  // direction doesn't correlate with position — both directions always appear
-  // when count ≥ directions.length.
-  const dirPool = cfg.directions.length > 0 ? cfg.directions : (["read"] as const);
-  const dirs: ("read" | "write")[] = slots.map(
-    (_, i) => dirPool[i % dirPool.length],
-  );
+  // direction doesn't correlate with position — every allowed direction always
+  // appears when count ≥ directions.length.
+  const dirPool: readonly NumberDirection[] =
+    cfg.directions.length > 0 ? cfg.directions : (["read"] as const);
+  const dirs: NumberDirection[] = slots.map((_, i) => dirPool[i % dirPool.length]);
   shuffle(dirs, rng);
 
   const items: NumberQuizItem[] = [];
@@ -266,8 +275,9 @@ function normalizeDigits(given: string): string {
  * READ: the answer is a reading — folded romaji→kana and compared against every
  * acceptable reading via the app's own romajiMatches, so よんじゅうなな typed as
  * "yonjuunana" grades true, and the engine's branch/spelling alternates are all
- * honored. WRITE: the answer is the count as digits — normalized and compared to
- * item.digits (さんぼん → 3, full-width ３ accepted).
+ * honored. WRITE and HEAR: the answer is the count as digits — normalized and
+ * compared to item.digits (さんぼん → 3, full-width ３ accepted). HEAR differs from
+ * WRITE only in how the prompt is presented (audio vs. text), not in grading.
  */
 export function gradeNumberItem(item: NumberQuizItem, given: string): boolean {
   if (item.direction === "read") {

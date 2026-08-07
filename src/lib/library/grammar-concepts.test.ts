@@ -159,9 +159,19 @@ describe("a concept points at the lesson's own prose, so the two cannot drift", 
     assert.match(adjectives.cards[0].body.map((paragraph) => paragraph.text).join(" "), /before a noun/);
   });
 
-  test("every concept has real, titled, non-empty teaching pages", () => {
+  test("every concept teaches — via lesson cards, or its own body prose", () => {
     for (const c of GRAMMAR_CONCEPTS) {
-      assert.ok(c.cards.length >= 1, `${c.id} teaches no pages`);
+      // A concept teaches EITHER by reusing the lesson's own cards OR, when it
+      // has no lesson to point at (the numbers-composition reference), through
+      // its own authored `body` paragraphs, which GrammarConceptView renders in
+      // place of the cards. One of the two must be non-empty.
+      if (c.cards.length === 0) {
+        assert.ok(c.body.length > 0, `${c.id} has neither cards nor body prose`);
+        for (const para of c.body) {
+          assert.ok(para.trim().length > 0, `${c.id} has an empty body paragraph`);
+        }
+        continue;
+      }
       const ids = new Set<string>();
       for (const card of c.cards) {
         assert.ok(card.title.trim().length > 0, `${card.id} has no title`);
