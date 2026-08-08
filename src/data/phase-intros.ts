@@ -1176,7 +1176,7 @@ export const ONYOMI_INTRO: PhaseIntro = {
   body: [
     {
       lead: "Most kanji have two kinds of reading.",
-      text: "One is the native Japanese word the character was matched to, used when it stands on its own. 人 read by itself is ひと. 車 is くるま. That is the reading you already met as the word.",
+      text: "One is the native Japanese word the character was matched to, used when it stands on its own. 人 read by itself is ひと. 車 is くるま. That is the reading you already saw as the word.",
     },
     {
       lead: "The other is borrowed from Chinese, and it surfaces in compounds.",
