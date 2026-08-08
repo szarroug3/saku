@@ -1046,6 +1046,10 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
       lead: "For the numbers between, add a ones digit on the end.",
       text: "にじゅういち is 21, よんじゅうなな is 47. Once you know 1 to 10 and じゅう, you can say every number up to 99 without learning another word.",
     },
+    {
+      lead: "Three of the digits read two ways.",
+      text: "4 is よん or し, 7 is なな or しち, and 9 is きゅう or く. Counting leans on the first of each — よん, なな, きゅう — but the other reading turns up in fixed words and telling the time, so both are worth knowing.",
+    },
   ],
   examples: [
     { from: "に + じゅう", to: "20", reading: "にじゅう", gloss: "twenty", say: "にじゅう" },

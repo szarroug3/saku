@@ -141,23 +141,21 @@ const TSU: readonly CounterForm[] = [
   kana("counter:tsu:10", "とお", "ten things", "つ"),
 ];
 
-// ─── Phase 1b · the Sino numbers いち〜じゅう ───────────────────────────────
-// Kana, so they are usable as sounds before any kanji. The branching readings
-// (4, 7, 9) are carried as altReading on the READING side, because picking the
-// wrong branch is the commonest beginner tell — but a reading belongs beside the
-// reading, never in the meaning gloss.
-const NUMBERS: readonly CounterForm[] = [
-  kana("counter:num:1", "いち", "one (1)", ""),
-  kana("counter:num:2", "に", "two (2)", ""),
-  kana("counter:num:3", "さん", "three (3)", ""),
-  kana("counter:num:4", "よん", "four (4)", "", "し"),
-  kana("counter:num:5", "ご", "five (5)", ""),
-  kana("counter:num:6", "ろく", "six (6)", ""),
-  kana("counter:num:7", "なな", "seven (7)", "", "しち"),
-  kana("counter:num:8", "はち", "eight (8)", ""),
-  kana("counter:num:9", "きゅう", "nine (9)", "", "く"),
-  kana("counter:num:10", "じゅう", "ten (10)", ""),
-];
+// ─── The Sino numbers 1-10 are NOT rote kana forms any more ────────────────
+// いち〜じゅう used to ship here as memorised kana forms (counter:num:1..10). They
+// were a DUPLICATE: the number KANJI 一…十 already teach their reading and meaning
+// as WORD facts (二 = に = two, 四 = し = four …, minted from vocab.json and now
+// scheduled by the words track — see COUNTER_TRACK_KEBS in word-lesson.ts), and
+// the counters track teaches each 一…十 kanji in-track as a prereq of the tens
+// unit. A separate spoken-number card taught nothing the kanji's word role did
+// not. So the numbers are gone from this curriculum; the number kanji carry them.
+//
+// THE BRANCHING READINGS (4, 7, 9) ARE PRESERVED. The kana forms carried a second
+// reading each — よん also し, なな also しち, きゅう also く. vocab.json's word role
+// gives only し / しち / きゅう, so the OTHER branch of each (よん, なな, く) is kept
+// in the tens construction rule card (NUMBERS_COMPOSE in phase-intros.ts), which
+// now names all three pairs, and the reading engine still accepts every branch
+// when grading a generated round (acceptableNumberReadings). Nothing is lost.
 
 // ─── 〜人's irregulars are NOT rote forms any more ──────────────────────────
 // ひとり (一人), ふたり (二人) and よにん (四人) used to ship as memorised kana forms.
@@ -192,19 +190,17 @@ const TAIL: readonly CounterForm[] = [
 /**
  * The whole counters curriculum, in teaching order.
  *
- * 〜つ leads (the escape hatch), then the Sino numbers 1-10. Numbers past ten,
- * and every object counter, are NOT forms in this array — they are taught by the
- * generative CATEGORIES (see src/data/counter-categories.ts and the counter:gen:*
- * markers below), which the scheduler runs as rule-then-round units. The only
- * memorised form left past the numbers is the one special tail reading (二十歳
- * はたち), which no category can build. 〜人's ひとり/ふたり/よにん are no longer rote
- * forms either — the 〜人 category teaches them (see the note above). counters.test
- * pins 〜つ ahead of the numbers so a reorder cannot break the escape-hatch-first
- * rule.
+ * 〜つ leads (the escape hatch, the native 1-10). The Sino numbers 1-10 are NOT
+ * forms here any more — the number kanji 一…十 carry them (their word role, plus
+ * the tens unit's in-track prereq; see the note above). Numbers past ten and every
+ * object counter are taught by the generative CATEGORIES (see counter-categories.ts
+ * and the counter:gen:* markers below), which the scheduler runs as rule-then-round
+ * units. The only memorised form left is the one special tail reading (二十歳
+ * はたち), which no category can build. 〜人's ひとり/ふたり/よにん are taught by the
+ * 〜人 category (see the note above).
  */
 export const COUNTER_CURRICULUM: readonly CounterForm[] = [
   ...TSU,
-  ...NUMBERS,
   ...TAIL,
 ];
 

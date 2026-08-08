@@ -130,7 +130,7 @@ describe("the word total is the material, and does not move", () => {
     // Equal today because beginnerRank is dense. They are different claims, and
     // the count is the one that stays right if a re-cut leaves a hole.
     assert.equal(WORDS_CURRICULUM_TOTAL, CURRICULUM_WORDS.length);
-    assert.equal(WORDS_CURRICULUM_TOTAL, 6188);
+    assert.equal(WORDS_CURRICULUM_TOTAL, 6198);
     assert.ok(WORDS_CURRICULUM_TOTAL <= WORDS_CURRICULUM_MAX);
   });
 });

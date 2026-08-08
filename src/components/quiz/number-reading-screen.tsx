@@ -165,11 +165,13 @@ function setValue(card: NumCard, value: string): void {
   card.value = value;
 }
 
-/** The digit prompt for a READ card: "3 本" or "47". */
-function digitPrompt(item: NumberQuizItem): string {
-  return item.counter
-    ? `${item.digits} ${COUNTER_GLYPH[item.counter]}`
-    : item.digits;
+/** The READ card's prompt: the number written in KANJI — 十七, 三百, 三本, 十七人.
+ * The card asks how the written number is said, so it shows the number the way it
+ * appears in the wild (baked on the item by countToKanji), not the bare digit.
+ * The counter kanji is already welded in for a counted form, so READ needs no
+ * separate counter glyph beneath it. */
+function readPrompt(item: NumberQuizItem): string {
+  return item.promptKanji;
 }
 
 export function NumberReadingScreen() {
@@ -300,10 +302,10 @@ export function NumberReadingScreen() {
     rerender();
   };
 
-  // The prompt glyph the halo shows: the digits (+ counter) for READ, the kana
-  // reading for WRITE. HEAR hides the glyph (listen mode) and ignores it. jp so
-  // the visual prompts render on one pre-fitted line.
-  const haloGlyph = isRead ? digitPrompt(item) : item.reading;
+  // The prompt glyph the halo shows: the number in kanji (十七, 三本) for READ, the
+  // kana reading for WRITE. HEAR hides the glyph (listen mode) and ignores it. jp
+  // so the visual prompts render on one pre-fitted line.
+  const haloGlyph = isRead ? readPrompt(item) : item.reading;
   const counterGlyph = item.counter ? COUNTER_GLYPH[item.counter] : "";
 
   // The ring speaks the same three states the drill's does: still while you
@@ -419,7 +421,7 @@ export function NumberReadingScreen() {
             readOnly={resolved}
             aria-label={
               isRead
-                ? `Read ${digitPrompt(item)}`
+                ? `Read ${readPrompt(item)}`
                 : isHear
                   ? "Write the number you hear"
                   : `Write the number for ${item.reading}`

@@ -123,10 +123,17 @@ const COUNTER_KANJI_GLYPHS: ReadonlySet<string> = new Set(
   COUNTER_CURRICULUM.filter((f) => f.glyph !== f.reading).map((f) => f.glyph),
 );
 
-// Number kanji and counting words that are already covered by the counters track.
+// Counting words that are already covered by the counters track, so the words
+// track does not teach them a second time.
+//
+// The Sino numbers 一…十 are NOT here: the counters track no longer ships a spoken
+// number form (いち/に … were duplicates), so their reading and meaning are taught
+// by their WORD role here — 二 = に = two, 四 = し = four. 百/千/万 stay excluded:
+// the counters track's `big` unit still teaches those as base words with their own
+// rule card, so a words-track copy would duplicate them.
 const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
-  // Standalone number kanji — counters track teaches the spoken forms
-  "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万",
+  // Big base words — counters track's `big` unit teaches these with their rule.
+  "百", "千", "万",
   // Native 〜つ counting words (counters track: ひとつ〜ここのつ)
   "一つ", "二つ", "三つ", "四つ", "五つ", "六つ", "七つ", "八つ", "九つ",
   // Irregular people-counting forms (counters track: ひとり, ふたり)
