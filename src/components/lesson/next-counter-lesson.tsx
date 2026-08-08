@@ -53,6 +53,7 @@ export function NextCounterLesson({
   onContinue?: () => void;
 }) {
   const { cards, position, cardPrereqTiles } = lesson;
+  const hideUnitCard = !!lesson.numberUnit?.prepOnly;
   return (
     <Card>
       {/* "counters" names the track and the items both — unlike grammar, whose
@@ -77,12 +78,14 @@ export function NextCounterLesson({
                 base={26}
               />
             ))}
-            <PreviewTile
-              glyph={card.glyph}
-              type={card.counter ? "Counter" : "Number"}
-              href={entryHref(card.entry)}
-              base={26}
-            />
+            {hideUnitCard ? null : (
+              <PreviewTile
+                glyph={card.glyph}
+                type={card.counter ? "Counter" : "Number"}
+                href={entryHref(card.entry)}
+                base={26}
+              />
+            )}
           </div>
         ))}
       </div>

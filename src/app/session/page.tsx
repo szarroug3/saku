@@ -278,9 +278,12 @@ export default function SessionPage() {
     // them; there's no subject on the session to read, so we resolve it from the
     // fact and let the Library turn it into the specific lesson-type label
     // (kana splits by script) rather than restating that mapping here.
-    const subjectLabel = session.teach.length
-      ? teachSubjectLabel(factInfo(session.teach[0]))
-      : undefined;
+    const subjectLabel =
+      session.snapshot.mode === "number-reading"
+        ? "Numbers"
+        : session.teach.length
+          ? teachSubjectLabel(factInfo(session.teach[0]))
+          : undefined;
     return (
       <>
         {/* The top bar carries the position through the lesson — "1 of 5",
