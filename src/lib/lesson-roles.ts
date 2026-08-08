@@ -408,7 +408,10 @@ export function lessonSections(item: LessonItem): LessonSection[] {
     // so the lesson and the reference decompose a kanji identically. A memorised
     // whole (a pictograph, a kanji Wiktionary can't split) has no pieces; the
     // number kanji 一…十 are held whole here too, matching KanjiBuiltFrom, even
-    // where Wiktionary does split one (三 as three 一).
+    // where Wiktionary does split one (三 as three 一). The Library entry page
+    // additionally shows a no-tiles glyph-origin STORY (中's flagpole) where one
+    // exists; the lesson deliberately keeps such pictographs as memorised wholes
+    // and shows no breakdown, so the story stays reference-only.
     if (builtPieces(item.glyph).length && !isNumberKanji(item.glyph)) {
       out.add("kanji-parts");
     }

@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { builtPieces } from "@/data/kanji-etymology";
+import { builtPieces, etymologyOf } from "@/data/kanji-etymology";
 import { isNumberKanji } from "@/data/number-kanji";
 import { KANJI } from "@/data/kanji";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
@@ -18,6 +18,19 @@ import { hasOnyomi, onReadingsOf, phoneticExample } from "@/lib/kanji-onyomi";
 /** builtPieces as [glyph, role, label] triples — what a tile renders from. */
 function pieces(k: string): Array<[string, string, string | null]> {
   return builtPieces(k).map((p) => [p.glyph, p.role, p.label]);
+}
+
+/** The glyph-origin story a no-tiles section shows as its body, or null. */
+function originOf(k: string): string | null {
+  const o = etymologyOf(k)?.originText ?? null;
+  return typeof o === "string" && o.trim().length > 0 ? o : null;
+}
+
+/** Mirrors KanjiBuiltFrom's render gate: the section shows nothing for a number
+ * kanji, and otherwise shows when there are tiles OR a glyph-origin story. */
+function rendersSection(k: string): boolean {
+  if (isNumberKanji(k)) return false;
+  return builtPieces(k).length > 0 || originOf(k) !== null;
 }
 
 describe("representative kanji → the pieces, roles and labels the box shows", () => {
@@ -74,11 +87,42 @@ describe("representative kanji → the pieces, roles and labels the box shows", 
   });
 });
 
+describe("no-tiles pictographs now show their glyph-origin story", () => {
+  test("中 — no tiles, but the flagpole story renders as the section body", () => {
+    // 中 is a pictograph: builtPieces is empty, so there are NO tiles…
+    assert.equal(builtPieces("中").length, 0);
+    // …but it carries a glyph-origin story, so the section still renders, now
+    // showing that prose directly as its body rather than nothing.
+    const story = originOf("中");
+    assert.ok(story && story.includes("flagpole"), "中 has its flagpole origin");
+    assert.equal(rendersSection("中"), true);
+  });
+
+  test("生, 人 — pictographs with a story now render (they used to show nothing)", () => {
+    // These have no mappable pieces but DO have originText, so under the new gate
+    // the section renders their story instead of being suppressed.
+    for (const g of ["生", "人"]) {
+      assert.equal(builtPieces(g).length, 0, `${g} has no tiles`);
+      assert.ok(originOf(g), `${g} has a glyph-origin story`);
+      assert.equal(rendersSection(g), true);
+    }
+  });
+});
+
 describe("no section where there is nothing honest to show", () => {
-  test("a kanji with no etymology pieces renders no Built from", () => {
-    // 生 is a pictograph — builtPieces is empty, so KanjiBuiltFrom returns null.
-    assert.equal(builtPieces("生").length, 0);
-    assert.equal(builtPieces("人").length, 0);
+  test("neither tiles nor a story ⇒ no section at all (no empty card)", () => {
+    // 与 has no etymology pieces AND no originText, so KanjiBuiltFrom returns null.
+    assert.equal(builtPieces("与").length, 0);
+    assert.equal(originOf("与"), null);
+    assert.equal(rendersSection("与"), false);
+  });
+
+  test("tiles kanji are unchanged — section renders with its tiles", () => {
+    // 森 (three 木) and 河 (氵 + 可) still decompose into tiles exactly as before.
+    assert.equal(builtPieces("森").length, 3);
+    assert.equal(builtPieces("河").length, 2);
+    assert.equal(rendersSection("森"), true);
+    assert.equal(rendersSection("河"), true);
   });
 
   test("the number kanji 一…十 render no Built from — even 三, which DOES split", () => {

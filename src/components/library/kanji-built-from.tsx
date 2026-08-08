@@ -23,13 +23,18 @@
 //     They are shape with no glyph-origin role, and showing them as "part of the
 //     meaning" would be the lie the whole etymology layer refuses.
 //
-// EMPTY MEANS NO SECTION. Where builtPieces is empty — a pictograph, a kanji
-// Wiktionary can't usefully decompose, the number kanji 一…十 — this renders
-// nothing at all. That kanji is taught as a memorised whole; a "Built from" box
-// with nothing honest in it is worse than no box.
-//
-// THE GLYPH-ORIGIN PROSE ("Why?") is folded behind a disclosure, never inline:
-// across the full set it often runs long. See WhyOrigin below.
+// NO TILES, BUT A STORY STILL COUNTS. Where builtPieces is empty this used to
+// render nothing at all. But a great many pictographs (中 = a flagpole with a
+// drum in the center of a field) and shape-drift kanji (丈 = ten 尺 make one 丈)
+// have no mappable pieces yet DO carry a glyph-origin story in
+// `etymologyOf(glyph).originText`, and that story genuinely aids memory. So:
+//   - PIECES present → tiles, exactly as before, with the origin prose folded
+//     behind the collapsed "Why?" (it often runs long alongside tiles).
+//   - NO pieces but originText present → the section still renders, this time
+//     with NO tiles and the origin prose shown DIRECTLY as the body, because the
+//     whole point is to read it, not to toggle it open. See OriginProse below.
+//   - NEITHER → nothing at all (no empty card), and the number kanji 一…十 are
+//     always held whole regardless.
 //
 // SAME LINK-THROUGH AS BEFORE. Each tile still links to the piece's own Library
 // page (kanji / radical / primitive), via the id-resolution the shape
@@ -165,6 +170,44 @@ function WhyOrigin({ text }: { text: string }) {
   );
 }
 
+/** The glyph-origin prose shown DIRECTLY as the section body, for a kanji that
+ * has a story but no mappable pieces (中, 上, 丈). Unlike WhyOrigin this defaults
+ * VISIBLE — the owner wants to read it, not toggle it open. Long lines (some
+ * origins run scholarly and long) soft-clamp to a few lines with a "Show more"
+ * control, so the section stays readable at a glance without ballooning the card;
+ * short ones show whole with no control. */
+function OriginProse({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const panelId = useId();
+  // Only long prose earns a clamp+toggle; short origins (上's one line) show
+  // whole. The threshold is a rough character count, not a line measure — enough
+  // to keep the card compact without hiding a sentence or two.
+  const clampable = text.length > 180;
+  return (
+    <div className="mt-1">
+      <p
+        id={panelId}
+        className={`text-[13px] leading-relaxed text-text-muted ${
+          clampable && !expanded ? "line-clamp-4" : ""
+        }`}
+      >
+        {text}
+      </p>
+      {clampable ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={panelId}
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1.5 cursor-pointer rounded border-none bg-transparent p-0 text-[13px] text-accent underline decoration-dotted underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function KanjiBuiltFrom({
   entry,
   // The one-line footnote orients the Library, where "Built from" is reference;
@@ -181,11 +224,13 @@ export function KanjiBuiltFrom({
   // they show NO Built from. Every other kanji keeps whatever pieces it has.
   if (isNumberKanji(entry.glyph)) return null;
   const pieces = builtPieces(entry.glyph);
-  // No etymology role pieces — a memorised whole (a pictograph, or a kanji
-  // Wiktionary can't usefully split). Render nothing at all.
-  if (!pieces.length) return null;
-
   const origin = etymologyOf(entry.glyph)?.originText ?? null;
+  const hasTiles = pieces.length > 0;
+  const hasOrigin = typeof origin === "string" && origin.trim().length > 0;
+  // Render only where there is something honest to show: tiles to take the kanji
+  // apart, OR — for a pictograph / shape-drift kanji with no mappable pieces — a
+  // glyph-origin story to read. Neither ⇒ nothing at all (no empty card).
+  if (!hasTiles && !hasOrigin) return null;
 
   // RARE, UNTAUGHT PHONETIC PIECES get flagged. A sound piece the learner has
   // never met (冓 in 講) reads as a character they should know and don't, so it
@@ -202,47 +247,58 @@ export function KanjiBuiltFrom({
 
   return (
     <Card>
-      <Lbl>Built from</Lbl>
-      <div className="flex flex-wrap items-stretch gap-2">
-        {pieces.map((p, i) => (
-          <PieceTile
-            key={`${p.glyph}-${i}`}
-            host={entry.glyph}
-            piece={p}
-            marker={rare.get(i)?.marker ?? null}
-          />
-        ))}
-      </div>
-      {footnote ? (
-        <p className="mt-2.5 text-xs text-text-muted">
-          A <span className="text-text">meaning</span> piece is a clue to what the
-          kanji means; a <span className="text-accent">phonetic</span> piece is the
-          sound it takes inside words.
-        </p>
-      ) : null}
-      {/* One footnote per rare, untaught sound piece — plain American voice, the
-          reading in kana (dropped when it couldn't be derived). */}
-      {rare.size > 0 ? (
-        <div className="mt-2.5 flex flex-col gap-1">
-          {pieces.map((p, i) => {
-            const flag = rare.get(i);
-            if (!flag) return null;
-            return (
-              <p key={`fn-${p.glyph}-${i}`} className="text-xs leading-relaxed text-text-muted">
-                <span className="text-text-muted">{flag.marker}</span>{" "}
-                <span className={japaneseFontClass(p.glyph)}>{p.glyph}</span>
-                {flag.gloss.reading ? (
-                  <span className="font-kana"> ({flag.gloss.reading})</span>
-                ) : null}{" "}
-                is the sound piece here, but it&rsquo;s a rare character meaning
-                &ldquo;{flag.gloss.meaning}&rdquo; — it&rsquo;s not in our
-                dictionary, so you won&rsquo;t have met it before.
-              </p>
-            );
-          })}
-        </div>
-      ) : null}
-      {origin ? <WhyOrigin text={origin} /> : null}
+      <Lbl>How it&rsquo;s built &amp; etymology</Lbl>
+      {hasTiles ? (
+        <>
+          <div className="flex flex-wrap items-stretch gap-2">
+            {pieces.map((p, i) => (
+              <PieceTile
+                key={`${p.glyph}-${i}`}
+                host={entry.glyph}
+                piece={p}
+                marker={rare.get(i)?.marker ?? null}
+              />
+            ))}
+          </div>
+          {footnote ? (
+            <p className="mt-2.5 text-xs text-text-muted">
+              A <span className="text-text">meaning</span> piece is a clue to what
+              the kanji means; a{" "}
+              <span className="text-accent">phonetic</span> piece is the sound it
+              takes inside words.
+            </p>
+          ) : null}
+          {/* One footnote per rare, untaught sound piece — plain American voice,
+              the reading in kana (dropped when it couldn't be derived). */}
+          {rare.size > 0 ? (
+            <div className="mt-2.5 flex flex-col gap-1">
+              {pieces.map((p, i) => {
+                const flag = rare.get(i);
+                if (!flag) return null;
+                return (
+                  <p key={`fn-${p.glyph}-${i}`} className="text-xs leading-relaxed text-text-muted">
+                    <span className="text-text-muted">{flag.marker}</span>{" "}
+                    <span className={japaneseFontClass(p.glyph)}>{p.glyph}</span>
+                    {flag.gloss.reading ? (
+                      <span className="font-kana"> ({flag.gloss.reading})</span>
+                    ) : null}{" "}
+                    is the sound piece here, but it&rsquo;s a rare character meaning
+                    &ldquo;{flag.gloss.meaning}&rdquo; — it&rsquo;s not in our
+                    dictionary, so you won&rsquo;t have met it before.
+                  </p>
+                );
+              })}
+            </div>
+          ) : null}
+          {/* Tiles present: the origin prose stays folded behind "Why?" — it
+              often runs long alongside the tiles. */}
+          {origin ? <WhyOrigin text={origin} /> : null}
+        </>
+      ) : (
+        // No mappable pieces, but a glyph-origin story: show it directly as the
+        // body. `hasOrigin` gated the render, so `origin` is a non-empty string.
+        <OriginProse text={origin!} />
+      )}
     </Card>
   );
 }
