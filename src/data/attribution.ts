@@ -116,6 +116,20 @@ export const SOURCES: readonly Source[] = [
     licence: "CC BY-SA 3.0",
     href: "https://kanjivg.tagaini.net/",
   },
+  {
+    // The third non-EDRDG source. English Wiktionary's Translingual glyph-origin
+    // markup ({{Han compound}}) is where kanji-etymology.json's component
+    // FUNCTION (semantic / phonetic / form), applicable SENSE, and the plain
+    // glyph-origin explanation come from. CC BY-SA — the same ShareAlike family
+    // as the EDRDG files, so it sits in the generated collection without
+    // conflict. Like every other borrowed thing, it earns a line here so the
+    // credit is a thing someone has to consciously delete, not forget to add.
+    name: "English Wiktionary",
+    what: "Each kanji's glyph origin: what each component contributes (meaning, sound, or shape), the sense that applies, and the plain-language explanation of how the parts make the whole.",
+    holder: "Wiktionary contributors",
+    licence: "CC BY-SA 4.0",
+    href: "https://en.wiktionary.org/",
+  },
   // The three sources of `beginnerRank` (see scripts/ingest/beginnerrank.py).
   // They order the words most-useful-first; the derived `beginnerRank` field in
   // vocab.json is share-alike (CC BY-SA 4.0) like the rest of generated/, which
@@ -162,7 +176,10 @@ export const LICENCE_NOTE =
   "from the JLPT vocabulary lists at tanos.co.uk (Jonathan Waller, CC BY) and " +
   "open-anki-jlpt-decks (MIT), together with the OpenSubtitles 2018 frequency " +
   "list from hermitdave/FrequencyWords (Creative Commons Attribution-ShareAlike " +
-  "4.0 International licence).";
+  "4.0 International licence). The glyph-origin notes — what each component of a " +
+  "kanji contributes and how the parts make the whole — are derived from English " +
+  "Wiktionary (en.wiktionary.org), used under the Creative Commons Attribution-" +
+  "ShareAlike 4.0 International licence and written by Wiktionary's contributors.";
 
 /** The EDRDG licence in full — the authority for everything above. */
 export const LICENCE_HREF = "https://www.edrdg.org/edrdg/licence.html";
