@@ -1565,7 +1565,14 @@ export function DrillScreen() {
         : q.numberItem.direction === "hear"
           ? "Type the number you hear."
           : "Type the number."
-      : quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed", q.grammarVehicle ?? undefined);
+      : q.variant
+        ? // A variant showing puts a component form (亻) in the halo over a board
+          // of kanji and asks which character it belongs to. The whole question is
+          // this ONE line — the grey "which character is this a form of?"
+          // sub-label was dropped (see the variant prompt in engine/question.ts),
+          // the way the grammar form-name folded into its instruction.
+          "Which of these is this a form of?"
+        : quizInstruction(q.f, q.dir, q.mc ? "mc" : "typed", q.grammarVehicle ?? undefined);
   const total = limited ? rt.deck.length : null;
   const pct = total ? Math.min(100, Math.round((100 * rt.resolved) / total)) : null;
   // The card already decided its shape at ask time: MC options were built (or
