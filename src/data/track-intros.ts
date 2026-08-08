@@ -307,7 +307,7 @@ export const COUNTERS_TRACK: PhaseIntro = {
     },
     {
       lead: "Some pieces you learn here aren’t numbers or counters.",
-      text: "When a lesson introduces a number or counter kanji, it first teaches the smaller radicals and kanji that character is built from, so the new character reads as pieces you already know instead of a shape to memorize whole. 個, the counter for small objects, is built from 口, 古 and 固, so those come first and 個 then falls into place. A few of these building blocks, like 古 and 固, are whole kanji that just don’t count anything themselves.",
+      text: "When a lesson introduces a number or counter kanji, it first teaches the smaller radicals and kanji that character is built from, so the new character reads as pieces you already know instead of a shape to memorize whole. 明 (bright) is 日 (sun) next to 月 (moon), and once you know both pieces the whole reads at a glance. The number and counter kanji here work the same way, and a few of their building blocks are whole kanji that don’t count anything themselves.",
     },
   ],
 };
