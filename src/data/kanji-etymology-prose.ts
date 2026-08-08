@@ -27,7 +27,14 @@
 // - No em or en dashes (— –); use commas, colons, periods.
 // - Keep the piece glyphs and their sense in parentheses where they help.
 
-export const PROSE_OVERRIDE: Readonly<Record<string, string>> = {
+import { BATCH_02 } from "./etymology-prose/batch-02.ts";
+import { BATCH_03 } from "./etymology-prose/batch-03.ts";
+import { BATCH_04 } from "./etymology-prose/batch-04.ts";
+import { BATCH_05 } from "./etymology-prose/batch-05.ts";
+import { BATCH_06 } from "./etymology-prose/batch-06.ts";
+
+// Batch 01 — the first hand-cleaned set (teaching order, most-seen first).
+const BATCH_01: Readonly<Record<string, string>> = {
   人: "The original glyph looked like a side view of a standing man showing an arm and a leg.",
   大: "The original glyph looked like a person facing forward, standing tall to suggest something big.",
   日: "The original glyph looked like the sun, a mark added inside to set it apart from lookalikes.",
@@ -47,4 +54,16 @@ export const PROSE_OVERRIDE: Readonly<Record<string, string>> = {
   分: "八 (to split) over 刀 (a knife): to divide something up, a part.",
   干: "The original glyph looked like a shield, later also borrowed to write dry.",
   年: "This glyph originally meant harvest but changed to year over time. It uses the definition of 禾 (grain) and the sound of 人.",
+};
+
+/** Every hand-cleaned story so far, batches merged in teaching order. Ranges are
+ * disjoint by construction (the dump helper excludes already-cleaned kanji), so
+ * no key is defined twice; the spread order is just for readability. */
+export const PROSE_OVERRIDE: Readonly<Record<string, string>> = {
+  ...BATCH_01,
+  ...BATCH_02,
+  ...BATCH_03,
+  ...BATCH_04,
+  ...BATCH_05,
+  ...BATCH_06,
 };
