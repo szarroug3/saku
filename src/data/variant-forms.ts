@@ -101,23 +101,42 @@ const FALLBACK_POSITION: Readonly<Record<string, VariantPosition>> = {
 /**
  * Forms dropped from the teaching entirely: `variantForm` returns undefined for
  * them, so they never render an "Also written as" row and never carry a "Built
- * from" variant note. The rule this enforces is: a variant is shown only if we
- * can NAME it. A form lands here for one of two reasons.
+ * from" variant note. The rule this enforces is: a variant is shown only when the
+ * pairing is TRUE and (where it surfaces in a table) nameable. A form lands here
+ * for one of two reasons.
  *
- *   MISLABEL — KanjiVG records `kvg:original` as a character the glyph is not
- *   actually a reduced form of. Left in, it teaches a false identity AND (having
- *   no real name for the false pairing) shows a blank "Called".
+ *   MISLABEL — KanjiVG's `kvg:original` names a character the glyph is not
+ *   actually a reduced form of, so the pairing is a FALSE identity. Left in on a
+ *   surface-#1 form it shows a blank "Called"; left in on a built-from-only form
+ *   it prints a false note ("X in its bottom form") under a plain component. A
+ *   full audit of all 58 `kvg:original` values (KanjiVG cannot validate its own
+ *   field) found eight.
  *
- *     儿  KanjiVG calls this a form of 八. It is not — 儿 is the "legs" radical
- *         にんにょう / ひとあし (historically from 人), a radical in its own right.
- *         This is the row that showed `儿 | bottom | (blank) | 見` on 八's page.
- *     士  KanjiVG calls this a form of 土 (top of 売). It is not — 士 (さむらい,
- *         Kangxi radical 33) is its own radical, and dictionaries file 売 under
- *         士, not 土. Naming it (as 土) would compound the false pairing.
+ *     儿  called a form of 八. It is not — 儿 is the "legs" radical にんにょう /
+ *         ひとあし (historically from 人), a radical in its own right. This is the
+ *         row that showed `儿 | bottom | (blank) | 見` on 八's page.
+ *     士  called a form of 土 (top of 売). It is not — 士 (さむらい, Kangxi radical
+ *         33) is its own radical, and dictionaries file 売 under 士, not 土.
+ *     日  called a bottom-form of 曰 (say). It is not — 日 (sun/day) is its own
+ *         character; the box in 白, 冒, 旦 … is plain 日. Left in, 白's "Built
+ *         from" read "日 in its bottom form" and 日's own page showed no forms.
+ *     川  called a form of 巛. It is not — 川 (river) is its own taught character
+ *         AND the primary form of the river radical; 巛 is the archaic curved
+ *         variant, so the arrow points backwards. The 川 in 訓, 順, 州 is plain
+ *         川; left in it read "巛 in its bottom form" under it. Parallels 日→曰.
+ *     戌  called a form of 戍, and 戍 called a form of 戌 — a bidirectional swap of
+ *     戍  two DISTINCT characters that differ by a single stroke (戌 = 11th earthly
+ *         branch / dog; 戍 = to garrison). Neither is a positional form of the
+ *         other; the note cross-labels a plain component with the wrong character.
+ *     ⺍  called a form of "つ" — the HIRAGANA tsu (U+3064), not a kanji at all.
+ *         A pure ingest artifact: there is no character for this to be a form of.
+ *     厶  mapped to itself (原 == 厶). A self-map is not a variant relationship;
+ *         it would render the empty tautology "厶 is 厶 in its bottom form".
  *
  *   NO ESTABLISHED NAME — a rare or non-standard glyph with no checkable
- *   Japanese radical name, appearing only in one obscure host. Naming it would
- *   mean inventing, so it is dropped instead.
+ *   Japanese radical name, appearing only in one obscure host. Each is a
+ *   surface-#1 form (its original IS taught), so it would render a table row with
+ *   a blank "Called"; naming it would mean inventing, so it is dropped instead.
  *
  *     眞  the kyūjitai (old whole-character form) of 真, not a positional
  *         radical; no radical name; sole jōyō host is the rare 塡.
@@ -127,16 +146,42 @@ const FALLBACK_POSITION: Readonly<Record<string, VariantPosition>> = {
  *         written 魚, うおへん); sole host 衡 is not a fish kanji, so the pairing
  *         is a decomposition artifact with no teachable name.
  *
- * Every OTHER surface-#1 form (one whose original is a taught character) has a
- * verified NAME below, so no shown row is ever blank. See variant-forms.test.ts.
+ * Every surviving surface-#1 form (one whose original is a taught character) has a
+ * verified NAME below, so no shown table row is ever blank; every surviving
+ * built-from-only form is a TRUE variant taught by position. The full kept/dropped
+ * decision is pinned in variant-forms.test.ts.
  */
 const EXCLUDED: ReadonlySet<string> = new Set([
-  "儿", // mislabel: にんにょう/ひとあし, not a form of 八
-  "士", // mislabel: さむらい (radical 33), not a form of 土
-  "眞", // no name: kyūjitai of 真, not a radical
-  "𦥑", // no name: rare two-hands component, conflated with 臼
-  "𩵋", // no name: rare fish glyph, not the 魚 うおへん radical
+  // Mislabels (false cross-character identity):
+  "儿", // にんにょう/ひとあし, not a form of 八
+  "士", // さむらい (radical 33), not a form of 土
+  "日", // 日 (sun) is its own character, not a bottom-form of 曰 (say)
+  "川", // 川 (river) is its own char / primary river radical, not a form of 巛
+  "戌", // 戌 (dog branch) and 戍 (garrison) are distinct chars — swapped pairing
+  "戍", // reverse of the same 戌/戍 confusion
+  "⺍", // "original" is the hiragana つ (U+3064), not a kanji — ingest artifact
+  "厶", // self-map (厶 → 厶): not a variant relationship
+  // No established name (rare glyph, would mean inventing a name):
+  "眞", // kyūjitai of 真, not a radical
+  "𦥑", // rare two-hands component, conflated with 臼
+  "𩵋", // rare fish glyph, not the 魚 うおへん radical
 ]);
+
+/**
+ * Whether a glyph is a variant the `variants` map names but the teaching DROPS —
+ * a mislabel (儿→八, 日→曰) or an un-nameable rare form (眞, 𩵋). `variantForm`
+ * already returns undefined for these, so the "Also written as" table and the
+ * "Built from" variant NOTE both skip them. But a component's LINK and MEANING are
+ * resolved on a separate path (`variantTaughtKanji` → `madeOf`/`builtPieceMeaning`
+ * in lib/library/entries.ts) that reads the raw map and would still route 儿
+ * through to 八 — printing "eight" under a 儿 that its own radical page calls
+ * "legs". That path must consult this predicate first and, for an excluded glyph,
+ * treat the piece as its own shape (its radical or primitive), never the dropped
+ * original. Keyed on the exact form glyph in the `variants` map.
+ */
+export function isExcludedVariant(glyph: string): boolean {
+  return EXCLUDED.has(glyph);
+}
 
 /**
  * The Japanese position-name of a form, where it is verified. NOT derived: no
