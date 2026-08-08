@@ -110,8 +110,9 @@ const phase1 = COUNTER_CURRICULUM.filter((f) => f.phase === 1);
 const phase1Met = phase1.map(counterMeaningFactId);
 const byGlyph = (g: string) => COUNTER_CURRICULUM.find((f) => f.glyph === g)!;
 
-// The bare numbers 1-10 plus 〜つ — everything the scheduler teaches BEFORE the
-// generative units.
+// The 〜つ forms — everything the scheduler teaches as a FORM before the generative
+// units. (The Sino numbers 1-10 are no longer rote forms; the tens unit teaches
+// their kanji, and the words track teaches their reading via the kanji's word role.)
 const numbersDone = COUNTER_CURRICULUM.filter(
   (f) => f.counter === "" || f.counter === "つ",
 ).map(counterMeaningFactId);
@@ -214,23 +215,23 @@ describe("the rote counted forms are gone", () => {
   });
 });
 
-describe("prereqs before their kanji, kanji before the kana that uses them", () => {
-  test("a number lesson teaches each number kanji ahead of its kana reading", () => {
-    // The lesson that first teaches 一: its 一 kanji card precedes the いち card.
+describe("the tens unit teaches the number kanji, radicals before their kanji", () => {
+  test("the tens unit teaches the Sino number kanji 一…十 as prereqs", () => {
+    // The Sino numbers are no longer rote kana forms; the tens unit (the first
+    // material that spells a number in kanji) teaches 一…十 ahead of its rule card.
     const { lesson } = advanceUntil((l) =>
       l.cardPrereqTiles.some((ts) => ts.some((t) => t.glyph === "一")),
     );
+    assert.ok(lesson.numberUnit, "the number kanji ride into the tens UNIT lesson");
+    assert.equal(lesson.numberUnit!.marker, NUMBER_UNIT_TENS_MARKER);
     const glyphs = walkGlyphs(lesson);
-    assert.ok(glyphs.includes("一") && glyphs.includes("いち"));
-    assert.ok(
-      glyphs.indexOf("一") < glyphs.indexOf("いち"),
-      "the kanji 一 is taught before the kana いち",
-    );
+    for (const k of ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
+      assert.ok(glyphs.includes(k), `the tens unit teaches ${k}`);
+    }
   });
 
   test("a radical prereq is taught before the kanji it builds", () => {
-    // 四 is built from 囗 and 儿; the lesson that teaches 四 teaches those radicals
-    // first, then 四, then the kana form よん.
+    // 四 is built from 囗 and 儿; the tens unit teaches those radicals first, then 四.
     const { lesson } = advanceUntil((l) =>
       l.cardPrereqTiles.some((ts) => ts.some((t) => t.glyph === "四")),
     );
@@ -239,7 +240,6 @@ describe("prereqs before their kanji, kanji before the kana that uses them", () 
       assert.ok(glyphs.includes(rad), `${rad} is taught`);
       assert.ok(glyphs.indexOf(rad) < glyphs.indexOf("四"), `${rad} precedes 四`);
     }
-    assert.ok(glyphs.indexOf("四") < glyphs.indexOf("よん"), "四 precedes よん");
   });
 
   test("the number kanji reuse the kanji track's meaning fact (no new mint)", () => {
@@ -260,19 +260,16 @@ describe("prereqs before their kanji, kanji before the kana that uses them", () 
 });
 
 describe("the cost budget packs a sitting up to the lesson max", () => {
-  test("the budget is not one-number-at-a-time, and never blows the max", () => {
-    // Some number sittings pack more than one number (に・さん ride together at
-    // 5–7), proving the budget packs rather than emitting one form per lesson;
-    // and no form sitting ever exceeds the configured max.
-    const numberLessons = allLessons().filter(
-      (l) => !l.numberUnit && l.cards.every((c) => c.counter === ""),
-    );
+  test("the budget is not one-form-at-a-time, and never blows the max", () => {
+    // Some form sittings pack more than one form (〜つ forms ride together at 5–7),
+    // proving the budget packs rather than emitting one form per lesson; and no
+    // form sitting ever exceeds the configured max.
+    const formLessons = allLessons().filter((l) => !l.numberUnit);
     assert.ok(
-      numberLessons.some((l) => l.cards.length >= 2),
-      "at least one number sitting packs two or more numbers",
+      formLessons.some((l) => l.cards.length >= 2),
+      "at least one form sitting packs two or more forms",
     );
-    for (const l of allLessons()) {
-      if (l.numberUnit) continue; // a unit is its own boundary
+    for (const l of formLessons) {
       assert.ok(
         l.cards.length <= RANGE.max,
         "a form sitting never exceeds the item max",
@@ -388,16 +385,21 @@ describe("the generative units", () => {
     assert.ok(hon[0].type === "intro" && hon[0].intro.id === "intro-counter-hon");
   });
 
-  test("the tens unit is due right after 1-10 and needs no kanji", () => {
+  test("the tens unit is due after 〜つ and teaches the number kanji 一…十", () => {
     const lesson = nextCounterLesson(claiming(numbersDone), RANGE);
     assert.ok(lesson?.numberUnit, "a generative unit lesson, not a form lesson");
     assert.equal(lesson!.numberUnit!.marker, NUMBER_UNIT_TENS_MARKER);
     assert.equal(lesson!.numberUnit!.intro.id, NUMBERS_COMPOSE.id);
     assert.equal(lesson!.numberUnit!.config.numberMax, 99);
     assert.equal(lesson!.numberUnit!.config.includeCounters, false);
-    // tens is the one unit with no new kanji: the numbers already taught them.
-    assert.deepEqual(lesson!.facts, [NUMBER_UNIT_TENS_MARKER]);
-    assert.deepEqual(lesson!.cardPrereqTiles[0], []);
+    // The tens unit spells 11-99 in kanji, so it teaches 一…十 as prereqs before its
+    // rule card (they are no longer rote forms), and ends on its marker.
+    const tiles = lesson!.cardPrereqTiles[0].map((t) => t.glyph);
+    for (const k of ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
+      assert.ok(tiles.includes(k), `the tens unit teaches ${k}`);
+    }
+    assert.ok(lesson!.facts.includes(kanjiMeaningFactId("一")));
+    assert.equal(lesson!.facts.at(-1), NUMBER_UNIT_TENS_MARKER);
     assert.equal(lesson!.position.from, numbersDone.length + 1);
     assert.equal(lesson!.position.total, COUNTERS_CURRICULUM_TOTAL);
   });

@@ -33,63 +33,51 @@ import {
 import { VOCAB_SUBJECT } from "./vocab.ts";
 import { TRACK_INTROS } from "./track-intros.ts";
 import { ALL_FACTS } from "../lib/facts.ts";
-import { counterReading } from "../lib/number-reading.ts";
+import { acceptableNumberReadings, counterReading } from "../lib/number-reading.ts";
+import { NUMBERS_COMPOSE } from "./phase-intros.ts";
 
 const byGlyph = (g: string): CounterForm =>
   COUNTER_CURRICULUM.find((f) => f.glyph === g)!;
 
-describe("the track order teaches 〜つ before the numbers", () => {
-  test("the first 〜つ form comes before the first bare number", () => {
-    const firstTsu = COUNTER_CURRICULUM.findIndex((f) => f.counter === "つ");
-    const firstNumber = COUNTER_CURRICULUM.findIndex(
-      (f) => f.counter === "" && f.phase === 1,
-    );
-    assert.ok(firstTsu >= 0 && firstNumber >= 0);
-    assert.ok(firstTsu < firstNumber, "〜つ must precede the Sino numbers");
-  });
-
+describe("the Sino numbers 1-10 are no longer rote forms", () => {
   test("〜つ is the very first thing in the track", () => {
     assert.equal(COUNTER_CURRICULUM[0].counter, "つ");
     assert.equal(COUNTER_CURRICULUM[0].glyph, "ひとつ");
   });
+
+  test("no bare Sino-number form remains — the number kanji carry them", () => {
+    // いち…じゅう used to ship as counter:num:1..10 kana forms. They duplicated the
+    // number kanji's word role (二 = に = two), so they are gone. There is no bare
+    // number (counter === "") left in the curriculum.
+    const bare = COUNTER_CURRICULUM.filter((f) => f.counter === "");
+    assert.deepEqual(bare, [], "the counter:num:1..10 forms must be removed");
+    const keys = new Set(COUNTER_CURRICULUM.map((f) => f.key));
+    for (let n = 1; n <= 10; n++) {
+      assert.ok(!keys.has(`counter:num:${n}`), `counter:num:${n} should be gone`);
+    }
+  });
 });
 
-describe("the branching Sino numbers carry the alt reading, not a reading-in-the-meaning", () => {
-  // 4, 7, 9 each branch into a second reading (よん/し, なな/しち, きゅう/く). The
-  // alternate is a READING, so it rides on altReading and shows on the reading
-  // side — never smuggled into the meaning gloss, where the say-it panel would
-  // print it under Means as if it were a definition.
-  const ALT: ReadonlyArray<[string, string]> = [
-    ["よん", "し"],
-    ["なな", "しち"],
-    ["きゅう", "く"],
-  ];
-  for (const [reading, alt] of ALT) {
-    test(`${reading} carries alt reading ${alt} and a kana-free number meaning`, () => {
-      const form = byGlyph(reading);
-      assert.equal(form.altReading, alt);
-      // The meaning is the number alone: no "also", no kana reading hidden in it.
-      assert.ok(
-        !form.meaning.includes("also"),
-        `${reading} meaning must not carry a reading`,
-      );
-      assert.doesNotMatch(
-        form.meaning,
-        /[぀-ヿ]/u,
-        `${reading} meaning must be free of kana`,
-      );
-    });
-  }
-
-  test('9 (きゅう) means exactly "nine (9)"', () => {
-    assert.equal(byGlyph("きゅう").meaning, "nine (9)");
+describe("the branching readings (4, 7, 9) survive the removal", () => {
+  // The rote forms carried a second reading each — よん/し, なな/しち, きゅう/く. The
+  // kanji word role (from vocab.json) gives only し / しち / きゅう, so the OTHER
+  // branch of each — よん, なな, く — is kept in the tens construction rule card and
+  // stays accepted by the reading engine when grading a generated round. Nothing
+  // is lost.
+  test("the tens rule card names both readings of 4, 7 and 9", () => {
+    const prose = NUMBERS_COMPOSE.body.map((p) => p.text).join(" ");
+    for (const reading of ["よん", "し", "なな", "しち", "きゅう", "く"]) {
+      assert.ok(prose.includes(reading), `NUMBERS_COMPOSE must teach ${reading}`);
+    }
   });
 
-  test("every other bare number has no alt reading", () => {
-    const single = ["いち", "に", "さん", "ご", "ろく", "はち", "じゅう"];
-    for (const g of single) {
-      assert.equal(byGlyph(g).altReading, "", `${g} should carry no alt reading`);
-    }
+  test("the engine still accepts BOTH branches on the ones digit", () => {
+    assert.ok(acceptableNumberReadings(4).includes("よん"));
+    assert.ok(acceptableNumberReadings(4).includes("し"));
+    assert.ok(acceptableNumberReadings(7).includes("なな"));
+    assert.ok(acceptableNumberReadings(7).includes("しち"));
+    assert.ok(acceptableNumberReadings(9).includes("きゅう"));
+    assert.ok(acceptableNumberReadings(9).includes("く"));
   });
 });
 

@@ -20,6 +20,7 @@ import {
   acceptableCounterReadings,
   acceptableNumberReadings,
   counterReading,
+  countToKanji,
   numberReading,
   type CounterKind,
 } from "@/lib/number-reading";
@@ -57,6 +58,10 @@ export interface NumberQuizItem {
   readonly accept: string[];
   /** String(n) — the answer for the WRITE direction. */
   readonly digits: string;
+  /** The kanji spelling shown as the READ prompt — 十七, 三百, 三本, 十七人. The
+   * READ card asks "how is this said", so it shows the number the way it is
+   * written (kanji), not the digit; WRITE / HEAR ignore this and answer `digits`. */
+  readonly promptKanji: string;
 }
 
 export interface NumberQuizConfig {
@@ -139,6 +144,7 @@ export function makeItem(
       reading,
       accept: acceptableCounterReadings(n, counter),
       digits: String(n),
+      promptKanji: countToKanji(n, counter),
     };
   }
   const reading = numberReading(n);
@@ -151,6 +157,7 @@ export function makeItem(
     reading,
     accept: acceptableNumberReadings(n),
     digits: String(n),
+    promptKanji: countToKanji(n, null),
   };
 }
 

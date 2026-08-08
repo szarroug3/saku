@@ -432,7 +432,7 @@ describe("the single-kanji fold", () => {
     const single = CURRICULUM_WORDS.filter(
       (w) => w.keb.length === 1 && kanjiRow(w.keb) !== undefined,
     );
-    assert.equal(single.length, 582);
+    assert.equal(single.length, 592);
     for (const w of single) {
       assert.ok(has(w.keb, "word"), `${w.keb} lacks the word role`);
       assert.ok(has(w.keb, "kanji"), `${w.keb} lacks the kanji role`);
@@ -491,7 +491,7 @@ describe("the tail", () => {
   const pulledAsComponent = (c: string): boolean => AT.get(c)! < lastWord;
 
   test("the orphan kanji are the 393 the data says, and follow every word", () => {
-    assert.equal(orphanKanji.length, 393);
+    assert.equal(orphanKanji.length, 389);
     // The ones no earlier character reached for. Everything else is a component
     // debt that was paid at the point it was owed.
     const tail = orphanKanji.filter((c) => !pulledAsComponent(c));
@@ -563,7 +563,7 @@ describe("the tail", () => {
     assert.ok(lastWord < lastKanji);
     assert.equal(
       CURRICULUM_SEQUENCE.length,
-      KANJI.length + RADICAL_ONLY.length + CURRICULUM_WORDS.length - 582,
+      KANJI.length + RADICAL_ONLY.length + CURRICULUM_WORDS.length - 592,
       "total is kanji + radical-only shapes + words, less the folds",
     );
   });

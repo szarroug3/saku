@@ -26,6 +26,7 @@ import {
   acceptableCounterReadings,
   acceptableNumberReadings,
   counterReading,
+  countToKanji,
   numberReading,
   type CounterKind,
 } from "@/lib/number-reading";
@@ -217,6 +218,7 @@ describe("gradeNumberItem", () => {
           reading: counterReading(n, counter) ?? "",
           accept: acceptableCounterReadings(n, counter),
           digits: String(n),
+          promptKanji: countToKanji(n, counter),
         }
       : {
           kind: "number",
@@ -226,6 +228,7 @@ describe("gradeNumberItem", () => {
           reading: numberReading(n),
           accept: acceptableNumberReadings(n),
           digits: String(n),
+          promptKanji: countToKanji(n, null),
         };
   }
 
@@ -260,6 +263,7 @@ describe("gradeNumberItem", () => {
       reading: "さんぼん",
       accept: [],
       digits: "3",
+      promptKanji: "三本",
     };
     assert.ok(gradeNumberItem(item, "3"));
     assert.ok(gradeNumberItem(item, " 3 "));
@@ -276,6 +280,7 @@ describe("gradeNumberItem", () => {
       reading: "さんぼん",
       accept: [],
       digits: "3",
+      promptKanji: "三本",
     };
     assert.ok(gradeNumberItem(item, "3"));
     assert.ok(gradeNumberItem(item, "３")); // full-width

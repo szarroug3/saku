@@ -1631,21 +1631,14 @@ const keigoQuestions: QuestionType = {
 // the point. Grading, prompt and reveal all defer to the rolled item, so the
 // fact's baked `answers` (its category name) is never asked or shown.
 
-/** The counter kanji a category counts (本, 匹, …), or "" for a bare-number
- * range (the tens/big categories, whose items carry no counter). Read off the
- * category glyph (〜本 → 本), never parsed from the id. */
-function counterKanjiOf(fact: FactId): string {
-  return constructionCategory(fact)?.glyph.replace(/^〜/, "") ?? "";
-}
-
-/** What a construction card shows: the digits for a READ card (3, or 3 本 for a
- * counter), or the kana reading for a WRITE / HEAR card (the number to type back
- * as digits — HEAR plays it, WRITE prints it). */
-function constructionGlyph(item: NumberQuizItem, kanji: string): string {
-  if (item.direction === "read") {
-    return item.counter && kanji ? `${item.digits} ${kanji}` : item.digits;
-  }
-  return item.reading;
+/** What a construction card shows: the number written in KANJI for a READ card
+ * (十七, 三本, 十七人) — the READ card asks how the written number is said, so it
+ * shows the number the way it appears in the wild, not the digit — or the kana
+ * reading for a WRITE / HEAR card (the number to type back as digits — HEAR plays
+ * it, WRITE prints it). The kanji is baked on the item (countToKanji), so this
+ * matches the dedicated screen and the construction reference tables exactly. */
+function constructionGlyph(item: NumberQuizItem): string {
+  return item.direction === "read" ? item.promptKanji : item.reading;
 }
 
 const constructionQuestions: QuestionType = {
@@ -1660,7 +1653,7 @@ const constructionQuestions: QuestionType = {
       return { glyph: cat?.glyph ?? glyphOfFact(fact), jp: true, context: null, hint: null };
     }
     return {
-      glyph: constructionGlyph(item, counterKanjiOf(fact)),
+      glyph: constructionGlyph(item),
       jp: true,
       // READ shows a number and wants its reading; WRITE shows a reading and
       // wants the number. The context names which way round, so the digits/kana

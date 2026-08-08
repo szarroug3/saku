@@ -114,7 +114,9 @@ describe("the shelf exists and lists the counters", () => {
 
 describe("a counter entry resolves to a real Library page", () => {
   test("its URL round-trips to the same id", () => {
-    for (const glyph of ["ひとつ", "に", "二十歳"]) {
+    // A 〜つ kana form and the one memorised counted form; the bare Sino numbers
+    // (に …) are no longer counter forms — the number kanji carry them.
+    for (const glyph of ["ひとつ", "とお", "二十歳"]) {
       const id = counterEntry(byGlyph(glyph));
       assert.ok(libEntry(id), `${glyph} has a LibEntry`);
       const href = entryHref(id);

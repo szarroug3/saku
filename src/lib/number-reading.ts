@@ -73,6 +73,70 @@ export type CounterKind =
   | "kai"
   | "sai";
 
+/** Digit → its kanji, indexed 0–10 (0 unused). The SAME table the construction
+ * pages spell their Word column with, kept here in the pure engine so the quiz's
+ * READ prompt and the reference tables can never draw a number two different ways. */
+const KANJI_DIGIT: readonly string[] = [
+  "", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
+];
+
+/** The counter kanji each CounterKind counts — 〜本 → 本, 〜人 → 人. Matches the
+ * counter glyphs the construction pages and the drill's counterKanjiOf use, so a
+ * counted READ prompt (三本) and its reference table agree. */
+const COUNTER_KANJI: Record<CounterKind, string> = {
+  tsu: "つ",
+  nin: "人",
+  hon: "本",
+  hiki: "匹",
+  mai: "枚",
+  ko: "個",
+  dai: "台",
+  satsu: "冊",
+  hai: "杯",
+  kai: "回",
+  sai: "歳",
+};
+
+/** The counter kanji of a CounterKind (本, 人, …). */
+export function counterKanji(counter: CounterKind): string {
+  return COUNTER_KANJI[counter];
+}
+
+/**
+ * The kanji spelling of an integer 1 ≤ n < 10^8 — 17 → 十七, 300 → 三百, 8000 →
+ * 八千, 100000 → 十万. The written twin of numberReading: same 4-digit grouping
+ * with 万, the tens/hundreds/thousands "1" dropped (十, not 一十) while 万 keeps
+ * its 一 (一万), so it lines up with the readings the app already ships.
+ */
+export function numberToKanji(n: number): string {
+  const group = (v: number): string => {
+    const th = Math.floor(v / 1000) % 10;
+    const h = Math.floor(v / 100) % 10;
+    const t = Math.floor(v / 10) % 10;
+    const o = v % 10;
+    let out = "";
+    if (th) out += (th === 1 ? "" : KANJI_DIGIT[th]) + "千";
+    if (h) out += (h === 1 ? "" : KANJI_DIGIT[h]) + "百";
+    if (t) out += (t === 1 ? "" : KANJI_DIGIT[t]) + "十";
+    if (o) out += KANJI_DIGIT[o];
+    return out;
+  };
+  const man = Math.floor(n / 10000);
+  const rest = n % 10000;
+  let out = "";
+  if (man) out += (man === 1 ? "一" : numberToKanji(man)) + "万";
+  if (rest) out += group(rest);
+  return out;
+}
+
+/** The kanji form of a count for the READ prompt: the bare number in kanji (十七),
+ * or the number welded to its counter kanji (三本, 十七人). The one place the two
+ * READ render paths (the dedicated screen and the fact drill) build the prompt,
+ * so they can never diverge. */
+export function countToKanji(n: number, counter: CounterKind | null): string {
+  return counter ? numberToKanji(n) + counterKanji(counter) : numberToKanji(n);
+}
+
 /**
  * UNIT[counter][k] — the reading of the single count k (1–10). These carry the
  * counter's sound changes and are used verbatim; index 0 is unused padding.

@@ -39,7 +39,12 @@ import {
   type IntroPara,
 } from "@/data/phase-intros";
 import { counterIrregulars, type NumberQuizConfig } from "@/lib/engine/number-quiz";
-import { counterReading, numberReading, type CounterKind } from "@/lib/number-reading";
+import {
+  counterReading,
+  numberReading,
+  numberToKanji,
+  type CounterKind,
+} from "@/lib/number-reading";
 import { entryId } from "@/lib/fact-id";
 import type { EntryId } from "@/types";
 
@@ -87,25 +92,11 @@ export interface NumberConstruction {
 const KANJI_DIGIT = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
 
 /** The full kanji spelling of an integer this file shows in the Word column — the
- * tens (11-99) and the big bases (100 … 100000). Parallels numberReading but yields
- * kanji: 十一, 三十四, 二百, 一万, 十万. */
+ * tens (11-99) and the big bases (100 … 100000): 十一, 三十四, 二百, 一万, 十万.
+ * Delegates to the engine's numberToKanji so the reference tables and the quiz's
+ * READ prompt spell a number the one same way. */
 function numberKanji(n: number): string {
-  if (n < 100) {
-    const t = Math.floor(n / 10);
-    const o = n % 10;
-    const tens = t === 0 ? "" : t === 1 ? "十" : KANJI_DIGIT[t] + "十";
-    return tens + (o ? KANJI_DIGIT[o] : "");
-  }
-  if (n < 1000) {
-    const h = Math.floor(n / 100);
-    return h === 1 ? "百" : KANJI_DIGIT[h] + "百";
-  }
-  if (n < 10000) {
-    const th = Math.floor(n / 1000);
-    return th === 1 ? "千" : KANJI_DIGIT[th] + "千";
-  }
-  // 万 bases: 10000 = 一万, 100000 = 十万. The prefix is itself a kanji number.
-  return numberKanji(n / 10000) + "万";
+  return numberToKanji(n);
 }
 
 /** One counter's whole page metadata: the glyph, the name, what it counts (for
