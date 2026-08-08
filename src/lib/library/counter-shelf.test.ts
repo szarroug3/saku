@@ -33,8 +33,13 @@ import {
   libEntry,
   LIB_ENTRIES,
 } from "./entries.ts";
+import { kanjiEntry, KANJI_SUBJECT } from "../../data/kanji.ts";
 import { counterShelfSections } from "./counter-shelf.ts";
 import { entryFromSlug, entryHref } from "./href.ts";
+
+// The Sino numbers 1-10, in counting order — the kanji the "Numbers" section
+// surfaces since the dedupe removed the rote counter:num forms.
+const NUMBER_KANJI = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
 
 const byGlyph = (g: string) => COUNTER_CURRICULUM.find((f) => f.glyph === g)!;
 
@@ -59,10 +64,11 @@ describe("the shelf exists and lists the counters", () => {
     for (const id of counterIds) assert.ok(expected.has(id), `${id} is a counter entry`);
   });
 
-  test("every listed entry is a COUNTER_KIND LibEntry, bar the construction pages", () => {
+  test("every listed entry is a COUNTER_KIND LibEntry, bar the construction and number-kanji pages", () => {
     const constructionIds = new Set(
       NUMBER_CONSTRUCTIONS.map((c) => numberConstructionEntry(c.id)),
     );
+    const numberKanjiIds = new Set(NUMBER_KANJI.map((c) => kanjiEntry(c)));
     for (const s of counterShelfSections()) {
       for (const e of s.entries) {
         if (constructionIds.has(e.id)) {
@@ -73,6 +79,12 @@ describe("the shelf exists and lists the counters", () => {
           );
           continue;
         }
+        // The Sino numbers 1-10 are KANJI entries (their own pages), surfaced on
+        // this shelf but owned by the Kanji subject.
+        if (numberKanjiIds.has(e.id)) {
+          assert.equal(e.kind, KANJI_SUBJECT, "the numbers are kanji pages");
+          continue;
+        }
         assert.equal(e.kind, COUNTER_KIND);
       }
     }
@@ -80,6 +92,29 @@ describe("the shelf exists and lists the counters", () => {
     // slice see them.
     const inIndex = LIB_ENTRIES.filter((e) => e.kind === COUNTER_KIND);
     assert.equal(inIndex.length, COUNTER_CURRICULUM.length);
+  });
+
+  test("the Sino numbers 1-10 have a 'Numbers' section of their own kanji pages", () => {
+    const sections = counterShelfSections();
+    const numbers = sections.find((s) => s.id === "counters-numbers");
+    assert.ok(numbers, "the shelf has a Numbers section");
+    assert.equal(numbers.label, "Numbers");
+    // Every number kanji 一…十, in counting order, resolved to its own page.
+    assert.deepEqual(
+      numbers.entries.map((e) => e.id),
+      NUMBER_KANJI.map((c) => kanjiEntry(c)),
+    );
+    for (const e of numbers.entries) assert.equal(e.kind, KANJI_SUBJECT);
+    // It sits between the native 〜つ group and the tail, the teaching order.
+    const ids = sections.map((s) => s.id);
+    assert.ok(
+      ids.indexOf("counters-tsu") < ids.indexOf("counters-numbers"),
+      "〜つ leads the numbers",
+    );
+    assert.ok(
+      ids.indexOf("counters-numbers") < ids.indexOf("counters-tail"),
+      "the numbers precede the tail",
+    );
   });
 
   test("the 'how to build them' constructions lead the shelf and are not drillable", () => {
