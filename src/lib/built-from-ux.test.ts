@@ -10,7 +10,6 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { builtPieces, etymologyOf } from "@/data/kanji-etymology";
-import { isNumberKanji } from "@/data/number-kanji";
 import { KANJI } from "@/data/kanji";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
 import { hasOnyomi, onReadingsOf, phoneticExample } from "@/lib/kanji-onyomi";
@@ -26,10 +25,9 @@ function originOf(k: string): string | null {
   return typeof o === "string" && o.trim().length > 0 ? o : null;
 }
 
-/** Mirrors KanjiBuiltFrom's render gate: the section shows nothing for a number
- * kanji, and otherwise shows when there are tiles OR a glyph-origin story. */
+/** Mirrors KanjiBuiltFrom's render gate: the section shows when there are tiles
+ * OR a glyph-origin story. Numbers render like any kanji now. */
 function rendersSection(k: string): boolean {
-  if (isNumberKanji(k)) return false;
   return builtPieces(k).length > 0 || originOf(k) !== null;
 }
 
@@ -109,15 +107,12 @@ describe("no-tiles pictographs now show their glyph-origin story", () => {
   });
 });
 
-describe("no section where there is nothing honest to show", () => {
-  test("number kanji render no section; every other jōyō kanji now does", () => {
-    // The only "no section" case left is the number-kanji suppression: 一 carries
-    // a story in the data but is held whole, so KanjiBuiltFrom returns null.
-    assert.equal(rendersSection("一"), false);
-    // Invariant after the research recovery pass: NO non-number jōyō kanji renders
-    // an empty Built-from — each has tiles or a hand-checked glyph-origin story.
+describe("every jōyō kanji renders a Built-from section", () => {
+  test("no jōyō kanji renders an empty Built-from — numbers included", () => {
+    // After numbers were un-suppressed and the research pass filled every gap,
+    // every jōyō kanji has tiles or a glyph-origin story; none is blank.
     const blank = KANJI.map((r) => r.c).filter(
-      (k) => !isNumberKanji(k) && builtPieces(k).length === 0 && originOf(k) === null,
+      (k) => builtPieces(k).length === 0 && originOf(k) === null,
     );
     assert.deepEqual(blank, [], `these render no section: ${blank.join(" ")}`);
   });
@@ -130,14 +125,16 @@ describe("no section where there is nothing honest to show", () => {
     assert.equal(rendersSection("河"), true);
   });
 
-  test("the number kanji 一…十 render no Built from — even 三, which DOES split", () => {
+  test("number kanji render like any kanji: 三/二 show stacked-一, the rest their story", () => {
+    // 三 = 一+一+一 and 二 = 一+一 are genuine stacked strokes, so they tile; the
+    // other numbers show their story alone with NO false pieces (六 never shows 八).
+    assert.deepEqual(builtPieces("三").map((p) => p.glyph), ["一", "一", "一"]);
+    assert.deepEqual(builtPieces("二").map((p) => p.glyph), ["一", "一"]);
+    assert.equal(builtPieces("六").length, 0, "六 shows no false pieces");
+    assert.ok(originOf("六"), "六 shows its story");
     for (const g of ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
-      assert.ok(isNumberKanji(g), `${g} is a number kanji`);
+      assert.equal(rendersSection(g), true, `${g} renders a section`);
     }
-    // 三 is the trap: Wiktionary decomposes it into three 一, so builtPieces is
-    // NON-empty — but isNumberKanji suppresses the box, so KanjiBuiltFrom and the
-    // lesson gate both show nothing. This pins that the suppression is load-bearing.
-    assert.ok(builtPieces("三").length > 0, "三 does decompose in the data");
   });
 });
 

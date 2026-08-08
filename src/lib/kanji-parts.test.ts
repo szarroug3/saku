@@ -91,11 +91,17 @@ describe("teachableParts — the etymology pieces, resolved to teachable shapes"
 
 describe("teachableParts — a memorised whole has no pieces", () => {
   // No etymology role pieces at all → null → the lesson and hint show no
-  // breakdown, and the number kanji stay whole.
-  test("一, 人, 口, 生 are taught whole", () => {
-    for (const g of ["一", "二", "十", "人", "口", "生"]) {
+  // breakdown. Most numbers stay whole; 二 and 三 are the exceptions — genuine
+  // stacked 一 — so they DO decompose.
+  test("一, 十, 人, 口, 生 are taught whole", () => {
+    for (const g of ["一", "十", "人", "口", "生"]) {
       assert.equal(teachableParts(g), null, `${g} should have no teachable parts`);
     }
+  });
+
+  test("二 and 三 decompose into stacked 一", () => {
+    assert.deepEqual(teachableParts("二")?.map((p) => p.c), ["一", "一"]);
+    assert.deepEqual(teachableParts("三")?.map((p) => p.c), ["一", "一", "一"]);
   });
 });
 

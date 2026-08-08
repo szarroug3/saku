@@ -202,13 +202,13 @@ describe("lessonSections — a section per role, up the ladder", () => {
     ]);
   });
 
-  test("a number kanji shows no parts at all: 一 has no tiles AND no story shown", () => {
-    // isNumberKanji suppression is load-bearing and stays. 一 DOES carry an
-    // originText ("a horizontal stroke, indicating the number"), but the number
-    // kanji 一…十 are held whole regardless — no tiles and no story — so the
-    // kanji-parts gate must never fire for them.
-    const sections = lessonSections(step(kanjiEntry("一"), "一", "kanji"));
-    assert.ok(!sections.includes("kanji-parts"), "一 is a number kanji, no breakdown");
+  test("a number kanji shows its kanji-parts section now: 一 story, 三 pieces", () => {
+    // Numbers render like any kanji now: 一 shows its origin story, 三 its 一+一+一
+    // pieces, so the kanji-parts gate fires for them.
+    const one = lessonSections(step(kanjiEntry("一"), "一", "kanji"));
+    assert.ok(one.includes("kanji-parts"), "一 shows its origin story now");
+    const three = lessonSections(step(kanjiEntry("三"), "三", "kanji"));
+    assert.ok(three.includes("kanji-parts"), "三 shows its 一+一+一 pieces");
   });
 
   test("A SINGLE-ROLE KANJI KEEPS ITS DEFINITION, because its heading is the only label left", () => {

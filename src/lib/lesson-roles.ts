@@ -81,7 +81,6 @@ import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
 import { libEntry } from "@/lib/library/entries";
 import { builtPieces, etymologyOf } from "@/data/kanji-etymology";
-import { isNumberKanji } from "@/data/number-kanji";
 import { adjectiveKind, formsOfWord, ruVerbKind } from "@/lib/word-forms";
 
 /** The kinds that name a role. A step on one of these tracks plays that role
@@ -411,10 +410,10 @@ export function lessonSections(item: LessonItem): LessonSection[] {
     // (`originText`), shown as prose with NO tiles. The story is a memory aid and
     // learning happens in the lesson, so it is taught here now, not kept
     // reference-only; a no-pieces kanji stays a memorised whole (no piece
-    // decomposition) and only gains the prose. The number kanji 一…十 are held
-    // whole regardless — no tiles AND no story — matching KanjiBuiltFrom, even
-    // where Wiktionary does split one (三 as three 一).
-    if (!isNumberKanji(item.glyph)) {
+    // decomposition) and only gains the prose. The number kanji 一…十 render like
+    // any other kanji now — 三/二 show their stacked-一 pieces, the rest show their
+    // story alone — matching KanjiBuiltFrom.
+    {
       const origin = etymologyOf(item.glyph)?.originText;
       const hasOrigin = typeof origin === "string" && origin.trim().length > 0;
       if (builtPieces(item.glyph).length > 0 || hasOrigin) out.add("kanji-parts");

@@ -42,7 +42,6 @@ import {
   type BuiltPiece,
   type PhoneticGloss,
 } from "@/data/kanji-etymology";
-import { isNumberKanji } from "@/data/number-kanji";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
 import type { LibEntry } from "@/lib/library/entries";
@@ -191,11 +190,11 @@ export function KanjiBuiltFrom({
   entry: LibEntry;
   footnote?: boolean;
 }) {
-  // THE NUMBER KANJI 一…十 ARE MEMORISED WHOLES, always, even where Wiktionary
-  // does decompose them (三 as three 一): their shape-only pieces imply a meaning
-  // the number does not carry, so — exactly as the old shape decomposition did —
-  // they show NO Built from. Every other kanji keeps whatever pieces it has.
-  if (isNumberKanji(entry.glyph)) return null;
+  // THE NUMBER KANJI 一…十 render like any other kanji. The old worry — that their
+  // shape pieces (六 = 亠 + 八 "eight") mislead — is gone: the etymology layer only
+  // tiles pieces Wiktionary calls real, so 三 shows 一+一+一 and 二 shows 一+一
+  // (genuine stacked strokes), while 六/四/七/… show their story alone with no
+  // false pieces. Their origin prose lives in NUMBERS (kanji-etymology-prose.ts).
   const pieces = builtPieces(entry.glyph);
   const origin = etymologyOf(entry.glyph)?.originText ?? null;
   const hasTiles = pieces.length > 0;

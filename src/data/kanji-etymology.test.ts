@@ -323,8 +323,6 @@ test("every prose override resolves to a real etymology it can replace", () => {
   for (const k of Object.keys(PROSE_OVERRIDE)) {
     // The override only surfaces through etymologyOf, which needs a raw record.
     assert.ok(etymologyOf(k), `override for ${k} has no etymology to attach to`);
-    // Number kanji never render a Built-from, so an override there is dead copy.
-    assert.ok(!isNumberKanji(k), `${k} is a number kanji; its override never shows`);
     // etymologyOf must actually hand back the cleaned text.
     assert.equal(etymologyOf(k)?.originText, PROSE_OVERRIDE[k]);
   }

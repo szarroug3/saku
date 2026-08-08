@@ -257,6 +257,21 @@ export interface BuiltPiece {
 }
 
 /**
+ * Built-from tiles that the visible-comps join can't produce on its own. 二 is
+ * genuinely two 一 stacked, but KanjiVG draws it as a single group (no comps), so
+ * the join yields nothing — unlike 三, which KanjiVG DOES split into three 一.
+ * This gives 二 its matching 一 + 一 tiles WITHOUT touching the global
+ * decomposition (comps, classical radical, stroke conservation all stay as they
+ * were). Kept tiny and explicit on purpose; not a general escape hatch.
+ */
+const BUILT_PIECES_OVERRIDE: Readonly<Record<string, readonly BuiltPiece[]>> = {
+  二: [
+    { glyph: "一", role: "semantic", label: "one" },
+    { glyph: "一", role: "semantic", label: "one" },
+  ],
+};
+
+/**
  * A kanji's shape pieces that CARRY a glyph-origin role, in `comps` order —
  * the semantic and phonetic pieces, each with its display label. Form pieces and
  * pieces that matched no Wiktionary component are dropped (this is the UX
@@ -277,6 +292,8 @@ export interface BuiltPiece {
  * phonetic body is atomic, finds no container to expand, and stays unlabelled).
  */
 export function builtPieces(kanji: string): readonly BuiltPiece[] {
+  const override = BUILT_PIECES_OVERRIDE[kanji];
+  if (override) return override;
   const etym = RAW[kanji];
   const roles = builtFromRoles(kanji);
   if (!etym) return [];

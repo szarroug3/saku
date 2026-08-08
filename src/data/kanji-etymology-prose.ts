@@ -66,6 +66,7 @@ import { MANUAL_02 } from "./etymology-prose/manual-02.ts";
 import { MANUAL_03 } from "./etymology-prose/manual-03.ts";
 import { MANUAL_04 } from "./etymology-prose/manual-04.ts";
 import { MANUAL_05 } from "./etymology-prose/manual-05.ts";
+import { NUMBERS } from "./etymology-prose/numbers.ts";
 
 // Batch 01 — the first hand-cleaned set (teaching order, most-seen first).
 const BATCH_01: Readonly<Record<string, string>> = {
@@ -129,6 +130,7 @@ export const PROSE_OVERRIDE: Readonly<Record<string, string>> = {
   ...BATCH_33,
   ...BATCH_34,
   ...BATCH_35,
+  ...NUMBERS,
 };
 
 /**
