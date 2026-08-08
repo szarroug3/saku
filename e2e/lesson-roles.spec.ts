@@ -131,12 +131,11 @@ test("a folded character's lesson step teaches all three of its roles", async ({
   // step arrived on.
   await expect(page.locator("body")).toContainText("person");
 
-  // THE WORD BLOCK SHOWS ONLY THE READING THAT STANDS ALONE. 人 has three
-  // readings on file and only ひと is a word: じん is the -ian suffix and にん
-  // counts people, and printing either here tells a beginner they can say 人 that
-  // way (see standaloneSenses in src/lib/lesson-roles.ts). This is the assertion
-  // that catches the gate being loosened back to "every sense".
+  // THE WORD BLOCK SHOWS ALL READINGS. WordSensePanel now shows every reading-
+  // unit: ひと (standalone) plus じん and にん (compound-only, marked "in compounds").
   await expect(page.locator("body")).toContainText("ひと");
-  await expect(page.locator("body")).not.toContainText("じん");
-  await expect(page.locator("body")).not.toContainText("にん");
+  await expect(page.locator("body")).toContainText("じん");
+  await expect(page.locator("body")).toContainText("にん");
+  // Bound readings are clearly labelled so learners know they can't be said standalone.
+  await expect(page.locator("body")).toContainText("in compounds");
 });

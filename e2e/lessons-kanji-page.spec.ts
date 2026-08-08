@@ -27,7 +27,7 @@ test("the 何 kanji page leads with a linked Built from, above the readings tabl
 
   // "How it's built": the two shapes, each a link to its own page.
   // The library page uses a flat surface (no kq-material), so find by label text.
-  const builtFromLbl = page.getByText("How it's built", { exact: true });
+  const builtFromLbl = page.getByText("How it\u2019s built", { exact: true });
   await expect(builtFromLbl).toBeVisible();
   const builtFrom = builtFromLbl.locator("..");
   await expect(builtFrom.getByRole("link", { name: /亻/ })).toBeVisible();

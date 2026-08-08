@@ -33,7 +33,7 @@ test("the 明 kanji page leads with a linked Built from of its shape pieces", as
   // are jōyō kanji with pages of their own, so each renders as a link.
   // The library page uses a flat surface (no kq-material), so we find the section
   // via its label text and navigate to the parent card div.
-  const builtFromLbl = page.getByText("How it's built", { exact: true });
+  const builtFromLbl = page.getByText("How it\u2019s built", { exact: true });
   await expect(builtFromLbl).toBeVisible();
   const builtFrom = builtFromLbl.locator("..");
   await expect(builtFrom.getByRole("link", { name: /日/ })).toBeVisible();
@@ -65,7 +65,7 @@ test("the 明 kanji page renders the readings table for a kanji that has reading
 
   // "How it's built" LEADS the page: the shape card sits above the readings card
   // in the document, the recent order change that made the decomposition the first read.
-  const builtFromLbl = page.getByText("How it's built", { exact: true });
+  const builtFromLbl = page.getByText("How it\u2019s built", { exact: true });
   const builtFromBox = await builtFromLbl.boundingBox();
   const readingsBox = await readingsLbl.boundingBox();
   expect(builtFromBox).not.toBeNull();

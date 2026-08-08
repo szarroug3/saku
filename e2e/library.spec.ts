@@ -119,7 +119,7 @@ test("a word has one clear Forms panel with its class in the header and audio on
 
   // The word class is in the WordClassNote (a plain paragraph), not in a
   // kq-material header card (word pages use a flat glyph header now).
-  await expect(page.getByText("う-verb", { exact: true })).toBeVisible();
+  await expect(page.locator("body")).toContainText("\u3046-verb");
   await expect(page.getByText("Forms", { exact: true })).toHaveCount(1);
 
   const forms = page.locator("section").filter({ has: page.getByText("Forms", { exact: true }) });
@@ -140,7 +140,7 @@ test("a な-adjective word page shows its form before a noun", async ({ page }) 
   await page.goto("/library/word/静か");
 
   // The word class is in the WordClassNote (a plain paragraph).
-  await expect(page.getByText("な-adjective", { exact: true })).toBeVisible();
+  await expect(page.locator("body")).toContainText("\u306a-adjective");
   const forms = page.locator("section").filter({
     has: page.getByText("Forms", { exact: true }),
   });

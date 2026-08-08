@@ -72,9 +72,9 @@ test("a kanji step shows what it is Built from, each piece a link", async ({
   await expect(
     page.getByRole("heading", { level: 3, name: "Kanji", exact: true }),
   ).toBeVisible();
-  // The lesson now shows "How it's built" (from KanjiBuiltFrom with etymology
+  // The lesson now shows "How it\u2019s built" (from KanjiBuiltFrom with etymology
   // pieces) rather than the old KanjiPartsRow "Built from".
-  await expect(page.locator("body")).toContainText("How it's built");
+  await expect(page.locator("body")).toContainText("How it\u2019s built");
   // 可's etymology: semantic 口 + phonetic 丂. 口 is a jōyō kanji with a page.
   await expect(
     page.getByRole("link", { name: /口/ }).first(),
