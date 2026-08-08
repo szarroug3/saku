@@ -66,6 +66,10 @@ export interface CounterSense {
   /** The reading to show and speak — いっぽん, or the glyph itself for a kana
    * form (ひとつ). */
   readonly reading: string;
+  /** A second reading the same number branches into — く beside きゅう (9). Shown
+   * after the primary reading, but the speaker stays on the primary. Empty for a
+   * form with one reading. */
+  readonly altReading?: string;
   /** The muted tag in the reading row — "counter" or "number", the counter's
    * analogue of a word's part-of-speech. */
   readonly kind: string;
@@ -84,6 +88,10 @@ export interface CounterSense {
  * builds a single one. */
 interface SenseRow {
   reb: string;
+  /** A second reading of the same number, shown after the primary (く after
+   * きゅう). Empty when the form has one reading. The speaker stays on the
+   * primary reading. */
+  altReb?: string;
   kind: string;
   /** The muted "in compounds" tag on a bound, non-primary reading (おお, じん,
    * にん). The primary reading is always sayable alone, so it is never marked. */
@@ -139,6 +147,14 @@ function SenseTable({
                     ) : (
                       <span className="font-kana text-[15px]">{r.reb}</span>
                     )}
+                    {/* A second reading the same number branches into — く beside
+                        きゅう. It reads "also …" so it is plainly a reading, not a
+                        meaning; the speaker above stays on the primary. */}
+                    {r.altReb ? (
+                      <span className="font-kana text-[13px] text-text-muted">
+                        also {r.altReb}
+                      </span>
+                    ) : null}
                     {r.readingStanding ? (
                       <StandingChip standing={r.readingStanding} />
                     ) : null}
@@ -195,6 +211,7 @@ export function WordSensePanel({
   if (counter) {
     const row: SenseRow = {
       reb: counter.reading,
+      altReb: counter.altReading,
       kind: counter.kind,
       bound: false,
       meaning: counter.meaning,

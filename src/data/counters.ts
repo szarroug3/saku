@@ -82,16 +82,33 @@ export interface CounterForm {
   /** The number kanji this form must be able to read before it can be taught,
    * or null for a kana form (which needs no kanji at all). */
   readonly numberKanji: string | null;
+  /** A second reading the same number branches into — し for よん (4), しち for
+   * なな (7), く for きゅう (9). Empty for a form with one reading. It is a
+   * READING, so it belongs on the reading side, never in the meaning gloss;
+   * picking the wrong branch is the commonest beginner tell, so it is still
+   * shown. See the NUMBERS block below. */
+  readonly altReading: string;
 }
 
-/** A kana form: glyph and reading are the same, no kanji prerequisite. */
+/** A kana form: glyph and reading are the same, no kanji prerequisite. The
+ * optional altReading carries a second reading of the same number (よん also し). */
 function kana(
   key: string,
   glyph: string,
   meaning: string,
   counter: string,
+  altReading = "",
 ): CounterForm {
-  return { key, glyph, reading: glyph, meaning, counter, phase: 1, numberKanji: null };
+  return {
+    key,
+    glyph,
+    reading: glyph,
+    meaning,
+    counter,
+    phase: 1,
+    numberKanji: null,
+    altReading,
+  };
 }
 
 /** A counted form written with a number kanji: 三本 read さんぼん. */
@@ -104,7 +121,7 @@ function counted(
   numberKanji: string,
   phase: CounterPhase,
 ): CounterForm {
-  return { key, glyph, reading, meaning, counter, phase, numberKanji };
+  return { key, glyph, reading, meaning, counter, phase, numberKanji, altReading: "" };
 }
 
 // ─── Phase 1a · 〜つ, the escape hatch, taught FIRST ────────────────────────
@@ -126,18 +143,19 @@ const TSU: readonly CounterForm[] = [
 
 // ─── Phase 1b · the Sino numbers いち〜じゅう ───────────────────────────────
 // Kana, so they are usable as sounds before any kanji. The branching readings
-// (4, 7, 9) are carried in the gloss, because picking the wrong branch is the
-// commonest beginner tell.
+// (4, 7, 9) are carried as altReading on the READING side, because picking the
+// wrong branch is the commonest beginner tell — but a reading belongs beside the
+// reading, never in the meaning gloss.
 const NUMBERS: readonly CounterForm[] = [
   kana("counter:num:1", "いち", "one (1)", ""),
   kana("counter:num:2", "に", "two (2)", ""),
   kana("counter:num:3", "さん", "three (3)", ""),
-  kana("counter:num:4", "よん", "four (4), also し", ""),
+  kana("counter:num:4", "よん", "four (4)", "", "し"),
   kana("counter:num:5", "ご", "five (5)", ""),
   kana("counter:num:6", "ろく", "six (6)", ""),
-  kana("counter:num:7", "なな", "seven (7), also しち", ""),
+  kana("counter:num:7", "なな", "seven (7)", "", "しち"),
   kana("counter:num:8", "はち", "eight (8)", ""),
-  kana("counter:num:9", "きゅう", "nine (9), also く", ""),
+  kana("counter:num:9", "きゅう", "nine (9)", "", "く"),
   kana("counter:num:10", "じゅう", "ten (10)", ""),
 ];
 
@@ -200,6 +218,23 @@ export const TAIL_COUNTERS: readonly string[] = ["個", "台", "冊", "杯", "�
 /** The entry a counter form's facts hang off. Namespaced, so never a vocab keb. */
 export function counterEntry(form: CounterForm): EntryId {
   return entryId(COUNTERS_SUBJECT, form.key);
+}
+
+/** Whether a form is a bare number (いち, に, きゅう) rather than a counted form
+ * welded to a thing (三本). A bare number carries no counter. */
+export function isBareNumber(form: CounterForm): boolean {
+  return form.counter === "";
+}
+
+/**
+ * The one-line note under a form's role heading in the teach view, or null for a
+ * bare number. A number needs no gloss of its role: the heading and the say-it
+ * panel already say what it is, so there is nothing to add. A counter does, since
+ * the number-plus-thing join is something a learner has not met yet.
+ */
+export function counterRoleNote(form: CounterForm): string | null {
+  if (isBareNumber(form)) return null;
+  return "This is a counting word. It joins a number to the thing you count.";
 }
 
 /** A counter form is a kana form when its glyph is its reading — no kanji, so no

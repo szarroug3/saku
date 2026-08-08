@@ -25,6 +25,8 @@ import {
   constructionMarker,
   counterEntry,
   counterKanjiPrereqs,
+  counterRoleNote,
+  isBareNumber,
   isKanaForm,
   type CounterForm,
 } from "./counters.ts";
@@ -49,6 +51,67 @@ describe("the track order teaches 〜つ before the numbers", () => {
   test("〜つ is the very first thing in the track", () => {
     assert.equal(COUNTER_CURRICULUM[0].counter, "つ");
     assert.equal(COUNTER_CURRICULUM[0].glyph, "ひとつ");
+  });
+});
+
+describe("the branching Sino numbers carry the alt reading, not a reading-in-the-meaning", () => {
+  // 4, 7, 9 each branch into a second reading (よん/し, なな/しち, きゅう/く). The
+  // alternate is a READING, so it rides on altReading and shows on the reading
+  // side — never smuggled into the meaning gloss, where the say-it panel would
+  // print it under Means as if it were a definition.
+  const ALT: ReadonlyArray<[string, string]> = [
+    ["よん", "し"],
+    ["なな", "しち"],
+    ["きゅう", "く"],
+  ];
+  for (const [reading, alt] of ALT) {
+    test(`${reading} carries alt reading ${alt} and a kana-free number meaning`, () => {
+      const form = byGlyph(reading);
+      assert.equal(form.altReading, alt);
+      // The meaning is the number alone: no "also", no kana reading hidden in it.
+      assert.ok(
+        !form.meaning.includes("also"),
+        `${reading} meaning must not carry a reading`,
+      );
+      assert.doesNotMatch(
+        form.meaning,
+        /[぀-ヿ]/u,
+        `${reading} meaning must be free of kana`,
+      );
+    });
+  }
+
+  test('9 (きゅう) means exactly "nine (9)"', () => {
+    assert.equal(byGlyph("きゅう").meaning, "nine (9)");
+  });
+
+  test("every other bare number has no alt reading", () => {
+    const single = ["いち", "に", "さん", "ご", "ろく", "はち", "じゅう"];
+    for (const g of single) {
+      assert.equal(byGlyph(g).altReading, "", `${g} should carry no alt reading`);
+    }
+  });
+});
+
+describe("the role note distinguishes a bare number from a counter", () => {
+  test("a bare number gets NO role description", () => {
+    for (const f of COUNTER_CURRICULUM.filter((f) => f.counter === "")) {
+      assert.ok(isBareNumber(f), `${f.glyph} should read as a bare number`);
+      assert.equal(
+        counterRoleNote(f),
+        null,
+        `${f.glyph} is a number and must have no role note`,
+      );
+    }
+  });
+
+  test("a counter gets the counting-word note", () => {
+    const tsu = byGlyph("ひとつ");
+    assert.equal(isBareNumber(tsu), false);
+    assert.equal(
+      counterRoleNote(tsu),
+      "This is a counting word. It joins a number to the thing you count.",
+    );
   });
 });
 

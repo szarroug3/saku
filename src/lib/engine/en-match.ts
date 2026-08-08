@@ -38,8 +38,8 @@ export function norm(s: string): string {
 
 /** Whether a gloss is English — carries at least one Latin letter. A Japanese
  * reading (し, せんせい) has none, so the forgiving layers skip it and it stays
- * exact-match. A mixed gloss ("four (4), also し") counts as English: its Latin
- * part is exactly what wants the forgiveness. */
+ * exact-match. A mixed gloss ("ten long thin objects, also じっぽん") counts as
+ * English: its Latin part is exactly what wants the forgiveness. */
 export function isEnglishGloss(s: string): boolean {
   return /[a-z]/i.test(s);
 }

@@ -116,7 +116,12 @@ import { cluster, membersOf } from "@/data/grammar/clusters";
 import { getMnemonic } from "@/data/mnemonics";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { keigoSetForEntry } from "@/data/keigo";
-import { counterForm, type CounterForm } from "@/data/counters";
+import {
+  counterForm,
+  counterRoleNote,
+  isBareNumber,
+  type CounterForm,
+} from "@/data/counters";
 import { buildRow } from "@/lib/grammar/build";
 import { primaryHost } from "@/lib/grammar/example";
 import { attachesTo, recipeFormula } from "@/lib/grammar/formula";
@@ -470,7 +475,10 @@ function CounterTeachView({
 }) {
   // "" is a bare number (いち, に, ひゃく); anything else is a counted form
   // welded to what it counts (三本). Same split the reading row's Kind uses.
-  const isNumber = form.counter === "";
+  const isNumber = isBareNumber(form);
+  // The role note under the heading — null for a number (nothing to add), the
+  // counting-word line for a counter. Kept in counters.ts so it is testable.
+  const roleNote = counterRoleNote(form);
   return (
     <div>
       <PlainHeadword
@@ -488,15 +496,19 @@ function CounterTeachView({
             <h3 className="text-[13px] font-semibold text-text">
               {isNumber ? "Number" : "Counter"}
             </h3>
-            <p className="mt-0.5 text-[12px] leading-snug text-text-muted">
-              {isNumber
-                ? "This is a number."
-                : "This is a counting word. It joins a number to the thing you count."}
-            </p>
+            {/* A number needs no gloss of its role — the header and the say-it
+                panel already say what it is. A counter does: it explains the
+                number-plus-thing join a learner has not met yet. */}
+            {roleNote ? (
+              <p className="mt-0.5 text-[12px] leading-snug text-text-muted">
+                {roleNote}
+              </p>
+            ) : null}
           </div>
           <WordSensePanel
             counter={{
               reading: form.reading,
+              altReading: form.altReading,
               kind: isNumber ? "number" : "counter",
               meaning: form.meaning,
               // The lesson teaches, it does not grade, so no standing chips —
