@@ -642,19 +642,17 @@ export function HomeFeed() {
               startLesson(facts, { teach });
               return;
             }
-            // A NUMBER unit is a SOFT CHECKPOINT: beginning it — Start or Quiz me
-            // — CLAIMS its marker, so the scheduler advances to the next unit
-            // whether or not the practice round is finished. It has to be a claim,
-            // not a `seen` mark: the scheduler's `isFresh` reads lastTested, which
-            // a claim sets but a bare `seen` does not, so a seen-only marker left
-            // the unit stuck. Unlike a form lesson there is no rote material to
-            // learn on completion (the marker is a progression flag, not a
-            // drillable fact), so there is nothing to hold the advance for.
+            // A NUMBER unit advances on COMPLETION, not on start: claiming its
+            // marker at start let a started-then-discarded session skip the unit
+            // entirely. Start teaches the rule and runs the number-reading round;
+            // finishSession then claims `session.teach` (quiz-session.tsx), so pass
+            // the marker there even for "Quiz me" (teach=false), where `teach`
+            // would otherwise be empty and never claim it.
+            const teachFacts = teach ? facts : [unit.marker];
             startTransition(() => {
-              claim(facts);
               startSession(
                 facts,
-                teach ? facts : [],
+                teachFacts,
                 undefined,
                 "lesson",
                 [],
