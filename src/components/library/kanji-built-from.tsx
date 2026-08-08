@@ -40,7 +40,13 @@ import Link from "next/link";
 import { useId, useState } from "react";
 
 import { Card, Lbl } from "@/components/ui";
-import { builtPieces, etymologyOf, type BuiltPiece } from "@/data/kanji-etymology";
+import {
+  builtPieces,
+  etymologyOf,
+  phoneticGloss,
+  type BuiltPiece,
+  type PhoneticGloss,
+} from "@/data/kanji-etymology";
 import { isNumberKanji } from "@/data/number-kanji";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
@@ -48,7 +54,6 @@ import type { LibEntry } from "@/lib/library/entries";
 import { builtPieceEntryId } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import { phoneticExample } from "@/lib/kanji-onyomi";
-import { phoneticGloss, type PhoneticGloss } from "@/lib/phonetic-gloss";
 
 /** The line-2 label a piece prints: for a MEANING piece its applicable sense —
  * or, when Wiktionary gave none for this join (河's 氵 carries no contextual

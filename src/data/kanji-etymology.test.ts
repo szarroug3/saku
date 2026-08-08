@@ -128,6 +128,40 @@ test("林 — the doubled-tree explanation survives cleaning in plain voice", ()
   assert.match(etym.originText ?? "", /doubled 木/);
 });
 
+// ── Repeated-container expansion in builtPieces ──────────────────────────────
+//
+// Wiktionary records a tripled component three times (森 = 木·木·木), but KanjiVG
+// DRAWS 森 as 木 + 林 — nesting two of the trees inside 林. The one-to-one
+// builtFromRoles pass then labels only the top 木 and drops 林, leaving a lone
+// tree. builtPieces expands an unmatched container whose sub-pieces each claim a
+// still-unconsumed component of the host, so all three 木 render — grounded in
+// the host's own recorded components, never guessed.
+test("森 — all three 木 render semantic (林 container expanded)", () => {
+  const pieces = builtPieces("森");
+  assert.equal(pieces.length, 3, "森 should show three 木 tiles");
+  assert.ok(
+    pieces.every((p) => p.glyph === "木" && p.role === "semantic"),
+    "every 森 piece is a semantic 木",
+  );
+});
+
+test("林 — two 木 unchanged, no spurious expansion", () => {
+  const pieces = builtPieces("林");
+  assert.equal(pieces.length, 2);
+  assert.ok(pieces.every((p) => p.glyph === "木" && p.role === "semantic"));
+});
+
+test("河 — 氵 (meaning) + 可 (sound) unchanged, no expansion", () => {
+  const pieces = builtPieces("河");
+  assert.deepEqual(
+    pieces.map((p) => [p.glyph, p.role]),
+    [
+      ["氵", "semantic"],
+      ["可", "phonetic"],
+    ],
+  );
+});
+
 // ── Hand-authored layer (generated/kanji-etymology-manual.json) ──────────────
 //
 // Step 1 recovery: kanji whose Wiktionary origin decomposes to a deeper/older

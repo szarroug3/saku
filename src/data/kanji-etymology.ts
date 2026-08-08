@@ -240,20 +240,82 @@ export interface BuiltPiece {
  * the semantic and phonetic pieces, each with its display label. Form pieces and
  * pieces that matched no Wiktionary component are dropped (this is the UX
  * lookup; `builtFromRoles` is the lower-level aligned view that keeps the nulls).
+ *
+ * REPEATED-CONTAINER EXPANSION. `builtFromRoles` matches each Wiktionary
+ * component at most once and is 1:1 with the visible `comps`. That under-counts
+ * a component Wiktionary records N times but that KanjiVG DRAWS with fewer top
+ * pieces because copies are nested inside one shape: 森 = 木·木·木 in Wiktionary,
+ * but drawn 木 + 林 (林 itself two 木), so two of the trees would go unlabelled
+ * and be dropped, leaving a lone 木. Here, for an unmatched visible piece that
+ * itself decomposes (林 → 木 + 木), if EVERY one of its sub-pieces can claim a
+ * still-unconsumed component of THIS host, the sub-pieces are drawn with those
+ * components' roles. It is grounded entirely in the host's own recorded
+ * components — never a guess: if any sub-piece finds no leftover component to
+ * claim, the whole piece stays dropped, exactly as before (林's own two 木 both
+ * match directly and never take this path; 嘆's coincidental 口 inside its
+ * phonetic body is atomic, finds no container to expand, and stays unlabelled).
  */
 export function builtPieces(kanji: string): readonly BuiltPiece[] {
-  const out: BuiltPiece[] = [];
-  for (const role of builtFromRoles(kanji)) {
-    if (!role || role.function === "form") continue;
-    out.push({
-      glyph: role.piece,
-      role: role.function,
-      label:
-        role.function === "phonetic"
-          ? phoneticReading(kanji, role.piece)
-          : role.sense,
-    });
+  const etym = RAW[kanji];
+  const roles = builtFromRoles(kanji);
+  if (!etym) return [];
+  const comps = kanjiRow(kanji)?.comps ?? [];
+
+  // The role-bearing components (semantic/phonetic) as a consumable pool, with
+  // the copies the one-to-one pass already claimed marked used.
+  const leftover = etym.components
+    .filter((c) => c.function === "semantic" || c.function === "phonetic")
+    .map((c) => ({
+      canon: canonical(c.glyph),
+      fn: c.function as "semantic" | "phonetic",
+      sense: c.sense,
+      used: false,
+    }));
+  for (const r of roles) {
+    if (!r || r.function === "form") continue;
+    const claimed = leftover.find(
+      (l) => !l.used && l.canon === r.matched && l.fn === r.function,
+    );
+    if (claimed) claimed.used = true;
   }
+
+  const tile = (
+    glyph: string,
+    fn: "semantic" | "phonetic",
+    sense: string | null,
+  ): BuiltPiece => ({
+    glyph,
+    role: fn,
+    label: fn === "phonetic" ? phoneticReading(kanji, glyph) : sense,
+  });
+
+  const out: BuiltPiece[] = [];
+  comps.forEach((piece, i) => {
+    const role = roles[i];
+    if (role) {
+      if (role.function === "form") return;
+      out.push(tile(role.piece, role.function, role.sense));
+      return;
+    }
+    // Unmatched visible piece: try repeated-container expansion (see header).
+    const sub = kanjiRow(piece)?.comps ?? [];
+    if (sub.length < 2) return;
+    const claimed: typeof leftover = [];
+    const tiles: BuiltPiece[] = [];
+    for (const s of sub) {
+      const sc = canonical(s);
+      const hit = leftover.find((l) => !l.used && l.canon === sc);
+      if (!hit) break;
+      hit.used = true;
+      claimed.push(hit);
+      tiles.push(tile(s, hit.fn, hit.sense));
+    }
+    if (tiles.length === sub.length) {
+      out.push(...tiles);
+    } else {
+      for (const c of claimed) c.used = false; // partial → drop, leave nulls null
+    }
+  });
   return out;
 }
 
