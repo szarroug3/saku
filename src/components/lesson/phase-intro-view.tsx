@@ -20,6 +20,7 @@ import { Fragment } from "react";
 // can't see, and the walk's forward button looks broken rather than patient.
 
 import { HearButton } from "@/components/lesson/hear-button";
+import { useFlatSurface } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { countGroupHasBuild } from "@/data/phase-intros";
 import type {
@@ -318,6 +319,9 @@ export function IntroExamples({
   bare?: boolean;
 }) {
   const { cfg } = useQuizConfig();
+  // Flat on the Library entry page (border kept, the frosty bg-panel/40 dropped),
+  // frosty in the lesson teach walk where no FlatSurfaceProvider sits above.
+  const flat = useFlatSurface();
   const hasAccent = examples.some((ex) => ex.accentTo || ex.accentFrom);
   const pairGloss = (gloss: string): [string, string] | null => {
     const inner = /\(([^)]+)\)/.exec(gloss)?.[1] ?? gloss;
@@ -325,7 +329,13 @@ export function IntroExamples({
     return bits.length === 2 ? [bits[0], bits[1]] : null;
   };
   return (
-    <div className={bare ? "" : "rounded-lg border border-border bg-panel/40 p-4"}>
+    <div
+      className={
+        bare
+          ? ""
+          : `rounded-lg border border-border p-4 ${flat ? "" : "bg-panel/40"}`
+      }
+    >
       <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
         Examples
       </p>
@@ -979,8 +989,13 @@ export function IntroDeriveTableGroup({
  * of the steps above rather than another step. Exported so the Library form page
  * can render the same chain the lesson shows. */
 export function IntroBuildFooter({ footer }: { footer: { chain: string; gloss: string } }) {
+  // Flat on the Library entry page, frosty in the lesson teach walk — see
+  // IntroExamples above.
+  const flat = useFlatSurface();
   return (
-    <div className="rounded-lg border border-border bg-panel/40 px-4 py-3">
+    <div
+      className={`rounded-lg border border-border px-4 py-3 ${flat ? "" : "bg-panel/40"}`}
+    >
       <p lang="ja" className="font-kana text-[17px] text-accent">
         {footer.chain}
       </p>

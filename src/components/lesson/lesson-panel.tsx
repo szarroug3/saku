@@ -29,7 +29,11 @@
 // neighbour with; and below 860px the grid becomes one column, where stretching
 // means nothing and heights go back to content.
 
+"use client";
+
 import type { ReactNode } from "react";
+
+import { useFlatSurface } from "@/components/ui";
 
 export function LessonPanel({
   title,
@@ -39,13 +43,23 @@ export function LessonPanel({
 }: {
   title: ReactNode;
   className?: string;
+  /** Force the flat, transparent fill. Usually granted instead by
+   * FlatSurfaceProvider (the Library entry page) via `useFlatSurface`, so most
+   * callers never pass it. In the lesson teach walk no provider sits above, so
+   * the panel keeps its frosty `bg-panel` fill — the deliberate lessons-frost /
+   * Library-flat distinction. */
   transparent?: boolean;
   children: ReactNode;
 }) {
+  // Flat on the Library entry page (border and radius kept, `bg-panel` dropped
+  // for a transparent ground), frosty `bg-panel` in the lesson teach view where
+  // no FlatSurfaceProvider sits above.
+  const flatSurface = useFlatSurface();
+  const flat = transparent || flatSurface;
   return (
     <section
       className={`flex flex-col rounded-lg border border-border ${
-        transparent ? "bg-transparent" : "bg-panel"
+        flat ? "bg-transparent" : "bg-panel"
       } px-3.5 py-3 ${className}`}
     >
       <p className="text-[13px] font-medium">{title}</p>
