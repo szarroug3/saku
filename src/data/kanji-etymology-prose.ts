@@ -1,0 +1,50 @@
+// Plain-language rewrites of the glyph-origin story shown in the "Etymology"
+// section of a kanji's Built-from card.
+//
+// WHY THIS LAYER EXISTS
+// =====================
+// The generated `originText` (scripts/ingest/kanji-etymology.mjs, from
+// Wiktionary) is mechanically cleaned but still reads like a dictionary: it
+// opens with jargon ("Ideogrammic compound: semantic 人 (man) + semantic 木
+// (tree) …") and trails long scholarly cross-references ("Compare 森…", "Shuowen
+// interprets…"). A learner wants one plain, memorable line. These hand-written
+// entries replace the raw text for the kanji processed so far, modelled on the
+// forest line — "doubled 木 (tree) to give the idea of many trees, thus a
+// forest": short, concrete, no jargon, no em dashes.
+//
+// HOW IT PLUGS IN
+// ===============
+// `etymologyOf` prefers an entry here over the generated/manual `originText`. A
+// kanji with no entry here falls back to its raw text, so this file can grow one
+// committable batch at a time (teaching order, most-seen kanji first) without
+// anything half-done. Number kanji 一…十 are skipped — their Built-from never
+// renders. Where the source text is degenerate (no real origin to reword, e.g.
+// 気), the kanji is left out for a later sourcing pass rather than guessed.
+//
+// HOUSE STYLE (enforced by kanji-etymology.test.ts)
+// - No jargon: never "compound", "semantic", "phonetic", "pictogram",
+//   "ideogram" — say what the pieces DO ("gives the meaning", "lends the sound").
+// - No em or en dashes (— –); use commas, colons, periods.
+// - Keep the piece glyphs and their sense in parentheses where they help.
+
+export const PROSE_OVERRIDE: Readonly<Record<string, string>> = {
+  人: "The original glyph looked like a side view of a standing man showing an arm and a leg.",
+  大: "The original glyph looked like a person facing forward, standing tall to suggest something big.",
+  日: "The original glyph looked like the sun, a mark added inside to set it apart from lookalikes.",
+  不: "The original glyph looked like the calyx of a flower, later borrowed to mean not.",
+  乙: "The origin is unclear.",
+  乞: "A variant of 气, set apart to mean to beg.",
+  山: "The original glyph looked like three mountain peaks.",
+  出: "A foot (止) stepping out of a hollow (凵): to step outside, to exit.",
+  上: "A short stroke above a long line, marking what is above (the opposite of 下).",
+  生: "A young shoot (屮) rising from the ground (一): life and growth.",
+  手: "The original glyph looked like a hand with its fingers spread.",
+  口: "The original glyph looked like an open mouth.",
+  合: "A lid (亼) closing over a container's mouth (口): things coming together and fitting.",
+  中: "The original glyph looked like a flagpole standing in the center of a field, marking the middle.",
+  行: "The original glyph looked like a crossroads. Its left half 彳 became the common radical for going and movement.",
+  刀: "The original glyph looked like a knife.",
+  分: "八 (to split) over 刀 (a knife): to divide something up, a part.",
+  干: "The original glyph looked like a shield, later also borrowed to write dry.",
+  年: "This glyph originally meant harvest but changed to year over time. It uses the definition of 禾 (grain) and the sound of 人.",
+};

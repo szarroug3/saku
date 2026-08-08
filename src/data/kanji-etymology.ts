@@ -28,6 +28,7 @@
 
 import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
 import etymologyManualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
+import { PROSE_OVERRIDE } from "./kanji-etymology-prose.ts";
 import phoneticGlossJson from "./generated/kanji-phonetic-gloss.json" with { type: "json" };
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import { kanjiRow, READINGS } from "./kanji";
@@ -145,7 +146,12 @@ function canonical(glyph: string): string {
 
 /** A kanji's raw glyph origin, or undefined when Wiktionary carries none. */
 export function etymologyOf(kanji: string): KanjiEtymology | undefined {
-  return RAW[kanji];
+  const raw = RAW[kanji];
+  if (!raw) return undefined;
+  // Prefer a hand-cleaned, plain-language story where one exists (grows in
+  // batches, see kanji-etymology-prose.ts); otherwise the raw dictionary text.
+  const prose = PROSE_OVERRIDE[kanji];
+  return prose ? { ...raw, originText: prose } : raw;
 }
 
 /**

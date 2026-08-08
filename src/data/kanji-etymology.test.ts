@@ -310,3 +310,31 @@ test("phoneticGloss — every glossed component is a rare, untaught character", 
     assert.ok(g.meaning.length > 0, `${glyph} has an empty meaning`);
   }
 });
+
+// ── Plain-language prose overrides (kanji-etymology-prose.ts) ────────────────
+// Each hand-cleaned story replaces the raw dictionary text in the Etymology
+// section. Two things must hold as the file grows one batch at a time.
+import { PROSE_OVERRIDE } from "./kanji-etymology-prose.ts";
+import { isNumberKanji } from "./number-kanji.ts";
+
+test("every prose override resolves to a real etymology it can replace", () => {
+  for (const k of Object.keys(PROSE_OVERRIDE)) {
+    // The override only surfaces through etymologyOf, which needs a raw record.
+    assert.ok(etymologyOf(k), `override for ${k} has no etymology to attach to`);
+    // Number kanji never render a Built-from, so an override there is dead copy.
+    assert.ok(!isNumberKanji(k), `${k} is a number kanji; its override never shows`);
+    // etymologyOf must actually hand back the cleaned text.
+    assert.equal(etymologyOf(k)?.originText, PROSE_OVERRIDE[k]);
+  }
+});
+
+test("prose overrides stay plain: no dictionary jargon, no em/en dashes", () => {
+  // The whole point of the layer is to drop the jargon and the dashes. Pin it so
+  // a future batch can't quietly reintroduce "Ideogrammic compound: semantic …".
+  const banned = /Phono-semantic|Ideogrammic|Pictogram|Ideogram|\bsemantic\b|\bphonetic\b|—|–/;
+  for (const [k, text] of Object.entries(PROSE_OVERRIDE)) {
+    assert.ok(text.trim().length > 0, `${k} override is empty`);
+    const hit = text.match(banned);
+    assert.equal(hit, null, `${k} override still reads like a dictionary: "${hit?.[0]}"`);
+  }
+});
