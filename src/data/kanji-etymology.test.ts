@@ -251,6 +251,45 @@ test("phoneticGloss — 冓 is a rare untaught phonetic with reading + framework
   }
 });
 
+test("phoneticGloss — corrected readings stay fixed (regression pins)", () => {
+  // A prior data-quality pass corrected these against English Wiktionary's
+  // {{ja-readings}} kan-on fields. Each pins the standard on'yomi matching the
+  // taught host the component is a phonetic for, guarding the specific bugs found:
+  //   匈 く→きょう (host 胸 きょう), 逢 ぶ→ほう (host 縫 ほう),
+  //   丑 ちゅ→ちゅう (dropped long vowel), 匕/辰/酉 radical-index tags → real glosses.
+  assert.equal(phoneticGloss("匈")?.reading, "きょう");
+  assert.equal(phoneticGloss("逢")?.reading, "ほう");
+  // 丑 was truncated to ちゅ — the long vowel must survive.
+  assert.equal(phoneticGloss("丑")?.reading, "ちゅう");
+  assert.equal(phoneticGloss("躬")?.reading, "きゅう");
+  assert.equal(phoneticGloss("酋")?.reading, "しゅう");
+  assert.equal(phoneticGloss("赫")?.reading, "かく");
+  // No reading in the glossary ends in a bare small ゃ/ゅ/ょ that a standard
+  // on'yomi would lengthen with う (the 丑→ちゅ truncation signature), except the
+  // genuinely-short kan-on readings しゅ/きょ/しょ/ちょ.
+  const ALLOWED_SHORT = new Set(["しゅ", "きょ", "しょ", "ちょ"]);
+  for (const [glyph, entry] of Object.entries(glossJson.data) as [
+    string,
+    { reading: string | null },
+  ][]) {
+    const r = entry.reading;
+    if (r && /[ゃゅょ]$/.test(r)) {
+      assert.ok(
+        ALLOWED_SHORT.has(r),
+        `${glyph} reading ${r} looks truncated (missing long vowel)`,
+      );
+    }
+  }
+  // Radical-index and cross-reference tags were replaced with real glosses.
+  for (const glyph of ["辰", "酉", "匕", "昜", "㐬"]) {
+    assert.doesNotMatch(
+      phoneticGloss(glyph)?.meaning ?? "",
+      /radical|alternative form|variant of several/i,
+      `${glyph} still carries a placeholder meaning`,
+    );
+  }
+});
+
 test("phoneticGloss — a TAUGHT phonetic component returns null (no footnote)", () => {
   // 可 (河), 交 (校), 寺 (時) are taught jōyō kanji a learner can tap through to;
   // they must never carry the rare-component asterisk footnote.
