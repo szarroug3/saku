@@ -131,7 +131,7 @@ function lessonsThroughMarker(
     const lesson = nextCounterLesson(hist, range);
     assert.ok(lesson, `expected a lesson before reaching ${marker}`);
     lessons.push(lesson!);
-    if (lesson!.numberUnit?.marker === marker) {
+    if (lesson!.numberUnit?.marker === marker && lesson!.facts.includes(marker)) {
       return { lessons, markerLesson: lesson! };
     }
     hist = claimLesson(hist, lesson!);
@@ -468,7 +468,8 @@ describe("the generative units", () => {
     const first = nextCounterLesson(claiming(numbersDone), RANGE)!;
     // With the default 5-7 range, the full 一…十 prereq chain no longer fits in one
     // sitting, so the unit may start with prereq-only lessons.
-    assert.ok(!first.numberUnit, "the first tens lesson can be prereq-only");
+    assert.ok(first.numberUnit, "the first tens lesson is a unit-backed prereq slice");
+    assert.ok(first.numberUnit!.prepOnly, "the first tens slice is prep-only");
     assert.ok(first.cardPrereqTiles[0].length > 0, "it still teaches number kanji prereqs");
     assert.equal(first.position.from, numbersDone.length + 1);
     assert.equal(first.position.total, COUNTERS_CURRICULUM_TOTAL);
@@ -478,13 +479,17 @@ describe("the generative units", () => {
     let markerLesson: CounterLesson | null = null;
     for (let i = 0; i < 10; i++) {
       const lesson = nextCounterLesson(hist, RANGE)!;
-      if (lesson.numberUnit?.marker === NUMBER_UNIT_TENS_MARKER) {
+      if (
+        lesson.numberUnit?.marker === NUMBER_UNIT_TENS_MARKER &&
+        lesson.facts.includes(NUMBER_UNIT_TENS_MARKER)
+      ) {
         markerLesson = lesson;
         break;
       }
       hist = claimLesson(hist, lesson);
     }
     assert.ok(markerLesson, "the marker lesson appears after prereq lessons");
+    assert.ok(!markerLesson!.numberUnit!.prepOnly, "the marker lesson is the real unit lesson");
     assert.equal(markerLesson!.numberUnit!.intro.id, NUMBERS_COMPOSE.id);
     assert.equal(markerLesson!.numberUnit!.config.numberMax, 99);
     assert.equal(markerLesson!.numberUnit!.config.includeCounters, false);
@@ -503,7 +508,10 @@ describe("the generative units", () => {
     let markerLesson: CounterLesson | null = null;
     for (let i = 0; i < 10; i++) {
       const lesson = nextCounterLesson(hist, RANGE)!;
-      if (lesson.numberUnit?.marker === NUMBER_UNIT_BIG_MARKER) {
+      if (
+        lesson.numberUnit?.marker === NUMBER_UNIT_BIG_MARKER &&
+        lesson.facts.includes(NUMBER_UNIT_BIG_MARKER)
+      ) {
         markerLesson = lesson;
         break;
       }

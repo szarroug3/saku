@@ -210,6 +210,10 @@ export interface CounterLesson {
     config: NumberQuizConfig;
     marker: FactId;
     intro: PhaseIntro;
+    /** True when this lesson is a prereq-only slice for the unit: it runs the
+     * unit drill mode but does not include the marker fact yet, so completion
+     * does not advance the unit gate. */
+    prepOnly?: boolean;
   };
 }
 
@@ -514,6 +518,13 @@ export function nextCounterLesson(
       // No marker yet: the rule card remains due until its own lesson runs.
       facts: unitPrereqs.map((p) => p.fact),
       cardPrereqTiles: [toPrereqTiles(unitPrereqs)],
+      numberUnit: {
+        mode: unitPrepOnly.mode,
+        config: unitPrepOnly.config,
+        marker: unitPrepOnly.marker,
+        intro: unitPrepOnly.intro,
+        prepOnly: true,
+      },
       position: { from: done + 1, to: done + 1, total: COUNTERS_CURRICULUM_TOTAL },
     };
   }

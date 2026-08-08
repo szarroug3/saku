@@ -648,7 +648,11 @@ export function HomeFeed() {
             // finishSession then claims `session.teach` (quiz-session.tsx), so pass
             // the marker there even for "Quiz me" (teach=false), where `teach`
             // would otherwise be empty and never claim it.
-            const teachFacts = teach ? facts : [unit.marker];
+            const teachFacts = unit.prepOnly
+              ? facts
+              : teach
+                ? facts
+                : [unit.marker];
             startTransition(() => {
               startSession(
                 facts,
