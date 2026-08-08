@@ -58,12 +58,14 @@ import {
   requeueGap,
   retriesAllowed,
   revealFor,
+  variantPromptFor,
   wordReadingCredit,
   shuffle,
   spread,
   type GrammarSelection,
   type GrammarVehicle,
   type PromptContext,
+  type VariantPrompt,
 } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
 import {
@@ -167,6 +169,15 @@ interface DrillQuestion {
    * constructionQuestions). null for every non-category card. Plain data, so it
    * rides the serialized runtime. */
   numberItem: NumberQuizItem | null;
+  /**
+   * The VARIANT form this kanji recognition card is testing THIS showing — the
+   * component shape (亻) shown in place of the English gloss on an en2jp meaning
+   * card, still graded against the base character (人). Rolled once at ask time
+   * exactly like `numberItem` and `grammarVehicle`, so a remount neither re-rolls
+   * it nor swaps which form is shown. null for every card that is not a variant
+   * showing — every reading card, every jp2en card, and every character with no
+   * variant form. Plain data, so it rides the serialized runtime. */
+  variant: VariantPrompt | null;
   /** Japanese-sentence → English-meaning board (text or audio). Its options are strings rather
    * than FactIds, so it carries its own correct index. */
   recognition: RecognitionItem | null;
@@ -255,6 +266,7 @@ function ctxFor(q: DrillQuestion, anchor?: string): PromptContext {
     grammarVehicle: q.grammarVehicle ?? undefined,
     grammarSelection: q.grammarSelection ?? undefined,
     numberItem: q.numberItem ?? undefined,
+    variant: q.variant ?? undefined,
   };
 }
 
@@ -715,11 +727,21 @@ export function DrillScreen() {
       form.response === "definition"
         ? pickRecognitionForFact(f, history)
         : null;
+    // A kanji MEANING card asked en2jp may, this showing, test the character's
+    // VARIANT form instead of its English gloss — show 亻, ask which character it
+    // is a form of, still grading against 人. Rolled here once (like the vehicle
+    // and the count above) so prompt, board and reveal all agree, and a remount
+    // can't swap the form. null for every card that is not a variant showing —
+    // reading cards, jp2en cards, characters with no variant, and (occasionally)
+    // a variant character whose plain recognition this showing keeps. It rides
+    // the SAME meaning fact, so nothing about grading or scheduling changes.
+    const variant = variantPromptFor(f, dir);
     const ctx: PromptContext = {
       listen,
       grammarVehicle: grammarVehicle ?? undefined,
       grammarSelection: grammarSelection ?? undefined,
       numberItem: numberItem ?? undefined,
+      variant: variant ?? undefined,
     };
     // The selection board comes PRE-BUILT and pre-shuffled: its options were
     // chosen per-sentence by the generator, which proved each one wrong for THIS
@@ -760,6 +782,7 @@ export function DrillScreen() {
       grammarVehicle,
       grammarSelection,
       numberItem,
+      variant,
       recognition,
       katakana: isKatakana(revealFor(f, dir, ctx)),
       listen,
@@ -1183,6 +1206,10 @@ export function DrillScreen() {
     // through a truthiness test, so this is tidiness rather than load-bearing.
     if (rt.q && rt.q.confused === undefined) rt.q.confused = null;
     if (rt.q && rt.q.recognition === undefined) rt.q.recognition = null;
+    // A showing in flight from before the variant quiz existed had no variant.
+    // Null, not undefined: ctxFor reads it through `?? undefined`, so this is
+    // tidiness rather than load-bearing.
+    if (rt.q && rt.q.variant === undefined) rt.q.variant = null;
     // A quiz mid-flight before this field existed: best-effort backfill so the
     // count doesn't jump. asked minus the card currently on screen (unresolved).
     if (typeof rt.resolved !== "number") {

@@ -62,6 +62,7 @@ import {
   readingFactId,
 } from "@/data/kanji";
 import { RADICALS, RADICAL_SUBJECT } from "@/data/radicals";
+import { variantsOf } from "@/data/variant-forms";
 import { curriculumPosition } from "@/lib/curriculum-order";
 import {
   VOCAB,
@@ -188,6 +189,37 @@ export interface PromptContext {
    * every non-construction fact. See constructionQuestions and drill-screen.tsx.
    */
   numberItem?: NumberQuizItem;
+  /**
+   * The per-showing VARIANT form a kanji recognition card is testing THIS time —
+   * the shape the character takes as a component (人 → 亻, 水 → 氵). Same
+   * discipline as `grammarVehicle` and `numberItem`: the FACT is fixed (know 人),
+   * the SHOWING varies, and it is rolled once at ask time (see variantPromptFor)
+   * so prompt and reveal agree. When set, the en2jp meaning card shows the form
+   * (亻) and asks which character it belongs to, still grading against the base
+   * glyph (人) — a display variation of the SAME meaning fact, no new fact id.
+   * Absent for every card that is not a variant showing, which is almost all of
+   * them.
+   */
+  variant?: VariantPrompt;
+}
+
+/**
+ * One variant-recognition showing, flattened to plain data so it rides the
+ * drill's serialized runtime beside `GrammarVehicle` and `NumberQuizItem`.
+ *
+ * It carries `original` — the base character the form belongs to — so the kanji
+ * prompt can refuse a stale ctx (a serialized runtime, a re-cut of the data)
+ * whose variant is for some OTHER fact, exactly as `selectionShowing` and
+ * `variedVehicle` guard their per-showing state. The answer is always `original`
+ * (人 for 亻), so grading and reveal reuse the ordinary en2jp meaning path with
+ * no new grading id.
+ */
+export interface VariantPrompt {
+  /** The form as it is written — 亻, 氵, 忄. Shown as the prompt glyph. */
+  readonly glyph: string;
+  /** The base character it is a form of — the fact's own glyph, and the answer
+   * this card grades against. */
+  readonly original: string;
 }
 
 /** A verb picked to carry a grammar production question this showing. Plain
@@ -634,6 +666,25 @@ const kanjiQuestions: QuestionType = {
         hint: null,
       };
     }
+    // A VARIANT recognition showing rides the meaning fact: instead of the
+    // English gloss, show the FORM this character takes as a component (亻) and
+    // ask which character it belongs to. The answer is still this glyph (人), so
+    // check, distractors (a board of kanji) and reveal are the ordinary en2jp
+    // meaning path, untouched — only the prompt face changes. Guarded on
+    // `original === glyph` so a stale ctx carrying another fact's variant is
+    // dropped, exactly as selectionShowing/variedVehicle refuse a mismatched
+    // showing; a reading fact (anchor set) never reaches here.
+    const variant = !anchor ? ctx?.variant : undefined;
+    if (variant && variant.original === glyph) {
+      return {
+        glyph: variant.glyph,
+        jp: true,
+        // The line that makes the question answerable — without it "亻 → ?" does
+        // not say what is being asked. Not the English gloss; the answer is 人.
+        context: "which character is this a form of?",
+        hint: null,
+      };
+    }
     return {
       glyph: answerOf(fact),
       jp: !!anchor,
@@ -698,6 +749,53 @@ const kanjiQuestions: QuestionType = {
       .slice(0, n);
   },
 };
+
+/**
+ * Roll a VARIANT-recognition showing for a kanji MEANING fact asked en2jp, or
+ * null. This is the whole of the variant-quiz integration: a character that
+ * reshapes as a component (人 → 亻, 水 → 氵, 心 → 忄/⺗) is TAUGHT the form on its
+ * lesson page but was never QUIZZED on it. Folding recognition into the base
+ * character's own card — no new SRS fact — means the meaning fact that already
+ * asks "produce 人" can, this showing, instead show 亻 and ask which character it
+ * is a form of. The answer is the base glyph either way, so nothing about the
+ * fact, its scheduling or its grading changes; only the prompt face does.
+ *
+ * Null for:
+ *   - any direction but en2jp (the produce-the-glyph card; jp2en asks the gloss);
+ *   - a fact that is not a kanji MEANING fact (a reading fact carries an anchor;
+ *     a word/kana/grammar fact is a different subject);
+ *   - a character with no variant form on file — `variantsOf(glyph).length === 0`
+ *     — which is almost all of them; and
+ *   - OCCASIONALLY for one that has a variant, so the plain English → glyph
+ *     recognition still appears. This is the "one of several question forms for
+ *     this fact" shape the task chose over always-variant: the base recognition
+ *     (person → 人) and the variant recognition (亻 → 人) alternate on the same
+ *     card, the way a grammar production fact alternates its vehicle verb.
+ *
+ * A multi-form character (心 → 忄, ⺗) picks one form for the showing. `rng` is
+ * injectable so a test can pin both the coin and the pick.
+ */
+export function variantPromptFor(
+  fact: FactId,
+  dir: Direction,
+  rng: Rng = Math.random,
+): VariantPrompt | null {
+  if (dir !== "en2jp") return null;
+  const info = factInfo(fact);
+  // Kanji subject only, and a MEANING fact (reading facts carry an anchor and
+  // are jp2en only, so they never reach an en2jp ask anyway — the anchor guard
+  // is belt and braces).
+  if (!info || info.subject !== KANJI_SUBJECT) return null;
+  if (anchorOf(fact) !== null) return null;
+  const glyph = info.glyph;
+  const forms = variantsOf(glyph);
+  if (forms.length === 0) return null;
+  // Occasional: leave the plain English → glyph recognition to the other half of
+  // showings, so the base fact is still asked its ordinary way too.
+  if (rng() < 0.5) return null;
+  const pick = forms[Math.floor(rng() * forms.length)] ?? forms[0];
+  return { glyph: pick.glyph, original: glyph };
+}
 
 // ---------- words ----------
 

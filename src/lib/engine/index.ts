@@ -31,11 +31,13 @@ export {
   wordReadingCredit,
   grammarVehicleFor,
   grammarSelectionFor,
+  variantPromptFor,
   type Prompt,
   type PromptContext,
   type QuestionType,
   type GrammarVehicle,
   type GrammarSelection,
+  type VariantPrompt,
 } from "@/lib/engine/question";
 
 // The pure totals/stats math lives in engine/results.ts — no registry, no
