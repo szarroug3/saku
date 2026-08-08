@@ -213,6 +213,19 @@ export interface CounterLesson {
   };
 }
 
+/** Pick a budgeted prefix of prereq items, mirroring the form-packer rule:
+ * take at least one item, then stop before the next would exceed max. */
+function packPrereqs(items: readonly PrereqItem[], max: number): PrereqItem[] {
+  const packed: PrereqItem[] = [];
+  let cost = 0;
+  for (const item of items) {
+    if (packed.length > 0 && cost + item.cost > max) break;
+    packed.push(item);
+    cost += item.cost;
+  }
+  return packed;
+}
+
 function toCard(form: CounterForm): CounterCard {
   return {
     entry: counterEntry(form),
@@ -394,6 +407,7 @@ export function nextCounterLesson(
 
   let dueUnit: NumberUnit | null = null;
   const unitPrereqs: PrereqItem[] = [];
+  let unitPrepOnly: NumberUnit | null = null;
 
   for (const step of SCHEDULE) {
     if ("unit" in step) {
@@ -407,6 +421,21 @@ export function nextCounterLesson(
         // pieces (囗 儿 亠 …) mislead, so isNumberKanji marks them leaf. Counter
         // kanji (人 本 匹 …) are not in the set and decompose as before.
         collectPrereqs(c, history, seenKanji, seenRadicals, unitPrereqs, isNumberKanji);
+      }
+
+      // Respect the lesson range for unit lessons too: if teaching the whole
+      // prereq chain plus the unit's own rule would overflow max, hand out a
+      // prereq-only lesson first. Claiming those real kanji/radical facts moves
+      // history forward, so the next call shrinks the remaining chain until the
+      // marker lesson itself fits.
+      const unitCost =
+        unitPrereqs.reduce((n, p) => n + p.cost, 0) + unitContentCost(step.unit);
+      if (unitCost > range.max && unitPrereqs.length > 0) {
+        const packed = packPrereqs(unitPrereqs, range.max);
+        unitPrereqs.length = 0;
+        unitPrereqs.push(...packed);
+        dueUnit = null;
+        unitPrepOnly = step.unit;
       }
       break;
     }
@@ -463,6 +492,16 @@ export function nextCounterLesson(
         marker: dueUnit.marker,
         intro: dueUnit.intro,
       },
+      position: { from: done + 1, to: done + 1, total: COUNTERS_CURRICULUM_TOTAL },
+    };
+  }
+  if (unitPrepOnly) {
+    return {
+      cards: [unitCard(unitPrepOnly)],
+      // A unit-prep lesson teaches only part of the due unit's prereq chain.
+      // No marker yet: the rule card remains due until its own lesson runs.
+      facts: unitPrereqs.map((p) => p.fact),
+      cardPrereqTiles: [toPrereqTiles(unitPrereqs)],
       position: { from: done + 1, to: done + 1, total: COUNTERS_CURRICULUM_TOTAL },
     };
   }

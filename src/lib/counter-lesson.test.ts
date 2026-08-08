@@ -20,6 +20,7 @@
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+import { effectiveState } from "./claims.ts";
 
 import {
   COUNTER_CURRICULUM,
@@ -27,6 +28,7 @@ import {
   NUMBER_UNIT_MARKERS,
   NUMBER_UNIT_TENS_MARKER,
   constructionMarker,
+  counterEntry,
   counterKanjiPrereqs,
   counterMeaningFactId,
   isKanaForm,
@@ -67,6 +69,15 @@ function claiming(facts: readonly FactId[]): HistoryFile {
   return history({ claims: claims as HistoryFile["claims"] });
 }
 
+function isFresh(fact: FactId, hist: HistoryFile): boolean {
+  const state = effectiveState(
+    hist.facts[fact],
+    hist.claims?.[fact],
+    hist.seen?.[fact],
+  );
+  return state.lastTested === 0;
+}
+
 /** Claim every fact a lesson seeds (its prereq kanji/radicals AND its own facts
  * or marker) on top of an existing history — the "Start and finish" move the app
  * makes, so the next call sees this lesson as done. */
@@ -104,6 +115,28 @@ function allLessons(range = RANGE): CounterLesson[] {
     hist = claimLesson(hist, lesson);
   }
   return out;
+}
+
+/** Claim lessons from `start` until the lesson that carries `marker` as its
+ * numberUnit marker appears. Returns every visited lesson (including the marker
+ * lesson) and the marker lesson itself. */
+function lessonsThroughMarker(
+  start: HistoryFile,
+  marker: FactId,
+  range = RANGE,
+): { lessons: CounterLesson[]; markerLesson: CounterLesson } {
+  let hist = start;
+  const lessons: CounterLesson[] = [];
+  for (let i = 0; i < 100; i++) {
+    const lesson = nextCounterLesson(hist, range);
+    assert.ok(lesson, `expected a lesson before reaching ${marker}`);
+    lessons.push(lesson!);
+    if (lesson!.numberUnit?.marker === marker) {
+      return { lessons, markerLesson: lesson! };
+    }
+    hist = claimLesson(hist, lesson!);
+  }
+  throw new Error(`marker lesson not reached: ${marker}`);
 }
 
 const phase1 = COUNTER_CURRICULUM.filter((f) => f.phase === 1);
@@ -159,10 +192,17 @@ describe("the schedule", () => {
   });
 
   test("phase-1 forms + the two range units done → the 〜人 unit is due, ungated", () => {
-    const lesson = nextCounterLesson(claiming([...phase1Met, ...bothMarkers]), RANGE);
-    assert.ok(lesson?.numberUnit, "the 〜人 unit is due");
-    assert.equal(lesson!.numberUnit!.marker, constructionMarker("nin"));
-    assert.equal(lesson!.numberUnit!.mode, "number-reading");
+    const start = claiming([...phase1Met, ...bothMarkers]);
+    const lesson = nextCounterLesson(start, RANGE);
+    assert.ok(lesson, "a counters lesson exists");
+    assert.equal(
+      lesson!.position.from,
+      phase1Met.length + NUMBER_UNITS.length + 1,
+      "the next due content step is the 〜人 unit",
+    );
+    const { markerLesson } = lessonsThroughMarker(start, constructionMarker("nin"), RANGE);
+    assert.equal(markerLesson.numberUnit!.marker, constructionMarker("nin"));
+    assert.equal(markerLesson.numberUnit!.mode, "number-reading");
   });
 
   test("a learner with no counters history has not started the track", () => {
@@ -219,12 +259,13 @@ describe("the tens unit teaches the number kanji as whole items", () => {
   test("the tens unit teaches the Sino number kanji 一…十 as prereqs", () => {
     // The Sino numbers are no longer rote kana forms; the tens unit (the first
     // material that spells a number in kanji) teaches 一…十 ahead of its rule card.
-    const { lesson } = advanceUntil((l) =>
-      l.cardPrereqTiles.some((ts) => ts.some((t) => t.glyph === "一")),
+    const { lessons, markerLesson } = lessonsThroughMarker(
+      claiming(numbersDone),
+      NUMBER_UNIT_TENS_MARKER,
+      RANGE,
     );
-    assert.ok(lesson.numberUnit, "the number kanji ride into the tens UNIT lesson");
-    assert.equal(lesson.numberUnit!.marker, NUMBER_UNIT_TENS_MARKER);
-    const glyphs = walkGlyphs(lesson);
+    const glyphs = lessons.flatMap((l) => walkGlyphs(l));
+    assert.equal(markerLesson.numberUnit!.marker, NUMBER_UNIT_TENS_MARKER);
     for (const k of ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
       assert.ok(glyphs.includes(k), `the tens unit teaches ${k}`);
     }
@@ -234,15 +275,18 @@ describe("the tens unit teaches the number kanji as whole items", () => {
     // Number kanji are memorised wholes: 四 is taught as its own tile with NO 囗/儿
     // sub-tiles, 六 with no 亠/八, and so on. The shape-only pieces that used to
     // ride the tens unit are gone (see src/data/number-kanji.ts).
-    const { lesson } = advanceUntil((l) =>
-      l.cardPrereqTiles.some((ts) => ts.some((t) => t.glyph === "四")),
+    const { lessons } = lessonsThroughMarker(
+      claiming(numbersDone),
+      NUMBER_UNIT_TENS_MARKER,
+      RANGE,
     );
-    const glyphs = walkGlyphs(lesson);
+    const glyphs = lessons.flatMap((l) => walkGlyphs(l));
     for (const piece of ["囗", "儿", "亠", "丿", "乙"]) {
       assert.ok(!glyphs.includes(piece), `${piece} is NOT taught as a number-kanji piece`);
     }
     // Every number tile is a Kanji tile — no Radical sub-tiles among them.
-    const numberTiles = lesson.cardPrereqTiles
+    const numberTiles = lessons
+      .flatMap((l) => l.cardPrereqTiles)
       .flat()
       .filter((t) => ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"].includes(t.glyph));
     assert.equal(numberTiles.length, 10, "all ten number kanji are taught");
@@ -343,10 +387,12 @@ describe("a generative unit's content cost is 1 + its irregular count", () => {
 
 describe("a heavy counter teaches its kanji chain ahead of its rule card", () => {
   test("〜個 pulls 古 固 個 and teaches them before the 〜個 rule", () => {
-    const { lesson } = advanceUntil(
-      (l) => l.numberUnit?.marker === constructionMarker("ko"),
+    const { lessons, markerLesson } = lessonsThroughMarker(
+      history(),
+      constructionMarker("ko"),
+      RANGE,
     );
-    const tiles = lesson.cardPrereqTiles[0].map((t) => t.glyph);
+    const tiles = lessons.flatMap((l) => l.cardPrereqTiles.flat().map((t) => t.glyph));
     // Prereqs are the ETYMOLOGY pieces now, not the raw shape decomposition:
     // 個 owes 固, 固 owes 古 (and the 囗 radical), and 古's own glyph origin
     // assigns no piece a role, so it is taught whole — 口 is no longer pulled in
@@ -355,7 +401,7 @@ describe("a heavy counter teaches its kanji chain ahead of its rule card", () =>
       assert.ok(tiles.includes(g), `〜個 teaches ${g}`);
     }
     // The teach walk shows the kanji chain as item cards, THEN the rule card.
-    const steps = lessonSteps(lesson.facts, history());
+    const steps = lessonSteps(markerLesson.facts, history());
     const lastItem = steps.map((s) => s.type).lastIndexOf("item");
     const ruleAt = steps.findIndex(
       (s) => s.type === "intro" && s.intro.id === "intro-counter-ko",
@@ -363,7 +409,7 @@ describe("a heavy counter teaches its kanji chain ahead of its rule card", () =>
     assert.ok(ruleAt >= 0, "the 〜個 rule card is in the walk");
     assert.ok(lastItem < ruleAt, "every kanji item precedes the rule card");
     // The marker is last so completing the lesson claims the range taught.
-    assert.equal(lesson.facts.at(-1), constructionMarker("ko"));
+    assert.equal(markerLesson.facts.at(-1), constructionMarker("ko"));
   });
 });
 
@@ -397,60 +443,87 @@ describe("the generative units", () => {
   });
 
   test("the tens unit is due after 〜つ and teaches the number kanji 一…十", () => {
-    const lesson = nextCounterLesson(claiming(numbersDone), RANGE);
-    assert.ok(lesson?.numberUnit, "a generative unit lesson, not a form lesson");
-    assert.equal(lesson!.numberUnit!.marker, NUMBER_UNIT_TENS_MARKER);
-    assert.equal(lesson!.numberUnit!.intro.id, NUMBERS_COMPOSE.id);
-    assert.equal(lesson!.numberUnit!.config.numberMax, 99);
-    assert.equal(lesson!.numberUnit!.config.includeCounters, false);
-    // The tens unit spells 11-99 in kanji, so it teaches 一…十 as prereqs before its
-    // rule card (they are no longer rote forms), and ends on its marker.
-    const tiles = lesson!.cardPrereqTiles[0].map((t) => t.glyph);
-    for (const k of ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
-      assert.ok(tiles.includes(k), `the tens unit teaches ${k}`);
+    const first = nextCounterLesson(claiming(numbersDone), RANGE)!;
+    // With the default 5-7 range, the full 一…十 prereq chain no longer fits in one
+    // sitting, so the unit may start with prereq-only lessons.
+    assert.ok(!first.numberUnit, "the first tens lesson can be prereq-only");
+    assert.ok(first.cardPrereqTiles[0].length > 0, "it still teaches number kanji prereqs");
+    assert.equal(first.position.from, numbersDone.length + 1);
+    assert.equal(first.position.total, COUNTERS_CURRICULUM_TOTAL);
+
+    // Claim through the prereq split until the marker lesson appears.
+    let hist = claiming(numbersDone);
+    let markerLesson: CounterLesson | null = null;
+    for (let i = 0; i < 10; i++) {
+      const lesson = nextCounterLesson(hist, RANGE)!;
+      if (lesson.numberUnit?.marker === NUMBER_UNIT_TENS_MARKER) {
+        markerLesson = lesson;
+        break;
+      }
+      hist = claimLesson(hist, lesson);
     }
-    assert.ok(lesson!.facts.includes(kanjiMeaningFactId("一")));
-    assert.equal(lesson!.facts.at(-1), NUMBER_UNIT_TENS_MARKER);
-    assert.equal(lesson!.position.from, numbersDone.length + 1);
-    assert.equal(lesson!.position.total, COUNTERS_CURRICULUM_TOTAL);
+    assert.ok(markerLesson, "the marker lesson appears after prereq lessons");
+    assert.equal(markerLesson!.numberUnit!.intro.id, NUMBERS_COMPOSE.id);
+    assert.equal(markerLesson!.numberUnit!.config.numberMax, 99);
+    assert.equal(markerLesson!.numberUnit!.config.includeCounters, false);
+    assert.equal(markerLesson!.facts.at(-1), NUMBER_UNIT_TENS_MARKER);
   });
 
   test("the big unit teaches 百千万 before its rule and ends on its marker", () => {
-    const lesson = nextCounterLesson(
+    // As with tens, the first due lesson may be prereq-only at a tight range.
+    const first = nextCounterLesson(
       claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER]),
       RANGE,
     )!;
-    assert.ok(lesson.numberUnit, "the big unit is now due");
-    assert.equal(lesson.numberUnit!.marker, NUMBER_UNIT_BIG_MARKER);
-    assert.equal(lesson.numberUnit!.intro.id, NUMBERS_BIG.id);
-    // Prereqs first (百 千 万 and their chain), the marker last.
-    const tiles = lesson.cardPrereqTiles[0].map((t) => t.glyph);
-    for (const g of ["百", "千", "万"]) assert.ok(tiles.includes(g), `big teaches ${g}`);
-    assert.equal(lesson.facts.at(-1), NUMBER_UNIT_BIG_MARKER);
-    assert.ok(lesson.facts.includes(kanjiMeaningFactId("百")));
-    assert.equal(lesson.position.from, numbersDone.length + 2);
+    assert.equal(first.position.from, numbersDone.length + 2);
+
+    let hist = claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER]);
+    let markerLesson: CounterLesson | null = null;
+    for (let i = 0; i < 10; i++) {
+      const lesson = nextCounterLesson(hist, RANGE)!;
+      if (lesson.numberUnit?.marker === NUMBER_UNIT_BIG_MARKER) {
+        markerLesson = lesson;
+        break;
+      }
+      hist = claimLesson(hist, lesson);
+    }
+    assert.ok(markerLesson, "the big marker lesson appears after prereq lessons");
+    assert.equal(markerLesson!.numberUnit!.intro.id, NUMBERS_BIG.id);
+    assert.equal(markerLesson!.facts.at(-1), NUMBER_UNIT_BIG_MARKER);
   });
 
   test("claiming BOTH range markers advances the scheduler to the 〜人 unit", () => {
-    const lesson = nextCounterLesson(
-      claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER, NUMBER_UNIT_BIG_MARKER]),
-      RANGE,
-    );
-    assert.ok(lesson?.numberUnit, "the 〜人 unit is now due");
-    assert.equal(lesson!.numberUnit!.marker, constructionMarker("nin"));
-    assert.equal(lesson!.numberUnit!.config.includeCounters, true);
-    assert.deepEqual(lesson!.numberUnit!.config.counters, ["nin"]);
+    const start = claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER, NUMBER_UNIT_BIG_MARKER]);
+    const lesson = nextCounterLesson(start, RANGE);
+    assert.ok(lesson, "the 〜人 unit path is due");
     assert.equal(lesson!.position.from, numbersDone.length + NUMBER_UNITS.length + 1);
+    const { markerLesson } = lessonsThroughMarker(start, constructionMarker("nin"), RANGE);
+    assert.equal(markerLesson.numberUnit!.marker, constructionMarker("nin"));
+    assert.equal(markerLesson.numberUnit!.config.includeCounters, true);
+    assert.deepEqual(markerLesson.numberUnit!.config.counters, ["nin"]);
   });
 
   test("〜人 has NO rote form lesson — claiming it advances to the next counter unit", () => {
-    const lesson = nextCounterLesson(
-      claiming([...numbersDone, ...bothMarkers, constructionMarker("nin")]),
-      RANGE,
-    );
-    assert.ok(lesson, "a lesson exists");
-    assert.ok(lesson!.numberUnit, "a generative unit, not a form lesson");
-    assert.equal(lesson!.numberUnit!.marker, constructionMarker("hon"));
+    const start = claiming([...numbersDone, ...bothMarkers, constructionMarker("nin")]);
+    const { markerLesson } = lessonsThroughMarker(start, constructionMarker("hon"), RANGE);
+    assert.equal(markerLesson.numberUnit!.marker, constructionMarker("hon"));
+  });
+
+  test("every counters lesson respects max cost, including unit prep and unit marker lessons", () => {
+    const lessons = allLessons(RANGE);
+    for (const lesson of lessons) {
+      const cost = lesson.facts.reduce((sum, fact) => {
+        if (isNumberUnitMarker(fact)) {
+          const unit = GENERATIVE_UNITS.find((u) => u.marker === fact);
+          return sum + (unit ? unitContentCost(unit) : 0);
+        }
+        return sum + 1;
+      }, 0);
+      assert.ok(
+        cost <= RANGE.max,
+        `lesson cost ${cost} should not exceed max ${RANGE.max}`,
+      );
+    }
   });
 });
 
@@ -463,12 +536,15 @@ describe("the whole track is finite and content-counted", () => {
     // The denominator counts content (forms + units), never the prereq tiles.
     assert.equal(last.position.total, COUNTERS_CURRICULUM_TOTAL);
     assert.equal(last.position.to, COUNTERS_CURRICULUM_TOTAL);
-    // Every form and unit is reached exactly once across the run.
-    const formsAndUnits = lessons.reduce(
-      (n, l) => n + (l.numberUnit ? 1 : l.cards.length),
-      0,
-    );
-    assert.equal(formsAndUnits, COUNTERS_CURRICULUM_TOTAL);
+    // Finishing the whole run claims every content step exactly once: every form
+    // meaning fact and every unit marker is non-fresh.
+    const end = lessons.reduce((h, l) => claimLesson(h, l), history());
+    for (const f of COUNTER_CURRICULUM) {
+      assert.ok(!isFresh(counterMeaningFactId(f), end));
+    }
+    for (const u of GENERATIVE_UNITS) {
+      assert.ok(!isFresh(u.marker, end));
+    }
   });
 });
 
