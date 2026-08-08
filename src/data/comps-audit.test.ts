@@ -55,7 +55,7 @@ const RADICAL_GLYPH = new Map(
   (radicalDefsJson as { num: number; glyph: string }[]).map((r) => [r.num, r.glyph]),
 );
 
-/** Every jōyō kanji that HAS a decomposition (68 of the 2,136 are atomic). */
+/** Every jōyō kanji that HAS a decomposition (74 of the 2,136 are atomic). */
 const DECOMPOSED = KANJI.filter((k) => k.comps.length > 0);
 
 /**
@@ -87,27 +87,28 @@ describe("stroke-count conservation — components should sum to the whole", () 
     }
   });
 
-  // The 44 kanji whose component strokes miss the whole by more than ±3. Every
+  // The 35 kanji whose component strokes miss the whole by more than ±3. Every
   // one is a KanjiVG artifact, NOT a wrong part: positive Δ = a surround emitted
   // once per child group (行/衣/囗/斉 …) or an otherwise duplicated part;
   // negative Δ = a partial depth-1 that named one element (先→儿, 鳥→灬). Pinned
   // as an exact set so a re-cut that mangles a NEW kanji's strokes — the
   // over-nesting a mis-decomposition looks like — breaks this test loudly.
   //
-  // Was 66; 22 over-count artifacts are now corrected by COMPS_OVERRIDE (see
-  // kanji.ts) and conserve within tolerance, so they left this set: the surround
-  // splits 斎 黙 憩 衰 修 衷 哀 威 術 街 衛 衝 衡 裏 褒 戚 束 東, and the single-shape
-  // splits 必 戒 氷 由. The 12 over-counts that REMAIN here are ones whose corrected
-  // depth-1 list is still doubtful (謄 州 成 準 挿 曲 蔵 卵 …) — left for the owner,
-  // not force-fixed. COMPS_OVER_COUNT_FIXED below pins the corrected side.
+  // Was 66, then 44; the once-ambiguous duplicated-part set is now resolved by
+  // COMPS_OVERRIDE (see kanji.ts), so nine more over-counts left this set —
+  // 謄 随 成 準 挿 蔵 卵 畿 collapse a kvg:part split and conserve, and 曲 goes
+  // atomic (drops out of DECOMPOSED). Only three over-counts REMAIN (州 島 章),
+  // whose corrected depth-1 list is still doubtful. 興 stays OFF this set: its two
+  // 𦥑 both carry real strokes (part markers notwithstanding), so it conserves as
+  // a genuine repeat. COMPS_OVER_COUNT_FIXED below pins the corrected side.
   const KNOWN_STROKE_ANOMALIES = new Set(
     // over-count (Δ > +3) still uncorrected: duplicated surround / repeated part
-    ("謄随州成準挿曲蔵卵島畿章" +
+    ("州島章" +
       // under-count (Δ < −3): partial depth-1
       "僅先免共声展憲散瓦衆衣言谷豆赤鹿倉帥師慶段角飛無舞華薦遣馬骨麗鳥").split(""),
   );
 
-  test("the set of gross mismatches is exactly the 44 documented artifacts", () => {
+  test("the set of gross mismatches is exactly the 35 documented artifacts", () => {
     const anomalies = new Set<string>();
     for (const k of DECOMPOSED) {
       const sum = k.comps.reduce((n, c) => n + (componentStrokes(c) ?? 0), 0);
@@ -121,7 +122,7 @@ describe("stroke-count conservation — components should sum to the whole", () 
       { appeared: [], gone: [] },
       "stroke-conservation anomaly set changed — review new/removed kanji",
     );
-    assert.equal(anomalies.size, 44);
+    assert.equal(anomalies.size, 35);
   });
 
   test("the overwhelming majority conserve within tolerance", () => {
@@ -129,8 +130,8 @@ describe("stroke-count conservation — components should sum to the whole", () 
       const sum = k.comps.reduce((n, c) => n + (componentStrokes(c) ?? 0), 0);
       return Math.abs(sum - k.strokes) <= TOLERANCE;
     }).length;
-    assert.equal(DECOMPOSED.length, 2068);
-    assert.equal(within, 2024);
+    assert.equal(DECOMPOSED.length, 2062);
+    assert.equal(within, 2027);
     assert.ok(within / DECOMPOSED.length >= 0.96, `${within}/${DECOMPOSED.length}`);
   });
 });
@@ -157,7 +158,7 @@ describe("over-count corrections — no fixed kanji lists a part too many times"
     衡: ["行", "𩵋"],
     // 衣 split top/bottom
     哀: ["衣", "口"], 衷: ["衣", "口", "丨"], 裏: ["衣", "里"], 褒: ["衣", "保"],
-    衰: ["衣", "口", "口"],
+    衰: ["衣", "口"],
     // 𢦏 frame
     栽: ["𢦏", "木"], 裁: ["𢦏", "衣"], 載: ["𢦏", "車"], 戴: ["𢦏", "異"],
     // 斉 wrapping 示
@@ -169,6 +170,16 @@ describe("over-count corrections — no fixed kanji lists a part too many times"
     東: ["木", "日"], 束: ["木", "口"], 氷: ["水", "丶"], 我: ["丿", "戈", "亅"],
     // number kanji
     五: ["二"], 年: ["丿", "干"], 午: ["丿", "干"],
+    // once-ambiguous duplicated-part set, resolved via KanjiVG kvg:part markers
+    亜: ["二", "口"], 成: ["𠂊", "戈"], 畿: ["幺", "幺", "戈", "田"],
+    幽: ["山", "幺", "幺"], 卵: ["卯", "丶"], 塞: ["宀", "三", "八", "土"],
+    寒: ["宀", "三", "八", "冫"], 弐: ["一", "弋", "二"], 挿: ["扌", "千", "十", "日"],
+    準: ["氵", "隼"], 滅: ["氵", "戌", "火"], 為: ["丶", "勹", "灬"],
+    爽: ["大", "爻", "爻"], 蔵: ["艹", "厂", "戈", "臣"],
+    表: ["二", "丨", "衣"], 謄: ["朕", "言"], 随: ["陏", "⻌"],
+    歳: ["止", "戌", "小"], 武: ["CDP-8CB8", "止"],
+    // atomic — split collapses to a single non-parent or an arbitrary carving
+    母: [], 甘: [], 平: [], 巨: [], 兆: [], 曲: [],
   };
 
   test("every corrected kanji's comps equals its curated list", () => {
@@ -239,16 +250,17 @@ describe("classical-radical reachability — the Kangxi radical is in the closur
     return false;
   }
 
-  // The 47 kanji whose Kangxi radical is genuinely NOT in their depth-1 shape —
+  // The 46 kanji whose Kangxi radical is genuinely NOT in their depth-1 shape —
   // radical-by-tradition, the expected residue. 由/甲/申 are radical 田 (field)
   // but drawn 日+丨; 世 is radical 一 drawn 廿; 来 is radical 木 drawn 米; 麦/黄/黒
   // are the modern forms of their own traditional radical (麥/黃/黑). All correct
   // as classifications; the depth-1 shape simply doesn't contain the radical.
+  // (巨 was here as radical 匚; it is now atomic [] and drops out of DECOMPOSED.)
   const KNOWN_RADICAL_EXCEPTIONS = new Set(
-    "世主久亀修充光全再冒勝升単卵商夏奉奪奮密寧就巣巨帰常幸当彙戚戴承整来由甲申画畝築能采随騰麦黄黒".split(""),
+    "世主久亀修充光全再冒勝升単卵商夏奉奪奮密寧就巣帰常幸当彙戚戴承整来由甲申画畝築能采随騰麦黄黒".split(""),
   );
 
-  test("the exception set is exactly the 47 radical-by-tradition kanji", () => {
+  test("the exception set is exactly the 46 radical-by-tradition kanji", () => {
     const exceptions = new Set(
       DECOMPOSED.filter((k) => !radicalReachable(k.c)).map((k) => k.c),
     );
@@ -259,12 +271,12 @@ describe("classical-radical reachability — the Kangxi radical is in the closur
       { appeared: [], gone: [] },
       "radical-reachability exception set changed — review new/removed kanji",
     );
-    assert.equal(exceptions.size, 47);
+    assert.equal(exceptions.size, 46);
   });
 
   test("the large majority reach their classical radical", () => {
     const reached = DECOMPOSED.filter((k) => radicalReachable(k.c)).length;
-    assert.equal(reached, 2021);
+    assert.equal(reached, 2016);
     assert.ok(reached / DECOMPOSED.length >= 0.97, `${reached}/${DECOMPOSED.length}`);
   });
 });

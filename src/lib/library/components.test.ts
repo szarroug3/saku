@@ -77,7 +77,7 @@ describe("the index covers every component the depth-1 decomposition attests", (
     assert.equal(usedAsPartIn("口").length, 104);
     assert.equal(usedAsPartIn("木").length, 101);
     assert.equal(usedAsPartIn("亻").length, 95);
-    assert.equal(usedAsPartIn("日").length, 61);
+    assert.equal(usedAsPartIn("日").length, 60);
     assert.equal(usedAsPartIn("ノ").length, 0);
     assert.equal(usedAsPartIn("｜").length, 0);
   });
