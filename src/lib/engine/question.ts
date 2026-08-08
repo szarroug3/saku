@@ -679,9 +679,12 @@ const kanjiQuestions: QuestionType = {
       return {
         glyph: variant.glyph,
         jp: true,
-        // The line that makes the question answerable — without it "亻 → ?" does
-        // not say what is being asked. Not the English gloss; the answer is 人.
-        context: "which character is this a form of?",
+        // No sub-label. The whole question — "which character is 亻 a form of" —
+        // rides in the ONE instruction line the card already shows (see the
+        // variant branch in drill-screen.tsx), the way the grammar form-name was
+        // folded in and its grey sub-label dropped. A second grey line under the
+        // instruction only repeated it.
+        context: null,
         hint: null,
       };
     }
