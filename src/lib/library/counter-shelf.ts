@@ -21,18 +21,17 @@ import {
   numberConstructionEntry,
 } from "@/data/number-construction";
 import { kanjiEntry } from "@/data/kanji";
+import { NUMBER_KANJI } from "@/data/number-kanji";
 import { libEntry } from "@/lib/library/entries";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 
-// The Sino numbers 1-10, in counting order. Since the dedupe (drop the rote
-// counter:num:1..10 kana forms), the number KANJI carry these — 二 = に = two —
-// so the shelf surfaces the kanji entries themselves rather than curriculum
-// forms it no longer has. Owners look for "the numbers" here; without this
-// section they vanished from the shelf entirely (the kanji stayed reachable
-// under Kanji and in search, but not where a learner expects to browse them).
-const NUMBER_KANJI: readonly string[] = [
-  "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
-];
+// The Sino numbers 1-10, in counting order (NUMBER_KANJI, shared with the prereq
+// walk and builtFrom). Since the dedupe (drop the rote counter:num:1..10 kana
+// forms), the number KANJI carry these — 二 = に = two — so the shelf surfaces the
+// kanji entries themselves rather than curriculum forms it no longer has. Owners
+// look for "the numbers" here; without this section they vanished from the shelf
+// entirely (the kanji stayed reachable under Kanji and in search, but not where a
+// learner expects to browse them).
 
 /** One section of the shelf: a name and the predicate that fills it. In teaching
  * order, and mutually exclusive over the curriculum — every form falls in

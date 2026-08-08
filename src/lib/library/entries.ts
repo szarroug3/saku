@@ -78,6 +78,7 @@ import {
   NUMBER_CONSTRUCTIONS,
   numberConstructionEntry,
 } from "@/data/number-construction";
+import { isNumberKanji } from "@/data/number-kanji";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import {
   COUNTER_CURRICULUM,
@@ -979,6 +980,12 @@ export interface BuiltPiece {
  * Empty for an atomic kanji (一 has no components); the section renders nothing.
  */
 export function builtFrom(entry: LibEntry): BuiltPiece[] {
+  // The number kanji 一…十 are memorised wholes, not compositions: their KanjiVG
+  // pieces (囗 儿 亠 丿 乙, the 八 in 六) are shape-only and imply a meaning the
+  // number does not carry, so the page (and the lesson card, which mounts this
+  // same box and gates on this same length via lesson-roles) shows NO "Built
+  // from" for them. Every other kanji — counters included — keeps its breakdown.
+  if (entry.kind === KANJI_SUBJECT && isNumberKanji(entry.glyph)) return [];
   const pieces = madeOf(entry);
   if (!pieces.length) return [];
   const kept = deframe(pieces.map((p) => p.c)).length;

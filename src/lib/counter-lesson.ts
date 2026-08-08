@@ -60,6 +60,7 @@ import {
   type CounterForm,
 } from "@/data/counters";
 import { CONSTRUCTION_CATEGORIES } from "@/data/counter-categories";
+import { isNumberKanji } from "@/data/number-kanji";
 import {
   numberConstructionEntry,
   numberConstructionRow,
@@ -402,7 +403,10 @@ export function nextCounterLesson(
       // with its counter kanji's full component chain taught ahead of the rule.
       dueUnit = step.unit;
       for (const c of UNIT_KANJI[step.unit.id]) {
-        collectPrereqs(c, history, seenKanji, seenRadicals, unitPrereqs);
+        // The number kanji 一…十 are taught as whole tiles — their shape-only
+        // pieces (囗 儿 亠 …) mislead, so isNumberKanji marks them leaf. Counter
+        // kanji (人 本 匹 …) are not in the set and decompose as before.
+        collectPrereqs(c, history, seenKanji, seenRadicals, unitPrereqs, isNumberKanji);
       }
       break;
     }
@@ -415,7 +419,10 @@ export function nextCounterLesson(
     const radSnap = new Set(seenRadicals);
     const tempItems: PrereqItem[] = [];
     for (const c of formKanji(form)) {
-      collectPrereqs(c, history, seenKanji, seenRadicals, tempItems);
+      // Number kanji stay whole here too (see the unit branch); 二十歳's 二 十 are
+      // the only number kanji a form's glyph carries, and both are already taught
+      // by the tens unit ahead of it, so this rarely adds anything.
+      collectPrereqs(c, history, seenKanji, seenRadicals, tempItems, isNumberKanji);
     }
     // A form's full difficulty is its prereq reading-units PLUS its own content:
     // one per kana meaning fact (a bare number / 〜つ form is one), the mirror of
