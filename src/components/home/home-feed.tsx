@@ -108,6 +108,10 @@ function trackOfRun(run: RunInfo): TrackKey | null {
   // recognised by its mode. Only lesson sessions reach here (see runForTrack), so
   // this never captures a one-off Practice number-reading quiz.
   if (run.mode === "number-reading") return "counter";
+  // A prep-only counter unit session teaches only prereq kanji/radicals, so it
+  // carries no counter facts. Those sessions are started with an explicit track
+  // label in `what`; read it here so Continue stays on the counters card.
+  if (/^Counters\b/i.test(run.what)) return "counter";
   // Scan all facts: some lessons (keigo, and now counters) prepend prerequisite
   // kanji/radical facts before their own facts, so the first fact is not always
   // the track identifier. A counter is a `word` fact told apart by COUNTER_ENTRIES
@@ -645,7 +649,11 @@ export function HomeFeed() {
             if (unit.prepOnly) {
               // Prep-only slices teach/drill prereq facts only. The generated
               // number-reading round belongs to the marker lesson itself.
-              startLesson(facts, { teach });
+              const seeded = teach ? [] : newlySeen(facts);
+              startTransition(() => {
+                if (!teach) markSeen(facts);
+                startSession(facts, teach ? facts : [], "Counters", "lesson", seeded);
+              });
               return;
             }
             // A NUMBER unit advances on COMPLETION, not on start: claiming its
