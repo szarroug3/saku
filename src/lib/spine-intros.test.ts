@@ -318,7 +318,7 @@ describe("the kanji card comes before the radical card", () => {
 });
 
 // THE VARIANT CARD, a non-role anchor. It rides its own predicate (the first item
-// that teaches a variant on either surface) rather than ANCHOR_RULE, and mints no
+// whose lesson SHOWS variant forms) rather than ANCHOR_RULE, and mints no
 // fact, so the only thing that stops it coming back is the shown set. These pin
 // that it fires once, ahead of the first variant, last among the cards it shares
 // an item with, and never on a walk with no variant in it.
@@ -327,7 +327,7 @@ describe("the variant-forms card", () => {
     assert.ok(new Set(CONCEPT_CARD_IDS).has(VARIANT_INTRO.id), "intro-shown.ts forgot it");
   });
 
-  test("it fires ahead of the first item that teaches a variant, exactly once", () => {
+  test("it fires ahead of the first item that shows variant forms, exactly once", () => {
     const walk = GROUPS[0].items.map((it) => ({ kind: "kanji", glyph: it.glyph }));
     const first = walk.findIndex((s) => teachesVariant(s.glyph));
     assert.ok(first >= 0, "the opening lesson teaches no variant, so this pins nothing");

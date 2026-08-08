@@ -642,6 +642,12 @@ export function HomeFeed() {
               startLesson(facts, { teach });
               return;
             }
+            if (unit.prepOnly) {
+              // Prep-only slices teach/drill prereq facts only. The generated
+              // number-reading round belongs to the marker lesson itself.
+              startLesson(facts, { teach });
+              return;
+            }
             // A NUMBER unit advances on COMPLETION, not on start: claiming its
             // marker at start let a started-then-discarded session skip the unit
             // entirely. Start teaches the rule and runs the number-reading round;

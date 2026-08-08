@@ -1,7 +1,8 @@
 // The concept cards the curriculum spine owes, and when each is due: the three
 // role cards ("What kanji are", "What a radical is", "What words add") planned
 // through ANCHOR_RULE, plus the variant-forms card, a non-role anchor that fires
-// ahead of the first item teaching a variant (see teachesVariant, spineIntroPlan).
+// ahead of the first item that SHOWS variant forms (see teachesVariant,
+// spineIntroPlan).
 //
 // WHAT THIS HAS TAKEN THREE GOES TO GET RIGHT
 // ===========================================
@@ -58,7 +59,7 @@
 // already learned, so a learner starting from zero still gets each card where it
 // reads best and never three at once.
 
-import { kanjiRow, meaningFactId, variantOriginal } from "@/data/kanji";
+import { meaningFactId } from "@/data/kanji";
 import { radicalMeaningFactId } from "@/data/radicals";
 import { wordMeaningFactId } from "@/data/vocab";
 import { variantsOf } from "@/data/variant-forms";
@@ -201,21 +202,15 @@ const ITEM_OF: ReadonlyMap<string, (typeof CURRICULUM_SEQUENCE)[number]> = new M
 );
 
 /**
- * Does this item's step TEACH a variant form, on either surface?
+ * Does this item's step SHOW variant forms in the lesson UI?
  *
- * Surface #1: the character owns variant forms, so its lesson says so (人 → 亻).
- * Surface #2: the character is built from a variant piece, so its "Built from"
- * note does (体 shows 亻 is 人 in its left form). The variant concept card fires
- * ahead of the first walk item either is true of, so a learner is told what a
- * variant form is before meeting one.
- *
- * The built-from test reads the raw component list, a hair wider than the deframed
- * pieces the tile actually shows; the cost of that is at worst the card firing one
- * item early, which is the safe direction for a "here is what is coming" card.
+ * This matches the `lessonSections` gate for `"variant-forms"`: a character with
+ * direct variant forms data (人 → 亻, 心 → 忄/⺗). The concept card fires ahead of
+ * the first walk item that actually renders that panel, so it does not appear
+ * early on characters that only include a variant piece in their decomposition.
  */
 export function teachesVariant(glyph: string): boolean {
-  if (variantsOf(glyph).length > 0) return true;
-  return (kanjiRow(glyph)?.comps ?? []).some((c) => variantOriginal(c) !== undefined);
+  return variantsOf(glyph).length > 0;
 }
 
 /**
