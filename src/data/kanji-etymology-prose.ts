@@ -52,6 +52,15 @@ import { BATCH_23 } from "./etymology-prose/batch-23.ts";
 import { BATCH_24 } from "./etymology-prose/batch-24.ts";
 import { BATCH_25 } from "./etymology-prose/batch-25.ts";
 import { BATCH_26 } from "./etymology-prose/batch-26.ts";
+import { BATCH_27 } from "./etymology-prose/batch-27.ts";
+import { BATCH_28 } from "./etymology-prose/batch-28.ts";
+import { BATCH_29 } from "./etymology-prose/batch-29.ts";
+import { BATCH_30 } from "./etymology-prose/batch-30.ts";
+import { BATCH_31 } from "./etymology-prose/batch-31.ts";
+import { BATCH_32 } from "./etymology-prose/batch-32.ts";
+import { BATCH_33 } from "./etymology-prose/batch-33.ts";
+import { BATCH_34 } from "./etymology-prose/batch-34.ts";
+import { BATCH_35 } from "./etymology-prose/batch-35.ts";
 
 // Batch 01 — the first hand-cleaned set (teaching order, most-seen first).
 const BATCH_01: Readonly<Record<string, string>> = {
@@ -106,6 +115,15 @@ export const PROSE_OVERRIDE: Readonly<Record<string, string>> = {
   ...BATCH_24,
   ...BATCH_25,
   ...BATCH_26,
+  ...BATCH_27,
+  ...BATCH_28,
+  ...BATCH_29,
+  ...BATCH_30,
+  ...BATCH_31,
+  ...BATCH_32,
+  ...BATCH_33,
+  ...BATCH_34,
+  ...BATCH_35,
 };
 
 /**
@@ -129,4 +147,8 @@ export const PROSE_SKIP: ReadonlySet<string> = new Set([
   "脚", "畳", "黙", "旧",
   "卵", "卒", "呪", "径", "卸", "浅", "砕", "剣", "剤", "捜",
   "蛍", "寛", "禅", "稲", "銭", "亀", "譲", "沢", "峡",
+  "挟", "桜", "耗", "巣", "斎", "堕", "湾", "蛮", "竜", "践",
+  "徳", "穂", "嬢", "顕", "𠮟", "壮", "弐", "呉", "壱", "且",
+  "奈", "枢", "勅", "厘", "叙", "栃", "逓", "曽", "圏", "楼",
+  "麺", "醸",
 ]);
