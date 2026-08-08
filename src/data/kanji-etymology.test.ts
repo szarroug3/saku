@@ -23,10 +23,12 @@ import {
   builtPieces,
   etymologyOf,
   hasEtymology,
+  phoneticGloss,
   phoneticReading,
 } from "./kanji-etymology.ts";
 import { kanjiRow } from "./kanji.ts";
 import manualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
+import glossJson from "./generated/kanji-phonetic-gloss.json" with { type: "json" };
 
 /** The role assigned to a specific shape piece of a kanji, or null. */
 function roleOf(kanji: string, piece: string) {
@@ -196,5 +198,42 @@ test("every hand-authored entry cites a source and lands on a real piece", () =>
       builtPieces(k).length > 0,
       `${k} hand-authored entry produced no labelled piece`,
     );
+  }
+});
+
+// ── Rare-phonetic footnote glossary (phoneticGloss) ──────────────────────────
+
+test("phoneticGloss — 冓 is a rare untaught phonetic with reading + framework meaning", () => {
+  const g = phoneticGloss("冓");
+  assert.ok(g, "冓 got no gloss — the rare-phonetic footnote source is empty for it");
+  assert.equal(g.reading, "こう");
+  assert.match(g.meaning, /join|timber|frame|cross/i);
+  // 冓 really is the phonetic in these hosts, so the footnote will fire there.
+  for (const host of ["構", "溝", "講", "購"]) {
+    assert.ok(
+      builtPieces(host).some((p) => p.role === "phonetic" && p.glyph === "冓"),
+      `${host} lost its 冓 phonetic piece`,
+    );
+  }
+});
+
+test("phoneticGloss — a TAUGHT phonetic component returns null (no footnote)", () => {
+  // 可 (河), 交 (校), 寺 (時) are taught jōyō kanji a learner can tap through to;
+  // they must never carry the rare-component asterisk footnote.
+  for (const taught of ["可", "交", "寺", "曽"]) {
+    assert.equal(phoneticGloss(taught), null, `${taught} wrongly got a rare-phonetic gloss`);
+  }
+});
+
+test("phoneticGloss — every glossed component is a rare, untaught character", () => {
+  for (const glyph of Object.keys(glossJson.data)) {
+    assert.equal(
+      kanjiRow(glyph),
+      undefined,
+      `${glyph} is a taught kanji and must not be in the rare-phonetic glossary`,
+    );
+    const g = phoneticGloss(glyph);
+    assert.ok(g, `${glyph} in the file but phoneticGloss returned null`);
+    assert.ok(g.meaning.length > 0, `${glyph} has an empty meaning`);
   }
 });

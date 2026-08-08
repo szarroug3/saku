@@ -1,0 +1,1046 @@
+{
+ "_license": "Hand-authored glossary of rare, untaught phonetic components. On-readings and meanings are sourced from English Wiktionary (en.wiktionary.org, CC BY-SA 4.0) and/or KANJIDIC2 (EDRDG, CC BY-SA 4.0). Each entry cites its source. Text remains CC BY-SA 4.0. See src/data/attribution.ts and src/data/generated/LICENSE.",
+ "_note": "Covers exactly the components that act as a PHONETIC piece in builtPieces(k) for some taught jōyō host yet are not themselves taught (no kanjiRow, not jōyō) — the ones the UX marks with an asterisk footnote. reading is the component's representative on'yomi in kana (null when genuinely unavailable); meaning is a short English gloss (≤ ~6 words).",
+ "data": {
+  "莫": {
+   "reading": "ばく",
+   "meaning": "none; nothing; not",
+   "source": "https://en.wiktionary.org/wiki/莫"
+  },
+  "咅": {
+   "reading": "とう",
+   "meaning": "sound indicating refusal",
+   "source": "https://en.wiktionary.org/wiki/咅"
+  },
+  "其": {
+   "reading": "き",
+   "meaning": "his; her; its; their",
+   "source": "https://en.wiktionary.org/wiki/其"
+  },
+  "昜": {
+   "reading": "よう",
+   "meaning": "alternative form of 陽/易",
+   "source": "https://en.wiktionary.org/wiki/昜"
+  },
+  "艮": {
+   "reading": "こん",
+   "meaning": "eight trigrams; mountain",
+   "source": "https://en.wiktionary.org/wiki/艮"
+  },
+  "亥": {
+   "reading": "がい",
+   "meaning": "12th earthly branch",
+   "source": "https://en.wiktionary.org/wiki/亥"
+  },
+  "甫": {
+   "reading": "ふ",
+   "meaning": "term of address for a man",
+   "source": "https://en.wiktionary.org/wiki/甫"
+  },
+  "隹": {
+   "reading": "すい",
+   "meaning": "short-tailed bird",
+   "source": "https://en.wiktionary.org/wiki/隹"
+  },
+  "也": {
+   "reading": "や",
+   "meaning": "final particle; to be",
+   "source": "https://en.wiktionary.org/wiki/也"
+  },
+  "云": {
+   "reading": "うん",
+   "meaning": "say",
+   "source": "https://en.wiktionary.org/wiki/云"
+  },
+  "乍": {
+   "reading": "さ",
+   "meaning": "suddenly",
+   "source": "https://en.wiktionary.org/wiki/乍"
+  },
+  "韋": {
+   "reading": "い",
+   "meaning": "tanned leather",
+   "source": "https://en.wiktionary.org/wiki/韋"
+  },
+  "禺": {
+   "reading": "ぐう",
+   "meaning": "kind of large monkey",
+   "source": "https://en.wiktionary.org/wiki/禺"
+  },
+  "尞": {
+   "reading": "りょう",
+   "meaning": "fuel used for sacrifices",
+   "source": "https://en.wiktionary.org/wiki/尞"
+  },
+  "畐": {
+   "reading": "ふく",
+   "meaning": "full; filled",
+   "source": "https://en.wiktionary.org/wiki/畐"
+  },
+  "辰": {
+   "reading": "しん",
+   "meaning": "Kangxi radical 161",
+   "source": "https://en.wiktionary.org/wiki/辰"
+  },
+  "曷": {
+   "reading": "かつ",
+   "meaning": "why; what; when; how",
+   "source": "https://en.wiktionary.org/wiki/曷"
+  },
+  "辟": {
+   "reading": "へき",
+   "meaning": "monarch; sovereign",
+   "source": "https://en.wiktionary.org/wiki/辟"
+  },
+  "爰": {
+   "reading": "えん",
+   "meaning": "to lead on to",
+   "source": "https://en.wiktionary.org/wiki/爰"
+  },
+  "冓": {
+   "reading": "こう",
+   "meaning": "to join together; crossed timbers",
+   "source": "https://en.wiktionary.org/wiki/冓"
+  },
+  "咼": {
+   "reading": "か",
+   "meaning": "slanting",
+   "source": "https://en.wiktionary.org/wiki/咼"
+  },
+  "勺": {
+   "reading": "しゃく",
+   "meaning": "spoon; ladle",
+   "source": "https://en.wiktionary.org/wiki/勺"
+  },
+  "并": {
+   "reading": "へい",
+   "meaning": "combine two things",
+   "source": "https://en.wiktionary.org/wiki/并"
+  },
+  "夋": {
+   "reading": null,
+   "meaning": "to dawdle",
+   "source": "https://en.wiktionary.org/wiki/夋"
+  },
+  "侖": {
+   "reading": "りん",
+   "meaning": "order",
+   "source": "https://en.wiktionary.org/wiki/侖"
+  },
+  "扁": {
+   "reading": "へん",
+   "meaning": "flat and thin",
+   "source": "https://en.wiktionary.org/wiki/扁"
+  },
+  "劦": {
+   "reading": "きょう",
+   "meaning": "to cooperate; work together",
+   "source": "https://en.wiktionary.org/wiki/劦"
+  },
+  "禾": {
+   "reading": "か",
+   "meaning": "grain; cereal",
+   "source": "https://en.wiktionary.org/wiki/禾"
+  },
+  "賁": {
+   "reading": "ひ",
+   "meaning": "to adorn oneself",
+   "source": "https://en.wiktionary.org/wiki/賁"
+  },
+  "袁": {
+   "reading": "えん",
+   "meaning": "long robe",
+   "source": "https://en.wiktionary.org/wiki/袁"
+  },
+  "亢": {
+   "reading": "こう",
+   "meaning": "high; arrogant; haughty",
+   "source": "https://en.wiktionary.org/wiki/亢"
+  },
+  "夭": {
+   "reading": "よう",
+   "meaning": "die young; die prematurely",
+   "source": "https://en.wiktionary.org/wiki/夭"
+  },
+  "敝": {
+   "reading": "へい",
+   "meaning": "worn-out; tattered",
+   "source": "https://en.wiktionary.org/wiki/敝"
+  },
+  "氐": {
+   "reading": "てい",
+   "meaning": "the Di people",
+   "source": "https://en.wiktionary.org/wiki/氐"
+  },
+  "复": {
+   "reading": null,
+   "meaning": "to go back",
+   "source": "https://en.wiktionary.org/wiki/复"
+  },
+  "兌": {
+   "reading": "たい",
+   "meaning": "opening; aperture",
+   "source": "https://en.wiktionary.org/wiki/兌"
+  },
+  "俞": {
+   "reading": "ゆ",
+   "meaning": "hollow a tree into boat",
+   "source": "https://en.wiktionary.org/wiki/俞"
+  },
+  "兹": {
+   "reading": "じ",
+   "meaning": "this",
+   "source": "https://en.wiktionary.org/wiki/兹"
+  },
+  "喿": {
+   "reading": "そう",
+   "meaning": "chirping of birds",
+   "source": "https://en.wiktionary.org/wiki/喿"
+  },
+  "翟": {
+   "reading": "てき",
+   "meaning": "long-tailed pheasant",
+   "source": "https://en.wiktionary.org/wiki/翟"
+  },
+  "卜": {
+   "reading": "ぼく",
+   "meaning": "to divine",
+   "source": "https://en.wiktionary.org/wiki/卜"
+  },
+  "几": {
+   "reading": "き",
+   "meaning": "stool; chair",
+   "source": "https://en.wiktionary.org/wiki/几"
+  },
+  "卯": {
+   "reading": "ぼう",
+   "meaning": "fourth of twelve earthly branches",
+   "source": "https://en.wiktionary.org/wiki/卯"
+  },
+  "𢦏": {
+   "reading": null,
+   "meaning": "to hurt; to wound",
+   "source": "https://en.wiktionary.org/wiki/𢦏"
+  },
+  "㕣": {
+   "reading": "えん",
+   "meaning": "marsh between mountains",
+   "source": "https://en.wiktionary.org/wiki/㕣"
+  },
+  "蒦": {
+   "reading": "かく",
+   "meaning": "to measure",
+   "source": "https://en.wiktionary.org/wiki/蒦"
+  },
+  "甬": {
+   "reading": "よう",
+   "meaning": "handle of a bell",
+   "source": "https://en.wiktionary.org/wiki/甬"
+  },
+  "戠": {
+   "reading": "しょく",
+   "meaning": "yellow clay",
+   "source": "https://en.wiktionary.org/wiki/戠"
+  },
+  "弋": {
+   "reading": "よく",
+   "meaning": "arrow attached to a string",
+   "source": "https://en.wiktionary.org/wiki/弋"
+  },
+  "卬": {
+   "reading": "ごう",
+   "meaning": "i; me",
+   "source": "https://en.wiktionary.org/wiki/卬"
+  },
+  "壬": {
+   "reading": "じん",
+   "meaning": "ninth of ten heavenly stems",
+   "source": "https://en.wiktionary.org/wiki/壬"
+  },
+  "圭": {
+   "reading": "けい",
+   "meaning": "jade pointed at top",
+   "source": "https://en.wiktionary.org/wiki/圭"
+  },
+  "攸": {
+   "reading": "ゆう",
+   "meaning": "place; place where",
+   "source": "https://en.wiktionary.org/wiki/攸"
+  },
+  "菐": {
+   "reading": "ぼく",
+   "meaning": "thicket",
+   "source": "https://en.wiktionary.org/wiki/菐"
+  },
+  "朿": {
+   "reading": "し",
+   "meaning": "thorn; spike",
+   "source": "https://en.wiktionary.org/wiki/朿"
+  },
+  "埶": {
+   "reading": "げい",
+   "meaning": "to plant",
+   "source": "https://en.wiktionary.org/wiki/埶"
+  },
+  "尃": {
+   "reading": "ふ",
+   "meaning": "to scatter; to diffuse",
+   "source": "https://en.wiktionary.org/wiki/尃"
+  },
+  "厂": {
+   "reading": "かん",
+   "meaning": "cliff",
+   "source": "https://en.wiktionary.org/wiki/厂"
+  },
+  "尗": {
+   "reading": "しゅく",
+   "meaning": "younger brother; paternal uncle",
+   "source": "https://en.wiktionary.org/wiki/尗"
+  },
+  "丩": {
+   "reading": "く",
+   "meaning": "to entangle; to entwine",
+   "source": "https://en.wiktionary.org/wiki/丩"
+  },
+  "奐": {
+   "reading": "かん",
+   "meaning": "numerous",
+   "source": "https://en.wiktionary.org/wiki/奐"
+  },
+  "亘": {
+   "reading": "せん",
+   "meaning": "to revolve around",
+   "source": "https://en.wiktionary.org/wiki/亘"
+  },
+  "或": {
+   "reading": "わく",
+   "meaning": "or; either",
+   "source": "https://en.wiktionary.org/wiki/或"
+  },
+  "朔": {
+   "reading": "さく",
+   "meaning": "first day of lunar month",
+   "source": "https://en.wiktionary.org/wiki/朔"
+  },
+  "荅": {
+   "reading": "とう",
+   "meaning": "small bean",
+   "source": "https://en.wiktionary.org/wiki/荅"
+  },
+  "孰": {
+   "reading": "じゅく",
+   "meaning": "who; whoever",
+   "source": "https://en.wiktionary.org/wiki/孰"
+  },
+  "竟": {
+   "reading": "きょう",
+   "meaning": "to finish; to end",
+   "source": "https://en.wiktionary.org/wiki/竟"
+  },
+  "啇": {
+   "reading": "てき",
+   "meaning": "stem",
+   "source": "https://en.wiktionary.org/wiki/啇"
+  },
+  "瓜": {
+   "reading": "く",
+   "meaning": "melon; gourd; squash",
+   "source": "https://en.wiktionary.org/wiki/瓜"
+  },
+  "乇": {
+   "reading": "たく",
+   "meaning": "blade of grass; leaf",
+   "source": "https://en.wiktionary.org/wiki/乇"
+  },
+  "于": {
+   "reading": "う",
+   "meaning": "in; at; to (preposition)",
+   "source": "https://en.wiktionary.org/wiki/于"
+  },
+  "夗": {
+   "reading": "えん",
+   "meaning": "to turn over when asleep",
+   "source": "https://en.wiktionary.org/wiki/夗"
+  },
+  "宓": {
+   "reading": "びつ",
+   "meaning": "quiet",
+   "source": "https://en.wiktionary.org/wiki/宓"
+  },
+  "夆": {
+   "reading": "ほう",
+   "meaning": "resist",
+   "source": "https://en.wiktionary.org/wiki/夆"
+  },
+  "厓": {
+   "reading": "がい",
+   "meaning": "cliff; precipice",
+   "source": "https://en.wiktionary.org/wiki/厓"
+  },
+  "朋": {
+   "reading": "ほう",
+   "meaning": "friend; companion",
+   "source": "https://en.wiktionary.org/wiki/朋"
+  },
+  "丂": {
+   "reading": "こう",
+   "meaning": "obstruction of breath",
+   "source": "https://en.wiktionary.org/wiki/丂"
+  },
+  "坐": {
+   "reading": "さ",
+   "meaning": "to sit",
+   "source": "https://en.wiktionary.org/wiki/坐"
+  },
+  "聿": {
+   "reading": "いつ",
+   "meaning": "writing brush",
+   "source": "https://en.wiktionary.org/wiki/聿"
+  },
+  "夬": {
+   "reading": "かい",
+   "meaning": "parted; forked",
+   "source": "https://en.wiktionary.org/wiki/夬"
+  },
+  "吾": {
+   "reading": "ご",
+   "meaning": "i; my",
+   "source": "https://en.wiktionary.org/wiki/吾"
+  },
+  "咸": {
+   "reading": "かん",
+   "meaning": "all",
+   "source": "https://en.wiktionary.org/wiki/咸"
+  },
+  "曼": {
+   "reading": "ばん",
+   "meaning": "long; extended; vast",
+   "source": "https://en.wiktionary.org/wiki/曼"
+  },
+  "虍": {
+   "reading": "こ",
+   "meaning": "tiger stripes",
+   "source": "https://en.wiktionary.org/wiki/虍"
+  },
+  "殳": {
+   "reading": "しゅ",
+   "meaning": "weapon; kangxi radical 79",
+   "source": "https://en.wiktionary.org/wiki/殳"
+  },
+  "匕": {
+   "reading": "ひ",
+   "meaning": "kangxi radical 21",
+   "source": "https://en.wiktionary.org/wiki/匕"
+  },
+  "冘": {
+   "reading": "いん",
+   "meaning": "moving forward steadily",
+   "source": "https://en.wiktionary.org/wiki/冘"
+  },
+  "喬": {
+   "reading": "きょう",
+   "meaning": "tall; lofty",
+   "source": "https://en.wiktionary.org/wiki/喬"
+  },
+  "弗": {
+   "reading": "ふつ",
+   "meaning": "not; negative",
+   "source": "https://en.wiktionary.org/wiki/弗"
+  },
+  "𠂢": {
+   "reading": "はい",
+   "meaning": "river tributary",
+   "source": "https://en.wiktionary.org/wiki/𠂢"
+  },
+  "离": {
+   "reading": "ち",
+   "meaning": "rare beast",
+   "source": "https://en.wiktionary.org/wiki/离"
+  },
+  "睘": {
+   "reading": "けい",
+   "meaning": "look startled",
+   "source": "https://en.wiktionary.org/wiki/睘"
+  },
+  "寉": {
+   "reading": "かく",
+   "meaning": "crane (bird)",
+   "source": "https://en.wiktionary.org/wiki/寉"
+  },
+  "溥": {
+   "reading": "ほ",
+   "meaning": "vast; widespread",
+   "source": "https://en.wiktionary.org/wiki/溥"
+  },
+  "此": {
+   "reading": "し",
+   "meaning": "this",
+   "source": "https://en.wiktionary.org/wiki/此"
+  },
+  "朮": {
+   "reading": "しゅつ",
+   "meaning": "glutinous millet",
+   "source": "https://en.wiktionary.org/wiki/朮"
+  },
+  "酉": {
+   "reading": "ゆう",
+   "meaning": "kangxi radical 164",
+   "source": "https://en.wiktionary.org/wiki/酉"
+  },
+  "奄": {
+   "reading": "えん",
+   "meaning": "cover",
+   "source": "https://en.wiktionary.org/wiki/奄"
+  },
+  "旁": {
+   "reading": "ほう",
+   "meaning": "side; beside",
+   "source": "https://en.wiktionary.org/wiki/旁"
+  },
+  "桀": {
+   "reading": "けつ",
+   "meaning": "chicken roost; fierce; cruel",
+   "source": "https://en.wiktionary.org/wiki/桀"
+  },
+  "崔": {
+   "reading": "さい",
+   "meaning": "high; lofty; towering",
+   "source": "https://en.wiktionary.org/wiki/崔"
+  },
+  "敖": {
+   "reading": "ごう",
+   "meaning": "leisurely; to ramble",
+   "source": "https://en.wiktionary.org/wiki/敖"
+  },
+  "豦": {
+   "reading": "きょ",
+   "meaning": "wild boar; to fight",
+   "source": "https://en.wiktionary.org/wiki/豦"
+  },
+  "孛": {
+   "reading": "ほつ",
+   "meaning": "comet; suddenly",
+   "source": "https://en.wiktionary.org/wiki/孛"
+  },
+  "尹": {
+   "reading": "いん",
+   "meaning": "to govern; official",
+   "source": "https://en.wiktionary.org/wiki/尹"
+  },
+  "乎": {
+   "reading": "こ",
+   "meaning": "at; in; particle",
+   "source": "https://en.wiktionary.org/wiki/乎"
+  },
+  "关": {
+   "reading": "しょう",
+   "meaning": "door bolt; to close",
+   "source": "https://en.wiktionary.org/wiki/关"
+  },
+  "昌": {
+   "reading": "しょう",
+   "meaning": "prosperous; flourishing",
+   "source": "https://en.wiktionary.org/wiki/昌"
+  },
+  "兪": {
+   "reading": "ゆ",
+   "meaning": "yes; indeed",
+   "source": "https://en.wiktionary.org/wiki/兪"
+  },
+  "赫": {
+   "reading": "きゃく",
+   "meaning": "bright red; radiant",
+   "source": "https://en.wiktionary.org/wiki/赫"
+  },
+  "匀": {
+   "reading": "いん",
+   "meaning": "equal; even",
+   "source": "https://en.wiktionary.org/wiki/匀"
+  },
+  "涂": {
+   "reading": "ず",
+   "meaning": "mud; to smear",
+   "source": "https://en.wiktionary.org/wiki/涂"
+  },
+  "冢": {
+   "reading": "ちょう",
+   "meaning": "tomb; burial mound",
+   "source": "https://en.wiktionary.org/wiki/冢"
+  },
+  "亶": {
+   "reading": "たん",
+   "meaning": "sincere; truthful",
+   "source": "https://en.wiktionary.org/wiki/亶"
+  },
+  "昏": {
+   "reading": "こん",
+   "meaning": "dusk; dark",
+   "source": "https://en.wiktionary.org/wiki/昏"
+  },
+  "帚": {
+   "reading": "す",
+   "meaning": "broom",
+   "source": "https://en.wiktionary.org/wiki/帚"
+  },
+  "胥": {
+   "reading": "そ",
+   "meaning": "minor official",
+   "source": "https://en.wiktionary.org/wiki/胥"
+  },
+  "寍": {
+   "reading": "ねい",
+   "meaning": "peaceful; tranquil",
+   "source": "https://en.wiktionary.org/wiki/寍"
+  },
+  "巛": {
+   "reading": "せん",
+   "meaning": "river; stream",
+   "source": "https://en.wiktionary.org/wiki/巛"
+  },
+  "圣": {
+   "reading": "きょう",
+   "meaning": "to dig",
+   "source": "https://en.wiktionary.org/wiki/圣"
+  },
+  "栗": {
+   "reading": "りち",
+   "meaning": "chestnut; chestnut tree",
+   "source": "https://en.wiktionary.org/wiki/栗"
+  },
+  "縣": {
+   "reading": "けん",
+   "meaning": "county; administrative division",
+   "source": "https://en.wiktionary.org/wiki/縣"
+  },
+  "巴": {
+   "reading": "へ",
+   "meaning": "python; huge snake",
+   "source": "https://en.wiktionary.org/wiki/巴"
+  },
+  "矣": {
+   "reading": "い",
+   "meaning": "sentence-final particle",
+   "source": "https://en.wiktionary.org/wiki/矣"
+  },
+  "卦": {
+   "reading": "け",
+   "meaning": "trigram; hexagram",
+   "source": "https://en.wiktionary.org/wiki/卦"
+  },
+  "妾": {
+   "reading": "しょう",
+   "meaning": "concubine",
+   "source": "https://en.wiktionary.org/wiki/妾"
+  },
+  "窄": {
+   "reading": "しゃく",
+   "meaning": "narrow; tight",
+   "source": "https://en.wiktionary.org/wiki/窄"
+  },
+  "雍": {
+   "reading": "よう",
+   "meaning": "harmony; peace",
+   "source": "https://en.wiktionary.org/wiki/雍"
+  },
+  "叚": {
+   "reading": "け",
+   "meaning": "to borrow",
+   "source": "https://en.wiktionary.org/wiki/叚"
+  },
+  "彡": {
+   "reading": "さん",
+   "meaning": "hair; feathers",
+   "source": "https://en.wiktionary.org/wiki/彡"
+  },
+  "亟": {
+   "reading": "こ",
+   "meaning": "urgent; pressing",
+   "source": "https://en.wiktionary.org/wiki/亟"
+  },
+  "闌": {
+   "reading": "らん",
+   "meaning": "railing; fence",
+   "source": "https://en.wiktionary.org/wiki/闌"
+  },
+  "哥": {
+   "reading": "か",
+   "meaning": "elder brother",
+   "source": "https://en.wiktionary.org/wiki/哥"
+  },
+  "气": {
+   "reading": "け",
+   "meaning": "air; steam",
+   "source": "https://en.wiktionary.org/wiki/气"
+  },
+  "㐬": {
+   "reading": "る",
+   "meaning": "variant of several characters",
+   "source": "https://en.wiktionary.org/wiki/㐬"
+  },
+  "孚": {
+   "reading": "ふ",
+   "meaning": "sincere; to nourish",
+   "source": "https://en.wiktionary.org/wiki/孚"
+  },
+  "忝": {
+   "reading": "てん",
+   "meaning": "to shame",
+   "source": "https://en.wiktionary.org/wiki/忝"
+  },
+  "巷": {
+   "reading": "ごう",
+   "meaning": "alley; lane",
+   "source": "https://en.wiktionary.org/wiki/巷"
+  },
+  "胡": {
+   "reading": "こ",
+   "meaning": "barbarian; northern foreigner",
+   "source": "https://en.wiktionary.org/wiki/胡"
+  },
+  "隼": {
+   "reading": "しゅん",
+   "meaning": "falcon",
+   "source": "https://en.wiktionary.org/wiki/隼"
+  },
+  "桼": {
+   "reading": "しつ",
+   "meaning": "lacquer; varnish tree",
+   "source": "https://en.wiktionary.org/wiki/桼"
+  },
+  "寅": {
+   "reading": "いん",
+   "meaning": "third earthly branch",
+   "source": "https://en.wiktionary.org/wiki/寅"
+  },
+  "絜": {
+   "reading": "けつ",
+   "meaning": "a marking line; measure",
+   "source": "https://en.wiktionary.org/wiki/絜"
+  },
+  "舄": {
+   "reading": "しゃく",
+   "meaning": "shoe",
+   "source": "https://en.wiktionary.org/wiki/舄"
+  },
+  "閏": {
+   "reading": "にん",
+   "meaning": "intercalary",
+   "source": "https://en.wiktionary.org/wiki/閏"
+  },
+  "敫": {
+   "reading": "せく",
+   "meaning": "ancient musical instrument",
+   "source": "https://en.wiktionary.org/wiki/敫"
+  },
+  "蜀": {
+   "reading": "ぞく",
+   "meaning": "caterpillar; shu (place name)",
+   "source": "https://en.wiktionary.org/wiki/蜀"
+  },
+  "垔": {
+   "reading": "おう",
+   "meaning": "dam up; block; mound",
+   "source": "https://en.wiktionary.org/wiki/垔"
+  },
+  "勿": {
+   "reading": "もち",
+   "meaning": "do not; don't",
+   "source": "https://en.wiktionary.org/wiki/勿"
+  },
+  "夹": {
+   "reading": "きょう",
+   "meaning": "to press between; pinch",
+   "source": "https://en.wiktionary.org/wiki/夹"
+  },
+  "孟": {
+   "reading": "みょう",
+   "meaning": "eldest; great",
+   "source": "https://en.wiktionary.org/wiki/孟"
+  },
+  "酋": {
+   "reading": "じゅ",
+   "meaning": "chief of a tribe; chieftain",
+   "source": "https://en.wiktionary.org/wiki/酋"
+  },
+  "爾": {
+   "reading": "に",
+   "meaning": "you",
+   "source": "https://en.wiktionary.org/wiki/爾"
+  },
+  "釆": {
+   "reading": "べん",
+   "meaning": "to distinguish",
+   "source": "https://en.wiktionary.org/wiki/釆"
+  },
+  "疒": {
+   "reading": "にゃく",
+   "meaning": "sickness (radical)",
+   "source": "https://en.wiktionary.org/wiki/疒"
+  },
+  "愈": {
+   "reading": "ゆ",
+   "meaning": "more and more",
+   "source": "https://en.wiktionary.org/wiki/愈"
+  },
+  "舜": {
+   "reading": "しゅん",
+   "meaning": "emperor shun",
+   "source": "https://en.wiktionary.org/wiki/舜"
+  },
+  "开": {
+   "reading": "かい",
+   "meaning": "open",
+   "source": "https://en.wiktionary.org/wiki/开"
+  },
+  "楚": {
+   "reading": "しょ",
+   "meaning": "clear; distinct",
+   "source": "https://en.wiktionary.org/wiki/楚"
+  },
+  "厶": {
+   "reading": "し",
+   "meaning": "private",
+   "source": "https://en.wiktionary.org/wiki/厶"
+  },
+  "躬": {
+   "reading": "く",
+   "meaning": "body; self",
+   "source": "https://en.wiktionary.org/wiki/躬"
+  },
+  "羔": {
+   "reading": "こう",
+   "meaning": "lamb",
+   "source": "https://en.wiktionary.org/wiki/羔"
+  },
+  "耑": {
+   "reading": "せん",
+   "meaning": "end; extremity",
+   "source": "https://en.wiktionary.org/wiki/耑"
+  },
+  "戔": {
+   "reading": "ざん",
+   "meaning": "small; to harm",
+   "source": "https://en.wiktionary.org/wiki/戔"
+  },
+  "筑": {
+   "reading": "ちく",
+   "meaning": "ancient zither-like instrument",
+   "source": "https://en.wiktionary.org/wiki/筑"
+  },
+  "龍": {
+   "reading": "りゅう",
+   "meaning": "dragon",
+   "source": "https://en.wiktionary.org/wiki/龍"
+  },
+  "庄": {
+   "reading": "しょう",
+   "meaning": "flat; village",
+   "source": "https://en.wiktionary.org/wiki/庄"
+  },
+  "肙": {
+   "reading": "えん",
+   "meaning": "small worm",
+   "source": "https://en.wiktionary.org/wiki/肙"
+  },
+  "罔": {
+   "reading": "もう",
+   "meaning": "net",
+   "source": "https://en.wiktionary.org/wiki/罔"
+  },
+  "逢": {
+   "reading": "ぶ",
+   "meaning": "to meet; encounter",
+   "source": "https://en.wiktionary.org/wiki/逢"
+  },
+  "丑": {
+   "reading": "ちゅ",
+   "meaning": "second earthly branch",
+   "source": "https://en.wiktionary.org/wiki/丑"
+  },
+  "而": {
+   "reading": "に",
+   "meaning": "and; but",
+   "source": "https://en.wiktionary.org/wiki/而"
+  },
+  "匈": {
+   "reading": "く",
+   "meaning": "breast; chest",
+   "source": "https://en.wiktionary.org/wiki/匈"
+  },
+  "彭": {
+   "reading": "ほう",
+   "meaning": "sound of drumming",
+   "source": "https://en.wiktionary.org/wiki/彭"
+  },
+  "之": {
+   "reading": "し",
+   "meaning": "of; to go",
+   "source": "https://en.wiktionary.org/wiki/之"
+  },
+  "戊": {
+   "reading": "む",
+   "meaning": "fifth heavenly stem",
+   "source": "https://en.wiktionary.org/wiki/戊"
+  },
+  "匊": {
+   "reading": null,
+   "meaning": "handful; to grasp with both hands",
+   "source": "https://en.wiktionary.org/wiki/匊"
+  },
+  "洛": {
+   "reading": "らく",
+   "meaning": "luo river; luoyang",
+   "source": "https://en.wiktionary.org/wiki/洛"
+  },
+  "枼": {
+   "reading": "よう",
+   "meaning": "thin woodchip",
+   "source": "https://en.wiktionary.org/wiki/枼"
+  },
+  "烝": {
+   "reading": "しょう",
+   "meaning": "to rise (of steam); steam",
+   "source": "https://en.wiktionary.org/wiki/烝"
+  },
+  "盍": {
+   "reading": "ごう",
+   "meaning": "what? why not?",
+   "source": "https://en.wiktionary.org/wiki/盍"
+  },
+  "滕": {
+   "reading": "とう",
+   "meaning": "to gush forth; ancient state",
+   "source": "https://en.wiktionary.org/wiki/滕"
+  },
+  "潘": {
+   "reading": "はん",
+   "meaning": "water from washing rice",
+   "source": "https://en.wiktionary.org/wiki/潘"
+  },
+  "澡": {
+   "reading": "そう",
+   "meaning": "to bathe; to wash",
+   "source": "https://en.wiktionary.org/wiki/澡"
+  },
+  "它": {
+   "reading": "た",
+   "meaning": "other; it; snake",
+   "source": "https://en.wiktionary.org/wiki/它"
+  },
+  "夸": {
+   "reading": "こ",
+   "meaning": "boast; extravagant",
+   "source": "https://en.wiktionary.org/wiki/夸"
+  },
+  "咨": {
+   "reading": "し",
+   "meaning": "to consult; official document",
+   "source": "https://en.wiktionary.org/wiki/咨"
+  },
+  "堇": {
+   "reading": "きん",
+   "meaning": "clay",
+   "source": "https://en.wiktionary.org/wiki/堇"
+  },
+  "宁": {
+   "reading": "ちょ",
+   "meaning": "space by the entrance screen",
+   "source": "https://en.wiktionary.org/wiki/宁"
+  },
+  "戉": {
+   "reading": "えつ",
+   "meaning": "battle axe",
+   "source": "https://en.wiktionary.org/wiki/戉"
+  },
+  "亦": {
+   "reading": "やく",
+   "meaning": "also",
+   "source": "https://en.wiktionary.org/wiki/亦"
+  },
+  "沓": {
+   "reading": "とう",
+   "meaning": "overlapping; talkative",
+   "source": "https://en.wiktionary.org/wiki/沓"
+  },
+  "卂": {
+   "reading": "しん",
+   "meaning": "quick; rapid",
+   "source": "https://en.wiktionary.org/wiki/卂"
+  },
+  "𠂤": {
+   "reading": null,
+   "meaning": "heap; pile; mound",
+   "source": "https://en.wiktionary.org/wiki/𠂤"
+  },
+  "屰": {
+   "reading": "げき",
+   "meaning": "inverted; opposite; disobedient",
+   "source": "https://en.wiktionary.org/wiki/屰"
+  },
+  "隶": {
+   "reading": "い",
+   "meaning": "to reach; catch up to",
+   "source": "https://en.wiktionary.org/wiki/隶"
+  },
+  "斿": {
+   "reading": "よう",
+   "meaning": "pendants of a banner",
+   "source": "https://en.wiktionary.org/wiki/斿"
+  },
+  "巽": {
+   "reading": "そん",
+   "meaning": "fifth trigram; obedient",
+   "source": "https://en.wiktionary.org/wiki/巽"
+  },
+  "丰": {
+   "reading": "ふ",
+   "meaning": "abundant; lush; luxuriant",
+   "source": "https://en.wiktionary.org/wiki/丰"
+  },
+  "夅": {
+   "reading": "こう",
+   "meaning": "to descend; to fall",
+   "source": "https://en.wiktionary.org/wiki/夅"
+  },
+  "夌": {
+   "reading": "りょう",
+   "meaning": "to surmount; mound",
+   "source": "https://en.wiktionary.org/wiki/夌"
+  },
+  "坴": {
+   "reading": "ろく",
+   "meaning": "big clod of earth",
+   "source": "https://en.wiktionary.org/wiki/坴"
+  },
+  "鬲": {
+   "reading": "きゃく",
+   "meaning": "tripod with hollow legs",
+   "source": "https://en.wiktionary.org/wiki/鬲"
+  },
+  "粦": {
+   "reading": "りん",
+   "meaning": "will-o'-the-wisp",
+   "source": "https://en.wiktionary.org/wiki/粦"
+  },
+  "厷": {
+   "reading": "こう",
+   "meaning": "upper arm",
+   "source": "https://en.wiktionary.org/wiki/厷"
+  },
+  "夾": {
+   "reading": "きょう",
+   "meaning": "to insert between; to squeeze",
+   "source": "https://en.wiktionary.org/wiki/夾"
+  },
+  "咢": {
+   "reading": "がく",
+   "meaning": "to beat drum with bare hands",
+   "source": "https://en.wiktionary.org/wiki/咢"
+  },
+  "畀": {
+   "reading": "ひ",
+   "meaning": "to give",
+   "source": "https://en.wiktionary.org/wiki/畀"
+  }
+ }
+}

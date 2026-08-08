@@ -64,6 +64,12 @@ WHAT CAME FROM WHERE
                            by-glyph join could not (e.g. 時's phonetic, historically
                            之, now written 寺). Each entry cites its Wiktionary
                            source; CC BY-SA 4.0 like the crawled set.
+  kanji-phonetic-gloss.json
+                           Hand-authored glossary of the rare, untaught PHONETIC
+                           components (冓, 莫, 韋 …) that carry an on-reading no
+                           jouyou-only reading data can supply. On-readings and
+                           short meanings are sourced per entry from English
+                           Wiktionary and/or KANJIDIC2, both CC BY-SA 4.0.
   radicals.json            Unicode UCD (the 214 Kangxi radicals, their glyphs
                            and meanings) + KANJIDIC2 (radical stroke counts)
   kanji-radicals.json      KANJIDIC2 (each jouyou kanji's classical radical)
