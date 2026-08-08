@@ -93,8 +93,8 @@ describe("matchesEnglish — compound numbers reach a fact", () => {
 });
 
 describe("matchesEnglish — layer 2, digit forms", () => {
-  test('"4" answers the counter gloss "four (4), also し"', () => {
-    const glosses = ["four (4), also し"];
+  test('"4" answers the number gloss "four (4)"', () => {
+    const glosses = ["four (4)"];
     assert.equal(matchesEnglish("4", glosses), true);
     assert.equal(matchesEnglish("four", glosses), true);
     // A DIFFERENT digit is not manufactured — it never appeared in the gloss.
@@ -165,7 +165,7 @@ describe("matchesEnglish — never regresses exact / all-glosses", () => {
 describe("English-only — Japanese readings are not loosened", () => {
   test("isEnglishGloss is false for kana, true for a Latin-bearing gloss", () => {
     assert.equal(isEnglishGloss("せんせい"), false);
-    assert.equal(isEnglishGloss("four (4), also し"), true);
+    assert.equal(isEnglishGloss("ten long thin objects, also じっぽん"), true);
   });
   test("a kana reading answer keeps exact-match — no typo tolerance", () => {
     // せんせい is 4 chars; a length-4 typo budget of 1 would wrongly accept a
@@ -180,8 +180,13 @@ describe("English-only — Japanese readings are not loosened", () => {
 
 describe("glossCandidates — the assembled pool for one gloss", () => {
   test("full, stripped, pieces and digit variants are all present", () => {
-    const c = glossCandidates("four (4), also し");
-    for (const want of ["four (4), also し", "four", "4", "also し"]) {
+    const c = glossCandidates("ten long thin objects, also じっぽん");
+    for (const want of [
+      "ten long thin objects, also じっぽん",
+      "ten long thin objects",
+      "10",
+      "also じっぽん",
+    ]) {
       assert.ok(c.has(norm(want)), want);
     }
   });

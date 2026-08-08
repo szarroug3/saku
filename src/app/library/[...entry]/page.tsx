@@ -1101,6 +1101,9 @@ function EntryView({ entry }: { entry: LibEntry }) {
             voiceName={cfg.voiceName}
             counter={{
               reading: counterFormData.reading,
+              // A second reading the same number branches into — く beside きゅう.
+              // Shown after the primary reading, never in the meaning.
+              altReading: counterFormData.altReading,
               // "counter" for a counted form, "number" for a bare number (に, ひゃく)
               // — the counter's analogue of a word's part-of-speech tag. Plain
               // text, the way a word prints "noun".
