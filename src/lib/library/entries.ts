@@ -46,7 +46,7 @@ import {
   type ReadingRow,
   variantTaughtKanji,
 } from "@/data/kanji";
-import { variantForm, type VariantPosition } from "@/data/variant-forms";
+import { isExcludedVariant, variantForm, type VariantPosition } from "@/data/variant-forms";
 import {
   VOCAB,
   VOCAB_SUBJECT,
@@ -928,7 +928,15 @@ export function appearsIn(entry: LibEntry): readonly string[] {
 export function madeOf(entry: LibEntry): Array<{ c: string; id: EntryId }> {
   if (entry.kind !== KANJI_SUBJECT) return [];
   return (kanjiRow(entry.glyph)?.comps ?? []).map((c) => {
-    const kanjiLink = kanjiRow(c) ? c : variantTaughtKanji(c);
+    // An EXCLUDED variant (儿→八, 眞→真) is a dropped mapping: its link and meaning
+    // must NOT resolve through the false original, or the tile would label a 儿
+    // "eight" while its own radical page says "legs". Treat it as its own shape —
+    // it falls through to the radical (儿 → legs) or primitive branch below.
+    const kanjiLink = kanjiRow(c)
+      ? c
+      : isExcludedVariant(c)
+        ? undefined
+        : variantTaughtKanji(c);
     if (kanjiLink) return { c, id: kanjiEntry(kanjiLink) };
     // A component that is a Kangxi radical (not itself a kanji) links to its
     // library page rather than the primitive /radical route.
