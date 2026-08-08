@@ -250,9 +250,21 @@ function unitCard(unit: NumberUnit): CounterCard {
 }
 
 /** Is this unit still un-taught? Its marker is fresh (never claimed, never marked
- * seen) exactly while the range it covers has not been taught. */
+ * seen) while the range it covers has not been taught.
+ *
+ * Legacy/partial progress may already have the marker while still missing the
+ * unit's kanji chain. In that case the unit must resurface to backfill those
+ * prereqs; otherwise progression skips material the learner has never seen.
+ */
 function unitFresh(unit: NumberUnit, history: HistoryFile): boolean {
-  return isFresh(unit.marker, history);
+  if (isFresh(unit.marker, history)) return true;
+  const seenKanji = new Set<string>();
+  const seenRadicals = new Set<string>();
+  const prereqs: PrereqItem[] = [];
+  for (const c of UNIT_KANJI[unit.id]) {
+    collectPrereqs(c, history, seenKanji, seenRadicals, prereqs, isNumberKanji);
+  }
+  return prereqs.length > 0;
 }
 
 /** How many irregular counts a unit's construction teaches — the length of the

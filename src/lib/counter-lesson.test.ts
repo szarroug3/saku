@@ -197,8 +197,8 @@ describe("the schedule", () => {
     assert.ok(lesson, "a counters lesson exists");
     assert.equal(
       lesson!.position.from,
-      phase1Met.length + NUMBER_UNITS.length + 1,
-      "the next due content step is the 〜人 unit",
+      phase1Met.length + 1,
+      "claimed markers without prereqs keep the tens unit due for backfill",
     );
     const { markerLesson } = lessonsThroughMarker(start, constructionMarker("nin"), RANGE);
     assert.equal(markerLesson.numberUnit!.marker, constructionMarker("nin"));
@@ -208,6 +208,28 @@ describe("the schedule", () => {
   test("a learner with no counters history has not started the track", () => {
     assert.ok(!hasStartedCountersTrack(history()));
     assert.ok(hasStartedCountersTrack(claiming([counterMeaningFactId(phase1[0])])));
+  });
+
+  test("legacy markers without number-kanji prereqs still resurface the tens unit", () => {
+    // Legacy progress can carry counter:gen:tens/big markers while number-kanji
+    // prereqs are still unknown. The scheduler must backfill those prereqs before
+    // moving on to the first counter unit.
+    const legacy = claiming([
+      ...phase1Met,
+      NUMBER_UNIT_TENS_MARKER,
+      NUMBER_UNIT_BIG_MARKER,
+    ]);
+    const lesson = nextCounterLesson(legacy, RANGE);
+    assert.ok(lesson, "a backfill lesson exists");
+    assert.equal(
+      lesson!.position.from,
+      phase1Met.length + 1,
+      "the next due content is still the tens unit",
+    );
+    assert.ok(
+      lesson!.cardPrereqTiles.some((ts) => ts.some((t) => t.glyph === "一")),
+      "number-kanji prereqs are re-introduced",
+    );
   });
 });
 
@@ -475,7 +497,7 @@ describe("the generative units", () => {
       claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER]),
       RANGE,
     )!;
-    assert.equal(first.position.from, numbersDone.length + 2);
+    assert.equal(first.position.from, numbersDone.length + 1);
 
     let hist = claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER]);
     let markerLesson: CounterLesson | null = null;
@@ -496,7 +518,7 @@ describe("the generative units", () => {
     const start = claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER, NUMBER_UNIT_BIG_MARKER]);
     const lesson = nextCounterLesson(start, RANGE);
     assert.ok(lesson, "the 〜人 unit path is due");
-    assert.equal(lesson!.position.from, numbersDone.length + NUMBER_UNITS.length + 1);
+    assert.equal(lesson!.position.from, numbersDone.length + 1);
     const { markerLesson } = lessonsThroughMarker(start, constructionMarker("nin"), RANGE);
     assert.equal(markerLesson.numberUnit!.marker, constructionMarker("nin"));
     assert.equal(markerLesson.numberUnit!.config.includeCounters, true);
