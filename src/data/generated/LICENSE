@@ -57,6 +57,13 @@ WHAT CAME FROM WHERE
                            FUNCTION of each component — semantic, phonetic or
                            form — the applicable SENSE, and the plain-language
                            glyph-origin explanation). See its attribution below.
+  kanji-etymology-manual.json
+                           Hand-authored extension of kanji-etymology.json. Same
+                           schema; re-maps English Wiktionary's own glyph-origin
+                           prose onto the visible modern glyph where the crawl's
+                           by-glyph join could not (e.g. 時's phonetic, historically
+                           之, now written 寺). Each entry cites its Wiktionary
+                           source; CC BY-SA 4.0 like the crawled set.
   radicals.json            Unicode UCD (the 214 Kangxi radicals, their glyphs
                            and meanings) + KANJIDIC2 (radical stroke counts)
   kanji-radicals.json      KANJIDIC2 (each jouyou kanji's classical radical)

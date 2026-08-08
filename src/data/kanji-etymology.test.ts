@@ -26,6 +26,7 @@ import {
   phoneticReading,
 } from "./kanji-etymology.ts";
 import { kanjiRow } from "./kanji.ts";
+import manualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
 
 /** The role assigned to a specific shape piece of a kanji, or null. */
 function roleOf(kanji: string, piece: string) {
@@ -123,4 +124,77 @@ test("林 — the doubled-tree explanation survives cleaning in plain voice", ()
   assert.ok(roles.every((r) => r?.function === "semantic"));
   // The plain-language origin is preserved, not paraphrased.
   assert.match(etym.originText ?? "", /doubled 木/);
+});
+
+// ── Hand-authored layer (generated/kanji-etymology-manual.json) ──────────────
+//
+// Step 1 recovery: kanji whose Wiktionary origin decomposes to a deeper/older
+// component than the drawn shape, re-mapped onto the VISIBLE piece. These pin
+// that the manual layer merges over the generated set and lands on real pieces.
+
+test("時 — hand-authored: 日 semantic + 寺 phonetic (じ)", () => {
+  const hi = roleOf("時", "日");
+  const tera = roleOf("時", "寺");
+  assert.ok(hi && tera, "時's pieces did not both resolve");
+  assert.equal(hi.function, "semantic");
+  assert.match(hi.sense ?? "", /sun|day/i);
+  assert.equal(tera.function, "phonetic");
+  // 寺 lends the reading じ, which 時 has.
+  assert.equal(phoneticReading("時", "寺"), "じ");
+  const pieces = builtPieces("時");
+  assert.deepEqual(
+    pieces.map((p) => [p.glyph, p.role, p.label]),
+    [
+      ["日", "semantic", "sun; day"],
+      ["寺", "phonetic", "じ"],
+    ],
+  );
+});
+
+test("誤 — hand-authored: 言 semantic (speech) + 呉 phonetic (ご)", () => {
+  const gen = roleOf("誤", "言");
+  const go = roleOf("誤", "呉");
+  assert.ok(gen && go);
+  assert.equal(gen.function, "semantic");
+  assert.equal(go.function, "phonetic");
+  assert.equal(phoneticReading("誤", "呉"), "ご");
+});
+
+test("戻 — hand-authored ideogrammic: 戸 semantic (door); 大 stays unlabelled", () => {
+  const to = roleOf("戻", "戸");
+  assert.ok(to, "戻's 戸 got no role");
+  assert.equal(to.function, "semantic");
+  assert.match(to.sense ?? "", /door/i);
+  // The lower piece is a late form of 犬 (dog) — it matches no listed component
+  // and must stay unlabelled, the same discipline 服's 月 keeps.
+  assert.equal(roleOf("戻", "大") ?? null, null);
+  assert.equal(etymologyOf("戻")?.type, "ideogrammic");
+});
+
+test("扇 — hand-authored ideogrammic: BOTH 戸 and 羽 semantic", () => {
+  const to = roleOf("扇", "戸");
+  const hane = roleOf("扇", "羽");
+  assert.ok(to && hane);
+  assert.equal(to.function, "semantic");
+  assert.equal(hane.function, "semantic");
+  assert.ok(!builtFromRoles("扇").some((r) => r?.function === "phonetic"));
+});
+
+test("every hand-authored entry cites a source and lands on a real piece", () => {
+  const manual = manualJson.data as Record<
+    string,
+    { source?: string; components: { glyph: string; function: string | null }[] }
+  >;
+  for (const [k, rec] of Object.entries(manual)) {
+    assert.ok(
+      typeof rec.source === "string" && rec.source.length > 0,
+      `${k} hand-authored entry has no source citation`,
+    );
+    // At least one component carries a semantic/phonetic role that a visible
+    // KanjiVG piece receives — otherwise the entry does nothing.
+    assert.ok(
+      builtPieces(k).length > 0,
+      `${k} hand-authored entry produced no labelled piece`,
+    );
+  }
 });

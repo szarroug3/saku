@@ -27,6 +27,7 @@
 // Wiktionary. This CODE is MIT like the rest of src/. See src/data/attribution.ts.
 
 import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
+import etymologyManualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import { kanjiRow, READINGS } from "./kanji";
 
@@ -71,9 +72,22 @@ export interface PieceRole {
   readonly matched: string;
 }
 
-const RAW: Readonly<Record<string, KanjiEtymology>> = (
+// The crawled Wiktionary set, extended and overridden by a hand-authored layer.
+// The manual layer (generated/kanji-etymology-manual.json) carries entries the
+// automated crawl+join could not produce: chiefly kanji whose Wiktionary origin
+// decomposes to a deeper/older component than the drawn shape (時's phonetic 之,
+// later written 寺), re-mapped onto the VISIBLE piece so the by-glyph join lands.
+// Each manual entry cites its source; the schema is identical, so a manual entry
+// simply replaces the generated one for that kanji. See src/data/attribution.ts.
+const GENERATED: Readonly<Record<string, KanjiEtymology>> = (
   etymologyJson as { data: Record<string, KanjiEtymology> }
 ).data;
+
+const MANUAL: Readonly<Record<string, KanjiEtymology>> = (
+  etymologyManualJson as { data: Record<string, KanjiEtymology> }
+).data;
+
+const RAW: Readonly<Record<string, KanjiEtymology>> = { ...GENERATED, ...MANUAL };
 
 /** KanjiVG's variant form → the character it is a form of (亻→人, 氵→水, 月→肉). */
 const VARIANTS: Readonly<Record<string, string>> = (

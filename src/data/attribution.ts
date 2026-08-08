@@ -125,7 +125,7 @@ export const SOURCES: readonly Source[] = [
     // conflict. Like every other borrowed thing, it earns a line here so the
     // credit is a thing someone has to consciously delete, not forget to add.
     name: "English Wiktionary",
-    what: "Each kanji's glyph origin: what each component contributes (meaning, sound, or shape), the sense that applies, and the plain-language explanation of how the parts make the whole.",
+    what: "Each kanji's glyph origin: what each component contributes (meaning, sound, or shape), the sense that applies, and the plain-language explanation of how the parts make the whole. This covers both the crawled set (kanji-etymology.json) and a hand-authored layer (kanji-etymology-manual.json) that re-maps the same Wiktionary glyph-origin prose onto the visible modern glyph where the automated join could not — e.g. 時's phonetic, historically 之, now written 寺. Every hand-authored entry cites its Wiktionary source and stays CC BY-SA 4.0.",
     holder: "Wiktionary contributors",
     licence: "CC BY-SA 4.0",
     href: "https://en.wiktionary.org/",

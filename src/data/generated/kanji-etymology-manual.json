@@ -1,0 +1,416 @@
+{
+ "_license": "Hand-authored etymology layer. Component roles and glosses re-map English Wiktionary (en.wiktionary.org) glyph-origin prose onto the visible modern KanjiVG glyph; text is derived from that CC BY-SA 4.0 source and remains CC BY-SA 4.0. Each entry cites its source. See src/data/generated/LICENSE and src/data/attribution.ts.",
+ "_handAuthored": true,
+ "_note": "Step 1 (free recovery): kanji whose Wiktionary glyph origin decomposes to a deeper/older component than the drawn shape, re-mapped onto the visible piece where the prose supports it (e.g. 時's phonetic 之 later written 寺). Extends and overrides generated/kanji-etymology.json.",
+ "data": {
+  "僧": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "亻",
+     "function": "semantic",
+     "sense": "person"
+    },
+    {
+     "glyph": "曽",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 人 (person) + phonetic 曾 — the kind of person meant is a Buddhist monk.",
+   "source": "English Wiktionary, \"僧\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E5%83%A7#Translingual"
+  },
+  "層": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "尸",
+     "function": "semantic",
+     "sense": "building"
+    },
+    {
+     "glyph": "曽",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 尸 (a building) + phonetic 曾 — the tiers of a building, a storey; a layer.",
+   "source": "English Wiktionary, \"層\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E5%B1%A4#Translingual"
+  },
+  "志": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "士",
+     "function": "phonetic",
+     "sense": null
+    },
+    {
+     "glyph": "心",
+     "function": "semantic",
+     "sense": "heart"
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 心 (heart) + phonetic — historically 之 (to go), its top now written 士. The heart's direction: one's will.",
+   "source": "English Wiktionary, \"志\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E5%BF%97#Translingual"
+  },
+  "憎": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "忄",
+     "function": "semantic",
+     "sense": "heart"
+    },
+    {
+     "glyph": "曽",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 心 (heart) + phonetic 曾 — a feeling of the heart: to hate.",
+   "source": "English Wiktionary, \"憎\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E6%86%8E#Translingual"
+  },
+  "懲": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "徴",
+     "function": "phonetic",
+     "sense": null
+    },
+    {
+     "glyph": "心",
+     "function": "semantic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 心 (heart) + phonetic 徵 (now written 徴) — to chastise so the heart takes warning.",
+   "source": "English Wiktionary, \"懲\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E6%87%B2#Translingual"
+  },
+  "戻": {
+   "type": "ideogrammic",
+   "components": [
+    {
+     "glyph": "戸",
+     "function": "semantic",
+     "sense": "door"
+    }
+   ],
+   "originRaw": null,
+   "originText": "Ideogrammic compound: 戶 (door) over 犬 (dog) — a dog twisting back under a door, hence to return. The dog is now drawn 大.",
+   "source": "English Wiktionary, \"戻\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E6%88%BB#Translingual"
+  },
+  "房": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "戸",
+     "function": "semantic",
+     "sense": "door"
+    },
+    {
+     "glyph": "方",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 戶 (door) + phonetic 方 — a side room off the main hall.",
+   "source": "English Wiktionary, \"房\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E6%88%BF#Translingual"
+  },
+  "所": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "戸",
+     "function": "phonetic",
+     "sense": null
+    },
+    {
+     "glyph": "斤",
+     "function": "semantic",
+     "sense": "axe"
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 斤 (axe) + phonetic 戶 — originally the sound of chopping; now means a place.",
+   "source": "English Wiktionary, \"所\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E6%89%80#Translingual"
+  },
+  "扇": {
+   "type": "ideogrammic",
+   "components": [
+    {
+     "glyph": "戸",
+     "function": "semantic",
+     "sense": "door"
+    },
+    {
+     "glyph": "羽",
+     "function": "semantic",
+     "sense": "feather"
+    }
+   ],
+   "originRaw": null,
+   "originText": "Ideogrammic compound: semantic 戶 (door) + semantic 羽 (feathers) — a door-leaf of feathers, a fan.",
+   "source": "English Wiktionary, \"扇\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E6%89%87#Translingual"
+  },
+  "扉": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "戸",
+     "function": "semantic",
+     "sense": "door"
+    },
+    {
+     "glyph": "非",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 戶 (door) + phonetic 非 — a door-leaf.",
+   "source": "English Wiktionary, \"扉\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E6%89%89#Translingual"
+  },
+  "捨": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "扌",
+     "function": "semantic",
+     "sense": "hand"
+    },
+    {
+     "glyph": "舎",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 手 (hand) + phonetic 舍 — to let go with the hand, to discard.",
+   "source": "English Wiktionary, \"捨\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E6%8D%A8#Translingual"
+  },
+  "時": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "日",
+     "function": "semantic",
+     "sense": "sun; day"
+    },
+    {
+     "glyph": "寺",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 日 (sun; day) + phonetic — historically 之 (to go), the passing of the days. The phonetic component later changed to 寺.",
+   "source": "English Wiktionary, \"時\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E6%99%82#Translingual"
+  },
+  "磨": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "麻",
+     "function": "phonetic",
+     "sense": null
+    },
+    {
+     "glyph": "石",
+     "function": "semantic",
+     "sense": "rock"
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 石 (rock) + phonetic 麻 — to grind against stone. (Older forms wrote the phonetic as 靡.)",
+   "source": "English Wiktionary, \"磨\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E7%A3%A8#Translingual"
+  },
+  "税": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "禾",
+     "function": "semantic",
+     "sense": "grain"
+    },
+    {
+     "glyph": "兌",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 禾 (grain) + phonetic 兌 — a levy paid in grain, a tax.",
+   "source": "English Wiktionary, \"税\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E7%A8%8E#Translingual"
+  },
+  "簡": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "竹",
+     "function": "semantic",
+     "sense": "bamboo"
+    },
+    {
+     "glyph": "間",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 竹 (bamboo) + phonetic 間 (older 閒) — a bamboo writing-slip; hence brief, simple.",
+   "source": "English Wiktionary, \"簡\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E7%B0%A1#Translingual"
+  },
+  "緻": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "糸",
+     "function": "semantic",
+     "sense": "thread"
+    },
+    {
+     "glyph": "致",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 糸 (thread) + phonetic 致 — closely woven, fine.",
+   "source": "English Wiktionary, \"緻\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E7%B7%BB#Translingual"
+  },
+  "虞": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "虍",
+     "function": "semantic",
+     "sense": "tiger"
+    },
+    {
+     "glyph": "呉",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 虍 (tiger) + phonetic 吳 (now written 呉).",
+   "source": "English Wiktionary, \"虞\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E8%99%9E#Translingual"
+  },
+  "誤": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "言",
+     "function": "semantic",
+     "sense": "speech"
+    },
+    {
+     "glyph": "呉",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 言 (speech) + phonetic 吳 (now written 呉) — to speak in error.",
+   "source": "English Wiktionary, \"誤\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E8%AA%A4#Translingual"
+  },
+  "賞": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "尚",
+     "function": "phonetic",
+     "sense": null
+    },
+    {
+     "glyph": "貝",
+     "function": "semantic",
+     "sense": "cowry"
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 貝 (cowry; money) + phonetic 尚 (its seal form was 商) — to award with money, a reward.",
+   "source": "English Wiktionary, \"賞\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E8%B3%9E#Translingual"
+  },
+  "贈": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "貝",
+     "function": "semantic",
+     "sense": "cowry; money"
+    },
+    {
+     "glyph": "曽",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 貝 (cowry; money) + phonetic 曾 — to present a gift.",
+   "source": "English Wiktionary, \"贈\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E8%B4%88#Translingual"
+  },
+  "起": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "走",
+     "function": "semantic",
+     "sense": "to run"
+    },
+    {
+     "glyph": "己",
+     "function": "phonetic",
+     "sense": null
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 走 (to run) + phonetic — historically 巳, now written 己 — to rise and set off.",
+   "source": "English Wiktionary, \"起\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E8%B5%B7#Translingual"
+  },
+  "雇": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "戸",
+     "function": "phonetic",
+     "sense": null
+    },
+    {
+     "glyph": "隹",
+     "function": "semantic",
+     "sense": "bird"
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 隹 (bird) + phonetic 戶 — originally a migratory bird; later, to hire.",
+   "source": "English Wiktionary, \"雇\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E9%9B%87#Translingual"
+  },
+  "響": {
+   "type": "phono-semantic",
+   "components": [
+    {
+     "glyph": "郷",
+     "function": "phonetic",
+     "sense": null
+    },
+    {
+     "glyph": "音",
+     "function": "semantic",
+     "sense": "sound"
+    }
+   ],
+   "originRaw": null,
+   "originText": "Phono-semantic compound: semantic 音 (sound) + phonetic 鄉 (now written 郷) — an echo, a sound that resounds.",
+   "source": "English Wiktionary, \"響\" (Translingual, Glyph origin), CC BY-SA 4.0 — https://en.wiktionary.org/wiki/%E9%9F%BF#Translingual"
+  }
+ }
+}
