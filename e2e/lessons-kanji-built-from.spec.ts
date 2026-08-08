@@ -38,12 +38,13 @@ test("the 明 kanji page leads with a linked Built from of its shape pieces", as
   const builtFrom = builtFromLbl.locator("..");
   await expect(builtFrom.getByRole("link", { name: /日/ })).toBeVisible();
   await expect(builtFrom.getByRole("link", { name: /月/ })).toBeVisible();
-  // The tile prints the piece's FIRST meaning under its glyph (builtPieceMeaning
-  // reads kanjiRow(c).meanings[0]): 日 is "day", 月 is "month". These are the
-  // dictionary-order lead senses, not the "sun/moon" a decomposition mnemonic
-  // would pick, so the assertion tracks the data the page actually renders.
-  await expect(builtFrom).toContainText("day");
-  await expect(builtFrom).toContainText("month");
+  // The tile prints the piece's APPLICABLE etymology sense (builtPieces' label,
+  // the sense Wiktionary's glyph origin gives THIS join), not the dictionary
+  // lead: for 明 the join gives 日 "sun" and 月 "moon" — the senses that actually
+  // explain 明 = bright, which is the whole point of showing the fitting sense
+  // rather than kanjiRow(c).meanings[0] ("day"/"month").
+  await expect(builtFrom).toContainText("sun");
+  await expect(builtFrom).toContainText("moon");
 });
 
 test("the 明 kanji page renders the readings table for a kanji that has reading rows", async ({
