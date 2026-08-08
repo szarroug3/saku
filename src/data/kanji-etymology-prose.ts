@@ -61,6 +61,11 @@ import { BATCH_32 } from "./etymology-prose/batch-32.ts";
 import { BATCH_33 } from "./etymology-prose/batch-33.ts";
 import { BATCH_34 } from "./etymology-prose/batch-34.ts";
 import { BATCH_35 } from "./etymology-prose/batch-35.ts";
+import { MANUAL_01 } from "./etymology-prose/manual-01.ts";
+import { MANUAL_02 } from "./etymology-prose/manual-02.ts";
+import { MANUAL_03 } from "./etymology-prose/manual-03.ts";
+import { MANUAL_04 } from "./etymology-prose/manual-04.ts";
+import { MANUAL_05 } from "./etymology-prose/manual-05.ts";
 
 // Batch 01 — the first hand-cleaned set (teaching order, most-seen first).
 const BATCH_01: Readonly<Record<string, string>> = {
@@ -135,6 +140,24 @@ export const PROSE_OVERRIDE: Readonly<Record<string, string>> = {
  * Collected from the batch agents' skip reports; kept disjoint from
  * PROSE_OVERRIDE (guarded in kanji-etymology.test.ts).
  */
+/**
+ * Hand-authored plain-language stories for kanji the automated Wiktionary pass
+ * left with NO usable origin — the PROSE_SKIP degenerate sources (shinjitai like
+ * 気→氣 whose traditional form has a known origin) and the kanji Wiktionary has
+ * no record for at all. Recovered by research, each with a cited source in its
+ * batch file. `etymologyOf` applies these ABOVE the raw record, so a story here
+ * shows even when Wiktionary carries none, and it overrides a PROSE_SKIP entry.
+ * Same house style as PROSE_OVERRIDE (no jargon, no em/en dashes). Grows in
+ * research batches (etymology-prose/manual-*.ts).
+ */
+export const MANUAL_ORIGIN: Readonly<Record<string, string>> = {
+  ...MANUAL_01,
+  ...MANUAL_02,
+  ...MANUAL_03,
+  ...MANUAL_04,
+  ...MANUAL_05,
+};
+
 export const PROSE_SKIP: ReadonlySet<string> = new Set([
   "気", "国", "会", "当", "実", "発", "来", "売", "乗", "対",
   "間", "着", "悪", "断", "覚", "画", "歩", "変", "数", "戦",

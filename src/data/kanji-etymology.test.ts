@@ -316,7 +316,7 @@ test("phoneticGloss — every glossed component is a rare, untaught character", 
 // ── Plain-language prose overrides (kanji-etymology-prose.ts) ────────────────
 // Each hand-cleaned story replaces the raw dictionary text in the Etymology
 // section. Two things must hold as the file grows one batch at a time.
-import { PROSE_OVERRIDE, PROSE_SKIP } from "./kanji-etymology-prose.ts";
+import { PROSE_OVERRIDE, PROSE_SKIP, MANUAL_ORIGIN } from "./kanji-etymology-prose.ts";
 import { isNumberKanji } from "./number-kanji.ts";
 
 test("every prose override resolves to a real etymology it can replace", () => {
@@ -357,7 +357,28 @@ test("PROSE_SKIP is disjoint from PROSE_OVERRIDE and suppresses the story", () =
     assert.ok(!(k in PROSE_OVERRIDE), `${k} is in both PROSE_SKIP and PROSE_OVERRIDE`);
     // It must resolve to a real etymology (so the suppression actually applies)…
     assert.ok(etymologyOf(k), `PROSE_SKIP has ${k} with no etymology record`);
-    // …and its Etymology story must be suppressed (no raw junk shown).
-    assert.equal(etymologyOf(k)?.originText, null, `${k}'s degenerate story still shows`);
+    // …and its Etymology story must be suppressed (no raw junk shown) — unless a
+    // hand-authored story was researched for it, which wins.
+    if (!(k in MANUAL_ORIGIN)) {
+      assert.equal(etymologyOf(k)?.originText, null, `${k}'s degenerate story still shows`);
+    }
+  }
+});
+
+test("every MANUAL_ORIGIN story shows and never double-defines a Wiktionary one", () => {
+  for (const [k, text] of Object.entries(MANUAL_ORIGIN)) {
+    assert.ok(!isNumberKanji(k), `${k} is a number kanji; its story never shows`);
+    // A kanji is EITHER cleaned from Wiktionary OR hand-authored, not both.
+    assert.ok(!(k in PROSE_OVERRIDE), `${k} is in both MANUAL_ORIGIN and PROSE_OVERRIDE`);
+    // The hand-authored story must actually surface (even with no Wiktionary record).
+    assert.equal(etymologyOf(k)?.originText, text, `${k}'s hand-authored story does not show`);
+  }
+});
+
+test("MANUAL_ORIGIN stays plain: no dictionary jargon, no em/en dashes", () => {
+  const banned = /Phono-semantic|Ideogrammic|Pictogram|Ideogram|\bsemantic\b|\bphonetic\b|—|–/;
+  for (const [k, text] of Object.entries(MANUAL_ORIGIN)) {
+    const hit = text.match(banned);
+    assert.equal(hit, null, `${k} MANUAL_ORIGIN reads like a dictionary: "${hit?.[0]}"`);
   }
 });

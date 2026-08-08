@@ -28,7 +28,7 @@
 
 import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
 import etymologyManualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
-import { PROSE_OVERRIDE, PROSE_SKIP } from "./kanji-etymology-prose.ts";
+import { PROSE_OVERRIDE, PROSE_SKIP, MANUAL_ORIGIN } from "./kanji-etymology-prose.ts";
 import phoneticGlossJson from "./generated/kanji-phonetic-gloss.json" with { type: "json" };
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import { kanjiRow, READINGS } from "./kanji";
@@ -147,6 +147,18 @@ function canonical(glyph: string): string {
 /** A kanji's raw glyph origin, or undefined when Wiktionary carries none. */
 export function etymologyOf(kanji: string): KanjiEtymology | undefined {
   const raw = RAW[kanji];
+  // A hand-authored, researched story wins over everything and shows even when
+  // Wiktionary has no record at all (the recovery layer for the kanji the
+  // automated pass left blank or suppressed).
+  const manual = MANUAL_ORIGIN[kanji];
+  if (manual) {
+    return {
+      type: raw?.type ?? null,
+      components: raw?.components ?? [],
+      originRaw: raw?.originRaw ?? null,
+      originText: manual,
+    };
+  }
   if (!raw) return undefined;
   // A degenerate source (form-history note, bare glyph list) has nothing honest
   // to show — suppress the story rather than print the raw junk.

@@ -110,11 +110,16 @@ describe("no-tiles pictographs now show their glyph-origin story", () => {
 });
 
 describe("no section where there is nothing honest to show", () => {
-  test("neither tiles nor a story ⇒ no section at all (no empty card)", () => {
-    // 与 has no etymology pieces AND no originText, so KanjiBuiltFrom returns null.
-    assert.equal(builtPieces("与").length, 0);
-    assert.equal(originOf("与"), null);
-    assert.equal(rendersSection("与"), false);
+  test("number kanji render no section; every other jōyō kanji now does", () => {
+    // The only "no section" case left is the number-kanji suppression: 一 carries
+    // a story in the data but is held whole, so KanjiBuiltFrom returns null.
+    assert.equal(rendersSection("一"), false);
+    // Invariant after the research recovery pass: NO non-number jōyō kanji renders
+    // an empty Built-from — each has tiles or a hand-checked glyph-origin story.
+    const blank = KANJI.map((r) => r.c).filter(
+      (k) => !isNumberKanji(k) && builtPieces(k).length === 0 && originOf(k) === null,
+    );
+    assert.deepEqual(blank, [], `these render no section: ${blank.join(" ")}`);
   });
 
   test("tiles kanji are unchanged — section renders with its tiles", () => {
