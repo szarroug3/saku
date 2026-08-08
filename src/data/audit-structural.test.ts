@@ -252,23 +252,19 @@ describe("context pronunciation: only ん and っ, with the right sounds", () =>
 describe("pitch accent stays in range and only on kept words", () => {
   const PITCH = pitchJson as Record<string, number>;
 
-  // A word's downstep can never fall past its last mora (odaka = mora count);
-  // small ゃゅょ ride the preceding mora and don't count.
+  // A word's downstep can never fall past its last mora (odaka = mora count).
+  // Kana are one mora each EXCEPT the small y-glides (きゃ) and small vowels (ファ)
+  // that form a yōon and ride the preceding kana; ー, small っ, and ん each keep
+  // their own mora. Mirror scripts/ingest/pitch.mjs so the guard and the ingest
+  // measure the same beats.
   function moraCount(reb: string): number {
     let n = 0;
     for (const c of reb) {
-      if ("ゃゅょャュョ".includes(c)) continue;
+      if ("ゃゅょャュョぁぃぅぇぉァィゥェォ".includes(c)) continue;
       n++;
     }
     return n;
   }
-
-  // KNOWN UPSTREAM ERROR — reported, not silently patched. Kanjium records
-  // `面 めん 3`, but めん is two morae, so downstep 3 is impossible (max is 2).
-  // The value ships in generated/pitch.json and should be dropped or corrected
-  // at the source. Pinned here so this is the ONLY tolerated out-of-range value:
-  // any new one fails this test.
-  const KNOWN_OUT_OF_RANGE = new Set(["面"]);
 
   test("every stored downstep is a non-negative integer", () => {
     for (const [w, p] of Object.entries(PITCH)) {
@@ -277,21 +273,19 @@ describe("pitch accent stays in range and only on kept words", () => {
     }
   });
 
-  test("no downstep falls past the word's last mora, save the one known bad row", () => {
+  // UNIVERSAL INVARIANT, no exceptions. A downstep is measured against the
+  // reading the word is TAUGHT with (vocabRow's reb, the one the mark renders
+  // on), and can only fall on morae 0..moraCount. The ingest drops any row that
+  // violates this — including 面, whose Kanjium pitch 3 was matched on おもて (3
+  // morae) but which is taught as めん (2). Nothing here should be out of range.
+  test("no downstep falls past the taught reading's last mora", () => {
     const offenders: string[] = [];
     for (const [keb, p] of Object.entries(PITCH)) {
       const row = vocabRow(keb);
       if (!row) continue;
       if (p > moraCount(row.reb)) offenders.push(`${keb}(${row.reb})=${p}`);
     }
-    assert.deepEqual(
-      offenders.sort(),
-      [...KNOWN_OUT_OF_RANGE].map((k) => {
-        const row = vocabRow(k)!;
-        return `${k}(${row.reb})=${PITCH[k]}`;
-      }).sort(),
-      "a NEW out-of-range downstep appeared (or the known one changed)",
-    );
+    assert.deepEqual(offenders, [], `out-of-range downstep(s): ${offenders.join(", ")}`);
   });
 
   test("pitch is only stored for words the app actually teaches", () => {
@@ -300,8 +294,8 @@ describe("pitch accent stays in range and only on kept words", () => {
     assert.deepEqual(orphans, [], `pitch for non-vocab words: ${orphans.slice(0, 5).join(", ")}`);
   });
 
-  test("coverage matches the documented Kanjium ingest (8,683 words)", () => {
-    assert.equal(Object.keys(PITCH).length, 8683);
+  test("coverage matches the documented Kanjium ingest (8,682 words)", () => {
+    assert.equal(Object.keys(PITCH).length, 8682);
   });
 
   test("spot-checks against the reference values in pitch.ts", () => {

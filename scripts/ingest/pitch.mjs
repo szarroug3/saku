@@ -87,6 +87,35 @@ function parseAccents(text) {
   return { clean, stats };
 }
 
+/** Count the morae of a kana reading. A mora is one beat of the language, and
+ * kana map to it ALMOST one-to-one — the exceptions are the small y-glides that
+ * form a yōon (きゃ, しゅ, ちょ) and the small vowels that form foreign yōon
+ * (ファ, ウィ): those ride the preceding full kana and add no beat. Everything
+ * else is its own mora, INCLUDING the three that look like they might not be —
+ * the long-vowel mark ー (コーヒー = ko-o-hi-i, 4), the small っ sokuon
+ * (がっこう = ga-t-ko-o, 4), and ん (せんせい = se-n-se-e, 4). This is the count a
+ * downstep is measured against: an accent may fall on morae 0..moraCount, so any
+ * stored downstep larger than this is impossible for the reading. */
+const SMALL_KANA = new Set("ゃゅょャュョぁぃぅぇぉァィゥェォ");
+function moraCount(reading) {
+  let n = 0;
+  for (const c of reading) {
+    if (SMALL_KANA.has(c)) continue;
+    n++;
+  }
+  return n;
+}
+
+/** The reading a word is TAUGHT with, mirroring src/data/vocab.ts's withSenses:
+ * when word-senses.json lists a form, its FIRST sense's reading is the primary
+ * (面 ships in vocab.json as おもて but is taught as めん). The pitch mark is
+ * rendered on this reading, so this — not the raw vocab.json reb the Kanjium
+ * match was keyed on — is what a downstep must be valid against. */
+function taughtReading(row, senses) {
+  const s = senses[row.keb];
+  return s && s.length ? s[0].reb : row.reb;
+}
+
 async function main() {
   process.stderr.write(`Fetching ${ACCENTS_URL}\n`);
   const res = await fetch(ACCENTS_URL);
@@ -100,16 +129,35 @@ async function main() {
   const vocab = JSON.parse(
     await readFile(resolve(GENDIR, "vocab.json"), "utf8"),
   );
+  const senses = JSON.parse(
+    await readFile(resolve(GENDIR, "word-senses.json"), "utf8"),
+  );
 
   // Match on BOTH written form and reading. keb is unique across vocab, so the
   // output can be keyed by keb alone once the reb has been checked.
   const out = {};
   let matched = 0;
   let hitButDropped = 0;
+  const outOfRange = []; // dropped: downstep past the taught reading's last mora
   for (const row of vocab) {
     const key = `${row.keb}\t${row.reb}`;
     if (clean.has(key)) {
-      out[row.keb] = clean.get(key);
+      const downstep = clean.get(key);
+      // VALIDITY INVARIANT. An accent falls on some mora 0..moraCount; a downstep
+      // larger than the reading's mora count is impossible and renders a drop past
+      // the end of the word. This catches a wrong Kanjium row AND — the case that bit
+      // 面 — a mismatch where the pitch was matched on the vocab.json reb (おもて,
+      // 3 morae) but the word is TAUGHT with a shorter reading (めん, 2 morae).
+      // Validate against the taught reading, which is the one the mark renders on.
+      const reading = taughtReading(row, senses);
+      if (downstep > moraCount(reading)) {
+        outOfRange.push(
+          `${row.keb} (taught ${reading}, ${moraCount(reading)} morae; ` +
+            `matched ${row.reb}) downstep ${downstep}`,
+        );
+        continue;
+      }
+      out[row.keb] = downstep;
       matched++;
     } else if (
       // The pair exists in Kanjium but only as an ambiguous / multi-value row.
@@ -135,6 +183,8 @@ async function main() {
       `Vocab words: ${vocab.length}`,
       `  with verified pitch: ${matched} (${pct}%)`,
       `  present but ambiguous, no pitch stored: ${hitButDropped}`,
+      `  dropped, downstep past taught reading: ${outOfRange.length}`,
+      ...outOfRange.map((s) => `    ${s}`),
       `Wrote ${path}`,
       "",
     ].join("\n"),
