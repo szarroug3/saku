@@ -29,11 +29,13 @@ test("the 明 kanji page leads with a linked Built from of its shape pieces", as
   await seed({ seen: [], cfg: {} });
   await page.goto("/library/kanji/明");
 
-  // Built from: the SHAPE decomposition 明 = 日 day + 月 month (builtFrom, not the
-  // lesson's teachableParts). Both pieces are jōyō kanji with pages of their own,
-  // so each renders as a link into that component's entry.
-  const builtFrom = page.locator("div.kq-material").filter({ hasText: "Built from" });
-  await expect(builtFrom).toHaveCount(1);
+  // How it's built: the SHAPE decomposition 明 = 日 day + 月 month. Both pieces
+  // are jōyō kanji with pages of their own, so each renders as a link.
+  // The library page uses a flat surface (no kq-material), so we find the section
+  // via its label text and navigate to the parent card div.
+  const builtFromLbl = page.getByText("How it's built", { exact: true });
+  await expect(builtFromLbl).toBeVisible();
+  const builtFrom = builtFromLbl.locator("..");
   await expect(builtFrom.getByRole("link", { name: /日/ })).toBeVisible();
   await expect(builtFrom.getByRole("link", { name: /月/ })).toBeVisible();
   // The tile prints the piece's FIRST meaning under its glyph (builtPieceMeaning
@@ -55,16 +57,17 @@ test("the 明 kanji page renders the readings table for a kanji that has reading
   // card draws with the fixed column heads. A kanji with no rows would show none
   // of this — the guard renders nothing, not an empty box — so the card's
   // presence is the fact under test.
-  const readings = page.locator("div.kq-material").filter({ hasText: "Readings" });
-  await expect(readings).toHaveCount(1);
+  const readingsLbl = page.getByText("Readings", { exact: true });
+  await expect(readingsLbl).toBeVisible();
+  const readings = readingsLbl.locator("..");
   await expect(readings.locator("th", { hasText: "Reading" }).first()).toBeVisible();
   await expect(readings.locator("th", { hasText: "Example" }).first()).toBeVisible();
 
-  // Built from LEADS the page: the shape card sits above the readings card in the
-  // document, the recent order change that made the decomposition the first read.
-  const builtFrom = page.locator("div.kq-material").filter({ hasText: "Built from" });
-  const builtFromBox = await builtFrom.boundingBox();
-  const readingsBox = await readings.boundingBox();
+  // "How it's built" LEADS the page: the shape card sits above the readings card
+  // in the document, the recent order change that made the decomposition the first read.
+  const builtFromLbl = page.getByText("How it's built", { exact: true });
+  const builtFromBox = await builtFromLbl.boundingBox();
+  const readingsBox = await readingsLbl.boundingBox();
   expect(builtFromBox).not.toBeNull();
   expect(readingsBox).not.toBeNull();
   expect(builtFromBox!.y).toBeLessThan(readingsBox!.y);
@@ -97,10 +100,9 @@ test("a component-rich kanji shows the shapes built on it under 'Used as a part 
   // "Used as a part in" card: a row of linked kanji glyphs and a sentence naming
   // the true total. A kanji nothing is built from returns null here and shows no
   // card, so the card's presence and its capped-count sentence are the fact.
-  const usedAsPart = page
-    .locator("div.kq-material")
-    .filter({ hasText: "Used as a part in" });
-  await expect(usedAsPart).toHaveCount(1);
+  const usedAsPartLbl = page.getByText("Used as a part in", { exact: true });
+  await expect(usedAsPartLbl).toBeVisible();
+  const usedAsPart = usedAsPartLbl.locator("..");
   await expect(usedAsPart).toContainText("kanji are written with this shape");
   // At least one of the sample kanji is a link onward to its own entry.
   await expect(usedAsPart.getByRole("link").first()).toBeVisible();

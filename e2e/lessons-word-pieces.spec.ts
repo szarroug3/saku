@@ -37,9 +37,11 @@ import { test, expect, type Page } from "./helpers/app";
  * asserts on.
  */
 
-/** The Card (div.kq-material) whose section label is `label`. */
+/** The section card whose label is `label`. The library word page uses a flat
+ * surface (FlatSurfaceProvider), so Cards have no kq-material class. We find
+ * the card by its Lbl text and navigate to the parent card div. */
 function card(page: Page, label: string) {
-  return page.locator("div.kq-material").filter({ hasText: label });
+  return page.getByText(label, { exact: true }).locator("..");
 }
 
 /** The "Built from" card, whichever word is on screen. */
@@ -157,13 +159,12 @@ for (const { keb, why } of NO_SPLIT) {
     expect(response!.status(), `${keb} did not serve`).toBeLessThan(400);
 
     // The page itself rendered — a real entry, not a 404 — so the missing card is
-    // a decision, not a failed load.
-    const h1 = page.getByRole("heading", { level: 1 });
-    await expect(h1).toHaveCount(1);
-    await expect(h1).not.toBeEmpty();
+    // a decision, not a failed load. Word pages no longer use an h1 heading;
+    // the word's reading/meaning panel confirms the page loaded correctly.
     await expect(page.locator("body")).not.toContainText(
       "This page could not be found",
     );
+    await expect(page.getByText("How you say it, and what it means")).toBeVisible();
 
     // Absent, not empty: no card carries the "Built from" label at all.
     await expect(builtFrom(page)).toHaveCount(0);

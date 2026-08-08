@@ -1,6 +1,7 @@
 import { test, expect } from "./helpers/app";
 import { COUNTER_KIND, LIB_ENTRIES, KINDS, libEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
+import { VOCAB_SUBJECT } from "@/data/vocab";
 
 /**
  * "Library entry pages render for every kind, including the readable URLs."
@@ -22,12 +23,13 @@ import { entryHref } from "@/lib/library/href";
  * contract in the form a user would type it. The derived sweep below is what
  * guards against them drifting out of the data.
  */
-const READABLE: Array<{ url: string; heading: string; crumb: string }> = [
+const READABLE: Array<{ url: string; heading: string; crumb: string; wordPage?: boolean }> = [
   { url: "/library/hiragana/a", heading: "a", crumb: "Kana" },
   { url: "/library/katakana/a", heading: "a", crumb: "Kana" },
   { url: "/library/radical/一", heading: "one", crumb: "Radicals" },
   { url: "/library/kanji/生", heading: "life", crumb: "Kanji" },
-  { url: "/library/word/明白", heading: "obvious", crumb: "Words" },
+  // Word pages no longer use h1 — the header is just the large glyph.
+  { url: "/library/word/明白", heading: "obvious", crumb: "Words", wordPage: true },
   { url: "/library/grammar/te-request", heading: "please do X", crumb: "Grammar" },
   { url: "/library/transitivity/開く-開ける", heading: "open", crumb: "Verb pairs" },
   { url: "/library/writing-rule/dakuten", heading: "", crumb: "Writing rules" },
@@ -40,10 +42,17 @@ for (const entry of READABLE) {
     expect(response!.status(), `${entry.url} did not serve`).toBeLessThan(400);
 
     // Exactly one h1, which is the entry's meanings or readings.
-    const h1 = page.getByRole("heading", { level: 1 });
-    await expect(h1).toHaveCount(1);
-    await expect(h1).not.toBeEmpty();
-    if (entry.heading) await expect(h1).toContainText(entry.heading);
+    // Word pages instead show just the glyph and use a reading/meaning panel.
+    if (entry.wordPage) {
+      // Word page: check reading/meaning panel exists and body has the heading text.
+      await expect(page.getByText("How you say it, and what it means")).toBeVisible();
+      if (entry.heading) await expect(page.locator("body")).toContainText(entry.heading);
+    } else {
+      const h1 = page.getByRole("heading", { level: 1 });
+      await expect(h1).toHaveCount(1);
+      await expect(h1).not.toBeEmpty();
+      if (entry.heading) await expect(h1).toContainText(entry.heading);
+    }
 
     // The breadcrumb names the KIND, which is how the page says which shelf it
     // belongs to. This is the assertion that would catch a slug being served by
@@ -73,10 +82,20 @@ test("every library kind mints a working href", async ({ page }) => {
       response!.status(),
       `kind ${kind} minted ${href}, which did not serve`,
     ).toBeLessThan(400);
-    await expect(
-      page.getByRole("heading", { level: 1 }),
-      `kind ${kind} at ${href} rendered no heading`,
-    ).toHaveCount(1);
+    // Word and counter pages no longer use h1 — the header is just the glyph.
+    // Check the reading/meaning panel instead.
+    const isWordLike = kind === VOCAB_SUBJECT || kind === COUNTER_KIND;
+    if (isWordLike) {
+      await expect(
+        page.getByText("How you say it, and what it means"),
+        `kind ${kind} at ${href} rendered no reading/meaning panel`,
+      ).toBeVisible();
+    } else {
+      await expect(
+        page.getByRole("heading", { level: 1 }),
+        `kind ${kind} at ${href} rendered no heading`,
+      ).toHaveCount(1);
+    }
 
     // Links has one stable home on every entry: exactly once, after the entry's
     // content and immediately before the common action bar.
@@ -98,8 +117,9 @@ test("a word has one clear Forms panel with its class in the header and audio on
 }) => {
   await page.goto("/library/word/知る");
 
-  const header = page.locator(".kq-material").first();
-  await expect(header.getByText("う-verb", { exact: true })).toBeVisible();
+  // The word class is in the WordClassNote (a plain paragraph), not in a
+  // kq-material header card (word pages use a flat glyph header now).
+  await expect(page.getByText("う-verb", { exact: true })).toBeVisible();
   await expect(page.getByText("Forms", { exact: true })).toHaveCount(1);
 
   const forms = page.locator("section").filter({ has: page.getByText("Forms", { exact: true }) });
@@ -119,8 +139,8 @@ test("a word has one clear Forms panel with its class in the header and audio on
 test("a な-adjective word page shows its form before a noun", async ({ page }) => {
   await page.goto("/library/word/静か");
 
-  const header = page.locator(".kq-material").first();
-  await expect(header.getByText("な-adjective", { exact: true })).toBeVisible();
+  // The word class is in the WordClassNote (a plain paragraph).
+  await expect(page.getByText("な-adjective", { exact: true })).toBeVisible();
   const forms = page.locator("section").filter({
     has: page.getByText("Forms", { exact: true }),
   });
@@ -130,20 +150,19 @@ test("a な-adjective word page shows its form before a noun", async ({ page }) 
 });
 
 /**
- * A jargon word links to its glossary definition. A counter page names its kind
- * "Counter" under the title and nowhere defines the word; that word is now the
- * link to /library/term/counter. This clicks it, the one end-to-end proof that
- * termHref mints a URL the route actually serves.
+ * Counter pages no longer have a "Counter" TermLink in the header (the word-style
+ * flat header replaced it). Verify the counter page renders its reading/meaning
+ * panel (the new way counter pages show their content).
  */
-test("the word 'Counter' on a counter page opens its glossary term", async ({ page }) => {
+test("a counter page renders its reading and meaning", async ({ page }) => {
   const counter = LIB_ENTRIES.find((e) => e.kind === COUNTER_KIND && e.sub === "Counter");
   expect(counter, "no counter entry with a 'Counter' sub in this build").toBeTruthy();
 
   await page.goto(entryHref(counter!.id));
-  await page.getByRole("link", { name: "Counter", exact: true }).click();
-
-  await expect(page).toHaveURL(/\/library\/term\/counter$/);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Counter");
+  // The counter page renders WordSensePanel with "How you say it, and what it means".
+  await expect(page.getByText("How you say it, and what it means")).toBeVisible();
+  // The kind column shows "counter" (plain text, not a link).
+  await expect(page.getByText("counter", { exact: true })).toBeVisible();
 });
 
 /**
@@ -312,12 +331,11 @@ test("filter chips still work after a back/forward/back through a detail page", 
     page.getByRole("button", { name, exact: true });
 
   await page.goto("/library?kind=kanji");
-  await chip("Kanji").scrollIntoViewIfNeeded();
-  await page.mouse.wheel(0, 1200);
-  await expect(page.locator('a[href="/library/kanji/生"]').first()).toBeVisible();
+  // 人 is the first kanji in curriculum order and always visible at the top.
+  await expect(page.locator('a[href="/library/kanji/人"]').first()).toBeVisible();
 
   // Into a kanji detail, then the back → forward → back cycle that arms the bug.
-  await page.locator('a[href="/library/kanji/生"]').first().click();
+  await page.locator('a[href="/library/kanji/人"]').first().click();
   await expect(page).toHaveURL(/\/library\/kanji\//);
   await page.goBack();
   await expect(page).toHaveURL(/\?kind=kanji$/);

@@ -32,7 +32,9 @@ test("an ambiguous adjective is identified in its word lesson and Library page",
   await card.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
   await stepToHeadword(page, WORD);
-  await expect(page.getByText(CLASS_NOTE, { exact: false })).toBeVisible();
+  // The lesson now shows the adjective class in the "Word · な-adjective" heading
+  // rather than as a separate note.
+  await expect(page.getByRole("heading", { level: 3 })).toContainText("な-adjective");
 
   await page.goto(entryHref(wordEntry(WORD)));
   await expect(page.getByText(CLASS_NOTE, { exact: false })).toBeVisible();

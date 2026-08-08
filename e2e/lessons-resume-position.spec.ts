@@ -74,10 +74,10 @@ test("leaving on the last teach card and continuing resumes that same card", asy
   await card.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
 
-  // Walk all the way to the last character of the group (丁) and record the HUD
-  // position there. 丁 is the final teach card, so this is resume at the boundary
+  // Walk all the way to the last item (人) and record the HUD
+  // position there. 人 is the final teach card, so this is resume at the boundary
   // with the quiz.
-  await stepToHeadword(page, "丁");
+  await stepToHeadword(page, "人");
   const position = await page.getByText(/^\d+ of \d+$/).innerText();
 
   // Leave the walk for Home WITHOUT ending it: the session rests where it is.
@@ -91,8 +91,8 @@ test("leaving on the last teach card and continuing resumes that same card", asy
   await cont.click();
   await page.waitForURL("**/session");
 
-  // Back on the EXACT card, not item 1: 丁 is on screen and the HUD reads the same
+  // Back on the EXACT card, not item 1: 人 is on screen and the HUD reads the same
   // "N of M" it did before leaving.
-  await expect(headword(page, "丁")).toBeVisible();
+  await expect(headword(page, "人")).toBeVisible();
   await expect(page.getByText(/^\d+ of \d+$/)).toHaveText(position);
 });

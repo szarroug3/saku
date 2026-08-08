@@ -79,9 +79,13 @@ test("a folded character's lesson step teaches all three of its roles", async ({
 
   // THE CARD. One card for the whole spine, headed by a composite position that
   // counts each kind of thing the lesson teaches rather than a lesson ordinal.
+  // The position label only lists RADICAL when the lesson has radical-only items;
+  // 人 is radical+kanji+word (not radical-only), so the label shows Kanji/Word.
+  // We find the card by the tile's role label "Radical · Kanji · Word" instead.
   const card = page
     .locator("div.kq-material")
-    .filter({ hasText: "Up next · Radical" });
+    .filter({ hasText: "Up next" })
+    .filter({ hasText: "Radical · Kanji · Word" });
   await expect(card).toHaveCount(1);
   await expect(card).toContainText(
     `Up next · ${compositePositionLabel(LESSON.position)}`,

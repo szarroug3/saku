@@ -25,20 +25,23 @@ test("the 何 kanji page leads with a linked Built from, above the readings tabl
   await seed({ seen: [], cfg: {} });
   await page.goto("/library/kanji/何");
 
-  // Built from: the two shapes, each a link to its own page.
-  const builtFrom = page.locator("div.kq-material").filter({ hasText: "Built from" });
-  await expect(builtFrom).toHaveCount(1);
+  // "How it's built": the two shapes, each a link to its own page.
+  // The library page uses a flat surface (no kq-material), so find by label text.
+  const builtFromLbl = page.getByText("How it's built", { exact: true });
+  await expect(builtFromLbl).toBeVisible();
+  const builtFrom = builtFromLbl.locator("..");
   await expect(builtFrom.getByRole("link", { name: /亻/ })).toBeVisible();
   await expect(builtFrom.getByRole("link", { name: /可/ })).toBeVisible();
 
   // The readings table is still on the page, headed "Readings".
-  const readings = page.locator("div.kq-material").filter({ hasText: "Readings" });
-  await expect(readings).toHaveCount(1);
+  const readingsLbl = page.getByText("Readings", { exact: true });
+  await expect(readingsLbl).toBeVisible();
+  const readings = readingsLbl.locator("..");
   await expect(readings.locator("th", { hasText: "Reading" }).first()).toBeVisible();
 
-  // Built from LEADS: its card sits above the readings card in the document.
-  const builtFromBox = await builtFrom.boundingBox();
-  const readingsBox = await readings.boundingBox();
+  // "How it's built" LEADS: its card sits above the readings card in the document.
+  const builtFromBox = await builtFromLbl.boundingBox();
+  const readingsBox = await readingsLbl.boundingBox();
   expect(builtFromBox).not.toBeNull();
   expect(readingsBox).not.toBeNull();
   expect(builtFromBox!.y).toBeLessThan(readingsBox!.y);

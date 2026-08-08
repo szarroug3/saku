@@ -41,7 +41,7 @@ test("a radical-only step teaches the shape's own meaning", async ({
 }) => {
   // 亅 is a building block with no word and no kanji role of its own; its whole
   // lesson is the "Radical" heading, its one line, and the shape's meaning.
-  await seed({ seen: KANA_FACTS, cfg: {} });
+  await seed({ seen: seenToReachCurriculum("亅"), cfg: {} });
   await startCurriculumLesson(page, "亅");
   await stepToHeadword(page, "亅");
 
@@ -72,14 +72,10 @@ test("a kanji step shows what it is Built from, each piece a link", async ({
   await expect(
     page.getByRole("heading", { level: 3, name: "Kanji", exact: true }),
   ).toBeVisible();
-  await expect(page.locator("body")).toContainText("Built from");
-  await expect(page.locator("body")).toContainText(
-    "Each piece is a character you have already learned on its own.",
-  );
-  // Each tile is a Library link for the component character.
-  await expect(
-    page.getByRole("link", { name: /丁/ }).first(),
-  ).toBeVisible();
+  // The lesson now shows "How it's built" (from KanjiBuiltFrom with etymology
+  // pieces) rather than the old KanjiPartsRow "Built from".
+  await expect(page.locator("body")).toContainText("How it's built");
+  // 可's etymology: semantic 口 + phonetic 丂. 口 is a jōyō kanji with a page.
   await expect(
     page.getByRole("link", { name: /口/ }).first(),
   ).toBeVisible();
@@ -100,9 +96,11 @@ test("a compound word step shows the reading pieces it is Built from", async ({
   // A two-character WORD plays no single-glyph character role, so its sections
   // come back UNLABELLED — there is no "Word" role heading here (that is for a
   // folded character like 人). The Built from card itself is the material.
-  await expect(page.locator("body")).toContainText("Built from");
+  // The lesson walk uses a flat surface (no kq-material), so find by label text.
+  const builtFromLbl = page.getByText("Built from", { exact: true });
+  await expect(builtFromLbl).toBeVisible();
   // The two kanji pieces with the sound each makes IN THIS WORD.
-  const builtFrom = page.locator("div.kq-material").filter({ hasText: "Built from" });
+  const builtFrom = builtFromLbl.locator("..");
   await expect(builtFrom.getByText("電", { exact: true })).toBeVisible();
   await expect(builtFrom.getByText("でん", { exact: true })).toBeVisible();
   await expect(builtFrom.getByText("話", { exact: true })).toBeVisible();

@@ -33,8 +33,9 @@ test("leaving a lesson mid-walk and continuing resumes the same step", async ({
   await card.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
 
-  // Walk a few steps in, to the 亅 card, and record the HUD position there.
-  await stepToHeadword(page, "亅");
+  // Walk to the 人 card (past the intro card that precedes it) and record the
+  // HUD position there.
+  await stepToHeadword(page, "人");
   const position = await page.getByText(/^\d+ of \d+$/).innerText();
 
   // Leave the walk for Home. The session is not ended — it rests where it is.
@@ -48,8 +49,8 @@ test("leaving a lesson mid-walk and continuing resumes the same step", async ({
     .click();
   await page.waitForURL("**/session");
 
-  // Back on the EXACT card, not item 1: the 亅 headword is on screen and the HUD
+  // Back on the EXACT card, not item 1: the 人 headword is on screen and the HUD
   // reads the same "N of M" it did before.
-  await expect(headword(page, "亅")).toBeVisible();
+  await expect(headword(page, "人")).toBeVisible();
   await expect(page.getByText(/^\d+ of \d+$/)).toHaveText(position);
 });
