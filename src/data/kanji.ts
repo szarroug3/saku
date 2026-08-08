@@ -230,6 +230,56 @@ const COMPS: Readonly<Record<string, readonly string[]>> = (
   kanjiComponentsJson as { comps: Record<string, readonly string[]> }
 ).comps;
 
+/**
+ * Curated OVER-COUNT corrections applied on top of COMPS. KanjiVG emits some
+ * components MORE times than they visually occur, because it splits ONE shape
+ * across two child groups and names it once per side. The commonest is a
+ * surround/enclosure drawn around an inner element — the wrapper's two arms land
+ * in separate groups — so the "Made of" row shows a doubled part: 国 [囗 玉 囗],
+ * 術 [行 朮 行], 衣-enclosures (哀 裏 褒 …), 斎 [斉 斉 示 斉]. A few non-enclosure
+ * splits do the same (可 [丁 口 丁], 必 [心 丿 心], 東 [木 日 木]).
+ *
+ * Each entry is the corrected depth-1 list: the SAME components in source order,
+ * with the split-induced duplicate collapsed to its true count. Only over-counts
+ * whose corrected list is unambiguous are listed here; genuinely-repeated parts
+ * (林 [木 木], 品 [口 口 口], 晶, 双 two hands, 弱 two 弓, 斑/班/琴 two 王, 器 four
+ * 口, 多 two 夕) are LEFT ALONE — the rule is "count = how many times the part
+ * actually appears", which this table only ever LOWERS, never invents. Kanji
+ * with a duplicated part whose correct list is still doubtful (亜, 兆, 成, 巨,
+ * 母, 甘, 平, 準, 滅, 蔵 …) are deliberately NOT listed; the audit reports them.
+ *
+ * NOT edited into the generated JSON: kanji-components.json is re-cut by
+ * scripts/ingest/kanjivg.mjs, so a hand fix there is lost on the next ingest.
+ * The override is the durable home. src/data/comps-audit.test.ts pins the set.
+ */
+export const COMPS_OVERRIDE: Readonly<Record<string, readonly string[]>> = {
+  // Enclosure 囗 split across left/right arms — one box, not two.
+  囚: ["囗", "人"], 四: ["囗", "儿"], 回: ["囗", "口"], 因: ["囗", "大"],
+  団: ["囗", "寸"], 困: ["囗", "木"], 囲: ["囗", "井"], 図: ["囗", "⺍", "乂"],
+  固: ["囗", "古"], 国: ["囗", "玉"], 圏: ["囗", "巻"], 園: ["囗", "袁"],
+  菌: ["艹", "囗", "禾"],
+  // Open-box 匚 / 匸 enclosure, likewise one shape.
+  匠: ["匚", "斤"], 区: ["匸", "乂"], 医: ["匸", "矢"], 匿: ["匸", "若"],
+  匹: ["匸", "儿"],
+  // 行 wraps a phonetic between 彳 and 亍 — one 行, not two.
+  術: ["行", "朮"], 街: ["行", "圭"], 衛: ["行", "韋"], 衝: ["行", "重"],
+  衡: ["行", "𩵋"],
+  // 衣 split top (亠) / bottom around an inner element — one 衣.
+  哀: ["衣", "口"], 衷: ["衣", "口", "丨"], 裏: ["衣", "里"], 褒: ["衣", "保"],
+  衰: ["衣", "口", "口"],
+  // 𢦏 (十+戈 top-right frame) wraps its inner element — one 𢦏.
+  栽: ["𢦏", "木"], 裁: ["𢦏", "衣"], 載: ["𢦏", "車"], 戴: ["𢦏", "異"],
+  // 斉 wraps 示 — one 斉, not three.
+  斎: ["斉", "示"],
+  // Other single-shape splits: the part is drawn once, emitted twice.
+  可: ["丁", "口"], 吏: ["丈", "口"], 式: ["弋", "工"], 戒: ["戈", "廾"],
+  戚: ["戊", "尗"], 威: ["戍", "女"], 憩: ["舌", "息"], 必: ["心", "丿"],
+  黙: ["黒", "犬"], 修: ["攸", "彡"], 充: ["亠", "允"], 由: ["日", "丨"],
+  東: ["木", "日"], 束: ["木", "口"], 氷: ["水", "丶"], 我: ["丿", "戈", "亅"],
+  // Number kanji the owner is reviewing.
+  五: ["二"], 年: ["丿", "干"], 午: ["丿", "干"],
+};
+
 /** A variant/bound component form → the character KanjiVG records it as a form
  * of (kvg:original): 亻→人, 氵→水, 刂→刀. */
 const VARIANT_ORIGINAL: Readonly<Record<string, string>> = (
@@ -252,7 +302,7 @@ export const KANJI: readonly KanjiRow[] = (kanjiJson as readonly RawKanji[]).map
     // KanjiVG depth-1 is the "Made of" truth; the KRADFILE list becomes the
     // cost-only `costParts`. `comps` last so it wins over the spread.
     costParts: k.comps,
-    comps: COMPS[k.c] ?? [],
+    comps: COMPS_OVERRIDE[k.c] ?? COMPS[k.c] ?? [],
   }),
 );
 /**

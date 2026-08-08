@@ -226,11 +226,12 @@ describe("prerequisite invariants", () => {
   });
 
   test("a repeated component is emitted once", () => {
-    // 可 decomposes as 丁 口 丁, and the duplicate must not become a second item
-    // or a second weld.
-    assert.deepEqual(kanjiRow("可")!.comps, ["丁", "口", "丁"]);
-    assert.deepEqual(componentKanji("可"), ["丁", "口"]);
-    assert.equal(CURRICULUM_SEQUENCE.filter((it) => it.glyph === "丁").length, 1);
+    // 林 is genuinely two 木 (a grove), and the legitimate repeat must not become
+    // a second item or a second weld. (可 used to test this via KanjiVG's spurious
+    // 丁 口 丁, but COMPS_OVERRIDE corrected that to 丁 口; 林's repeat is real.)
+    assert.deepEqual(kanjiRow("林")!.comps, ["木", "木"]);
+    assert.deepEqual(componentKanji("林"), ["木"]);
+    assert.equal(CURRICULUM_SEQUENCE.filter((it) => it.glyph === "木").length, 1);
   });
 
   test("人 precedes 何", () => {
