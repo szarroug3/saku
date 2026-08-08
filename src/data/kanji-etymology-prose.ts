@@ -37,6 +37,11 @@ import { BATCH_08 } from "./etymology-prose/batch-08.ts";
 import { BATCH_09 } from "./etymology-prose/batch-09.ts";
 import { BATCH_10 } from "./etymology-prose/batch-10.ts";
 import { BATCH_11 } from "./etymology-prose/batch-11.ts";
+import { BATCH_12 } from "./etymology-prose/batch-12.ts";
+import { BATCH_13 } from "./etymology-prose/batch-13.ts";
+import { BATCH_14 } from "./etymology-prose/batch-14.ts";
+import { BATCH_15 } from "./etymology-prose/batch-15.ts";
+import { BATCH_16 } from "./etymology-prose/batch-16.ts";
 
 // Batch 01 — the first hand-cleaned set (teaching order, most-seen first).
 const BATCH_01: Readonly<Record<string, string>> = {
@@ -76,6 +81,11 @@ export const PROSE_OVERRIDE: Readonly<Record<string, string>> = {
   ...BATCH_09,
   ...BATCH_10,
   ...BATCH_11,
+  ...BATCH_12,
+  ...BATCH_13,
+  ...BATCH_14,
+  ...BATCH_15,
+  ...BATCH_16,
 };
 
 /**
@@ -93,4 +103,6 @@ export const PROSE_SKIP: ReadonlySet<string> = new Set([
   "観", "関", "楽", "様", "経", "読", "独", "帰", "黄", "抜",
   "参", "残", "権", "広", "育", "雑", "顔", "毎", "価", "単",
   "斉", "済", "歯", "営", "区", "辺", "辞", "総",
+  "専", "衆", "遅", "触", "歴", "写", "宝", "黒", "絵", "駅",
+  "厳", "児", "虚", "髪", "蔵", "励", "却", "麦",
 ]);

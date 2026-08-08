@@ -124,8 +124,10 @@ test("林 — the doubled-tree explanation survives cleaning in plain voice", ()
   const roles = builtFromRoles("林");
   assert.equal(roles.length, 2);
   assert.ok(roles.every((r) => r?.function === "semantic"));
-  // The plain-language origin is preserved, not paraphrased.
-  assert.match(etym.originText ?? "", /doubled 木/);
+  // The cleaned plain-language origin still names the tree piece and the forest
+  // idea (the prose pass rewrote the raw "doubled 木…" into plain voice).
+  assert.match(etym.originText ?? "", /木/);
+  assert.match(etym.originText ?? "", /forest|grove|trees/i);
 });
 
 // ── Repeated-container expansion in builtPieces ──────────────────────────────
