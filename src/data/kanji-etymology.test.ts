@@ -314,7 +314,7 @@ test("phoneticGloss — every glossed component is a rare, untaught character", 
 // ── Plain-language prose overrides (kanji-etymology-prose.ts) ────────────────
 // Each hand-cleaned story replaces the raw dictionary text in the Etymology
 // section. Two things must hold as the file grows one batch at a time.
-import { PROSE_OVERRIDE } from "./kanji-etymology-prose.ts";
+import { PROSE_OVERRIDE, PROSE_SKIP } from "./kanji-etymology-prose.ts";
 import { isNumberKanji } from "./number-kanji.ts";
 
 test("every prose override resolves to a real etymology it can replace", () => {
@@ -346,4 +346,16 @@ test("神 keeps a long Etymology story — the e2e More/Less target must stay cl
   // fail HERE (loudly) rather than as a mystery e2e flake.
   const t = etymologyOf("神")?.originText ?? "";
   assert.ok(t.length > 120, `神's story is ${t.length} chars; the e2e toggle needs > 120`);
+});
+
+test("PROSE_SKIP is disjoint from PROSE_OVERRIDE and suppresses the story", () => {
+  for (const k of PROSE_SKIP) {
+    // A skipped kanji must NOT also carry a cleaned story (that would be a
+    // contradiction — the skip list is for kanji with no honest story).
+    assert.ok(!(k in PROSE_OVERRIDE), `${k} is in both PROSE_SKIP and PROSE_OVERRIDE`);
+    // It must resolve to a real etymology (so the suppression actually applies)…
+    assert.ok(etymologyOf(k), `PROSE_SKIP has ${k} with no etymology record`);
+    // …and its Etymology story must be suppressed (no raw junk shown).
+    assert.equal(etymologyOf(k)?.originText, null, `${k}'s degenerate story still shows`);
+  }
 });

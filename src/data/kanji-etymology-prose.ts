@@ -32,6 +32,11 @@ import { BATCH_03 } from "./etymology-prose/batch-03.ts";
 import { BATCH_04 } from "./etymology-prose/batch-04.ts";
 import { BATCH_05 } from "./etymology-prose/batch-05.ts";
 import { BATCH_06 } from "./etymology-prose/batch-06.ts";
+import { BATCH_07 } from "./etymology-prose/batch-07.ts";
+import { BATCH_08 } from "./etymology-prose/batch-08.ts";
+import { BATCH_09 } from "./etymology-prose/batch-09.ts";
+import { BATCH_10 } from "./etymology-prose/batch-10.ts";
+import { BATCH_11 } from "./etymology-prose/batch-11.ts";
 
 // Batch 01 — the first hand-cleaned set (teaching order, most-seen first).
 const BATCH_01: Readonly<Record<string, string>> = {
@@ -66,4 +71,26 @@ export const PROSE_OVERRIDE: Readonly<Record<string, string>> = {
   ...BATCH_04,
   ...BATCH_05,
   ...BATCH_06,
+  ...BATCH_07,
+  ...BATCH_08,
+  ...BATCH_09,
+  ...BATCH_10,
+  ...BATCH_11,
 };
+
+/**
+ * Kanji whose Wiktionary origin is DEGENERATE — a form-history note ("shinjitai
+ * of 實", "variant of 來"), a bare glyph list ("國或玉"), or a stub with no real
+ * story. There is nothing honest to rewrite, so rather than show the raw junk we
+ * suppress the Etymology section entirely (etymologyOf nulls their originText),
+ * and the prose-range helper skips them so they stop clogging future batches.
+ * Collected from the batch agents' skip reports; kept disjoint from
+ * PROSE_OVERRIDE (guarded in kanji-etymology.test.ts).
+ */
+export const PROSE_SKIP: ReadonlySet<string> = new Set([
+  "気", "国", "会", "当", "実", "発", "来", "売", "乗", "対",
+  "間", "着", "悪", "断", "覚", "画", "歩", "変", "数", "戦",
+  "観", "関", "楽", "様", "経", "読", "独", "帰", "黄", "抜",
+  "参", "残", "権", "広", "育", "雑", "顔", "毎", "価", "単",
+  "斉", "済", "歯", "営", "区", "辺", "辞", "総",
+]);

@@ -28,7 +28,7 @@
 
 import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
 import etymologyManualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
-import { PROSE_OVERRIDE } from "./kanji-etymology-prose.ts";
+import { PROSE_OVERRIDE, PROSE_SKIP } from "./kanji-etymology-prose.ts";
 import phoneticGlossJson from "./generated/kanji-phonetic-gloss.json" with { type: "json" };
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import { kanjiRow, READINGS } from "./kanji";
@@ -148,6 +148,9 @@ function canonical(glyph: string): string {
 export function etymologyOf(kanji: string): KanjiEtymology | undefined {
   const raw = RAW[kanji];
   if (!raw) return undefined;
+  // A degenerate source (form-history note, bare glyph list) has nothing honest
+  // to show — suppress the story rather than print the raw junk.
+  if (PROSE_SKIP.has(kanji)) return { ...raw, originText: null };
   // Prefer a hand-cleaned, plain-language story where one exists (grows in
   // batches, see kanji-etymology-prose.ts); otherwise the raw dictionary text.
   const prose = PROSE_OVERRIDE[kanji];

@@ -13,7 +13,7 @@ import {
   phoneticReading,
 } from "../src/data/kanji-etymology.ts";
 import { isNumberKanji } from "../src/data/number-kanji.ts";
-import { PROSE_OVERRIDE } from "../src/data/kanji-etymology-prose.ts";
+import { PROSE_OVERRIDE, PROSE_SKIP } from "../src/data/kanji-etymology-prose.ts";
 
 const order = KANJI_ORDER.map((o) => o.c);
 const seen = new Set<string>();
@@ -28,6 +28,7 @@ const meaningOf = (k: string) => kanjiRow(k)?.meanings?.slice(0, 3).join(", ") ?
 const remaining = seq.filter((k) => {
   if (isNumberKanji(k)) return false;
   if (k in PROSE_OVERRIDE) return false;
+  if (PROSE_SKIP.has(k)) return false;
   const t = etymologyOf(k)?.originText;
   return typeof t === "string" && t.trim().length > 0;
 });
