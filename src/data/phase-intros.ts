@@ -1136,6 +1136,10 @@ export const PITCH_INTRO: PhaseIntro = {
       text: "Japanese does not stress a syllable the way English does. Instead the voice sits high on some beats of a word and low on others, and where it drops is fixed for each word. From now on, a thin line is drawn over the reading to show it: the line runs over the high beats and turns down where the voice falls.",
     },
     {
+      lead: "A flat line means the pitch never drops.",
+      text: "Many words have no fall at all. Their line runs level across the reading and simply stops, with no downturn, which tells you the voice holds its pitch to the end of the word instead of dropping partway through.",
+    },
+    {
       lead: "The symbol is here to help you tell same-sounding words apart.",
       text: "箸 (chopsticks) and 橋 (bridge) are both read はし, and the pitch is the only difference in sound: 箸 starts high and drops, 橋 starts low and rises. We show the line so you learn that difference from the start, because a pronunciation learned wrong is hard to unlearn later. Most words are not a pair like this, so mostly the line is just how the word sounds.",
     },
