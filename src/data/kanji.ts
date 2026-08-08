@@ -244,9 +244,17 @@ const COMPS: Readonly<Record<string, readonly string[]>> = (
  * whose corrected list is unambiguous are listed here; genuinely-repeated parts
  * (林 [木 木], 品 [口 口 口], 晶, 双 two hands, 弱 two 弓, 斑/班/琴 two 王, 器 four
  * 口, 多 two 夕) are LEFT ALONE — the rule is "count = how many times the part
- * actually appears", which this table only ever LOWERS, never invents. Kanji
- * with a duplicated part whose correct list is still doubtful (亜, 兆, 成, 巨,
- * 母, 甘, 平, 準, 滅, 蔵 …) are deliberately NOT listed; the audit reports them.
+ * actually appears", which this table only ever LOWERS, never invents. The once-
+ * doubtful duplicated-part set (亜, 兆, 成, 巨, 母, 甘, 平, 準, 滅, 蔵 …) is now
+ * resolved below against KanjiVG's own kvg:part markers — part1/part2 on the same
+ * element IS the source declaring one shape split across sibling groups, so those
+ * collapse to a single count; a repeat with NO part marker (双 又+又, 睦 土+土,
+ * 脊 二+二, 卑 丿+丿) is a genuine repeat and stays. 興 (𦥑 part1/part2) is the one
+ * exception where part markers do NOT mean split: its two hand-groups both carry
+ * real strokes (comps-audit stroke-conservation confirms), so it too is left as a
+ * genuine repeat. A few whose split collapses to
+ * a single non-parent (母→毋, 巨→匚) or an arbitrary carving of a unitary
+ * pictograph (兆, 曲) are set atomic [] — their parts are not a real build.
  *
  * NOT edited into the generated JSON: kanji-components.json is re-cut by
  * scripts/ingest/kanjivg.mjs, so a hand fix there is lost on the next ingest.
@@ -266,7 +274,7 @@ export const COMPS_OVERRIDE: Readonly<Record<string, readonly string[]>> = {
   衡: ["行", "𩵋"],
   // 衣 split top (亠) / bottom around an inner element — one 衣.
   哀: ["衣", "口"], 衷: ["衣", "口", "丨"], 裏: ["衣", "里"], 褒: ["衣", "保"],
-  衰: ["衣", "口", "口"],
+  衰: ["衣", "口"],
   // 𢦏 (十+戈 top-right frame) wraps its inner element — one 𢦏.
   栽: ["𢦏", "木"], 裁: ["𢦏", "衣"], 載: ["𢦏", "車"], 戴: ["𢦏", "異"],
   // 斉 wraps 示 — one 斉, not three.
@@ -278,6 +286,32 @@ export const COMPS_OVERRIDE: Readonly<Record<string, readonly string[]>> = {
   東: ["木", "日"], 束: ["木", "口"], 氷: ["水", "丶"], 我: ["丿", "戈", "亅"],
   // Number kanji the owner is reviewing.
   五: ["二"], 年: ["丿", "干"], 午: ["丿", "干"],
+  // Once-ambiguous duplicated-part set, resolved via KanjiVG kvg:part markers
+  // (part1/part2 on one element = a single shape split across sibling groups →
+  // collapse to one count; genuine repeats with no part marker are preserved).
+  亜: ["二", "口"], // 二 split top/bottom around 口 — like 哀
+  成: ["𠂊", "戈"], // 𠂊 and 戈 each split part1/part2
+  畿: ["幺", "幺", "戈", "田"], // 戈 split; the two 幺 are genuine (as in 幾/機)
+  幽: ["山", "幺", "幺"], // 山 split enclosure; two 幺 genuine
+  卵: ["卯", "丶"], // 卯 split left/right around the dots
+  塞: ["宀", "三", "八", "土"], // 三 split part1(1 stroke)+part2(2 strokes) = one 三
+  寒: ["宀", "三", "八", "冫"], // 三 split, as 塞
+  弐: ["一", "弋", "二"], // 弋 split part1/part2
+  挿: ["扌", "千", "十", "日"], // 千 split part1/part2 (臿 phonetic)
+  準: ["氵", "隼"], // 隼 split part1/part2
+  滅: ["氵", "戌", "火"], // 戌 split around 火
+  為: ["丶", "勹", "灬"], // 勹 split part1/part2
+  爽: ["大", "爻", "爻"], // 大 split; the two 爻 are genuine (one per side)
+  蔵: ["艹", "厂", "戈", "臣"], // 戈 split (咸 body)
+  表: ["二", "丨", "衣"], // 二 split by 丨 (龶 top) over 衣
+  謄: ["朕", "言"], // 朕 split part1/part2 over 言
+  随: ["陏", "⻌"], // 陏 split part1/part2 + ⻌
+  歳: ["止", "戌", "小"], // 戌 split around 小
+  武: ["CDP-8CB8", "止"], // 戈-frame (CDP-8CB8) split part1/part2 + 止
+  // Atomic: the split collapses to a single non-parent (母≠毋, 甘≠廿, 平≠干,
+  // 巨≠匚) or the "parts" are an arbitrary carving of a unitary pictograph
+  // (兆 crack-shape, 曲 basket) — not a real build.
+  母: [], 甘: [], 平: [], 巨: [], 兆: [], 曲: [],
 };
 
 /** A variant/bound component form → the character KanjiVG records it as a form
