@@ -21,6 +21,7 @@ import { Fragment } from "react";
 
 import { HearButton } from "@/components/lesson/hear-button";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { countGroupHasBuild } from "@/data/phase-intros";
 import type {
   CountBuildPiece,
   CountRow,
@@ -684,6 +685,11 @@ export function IntroCountTable({
   counter: boolean;
 }) {
   const { cfg } = useQuizConfig();
+  // The "How it's built" column earns its place only when some row carries a real
+  // derivation. An all-suppletive group (〜人's ひとり / ふたり / よにん, every row's
+  // build empty) would show only trivial "1 → ひとり" mappings, so the whole column
+  // — header and cells — is dropped for it. Detected off the data, not by name.
+  const hasBuild = countGroupHasBuild(rows);
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-left" lang="ja">
@@ -694,7 +700,7 @@ export function IntroCountTable({
           >
             <th className="px-4 py-2.5 font-semibold">{counter ? "Counter" : "Number"}</th>
             <th className="px-4 py-2.5 font-semibold">Word</th>
-            <th className="px-4 py-2.5 font-semibold">How it&rsquo;s built</th>
+            {hasBuild ? <th className="px-4 py-2.5 font-semibold">How it&rsquo;s built</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -715,9 +721,11 @@ export function IntroCountTable({
                   className="ml-1.5 align-middle"
                 />
               </td>
-              <td className="w-full whitespace-nowrap px-4 py-3 align-baseline text-[15px] text-text">
-                <CountBuild build={row.build} result={row.result} />
-              </td>
+              {hasBuild ? (
+                <td className="w-full whitespace-nowrap px-4 py-3 align-baseline text-[15px] text-text">
+                  <CountBuild build={row.build} result={row.result} />
+                </td>
+              ) : null}
             </tr>
           ))}
         </tbody>

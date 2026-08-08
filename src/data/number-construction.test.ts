@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { numberConstructionRow } from "./number-construction.ts";
+import { countGroupHasBuild } from "./phase-intros.ts";
 import { counterIrregulars } from "../lib/engine/number-quiz.ts";
 import { counterReading, numberReading } from "../lib/number-reading.ts";
 
@@ -186,6 +187,27 @@ describe("column 3 — the build equation, with accent-coloured numeric annotati
     const one = rowsOf("hon", "Irregular").find((r) => r.word === "一本")!;
     assert.deepEqual(one.build, [{ kana: "いち", value: "1" }, { kana: "ほん" }]);
     assert.equal(one.result.kana, "いっぽん");
+  });
+});
+
+describe("the 'How it's built' column is dropped for an all-suppletive group", () => {
+  // IntroCountTable renders the third column only when countGroupHasBuild(rows) is
+  // true — some row carries a real derivation. This pins the render decision the
+  // view calls straight through (there is no DOM renderer in this harness).
+  test("〜人's Irregular group is all-suppletive, so the column is hidden", () => {
+    const irregular = rowsOf("nin", "Irregular");
+    assert.ok(irregular.every((r) => r.build.length === 0), "every 〜人 irregular is suppletive");
+    assert.equal(countGroupHasBuild(irregular), false);
+  });
+
+  test("〜本's Irregular group carries the sound shift, so the column stays", () => {
+    assert.equal(countGroupHasBuild(rowsOf("hon", "Irregular")), true);
+  });
+
+  test("a Regular group always builds additively, so it keeps the column", () => {
+    assert.equal(countGroupHasBuild(rowsOf("nin", "Regular")), true);
+    assert.equal(countGroupHasBuild(rowsOf("big", "Regular")), true);
+    assert.equal(countGroupHasBuild(rowsOf("tens", "Regular")), true);
   });
 });
 

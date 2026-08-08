@@ -176,6 +176,20 @@ export interface CountRow {
 }
 
 /**
+ * Whether a count group's "How it's built" column earns its place: true when SOME
+ * row carries a real derivation (a non-empty `build`). An all-suppletive group —
+ * 〜人's ひとり / ふたり / よにん, whose words are memorised, not built, so every row's
+ * `build` is empty — returns false, and IntroCountTable drops the column (header
+ * and cells) for it. A row's empty build is the suppletive flag; this is read off
+ * the data, never off a counter's name, so any counter whose irregulars are all
+ * suppletive loses the trivial column while 〜本 / 〜匹 / big keep theirs (their
+ * irregulars carry the real sound shift). A Regular group always has builds.
+ */
+export function countGroupHasBuild(rows: readonly CountRow[]): boolean {
+  return rows.some((row) => row.build.length > 0);
+}
+
+/**
  * One titled group of worked count rows — a "Regular" or "Irregular" table,
  * mirroring grammar's Godan / Ichidan / Irregular split. The group's title carries
  * the regular-vs-shifting meaning, but is shown ONLY when a page has both groups;
