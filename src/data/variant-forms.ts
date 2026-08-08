@@ -20,10 +20,15 @@
 //   position  where the form sits inside its host — KanjiVG's `kvg:position`,
 //             ingested into `variantPositions`, with a small authored fallback for
 //             the handful the source leaves unpositioned.
-//   example   a kanji the form appears in — the EARLIEST one in teaching order
+//   example   a kanji the form appears in. A hand-picked one where curated (see
+//             CURATED_EXAMPLE), falling back to the EARLIEST in teaching order
 //             (order.json) whose components include the form, the base character
-//             itself excluded, so the example is a real second character and not
-//             the one being taught.
+//             excluded. The curated pick beats the derived default for two
+//             reasons: the earliest-by-order kanji is often not the one a beginner
+//             knows (人 → 亻 derived to 化, curated to 体), and — the bug the
+//             curation exists to fix — a component list cannot tell the moon 月
+//             from the flesh 月, so 月 (a form of 肉) derived to 明, whose 月 is the
+//             MOON. The example must show the flesh form, so 月 is curated to 腹.
 //   name?     the Japanese position-name (にんべん, さんずい). This is the one thing
 //             no data source carries, so it is an authored table filled only with
 //             names verified by hand. A form with no name is taught positionally
@@ -55,8 +60,9 @@ export interface VariantForm {
   /** The Japanese position-name, where one is verified and authored. Absent for
    * most forms, which are taught by position instead. */
   readonly name?: string;
-  /** A kanji the form appears in — the earliest in teaching order, the base
-   * character excluded. Present for every form the map carries (see the test). */
+  /** A kanji the form appears in — the curated pick where one is authored, else
+   * the earliest in teaching order with the base character excluded. Present for
+   * every form the map carries (see the test). */
   readonly example?: string;
 }
 
@@ -122,10 +128,65 @@ const NAME: Readonly<Record<string, string>> = {
 };
 
 /**
+ * The hand-picked example kanji for a form, chosen over the earliest-by-order
+ * default below. NOT derived — a component list is blind to two things the
+ * derived pick gets wrong:
+ *
+ *   1. FLESH vs MOON. 月 is a form of 肉 (にくづき), but the same glyph is also the
+ *      moon. A comps scan cannot tell them apart, so the earliest host of "月" was
+ *      明 — whose 月 is the moon, making "肉 also appears as 月, as in 明" a real
+ *      teaching error. The flesh form has to be shown on flesh: 腹 (belly), whose
+ *      月 is the flesh radical on the left. This is the bug this table exists for.
+ *
+ *   2. FAMILIARITY. The earliest kanji in teaching order is often not the one a
+ *      beginner recognises: 亻 derived to 化, and a learner meets 体 (body) long
+ *      before they meet 化. So each form points at a common, recognisable kanji it
+ *      genuinely appears in, chosen over the earliest.
+ *
+ * Covers all 27 forms whose original is a taught character (the surface-#1 forms,
+ * the only ones whose example a learner ever sees — the "Built from" note reads
+ * position and name, never the example). Every pick is a jōyō kanji whose comps
+ * actually contain the glyph AS this variant; variant-forms.test.ts pins that.
+ * Two forms (眞, 𩵋) have a single jōyō host each, so the curated pick is the only
+ * option and equals the derived one; they are listed anyway to keep the table
+ * complete and to pin the choice against a future re-order.
+ */
+const CURATED_EXAMPLE: Readonly<Record<string, string>> = {
+  "⺌": "光", // 小, on top — light
+  "⺗": "慕", // 心, underneath (したごころ) — the only common jōyō host
+  "⺤": "愛", // 爪, on top — love
+  "⺨": "猫", // 犬, on the left (けものへん) — cat
+  "⺷": "美", // 羊, on top — beauty
+  "⻖": "院", // 阜, on the left (こざとへん) — as in 病院, hospital
+  "⻞": "餅", // 食, on the left — rice cake (the only common jōyō host)
+  "亻": "体", // 人, on the left (にんべん) — body
+  "儿": "見", // 八, underneath — to see
+  "冫": "冷", // 二, on the left (にすい) — cold, the meaning にすい names
+  "刂": "前", // 刀, on the right (りっとう) — front, before
+  "士": "売", // 土, on top — to sell
+  "忄": "情", // 心, on the left (りっしんべん) — feeling
+  "扌": "持", // 手, on the left (てへん) — to hold
+  "月": "腹", // 肉, on the left (にくづき) — belly; a FLESH 月, not the moon 明
+  "毋": "毎", // 母, underneath — every
+  "氵": "海", // 水, on the left (さんずい) — sea
+  "氺": "様", // 水, underneath — as in 様 (さま)
+  "灬": "熱", // 火, underneath (れっか) — heat, the meaning れっか names
+  "王": "理", // 玉, on the left (おうへん) — as in 料理, 理由
+  "眞": "塡", // 真, on the right — the only jōyō host
+  "礻": "社", // 示, on the left (しめすへん) — company, shrine
+  "耂": "者", // 老, over the top (おいかんむり) — person
+  "衤": "初", // 衣, on the left (ころもへん) — first
+  "飠": "飲", // 食, on the left (しょくへん) — to drink
+  "𦥑": "興", // 臼, on top — as in 興味, interest (the only common jōyō host)
+  "𩵋": "衡", // 魚 — the only jōyō host (a rare form; see the report)
+};
+
+/**
  * The earliest kanji, by teaching order, whose components include each variant
- * form — the form's worked example. The base character is skipped (a host that IS
- * the form's own original would make the example the very character being taught),
- * so the example is always a second, different kanji.
+ * form — the fallback example for any form CURATED_EXAMPLE does not cover. The
+ * base character is skipped (a host that IS the form's own original would make the
+ * example the very character being taught), so the example is always a second,
+ * different kanji.
  *
  * Built once from the component lists KanjiVG gives every jōyō kanji. Every form
  * the `variants` map carries resolves one; variant-forms.test.ts pins that.
@@ -167,7 +228,7 @@ export function variantForm(glyph: string): VariantForm | undefined {
     original,
     position: positionOf(glyph),
     name: NAME[glyph],
-    example: EXAMPLE.get(glyph),
+    example: CURATED_EXAMPLE[glyph] ?? EXAMPLE.get(glyph),
   };
 }
 

@@ -10,6 +10,10 @@
 //     rely on ("as in 体"). Every one of the fifty-eight must resolve one.
 //   - an example that is the base character itself, which would teach 人 by
 //     showing 人 rather than a second kanji.
+//   - a curated example that does not actually contain the form, or that shows the
+//     WRONG glyph — the 月/肉 case, where a comps scan cannot tell the flesh 月 from
+//     the moon 月 and the derived pick 明 is the moon. The curated table fixes it,
+//     and the "the curated examples" block below pins that it stays fixed.
 //   - a position outside the six the panel knows how to phrase.
 //   - the authored name and position tables keying to a glyph that is not a
 //     variant form at all — a dead entry, or worse a typo for a real one.
@@ -92,12 +96,54 @@ describe("variantForm — the derived model of one form", () => {
     assert.equal(variantForm("忄")!.name, "りっしんべん");
   });
 
-  test("亻 is 人, on the left, called にんべん, seen in a real kanji", () => {
+  test("亻 is 人, on the left, called にんべん, shown in 体", () => {
     const form = variantForm("亻")!;
     assert.equal(form.original, "人");
     assert.equal(form.position, "left");
     assert.equal(form.name, "にんべん");
-    assert.ok(form.example);
+    // The curated pick, not the earliest-by-order 化: a learner meets 体 first.
+    assert.equal(form.example, "体");
+  });
+});
+
+describe("the curated examples win over the earliest-by-order default", () => {
+  /** The 27 surface-#1 forms — the ones whose original is a taught character, and
+   * so the only ones whose example a learner ever sees. Read off the data. */
+  const kanjiSet = new Set(
+    Object.values(VARIANTS).filter((original) => kanjiRow(original)),
+  );
+  const surfaceOne = GLYPHS.filter((g) => kanjiSet.has(VARIANTS[g]));
+
+  test("all 27 surface-#1 forms have a curated example that they truly contain", () => {
+    assert.equal(surfaceOne.length, 27);
+    for (const glyph of surfaceOne) {
+      const example = variantForm(glyph)!.example;
+      assert.ok(example, `${glyph} resolves no example`);
+      assert.ok(
+        (kanjiRow(example!)?.comps ?? []).includes(glyph),
+        `${glyph}'s example ${example} does not contain it as a component`,
+      );
+    }
+  });
+
+  test("the familiar picks replace the earliest-by-order defaults", () => {
+    // 化 is the earliest 亻; 汁 the earliest 氵; a beginner meets 体 and 海 first.
+    assert.equal(variantForm("亻")!.example, "体");
+    assert.equal(variantForm("氵")!.example, "海");
+    assert.equal(variantForm("忄")!.example, "情");
+    assert.equal(variantForm("扌")!.example, "持");
+  });
+
+  test("THE BUG: 月 (a form of 肉) shows a FLESH kanji, not the moon 明", () => {
+    // 月 is both the moon and the flesh radical にくづき. A component list cannot
+    // tell them apart, so the earliest host of 月 was 明, whose 月 is the moon —
+    // "肉 also appears as 月, as in 明" is a real teaching error. The example must
+    // be a kanji where 月 is genuinely the flesh form.
+    const form = variantForm("月")!;
+    assert.equal(form.original, "肉");
+    assert.notEqual(form.example, "明", "月's example is the MOON kanji");
+    assert.equal(form.example, "腹"); // belly — a flesh 月 on the left
+    assert.ok((kanjiRow(form.example!)?.comps ?? []).includes("月"));
   });
 });
 
