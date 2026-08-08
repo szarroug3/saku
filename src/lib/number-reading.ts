@@ -97,10 +97,26 @@ const UNIT: Record<CounterKind, readonly string[]> = {
  * range. Mechanism is PREFIX + LAST UNIT:
  *   - n ≤ 10 → UNIT[counter][n] directly.
  *   - 11 ≤ n ≤ 99, d = n % 10:
- *       d ≠ 0 → numberReading(n − d) + UNIT[counter][d]
+ *       d ≠ 0 → numberReading(n − d) + composingUnit(counter, d)
  *       d = 0 → ONES[n/10] + UNIT[counter][10]
  * "tsu" is valid only for 1 ≤ n ≤ 10; other counters for 1 ≤ n ≤ 99.
  */
+/**
+ * The tail a count d (1–9) contributes as the ONES place of a compound counted
+ * form (11本, 21人, …). For nearly every counter this is just UNIT[counter][d] —
+ * the shift a low digit carries (いっ, ろっ, さんび…) is identical at 1 and at 11.
+ *
+ * 〜人 is the exception: its 1 and 2 are SUPPLETIVE native words (一人 ひとり,
+ * 二人 ふたり), and those do NOT compose. 11 people is じゅういちにん, never
+ * じゅうひとり; 22 people is にじゅうににん, never にじゅうふたり. In a compound the
+ * ones place reverts to the Sino いち/に + にん. (四人 よにん genuinely holds at
+ * every scale — 14 = じゅうよにん — so d = 4 is left untouched.)
+ */
+function composingUnit(counter: CounterKind, d: number): string {
+  if (counter === "nin" && (d === 1 || d === 2)) return ONES[d] + "にん";
+  return UNIT[counter][d];
+}
+
 export function counterReading(n: number, counter: CounterKind): string | null {
   if (n < 1) return null;
   if (counter === "tsu") {
@@ -110,7 +126,7 @@ export function counterReading(n: number, counter: CounterKind): string | null {
   if (n <= 10) return UNIT[counter][n];
 
   const d = n % 10;
-  if (d !== 0) return numberReading(n - d) + UNIT[counter][d];
+  if (d !== 0) return numberReading(n - d) + composingUnit(counter, d);
   return ONES[n / 10] + UNIT[counter][10];
 }
 
