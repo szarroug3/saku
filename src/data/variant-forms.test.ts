@@ -7,7 +7,8 @@
 // of the derivation coming back empty or pointing at the wrong thing:
 //
 //   - a form with no worked example, which the lesson and the concept card both
-//     rely on ("as in 体"). Every one of the fifty-eight must resolve one.
+//     rely on ("as in 体"). Every SHOWN form (the fifty-eight less the handful
+//     EXCLUDED as mislabels or un-nameable) must resolve one.
 //   - an example that is the base character itself, which would teach 人 by
 //     showing 人 rather than a second kanji.
 //   - a curated example that does not actually contain the form, or that shows the
@@ -30,6 +31,12 @@ import { variantForm, variantsOf, type VariantPosition } from "@/data/variant-fo
 
 const VARIANTS = (kanjiComponents as { variants: Record<string, string> }).variants;
 const GLYPHS = Object.keys(VARIANTS);
+// The forms dropped from the teaching in variant-forms.ts (EXCLUDED there):
+// mislabels (儿, 士) and un-nameable rare glyphs (眞, 𦥑, 𩵋). variantForm returns
+// undefined for these, so the "every form …" sweeps below step over them and the
+// exclusion is pinned by its own test.
+const EXCLUDED: ReadonlySet<string> = new Set(["儿", "士", "眞", "𦥑", "𩵋"]);
+const SHOWN = GLYPHS.filter((g) => !EXCLUDED.has(g));
 const POSITIONS: ReadonlySet<VariantPosition> = new Set<VariantPosition>([
   "left",
   "right",
@@ -46,16 +53,33 @@ describe("variantForm — the derived model of one form", () => {
     assert.equal(GLYPHS.length, 58);
   });
 
-  test("every form resolves to its original", () => {
-    for (const glyph of GLYPHS) {
+  test("every non-excluded form resolves to its original", () => {
+    for (const glyph of SHOWN) {
       const form = variantForm(glyph);
       assert.ok(form, `${glyph} resolves no form`);
       assert.equal(form!.original, VARIANTS[glyph]);
     }
   });
 
-  test("every form resolves a worked example, and it is a second kanji", () => {
-    for (const glyph of GLYPHS) {
+  test("an EXCLUDED form resolves to nothing, so it is never shown", () => {
+    // The rule: a variant is taught only if we can name it. The mislabels and the
+    // un-nameable rare glyphs are dropped, and dropping them is what removes the
+    // blank-"Called" rows (儿 on 八's page especially).
+    for (const glyph of EXCLUDED) {
+      assert.ok(VARIANTS[glyph], `${glyph} is not even in the map — stale exclusion`);
+      assert.equal(variantForm(glyph), undefined, `${glyph} is excluded but still resolves`);
+    }
+  });
+
+  test("八 has no variant form, so its page shows no 'Also written as'", () => {
+    // 儿 is the legs radical にんにょう/ひとあし, not a form of 八 — the KanjiVG
+    // mislabel that produced the blank row this change removes.
+    assert.equal(variantForm("儿"), undefined);
+    assert.deepEqual(variantsOf("八"), []);
+  });
+
+  test("every non-excluded form resolves a worked example, and it is a second kanji", () => {
+    for (const glyph of SHOWN) {
       const form = variantForm(glyph)!;
       assert.ok(form.example, `${glyph} resolves no example`);
       // The example is a real kanji whose components include the form...
@@ -68,10 +92,10 @@ describe("variantForm — the derived model of one form", () => {
     }
   });
 
-  test("every form has a position, and it is one the panel can phrase", () => {
-    // Fifty-three come from KanjiVG; the five it leaves unplaced are covered by
-    // the authored fallback, so all fifty-eight land on one of the six tokens.
-    for (const glyph of GLYPHS) {
+  test("every non-excluded form has a position, and it is one the panel can phrase", () => {
+    // The unplaced ones are covered by the authored fallback, so every form that
+    // still resolves lands on one of the six position tokens.
+    for (const glyph of SHOWN) {
       const pos = variantForm(glyph)!.position;
       assert.ok(pos, `${glyph} has no position`);
       assert.ok(POSITIONS.has(pos!), `${glyph} has an unphrasable position ${pos}`);
@@ -87,7 +111,7 @@ describe("variantForm — the derived model of one form", () => {
     // Every name comes back on a glyph that is genuinely in the variants map (a
     // name keyed to a non-form would be a typo), and the three the app leans on
     // in its copy read as expected.
-    for (const glyph of GLYPHS) {
+    for (const glyph of SHOWN) {
       const name = variantForm(glyph)!.name;
       if (name !== undefined) assert.ok(VARIANTS[glyph], `${glyph} is named but is not a form`);
     }
@@ -113,10 +137,29 @@ describe("the curated examples win over the earliest-by-order default", () => {
     Object.values(VARIANTS).filter((original) => kanjiRow(original)),
   );
   const surfaceOne = GLYPHS.filter((g) => kanjiSet.has(VARIANTS[g]));
+  // Of the 27, five are dropped (儿, 士, 眞, 𦥑, 𩵋); 22 are shown.
+  const shownSurfaceOne = surfaceOne.filter((g) => !EXCLUDED.has(g));
 
-  test("all 27 surface-#1 forms have a curated example that they truly contain", () => {
+  test("the 27 surface-#1 forms split into 22 shown and 5 excluded", () => {
     assert.equal(surfaceOne.length, 27);
-    for (const glyph of surfaceOne) {
+    assert.equal(shownSurfaceOne.length, 22);
+    for (const glyph of EXCLUDED) {
+      assert.ok(surfaceOne.includes(glyph), `${glyph} should be a surface-#1 form`);
+      assert.equal(variantForm(glyph), undefined, `${glyph} is excluded but resolves`);
+    }
+  });
+
+  test("every SHOWN surface-#1 form has a non-empty name — no blank 'Called'", () => {
+    // The core guarantee: a form is shown only if we can name it, so a rendered
+    // "Also written as" row never has an empty Called column.
+    for (const glyph of shownSurfaceOne) {
+      const name = variantForm(glyph)!.name;
+      assert.ok(name && name.length > 0, `${glyph} is shown but has no name`);
+    }
+  });
+
+  test("all 22 shown surface-#1 forms have a curated example that they truly contain", () => {
+    for (const glyph of shownSurfaceOne) {
       const example = variantForm(glyph)!.example;
       assert.ok(example, `${glyph} resolves no example`);
       assert.ok(
@@ -124,6 +167,15 @@ describe("the curated examples win over the earliest-by-order default", () => {
         `${glyph}'s example ${example} does not contain it as a component`,
       );
     }
+  });
+
+  test("newly named forms carry their verified name", () => {
+    assert.equal(variantForm("⺌")!.name, "しょうがしら");
+    assert.equal(variantForm("⺤")!.name, "つめかんむり");
+    assert.equal(variantForm("⺷")!.name, "ひつじ");
+    assert.equal(variantForm("⻞")!.name, "しょくへん");
+    assert.equal(variantForm("氺")!.name, "したみず");
+    assert.equal(variantForm("毋")!.name, "なかれ");
   });
 
   test("the familiar picks replace the earliest-by-order defaults", () => {
@@ -171,13 +223,20 @@ describe("variantsOf — the forms a character takes", () => {
   });
 
   test("every original groups back the forms that name it", () => {
-    // The inverse is total: each form appears under its own original, and under
-    // no other.
-    for (const glyph of GLYPHS) {
+    // The inverse is total over the SHOWN forms: each appears under its own
+    // original. An excluded form appears under none — pinned separately.
+    for (const glyph of SHOWN) {
       const original = VARIANTS[glyph];
       assert.ok(
         variantsOf(original).some((f) => f.glyph === glyph),
         `${glyph} is missing from variantsOf(${original})`,
+      );
+    }
+    for (const glyph of EXCLUDED) {
+      const original = VARIANTS[glyph];
+      assert.ok(
+        !variantsOf(original).some((f) => f.glyph === glyph),
+        `${glyph} is excluded but still groups under ${original}`,
       );
     }
   });
