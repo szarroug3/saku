@@ -39,7 +39,7 @@ import { LessonItemView } from "@/components/lesson/lesson-item-view";
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { AttributionLink } from "@/components/library/attribution-link";
 import { ConfigPreview } from "@/components/quiz/config-preview";
-import { Btn } from "@/components/ui";
+import { Btn, FlatSurfaceProvider } from "@/components/ui";
 import { lessonSteps } from "@/lib/lesson-steps";
 import type { FactId, HistoryFile } from "@/types";
 
@@ -127,14 +127,26 @@ export function TeachWalk({
           so each step is a clean remount: the persisted-preference sections
           re-read their state and no open/closed disclosure leaks between
           glyphs. */}
+      {/* FLAT SECTION SURFACES, exactly as on the Library entry page. The teach
+          walk shows the SAME flat-aware section panels the entry page does
+          (LessonPanel, WordSensePanel, VerbPairView, KeigoSetView, the intro
+          panels, Card), and the owner wants them flat HERE too — border kept,
+          the frosty fill dropped. Those panels flatten by WHERE they render, so
+          wrapping the item content in the same provider the entry page uses
+          (src/app/library/[...entry]/page.tsx) flattens them without threading a
+          prop through every intermediary. Scoped to the item only: the config
+          strip and step buttons below sit outside it and keep their own
+          treatment. */}
       <div className="mt-2">
-        {current.type === "intro" ? (
-          <PhaseIntroView key={current.key} intro={current.intro} />
-        ) : current.type === "conversion" ? (
-          <ConversionCard key={current.key} row={current.row} />
-        ) : (
-          <LessonItemView key={current.key} item={current.item} />
-        )}
+        <FlatSurfaceProvider>
+          {current.type === "intro" ? (
+            <PhaseIntroView key={current.key} intro={current.intro} />
+          ) : current.type === "conversion" ? (
+            <ConversionCard key={current.key} row={current.row} />
+          ) : (
+            <LessonItemView key={current.key} item={current.item} />
+          )}
+        </FlatSurfaceProvider>
       </div>
 
       {/* Step controls, and the end of the walk.
