@@ -57,6 +57,14 @@ export interface PrereqTile {
  * component walk.
  *
  * `seenKanji` / `seenRadicals` prevent duplicate emission across calls.
+ *
+ * `isLeaf`, when passed, marks glyphs the CALLER teaches as atomic wholes: such a
+ * glyph is emitted as its own tile but its components are NOT walked. The numbers
+ * track passes it for the number kanji 一…十 (memorised wholes whose shape-only
+ * pieces mislead — see src/data/number-kanji.ts); keigo passes nothing, so its
+ * kanji decompose exactly as before. It threads through recursion, so a number
+ * kanji reached as a sub-component is a leaf too (本's 一 stays a single tile with
+ * no pieces of its own — which it never had).
  */
 export function collectPrereqs(
   c: string,
@@ -64,6 +72,7 @@ export function collectPrereqs(
   seenKanji: Set<string>,
   seenRadicals: Set<string>,
   out: PrereqItem[],
+  isLeaf?: (glyph: string) => boolean,
 ): void {
   if (seenKanji.has(c)) return;
   seenKanji.add(c);
@@ -72,10 +81,19 @@ export function collectPrereqs(
   // Already known — it and its components were taught by the curriculum earlier.
   if (kanjiKnown(c, history)) return;
 
+  // A caller-declared atomic whole (the numbers track's number kanji): teach the
+  // tile itself, but do not walk its shape-only components or its filed-under
+  // radical. Same cost/fact as the tail push below, taken early so nothing
+  // recurses beneath it.
+  if (isLeaf?.(c)) {
+    out.push({ glyph: c, type: "Kanji", fact: meaningFactId(c), cost: glyphDifficulty(c) });
+    return;
+  }
+
   for (const part of row.comps) {
     if (part === c) continue;
     if (kanjiRow(part) !== undefined) {
-      collectPrereqs(part, history, seenKanji, seenRadicals, out);
+      collectPrereqs(part, history, seenKanji, seenRadicals, out, isLeaf);
     } else {
       const rad = radicalByWrittenForm(part);
       if (rad && !isRadicalTaughtAsKanji(rad.num)) {
@@ -84,7 +102,7 @@ export function collectPrereqs(
         const orig = variantOriginal(part);
         if (orig !== undefined && orig !== c) {
           if (kanjiRow(orig) !== undefined) {
-            collectPrereqs(orig, history, seenKanji, seenRadicals, out);
+            collectPrereqs(orig, history, seenKanji, seenRadicals, out, isLeaf);
           } else {
             const origRad = radicalByWrittenForm(orig);
             if (origRad && !isRadicalTaughtAsKanji(origRad.num)) {

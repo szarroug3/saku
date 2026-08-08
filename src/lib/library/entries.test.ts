@@ -94,6 +94,17 @@ test("builtFrom is empty for an atomic kanji — no section", () => {
   assert.deepEqual(built("一"), []);
 });
 
+test("builtFrom is empty for every number kanji — memorised wholes, no pieces", () => {
+  // 四…十 DO have KanjiVG comps (四 → 囗 儿, 六 → 亠 八), but those pieces are
+  // shape-only and mislead, so the number kanji are taught whole and show no
+  // "Built from" (src/data/number-kanji.ts). Contrast the counter kanji below.
+  for (const n of ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
+    assert.deepEqual(built(n), [], `${n} shows no Built from`);
+  }
+  // A counter kanji is NOT a number kanji: 回 still decomposes into 囗 + 口.
+  assert.deepEqual(built("回").map((x) => x.c), ["囗", "口"]);
+});
+
 test("a kanji's table is readings only — the meaning row is gone", () => {
   // 一 is the case the owner reported: its first row was the MEANING, under a
   // column headed "Reading", and the meaning KANJIDIC2 gave was "one, one

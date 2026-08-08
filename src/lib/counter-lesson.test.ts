@@ -215,7 +215,7 @@ describe("the rote counted forms are gone", () => {
   });
 });
 
-describe("the tens unit teaches the number kanji, radicals before their kanji", () => {
+describe("the tens unit teaches the number kanji as whole items", () => {
   test("the tens unit teaches the Sino number kanji 一…十 as prereqs", () => {
     // The Sino numbers are no longer rote kana forms; the tens unit (the first
     // material that spells a number in kanji) teaches 一…十 ahead of its rule card.
@@ -230,16 +230,23 @@ describe("the tens unit teaches the number kanji, radicals before their kanji", 
     }
   });
 
-  test("a radical prereq is taught before the kanji it builds", () => {
-    // 四 is built from 囗 and 儿; the tens unit teaches those radicals first, then 四.
+  test("a number kanji is taught whole — none of its shape pieces ride along", () => {
+    // Number kanji are memorised wholes: 四 is taught as its own tile with NO 囗/儿
+    // sub-tiles, 六 with no 亠/八, and so on. The shape-only pieces that used to
+    // ride the tens unit are gone (see src/data/number-kanji.ts).
     const { lesson } = advanceUntil((l) =>
       l.cardPrereqTiles.some((ts) => ts.some((t) => t.glyph === "四")),
     );
     const glyphs = walkGlyphs(lesson);
-    for (const rad of ["囗", "儿"]) {
-      assert.ok(glyphs.includes(rad), `${rad} is taught`);
-      assert.ok(glyphs.indexOf(rad) < glyphs.indexOf("四"), `${rad} precedes 四`);
+    for (const piece of ["囗", "儿", "亠", "丿", "乙"]) {
+      assert.ok(!glyphs.includes(piece), `${piece} is NOT taught as a number-kanji piece`);
     }
+    // Every number tile is a Kanji tile — no Radical sub-tiles among them.
+    const numberTiles = lesson.cardPrereqTiles
+      .flat()
+      .filter((t) => ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"].includes(t.glyph));
+    assert.equal(numberTiles.length, 10, "all ten number kanji are taught");
+    assert.ok(numberTiles.every((t) => t.type === "Kanji"), "each is a whole kanji tile");
   });
 
   test("the number kanji reuse the kanji track's meaning fact (no new mint)", () => {

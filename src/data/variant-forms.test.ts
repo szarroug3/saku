@@ -303,10 +303,14 @@ describe("the built-from label respects the exclusion set — no mislabel leaks"
     return undefined;
   }
 
-  test("四's 儿 tile reads its own meaning 'legs', never the false 'eight'", () => {
-    const entry = libEntry(kanjiEntry("四"))!;
+  test("匹's 儿 tile reads its own meaning 'legs', never the false 'eight'", () => {
+    // 匹 (匸 + 儿) is a counter kanji, not a number kanji, so it keeps its Built
+    // from — the number kanji 四, which also carries 儿, no longer shows one (it is
+    // a memorised whole; see src/data/number-kanji.ts), so this pins the exclusion
+    // fix on a host that still renders the tile.
+    const entry = libEntry(kanjiEntry("匹"))!;
     const piece = builtFrom(entry).find((p) => p.c === "儿");
-    assert.ok(piece, "四 has no 儿 piece in its Built from");
+    assert.ok(piece, "匹 has no 儿 piece in its Built from");
     assert.equal(piece!.meaning, "legs");
     assert.notEqual(piece!.meaning, "eight");
     // And it carries no variant note pointing at 八.
