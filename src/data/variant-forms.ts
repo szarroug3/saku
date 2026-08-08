@@ -99,6 +99,46 @@ const FALLBACK_POSITION: Readonly<Record<string, VariantPosition>> = {
 };
 
 /**
+ * Forms dropped from the teaching entirely: `variantForm` returns undefined for
+ * them, so they never render an "Also written as" row and never carry a "Built
+ * from" variant note. The rule this enforces is: a variant is shown only if we
+ * can NAME it. A form lands here for one of two reasons.
+ *
+ *   MISLABEL — KanjiVG records `kvg:original` as a character the glyph is not
+ *   actually a reduced form of. Left in, it teaches a false identity AND (having
+ *   no real name for the false pairing) shows a blank "Called".
+ *
+ *     儿  KanjiVG calls this a form of 八. It is not — 儿 is the "legs" radical
+ *         にんにょう / ひとあし (historically from 人), a radical in its own right.
+ *         This is the row that showed `儿 | bottom | (blank) | 見` on 八's page.
+ *     士  KanjiVG calls this a form of 土 (top of 売). It is not — 士 (さむらい,
+ *         Kangxi radical 33) is its own radical, and dictionaries file 売 under
+ *         士, not 土. Naming it (as 土) would compound the false pairing.
+ *
+ *   NO ESTABLISHED NAME — a rare or non-standard glyph with no checkable
+ *   Japanese radical name, appearing only in one obscure host. Naming it would
+ *   mean inventing, so it is dropped instead.
+ *
+ *     眞  the kyūjitai (old whole-character form) of 真, not a positional
+ *         radical; no radical name; sole jōyō host is the rare 塡.
+ *     𦥑  a rare Ext-B "two hands" component KanjiVG conflates with 臼; not a
+ *         named radical, renders poorly; sole host 興.
+ *     𩵋  a rare Ext-B fish glyph — NOT the standard fish radical (which is
+ *         written 魚, うおへん); sole host 衡 is not a fish kanji, so the pairing
+ *         is a decomposition artifact with no teachable name.
+ *
+ * Every OTHER surface-#1 form (one whose original is a taught character) has a
+ * verified NAME below, so no shown row is ever blank. See variant-forms.test.ts.
+ */
+const EXCLUDED: ReadonlySet<string> = new Set([
+  "儿", // mislabel: にんにょう/ひとあし, not a form of 八
+  "士", // mislabel: さむらい (radical 33), not a form of 土
+  "眞", // no name: kyūjitai of 真, not a radical
+  "𦥑", // no name: rare two-hands component, conflated with 臼
+  "𩵋", // no name: rare fish glyph, not the 魚 うおへん radical
+]);
+
+/**
  * The Japanese position-name of a form, where it is verified. NOT derived: no
  * data source carries these, so this table is authored and holds only names
  * checked by hand. Filling it wrong would teach a learner a name the app made up,
@@ -125,6 +165,12 @@ const NAME: Readonly<Record<string, string>> = {
   "⻏": "おおざと",
   "飠": "しょくへん",
   "耂": "おいかんむり",
+  "⺌": "しょうがしら", // 小 on top (小頭); okjiten lists ⺌ as しょうがしら／なおがしら
+  "⺤": "つめかんむり", // 爪 on top (爪冠); the 受・愛 top form, つめかんむり／つめがしら
+  "⺷": "ひつじ", // 羊 on top; the 美・着 form, filed under 部首名 ひつじ (radical 123)
+  "⻞": "しょくへん", // 食 on the left (Unicode "CJK RADICAL EAT THREE"), as in 餅
+  "氺": "したみず", // 水 underneath (下水), the 泰・様 form; distinct from さんずい
+  "毋": "なかれ", // 母/毎 group, filed under radical 80 毋 (なかれ)
 };
 
 /**
@@ -143,13 +189,13 @@ const NAME: Readonly<Record<string, string>> = {
  *      before they meet 化. So each form points at a common, recognisable kanji it
  *      genuinely appears in, chosen over the earliest.
  *
- * Covers all 27 forms whose original is a taught character (the surface-#1 forms,
- * the only ones whose example a learner ever sees — the "Built from" note reads
- * position and name, never the example). Every pick is a jōyō kanji whose comps
- * actually contain the glyph AS this variant; variant-forms.test.ts pins that.
- * Two forms (眞, 𩵋) have a single jōyō host each, so the curated pick is the only
- * option and equals the derived one; they are listed anyway to keep the table
- * complete and to pin the choice against a future re-order.
+ * Covers the 22 SHOWN surface-#1 forms — those whose original is a taught
+ * character AND which survive the EXCLUDED filter, the only ones whose example a
+ * learner ever sees (the "Built from" note reads position and name, never the
+ * example). Every pick is a jōyō kanji whose comps actually contain the glyph AS
+ * this variant; variant-forms.test.ts pins that. The five excluded surface-#1
+ * forms (儿, 士, 眞, 𦥑, 𩵋 — see EXCLUDED) are intentionally absent: they never
+ * render, so they need no example.
  */
 const CURATED_EXAMPLE: Readonly<Record<string, string>> = {
   "⺌": "光", // 小, on top — light
@@ -160,10 +206,8 @@ const CURATED_EXAMPLE: Readonly<Record<string, string>> = {
   "⻖": "院", // 阜, on the left (こざとへん) — as in 病院, hospital
   "⻞": "餅", // 食, on the left — rice cake (the only common jōyō host)
   "亻": "体", // 人, on the left (にんべん) — body
-  "儿": "見", // 八, underneath — to see
   "冫": "冷", // 二, on the left (にすい) — cold, the meaning にすい names
   "刂": "前", // 刀, on the right (りっとう) — front, before
-  "士": "売", // 土, on top — to sell
   "忄": "情", // 心, on the left (りっしんべん) — feeling
   "扌": "持", // 手, on the left (てへん) — to hold
   "月": "腹", // 肉, on the left (にくづき) — belly; a FLESH 月, not the moon 明
@@ -172,13 +216,10 @@ const CURATED_EXAMPLE: Readonly<Record<string, string>> = {
   "氺": "様", // 水, underneath — as in 様 (さま)
   "灬": "熱", // 火, underneath (れっか) — heat, the meaning れっか names
   "王": "理", // 玉, on the left (おうへん) — as in 料理, 理由
-  "眞": "塡", // 真, on the right — the only jōyō host
   "礻": "社", // 示, on the left (しめすへん) — company, shrine
   "耂": "者", // 老, over the top (おいかんむり) — person
   "衤": "初", // 衣, on the left (ころもへん) — first
   "飠": "飲", // 食, on the left (しょくへん) — to drink
-  "𦥑": "興", // 臼, on top — as in 興味, interest (the only common jōyō host)
-  "𩵋": "衡", // 魚 — the only jōyō host (a rare form; see the report)
 };
 
 /**
@@ -223,6 +264,9 @@ function positionOf(glyph: string): VariantPosition | undefined {
 export function variantForm(glyph: string): VariantForm | undefined {
   const original = VARIANTS[glyph];
   if (original === undefined) return undefined;
+  // A form we cannot name (mislabel or no established name) is dropped entirely,
+  // so it never shows an "Also written as" row or a "Built from" variant note.
+  if (EXCLUDED.has(glyph)) return undefined;
   return {
     glyph,
     original,
