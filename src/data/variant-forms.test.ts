@@ -7,7 +7,7 @@
 // of the derivation coming back empty or pointing at the wrong thing:
 //
 //   - a form with no worked example, which the lesson and the concept card both
-//     rely on ("as in 体"). Every SHOWN form (the fifty-eight less the eleven
+//     rely on ("as in 体"). Every SHOWN form (the fifty-eight less the twelve
 //     EXCLUDED as mislabels or un-nameable) must resolve one.
 //   - an example that is the base character itself, which would teach 人 by
 //     showing 人 rather than a second kanji.
@@ -67,6 +67,8 @@ const EVERY_GLYPH: ReadonlySet<string> = new Set([
 //   MISLABEL (false cross-character identity):
 //     儿  にんにょう/ひとあし (legs), a radical of its own — NOT a form of 八 (eight).
 //     士  さむらい (radical 33, scholar) — NOT a form of 土 (earth); 売 files under 士.
+//     冫  にすい (ice, radical 15, from 冰) — NOT a form of 二 (two). The 冫 in 冷・冬
+//         is the ice radical, not a reshaped 二.
 //     日  日 (sun) is its own character — NOT a bottom-form of 曰 (say).
 //     川  川 (river) is its own taught kanji and the primary river-radical form —
 //         NOT a reduced form of the archaic curved variant 巛. Arrow points backwards.
@@ -80,10 +82,10 @@ const EVERY_GLYPH: ReadonlySet<string> = new Set([
 //     𦥑  rare Ext-B two-hands component conflated with 臼; sole host 興.
 //     𩵋  rare Ext-B fish glyph, not the 魚 うおへん radical; sole host 衡.
 const EXCLUDED: ReadonlySet<string> = new Set([
-  "儿", "士", "日", "川", "戌", "戍", "⺍", "厶", "眞", "𦥑", "𩵋",
+  "儿", "士", "冫", "日", "川", "戌", "戍", "⺍", "厶", "眞", "𦥑", "𩵋",
 ]);
 
-// The hand-verified original for EVERY kept mapping — 47 of them. Each is a TRUE
+// The hand-verified original for EVERY kept mapping — 46 of them. Each is a TRUE
 // reshaping (radical form: 亻 of 人, 艹 of 艸) or modern↔old whole-character form
 // (斉 of 齊, 麦 of 麥, 歯 of 齒). Asserted equal to the shipped map below.
 const EXPECTED_VARIANT_ORIGIN: Readonly<Record<string, string>> = {
@@ -103,7 +105,6 @@ const EXPECTED_VARIANT_ORIGIN: Readonly<Record<string, string>> = {
   "㔾": "卩", // variant of the seal radical 卩
   "亻": "人", // にんべん, left form of 人
   "兹": "茲", // variant of 茲 ("this")
-  "冫": "二", // にすい (retained per prior pass; see note below)
   "刂": "刀", // りっとう, right form of 刀
   "匸": "匚", // hiding/box enclosure form (retained; see note below)
   "夹": "夾", // shinjitai form of 夾 (狭・挟・峡)
@@ -157,14 +158,14 @@ describe("the pinned variant map — a KanjiVG re-cut cannot change it silently"
 
   test("EXCLUDED is exactly the identified mislabels and un-nameable forms", () => {
     // Every excluded glyph is genuinely in the map (no stale exclusion), and the
-    // set is exactly the eleven the audit dropped — no more, no fewer.
+    // set is exactly the twelve the audit dropped — no more, no fewer.
     for (const glyph of EXCLUDED) {
       assert.ok(VARIANTS[glyph], `${glyph} is excluded but not even in the map`);
     }
-    assert.equal(EXCLUDED.size, 11);
+    assert.equal(EXCLUDED.size, 12);
     assert.deepEqual(
       new Set([...EXCLUDED]),
-      new Set(["儿", "士", "日", "川", "戌", "戍", "⺍", "厶", "眞", "𦥑", "𩵋"]),
+      new Set(["儿", "士", "冫", "日", "川", "戌", "戍", "⺍", "厶", "眞", "𦥑", "𩵋"]),
     );
   });
 
@@ -360,16 +361,16 @@ describe("the curated examples win over the earliest-by-order default", () => {
   const excludedSurfaceOne = surfaceOne.filter((g) => EXCLUDED.has(g));
   const shownSurfaceOne = surfaceOne.filter((g) => !EXCLUDED.has(g));
 
-  test("the 27 surface-#1 forms split into 22 shown and 5 excluded", () => {
-    // The five excluded surface-#1 forms are 儿, 士, 眞, 𦥑, 𩵋 — the ones whose
+  test("the 27 surface-#1 forms split into 21 shown and 6 excluded", () => {
+    // The six excluded surface-#1 forms are 儿, 士, 冫, 眞, 𦥑, 𩵋 — the ones whose
     // false/absent name would show a blank "Called". The other six exclusions
     // (日, 川, 戌, 戍, ⺍, 厶) are NOT surface-#1: their original is untaught, so
     // they only ever appeared as a "Built from" note.
     assert.equal(surfaceOne.length, 27);
-    assert.equal(shownSurfaceOne.length, 22);
+    assert.equal(shownSurfaceOne.length, 21);
     assert.deepEqual(
       new Set(excludedSurfaceOne),
-      new Set(["儿", "士", "眞", "𦥑", "𩵋"]),
+      new Set(["儿", "士", "冫", "眞", "𦥑", "𩵋"]),
     );
     for (const glyph of excludedSurfaceOne) {
       assert.equal(variantForm(glyph), undefined, `${glyph} is excluded but resolves`);
@@ -383,7 +384,7 @@ describe("the curated examples win over the earliest-by-order default", () => {
     }
   });
 
-  test("all 22 shown surface-#1 forms have a curated example that they truly contain", () => {
+  test("all 21 shown surface-#1 forms have a curated example that they truly contain", () => {
     for (const glyph of shownSurfaceOne) {
       const example = variantForm(glyph)!.example;
       assert.ok(example, `${glyph} resolves no example`);

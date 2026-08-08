@@ -110,13 +110,16 @@ const FALLBACK_POSITION: Readonly<Record<string, VariantPosition>> = {
  *   surface-#1 form it shows a blank "Called"; left in on a built-from-only form
  *   it prints a false note ("X in its bottom form") under a plain component. A
  *   full audit of all 58 `kvg:original` values (KanjiVG cannot validate its own
- *   field) found eight.
+ *   field) found nine.
  *
  *     儿  called a form of 八. It is not — 儿 is the "legs" radical にんにょう /
  *         ひとあし (historically from 人), a radical in its own right. This is the
  *         row that showed `儿 | bottom | (blank) | 見` on 八's page.
  *     士  called a form of 土 (top of 売). It is not — 士 (さむらい, Kangxi radical
  *         33) is its own radical, and dictionaries file 売 under 士, not 土.
+ *     冫  called a form of 二 (two). It is not — 冫 is the "ice" radical にすい
+ *         (historically from 冰), Kangxi radical 15, a radical in its own right.
+ *         The 冫 in 冷・冬 is the ice radical, not a reshaped 二.
  *     日  called a bottom-form of 曰 (say). It is not — 日 (sun/day) is its own
  *         character; the box in 白, 冒, 旦 … is plain 日. Left in, 白's "Built
  *         from" read "日 in its bottom form" and 日's own page showed no forms.
@@ -155,6 +158,7 @@ const EXCLUDED: ReadonlySet<string> = new Set([
   // Mislabels (false cross-character identity):
   "儿", // にんにょう/ひとあし, not a form of 八
   "士", // さむらい (radical 33), not a form of 土
+  "冫", // ice radical にすい, from 冰, not a form of 二 (two)
   "日", // 日 (sun) is its own character, not a bottom-form of 曰 (say)
   "川", // 川 (river) is its own char / primary river radical, not a form of 巛
   "戌", // 戌 (dog branch) and 戍 (garrison) are distinct chars — swapped pairing
@@ -192,7 +196,6 @@ export function isExcludedVariant(glyph: string): boolean {
  */
 const NAME: Readonly<Record<string, string>> = {
   "亻": "にんべん",
-  "冫": "にすい",
   "刂": "りっとう",
   "扌": "てへん",
   "氵": "さんずい",
@@ -234,12 +237,12 @@ const NAME: Readonly<Record<string, string>> = {
  *      before they meet 化. So each form points at a common, recognisable kanji it
  *      genuinely appears in, chosen over the earliest.
  *
- * Covers the 22 SHOWN surface-#1 forms — those whose original is a taught
+ * Covers the 21 SHOWN surface-#1 forms — those whose original is a taught
  * character AND which survive the EXCLUDED filter, the only ones whose example a
  * learner ever sees (the "Built from" note reads position and name, never the
  * example). Every pick is a jōyō kanji whose comps actually contain the glyph AS
- * this variant; variant-forms.test.ts pins that. The five excluded surface-#1
- * forms (儿, 士, 眞, 𦥑, 𩵋 — see EXCLUDED) are intentionally absent: they never
+ * this variant; variant-forms.test.ts pins that. The six excluded surface-#1
+ * forms (儿, 士, 冫, 眞, 𦥑, 𩵋 — see EXCLUDED) are intentionally absent: they never
  * render, so they need no example.
  */
 const CURATED_EXAMPLE: Readonly<Record<string, string>> = {
@@ -251,7 +254,6 @@ const CURATED_EXAMPLE: Readonly<Record<string, string>> = {
   "⻖": "院", // 阜, on the left (こざとへん) — as in 病院, hospital
   "⻞": "餅", // 食, on the left — rice cake (the only common jōyō host)
   "亻": "体", // 人, on the left (にんべん) — body
-  "冫": "冷", // 二, on the left (にすい) — cold, the meaning にすい names
   "刂": "前", // 刀, on the right (りっとう) — front, before
   "忄": "情", // 心, on the left (りっしんべん) — feeling
   "扌": "持", // 手, on the left (てへん) — to hold
