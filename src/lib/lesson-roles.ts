@@ -80,7 +80,7 @@ import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role"
 import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
 import { libEntry } from "@/lib/library/entries";
-import { builtPieces } from "@/data/kanji-etymology";
+import { builtPieces, etymologyOf } from "@/data/kanji-etymology";
 import { isNumberKanji } from "@/data/number-kanji";
 import { adjectiveKind, formsOfWord, ruVerbKind } from "@/lib/word-forms";
 
@@ -403,17 +403,21 @@ export function lessonSections(item: LessonItem): LessonSection[] {
   }
   if (roles.includes("kanji")) {
     if (kanjiMeanings(item).length) out.add("kanji-meaning");
-    // "Built from" whenever the etymology layer gives the character semantic or
-    // phonetic pieces — the SAME `builtPieces` the Library's KanjiBuiltFrom shows,
-    // so the lesson and the reference decompose a kanji identically. A memorised
-    // whole (a pictograph, a kanji Wiktionary can't split) has no pieces; the
-    // number kanji 一…十 are held whole here too, matching KanjiBuiltFrom, even
-    // where Wiktionary does split one (三 as three 一). The Library entry page
-    // additionally shows a no-tiles glyph-origin STORY (中's flagpole) where one
-    // exists; the lesson deliberately keeps such pictographs as memorised wholes
-    // and shows no breakdown, so the story stays reference-only.
-    if (builtPieces(item.glyph).length && !isNumberKanji(item.glyph)) {
-      out.add("kanji-parts");
+    // "Built from & etymology" on the SAME gate the Library's KanjiBuiltFrom
+    // uses, so the lesson and the reference render this section identically:
+    // tiles when the etymology layer gives the character semantic or phonetic
+    // pieces (`builtPieces`), OR — for a pictograph / shape-drift kanji with no
+    // mappable pieces (人, 千, 中's flagpole) — the glyph-origin STORY alone
+    // (`originText`), shown as prose with NO tiles. The story is a memory aid and
+    // learning happens in the lesson, so it is taught here now, not kept
+    // reference-only; a no-pieces kanji stays a memorised whole (no piece
+    // decomposition) and only gains the prose. The number kanji 一…十 are held
+    // whole regardless — no tiles AND no story — matching KanjiBuiltFrom, even
+    // where Wiktionary does split one (三 as three 一).
+    if (!isNumberKanji(item.glyph)) {
+      const origin = etymologyOf(item.glyph)?.originText;
+      const hasOrigin = typeof origin === "string" && origin.trim().length > 0;
+      if (builtPieces(item.glyph).length > 0 || hasOrigin) out.add("kanji-parts");
     }
   }
   if (roles.includes("radical")) out.add("radical-note");

@@ -41,6 +41,7 @@ import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
 import { kanaEntry } from "@/data/characters";
+import { builtPieces, etymologyOf } from "@/data/kanji-etymology";
 import { kanjiEntry } from "@/data/kanji";
 import { patternEntry } from "@/data/grammar";
 import { radicalEntry } from "@/data/radicals";
@@ -68,6 +69,14 @@ import type { EntryId } from "@/types";
 
 function step(entry: EntryId, glyph: string, kind: LessonKind): LessonItem {
   return { entry, glyph, kind, facts: [] };
+}
+
+/** The glyph-origin story a no-tiles kanji-parts section shows as prose, or null
+ * — the same originText the lesson gate and KanjiBuiltFrom read to decide a
+ * pictograph earns the section with a memory aid but no decomposition. */
+function etymologyStory(glyph: string): string | null {
+  const o = etymologyOf(glyph)?.originText ?? null;
+  return typeof o === "string" && o.trim().length > 0 ? o : null;
 }
 
 /** 人 as the curriculum hands it over: one step, on the kanji track, for a
@@ -98,16 +107,22 @@ describe("lessonRoles — every role the step teaches, not just the track it cam
 });
 
 describe("lessonSections — a section per role, up the ladder", () => {
-  test("人 teaches the shape, its variant form, then the character, then the word, then how it's drawn", () => {
-    // No breakdown: 人 is one character, so there is nothing to take apart. No
-    // readings table either, in either block, and no example sentence; those are
-    // the Library's. The variant-forms section rides under the radical heading:
-    // 人 is one of the characters that takes a component form (亻), so its lesson
-    // teaches that shape too.
+  test("人 teaches the shape, its variant form, the character, its origin story, then the word, then how it's drawn", () => {
+    // NO PIECE TILES: 人 is a pictograph with no mappable pieces, so there is
+    // nothing to take APART. But it carries a glyph-origin STORY (a standing
+    // man), and the story is a memory aid the lesson now shows — the same
+    // no-tiles prose the Library entry renders — so the kanji-parts section is
+    // present, driven by originText rather than by any decomposition. No readings
+    // table in either block, and no example sentence; those are the Library's.
+    // The variant-forms section rides under the radical heading: 人 is one of the
+    // characters that takes a component form (亻), so its lesson teaches that too.
+    assert.equal(builtPieces("人").length, 0, "人 has no piece tiles");
+    assert.ok(etymologyStory("人"), "人 carries a glyph-origin story");
     assert.deepEqual(lessonSections(FOLDED), [
       "radical-note",
       "variant-forms",
       "kanji-meaning",
+      "kanji-parts",
       "word-sense",
       "how-its-written",
     ]);
@@ -169,22 +184,31 @@ describe("lessonSections — a section per role, up the ladder", () => {
     ]);
   });
 
-  test("千 is taught whole: the etymology gives it no meaning or sound piece", () => {
-    // The gate is `builtPieces` now, not the raw shape decomposition. 千 is 丿 +
-    // 十 by KanjiVG, but Wiktionary's glyph origin assigns neither piece a semantic
-    // or phonetic role, so builtPieces is empty and 千 shows NO Built from — the
-    // lesson and the Library agree, both treating it as a memorised whole. 千 is
-    // still the dictionary word せん, so it keeps the word-sense block.
+  test("千 has no piece tiles, but its origin story renders — memorised whole plus a memory aid", () => {
+    // NO PIECE DECOMPOSITION: 千 is 丿 + 十 by KanjiVG, but Wiktionary's glyph
+    // origin assigns neither piece a semantic or phonetic role, so builtPieces is
+    // empty — the lesson and the Library agree there are no TILES, 千 is a
+    // memorised whole. It does carry a glyph-origin STORY, though, and the lesson
+    // now shows that prose (as the Library does) because it is a memory aid, so
+    // the kanji-parts section is present via originText, not decomposition. 千 is
+    // still the dictionary word せん, so it keeps the word-sense block too.
+    assert.equal(builtPieces("千").length, 0, "千 has no piece tiles");
+    assert.ok(etymologyStory("千"), "千 carries a glyph-origin story");
     assert.deepEqual(lessonSections(step(kanjiEntry("千"), "千", "kanji")), [
       "kanji-meaning",
+      "kanji-parts",
       "word-sense",
       "how-its-written",
     ]);
   });
 
-  test("an atomic kanji still shows no parts: 一 has nothing to take apart", () => {
+  test("a number kanji shows no parts at all: 一 has no tiles AND no story shown", () => {
+    // isNumberKanji suppression is load-bearing and stays. 一 DOES carry an
+    // originText ("a horizontal stroke, indicating the number"), but the number
+    // kanji 一…十 are held whole regardless — no tiles and no story — so the
+    // kanji-parts gate must never fire for them.
     const sections = lessonSections(step(kanjiEntry("一"), "一", "kanji"));
-    assert.ok(!sections.includes("kanji-parts"), "一 is one shape, no breakdown");
+    assert.ok(!sections.includes("kanji-parts"), "一 is a number kanji, no breakdown");
   });
 
   test("A SINGLE-ROLE KANJI KEEPS ITS DEFINITION, because its heading is the only label left", () => {
@@ -193,9 +217,14 @@ describe("lessonSections — a section per role, up the ladder", () => {
     // block under the "Kanji" heading has to have something in it, and the
     // definition is the thing the trim left standing. 乞's KanjiVG pieces (𠂉 + 乙)
     // carry no semantic or phonetic role in the etymology, so builtPieces is empty
-    // and it shows NO Built from — taught whole, just its meaning and its strokes.
+    // and it shows NO piece tiles — a memorised whole. It does carry a
+    // glyph-origin STORY, so the lesson now also shows that prose (kanji-parts via
+    // originText), alongside its meaning and its strokes.
+    assert.equal(builtPieces("乞").length, 0, "乞 has no piece tiles");
+    assert.ok(etymologyStory("乞"), "乞 carries a glyph-origin story");
     assert.deepEqual(lessonSections(step(kanjiEntry("乞"), "乞", "kanji")), [
       "kanji-meaning",
+      "kanji-parts",
       "how-its-written",
     ]);
   });
