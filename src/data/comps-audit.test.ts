@@ -87,20 +87,27 @@ describe("stroke-count conservation — components should sum to the whole", () 
     }
   });
 
-  // The 66 kanji whose component strokes miss the whole by more than ±3. Every
+  // The 44 kanji whose component strokes miss the whole by more than ±3. Every
   // one is a KanjiVG artifact, NOT a wrong part: positive Δ = a surround emitted
   // once per child group (行/衣/囗/斉 …) or an otherwise duplicated part;
   // negative Δ = a partial depth-1 that named one element (先→儿, 鳥→灬). Pinned
   // as an exact set so a re-cut that mangles a NEW kanji's strokes — the
   // over-nesting a mis-decomposition looks like — breaks this test loudly.
+  //
+  // Was 66; 22 over-count artifacts are now corrected by COMPS_OVERRIDE (see
+  // kanji.ts) and conserve within tolerance, so they left this set: the surround
+  // splits 斎 黙 憩 衰 修 衷 哀 威 術 街 衛 衝 衡 裏 褒 戚 束 東, and the single-shape
+  // splits 必 戒 氷 由. The 12 over-counts that REMAIN here are ones whose corrected
+  // depth-1 list is still doubtful (謄 州 成 準 挿 曲 蔵 卵 …) — left for the owner,
+  // not force-fixed. COMPS_OVER_COUNT_FIXED below pins the corrected side.
   const KNOWN_STROKE_ANOMALIES = new Set(
-    // over-count (Δ > +3): duplicated surround / repeated part
-    ("斎黙憩謄随衰修衷哀威州成準術街衛衝衡裏褒戚挿曲蔵卵島必戒束東氷由畿章" +
+    // over-count (Δ > +3) still uncorrected: duplicated surround / repeated part
+    ("謄随州成準挿曲蔵卵島畿章" +
       // under-count (Δ < −3): partial depth-1
       "僅先免共声展憲散瓦衆衣言谷豆赤鹿倉帥師慶段角飛無舞華薦遣馬骨麗鳥").split(""),
   );
 
-  test("the set of gross mismatches is exactly the 66 documented artifacts", () => {
+  test("the set of gross mismatches is exactly the 44 documented artifacts", () => {
     const anomalies = new Set<string>();
     for (const k of DECOMPOSED) {
       const sum = k.comps.reduce((n, c) => n + (componentStrokes(c) ?? 0), 0);
@@ -114,7 +121,7 @@ describe("stroke-count conservation — components should sum to the whole", () 
       { appeared: [], gone: [] },
       "stroke-conservation anomaly set changed — review new/removed kanji",
     );
-    assert.equal(anomalies.size, 66);
+    assert.equal(anomalies.size, 44);
   });
 
   test("the overwhelming majority conserve within tolerance", () => {
@@ -123,8 +130,63 @@ describe("stroke-count conservation — components should sum to the whole", () 
       return Math.abs(sum - k.strokes) <= TOLERANCE;
     }).length;
     assert.equal(DECOMPOSED.length, 2068);
-    assert.equal(within, 2002);
+    assert.equal(within, 2024);
     assert.ok(within / DECOMPOSED.length >= 0.96, `${within}/${DECOMPOSED.length}`);
+  });
+});
+
+describe("over-count corrections — no fixed kanji lists a part too many times", () => {
+  // The over-count defects COMPS_OVERRIDE corrects, pinned as the corrected
+  // depth-1 list. KanjiVG split ONE shape across two child groups and named it
+  // once per side (国 [囗 玉 囗], 術 [行 朮 行], 斎 [斉 斉 示 斉], 五 [二 二]); the
+  // override collapses each duplicate to its true count. This guard asserts two
+  // things at once: comps now equals the corrected list, AND no component in it
+  // repeats beyond what the corrected list allows — so a re-cut that reintroduces
+  // the split, or over-collapses a genuine repeat, fails here.
+  const CORRECTED: Record<string, string[]> = {
+    // enclosure 囗 (one box, not two)
+    囚: ["囗", "人"], 四: ["囗", "儿"], 回: ["囗", "口"], 因: ["囗", "大"],
+    団: ["囗", "寸"], 困: ["囗", "木"], 囲: ["囗", "井"], 図: ["囗", "⺍", "乂"],
+    固: ["囗", "古"], 国: ["囗", "玉"], 圏: ["囗", "巻"], 園: ["囗", "袁"],
+    菌: ["艹", "囗", "禾"],
+    // open-box 匚 / 匸
+    匠: ["匚", "斤"], 区: ["匸", "乂"], 医: ["匸", "矢"], 匿: ["匸", "若"],
+    匹: ["匸", "儿"],
+    // 行 wrapping a phonetic
+    術: ["行", "朮"], 街: ["行", "圭"], 衛: ["行", "韋"], 衝: ["行", "重"],
+    衡: ["行", "𩵋"],
+    // 衣 split top/bottom
+    哀: ["衣", "口"], 衷: ["衣", "口", "丨"], 裏: ["衣", "里"], 褒: ["衣", "保"],
+    衰: ["衣", "口", "口"],
+    // 𢦏 frame
+    栽: ["𢦏", "木"], 裁: ["𢦏", "衣"], 載: ["𢦏", "車"], 戴: ["𢦏", "異"],
+    // 斉 wrapping 示
+    斎: ["斉", "示"],
+    // other single-shape splits
+    可: ["丁", "口"], 吏: ["丈", "口"], 式: ["弋", "工"], 戒: ["戈", "廾"],
+    戚: ["戊", "尗"], 威: ["戍", "女"], 憩: ["舌", "息"], 必: ["心", "丿"],
+    黙: ["黒", "犬"], 修: ["攸", "彡"], 充: ["亠", "允"], 由: ["日", "丨"],
+    東: ["木", "日"], 束: ["木", "口"], 氷: ["水", "丶"], 我: ["丿", "戈", "亅"],
+    // number kanji
+    五: ["二"], 年: ["丿", "干"], 午: ["丿", "干"],
+  };
+
+  test("every corrected kanji's comps equals its curated list", () => {
+    for (const [c, expected] of Object.entries(CORRECTED)) {
+      assert.deepEqual(kanjiRow(c)?.comps, expected, c);
+    }
+  });
+
+  test("no corrected kanji repeats a component beyond its expected count", () => {
+    for (const [c, expected] of Object.entries(CORRECTED)) {
+      const allow = new Map<string, number>();
+      for (const p of expected) allow.set(p, (allow.get(p) ?? 0) + 1);
+      const got = new Map<string, number>();
+      for (const p of kanjiRow(c)?.comps ?? []) got.set(p, (got.get(p) ?? 0) + 1);
+      for (const [p, n] of got) {
+        assert.ok(n <= (allow.get(p) ?? 0), `${c}: "${p}" appears ${n}×, over-count`);
+      }
+    }
   });
 });
 
@@ -209,20 +271,21 @@ describe("classical-radical reachability — the Kangxi radical is in the closur
 
 describe("pinned decomposition of the first 100 taught kanji", () => {
   // Generated from today's comps, then hand-checked one by one against the glyph.
-  // Every listed component is genuinely part of its kanji — no 儿→八. Two shapes
-  // are imperfect but NOT wrong, and are pinned deliberately so a change is
-  // noticed: 国 [囗 玉 囗] duplicates the enclosure, and 年 [丿 干 干] repeats 干;
-  // several are thin partials (先 [儿], 白 [日], 里 [日], 言 [口]). A future re-cut
-  // that reshuffles any of these first-seen kanji fails this assertion.
+  // Every listed component is genuinely part of its kanji — no 儿→八. 国 [囗 玉]
+  // and 年 [丿 干] are the COMPS_OVERRIDE-corrected forms: KanjiVG shipped 国
+  // [囗 玉 囗] (doubled enclosure) and 年 [丿 干 干] (repeated 干), and the override
+  // collapses each duplicate — so the snapshot pins the corrected shape a learner
+  // now sees. Several entries are still thin partials (先 [儿], 白 [日], 里 [日],
+  // 言 [口]). A future re-cut that reshuffles any first-seen kanji fails here.
   const EXPECTED: Record<string, string[]> = {
     人: [], 大: [], 日: [], 一: [], 不: ["一", "丿", "丨"], 乙: [],
     乞: ["𠂉", "乙"], 気: ["气", "乂"], 山: [], 出: ["山", "凵"], 上: ["卜", "一"],
     生: [], 手: [], 口: [], 合: ["人", "一", "口"], 中: ["口", "丨"], 行: ["彳"],
-    刀: [], 分: ["八", "刀"], 十: [], 干: ["十"], 年: ["丿", "干", "干"], 入: [],
+    刀: [], 分: ["八", "刀"], 十: [], 干: ["十"], 年: ["丿", "干"], 入: [],
     下: ["一", "卜"], 立: ["亠"], 土: [], 地: ["土", "也"], 用: [], 弓: [],
     引: ["弓", "丨"], 目: [], 見: ["目", "儿"], 牛: [], 物: ["牛", "勿"], 子: [],
     尚: ["⺌", "冋"], 学: ["⺍", "冖", "子"], 白: ["日"], 的: ["白", "勺"], 王: [],
-    国: ["囗", "玉", "囗"], 夕: [], 名: ["夕", "口"], 耳: [], 又: [],
+    国: ["囗", "玉"], 夕: [], 名: ["夕", "口"], 耳: [], 又: [],
     取: ["耳", "又"], 事: ["口", "⺕", "亅"], 力: [], 水: [], 二: [],
     会: ["人", "云"], 木: [], 化: ["亻", "匕"], 体: ["亻", "本"], 方: ["亠"],
     本: ["木"], 定: ["宀", "疋"], 切: ["七", "刀"], 心: [], 当: ["⺌", "⺕"],
