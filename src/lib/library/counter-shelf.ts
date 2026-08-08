@@ -20,8 +20,19 @@ import {
   NUMBER_CONSTRUCTIONS,
   numberConstructionEntry,
 } from "@/data/number-construction";
+import { kanjiEntry } from "@/data/kanji";
 import { libEntry } from "@/lib/library/entries";
 import type { ShelfSection } from "@/lib/library/shelf-view";
+
+// The Sino numbers 1-10, in counting order. Since the dedupe (drop the rote
+// counter:num:1..10 kana forms), the number KANJI carry these — 二 = に = two —
+// so the shelf surfaces the kanji entries themselves rather than curriculum
+// forms it no longer has. Owners look for "the numbers" here; without this
+// section they vanished from the shelf entirely (the kanji stayed reachable
+// under Kanji and in search, but not where a learner expects to browse them).
+const NUMBER_KANJI: readonly string[] = [
+  "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
+];
 
 /** One section of the shelf: a name and the predicate that fills it. In teaching
  * order, and mutually exclusive over the curriculum — every form falls in
@@ -41,13 +52,33 @@ interface CounterGroup {
 const GROUPS: readonly CounterGroup[] = [
   // 〜つ leads, because it is the escape hatch taught first (see counters.ts).
   { id: "tsu", label: "Native numbers (〜つ)", keep: (f) => f.counter === "つ" },
-  // The bare Sino numbers 1..10, memorised before anything builds on them.
-  { id: "numbers", label: "Numbers", keep: (f) => f.counter === "" },
-  // 〜人 keeps its three irregulars only; the regular counts are generated.
-  { id: "nin", label: "People (〜人)", keep: (f) => f.counter === "人" },
+  // The bare Sino numbers 1..10 are no longer curriculum FORMS (the dedupe removed
+  // counter:num:1..10); the number kanji 一…十 carry them, injected below as their
+  // own section (numberKanjiSection) between 〜つ and the tail. 〜人's regular
+  // counts are generated and its irregulars ride the 〜人 category, so no bare
+  // number or 〜人 form remains to group here.
   // The one memorised tail reading, 二十歳 はたち.
   { id: "tail", label: "More counters", keep: (f) => f.phase === 3 },
 ];
+
+/**
+ * The Sino numbers 1-10 as a shelf section — the number kanji 一…十 resolved to
+ * their Library pages, in counting order. These are KANJI entries (not counter
+ * forms), so they are built here rather than filtered out of COUNTER_CURRICULUM:
+ * the dedupe moved the teaching of 一…十 onto the kanji's own word role, and this
+ * is where the shelf makes them browsable again. A kanji with no build is skipped,
+ * the same degradation the counter groups take.
+ */
+function numberKanjiSection(): ShelfSection {
+  return {
+    id: "counters-numbers",
+    label: "Numbers",
+    entries: NUMBER_KANJI.flatMap((c) => {
+      const e = libEntry(kanjiEntry(c));
+      return e ? [e] : [];
+    }),
+  };
+}
 
 /**
  * The counters shelf's sections, each holding its group's entries in curriculum
@@ -92,5 +123,15 @@ export function counterShelfSections(): ShelfSection[] {
       ]
     : [];
 
-  return [...referenceSection, ...groups];
+  // The Sino numbers 一…十 sit between the native 〜つ and the tail — the teaching
+  // order this file documents (〜つ escape hatch, then the numbers, then what is
+  // built on them). Injected after the 〜つ group by id so it lands in place even
+  // if the group set changes; dropped whole if no number kanji resolves.
+  const numbers = numberKanjiSection();
+  const withNumbers =
+    numbers.entries.length > 0
+      ? groups.flatMap((s) => (s.id === "counters-tsu" ? [s, numbers] : [s]))
+      : groups;
+
+  return [...referenceSection, ...withNumbers];
 }

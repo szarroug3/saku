@@ -513,10 +513,17 @@ export function LibraryPageClient({
       const entries = keep ? LIB_ENTRIES.filter(keep) : LIB_ENTRIES;
       return { label: "Everything", entries: entries.map((e) => e.id) };
     }
-    const entries = shelfFor(tab).entries;
+    // The bar means exactly what the shelf SHOWS — the same visible, keep-filtered
+    // id list a Shift-range selects over (visibleShelfIds above), not the kind's raw
+    // LIB_ENTRIES_BY_KIND set. The two diverge on "Numbers and counters", whose
+    // sections are assembled from several kinds (the construction reference pages
+    // and the number kanji 一…十, not just COUNTER_KIND entries — see
+    // counterShelfSections): counting the raw set there names only the handful of
+    // memorised counter forms and undercounts the shelf. Deriving from the sections
+    // keeps the count, the selection range and the painted rows one set.
     return {
       label: KIND_LABEL[tab],
-      entries: (keep ? entries.filter(keep) : entries).map((e) => e.id),
+      entries: visibleShelfIds(tab, shelfFor(tab).sections, keep),
     };
   }, [selected, q, tab, keep, allHits]);
 
