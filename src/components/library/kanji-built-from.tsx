@@ -3,43 +3,33 @@
 // "Built from" — a kanji taken apart into the pieces Wiktionary's glyph origin
 // says it is made of, and what each piece is DOING there.
 //
-// WHAT CHANGED, AND WHY
-// =====================
-// This used to show the full KanjiVG SHAPE decomposition — every drawn piece,
-// radicals included, glyph over meaning. That answered "what strokes is this
-// drawn from" but not the more useful question a learner actually has: which
-// piece carries the MEANING and which one is only there for the SOUND. The
-// etymology layer (src/data/kanji-etymology.ts, builtPieces) answers that, joining
-// Wiktionary's per-component function onto the app's own shapes, so this section
-// now teaches structure instead of stroke-assembly:
+// TWO STACKED SECTIONS IN ONE CARD
+// ================================
+//   1. HOW IT'S BUILT — the piece tiles. Each is a shape the kanji is drawn from,
+//      labelled by the ROLE Wiktionary's glyph origin gives it:
+//        - SEMANTIC pieces carry a meaning clue. 河 is water (氵), shown with the
+//          sense under the glyph and a quiet "meaning" tag.
+//        - PHONETIC pieces carry the sound the kanji takes in compounds. 河 is か,
+//          lent by 可, and the tile shows か plus the one everyday word where that
+//          sound surfaces (河川, かせん) — a reading you cannot point at in a word
+//          is a reading you cannot check.
+//        - FORM pieces, and any piece Wiktionary does not account for, are DROPPED:
+//          shape with no glyph-origin role, so showing them as "part of the
+//          meaning" would be the lie the whole etymology layer refuses.
+//   2. ETYMOLOGY — the glyph-origin story in prose, truncated with a More/Less
+//      toggle, and a line crediting the English Wiktionary (the word links to the
+//      character's own page). Many pictographs (中 = a flagpole with a drum in the
+//      center of a field) and shape-drift kanji (丈 = ten 尺 make one 丈) have no
+//      mappable pieces yet DO carry a story worth reading, so this section stands
+//      on its own — a kanji can show the etymology with no tiles above it.
 //
-//   - SEMANTIC pieces carry a meaning clue. 河 is water (氵), and the section says
-//     so with the sense under the glyph and a quiet "meaning" tag.
-//   - PHONETIC pieces carry the sound the kanji takes in compounds. 河 is か, lent
-//     by 可, and the tile shows the reading か plus the one everyday word where
-//     that sound surfaces (河川, かせん) — because a reading you cannot point at in
-//     a word is a reading you cannot check.
-//   - FORM pieces, and any piece Wiktionary does not account for, are DROPPED.
-//     They are shape with no glyph-origin role, and showing them as "part of the
-//     meaning" would be the lie the whole etymology layer refuses.
+// A separator sits between the two only when BOTH are present. Where there are
+// neither tiles nor a story, nothing renders (no empty card), and the number
+// kanji 一…十 are always held whole regardless.
 //
-// NO TILES, BUT A STORY STILL COUNTS. Where builtPieces is empty this used to
-// render nothing at all. But a great many pictographs (中 = a flagpole with a
-// drum in the center of a field) and shape-drift kanji (丈 = ten 尺 make one 丈)
-// have no mappable pieces yet DO carry a glyph-origin story in
-// `etymologyOf(glyph).originText`, and that story genuinely aids memory. So:
-//   - PIECES present → tiles, exactly as before, with the origin prose folded
-//     behind the collapsed "Why?" (it often runs long alongside tiles).
-//   - NO pieces but originText present → the section still renders, this time
-//     with NO tiles and the origin prose shown DIRECTLY as the body, because the
-//     whole point is to read it, not to toggle it open. See OriginProse below.
-//   - NEITHER → nothing at all (no empty card), and the number kanji 一…十 are
-//     always held whole regardless.
-//
-// SAME LINK-THROUGH AS BEFORE. Each tile still links to the piece's own Library
-// page (kanji / radical / primitive), via the id-resolution the shape
-// decomposition always used (builtPieceEntryId). The shape SHOWN is the drawn
-// form (氵); the link resolves to the character it stands for (水).
+// SAME LINK-THROUGH AS BEFORE. Each tile links to the piece's own Library page
+// (kanji / radical / primitive), via builtPieceEntryId. The shape SHOWN is the
+// drawn form (氵); the link resolves to the character it stands for (水).
 
 import Link from "next/link";
 import { useId, useState } from "react";
@@ -143,52 +133,24 @@ function PieceTile({
   );
 }
 
-/** The glyph-origin prose, ALWAYS behind a collapsed "Why?" — many run long, so
- * none goes inline. Reuses the dotted-underline "Why?" toggle and muted body of
- * the shared WhyDisclosure (src/components/lesson/why.tsx), but takes a plain
- * per-kanji string rather than static data from src/data/why.ts. */
-function WhyOrigin({ text }: { text: string }) {
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
-  return (
-    <div className="mt-3 border-t border-border pt-3">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((v) => !v)}
-        className="cursor-pointer rounded border-none bg-transparent p-0 text-[13px] text-accent underline decoration-dotted underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-      >
-        {open ? "Less" : "Why?"}
-      </button>
-      {open ? (
-        <p id={panelId} className="mt-2 text-[13px] leading-relaxed text-text-muted">
-          {text}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-/** The glyph-origin prose shown DIRECTLY as the section body, for a kanji that
- * has a story but no mappable pieces (中, 上, 丈). Unlike WhyOrigin this defaults
- * VISIBLE — the owner wants to read it, not toggle it open. Long lines (some
- * origins run scholarly and long) soft-clamp to a few lines with a "Show more"
- * control, so the section stays readable at a glance without ballooning the card;
- * short ones show whole with no control. */
-function OriginProse({ text }: { text: string }) {
+/** The Etymology section body: the glyph-origin story, truncated to a couple of
+ * lines by default with a More/Less toggle to the full text (short origins show
+ * whole, no control), followed by a line crediting the English Wiktionary — the
+ * source of the prose — with the character's own page linked. */
+function EtymologyBody({ glyph, text }: { glyph: string; text: string }) {
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
-  // Only long prose earns a clamp+toggle; short origins (上's one line) show
-  // whole. The threshold is a rough character count, not a line measure — enough
-  // to keep the card compact without hiding a sentence or two.
-  const clampable = text.length > 180;
+  // Only prose past a short threshold earns a clamp+toggle; a one-line origin
+  // shows whole. Character count, not a line measure — enough to keep the card
+  // compact without hiding a sentence.
+  const clampable = text.length > 120;
+  const wiktionaryUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(glyph)}`;
   return (
-    <div className="mt-1">
+    <div>
       <p
         id={panelId}
         className={`text-[13px] leading-relaxed text-text-muted ${
-          clampable && !expanded ? "line-clamp-4" : ""
+          clampable && !expanded ? "line-clamp-2" : ""
         }`}
       >
         {text}
@@ -199,11 +161,22 @@ function OriginProse({ text }: { text: string }) {
           aria-expanded={expanded}
           aria-controls={panelId}
           onClick={() => setExpanded((v) => !v)}
-          className="mt-1.5 cursor-pointer rounded border-none bg-transparent p-0 text-[13px] text-accent underline decoration-dotted underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="mt-1 cursor-pointer rounded border-none bg-transparent p-0 text-[13px] text-accent underline decoration-dotted underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          {expanded ? "Show less" : "Show more"}
+          {expanded ? "Less" : "More"}
         </button>
       ) : null}
+      <p className="mt-2 text-[11px] text-text-muted">
+        From the English{" "}
+        <a
+          href={wiktionaryUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent underline decoration-dotted underline-offset-2 hover:opacity-80"
+        >
+          Wiktionary
+        </a>
+      </p>
     </div>
   );
 }
@@ -247,9 +220,10 @@ export function KanjiBuiltFrom({
 
   return (
     <Card>
-      <Lbl>How it&rsquo;s built &amp; etymology</Lbl>
+      {/* SECTION 1 — the pieces the kanji is built from. */}
       {hasTiles ? (
         <>
+          <Lbl>How it&rsquo;s built</Lbl>
           <div className="flex flex-wrap items-stretch gap-2">
             {pieces.map((p, i) => (
               <PieceTile
@@ -268,8 +242,8 @@ export function KanjiBuiltFrom({
               takes inside words.
             </p>
           ) : null}
-          {/* One footnote per rare, untaught sound piece — plain American voice,
-              the reading in kana (dropped when it couldn't be derived). */}
+          {/* One footnote per rare, untaught sound piece — plain voice, the
+              reading in kana (dropped when it couldn't be derived). */}
           {rare.size > 0 ? (
             <div className="mt-2.5 flex flex-col gap-1">
               {pieces.map((p, i) => {
@@ -283,22 +257,30 @@ export function KanjiBuiltFrom({
                       <span className="font-kana"> ({flag.gloss.reading})</span>
                     ) : null}{" "}
                     is the sound piece here, but it&rsquo;s a rare character meaning
-                    &ldquo;{flag.gloss.meaning}&rdquo; — it&rsquo;s not in our
+                    &ldquo;{flag.gloss.meaning}&rdquo;. It&rsquo;s not in our
                     dictionary, so you won&rsquo;t have met it before.
                   </p>
                 );
               })}
             </div>
           ) : null}
-          {/* Tiles present: the origin prose stays folded behind "Why?" — it
-              often runs long alongside the tiles. */}
-          {origin ? <WhyOrigin text={origin} /> : null}
         </>
-      ) : (
-        // No mappable pieces, but a glyph-origin story: show it directly as the
-        // body. `hasOrigin` gated the render, so `origin` is a non-empty string.
-        <OriginProse text={origin!} />
-      )}
+      ) : null}
+
+      {/* Separator only when both a build and a story are present. */}
+      {hasTiles && hasOrigin ? (
+        <div className="my-3 border-t border-border" />
+      ) : null}
+
+      {/* SECTION 2 — the glyph-origin story, standing on its own for a pictograph
+          or shape-drift kanji with no mappable pieces. `hasOrigin` gated a
+          non-empty string. */}
+      {hasOrigin ? (
+        <>
+          <Lbl>Etymology</Lbl>
+          <EtymologyBody glyph={entry.glyph} text={origin!} />
+        </>
+      ) : null}
     </Card>
   );
 }
