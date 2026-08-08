@@ -1158,6 +1158,70 @@ export const PITCH_INTRO: PhaseIntro = {
   ],
 };
 
+// ON'YOMI — a reading card, the first thing to name the borrowed compound
+// reading outright. It fires once, ahead of the first curriculum kanji a learner
+// meets that HAS an on'yomi (word-gated in lesson-steps.ts, the same shape the
+// pitch card uses). A kanji entry then carries a brief on'yomi hint (the reading
+// + an example word); this card is where the CONCEPT is taught, so the hint does
+// not have to re-explain it on every page. Once-ever (id in CONCEPT_CARD_IDS).
+// Script-neutral (NO_SCRIPT): a reading is a sound, not a spelling. The example
+// readings are real (人 じん/ひと, 車 しゃ/くるま), and the term "on'yomi" is used
+// on purpose — a deliberate reversal of the old app-wide ban (see the FactRow
+// `origin` note in src/lib/library/entries.ts).
+export const ONYOMI_INTRO: PhaseIntro = {
+  id: "intro-onyomi",
+  setId: NO_SCRIPT,
+  eyebrow: "What an on'yomi is",
+  title: "A kanji borrows a second reading for when it joins other kanji.",
+  body: [
+    {
+      lead: "Most kanji have two kinds of reading.",
+      text: "One is the native Japanese word the character was matched to, used when it stands on its own. 人 read by itself is ひと. 車 is くるま. That is the reading you already met as the word.",
+    },
+    {
+      lead: "The other is borrowed from Chinese, and it surfaces in compounds.",
+      text: "When a kanji joins other kanji to build a word, it usually switches to a reading Japanese took from Chinese along with the character. 人 becomes じん in 外国人 (foreigner). 車 becomes しゃ in 電車 (train). This borrowed, compound-word reading is called the on'yomi.",
+    },
+    {
+      lead: "So one character can sound completely different in a word.",
+      text: "ひと and じん are the same kanji, two languages' worth of pronunciation. That is why 人 alone and 人 inside 外国人 sound nothing alike, and why a kanji's readings are worth meeting one word at a time. Each kanji's page names its on'yomi and an everyday word it shows up in.",
+    },
+  ],
+};
+
+// BUILT FROM — the card that explains how to READ the "Built from" box: which
+// piece is the meaning and which is only the sound. It fires once, ahead of the
+// first curriculum kanji whose Built-from box actually has pieces to show
+// (word-gated in lesson-steps.ts), so the distinction arrives with a real example
+// on screen rather than in the abstract. Leans on the on'yomi card having been
+// read — the "sound piece" is exactly the on-reading that card just named.
+// Once-ever (id in CONCEPT_CARD_IDS). Script-neutral. Examples are real jōyō
+// kanji (河 = 氵 + 可, 明 = 日 + 月).
+export const BUILT_FROM_INTRO: PhaseIntro = {
+  id: "intro-built-from",
+  setId: NO_SCRIPT,
+  eyebrow: "How a kanji is built",
+  title: "A kanji's pieces do one of two jobs: give the meaning, or give the sound.",
+  body: [
+    {
+      lead: "Some pieces are a clue to the meaning.",
+      text: "河 (river) is 氵 next to 可. The 氵 is the water piece, and it tells you what 河 is about: something to do with water. A piece that works this way carries the idea of the kanji, and the box tags it “meaning”.",
+    },
+    {
+      lead: "Some pieces are only there for the sound.",
+      text: "The 可 in 河 says nothing about rivers. It is there because it lends 河 its on'yomi, か — the reading 河 takes in a word like 河川 (かせん, a river). The box tags a piece like this “phonetic” and shows the reading it lends, with a word where you can hear it.",
+    },
+    {
+      lead: "A kanji can be all meaning, too.",
+      text: "明 (bright) is 日 (sun) beside 月 (moon) — two meaning pieces, no sound piece, the two of them together giving the idea of brightness. Plenty of kanji are built this way.",
+    },
+    {
+      lead: "And some pieces are just shape.",
+      text: "A few strokes are only there to make the character look the way it does, carrying neither a meaning nor a sound worth learning. The box leaves those out, so what it shows you is always doing one of the two real jobs.",
+    },
+  ],
+};
+
 /**
  * Section id → the card shown BEFORE that section's characters.
  *
@@ -1233,6 +1297,8 @@ export const PHASE_INTROS: PhaseIntro[] = [
   NUMBERS_COMPOSE,
   NUMBERS_BIG,
   PITCH_INTRO,
+  ONYOMI_INTRO,
+  BUILT_FROM_INTRO,
 ];
 
 // NOT BUILT, AND SAY SO

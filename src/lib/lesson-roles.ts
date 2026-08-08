@@ -79,7 +79,9 @@ import { vocabRow, type VocabRow, type WordSense } from "@/data/vocab";
 import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role";
 import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
-import { builtFrom, libEntry } from "@/lib/library/entries";
+import { libEntry } from "@/lib/library/entries";
+import { builtPieces } from "@/data/kanji-etymology";
+import { isNumberKanji } from "@/data/number-kanji";
 import { adjectiveKind, formsOfWord, ruVerbKind } from "@/lib/word-forms";
 
 /** The kinds that name a role. A step on one of these tracks plays that role
@@ -401,14 +403,15 @@ export function lessonSections(item: LessonItem): LessonSection[] {
   }
   if (roles.includes("kanji")) {
     if (kanjiMeanings(item).length) out.add("kanji-meaning");
-    // "Built from" whenever the character decomposes into shapes at all — the
-    // FULL immediate breakdown the Library shows (`builtFrom`), radicals and
-    // primitives included, not the kanji-only `teachableParts`. 千 is 丿 slash +
-    // 十 ten, and 丿 is a radical with no kanji card, so the old all-kanji test
-    // returned nothing and the lesson hid a breakdown the Library entry showed.
-    // An atomic kanji (一) has no pieces and still adds nothing.
-    const kanji = kanjiEntryOf(item);
-    if (kanji && builtFrom(kanji).length) out.add("kanji-parts");
+    // "Built from" whenever the etymology layer gives the character semantic or
+    // phonetic pieces — the SAME `builtPieces` the Library's KanjiBuiltFrom shows,
+    // so the lesson and the reference decompose a kanji identically. A memorised
+    // whole (a pictograph, a kanji Wiktionary can't split) has no pieces; the
+    // number kanji 一…十 are held whole here too, matching KanjiBuiltFrom, even
+    // where Wiktionary does split one (三 as three 一).
+    if (builtPieces(item.glyph).length && !isNumberKanji(item.glyph)) {
+      out.add("kanji-parts");
+    }
   }
   if (roles.includes("radical")) out.add("radical-note");
   // The forms this character takes as a component — 人 → 亻, 心 → 忄 and ⺗. It

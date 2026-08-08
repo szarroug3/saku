@@ -928,23 +928,40 @@ export function appearsIn(entry: LibEntry): readonly string[] {
  */
 export function madeOf(entry: LibEntry): Array<{ c: string; id: EntryId }> {
   if (entry.kind !== KANJI_SUBJECT) return [];
-  return (kanjiRow(entry.glyph)?.comps ?? []).map((c) => {
-    // An EXCLUDED variant (儿→八, 眞→真) is a dropped mapping: its link and meaning
-    // must NOT resolve through the false original, or the tile would label a 儿
-    // "eight" while its own radical page says "legs". Treat it as its own shape —
-    // it falls through to the radical (儿 → legs) or primitive branch below.
-    const kanjiLink = kanjiRow(c)
-      ? c
-      : isExcludedVariant(c)
-        ? undefined
-        : variantTaughtKanji(c);
-    if (kanjiLink) return { c, id: kanjiEntry(kanjiLink) };
-    // A component that is a Kangxi radical (not itself a kanji) links to its
-    // library page rather than the primitive /radical route.
-    const rad = radicalByWrittenForm(c);
-    if (rad) return { c, id: radicalEntry(rad.glyph) };
-    return { c, id: primitiveEntry(c) };
-  });
+  return (kanjiRow(entry.glyph)?.comps ?? []).map((c) => ({
+    c,
+    id: builtPieceEntryId(c),
+  }));
+}
+
+/**
+ * Where a "Built from" tile links when tapped: the Library page for the shape it
+ * shows. The same id-resolution the shape decomposition has always used, lifted
+ * out so the etymology-driven Built-from (which shows a SUBSET of the shape
+ * pieces, chosen by Wiktionary's glyph origin) links each surviving piece exactly
+ * as the old full decomposition did.
+ *
+ * A kanji (or a variant of a taught kanji — 亻 of 人, 刂 of 刀) links to that
+ * kanji; a bare Kangxi radical to its radical page; anything else to its
+ * primitive page. Where a component is a variant, the shape SHOWN is still the
+ * drawn form, only the link resolves to the character it stands for.
+ */
+export function builtPieceEntryId(c: string): EntryId {
+  // An EXCLUDED variant (儿→八, 眞→真) is a dropped mapping: its link and meaning
+  // must NOT resolve through the false original, or the tile would label a 儿
+  // "eight" while its own radical page says "legs". Treat it as its own shape —
+  // it falls through to the radical (儿 → legs) or primitive branch below.
+  const kanjiLink = kanjiRow(c)
+    ? c
+    : isExcludedVariant(c)
+      ? undefined
+      : variantTaughtKanji(c);
+  if (kanjiLink) return kanjiEntry(kanjiLink);
+  // A component that is a Kangxi radical (not itself a kanji) links to its
+  // library page rather than the primitive /radical route.
+  const rad = radicalByWrittenForm(c);
+  if (rad) return radicalEntry(rad.glyph);
+  return primitiveEntry(c);
 }
 
 /** One piece of the kanji-page "Built from" section: the shape to show, where
@@ -1141,12 +1158,22 @@ export interface FactRow {
    * Where this reading's SOUND came from, in beginner English — the answer to
    * "why do 一's いち and ひと sound nothing like each other".
    *
-   * The words "on'yomi" and "kun'yomi" are never used. They name the thing for
-   * someone who already knows it; the learner reading this table does not, and
-   * a label she has to look up is not a label. "from Chinese" / "native
-   * Japanese" says the same thing in words that already mean something, and the
-   * note under the table carries the one detail the phrase cannot: that the
-   * borrowed reading is the compound-word one.
+   * THIS COLUMN still says "from Chinese" / "native Japanese", not "on'yomi" /
+   * "kun'yomi". It is a per-row label in a dense table, read at a glance, and
+   * there the plain phrase carries its own meaning where the jargon would need
+   * looking up.
+   *
+   * THE JARGON ITSELF IS NO LONGER BANNED, and that is a deliberate reversal.
+   * This column existed BECAUSE the words were forbidden app-wide, on the
+   * reasoning that a reading is taught through the WORD it surfaces in, so a
+   * learner never needs the term. Sam has since decided the term is worth
+   * teaching directly: the kanji entry now carries an on'yomi hint (the reading
+   * borrowed from Chinese, the one a kanji takes in compounds), and the concept
+   * is explained once, in a curriculum intro card, before the first kanji with
+   * an on'yomi. So "on'yomi" IS used in the UI now — introduced up front, then
+   * used as a brief label on the hint — while this reference table keeps the
+   * plainer phrase for the same at-a-glance reason it always did. See
+   * src/lib/kanji-onyomi.ts and the on'yomi intro in src/data/phase-intros.ts.
    *
    * `null` for every row that is not a kanji reading (a kana's romaji, a word's
    * reading, a grammar pattern) — those have no such distinction, and printing

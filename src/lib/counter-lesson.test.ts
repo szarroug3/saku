@@ -342,12 +342,16 @@ describe("a generative unit's content cost is 1 + its irregular count", () => {
 });
 
 describe("a heavy counter teaches its kanji chain ahead of its rule card", () => {
-  test("〜個 pulls 口 古 固 個 and teaches them before the 〜個 rule", () => {
+  test("〜個 pulls 古 固 個 and teaches them before the 〜個 rule", () => {
     const { lesson } = advanceUntil(
       (l) => l.numberUnit?.marker === constructionMarker("ko"),
     );
     const tiles = lesson.cardPrereqTiles[0].map((t) => t.glyph);
-    for (const g of ["口", "古", "固", "個"]) {
+    // Prereqs are the ETYMOLOGY pieces now, not the raw shape decomposition:
+    // 個 owes 固, 固 owes 古 (and the 囗 radical), and 古's own glyph origin
+    // assigns no piece a role, so it is taught whole — 口 is no longer pulled in
+    // under it. The chain 古 → 固 → 個 still arrives before the 〜個 rule.
+    for (const g of ["古", "固", "個"]) {
       assert.ok(tiles.includes(g), `〜個 teaches ${g}`);
     }
     // The teach walk shows the kanji chain as item cards, THEN the rule card.

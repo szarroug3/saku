@@ -61,6 +61,11 @@ export const CONCEPT_CARD_IDS: readonly string[] = [
   "intro-pitch",
   "intro-numbers-compose",
   "intro-numbers-big",
+  // The on'yomi concept and the "how a kanji is built" (semantic vs phonetic)
+  // card — both once-ever, both word-gated ahead of the first curriculum kanji
+  // that needs them. See src/data/phase-intros.ts and lesson-steps.ts.
+  "intro-onyomi",
+  "intro-built-from",
 ];
 
 /** The localStorage key for one intro's "already shown" flag (renamed

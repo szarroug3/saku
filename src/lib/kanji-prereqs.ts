@@ -22,12 +22,12 @@
 // piece twice.
 
 import { effectiveState } from "@/lib/claims";
+import { builtPieces } from "@/data/kanji-etymology";
 import { kanjiRow, meaningFactId, variantOriginal } from "@/data/kanji";
 import {
   isRadicalTaughtAsKanji,
   radicalByWrittenForm,
   radicalMeaningFactId,
-  radicalOfKanji,
   type RadicalRow,
 } from "@/data/radicals";
 import { kanjiKnown } from "@/lib/kanji-known";
@@ -90,7 +90,17 @@ export function collectPrereqs(
     return;
   }
 
-  for (const part of row.comps) {
+  // THE PIECES ARE THE ETYMOLOGY PIECES NOW, not the raw shape decomposition.
+  // What a lesson must teach first is what the "Built from" box SHOWS: the
+  // semantic and phonetic pieces (`builtPieces`), not every drawn stroke-shape.
+  // So this walks those, resolving each drawn form the same way it always did — a
+  // jōyō kanji is an ordered kanji prereq, a bound form (氵, 亻) is the debt of the
+  // character it stands for (水, 人), a Kangxi radical (囗, 气) is a welded radical
+  // prereq. A memorised whole — `builtPieces` empty — owes NO pieces, and the loop
+  // and the filed-under-radical safety net below both fall away with it: it is
+  // taught whole, which is the agreed fallback. This keeps the prereqs in
+  // agreement with what Built from, the Library and the hint all now show.
+  for (const { glyph: part } of builtPieces(c)) {
     if (part === c) continue;
     if (kanjiRow(part) !== undefined) {
       collectPrereqs(part, history, seenKanji, seenRadicals, out, isLeaf);
@@ -111,16 +121,6 @@ export function collectPrereqs(
           }
         }
       }
-    }
-  }
-
-  // Filed-under radical — may not appear in `comps`.
-  const filed = radicalOfKanji(c);
-  if (filed && !isRadicalTaughtAsKanji(filed.num)) {
-    // Skip when the radical is itself built from `c` (avoids the 王↔玉 cycle).
-    const filedRow = kanjiRow(filed.glyph);
-    if (!filedRow || !filedRow.comps.includes(c)) {
-      addRadicalIfNew(filed, history, seenRadicals, out);
     }
   }
 

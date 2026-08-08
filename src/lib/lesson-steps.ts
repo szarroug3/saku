@@ -42,15 +42,21 @@
 import { CHAR_INDEX } from "@/data/characters";
 import { dakutenRowFor, type DakutenRow } from "@/data/dakuten-rows";
 import {
+  BUILT_FROM_INTRO,
   INTRO_AFTER,
   INTRO_BEFORE,
   ITERATION_MARK,
+  ONYOMI_INTRO,
   PITCH_INTRO,
   RENDAKU,
   TRANSITIVITY_INTRO,
   type PhaseIntro,
 } from "@/data/phase-intros";
 import { wordPitch } from "@/data/pitch";
+import { builtPieces } from "@/data/kanji-etymology";
+import { meaningFactId } from "@/data/kanji";
+import { isNumberKanji } from "@/data/number-kanji";
+import { hasOnyomi } from "@/lib/kanji-onyomi";
 import {
   constructionIntroForMarker,
   isConstructionMarker,
@@ -276,6 +282,16 @@ export function lessonSteps(
   // with no history (a test naming a teach set) gets the pre-track walk, and only
   // the app, which always passes history and the shown set, ever fires it.
   let markedPitch = shownIntros.has(PITCH_INTRO.id) || !history;
+  // The on'yomi card and the "how a kanji is built" card ride the first
+  // curriculum kanji that needs each — the first with an on'yomi, and the first
+  // whose Built-from box has pieces to show. Once ever (ids in CONCEPT_CARD_IDS),
+  // so a learner who has read one is never shown it again. Skipped in a context
+  // kanji lesson (keigo/counters), where the kanji are material for the track's
+  // own subject rather than the curriculum's — the same call the spine cards make.
+  let markedOnyomi =
+    shownIntros.has(ONYOMI_INTRO.id) || !history || isContextKanjiLesson;
+  let markedBuiltFrom =
+    shownIntros.has(BUILT_FROM_INTRO.id) || !history || isContextKanjiLesson;
   items.forEach((item, index) => {
     // THE CONCEPT CARDS GO FIRST, ahead of everything else this item might owe:
     // ahead of its conversion row, ahead of any rule card. A learner meeting
@@ -340,6 +356,28 @@ export function lessonSteps(
     ) {
       markedPitch = true;
       steps.push({ type: "intro", key: PITCH_INTRO.id, intro: PITCH_INTRO });
+    }
+    // The on'yomi card, ahead of the first kanji taught here that has one. Gated
+    // on the step actually TEACHING the kanji (its meaning fact is in the step),
+    // so a kanji merely referenced elsewhere does not trip it — the same shape the
+    // pitch gate uses. The on'yomi card leads the built-from card when both come
+    // due on one kanji, because the built-from copy leans on the on-reading it
+    // just named.
+    if (!markedOnyomi && item.facts.includes(meaningFactId(item.glyph)) && hasOnyomi(item.glyph)) {
+      markedOnyomi = true;
+      steps.push({ type: "intro", key: ONYOMI_INTRO.id, intro: ONYOMI_INTRO });
+    }
+    // The "how a kanji is built" card, ahead of the first kanji whose Built-from
+    // box has semantic/phonetic pieces to point at, so the distinction lands with
+    // a real example on screen.
+    if (
+      !markedBuiltFrom &&
+      item.facts.includes(meaningFactId(item.glyph)) &&
+      !isNumberKanji(item.glyph) &&
+      builtPieces(item.glyph).length > 0
+    ) {
+      markedBuiltFrom = true;
+      steps.push({ type: "intro", key: BUILT_FROM_INTRO.id, intro: BUILT_FROM_INTRO });
     }
     steps.push({ type: "item", key: item.entry, item });
   });

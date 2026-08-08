@@ -169,16 +169,14 @@ describe("lessonSections — a section per role, up the ladder", () => {
     ]);
   });
 
-  test("THE BUG: 千 shows its parts, because the gate is the Library's full breakdown now", () => {
-    // 千 is 丿 slash + 十 ten, and 丿 is a RADICAL with no kanji card. The old gate
-    // (`teachableParts`) was all-or-nothing on every piece being a taught kanji,
-    // so it returned null and the lesson's kanji block showed no breakdown while
-    // the Library entry showed one. The gate is `builtFrom` having pieces now —
-    // radicals included — so the two agree. 千 is also the dictionary word せん, so
-    // it now carries the word-sense block too (taught whole; see character-role).
+  test("千 is taught whole: the etymology gives it no meaning or sound piece", () => {
+    // The gate is `builtPieces` now, not the raw shape decomposition. 千 is 丿 +
+    // 十 by KanjiVG, but Wiktionary's glyph origin assigns neither piece a semantic
+    // or phonetic role, so builtPieces is empty and 千 shows NO Built from — the
+    // lesson and the Library agree, both treating it as a memorised whole. 千 is
+    // still the dictionary word せん, so it keeps the word-sense block.
     assert.deepEqual(lessonSections(step(kanjiEntry("千"), "千", "kanji")), [
       "kanji-meaning",
-      "kanji-parts",
       "word-sense",
       "how-its-written",
     ]);
@@ -189,16 +187,15 @@ describe("lessonSections — a section per role, up the ladder", () => {
     assert.ok(!sections.includes("kanji-parts"), "一 is one shape, no breakdown");
   });
 
-  test("A SINGLE-ROLE KANJI NOW KEEPS ITS DEFINITION, because its heading is the only label left", () => {
+  test("A SINGLE-ROLE KANJI KEEPS ITS DEFINITION, because its heading is the only label left", () => {
     // It used to be suppressed: the definition is also on the headword line, and
     // the badge in the corner already said "Kanji". The badge is gone, so the
     // block under the "Kanji" heading has to have something in it, and the
-    // definition is the thing the trim left standing. 乞 also decomposes (𠂉 + 乙),
-    // and with the breakdown gate now the Library's full `builtFrom` it carries
-    // its parts too, the same as the entry page shows.
+    // definition is the thing the trim left standing. 乞's KanjiVG pieces (𠂉 + 乙)
+    // carry no semantic or phonetic role in the etymology, so builtPieces is empty
+    // and it shows NO Built from — taught whole, just its meaning and its strokes.
     assert.deepEqual(lessonSections(step(kanjiEntry("乞"), "乞", "kanji")), [
       "kanji-meaning",
-      "kanji-parts",
       "how-its-written",
     ]);
   });

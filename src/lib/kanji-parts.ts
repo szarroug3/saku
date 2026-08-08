@@ -1,12 +1,25 @@
-// The jōyō components of a kanji — "built from parts you learn on their own".
+// The teachable pieces of a kanji — "built from parts you learn on their own".
 //
 // Lifted out of components/lesson/how-its-written.tsx so the drill's hint
-// builder can ask the same question the lesson asks, with the same answer. It
-// was a private helper there; it is the same helper here, unchanged, and that
-// file now imports it. Two copies of this test would be two chances for the
-// lesson and the hint to disagree about what 明 is made of.
+// builder can ask the same question the lesson asks, with the same answer. Two
+// copies of this test would be two chances for the lesson and the hint to
+// disagree about what 明 is made of.
+//
+// NOW DRIVEN BY THE ETYMOLOGY LAYER, NOT THE RAW SHAPE DECOMPOSITION. It used to
+// be an all-or-nothing pass over KanjiVG's `comps`: return every component only
+// when all of them are themselves jōyō kanji, so a bound form (亻, 氵) killed the
+// whole list. That is the SHAPE question. The question the app now teaches is the
+// etymology one — which pieces carry the meaning or the sound — so this reads
+// `builtPieces` (src/data/kanji-etymology.ts, the same lookup the Library's and
+// the lesson's "Built from" render) and keeps the ones a learner can actually be
+// taught: a piece with a kanji card, or a radical. A memorised whole (a
+// pictograph, the number kanji, a kanji Wiktionary can't usefully split) has no
+// pieces and yields null. This keeps the hint builder, the lesson and the Library
+// in agreement about what a kanji is made of, because all three read the one join.
 
-import { kanjiRow } from "@/data/kanji";
+import { builtPieces } from "@/data/kanji-etymology";
+import { kanjiRow, variantOriginal } from "@/data/kanji";
+import { radicalByWrittenForm } from "@/data/radicals";
 
 export interface KanjiPart {
   readonly c: string;
@@ -41,22 +54,45 @@ export function deframe(comps: readonly string[]): readonly string[] {
 }
 
 /**
- * A kanji's components EXCLUDING itself, but ONLY when every one of them is
- * itself a jōyō kanji with a card — the same test kanjiCost uses for a "known
- * radical". Null otherwise, which every caller reads as "there is nothing
- * teachable to say here".
+ * The display meaning of one piece a learner can be taught to name: a kanji's own
+ * gloss, a radical's meaning, or — for a variant form with no card of its own (亻,
+ * 氵) — the meaning of the character it stands for (人, 水). Null when the shape is
+ * teachable in neither sense, which is the signal that it is NOT a prerequisite.
+ */
+export function teachablePieceMeaning(glyph: string): string | null {
+  const k = kanjiRow(glyph);
+  if (k) return k.meanings[0] ?? "";
+  const rad = radicalByWrittenForm(glyph);
+  if (rad) return rad.meaning;
+  const orig = variantOriginal(glyph);
+  if (orig !== undefined && orig !== glyph) {
+    const ok = kanjiRow(orig);
+    if (ok) return ok.meanings[0] ?? "";
+    const orad = radicalByWrittenForm(orig);
+    if (orad) return orad.meaning;
+  }
+  return null;
+}
+
+/**
+ * A kanji's semantic + phonetic pieces (from `builtPieces`) that are themselves
+ * teachable — the ones with a kanji card or a radical. Null when the kanji has no
+ * etymology pieces at all (a memorised whole) or none of them is teachable, which
+ * every caller reads as "there is nothing teachable to say here".
  *
- * Components that are not themselves taught kanji (亻, 氵, 艹 — variant and bound
- * forms) are never returned: an all-or-nothing test rather than a filter,
- * because "made of 日" is a false statement about 明 when the other half is a
- * shape with no card. `comps` is now KanjiVG's depth-1 decomposition, so this no
- * longer has to defend against KRADFILE's 亻-as-化 and stroke-artefact parts.
+ * A FILTER, not the old all-or-nothing pass, and deliberately so: `builtPieces`
+ * has already dropped the form pieces and the pieces Wiktionary cannot account
+ * for, so what survives is exactly what the "Built from" tiles show. A piece with
+ * no card (a non-jōyō phonetic) is simply not a prerequisite — it is still shown
+ * on the tile, but there is nothing to teach it as.
  */
 export function teachableParts(glyph: string): KanjiPart[] | null {
-  const row = kanjiRow(glyph);
-  if (!row) return null;
-  const parts = deframe(row.comps).filter((c) => c !== glyph);
-  if (!parts.length) return null;
-  if (!parts.every((c) => kanjiRow(c) !== undefined)) return null;
-  return parts.map((c) => ({ c, meaning: kanjiRow(c)?.meanings[0] ?? "" }));
+  const pieces = builtPieces(glyph);
+  if (!pieces.length) return null;
+  const out: KanjiPart[] = [];
+  for (const p of pieces) {
+    const meaning = teachablePieceMeaning(p.glyph);
+    if (meaning !== null) out.push({ c: p.glyph, meaning });
+  }
+  return out.length ? out : null;
 }

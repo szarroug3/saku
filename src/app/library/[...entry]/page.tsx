@@ -51,6 +51,7 @@ import { ComponentUses } from "@/components/library/component-uses";
 import { EntryHeader } from "@/components/library/entry-header";
 import { EntryLinks, GlyphLink, LinkRow } from "@/components/library/entry-links";
 import { KanjiBuiltFrom } from "@/components/library/kanji-built-from";
+import { OnyomiHint } from "@/components/library/onyomi-hint";
 import { KanaFamilyView } from "@/components/library/kana-family-view";
 import { KanjiReadings } from "@/components/library/kanji-readings";
 import { MarkView } from "@/components/library/mark-view";
@@ -941,6 +942,12 @@ function EntryView({ entry }: { entry: LibEntry }) {
               not empty, for an atomic kanji. Distinct from the word page's
               "Built from", which splits a word into its READING pieces. */}
           <KanjiBuiltFrom entry={entry} />
+          {/* ON'YOMI HINT — the borrowed compound reading(s), named as a hint
+              beneath Built from because the phonetic pieces above are exactly the
+              sound this surfaces. Display only; the concept is taught once, up
+              front. Renders nothing (its Card carries its own margin) for a
+              kun-only kanji with no on'yomi. */}
+          <OnyomiHint glyph={entry.glyph} />
           {/* ALSO WRITTEN AS — the forms this character takes as a component (人
               also appears as 亻 on the left). The same panel the lesson mounts,
               so the reference and the walk describe the shape identically.

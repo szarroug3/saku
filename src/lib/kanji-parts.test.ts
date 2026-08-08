@@ -1,18 +1,24 @@
 // Run: node --import ./src/lib/conjugate/test-hooks.mjs --test src/lib/kanji-parts.test.ts
 //
-// The trap this closes: KanjiVG's depth-1 decomposition renders a single
-// enclosing radical as its two halves, so 可 records `["丁","口","丁"]` — one 丁
-// frame written twice. teachableParts() used to pass that straight through, and
-// the lesson said "丁 street + 口 mouth + 丁 street". deframe() collapses that
-// one split wrapper WITHOUT touching a genuine repetition, and the counterexample
-// half of this file — 品 口口口, 器, 森, 晶, 三 left exactly as they were — is the
-// part that matters: a blind dedupe would pass the frame cases and quietly break
-// these.
+// TWO THINGS ARE PINNED HERE.
+//
+// deframe() — the enclosure-dedup used by the shape decomposition (entries.ts's
+// builtFrom): a single enclosing radical KanjiVG splits into a leading + trailing
+// copy (可 = ["丁","口","丁"]) is collapsed to one frame, WITHOUT touching a
+// genuine repetition (品 口口口). Unchanged by the etymology work, still exercised.
+//
+// teachableParts() — now DERIVED FROM THE ETYMOLOGY LAYER, not the raw shape
+// decomposition. It returns the semantic + phonetic pieces `builtPieces` shows
+// (src/data/kanji-etymology.ts) that a learner can actually be taught — a piece
+// with a kanji card or a radical. So a bound form like 亻 (person) or 氵 (water)
+// now COUNTS, because it resolves to a taught character, and a memorised whole
+// (一, 人, 生) has no pieces. The pins below are the real join's output, verified
+// against builtPieces — not the old KanjiVG all-or-nothing behaviour.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { deframe, teachableParts } from "@/lib/kanji-parts";
+import { deframe, teachableParts, teachablePieceMeaning } from "@/lib/kanji-parts";
 
 /** The components of a teachableParts result, in order, as a plain string[]. */
 function partChars(glyph: string): string[] | null {
@@ -52,55 +58,56 @@ describe("deframe", () => {
   });
 });
 
-describe("teachableParts — de-framed enclosures", () => {
-  test("可 is 丁 + 口, not 丁 + 口 + 丁", () => {
-    assert.deepEqual(partChars("可"), ["丁", "口"]);
+describe("teachableParts — the etymology pieces, resolved to teachable shapes", () => {
+  // A phono-semantic kanji: its semantic radical AND its phonetic kanji are both
+  // teachable, so both come back — 氵 resolves to 水 (water), 可 is a kanji (can).
+  test("河 is 氵 + 可", () => {
+    assert.deepEqual(partChars("河"), ["氵", "可"]);
+    assert.deepEqual(teachableParts("河"), [
+      { c: "氵", meaning: "water" },
+      { c: "可", meaning: "can" },
+    ]);
   });
 
-  test("哀 is 衣 + 口 with a single 衣 frame", () => {
-    assert.deepEqual(partChars("哀"), ["衣", "口"]);
+  // An ideogrammic kanji: two meaning pieces, both jōyō kanji.
+  test("明 is 日 + 月, 校 is 木 + 交, 好 is 女 + 子", () => {
+    assert.deepEqual(partChars("明"), ["日", "月"]);
+    assert.deepEqual(partChars("校"), ["木", "交"]);
+    assert.deepEqual(partChars("好"), ["女", "子"]);
   });
 
-  // 囚's frame 囗 is not itself a taught kanji, so the all-or-nothing gate
-  // returns null — but it does so on the SINGLE de-framed 囗, not a phantom
-  // trailing copy. The deframe() suite above pins that 囚 → 囗 + 人 structurally;
-  // here we only confirm the gate still fires (it always did).
-  test("囚 stays gated — 囗 is not a taught kanji", () => {
-    assert.equal(teachableParts("囚"), null);
+  // A BOUND FORM now counts: 亻 resolves to 人 (person), 木 is a kanji. The old
+  // all-or-nothing pass returned null for 休 because 亻 has no card of its own.
+  test("休 is 亻 + 木 — a bound form resolves to the character it stands for", () => {
+    assert.deepEqual(partChars("休"), ["亻", "木"]);
+    assert.equal(teachablePieceMeaning("亻"), "person");
   });
 
-  // Multi-level AND framed: 裏 dedupes its own 衣 frame at THIS level, and the
-  // chain continues independently one level down — navigating into 里 shows 里's
-  // own breakdown. Per-level dedup, no flattening across levels.
-  test("裏 de-frames to 衣 + 里, and 里 keeps its own separate breakdown", () => {
-    assert.deepEqual(partChars("裏"), ["衣", "里"]);
-    assert.deepEqual(partChars("里"), ["日"]);
-  });
-});
-
-describe("teachableParts — atomic or non-taught pieces yield nothing", () => {
-  // The all-or-nothing rule the kanji page's "Built from" card rides on: a null
-  // result renders no section. 一 has no components at all; 休 is 亻 + 木 but 亻
-  // is a bound form with no card, so "made of 亻" is not a statement to show.
-  test("一 is atomic — no built-from", () => {
-    assert.equal(teachableParts("一"), null);
-  });
-
-  test("休 has a non-taught piece (亻) — no built-from", () => {
-    assert.equal(teachableParts("休"), null);
-  });
-});
-
-describe("teachableParts — genuine repetitions UNCHANGED", () => {
-  test("品 stays three 口", () => {
+  // builtPieces keeps a real repetition, so teachableParts does too.
+  test("品 keeps its three 口", () => {
     assert.deepEqual(partChars("品"), ["口", "口", "口"]);
   });
+});
 
-  test("器 keeps all four 口 around 大", () => {
-    assert.deepEqual(partChars("器"), ["口", "口", "大", "口", "口"]);
+describe("teachableParts — a memorised whole has no pieces", () => {
+  // No etymology role pieces at all → null → the lesson and hint show no
+  // breakdown, and the number kanji stay whole.
+  test("一, 人, 口, 生 are taught whole", () => {
+    for (const g of ["一", "二", "十", "人", "口", "生"]) {
+      assert.equal(teachableParts(g), null, `${g} should have no teachable parts`);
+    }
+  });
+});
+
+describe("teachablePieceMeaning", () => {
+  test("a kanji's own gloss, a radical's meaning, or a variant's original", () => {
+    assert.equal(teachablePieceMeaning("可"), "can"); // kanji
+    assert.equal(teachablePieceMeaning("氵"), "water"); // 氵 → 水
+    assert.equal(teachablePieceMeaning("亻"), "person"); // 亻 → 人
   });
 
-  test("森 stays 木 + 林", () => {
-    assert.deepEqual(partChars("森"), ["木", "林"]);
+  test("null for a shape that is teachable in neither sense", () => {
+    // 冓 is a rare component with no kanji card and no radical — not a prereq.
+    assert.equal(teachablePieceMeaning("冓"), null);
   });
 });
