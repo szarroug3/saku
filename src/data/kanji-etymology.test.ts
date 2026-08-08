@@ -23,9 +23,12 @@ import {
   builtPieces,
   etymologyOf,
   hasEtymology,
+  phoneticGloss,
   phoneticReading,
 } from "./kanji-etymology.ts";
 import { kanjiRow } from "./kanji.ts";
+import manualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
+import glossJson from "./generated/kanji-phonetic-gloss.json" with { type: "json" };
 
 /** The role assigned to a specific shape piece of a kanji, or null. */
 function roleOf(kanji: string, piece: string) {
@@ -123,4 +126,114 @@ test("林 — the doubled-tree explanation survives cleaning in plain voice", ()
   assert.ok(roles.every((r) => r?.function === "semantic"));
   // The plain-language origin is preserved, not paraphrased.
   assert.match(etym.originText ?? "", /doubled 木/);
+});
+
+// ── Hand-authored layer (generated/kanji-etymology-manual.json) ──────────────
+//
+// Step 1 recovery: kanji whose Wiktionary origin decomposes to a deeper/older
+// component than the drawn shape, re-mapped onto the VISIBLE piece. These pin
+// that the manual layer merges over the generated set and lands on real pieces.
+
+test("時 — hand-authored: 日 semantic + 寺 phonetic (じ)", () => {
+  const hi = roleOf("時", "日");
+  const tera = roleOf("時", "寺");
+  assert.ok(hi && tera, "時's pieces did not both resolve");
+  assert.equal(hi.function, "semantic");
+  assert.match(hi.sense ?? "", /sun|day/i);
+  assert.equal(tera.function, "phonetic");
+  // 寺 lends the reading じ, which 時 has.
+  assert.equal(phoneticReading("時", "寺"), "じ");
+  const pieces = builtPieces("時");
+  assert.deepEqual(
+    pieces.map((p) => [p.glyph, p.role, p.label]),
+    [
+      ["日", "semantic", "sun; day"],
+      ["寺", "phonetic", "じ"],
+    ],
+  );
+});
+
+test("誤 — hand-authored: 言 semantic (speech) + 呉 phonetic (ご)", () => {
+  const gen = roleOf("誤", "言");
+  const go = roleOf("誤", "呉");
+  assert.ok(gen && go);
+  assert.equal(gen.function, "semantic");
+  assert.equal(go.function, "phonetic");
+  assert.equal(phoneticReading("誤", "呉"), "ご");
+});
+
+test("戻 — hand-authored ideogrammic: 戸 semantic (door); 大 stays unlabelled", () => {
+  const to = roleOf("戻", "戸");
+  assert.ok(to, "戻's 戸 got no role");
+  assert.equal(to.function, "semantic");
+  assert.match(to.sense ?? "", /door/i);
+  // The lower piece is a late form of 犬 (dog) — it matches no listed component
+  // and must stay unlabelled, the same discipline 服's 月 keeps.
+  assert.equal(roleOf("戻", "大") ?? null, null);
+  assert.equal(etymologyOf("戻")?.type, "ideogrammic");
+});
+
+test("扇 — hand-authored ideogrammic: BOTH 戸 and 羽 semantic", () => {
+  const to = roleOf("扇", "戸");
+  const hane = roleOf("扇", "羽");
+  assert.ok(to && hane);
+  assert.equal(to.function, "semantic");
+  assert.equal(hane.function, "semantic");
+  assert.ok(!builtFromRoles("扇").some((r) => r?.function === "phonetic"));
+});
+
+test("every hand-authored entry cites a source and lands on a real piece", () => {
+  const manual = manualJson.data as Record<
+    string,
+    { source?: string; components: { glyph: string; function: string | null }[] }
+  >;
+  for (const [k, rec] of Object.entries(manual)) {
+    assert.ok(
+      typeof rec.source === "string" && rec.source.length > 0,
+      `${k} hand-authored entry has no source citation`,
+    );
+    // At least one component carries a semantic/phonetic role that a visible
+    // KanjiVG piece receives — otherwise the entry does nothing.
+    assert.ok(
+      builtPieces(k).length > 0,
+      `${k} hand-authored entry produced no labelled piece`,
+    );
+  }
+});
+
+// ── Rare-phonetic footnote glossary (phoneticGloss) ──────────────────────────
+
+test("phoneticGloss — 冓 is a rare untaught phonetic with reading + framework meaning", () => {
+  const g = phoneticGloss("冓");
+  assert.ok(g, "冓 got no gloss — the rare-phonetic footnote source is empty for it");
+  assert.equal(g.reading, "こう");
+  assert.match(g.meaning, /join|timber|frame|cross/i);
+  // 冓 really is the phonetic in these hosts, so the footnote will fire there.
+  for (const host of ["構", "溝", "講", "購"]) {
+    assert.ok(
+      builtPieces(host).some((p) => p.role === "phonetic" && p.glyph === "冓"),
+      `${host} lost its 冓 phonetic piece`,
+    );
+  }
+});
+
+test("phoneticGloss — a TAUGHT phonetic component returns null (no footnote)", () => {
+  // 可 (河), 交 (校), 寺 (時) are taught jōyō kanji a learner can tap through to;
+  // they must never carry the rare-component asterisk footnote.
+  for (const taught of ["可", "交", "寺", "曽"]) {
+    assert.equal(phoneticGloss(taught), null, `${taught} wrongly got a rare-phonetic gloss`);
+  }
+});
+
+test("phoneticGloss — every glossed component is a rare, untaught character", () => {
+  for (const glyph of Object.keys(glossJson.data)) {
+    assert.equal(
+      kanjiRow(glyph),
+      undefined,
+      `${glyph} is a taught kanji and must not be in the rare-phonetic glossary`,
+    );
+    const g = phoneticGloss(glyph);
+    assert.ok(g, `${glyph} in the file but phoneticGloss returned null`);
+    assert.ok(g.meaning.length > 0, `${glyph} has an empty meaning`);
+  }
 });

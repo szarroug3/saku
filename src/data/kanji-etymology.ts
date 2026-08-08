@@ -27,6 +27,8 @@
 // Wiktionary. This CODE is MIT like the rest of src/. See src/data/attribution.ts.
 
 import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
+import etymologyManualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
+import phoneticGlossJson from "./generated/kanji-phonetic-gloss.json" with { type: "json" };
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import { kanjiRow, READINGS } from "./kanji";
 
@@ -71,9 +73,22 @@ export interface PieceRole {
   readonly matched: string;
 }
 
-const RAW: Readonly<Record<string, KanjiEtymology>> = (
+// The crawled Wiktionary set, extended and overridden by a hand-authored layer.
+// The manual layer (generated/kanji-etymology-manual.json) carries entries the
+// automated crawl+join could not produce: chiefly kanji whose Wiktionary origin
+// decomposes to a deeper/older component than the drawn shape (時's phonetic 之,
+// later written 寺), re-mapped onto the VISIBLE piece so the by-glyph join lands.
+// Each manual entry cites its source; the schema is identical, so a manual entry
+// simply replaces the generated one for that kanji. See src/data/attribution.ts.
+const GENERATED: Readonly<Record<string, KanjiEtymology>> = (
   etymologyJson as { data: Record<string, KanjiEtymology> }
 ).data;
+
+const MANUAL: Readonly<Record<string, KanjiEtymology>> = (
+  etymologyManualJson as { data: Record<string, KanjiEtymology> }
+).data;
+
+const RAW: Readonly<Record<string, KanjiEtymology>> = { ...GENERATED, ...MANUAL };
 
 /** KanjiVG's variant form → the character it is a form of (亻→人, 氵→水, 月→肉). */
 const VARIANTS: Readonly<Record<string, string>> = (
@@ -240,4 +255,47 @@ export function builtPieces(kanji: string): readonly BuiltPiece[] {
     });
   }
   return out;
+}
+
+// ── Rare-phonetic footnote: reading + meaning for untaught sound pieces ───────
+//
+// Some phonetic pieces are rare, non-jōyō characters a learner has never met and
+// the app never teaches — 講's 冓 (こう, "crossed timbers"), 構's 冓, 慕's 莫. The
+// UX marks these with an asterisk and a footnote, "冓 (こう), a rare character
+// meaning …". That needs the component's own on-reading and a short meaning,
+// which the jōyō-only READINGS data cannot give (phoneticReading returns null for
+// them). This glossary — generated/kanji-phonetic-gloss.json, sourced per entry
+// from English Wiktionary / KANJIDIC2 — supplies exactly those, and ONLY those.
+//
+// It is the single source of truth for "does this phonetic piece get a footnote":
+// `phoneticGloss` is non-null precisely for the rare untaught phonetics it covers
+// and null for everything else, so a taught sound piece (可, 交) never footnotes.
+
+/** A rare phonetic component's footnote data: its on-reading (kana; null when
+ * genuinely unavailable) and a short English meaning gloss. */
+export interface PhoneticGloss {
+  readonly reading: string | null;
+  readonly meaning: string;
+}
+
+interface PhoneticGlossEntry {
+  readonly reading: string | null;
+  readonly meaning: string;
+  readonly source: string;
+}
+
+const PHONETIC_GLOSS: Readonly<Record<string, PhoneticGlossEntry>> = (
+  phoneticGlossJson as { data: Record<string, PhoneticGlossEntry> }
+).data;
+
+/**
+ * The footnote for a rare, untaught phonetic component: its on-reading and a
+ * short meaning. Non-null ONLY for the rare untaught phonetics this glossary
+ * covers — a taught component (可, 交, 寺) returns null, because a learner can tap
+ * through to it and needs no footnote. This is the one place that decides whether
+ * a phonetic piece is marked with the asterisk footnote.
+ */
+export function phoneticGloss(glyph: string): PhoneticGloss | null {
+  const e = PHONETIC_GLOSS[glyph];
+  return e ? { reading: e.reading, meaning: e.meaning } : null;
 }
