@@ -28,7 +28,7 @@ import { kanjiTeachOrder } from "../data/kanji.ts";
 import { INTRO_AFTER, INTRO_BEFORE } from "../data/phase-intros.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { wordReadingFactId } from "../data/vocab.ts";
-import { LESSON_RANGE_DEFAULT, packLessons } from "./kanji-lesson.ts";
+import { packLessons } from "./kanji-lesson.ts";
 import { KANA_GROUPS, groupOfFact, scriptSoFar, widerScope } from "./lesson.ts";
 import { itemsFromFacts } from "./lesson-items.ts";
 import { hasOkurigana, hasRendaku, lessonSteps } from "./lesson-steps.ts";
@@ -532,11 +532,14 @@ describe("々 and rendaku each ride the first word that shows them", () => {
 // the radical intro before the kanji intro" is either true or false.
 describe("a mixed radical/kanji set steps the radical ahead of its kanji", () => {
   const ORDER = kanjiTeachOrder("everyday");
-  const GROUPS = packLessons(ORDER, LESSON_RANGE_DEFAULT);
+  // Pinned to a 6–12 budget: these assert the packer's hand-worked set
+  // compositions (人 大 日 一 first, 气 气 山 as the first woven set), which are a
+  // function of the packing granularity, not the shipped config default (5–7).
+  const GROUPS = packLessons(ORDER, { min: 6, max: 12 });
 
-  test("the first woven-radical set walks 气 before 気 (everyday, default range)", () => {
+  test("the first woven-radical set walks 气 before 気 (everyday, 6–12 budget)", () => {
     // The earliest set that carries a radical-only shape. Under the everyday
-    // order and the default range that set opens 气 気 山: 气 (steam) is the
+    // order and a 6–12 budget that set opens 气 気 山: 气 (steam) is the
     // radical 気 (spirit) is built around, and it has no card of its own anywhere
     // else, so the walk is where the learner meets it — immediately before 気.
     // (乙 乞 are worded kanji in their own right and pack a set earlier, with 不;

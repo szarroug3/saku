@@ -355,19 +355,20 @@ export function SettingsCard() {
         </Row>
       </Card>
 
-      {/* The lesson length, in kanji not minutes. Two steppers, and the ONE
-          constraint that matters is enforced in the buttons themselves: the
+      {/* The lesson length, in new material not minutes. Two steppers, and the
+          ONE constraint that matters is enforced in the buttons themselves: the
           shortest can't pass the longest and the longest can't drop below the
           shortest, so the pair the packer receives is always a real range. The
           same guard runs again on config load (clampLessonRange), for the value
-          that never came through these buttons. Cost is not shown as a raw
-          number — "6" means nothing to the person doing it — so the labels talk
-          in kanji, which is what the number roughly buys. */}
+          that never came through these buttons. It budgets ALL new material —
+          radicals, kanji, words and counters — not kanji alone. Cost is not
+          shown as a raw number — "6" means nothing to the person doing it — so
+          the labels talk in items, which is what the number roughly buys. */}
       <Card>
-        <Lbl>How much new kanji per lesson</Lbl>
+        <Lbl>How much new material per lesson</Lbl>
         <Row
           label="Shortest lesson"
-          info="A new-kanji lesson won't be shorter than this unless there's nothing left to add. Bigger kanji count for more, so this is roughly, not exactly, a number of kanji."
+          info="A lesson won't be shorter than this unless there's nothing left to add. Heavier items count for more, so this is roughly, not exactly, a number of items."
         >
           <SmallBtn
             disabled={cfg.lessonMinCost <= 1}
@@ -389,7 +390,7 @@ export function SettingsCard() {
         </Row>
         <Row
           label="Longest lesson"
-          info="A lesson fills toward this and stops. One kanji can still be bigger than it all on its own, and 鬱 is 29 strokes and can't be split, so the lesson says so when that happens."
+          info="A lesson fills toward this and stops. One item can still be bigger than it all on its own, and 鬱 is 29 strokes and can't be split, so the lesson says so when that happens."
         >
           {/* Can't drop below the shortest — the other half of the same rule. */}
           <SmallBtn

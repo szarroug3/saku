@@ -26,10 +26,10 @@ export interface LessonRange {
   max: number;
 }
 
-/** 6 and 12: a short sitting is roughly two or three ordinary kanji, a long one
- * half a dozen. Anchored to nothing but how long a beginner's session should
+/** 5 and 7: a short sitting is roughly a couple of ordinary kanji, a long one
+ * three or so. Anchored to nothing but how long a beginner's session should
  * feel; move them in Settings. */
-export const LESSON_RANGE_DEFAULT: LessonRange = { min: 6, max: 12 };
+export const LESSON_RANGE_DEFAULT: LessonRange = { min: 5, max: 7 };
 
 /**
  * The one place a kanji range is made safe, and it is called on BOTH sides —

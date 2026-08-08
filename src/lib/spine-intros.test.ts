@@ -482,7 +482,12 @@ describe("a learner carrying progress from the old separate tracks", () => {
     // gets a first lesson with pieces already missing. That is what removed the
     // card's old anchor, and it is why the anchor is a folded character now: one
     // that carries several facts survives the filter.
-    const lesson = nextCurriculumLesson(priorProgress, LESSON_RANGE_DEFAULT)!;
+    //
+    // Pinned to a 6–12 budget: the thinning is only visible when the opening
+    // lesson is big enough to overlap the old radical shapes. At the shipped 5–7
+    // default the first lesson is too small to demonstrate it — the folding
+    // behaviour itself is unchanged and its siblings below cover it at 5–7.
+    const lesson = nextCurriculumLesson(priorProgress, { min: 6, max: 12 })!;
     assert.ok(
       lesson.cards.length < lesson.group.items.length,
       "nothing was filtered out, so this pins nothing",

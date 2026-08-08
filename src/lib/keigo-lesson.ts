@@ -35,7 +35,7 @@ import {
   type PrereqItem,
   type PrereqTile,
 } from "@/lib/kanji-prereqs";
-import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
+import type { LessonRange } from "@/lib/lesson-sizing";
 import type { LessonPosition } from "@/lib/lesson-position";
 import {
   KEIGO_SETS,
@@ -187,8 +187,9 @@ const HAN = /\p{Script=Han}/u;
  * counting — it is not yet part of progress and must not block the sets behind
  * it. A fresh, unlocked set is taken, up to `count` of them — subject to the
  * prereq cost budget: if a set's unknown kanji and their radical components would
- * push the total teach-work over `LESSON_RANGE_DEFAULT.max`, it starts the next
- * lesson instead. At least one set is always taken.
+ * push the total teach-work over the passed `range.max` (the same
+ * `cfg.lessonMinCost`/`lessonMaxCost` range the kanji packer reads), it starts the
+ * next lesson instead. At least one set is always taken.
  *
  * PURE OF KANA. Like the other post-kana tracks, this does not know whether kana
  * is done; that gate is the caller's (see src/app/page.tsx).
@@ -196,6 +197,7 @@ const HAN = /\p{Script=Han}/u;
 export function nextKeigoLesson(
   history: HistoryFile,
   count: number,
+  range: LessonRange,
 ): KeigoLesson | null {
   const size = clampKeigoPerLesson(count);
   const rows: KeigoSet[] = [];
@@ -234,7 +236,7 @@ export function nextKeigoLesson(
     // Budget check: if this set's full difficulty would overflow the lesson, roll
     // back and stop. The first set is always taken regardless of cost (never leave
     // an empty lesson), so a single set heavier than the budget fills its own.
-    if (rows.length > 0 && totalPrereqCost + addedCost > LESSON_RANGE_DEFAULT.max) {
+    if (rows.length > 0 && totalPrereqCost + addedCost > range.max) {
       seenKanji.clear();
       for (const x of kanjiSnap) seenKanji.add(x);
       seenRadicals.clear();

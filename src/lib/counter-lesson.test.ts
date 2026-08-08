@@ -43,11 +43,16 @@ import {
   NUMBER_UNITS,
   hasStartedCountersTrack,
   nextCounterLesson,
+  unitContentCost,
   type CounterLesson,
 } from "./counter-lesson.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 const AT = Date.UTC(2026, 0, 1);
+
+/** The range every scheduler call is budgeted against unless a test overrides it
+ * — the shipped default (5–7), so these tests pin what a fresh learner gets. */
+const RANGE = LESSON_RANGE_DEFAULT;
 
 function history(over: Partial<HistoryFile> = {}): HistoryFile {
   return { sessions: [], facts: {}, claims: {}, ...over };
@@ -76,10 +81,11 @@ function claimLesson(hist: HistoryFile, lesson: CounterLesson): HistoryFile {
  * against a runaway if the predicate never matches. */
 function advanceUntil(
   hit: (l: CounterLesson) => boolean,
+  range = RANGE,
 ): { before: HistoryFile; lesson: CounterLesson } {
   let hist = history();
   for (let i = 0; i < 100; i++) {
-    const lesson = nextCounterLesson(hist);
+    const lesson = nextCounterLesson(hist, range);
     assert.ok(lesson, "the scheduler ran out before the predicate matched");
     if (hit(lesson)) return { before: hist, lesson };
     hist = claimLesson(hist, lesson);
@@ -88,11 +94,11 @@ function advanceUntil(
 }
 
 /** Every lesson the track hands out, start to finish. */
-function allLessons(): CounterLesson[] {
+function allLessons(range = RANGE): CounterLesson[] {
   let hist = history();
   const out: CounterLesson[] = [];
   for (let i = 0; i < 100; i++) {
-    const lesson = nextCounterLesson(hist);
+    const lesson = nextCounterLesson(hist, range);
     if (!lesson) break;
     out.push(lesson);
     hist = claimLesson(hist, lesson);
@@ -140,7 +146,7 @@ describe("phase 1 carries no number-kanji data, and nothing gates on kanji", () 
 
 describe("the schedule", () => {
   test("with no history it opens on 〜つ, all kana, no prereqs", () => {
-    const lesson = nextCounterLesson(history());
+    const lesson = nextCounterLesson(history(), RANGE);
     assert.ok(lesson, "a first counters lesson exists straight after kana");
     // 〜つ leads the curriculum, so the first card is ひとつ, a kana form (no
     // reading line, no prereq tiles — 〜つ needs no kanji).
@@ -152,7 +158,7 @@ describe("the schedule", () => {
   });
 
   test("phase-1 forms + the two range units done → the 〜人 unit is due, ungated", () => {
-    const lesson = nextCounterLesson(claiming([...phase1Met, ...bothMarkers]));
+    const lesson = nextCounterLesson(claiming([...phase1Met, ...bothMarkers]), RANGE);
     assert.ok(lesson?.numberUnit, "the 〜人 unit is due");
     assert.equal(lesson!.numberUnit!.marker, constructionMarker("nin"));
     assert.equal(lesson!.numberUnit!.mode, "number-reading");
@@ -166,7 +172,7 @@ describe("the schedule", () => {
 
 describe("the track opens with exactly one intro", () => {
   test("the first counters lesson fires one track-counters card and no spine card", () => {
-    const lesson = nextCounterLesson(history())!;
+    const lesson = nextCounterLesson(history(), RANGE)!;
     const steps = lessonSteps(lesson.facts, history());
     const intros = steps.filter(
       (s) => s.type === "intro" && s.intro.id === "track-counters",
@@ -244,7 +250,7 @@ describe("prereqs before their kanji, kanji before the kana that uses them", () 
     );
     assert.ok(lesson.facts.includes(kanjiMeaningFactId("一")));
     const withKanji = claiming([kanjiMeaningFactId("一")]);
-    const first = nextCounterLesson(withKanji)!;
+    const first = nextCounterLesson(withKanji, RANGE)!;
     // 一 already known → no 一 tile even where it would otherwise appear.
     assert.ok(
       first.cardPrereqTiles.every((ts) => ts.every((t) => t.glyph !== "一")),
@@ -254,26 +260,80 @@ describe("prereqs before their kanji, kanji before the kana that uses them", () 
 });
 
 describe("the cost budget packs a sitting up to the lesson max", () => {
-  test("a number sitting packs several numbers at once, never blowing the max", () => {
-    // The budget is not one-number-at-a-time: the first number lesson packs more
-    // than one number, and no sitting exceeds LESSON_RANGE_DEFAULT.max items.
-    const { lesson } = advanceUntil((l) =>
-      l.cardPrereqTiles.some((ts) => ts.some((t) => t.glyph === "一")),
+  test("the budget is not one-number-at-a-time, and never blows the max", () => {
+    // Some number sittings pack more than one number (に・さん ride together at
+    // 5–7), proving the budget packs rather than emitting one form per lesson;
+    // and no form sitting ever exceeds the configured max.
+    const numberLessons = allLessons().filter(
+      (l) => !l.numberUnit && l.cards.every((c) => c.counter === ""),
     );
-    assert.ok(lesson.cards.length >= 2, "the budget packs several numbers into one sitting");
+    assert.ok(
+      numberLessons.some((l) => l.cards.length >= 2),
+      "at least one number sitting packs two or more numbers",
+    );
     for (const l of allLessons()) {
       if (l.numberUnit) continue; // a unit is its own boundary
       assert.ok(
-        l.cards.length <= LESSON_RANGE_DEFAULT.max,
+        l.cards.length <= RANGE.max,
         "a form sitting never exceeds the item max",
       );
     }
   });
 
-  test("〜つ packs into a single sitting (uniform, cheap, no prereqs)", () => {
-    const first = nextCounterLesson(history())!;
+  test("the 〜つ run SPLITS across lessons to honour max (not one 10-item lesson)", () => {
+    // 〜つ is ten memorised kana forms at one cost each. The form-run budget adds
+    // them one at a time and closes the sitting when the next would pass max, so
+    // at the 5–7 default the ten forms land across more than one lesson — never
+    // the single 10-item sitting the old max of 12 produced.
+    const first = nextCounterLesson(history(), RANGE)!;
     assert.ok(first.cards.every((c) => c.counter === "つ"), "the first sitting is all 〜つ");
-    assert.ok(first.cards.length > 5, "〜つ is not capped at the old fixed 5");
+    assert.ok(
+      first.cards.length <= RANGE.max,
+      `the first 〜つ sitting honours max (${first.cards.length} <= ${RANGE.max})`,
+    );
+    assert.ok(first.cards.length < 10, "the ten 〜つ forms are NOT one lesson at 5–7");
+
+    // Count 〜つ cards per lesson: the run spreads over at least two lessons, and
+    // every one of the ten forms is taught exactly once across the split.
+    const tsuByLesson = allLessons().map((l) =>
+      l.numberUnit ? 0 : l.cards.filter((c) => c.counter === "つ").length,
+    );
+    assert.ok(
+      tsuByLesson.filter((n) => n > 0).length >= 2,
+      "the 〜つ run spans at least two lessons at 5–7",
+    );
+    assert.equal(
+      tsuByLesson.reduce((a, b) => a + b, 0),
+      10,
+      "all ten 〜つ forms are taught across the split",
+    );
+  });
+
+  test("a custom cfg range changes how many 〜つ forms a sitting holds", () => {
+    // The scheduler honours the caller's range, not a hardcoded default: a wide
+    // range fits all ten 〜つ in one sitting, a narrow one takes only three.
+    const wide = nextCounterLesson(history(), { min: 8, max: 10 })!;
+    const narrow = nextCounterLesson(history(), { min: 2, max: 3 })!;
+    assert.ok(wide.cards.every((c) => c.counter === "つ"));
+    assert.ok(narrow.cards.every((c) => c.counter === "つ"));
+    assert.equal(wide.cards.length, 10, "max 10 fits all ten 〜つ");
+    assert.equal(narrow.cards.length, 3, "max 3 takes three 〜つ");
+    assert.ok(wide.cards.length > narrow.cards.length);
+  });
+});
+
+describe("a generative unit's content cost is 1 + its irregular count", () => {
+  const unit = (id: string) => GENERATIVE_UNITS.find((u) => u.id === id)!;
+  test("a counter costs one for its rule plus one per sound-shift irregular", () => {
+    assert.equal(unitContentCost(unit("nin")), 4, "〜人 has 3 irregulars → 4");
+    assert.equal(unitContentCost(unit("hon")), 6, "〜本 has 5 irregulars → 6");
+    assert.equal(unitContentCost(unit("hiki")), 6, "〜匹 has 5 irregulars → 6");
+    assert.equal(unitContentCost(unit("mai")), 1, "〜枚 has no shifts → 1");
+    assert.equal(unitContentCost(unit("dai")), 1, "〜台 has no shifts → 1");
+  });
+  test("the number-range units read their irregular count from the same table", () => {
+    assert.equal(unitContentCost(unit("tens")), 1, "11–99 is all regular → 1");
+    assert.equal(unitContentCost(unit("big")), 6, "the big range hardens at 5 seams → 6");
   });
 });
 
@@ -329,7 +389,7 @@ describe("the generative units", () => {
   });
 
   test("the tens unit is due right after 1-10 and needs no kanji", () => {
-    const lesson = nextCounterLesson(claiming(numbersDone));
+    const lesson = nextCounterLesson(claiming(numbersDone), RANGE);
     assert.ok(lesson?.numberUnit, "a generative unit lesson, not a form lesson");
     assert.equal(lesson!.numberUnit!.marker, NUMBER_UNIT_TENS_MARKER);
     assert.equal(lesson!.numberUnit!.intro.id, NUMBERS_COMPOSE.id);
@@ -345,6 +405,7 @@ describe("the generative units", () => {
   test("the big unit teaches 百千万 before its rule and ends on its marker", () => {
     const lesson = nextCounterLesson(
       claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER]),
+      RANGE,
     )!;
     assert.ok(lesson.numberUnit, "the big unit is now due");
     assert.equal(lesson.numberUnit!.marker, NUMBER_UNIT_BIG_MARKER);
@@ -360,6 +421,7 @@ describe("the generative units", () => {
   test("claiming BOTH range markers advances the scheduler to the 〜人 unit", () => {
     const lesson = nextCounterLesson(
       claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER, NUMBER_UNIT_BIG_MARKER]),
+      RANGE,
     );
     assert.ok(lesson?.numberUnit, "the 〜人 unit is now due");
     assert.equal(lesson!.numberUnit!.marker, constructionMarker("nin"));
@@ -371,6 +433,7 @@ describe("the generative units", () => {
   test("〜人 has NO rote form lesson — claiming it advances to the next counter unit", () => {
     const lesson = nextCounterLesson(
       claiming([...numbersDone, ...bothMarkers, constructionMarker("nin")]),
+      RANGE,
     );
     assert.ok(lesson, "a lesson exists");
     assert.ok(lesson!.numberUnit, "a generative unit, not a form lesson");

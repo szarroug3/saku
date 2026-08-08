@@ -32,10 +32,13 @@
 // ================================
 // A number form now carries a variable amount of prereq work (一 pulls nothing,
 // 四 pulls 囗 儿, 六 pulls 亠 八 …), so a fixed "5 per lesson" is the wrong unit.
-// The sitting is cost-budgeted against LESSON_RANGE_DEFAULT.max the keigo way:
+// The sitting is cost-budgeted against the caller's LessonRange.max the keigo way
+// (the same `cfg.lessonMinCost`/`lessonMaxCost` range the kanji packer reads):
 // Σ prereq reading-units + the form's own content, always taking at least the
 // first step. A generative unit is its own lesson (a rule card + a generated
-// round), with its counter kanji's chain taught ahead of the rule card.
+// round), with its counter kanji's chain taught ahead of the rule card; its
+// CONTENT cost is 1 + its irregular count (see unitContentCost), a rule plus its
+// exceptions rather than the ten rote forms it replaces.
 
 import { effectiveState } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
@@ -45,7 +48,7 @@ import {
   type PrereqItem,
   type PrereqTile,
 } from "@/lib/kanji-prereqs";
-import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
+import type { LessonRange } from "@/lib/lesson-sizing";
 import type { LessonPosition } from "@/lib/lesson-position";
 import {
   COUNTERS_SUBJECT,
@@ -57,7 +60,10 @@ import {
   type CounterForm,
 } from "@/data/counters";
 import { CONSTRUCTION_CATEGORIES } from "@/data/counter-categories";
-import { numberConstructionEntry } from "@/data/number-construction";
+import {
+  numberConstructionEntry,
+  numberConstructionRow,
+} from "@/data/number-construction";
 import { type PhaseIntro } from "@/data/phase-intros";
 import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import type { EntryId, FactId, HistoryFile } from "@/types";
@@ -235,6 +241,33 @@ function unitFresh(unit: NumberUnit, history: HistoryFile): boolean {
   return isFresh(unit.marker, history);
 }
 
+/** How many irregular counts a unit's construction teaches — the length of the
+ * "Irregular" group in its construction page's example tables, the SAME table the
+ * Library page renders, so the number can never drift from what the learner sees.
+ * `tens` has no irregular group (0); `big` hardens at five seams (300/600/800/
+ * 3000/8000); each counter carries its own (〜人 3, 〜本 5, 〜枚 0). */
+function unitIrregularCount(id: ConstructionCategoryId): number {
+  const group = numberConstructionRow(id)?.exampleGroups.find(
+    (g) => g.title === "Irregular",
+  );
+  return group ? group.examples.length : 0;
+}
+
+/**
+ * A generative unit's CONTENT cost — what teaching its rule is worth to the
+ * sitting's budget, separate from and added on top of its prereq kanji-chain cost.
+ *
+ * One for the rule itself, plus one per irregular it must also teach: a
+ * construction counter is a rule and its exceptions, not the ten rote forms it
+ * replaces, so a flat 1 undercharges a counter full of sound-shifts and 10
+ * overcharges a regular one. So 〜枚/〜台 (no shifts) cost 1, 〜人 costs 4, 〜本/〜匹
+ * cost 6, and the big range costs 6. 〜つ is NOT a unit — it stays ten memorised
+ * kana forms at one each, split across lessons by the form-run budget.
+ */
+export function unitContentCost(unit: NumberUnit): number {
+  return 1 + unitIrregularCount(unit.id);
+}
+
 /** One step of the numbers-and-counters schedule: a form to teach, or a
  * generative unit. */
 type ScheduleStep = { form: CounterForm } | { unit: NumberUnit };
@@ -351,7 +384,7 @@ function doneSteps(history: HistoryFile): number {
  * over. Fresh FORMS pack into one sitting the keigo way: each form's number-kanji
  * prereqs are collected (shared seen-sets across the sitting so a component is
  * taught once), and the sitting's cost — Σ prereq reading-units + each form's own
- * content — is budgeted against LESSON_RANGE_DEFAULT.max; the first form is always
+ * content — is budgeted against the passed `range.max`; the first form is always
  * taken, so a form heavier than the budget fills its own lesson. A generative UNIT
  * is a HARD BOUNDARY and its own lesson: forms collected so far are taught first,
  * and a due unit teaches its counter kanji's full component chain ahead of its
@@ -361,7 +394,10 @@ function doneSteps(history: HistoryFile): number {
  * PURE OF KANA. Like the other post-kana tracks, this does not know whether kana
  * is done; that gate is the caller's (see src/app/page.tsx).
  */
-export function nextCounterLesson(history: HistoryFile): CounterLesson | null {
+export function nextCounterLesson(
+  history: HistoryFile,
+  range: LessonRange,
+): CounterLesson | null {
   const seenKanji = new Set<string>();
   const seenRadicals = new Set<string>();
   const rows: CounterForm[] = [];
@@ -402,7 +438,7 @@ export function nextCounterLesson(history: HistoryFile): CounterLesson | null {
 
     // The first form is always taken (never an empty lesson); a later form that
     // would overflow the budget rolls the seen-sets back and starts the next one.
-    if (rows.length > 0 && totalCost + addedCost > LESSON_RANGE_DEFAULT.max) {
+    if (rows.length > 0 && totalCost + addedCost > range.max) {
       seenKanji.clear();
       for (const x of kanjiSnap) seenKanji.add(x);
       seenRadicals.clear();
