@@ -338,3 +338,12 @@ test("prose overrides stay plain: no dictionary jargon, no em/en dashes", () => 
     assert.equal(hit, null, `${k} override still reads like a dictionary: "${hit?.[0]}"`);
   }
 });
+
+test("神 keeps a long Etymology story — the e2e More/Less target must stay clamped", () => {
+  // e2e/kanji-etymology-ui.spec.ts drives the More/Less toggle on 神's page,
+  // which only appears when the story exceeds the 120-char clamp threshold. Most
+  // cleaned stories are one short line, so pin this one long: shortening it must
+  // fail HERE (loudly) rather than as a mystery e2e flake.
+  const t = etymologyOf("神")?.originText ?? "";
+  assert.ok(t.length > 120, `神's story is ${t.length} chars; the e2e toggle needs > 120`);
+});

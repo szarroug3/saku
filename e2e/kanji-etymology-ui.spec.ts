@@ -18,12 +18,15 @@ import { test, expect } from "./helpers/app";
  *   校 — has an on'yomi (こう), so the On'yomi card + Hear button render.
  */
 
-test("the 明 kanji page shows an Etymology story with a Wiktionary link and a More/Less toggle", async ({
+test("a kanji page shows an Etymology story with a Wiktionary link and a More/Less toggle", async ({
   page,
   seed,
 }) => {
   await seed({ seen: [], cfg: {} });
-  await page.goto("/library/kanji/明");
+  // 神 is chosen because its cleaned origin story is long enough to clamp — the
+  // plain-language rewrites are mostly one short line, so a stable long target is
+  // pinned (kanji-etymology.test.ts asserts 神's story stays > 120 chars).
+  await page.goto("/library/kanji/神");
 
   // The prose section is headed by an "Etymology" label (distinct from the
   // "How it's built" tiles header above it).
@@ -36,11 +39,11 @@ test("the 明 kanji page shows an Etymology story with a Wiktionary link and a M
   // or the raw form so the test does not hinge on how the DOM reports it.
   await expect(wiktionary).toHaveAttribute(
     "href",
-    /^https:\/\/en\.wiktionary\.org\/wiki\/(明|%E6%98%8E)$/,
+    /^https:\/\/en\.wiktionary\.org\/wiki\/(神|%E7%A5%9E)$/,
   );
 
-  // 明's origin is long enough to clamp, so a More control is offered; clicking
-  // it reveals the rest and flips the label to Less, which collapses it again.
+  // The long origin clamps, so a More control is offered; clicking it reveals the
+  // rest and flips the label to Less, which collapses it again.
   const more = page.getByRole("button", { name: "More", exact: true });
   await expect(more).toBeVisible();
   await more.click();
