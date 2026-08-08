@@ -70,7 +70,7 @@ export function NextCounterLesson({
           <div key={card.entry} className="contents">
             {cardPrereqTiles[i].map((t) => (
               <PreviewTile
-                key={t.glyph}
+                key={`${t.glyph}-${t.type}`}
                 glyph={t.glyph}
                 type={characterRoleTitle(t.glyph) ?? t.type}
                 href={entryHref(t.type === "Kanji" ? kanjiEntry(t.glyph) : radicalEntry(t.glyph))}
