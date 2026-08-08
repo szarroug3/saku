@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { ConfigPreview } from "@/components/quiz/config-preview";
 import { AttributionLink } from "@/components/library/attribution-link";
-import { Btn } from "@/components/ui";
+import { Btn, FlatSurfaceProvider } from "@/components/ui";
 import type { PhaseIntro } from "@/data/phase-intros";
 import {
   SENTENCE_ORDERING_GUIDES,
@@ -1011,7 +1011,13 @@ export function SentenceOrderingTeachWalk({
 
       <div className="mt-2">
         {onIntro ? (
-          <PhaseIntroView intro={intro} />
+          // Flat section surfaces, matching the main TeachWalk and the Library
+          // entry page: the intro card's flat-aware panels drop their frosty
+          // fill in the teach walk too (border kept). Same provider, same reason
+          // as teach-walk.tsx.
+          <FlatSurfaceProvider>
+            <PhaseIntroView intro={intro} />
+          </FlatSurfaceProvider>
         ) : lesson ? (
           <div className="space-y-5">
             <div>

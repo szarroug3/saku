@@ -35,7 +35,7 @@ import { useId, useState } from "react";
 
 import { StrokeOrder } from "@/components/lesson/stroke-order";
 import { WhyDisclosure } from "@/components/lesson/why";
-import { Card } from "@/components/ui";
+import { Card, useFlatSurface } from "@/components/ui";
 import { kanjiEntry } from "@/data/kanji";
 import { WHY_STROKE_ORDER, WHY_WRITING_EARLY } from "@/data/why";
 // What this section can say when there is no diagram is worked out in lib, off
@@ -185,6 +185,13 @@ export function HowItsWritten({
 }) {
   const [pref, setOpen] = useLessonPref("writing");
   const open = alwaysOpen || pref;
+  // FLAT SECTION SURFACE, same as every other section panel. The collapsed-form
+  // box below is a section panel too, and the owner wants no frosted fill on
+  // these anywhere: under a FlatSurfaceProvider (the Library entry page, and now
+  // the session teach walk) it drops its bg-panel fill for a transparent ground,
+  // border kept — exactly the flat/not-flat fork LessonPanel makes. Absent a
+  // provider (every other screen) it keeps its recessed panel untouched.
+  const flatSurface = useFlatSurface();
   // Lazy — the stroke asset is only fetched once the section is open. Skipping
   // the lookup while collapsed keeps the chunk off the initial load entirely.
   const strokes = useGlyphStrokes(open ? item.glyph : "");
@@ -261,19 +268,24 @@ export function HowItsWritten({
     </>
   );
 
-  // TWO MATERIALS, ONE COMPONENT. Inside the stepped lesson this is a section
-  // NESTED in a card, so it wears nested-panel material: --panel, the smaller
-  // radius, the tighter padding. On the Library entry page (the one and only
-  // alwaysOpen caller) it is a TOP-LEVEL box sitting directly beside a Card, so
-  // there it IS a Card, sharing that surface's radius, padding and material — and
-  // since the entry page runs under FlatSurfaceProvider, that shared material is
-  // the flat, transparent one every other section there wears, not the frost.
+  // TWO MATERIALS, ONE COMPONENT. On the Library entry page (the one and only
+  // alwaysOpen caller) this is a TOP-LEVEL box sitting directly beside a Card, so
+  // there it IS a Card, sharing that surface's radius, padding and material. In
+  // the stepped lesson it is the smaller collapsed-form box below: --panel tone,
+  // smaller radius, tighter padding. EITHER surface flattens under a
+  // FlatSurfaceProvider — the entry page always did (via Card), and the session
+  // teach walk now does too (via `flatSurface` below) — so this section's fill
+  // drops to transparent wherever the owner asked the section panels to go flat.
   if (alwaysOpen) {
     return <Card className="flex h-full flex-col">{content}</Card>;
   }
 
   return (
-    <div className="mt-3 rounded-lg border border-border bg-panel px-3.5 py-3">
+    <div
+      className={`mt-3 rounded-lg border border-border px-3.5 py-3 ${
+        flatSurface ? "bg-transparent" : "bg-panel"
+      }`}
+    >
       {content}
     </div>
   );
