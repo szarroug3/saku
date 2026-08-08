@@ -197,8 +197,14 @@ export function HomeFeed() {
   // of the words track: a counter is a `word` fact but not in VOCAB, so the two
   // schedulers never see each other's material.
   const counterLesson = useMemo(
-    () => (lesson ? null : nextCounterLesson(history)),
-    [lesson, history],
+    () =>
+      lesson
+        ? null
+        : nextCounterLesson(history, {
+            min: cfg.lessonMinCost,
+            max: cfg.lessonMaxCost,
+          }),
+    [lesson, history, cfg.lessonMinCost, cfg.lessonMaxCost],
   );
 
   // The grammar track opens as soon as kana is done and never depends on Words.
@@ -229,8 +235,14 @@ export function HomeFeed() {
   // verb is unmet is skipped — so this is a lesson or nothing. Gated on
   // `lesson === null` (kana done) like every post-kana track.
   const keigoLesson = useMemo(
-    () => (lesson ? null : nextKeigoLesson(history, KEIGO_PER_LESSON_DEFAULT)),
-    [lesson, history],
+    () =>
+      lesson
+        ? null
+        : nextKeigoLesson(history, KEIGO_PER_LESSON_DEFAULT, {
+            min: cfg.lessonMinCost,
+            max: cfg.lessonMaxCost,
+          }),
+    [lesson, history, cfg.lessonMinCost, cfg.lessonMaxCost],
   );
 
   const sentenceOrderingLesson = useMemo(
@@ -460,7 +472,7 @@ export function HomeFeed() {
     nextCurriculumLesson(h, range),
   );
   const counterLessonShown = resumeShown(counterLesson, counterRun, (h) =>
-    nextCounterLesson(h),
+    nextCounterLesson(h, range),
   );
   const grammarLessonShown = resumeShown(grammarLesson, grammarRun, (h) =>
     nextGrammarLesson(h, GRAMMAR_PER_LESSON_DEFAULT),
@@ -469,7 +481,7 @@ export function HomeFeed() {
     nextTransitivityLesson(h, TRANSITIVITY_PER_LESSON_DEFAULT),
   );
   const keigoLessonShown = resumeShown(keigoLesson, keigoRun, (h) =>
-    nextKeigoLesson(h, KEIGO_PER_LESSON_DEFAULT),
+    nextKeigoLesson(h, KEIGO_PER_LESSON_DEFAULT, range),
   );
   const sentenceOrderingLessonShown = sentenceOrderingLesson ??
     (sentenceOrderingRun

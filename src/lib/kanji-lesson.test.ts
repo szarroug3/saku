@@ -60,7 +60,12 @@ import {
 import type { FactId } from "../types/index.ts";
 
 const ORDER: readonly string[] = KANJI_ORDER.map((o) => o.c);
-const RANGE = LESSON_RANGE_DEFAULT;
+// These tests pin the PACKER's hand-worked lesson compositions (day-one is
+// 人 大 日 一 at cost 10, 不 packs with 乙 乞, …), which were computed against a
+// 6–12 budget. They exercise packing mechanics, not the config default, so the
+// range is pinned explicitly here and does not track LESSON_RANGE_DEFAULT (now
+// 5–7) — the clamp tests below still assert the default itself.
+const RANGE = { min: 6, max: 12 } as const;
 const GROUPS = kanjiCurriculum(ORDER, RANGE);
 /** The groups that teach kanji — every group but the kanji-less orphan tail. */
 const KANJI_GROUPS = GROUPS.filter((g) => g.chars.length > 0);

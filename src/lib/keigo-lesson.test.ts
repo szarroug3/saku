@@ -18,6 +18,7 @@ import { KEIGO_SETS, keigoSetEntry, keigoWordFactId } from "../data/keigo.ts";
 import { meaningFactId } from "../data/kanji.ts";
 import { wordMeaningFactId } from "../data/vocab.ts";
 import { questionsFor } from "./engine/question.ts";
+import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import {
   KEIGO_CURRICULUM_TOTAL,
   hasStartedKeigoTrack,
@@ -25,6 +26,14 @@ import {
   nextKeigoLesson,
 } from "./keigo-lesson.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
+
+/** The shipped default range (5–7) — what a fresh learner's config seeds. */
+const RANGE = LESSON_RANGE_DEFAULT;
+
+/** A roomy budget for the gating tests below: they pin WHICH sets a lesson
+ * offers (welcome first, a locked set skipped), not the cost-split, so a wide
+ * range keeps the sitting whole and their intent unperturbed by the 5–7 budget. */
+const WIDE = { min: 6, max: 12 } as const;
 
 /** A learner who has done nothing. */
 const BLANK: HistoryFile = { sessions: [], facts: {} };
@@ -61,7 +70,7 @@ const WELCOME = KEIGO_SETS.find((s) => s.id === "welcome")!
 describe("the track opens EARLY, on a plain verb the learner already knows", () => {
   test("a blank learner sees welcome immediately; no other set is taught yet", () => {
     // welcome has an empty gate so it opens as soon as kana is done (caller\u2019s gate).
-    const lesson = nextKeigoLesson(BLANK, 3);
+    const lesson = nextKeigoLesson(BLANK, 3, WIDE);
     assert.ok(lesson, "welcome did not open for a blank learner");
     assert.equal(lesson.cards[0].entry, keigoSetEntry(WELCOME));
     // A learner who has done nothing is not \u201cstarted\u201d on keigo (no met sets).
@@ -74,7 +83,7 @@ describe("the track opens EARLY, on a plain verb the learner already knows", () 
     // The kanji gate: forms like 召し上がる require knowing 召 and 上 first.
     const history = learned([wordMeaningFactId("食べる"), ...EAT_KANJI]);
     assert.ok(keigoUnlocked(EAT, history));
-    const lesson = nextKeigoLesson(history, 3);
+    const lesson = nextKeigoLesson(history, 3, WIDE);
     assert.ok(lesson, "the eat set did not open on 食べる");
     // welcome always leads; eat follows as the first unlocked verb set
     assert.ok(lesson.cards.some((c) => c.meaning === "eat / drink"), "eat set missing from lesson");
@@ -87,7 +96,7 @@ describe("the track opens EARLY, on a plain verb the learner already knows", () 
 
   test("the position denominator is the whole curriculum", () => {
     const history = learned([wordMeaningFactId("食べる"), ...EAT_KANJI]);
-    const lesson = nextKeigoLesson(history, 3)!;
+    const lesson = nextKeigoLesson(history, 3, WIDE)!;
     assert.equal(lesson.position.total, KEIGO_CURRICULUM_TOTAL);
     assert.equal(lesson.position.from, 1);
   });
@@ -98,7 +107,7 @@ describe("starting a word lesson is not completing its prerequisite", () => {
     // seen-but-not-claimed 食べる leaves eat locked; welcome still opens (empty gate).
     const history = met([wordMeaningFactId("食べる")]);
     assert.equal(keigoUnlocked(EAT, history), false);
-    const lesson = nextKeigoLesson(history, 3);
+    const lesson = nextKeigoLesson(history, 3, WIDE);
     assert.ok(lesson, "welcome should still be offered");
     assert.ok(lesson.cards.every((c) => c.meaning !== "eat / drink"), "eat opened on seen verb");
   });
@@ -127,10 +136,41 @@ describe("it interleaves rather than blocking", () => {
     const history = learned([wordMeaningFactId("食べる"), ...EAT_KANJI]);
     assert.ok(keigoUnlocked(EAT, history));
     assert.ok(!keigoUnlocked(SAY, history));
-    const lesson = nextKeigoLesson(history, 9)!;
+    const lesson = nextKeigoLesson(history, 9, WIDE)!;
     const taught = new Set(lesson.cards.map((c) => c.meaning));
     assert.ok(taught.has("eat / drink"), "the ready set was not taught");
     assert.ok(!taught.has("say"), "a locked set was taught anyway");
+  });
+
+  test("the shipped 5–7 range still opens welcome for a blank learner", () => {
+    // Sanity that the default the config seeds is a working range: the track
+    // still opens on welcome, budgeted against 5–7 rather than the old 6–12.
+    assert.deepEqual(RANGE, { min: 5, max: 7 });
+    const lesson = nextKeigoLesson(BLANK, 3, RANGE)!;
+    assert.equal(lesson.cards[0].entry, keigoSetEntry(WELCOME));
+  });
+
+  test("a custom cfg range changes how many keigo sets a sitting holds", () => {
+    // Every gate verb and every form kanji known, so each set's cost is just its
+    // own words (no prereq overhead). A tiny budget then teaches fewer sets per
+    // sitting than a roomy one — the config range flows through, as it must.
+    const HAN = /\p{Script=Han}/u;
+    const allGates = KEIGO_SETS.flatMap((s) => s.gate).map(wordMeaningFactId);
+    const allFormKanji = [
+      ...new Set(
+        KEIGO_SETS.flatMap((s) => s.words)
+          .flatMap((w) => [...w.word])
+          .filter((c) => HAN.test(c)),
+      ),
+    ].map(meaningFactId);
+    const known = learned([...allGates, ...allFormKanji]);
+
+    const narrow = nextKeigoLesson(known, 9, { min: 2, max: 3 })!;
+    const wide = nextKeigoLesson(known, 9, { min: 10, max: 40 })!;
+    assert.ok(
+      wide.cards.length > narrow.cards.length,
+      `a bigger budget teaches more sets (${wide.cards.length} > ${narrow.cards.length})`,
+    );
   });
 
   test("a met set is counted but not re-offered", () => {
@@ -145,7 +185,7 @@ describe("it interleaves rather than blocking", () => {
       ...eatFacts,
     ]);
     assert.ok(hasStartedKeigoTrack(history));
-    const lesson = nextKeigoLesson(history, 3)!;
+    const lesson = nextKeigoLesson(history, 3, WIDE)!;
     assert.ok(
       lesson.cards.every((c) => c.meaning !== "eat / drink"),
       "a fully-met set was offered again",
