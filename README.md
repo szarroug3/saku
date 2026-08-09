@@ -249,9 +249,9 @@ implements.
 Two licenses, split at one directory:
 
 - **Code** — MIT. Everything except `src/data/generated/`. See [`LICENSE`](LICENSE).
-- **Generated dictionary data** — CC BY-SA 4.0. `src/data/generated/`, adapted
-  from EDRDG's dictionaries. See `src/data/generated/LICENSE` for the full
-  attribution and the Tatoeba carve-out.
+- **Generated data** — primarily CC BY-SA 4.0, with source-specific CEJC and
+  Tatoeba carve-outs. See `src/data/generated/LICENSE` for the exact boundary
+  and full attribution.
 
 [`NOTICE`](NOTICE) states the boundary: the code reads the data, it isn't derived
 from it, so the two ship as a collection and ShareAlike doesn't reach the code.

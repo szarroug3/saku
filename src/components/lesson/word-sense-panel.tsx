@@ -53,8 +53,8 @@ import { useFlatSurface } from "@/components/ui";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { StandingChip } from "@/components/library/standing-chip";
 import { wordPitch } from "@/data/pitch";
-import { wordUnitFacts, type VocabRow } from "@/data/vocab";
-import { allReadingSenses, isBoundReading, wordTypeOf } from "@/lib/lesson-roles";
+import { readingDefinitions, wordUnitFacts, type VocabRow } from "@/data/vocab";
+import { isBoundReading, wordTypeOf } from "@/lib/lesson-roles";
 import { wordFormKind } from "@/lib/word-forms";
 import type { Standing } from "@/lib/library/standing";
 import type { FactId } from "@/types";
@@ -96,22 +96,29 @@ interface SenseRow {
   /** The muted "in compounds" tag on a bound, non-primary reading (おお, じん,
    * にん). The primary reading is always sayable alone, so it is never marked. */
   bound: boolean;
-  meaning: string;
+  /** CEJC-backed, definition-scoped preference. It never compares readings
+   * belonging to different meanings. */
+  preferred: boolean;
   /** The downstep to draw the pitch overline at, or null for no verified pitch. */
   pitch: number | null;
   readingStanding: Standing | null;
   meaningStanding: Standing | null;
 }
 
+interface SenseGroup {
+  meaning: string;
+  rows: readonly SenseRow[];
+}
+
 /** The ONE shape every word and counter uses: a Reading | Kind | Means table.
  * A single-reading word (or a counter) is a one-row table, so every page reads
  * the same whether it has one reading or several. */
 function SenseTable({
-  rows,
+  groups,
   voiceName,
   transparent,
 }: {
-  rows: readonly SenseRow[];
+  groups: readonly SenseGroup[];
   voiceName: string;
   /** Flat look on the Library entry page — drops the panel's frosty fill. */
   transparent: boolean;
@@ -127,11 +134,10 @@ function SenseTable({
               <th className="py-1.5 font-medium">Means</th>
             </tr>
           </thead>
-          <tbody>
-            {/* Keyed on position, because a reading is not unique within a
-                form: コート is a coat and a tennis court, one sound, two rows. */}
-            {rows.map((r, i) => (
-              <tr key={i} className="border-b border-border last:border-b-0">
+          {groups.map((group, groupIndex) => (
+            <tbody key={groupIndex} className="border-b border-border last:border-b-0">
+              {group.rows.map((r, readingIndex) => (
+              <tr key={readingIndex}>
                 <td className="py-2 pr-2 align-middle">
                   {/* The speaker sits WITH the thing it speaks, to its left, the
                       same rule the readings table and the entry header follow.
@@ -159,6 +165,11 @@ function SenseTable({
                       <StandingChip standing={r.readingStanding} />
                     ) : null}
                   </span>
+                  {r.preferred ? (
+                    <span className="mt-1 block text-[11px] leading-snug text-accent">
+                      Usually preferred in everyday conversation
+                    </span>
+                  ) : null}
                 </td>
                 <td className="py-2 pr-2 align-middle text-text-muted">
                   {r.kind}
@@ -172,17 +183,23 @@ function SenseTable({
                     </span>
                   ) : null}
                 </td>
-                <td className="py-2 align-middle text-text">
+                {readingIndex === 0 ? (
+                <td
+                  rowSpan={group.rows.length}
+                  className="py-2 align-middle text-text"
+                >
                   <span className="flex flex-wrap items-center gap-2">
-                    <span>{r.meaning}</span>
+                    <span>{group.meaning}</span>
                     {r.meaningStanding ? (
                       <StandingChip standing={r.meaningStanding} />
                     ) : null}
                   </span>
                 </td>
+                ) : null}
               </tr>
-            ))}
-          </tbody>
+              ))}
+            </tbody>
+          ))}
         </table>
       </div>
     </LessonPanel>
@@ -214,12 +231,18 @@ export function WordSensePanel({
       altReb: counter.altReading,
       kind: counter.kind,
       bound: false,
-      meaning: counter.meaning,
+      preferred: false,
       pitch: null,
       readingStanding: counter.readingStanding,
       meaningStanding: counter.meaningStanding,
     };
-    return <SenseTable rows={[row]} voiceName={voiceName} transparent={transparent} />;
+    return (
+      <SenseTable
+        groups={[{ meaning: counter.meaning, rows: [row] }]}
+        voiceName={voiceName}
+        transparent={transparent}
+      />
+    );
   }
 
   // Every other caller drives the panel from a VocabRow. The optional-`word`
@@ -227,12 +250,12 @@ export function WordSensePanel({
   // always passes one, so this guard never fires for them.
   if (!word) return null;
 
-  const senses = allReadingSenses(word);
+  const definitions = readingDefinitions(word);
 
-  // `allReadingSenses` matches `readingUnits`/`wordUnitFacts` 1:1 (same count,
-  // same reb, same order — all group by reading), so a sense at position i owns
-  // the reading and meaning fact ids at the same index here. The reading fact is
-  // null for a kana word, which mints no reading question.
+  // Facts remain keyed by READING, while presentation is definition-first and
+  // may reorder readings inside a definition. Join by reb rather than position,
+  // so a CEJC display sort cannot move a standing chip onto another fact. The
+  // reading fact is null for a kana word, which mints no reading question.
   const unitFacts = standings ? wordUnitFacts(word.keb) : null;
   const standingFor = (id: FactId | null | undefined): Standing | null =>
     id && standings ? standings(id) : null;
@@ -250,17 +273,22 @@ export function WordSensePanel({
   // property of the WORD, not a single reading, so every row carries it; a
   // non-conjugating word (a noun) falls back to the reading-unit's plain type.
   const formKind = wordFormKind(word);
-  const rows: SenseRow[] = senses.map((s, i) => ({
-    reb: s.reb,
-    kind: formKind ?? wordTypeOf(s),
-    // Never on the first row: the primary is the reading the word is filed and
-    // said under, and is always sayable alone.
-    bound: i > 0 && isBoundReading(s),
-    meaning: s.glosses.slice(0, 4).join(", "),
-    pitch: pitch != null && s.reb === word.reb ? pitch : null,
-    readingStanding: standingFor(unitFacts?.[i]?.reading),
-    meaningStanding: standingFor(unitFacts?.[i]?.meaning),
+  const factsByReading = new Map(unitFacts?.map((facts) => [facts.unit.reb, facts]) ?? []);
+  const groups: SenseGroup[] = definitions.map((definition) => ({
+    meaning: definition.glosses.slice(0, 4).join(", "),
+    rows: definition.readings.map((sense) => {
+      const facts = factsByReading.get(sense.reb);
+      return {
+        reb: sense.reb,
+        kind: formKind ?? wordTypeOf(sense),
+        bound: sense.reb !== word.reb && isBoundReading(sense),
+        preferred: definition.preferredReading === sense.reb,
+        pitch: pitch != null && sense.reb === word.reb ? pitch : null,
+        readingStanding: standingFor(facts?.reading),
+        meaningStanding: standingFor(facts?.meaning),
+      };
+    }),
   }));
 
-  return <SenseTable rows={rows} voiceName={voiceName} transparent={transparent} />;
+  return <SenseTable groups={groups} voiceName={voiceName} transparent={transparent} />;
 }

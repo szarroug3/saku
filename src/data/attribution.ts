@@ -156,6 +156,13 @@ export const SOURCES: readonly Source[] = [
     licence: "CC BY-SA 4.0",
     href: "https://github.com/hermitdave/FrequencyWords",
   },
+  {
+    name: "Corpus of Everyday Japanese Conversation (CEJC)",
+    what: "Observed pronunciation frequencies from 200 hours of everyday conversation. These order interchangeable readings within each dictionary meaning and support the everyday-preference note when the evidence is substantial.",
+    holder: "National Institute for Japanese Language and Linguistics",
+    licence: "Free for research and education; raw redistribution prohibited",
+    href: "https://www2.ninjal.ac.jp/conversation/cejc/cejc-wc.html",
+  },
 ];
 
 /**
@@ -176,7 +183,11 @@ export const LICENCE_NOTE =
   "from the JLPT vocabulary lists at tanos.co.uk (Jonathan Waller, CC BY) and " +
   "open-anki-jlpt-decks (MIT), together with the OpenSubtitles 2018 frequency " +
   "list from hermitdave/FrequencyWords (Creative Commons Attribution-ShareAlike " +
-  "4.0 International licence). The glyph-origin notes — what each component of a " +
+  "4.0 International licence). Reading preference and within-definition reading " +
+  "order are derived from the Corpus of Everyday Japanese Conversation " +
+  "(CEJC) short-unit vocabulary tables, version 2022.09, created by the National " +
+  "Institute for Japanese Language and Linguistics. Raw CEJC data is not " +
+  "redistributed. The glyph-origin notes — what each component of a " +
   "kanji contributes and how the parts make the whole — are derived from English " +
   "Wiktionary (en.wiktionary.org), used under the Creative Commons Attribution-" +
   "ShareAlike 4.0 International licence and written by Wiktionary's contributors.";
@@ -199,4 +210,4 @@ export const ATTRIBUTION_HREF = "/about/data";
  * than every holder, so the label stays footer-sized and still tells you what is
  * on the other end. EDRDG stays named outright: its licence is the strict one. */
 export const SHORT =
-  "Dictionary, stroke and sentence data: EDRDG, KanjiVG, Tatoeba";
+  "Dictionary, frequency, stroke and sentence data: EDRDG, NINJAL, KanjiVG, Tatoeba";

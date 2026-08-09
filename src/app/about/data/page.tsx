@@ -64,6 +64,12 @@ export default function AboutDataPage() {
           share-alike work may be used in a 4.0 one, so the diagrams sit
           alongside the dictionary data without conflict.
         </p>
+        <p className="mt-2.5 text-[13px] leading-relaxed text-text-muted">
+          CEJC&rsquo;s raw conversation-frequency files are not included. The app
+          ships only the reduced reading order used for its own vocabulary, and
+          identifies that educational analysis separately rather than relicensing
+          NINJAL&rsquo;s work as CC BY-SA.
+        </p>
       </Card>
     </>
   );

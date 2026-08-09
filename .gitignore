@@ -45,6 +45,11 @@ next-env.d.ts
 # python legacy
 __pycache__/
 
+# Upstream ingest downloads. These can be large and some sources, including
+# CEJC, permit educational analysis but prohibit redistribution. Generated,
+# source-attributed reductions belong in src/data/generated; raw archives do not.
+/scripts/ingest/raw/
+
 # Local learner data, not shipped
 lists.json
 history.json

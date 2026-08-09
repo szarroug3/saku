@@ -41,6 +41,9 @@
 
 import vocabJson from "./generated/vocab.json" with { type: "json" };
 import wordSensesJson from "./generated/word-senses.json" with { type: "json" };
+import cejcReadingFrequencyJson from "./generated/cejc-reading-frequency.json" with { type: "json" };
+import numberWordAlternatesJson from "./number-word-alternates.json" with { type: "json" };
+import wordDefinitionsJson from "./generated/word-definitions.json" with { type: "json" };
 import { entryId, factId, meaningAspect, readingAspect } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
 
@@ -55,6 +58,10 @@ export const VOCAB_SUBJECT = "word";
  * breakdown. The word row IS its first sense; see `SENSES`.
  */
 export interface WordSense {
+  /** Stable identity of the meaning this reading expresses. Several readings
+   * may share it; several English glosses inside it are synonyms, not separate
+   * definitions. Never inferred by comparing English strings. */
+  readonly definitionId: string;
   /** The reading, in kana. */
   readonly reb: string;
   /** English glosses for this reading, best first. */
@@ -217,6 +224,24 @@ type JsonVocabRow = Omit<VocabRow, "senses">;
 // own rows carry; the ingest is what guarantees the arity.
 const SENSES = wordSensesJson as unknown as Readonly<Record<string, readonly WordSense[]>>;
 
+type CejcReadingCounts = Readonly<Record<string, Readonly<Record<string, number>>>>;
+
+/** CEJC occurrence totals, reduced to words Saku carries and normalized to the
+ * hiragana readings Saku uses. Raw CEJC files are ignored and never shipped. */
+const CEJC_READING_COUNTS = (cejcReadingFrequencyJson as {
+  readonly words: CejcReadingCounts;
+}).words;
+
+interface SourceDefinition {
+  readonly id: string;
+  readonly glosses: readonly string[];
+  readonly readings: readonly string[];
+}
+
+const SOURCE_DEFINITIONS = (wordDefinitionsJson as {
+  readonly words: Readonly<Record<string, readonly SourceDefinition[]>>;
+}).words;
+
 /**
  * Productive counting readings omitted by JMdict's standalone-word cut.
  *
@@ -227,16 +252,24 @@ const SENSES = wordSensesJson as unknown as Readonly<Record<string, readonly Wor
  * Library pages, search and ordinary word quizzes receive them together.
  */
 export const NUMBER_WORD_ALTERNATES: Readonly<Record<string, readonly string[]>> = {
-  四: ["よん"],
-  七: ["なな"],
-  九: ["く"],
+  ...numberWordAlternatesJson,
 };
 
 function withSenses(row: JsonVocabRow): VocabRow {
   const shipped = SENSES[row.keb];
-  const base: readonly WordSense[] = shipped?.length
+  const base: readonly WordSense[] = (shipped?.length
     ? shipped
-    : [{ reb: row.reb, glosses: row.glosses, pos: row.pos, align: row.align }];
+    : [{ reb: row.reb, glosses: row.glosses, pos: row.pos, align: row.align }]
+  ).map((sense, i) => ({
+    ...sense,
+    // The current sidecar predates source sense ids. Keep each source row a
+    // separate definition instead of guessing from similar English. A future
+    // JMdict recut writes its ent_seq+sense ordinal here directly.
+    definitionId:
+      "definitionId" in sense && typeof sense.definitionId === "string"
+        ? sense.definitionId
+        : `${row.keb}:${i}`,
+  }));
   const alternates = NUMBER_WORD_ALTERNATES[row.keb] ?? [];
   const senses = [
     ...base,
@@ -244,6 +277,9 @@ function withSenses(row: JsonVocabRow): VocabRow {
       .filter((reb) => !base.some((sense) => sense.reb === reb))
       .map((reb) => ({
         reb,
+        // These are explicitly alternate pronunciations of the SAME number
+        // meaning, so they join that definition by curation, not gloss matching.
+        definitionId: base[0].definitionId,
         glosses: base[0].glosses,
         pos: base[0].pos,
         align: base[0].align,
@@ -258,6 +294,109 @@ function withSenses(row: JsonVocabRow): VocabRow {
     align: primary.align,
     senses,
   };
+}
+
+export interface ReadingDefinition {
+  readonly id: string;
+  readonly glosses: readonly string[];
+  readonly readings: readonly WordSense[];
+  /** Present only when CEJC has enough evidence and the leading reading clears
+   * the conservative majority, effect-size and confidence thresholds. */
+  readonly preferredReading: string | null;
+}
+
+function wilsonLower(successes: number, total: number): number {
+  if (total === 0) return 0;
+  const z = 1.96;
+  const p = successes / total;
+  const z2 = z * z;
+  return (
+    (p + z2 / (2 * total) - z * Math.sqrt((p * (1 - p) + z2 / (4 * total)) / total)) /
+    (1 + z2 / total)
+  );
+}
+
+/** Definitions stay in dictionary order. Readings move only WITHIN their own
+ * definition, most-to-least common in CEJC; a common reading of definition B
+ * can never jump above any reading of definition A. */
+export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[] {
+  const fallback = new Map<string, { glosses: readonly string[]; readings: WordSense[] }>();
+  for (const sense of word.senses) {
+    const group = fallback.get(sense.definitionId);
+    if (group) {
+      const existing = group.readings.find((r) => r.reb === sense.reb);
+      if (!existing) group.readings.push(sense);
+      continue;
+    }
+    fallback.set(sense.definitionId, { glosses: sense.glosses, readings: [sense] });
+  }
+
+  // Restore JMdict's actual sense boundaries. A reading may participate in
+  // several senses, and one sense may accept several readings. When the legacy
+  // sidecar has several rows with one sound, consume them in source order; when
+  // JMdict has more detailed senses than that old snapshot, reuse the sound's
+  // row for its POS/alignment rather than fabricating a new lexical fact.
+  const byReading = new Map<string, WordSense[]>();
+  for (const sense of word.senses) {
+    const rows = byReading.get(sense.reb) ?? [];
+    rows.push(sense);
+    byReading.set(sense.reb, rows);
+  }
+  const used = new Map<string, number>();
+  const covered = new Set<WordSense>();
+  const source = SOURCE_DEFINITIONS[word.keb] ?? [];
+  const definitions: Array<{ id: string; glosses: readonly string[]; readings: WordSense[] }> = [];
+  for (const definition of source) {
+    const readings = definition.readings.flatMap((reb) => {
+      const candidates = byReading.get(reb) ?? [];
+      if (!candidates.length) return [];
+      const at = used.get(reb) ?? 0;
+      const sense = candidates[Math.min(at, candidates.length - 1)];
+      used.set(reb, at + 1);
+      covered.add(sense);
+      return [sense];
+    });
+    if (readings.length) definitions.push({ ...definition, readings });
+  }
+  // A current-app reading absent from today's JMdict is source drift, not a
+  // reason to hide something the quiz still asks. Keep its legacy definition at
+  // the foot, without merging it by English similarity.
+  for (const [id, group] of fallback) {
+    const readings = group.readings.filter((sense) => !covered.has(sense));
+    if (readings.length) definitions.push({ id, glosses: group.glosses, readings });
+  }
+
+  const counts = CEJC_READING_COUNTS[word.keb] ?? {};
+  return definitions.map((group) => {
+    const readings = group.readings
+      .map((reading, order) => ({ reading, order, count: counts[reading.reb] }))
+      .sort((a, b) => {
+        if (a.count == null && b.count == null) return a.order - b.order;
+        if (a.count == null) return 1;
+        if (b.count == null) return -1;
+        return b.count - a.count || a.order - b.order;
+      })
+      .map((x) => x.reading);
+
+    let preferredReading: string | null = null;
+    if (readings.length >= 2) {
+      const top = counts[readings[0].reb];
+      const second = counts[readings[1].reb];
+      const observed = readings.map((r) => counts[r.reb]).filter((n): n is number => n != null);
+      const total = observed.reduce((sum, n) => sum + n, 0);
+      if (
+        top != null &&
+        second != null &&
+        total >= 50 &&
+        top / total >= 0.5 &&
+        top / second >= 1.6 &&
+        wilsonLower(top, top + second) > 0.5
+      ) {
+        preferredReading = readings[0].reb;
+      }
+    }
+    return { id: group.id, glosses: group.glosses, readings, preferredReading };
+  });
 }
 
 export const VOCAB: readonly VocabRow[] = [

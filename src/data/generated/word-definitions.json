@@ -1,0 +1,9004 @@
+{
+  "source": {
+    "name": "JMdict",
+    "rawSha256": "a741932c15f7dc1d3be50958798e641141e3f6cafda1c19c8f62ef33b86b8b25",
+    "url": "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz"
+  },
+  "words": {
+    "あの": [
+      {
+        "glosses": [
+          "that",
+          "those",
+          "the"
+        ],
+        "id": "1000420:0",
+        "readings": [
+          "あの"
+        ]
+      },
+      {
+        "glosses": [
+          "say",
+          "well",
+          "um",
+          "er"
+        ],
+        "id": "1000430:0",
+        "readings": [
+          "あの"
+        ]
+      }
+    ],
+    "ある": [
+      {
+        "glosses": [
+          "to be",
+          "to exist",
+          "to live"
+        ],
+        "id": "1296400:0",
+        "readings": [
+          "ある"
+        ]
+      },
+      {
+        "glosses": [
+          "to have"
+        ],
+        "id": "1296400:1",
+        "readings": [
+          "ある"
+        ]
+      },
+      {
+        "glosses": [
+          "to be located"
+        ],
+        "id": "1296400:2",
+        "readings": [
+          "ある"
+        ]
+      },
+      {
+        "glosses": [
+          "to be equipped with"
+        ],
+        "id": "1296400:3",
+        "readings": [
+          "ある"
+        ]
+      },
+      {
+        "glosses": [
+          "to happen",
+          "to come about"
+        ],
+        "id": "1296400:4",
+        "readings": [
+          "ある"
+        ]
+      },
+      {
+        "glosses": [
+          "to exist (in a completed state)",
+          "to be (something unchanged in its current state)"
+        ],
+        "id": "1296400:5",
+        "readings": [
+          "ある"
+        ]
+      },
+      {
+        "glosses": [
+          "a certain ...",
+          "some ..."
+        ],
+        "id": "1586840:0",
+        "readings": [
+          "ある"
+        ]
+      }
+    ],
+    "いとこ": [
+      {
+        "glosses": [
+          "cousin (male)"
+        ],
+        "id": "1335290:0",
+        "readings": [
+          "いとこ"
+        ]
+      },
+      {
+        "glosses": [
+          "cousin (female)"
+        ],
+        "id": "1335310:0",
+        "readings": [
+          "いとこ"
+        ]
+      }
+    ],
+    "いる": [
+      {
+        "glosses": [
+          "to be needed",
+          "to be necessary",
+          "to be required",
+          "to be wanted",
+          "to need",
+          "to want"
+        ],
+        "id": "1546640:0",
+        "readings": [
+          "いる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be (of animate objects)",
+          "to exist"
+        ],
+        "id": "1577980:0",
+        "readings": [
+          "いる"
+        ]
+      },
+      {
+        "glosses": [
+          "to stay"
+        ],
+        "id": "1577980:1",
+        "readings": [
+          "いる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be ...-ing"
+        ],
+        "id": "1577980:2",
+        "readings": [
+          "いる"
+        ]
+      },
+      {
+        "glosses": [
+          "to have ...-ed",
+          "to be ...-ed"
+        ],
+        "id": "1577980:3",
+        "readings": [
+          "いる"
+        ]
+      },
+      {
+        "glosses": [
+          "to calm down"
+        ],
+        "id": "2729170:0",
+        "readings": [
+          "いる"
+        ]
+      }
+    ],
+    "おごる": [
+      {
+        "glosses": [
+          "to treat (someone) to (something)",
+          "to give (someone) a treat",
+          "to buy (someone a meal, drink, etc.)"
+        ],
+        "id": "1565940:0",
+        "readings": [
+          "おごる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be extravagant",
+          "to live in luxury"
+        ],
+        "id": "1565940:1",
+        "readings": [
+          "おごる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be proud",
+          "to be haughty",
+          "to be arrogant",
+          "to be conceited",
+          "to brag",
+          "to show off"
+        ],
+        "id": "2857913:0",
+        "readings": [
+          "おごる"
+        ]
+      }
+    ],
+    "かかる": [
+      {
+        "glosses": [
+          "to take (a resource, e.g. time or money)"
+        ],
+        "id": "1207590:0",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to hang"
+        ],
+        "id": "1207590:1",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to come into view",
+          "to arrive"
+        ],
+        "id": "1207590:2",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to come under (a contract, a tax)"
+        ],
+        "id": "1207590:3",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to start (engines, motors)"
+        ],
+        "id": "1207590:4",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to attend",
+          "to deal with",
+          "to handle"
+        ],
+        "id": "1207590:5",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to have started to",
+          "to be on the verge of"
+        ],
+        "id": "1207590:6",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to overlap (e.g. information in a manual)",
+          "to cover"
+        ],
+        "id": "1207590:7",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to (come) at"
+        ],
+        "id": "1207590:8",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be fastened"
+        ],
+        "id": "1207590:9",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be covered (e.g. with dust, a table-cloth, etc.)"
+        ],
+        "id": "1207590:10",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be caught in"
+        ],
+        "id": "1207590:11",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to get a call"
+        ],
+        "id": "1207590:12",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to depend on"
+        ],
+        "id": "1207590:13",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to begin (a task)",
+          "to set about (doing)",
+          "to get down to"
+        ],
+        "id": "1207590:14",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "to contract (a disease)",
+          "to suffer from"
+        ],
+        "id": "1609500:0",
+        "readings": [
+          "かかる"
+        ]
+      },
+      {
+        "glosses": [
+          "such",
+          "like this"
+        ],
+        "id": "2076580:0",
+        "readings": [
+          "かかる"
+        ]
+      }
+    ],
+    "そう": [
+      {
+        "glosses": [
+          "appearing that",
+          "seeming that",
+          "looking like",
+          "having the appearance of"
+        ],
+        "id": "1006610:0",
+        "readings": [
+          "そう"
+        ]
+      },
+      {
+        "glosses": [
+          "in that way",
+          "thus",
+          "such"
+        ],
+        "id": "2137720:0",
+        "readings": [
+          "そう"
+        ]
+      },
+      {
+        "glosses": [
+          "so",
+          "the same",
+          "that's the case"
+        ],
+        "id": "2137720:1",
+        "readings": [
+          "そう"
+        ]
+      },
+      {
+        "glosses": [
+          "so?"
+        ],
+        "id": "2137720:2",
+        "readings": [
+          "そう"
+        ]
+      }
+    ],
+    "そば": [
+      {
+        "glosses": [
+          "buckwheat (Fagopyrum esculentum)"
+        ],
+        "id": "1238460:0",
+        "readings": [
+          "そば"
+        ]
+      },
+      {
+        "glosses": [
+          "soba",
+          "Japanese buckwheat noodles"
+        ],
+        "id": "1238460:1",
+        "readings": [
+          "そば"
+        ]
+      },
+      {
+        "glosses": [
+          "Chinese-style wheat noodles"
+        ],
+        "id": "1238460:2",
+        "readings": [
+          "そば"
+        ]
+      },
+      {
+        "glosses": [
+          "(place) near by",
+          "(place) close by",
+          "(place) right next to",
+          "the side (of something)",
+          "beside",
+          "vicinity",
+          "proximity",
+          "neighbourhood (neighborhood)"
+        ],
+        "id": "1403830:0",
+        "readings": [
+          "そば"
+        ]
+      },
+      {
+        "glosses": [
+          "as soon as",
+          "right after"
+        ],
+        "id": "1403830:1",
+        "readings": [
+          "そば"
+        ]
+      }
+    ],
+    "ちゃう": [
+      {
+        "glosses": [
+          "to do completely"
+        ],
+        "id": "2013800:0",
+        "readings": [
+          "ちゃう"
+        ]
+      },
+      {
+        "glosses": [
+          "to do accidentally",
+          "to do without meaning to",
+          "to happen to do"
+        ],
+        "id": "2013800:1",
+        "readings": [
+          "ちゃう"
+        ]
+      },
+      {
+        "glosses": [
+          "no",
+          "that's wrong",
+          "it's not like that"
+        ],
+        "id": "2013805:0",
+        "readings": [
+          "ちゃう"
+        ]
+      },
+      {
+        "glosses": [
+          "isn't it?",
+          "wasn't it?"
+        ],
+        "id": "2013805:1",
+        "readings": [
+          "ちゃう"
+        ]
+      }
+    ],
+    "つく": [
+      {
+        "glosses": [
+          "to be lit (of a lamp, burner, etc.)",
+          "to catch fire",
+          "to ignite",
+          "to start burning"
+        ],
+        "id": "1441400:0",
+        "readings": [
+          "つく"
+        ]
+      },
+      {
+        "glosses": [
+          "to be turned on (of a light, appliance, etc.)",
+          "to come on"
+        ],
+        "id": "1441400:1",
+        "readings": [
+          "つく"
+        ]
+      },
+      {
+        "glosses": [
+          "to breathe out",
+          "to breathe"
+        ],
+        "id": "1444150:0",
+        "readings": [
+          "つく"
+        ]
+      },
+      {
+        "glosses": [
+          "to tell (a lie)",
+          "to use (foul language)"
+        ],
+        "id": "1444150:1",
+        "readings": [
+          "つく"
+        ]
+      },
+      {
+        "glosses": [
+          "to vomit",
+          "to throw up",
+          "to spit up"
+        ],
+        "id": "1444150:2",
+        "readings": [
+          "つく"
+        ]
+      },
+      {
+        "glosses": [
+          "to hull (rice, barley, etc.)",
+          "to pound (rice)",
+          "to polish (rice)",
+          "to stamp (ore)"
+        ],
+        "id": "2097190:0",
+        "readings": [
+          "つく"
+        ]
+      },
+      {
+        "glosses": [
+          "horned owl (any owl with horn-like ear tufts)"
+        ],
+        "id": "2869190:0",
+        "readings": [
+          "つく"
+        ]
+      }
+    ],
+    "つける": [
+      {
+        "glosses": [
+          "to attach",
+          "to join",
+          "to connect",
+          "to add",
+          "to append",
+          "to affix",
+          "to stick",
+          "to glue",
+          "to fasten",
+          "to sew on",
+          "to apply (ointment)",
+          "to put against"
+        ],
+        "id": "1495770:0",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to furnish (a house with)"
+        ],
+        "id": "1495770:1",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to wear",
+          "to put on"
+        ],
+        "id": "1495770:2",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to keep a diary",
+          "to make an entry"
+        ],
+        "id": "1495770:3",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to appraise",
+          "to set (a price)"
+        ],
+        "id": "1495770:4",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to allot",
+          "to budget",
+          "to assign"
+        ],
+        "id": "1495770:5",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to bring alongside"
+        ],
+        "id": "1495770:6",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to place (under guard or doctor)"
+        ],
+        "id": "1495770:7",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to follow (someone)",
+          "to shadow",
+          "to tail",
+          "to stalk"
+        ],
+        "id": "1495770:8",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to load",
+          "to give (courage to)"
+        ],
+        "id": "1495770:9",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to keep (an eye on)"
+        ],
+        "id": "1495770:10",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to establish (relations or understanding)"
+        ],
+        "id": "1495770:11",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to turn on (a light)"
+        ],
+        "id": "1495770:12",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to produce flowers (of a plant)",
+          "to produce fruit"
+        ],
+        "id": "1495770:13",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to attach",
+          "to play an attachment"
+        ],
+        "id": "1495770:14",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to do intensely",
+          "to do fiercely",
+          "to do strongly"
+        ],
+        "id": "1495770:15",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to be used to (doing)",
+          "to be accustomed to"
+        ],
+        "id": "1495770:16",
+        "readings": [
+          "つける"
+        ]
+      },
+      {
+        "glosses": [
+          "to turn on",
+          "to switch on",
+          "to light up"
+        ],
+        "id": "1610400:0",
+        "readings": [
+          "つける"
+        ]
+      }
+    ],
+    "ない": [
+      {
+        "glosses": [
+          "nonexistent",
+          "not being (there)"
+        ],
+        "id": "1529520:0",
+        "readings": [
+          "ない"
+        ]
+      },
+      {
+        "glosses": [
+          "unowned",
+          "not had",
+          "unpossessed"
+        ],
+        "id": "1529520:1",
+        "readings": [
+          "ない"
+        ]
+      },
+      {
+        "glosses": [
+          "unique"
+        ],
+        "id": "1529520:2",
+        "readings": [
+          "ない"
+        ]
+      },
+      {
+        "glosses": [
+          "not",
+          "impossible",
+          "won't happen"
+        ],
+        "id": "1529520:3",
+        "readings": [
+          "ない"
+        ]
+      },
+      {
+        "glosses": [
+          "not"
+        ],
+        "id": "1529520:4",
+        "readings": [
+          "ない"
+        ]
+      },
+      {
+        "glosses": [
+          "to not be",
+          "to have not"
+        ],
+        "id": "1529520:5",
+        "readings": [
+          "ない"
+        ]
+      },
+      {
+        "glosses": [
+          "emphatic suffix"
+        ],
+        "id": "2861097:0",
+        "readings": [
+          "ない"
+        ]
+      },
+      {
+        "glosses": [
+          "earthquake"
+        ],
+        "id": "2862777:0",
+        "readings": [
+          "ない"
+        ]
+      }
+    ],
+    "なす": [
+      {
+        "glosses": [
+          "eggplant (Solanum melongena)",
+          "aubergine"
+        ],
+        "id": "1195240:0",
+        "readings": [
+          "なす"
+        ]
+      },
+      {
+        "glosses": [
+          "-like",
+          "resembling",
+          "similar to"
+        ],
+        "id": "2842197:0",
+        "readings": [
+          "なす"
+        ]
+      },
+      {
+        "glosses": [
+          "to do",
+          "to commit",
+          "to carry out",
+          "to bring about"
+        ],
+        "id": "2861111:0",
+        "readings": [
+          "なす"
+        ]
+      }
+    ],
+    "なる": [
+      {
+        "glosses": [
+          "to become",
+          "to get",
+          "to grow",
+          "to turn",
+          "to reach",
+          "to attain"
+        ],
+        "id": "1375610:0",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to result in",
+          "to turn out",
+          "to end up",
+          "to prove (to be)"
+        ],
+        "id": "1375610:1",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to consist of",
+          "to be composed of",
+          "to be made up of"
+        ],
+        "id": "1375610:2",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be completed",
+          "to be realized",
+          "to succeed",
+          "to be attained",
+          "to be accomplished"
+        ],
+        "id": "1375610:3",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to change (into)",
+          "to turn (into)",
+          "to transform"
+        ],
+        "id": "1375610:4",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to come (to do)",
+          "to begin (to do)",
+          "to grow (to do)"
+        ],
+        "id": "1375610:5",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to come to",
+          "to amount to",
+          "to add up to",
+          "to make"
+        ],
+        "id": "1375610:6",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to play (the part of)",
+          "to act as"
+        ],
+        "id": "1375610:7",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be used for",
+          "to be useful for",
+          "to serve as"
+        ],
+        "id": "1375610:8",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be promoted"
+        ],
+        "id": "1375610:9",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to do ..."
+        ],
+        "id": "1375610:10",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "to bear fruit"
+        ],
+        "id": "1611000:0",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "that is in"
+        ],
+        "id": "2138260:0",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "who is called",
+          "that is called"
+        ],
+        "id": "2138260:1",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "that is"
+        ],
+        "id": "2138260:2",
+        "readings": [
+          "なる"
+        ]
+      },
+      {
+        "glosses": [
+          "I see"
+        ],
+        "id": "2138260:3",
+        "readings": [
+          "なる"
+        ]
+      }
+    ],
+    "なんて": [
+      {
+        "glosses": [
+          "how ...!",
+          "what ...!"
+        ],
+        "id": "1188370:0",
+        "readings": [
+          "なんて"
+        ]
+      },
+      {
+        "glosses": [
+          "what?",
+          "what's that?"
+        ],
+        "id": "1188370:1",
+        "readings": [
+          "なんて"
+        ]
+      },
+      {
+        "glosses": [
+          "things like",
+          "something like",
+          "someone like",
+          "such a thing as",
+          "(the fact) that",
+          "to think that"
+        ],
+        "id": "2089060:0",
+        "readings": [
+          "なんて"
+        ]
+      }
+    ],
+    "はげる": [
+      {
+        "glosses": [
+          "to lose hair",
+          "to become bald"
+        ],
+        "id": "1455420:0",
+        "readings": [
+          "はげる"
+        ]
+      },
+      {
+        "glosses": [
+          "to become bare (e.g. a mountain becomes bare of trees)"
+        ],
+        "id": "1455420:1",
+        "readings": [
+          "はげる"
+        ]
+      },
+      {
+        "glosses": [
+          "to peel off",
+          "to come off",
+          "to flake off",
+          "to be worn off"
+        ],
+        "id": "1474390:0",
+        "readings": [
+          "はげる"
+        ]
+      },
+      {
+        "glosses": [
+          "to fade",
+          "to discolor",
+          "to discolour"
+        ],
+        "id": "1474390:1",
+        "readings": [
+          "はげる"
+        ]
+      }
+    ],
+    "ぼける": [
+      {
+        "glosses": [
+          "to grow senile",
+          "to be childish with age"
+        ],
+        "id": "1288490:0",
+        "readings": [
+          "ぼける"
+        ]
+      },
+      {
+        "glosses": [
+          "to be mentally slow",
+          "to be befuddled"
+        ],
+        "id": "1288490:1",
+        "readings": [
+          "ぼける"
+        ]
+      },
+      {
+        "glosses": [
+          "to play stupid",
+          "to say something stupid (oft. on purpose; esp. as part of a comedic routine)"
+        ],
+        "id": "1288490:2",
+        "readings": [
+          "ぼける"
+        ]
+      },
+      {
+        "glosses": [
+          "to be faded",
+          "to be hazy",
+          "to be blurred",
+          "to be out of focus"
+        ],
+        "id": "1288495:0",
+        "readings": [
+          "ぼける"
+        ]
+      }
+    ],
+    "まく": [
+      {
+        "glosses": [
+          "to scatter",
+          "to sprinkle",
+          "to strew"
+        ],
+        "id": "1303400:0",
+        "readings": [
+          "まく"
+        ]
+      },
+      {
+        "glosses": [
+          "to distribute (flyers, etc.)",
+          "to give out",
+          "to hand out"
+        ],
+        "id": "1303400:1",
+        "readings": [
+          "まく"
+        ]
+      },
+      {
+        "glosses": [
+          "to shake off (a pursuer, companion, etc.)",
+          "to give the slip",
+          "to throw off",
+          "to lose",
+          "to get rid of"
+        ],
+        "id": "1303400:2",
+        "readings": [
+          "まく"
+        ]
+      },
+      {
+        "glosses": [
+          "to sow",
+          "to plant",
+          "to seed"
+        ],
+        "id": "2611890:0",
+        "readings": [
+          "まく"
+        ]
+      },
+      {
+        "glosses": [
+          "to sow (the seeds of; e.g. conflict)"
+        ],
+        "id": "2611890:1",
+        "readings": [
+          "まく"
+        ]
+      },
+      {
+        "glosses": [
+          "to sprinkle (gold or silver powder on lacquerware)"
+        ],
+        "id": "2611890:2",
+        "readings": [
+          "まく"
+        ]
+      }
+    ],
+    "ウェア": [
+      {
+        "glosses": [
+          "wear",
+          "clothing",
+          "dress"
+        ],
+        "id": "1025730:0",
+        "readings": [
+          "ウェア"
+        ]
+      },
+      {
+        "glosses": [
+          "ware",
+          "goods"
+        ],
+        "id": "2869280:0",
+        "readings": [
+          "ウェア"
+        ]
+      },
+      {
+        "glosses": [
+          "-ware",
+          "software"
+        ],
+        "id": "2869280:1",
+        "readings": [
+          "ウェア"
+        ]
+      }
+    ],
+    "カラー": [
+      {
+        "glosses": [
+          "color",
+          "colour"
+        ],
+        "id": "1038500:0",
+        "readings": [
+          "カラー"
+        ]
+      },
+      {
+        "glosses": [
+          "color",
+          "character",
+          "characteristics",
+          "atmosphere"
+        ],
+        "id": "1038500:1",
+        "readings": [
+          "カラー"
+        ]
+      },
+      {
+        "glosses": [
+          "coloring (one's hair)",
+          "dyeing"
+        ],
+        "id": "1038500:2",
+        "readings": [
+          "カラー"
+        ]
+      },
+      {
+        "glosses": [
+          "collar"
+        ],
+        "id": "2853151:0",
+        "readings": [
+          "カラー"
+        ]
+      },
+      {
+        "glosses": [
+          "calla (variety of arum lily)"
+        ],
+        "id": "2853152:0",
+        "readings": [
+          "カラー"
+        ]
+      }
+    ],
+    "コート": [
+      {
+        "glosses": [
+          "coat"
+        ],
+        "id": "1049000:0",
+        "readings": [
+          "コート"
+        ]
+      },
+      {
+        "glosses": [
+          "coating"
+        ],
+        "id": "1049000:1",
+        "readings": [
+          "コート"
+        ]
+      },
+      {
+        "glosses": [
+          "court (e.g. tennis, basketball, volleyball)"
+        ],
+        "id": "2842174:0",
+        "readings": [
+          "コート"
+        ]
+      }
+    ],
+    "シリアル": [
+      {
+        "glosses": [
+          "serial"
+        ],
+        "id": "1062960:0",
+        "readings": [
+          "シリアル"
+        ]
+      },
+      {
+        "glosses": [
+          "cereal",
+          "breakfast cereal"
+        ],
+        "id": "2860960:0",
+        "readings": [
+          "シリアル"
+        ]
+      }
+    ],
+    "シート": [
+      {
+        "glosses": [
+          "seat"
+        ],
+        "id": "1059450:0",
+        "readings": [
+          "シート"
+        ]
+      },
+      {
+        "glosses": [
+          "sheet"
+        ],
+        "id": "2851348:0",
+        "readings": [
+          "シート"
+        ]
+      },
+      {
+        "glosses": [
+          "spreadsheet"
+        ],
+        "id": "2851348:1",
+        "readings": [
+          "シート"
+        ]
+      }
+    ],
+    "ダイヤ": [
+      {
+        "glosses": [
+          "diamond"
+        ],
+        "id": "1076860:0",
+        "readings": [
+          "ダイヤ"
+        ]
+      },
+      {
+        "glosses": [
+          "(railway) schedule",
+          "timetable"
+        ],
+        "id": "2855660:0",
+        "readings": [
+          "ダイヤ"
+        ]
+      },
+      {
+        "glosses": [
+          "diagram"
+        ],
+        "id": "2855660:1",
+        "readings": [
+          "ダイヤ"
+        ]
+      }
+    ],
+    "ピン": [
+      {
+        "glosses": [
+          "pin (e.g. hairpin, safety pin)"
+        ],
+        "id": "1107060:0",
+        "readings": [
+          "ピン"
+        ]
+      },
+      {
+        "glosses": [
+          "(bowling) pin"
+        ],
+        "id": "1107060:1",
+        "readings": [
+          "ピン"
+        ]
+      },
+      {
+        "glosses": [
+          "pin",
+          "flagstick"
+        ],
+        "id": "1107060:2",
+        "readings": [
+          "ピン"
+        ]
+      },
+      {
+        "glosses": [
+          "(a) one (on dice or Japanese playing cards)"
+        ],
+        "id": "2855585:0",
+        "readings": [
+          "ピン"
+        ]
+      },
+      {
+        "glosses": [
+          "first",
+          "top",
+          "best",
+          "number one"
+        ],
+        "id": "2855585:1",
+        "readings": [
+          "ピン"
+        ]
+      },
+      {
+        "glosses": [
+          "rake-off",
+          "cut",
+          "kickback"
+        ],
+        "id": "2855585:2",
+        "readings": [
+          "ピン"
+        ]
+      }
+    ],
+    "ファースト": [
+      {
+        "glosses": [
+          "first"
+        ],
+        "id": "1107460:0",
+        "readings": [
+          "ファースト"
+        ]
+      },
+      {
+        "glosses": [
+          "first base",
+          "first baseman"
+        ],
+        "id": "1107460:1",
+        "readings": [
+          "ファースト"
+        ]
+      },
+      {
+        "glosses": [
+          "fast"
+        ],
+        "id": "2858155:0",
+        "readings": [
+          "ファースト"
+        ]
+      }
+    ],
+    "ホーム": [
+      {
+        "glosses": [
+          "platform"
+        ],
+        "id": "1121740:0",
+        "readings": [
+          "ホーム"
+        ]
+      },
+      {
+        "glosses": [
+          "home"
+        ],
+        "id": "2855797:0",
+        "readings": [
+          "ホーム"
+        ]
+      },
+      {
+        "glosses": [
+          "home base",
+          "home plate"
+        ],
+        "id": "2855797:1",
+        "readings": [
+          "ホーム"
+        ]
+      }
+    ],
+    "ホール": [
+      {
+        "glosses": [
+          "hall (dance, concert, etc.)"
+        ],
+        "id": "1122130:0",
+        "readings": [
+          "ホール"
+        ]
+      },
+      {
+        "glosses": [
+          "dining area of a restaurant"
+        ],
+        "id": "1122130:1",
+        "readings": [
+          "ホール"
+        ]
+      },
+      {
+        "glosses": [
+          "hole"
+        ],
+        "id": "2841290:0",
+        "readings": [
+          "ホール"
+        ]
+      },
+      {
+        "glosses": [
+          "hole",
+          "cup"
+        ],
+        "id": "2841290:1",
+        "readings": [
+          "ホール"
+        ]
+      },
+      {
+        "glosses": [
+          "(electron) hole"
+        ],
+        "id": "2841290:2",
+        "readings": [
+          "ホール"
+        ]
+      },
+      {
+        "glosses": [
+          "whole",
+          "entire",
+          "complete"
+        ],
+        "id": "2841291:0",
+        "readings": [
+          "ホール"
+        ]
+      }
+    ],
+    "ボルト": [
+      {
+        "glosses": [
+          "volt"
+        ],
+        "id": "1124390:0",
+        "readings": [
+          "ボルト"
+        ]
+      },
+      {
+        "glosses": [
+          "bolt"
+        ],
+        "id": "2853387:0",
+        "readings": [
+          "ボルト"
+        ]
+      }
+    ],
+    "ライター": [
+      {
+        "glosses": [
+          "lighter"
+        ],
+        "id": "1137880:0",
+        "readings": [
+          "ライター"
+        ]
+      },
+      {
+        "glosses": [
+          "writer"
+        ],
+        "id": "2844121:0",
+        "readings": [
+          "ライター"
+        ]
+      }
+    ],
+    "ロック": [
+      {
+        "glosses": [
+          "lock"
+        ],
+        "id": "1147600:0",
+        "readings": [
+          "ロック"
+        ]
+      },
+      {
+        "glosses": [
+          "lock (in rugby)",
+          "lock forward"
+        ],
+        "id": "1147600:1",
+        "readings": [
+          "ロック"
+        ]
+      },
+      {
+        "glosses": [
+          "roc (mythological bird)"
+        ],
+        "id": "2846322:0",
+        "readings": [
+          "ロック"
+        ]
+      },
+      {
+        "glosses": [
+          "rock (music)"
+        ],
+        "id": "2846323:0",
+        "readings": [
+          "ロック"
+        ]
+      },
+      {
+        "glosses": [
+          "rock",
+          "boulder",
+          "stone"
+        ],
+        "id": "2846323:1",
+        "readings": [
+          "ロック"
+        ]
+      },
+      {
+        "glosses": [
+          "on the rocks (drink)"
+        ],
+        "id": "2846323:2",
+        "readings": [
+          "ロック"
+        ]
+      }
+    ],
+    "一": [
+      {
+        "glosses": [
+          "one",
+          "1"
+        ],
+        "id": "1160790:0",
+        "readings": [
+          "いち"
+        ]
+      },
+      {
+        "glosses": [
+          "best"
+        ],
+        "id": "1160790:1",
+        "readings": [
+          "いち"
+        ]
+      },
+      {
+        "glosses": [
+          "first",
+          "foremost"
+        ],
+        "id": "1160790:2",
+        "readings": [
+          "いち"
+        ]
+      },
+      {
+        "glosses": [
+          "beginning",
+          "start"
+        ],
+        "id": "1160790:3",
+        "readings": [
+          "いち"
+        ]
+      },
+      {
+        "glosses": [
+          "a (single)",
+          "one (of many)"
+        ],
+        "id": "1160790:4",
+        "readings": [
+          "いち"
+        ]
+      },
+      {
+        "glosses": [
+          "ace"
+        ],
+        "id": "1160790:5",
+        "readings": [
+          "いち"
+        ]
+      },
+      {
+        "glosses": [
+          "bottom string (on a shamisen, etc.)"
+        ],
+        "id": "1160790:6",
+        "readings": [
+          "いち"
+        ]
+      },
+      {
+        "glosses": [
+          "one"
+        ],
+        "id": "2821500:0",
+        "readings": [
+          "ひと"
+        ]
+      }
+    ],
+    "七": [
+      {
+        "glosses": [
+          "seven"
+        ],
+        "id": "1319210:0",
+        "readings": [
+          "しち",
+          "なな"
+        ]
+      }
+    ],
+    "上": [
+      {
+        "glosses": [
+          "above",
+          "over",
+          "up"
+        ],
+        "id": "1352130:0",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "top",
+          "summit",
+          "upper part",
+          "head (e.g. of a staircase)"
+        ],
+        "id": "1352130:1",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "surface",
+          "on (top of)"
+        ],
+        "id": "1352130:2",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "the above (in a piece of writing)",
+          "earlier part"
+        ],
+        "id": "1352130:3",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "superior",
+          "better",
+          "higher (position, rank, etc.)",
+          "upper (class)"
+        ],
+        "id": "1352130:4",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "elder",
+          "older",
+          "senior"
+        ],
+        "id": "1352130:5",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "with respect to ...",
+          "in terms of",
+          "as far as ... is concerned",
+          "when (e.g. drunk)"
+        ],
+        "id": "1352130:6",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "besides ...",
+          "in addition to ...",
+          "on top of ...",
+          "as well as ..."
+        ],
+        "id": "1352130:7",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "after ...",
+          "upon ...",
+          "on ...",
+          "with (e.g. full awareness)",
+          "as a result of ..."
+        ],
+        "id": "1352130:8",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "since ...",
+          "now that ...",
+          "because ..."
+        ],
+        "id": "1352130:9",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "honorable",
+          "venerable",
+          "dear"
+        ],
+        "id": "1352130:10",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "emperor",
+          "sovereign",
+          "shogun",
+          "daimyo"
+        ],
+        "id": "1352130:11",
+        "readings": [
+          "うえ"
+        ]
+      },
+      {
+        "glosses": [
+          "upper reaches (of a river)",
+          "upper stream"
+        ],
+        "id": "1352150:0",
+        "readings": [
+          "かみ"
+        ]
+      },
+      {
+        "glosses": [
+          "top",
+          "upper part",
+          "upper half (of the body)"
+        ],
+        "id": "1352150:1",
+        "readings": [
+          "かみ"
+        ]
+      },
+      {
+        "glosses": [
+          "long ago"
+        ],
+        "id": "1352150:2",
+        "readings": [
+          "かみ"
+        ]
+      },
+      {
+        "glosses": [
+          "beginning",
+          "first"
+        ],
+        "id": "1352150:3",
+        "readings": [
+          "かみ"
+        ]
+      },
+      {
+        "glosses": [
+          "person of high rank (e.g. the emperor)"
+        ],
+        "id": "1352150:4",
+        "readings": [
+          "かみ"
+        ]
+      },
+      {
+        "glosses": [
+          "government",
+          "imperial court"
+        ],
+        "id": "1352150:5",
+        "readings": [
+          "かみ"
+        ]
+      },
+      {
+        "glosses": [
+          "imperial capital (i.e. Kyoto)",
+          "capital region (i.e. Kansai)",
+          "region (or direction of) the imperial palace"
+        ],
+        "id": "1352150:6",
+        "readings": [
+          "かみ"
+        ]
+      },
+      {
+        "glosses": [
+          "head (of a table)"
+        ],
+        "id": "1352150:7",
+        "readings": [
+          "かみ"
+        ]
+      },
+      {
+        "glosses": [
+          "wife",
+          "mistress (of a restaurant)"
+        ],
+        "id": "1352150:8",
+        "readings": [
+          "かみ"
+        ]
+      },
+      {
+        "glosses": [
+          "from the standpoint of",
+          "from the viewpoint of",
+          "with respect to",
+          "in terms of",
+          "as a matter of",
+          "in view of",
+          "so far as ... is concerned"
+        ],
+        "id": "1352170:0",
+        "readings": [
+          "じょう"
+        ]
+      },
+      {
+        "glosses": [
+          "on",
+          "above",
+          "on top of",
+          "aboard (a ship or vehicle)"
+        ],
+        "id": "1352170:1",
+        "readings": [
+          "じょう"
+        ]
+      },
+      {
+        "glosses": [
+          "the best",
+          "top",
+          "first class",
+          "first grade"
+        ],
+        "id": "1352170:2",
+        "readings": [
+          "じょう"
+        ]
+      },
+      {
+        "glosses": [
+          "first volume (of a two or three-volume set)",
+          "first book"
+        ],
+        "id": "1352170:3",
+        "readings": [
+          "じょう"
+        ]
+      },
+      {
+        "glosses": [
+          "with my compliments"
+        ],
+        "id": "1352170:4",
+        "readings": [
+          "じょう"
+        ]
+      }
+    ],
+    "上下": [
+      {
+        "glosses": [
+          "top and bottom",
+          "high and low",
+          "above and below",
+          "upper and lower ends",
+          "up and down"
+        ],
+        "id": "1352710:0",
+        "readings": [
+          "じょうげ"
+        ]
+      },
+      {
+        "glosses": [
+          "going up and down",
+          "rising and falling",
+          "fluctuating"
+        ],
+        "id": "1352710:1",
+        "readings": [
+          "じょうげ"
+        ]
+      },
+      {
+        "glosses": [
+          "going and coming back"
+        ],
+        "id": "1352710:2",
+        "readings": [
+          "じょうげ"
+        ]
+      },
+      {
+        "glosses": [
+          "upper and lower classes",
+          "ruler and ruled",
+          "the government and the people"
+        ],
+        "id": "1352710:3",
+        "readings": [
+          "じょうげ"
+        ]
+      },
+      {
+        "glosses": [
+          "first and second volumes"
+        ],
+        "id": "1352710:4",
+        "readings": [
+          "じょうげ"
+        ]
+      },
+      {
+        "glosses": [
+          "top and bottom",
+          "two-piece (outfit)"
+        ],
+        "id": "1352710:5",
+        "readings": [
+          "じょうげ"
+        ]
+      },
+      {
+        "glosses": [
+          "top and bottom",
+          "up and down",
+          "high and low",
+          "above and below",
+          "upper and lower ends"
+        ],
+        "id": "1352700:0",
+        "readings": [
+          "うえした"
+        ]
+      },
+      {
+        "glosses": [
+          "upside-down"
+        ],
+        "id": "1352700:1",
+        "readings": [
+          "うえした"
+        ]
+      }
+    ],
+    "下手": [
+      {
+        "glosses": [
+          "unskillful",
+          "poor",
+          "awkward"
+        ],
+        "id": "1185200:0",
+        "readings": [
+          "へた"
+        ]
+      },
+      {
+        "glosses": [
+          "imprudent",
+          "untactful"
+        ],
+        "id": "1185200:1",
+        "readings": [
+          "へた"
+        ]
+      },
+      {
+        "glosses": [
+          "humble position",
+          "inferior"
+        ],
+        "id": "1185190:0",
+        "readings": [
+          "したて"
+        ]
+      },
+      {
+        "glosses": [
+          "underarm grip on opponent's belt"
+        ],
+        "id": "1185190:1",
+        "readings": [
+          "したて"
+        ]
+      }
+    ],
+    "中": [
+      {
+        "glosses": [
+          "inside",
+          "interior"
+        ],
+        "id": "1423310:0",
+        "readings": [
+          "なか"
+        ]
+      },
+      {
+        "glosses": [
+          "among",
+          "within"
+        ],
+        "id": "1423310:1",
+        "readings": [
+          "なか"
+        ]
+      },
+      {
+        "glosses": [
+          "middle",
+          "center",
+          "centre"
+        ],
+        "id": "1423310:2",
+        "readings": [
+          "なか"
+        ]
+      },
+      {
+        "glosses": [
+          "during",
+          "while",
+          "middle",
+          "midst",
+          "amid"
+        ],
+        "id": "1423310:3",
+        "readings": [
+          "なか"
+        ]
+      },
+      {
+        "glosses": [
+          "interval",
+          "gap"
+        ],
+        "id": "1423310:4",
+        "readings": [
+          "なか"
+        ]
+      },
+      {
+        "glosses": [
+          "mean",
+          "average"
+        ],
+        "id": "1423310:5",
+        "readings": [
+          "なか"
+        ]
+      },
+      {
+        "glosses": [
+          "second (of three, e.g. sons, volumes)",
+          "middle"
+        ],
+        "id": "1423310:6",
+        "readings": [
+          "なか"
+        ]
+      },
+      {
+        "glosses": [
+          "medium grade",
+          "medium quality"
+        ],
+        "id": "1423310:7",
+        "readings": [
+          "なか"
+        ]
+      },
+      {
+        "glosses": [
+          "red-light district"
+        ],
+        "id": "1423310:8",
+        "readings": [
+          "なか"
+        ]
+      },
+      {
+        "glosses": [
+          "medium (size)",
+          "average (grade, level, etc.)",
+          "middle"
+        ],
+        "id": "1620400:0",
+        "readings": [
+          "ちゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "in",
+          "within",
+          "out of (e.g. ten people)",
+          "among"
+        ],
+        "id": "1620400:1",
+        "readings": [
+          "ちゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "during",
+          "while",
+          "in (the course of)",
+          "within (a period)",
+          "throughout"
+        ],
+        "id": "1620400:2",
+        "readings": [
+          "ちゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "currently (doing)",
+          "in the process of",
+          "in the middle of",
+          "under (e.g. construction, investigation)"
+        ],
+        "id": "1620400:3",
+        "readings": [
+          "ちゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "middle way",
+          "moderation"
+        ],
+        "id": "1620400:4",
+        "readings": [
+          "ちゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "second volume (of three)"
+        ],
+        "id": "1620400:5",
+        "readings": [
+          "ちゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "junior high school",
+          "middle school"
+        ],
+        "id": "1620400:6",
+        "readings": [
+          "ちゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "China"
+        ],
+        "id": "1620400:7",
+        "readings": [
+          "ちゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "(all) through (e.g. the night)",
+          "throughout (e.g. the year)",
+          "all ... long"
+        ],
+        "id": "2083570:0",
+        "readings": [
+          "じゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "within (e.g. the week)",
+          "in the course of (e.g. today)",
+          "by the end of"
+        ],
+        "id": "2083570:1",
+        "readings": [
+          "じゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "all over",
+          "throughout (e.g. the world)"
+        ],
+        "id": "2083570:2",
+        "readings": [
+          "じゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "all (of a group)",
+          "the whole (family, school, etc.)"
+        ],
+        "id": "2083570:3",
+        "readings": [
+          "じゅう"
+        ]
+      }
+    ],
+    "主": [
+      {
+        "glosses": [
+          "(one's) master",
+          "(one's) employer",
+          "(one's) lord"
+        ],
+        "id": "1324950:0",
+        "readings": [
+          "しゅ"
+        ]
+      },
+      {
+        "glosses": [
+          "leader (of a country, group, etc.)",
+          "head",
+          "chief"
+        ],
+        "id": "1324950:1",
+        "readings": [
+          "しゅ"
+        ]
+      },
+      {
+        "glosses": [
+          "Lord"
+        ],
+        "id": "1324950:2",
+        "readings": [
+          "しゅ"
+        ]
+      },
+      {
+        "glosses": [
+          "main thing",
+          "chief part",
+          "first consideration",
+          "primary object",
+          "principal aim"
+        ],
+        "id": "1324950:3",
+        "readings": [
+          "しゅ"
+        ]
+      },
+      {
+        "glosses": [
+          "chief",
+          "main",
+          "principal",
+          "important"
+        ],
+        "id": "1324940:0",
+        "readings": [
+          "おも"
+        ]
+      },
+      {
+        "glosses": [
+          "main secondary or supporting role (in kyogen)"
+        ],
+        "id": "1324940:1",
+        "readings": [
+          "おも"
+        ]
+      },
+      {
+        "glosses": [
+          "head (of a household, etc.)",
+          "leader",
+          "master"
+        ],
+        "id": "1324960:0",
+        "readings": [
+          "ぬし"
+        ]
+      },
+      {
+        "glosses": [
+          "owner",
+          "proprietor",
+          "proprietress"
+        ],
+        "id": "1324960:1",
+        "readings": [
+          "ぬし"
+        ]
+      },
+      {
+        "glosses": [
+          "subject (of a rumour, etc.)",
+          "doer (of a deed)"
+        ],
+        "id": "1324960:2",
+        "readings": [
+          "ぬし"
+        ]
+      },
+      {
+        "glosses": [
+          "guardian spirit (e.g. long-resident beast, usu. with mystical powers)",
+          "long-time resident (or employee, etc.)"
+        ],
+        "id": "1324960:3",
+        "readings": [
+          "ぬし"
+        ]
+      },
+      {
+        "glosses": [
+          "husband"
+        ],
+        "id": "1324960:4",
+        "readings": [
+          "ぬし"
+        ]
+      },
+      {
+        "glosses": [
+          "you"
+        ],
+        "id": "1324960:5",
+        "readings": [
+          "ぬし"
+        ]
+      },
+      {
+        "glosses": [
+          "head (of a household)",
+          "proprietor (of a store)",
+          "proprietress",
+          "landlord",
+          "landlady",
+          "master (of a servant)"
+        ],
+        "id": "2427550:0",
+        "readings": [
+          "あるじ"
+        ]
+      },
+      {
+        "glosses": [
+          "entertaining someone as one's guest"
+        ],
+        "id": "2427550:1",
+        "readings": [
+          "あるじ"
+        ]
+      }
+    ],
+    "九": [
+      {
+        "glosses": [
+          "nine",
+          "9"
+        ],
+        "id": "1578150:0",
+        "readings": [
+          "きゅう",
+          "く"
+        ]
+      }
+    ],
+    "人": [
+      {
+        "glosses": [
+          "person",
+          "someone",
+          "somebody"
+        ],
+        "id": "1580640:0",
+        "readings": [
+          "ひと"
+        ]
+      },
+      {
+        "glosses": [
+          "human beings",
+          "mankind",
+          "man",
+          "people",
+          "humans"
+        ],
+        "id": "1580640:1",
+        "readings": [
+          "ひと"
+        ]
+      },
+      {
+        "glosses": [
+          "human (Homo sapiens)"
+        ],
+        "id": "1580640:2",
+        "readings": [
+          "ひと"
+        ]
+      },
+      {
+        "glosses": [
+          "(other) people",
+          "others"
+        ],
+        "id": "1580640:3",
+        "readings": [
+          "ひと"
+        ]
+      },
+      {
+        "glosses": [
+          "character",
+          "personality",
+          "nature"
+        ],
+        "id": "1580640:4",
+        "readings": [
+          "ひと"
+        ]
+      },
+      {
+        "glosses": [
+          "capable person",
+          "competent person",
+          "suitable person",
+          "right person"
+        ],
+        "id": "1580640:5",
+        "readings": [
+          "ひと"
+        ]
+      },
+      {
+        "glosses": [
+          "adult",
+          "grown-up"
+        ],
+        "id": "1580640:6",
+        "readings": [
+          "ひと"
+        ]
+      },
+      {
+        "glosses": [
+          "I",
+          "me",
+          "one"
+        ],
+        "id": "1580640:7",
+        "readings": [
+          "ひと"
+        ]
+      },
+      {
+        "glosses": [
+          "-ian (e.g. Italian)",
+          "-ite (e.g. Tokyoite)"
+        ],
+        "id": "1366410:0",
+        "readings": [
+          "じん"
+        ]
+      },
+      {
+        "glosses": [
+          "-er (e.g. performer, etc.)",
+          "person working with ..."
+        ],
+        "id": "1366410:1",
+        "readings": [
+          "じん"
+        ]
+      },
+      {
+        "glosses": [
+          "man",
+          "person",
+          "people"
+        ],
+        "id": "1366410:2",
+        "readings": [
+          "じん"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for people"
+        ],
+        "id": "2149890:0",
+        "readings": [
+          "にん"
+        ]
+      }
+    ],
+    "人事": [
+      {
+        "glosses": [
+          "human affairs",
+          "mundane matters",
+          "things human"
+        ],
+        "id": "1367870:0",
+        "readings": [
+          "じんじ"
+        ]
+      },
+      {
+        "glosses": [
+          "personnel affairs",
+          "human resources",
+          "employee matters",
+          "HR"
+        ],
+        "id": "1367870:1",
+        "readings": [
+          "じんじ"
+        ]
+      },
+      {
+        "glosses": [
+          "human power",
+          "human effort",
+          "what is humanly possible"
+        ],
+        "id": "1367870:2",
+        "readings": [
+          "じんじ"
+        ]
+      },
+      {
+        "glosses": [
+          "category of haiku seasonal words relating to human affairs"
+        ],
+        "id": "1367870:3",
+        "readings": [
+          "じんじ"
+        ]
+      },
+      {
+        "glosses": [
+          "other people's affairs",
+          "someone else's problem"
+        ],
+        "id": "1367880:0",
+        "readings": [
+          "ひとごと"
+        ]
+      }
+    ],
+    "人前": [
+      {
+        "glosses": [
+          "presence of other people",
+          "(in) public",
+          "(in) front of others"
+        ],
+        "id": "1368490:0",
+        "readings": [
+          "ひとまえ"
+        ]
+      },
+      {
+        "glosses": [
+          "portion of food"
+        ],
+        "id": "1368480:0",
+        "readings": [
+          "にんまえ"
+        ]
+      }
+    ],
+    "仏": [
+      {
+        "glosses": [
+          "Buddha",
+          "Shakyamuni"
+        ],
+        "id": "1501760:0",
+        "readings": [
+          "ほとけ"
+        ]
+      },
+      {
+        "glosses": [
+          "Buddhist image",
+          "figure of Buddha"
+        ],
+        "id": "1501760:1",
+        "readings": [
+          "ほとけ"
+        ]
+      },
+      {
+        "glosses": [
+          "the dead",
+          "dead person",
+          "departed soul"
+        ],
+        "id": "1501760:2",
+        "readings": [
+          "ほとけ"
+        ]
+      },
+      {
+        "glosses": [
+          "merciful person"
+        ],
+        "id": "1501760:3",
+        "readings": [
+          "ほとけ"
+        ]
+      },
+      {
+        "glosses": [
+          "France"
+        ],
+        "id": "1501740:0",
+        "readings": [
+          "ふつ"
+        ]
+      }
+    ],
+    "位": [
+      {
+        "glosses": [
+          "approximately",
+          "about",
+          "around",
+          "or so"
+        ],
+        "id": "1154340:0",
+        "readings": [
+          "くらい"
+        ]
+      },
+      {
+        "glosses": [
+          "to (about) the extent that",
+          "(almost) enough that",
+          "so ... that ...",
+          "at least"
+        ],
+        "id": "1154340:1",
+        "readings": [
+          "くらい"
+        ]
+      },
+      {
+        "glosses": [
+          "as ... as ...",
+          "like"
+        ],
+        "id": "1154340:2",
+        "readings": [
+          "くらい"
+        ]
+      },
+      {
+        "glosses": [
+          "throne",
+          "crown",
+          "(nobleman's) seat"
+        ],
+        "id": "1155400:0",
+        "readings": [
+          "くらい"
+        ]
+      },
+      {
+        "glosses": [
+          "government position",
+          "court rank"
+        ],
+        "id": "1155400:1",
+        "readings": [
+          "くらい"
+        ]
+      },
+      {
+        "glosses": [
+          "social standing",
+          "rank",
+          "class",
+          "echelon",
+          "rung"
+        ],
+        "id": "1155400:2",
+        "readings": [
+          "くらい"
+        ]
+      },
+      {
+        "glosses": [
+          "grade (of quality, etc.)",
+          "level",
+          "tier",
+          "rank"
+        ],
+        "id": "1155400:3",
+        "readings": [
+          "くらい"
+        ]
+      },
+      {
+        "glosses": [
+          "position of a figure (e.g. tens, thousands)",
+          "digit",
+          "(decimal) place"
+        ],
+        "id": "1155400:4",
+        "readings": [
+          "くらい"
+        ]
+      },
+      {
+        "glosses": [
+          "rank",
+          "place (e.g. first place)"
+        ],
+        "id": "2068010:0",
+        "readings": [
+          "い"
+        ]
+      },
+      {
+        "glosses": [
+          "decimal place"
+        ],
+        "id": "2068010:1",
+        "readings": [
+          "い"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for ghosts"
+        ],
+        "id": "2068010:2",
+        "readings": [
+          "い"
+        ]
+      }
+    ],
+    "何": [
+      {
+        "glosses": [
+          "what"
+        ],
+        "id": "1577100:0",
+        "readings": [
+          "なに"
+        ]
+      },
+      {
+        "glosses": [
+          "you-know-what",
+          "that thing"
+        ],
+        "id": "1577100:1",
+        "readings": [
+          "なに"
+        ]
+      },
+      {
+        "glosses": [
+          "whatsit",
+          "whachamacallit",
+          "what's-his-name",
+          "what's-her-name"
+        ],
+        "id": "1577100:2",
+        "readings": [
+          "なに"
+        ]
+      },
+      {
+        "glosses": [
+          "penis",
+          "(one's) thing",
+          "dick"
+        ],
+        "id": "1577100:3",
+        "readings": [
+          "なに"
+        ]
+      },
+      {
+        "glosses": [
+          "(not) at all",
+          "(not) in the slightest"
+        ],
+        "id": "1577100:4",
+        "readings": [
+          "なに"
+        ]
+      },
+      {
+        "glosses": [
+          "what?",
+          "huh?"
+        ],
+        "id": "1577100:5",
+        "readings": [
+          "なに"
+        ]
+      },
+      {
+        "glosses": [
+          "hey!",
+          "come on!"
+        ],
+        "id": "1577100:6",
+        "readings": [
+          "なに"
+        ]
+      },
+      {
+        "glosses": [
+          "oh, no (it's fine)",
+          "why (it's nothing)",
+          "oh (certainly not)"
+        ],
+        "id": "1577100:7",
+        "readings": [
+          "なに"
+        ]
+      },
+      {
+        "glosses": [
+          "what"
+        ],
+        "id": "2846738:0",
+        "readings": [
+          "なん"
+        ]
+      },
+      {
+        "glosses": [
+          "how many"
+        ],
+        "id": "2846738:1",
+        "readings": [
+          "なん"
+        ]
+      },
+      {
+        "glosses": [
+          "many",
+          "a lot of"
+        ],
+        "id": "2846738:2",
+        "readings": [
+          "なん"
+        ]
+      },
+      {
+        "glosses": [
+          "several",
+          "a few",
+          "some"
+        ],
+        "id": "2846738:3",
+        "readings": [
+          "なん"
+        ]
+      }
+    ],
+    "何分": [
+      {
+        "glosses": [
+          "some",
+          "any",
+          "(a) little",
+          "of some kind",
+          "of some sort"
+        ],
+        "id": "1189310:0",
+        "readings": [
+          "なにぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "please"
+        ],
+        "id": "1189310:1",
+        "readings": [
+          "なにぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "anyway",
+          "anyhow",
+          "at any rate",
+          "after all"
+        ],
+        "id": "1189310:2",
+        "readings": [
+          "なにぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "what minute",
+          "how many minutes"
+        ],
+        "id": "1189320:0",
+        "readings": [
+          "なんぷん"
+        ]
+      }
+    ],
+    "入る": [
+      {
+        "glosses": [
+          "to enter",
+          "to come in",
+          "to go in",
+          "to get in",
+          "to arrive"
+        ],
+        "id": "1465590:0",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to join (a club, company, etc.)",
+          "to enter (a university, the army, etc.)",
+          "to enroll (in)",
+          "to go into (e.g. politics)",
+          "to get into"
+        ],
+        "id": "1465590:1",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be contained (in)",
+          "to be included (in)",
+          "to be inside (e.g. a box)",
+          "to come under (a heading)",
+          "to belong (in a category)"
+        ],
+        "id": "1465590:2",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to (be able to) fit (in a container, building, etc.)",
+          "to be (able to be) held",
+          "to be (able to be) accommodated"
+        ],
+        "id": "1465590:3",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be introduced",
+          "to be brought in",
+          "to be installed"
+        ],
+        "id": "1465590:4",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be received",
+          "to be obtained"
+        ],
+        "id": "1465590:5",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be scored (of points)",
+          "to be won (of votes)"
+        ],
+        "id": "1465590:6",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to turn on",
+          "to start functioning",
+          "to start working"
+        ],
+        "id": "1465590:7",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to enter (a month, season, etc.)",
+          "to reach (e.g. a climax)",
+          "to get to (e.g. the main topic)",
+          "to enter into (e.g. negotiations)",
+          "to start (doing)",
+          "to begin"
+        ],
+        "id": "1465590:8",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to form (of a crack, fissure, etc.)",
+          "to develop"
+        ],
+        "id": "1465590:9",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be put in (of effort, spirit, feeling, etc.)",
+          "to be applied (e.g. of strength)"
+        ],
+        "id": "1465590:10",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to be ready (of tea, coffee, etc.)",
+          "to be made"
+        ],
+        "id": "1465590:11",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to enter the body (of alcohol)",
+          "to become drunk"
+        ],
+        "id": "1465590:12",
+        "readings": [
+          "はいる"
+        ]
+      },
+      {
+        "glosses": [
+          "to enter",
+          "to go in",
+          "to get in",
+          "to come in"
+        ],
+        "id": "1465580:0",
+        "readings": [
+          "いる"
+        ]
+      },
+      {
+        "glosses": [
+          "to set (of the sun or moon)",
+          "to sink",
+          "to go down"
+        ],
+        "id": "1465580:1",
+        "readings": [
+          "いる"
+        ]
+      },
+      {
+        "glosses": [
+          "to attain (nirvana, enlightenment, etc.)",
+          "to achieve",
+          "to reach (e.g. a climax)"
+        ],
+        "id": "1465580:2",
+        "readings": [
+          "いる"
+        ]
+      },
+      {
+        "glosses": [
+          "to do fully",
+          "to do intently",
+          "to do sincerely",
+          "to do deeply",
+          "to feel keenly"
+        ],
+        "id": "1465580:3",
+        "readings": [
+          "いる"
+        ]
+      },
+      {
+        "glosses": [
+          "to (reach a state) completely"
+        ],
+        "id": "1465580:4",
+        "readings": [
+          "いる"
+        ]
+      }
+    ],
+    "内": [
+      {
+        "glosses": [
+          "inside",
+          "within"
+        ],
+        "id": "1457730:0",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "while (e.g. one is young)",
+          "during",
+          "within (e.g. a day)",
+          "in the course of"
+        ],
+        "id": "1457730:1",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "among",
+          "amongst",
+          "(out) of",
+          "between"
+        ],
+        "id": "1457730:2",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "in (secret, chaos, poverty, etc.)",
+          "amidst",
+          "with (e.g. success)"
+        ],
+        "id": "1457730:3",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "within oneself",
+          "one's feelings",
+          "inner thoughts"
+        ],
+        "id": "1457730:4",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "we",
+          "our company",
+          "our organization"
+        ],
+        "id": "1457730:5",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "one's home",
+          "one's family"
+        ],
+        "id": "1457730:6",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "my spouse",
+          "my husband",
+          "my wife"
+        ],
+        "id": "1457730:7",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "signed on behalf of (husband's name) by his wife"
+        ],
+        "id": "1457730:8",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "I",
+          "me"
+        ],
+        "id": "1457730:9",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "imperial palace grounds"
+        ],
+        "id": "1457730:10",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "emperor"
+        ],
+        "id": "1457730:11",
+        "readings": [
+          "うち"
+        ]
+      },
+      {
+        "glosses": [
+          "within ...",
+          "inside ..."
+        ],
+        "id": "2098290:0",
+        "readings": [
+          "ない"
+        ]
+      }
+    ],
+    "分": [
+      {
+        "glosses": [
+          "part",
+          "portion",
+          "share"
+        ],
+        "id": "1502860:0",
+        "readings": [
+          "ぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "amount",
+          "worth (as in \"two days' worth\")",
+          "enough (for)"
+        ],
+        "id": "1502860:1",
+        "readings": [
+          "ぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "one's means",
+          "one's place",
+          "one's lot",
+          "one's social position"
+        ],
+        "id": "1502860:2",
+        "readings": [
+          "ぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "one's duty",
+          "one's part"
+        ],
+        "id": "1502860:3",
+        "readings": [
+          "ぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "condition",
+          "state (of affairs)",
+          "extent",
+          "rate (as in \"at this rate\")"
+        ],
+        "id": "1502860:4",
+        "readings": [
+          "ぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "in proportion to",
+          "just as much as",
+          "to the same degree"
+        ],
+        "id": "1502860:5",
+        "readings": [
+          "ぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "content (e.g. alcohol)",
+          "percentage"
+        ],
+        "id": "1502860:6",
+        "readings": [
+          "ぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "equivalent to (e.g. an old brother)"
+        ],
+        "id": "1502860:7",
+        "readings": [
+          "ぶん"
+        ]
+      },
+      {
+        "glosses": [
+          "minute (unit of time)"
+        ],
+        "id": "1502840:0",
+        "readings": [
+          "ふん"
+        ]
+      },
+      {
+        "glosses": [
+          "fun (one tenth of a monme, 5.787 grains)"
+        ],
+        "id": "1502840:1",
+        "readings": [
+          "ふん"
+        ]
+      }
+    ],
+    "分別": [
+      {
+        "glosses": [
+          "separation (e.g. of rubbish when recycling)",
+          "classification",
+          "discrimination",
+          "division",
+          "distinction"
+        ],
+        "id": "1504200:0",
+        "readings": [
+          "ぶんべつ"
+        ]
+      },
+      {
+        "glosses": [
+          "discretion",
+          "prudence",
+          "good sense",
+          "judgement",
+          "judgment",
+          "wisdom",
+          "discernment"
+        ],
+        "id": "1504190:0",
+        "readings": [
+          "ふんべつ"
+        ]
+      }
+    ],
+    "前": [
+      {
+        "glosses": [
+          "in front (of)",
+          "before (e.g. a building)"
+        ],
+        "id": "1392580:0",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "before",
+          "earlier",
+          "previously",
+          "prior",
+          "ago",
+          "(minutes) to (the hour)"
+        ],
+        "id": "1392580:1",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "(the) front",
+          "frontal part",
+          "fore",
+          "head (e.g. of a line)"
+        ],
+        "id": "1392580:2",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "forward",
+          "ahead"
+        ],
+        "id": "1392580:3",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "(in the) presence (of)",
+          "in front (of someone)"
+        ],
+        "id": "1392580:4",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "previous (e.g. page)",
+          "prior (e.g. engagement)",
+          "first (e.g. half)",
+          "former (e.g. example)"
+        ],
+        "id": "1392580:5",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "portion",
+          "helping"
+        ],
+        "id": "1392580:6",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "front (of one's body or clothing)",
+          "breast (of a coat, kimono, etc.)"
+        ],
+        "id": "1392580:7",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "privates",
+          "private parts"
+        ],
+        "id": "1392580:8",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "criminal record",
+          "previous conviction",
+          "(a) prior"
+        ],
+        "id": "1392580:9",
+        "readings": [
+          "まえ"
+        ]
+      },
+      {
+        "glosses": [
+          "last (i.e. immediately preceding)",
+          "previous",
+          "ex-",
+          "former"
+        ],
+        "id": "1392570:0",
+        "readings": [
+          "ぜん"
+        ]
+      },
+      {
+        "glosses": [
+          "pre- (e.g. premodern)"
+        ],
+        "id": "1392570:1",
+        "readings": [
+          "ぜん"
+        ]
+      },
+      {
+        "glosses": [
+          "before"
+        ],
+        "id": "1392570:2",
+        "readings": [
+          "ぜん"
+        ]
+      },
+      {
+        "glosses": [
+          "before",
+          "earlier"
+        ],
+        "id": "1392570:3",
+        "readings": [
+          "ぜん"
+        ]
+      }
+    ],
+    "力": [
+      {
+        "glosses": [
+          "force",
+          "strength",
+          "might",
+          "vigour",
+          "vigor",
+          "energy"
+        ],
+        "id": "1554820:0",
+        "readings": [
+          "ちから"
+        ]
+      },
+      {
+        "glosses": [
+          "capability",
+          "ability",
+          "proficiency",
+          "capacity",
+          "faculty"
+        ],
+        "id": "1554820:1",
+        "readings": [
+          "ちから"
+        ]
+      },
+      {
+        "glosses": [
+          "efficacy",
+          "effect"
+        ],
+        "id": "1554820:2",
+        "readings": [
+          "ちから"
+        ]
+      },
+      {
+        "glosses": [
+          "effort",
+          "endeavours",
+          "endeavors",
+          "exertions"
+        ],
+        "id": "1554820:3",
+        "readings": [
+          "ちから"
+        ]
+      },
+      {
+        "glosses": [
+          "power",
+          "authority",
+          "influence",
+          "good offices",
+          "agency"
+        ],
+        "id": "1554820:4",
+        "readings": [
+          "ちから"
+        ]
+      },
+      {
+        "glosses": [
+          "support",
+          "help",
+          "aid",
+          "assistance"
+        ],
+        "id": "1554820:5",
+        "readings": [
+          "ちから"
+        ]
+      },
+      {
+        "glosses": [
+          "stress",
+          "emphasis"
+        ],
+        "id": "1554820:6",
+        "readings": [
+          "ちから"
+        ]
+      },
+      {
+        "glosses": [
+          "means",
+          "resources"
+        ],
+        "id": "1554820:7",
+        "readings": [
+          "ちから"
+        ]
+      },
+      {
+        "glosses": [
+          "strength",
+          "power",
+          "proficiency",
+          "ability"
+        ],
+        "id": "1554840:0",
+        "readings": [
+          "りょく"
+        ]
+      }
+    ],
+    "博士": [
+      {
+        "glosses": [
+          "expert",
+          "learned person"
+        ],
+        "id": "1474620:0",
+        "readings": [
+          "はかせ"
+        ]
+      },
+      {
+        "glosses": [
+          "doctor",
+          "PhD",
+          "Dr."
+        ],
+        "id": "1474620:1",
+        "readings": [
+          "はかせ"
+        ]
+      },
+      {
+        "glosses": [
+          "instructor at the imperial court (ritsuryō period)"
+        ],
+        "id": "1474620:2",
+        "readings": [
+          "はかせ"
+        ]
+      },
+      {
+        "glosses": [
+          "pitch and length marks (to accompany a Buddhist liturgical chant, etc.)"
+        ],
+        "id": "1474620:3",
+        "readings": [
+          "はかせ"
+        ]
+      },
+      {
+        "glosses": [
+          "doctor",
+          "PhD",
+          "Dr."
+        ],
+        "id": "2834601:0",
+        "readings": [
+          "はくし"
+        ]
+      }
+    ],
+    "印": [
+      {
+        "glosses": [
+          "mark",
+          "sign"
+        ],
+        "id": "1168060:0",
+        "readings": [
+          "しるし"
+        ]
+      },
+      {
+        "glosses": [
+          "symbol",
+          "emblem"
+        ],
+        "id": "1168060:1",
+        "readings": [
+          "しるし"
+        ]
+      },
+      {
+        "glosses": [
+          "badge",
+          "crest",
+          "flag"
+        ],
+        "id": "1168060:2",
+        "readings": [
+          "しるし"
+        ]
+      },
+      {
+        "glosses": [
+          "evidence",
+          "proof"
+        ],
+        "id": "1168060:3",
+        "readings": [
+          "しるし"
+        ]
+      },
+      {
+        "glosses": [
+          "token (of gratitude, affection, etc.)"
+        ],
+        "id": "1168060:4",
+        "readings": [
+          "しるし"
+        ]
+      },
+      {
+        "glosses": [
+          "stamp",
+          "seal",
+          "chop"
+        ],
+        "id": "1168050:0",
+        "readings": [
+          "いん"
+        ]
+      },
+      {
+        "glosses": [
+          "seal impression",
+          "seal",
+          "sealing",
+          "stamp",
+          "mark",
+          "print"
+        ],
+        "id": "1168050:1",
+        "readings": [
+          "いん"
+        ]
+      },
+      {
+        "glosses": [
+          "mudra (symbolic hand gesture)"
+        ],
+        "id": "1168050:2",
+        "readings": [
+          "いん"
+        ]
+      },
+      {
+        "glosses": [
+          "ninja hand sign"
+        ],
+        "id": "1168050:3",
+        "readings": [
+          "いん"
+        ]
+      },
+      {
+        "glosses": [
+          "India"
+        ],
+        "id": "1168050:4",
+        "readings": [
+          "いん"
+        ]
+      }
+    ],
+    "君": [
+      {
+        "glosses": [
+          "you",
+          "buddy",
+          "pal"
+        ],
+        "id": "1247250:0",
+        "readings": [
+          "きみ"
+        ]
+      },
+      {
+        "glosses": [
+          "monarch",
+          "ruler",
+          "sovereign",
+          "(one's) master"
+        ],
+        "id": "1247250:1",
+        "readings": [
+          "きみ"
+        ]
+      },
+      {
+        "glosses": [
+          "he",
+          "she"
+        ],
+        "id": "1247250:2",
+        "readings": [
+          "きみ"
+        ]
+      },
+      {
+        "glosses": [
+          "Mr",
+          "master",
+          "boy"
+        ],
+        "id": "1247260:0",
+        "readings": [
+          "くん"
+        ]
+      },
+      {
+        "glosses": [
+          "Ms",
+          "miss"
+        ],
+        "id": "1247260:1",
+        "readings": [
+          "くん"
+        ]
+      },
+      {
+        "glosses": [
+          "sir",
+          "madam"
+        ],
+        "id": "1247260:2",
+        "readings": [
+          "くん"
+        ]
+      }
+    ],
+    "否": [
+      {
+        "glosses": [
+          "no",
+          "the noes"
+        ],
+        "id": "1482860:0",
+        "readings": [
+          "ひ"
+        ]
+      },
+      {
+        "glosses": [
+          "no",
+          "nay"
+        ],
+        "id": "2857381:0",
+        "readings": [
+          "いな"
+        ]
+      },
+      {
+        "glosses": [
+          "disagreement",
+          "objection",
+          "disapproval"
+        ],
+        "id": "2857381:1",
+        "readings": [
+          "いな"
+        ]
+      }
+    ],
+    "品": [
+      {
+        "glosses": [
+          "article",
+          "item",
+          "thing",
+          "goods",
+          "stock"
+        ],
+        "id": "1583470:0",
+        "readings": [
+          "しな"
+        ]
+      },
+      {
+        "glosses": [
+          "quality"
+        ],
+        "id": "1583470:1",
+        "readings": [
+          "しな"
+        ]
+      },
+      {
+        "glosses": [
+          "flirtatiousness",
+          "coquetry"
+        ],
+        "id": "1583470:2",
+        "readings": [
+          "しな"
+        ]
+      },
+      {
+        "glosses": [
+          "elegance",
+          "grace",
+          "refinement",
+          "class",
+          "dignity"
+        ],
+        "id": "2648780:0",
+        "readings": [
+          "ひん"
+        ]
+      },
+      {
+        "glosses": [
+          "article",
+          "item"
+        ],
+        "id": "2648780:1",
+        "readings": [
+          "ひん"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for items (of food, etc.)",
+          "counter for dishes or courses (at a restaurant)"
+        ],
+        "id": "2648780:2",
+        "readings": [
+          "ひん"
+        ]
+      }
+    ],
+    "四": [
+      {
+        "glosses": [
+          "four",
+          "4"
+        ],
+        "id": "1579470:0",
+        "readings": [
+          "し",
+          "よん"
+        ]
+      }
+    ],
+    "園": [
+      {
+        "glosses": [
+          "garden",
+          "orchard",
+          "park"
+        ],
+        "id": "1176240:0",
+        "readings": [
+          "その"
+        ]
+      },
+      {
+        "glosses": [
+          "place",
+          "world",
+          "environment"
+        ],
+        "id": "1176240:1",
+        "readings": [
+          "その"
+        ]
+      },
+      {
+        "glosses": [
+          "garden",
+          "orchard",
+          "park",
+          "plantation"
+        ],
+        "id": "2854424:0",
+        "readings": [
+          "えん"
+        ]
+      },
+      {
+        "glosses": [
+          "kindergarten",
+          "nursery school",
+          "preschool"
+        ],
+        "id": "2854424:1",
+        "readings": [
+          "えん"
+        ]
+      }
+    ],
+    "埋める": [
+      {
+        "glosses": [
+          "to bury (e.g. in the ground)"
+        ],
+        "id": "1524500:0",
+        "readings": [
+          "うめる"
+        ]
+      },
+      {
+        "glosses": [
+          "to fill up (e.g. audience fills a hall)",
+          "to cause to be packed"
+        ],
+        "id": "1524500:1",
+        "readings": [
+          "うめる"
+        ]
+      },
+      {
+        "glosses": [
+          "to plug (a gap)",
+          "to stop (a gap)",
+          "to bridge (a difference, a gap)",
+          "to fill (a seat, a vacant position)",
+          "to fill out (a form, a sheet)"
+        ],
+        "id": "1524500:2",
+        "readings": [
+          "うめる"
+        ]
+      },
+      {
+        "glosses": [
+          "to make up for (a loss, shortage, etc.)",
+          "to make amends",
+          "to compensate for"
+        ],
+        "id": "1524500:3",
+        "readings": [
+          "うめる"
+        ]
+      },
+      {
+        "glosses": [
+          "to put cold water (in a bath)"
+        ],
+        "id": "1524500:4",
+        "readings": [
+          "うめる"
+        ]
+      },
+      {
+        "glosses": [
+          "to cover",
+          "to scatter something over"
+        ],
+        "id": "1524500:5",
+        "readings": [
+          "うめる"
+        ]
+      },
+      {
+        "glosses": [
+          "to cover",
+          "to bury (e.g. one's face in hands)",
+          "to submerge"
+        ],
+        "id": "1524490:0",
+        "readings": [
+          "うずめる"
+        ]
+      },
+      {
+        "glosses": [
+          "to fill (completely)",
+          "to stuff",
+          "to pack",
+          "to cram",
+          "to fill up"
+        ],
+        "id": "1524490:1",
+        "readings": [
+          "うずめる"
+        ]
+      }
+    ],
+    "外": [
+      {
+        "glosses": [
+          "outside",
+          "exterior"
+        ],
+        "id": "1203250:0",
+        "readings": [
+          "そと"
+        ]
+      },
+      {
+        "glosses": [
+          "the open (air)"
+        ],
+        "id": "1203250:1",
+        "readings": [
+          "そと"
+        ]
+      },
+      {
+        "glosses": [
+          "other place",
+          "somewhere else",
+          "outside one's group (family, company, etc.)"
+        ],
+        "id": "1203250:2",
+        "readings": [
+          "そと"
+        ]
+      },
+      {
+        "glosses": [
+          "outside ...",
+          "beyond ...",
+          "not included in ..."
+        ],
+        "id": "2227930:0",
+        "readings": [
+          "がい"
+        ]
+      }
+    ],
+    "大": [
+      {
+        "glosses": [
+          "large",
+          "big",
+          "great",
+          "huge",
+          "vast",
+          "major",
+          "important",
+          "serious",
+          "severe"
+        ],
+        "id": "2082450:0",
+        "readings": [
+          "だい"
+        ]
+      },
+      {
+        "glosses": [
+          "great",
+          "prominent",
+          "eminent",
+          "distinguished"
+        ],
+        "id": "2082450:1",
+        "readings": [
+          "だい"
+        ]
+      },
+      {
+        "glosses": [
+          "-sized",
+          "as big as",
+          "the size of"
+        ],
+        "id": "2082450:2",
+        "readings": [
+          "だい"
+        ]
+      },
+      {
+        "glosses": [
+          "university"
+        ],
+        "id": "2082450:3",
+        "readings": [
+          "だい"
+        ]
+      },
+      {
+        "glosses": [
+          "large (e.g. serving size)",
+          "large option"
+        ],
+        "id": "2082450:4",
+        "readings": [
+          "だい"
+        ]
+      },
+      {
+        "glosses": [
+          "long month (i.e. having 31 days)"
+        ],
+        "id": "2082450:5",
+        "readings": [
+          "だい"
+        ]
+      },
+      {
+        "glosses": [
+          "feces",
+          "faeces",
+          "excrement",
+          "stool"
+        ],
+        "id": "2082450:6",
+        "readings": [
+          "だい"
+        ]
+      },
+      {
+        "glosses": [
+          "large",
+          "big",
+          "great",
+          "major",
+          "important",
+          "serious",
+          "heavy",
+          "loud"
+        ],
+        "id": "2082140:0",
+        "readings": [
+          "おお"
+        ]
+      },
+      {
+        "glosses": [
+          "older",
+          "senior"
+        ],
+        "id": "2082140:1",
+        "readings": [
+          "おお"
+        ]
+      },
+      {
+        "glosses": [
+          "final",
+          "ultimate"
+        ],
+        "id": "2082140:2",
+        "readings": [
+          "おお"
+        ]
+      },
+      {
+        "glosses": [
+          "rough",
+          "broad",
+          "general"
+        ],
+        "id": "2082140:3",
+        "readings": [
+          "おお"
+        ]
+      }
+    ],
+    "大勢": [
+      {
+        "glosses": [
+          "crowd of people",
+          "great number of people"
+        ],
+        "id": "1414220:0",
+        "readings": [
+          "おおぜい"
+        ]
+      },
+      {
+        "glosses": [
+          "in great numbers"
+        ],
+        "id": "1414220:1",
+        "readings": [
+          "おおぜい"
+        ]
+      },
+      {
+        "glosses": [
+          "general situation",
+          "general trend",
+          "general tendency",
+          "way things are moving",
+          "current (of the times)",
+          "tide (e.g. of public opinion)"
+        ],
+        "id": "1414230:0",
+        "readings": [
+          "たいせい"
+        ]
+      },
+      {
+        "glosses": [
+          "large majority (of a group, faction, etc.)",
+          "majority group"
+        ],
+        "id": "1414230:1",
+        "readings": [
+          "たいせい"
+        ]
+      }
+    ],
+    "大家": [
+      {
+        "glosses": [
+          "landlord",
+          "landlady"
+        ],
+        "id": "1413140:0",
+        "readings": [
+          "おおや"
+        ]
+      },
+      {
+        "glosses": [
+          "master",
+          "expert",
+          "authority",
+          "leading figure"
+        ],
+        "id": "1413150:0",
+        "readings": [
+          "たいか"
+        ]
+      },
+      {
+        "glosses": [
+          "mansion",
+          "large house"
+        ],
+        "id": "1413150:1",
+        "readings": [
+          "たいか"
+        ]
+      },
+      {
+        "glosses": [
+          "rich family",
+          "distinguished family"
+        ],
+        "id": "1413150:2",
+        "readings": [
+          "たいか"
+        ]
+      }
+    ],
+    "子": [
+      {
+        "glosses": [
+          "child",
+          "kid",
+          "teenager",
+          "youngster",
+          "young (non-adult) person"
+        ],
+        "id": "1307770:0",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "(one's) child",
+          "offspring"
+        ],
+        "id": "1307770:1",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "young woman"
+        ],
+        "id": "1307770:2",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "young (animal)"
+        ],
+        "id": "1307770:3",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "offshoot"
+        ],
+        "id": "1307770:4",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "interest"
+        ],
+        "id": "1307770:5",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "new share"
+        ],
+        "id": "1307770:6",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "player who is not a dealer"
+        ],
+        "id": "1307770:7",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "young geisha",
+          "young prostitute"
+        ],
+        "id": "1307770:8",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "bird egg"
+        ],
+        "id": "1307770:9",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "-er (often of young women)"
+        ],
+        "id": "1307770:10",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "the Rat (first sign of the Chinese zodiac)"
+        ],
+        "id": "1307780:0",
+        "readings": [
+          "ね"
+        ]
+      },
+      {
+        "glosses": [
+          "hour of the Rat (around midnight, 11pm to 1am, or 12 midnight to 2am)"
+        ],
+        "id": "1307780:1",
+        "readings": [
+          "ね"
+        ]
+      },
+      {
+        "glosses": [
+          "north"
+        ],
+        "id": "1307780:2",
+        "readings": [
+          "ね"
+        ]
+      },
+      {
+        "glosses": [
+          "eleventh month of the lunar calendar"
+        ],
+        "id": "1307780:3",
+        "readings": [
+          "ね"
+        ]
+      }
+    ],
+    "家": [
+      {
+        "glosses": [
+          "house",
+          "residence",
+          "dwelling",
+          "home"
+        ],
+        "id": "1191730:0",
+        "readings": [
+          "いえ"
+        ]
+      },
+      {
+        "glosses": [
+          "family",
+          "household"
+        ],
+        "id": "1191730:1",
+        "readings": [
+          "いえ"
+        ]
+      },
+      {
+        "glosses": [
+          "lineage",
+          "family name"
+        ],
+        "id": "1191730:2",
+        "readings": [
+          "いえ"
+        ]
+      },
+      {
+        "glosses": [
+          "house",
+          "family"
+        ],
+        "id": "1191750:0",
+        "readings": [
+          "け"
+        ]
+      }
+    ],
+    "対": [
+      {
+        "glosses": [
+          "versus",
+          "against",
+          "vs.",
+          "v."
+        ],
+        "id": "1409800:0",
+        "readings": [
+          "たい"
+        ]
+      },
+      {
+        "glosses": [
+          "to (e.g. score of 4 to 2, ratio of 3 to 1, vote of 320 to 180)"
+        ],
+        "id": "1409800:1",
+        "readings": [
+          "たい"
+        ]
+      },
+      {
+        "glosses": [
+          "toward ...",
+          "to ...",
+          "with ...",
+          "against ...",
+          "anti-"
+        ],
+        "id": "1409800:2",
+        "readings": [
+          "たい"
+        ]
+      },
+      {
+        "glosses": [
+          "equal footing",
+          "equal terms"
+        ],
+        "id": "1409800:3",
+        "readings": [
+          "たい"
+        ]
+      },
+      {
+        "glosses": [
+          "opposite"
+        ],
+        "id": "1409800:4",
+        "readings": [
+          "たい"
+        ]
+      },
+      {
+        "glosses": [
+          "pair",
+          "couple",
+          "set"
+        ],
+        "id": "1409810:0",
+        "readings": [
+          "つい"
+        ]
+      },
+      {
+        "glosses": [
+          "antithesis"
+        ],
+        "id": "1409810:1",
+        "readings": [
+          "つい"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for items that come in pairs"
+        ],
+        "id": "1409810:2",
+        "readings": [
+          "つい"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for sets (of clothes, small furniture, utensils, etc.)"
+        ],
+        "id": "1409810:3",
+        "readings": [
+          "つい"
+        ]
+      }
+    ],
+    "小": [
+      {
+        "glosses": [
+          "smallness",
+          "small item"
+        ],
+        "id": "2083540:0",
+        "readings": [
+          "しょう"
+        ]
+      },
+      {
+        "glosses": [
+          "short month (i.e. having fewer than 31 days)"
+        ],
+        "id": "2083540:1",
+        "readings": [
+          "しょう"
+        ]
+      },
+      {
+        "glosses": [
+          "urine",
+          "piss",
+          "pee",
+          "urination"
+        ],
+        "id": "2083540:2",
+        "readings": [
+          "しょう"
+        ]
+      },
+      {
+        "glosses": [
+          "elementary school"
+        ],
+        "id": "2083540:3",
+        "readings": [
+          "しょう"
+        ]
+      },
+      {
+        "glosses": [
+          "smaller (of two things, places, etc. with the same name)",
+          "inferior"
+        ],
+        "id": "2083540:4",
+        "readings": [
+          "しょう"
+        ]
+      },
+      {
+        "glosses": [
+          "younger (of two people with the same name)",
+          "junior"
+        ],
+        "id": "2083540:5",
+        "readings": [
+          "しょう"
+        ]
+      },
+      {
+        "glosses": [
+          "unit of field area (approx. 400 sq m)"
+        ],
+        "id": "2083540:6",
+        "readings": [
+          "しょう"
+        ]
+      },
+      {
+        "glosses": [
+          "small",
+          "little",
+          "slight"
+        ],
+        "id": "2153770:0",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "slightly less than",
+          "just about"
+        ],
+        "id": "2153770:1",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "somewhat",
+          "somehow"
+        ],
+        "id": "2153770:2",
+        "readings": [
+          "こ"
+        ]
+      },
+      {
+        "glosses": [
+          "minor",
+          "petty"
+        ],
+        "id": "2153770:3",
+        "readings": [
+          "こ"
+        ]
+      }
+    ],
+    "小人": [
+      {
+        "glosses": [
+          "little person (in folklore and fantasy, e.g. fairy, elf, gnome)",
+          "little people",
+          "dwarf"
+        ],
+        "id": "2860036:0",
+        "readings": [
+          "こびと"
+        ]
+      },
+      {
+        "glosses": [
+          "little person (i.e. a person with dwarfism)",
+          "dwarf",
+          "midget"
+        ],
+        "id": "2860036:1",
+        "readings": [
+          "こびと"
+        ]
+      },
+      {
+        "glosses": [
+          "child (esp. one of elementary school age or younger)"
+        ],
+        "id": "1348350:0",
+        "readings": [
+          "しょうにん"
+        ]
+      }
+    ],
+    "市": [
+      {
+        "glosses": [
+          "city"
+        ],
+        "id": "1308090:0",
+        "readings": [
+          "し"
+        ]
+      },
+      {
+        "glosses": [
+          "market",
+          "fair"
+        ],
+        "id": "1308080:0",
+        "readings": [
+          "いち"
+        ]
+      }
+    ],
+    "市場": [
+      {
+        "glosses": [
+          "(town) market",
+          "(street) market",
+          "marketplace"
+        ],
+        "id": "1308300:0",
+        "readings": [
+          "いちば"
+        ]
+      },
+      {
+        "glosses": [
+          "market (financial, stock, domestic, etc.)",
+          "marketplace",
+          "exchange"
+        ],
+        "id": "1308305:0",
+        "readings": [
+          "しじょう"
+        ]
+      },
+      {
+        "glosses": [
+          "(street) market"
+        ],
+        "id": "1308305:1",
+        "readings": [
+          "しじょう"
+        ]
+      }
+    ],
+    "年": [
+      {
+        "glosses": [
+          "year"
+        ],
+        "id": "1468060:0",
+        "readings": [
+          "とし"
+        ]
+      },
+      {
+        "glosses": [
+          "age",
+          "years"
+        ],
+        "id": "1468060:1",
+        "readings": [
+          "とし"
+        ]
+      },
+      {
+        "glosses": [
+          "past one's prime",
+          "old age"
+        ],
+        "id": "1468060:2",
+        "readings": [
+          "とし"
+        ]
+      },
+      {
+        "glosses": [
+          "year"
+        ],
+        "id": "2084840:0",
+        "readings": [
+          "ねん"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for years (e.g. of an era), grades (e.g. school)"
+        ],
+        "id": "2084840:1",
+        "readings": [
+          "ねん"
+        ]
+      },
+      {
+        "glosses": [
+          "period of an apprentice's contract (usu. ten years)"
+        ],
+        "id": "2084840:2",
+        "readings": [
+          "ねん"
+        ]
+      }
+    ],
+    "床": [
+      {
+        "glosses": [
+          "floor"
+        ],
+        "id": "1349380:0",
+        "readings": [
+          "ゆか"
+        ]
+      },
+      {
+        "glosses": [
+          "stage (for the narrator and the shamisen player)"
+        ],
+        "id": "1349380:1",
+        "readings": [
+          "ゆか"
+        ]
+      },
+      {
+        "glosses": [
+          "dining platform built across a river"
+        ],
+        "id": "1349380:2",
+        "readings": [
+          "ゆか"
+        ]
+      },
+      {
+        "glosses": [
+          "bed",
+          "bedding"
+        ],
+        "id": "1349370:0",
+        "readings": [
+          "とこ"
+        ]
+      },
+      {
+        "glosses": [
+          "sickbed"
+        ],
+        "id": "1349370:1",
+        "readings": [
+          "とこ"
+        ]
+      },
+      {
+        "glosses": [
+          "alcove"
+        ],
+        "id": "1349370:2",
+        "readings": [
+          "とこ"
+        ]
+      },
+      {
+        "glosses": [
+          "riverbed"
+        ],
+        "id": "1349370:3",
+        "readings": [
+          "とこ"
+        ]
+      },
+      {
+        "glosses": [
+          "seedbed"
+        ],
+        "id": "1349370:4",
+        "readings": [
+          "とこ"
+        ]
+      },
+      {
+        "glosses": [
+          "straw \"core\" of a tatami mat"
+        ],
+        "id": "1349370:5",
+        "readings": [
+          "とこ"
+        ]
+      },
+      {
+        "glosses": [
+          "floor"
+        ],
+        "id": "1349370:6",
+        "readings": [
+          "とこ"
+        ]
+      }
+    ],
+    "店": [
+      {
+        "glosses": [
+          "store",
+          "shop",
+          "establishment",
+          "restaurant"
+        ],
+        "id": "1582120:0",
+        "readings": [
+          "みせ"
+        ]
+      },
+      {
+        "glosses": [
+          "store",
+          "shop",
+          "restaurant"
+        ],
+        "id": "1582125:0",
+        "readings": [
+          "てん"
+        ]
+      }
+    ],
+    "度": [
+      {
+        "glosses": [
+          "time (three times, each time, etc.)",
+          "times"
+        ],
+        "id": "1445150:0",
+        "readings": [
+          "たび"
+        ]
+      },
+      {
+        "glosses": [
+          "degree (angle, temperature, scale, etc.)"
+        ],
+        "id": "1445160:0",
+        "readings": [
+          "ど"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for occurrences"
+        ],
+        "id": "1445160:1",
+        "readings": [
+          "ど"
+        ]
+      },
+      {
+        "glosses": [
+          "strength (of glasses)",
+          "glasses prescription"
+        ],
+        "id": "1445160:2",
+        "readings": [
+          "ど"
+        ]
+      },
+      {
+        "glosses": [
+          "alcohol content (percentage)",
+          "alcohol by volume"
+        ],
+        "id": "1445160:3",
+        "readings": [
+          "ど"
+        ]
+      },
+      {
+        "glosses": [
+          "extent",
+          "degree",
+          "limit"
+        ],
+        "id": "1445160:4",
+        "readings": [
+          "ど"
+        ]
+      },
+      {
+        "glosses": [
+          "presence of mind",
+          "composure"
+        ],
+        "id": "1445160:5",
+        "readings": [
+          "ど"
+        ]
+      },
+      {
+        "glosses": [
+          "extreme",
+          "ultra",
+          "mega",
+          "totally",
+          "very much",
+          "precisely",
+          "exactly"
+        ],
+        "id": "2252690:0",
+        "readings": [
+          "ど"
+        ]
+      },
+      {
+        "glosses": [
+          "damn",
+          "stupid",
+          "cursed"
+        ],
+        "id": "2252690:1",
+        "readings": [
+          "ど"
+        ]
+      }
+    ],
+    "後": [
+      {
+        "glosses": [
+          "behind",
+          "rear"
+        ],
+        "id": "1269320:0",
+        "readings": [
+          "あと"
+        ]
+      },
+      {
+        "glosses": [
+          "after",
+          "later"
+        ],
+        "id": "1269320:1",
+        "readings": [
+          "あと"
+        ]
+      },
+      {
+        "glosses": [
+          "remainder",
+          "the rest"
+        ],
+        "id": "1269320:2",
+        "readings": [
+          "あと"
+        ]
+      },
+      {
+        "glosses": [
+          "more (e.g. five more minutes)",
+          "left"
+        ],
+        "id": "1269320:3",
+        "readings": [
+          "あと"
+        ]
+      },
+      {
+        "glosses": [
+          "also",
+          "in addition"
+        ],
+        "id": "1269320:4",
+        "readings": [
+          "あと"
+        ]
+      },
+      {
+        "glosses": [
+          "descendant",
+          "successor",
+          "heir"
+        ],
+        "id": "1269320:5",
+        "readings": [
+          "あと"
+        ]
+      },
+      {
+        "glosses": [
+          "after one's death"
+        ],
+        "id": "1269320:6",
+        "readings": [
+          "あと"
+        ]
+      },
+      {
+        "glosses": [
+          "past",
+          "previous"
+        ],
+        "id": "1269320:7",
+        "readings": [
+          "あと"
+        ]
+      },
+      {
+        "glosses": [
+          "after"
+        ],
+        "id": "2147630:0",
+        "readings": [
+          "ご"
+        ]
+      }
+    ],
+    "得る": [
+      {
+        "glosses": [
+          "to be able to ...",
+          "can ..."
+        ],
+        "id": "1454500:0",
+        "readings": [
+          "うる"
+        ]
+      },
+      {
+        "glosses": [
+          "to get",
+          "to acquire",
+          "to obtain",
+          "to procure",
+          "to earn",
+          "to win",
+          "to gain",
+          "to secure",
+          "to attain"
+        ],
+        "id": "1454500:1",
+        "readings": [
+          "うる"
+        ]
+      },
+      {
+        "glosses": [
+          "to get",
+          "to earn",
+          "to acquire",
+          "to procure",
+          "to gain",
+          "to secure",
+          "to attain",
+          "to obtain",
+          "to win"
+        ],
+        "id": "1588760:0",
+        "readings": [
+          "える"
+        ]
+      },
+      {
+        "glosses": [
+          "to understand",
+          "to comprehend"
+        ],
+        "id": "1588760:1",
+        "readings": [
+          "える"
+        ]
+      },
+      {
+        "glosses": [
+          "to receive something undesirable (e.g. a punishment)",
+          "to get (ill)"
+        ],
+        "id": "1588760:2",
+        "readings": [
+          "える"
+        ]
+      },
+      {
+        "glosses": [
+          "to be able to ..., can ..."
+        ],
+        "id": "1588760:3",
+        "readings": [
+          "える"
+        ]
+      }
+    ],
+    "心": [
+      {
+        "glosses": [
+          "mind",
+          "heart",
+          "spirit"
+        ],
+        "id": "1360480:0",
+        "readings": [
+          "こころ"
+        ]
+      },
+      {
+        "glosses": [
+          "the meaning of a phrase (riddle, etc.)"
+        ],
+        "id": "1360480:1",
+        "readings": [
+          "こころ"
+        ]
+      },
+      {
+        "glosses": [
+          "heart",
+          "mind",
+          "spirit",
+          "vitality",
+          "inner strength"
+        ],
+        "id": "1595125:0",
+        "readings": [
+          "しん"
+        ]
+      },
+      {
+        "glosses": [
+          "bottom of one's heart",
+          "core (of one's character)",
+          "nature"
+        ],
+        "id": "1595125:1",
+        "readings": [
+          "しん"
+        ]
+      },
+      {
+        "glosses": [
+          "centre",
+          "center",
+          "core",
+          "heart"
+        ],
+        "id": "1595125:2",
+        "readings": [
+          "しん"
+        ]
+      },
+      {
+        "glosses": [
+          "heart (organ)"
+        ],
+        "id": "1595125:3",
+        "readings": [
+          "しん"
+        ]
+      },
+      {
+        "glosses": [
+          "Chinese \"Heart\" constellation (one of the 28 mansions)"
+        ],
+        "id": "1595125:4",
+        "readings": [
+          "しん"
+        ]
+      },
+      {
+        "glosses": [
+          "friend"
+        ],
+        "id": "1595125:5",
+        "readings": [
+          "しん"
+        ]
+      }
+    ],
+    "心中": [
+      {
+        "glosses": [
+          "double suicide",
+          "lovers' suicide"
+        ],
+        "id": "1360840:0",
+        "readings": [
+          "しんじゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "group suicide",
+          "family suicide"
+        ],
+        "id": "1360840:1",
+        "readings": [
+          "しんじゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "dedication to the point of self-sacrifice"
+        ],
+        "id": "1360840:2",
+        "readings": [
+          "しんじゅう"
+        ]
+      },
+      {
+        "glosses": [
+          "one's heart",
+          "the mind",
+          "inner feelings",
+          "inmost thoughts",
+          "true motives"
+        ],
+        "id": "1609980:0",
+        "readings": [
+          "しんちゅう"
+        ]
+      }
+    ],
+    "悪口": [
+      {
+        "glosses": [
+          "(verbal) abuse",
+          "name-calling",
+          "abusive language",
+          "insulting remarks"
+        ],
+        "id": "2862924:0",
+        "readings": [
+          "あっこう"
+        ]
+      },
+      {
+        "glosses": [
+          "(verbal) abuse",
+          "speaking ill of people",
+          "bad-mouthing",
+          "name-calling",
+          "slander",
+          "abusive language",
+          "insulting remarks"
+        ],
+        "id": "1575730:0",
+        "readings": [
+          "わるぐち"
+        ]
+      }
+    ],
+    "抱く": [
+      {
+        "glosses": [
+          "to hold in one's arms (e.g. a baby)",
+          "to embrace",
+          "to hug"
+        ],
+        "id": "1584090:0",
+        "readings": [
+          "いだく"
+        ]
+      },
+      {
+        "glosses": [
+          "to have (a thought or feeling)",
+          "to hold",
+          "to harbour (suspicion, doubt, etc.)",
+          "to harbor",
+          "to bear (a grudge, ill will, etc.)",
+          "to entertain (hope, illusions, etc.)",
+          "to cherish (e.g. an ambition)"
+        ],
+        "id": "1584090:1",
+        "readings": [
+          "いだく"
+        ]
+      },
+      {
+        "glosses": [
+          "to hold in one's arms (e.g. a baby)",
+          "to embrace",
+          "to hug"
+        ],
+        "id": "2844997:0",
+        "readings": [
+          "だく"
+        ]
+      },
+      {
+        "glosses": [
+          "to have sex with",
+          "to make love to",
+          "to sleep with"
+        ],
+        "id": "2844997:1",
+        "readings": [
+          "だく"
+        ]
+      },
+      {
+        "glosses": [
+          "to sit on (eggs)",
+          "to brood"
+        ],
+        "id": "2844997:2",
+        "readings": [
+          "だく"
+        ]
+      }
+    ],
+    "数": [
+      {
+        "glosses": [
+          "number",
+          "amount"
+        ],
+        "id": "1580820:0",
+        "readings": [
+          "かず"
+        ]
+      },
+      {
+        "glosses": [
+          "several",
+          "a few",
+          "a number of"
+        ],
+        "id": "1580825:0",
+        "readings": [
+          "すう"
+        ]
+      },
+      {
+        "glosses": [
+          "number",
+          "quantity",
+          "amount"
+        ],
+        "id": "1580825:1",
+        "readings": [
+          "すう"
+        ]
+      },
+      {
+        "glosses": [
+          "counting",
+          "calculation",
+          "figures",
+          "numbers"
+        ],
+        "id": "1580825:2",
+        "readings": [
+          "すう"
+        ]
+      },
+      {
+        "glosses": [
+          "number",
+          "numeral",
+          "figure"
+        ],
+        "id": "1580825:3",
+        "readings": [
+          "すう"
+        ]
+      },
+      {
+        "glosses": [
+          "number"
+        ],
+        "id": "1580825:4",
+        "readings": [
+          "すう"
+        ]
+      },
+      {
+        "glosses": [
+          "destiny",
+          "fate",
+          "outcome",
+          "course of events",
+          "trend"
+        ],
+        "id": "1580825:5",
+        "readings": [
+          "すう"
+        ]
+      }
+    ],
+    "方": [
+      {
+        "glosses": [
+          "direction",
+          "way"
+        ],
+        "id": "1516925:0",
+        "readings": [
+          "かた"
+        ]
+      },
+      {
+        "glosses": [
+          "person",
+          "lady",
+          "gentleman"
+        ],
+        "id": "1516925:1",
+        "readings": [
+          "かた"
+        ]
+      },
+      {
+        "glosses": [
+          "method of",
+          "manner of",
+          "way of"
+        ],
+        "id": "1516925:2",
+        "readings": [
+          "かた"
+        ]
+      },
+      {
+        "glosses": [
+          "care of ..."
+        ],
+        "id": "1516925:3",
+        "readings": [
+          "かた"
+        ]
+      },
+      {
+        "glosses": [
+          "person in charge of ..."
+        ],
+        "id": "1516925:4",
+        "readings": [
+          "かた"
+        ]
+      },
+      {
+        "glosses": [
+          "side (e.g. \"on my mother's side\")"
+        ],
+        "id": "1516925:5",
+        "readings": [
+          "かた"
+        ]
+      },
+      {
+        "glosses": [
+          "direction",
+          "way",
+          "side",
+          "area (in a particular direction)"
+        ],
+        "id": "1516930:0",
+        "readings": [
+          "ほう"
+        ]
+      },
+      {
+        "glosses": [
+          "side (of an argument, etc.)",
+          "one's part"
+        ],
+        "id": "1516930:1",
+        "readings": [
+          "ほう"
+        ]
+      },
+      {
+        "glosses": [
+          "type",
+          "category"
+        ],
+        "id": "1516930:2",
+        "readings": [
+          "ほう"
+        ]
+      },
+      {
+        "glosses": [
+          "field (of study, etc.)"
+        ],
+        "id": "1516930:3",
+        "readings": [
+          "ほう"
+        ]
+      },
+      {
+        "glosses": [
+          "indicates one side of a comparison"
+        ],
+        "id": "1516930:4",
+        "readings": [
+          "ほう"
+        ]
+      },
+      {
+        "glosses": [
+          "way",
+          "method",
+          "manner",
+          "means"
+        ],
+        "id": "1516930:5",
+        "readings": [
+          "ほう"
+        ]
+      },
+      {
+        "glosses": [
+          "length (of each side of a square)"
+        ],
+        "id": "1516930:6",
+        "readings": [
+          "ほう"
+        ]
+      }
+    ],
+    "方々": [
+      {
+        "glosses": [
+          "people",
+          "(all) persons",
+          "everyone",
+          "ladies and gentlemen"
+        ],
+        "id": "1584100:0",
+        "readings": [
+          "かたがた"
+        ]
+      },
+      {
+        "glosses": [
+          "you (usu. plural)"
+        ],
+        "id": "1584100:1",
+        "readings": [
+          "かたがた"
+        ]
+      },
+      {
+        "glosses": [
+          "here and there",
+          "this way and that way",
+          "everywhere",
+          "all over"
+        ],
+        "id": "1584105:0",
+        "readings": [
+          "ほうぼう"
+        ]
+      }
+    ],
+    "日": [
+      {
+        "glosses": [
+          "day",
+          "days"
+        ],
+        "id": "1463770:0",
+        "readings": [
+          "ひ"
+        ]
+      },
+      {
+        "glosses": [
+          "sun",
+          "sunshine",
+          "sunlight"
+        ],
+        "id": "1463770:1",
+        "readings": [
+          "ひ"
+        ]
+      },
+      {
+        "glosses": [
+          "(the) day",
+          "daytime",
+          "daylight"
+        ],
+        "id": "1463770:2",
+        "readings": [
+          "ひ"
+        ]
+      },
+      {
+        "glosses": [
+          "date",
+          "deadline"
+        ],
+        "id": "1463770:3",
+        "readings": [
+          "ひ"
+        ]
+      },
+      {
+        "glosses": [
+          "(past) days",
+          "time (e.g. of one's childhood)"
+        ],
+        "id": "1463770:4",
+        "readings": [
+          "ひ"
+        ]
+      },
+      {
+        "glosses": [
+          "case (esp. unfortunate)",
+          "event"
+        ],
+        "id": "1463770:5",
+        "readings": [
+          "ひ"
+        ]
+      },
+      {
+        "glosses": [
+          "Sunday"
+        ],
+        "id": "2083100:0",
+        "readings": [
+          "にち"
+        ]
+      },
+      {
+        "glosses": [
+          "nth day (of the month)"
+        ],
+        "id": "2083100:1",
+        "readings": [
+          "にち"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for days"
+        ],
+        "id": "2083100:2",
+        "readings": [
+          "にち"
+        ]
+      },
+      {
+        "glosses": [
+          "Japan"
+        ],
+        "id": "2083100:3",
+        "readings": [
+          "にち"
+        ]
+      }
+    ],
+    "時": [
+      {
+        "glosses": [
+          "time",
+          "hour",
+          "moment"
+        ],
+        "id": "1315840:0",
+        "readings": [
+          "とき"
+        ]
+      },
+      {
+        "glosses": [
+          "occasion",
+          "case"
+        ],
+        "id": "1315840:1",
+        "readings": [
+          "とき"
+        ]
+      },
+      {
+        "glosses": [
+          "chance",
+          "opportunity",
+          "season"
+        ],
+        "id": "1315840:2",
+        "readings": [
+          "とき"
+        ]
+      },
+      {
+        "glosses": [
+          "the times",
+          "the age",
+          "the day"
+        ],
+        "id": "1315840:3",
+        "readings": [
+          "とき"
+        ]
+      },
+      {
+        "glosses": [
+          "tense"
+        ],
+        "id": "1315840:4",
+        "readings": [
+          "とき"
+        ]
+      },
+      {
+        "glosses": [
+          "hour",
+          "o'clock"
+        ],
+        "id": "2020680:0",
+        "readings": [
+          "じ"
+        ]
+      },
+      {
+        "glosses": [
+          "(specified) time",
+          "when ...",
+          "during ..."
+        ],
+        "id": "2020680:1",
+        "readings": [
+          "じ"
+        ]
+      }
+    ],
+    "月": [
+      {
+        "glosses": [
+          "Moon"
+        ],
+        "id": "1255430:0",
+        "readings": [
+          "つき"
+        ]
+      },
+      {
+        "glosses": [
+          "month"
+        ],
+        "id": "1255430:1",
+        "readings": [
+          "つき"
+        ]
+      },
+      {
+        "glosses": [
+          "moonlight"
+        ],
+        "id": "1255430:2",
+        "readings": [
+          "つき"
+        ]
+      },
+      {
+        "glosses": [
+          "(a) moon",
+          "natural satellite"
+        ],
+        "id": "1255430:3",
+        "readings": [
+          "つき"
+        ]
+      },
+      {
+        "glosses": [
+          "month (of the year)"
+        ],
+        "id": "2871532:0",
+        "readings": [
+          "がつ"
+        ]
+      }
+    ],
+    "月日": [
+      {
+        "glosses": [
+          "time",
+          "years",
+          "days",
+          "(one's) life"
+        ],
+        "id": "1255780:0",
+        "readings": [
+          "つきひ"
+        ]
+      },
+      {
+        "glosses": [
+          "the Moon and the Sun"
+        ],
+        "id": "1255780:1",
+        "readings": [
+          "つきひ"
+        ]
+      },
+      {
+        "glosses": [
+          "month and day (of the year)",
+          "(the) date"
+        ],
+        "id": "1609580:0",
+        "readings": [
+          "がっぴ"
+        ]
+      }
+    ],
+    "未": [
+      {
+        "glosses": [
+          "the Sheep (eighth sign of the Chinese zodiac)",
+          "the Ram",
+          "the Goat"
+        ],
+        "id": "1527090:0",
+        "readings": [
+          "ひつじ"
+        ]
+      },
+      {
+        "glosses": [
+          "hour of the Sheep (around 2pm, 1-3pm, or 2-4pm)"
+        ],
+        "id": "1527090:1",
+        "readings": [
+          "ひつじ"
+        ]
+      },
+      {
+        "glosses": [
+          "south-southwest"
+        ],
+        "id": "1527090:2",
+        "readings": [
+          "ひつじ"
+        ]
+      },
+      {
+        "glosses": [
+          "sixth month of the lunar calendar"
+        ],
+        "id": "1527090:3",
+        "readings": [
+          "ひつじ"
+        ]
+      },
+      {
+        "glosses": [
+          "not yet",
+          "un-"
+        ],
+        "id": "2242840:0",
+        "readings": [
+          "み"
+        ]
+      }
+    ],
+    "末": [
+      {
+        "glosses": [
+          "end",
+          "tip",
+          "top"
+        ],
+        "id": "1525250:0",
+        "readings": [
+          "すえ"
+        ]
+      },
+      {
+        "glosses": [
+          "end (of the year, month, etc.)",
+          "close"
+        ],
+        "id": "1525250:1",
+        "readings": [
+          "すえ"
+        ]
+      },
+      {
+        "glosses": [
+          "youngest child"
+        ],
+        "id": "1525250:2",
+        "readings": [
+          "すえ"
+        ]
+      },
+      {
+        "glosses": [
+          "descendants",
+          "offspring",
+          "posterity"
+        ],
+        "id": "1525250:3",
+        "readings": [
+          "すえ"
+        ]
+      },
+      {
+        "glosses": [
+          "future"
+        ],
+        "id": "1525250:4",
+        "readings": [
+          "すえ"
+        ]
+      },
+      {
+        "glosses": [
+          "(finally) after",
+          "(at last) after",
+          "at the end of"
+        ],
+        "id": "1525250:5",
+        "readings": [
+          "すえ"
+        ]
+      },
+      {
+        "glosses": [
+          "trifles",
+          "trivialities"
+        ],
+        "id": "1525250:6",
+        "readings": [
+          "すえ"
+        ]
+      },
+      {
+        "glosses": [
+          "degenerate age"
+        ],
+        "id": "1525250:7",
+        "readings": [
+          "すえ"
+        ]
+      },
+      {
+        "glosses": [
+          "the end (of)"
+        ],
+        "id": "1525260:0",
+        "readings": [
+          "まつ"
+        ]
+      },
+      {
+        "glosses": [
+          "powder"
+        ],
+        "id": "1525260:1",
+        "readings": [
+          "まつ"
+        ]
+      }
+    ],
+    "札": [
+      {
+        "glosses": [
+          "banknote",
+          "bill",
+          "note",
+          "paper money"
+        ],
+        "id": "1298960:0",
+        "readings": [
+          "さつ"
+        ]
+      },
+      {
+        "glosses": [
+          "ticket",
+          "token",
+          "check",
+          "receipt"
+        ],
+        "id": "1298970:0",
+        "readings": [
+          "ふだ"
+        ]
+      },
+      {
+        "glosses": [
+          "label",
+          "tag"
+        ],
+        "id": "1298970:1",
+        "readings": [
+          "ふだ"
+        ]
+      },
+      {
+        "glosses": [
+          "sign",
+          "card",
+          "plate"
+        ],
+        "id": "1298970:2",
+        "readings": [
+          "ふだ"
+        ]
+      },
+      {
+        "glosses": [
+          "playing card"
+        ],
+        "id": "1298970:3",
+        "readings": [
+          "ふだ"
+        ]
+      },
+      {
+        "glosses": [
+          "charm",
+          "talisman"
+        ],
+        "id": "1298970:4",
+        "readings": [
+          "ふだ"
+        ]
+      },
+      {
+        "glosses": [
+          "slip of paper posted on shrine pillars by pilgrims"
+        ],
+        "id": "1298970:5",
+        "readings": [
+          "ふだ"
+        ]
+      }
+    ],
+    "柄": [
+      {
+        "glosses": [
+          "pattern",
+          "design"
+        ],
+        "id": "1508300:0",
+        "readings": [
+          "がら"
+        ]
+      },
+      {
+        "glosses": [
+          "body build",
+          "figure",
+          "physique"
+        ],
+        "id": "1508300:1",
+        "readings": [
+          "がら"
+        ]
+      },
+      {
+        "glosses": [
+          "essential qualities",
+          "character",
+          "nature"
+        ],
+        "id": "1508300:2",
+        "readings": [
+          "がら"
+        ]
+      },
+      {
+        "glosses": [
+          "appropriate to",
+          "fitting of",
+          "suitable for"
+        ],
+        "id": "1508300:3",
+        "readings": [
+          "がら"
+        ]
+      },
+      {
+        "glosses": [
+          "handle",
+          "grip"
+        ],
+        "id": "1508290:0",
+        "readings": [
+          "え"
+        ]
+      },
+      {
+        "glosses": [
+          "stalk (of a mushroom, leaf, etc.)"
+        ],
+        "id": "1508290:1",
+        "readings": [
+          "え"
+        ]
+      }
+    ],
+    "気味": [
+      {
+        "glosses": [
+          "sensation",
+          "feeling"
+        ],
+        "id": "1222640:0",
+        "readings": [
+          "きみ"
+        ]
+      },
+      {
+        "glosses": [
+          "tendency",
+          "propensity"
+        ],
+        "id": "1222640:1",
+        "readings": [
+          "きみ"
+        ]
+      },
+      {
+        "glosses": [
+          "-like",
+          "-looking",
+          "-looked",
+          "tending to ..."
+        ],
+        "id": "1790980:0",
+        "readings": [
+          "ぎみ"
+        ]
+      }
+    ],
+    "畳": [
+      {
+        "glosses": [
+          "tatami mat",
+          "Japanese straw floor coverings"
+        ],
+        "id": "1356750:0",
+        "readings": [
+          "たたみ"
+        ]
+      },
+      {
+        "glosses": [
+          "tatami mat (esp. as a measure of room size, either 1.82 sqm or 1.54 sqm)"
+        ],
+        "id": "1356740:0",
+        "readings": [
+          "じょう"
+        ]
+      }
+    ],
+    "目下": [
+      {
+        "glosses": [
+          "subordinate",
+          "subordinates",
+          "inferior",
+          "inferiors",
+          "junior"
+        ],
+        "id": "1535320:0",
+        "readings": [
+          "めした"
+        ]
+      },
+      {
+        "glosses": [
+          "at present",
+          "now"
+        ],
+        "id": "1535330:0",
+        "readings": [
+          "もっか"
+        ]
+      }
+    ],
+    "直": [
+      {
+        "glosses": [
+          "soon",
+          "in a moment",
+          "before long",
+          "shortly"
+        ],
+        "id": "1581790:0",
+        "readings": [
+          "じき"
+        ]
+      },
+      {
+        "glosses": [
+          "nearby",
+          "close"
+        ],
+        "id": "1581790:1",
+        "readings": [
+          "じき"
+        ]
+      },
+      {
+        "glosses": [
+          "direct"
+        ],
+        "id": "1581790:2",
+        "readings": [
+          "じき"
+        ]
+      },
+      {
+        "glosses": [
+          "spot transaction",
+          "cash transaction"
+        ],
+        "id": "1581790:3",
+        "readings": [
+          "じき"
+        ]
+      },
+      {
+        "glosses": [
+          "direct"
+        ],
+        "id": "1581795:0",
+        "readings": [
+          "ちょく"
+        ]
+      },
+      {
+        "glosses": [
+          "honest",
+          "frank",
+          "straightforward",
+          "candid"
+        ],
+        "id": "1581795:1",
+        "readings": [
+          "ちょく"
+        ]
+      },
+      {
+        "glosses": [
+          "easygoing",
+          "lighthearted",
+          "friendly"
+        ],
+        "id": "1581795:2",
+        "readings": [
+          "ちょく"
+        ]
+      },
+      {
+        "glosses": [
+          "night duty",
+          "night watch"
+        ],
+        "id": "1581795:3",
+        "readings": [
+          "ちょく"
+        ]
+      },
+      {
+        "glosses": [
+          "being on duty (in a factory)",
+          "shift"
+        ],
+        "id": "1581795:4",
+        "readings": [
+          "ちょく"
+        ]
+      }
+    ],
+    "空": [
+      {
+        "glosses": [
+          "sky",
+          "the air",
+          "the heavens"
+        ],
+        "id": "1245290:0",
+        "readings": [
+          "そら"
+        ]
+      },
+      {
+        "glosses": [
+          "weather"
+        ],
+        "id": "1245290:1",
+        "readings": [
+          "そら"
+        ]
+      },
+      {
+        "glosses": [
+          "far-off place",
+          "distant place"
+        ],
+        "id": "1245290:2",
+        "readings": [
+          "そら"
+        ]
+      },
+      {
+        "glosses": [
+          "state of mind",
+          "feeling"
+        ],
+        "id": "1245290:3",
+        "readings": [
+          "そら"
+        ]
+      },
+      {
+        "glosses": [
+          "(from) memory",
+          "(by) heart"
+        ],
+        "id": "1245290:4",
+        "readings": [
+          "そら"
+        ]
+      },
+      {
+        "glosses": [
+          "falsehood",
+          "lie"
+        ],
+        "id": "1245290:5",
+        "readings": [
+          "そら"
+        ]
+      },
+      {
+        "glosses": [
+          "somehow",
+          "vaguely"
+        ],
+        "id": "1245290:6",
+        "readings": [
+          "そら"
+        ]
+      },
+      {
+        "glosses": [
+          "fake"
+        ],
+        "id": "1245290:7",
+        "readings": [
+          "そら"
+        ]
+      },
+      {
+        "glosses": [
+          "emptiness",
+          "being empty"
+        ],
+        "id": "1245280:0",
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "not carrying anything",
+          "unburdened",
+          "empty-handed"
+        ],
+        "id": "1245280:1",
+        "readings": [
+          "から"
+        ]
+      },
+      {
+        "glosses": [
+          "dishonoured (bill, promise, etc.)",
+          "false",
+          "no-show (reservation)",
+          "put-on (cheeriness, courage, etc.)",
+          "empty (compliments)",
+          "insincere"
+        ],
+        "id": "1245280:2",
+        "readings": [
+          "から"
+        ]
+      }
+    ],
+    "管": [
+      {
+        "glosses": [
+          "pipe",
+          "tube"
+        ],
+        "id": "2868440:0",
+        "readings": [
+          "くだ"
+        ]
+      },
+      {
+        "glosses": [
+          "bobbin (in a shuttle or spinning wheel)"
+        ],
+        "id": "2868440:1",
+        "readings": [
+          "くだ"
+        ]
+      },
+      {
+        "glosses": [
+          "pipe",
+          "tube"
+        ],
+        "id": "1577650:0",
+        "readings": [
+          "かん"
+        ]
+      },
+      {
+        "glosses": [
+          "wind instrument"
+        ],
+        "id": "1577650:1",
+        "readings": [
+          "かん"
+        ]
+      },
+      {
+        "glosses": [
+          "vessel",
+          "duct",
+          "tract",
+          "canal"
+        ],
+        "id": "1577650:2",
+        "readings": [
+          "かん"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for tube-shaped objects"
+        ],
+        "id": "1577650:3",
+        "readings": [
+          "かん"
+        ]
+      }
+    ],
+    "節": [
+      {
+        "glosses": [
+          "joint",
+          "knuckle"
+        ],
+        "id": "1386160:0",
+        "readings": [
+          "ふし"
+        ]
+      },
+      {
+        "glosses": [
+          "tune",
+          "melody"
+        ],
+        "id": "1386160:1",
+        "readings": [
+          "ふし"
+        ]
+      },
+      {
+        "glosses": [
+          "node (of a plant stem)",
+          "joint",
+          "knot (in wood)",
+          "knob"
+        ],
+        "id": "1386160:2",
+        "readings": [
+          "ふし"
+        ]
+      },
+      {
+        "glosses": [
+          "(notable) point",
+          "part"
+        ],
+        "id": "1386160:3",
+        "readings": [
+          "ふし"
+        ]
+      },
+      {
+        "glosses": [
+          "node"
+        ],
+        "id": "1386160:4",
+        "readings": [
+          "ふし"
+        ]
+      },
+      {
+        "glosses": [
+          "occasion",
+          "time"
+        ],
+        "id": "1386140:0",
+        "readings": [
+          "せつ"
+        ]
+      },
+      {
+        "glosses": [
+          "section (of a literary work or piece of music)",
+          "passage",
+          "paragraph",
+          "verse",
+          "stanza"
+        ],
+        "id": "1386140:1",
+        "readings": [
+          "せつ"
+        ]
+      },
+      {
+        "glosses": [
+          "clause"
+        ],
+        "id": "1386140:2",
+        "readings": [
+          "せつ"
+        ]
+      },
+      {
+        "glosses": [
+          "season",
+          "term"
+        ],
+        "id": "1386140:3",
+        "readings": [
+          "せつ"
+        ]
+      },
+      {
+        "glosses": [
+          "one's principles",
+          "integrity"
+        ],
+        "id": "1386140:4",
+        "readings": [
+          "せつ"
+        ]
+      },
+      {
+        "glosses": [
+          "node (of a plant stem)"
+        ],
+        "id": "1386140:5",
+        "readings": [
+          "せつ"
+        ]
+      },
+      {
+        "glosses": [
+          "section (taxonomic rank)"
+        ],
+        "id": "1386140:6",
+        "readings": [
+          "せつ"
+        ]
+      },
+      {
+        "glosses": [
+          "knot (nautical mile per hour)"
+        ],
+        "id": "1386140:7",
+        "readings": [
+          "せつ"
+        ]
+      }
+    ],
+    "米": [
+      {
+        "glosses": [
+          "(husked grains of) rice"
+        ],
+        "id": "1508750:0",
+        "readings": [
+          "こめ"
+        ]
+      },
+      {
+        "glosses": [
+          "staple (product, etc.)",
+          "necessity"
+        ],
+        "id": "1508750:1",
+        "readings": [
+          "こめ"
+        ]
+      },
+      {
+        "glosses": [
+          "(online) comment"
+        ],
+        "id": "1508750:2",
+        "readings": [
+          "こめ"
+        ]
+      },
+      {
+        "glosses": [
+          "(United States of) America",
+          "USA"
+        ],
+        "id": "2150610:0",
+        "readings": [
+          "べい"
+        ]
+      }
+    ],
+    "紅葉": [
+      {
+        "glosses": [
+          "leaves turning red (in autumn)",
+          "red leaves",
+          "autumn colours",
+          "fall colors"
+        ],
+        "id": "1578780:0",
+        "readings": [
+          "こうよう"
+        ]
+      },
+      {
+        "glosses": [
+          "maple (tree)"
+        ],
+        "id": "2857870:0",
+        "readings": [
+          "もみじ"
+        ]
+      },
+      {
+        "glosses": [
+          "red leaves (of autumn)",
+          "autumn colors",
+          "leaves changing color"
+        ],
+        "id": "2857870:1",
+        "readings": [
+          "もみじ"
+        ]
+      },
+      {
+        "glosses": [
+          "layered colors in garments, resembling autumn colors"
+        ],
+        "id": "2857870:2",
+        "readings": [
+          "もみじ"
+        ]
+      },
+      {
+        "glosses": [
+          "venison"
+        ],
+        "id": "2857870:3",
+        "readings": [
+          "もみじ"
+        ]
+      }
+    ],
+    "罰": [
+      {
+        "glosses": [
+          "(divine) punishment",
+          "curse",
+          "retribution"
+        ],
+        "id": "1478050:0",
+        "readings": [
+          "ばち"
+        ]
+      },
+      {
+        "glosses": [
+          "punishment",
+          "penalty"
+        ],
+        "id": "1478060:0",
+        "readings": [
+          "ばつ"
+        ]
+      }
+    ],
+    "羽": [
+      {
+        "glosses": [
+          "feather",
+          "plume",
+          "down"
+        ],
+        "id": "1171680:0",
+        "readings": [
+          "はね"
+        ]
+      },
+      {
+        "glosses": [
+          "wing"
+        ],
+        "id": "1171680:1",
+        "readings": [
+          "はね"
+        ]
+      },
+      {
+        "glosses": [
+          "shuttlecock (in badminton)"
+        ],
+        "id": "1171680:3",
+        "readings": [
+          "はね"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for birds or rabbits"
+        ],
+        "id": "1607310:0",
+        "readings": [
+          "わ"
+        ]
+      }
+    ],
+    "背": [
+      {
+        "glosses": [
+          "back"
+        ],
+        "id": "2147990:0",
+        "readings": [
+          "せ"
+        ]
+      },
+      {
+        "glosses": [
+          "reverse",
+          "rear side",
+          "back (e.g. of a chair)",
+          "spine (of a book)"
+        ],
+        "id": "2147990:1",
+        "readings": [
+          "せ"
+        ]
+      },
+      {
+        "glosses": [
+          "height",
+          "stature"
+        ],
+        "id": "2147990:2",
+        "readings": [
+          "せ"
+        ]
+      },
+      {
+        "glosses": [
+          "ridge (of a mountain)"
+        ],
+        "id": "2147990:3",
+        "readings": [
+          "せ"
+        ]
+      },
+      {
+        "glosses": [
+          "height",
+          "stature"
+        ],
+        "id": "1472650:0",
+        "readings": [
+          "せい"
+        ]
+      }
+    ],
+    "脅かす": [
+      {
+        "glosses": [
+          "to threaten",
+          "to menace",
+          "to intimidate"
+        ],
+        "id": "1578070:0",
+        "readings": [
+          "おどかす"
+        ]
+      },
+      {
+        "glosses": [
+          "to startle",
+          "to frighten",
+          "to scare"
+        ],
+        "id": "1578070:1",
+        "readings": [
+          "おどかす"
+        ]
+      },
+      {
+        "glosses": [
+          "to intimidate",
+          "to frighten",
+          "to scare"
+        ],
+        "id": "1578075:0",
+        "readings": [
+          "おびやかす"
+        ]
+      },
+      {
+        "glosses": [
+          "to threaten (e.g. peace)",
+          "to jeopardize",
+          "to endanger",
+          "to imperil"
+        ],
+        "id": "1578075:1",
+        "readings": [
+          "おびやかす"
+        ]
+      }
+    ],
+    "表": [
+      {
+        "glosses": [
+          "surface"
+        ],
+        "id": "1489340:0",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "face (i.e. the visible side of an object)"
+        ],
+        "id": "1489340:1",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "front (of a building, etc.)",
+          "obverse side (i.e. \"head\") of a coin"
+        ],
+        "id": "1489340:2",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "outside",
+          "exterior"
+        ],
+        "id": "1489340:3",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "appearance"
+        ],
+        "id": "1489340:4",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "public"
+        ],
+        "id": "1489340:5",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "first half (of an inning)",
+          "top (of an inning)"
+        ],
+        "id": "1489340:6",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "cover (for tatami mats, etc.)"
+        ],
+        "id": "1489340:7",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "foreground"
+        ],
+        "id": "1489340:8",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "Omotesenke school of tea ceremony"
+        ],
+        "id": "1489340:9",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "table",
+          "chart",
+          "list"
+        ],
+        "id": "1489350:0",
+        "readings": [
+          "ひょう"
+        ]
+      },
+      {
+        "glosses": [
+          "memorial to an emperor"
+        ],
+        "id": "1489350:1",
+        "readings": [
+          "ひょう"
+        ]
+      }
+    ],
+    "角": [
+      {
+        "glosses": [
+          "corner",
+          "edge"
+        ],
+        "id": "1206110:0",
+        "readings": [
+          "かど"
+        ]
+      },
+      {
+        "glosses": [
+          "(street) corner",
+          "turning"
+        ],
+        "id": "1206110:1",
+        "readings": [
+          "かど"
+        ]
+      },
+      {
+        "glosses": [
+          "rough edges (of one's character, words, etc.)",
+          "abrasiveness",
+          "harshness",
+          "sharpness"
+        ],
+        "id": "1206110:2",
+        "readings": [
+          "かど"
+        ]
+      },
+      {
+        "glosses": [
+          "angle"
+        ],
+        "id": "1206100:0",
+        "readings": [
+          "かく"
+        ]
+      },
+      {
+        "glosses": [
+          "square",
+          "cube"
+        ],
+        "id": "1206100:1",
+        "readings": [
+          "かく"
+        ]
+      },
+      {
+        "glosses": [
+          "bishop"
+        ],
+        "id": "1206100:2",
+        "readings": [
+          "かく"
+        ]
+      },
+      {
+        "glosses": [
+          "third degree (of the Japanese and Chinese pentatonic scale)"
+        ],
+        "id": "1206100:3",
+        "readings": [
+          "かく"
+        ]
+      },
+      {
+        "glosses": [
+          "Chinese \"horn\" constellation (one of the 28 mansions)"
+        ],
+        "id": "1206100:4",
+        "readings": [
+          "かく"
+        ]
+      },
+      {
+        "glosses": [
+          "jiao (monetary unit of China; one-tenth of a yuan)"
+        ],
+        "id": "1206100:5",
+        "readings": [
+          "かく"
+        ]
+      },
+      {
+        "glosses": [
+          "horn",
+          "antler"
+        ],
+        "id": "1206120:0",
+        "readings": [
+          "つの"
+        ]
+      },
+      {
+        "glosses": [
+          "antenna",
+          "feeler",
+          "tentacle (e.g. of a snail)"
+        ],
+        "id": "1206120:1",
+        "readings": [
+          "つの"
+        ]
+      },
+      {
+        "glosses": [
+          "horn-like projection (e.g. peaks of whipped cream)"
+        ],
+        "id": "1206120:2",
+        "readings": [
+          "つの"
+        ]
+      }
+    ],
+    "退ける": [
+      {
+        "glosses": [
+          "to put something out of the way",
+          "to move (something, someone) aside"
+        ],
+        "id": "2850084:0",
+        "readings": [
+          "どける"
+        ]
+      },
+      {
+        "glosses": [
+          "to put something out of the way",
+          "to move (something, someone) aside"
+        ],
+        "id": "1411270:0",
+        "readings": [
+          "のける"
+        ]
+      },
+      {
+        "glosses": [
+          "to set aside",
+          "to keep apart"
+        ],
+        "id": "1411270:2",
+        "readings": [
+          "のける"
+        ]
+      },
+      {
+        "glosses": [
+          "to remove (someone) from the group",
+          "to shun"
+        ],
+        "id": "1411270:3",
+        "readings": [
+          "のける"
+        ]
+      },
+      {
+        "glosses": [
+          "to do well despite difficulties",
+          "to accomplish despite adversity"
+        ],
+        "id": "1411270:4",
+        "readings": [
+          "のける"
+        ]
+      },
+      {
+        "glosses": [
+          "to do resolutely",
+          "to do boldly"
+        ],
+        "id": "1411270:5",
+        "readings": [
+          "のける"
+        ]
+      }
+    ],
+    "通り": [
+      {
+        "glosses": [
+          "street",
+          "road",
+          "avenue",
+          "thoroughfare"
+        ],
+        "id": "1432920:0",
+        "readings": [
+          "とおり"
+        ]
+      },
+      {
+        "glosses": [
+          "traffic",
+          "coming and going"
+        ],
+        "id": "1432920:1",
+        "readings": [
+          "とおり"
+        ]
+      },
+      {
+        "glosses": [
+          "flow (of water, air, etc.)",
+          "passage",
+          "running"
+        ],
+        "id": "1432920:2",
+        "readings": [
+          "とおり"
+        ]
+      },
+      {
+        "glosses": [
+          "transmission (of sound)",
+          "reach (of voice)"
+        ],
+        "id": "1432920:3",
+        "readings": [
+          "とおり"
+        ]
+      },
+      {
+        "glosses": [
+          "reputation",
+          "favor",
+          "favour",
+          "popularity"
+        ],
+        "id": "1432920:4",
+        "readings": [
+          "とおり"
+        ]
+      },
+      {
+        "glosses": [
+          "understanding",
+          "comprehension",
+          "comprehensibility",
+          "clarity"
+        ],
+        "id": "1432920:5",
+        "readings": [
+          "とおり"
+        ]
+      },
+      {
+        "glosses": [
+          "the same way (as)",
+          "as (follows, stated, expected, etc.)"
+        ],
+        "id": "1432920:6",
+        "readings": [
+          "とおり"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for sets of things"
+        ],
+        "id": "1432920:7",
+        "readings": [
+          "とおり"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for methods, ways, kinds, etc."
+        ],
+        "id": "1432920:8",
+        "readings": [
+          "とおり"
+        ]
+      },
+      {
+        "glosses": [
+          "in accordance with",
+          "following"
+        ],
+        "id": "1432930:0",
+        "readings": [
+          "どおり"
+        ]
+      },
+      {
+        "glosses": [
+          "roughly",
+          "about"
+        ],
+        "id": "1432930:1",
+        "readings": [
+          "どおり"
+        ]
+      },
+      {
+        "glosses": [
+          "Street",
+          "Avenue"
+        ],
+        "id": "1432930:2",
+        "readings": [
+          "どおり"
+        ]
+      }
+    ],
+    "連れ": [
+      {
+        "glosses": [
+          "companion",
+          "company"
+        ],
+        "id": "1559260:0",
+        "readings": [
+          "つれ"
+        ]
+      },
+      {
+        "glosses": [
+          "tritagonist",
+          "second supporting character"
+        ],
+        "id": "1559260:1",
+        "readings": [
+          "つれ"
+        ]
+      },
+      {
+        "glosses": [
+          "in the company of",
+          "accompanied by ...",
+          "as a group comprising ..."
+        ],
+        "id": "2842257:0",
+        "readings": [
+          "づれ"
+        ]
+      },
+      {
+        "glosses": [
+          "likes of ..."
+        ],
+        "id": "2842257:1",
+        "readings": [
+          "づれ"
+        ]
+      }
+    ],
+    "金": [
+      {
+        "glosses": [
+          "money"
+        ],
+        "id": "1242590:0",
+        "readings": [
+          "かね"
+        ]
+      },
+      {
+        "glosses": [
+          "metal"
+        ],
+        "id": "1242590:1",
+        "readings": [
+          "かね"
+        ]
+      },
+      {
+        "glosses": [
+          "gold (metal)"
+        ],
+        "id": "1242600:0",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "gold (color)"
+        ],
+        "id": "1242600:1",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "gold (medal)",
+          "first place (prize)"
+        ],
+        "id": "1242600:2",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "something of great value",
+          "something golden (e.g. silence)"
+        ],
+        "id": "1242600:3",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "money",
+          "gold coin"
+        ],
+        "id": "1242600:4",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "sum (of money)"
+        ],
+        "id": "1242600:5",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "Friday"
+        ],
+        "id": "1242600:6",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "karat (measure of purity of gold)",
+          "carat"
+        ],
+        "id": "1242600:7",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "metal (fourth phase of Wu Xing)"
+        ],
+        "id": "1242600:8",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "Jin dynasty (of China; 1115-1234)",
+          "Chin dynasty",
+          "Jurchen dynasty"
+        ],
+        "id": "1242600:9",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "gold general"
+        ],
+        "id": "1242600:10",
+        "readings": [
+          "きん"
+        ]
+      },
+      {
+        "glosses": [
+          "testicles"
+        ],
+        "id": "1242600:11",
+        "readings": [
+          "きん"
+        ]
+      }
+    ],
+    "開く": [
+      {
+        "glosses": [
+          "to open (e.g. doors)"
+        ],
+        "id": "1586270:0",
+        "readings": [
+          "あく"
+        ]
+      },
+      {
+        "glosses": [
+          "to open (e.g. business, etc.)"
+        ],
+        "id": "1586270:1",
+        "readings": [
+          "あく"
+        ]
+      },
+      {
+        "glosses": [
+          "to be empty"
+        ],
+        "id": "1586270:2",
+        "readings": [
+          "あく"
+        ]
+      },
+      {
+        "glosses": [
+          "to be vacant",
+          "to be available",
+          "to be free"
+        ],
+        "id": "1586270:3",
+        "readings": [
+          "あく"
+        ]
+      },
+      {
+        "glosses": [
+          "to be open (e.g. neckline, etc.)"
+        ],
+        "id": "1586270:4",
+        "readings": [
+          "あく"
+        ]
+      },
+      {
+        "glosses": [
+          "to have been opened (of one's eyes, mouth, etc.)"
+        ],
+        "id": "1586270:5",
+        "readings": [
+          "あく"
+        ]
+      },
+      {
+        "glosses": [
+          "to come to an end"
+        ],
+        "id": "1586270:6",
+        "readings": [
+          "あく"
+        ]
+      },
+      {
+        "glosses": [
+          "to open (one's eyes, mouth, etc.)"
+        ],
+        "id": "1586270:7",
+        "readings": [
+          "あく"
+        ]
+      },
+      {
+        "glosses": [
+          "to have a hole",
+          "to form a gap",
+          "to have an interval (between events)"
+        ],
+        "id": "1586270:8",
+        "readings": [
+          "あく"
+        ]
+      },
+      {
+        "glosses": [
+          "to open",
+          "to undo",
+          "to unseal",
+          "to unpack"
+        ],
+        "id": "1202440:0",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to bloom",
+          "to unfold",
+          "to spread out"
+        ],
+        "id": "1202440:1",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to open (for business, e.g. in the morning)"
+        ],
+        "id": "1202440:2",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to be wide (gap, etc.)",
+          "to widen"
+        ],
+        "id": "1202440:3",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to hold (meeting, party, etc.)",
+          "to give",
+          "to open"
+        ],
+        "id": "1202440:4",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to found (nation, dynasty, sect, etc.)",
+          "to open (a new business)",
+          "to set up",
+          "to establish",
+          "to start"
+        ],
+        "id": "1202440:5",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to open (ports, borders, etc.)"
+        ],
+        "id": "1202440:6",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to open (an account)"
+        ],
+        "id": "1202440:7",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to open up (new land, path, etc.)",
+          "to clear",
+          "to develop"
+        ],
+        "id": "1202440:8",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to open (a file, etc.)"
+        ],
+        "id": "1202440:9",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to extract (root)",
+          "to reduce (equation)"
+        ],
+        "id": "1202440:10",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to cut open (fish)"
+        ],
+        "id": "1202440:11",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to change (kanji into hiragana)"
+        ],
+        "id": "1202440:12",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to flare (e.g. skirt)"
+        ],
+        "id": "1202440:13",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to slacken (into a poor posture)"
+        ],
+        "id": "1202440:14",
+        "readings": [
+          "ひらく"
+        ]
+      },
+      {
+        "glosses": [
+          "to extend"
+        ],
+        "id": "1202440:15",
+        "readings": [
+          "ひらく"
+        ]
+      }
+    ],
+    "開ける": [
+      {
+        "glosses": [
+          "to open (a door, etc.)",
+          "to unwrap (e.g. parcel, package)",
+          "to unlock"
+        ],
+        "id": "1202450:0",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to open (for business, etc.)"
+        ],
+        "id": "1202450:1",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to empty",
+          "to remove",
+          "to make space",
+          "to make room"
+        ],
+        "id": "1202450:2",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to move out",
+          "to clear out"
+        ],
+        "id": "1202450:3",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to be away from (e.g. one's house)",
+          "to leave (temporarily)"
+        ],
+        "id": "1202450:4",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to dawn",
+          "to grow light"
+        ],
+        "id": "1202450:5",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to end (of a period, season)"
+        ],
+        "id": "1202450:6",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to begin (of the New Year)"
+        ],
+        "id": "1202450:7",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to leave (one's schedule) open",
+          "to make time (for)"
+        ],
+        "id": "1202450:8",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to make (a hole)",
+          "to open up (a hole)"
+        ],
+        "id": "1202450:9",
+        "readings": [
+          "あける"
+        ]
+      },
+      {
+        "glosses": [
+          "to open out (of a view, scenery, etc.)",
+          "to spread out",
+          "to become clear (of a road, visibility, etc.)",
+          "to open up"
+        ],
+        "id": "1202460:0",
+        "readings": [
+          "ひらける"
+        ]
+      },
+      {
+        "glosses": [
+          "to improve (of luck, prospects, etc.)",
+          "to get better"
+        ],
+        "id": "1202460:1",
+        "readings": [
+          "ひらける"
+        ]
+      },
+      {
+        "glosses": [
+          "to develop (of a town, civilization, etc.)",
+          "to become civilized",
+          "to modernize",
+          "to grow",
+          "to advance (of knowledge, ideas, etc.)"
+        ],
+        "id": "1202460:2",
+        "readings": [
+          "ひらける"
+        ]
+      },
+      {
+        "glosses": [
+          "to be sensible",
+          "to be understanding",
+          "to be enlightened"
+        ],
+        "id": "1202460:3",
+        "readings": [
+          "ひらける"
+        ]
+      },
+      {
+        "glosses": [
+          "to open (of a new road, railway, etc.)",
+          "to be opened to traffic"
+        ],
+        "id": "1202460:4",
+        "readings": [
+          "ひらける"
+        ]
+      },
+      {
+        "glosses": [
+          "to become populous",
+          "to become densely built",
+          "to become bustling"
+        ],
+        "id": "1202460:5",
+        "readings": [
+          "ひらける"
+        ]
+      }
+    ],
+    "間": [
+      {
+        "glosses": [
+          "space (between)",
+          "gap",
+          "interval",
+          "distance",
+          "stretch"
+        ],
+        "id": "1215230:0",
+        "readings": [
+          "あいだ"
+        ]
+      },
+      {
+        "glosses": [
+          "period of time (during, while)",
+          "duration",
+          "interval"
+        ],
+        "id": "1215230:1",
+        "readings": [
+          "あいだ"
+        ]
+      },
+      {
+        "glosses": [
+          "between (two parties or things)"
+        ],
+        "id": "1215230:2",
+        "readings": [
+          "あいだ"
+        ]
+      },
+      {
+        "glosses": [
+          "among (a group)"
+        ],
+        "id": "1215230:3",
+        "readings": [
+          "あいだ"
+        ]
+      },
+      {
+        "glosses": [
+          "relations (between)",
+          "relationship"
+        ],
+        "id": "1215230:4",
+        "readings": [
+          "あいだ"
+        ]
+      },
+      {
+        "glosses": [
+          "midpoint",
+          "average",
+          "halfway",
+          "middle ground"
+        ],
+        "id": "1215230:5",
+        "readings": [
+          "あいだ"
+        ]
+      },
+      {
+        "glosses": [
+          "due to",
+          "because of"
+        ],
+        "id": "1215230:6",
+        "readings": [
+          "あいだ"
+        ]
+      },
+      {
+        "glosses": [
+          "time",
+          "pause"
+        ],
+        "id": "1215240:0",
+        "readings": [
+          "ま"
+        ]
+      },
+      {
+        "glosses": [
+          "space"
+        ],
+        "id": "1215240:1",
+        "readings": [
+          "ま"
+        ]
+      },
+      {
+        "glosses": [
+          "room"
+        ],
+        "id": "1215240:2",
+        "readings": [
+          "ま"
+        ]
+      },
+      {
+        "glosses": [
+          "interval",
+          "period of time"
+        ],
+        "id": "2067900:0",
+        "readings": [
+          "かん"
+        ]
+      },
+      {
+        "glosses": [
+          "among",
+          "between",
+          "inter-"
+        ],
+        "id": "2067900:1",
+        "readings": [
+          "かん"
+        ]
+      },
+      {
+        "glosses": [
+          "good opportunity",
+          "chance"
+        ],
+        "id": "2067900:2",
+        "readings": [
+          "かん"
+        ]
+      },
+      {
+        "glosses": [
+          "estrangement",
+          "discord",
+          "alienation"
+        ],
+        "id": "2067900:3",
+        "readings": [
+          "かん"
+        ]
+      },
+      {
+        "glosses": [
+          "spy",
+          "secret agent"
+        ],
+        "id": "2067900:4",
+        "readings": [
+          "かん"
+        ]
+      }
+    ],
+    "面": [
+      {
+        "glosses": [
+          "face"
+        ],
+        "id": "1584695:0",
+        "readings": [
+          "めん"
+        ]
+      },
+      {
+        "glosses": [
+          "mask",
+          "face guard"
+        ],
+        "id": "1584695:1",
+        "readings": [
+          "めん"
+        ]
+      },
+      {
+        "glosses": [
+          "striking the head (in kendo)"
+        ],
+        "id": "1584695:2",
+        "readings": [
+          "めん"
+        ]
+      },
+      {
+        "glosses": [
+          "surface (esp. a geometrical surface)"
+        ],
+        "id": "1584695:3",
+        "readings": [
+          "めん"
+        ]
+      },
+      {
+        "glosses": [
+          "page"
+        ],
+        "id": "1584695:4",
+        "readings": [
+          "めん"
+        ]
+      },
+      {
+        "glosses": [
+          "aspect",
+          "facet",
+          "side"
+        ],
+        "id": "1584695:5",
+        "readings": [
+          "めん"
+        ]
+      },
+      {
+        "glosses": [
+          "chamfer"
+        ],
+        "id": "1584695:6",
+        "readings": [
+          "めん"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for broad, flat objects, levels or stages, e.g. in a video game"
+        ],
+        "id": "1584695:7",
+        "readings": [
+          "めん"
+        ]
+      },
+      {
+        "glosses": [
+          "face"
+        ],
+        "id": "1584680:0",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "surface"
+        ],
+        "id": "1584680:1",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "mask (esp. a noh or kyogen mask)"
+        ],
+        "id": "1584680:2",
+        "readings": [
+          "おもて"
+        ]
+      },
+      {
+        "glosses": [
+          "face",
+          "mug"
+        ],
+        "id": "1584690:0",
+        "readings": [
+          "つら"
+        ]
+      },
+      {
+        "glosses": [
+          "surface"
+        ],
+        "id": "1584690:1",
+        "readings": [
+          "つら"
+        ]
+      },
+      {
+        "glosses": [
+          "cheek meat"
+        ],
+        "id": "1584690:2",
+        "readings": [
+          "つら"
+        ]
+      },
+      {
+        "glosses": [
+          "cheek",
+          "cheeks"
+        ],
+        "id": "1584690:3",
+        "readings": [
+          "つら"
+        ]
+      },
+      {
+        "glosses": [
+          "surrounding area"
+        ],
+        "id": "1584690:4",
+        "readings": [
+          "つら"
+        ]
+      }
+    ],
+    "音": [
+      {
+        "glosses": [
+          "sound",
+          "noise"
+        ],
+        "id": "1576900:0",
+        "readings": [
+          "おと"
+        ]
+      },
+      {
+        "glosses": [
+          "(musical) note"
+        ],
+        "id": "1576900:1",
+        "readings": [
+          "おと"
+        ]
+      },
+      {
+        "glosses": [
+          "fame"
+        ],
+        "id": "1576900:2",
+        "readings": [
+          "おと"
+        ]
+      },
+      {
+        "glosses": [
+          "sound",
+          "noise"
+        ],
+        "id": "2859161:0",
+        "readings": [
+          "おん"
+        ]
+      },
+      {
+        "glosses": [
+          "(speech) sound"
+        ],
+        "id": "2859161:1",
+        "readings": [
+          "おん"
+        ]
+      },
+      {
+        "glosses": [
+          "Chinese-derived reading of a kanji"
+        ],
+        "id": "2859161:2",
+        "readings": [
+          "おん"
+        ]
+      },
+      {
+        "glosses": [
+          "sound",
+          "tone",
+          "note",
+          "ring",
+          "chirp"
+        ],
+        "id": "2859162:0",
+        "readings": [
+          "ね"
+        ]
+      }
+    ],
+    "頭": [
+      {
+        "glosses": [
+          "head"
+        ],
+        "id": "1582310:0",
+        "readings": [
+          "あたま"
+        ]
+      },
+      {
+        "glosses": [
+          "hair (on one's head)"
+        ],
+        "id": "1582310:1",
+        "readings": [
+          "あたま"
+        ]
+      },
+      {
+        "glosses": [
+          "mind",
+          "brains",
+          "intellect"
+        ],
+        "id": "1582310:2",
+        "readings": [
+          "あたま"
+        ]
+      },
+      {
+        "glosses": [
+          "leader",
+          "chief",
+          "boss",
+          "captain"
+        ],
+        "id": "1582310:3",
+        "readings": [
+          "あたま"
+        ]
+      },
+      {
+        "glosses": [
+          "top",
+          "tip"
+        ],
+        "id": "1582310:4",
+        "readings": [
+          "あたま"
+        ]
+      },
+      {
+        "glosses": [
+          "beginning",
+          "start"
+        ],
+        "id": "1582310:5",
+        "readings": [
+          "あたま"
+        ]
+      },
+      {
+        "glosses": [
+          "head",
+          "person"
+        ],
+        "id": "1582310:6",
+        "readings": [
+          "あたま"
+        ]
+      },
+      {
+        "glosses": [
+          "down payment",
+          "deposit"
+        ],
+        "id": "1582310:7",
+        "readings": [
+          "あたま"
+        ]
+      },
+      {
+        "glosses": [
+          "pair"
+        ],
+        "id": "1582310:9",
+        "readings": [
+          "あたま"
+        ]
+      },
+      {
+        "glosses": [
+          "counter for large animals (e.g. head of cattle)",
+          "counter for insects in a collection",
+          "counter for helmets, masks, etc."
+        ],
+        "id": "1450690:0",
+        "readings": [
+          "とう"
+        ]
+      }
+    ],
+    "額": [
+      {
+        "glosses": [
+          "(picture) frame",
+          "framed picture"
+        ],
+        "id": "1207500:0",
+        "readings": [
+          "がく"
+        ]
+      },
+      {
+        "glosses": [
+          "amount (esp. of money)",
+          "sum"
+        ],
+        "id": "1207500:1",
+        "readings": [
+          "がく"
+        ]
+      },
+      {
+        "glosses": [
+          "forehead",
+          "brow"
+        ],
+        "id": "1207510:0",
+        "readings": [
+          "ひたい"
+        ]
+      }
+    ],
+    "風": [
+      {
+        "glosses": [
+          "wind",
+          "breeze",
+          "draught",
+          "draft"
+        ],
+        "id": "1499720:0",
+        "readings": [
+          "かぜ"
+        ]
+      },
+      {
+        "glosses": [
+          "manner",
+          "behaviour",
+          "behavior"
+        ],
+        "id": "1499720:1",
+        "readings": [
+          "かぜ"
+        ]
+      },
+      {
+        "glosses": [
+          "cold",
+          "influenza"
+        ],
+        "id": "1499720:2",
+        "readings": [
+          "かぜ"
+        ]
+      },
+      {
+        "glosses": [
+          "manner",
+          "way",
+          "style"
+        ],
+        "id": "1499730:0",
+        "readings": [
+          "ふう"
+        ]
+      },
+      {
+        "glosses": [
+          "appearance",
+          "air",
+          "likeness"
+        ],
+        "id": "1499730:1",
+        "readings": [
+          "ふう"
+        ]
+      },
+      {
+        "glosses": [
+          "custom",
+          "convention",
+          "practice"
+        ],
+        "id": "1499730:2",
+        "readings": [
+          "ふう"
+        ]
+      },
+      {
+        "glosses": [
+          "folk song (genre of the Shi Jing)"
+        ],
+        "id": "1499730:3",
+        "readings": [
+          "ふう"
+        ]
+      },
+      {
+        "glosses": [
+          "wind (one of the five elements)"
+        ],
+        "id": "1499730:4",
+        "readings": [
+          "ふう"
+        ]
+      },
+      {
+        "glosses": [
+          "-ish",
+          "resembling",
+          "-looking"
+        ],
+        "id": "1499730:5",
+        "readings": [
+          "ふう"
+        ]
+      }
+    ],
+    "黄金": [
+      {
+        "glosses": [
+          "gold (Au)"
+        ],
+        "id": "1181860:0",
+        "readings": [
+          "おうごん"
+        ]
+      },
+      {
+        "glosses": [
+          "golden",
+          "prosperous",
+          "excellent",
+          "superb"
+        ],
+        "id": "1181860:1",
+        "readings": [
+          "おうごん"
+        ]
+      },
+      {
+        "glosses": [
+          "money (esp. ōban coin)",
+          "cash"
+        ],
+        "id": "1181860:2",
+        "readings": [
+          "おうごん"
+        ]
+      },
+      {
+        "glosses": [
+          "gold"
+        ],
+        "id": "2839304:0",
+        "readings": [
+          "こがね"
+        ]
+      },
+      {
+        "glosses": [
+          "gold coin"
+        ],
+        "id": "2839304:1",
+        "readings": [
+          "こがね"
+        ]
+      },
+      {
+        "glosses": [
+          "gold colour (color)"
+        ],
+        "id": "2839304:2",
+        "readings": [
+          "こがね"
+        ]
+      }
+    ]
+  }
+}

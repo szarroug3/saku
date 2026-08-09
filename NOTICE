@@ -1,14 +1,15 @@
 Kana quiz — licensing boundary
 ==============================
 
-This repository is distributed under two licences, split at one directory.
+This repository separates application code from generated third-party data.
 
   Everything EXCEPT src/data/generated/   MIT                 — see LICENSE
-  src/data/generated/                     CC BY-SA 4.0        — see
+  src/data/generated/                     Source-specific     — see
                                                                 src/data/generated/LICENSE
 
-The generated data is adapted from CC BY-SA dictionaries, so ShareAlike reaches
-it. It does not reach the code: the code reads the data, it is not derived from
+Most generated data is adapted from CC BY-SA dictionaries, so ShareAlike reaches
+it; CEJC and Tatoeba have the carve-outs recorded in the directory licence. The
+data licences do not reach the code: the code reads the data, it is not derived from
 it, so the two are distributed as a collection rather than combined into an
 adaptation, and CC BY-SA 4.0 does not require a collection apart from the work
 itself to be licensed under its terms.
@@ -25,6 +26,12 @@ folded into a CC BY-SA 4.0 work; OpenSubtitles is itself CC BY-SA 4.0. Full
 attribution is in src/data/generated/LICENSE; the source snapshots live under
 scripts/ingest/sources/.
 
-If you fork this: the boundary is the directory. Take the code under MIT. Take
-the data under CC BY-SA 4.0, keeping the attribution in
-src/data/generated/LICENSE, and note the Tatoeba carve-out recorded there.
+cejc-reading-frequency.json is a reduced educational analysis of the National
+Institute for Japanese Language and Linguistics' Corpus of Everyday Japanese
+Conversation (CEJC), version 2022.09. It is not relicensed as CC BY-SA; its use
+remains subject to CEJC's terms. The raw CEJC archive is not distributed. See
+the CEJC carve-out in src/data/generated/LICENSE.
+
+If you fork this: take the code under MIT and preserve the source-specific terms
+and attribution recorded in src/data/generated/LICENSE for generated data,
+including the CEJC and Tatoeba carve-outs.

@@ -146,6 +146,10 @@ def load_jmdict(path):
         nf = [int(p[2:]) for p in pri if p.startswith("nf")]
         W.append(dict(
             keb=form,
+            # Source identity of the definition, not a hash of its English
+            # glosses. Multiple gloss nodes inside this sense are synonyms;
+            # separate sense/entry ids remain separate until explicitly curated.
+            definitionId=f"{el.findtext('ent_seq')}:0",
             pri=pri,
             kana=kana,
             legacy_keb=legacy[0] if legacy else None,
@@ -468,7 +472,8 @@ def main():
         out = []
         for c in w["senses"]:
             a = None if c["kana"] else align(c["keb"], c["reb"], krd)
-            out.append(dict(reb=c["reb"], glosses=c["glosses"], pos=c["pos"],
+            out.append(dict(definitionId=c["definitionId"], reb=c["reb"],
+                            glosses=c["glosses"], pos=c["pos"],
                             align=[[k, s, b] for k, s, b in a] if a else None))
         sense_rows[w["keb"]] = out
     dump("word-senses.json", sense_rows, sort_keys=True)
