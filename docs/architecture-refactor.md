@@ -274,14 +274,24 @@ smaller safe/additive piece left; what remains is the integration.
 1. ✅ `unitItem` — the generative-rule units (the part `buildItem` can't make).
 2. ✅ `formItem` — the entry-backed forms (`〜つ` natives + the `二十歳` tail),
    wholly `buildItem`'s job off `counterEntry(form)`.
-3. ⏳ assemble the full `Track.order()` by walking `SCHEDULE`
-   (`formItem(step.form)` / `unitItem(step.unit)`), and prove it end-to-end
-   through `nextLesson`.
+3. ✅ `numbersTrack()` — walks the same `SCHEDULE` (exported from
+   `counter-lesson`), maps each step through `formItem`/`unitItem`, and runs end
+   to end through `nextLesson` (opens on ひとつ from an empty history).
 4. ☐ swap the live counter scheduler onto `nextLesson` under the fact-set guard.
 
 Note: because `SCHEDULE` interleaves forms and units, this track walks
 `formItem`/`unitItem` directly rather than `orderedTrack` — `orderedTrack` stays
 the tool for pure entry-list tracks (words, a grammar syllabus).
+
+**Two reconciliations to settle at step 4 (the swap), both about matching live
+behavior, not correctness of the new machine:**
+- **Cost.** `nextLesson` prices items with `glyphDifficulty`, which is off the
+  kanji/vocab spine and returns ~0 for kana `〜つ` forms and the rule units — so
+  budgeting won't match the live counters packer (`unitContentCost` + per-form
+  content) until the track supplies its own cost, or `glyphDifficulty` learns
+  these kinds. Lessons still form; their *sizes* would drift.
+- **Number-kanji leaf.** The live path treats 一…十 as leaves (`isNumberKanji`);
+  the new model teaches their Built-from edges (一→三). Confirm the intended one.
 
 Behavior note surfaced while reading the source: the live path treats number
 kanji as leaves (`isNumberKanji`), so it never taught 一 before 三; the new model
