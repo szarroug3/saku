@@ -293,11 +293,17 @@ the tool for pure entry-list tracks (words, a grammar syllabus).
   sizing like 日) stays a SEPARATE deliberate step; this pilot doesn't touch the
   kanji/word tracks' sizes.
 - ✅ **Number-kanji leaf → numbers are first-class items.** Resolved by making the
-  bare Sino numbers 一…十, 百千万 their own number-word items in the track list
-  (not just unit prereqs), per Sam: "1, 2, 3, 4 … are core items of the number
-  track." Each number's character is taught first as the word's own Built-from
-  prereq (生 before 先生), so the leaf question no longer applies. Counter kanji
-  (本, 匹) stay prereqs — a counter is not a number.
+  bare Sino numbers 一…十, 百千万 their own items in the track list (not just unit
+  prereqs), per Sam: "1, 2, 3, 4 … are core items of the number track." Counter
+  kanji (本, 匹) stay prereqs — a counter is not a number.
+- ✅ **Two-entry split → cohesive character items.** Per Sam: "radicals/kanji/
+  numbers that share a glyph should be taught as one cohesive item." A single Han
+  glyph is now ONE `character` item (`buildGlyphItem`) carrying the UNION of its
+  roles' facts — 三 is the kanji three AND the number さん in one lesson, not two
+  rows. `resolveItem` and `numbersTrack` build these; identity is the canonical
+  kanji entry, so a unit's kanji prereqs and the number items are the same item.
+  This mirrors the words/kanji curriculum spine and folds the old word:三 →
+  kanji:三 self-prereq away entirely.
 
 Behavior note surfaced while reading the source: the live path treats number
 kanji as leaves (`isNumberKanji`), so it never taught 一 before 三; the new model
