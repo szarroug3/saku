@@ -39,7 +39,13 @@ import { MnemonicImage } from "@/components/lesson/mnemonic-image";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { Btn, SmallBtn } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
-import { VOCAB_SUBJECT, isWordReadingFact, vocabRow, wordMeaningFactId } from "@/data/vocab";
+import {
+  legacyUnqualifiedReading,
+  VOCAB_SUBJECT,
+  isWordReadingFact,
+  vocabRow,
+  wordMeaningFactId,
+} from "@/data/vocab";
 import { formatAccuracy } from "@/lib/accuracy";
 import { BEHAVIOR, pickFont } from "@/lib/config";
 import { answerGuide, confusionNote } from "@/lib/drill-guidance";
@@ -1530,8 +1536,10 @@ export function DrillScreen() {
     if (!meaningMustShowGlyph(q.f, history)) return null;
     const row = vocabRow(info.glyph);
     if (!row) return null;
+    const reading = legacyUnqualifiedReading(row.keb);
+    if (!reading) return null;
     const downstep = wordPitch(row.keb);
-    return downstep == null ? null : { reading: row.reb, downstep };
+    return downstep == null ? null : { reading, downstep };
   })();
   // A WORD card's context — the other half of its reading-unit — goes INSIDE the
   // halo beneath the glyph (or the listening speaker), not on a muted line below
@@ -1698,9 +1706,10 @@ export function DrillScreen() {
     if (!info || info.subject !== VOCAB_SUBJECT) return null;
     const row = vocabRow(info.glyph);
     if (!row) return null;
-    if (revealFor(q.f, q.dir, ctx) !== row.reb) return null;
+    const reading = legacyUnqualifiedReading(row.keb);
+    if (!reading || revealFor(q.f, q.dir, ctx) !== reading) return null;
     const downstep = wordPitch(row.keb);
-    return downstep == null ? null : { reading: row.reb, downstep };
+    return downstep == null ? null : { reading, downstep };
   })();
 
   const accuracy = cfg.showAccuracy

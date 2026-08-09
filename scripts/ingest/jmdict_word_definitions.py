@@ -179,9 +179,10 @@ def reduce(path):
                     })
             entry.clear()
 
-    # Remove exact duplicate source rows, then lead with definitions containing
-    # the app's established primary reading so adding source detail does not
-    # reorder definitions across meanings.
+    # Remove exact duplicate source rows. Keep the frozen app's established
+    # MEANING first (person before suffix for 人); this ordering never ranks two
+    # readings of the same sense. Neither JMdict XML order nor its priority tags
+    # select a pronunciation: CEJC alone ranks readings within each definition.
     words = {}
     for keb, definitions in collected.items():
         unique, seen = [], set()
@@ -195,8 +196,8 @@ def reduce(path):
                 continue
             seen.add(key)
             unique.append(definition)
-        primary = wanted[keb][0]
-        unique.sort(key=lambda d: (primary not in d["readings"],))
+        first_known_sense = wanted[keb][0]
+        unique.sort(key=lambda d: (first_known_sense not in d["readings"],))
         # A plain one-definition/one-reading word is already represented by its
         # vocab row. Ship the source sidecar only where it adds a definition or
         # a pronunciation; this keeps the processed artifact compact without

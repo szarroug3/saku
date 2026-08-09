@@ -127,8 +127,8 @@ describe("the shelf exists and lists the counters", () => {
   });
 
   test("4 and 7 carry both spoken number readings on their word pages", () => {
-    assert.deepEqual(readingUnits(vocabRow("四")!).map((u) => u.reb), ["し", "よん"]);
-    assert.deepEqual(readingUnits(vocabRow("七")!).map((u) => u.reb), ["しち", "なな"]);
+    assert.deepEqual(readingUnits(vocabRow("四")!).map((u) => u.reb), ["よん", "し"]);
+    assert.deepEqual(readingUnits(vocabRow("七")!).map((u) => u.reb), ["なな", "しち"]);
   });
 
   test("the 'how to build them' constructions lead the shelf and own their generated fact", () => {

@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import cejcReadingFrequencyJson from "./generated/cejc-reading-frequency.json" with { type: "json" };
-import { readingDefinitions, teachingSenses, vocabRow } from "./vocab.ts";
+import {
+  readingDefinitions,
+  teachingSenses,
+  vocabRow,
+  wordMeaningFactId,
+  wordReadingFactId,
+  wordUnitFacts,
+} from "./vocab.ts";
 
 const CEJC = cejcReadingFrequencyJson.words as Readonly<
   Record<string, Readonly<Record<string, number>>>
@@ -32,6 +39,17 @@ describe("CEJC reading order stays inside a definition", () => {
     assert.deepEqual(seven[0].readings.map((r) => r.reb), ["なな", "しち"]);
     assert.deepEqual(seven[0].referenceReadings.map((r) => r.reb), ["なあ", "ひち", "な"]);
     assert.equal(seven[0].preferredReading, "なな");
+
+    assert.equal(vocabRow("四")!.reb, "よん");
+    assert.equal(vocabRow("七")!.reb, "なな");
+  });
+
+  test("CEJC reordering never transfers an existing fact id to another sound", () => {
+    const four = wordUnitFacts("四");
+    assert.deepEqual(four.map((unit) => unit.unit.reb), ["よん", "し"]);
+    assert.equal(four.find((unit) => unit.unit.reb === "し")?.reading, wordReadingFactId("四"));
+    assert.equal(four.find((unit) => unit.unit.reb === "し")?.meaning, wordMeaningFactId("四"));
+    assert.notEqual(four[0].reading, wordReadingFactId("四"));
   });
 
   test("9 is ordered by frequency but its lead is not substantial", () => {
@@ -44,6 +62,7 @@ describe("CEJC reading order stays inside a definition", () => {
       "ここ",
     ]);
     assert.equal(nine[0].preferredReading, null);
+    assert.equal(vocabRow("九")!.reb, "く");
   });
 
   test("a frequent later definition never crosses an earlier definition", () => {

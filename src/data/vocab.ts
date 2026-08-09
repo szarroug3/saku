@@ -147,17 +147,11 @@ export interface VocabRow {
    */
   readonly beginnerRank: number;
   /**
-   * Every reading this written form has, primary first, with what each means.
+   * Every reading this written form has, in frozen source order, with what each
+   * means. Runtime teaching order comes only from CEJC.
    *
-   * Never empty: a word with one reading has one sense, and `reb`, `glosses`,
-   * `pos` and `align` above are a copy of `senses[0]`. So the lesson can print
-   * the whole list without asking whether there is a list, and the quiz can go
-   * on asking the word's own fields without knowing there are others.
-   *
-   * SHOWN IN FULL, DRILLED ON THE PRIMARY. 人 shows ひと, じん and にん and is
-   * only ever asked ひと. That is the rule the kanji readings table already
-   * follows, one level up: it lists all five of 人's readings and asks a reading
-   * only inside a word that proves it.
+   * Never empty. The row-level fields describe CEJC's first teachable reading;
+   * this list retains every source reading-to-sense relationship.
    */
   readonly senses: readonly WordSense[];
 }
@@ -213,11 +207,8 @@ type JsonVocabRow = Omit<VocabRow, "senses">;
  * lists ship beside the ranks instead of inside them, and every word keeps the
  * position it has.
  *
- * A form listed here takes its primary from `senses[0]`, which is how 人 stops
- * being taught as a suffix. The rank stays whatever vocab.json says. When
- * vocab.json is next re-cut the two agree by construction, and ranks for these
- * 117 forms will move once, deliberately, because a rank computed from ひと is
- * not the rank of じん.
+ * The rank stays whatever vocab.json says. No ordering in this frozen sidecar
+ * is treated as a pronunciation preference: CEJC alone supplies that signal.
  */
 // Through `unknown` because the JSON import types each `align` row as string[]
 // and `WordSense` says what it really is, a 3-tuple. Same widening vocab.json's
@@ -286,14 +277,26 @@ function withSenses(row: JsonVocabRow): VocabRow {
         align: base[0].align,
       })),
   ];
-  const primary = senses[0];
-  return {
+  const provisional: VocabRow = {
     ...row,
-    reb: primary.reb,
-    glosses: primary.glosses,
-    pos: primary.pos,
-    align: primary.align,
     senses,
+  };
+  // JMdict supplies valid readings and their sense relationships, never Saku's
+  // primary pronunciation. Definition order stays semantic; CEJC ranks the
+  // interchangeable readings inside each definition.
+  const ranked = readingDefinitions(provisional)
+    .flatMap((definition) => definition.readings)
+    .find((reading) => senses.some((sense) => sense.reb === reading.reb));
+  const selected = senses.find(
+    (sense) =>
+      sense.reb === ranked?.reb && sense.definitionId === ranked.definitionId,
+  ) ?? senses.find((sense) => sense.reb === ranked?.reb) ?? senses[0];
+  return {
+    ...provisional,
+    reb: selected.reb,
+    glosses: selected.glosses,
+    pos: selected.pos,
+    align: selected.align,
   };
 }
 
@@ -469,6 +472,20 @@ export const VOCAB: readonly VocabRow[] = [
 
 const BY_KEB: ReadonlyMap<string, VocabRow> = new Map(VOCAB.map((w) => [w.keb, w]));
 
+// Existing unqualified fact ids predate CEJC ranking. Preserve the reading each
+// id already means so a corpus update cannot transfer learner history to a
+// different pronunciation. Compatibility metadata is not a preference signal.
+const LEGACY_UNQUALIFIED_READING: ReadonlyMap<string, string> = new Map(
+  [...(vocabJson as readonly JsonVocabRow[]), ...SUPPLEMENT].map((row) => [
+    row.keb,
+    SENSES[row.keb]?.[0]?.reb ?? row.reb,
+  ]),
+);
+
+export function legacyUnqualifiedReading(keb: string): string | null {
+  return LEGACY_UNQUALIFIED_READING.get(keb) ?? null;
+}
+
 export function vocabRow(keb: string): VocabRow | undefined {
   return BY_KEB.get(keb);
 }
@@ -504,8 +521,8 @@ export function isSingleCharWordGlyph(glyph: string): boolean {
   );
 }
 
-/** The PRIMARY reading's fact (the first reading-unit). Unqualified, so every
- * consumer that means "the word's reading" keeps working. */
+/** The legacy unqualified reading fact. Its pronunciation identity is frozen
+ * for progress compatibility; it is NOT a primary-reading indicator. */
 export function wordReadingFactId(keb: string): FactId {
   return factId(wordEntry(keb), "reading");
 }
@@ -514,8 +531,8 @@ export function wordMeaningFactId(keb: string): FactId {
   return factId(wordEntry(keb), "meaning");
 }
 
-/** A NON-primary reading-unit's fact, qualified by its reading (日's か-unit is
- * `word:日/reading@か`). The primary unit uses the bare functions above. */
+/** A reading-qualified fact. The one legacy reading that already owns an
+ * unqualified id keeps it solely for progress compatibility. */
 export function wordUnitReadingFactId(keb: string, reb: string): FactId {
   return factId(wordEntry(keb), readingAspect(reb));
 }
@@ -545,14 +562,26 @@ export interface ReadingUnit {
 }
 
 export function readingUnits(w: VocabRow): ReadingUnit[] {
-  const order: string[] = [];
+  const teachable = teachingSenses(w);
+  const available = new Set(teachable.map((sense) => sense.reb));
+  // Preserve semantic definition order. CEJC is the only authority allowed to
+  // reorder pronunciations within a definition.
+  const order = [
+    ...new Set(
+      readingDefinitions(w).flatMap((definition) =>
+        definition.readings
+          .map((reading) => reading.reb)
+          .filter((reb) => available.has(reb)),
+      ),
+    ),
+  ];
   const byReb = new Map<string, string[]>();
-  for (const s of teachingSenses(w)) {
+  for (const s of teachable) {
     let gl = byReb.get(s.reb);
     if (!gl) {
       gl = [];
       byReb.set(s.reb, gl);
-      order.push(s.reb);
+      if (!order.includes(s.reb)) order.push(s.reb);
     }
     for (const g of s.glosses) if (!gl.includes(g)) gl.push(g);
   }
@@ -569,9 +598,10 @@ export interface WordUnitFacts {
 }
 
 /**
- * Every reading-unit of a word, primary first, each paired with its reading and
- * meaning fact ids — the PRIMARY unit's unqualified ids, the rest qualified by
- * their reading (日's にち-unit → `word:日/meaning@にち`), exactly as
+ * Every reading-unit of a word, CEJC-first within each definition, paired with
+ * stable fact ids. The historically unqualified unit remains unqualified; all
+ * others are qualified by their reading (日's にち-unit →
+ * `word:日/meaning@にち`), exactly as
  * `buildVocabFacts` mints them.
  *
  * The ONE enumeration of a word's facts. `buildVocabFacts` (which builds the
@@ -583,16 +613,17 @@ export function wordUnitFacts(keb: string): WordUnitFacts[] {
   const row = vocabRow(keb);
   if (!row) return [];
   const kana = isKanaWord(row);
-  return readingUnits(row).map((unit, i) => {
-    const primary = i === 0;
+  const unqualifiedReading = legacyUnqualifiedReading(keb);
+  return readingUnits(row).map((unit) => {
+    const legacyUnqualified = unit.reb === unqualifiedReading;
     return {
       unit,
       reading: kana
         ? null
-        : primary
+        : legacyUnqualified
           ? wordReadingFactId(keb)
           : wordUnitReadingFactId(keb, unit.reb),
-      meaning: primary
+      meaning: legacyUnqualified
         ? wordMeaningFactId(keb)
         : wordUnitMeaningFactId(keb, unit.reb),
     };
@@ -600,7 +631,7 @@ export function wordUnitFacts(keb: string): WordUnitFacts[] {
 }
 
 /**
- * Every fact a word mints, in mint order: per reading-unit (primary first) its
+ * Every fact a word mints, in mint order: per reading-unit (CEJC-first) its
  * reading fact (unless the word is kana) then its meaning fact. Derived from
  * `wordUnitFacts`, so it is the SAME SET the registry holds for the word.
  */
@@ -628,13 +659,13 @@ export function wordReadingUnit(
 }
 
 /**
- * Every word READING fact, primary AND qualified — the membership set that
+ * Every word READING fact, unqualified AND qualified — the membership set that
  * answers "is this fact a word's reading (vs its meaning)?" without parsing the
  * id. Built in `buildVocabFacts` right beside `READING_UNIT_OF`, as each reading
  * fact is minted.
  *
- * The one honest discriminator: `wordReadingFactId(keb)` only ever names the
- * PRIMARY unit's unqualified id, so testing `wordReadingFactId(glyph) === fact`
+ * The one honest discriminator: `wordReadingFactId(keb)` names only the frozen
+ * legacy unit's unqualified id, so testing `wordReadingFactId(glyph) === fact`
  * mis-classifies a qualified reading fact (`word:日/reading@にち`) as a meaning
  * fact. Consumers that mean "which KIND of fact is this" must use this instead.
  */
@@ -669,8 +700,9 @@ export function isWordReadingFact(fact: FactId): boolean {
  * same rule as the jukujikun `align === null` case: emit the fact that can be
  * graded, and decline to invent the one that cannot.
  *
- * A word's reading fact is unqualified on its primary reading-unit and qualified
- * on the rest — unlike a kanji, which mints no unqualified reading fact at all.
+ * A word's legacy reading fact stays unqualified and the rest are qualified —
+ * unlike a kanji, which mints no unqualified reading fact at all. This preserves
+ * progress identity while CEJC remains free to change teaching order.
  * That asymmetry is the model working: "what is 先生 read as" has exactly one
  * answer, so it can be graded, while "what is 生 read as" has nine and cannot.
  */

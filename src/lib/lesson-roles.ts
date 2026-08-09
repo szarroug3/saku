@@ -75,7 +75,13 @@
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph } from "@/data/radicals";
 import { variantsOf } from "@/data/variant-forms";
-import { teachingSenses, vocabRow, type VocabRow, type WordSense } from "@/data/vocab";
+import {
+  readingUnits,
+  teachingSenses,
+  vocabRow,
+  type VocabRow,
+  type WordSense,
+} from "@/data/vocab";
 import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role";
 import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
@@ -157,21 +163,17 @@ export function radicalMeaningOf(item: LessonItem): string | null {
  * something longer (外国人, 三人). Printing all three under "Word" told a reader
  * that 人 said じん is a thing you can utter, which it is not.
  *
- * THE RULE IS "SHARES A PART OF SPEECH WITH THE PRIMARY", NOT A LIST OF BOUND
- * TAGS. The obvious implementation — drop anything tagged suffix or counter — is
- * wrong on the data: 山, 手, 口 and 川 all carry a counter tag and are four of the
- * plainest standalone nouns in the language (see wordTypeOf, which already had to
- * work around exactly this). So no tag is read as bound in isolation. A sense
- * qualifies when it shares at least one tag with `senses[0]`, the reading the
- * word is filed and drilled under: it is the same KIND of word as the one that
- * demonstrably stands alone.
+ * THE RULE IS EACH READING'S OWN PART OF SPEECH, NOT SOURCE ORDER. The obvious
+ * implementation — drop anything tagged suffix or counter — is wrong on the
+ * data: 山, 手, 口 and 川 also carry standalone noun senses. `standsAlone` checks
+ * each sense's own tags, while CEJC independently decides display order.
  *
  * It keeps 主 whole, which is the case that kills every one-reading shortcut:
- * あるじ, おも, しゅ and ぬし are four real words, all four carrying the noun tag
- * the primary carries, and all four come back. 中 keeps なか and ちゅう and drops
- * じゅう, which is tagged suffix and nothing else.
+ * あるじ, おも, しゅ and ぬし are four real noun readings, and all four come
+ * back. 中 keeps なか and ちゅう and drops じゅう, which is tagged suffix and
+ * nothing else.
  *
- * Never empty: the primary is always in, by construction.
+ * CEJC's leading teachable reading is considered first.
  */
 /** Tags that mark a piece welded to something else. A tag carrying one of these
  * is disqualified, INCLUDING the ones that also say "noun": JMdict writes "noun,
@@ -217,7 +219,8 @@ function standsAlone(sense: WordSense): boolean {
 }
 
 export function standaloneSenses(word: VocabRow): readonly WordSense[] {
-  const [primary, ...rest] = teachingSenses(word);
+  const ordered = allReadingSenses(word);
+  const [primary, ...rest] = ordered;
   if (!primary) return [];
   return groupByReading([primary, ...rest.filter(standsAlone)]);
 }
@@ -238,7 +241,11 @@ export function standaloneSenses(word: VocabRow): readonly WordSense[] {
  * compounds without hiding them.
  */
 export function allReadingSenses(word: VocabRow): readonly WordSense[] {
-  return groupByReading(teachingSenses(word));
+  const grouped = new Map(groupByReading(teachingSenses(word)).map((sense) => [sense.reb, sense]));
+  return readingUnits(word).flatMap((unit) => {
+    const sense = grouped.get(unit.reb);
+    return sense ? [sense] : [];
+  });
 }
 
 /**
@@ -246,9 +253,8 @@ export function allReadingSenses(word: VocabRow): readonly WordSense[] {
  * inverse of `standsAlone`, read off the same tags. It is shown anyway (the quiz
  * asks it), so this exists only to let the display add a quiet "in compounds"
  * marker beside it, keeping the learner from inferring they can utter it alone.
- * The word's PRIMARY reading (senses[0], the one it is filed and drilled under)
- * is the one you can say, so callers exempt the first row rather than trusting a
- * tag heuristic on it.
+ * Callers exempt the CEJC-leading row and use this only to label additional
+ * compound-bound readings.
  */
 export function isBoundReading(sense: WordSense): boolean {
   return !standsAlone(sense);
@@ -269,9 +275,8 @@ export function isBoundReading(sense: WordSense): boolean {
  * spelling with one sound and two meanings. A table headed by the reading owes a
  * row to each sound, so the senses of a shared sound belong together in it.
  *
- * Insertion order is kept, so the primary's reading stays first and is still the
- * one the drill asks. This is display only: `VOCAB_FACTS` builds from the row's
- * own `glosses`, never from here, so nothing about what is graded moves.
+ * This helper only merges duplicate sounds; `allReadingSenses` applies CEJC
+ * order afterward so the teaching table and the drill remain identical.
  */
 function groupByReading(senses: readonly WordSense[]): readonly WordSense[] {
   const byReading = new Map<string, WordSense>();

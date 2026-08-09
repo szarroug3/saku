@@ -29,9 +29,8 @@
 // a prefix, じん the -ian suffix, にん the people-counter: real readings, drilled,
 // but never uttered standing alone. `isBoundReading` flags them and the row wears
 // a muted "in compounds" tag, so showing the reading does not tell the learner
-// they can pronounce 大 as おお by itself. The PRIMARY reading (the one the word
-// is filed under) is always the one you can say, so the first row is never
-// marked.
+// they can pronounce 大 as おお by itself. The CEJC-leading row is never marked;
+// the tag exists to clarify the additional compound-bound rows.
 //
 // ONE TABLE, ALWAYS
 // =================
@@ -51,7 +50,12 @@ import { useFlatSurface } from "@/components/ui";
 import { PitchReading } from "@/components/library/pitch-mark";
 import { StandingChip } from "@/components/library/standing-chip";
 import { wordPitch } from "@/data/pitch";
-import { readingDefinitions, wordUnitFacts, type VocabRow } from "@/data/vocab";
+import {
+  legacyUnqualifiedReading,
+  readingDefinitions,
+  wordUnitFacts,
+  type VocabRow,
+} from "@/data/vocab";
 import { isBoundReading, wordTypeOf } from "@/lib/lesson-roles";
 import { wordFormKind } from "@/lib/word-forms";
 import type { Standing } from "@/lib/library/standing";
@@ -91,8 +95,8 @@ interface SenseRow {
    * primary reading. */
   altReb?: string;
   kind: string;
-  /** The muted "in compounds" tag on a bound, non-primary reading (おお, じん,
-   * にん). The primary reading is always sayable alone, so it is never marked. */
+  /** The muted "in compounds" tag on an additional bound reading (おお, じん,
+   * にん). The CEJC-leading row is never marked. */
   bound: boolean;
   /** CEJC-backed, definition-scoped preference. It never compares readings
    * belonging to different meanings. */
@@ -264,12 +268,11 @@ export function WordSensePanel({
   const standingFor = (id: FactId | null | undefined): Standing | null =>
     id && standings ? standings(id) : null;
 
-  // The pitch overline is stored per WORD and validated against its PRIMARY
-  // reading (word.reb) — the same reading the drill reveal and the Library header
-  // draw it on. So it is drawn only on that reading; another reading of the same
-  // word (何's なん beside its primary なに) has no verified pitch of its own and
-  // stays plain. Display only, never graded. See pitch-mark.tsx / src/data/pitch.ts.
+  // The pitch artifact was validated against the frozen vocabulary reading.
+  // CEJC may select another primary, so keep the accent on the pronunciation it
+  // was actually verified for instead of transferring it with display order.
   const pitch = wordPitch(word.keb);
+  const pitchReading = legacyUnqualifiedReading(word.keb);
 
   // A conjugating word names its paradigm in the Kind column — う-verb, る-verb,
   // い-/な-adjective, irregular verb — the same class badge the lesson's role tag
@@ -291,7 +294,7 @@ export function WordSensePanel({
             kind: formKind ?? wordTypeOf(sense),
             bound: sense.reb !== word.reb && isBoundReading(sense),
             preferred: definition.preferredReading === sense.reb,
-            pitch: pitch != null && sense.reb === word.reb ? pitch : null,
+            pitch: pitch != null && sense.reb === pitchReading ? pitch : null,
             readingStanding: standingFor(facts?.reading),
             meaningStanding: standingFor(facts?.meaning),
           };

@@ -21,7 +21,13 @@ import { PitchReading } from "@/components/library/pitch-mark";
 import { StandingChip } from "@/components/library/standing-chip";
 import { Card, Lbl } from "@/components/ui";
 import { wordPitch } from "@/data/pitch";
-import { VOCAB_SUBJECT, vocabRow, wordMeaningFactId } from "@/data/vocab";
+import {
+  legacyUnqualifiedReading,
+  VOCAB_SUBJECT,
+  vocabRow,
+  wordMeaningFactId,
+  wordUnitFacts,
+} from "@/data/vocab";
 import { entryForGlyph } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
 import { standingOf } from "@/lib/library/standing";
@@ -77,15 +83,16 @@ export function WordsWith({
           // here — display only, and only where a pitch is verified; a word with
           // none shows the plain reading, unchanged. See pitch-mark.tsx.
           const pitch = wordPitch(w);
+          const leadingMeaning = wordUnitFacts(w)[0]?.meaning ?? wordMeaningFactId(w);
           // A STANDING DOT, not the word's score copied here. The word is its
           // own entry with its own page; this row is a pointer to it.
           const s = standingOf(
-            facts[wordMeaningFactId(w)],
-            claims[wordMeaningFactId(w)],
+            facts[leadingMeaning],
+            claims[leadingMeaning],
             metric,
             now,
           );
-          const taught = !!seen[wordMeaningFactId(w)];
+          const taught = !!seen[leadingMeaning];
           return (
             <div key={w} className="flex flex-wrap items-baseline gap-2 text-[13px]">
               {id ? (
@@ -95,7 +102,7 @@ export function WordsWith({
               ) : (
                 <span className="text-[16px]">{w}</span>
               )}
-              {row && pitch != null ? (
+              {row && pitch != null && row.reb === legacyUnqualifiedReading(w) ? (
                 <PitchReading reading={row.reb} downstep={pitch} className="text-text-muted" />
               ) : (
                 <span className="text-text-muted">{row?.reb}</span>
