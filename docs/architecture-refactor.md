@@ -1,9 +1,15 @@
 # Architecture refactor: one model, many surfaces
 
-Status: proposed. Author: pairing session, Aug 2026.
+Status: in progress on branch `refactor/content-model` (main untouched). Author:
+pairing session, Aug 2026.
 Goal: stop re-wiring every surface by hand for each new content type. An update to
 a content **type** (or a new word) should propagate consistently across lessons,
 quizzes, and the library — with the compiler and tests catching what's missing.
+
+> **Progress at a glance** — the content model and the ONE generic scheduler are
+> built and tested in isolation; nothing live consumes them yet, so main is safe.
+> The next step is the first live track migration (numbers/counters), the largest
+> and riskiest slice. See [§6 Progress](#6-progress-branch-refactorcontent-model).
 
 ---
 
@@ -149,9 +155,9 @@ Each stage is shippable on its own and lands behind the shared interface, with a
 invariant test that would have caught the corresponding bug class. Migrate one
 track at a time; delete each forked file only when its track is fully moved.
 
-- **Stage 0 — Interfaces, no behavior change.** Define `ContentItem`, `Fact`,
-  `FactKind`, `Track`, and the item-renderer/quiz-renderer registries alongside
-  today's code. Nothing consumes them yet.
+- **Stage 0 — Interfaces, no behavior change. ✅ Done.** Define `ContentItem`,
+  `Fact`, `FactKind`, `Track`, and the item-renderer/quiz-renderer registries
+  alongside today's code. Nothing consumes them yet.
 
 - **Stage 1 — Consume the existing `factsOf`; the kind axis already exists.** Two
   pieces are already in place and should be *reused*, not re-modeled:
@@ -165,6 +171,11 @@ track at a time; delete each forked file only when its track is fully moved.
   it" (mic) mode is a new *value* on the ask-forms axes, reached once. **Guard:**
   every taught item's fact-set equals `factsOf(entry)`. (Kills mechanism 1:
   readings, labels.)
+  *Status: 🟡 keystone done —* `buildItem(entry, kind)` reads `factsOf` +
+  `jp2enResponse` + `characterRoles` and derives prereq edges, so an item is
+  "whole" by construction (tested: a number-word carries BOTH meaning and
+  reading). *Remaining:* route the live counters scheduler through it under the
+  fact-set guard (part of the Stage-3 track swap below).
 
 - **Stage 2 — One `<LessonWalk>`.** Have preview, HUD, and resume read the same
   `items` array the walk teaches. Migrate tracks into it one by one; delete each
@@ -178,6 +189,13 @@ track at a time; delete each forked file only when its track is fully moved.
   **Guards:** the engine never returns an item whose prereqs are unsatisfied; and
   it never returns an item whose untaught-prereq chain exceeds the depth cap.
   (Kills mechanism 3: ordering.)
+  *Status: 🟡 engine done, no track on it yet —* `planLesson` (pure core) +
+  `nextLesson` (history seam) + `resolveItem` (kanji-corpus resolve) are built and
+  tested standalone. *Remaining, and the next real step:* write the first
+  `Track.order()` (numbers/counters — including the `generative-rule` units that
+  have no normal entry) and swap the live counter scheduler onto `nextLesson`.
+  This is the largest, riskiest slice — it touches shipped lesson behavior — so it
+  is its own session.
 
 - **Stage 4 — One `<Quiz>` shell and one `<EntryPage>`.** Collapse the 13 quiz
   screens to a shell + registered per-fact-kind renderers, and the ~7 library
@@ -215,3 +233,35 @@ These encode "consistency" so a future update can't silently drift:
 
 Nothing here is a from-scratch rewrite: it's introducing the shared seam, then
 moving tracks across it one at a time, each move deleting a fork.
+
+---
+
+## 6. Progress (branch `refactor/content-model`)
+
+The shared model and the one scheduler are built and tested in isolation. Nothing
+live imports `@/lib/content` yet — main is safe, and each piece landed as its own
+green commit.
+
+`src/lib/content/`:
+
+| File | What it is | Tests |
+|---|---|---|
+| `fact.ts` | `Fact { id, kind }`; `FactKind = ResponseKind` via `jp2enResponse` (alias, not a new enum) | `fact.test.ts` |
+| `item.ts` | `ContentItem { entry, kind, glyph, facts, roles, prereqs }` — the keystone shape | — |
+| `build-item.ts` | `buildItem(entry, kind)` — derives facts (`factsOf`+`jp2enResponse`), roles (`characterRoles`), and prereq edges (`teachableParts`/kanji-in-glyph). An item is "whole" by construction | `build-item.test.ts` |
+| `scheduler.ts` | `planLesson` (pure: cross-track prereq ordering, `MAX_PREREQ_DEPTH` gate, floor/ceiling fill) + `nextLesson` (history seam: due = fresh fact, cost = `glyphDifficulty`) | `scheduler.test.ts` |
+| `resolve.ts` | `resolveItem` — build-once kanji-corpus map the engine follows prereq edges through (a lookup, not an id parse) | `resolve.test.ts` |
+| `track.ts` | `Track { id, order(history) }` — ordering only; prereqs live on items | — |
+| `registry.ts` | `createRegistry`, `itemRenderers` — for the Stage-2/4 renderer maps | `registry.test.ts` |
+| `index.ts` | barrel |  |
+
+**What's proven:** a number-as-word carries BOTH its meaning and its reading
+(the drop can't happen by construction); the engine emits prereqs before
+dependents across tracks, gates chains past depth 3 (and the gate lifts as the
+tail is learned), fills to the floor without crossing the ceiling, and teaches a
+real due item out of an empty history.
+
+**Next (own session):** the numbers/counters `Track.order()` + live swap onto
+`nextLesson` under the fact-set guard — Stage 1's live half and Stage 3's first
+track, together. Largest and riskiest slice; everything above is the safety net
+it lands on.
