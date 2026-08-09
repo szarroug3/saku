@@ -3,9 +3,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { unitItem, formItem } from "./numbers-track.ts";
+import { unitItem, formItem, numbersTrack } from "./numbers-track.ts";
+import { nextLesson } from "./scheduler.ts";
+import { resolveItem } from "./resolve.ts";
 import { GENERATIVE_UNITS } from "@/lib/counter-lesson";
 import { COUNTER_CURRICULUM } from "@/data/counters";
+import { emptyHistory } from "@/lib/history-ops";
 import { kanjiEntry } from "@/data/kanji";
 
 const unit = (id: string) => GENERATIVE_UNITS.find((u) => u.id === id)!;
@@ -62,4 +65,24 @@ test("formItem — every base curriculum form builds (none is hollow)", () => {
   for (const f of COUNTER_CURRICULUM) {
     assert.ok(formItem(f), `${f.key} builds`);
   }
+});
+
+test("numbersTrack — order follows SCHEDULE: 〜つ natives, then the range units", () => {
+  const items = numbersTrack().order(emptyHistory());
+  assert.equal(items[0].glyph, "ひとつ", "the 〜つ natives lead");
+  const tens = items.findIndex((i) => i.glyph === "十〜");
+  const too = items.findIndex((i) => i.glyph === "とお");
+  assert.ok(tens > too && too >= 0, "the tens unit comes after the last 〜つ form");
+  assert.ok(
+    items.some((i) => i.kind === "generative-rule"),
+    "the generative units are in the order",
+  );
+});
+
+test("numbersTrack × nextLesson — a first lesson comes out of an empty history", () => {
+  // End to end: the shared scheduler drives the migrated track. The 〜つ natives
+  // are due (empty history) and lead, proving the track plugs into nextLesson.
+  const lesson = nextLesson(numbersTrack(), resolveItem, emptyHistory(), { min: 5, max: 7 });
+  assert.ok(lesson, "there is a first lesson");
+  assert.equal(lesson!.items[0].glyph, "ひとつ", "it opens on the first native");
 });

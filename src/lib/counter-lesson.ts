@@ -330,7 +330,7 @@ export function unitContentCost(unit: NumberUnit): number {
 
 /** One step of the numbers-and-counters schedule: a form to teach, or a
  * generative unit. */
-type ScheduleStep = { form: CounterForm } | { unit: NumberUnit };
+export type ScheduleStep = { form: CounterForm } | { unit: NumberUnit };
 
 /** The counter glyph each counter category counts, so the schedule can splice a
  * category's kept memorised form (歳's はたち) right behind its rule unit. Most
@@ -396,7 +396,7 @@ function formKanji(form: CounterForm): readonly string[] {
  *      category, never listed as rote forms.
  * A pure function of the curriculum's order and the category list, built once.
  */
-const SCHEDULE: readonly ScheduleStep[] = buildSchedule();
+export const SCHEDULE: readonly ScheduleStep[] = buildSchedule();
 
 function buildSchedule(): ScheduleStep[] {
   const steps: ScheduleStep[] = [];

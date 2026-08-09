@@ -15,9 +15,10 @@ import { entryOf } from "@/lib/facts";
 import { constructionFactForMarker } from "@/data/counter-categories";
 import { counterEntry, type CounterForm } from "@/data/counters";
 import { kanjiEntry } from "@/data/kanji";
-import { UNIT_KANJI, type NumberUnit } from "@/lib/counter-lesson";
+import { SCHEDULE, UNIT_KANJI, type NumberUnit } from "@/lib/counter-lesson";
 import { buildItem } from "./build-item";
 import type { ContentItem } from "./item";
+import type { Track } from "./track";
 
 /**
  * An entry-backed counter form as a ContentItem — the `〜つ` natives (kana,
@@ -48,4 +49,25 @@ export function unitItem(unit: NumberUnit): ContentItem | undefined {
   const base = buildItem(entryOf(fact), "generative-rule");
   if (!base) return undefined;
   return { ...base, prereqs: UNIT_KANJI[unit.id].map((c) => kanjiEntry(c)) };
+}
+
+/**
+ * The numbers/counters track: the whole curriculum as ContentItems, in teaching
+ * order, by walking the SAME `SCHEDULE` the live scheduler uses (〜つ natives, the
+ * two range units, then each counter's unit followed by its kept forms). Building
+ * both item shapes off the one schedule is what makes the shared `nextLesson`
+ * reproduce this track — a step that can't build (missing facts) is dropped, the
+ * same refusal `formItem`/`unitItem` make.
+ *
+ * Order ONLY — dueness, prereq resolution, budget, and the depth gate are the
+ * scheduler's (see track.ts). The order is static, so history is ignored and the
+ * items are built once.
+ */
+export function numbersTrack(): Track {
+  const items: ContentItem[] = [];
+  for (const step of SCHEDULE) {
+    const item = "unit" in step ? unitItem(step.unit) : formItem(step.form);
+    if (item) items.push(item);
+  }
+  return { id: "counters", order: () => items };
 }
