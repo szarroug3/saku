@@ -9,5 +9,6 @@ export type { ContentKind, ContentItem } from "./item";
 export type { Track } from "./track";
 export type { Lesson, NextLesson } from "./scheduler";
 export { MAX_PREREQ_DEPTH } from "./scheduler";
+export { buildItem } from "./build-item";
 export type { Registry, ItemRenderer } from "./registry";
 export { createRegistry, itemRenderers } from "./registry";
