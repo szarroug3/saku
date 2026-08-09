@@ -21,7 +21,7 @@
 // Additive, not yet consumed.
 
 import { effectiveState } from "@/lib/claims";
-import { glyphDifficulty } from "@/lib/difficulty";
+import { itemCost } from "./cost";
 import type { EntryId, FactId, HistoryFile } from "@/types";
 import type { LessonRange } from "@/lib/lesson-sizing";
 import type { ContentItem } from "./item";
@@ -130,15 +130,14 @@ function untaughtChain(
  * from existing sources — nothing new is modeled here:
  *   - DUE = the item has a FRESH fact (`lastTested === 0` off `effectiveState`,
  *     the same rule every track reads per fact);
- *   - COST = `glyphDifficulty` (reading-units), the packers' own pricing.
+ *   - COST = `itemCost` (facts to learn), the one kind-agnostic cost axis.
  * A track supplies only its order; `resolve` reaches items in any track so a
  * number can pull a word-track kanji as a prerequisite.
  */
 export const nextLesson: NextLesson = (track, resolve, history, range) => {
   const isDue = (item: ContentItem) =>
     item.facts.some((f) => isFactFresh(f.id, history));
-  const cost = (item: ContentItem) => glyphDifficulty(item.glyph);
-  const items = planLesson(track.order(history), resolve, isDue, cost, range);
+  const items = planLesson(track.order(history), resolve, isDue, itemCost, range);
   return items.length ? { items } : null;
 };
 

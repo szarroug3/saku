@@ -14,5 +14,6 @@ export type { Lesson, NextLesson } from "./scheduler";
 export { MAX_PREREQ_DEPTH, planLesson, nextLesson } from "./scheduler";
 export { buildItem } from "./build-item";
 export { resolveItem } from "./resolve";
+export { itemCost } from "./cost";
 export type { Registry, ItemRenderer } from "./registry";
 export { createRegistry, itemRenderers } from "./registry";
