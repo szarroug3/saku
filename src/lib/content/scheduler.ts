@@ -52,3 +52,70 @@ export type NextLesson = (
   history: HistoryFile,
   range: LessonRange,
 ) => Lesson | null;
+
+/**
+ * The pure heart of the scheduler, factored out of history so it can be tested on
+ * its own. `nextLesson` (next piece) supplies `isDue` (a fresh fact) and `cost`
+ * (reading-units) from history and calls this.
+ *
+ * Walk `order`; for each DUE item gather its untaught-prereq chain (dependency
+ * order, prereqs first, following `resolve` across tracks); DEPTH-GATE anything
+ * whose untaught chain runs past `maxDepth`; and emit until `budget` is spent,
+ * always taking at least one item's chain.
+ */
+export function planLesson(
+  order: readonly ContentItem[],
+  resolve: (entry: EntryId) => ContentItem | undefined,
+  isDue: (item: ContentItem) => boolean,
+  cost: (item: ContentItem) => number,
+  budget: number,
+  maxDepth: number = MAX_PREREQ_DEPTH,
+): ContentItem[] {
+  const out: ContentItem[] = [];
+  const emitted = new Set<EntryId>();
+  let spent = 0;
+  for (const item of order) {
+    if (!isDue(item)) continue;
+    const chain = untaughtChain(item, resolve, isDue, maxDepth);
+    if (!chain) continue; // untaught-prereq chain too deep → defer this item
+    const fresh = chain.filter((i) => !emitted.has(i.entry));
+    const add = fresh.reduce((n, i) => n + cost(i), 0);
+    if (out.length > 0 && spent + add > budget) break; // full (but always take one)
+    for (const i of fresh) {
+      out.push(i);
+      emitted.add(i.entry);
+    }
+    spent += add;
+    if (spent >= budget) break;
+  }
+  return out;
+}
+
+/**
+ * An item preceded by its still-untaught prerequisites, in dependency order, or
+ * null if any untaught branch runs deeper than `maxDepth`. Learned prereqs stop
+ * the walk (they don't extend the chain), so an item's depth shrinks as its
+ * prereqs are learned — the gate lifts on its own.
+ */
+function untaughtChain(
+  item: ContentItem,
+  resolve: (entry: EntryId) => ContentItem | undefined,
+  isDue: (item: ContentItem) => boolean,
+  maxDepth: number,
+): ContentItem[] | null {
+  const chain: ContentItem[] = [];
+  const seen = new Set<EntryId>();
+  const visit = (it: ContentItem, depth: number): boolean => {
+    if (seen.has(it.entry)) return true;
+    seen.add(it.entry);
+    if (depth > maxDepth) return false;
+    for (const p of it.prereqs) {
+      const pi = resolve(p);
+      if (!pi || !isDue(pi)) continue; // unknown to us, or already learned
+      if (!visit(pi, depth + 1)) return false;
+    }
+    chain.push(it); // after its prereqs
+    return true;
+  };
+  return visit(item, 0) ? chain : null;
+}
