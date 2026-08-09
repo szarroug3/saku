@@ -224,22 +224,23 @@ type JsonVocabRow = Omit<VocabRow, "senses">;
 // own rows carry; the ingest is what guarantees the arity.
 const SENSES = wordSensesJson as unknown as Readonly<Record<string, readonly WordSense[]>>;
 
+interface SourceDefinition {
+  readonly id: string;
+  readonly glosses: readonly string[];
+  readonly pos: readonly string[];
+  readonly readings: readonly string[];
+}
+
+const SOURCE_DEFINITIONS = (wordDefinitionsJson as {
+  readonly words: Readonly<Record<string, readonly SourceDefinition[]>>;
+}).words;
+
 type CejcReadingCounts = Readonly<Record<string, Readonly<Record<string, number>>>>;
 
 /** CEJC occurrence totals, reduced to words Saku carries and normalized to the
  * hiragana readings Saku uses. Raw CEJC files are ignored and never shipped. */
 const CEJC_READING_COUNTS = (cejcReadingFrequencyJson as {
   readonly words: CejcReadingCounts;
-}).words;
-
-interface SourceDefinition {
-  readonly id: string;
-  readonly glosses: readonly string[];
-  readonly readings: readonly string[];
-}
-
-const SOURCE_DEFINITIONS = (wordDefinitionsJson as {
-  readonly words: Readonly<Record<string, readonly SourceDefinition[]>>;
 }).words;
 
 /**
@@ -333,9 +334,8 @@ export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[]
 
   // Restore JMdict's actual sense boundaries. A reading may participate in
   // several senses, and one sense may accept several readings. When the legacy
-  // sidecar has several rows with one sound, consume them in source order; when
-  // JMdict has more detailed senses than that old snapshot, reuse the sound's
-  // row for its POS/alignment rather than fabricating a new lexical fact.
+  // quiz snapshot has several rows with one sound, consume them in source order.
+  // Source-only readings become reference rows below, not new scored facts.
   const byReading = new Map<string, WordSense[]>();
   for (const sense of word.senses) {
     const rows = byReading.get(sense.reb) ?? [];
@@ -349,12 +349,26 @@ export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[]
   for (const definition of source) {
     const readings = definition.readings.flatMap((reb) => {
       const candidates = byReading.get(reb) ?? [];
-      if (!candidates.length) return [];
       const at = used.get(reb) ?? 0;
-      const sense = candidates[Math.min(at, candidates.length - 1)];
-      used.set(reb, at + 1);
-      covered.add(sense);
-      return [sense];
+      const candidate = candidates[Math.min(at, candidates.length - 1)];
+      if (candidate) {
+        used.set(reb, at + 1);
+        covered.add(candidate);
+      }
+      // The source sidecar is reference data for this table. A reading absent
+      // from the frozen quiz snapshot is still a real JMdict pronunciation, but
+      // displaying it must not mint a new fact and rewrite learner history.
+      // Reuse known alignment where possible and otherwise leave it unclaimed.
+      const template = candidate ?? word.senses[0];
+      if (!template) return [];
+      return [{
+        ...template,
+        definitionId: definition.id,
+        reb,
+        glosses: definition.glosses,
+        pos: definition.pos.length ? definition.pos : template.pos,
+        align: candidate?.align ?? null,
+      }];
     });
     if (readings.length) definitions.push({ ...definition, readings });
   }

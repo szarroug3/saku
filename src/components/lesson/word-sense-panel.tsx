@@ -16,16 +16,13 @@
 // form: the reading is unambiguous, and the character alone can be read several
 // ways.
 //
-// EVERY READING THE QUIZ ASKS, BOUND ONES MARKED
-// ==============================================
-// This panel shows all of a word's reading-units — for 大 both だい and おお, for
-// 人 all of ひと, じん and にん — because those are exactly the readings the drill
-// mints a fact for (see `readingUnits`/`wordUnitFacts` in vocab.ts). It used to
-// ask `standaloneSenses`, which kept only the readings you can utter alone, so 大
-// taught だい and 人 taught ひと while the quiz went on asking おお, じん and にん:
-// the learner met those readings first as a question with an answer they had
-// never been shown. Teaching all of them closes that gap, and the rows here now
-// match `readingUnits` 1:1.
+// QUIZZED READINGS PLUS DICTIONARY REFERENCE READINGS
+// ==================================================
+// This panel includes every reading-unit the quiz asks — for 大 both だい and おお,
+// for 人 all of ひと, じん and にん — and may also include a source-only JMdict
+// alternate such as 寒い/さぶい. The latter is reference information, not a new
+// scored fact: restoring current dictionary detail must not silently rewrite a
+// learner's existing history. A source-only row therefore has no standing chip.
 //
 // SOME OF THEM YOU ONLY SAY IN COMPOUNDS, and the panel says so quietly. おお is
 // a prefix, じん the -ian suffix, にん the people-counter: real readings, drilled,
@@ -84,8 +81,8 @@ export interface CounterSense {
 }
 
 /** One row of the say-it table — a reading, its kind, its meaning, and (Library
- * only) the standing of each. A word builds one per reading-unit; a counter
- * builds a single one. */
+ * only) the standing of any scored fact. A word builds one per definition/read
+ * relationship; a counter builds a single one. */
 interface SenseRow {
   reb: string;
   /** A second reading of the same number, shown after the primary (く after

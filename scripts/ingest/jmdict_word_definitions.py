@@ -15,6 +15,7 @@ import gzip
 import hashlib
 import json
 import os
+import unicodedata
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -29,6 +30,13 @@ ALTERNATES = os.path.join(ROOT, "src", "data", "number-word-alternates.json")
 OUT = os.path.join(ROOT, "src", "data", "generated", "word-definitions.json")
 URL = "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz"
 UK = "word usually written using kana alone"
+CURATED = {"ichi1", "spec1", "spec2"}
+
+
+def hiragana(text):
+    """Collapse kana spelling variants that do not change pronunciation."""
+    text = unicodedata.normalize("NFKC", text)
+    return "".join(chr(ord(c) - 0x60) if "ァ" <= c <= "ヶ" else c for c in text)
 
 
 def download():
@@ -43,12 +51,11 @@ def targets():
     alternates = json.load(open(ALTERNATES, encoding="utf-8"))
     readings = {}
     for row in vocab:
-        # The sidecar repairs the words whose current snapshot has more than one
-        # reading/sense row, plus curated alternates. A one-row word already has
-        # one unambiguous display definition; copying all ~5,000 polysemous
-        # single-reading entries would add megabytes without ordering anything.
-        if row["keb"] not in senses and row["keb"] not in alternates:
-            continue
+        # Start from the app's established readings so a current JMdict entry can
+        # be matched back to a frozen vocabulary row without re-cutting ranks.
+        # The source pass below then restores every sense and every compatible
+        # reading from that entry, including r_ele alternates the legacy build
+        # discarded by taking only the first reading and first sense.
         rs = [sense["reb"] for sense in senses.get(row["keb"], [])] or [row["reb"]]
         rs.extend(alternates.get(row["keb"], []))
         readings[row["keb"]] = list(dict.fromkeys(rs))
@@ -63,10 +70,17 @@ def reduce(path):
             if entry.tag != "entry":
                 continue
             seq = entry.findtext("ent_seq")
-            kels = [ke.findtext("keb") for ke in entry.findall("k_ele")]
+            kels = [
+                {
+                    "keb": ke.findtext("keb"),
+                    "pri": {x.text for x in ke.findall("ke_pri")},
+                }
+                for ke in entry.findall("k_ele")
+            ]
             rels = [
                 {
-                    "reb": re.findtext("reb"),
+                    "reb": hiragana(re.findtext("reb")),
+                    "pri": {x.text for x in re.findall("re_pri")},
                     "restr": {x.text for x in re.findall("re_restr")},
                 }
                 for re in entry.findall("r_ele")
@@ -74,52 +88,73 @@ def reduce(path):
             senses = entry.findall("sense")
             misc0 = {m.text for m in senses[0].findall("misc")} if senses else set()
             kana_headword = not kels or UK in misc0
-            forms = [k for k in kels if k in wanted]
+            # Stay inside the same common-entry cut that produced vocab.json.
+            # Matching an established app reading also keeps frozen rows whose
+            # priority tags drifted since that snapshot. This excludes unrelated
+            # rare homographs such as 四/スー while retaining 四/し・よん・よ.
+            forms = [
+                ke["keb"] for ke in kels
+                if ke["keb"] in wanted
+                and (ke["pri"] & CURATED or any(r["reb"] in wanted[ke["keb"]] for r in rels))
+            ]
             if kana_headword:
                 forms.extend(r["reb"] for r in rels if r["reb"] in wanted)
 
             for form in dict.fromkeys(forms):
-                app_readings = set(wanted[form])
                 compatible = {
                     r["reb"] for r in rels
-                    if r["reb"] in app_readings
-                    and (kana_headword and r["reb"] == form or not kana_headword
-                         and (not r["restr"] or form in r["restr"]))
+                    if (kana_headword and r["reb"] == form or not kana_headword
+                        and (not r["restr"] or form in r["restr"]))
                 }
+                inherited_pos = []
                 for i, sense in enumerate(senses):
+                    explicit_pos = [p.text for p in sense.findall("pos") if p.text]
+                    if explicit_pos:
+                        inherited_pos = explicit_pos
                     stagk = {x.text for x in sense.findall("stagk")}
                     if stagk and form not in stagk:
                         continue
-                    stagr = {x.text for x in sense.findall("stagr")}
+                    stagr = {hiragana(x.text) for x in sense.findall("stagr")}
                     applicable = compatible & stagr if stagr else compatible
                     if not applicable:
                         continue
                     glosses = [g.text for g in sense.findall("gloss") if g.text]
                     if not glosses:
                         continue
-                    ordered = [r for r in wanted[form] if r in applicable]
+                    ordered = list(dict.fromkeys(
+                        r["reb"] for r in rels if r["reb"] in applicable
+                    ))
                     collected[form].append({
                         "id": f"{seq}:{i}",
                         "glosses": glosses,
+                        "pos": inherited_pos,
                         "readings": ordered,
                     })
             entry.clear()
 
-    # Only multi-row words need the sidecar. Remove exact duplicate source rows,
-    # then lead with definitions containing the app's established primary reading
-    # so adding source detail does not reorder definitions across meanings.
+    # Remove exact duplicate source rows, then lead with definitions containing
+    # the app's established primary reading so adding source detail does not
+    # reorder definitions across meanings.
     words = {}
     for keb, definitions in collected.items():
         unique, seen = [], set()
         for definition in definitions:
-            key = (tuple(definition["glosses"]), tuple(definition["readings"]))
+            key = (
+                tuple(definition["glosses"]),
+                tuple(definition["pos"]),
+                tuple(definition["readings"]),
+            )
             if key in seen:
                 continue
             seen.add(key)
             unique.append(definition)
         primary = wanted[keb][0]
         unique.sort(key=lambda d: (primary not in d["readings"],))
-        if unique:
+        # A plain one-definition/one-reading word is already represented by its
+        # vocab row. Ship the source sidecar only where it adds a definition or
+        # a pronunciation; this keeps the processed artifact compact without
+        # throwing away either relationship again.
+        if len(unique) > 1 or any(len(d["readings"]) > 1 for d in unique):
             words[keb] = unique
 
     digest = hashlib.sha256(open(path, "rb").read()).hexdigest()
