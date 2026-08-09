@@ -7,12 +7,20 @@
 // and one registered quiz renderer (Stage 4) handles it — instead of touching
 // every track's scheduler and every quiz screen.
 
-// ALIGN WITH THE EXISTING REGISTRY, DON'T FORK IT. src/lib/facts.ts already
-// unifies facts: every subject publishes `FactInfo[]` and `factsOf(entry)` reads
-// them, with nothing downstream able to tell subjects apart. The one thing
-// `FactInfo` lacks is an explicit KIND — today meaning-vs-reading is inferred from
-// id conventions (`word:X/reading`). Stage 1 folds `FactKind` onto `FactInfo`
-// itself; this file is the stub for that field, not a second fact type.
+// ALIGN WITH WHAT EXISTS, DON'T FORK IT. Two pieces are already in place:
+//   - src/lib/facts.ts unifies facts: every subject publishes `FactInfo[]` and
+//     `factsOf(entry)` reads them, nothing downstream telling subjects apart.
+//   - src/lib/ask-forms.ts already models a fact's KIND, and richer than a flat
+//     enum: orthogonal axes — PromptFormat (text·audio) × ResponseKind
+//     (definition·romaji, i.e. meaning·reading) × AnswerStyle — with
+//     `enabledFormsFor(fact, ask)` computing what a given fact supports.
+//
+// So the meaning/reading distinction is NOT missing, and a future "say it" (mic)
+// mode is a new axis VALUE on that model, not a new fact type. `FactKind` below is
+// only a convenience label for the common cases; the source of truth is
+// ask-forms.ts. The real Stage-1 work is fact INCLUSION — routing the counters
+// scheduler through `factsOf(entry)` so a number's reading fact is in the lesson —
+// not adding a field. See docs/architecture-refactor.md.
 
 import type { FactId } from "@/types";
 

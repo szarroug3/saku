@@ -150,16 +150,18 @@ track at a time; delete each forked file only when its track is fully moved.
   `FactKind`, `Track`, and the item-renderer/quiz-renderer registries alongside
   today's code. Nothing consumes them yet.
 
-- **Stage 1 — Kind axis + consume the existing `factsOf`.** The fact registry is
-  already unified (`src/lib/facts.ts`: subjects publish `FactInfo[]`, `factsOf(
-  entry)` reads them). Two moves: **(a)** add a `kind: FactKind` field to
-  `FactInfo` so the axis is typed data, not inferred from id conventions like
-  `word:X/reading` — this is the single lever a future "mic" fact starts from;
-  **(b)** route the counters/numbers scheduler through `factsOf(entry)` so a
+- **Stage 1 — Consume the existing `factsOf`; the kind axis already exists.** Two
+  pieces are already in place and should be *reused*, not re-modeled:
+  `src/lib/facts.ts` (subjects publish `FactInfo[]`; `factsOf(entry)` reads them),
+  and `src/lib/ask-forms.ts` (a fact's kind is `PromptFormat` × `ResponseKind`
+  [definition·romaji = meaning·reading] × `AnswerStyle`, with `enabledFormsFor`
+  computing what each fact supports). So the real fix is **fact INCLUSION, not a
+  new field**: route the counters/numbers scheduler through `factsOf(entry)` so a
   number gets ALL its facts (meaning + reading) by construction, and retire the
-  `tensReadingFactsForPrereqs`/`numberUnitReadingFacts` band-aids. **Guard:** every
-  taught item's fact-set equals `factsOf(entry)`. (Kills mechanism 1: readings,
-  labels.)
+  `tensReadingFactsForPrereqs`/`numberUnitReadingFacts` band-aids. A future "say
+  it" (mic) mode is a new *value* on the ask-forms axes, reached once. **Guard:**
+  every taught item's fact-set equals `factsOf(entry)`. (Kills mechanism 1:
+  readings, labels.)
 
 - **Stage 2 — One `<LessonWalk>`.** Have preview, HUD, and resume read the same
   `items` array the walk teaches. Migrate tracks into it one by one; delete each
