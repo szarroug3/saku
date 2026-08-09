@@ -105,7 +105,7 @@ import { RoleBlock } from "@/components/lesson/role-block";
 import { VariantFormsPanel } from "@/components/lesson/variant-forms-panel";
 import { WordSensePanel } from "@/components/lesson/word-sense-panel";
 import { KanjiBuiltFrom } from "@/components/library/kanji-built-from";
-import { OnyomiHint } from "@/components/library/onyomi-hint";
+import { KanjiReadingHint } from "@/components/library/kanji-reading-hint";
 import { WordBuiltFrom } from "@/components/library/word-built-from";
 import { VerbPairView } from "@/components/library/verb-pair-view";
 import { KeigoSetView } from "@/components/library/keigo-set-view";
@@ -848,11 +848,10 @@ export function LessonItemView({ item }: { item: LessonItem }) {
             {sections.has("kanji-parts") && kanjiCard ? (
               <KanjiBuiltFrom entry={kanjiCard} footnote={false} />
             ) : null}
-            {/* THE ON'YOMI HINT — the borrowed compound reading(s), the same hint
-                the Library entry shows, on the card where the kanji is first met.
-                Display only; the concept itself is taught once up front. Renders
-                nothing for a kun-only kanji with no on'yomi. */}
-            <OnyomiHint glyph={item.glyph} />
+            {/* KUN'YOMI AND ON'YOMI — the same side-by-side hint the Library
+                entry shows, on the card where the kanji is first met. Display
+                only; the concept itself is taught once up front. */}
+            <KanjiReadingHint glyph={item.glyph} />
           </RoleBlock>
         ) : null}
         {roleHasSections("word", sectionList) ? (

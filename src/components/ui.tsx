@@ -71,7 +71,8 @@ export function Card({
   // `.kq-material` fill (and its `bg-card`) for a transparent ground. "No fill"
   // is `bg-transparent`, not a hardcoded colour, so the flat look holds in every
   // theme. The flag comes from an explicit prop OR the surrounding provider.
-  const flat = flatProp || useFlatSurface();
+  const inheritedFlat = useFlatSurface();
+  const flat = flatProp || inheritedFlat;
   return (
     <div
       className={cx(

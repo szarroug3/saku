@@ -17,10 +17,10 @@ import { jp2enResponse } from "@/lib/ask-forms";
 import { characterRoles } from "@/lib/character-role";
 import { teachableParts } from "@/lib/kanji-parts";
 import { builtPieceEntryId } from "@/lib/library/entries";
-import { kanjiEntry, kanjiRow } from "@/data/kanji";
-import { radicalEntry, radicalByGlyph } from "@/data/radicals";
-import { wordEntry } from "@/data/vocab";
-import type { EntryId } from "@/types";
+import { kanjiEntry, kanjiRow, meaningFactId } from "@/data/kanji";
+import { radicalEntry, radicalByGlyph, radicalMeaningFactId } from "@/data/radicals";
+import { wordEntry, wordUnitFacts } from "@/data/vocab";
+import type { EntryId, FactId } from "@/types";
 import type { ContentItem, ContentKind } from "./item";
 import type { Fact } from "./fact";
 
@@ -43,24 +43,31 @@ function canonicalEntry(glyph: string): EntryId {
   return wordEntry(glyph);
 }
 
-/** The facts of an entry, each classified by direction (definition/romaji). */
-function factsFrom(entry: EntryId): Fact[] {
-  return factsOf(entry).map((id) => ({ id, kind: jp2enResponse(id) }));
-}
-
 /**
- * A single Han glyph as ONE cohesive `character` item: the union of its roles'
- * facts, its roles, and its Built-from prereq edges. Undefined if the glyph plays
- * no role or has no facts (so a caller can't mint a hollow item).
+ * A single Han glyph as ONE cohesive `character` item. Its facts are selected the
+ * SAME way the words/kanji curriculum spine selects them (curriculum-lesson.ts):
+ *   - radical role → its radical meaning;
+ *   - kanji role → its kanji meaning ONLY. A kanji's readings are NOT taught here
+ *     — they are attributed to the words that attest them (いち rides word:一,
+ *     いつ rides 唯一), which is why glyphDifficulty(日) is 4, not more;
+ *   - word role → every reading-unit (meaning + reading), so 一 teaches いち and
+ *     ひと as its own scored skills.
+ * Undefined if the glyph plays no role or has no facts.
  */
 export function buildGlyphItem(glyph: string): ContentItem | undefined {
   const roles = characterRoles(glyph);
   if (!roles.length) return undefined;
-  const facts: Fact[] = [];
-  if (roles.includes("radical")) facts.push(...factsFrom(radicalEntry(glyph)));
-  if (roles.includes("kanji")) facts.push(...factsFrom(kanjiEntry(glyph)));
-  if (roles.includes("word")) facts.push(...factsFrom(wordEntry(glyph)));
-  if (!facts.length) return undefined;
+  const ids: FactId[] = [];
+  if (roles.includes("radical")) ids.push(radicalMeaningFactId(glyph));
+  if (roles.includes("kanji")) ids.push(meaningFactId(glyph));
+  if (roles.includes("word")) {
+    for (const { reading, meaning } of wordUnitFacts(glyph)) {
+      ids.push(meaning);
+      if (reading) ids.push(reading);
+    }
+  }
+  if (!ids.length) return undefined;
+  const facts: Fact[] = ids.map((id) => ({ id, kind: jp2enResponse(id) }));
   return {
     entry: canonicalEntry(glyph),
     kind: "character",

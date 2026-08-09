@@ -21,10 +21,10 @@ import {
 } from "./counter-categories.ts";
 import {
   CONSTRUCTION_CATEGORY_IDS,
-  constructionCategoryEntry,
   constructionMarker,
   COUNTER_ENTRIES,
 } from "./counters.ts";
+import { numberConstructionEntry } from "./number-construction-id.ts";
 import { wordMeaningFactId } from "./vocab.ts";
 import { factType } from "../lib/practice-types.ts";
 import { buildMcOptions } from "../lib/engine/index.ts";
@@ -41,7 +41,7 @@ describe("the categories are well-formed", () => {
       assert.ok(isConstructionFact(cat.fact));
       assert.equal(factType(cat.fact), "counter", `${cat.id} files under Counters`);
       assert.ok(COUNTER_ENTRIES.has(cat.entry));
-      assert.equal(cat.entry, constructionCategoryEntry(cat.id));
+      assert.equal(cat.entry, numberConstructionEntry(cat.id));
       assert.equal(cat.marker, constructionMarker(cat.id));
       assert.ok(constructionConfigForFact(cat.fact), `${cat.id} has a drill config`);
     }
@@ -104,9 +104,11 @@ describe("the ask contract, with a rolled item", () => {
     test(`${c.direction}: reveals its answer, never its prompt, and grades it`, () => {
       const item = makeItem(3, "hon", c.direction)!;
       const ctx = { numberItem: item };
-      const shown = qt.prompt(honFact, c.dir, ctx).glyph.trim();
+      const prompt = qt.prompt(honFact, c.dir, ctx);
+      const shown = prompt.glyph.trim();
       const revealed = revealFor(honFact, c.dir, ctx).trim();
       assert.ok(shown.length > 0, "the prompt shows something");
+      assert.equal(prompt.context, null, "the instruction already names the answer type");
       assert.notEqual(revealed, shown, "the reveal is not the prompt");
       assert.equal(revealed, c.answer, "the reveal is the showing's answer");
       // The grader accepts the revealed answer and rejects a wrong one.

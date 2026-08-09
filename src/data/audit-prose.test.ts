@@ -20,6 +20,7 @@ import {
   COUNTER_SOUND_CHANGE,
   NUMBERS_BIG,
   NUMBERS_COMPOSE,
+  ONYOMI_INTRO,
   type IntroExample,
 } from "./phase-intros.ts";
 import { counterReading, numberReading, type CounterKind } from "../lib/number-reading.ts";
@@ -83,4 +84,19 @@ describe("counter-sound-change example readings match the engine", () => {
       );
     });
   }
+});
+
+describe("the reading-types intro teaches both families and the rule of thumb", () => {
+  const prose = ONYOMI_INTRO.body.map((paragraph) => paragraph.text).join(" ");
+
+  test("names kun'yomi and on'yomi", () => {
+    assert.match(prose, /kun’yomi/);
+    assert.match(prose, /on’yomi/);
+  });
+
+  test("covers standalone or hiragana-tail kun readings and compound on readings", () => {
+    assert.match(prose, /used by itself, or has hiragana attached to its tail/);
+    assert.match(prose, /multiple kanji are linked together/);
+    assert.match(prose, /exceptions/);
+  });
 });

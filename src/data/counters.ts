@@ -51,6 +51,7 @@
 
 import { entryId, factId } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
+import { numberConstructionEntry } from "./number-construction-id.ts";
 
 /**
  * The subject every counter fact carries. It is the WORDS subject on purpose:
@@ -292,7 +293,7 @@ function buildCounterFacts(): FactInfo[] {
  * rather than a new subject.
  *
  * It carries BOTH the memorised forms' entries AND the generative categories'
- * entries (constructionCategoryEntry): a category is a `word` fact that
+ * entries (numberConstructionEntry): a category is a `word` fact that
  * factType() must file under Counters, so its entry belongs to this label too.
  * Defined below the category machinery so CONSTRUCTION_CATEGORY_ENTRIES exists.
  */
@@ -359,17 +360,9 @@ export function constructionMarker(id: string): FactId {
   return `counter:gen:${id}` as FactId;
 }
 
-/** The DRILLABLE category fact's entry — a `word` entry (so it drills and scores
- * as a word) namespaced counter:cat:<id>, kept distinct from the Library page's
- * own `numbers:<id>` entry. In COUNTER_ENTRIES, so factType() files it under
- * Counters (see src/lib/practice-types.ts). */
-export function constructionCategoryEntry(id: string): EntryId {
-  return entryId(COUNTERS_SUBJECT, `counter:cat:${id}`);
-}
-
 /** Every category entry, for the COUNTER_ENTRIES label and quick membership. */
 export const CONSTRUCTION_CATEGORY_ENTRIES: ReadonlySet<EntryId> = new Set(
-  CONSTRUCTION_CATEGORY_IDS.map(constructionCategoryEntry),
+  CONSTRUCTION_CATEGORY_IDS.map(numberConstructionEntry),
 );
 
 /** The track label — the memorised forms' entries and the categories' entries.

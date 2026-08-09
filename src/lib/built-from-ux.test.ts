@@ -11,8 +11,14 @@ import { describe, test } from "node:test";
 
 import { builtPieces, etymologyOf } from "@/data/kanji-etymology";
 import { KANJI } from "@/data/kanji";
+import { NUMBER_WORD_ALTERNATES, vocabRow } from "@/data/vocab";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
-import { hasOnyomi, onReadingsOf, phoneticExample } from "@/lib/kanji-onyomi";
+import {
+  hasOnyomi,
+  kunReadingsOf,
+  onReadingsOf,
+  phoneticExample,
+} from "@/lib/kanji-onyomi";
 
 /** builtPieces as [glyph, role, label] triples — what a tile renders from. */
 function pieces(k: string): Array<[string, string, string | null]> {
@@ -135,6 +141,21 @@ describe("every jōyō kanji renders a Built-from section", () => {
     for (const g of ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
       assert.equal(rendersSection(g), true, `${g} renders a section`);
     }
+    assert.match(originOf("四")!, /よん.*し.*死 \(death\)/);
+    assert.match(originOf("七")!, /なな.*しち.*いち \(one\)/);
+    assert.match(originOf("九")!, /きゅう.*く.*苦 \(suffering\)/);
+  });
+
+  test("every bare number with alternate pronunciations explains them", () => {
+    for (const [glyph, alternates] of Object.entries(NUMBER_WORD_ALTERNATES)) {
+      const text = originOf(glyph) ?? "";
+      const primary = vocabRow(glyph)?.reb;
+      assert.ok(primary && text.includes(primary), `${glyph} omits primary ${primary}`);
+      for (const reading of alternates) {
+        assert.ok(text.includes(reading), `${glyph} omits alternate ${reading}`);
+      }
+      assert.match(text, /preferred/, `${glyph} does not explain everyday preference`);
+    }
   });
 });
 
@@ -201,5 +222,22 @@ describe("on'yomi hint data", () => {
     for (const row of KANJI.slice(0, 200)) {
       assert.equal(hasOnyomi(row.c), onReadingsOf(row.c).length > 0);
     }
+  });
+});
+
+describe("kun'yomi hint data", () => {
+  test("車 and 人 expose native readings with real word anchors", () => {
+    assert.deepEqual(kunReadingsOf("車"), [
+      { reading: "くるま", word: "車", wordReading: "くるま" },
+    ]);
+    assert.deepEqual(kunReadingsOf("人")[0], {
+      reading: "ひと",
+      word: "人",
+      wordReading: "ひと",
+    });
+  });
+
+  test("an on-only kanji has no fabricated kun'yomi", () => {
+    assert.deepEqual(kunReadingsOf("校"), []);
   });
 });

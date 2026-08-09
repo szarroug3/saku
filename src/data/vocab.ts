@@ -217,12 +217,38 @@ type JsonVocabRow = Omit<VocabRow, "senses">;
 // own rows carry; the ingest is what guarantees the arity.
 const SENSES = wordSensesJson as unknown as Readonly<Record<string, readonly WordSense[]>>;
 
+/**
+ * Productive counting readings omitted by JMdict's standalone-word cut.
+ *
+ * 四/七/九 are genuine spoken number words in both branches. Keeping よん,
+ * なな and く only in the procedural number engine made generated grading
+ * correct while the lesson and word page remained incomplete. Add the missing
+ * lexical units here, at the same seam all word readings use, so lessons,
+ * Library pages, search and ordinary word quizzes receive them together.
+ */
+export const NUMBER_WORD_ALTERNATES: Readonly<Record<string, readonly string[]>> = {
+  四: ["よん"],
+  七: ["なな"],
+  九: ["く"],
+};
+
 function withSenses(row: JsonVocabRow): VocabRow {
-  const senses = SENSES[row.keb];
-  if (!senses?.length) {
-    const { reb, glosses, pos, align } = row;
-    return { ...row, senses: [{ reb, glosses, pos, align }] };
-  }
+  const shipped = SENSES[row.keb];
+  const base: readonly WordSense[] = shipped?.length
+    ? shipped
+    : [{ reb: row.reb, glosses: row.glosses, pos: row.pos, align: row.align }];
+  const alternates = NUMBER_WORD_ALTERNATES[row.keb] ?? [];
+  const senses = [
+    ...base,
+    ...alternates
+      .filter((reb) => !base.some((sense) => sense.reb === reb))
+      .map((reb) => ({
+        reb,
+        glosses: base[0].glosses,
+        pos: base[0].pos,
+        align: base[0].align,
+      })),
+  ];
   const primary = senses[0];
   return {
     ...row,

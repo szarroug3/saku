@@ -155,8 +155,17 @@ export function LibraryPageClient({
 
   useEffect(() => {
     const syncFromLocation = () => setUrlState(readUrlState(window.location.search));
+    // The App Router may remount this cached page after the browser's popstate
+    // has already fired. Read the restored URL on mount/pageshow as well as on
+    // the event itself, so Back cannot fall back to the server's older seed and
+    // clear the selected tab, knowledge filter or query.
+    syncFromLocation();
     window.addEventListener("popstate", syncFromLocation);
-    return () => window.removeEventListener("popstate", syncFromLocation);
+    window.addEventListener("pageshow", syncFromLocation);
+    return () => {
+      window.removeEventListener("popstate", syncFromLocation);
+      window.removeEventListener("pageshow", syncFromLocation);
+    };
   }, []);
 
   // THE KIND, FILTER AND QUERY MOVE THROUGH THE NATIVE History API, NOT

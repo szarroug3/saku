@@ -169,6 +169,9 @@ export interface CountRow {
   readonly word: string;
   /** Column 2 — the reading of `word`, shown in parens and spoken by the speaker. */
   readonly reading: string;
+  /** Other readings accepted for this exact number/count, shown beside the
+   * preferred reading. Derived from the same engine set used by quiz grading. */
+  readonly alternateReadings?: readonly string[];
   /** Column 3 — the pieces the word is built from, joined with " + ". */
   readonly build: readonly CountBuildPiece[];
   /** Column 3 — the result the pieces make, after the "→". */
@@ -1158,33 +1161,33 @@ export const PITCH_INTRO: PhaseIntro = {
   ],
 };
 
-// ON'YOMI — a reading card, the first thing to name the borrowed compound
-// reading outright. It fires once, ahead of the first curriculum kanji a learner
+// ON'YOMI AND KUN'YOMI — a reading card, the first thing to name the two reading
+// families outright. It fires once, ahead of the first curriculum kanji a learner
 // meets that HAS an on'yomi (word-gated in lesson-steps.ts, the same shape the
-// pitch card uses). A kanji entry then carries a brief on'yomi hint (the reading
-// + an example word); this card is where the CONCEPT is taught, so the hint does
-// not have to re-explain it on every page. Once-ever (id in CONCEPT_CARD_IDS).
+// pitch card uses). A kanji entry then carries a brief side-by-side reading hint
+// with example words; this card is where the CONCEPT is taught, so that hint can
+// stay practical. Once-ever (id in CONCEPT_CARD_IDS).
 // Script-neutral (NO_SCRIPT): a reading is a sound, not a spelling. The example
-// readings are real (人 じん/ひと, 車 しゃ/くるま), and the term "on'yomi" is used
-// on purpose — a deliberate reversal of the old app-wide ban (see the FactRow
-// `origin` note in src/lib/library/entries.ts).
+// readings are real (人 じん/ひと, 車 しゃ/くるま). The stable id and exported
+// constant keep existing completion history valid even though the card now names
+// both on'yomi and kun'yomi.
 export const ONYOMI_INTRO: PhaseIntro = {
   id: "intro-onyomi",
   setId: NO_SCRIPT,
-  eyebrow: "What an on'yomi is",
-  title: "A kanji borrows a second reading for when it joins other kanji.",
+  eyebrow: "Kun’yomi and on’yomi",
+  title: "A kanji can carry a native Japanese reading and a borrowed Chinese reading.",
   body: [
     {
-      lead: "Most kanji have two kinds of reading.",
-      text: "One is the native Japanese word the character was matched to, used when it stands on its own. 人 read by itself is ひと. 車 is くるま. That is the reading you already saw as the word.",
+      lead: "Kun’yomi is the native Japanese reading.",
+      text: "Japanese already had words such as ひと (person) and くるま (car) before their kanji was added. Those native words were matched to 人 and 車. If a kanji is used by itself, or has hiragana attached to its tail, you usually read it using kun’yomi.",
     },
     {
-      lead: "The other is borrowed from Chinese, and it surfaces in compounds.",
-      text: "When a kanji joins other kanji to build a word, it usually switches to a reading Japanese took from Chinese along with the character. 人 becomes じん in 外国人 (foreigner). 車 becomes しゃ in 電車 (train). This borrowed, compound-word reading is called the on'yomi.",
+      lead: "On’yomi is the reading borrowed from Chinese.",
+      text: "When multiple kanji are linked together to form a larger vocabulary word, you usually read them using on’yomi. 人 becomes じん in 外国人 (foreigner), and 車 becomes しゃ in 電車 (train).",
     },
     {
-      lead: "So one character can sound completely different in a word.",
-      text: "ひと and じん are the same kanji, two languages' worth of pronunciation. That is why 人 alone and 人 inside 外国人 sound nothing alike, and why a kanji's readings are worth meeting one word at a time. Each kanji's page names its on'yomi and an everyday word it shows up in.",
+      lead: "Use that pattern as a clue, not a guarantee.",
+      text: "Japanese has many exceptions and mixed-reading words, so the word itself always wins. Each kanji page places its kun’yomi and on’yomi side by side, with an everyday word showing where each reading is used.",
     },
   ],
 };

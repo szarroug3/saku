@@ -1,11 +1,10 @@
 // Run: node --import ./src/lib/conjugate/test-hooks.mjs --test src/lib/content/fact-completeness.test.ts
 //
 // THE invariant the cohesive-item model rests on: a character's fact-set is
-// EXACTLY the UNION of factsOf over every role entry it plays (radical, kanji,
-// word). No fact dropped, none invented. This is why a number can't lose its
-// reading — 三's item takes the word entry's さん fact by construction — and why a
-// both-role glyph teaches its radical meaning too. A multi-char word's facts are
-// exactly factsOf(its entry).
+// EXACTLY the curriculum facts for every role it plays: radical meaning, kanji
+// meaning (readings belong to their attesting words), and every word reading
+// unit. This is why a number can't lose its pronunciation while a character
+// item never inherits the kanji dictionary's contextual reading catalogue.
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -13,26 +12,25 @@ import test from "node:test";
 import { buildGlyphItem, buildItem } from "./build-item.ts";
 import { factsOf } from "@/lib/facts";
 import { characterRoles } from "@/lib/character-role";
-import { kanjiEntry } from "@/data/kanji";
-import { radicalEntry, radicalByGlyph } from "@/data/radicals";
-import { wordEntry } from "@/data/vocab";
-import { kanjiRow } from "@/data/kanji";
+import { kanjiRow, meaningFactId } from "@/data/kanji";
+import { radicalByGlyph, radicalMeaningFactId } from "@/data/radicals";
+import { wordEntry, wordFactIds } from "@/data/vocab";
 
-function roleEntries(glyph: string) {
+function roleFacts(glyph: string) {
   const roles = characterRoles(glyph);
-  const entries = [];
-  if (roles.includes("radical")) entries.push(radicalEntry(glyph));
-  if (roles.includes("kanji")) entries.push(kanjiEntry(glyph));
-  if (roles.includes("word")) entries.push(wordEntry(glyph));
-  return entries;
+  const facts = [];
+  if (roles.includes("radical")) facts.push(radicalMeaningFactId(glyph));
+  if (roles.includes("kanji")) facts.push(meaningFactId(glyph));
+  if (roles.includes("word")) facts.push(...wordFactIds(glyph));
+  return facts;
 }
 
 for (const glyph of ["三", "日", "十", "山"]) {
-  test(`fact completeness — ${glyph}: character facts == union of its role entries' facts`, () => {
+  test(`fact completeness — ${glyph}: character facts match its curriculum roles`, () => {
     const item = buildGlyphItem(glyph);
     assert.ok(item, `${glyph} builds`);
     const got = item!.facts.map((f) => f.id);
-    const want = roleEntries(glyph).flatMap((e) => factsOf(e));
+    const want = roleFacts(glyph);
     assert.equal(got.length, want.length, "same count — nothing dropped or duplicated");
     assert.deepEqual(new Set(got), new Set(want), "same set of fact ids");
   });

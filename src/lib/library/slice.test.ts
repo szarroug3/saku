@@ -3,12 +3,9 @@
 //
 // WHAT THIS TEST IS FOR
 // =====================
-// The bar hides its Drill button on a slice with one thing to learn — a single
-// kana IS its one reading, and drilling exactly that proves nothing. The gate is
-// `sliceIsDrillable`, and its whole job is to be true for a kanji or word and
-// false for a lone kana. These run it against real entry ids the app mints, so
-// the rule is pinned to the data's actual fact counts and not to a hand-built
-// slice that could drift from what `factsOf` returns.
+// Library teaching remains fact-based, while Quiz eligibility is based on the
+// number of real question forms. Most facts represent one form; a generator's
+// one category fact represents its configured generated round.
 
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
@@ -18,8 +15,16 @@ import { KANJI_SUBJECT } from "@/data/kanji";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import type { Claims } from "@/lib/claims";
 import { factsOf } from "@/lib/facts";
-import { LIB_ENTRIES } from "@/lib/library/entries";
-import { drillOrder, drillPlan, sliceIsDrillable, sliceSentence } from "@/lib/library/slice";
+import { LIB_ENTRIES, NUMBER_CONSTRUCTION_KIND } from "@/lib/library/entries";
+import {
+  drillOrder,
+  drillPlan,
+  hasMultipleQuizForms,
+  quizFormCount,
+  sliceFacts,
+  sliceIsDrillable,
+  sliceSentence,
+} from "@/lib/library/slice";
 import type { FactAggregate, FactId } from "@/types";
 
 /** One real entry id of each kind, so the assertions run against ids the app
@@ -27,6 +32,28 @@ import type { FactAggregate, FactId } from "@/types";
 const kana = LIB_ENTRIES.find((e) => e.kind === KANA_SUBJECT)!;
 const kanji = LIB_ENTRIES.find((e) => e.kind === KANJI_SUBJECT)!;
 const word = LIB_ENTRIES.find((e) => e.kind === VOCAB_SUBJECT)!;
+const generator = LIB_ENTRIES.find((e) => e.kind === NUMBER_CONSTRUCTION_KIND)!;
+
+describe("Library quiz eligibility — more than one quizzable form", () => {
+  test("one ordinary fact is one form and cannot start alone", () => {
+    const forms = sliceFacts({ label: kana.glyph, entries: [kana.id] });
+    assert.equal(quizFormCount(forms), 1);
+    assert.equal(hasMultipleQuizForms(forms), false);
+  });
+
+  test("an ordinary multi-fact entry can start alone", () => {
+    const forms = sliceFacts({ label: word.glyph, entries: [word.id] });
+    assert.ok(quizFormCount(forms) > 1);
+    assert.equal(hasMultipleQuizForms(forms), true);
+  });
+
+  test("one generator category fact expands to a full quiz and can start alone", () => {
+    const forms = sliceFacts({ label: generator.name ?? generator.glyph, entries: [generator.id] });
+    assert.equal(forms.length, 1, "the generator keeps one persisted category fact");
+    assert.equal(quizFormCount(forms), 10);
+    assert.equal(hasMultipleQuizForms(forms), true);
+  });
+});
 
 describe("sliceIsDrillable — one thing to learn is not a drill", () => {
   test("a single kana has exactly one fact and is NOT drillable", () => {

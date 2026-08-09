@@ -40,24 +40,23 @@ import {
 } from "@/data/phase-intros";
 import { counterIrregulars, type NumberQuizConfig } from "@/lib/engine/number-quiz";
 import {
+  acceptableCounterReadings,
+  acceptableNumberReadings,
   counterReading,
   numberReading,
   numberToKanji,
   type CounterKind,
 } from "@/lib/number-reading";
-import { entryId } from "@/lib/fact-id";
+import {
+  NUMBER_CONSTRUCTION_SUBJECT,
+  numberConstructionEntry,
+} from "@/data/number-construction-id";
 import type { EntryId } from "@/types";
+
+export { NUMBER_CONSTRUCTION_SUBJECT, numberConstructionEntry };
 
 /** The subject id, in the same shape as GRAMMAR_CONCEPT_SUBJECT. It is also the
  * URL kind segment (/library/numbers/tens) and the LibEntry kind. */
-export const NUMBER_CONSTRUCTION_SUBJECT = "numbers";
-
-/** Mint a construction page's entry id. The ONLY place a construction id is
- * built; everything downstream resolves it by lookup, never by taking it apart. */
-export function numberConstructionEntry(id: string): EntryId {
-  return entryId(NUMBER_CONSTRUCTION_SUBJECT, id);
-}
-
 /** One "how to build it" reference page — a category of number construction. */
 export interface NumberConstruction {
   /** Stable id — the URL slug, the React key, and what a test names. */
@@ -171,6 +170,9 @@ function counterRow(n: number, spec: CounterSpec, base: string, suppletive: bool
     label: `${n} ${n === 1 ? singular : plural}`,
     word: `${KANJI_DIGIT[n]}${spec.glyph}`,
     reading,
+    alternateReadings: acceptableCounterReadings(n, spec.kind).filter(
+      (candidate) => candidate !== reading,
+    ),
     build: suppletive ? [] : [{ kana: numberReading(n), value: String(n) }, { kana: base }],
     result: { kana: reading, value: String(n) },
   };
@@ -228,7 +230,16 @@ function bigBuild(n: number): { build: CountBuildPiece[]; result: CountBuildPiec
 }
 
 function bigRow(n: number): CountRow {
-  return { label: String(n), word: numberKanji(n), reading: numberReading(n), ...bigBuild(n) };
+  const reading = numberReading(n);
+  return {
+    label: String(n),
+    word: numberKanji(n),
+    reading,
+    alternateReadings: acceptableNumberReadings(n).filter(
+      (candidate) => candidate !== reading,
+    ),
+    ...bigBuild(n),
+  };
 }
 
 /** The big page's Regular then Irregular tables. Regular = the plain hundreds,
@@ -256,10 +267,21 @@ function tensBuild(n: number): { build: CountBuildPiece[]; result: CountBuildPie
 }
 
 function tensRow(n: number): CountRow {
-  return { label: String(n), word: numberKanji(n), reading: numberReading(n), ...tensBuild(n) };
+  const reading = numberReading(n);
+  return {
+    label: String(n),
+    word: numberKanji(n),
+    reading,
+    alternateReadings: acceptableNumberReadings(n).filter(
+      (candidate) => candidate !== reading,
+    ),
+    ...tensBuild(n),
+  };
 }
 
-const TENS_SPREAD: readonly number[] = [11, 12, 20, 34, 58, 99];
+// The spread includes a ones-place 4, 7 and 9 so every digit with a second
+// pronunciation has a worked compound example (34, 47, 99 respectively).
+const TENS_SPREAD: readonly number[] = [11, 12, 20, 34, 47, 58, 99];
 
 const TENS_GROUPS: readonly IntroCountGroup[] = [
   { title: "Regular", counter: false, examples: TENS_SPREAD.map(tensRow) },

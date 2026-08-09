@@ -122,6 +122,7 @@ export function ComponentUses({
           label="Words you know that use it"
           facts={liveFacts}
           claims={claims}
+          seen={history.seen ?? {}}
           metric={metric}
           now={now}
         />

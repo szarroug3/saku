@@ -21,6 +21,7 @@
 // is already sure of, in the order the model wants them.
 
 import { effectiveState, type Claims } from "@/lib/claims";
+import { constructionConfigForFact } from "@/data/counter-categories";
 import { factsOf } from "@/lib/facts";
 import { rank, status, type RankCandidate } from "@/lib/scoring";
 import { transitivitySide } from "@/data/transitivity-facts";
@@ -69,6 +70,27 @@ export function sliceFacts(slice: Slice): FactId[] {
  */
 export function sliceIsDrillable(slice: Slice): boolean {
   return sliceFacts(slice).length > 1;
+}
+
+/**
+ * How many real questions a Library quiz pool represents.
+ *
+ * Ordinary facts each represent one thing to quiz. A number-construction fact
+ * is deliberately one stored category fact, but it generates a configured
+ * round of distinct counts; treating it as one made a category impossible to
+ * launch by itself. Callers pass an already-quizzable pool, so this function is
+ * only the cardinality rule: more than one form means a quiz can start.
+ */
+export function quizFormCount(facts: readonly FactId[]): number {
+  return facts.reduce(
+    (total, fact) => total + (constructionConfigForFact(fact)?.count ?? 1),
+    0,
+  );
+}
+
+/** The one eligibility rule shared by Library shelves and entry pages. */
+export function hasMultipleQuizForms(facts: readonly FactId[]): boolean {
+  return quizFormCount(facts) > 1;
 }
 
 /**
@@ -190,14 +212,16 @@ export function sliceCount(
   let seen = 0;
   let solid = 0;
   for (const id of all) {
-    if ((facts[id]?.seen ?? 0) > 0) seen++;
-    if (status(effectiveState(facts[id], claims[id]), now) === "quiet") solid++;
+    const forms = quizFormCount([id]);
+    if ((facts[id]?.seen ?? 0) > 0) seen += forms;
+    if (status(effectiveState(facts[id], claims[id]), now) === "quiet") solid += forms;
   }
+  const total = quizFormCount(all);
   // An explicit selection drills its solid facts too, so they are not the
   // number the button "deliberately isn't": drillable is everything, and the
   // bar has no solid remainder to explain away.
-  if (includeSolid) return { drillable: all.length, total: all.length, seen, solid: 0 };
-  return { drillable: all.length - solid, total: all.length, seen, solid };
+  if (includeSolid) return { drillable: total, total, seen, solid: 0 };
+  return { drillable: total - solid, total, seen, solid };
 }
 
 /**

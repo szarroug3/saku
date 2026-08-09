@@ -724,12 +724,26 @@ export function IntroCountTable({
               </td>
               <td className="whitespace-nowrap px-4 py-3 align-baseline text-[17px] text-text">
                 <span className="font-medium text-text">{row.word}</span>
-                <span className="text-text-muted"> ({row.reading})</span>
+                <span className="text-text-muted">
+                  ({row.reading}
+                  {row.alternateReadings?.map((reading) => (
+                    <Fragment key={reading}> / {reading}</Fragment>
+                  ))}
+                  )
+                </span>
                 <HearButton
                   glyph={row.reading}
                   voiceName={cfg.voiceName}
                   className="ml-1.5 align-middle"
                 />
+                {row.alternateReadings?.map((reading) => (
+                  <HearButton
+                    key={reading}
+                    glyph={reading}
+                    voiceName={cfg.voiceName}
+                    className="ml-1 align-middle"
+                  />
+                ))}
               </td>
               {hasBuild ? (
                 <td className="w-full whitespace-nowrap px-4 py-3 align-baseline text-[15px] text-text">

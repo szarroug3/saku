@@ -65,7 +65,7 @@ import {
   numberConstructionEntry,
   numberConstructionRow,
 } from "@/data/number-construction";
-import { vocabRow, wordReadingFactId } from "@/data/vocab";
+import { vocabRow, wordUnitFacts } from "@/data/vocab";
 import { type PhaseIntro } from "@/data/phase-intros";
 import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import type { EntryId, FactId, HistoryFile } from "@/types";
@@ -78,8 +78,8 @@ import type { EntryId, FactId, HistoryFile } from "@/types";
  * is "done" once its marker is non-fresh in history (claimed on finishing the
  * lesson, or marked seen by "Quiz me"). The teach walk renders `intro` as a
  * formless one-card walk (src/lib/lesson-steps.ts detects the marker), and the
- * drill runs in "number-reading" mode with `config` (src/components/quiz/
- * number-reading-screen.tsx reads it off the carried ActiveQuiz).
+ * drill runs in the normal "drill" mode; the category fact owns `config` and
+ * rolls its generated showing inside DrillScreen.
  */
 export interface NumberUnit {
   /** Which construction category this unit teaches. */
@@ -96,8 +96,8 @@ export interface NumberUnit {
   /** How the unit's material shows on screen — a range hint (十〜) or a counter
    * (〜本). */
   readonly glyph: string;
-  /** The drill mode — always number-reading for a unit. */
-  readonly mode: "number-reading";
+  /** The drill mode — generated categories use the shared Drill screen. */
+  readonly mode: "drill";
 }
 
 function unitOf(cat: (typeof CONSTRUCTION_CATEGORIES)[number]): NumberUnit {
@@ -108,7 +108,7 @@ function unitOf(cat: (typeof CONSTRUCTION_CATEGORIES)[number]): NumberUnit {
     intro: cat.intro,
     config: cat.config,
     glyph: cat.glyph,
-    mode: "number-reading",
+    mode: "drill",
   };
 }
 
@@ -202,12 +202,12 @@ export interface CounterLesson {
   /**
    * Set when this lesson is a generative NUMBER unit rather than a run of forms.
    * The teach walk shows the unit's rule card only, and the drill runs in
-   * number-reading mode with `config` (the marker is the whole teach set, so
+   * normal drill mode with `config` on its category fact (the marker is the whole teach set, so
    * finishing the lesson claims it and the scheduler advances). Absent for an
    * ordinary form-teaching lesson.
    */
   numberUnit?: {
-    mode: "number-reading";
+    mode: "drill";
     config: NumberQuizConfig;
     marker: FactId;
     intro: PhaseIntro;
@@ -262,10 +262,12 @@ function numberUnitReadingFacts(
   const seen = new Set<FactId>();
   for (const p of prereqs) {
     if (!own.has(p.glyph) || !vocabRow(p.glyph)) continue;
-    const fact = wordReadingFactId(p.glyph);
-    if (seen.has(fact) || !isFresh(fact, history)) continue;
-    seen.add(fact);
-    out.push(fact);
+    for (const unit of wordUnitFacts(p.glyph)) {
+      const fact = unit.reading;
+      if (!fact || seen.has(fact) || !isFresh(fact, history)) continue;
+      seen.add(fact);
+      out.push(fact);
+    }
   }
   return out;
 }

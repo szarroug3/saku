@@ -26,12 +26,12 @@
 
 import {
   CONSTRUCTION_CATEGORY_IDS,
-  constructionCategoryEntry,
   constructionMarker,
   COUNTERS_SUBJECT,
   type ConstructionCategoryId,
 } from "@/data/counters";
 import {
+  numberConstructionEntry,
   numberConstructionRow,
   type NumberConstruction,
 } from "@/data/number-construction";
@@ -100,7 +100,7 @@ function buildCategory(id: ConstructionCategoryId): ConstructionCategory {
   // from the same list), so this never misses; the non-null is the shared-id
   // contract, checked in counter-categories.test.ts.
   const c = numberConstructionRow(id)!;
-  const entry = constructionCategoryEntry(id);
+  const entry = numberConstructionEntry(id);
   return {
     id,
     fact: factId(entry, CATEGORY_ASPECT),

@@ -279,7 +279,7 @@ export default function SessionPage() {
     // fact and let the Library turn it into the specific lesson-type label
     // (kana splits by script) rather than restating that mapping here.
     const subjectLabel =
-      session.snapshot.mode === "number-reading" || /^Counters\b/i.test(session.what)
+      /^Counters\b/i.test(session.what)
         ? "Numbers"
         : session.teach.length
           ? teachSubjectLabel(factInfo(session.teach[0]))

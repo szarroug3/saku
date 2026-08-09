@@ -28,9 +28,13 @@ import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { AddToList } from "@/components/library/add-to-list";
 import { ConfigPreview } from "@/components/quiz/config-preview";
 import { Btn, Hint } from "@/components/ui";
+import { constructionConfigForFact } from "@/data/counter-categories";
 import {
   drillPlan,
+  hasMultipleQuizForms,
+  quizFormCount,
   sliceCount,
+  sliceFacts,
   sliceIsDrillable,
   sliceSentence,
   type Slice,
@@ -38,13 +42,7 @@ import {
 import { useQuizSession } from "@/lib/quiz-session";
 import { claimableFacts, quizzableFacts } from "@/lib/word-unlock";
 import type { Claims } from "@/lib/claims";
-import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import type { FactAggregate, FactId, HistoryFile, QuizMode } from "@/types";
-
-// A number-reading round generates its own items and ignores the launch pool; it
-// just needs a non-empty facts array to begin a leg. This synthetic id is that
-// rider, the same one the construction pages used before the launch moved here.
-const NUMBER_READING_FACTS: FactId[] = ["number-reading:round" as FactId];
 
 interface SliceTeachPlan {
   facts: readonly FactId[];
@@ -69,7 +67,6 @@ export function SliceBar({
   quizFacts,
   quizMode,
   teachPlan,
-  constructionQuiz,
   progressReady = true,
 }: {
   slice: Slice;
@@ -110,12 +107,6 @@ export function SliceBar({
   /** A subject-specific lesson launch. Sentence rules teach one coherent tier
    * at a time instead of merging ten lesson walks into one. */
   teachPlan?: SliceTeachPlan;
-  /** A NUMBER-CONSTRUCTION page's generative "Quiz me". A construction entry mints
-   * no gradeable facts, so the ordinary Quiz/Teach buttons never appear; this
-   * launches its number-reading round (scoped by `config`) from the same action
-   * bar as "Add to list", the one-bar layout every other entry page uses. Absent
-   * for every non-construction slice. */
-  constructionQuiz?: { what: string; config: NumberQuizConfig };
   /** False when this browser's signed-out history cannot be read until the
    * client starts. Never present actions calculated from a fake empty history. */
   progressReady?: boolean;
@@ -140,29 +131,23 @@ export function SliceBar({
   // budget.planFacts's rule and not this bar's to invent. This is what "Teach me"
   // runs: the new material, taught, then the met material probed.
   const order = [...plan.teach, ...plan.probe];
-  // WHAT "QUIZ ME" ASKS — only what you have already MET. Quiz me drops straight
-  // to questions with no teach screen, so asking a `teach` (never-seen) fact is
-  // asking something you were never shown: the reported "it quizzed me on things
-  // I don't know". So Quiz me runs the MET facts only — everything you have seen,
-  // solid included (a Library "quiz me on Kana" reads as "test me on the kana I
-  // know", solid ones and all), and never the unseen. `drillPlan(..., true).probe`
-  // IS that set: probe is the met facts, solid folded in, teach excluded.
-  //
-  // The one exception is a hand-picked selection (includeSolid): you toggled
-  // exactly those items and pressed on, so it drills exactly what you picked,
-  // unseen included — the explicit intent overrides the review default.
-  // GUARD (see quizzableFacts): whatever the quiz would ask, a kanji reading
+  // WHAT "QUIZ ME" ASKS — every quizzable fact named by this Library slice.
+  // A Library page has just shown the material, and an explicit Quiz action means
+  // test this material now; prior exposure is not an additional eligibility gate.
+  // GUARD (see quizzableFacts): a kanji reading
   // anchored in a word the learner has not learned is dropped. It never asks
   // "山 read as ざん in 登山" until 登山 itself has been learned, even if that
   // reading became "met" some other way (a stray claim, a re-cut). Non-reading
   // facts and readings whose word IS known are untouched, so kana, words and
   // meanings quiz exactly as before, and a hand-picked selection still asks
   // everything it picked except a reading in a word you never learned.
-  const quizOrder = quizzableFacts(
-    includeSolid ? order : [...drillPlan(slice, facts, claims, now, true).probe],
-    history,
-  );
+  const quizOrder = quizzableFacts(sliceFacts(slice), history);
   const effectiveQuizOrder = quizFacts ? [...new Set(quizFacts)] : quizOrder;
+  const quizCount = quizFormCount(effectiveQuizOrder);
+  const canQuiz = hasMultipleQuizForms(effectiveQuizOrder);
+  const hasGenerator = effectiveQuizOrder.some(
+    (fact) => constructionConfigForFact(fact) !== null,
+  );
   // Claim only ever touches NOT-solid facts: claiming what the model already
   // calls solid is a documented no-op. So even when Drill is force-including
   // solid facts, claim runs off the default plan and is disabled once every
@@ -259,7 +244,7 @@ export function SliceBar({
               ✓ I know {slice.entries.length === 1 ? "this" : "these"}
             </Btn>
           ) : null}
-          {/* Two ways to run a slice, both gated identically (see below).
+          {/* Two ways to run a slice, with gates suited to their jobs.
               "Quiz me" is the one-off (startQuiz): straight to the questions, no
               teach screen and no rest loop, ending on the results page — the
               same run the Practice page starts, for when you already know this
@@ -270,44 +255,16 @@ export function SliceBar({
               it, the only way a drill of something on screen scores anything
               (see the note up top).
 
-              N is the real number, and the buttons are GONE when N would be
-              zero. It used to be `drillChars(order).length` — the facts filtered
-              to the ones whose subject was kana, because the runtime drilled
-              CHARACTERS and CHAR_INDEX has no kanji in it. On 生 that filter
-              matched nothing and the button said "Drill 0" next to nine facts.
-              The runtime is fact-native now, so the filter, the note and the
-              whole of src/lib/library/drill.ts are gone: what the model would
-              drill and what the quiz can ask are the same list again. A run of 0
-              can still surface the honest way — a multi-fact slice every fact of
-              which is already solid drills nothing, so `order` is empty — and a
-              run of nothing is not a thing to offer (the sentence beside them
-              already says "all N solid, nothing to ask"), so both buttons are
-              HIDDEN, not shown disabled. `sliceIsDrillable` hides them on
-              single-fact slices; `order.length` hides them on empty ones. */}
-          {/* A construction page's generative Quiz me — launches its number-
-              reading round straight (no pre-start config, which edits the drill
-              config a number round does not use). It sits here beside "Add to
-              list" so the construction page has the same one-bar layout as every
-              other entry page, instead of a button floating above the content. */}
-          {constructionQuiz ? (
-            <Btn
-              sel
-              onClick={() =>
-                startQuizInMode(NUMBER_READING_FACTS, "number-reading", {
-                  what: constructionQuiz.what,
-                  numberQuiz: constructionQuiz.config,
-                })
-              }
-            >
-              Quiz me
-            </Btn>
-          ) : null}
-          {/* Quiz me — review what you KNOW. Gated on quizOrder (the met facts),
-              so it is GONE, not shown empty, when you have met nothing here yet:
-              a fresh shelf has nothing to quiz, only to teach. */}
-          {(quizFacts ? effectiveQuizOrder.length > 0 : canDrill && quizOrder.length > 0) ? (
+              Quiz eligibility is based on quizzable FORMS, below. Teach remains
+              a fact-based session: one stored fact is not a useful lesson loop,
+              and an empty order has nothing to teach. */}
+          {/* Quiz me follows one rule on shelves and entry pages alike: the
+              selected pool must contain more than one quizzable form. Ordinary
+              facts count once; a generator category counts the questions in its
+              configured round. */}
+          {canQuiz ? (
             <Btn sel onClick={() => setQuizzing(true)}>
-              Quiz me {effectiveQuizOrder.length}
+              Quiz me {quizCount}
             </Btn>
           ) : null}
           {/* Teach me — learn the new, then probe. Gated on the full order, so it
@@ -347,12 +304,21 @@ export function SliceBar({
         open={quizzing}
         onOpenChange={setQuizzing}
         label={slice.label}
-        count={effectiveQuizOrder.length}
-        onStart={() =>
-          quizMode
-            ? startQuizInMode(effectiveQuizOrder, quizMode, { what: slice.label })
-            : startQuiz(effectiveQuizOrder, { what: slice.label })
-        }
+        count={quizCount}
+        generator={hasGenerator}
+        onStart={() => {
+          if (hasGenerator) {
+            startQuiz(effectiveQuizOrder, {
+              what: slice.label,
+              mode: "drill",
+              coverage: true,
+            });
+          } else if (quizMode) {
+            startQuizInMode(effectiveQuizOrder, quizMode, { what: slice.label });
+          } else {
+            startQuiz(effectiveQuizOrder, { what: slice.label });
+          }
+        }}
       />
     </>
   );
@@ -371,6 +337,7 @@ function QuizPreStart({
   onOpenChange,
   label,
   count,
+  generator,
   onStart,
 }: {
   open: boolean;
@@ -380,6 +347,8 @@ function QuizPreStart({
   /** How many questions the run holds — order.length, the same number the
    * button showed. */
   count: number;
+  /** Generator pools are always ordinary Drill with their full generated round. */
+  generator: boolean;
   /** Runs the quiz. Navigates away, so the dialog need not close itself. */
   onStart: () => void;
 }) {
@@ -426,7 +395,13 @@ function QuizPreStart({
                 nested inside this dialog's card. This wrapper reproduces the box
                 ConfigPreview used to draw, so the look here is unchanged. */}
             <div className="mt-3 min-h-0 flex-1 overflow-y-auto rounded-lg border border-border bg-panel px-3 py-2">
-              <ConfigPreview />
+              {generator ? (
+                <span className="text-[13px] text-text-muted">
+                  Drill · Full generated round
+                </span>
+              ) : (
+                <ConfigPreview />
+              )}
             </div>
           </AlertDialogPrimitive.Description>
           <div className="mt-4 flex flex-none justify-end gap-2">

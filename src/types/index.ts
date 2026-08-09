@@ -126,8 +126,7 @@ export type QuizMode =
   | "grid"
   | "assembly"
   | "substitution"
-  | "listen-sentence"
-  | "number-reading";
+  | "listen-sentence";
 export type Direction = "jp2en" | "en2jp";
 export type AnswerStyle = "typed" | "mc";
 export type PairResponse = "definition" | "romaji" | "sentence";

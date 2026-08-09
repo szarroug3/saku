@@ -15,7 +15,12 @@ import { describe, test } from "node:test";
 import { numberConstructionRow } from "./number-construction.ts";
 import { countGroupHasBuild } from "./phase-intros.ts";
 import { counterIrregulars } from "../lib/engine/number-quiz.ts";
-import { counterReading, numberReading } from "../lib/number-reading.ts";
+import {
+  acceptableCounterReadings,
+  acceptableNumberReadings,
+  counterReading,
+  numberReading,
+} from "../lib/number-reading.ts";
 
 const groupsOf = (id: string) => numberConstructionRow(id)!.exampleGroups;
 const titles = (id: string) => groupsOf(id).map((g) => g.title);
@@ -52,7 +57,9 @@ describe("column 1 — the number, or the count with its English noun", () => {
       "10000", "100000",
     ]);
     assert.deepEqual(labels("big", "Irregular"), ["300", "600", "800", "3000", "8000"]);
-    assert.deepEqual(labels("tens", "Regular"), ["11", "12", "20", "34", "58", "99"]);
+    assert.deepEqual(labels("tens", "Regular"), [
+      "11", "12", "20", "34", "47", "58", "99",
+    ]);
   });
 
   test("counter tables show the numeral plus the noun, singular then plural", () => {
@@ -90,6 +97,37 @@ describe("column 2 — the kanji word, whose reading is always the engine's", ()
         for (const r of g.examples) {
           const n = countOf(r.word);
           assert.equal(r.reading, counterReading(n, kind), `${kind} ${r.word} reading`);
+        }
+      }
+    }
+  });
+
+  test("the tens examples show every alternate digit branch accepted by grading", () => {
+    const rows = rowsOf("tens", "Regular");
+    assert.deepEqual(rows.find((r) => r.label === "34")!.alternateReadings, ["さんじゅうし"]);
+    assert.deepEqual(rows.find((r) => r.label === "47")!.alternateReadings, ["よんじゅうしち"]);
+    assert.deepEqual(rows.find((r) => r.label === "99")!.alternateReadings, ["きゅうじゅうく"]);
+
+    for (const row of rows) {
+      const accepted = acceptableNumberReadings(Number(row.label));
+      assert.deepEqual(
+        [row.reading, ...(row.alternateReadings ?? [])],
+        accepted,
+        `${row.label} exposes the quiz's accepted readings`,
+      );
+    }
+  });
+
+  test("counter examples expose their context-specific accepted alternatives", () => {
+    for (const kind of ["nin", "hon", "hiki", "mai", "ko", "dai", "satsu", "hai", "kai", "sai"] as const) {
+      for (const group of groupsOf(kind)) {
+        for (const row of group.examples) {
+          const n = countOf(row.word);
+          assert.deepEqual(
+            [row.reading, ...(row.alternateReadings ?? [])],
+            acceptableCounterReadings(n, kind),
+            `${kind} ${n} exposes the quiz's accepted readings`,
+          );
         }
       }
     }

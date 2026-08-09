@@ -35,6 +35,7 @@ export function WordsWith({
   label = "Words with this character",
   facts,
   claims,
+  seen,
   metric,
   now,
 }: {
@@ -51,6 +52,9 @@ export function WordsWith({
   label?: string;
   facts: HistoryFile["facts"];
   claims: Claims;
+  /** Lesson exposure markers. A word can have been taught before it has a
+   * completed quiz aggregate; that is "seen", not "not seen". */
+  seen: NonNullable<HistoryFile["seen"]>;
   metric: AccuracyMetric;
   now: number;
 }) {
@@ -81,6 +85,7 @@ export function WordsWith({
             metric,
             now,
           );
+          const taught = !!seen[wordMeaningFactId(w)];
           return (
             <div key={w} className="flex flex-wrap items-baseline gap-2 text-[13px]">
               {id ? (
@@ -98,7 +103,13 @@ export function WordsWith({
               <span className="min-w-0 flex-1 truncate text-text-muted">
                 {row?.glosses.slice(0, 2).join(", ")}
               </span>
-              <StandingChip standing={s.standing} />
+              {s.standing === "not-seen" && taught ? (
+                <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-text-muted">
+                  seen
+                </span>
+              ) : (
+                <StandingChip standing={s.standing} />
+              )}
             </div>
           );
         })}

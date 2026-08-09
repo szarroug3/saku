@@ -51,6 +51,7 @@ import {
   DAKUTEN_K,
   OKURIGANA_INTRO,
   OKURIGANA_MOVING,
+  ONYOMI_INTRO,
   PITCH_INTRO,
   RENDAKU,
   type PhaseIntro,
@@ -135,9 +136,9 @@ export interface Term {
  *
  * WHICH ONES CARRY A CARD
  * =======================
- * Twelve of the eighteen name something the app teaches a card about, and those
- * twelve point at it (`cards`). Six do not, and they are: romaji, furigana,
- * JLPT, particle, pitch accent, mora. Each is a word the app USES on a surface
+ * Fourteen of the nineteen name something the app teaches a card about, and
+ * those fourteen point at it (`cards`). Five do not, and they are: romaji,
+ * furigana, JLPT, particle and mora. Each is a word the app USES on a surface
  * without ever stopping to teach it, so there is no card to point at and the
  * page stays the definition it has always been. Two of those are close calls
  * worth recording. Romaji is defined inside the hiragana card, in one paragraph
@@ -204,6 +205,29 @@ export const TERMS: readonly Term[] = [
     ],
     searchAlso: ["kanji", "chinese characters", "han characters"],
     cards: [KANJI_TRACK],
+  },
+  {
+    id: "kunyomi-onyomi",
+    name: "Kun’yomi and on’yomi",
+    summary: "The native Japanese and borrowed Chinese readings of a kanji.",
+    body: [
+      "Kun’yomi are native Japanese words matched to kanji, while on’yomi are readings borrowed from Chinese.",
+      "A kanji used by itself or with a hiragana tail usually takes kun’yomi, while several kanji linked into a vocabulary word usually take on’yomi, though the word itself always wins when there is an exception.",
+    ],
+    searchAlso: [
+      "kunyomi",
+      "kun-yomi",
+      "kun yomi",
+      "kun'yomi",
+      "on'yomi",
+      "onyomi",
+      "on-yomi",
+      "on yomi",
+      "kanji readings",
+      "chinese reading",
+      "japanese reading",
+    ],
+    cards: [ONYOMI_INTRO],
   },
   {
     id: "radical",

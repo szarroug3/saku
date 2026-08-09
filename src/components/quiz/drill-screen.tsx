@@ -60,7 +60,6 @@ import {
   revealFor,
   variantPromptFor,
   wordReadingCredit,
-  shuffle,
   spread,
   type GrammarSelection,
   type GrammarVehicle,
@@ -666,8 +665,28 @@ export function DrillScreen() {
     const construction = isConstructionFact(f)
       ? constructionConfigForFact(f)
       : null;
-    const numberItem = construction
-      ? rollConstructionItem(construction, Math.random)
+    // Deal a category's allowed directions across its repeated coverage slots.
+    // Randomly choosing every slot could produce a whole ten-card numbers quiz
+    // with no pronunciation question at all. The item value still rolls; only
+    // the prompt direction cycles, just as the former round builder balanced it.
+    const constructionShowing = construction
+      ? rt.deck.slice(0, rt.pos).filter((fact) => fact === f).length - 1
+      : 0;
+    const dealtConstruction =
+      construction && construction.directions.length > 0
+        ? {
+            ...construction,
+            directions: [
+              construction.directions[
+                ((constructionShowing % construction.directions.length) +
+                  construction.directions.length) %
+                  construction.directions.length
+              ],
+            ],
+          }
+        : construction;
+    const numberItem = dealtConstruction
+      ? rollConstructionItem(dealtConstruction, Math.random)
       : null;
     const listen = numberItem ? numberItem.direction === "hear" : form.listen;
     const dir: Direction = numberItem
@@ -1121,7 +1140,21 @@ export function DrillScreen() {
         (active.snapshot.length === "limited" &&
           active.snapshot.limType === "cov");
       if (coverage) {
-        const built = buildCoverageDeck(facts, active.snapshot.ask);
+        const base = buildCoverageDeck(facts, active.snapshot.ask);
+        // A construction category is one fact but represents a generated round,
+        // not one memorized answer. Expand its coverage slot by the count owned
+        // by that category's config. Every slot still flows through this normal
+        // Drill runtime; only the fact repeats, and each showing rolls its own
+        // frozen NumberQuizItem in presentCard.
+        const built = { deck: [] as FactId[], forms: [] as CardForm[] };
+        for (let i = 0; i < base.deck.length; i++) {
+          const fact = base.deck[i];
+          const repeats = constructionConfigForFact(fact)?.count ?? 1;
+          for (let n = 0; n < repeats; n++) {
+            built.deck.push(fact);
+            built.forms.push(base.forms[i]);
+          }
+        }
         const selectedBoxes = new Set(active.retryBoxes ?? []);
         const isBoxSelected = (f: FactId, form: CardForm): boolean => {
           if (!selectedBoxes.size) return true;
@@ -1595,8 +1628,7 @@ export function DrillScreen() {
   const romajiInput = q.numberItem
     ? q.numberItem.direction === "read"
     : typedMode && answerIsJapanese(q.f, q.dir);
-  // WRITE / HEAR answer with digits, so the box asks for a numeric keyboard —
-  // matching number-reading-screen.tsx.
+  // WRITE / HEAR answer with digits, so the box asks for a numeric keyboard.
   const numericInput = !!q.numberItem && q.numberItem.direction !== "read";
   // What the box wants, in words. Same predicate as `romajiInput` above, via
   // one module — see lib/drill-guidance.ts for why it must not be a second

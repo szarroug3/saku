@@ -51,7 +51,7 @@ import { ComponentUses } from "@/components/library/component-uses";
 import { EntryHeader } from "@/components/library/entry-header";
 import { EntryLinks, GlyphLink, LinkRow } from "@/components/library/entry-links";
 import { KanjiBuiltFrom } from "@/components/library/kanji-built-from";
-import { OnyomiHint } from "@/components/library/onyomi-hint";
+import { KanjiReadingHint } from "@/components/library/kanji-reading-hint";
 import { KanaFamilyView } from "@/components/library/kana-family-view";
 import { KanjiReadings } from "@/components/library/kanji-readings";
 import { MarkView } from "@/components/library/mark-view";
@@ -106,6 +106,7 @@ import {
   grammarConceptRow,
 } from "@/data/grammar-concepts";
 import { numberConstructionFor } from "@/data/number-construction";
+import { isNumberKanji } from "@/data/number-kanji";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { KANJI_SUBJECT, kanjiRow, meaningFactId } from "@/data/kanji";
 import { markFor } from "@/data/marks";
@@ -527,7 +528,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
 
   // ---- kanji-only material ----
 
-  const readingRows = readingRowsOf(entry);
+  // Standalone number pronunciations belong to the matching WORD page. Keeping
+  // the kanji's contextual reading table here duplicated that word material and
+  // was especially misleading for 四/七, whose everyday number branches were
+  // not the dictionary rows this table was built from.
+  const readingRows = isKanji && isNumberKanji(entry.glyph) ? [] : readingRowsOf(entry);
   // Which readings are OPEN, and on which known word. Recomputed from history
   // rather than stored: the unlock is a consequence of what you know, so it can
   // only ever be derived. See word-unlock.ts.
@@ -942,12 +947,11 @@ function EntryView({ entry }: { entry: LibEntry }) {
               not empty, for an atomic kanji. Distinct from the word page's
               "Built from", which splits a word into its READING pieces. */}
           <KanjiBuiltFrom entry={entry} />
-          {/* ON'YOMI HINT — the borrowed compound reading(s), named as a hint
-              beneath Built from because the phonetic pieces above are exactly the
-              sound this surfaces. Display only; the concept is taught once, up
-              front. Renders nothing (its Card carries its own margin) for a
-              kun-only kanji with no on'yomi. */}
-          <OnyomiHint glyph={entry.glyph} />
+          {/* READING TYPES — kun'yomi and on'yomi side by side, beneath Built
+              from because the phonetic pieces above lend the latter. Display
+              only; the concept is taught once up front. Number-kanji readings
+              remain on their word pages, not their shape/meaning pages. */}
+          {!isNumberKanji(entry.glyph) ? <KanjiReadingHint glyph={entry.glyph} /> : null}
           {/* ALSO WRITTEN AS — the forms this character takes as a component (人
               also appears as 亻 on the left). The same panel the lesson mounts,
               so the reference and the walk describe the shape identically.
@@ -986,6 +990,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
               words={words}
               facts={liveFacts}
               claims={claims}
+              seen={history.seen ?? {}}
               metric={cfg.accuracyMetric}
               now={now}
             />
@@ -1319,14 +1324,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
         now={now}
         onClaim={claim}
         claimFacts={sentenceRuleClaimFacts}
-        // A construction page has no gradeable facts, so its "Quiz me" is the
-        // generative number-reading round, launched from this bar beside "Add to
-        // list" — the one-bar layout every other entry page uses.
-        constructionQuiz={
-          construction
-            ? { what: construction.name, config: construction.quizConfig }
-            : undefined
-        }
         progressReady={historyLoaded}
       />
 

@@ -20,7 +20,6 @@ import {
   CONSTRUCTION_CATEGORY_ENTRIES,
   SYSTEM_COUNTERS,
   TAIL_COUNTERS,
-  constructionCategoryEntry,
   constructionCategoryOfMarker,
   constructionMarker,
   counterEntry,
@@ -30,6 +29,7 @@ import {
   isKanaForm,
   type CounterForm,
 } from "./counters.ts";
+import { numberConstructionEntry } from "./number-construction-id.ts";
 import { VOCAB_SUBJECT } from "./vocab.ts";
 import { TRACK_INTROS } from "./track-intros.ts";
 import { ALL_FACTS } from "../lib/facts.ts";
@@ -210,7 +210,7 @@ describe("the track label is a clean, collision-free set of word facts", () => {
       assert.ok(COUNTER_ENTRIES.has(counterEntry(f)));
     }
     for (const id of CONSTRUCTION_CATEGORY_IDS) {
-      assert.ok(COUNTER_ENTRIES.has(constructionCategoryEntry(id)));
+      assert.ok(COUNTER_ENTRIES.has(numberConstructionEntry(id)));
     }
     // The label is exactly the forms plus the categories, no more.
     assert.equal(

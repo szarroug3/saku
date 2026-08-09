@@ -107,9 +107,8 @@ export interface ReadingRow {
    *          would state something the dictionary does not.
    *
    * This is THE answer to "why do いち and ひと sound nothing alike" — they are
-   * two different languages' worth of pronunciation wearing one character. No
-   * screen may print the words "on'yomi"/"kun'yomi" at a beginner; see the
-   * entry page for the wording that ships.
+   * two different languages' worth of pronunciation wearing one character. The
+   * once-ever reading-types intro teaches the names before pages use them.
    *
    * Optional because a base the aligner derived is occasionally not one
    * KANJIDIC2 lists verbatim. Zero rows are untyped as shipped; the field stays

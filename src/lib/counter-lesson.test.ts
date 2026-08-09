@@ -28,7 +28,6 @@ import {
   NUMBER_UNIT_MARKERS,
   NUMBER_UNIT_TENS_MARKER,
   constructionMarker,
-  counterEntry,
   counterKanjiPrereqs,
   counterMeaningFactId,
   isKanaForm,
@@ -36,7 +35,7 @@ import {
 } from "../data/counters.ts";
 import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
-import { wordReadingFactId } from "../data/vocab.ts";
+import { wordReadingFactId, wordUnitReadingFactId } from "../data/vocab.ts";
 import { COUNTER_SOUND_CHANGE, NUMBERS_BIG, NUMBERS_COMPOSE } from "../data/phase-intros.ts";
 import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import { lessonSteps } from "./lesson-steps.ts";
@@ -203,7 +202,7 @@ describe("the schedule", () => {
     );
     const { markerLesson } = lessonsThroughMarker(start, constructionMarker("nin"), RANGE);
     assert.equal(markerLesson.numberUnit!.marker, constructionMarker("nin"));
-    assert.equal(markerLesson.numberUnit!.mode, "number-reading");
+    assert.equal(markerLesson.numberUnit!.mode, "drill");
   });
 
   test("a learner with no counters history has not started the track", () => {
@@ -292,6 +291,19 @@ describe("the tens unit teaches the number kanji as whole items", () => {
     for (const k of ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
       assert.ok(glyphs.includes(k), `the tens unit teaches ${k}`);
     }
+  });
+
+  test("the tens lessons include both everyday readings of 4 and 7", () => {
+    const { lessons } = lessonsThroughMarker(
+      claiming(numbersDone),
+      NUMBER_UNIT_TENS_MARKER,
+      RANGE,
+    );
+    const facts = new Set(lessons.flatMap((lesson) => lesson.facts));
+    assert.ok(facts.has(wordReadingFactId("四")), "4 includes し");
+    assert.ok(facts.has(wordUnitReadingFactId("四", "よん")), "4 includes よん");
+    assert.ok(facts.has(wordReadingFactId("七")), "7 includes しち");
+    assert.ok(facts.has(wordUnitReadingFactId("七", "なな")), "7 includes なな");
   });
 
   test("a number kanji is taught whole — none of its shape pieces ride along", () => {
@@ -464,10 +476,10 @@ describe("the generative units", () => {
     }
   });
 
-  test("there is a unit per range and per counter, all number-reading mode", () => {
+  test("there is a unit per range and per counter, all using normal drill mode", () => {
     assert.equal(GENERATIVE_UNITS.length, 12);
     assert.equal(NUMBER_UNITS.length, 2);
-    for (const u of GENERATIVE_UNITS) assert.equal(u.mode, "number-reading");
+    for (const u of GENERATIVE_UNITS) assert.equal(u.mode, "drill");
   });
 
   test("a marker-only teach walk is the rule card ALONE (formless)", () => {

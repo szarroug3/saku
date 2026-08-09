@@ -70,6 +70,7 @@ import { useQuizConfig } from "@/lib/quiz-config";
 import { useQuizSession, type RunInfo } from "@/lib/quiz-session";
 import { entryOf, factInfo } from "@/lib/facts";
 import { COUNTER_ENTRIES } from "@/data/counters";
+import { constructionFactForMarker } from "@/data/counter-categories";
 import { useHistoryWrites } from "@/lib/history-writes";
 import { useHistory } from "@/lib/use-history";
 import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
@@ -103,11 +104,6 @@ type TrackKey =
 // falls through to a plain Start, the safe default.
 function trackOfRun(run: RunInfo): TrackKey | null {
   if (run.mode === "assembly") return "sentence-ordering";
-  // A generative NUMBER unit is a counters-track lesson whose only fact is a
-  // marker pseudo-fact (no FactInfo to resolve a subject from), so it is
-  // recognised by its mode. Only lesson sessions reach here (see runForTrack), so
-  // this never captures a one-off Practice number-reading quiz.
-  if (run.mode === "number-reading") return "counter";
   // A prep-only counter unit session teaches only prereq kanji/radicals, so it
   // carries no counter facts. Those sessions are started with an explicit track
   // label in `what`; read it here so Continue stays on the counters card.
@@ -635,11 +631,10 @@ export function HomeFeed() {
       {counterLessonShown ? (
         <NextCounterLesson
           lesson={counterLessonShown}
-          // A generative NUMBER unit launches its number-reading round: the same
-          // teach-then-drill handlers, but startSession is handed the unit's mode
-          // and range config so the drill leg runs the round rather than a form
-          // drill (see counter-lesson.ts / quiz-session.tsx). An ordinary form
-          // lesson falls through to the shared startLesson.
+          // A generative unit is still an ordinary Drill session. Its category
+          // fact rolls a scoped number showing inside DrillScreen; the marker is
+          // retained only in the teach set so the rule card renders and session
+          // completion advances the scheduler.
           onStart={(facts, { teach = true } = {}) => {
             const unit = counterLessonShown.numberUnit;
             if (!unit) {
@@ -648,7 +643,7 @@ export function HomeFeed() {
             }
             if (unit.prepOnly) {
               // Prep-only slices teach/drill prereq facts only. The generated
-              // number-reading round belongs to the marker lesson itself.
+              // generated category round belongs to the marker lesson itself.
               const seeded = teach ? [] : newlySeen(facts);
               startTransition(() => {
                 if (!teach) markSeen(facts);
@@ -658,7 +653,7 @@ export function HomeFeed() {
             }
             // A NUMBER unit advances on COMPLETION, not on start: claiming its
             // marker at start let a started-then-discarded session skip the unit
-            // entirely. Start teaches the rule and runs the number-reading round;
+            // entirely. Start teaches the rule and runs the generated category;
             // finishSession then claims `session.teach` (quiz-session.tsx), so pass
             // the marker there even for "Quiz me" (teach=false), where `teach`
             // would otherwise be empty and never claim it.
@@ -667,15 +662,19 @@ export function HomeFeed() {
               : teach
                 ? facts
                 : [unit.marker];
+            const categoryFact = constructionFactForMarker(unit.marker);
+            const drillFacts = [
+              ...facts.filter((fact) => fact !== unit.marker),
+              ...(categoryFact ? [categoryFact] : []),
+            ];
             startTransition(() => {
               startSession(
-                facts,
+                drillFacts,
                 teachFacts,
                 undefined,
                 "lesson",
                 [],
-                unit.mode,
-                unit.config,
+                "drill",
               );
             });
           }}

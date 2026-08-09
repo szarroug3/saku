@@ -112,15 +112,13 @@ export function LessonReadings({
                     <span className="font-kana text-[15px]">{r.base}</span>
                   </span>
                 </td>
-                {/* CHINESE / JAPANESE, never on'yomi / kun'yomi. Those name the
-                    thing for someone who already knows it. */}
                 <td className="py-2 pr-2 align-middle text-text-muted">
                   {r.type === "on"
-                    ? "Chinese"
+                    ? "On’yomi"
                     : r.type === "kun"
-                      ? "Japanese"
+                      ? "Kun’yomi"
                       : r.type === "both"
-                        ? "both"
+                        ? "On’yomi and kun’yomi"
                         : "—"}
                 </td>
                 {/* THE WORD, unconditionally — not "the word you know", which is

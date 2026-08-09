@@ -18,27 +18,29 @@
 import { READINGS, type ReadingRow } from "@/data/kanji";
 import { vocabRow } from "@/data/vocab";
 
-/** A kanji's on-readings, grouped once at module load. On'yomi is KANJIDIC2's
- * "on" plus the handful it files as "both" (a reading it lists under on AND kun
- * for different senses). Kun-only readings are left out — this is the borrowed,
- * compound-word sound. */
-const ON_ROWS_BY_KANJI: ReadonlyMap<string, readonly ReadingRow[]> = (() => {
+/** Build one reading-family index. KANJIDIC2's handful of `both` rows belongs in
+ * both views: the same sound genuinely serves as on'yomi and kun'yomi in
+ * different senses, so assigning it to just one would corrupt the data. */
+function rowsByKanji(kind: "on" | "kun"): ReadonlyMap<string, readonly ReadingRow[]> {
   const map = new Map<string, ReadingRow[]>();
   for (const r of READINGS) {
-    if (r.type !== "on" && r.type !== "both") continue;
+    if (r.type !== kind && r.type !== "both") continue;
     const list = map.get(r.k);
     if (list) list.push(r);
     else map.set(r.k, [r]);
   }
-  // Richest evidence first, the same order the entry page's readings table uses,
-  // so the hint leads with the on-reading the learner meets in the most words.
+  // Richest evidence first, so each hint leads with the reading the learner
+  // meets in the most everyday words.
   for (const list of map.values()) list.sort((a, b) => b.nWords - a.nWords);
   return map;
-})();
+}
+
+const ON_ROWS_BY_KANJI = rowsByKanji("on");
+const KUN_ROWS_BY_KANJI = rowsByKanji("kun");
 
 /** One on-reading of a kanji, with the everyday word that attests it. */
-export interface OnReading {
-  /** The on-reading in kana — こう for 校. */
+export interface ReadingHint {
+  /** The reading in kana — こう for 校, くるま for 車. */
   readonly reading: string;
   /** An everyday word the kanji takes this reading in — 校門. Null when the
    * ingest found none. */
@@ -47,6 +49,9 @@ export interface OnReading {
    * row (so we cannot state its reading) or there is no word at all. */
   readonly wordReading: string | null;
 }
+
+/** Kept as a semantic alias for existing on'yomi consumers. */
+export type OnReading = ReadingHint;
 
 /** Does this kanji have an on'yomi at all? The gate the on'yomi concept card
  * rides in on — the first curriculum kanji this is true of is where the learner
@@ -59,7 +64,16 @@ export function hasOnyomi(kanji: string): boolean {
  * that word's reading where the data has one. Empty for a kanji with no on'yomi
  * (many kun-only jōyō kanji). Display only — nothing here is graded. */
 export function onReadingsOf(kanji: string): readonly OnReading[] {
-  const rows = ON_ROWS_BY_KANJI.get(kanji);
+  return readingHints(ON_ROWS_BY_KANJI.get(kanji));
+}
+
+/** A kanji's kun-readings, richest evidence first, with the everyday word that
+ * attests each native Japanese reading. */
+export function kunReadingsOf(kanji: string): readonly ReadingHint[] {
+  return readingHints(KUN_ROWS_BY_KANJI.get(kanji));
+}
+
+function readingHints(rows: readonly ReadingRow[] | undefined): readonly ReadingHint[] {
   if (!rows) return [];
   return rows.map((r) => {
     const word = r.anchor || null;

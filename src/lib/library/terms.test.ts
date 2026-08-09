@@ -25,6 +25,7 @@ const EXPECTED = [
   "katakana",
   "romaji",
   "kanji",
+  "kunyomi-onyomi",
   "radical",
   "furigana",
   "jlpt",
@@ -124,7 +125,7 @@ describe("the reference terms are a real shelf", () => {
  * at nothing else. */
 const SHIPPED = new Set([...PHASE_INTROS, ...Object.values(TRACK_INTROS)]);
 
-/** The six words the app uses but teaches no card about. Their pages are the
+/** The five words the app uses but teaches no card about. Their pages are the
  * definition and nothing else. See the note over TERMS. */
 const NO_CARD = ["romaji", "furigana", "jlpt", "particle", "mora"];
 

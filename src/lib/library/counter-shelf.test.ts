@@ -33,9 +33,16 @@ import {
   libEntry,
   LIB_ENTRIES,
 } from "./entries.ts";
-import { kanjiEntry, KANJI_SUBJECT } from "../../data/kanji.ts";
+import {
+  VOCAB_SUBJECT,
+  readingUnits,
+  vocabRow,
+  wordEntry,
+} from "../../data/vocab.ts";
+import { factsOf } from "../facts.ts";
 import { counterShelfSections } from "./counter-shelf.ts";
 import { entryFromSlug, entryHref } from "./href.ts";
+import { subLabel } from "./sub-label.ts";
 
 // The Sino numbers 1-10, in counting order — the kanji the "Numbers" section
 // surfaces since the dedupe removed the rote counter:num forms.
@@ -64,11 +71,11 @@ describe("the shelf exists and lists the counters", () => {
     for (const id of counterIds) assert.ok(expected.has(id), `${id} is a counter entry`);
   });
 
-  test("every listed entry is a COUNTER_KIND LibEntry, bar the construction and number-kanji pages", () => {
+  test("every listed entry is a COUNTER_KIND LibEntry, bar the construction and number-word pages", () => {
     const constructionIds = new Set(
       NUMBER_CONSTRUCTIONS.map((c) => numberConstructionEntry(c.id)),
     );
-    const numberKanjiIds = new Set(NUMBER_KANJI.map((c) => kanjiEntry(c)));
+    const numberWordIds = new Set(NUMBER_KANJI.map((c) => wordEntry(c)));
     for (const s of counterShelfSections()) {
       for (const e of s.entries) {
         if (constructionIds.has(e.id)) {
@@ -79,10 +86,8 @@ describe("the shelf exists and lists the counters", () => {
           );
           continue;
         }
-        // The Sino numbers 1-10 are KANJI entries (their own pages), surfaced on
-        // this shelf but owned by the Kanji subject.
-        if (numberKanjiIds.has(e.id)) {
-          assert.equal(e.kind, KANJI_SUBJECT, "the numbers are kanji pages");
+        if (numberWordIds.has(e.id)) {
+          assert.equal(e.kind, VOCAB_SUBJECT, "the numbers are word pages");
           continue;
         }
         assert.equal(e.kind, COUNTER_KIND);
@@ -94,7 +99,7 @@ describe("the shelf exists and lists the counters", () => {
     assert.equal(inIndex.length, COUNTER_CURRICULUM.length);
   });
 
-  test("the Sino numbers 1-10 have a 'Numbers' section of their own kanji pages", () => {
+  test("the Sino numbers 1-10 have a 'Numbers' section of their word pages", () => {
     const sections = counterShelfSections();
     const numbers = sections.find((s) => s.id === "counters-numbers");
     assert.ok(numbers, "the shelf has a Numbers section");
@@ -102,9 +107,13 @@ describe("the shelf exists and lists the counters", () => {
     // Every number kanji 一…十, in counting order, resolved to its own page.
     assert.deepEqual(
       numbers.entries.map((e) => e.id),
-      NUMBER_KANJI.map((c) => kanjiEntry(c)),
+      NUMBER_KANJI.map((c) => wordEntry(c)),
     );
-    for (const e of numbers.entries) assert.equal(e.kind, KANJI_SUBJECT);
+    for (const e of numbers.entries) {
+      assert.equal(e.kind, VOCAB_SUBJECT);
+      assert.match(entryHref(e.id), /^\/library\/word\//);
+      assert.equal(subLabel(e), e.meanings.join(", "));
+    }
     // It sits between the native 〜つ group and the tail, the teaching order.
     const ids = sections.map((s) => s.id);
     assert.ok(
@@ -117,7 +126,12 @@ describe("the shelf exists and lists the counters", () => {
     );
   });
 
-  test("the 'how to build them' constructions lead the shelf and are not drillable", () => {
+  test("4 and 7 carry both spoken number readings on their word pages", () => {
+    assert.deepEqual(readingUnits(vocabRow("四")!).map((u) => u.reb), ["し", "よん"]);
+    assert.deepEqual(readingUnits(vocabRow("七")!).map((u) => u.reb), ["しち", "なな"]);
+  });
+
+  test("the 'how to build them' constructions lead the shelf and own their generated fact", () => {
     const sections = counterShelfSections();
     // The construction pages are the very first section, so the build rules sit
     // above the numbers and counters they explain. Rendered as rows (asRows),
@@ -138,8 +152,10 @@ describe("the shelf exists and lists the counters", () => {
       assert.equal(entry.name, c.name);
       assert.equal(entry.meanings[0], c.name);
       assert.equal(entryName(entry), c.glyph);
-      // A construction page is read, never asked: no gradeable facts, like a term.
+      // The reference does not print a generic facts table, but its visible entry
+      // owns the category fact used by the normal Drill.
       assert.deepEqual(factRows(entry), []);
+      assert.equal(factsOf(entry.id).length, 1);
     }
     // The tens and big range pages lead, then the counters.
     assert.equal(first.entries[0].name, "Numbers 11–99");

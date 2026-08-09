@@ -51,9 +51,7 @@ export function howSentence(cfg: QuizConfig): string {
             ? "Substitution"
             : cfg.mode === "listen-sentence"
               ? "Listen to sentences"
-              : cfg.mode === "number-reading"
-                ? "Numbers"
-                : "Drill",
+              : "Drill",
   ];
   // Grid deals every card once, and the sentence corpus modes run their own
   // corpus-driven queue: none of them has a length or direction to state.
@@ -61,8 +59,7 @@ export function howSentence(cfg: QuizConfig): string {
     cfg.mode === "grid" ||
     cfg.mode === "assembly" ||
     cfg.mode === "substitution" ||
-    cfg.mode === "listen-sentence" ||
-    cfg.mode === "number-reading"
+    cfg.mode === "listen-sentence"
   )
     return parts.join(" · ");
 

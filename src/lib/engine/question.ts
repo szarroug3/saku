@@ -1655,10 +1655,9 @@ const constructionQuestions: QuestionType = {
     return {
       glyph: constructionGlyph(item),
       jp: true,
-      // READ shows a number and wants its reading; WRITE shows a reading and
-      // wants the number. The context names which way round, so the digits/kana
-      // are not an ambiguous prompt.
-      context: item.direction === "read" ? "reading" : "the number",
+      // The instruction below the halo already says whether to type the reading
+      // or the number. Repeating that as a label inside the card adds no context.
+      context: null,
       hint: null,
     };
   },

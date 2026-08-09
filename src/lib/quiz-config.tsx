@@ -126,6 +126,10 @@ function normalizeConfig(saved: unknown): QuizConfig {
       // mode. Sentences now correctly use the Japanese-sentence source inside
       // Drill, so migrate that saved UI state back to Drill.
       if (rawObj.mode === "mixed") cfg.mode = "drill";
+      // Number generation now runs as category facts inside the ordinary Drill.
+      // Migrate the short-lived standalone Numbers mode instead of restoring a
+      // screen that no longer exists.
+      if (rawObj.mode === "number-reading") cfg.mode = "drill";
       // Sentence listening used to be a standalone mode; it now folds into the
       // Audio prompt format, so a saved listen-sentence config becomes an audio
       // drill.

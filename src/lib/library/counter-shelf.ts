@@ -20,18 +20,18 @@ import {
   NUMBER_CONSTRUCTIONS,
   numberConstructionEntry,
 } from "@/data/number-construction";
-import { kanjiEntry } from "@/data/kanji";
 import { NUMBER_KANJI } from "@/data/number-kanji";
+import { wordEntry } from "@/data/vocab";
 import { libEntry } from "@/lib/library/entries";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 
 // The Sino numbers 1-10, in counting order (NUMBER_KANJI, shared with the prereq
 // walk and builtFrom). Since the dedupe (drop the rote counter:num:1..10 kana
 // forms), the number KANJI carry these — 二 = に = two — so the shelf surfaces the
-// kanji entries themselves rather than curriculum forms it no longer has. Owners
-// look for "the numbers" here; without this section they vanished from the shelf
-// entirely (the kanji stayed reachable under Kanji and in search, but not where a
-// learner expects to browse them).
+// standalone WORD entries. A number tile is a spoken word (四 = し / よん = four),
+// not the kanji's shape/meaning entry; routing it through kanji pages lost the
+// alternate number readings and made its quiz ask kanji-reading facts instead of
+// pronunciation. The kanji remains reachable from the Kanji shelf.
 
 /** One section of the shelf: a name and the predicate that fills it. In teaching
  * order, and mutually exclusive over the curriculum — every form falls in
@@ -62,10 +62,9 @@ const GROUPS: readonly CounterGroup[] = [
 
 /**
  * The Sino numbers 1-10 as a shelf section — the number kanji 一…十 resolved to
- * their Library pages, in counting order. These are KANJI entries (not counter
- * forms), so they are built here rather than filtered out of COUNTER_CURRICULUM:
- * the dedupe moved the teaching of 一…十 onto the kanji's own word role, and this
- * is where the shelf makes them browsable again. A kanji with no build is skipped,
+ * their WORD pages, in counting order. These are word entries (not counter
+ * forms), so they are built here rather than filtered out of COUNTER_CURRICULUM.
+ * A word with no build is skipped,
  * the same degradation the counter groups take.
  */
 function numberKanjiSection(): ShelfSection {
@@ -73,7 +72,7 @@ function numberKanjiSection(): ShelfSection {
     id: "counters-numbers",
     label: "Numbers",
     entries: NUMBER_KANJI.flatMap((c) => {
-      const e = libEntry(kanjiEntry(c));
+      const e = libEntry(wordEntry(c));
       return e ? [e] : [];
     }),
   };
