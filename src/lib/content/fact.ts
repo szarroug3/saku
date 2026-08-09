@@ -7,6 +7,13 @@
 // and one registered quiz renderer (Stage 4) handles it — instead of touching
 // every track's scheduler and every quiz screen.
 
+// ALIGN WITH THE EXISTING REGISTRY, DON'T FORK IT. src/lib/facts.ts already
+// unifies facts: every subject publishes `FactInfo[]` and `factsOf(entry)` reads
+// them, with nothing downstream able to tell subjects apart. The one thing
+// `FactInfo` lacks is an explicit KIND — today meaning-vs-reading is inferred from
+// id conventions (`word:X/reading`). Stage 1 folds `FactKind` onto `FactInfo`
+// itself; this file is the stub for that field, not a second fact type.
+
 import type { FactId } from "@/types";
 
 /**
