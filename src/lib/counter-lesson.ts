@@ -358,7 +358,7 @@ const COUNTER_GLYPH_BY_ID: Partial<Record<ConstructionCategoryId, string>> = {
  * the first unit that uses them, keigo-style.) collectPrereqs pulls the FULL
  * component chain of each (四 → 囗 儿, 個 → 口 古 固, 百 → 白, …) and dedupes a kanji
  * the learner already knows — the owner's ruling: no capping, no deferring. */
-const UNIT_KANJI: Readonly<Record<ConstructionCategoryId, readonly string[]>> = {
+export const UNIT_KANJI: Readonly<Record<ConstructionCategoryId, readonly string[]>> = {
   tens: ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"],
   big: ["百", "千", "万"],
   nin: ["人"],
