@@ -35,15 +35,21 @@ import type { FactId } from "@/types";
 export type FactKind = "meaning" | "reading" | "pronunciation-audio";
 
 /**
- * One testable piece of knowledge about a content item. `prompt` and `answer`
- * are kind-specific; they stay `unknown` at this layer so the model does not
- * fork per surface — a renderer registered for the fact's kind narrows them.
+ * One testable piece of knowledge about a content item.
+ *
+ * A fact is NOT a single prompt→answer: it is asked in MULTIPLE forms — both
+ * directions (jp→en and en→jp), text or listening, typed or multiple-choice —
+ * and those are forms of ONE fact, not separate facts. That set is already a
+ * first-class type, `CardForm` (source × response × direction × listen ×
+ * answer-style) in ask-forms.ts, and `enabledFormsFor(id, ask): CardForm[]`
+ * computes the forms a given fact supports under a config. So the content model
+ * does NOT carry a prompt/answer here; it carries the fact's identity and defers
+ * its quizzable forms to that function — the single source of truth the drill
+ * already trusts.
  */
 export interface Fact {
   readonly id: FactId;
+  /** Convenience label for the common case; the authoritative, per-form support
+   * lives in ask-forms.ts (see the FactKind note above). */
   readonly kind: FactKind;
-  /** What the learner is shown (kind-specific; narrowed by the kind's renderer). */
-  readonly prompt: unknown;
-  /** What grades the answer (kind-specific; narrowed by the kind's grader). */
-  readonly answer: unknown;
 }

@@ -55,31 +55,34 @@ A content item declares its **kind** and owns its **facts**; every surface reads
 facts, never re-derives them.
 
 ```ts
-type FactKind = "meaning" | "reading" | "pronunciation-audio" /* future: "mic" */;
+interface Fact { id: FactId; kind: FactKind; }   // identity + a convenience label
 
-interface Fact {
-  id: FactId;
-  kind: FactKind;
-  prompt: unknown;   // what the learner sees
-  answer: unknown;   // what grades it
-}
+// A fact is NOT one prompt→answer. It is asked in MULTIPLE forms — both
+// directions (jp→en, en→jp), text/listen, typed/MC — all forms of the SAME fact.
+// That set is already first-class in ask-forms.ts and is the source of truth:
+type CardForm = { source; response; dir: "jp2en" | "en2jp"; listen; answer };
+function enabledFormsFor(fact: FactId, ask: AskConfig): CardForm[];  // the quizzable forms
 
 interface ContentItem {
   entry: EntryId;
   kind: "word" | "kanji" | "kana" | "counter" | "number" | "grammar" | ...;
   glyph: string;
-  facts: Fact[];     // derived ONCE from kind + dictionary row
+  facts: Fact[];     // derived ONCE from kind + dictionary row (see facts.ts)
   roles: RoleName[]; // already centralized in character-role.ts — extend, don't fork
+  prereqs: EntryId[];
 }
 ```
 
-- The **dictionary is the source of truth.** `factsOf(item)` is the ONE function
-  that expands a kind into its facts. Adding a word = add a row; its facts follow.
+- **A fact carries identity, not a single prompt/answer.** Its quizzable forms —
+  both directions and every mode — come from `enabledFormsFor` (ask-forms.ts),
+  the source the drill already trusts. jp→en and en→jp are one fact, two forms.
+- The **dictionary is the source of truth.** `factsOf(entry)` (facts.ts) already
+  expands an entry into its facts. Adding a word = add a row; its facts follow.
 - **Numbers are just words with kind `number`** — same fact set as any word
   (meaning + reading), plus a `number` role for labeling. No special threading.
-- **Adding a fact-kind (mic pronunciation)** = add to `FactKind`, teach `factsOf`
-  to emit it for the relevant kinds, and register ONE quiz renderer for it. The
-  compiler then flags every `switch (fact.kind)` that doesn't handle it.
+- **A new quiz mode (mic "say it")** is a new *value* on the ask-forms axes
+  (a `PromptFormat`/`response`), reached in one place and rendered by one
+  registered per-form renderer — not a new fact type or a per-track edit.
 
 ### 2.2 One generic scheduler; prerequisites are data on the item
 
