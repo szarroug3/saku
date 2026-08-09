@@ -4,7 +4,10 @@
 The raw CEJC archive is intentionally ignored by git. This script downloads a
 pinned release when requested, streams the nested XLSX without third-party
 packages, and commits only a compact aggregate keyed by JMdict written form and
-normalized reading.
+normalized reading. Every matched word is retained, including words for which
+CEJC observed only one reading: a dictionary alternate with no corpus hit is
+still useful ordering evidence, even though it is not enough by itself for the
+strong everyday-preference note.
 
     python3 scripts/ingest/cejc_reading_frequency.py --download
     python3 scripts/ingest/cejc_reading_frequency.py --check
@@ -121,7 +124,6 @@ def reduce(archive):
     words = {
         keb: dict(sorted(readings.items(), key=lambda p: (-p[1], p[0])))
         for keb, readings in sorted(counts.items())
-        if len(readings) > 1
     }
     digest = hashlib.sha256(open(archive, "rb").read()).hexdigest()
     return {
@@ -159,7 +161,7 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "wb") as fh:
         fh.write(result)
-    print(f"wrote {OUT} ({len(json.loads(result)['words'])} multi-reading words)")
+    print(f"wrote {OUT} ({len(json.loads(result)['words'])} covered words)")
 
 
 if __name__ == "__main__":
