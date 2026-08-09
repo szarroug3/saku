@@ -13,10 +13,22 @@
 
 import { entryOf } from "@/lib/facts";
 import { constructionFactForMarker } from "@/data/counter-categories";
+import { counterEntry, type CounterForm } from "@/data/counters";
 import { kanjiEntry } from "@/data/kanji";
 import { UNIT_KANJI, type NumberUnit } from "@/lib/counter-lesson";
 import { buildItem } from "./build-item";
 import type { ContentItem } from "./item";
+
+/**
+ * An entry-backed counter form as a ContentItem — the `〜つ` natives (kana,
+ * meaning only) and the tail (二十歳 は，reading + meaning). Wholly `buildItem`'s
+ * job: the form's facts hang off `counterEntry(form)`, and its kanji prereqs
+ * (only 二十歳 has any) fall out of the glyph. Kept beside `unitItem` so the
+ * SCHEDULE walk (next piece) reads formItem(step.form) / unitItem(step.unit).
+ */
+export function formItem(form: CounterForm): ContentItem | undefined {
+  return buildItem(counterEntry(form), "counter");
+}
 
 /**
  * A generative unit as a ContentItem. Its drillable fact lives under the

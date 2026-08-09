@@ -9,7 +9,7 @@ export type { ContentKind, ContentItem } from "./item";
 export type { Track } from "./track";
 export type { OrderSpec } from "./ordered-track";
 export { orderedTrack } from "./ordered-track";
-export { unitItem } from "./numbers-track";
+export { unitItem, formItem } from "./numbers-track";
 export type { Lesson, NextLesson } from "./scheduler";
 export { MAX_PREREQ_DEPTH, planLesson, nextLesson } from "./scheduler";
 export { buildItem } from "./build-item";
