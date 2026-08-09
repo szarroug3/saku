@@ -22,17 +22,18 @@
 // scheduler through `factsOf(entry)` so a number's reading fact is in the lesson —
 // not adding a field. See docs/architecture-refactor.md.
 
-import type { FactId } from "@/types";
+import type { FactId, ResponseKind } from "@/types";
 
 /**
- * What kind of knowledge a fact tests. Deliberately open to extension: a new
- * kind is a one-line edit here, after which the compiler flags every
- * `switch (fact.kind)` that has not handled it — the opposite of today, where a
- * new fact-kind is wired surface by surface and silently forgotten.
+ * What a fact asks the learner to PRODUCE — the meaning/reading axis. This is
+ * exactly the existing `ResponseKind` ("definition" | "romaji"), so we alias it
+ * rather than invent a parallel enum. The classifier already exists too:
+ * `jp2enResponse(factId)` in ask-forms.ts (reads `FactInfo`, no id-parsing).
  *
- * "pronunciation-audio" is the seam a future mic-check ("say it") slots beside.
+ * A listen/mic mode is NOT a value here — that is a PromptFormat, an orthogonal
+ * axis (see ask-forms.ts). Keeping them separate is the whole point.
  */
-export type FactKind = "meaning" | "reading" | "pronunciation-audio";
+export type FactKind = ResponseKind;
 
 /**
  * One testable piece of knowledge about a content item.

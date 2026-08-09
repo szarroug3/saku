@@ -55,7 +55,7 @@ A content item declares its **kind** and owns its **facts**; every surface reads
 facts, never re-derives them.
 
 ```ts
-interface Fact { id: FactId; kind: FactKind; }   // identity + a convenience label
+interface Fact { id: FactId; kind: FactKind; }   // FactKind = ResponseKind, via jp2enResponse(id)
 
 // A fact is NOT one prompt→answer. It is asked in MULTIPLE forms — both
 // directions (jp→en, en→jp), text/listen, typed/MC — all forms of the SAME fact.
