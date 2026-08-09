@@ -29,6 +29,11 @@
 import etymologyJson from "./generated/kanji-etymology.json" with { type: "json" };
 import etymologyManualJson from "./generated/kanji-etymology-manual.json" with { type: "json" };
 import { PROSE_OVERRIDE, PROSE_SKIP, MANUAL_ORIGIN } from "./kanji-etymology-prose.ts";
+import { REASSEMBLY_A } from "./etymology-prose/reassembly-A.ts";
+import { REASSEMBLY_B } from "./etymology-prose/reassembly-B.ts";
+import { REASSEMBLY_C } from "./etymology-prose/reassembly-C.ts";
+import { REASSEMBLY_D } from "./etymology-prose/reassembly-D.ts";
+import { REASSEMBLY_E } from "./etymology-prose/reassembly-E.ts";
 import phoneticGlossJson from "./generated/kanji-phonetic-gloss.json" with { type: "json" };
 import kanjiComponentsJson from "./generated/kanji-components.json" with { type: "json" };
 import { kanjiRow, READINGS } from "./kanji";
@@ -269,6 +274,16 @@ const BUILT_PIECES_OVERRIDE: Readonly<Record<string, readonly BuiltPiece[]>> = {
     { glyph: "一", role: "semantic", label: "one" },
     { glyph: "一", role: "semantic", label: "one" },
   ],
+  // Recovered partials: kanji whose Built-from dropped a visible piece because the
+  // shape splits or hides its real Wiktionary component. Each dropped run was
+  // hand-verified to genuinely reassemble into (or be a variant of) the component
+  // — 低 (氏+一 → 氐), 冷 (冫 = 仌 "ice") — with corruptions/redrawn shapes left
+  // dropped. See etymology-prose/reassembly-*.ts (each entry cites its source).
+  ...REASSEMBLY_A,
+  ...REASSEMBLY_B,
+  ...REASSEMBLY_C,
+  ...REASSEMBLY_D,
+  ...REASSEMBLY_E,
 };
 
 /**
