@@ -253,6 +253,7 @@ green commit.
 | `resolve.ts` | `resolveItem` — build-once kanji-corpus map the engine follows prereq edges through (a lookup, not an id parse) | `resolve.test.ts` |
 | `track.ts` | `Track { id, order(history) }` — ordering only; prereqs live on items | — |
 | `ordered-track.ts` | `orderedTrack(id, spec)` — turn a fixed (entry, kind) sequence into a Track, built through `buildItem` | `ordered-track.test.ts` |
+| `numbers-track.ts` | `unitItem(unit)` — a generative-rule unit as a ContentItem (buildItem on its category-fact entry + bespoke `UNIT_KANJI` prereqs). The numbers/counters pilot's novel half | `numbers-track.test.ts` |
 | `registry.ts` | `createRegistry`, `itemRenderers` — for the Stage-2/4 renderer maps | `registry.test.ts` |
 | `index.ts` | barrel |  |
 
@@ -267,11 +268,17 @@ real due item out of an empty history.
 (`orderedTrack`), each tested in isolation and composed on real data. There is no
 smaller safe/additive piece left; what remains is the integration.
 
-**Next (own session):** assemble the numbers/counters track from the real
-curriculum — `orderedTrack` for the entry-backed base (number-words + counter
-forms), plus the `generative-rule` units built directly (they have no normal
-entry) — then swap the live counter scheduler onto `nextLesson` under the
-fact-set guard. Stage 1's live half and Stage 3's first track, together. Largest
-and riskiest slice; everything above is the safety net it lands on. The one
-caution: this authors/faithfully mirrors live curriculum data, so it must be done
-against `counter-lesson.ts` as its source, not from memory.
+**Numbers/counters pilot — in progress.** Building the track from the real
+`counter-lesson.ts` curriculum, one committed slice at a time:
+
+1. ✅ `unitItem` — the generative-rule units (the part `buildItem` can't make).
+2. ⏳ the entry-backed base spec — the `〜つ` natives + kept forms (`はたち`,
+   `二十歳`) as `OrderSpec` via `counterEntry`, for `orderedTrack`.
+3. ☐ assemble the full `Track.order()` per `SCHEDULE` (base forms interleaved
+   with units), and prove it end-to-end through `nextLesson`.
+4. ☐ swap the live counter scheduler onto `nextLesson` under the fact-set guard.
+
+Behavior note surfaced while reading the source: the live path treats number
+kanji as leaves (`isNumberKanji`), so it never taught 一 before 三; the new model
+uses each kanji's Built-from edges and *would* (一→三), matching the
+"numbers are normal words with etymology" direction. Confirm at the swap (step 4).
