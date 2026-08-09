@@ -23,6 +23,7 @@
 import { kanjiRow } from "@/data/kanji";
 import { radicalByGlyph } from "@/data/radicals";
 import { isSingleCharWordGlyph } from "@/data/vocab";
+import { isNumberKanji } from "@/data/number-kanji";
 
 /** The roles themselves, in the ONE order every label prints them: a radical is
  * the smallest thing, a kanji is built of radicals, a word is made of kanji. */
@@ -83,6 +84,9 @@ export function characterRole(glyph: string): CharacterRole | null {
  * a label wants the capital. Both spell the identical roles in the identical
  * order, so they stay one source. */
 export function characterRoleTitle(glyph: string): string | null {
+  // A number kanji reads as one thing — "Number" — not its raw "Kanji · Word"
+  // role mix, so its lesson/preview tiles name it the way the learner thinks of it.
+  if (isNumberKanji(glyph)) return "Number";
   const roles = characterRoles(glyph);
   if (!roles.length) return null;
   return roles.map((r) => r[0].toUpperCase() + r.slice(1)).join(" · ");
