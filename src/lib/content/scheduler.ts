@@ -20,7 +20,9 @@
 // Stage 0 of docs/architecture-refactor.md: the contract and the gate constant.
 // Additive, not yet consumed.
 
-import type { EntryId, HistoryFile } from "@/types";
+import { effectiveState } from "@/lib/claims";
+import { glyphDifficulty } from "@/lib/difficulty";
+import type { EntryId, FactId, HistoryFile } from "@/types";
 import type { LessonRange } from "@/lib/lesson-sizing";
 import type { ContentItem } from "./item";
 import type { Track } from "./track";
@@ -60,15 +62,16 @@ export type NextLesson = (
  *
  * Walk `order`; for each DUE item gather its untaught-prereq chain (dependency
  * order, prereqs first, following `resolve` across tracks); DEPTH-GATE anything
- * whose untaught chain runs past `maxDepth`; and emit until `budget` is spent,
- * always taking at least one item's chain.
+ * whose untaught chain runs past `maxDepth`; and fill toward the `range` floor,
+ * never past its ceiling except a lone bundle that is oversized on its own — the
+ * same two-number semantics the kanji/word packers already use (lesson-sizing.ts).
  */
 export function planLesson(
   order: readonly ContentItem[],
   resolve: (entry: EntryId) => ContentItem | undefined,
   isDue: (item: ContentItem) => boolean,
   cost: (item: ContentItem) => number,
-  budget: number,
+  range: LessonRange,
   maxDepth: number = MAX_PREREQ_DEPTH,
 ): ContentItem[] {
   const out: ContentItem[] = [];
@@ -80,13 +83,15 @@ export function planLesson(
     if (!chain) continue; // untaught-prereq chain too deep → defer this item
     const fresh = chain.filter((i) => !emitted.has(i.entry));
     const add = fresh.reduce((n, i) => n + cost(i), 0);
-    if (out.length > 0 && spent + add > budget) break; // full (but always take one)
+    // Never cross the ceiling — but a lone bundle bigger than the whole range is
+    // taught anyway, so a due item can't yield an empty lesson.
+    if (out.length > 0 && spent + add > range.max) break;
     for (const i of fresh) {
       out.push(i);
       emitted.add(i.entry);
     }
     spent += add;
-    if (spent >= budget) break;
+    if (spent >= range.min) break; // floor reached → stop
   }
   return out;
 }
@@ -118,4 +123,32 @@ function untaughtChain(
     return true;
   };
   return visit(item, 0) ? chain : null;
+}
+
+/**
+ * The one scheduler, wired to history. It supplies `planLesson`'s two injectables
+ * from existing sources — nothing new is modeled here:
+ *   - DUE = the item has a FRESH fact (`lastTested === 0` off `effectiveState`,
+ *     the same rule every track reads per fact);
+ *   - COST = `glyphDifficulty` (reading-units), the packers' own pricing.
+ * A track supplies only its order; `resolve` reaches items in any track so a
+ * number can pull a word-track kanji as a prerequisite.
+ */
+export const nextLesson: NextLesson = (track, resolve, history, range) => {
+  const isDue = (item: ContentItem) =>
+    item.facts.some((f) => isFactFresh(f.id, history));
+  const cost = (item: ContentItem) => glyphDifficulty(item.glyph);
+  const items = planLesson(track.order(history), resolve, isDue, cost, range);
+  return items.length ? { items } : null;
+};
+
+/** A fact the app has no record of — never answered, claimed, or "quiz me"'d.
+ * The one definition of "new", shared with the per-track schedulers. */
+function isFactFresh(fact: FactId, history: HistoryFile): boolean {
+  const state = effectiveState(
+    history.facts[fact],
+    history.claims?.[fact],
+    history.seen?.[fact],
+  );
+  return state.lastTested === 0;
 }
