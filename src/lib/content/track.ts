@@ -20,7 +20,9 @@ export interface Track {
    * The full teaching sequence for this track, most-fundamental first. A PURE
    * function of history (so a prereq already known drops out), returning items —
    * generative-rule units included. It does NOT decide lesson boundaries, budget,
-   * or resume position; the engine owns those so they cannot drift per track.
+   * resume position, or prerequisites: those live on the items (`ContentItem.
+   * prereqs`) and are resolved by the one shared scheduler (scheduler.ts), which
+   * follows prereqs ACROSS tracks and depth-gates them. A track only orders.
    */
   order(history: HistoryFile): readonly ContentItem[];
 }

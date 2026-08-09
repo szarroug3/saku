@@ -30,6 +30,14 @@ export type ContentKind =
  * adding a row, and its meaning/reading/… facts come by construction rather than
  * being stitched per track. `roles` reuses the existing central labeller
  * (character-role.ts); nothing re-phrases a role at a call site.
+ *
+ * PREREQUISITES ARE DATA ON THE ITEM, not per-track scheduler logic. `prereqs`
+ * lists the items this one is built on — a number kanji, a component radical, a
+ * word a counter needs. The one scheduler (see track.ts) resolves them
+ * transitively and ACROSS tracks: a number may pull a non-number kanji that
+ * "belongs" to the word track, and the scheduler teaches it here regardless. The
+ * DAG they form is the whole prerequisite graph; the scheduler walks it, budgets
+ * it, and depth-gates it — no track re-implements any of that.
  */
 export interface ContentItem {
   readonly entry: EntryId;
@@ -37,4 +45,7 @@ export interface ContentItem {
   readonly glyph: string;
   readonly facts: readonly Fact[];
   readonly roles: readonly RoleName[];
+  /** The items this one is directly built on (its edges in the prereq DAG). May
+   * point at items in ANY track; the scheduler follows them wherever they live. */
+  readonly prereqs: readonly EntryId[];
 }
