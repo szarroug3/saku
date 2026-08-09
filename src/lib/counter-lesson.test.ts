@@ -538,6 +538,23 @@ describe("the generative units", () => {
     assert.equal(markerLesson!.facts.at(-1), NUMBER_UNIT_BIG_MARKER);
   });
 
+  test("the big unit lesson chain carries 百千万 reading facts for pronunciation", () => {
+    // Numbers are words: 百/千/万 must ride their pronunciation the same way the
+    // tens unit does for 一…十 (the same gap, one unit over).
+    const { lessons } = lessonsThroughMarker(
+      claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER]),
+      NUMBER_UNIT_BIG_MARKER,
+      RANGE,
+    );
+    const taughtFacts = new Set(lessons.flatMap((l) => l.facts));
+    for (const k of ["百", "千", "万"]) {
+      assert.ok(
+        taughtFacts.has(wordReadingFactId(k)),
+        `the big unit chain carries ${k} reading for pronunciation`,
+      );
+    }
+  });
+
   test("claiming BOTH range markers advances the scheduler to the 〜人 unit", () => {
     const start = claiming([...numbersDone, NUMBER_UNIT_TENS_MARKER, NUMBER_UNIT_BIG_MARKER]);
     const lesson = nextCounterLesson(start, RANGE);

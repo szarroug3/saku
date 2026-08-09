@@ -242,23 +242,26 @@ function toCard(form: CounterForm): CounterCard {
 }
 
 /**
- * The reading facts that should ride with a tens-unit prereq slice.
+ * The reading facts that should ride with a number-UNIT prereq slice.
  *
- * The tens unit teaches number-kanji prereqs as item cards (一…十). Their
- * pronunciation lives on the matching one-character word reading facts, so add
- * those facts to the same lesson whenever that number kanji is taught now.
+ * The number units teach their number kanji as item cards — tens (一…十) and big
+ * (百 千 万). Those are WORDS: their pronunciation lives on the matching
+ * one-character word reading fact, so it must ride the same lesson, or the
+ * learner meets the kanji with no reading. Restricted to the unit's OWN number
+ * kanji, NOT the component chain collectPrereqs also pulls: 百's prereq 白 is a
+ * word too, but it is not a number and its reading is taught on its own turn.
  */
-function tensReadingFactsForPrereqs(
+function numberUnitReadingFacts(
   unit: NumberUnit,
   prereqs: readonly PrereqItem[],
   history: HistoryFile,
 ): FactId[] {
-  if (unit.id !== "tens") return [];
+  if (unit.id !== "tens" && unit.id !== "big") return [];
+  const own = new Set(UNIT_KANJI[unit.id]);
   const out: FactId[] = [];
   const seen = new Set<FactId>();
   for (const p of prereqs) {
-    if (!isNumberKanji(p.glyph)) continue;
-    if (!vocabRow(p.glyph)) continue;
+    if (!own.has(p.glyph) || !vocabRow(p.glyph)) continue;
     const fact = wordReadingFactId(p.glyph);
     if (seen.has(fact) || !isFresh(fact, history)) continue;
     seen.add(fact);
@@ -523,7 +526,7 @@ export function nextCounterLesson(
   const done = doneSteps(history);
 
   if (dueUnit) {
-    const readingFacts = tensReadingFactsForPrereqs(dueUnit, unitPrereqs, history);
+    const readingFacts = numberUnitReadingFacts(dueUnit, unitPrereqs, history);
     return {
       cards: [unitCard(dueUnit)],
       // Prereqs first, then the marker: the teach walk shows the kanji/radical
@@ -540,7 +543,7 @@ export function nextCounterLesson(
     };
   }
   if (unitPrepOnly) {
-    const readingFacts = tensReadingFactsForPrereqs(unitPrepOnly, unitPrereqs, history);
+    const readingFacts = numberUnitReadingFacts(unitPrepOnly, unitPrereqs, history);
     return {
       cards: [unitCard(unitPrepOnly)],
       // A unit-prep lesson teaches only part of the due unit's prereq chain.
