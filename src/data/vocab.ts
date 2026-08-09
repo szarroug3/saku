@@ -379,17 +379,20 @@ export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[]
       .map((x) => x.reading);
 
     let preferredReading: string | null = null;
-    if (readings.length >= 2) {
+    const hasCorpusEvidence = Object.keys(counts).length > 0;
+    if (readings.length >= 2 && hasCorpusEvidence) {
       const top = counts[readings[0].reb];
-      const second = counts[readings[1].reb];
-      const observed = readings.map((r) => counts[r.reb]).filter((n): n is number => n != null);
-      const total = observed.reduce((sum, n) => sum + n, 0);
+      // Once CEJC has observations for this written lexeme, a valid alternate
+      // reading absent from those observations has an observed count of zero;
+      // it is not missing corpus data. This distinction is why the generated
+      // lookup retains single-reading matches as well as multi-reading ones.
+      const second = counts[readings[1].reb] ?? 0;
+      const total = readings.reduce((sum, r) => sum + (counts[r.reb] ?? 0), 0);
       if (
         top != null &&
-        second != null &&
         total >= 50 &&
         top / total >= 0.5 &&
-        top / second >= 1.6 &&
+        (second === 0 || top / second >= 1.6) &&
         wilsonLower(top, top + second) > 0.5
       ) {
         preferredReading = readings[0].reb;

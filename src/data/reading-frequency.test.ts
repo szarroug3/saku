@@ -39,4 +39,19 @@ describe("CEJC reading order stays inside a definition", () => {
     assert.deepEqual(four.glosses, ["four", "4"]);
     assert.deepEqual(four.readings.map((r) => r.reb), ["よん", "し"]);
   });
+
+  test("an unobserved valid alternate counts as zero once CEJC observed the word", () => {
+    const teacher = vocabRow("先生")!;
+    const definitionId = teacher.senses[0].definitionId;
+    const withUnobservedAlternate = {
+      ...teacher,
+      senses: [
+        teacher.senses[0],
+        { ...teacher.senses[0], definitionId, reb: "せんしょう" },
+      ],
+    };
+    const definitions = readingDefinitions(withUnobservedAlternate);
+    assert.deepEqual(definitions[0].readings.map((r) => r.reb), ["せんせい", "せんしょう"]);
+    assert.equal(definitions[0].preferredReading, "せんせい");
+  });
 });
