@@ -81,20 +81,40 @@ interface ContentItem {
   to emit it for the relevant kinds, and register ONE quiz renderer for it. The
   compiler then flags every `switch (fact.kind)` that doesn't handle it.
 
-### 2.2 The scheduler contract
+### 2.2 One generic scheduler; prerequisites are data on the item
+
+There is **one** scheduler, not one per track. Two facts make that possible:
+
+- **A track is just an ordered list of items.** `Track.order(history)` returns the
+  curriculum sequence; that is all a track does.
+- **Every item carries its own prerequisites** (`ContentItem.prereqs`) — a single
+  DAG over the whole corpus, independent of tracks.
 
 ```ts
-interface Track {
-  id: TrackId;
-  order(history: HistoryFile): ContentItem[];  // ordering ONLY
-}
+interface Track { id: string; order(history): ContentItem[]; }        // ordering ONLY
+interface ContentItem { …; prereqs: EntryId[]; }                       // its DAG edges
+
+type NextLesson = (track, resolve, history, range) => Lesson | null;   // the one engine
 ```
 
-A shared engine does the rest, once, for every track:
-`nextLesson(track, history, range)` = take the next unlearned items in `order`,
-cost-budgeted, with prereqs guaranteed satisfied. No per-track fact-assembly, no
-per-track marker state. (Generative units — "drill 11–99" — are a `ContentItem`
-whose facts include the range marker; the same engine schedules them.)
+The engine does the same thing for every track:
+
+1. Walk `order` for the next **unknown** items.
+2. Gather each item's **untaught** prerequisites transitively — **across tracks**.
+   A number freely pulls a non-number kanji owned by the word track; the engine
+   teaches it here regardless of which track "owns" it. (`resolve` maps an entry
+   to its item so any track's items are reachable.)
+3. Emit items in dependency order, each preceded by its untaught prereqs, until
+   the `LessonRange` budget is full (always ≥ 1 item).
+4. **Depth gate** (`MAX_PREREQ_DEPTH`): defer an item whose untaught-prereq chain
+   is too deep — A>B>C>D>E with nothing known is too much cascade for one lesson.
+   It resurfaces once its deep prereqs are learned (on their own, or in earlier
+   lessons) and the remaining depth is within bound. **This one rule replaces the
+   counters track's `prepOnly`/marker machinery.**
+
+No per-track fact-assembly, no per-track marker state. Generative units ("drill
+11–99") are just a `ContentItem` (kind `generative-rule`) with its own prereqs and
+facts, scheduled by the same engine.
 
 ### 2.3 One lesson viewport
 
@@ -140,9 +160,12 @@ track at a time; delete each forked file only when its track is fully moved.
   `next-X-lesson.tsx` as it moves. **Guards:** preview tile-set == taught item-set;
   resume returns the session's stored current item. (Kills mechanism 2.)
 
-- **Stage 3 — Pure scheduler engine.** Each track supplies only `order()`; the
-  engine derives the next lesson. Standardize or retire markers/`prepOnly`.
-  **Guard:** the engine never returns an item whose prereqs are unsatisfied.
+- **Stage 3 — One generic scheduler.** Each track supplies only `order()`; every
+  item carries `prereqs`; the single engine resolves untaught prereqs across
+  tracks, budget-fills, and depth-gates (`MAX_PREREQ_DEPTH`), retiring the
+  `prepOnly`/marker machinery. All ~8 `nextXLesson` functions collapse into one.
+  **Guards:** the engine never returns an item whose prereqs are unsatisfied; and
+  it never returns an item whose untaught-prereq chain exceeds the depth cap.
   (Kills mechanism 3: ordering.)
 
 - **Stage 4 — One `<Quiz>` shell and one `<EntryPage>`.** Collapse the 13 quiz
