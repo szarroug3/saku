@@ -36,6 +36,7 @@ import {
 } from "../data/counters.ts";
 import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
+import { wordReadingFactId } from "../data/vocab.ts";
 import { COUNTER_SOUND_CHANGE, NUMBERS_BIG, NUMBERS_COMPOSE } from "../data/phase-intros.ts";
 import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import { lessonSteps } from "./lesson-steps.ts";
@@ -329,6 +330,21 @@ describe("the tens unit teaches the number kanji as whole items", () => {
       first.cardPrereqTiles.every((ts) => ts.every((t) => t.glyph !== "一")),
       "a known 一 is not re-taught as a prereq",
     );
+  });
+
+  test("the tens unit lesson chain carries number-word reading facts for pronunciation drills", () => {
+    const { lessons } = lessonsThroughMarker(
+      claiming(numbersDone),
+      NUMBER_UNIT_TENS_MARKER,
+      RANGE,
+    );
+    const taughtFacts = new Set(lessons.flatMap((l) => l.facts));
+    for (const k of ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]) {
+      assert.ok(
+        taughtFacts.has(wordReadingFactId(k)),
+        `the tens unit chain carries ${k} reading for pronunciation`,
+      );
+    }
   });
 });
 

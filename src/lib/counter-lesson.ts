@@ -65,6 +65,7 @@ import {
   numberConstructionEntry,
   numberConstructionRow,
 } from "@/data/number-construction";
+import { vocabRow, wordReadingFactId } from "@/data/vocab";
 import { type PhaseIntro } from "@/data/phase-intros";
 import type { NumberQuizConfig } from "@/lib/engine/number-quiz";
 import type { EntryId, FactId, HistoryFile } from "@/types";
@@ -238,6 +239,32 @@ function toCard(form: CounterForm): CounterCard {
     meaning: form.meaning,
     counter: form.counter,
   };
+}
+
+/**
+ * The reading facts that should ride with a tens-unit prereq slice.
+ *
+ * The tens unit teaches number-kanji prereqs as item cards (一…十). Their
+ * pronunciation lives on the matching one-character word reading facts, so add
+ * those facts to the same lesson whenever that number kanji is taught now.
+ */
+function tensReadingFactsForPrereqs(
+  unit: NumberUnit,
+  prereqs: readonly PrereqItem[],
+  history: HistoryFile,
+): FactId[] {
+  if (unit.id !== "tens") return [];
+  const out: FactId[] = [];
+  const seen = new Set<FactId>();
+  for (const p of prereqs) {
+    if (!isNumberKanji(p.glyph)) continue;
+    if (!vocabRow(p.glyph)) continue;
+    const fact = wordReadingFactId(p.glyph);
+    if (seen.has(fact) || !isFresh(fact, history)) continue;
+    seen.add(fact);
+    out.push(fact);
+  }
+  return out;
 }
 
 /** The Home preview card for a generative unit — one tile hinting the range or
@@ -496,11 +523,12 @@ export function nextCounterLesson(
   const done = doneSteps(history);
 
   if (dueUnit) {
+    const readingFacts = tensReadingFactsForPrereqs(dueUnit, unitPrereqs, history);
     return {
       cards: [unitCard(dueUnit)],
       // Prereqs first, then the marker: the teach walk shows the kanji/radical
       // item cards, then the unit's rule card (see lesson-steps.ts).
-      facts: [...unitPrereqs.map((p) => p.fact), dueUnit.marker],
+      facts: [...unitPrereqs.map((p) => p.fact), ...readingFacts, dueUnit.marker],
       cardPrereqTiles: [toPrereqTiles(unitPrereqs)],
       numberUnit: {
         mode: dueUnit.mode,
@@ -512,11 +540,12 @@ export function nextCounterLesson(
     };
   }
   if (unitPrepOnly) {
+    const readingFacts = tensReadingFactsForPrereqs(unitPrepOnly, unitPrereqs, history);
     return {
       cards: [unitCard(unitPrepOnly)],
       // A unit-prep lesson teaches only part of the due unit's prereq chain.
       // No marker yet: the rule card remains due until its own lesson runs.
-      facts: unitPrereqs.map((p) => p.fact),
+      facts: [...unitPrereqs.map((p) => p.fact), ...readingFacts],
       cardPrereqTiles: [toPrereqTiles(unitPrereqs)],
       numberUnit: {
         mode: unitPrepOnly.mode,
