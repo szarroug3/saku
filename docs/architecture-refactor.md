@@ -272,11 +272,16 @@ smaller safe/additive piece left; what remains is the integration.
 `counter-lesson.ts` curriculum, one committed slice at a time:
 
 1. ✅ `unitItem` — the generative-rule units (the part `buildItem` can't make).
-2. ⏳ the entry-backed base spec — the `〜つ` natives + kept forms (`はたち`,
-   `二十歳`) as `OrderSpec` via `counterEntry`, for `orderedTrack`.
-3. ☐ assemble the full `Track.order()` per `SCHEDULE` (base forms interleaved
-   with units), and prove it end-to-end through `nextLesson`.
+2. ✅ `formItem` — the entry-backed forms (`〜つ` natives + the `二十歳` tail),
+   wholly `buildItem`'s job off `counterEntry(form)`.
+3. ⏳ assemble the full `Track.order()` by walking `SCHEDULE`
+   (`formItem(step.form)` / `unitItem(step.unit)`), and prove it end-to-end
+   through `nextLesson`.
 4. ☐ swap the live counter scheduler onto `nextLesson` under the fact-set guard.
+
+Note: because `SCHEDULE` interleaves forms and units, this track walks
+`formItem`/`unitItem` directly rather than `orderedTrack` — `orderedTrack` stays
+the tool for pure entry-list tracks (words, a grammar syllabus).
 
 Behavior note surfaced while reading the source: the live path treats number
 kanji as leaves (`isNumberKanji`), so it never taught 一 before 三; the new model
