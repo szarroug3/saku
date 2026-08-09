@@ -275,8 +275,9 @@ smaller safe/additive piece left; what remains is the integration.
 2. ✅ `formItem` — the entry-backed forms (`〜つ` natives + the `二十歳` tail),
    wholly `buildItem`'s job off `counterEntry(form)`.
 3. ✅ `numbersTrack()` — walks the same `SCHEDULE` (exported from
-   `counter-lesson`), maps each step through `formItem`/`unitItem`, and runs end
-   to end through `nextLesson` (opens on ひとつ from an empty history).
+   `counter-lesson`), maps each step through `formItem`/`unitItem`, splices the
+   Sino numbers in as first-class number items, and runs end to end through
+   `nextLesson` (opens on ひとつ from an empty history).
 4. ☐ swap the live counter scheduler onto `nextLesson` under the fact-set guard.
 
 Note: because `SCHEDULE` interleaves forms and units, this track walks
@@ -291,10 +292,12 @@ the tool for pure entry-list tracks (words, a grammar syllabus).
   global `glyphDifficulty → itemCost` fold-in (which shifts multi-role glyph
   sizing like 日) stays a SEPARATE deliberate step; this pilot doesn't touch the
   kanji/word tracks' sizes.
-- ☐ **Number-kanji leaf.** The live path treats 一…十 as leaves (`isNumberKanji`);
-  the new model teaches their Built-from edges (一→三). Confirm the intended one
-  at the swap — likely the new behavior, per the "numbers are normal words with
-  etymology" direction.
+- ✅ **Number-kanji leaf → numbers are first-class items.** Resolved by making the
+  bare Sino numbers 一…十, 百千万 their own number-word items in the track list
+  (not just unit prereqs), per Sam: "1, 2, 3, 4 … are core items of the number
+  track." Each number's character is taught first as the word's own Built-from
+  prereq (生 before 先生), so the leaf question no longer applies. Counter kanji
+  (本, 匹) stay prereqs — a counter is not a number.
 
 Behavior note surfaced while reading the source: the live path treats number
 kanji as leaves (`isNumberKanji`), so it never taught 一 before 三; the new model
