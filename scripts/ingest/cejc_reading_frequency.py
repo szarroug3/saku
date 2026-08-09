@@ -34,6 +34,9 @@ ROOT = os.path.join(HERE, "..", "..")
 RAW_DIR = os.path.join(HERE, "raw", "cejc")
 RAW_ZIP = os.path.join(RAW_DIR, "CEJC-reading-frequency-ver202209.zip")
 VOCAB = os.path.join(ROOT, "src", "data", "generated", "vocab.json")
+SENSES = os.path.join(ROOT, "src", "data", "generated", "word-senses.json")
+DEFINITIONS = os.path.join(ROOT, "src", "data", "generated", "word-definitions.json")
+ALTERNATES = os.path.join(ROOT, "src", "data", "number-word-alternates.json")
 OUT = os.path.join(ROOT, "src", "data", "generated", "cejc-reading-frequency.json")
 
 VERSION = "2022.09"
@@ -65,6 +68,39 @@ def colnum(ref):
     return n - 1
 
 
+def edit_distance(a, b):
+    """Small-string Levenshtein distance for observed -> dictionary readings."""
+    row = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        next_row = [i]
+        for j, cb in enumerate(b, 1):
+            next_row.append(min(
+                next_row[-1] + 1,
+                row[j] + 1,
+                row[j - 1] + (ca != cb),
+            ))
+        row = next_row
+    return row[-1]
+
+
+def dictionary_reading(observed, lexical, candidates):
+    """Map an observed surface pronunciation to a JMdict dictionary reading."""
+    if observed in candidates:
+        return observed
+    distances = {reading: edit_distance(observed, reading) for reading in candidates}
+    if not distances:
+        return None
+    nearest = min(distances.values())
+    best = [reading for reading, distance in distances.items() if distance == nearest]
+    # CEJC's lexical analysis resolves tied contractions such as ヨッ between
+    # よ and よん, while a uniquely closer alternate captures サビー -> さぶい.
+    if lexical in best:
+        return lexical
+    if len(best) == 1:
+        return best[0]
+    return lexical if lexical in candidates else None
+
+
 def cells(row, shared):
     out = {}
     for cell in row.findall(NS + "c"):
@@ -86,7 +122,22 @@ def nested_workbook(archive):
 
 
 def reduce(archive):
-    vocab = {row["keb"] for row in json.load(open(VOCAB, encoding="utf-8"))}
+    vocab_rows = json.load(open(VOCAB, encoding="utf-8"))
+    senses = json.load(open(SENSES, encoding="utf-8"))
+    definitions = json.load(open(DEFINITIONS, encoding="utf-8"))["words"]
+    alternates = json.load(open(ALTERNATES, encoding="utf-8"))
+    candidates = {}
+    for row in vocab_rows:
+        keb = row["keb"]
+        readings = [row["reb"]]
+        readings.extend(sense["reb"] for sense in senses.get(keb, []))
+        readings.extend(alternates.get(keb, []))
+        readings.extend(
+            reb
+            for definition in definitions.get(keb, [])
+            for reb in definition["readings"]
+        )
+        candidates[keb] = set(readings)
     counts = defaultdict(lambda: defaultdict(int))
 
     with zipfile.ZipFile(nested_workbook(archive)) as book:
@@ -105,20 +156,27 @@ def reduce(archive):
                 values = cells(row, shared)
                 if headers is None:
                     headers = {name: i for i, name in values.items()}
-                    required = {"語彙素", "語彙素読み", "frequency"}
+                    required = {"語彙素", "語彙素読み", "発音形出現形", "frequency"}
                     missing = required - headers.keys()
                     if missing:
                         raise RuntimeError(f"CEJC columns changed; missing {sorted(missing)}")
                     row.clear()
                     continue
                 keb = values.get(headers["語彙素"])
-                reb = values.get(headers["語彙素読み"])
+                lexical = values.get(headers["語彙素読み"])
+                observed = values.get(headers["発音形出現形"])
                 frequency = values.get(headers["frequency"])
-                if keb in vocab and reb and frequency:
-                    # Several observed phonetic forms (ヨン, ヨ, ヨッ) can share
-                    # one lexical reading (ヨン). Sum those rows at the reading
-                    # grain the dictionary and UI use.
-                    counts[keb][hiragana(reb)] += int(float(frequency))
+                if keb in candidates and lexical and observed and frequency:
+                    lexical = hiragana(lexical)
+                    observed = hiragana(observed)
+                    # Prefer the actual pronunciation when it is itself a JMdict
+                    # reading: 日本/ニッポン has an observed ニホン row, and 寒い/
+                    # サムイ has observed サブイ rows. Otherwise CEJC's lexical
+                    # reading folds inflected or contracted forms (サムカッ,
+                    # キュッ) back to the dictionary form they realize.
+                    reb = dictionary_reading(observed, lexical, candidates[keb])
+                    if reb:
+                        counts[keb][reb] += int(float(frequency))
                 row.clear()
 
     words = {
@@ -132,7 +190,7 @@ def reduce(archive):
             "version": VERSION,
             "url": URL,
             "rawSha256": digest,
-            "measure": "short-unit occurrences grouped by lexeme and lexical reading",
+            "measure": "short-unit occurrences mapped from observed pronunciation forms to JMdict readings",
         },
         "words": words,
     }

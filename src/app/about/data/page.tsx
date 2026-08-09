@@ -70,6 +70,12 @@ export default function AboutDataPage() {
           identifies that educational analysis separately rather than relicensing
           NINJAL&rsquo;s work as CC BY-SA.
         </p>
+        <p className="mt-2.5 text-[13px] leading-relaxed text-text-muted">
+          Frequency comparisons never cross JMdict meanings. When every reading
+          has the same sense coverage and CEJC provides at least 50 observations,
+          a reading at or below 5% of usage moves to the Library&rsquo;s Other
+          dictionary readings section instead of the teaching table.
+        </p>
       </Card>
     </>
   );

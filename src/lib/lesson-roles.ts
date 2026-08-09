@@ -75,7 +75,7 @@
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { radicalByGlyph } from "@/data/radicals";
 import { variantsOf } from "@/data/variant-forms";
-import { vocabRow, type VocabRow, type WordSense } from "@/data/vocab";
+import { teachingSenses, vocabRow, type VocabRow, type WordSense } from "@/data/vocab";
 import { ROLE_ORDER, characterRoles, type RoleName } from "@/lib/character-role";
 import { teachableParts, type KanjiPart } from "@/lib/kanji-parts";
 import { showsHowItsWritten, type LessonItem } from "@/lib/lesson-items";
@@ -217,7 +217,7 @@ function standsAlone(sense: WordSense): boolean {
 }
 
 export function standaloneSenses(word: VocabRow): readonly WordSense[] {
-  const [primary, ...rest] = word.senses;
+  const [primary, ...rest] = teachingSenses(word);
   if (!primary) return [];
   return groupByReading([primary, ...rest.filter(standsAlone)]);
 }
@@ -238,7 +238,7 @@ export function standaloneSenses(word: VocabRow): readonly WordSense[] {
  * compounds without hiding them.
  */
 export function allReadingSenses(word: VocabRow): readonly WordSense[] {
-  return groupByReading(word.senses);
+  return groupByReading(teachingSenses(word));
 }
 
 /**

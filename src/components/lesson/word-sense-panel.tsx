@@ -18,11 +18,12 @@
 //
 // QUIZZED READINGS PLUS DICTIONARY REFERENCE READINGS
 // ==================================================
-// This panel includes every reading-unit the quiz asks — for 大 both だい and おお,
-// for 人 all of ひと, じん and にん — and may also include a source-only JMdict
-// alternate such as 寒い/さぶい. The latter is reference information, not a new
-// scored fact: restoring current dictionary detail must not silently rewrite a
-// learner's existing history. A source-only row therefore has no standing chip.
+// The teaching table includes every reading-unit the quiz asks — for 大 both だい
+// and おお, for 人 all of ひと, じん and にん. On a Library page, a second table may
+// also include a source-only or exceptionally uncommon JMdict alternate such as
+// 寒い/さぶい. That is reference information, not a new scored fact: restoring
+// current dictionary detail must not silently rewrite a learner's history. A
+// source-only row therefore has no standing chip.
 //
 // SOME OF THEM YOU ONLY SAY IN COMPOUNDS, and the panel says so quietly. おお is
 // a prefix, じん the -ian suffix, にん the people-counter: real readings, drilled,
@@ -111,17 +112,19 @@ interface SenseGroup {
  * A single-reading word (or a counter) is a one-row table, so every page reads
  * the same whether it has one reading or several. */
 function SenseTable({
+  title,
   groups,
   voiceName,
   transparent,
 }: {
+  title: string;
   groups: readonly SenseGroup[];
   voiceName: string;
   /** Flat look on the Library entry page — drops the panel's frosty fill. */
   transparent: boolean;
 }) {
   return (
-    <LessonPanel title="How you say it, and what it means" transparent={transparent}>
+    <LessonPanel title={title} transparent={transparent}>
       <div className="-mx-1 overflow-x-auto px-1">
         <table className="w-full text-left text-[13px]">
           <thead>
@@ -208,11 +211,14 @@ export function WordSensePanel({
   voiceName,
   standings,
   counter,
+  showReferenceReadings = false,
 }: {
   word?: VocabRow;
   voiceName: string;
   standings?: (factId: FactId) => Standing | null;
   counter?: CounterSense;
+  /** Library-only: show exceptionally uncommon valid readings separately. */
+  showReferenceReadings?: boolean;
 }) {
   // On the Library entry page this panel renders FLAT (transparent fill, border
   // kept); in the lesson teach view no provider sits above, so it stays bg-panel.
@@ -235,6 +241,7 @@ export function WordSensePanel({
     };
     return (
       <SenseTable
+        title="How you say it, and what it means"
         groups={[{ meaning: counter.meaning, rows: [row] }]}
         voiceName={voiceName}
         transparent={transparent}
@@ -271,21 +278,47 @@ export function WordSensePanel({
   // non-conjugating word (a noun) falls back to the reading-unit's plain type.
   const formKind = wordFormKind(word);
   const factsByReading = new Map(unitFacts?.map((facts) => [facts.unit.reb, facts]) ?? []);
-  const groups: SenseGroup[] = definitions.map((definition) => ({
-    meaning: definition.glosses.slice(0, 4).join(", "),
-    rows: definition.readings.map((sense) => {
-      const facts = factsByReading.get(sense.reb);
-      return {
-        reb: sense.reb,
-        kind: formKind ?? wordTypeOf(sense),
-        bound: sense.reb !== word.reb && isBoundReading(sense),
-        preferred: definition.preferredReading === sense.reb,
-        pitch: pitch != null && sense.reb === word.reb ? pitch : null,
-        readingStanding: standingFor(facts?.reading),
-        meaningStanding: standingFor(facts?.meaning),
-      };
-    }),
-  }));
+  const groupsFor = (key: "readings" | "referenceReadings"): SenseGroup[] =>
+    definitions.flatMap((definition) => {
+      const selected = definition[key];
+      if (!selected.length) return [];
+      return [{
+        meaning: definition.glosses.slice(0, 4).join(", "),
+        rows: selected.map((sense) => {
+          const facts = factsByReading.get(sense.reb);
+          return {
+            reb: sense.reb,
+            kind: formKind ?? wordTypeOf(sense),
+            bound: sense.reb !== word.reb && isBoundReading(sense),
+            preferred: definition.preferredReading === sense.reb,
+            pitch: pitch != null && sense.reb === word.reb ? pitch : null,
+            readingStanding: standingFor(facts?.reading),
+            meaningStanding: standingFor(facts?.meaning),
+          };
+        }),
+      }];
+    });
+  const groups = groupsFor("readings");
+  const referenceGroups = groupsFor("referenceReadings");
 
-  return <SenseTable groups={groups} voiceName={voiceName} transparent={transparent} />;
+  return (
+    <>
+      <SenseTable
+        title="How you say it, and what it means"
+        groups={groups}
+        voiceName={voiceName}
+        transparent={transparent}
+      />
+      {showReferenceReadings && referenceGroups.length ? (
+        <div className="mt-3.5">
+          <SenseTable
+            title="Other dictionary readings"
+            groups={referenceGroups}
+            voiceName={voiceName}
+            transparent={transparent}
+          />
+        </div>
+      ) : null}
+    </>
+  );
 }

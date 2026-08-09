@@ -1057,6 +1057,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
               <WordSensePanel
                 word={wordRow}
                 voiceName={cfg.voiceName}
+                showReferenceReadings
                 standings={(factId) =>
                   standingOf(
                     liveFacts[factId],

@@ -2588,8 +2588,7 @@
         ],
         "readings": [
           "いつもどおり",
-          "いつもとおり",
-          "いつもどうり"
+          "いつもとおり"
         ]
       }
     ],
@@ -12764,23 +12763,6 @@
         ],
         "readings": [
           "ごぞんじ"
-        ]
-      }
-    ],
-    "ご苦労様": [
-      {
-        "glosses": [
-          "thank you (for your hard work)",
-          "I appreciate your efforts"
-        ],
-        "id": "1005030:0",
-        "pos": [
-          "expressions (phrases, clauses, etc.)",
-          "adjectival nouns or quasi-adjectives (keiyodoshi)"
-        ],
-        "readings": [
-          "ごくろうさま",
-          "ごくろーさま"
         ]
       }
     ],
@@ -87567,26 +87549,6 @@
         ]
       }
     ],
-    "図々しい": [
-      {
-        "glosses": [
-          "impudent",
-          "shameless",
-          "brazen",
-          "forward",
-          "audacious",
-          "cheeky"
-        ],
-        "id": "1595940:0",
-        "pos": [
-          "adjective (keiyoushi)"
-        ],
-        "readings": [
-          "ずうずうしい",
-          "ずーずーしい"
-        ]
-      }
-    ],
     "図る": [
       {
         "glosses": [
@@ -93464,8 +93426,7 @@
         ],
         "readings": [
           "だいじょうぶ",
-          "だいじょぶ",
-          "だいじょーぶ"
+          "だいじょぶ"
         ]
       },
       {
@@ -93480,8 +93441,7 @@
         ],
         "readings": [
           "だいじょうぶ",
-          "だいじょぶ",
-          "だいじょーぶ"
+          "だいじょぶ"
         ]
       },
       {
@@ -93497,8 +93457,7 @@
         ],
         "readings": [
           "だいじょうぶ",
-          "だいじょぶ",
-          "だいじょーぶ"
+          "だいじょぶ"
         ]
       },
       {
@@ -95969,21 +95928,6 @@
         ],
         "readings": [
           "じょちゅう"
-        ]
-      }
-    ],
-    "女子高生": [
-      {
-        "glosses": [
-          "female high school student"
-        ],
-        "id": "1345160:0",
-        "pos": [
-          "noun (common) (futsuumeishi)"
-        ],
-        "readings": [
-          "じょしこうせい",
-          "じょしこーせー"
         ]
       }
     ],
@@ -110885,7 +110829,6 @@
         "readings": [
           "あたりまえ",
           "あたりめー",
-          "あたりめえ",
           "あったりめー"
         ]
       },
@@ -110906,7 +110849,6 @@
         "readings": [
           "あたりまえ",
           "あたりめー",
-          "あたりめえ",
           "あったりめー"
         ]
       }
@@ -112292,22 +112234,6 @@
         ]
       }
     ],
-    "待ち遠しい": [
-      {
-        "glosses": [
-          "longed-for",
-          "anxiously awaited"
-        ],
-        "id": "1410480:0",
-        "pos": [
-          "adjective (keiyoushi)"
-        ],
-        "readings": [
-          "まちどおしい",
-          "まちどうしい"
-        ]
-      }
-    ],
     "待つ": [
       {
         "glosses": [
@@ -113169,8 +113095,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "びみょう",
-          "びみょー"
+          "びみょう"
         ]
       },
       {
@@ -113187,8 +113112,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "びみょう",
-          "びみょー"
+          "びみょう"
         ]
       },
       {
@@ -113203,8 +113127,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "びみょう",
-          "びみょー"
+          "びみょう"
         ]
       },
       {
@@ -113218,8 +113141,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "びみょう",
-          "びみょー"
+          "びみょう"
         ]
       },
       {
@@ -113234,8 +113156,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "びみょう",
-          "びみょー"
+          "びみょう"
         ]
       }
     ],
@@ -127950,8 +127871,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "けいたい",
-          "けーたい"
+          "けいたい"
         ]
       }
     ],
@@ -134839,8 +134759,7 @@
           "adjectival nouns or quasi-adjectives (keiyodoshi)"
         ],
         "readings": [
-          "ふつう",
-          "ふつー"
+          "ふつう"
         ]
       },
       {
@@ -134856,8 +134775,7 @@
           "adverb (fukushi)"
         ],
         "readings": [
-          "ふつう",
-          "ふつー"
+          "ふつう"
         ]
       },
       {
@@ -134870,8 +134788,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "ふつう",
-          "ふつー"
+          "ふつう"
         ]
       }
     ],
@@ -136439,8 +136356,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "さいてい",
-          "さいてー"
+          "さいてい"
         ]
       },
       {
@@ -136453,8 +136369,7 @@
           "adjectival nouns or quasi-adjectives (keiyodoshi)"
         ],
         "readings": [
-          "さいてい",
-          "さいてー"
+          "さいてい"
         ]
       },
       {
@@ -136470,8 +136385,7 @@
           "adjectival nouns or quasi-adjectives (keiyodoshi)"
         ],
         "readings": [
-          "さいてい",
-          "さいてー"
+          "さいてい"
         ]
       },
       {
@@ -136483,8 +136397,7 @@
           "adverb (fukushi)"
         ],
         "readings": [
-          "さいてい",
-          "さいてー"
+          "さいてい"
         ]
       }
     ],
@@ -136757,8 +136670,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "さいこう",
-          "さいこー"
+          "さいこう"
         ]
       },
       {
@@ -136776,8 +136688,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "さいこう",
-          "さいこー"
+          "さいこう"
         ]
       }
     ],
@@ -138766,8 +138677,7 @@
         ],
         "readings": [
           "ほんとう",
-          "ほんと",
-          "ほんとー"
+          "ほんと"
         ]
       },
       {
@@ -138784,8 +138694,7 @@
         ],
         "readings": [
           "ほんとう",
-          "ほんと",
-          "ほんとー"
+          "ほんと"
         ]
       },
       {
@@ -138803,8 +138712,7 @@
         ],
         "readings": [
           "ほんとう",
-          "ほんと",
-          "ほんとー"
+          "ほんと"
         ]
       }
     ],
@@ -138820,8 +138728,7 @@
         ],
         "readings": [
           "ほんとうに",
-          "ほんとに",
-          "ほんとーに"
+          "ほんとに"
         ]
       }
     ],
@@ -149577,8 +149484,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "どろぼう",
-          "どろぼー"
+          "どろぼう"
         ]
       },
       {
@@ -149594,8 +149500,7 @@
           "transitive verb"
         ],
         "readings": [
-          "どろぼう",
-          "どろぼー"
+          "どろぼう"
         ]
       }
     ],
@@ -164672,8 +164577,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "びょうき",
-          "びょーき"
+          "びょうき"
         ]
       },
       {
@@ -164688,8 +164592,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "びょうき",
-          "びょーき"
+          "びょうき"
         ]
       },
       {
@@ -164704,8 +164607,7 @@
           "nouns which may take the genitive case particle 'no'"
         ],
         "readings": [
-          "びょうき",
-          "びょーき"
+          "びょうき"
         ]
       }
     ],
@@ -189290,26 +189192,6 @@
         ]
       }
     ],
-    "興奮": [
-      {
-        "glosses": [
-          "excitement",
-          "stimulation",
-          "agitation",
-          "arousal"
-        ],
-        "id": "1238380:0",
-        "pos": [
-          "noun (common) (futsuumeishi)",
-          "noun or participle which takes the aux. verb suru",
-          "intransitive verb"
-        ],
-        "readings": [
-          "こうふん",
-          "こーふん"
-        ]
-      }
-    ],
     "舌": [
       {
         "glosses": [
@@ -202375,8 +202257,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "けいさつ",
-          "けーさつ"
+          "けいさつ"
         ]
       },
       {
@@ -202388,8 +202269,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "けいさつ",
-          "けーさつ"
+          "けいさつ"
         ]
       },
       {
@@ -202401,8 +202281,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "けいさつ",
-          "けーさつ"
+          "けいさつ"
         ]
       },
       {
@@ -202417,8 +202296,7 @@
           "noun, used as a suffix"
         ],
         "readings": [
-          "けいさつ",
-          "けーさつ"
+          "けいさつ"
         ]
       }
     ],
@@ -203076,27 +202954,6 @@
         ],
         "readings": [
           "まずしい"
-        ]
-      }
-    ],
-    "貧乏": [
-      {
-        "glosses": [
-          "poverty-stricken",
-          "destitute",
-          "poor",
-          "penurious"
-        ],
-        "id": "1490900:0",
-        "pos": [
-          "adjectival nouns or quasi-adjectives (keiyodoshi)",
-          "noun (common) (futsuumeishi)",
-          "noun or participle which takes the aux. verb suru",
-          "intransitive verb"
-        ],
-        "readings": [
-          "びんぼう",
-          "びんぼー"
         ]
       }
     ],
@@ -204836,8 +204693,7 @@
           "adverb (fukushi)"
         ],
         "readings": [
-          "ちょう",
-          "ちょー"
+          "ちょう"
         ]
       },
       {
@@ -204853,8 +204709,7 @@
           "adverb (fukushi)"
         ],
         "readings": [
-          "ちょう",
-          "ちょー"
+          "ちょう"
         ]
       },
       {
@@ -210917,8 +210772,7 @@
           "noun, used as a suffix"
         ],
         "readings": [
-          "どおり",
-          "どうり"
+          "どおり"
         ]
       },
       {
@@ -210931,8 +210785,7 @@
           "noun, used as a suffix"
         ],
         "readings": [
-          "どおり",
-          "どうり"
+          "どおり"
         ]
       },
       {
@@ -210945,8 +210798,7 @@
           "noun, used as a suffix"
         ],
         "readings": [
-          "どおり",
-          "どうり"
+          "どおり"
         ]
       }
     ],
@@ -212289,8 +212141,7 @@
           "おっそーい",
           "おせー",
           "おっせー",
-          "おっせぇ",
-          "おっせえ"
+          "おっせぇ"
         ]
       },
       {
@@ -212308,8 +212159,7 @@
           "おっそーい",
           "おせー",
           "おっせー",
-          "おっせぇ",
-          "おっせえ"
+          "おっせぇ"
         ]
       },
       {
@@ -212327,8 +212177,7 @@
           "おっそーい",
           "おせー",
           "おっせー",
-          "おっせぇ",
-          "おっせえ"
+          "おっせぇ"
         ]
       }
     ],
@@ -214018,8 +213867,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "てきとう",
-          "てきとー"
+          "てきとう"
         ]
       }
     ],
@@ -223349,8 +223197,7 @@
           "transitive verb"
         ],
         "readings": [
-          "ちょうだい",
-          "ちょーだい"
+          "ちょうだい"
         ]
       },
       {
@@ -223366,8 +223213,7 @@
           "transitive verb"
         ],
         "readings": [
-          "ちょうだい",
-          "ちょーだい"
+          "ちょうだい"
         ]
       },
       {
@@ -223379,8 +223225,7 @@
           "expressions (phrases, clauses, etc.)"
         ],
         "readings": [
-          "ちょうだい",
-          "ちょーだい"
+          "ちょうだい"
         ]
       }
     ],
@@ -224914,8 +224759,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "ふうぞく",
-          "ふーぞく"
+          "ふうぞく"
         ]
       },
       {
@@ -224927,8 +224771,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "ふうぞく",
-          "ふーぞく"
+          "ふうぞく"
         ]
       },
       {
@@ -224942,8 +224785,7 @@
           "noun (common) (futsuumeishi)"
         ],
         "readings": [
-          "ふうぞく",
-          "ふーぞく"
+          "ふうぞく"
         ]
       }
     ],
@@ -228043,22 +227885,6 @@
         ],
         "readings": [
           "こんたん"
-        ]
-      }
-    ],
-    "魔法瓶": [
-      {
-        "glosses": [
-          "thermos bottle",
-          "vacuum flask"
-        ],
-        "id": "1524260:0",
-        "pos": [
-          "noun (common) (futsuumeishi)"
-        ],
-        "readings": [
-          "まほうびん",
-          "まほーびん"
         ]
       }
     ],

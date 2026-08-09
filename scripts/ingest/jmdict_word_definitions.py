@@ -31,12 +31,50 @@ OUT = os.path.join(ROOT, "src", "data", "generated", "word-definitions.json")
 URL = "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz"
 UK = "word usually written using kana alone"
 CURATED = {"ichi1", "spec1", "spec2"}
+SMALL_KANA = set("ゃゅょぁぃぅぇぉゎ")
+VOWELS = {
+    **{c: "a" for c in "あかがさざただなはばぱまゃらわ"},
+    **{c: "i" for c in "いきぎしじちぢにひびぴみり"},
+    **{c: "u" for c in "うくぐすずつづぬふぶぷむゅる"},
+    **{c: "e" for c in "えけげせぜてでねへべぺめれ"},
+    **{c: "o" for c in "おこごそぞとどのほぼぽもょろを"},
+}
 
 
 def hiragana(text):
     """Collapse kana spelling variants that do not change pronunciation."""
     text = unicodedata.normalize("NFKC", text)
     return "".join(chr(ord(c) - 0x60) if "ァ" <= c <= "ヶ" else c for c in text)
+
+
+def pronunciation_key(reading):
+    """Collapse spelling-only long-vowel variants such as さいこう/さいこー."""
+    morae = []
+    for char in reading:
+        if char in SMALL_KANA and morae:
+            morae[-1] += char
+        else:
+            morae.append(char)
+    out = []
+    previous_vowel = None
+    for mora in morae:
+        vowel = VOWELS.get(mora[-1])
+        is_long = (
+            mora == "ー"
+            or mora == "う" and previous_vowel in {"o", "u"}
+            or mora == "い" and previous_vowel == "e"
+            or mora == "お" and previous_vowel == "o"
+            or mora == "え" and previous_vowel == "e"
+        )
+        if is_long:
+            out.append("ー")
+        else:
+            out.append(mora)
+        if vowel:
+            previous_vowel = vowel
+        elif mora != "ー":
+            previous_vowel = None
+    return "".join(out)
 
 
 def download():
@@ -121,9 +159,18 @@ def reduce(path):
                     glosses = [g.text for g in sense.findall("gloss") if g.text]
                     if not glosses:
                         continue
-                    ordered = list(dict.fromkeys(
-                        r["reb"] for r in rels if r["reb"] in applicable
-                    ))
+                    ordered_by_sound = {}
+                    for reading in (r["reb"] for r in rels if r["reb"] in applicable):
+                        key = pronunciation_key(reading)
+                        existing = ordered_by_sound.get(key)
+                        # Keep the frozen app spelling when available; otherwise
+                        # preserve JMdict order. さいこう and さいこー are one
+                        # pronunciation, not two rows competing for frequency.
+                        if existing is None or (
+                            reading in wanted[form] and existing not in wanted[form]
+                        ):
+                            ordered_by_sound[key] = reading
+                    ordered = list(ordered_by_sound.values())
                     collected[form].append({
                         "id": f"{seq}:{i}",
                         "glosses": glosses,

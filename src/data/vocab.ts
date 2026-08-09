@@ -300,7 +300,11 @@ function withSenses(row: JsonVocabRow): VocabRow {
 export interface ReadingDefinition {
   readonly id: string;
   readonly glosses: readonly string[];
+  /** Readings common enough for the teaching table. */
   readonly readings: readonly WordSense[];
+  /** Valid JMdict readings whose CEJC share is at most 5% of comparable uses.
+   * Library reference material only; never silently added to scored facts. */
+  readonly referenceReadings: readonly WordSense[];
   /** Present only when CEJC has enough evidence and the leading reading clears
    * the conservative majority, effect-size and confidence thresholds. */
   readonly preferredReading: string | null;
@@ -317,9 +321,11 @@ function wilsonLower(successes: number, total: number): number {
   );
 }
 
-/** Definitions stay in dictionary order. Readings move only WITHIN their own
- * definition, most-to-least common in CEJC; a common reading of definition B
- * can never jump above any reading of definition A. */
+/** Definitions stay in dictionary order. Comparable readings move only WITHIN
+ * their own definition, most-to-least common in CEJC; a common reading of
+ * definition B can never jump above any reading of definition A. Readings at or
+ * below 5% of sufficiently observed comparable usage become Library reference
+ * rows rather than ordinary teaching rows. */
 export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[] {
   const fallback = new Map<string, { glosses: readonly string[]; readings: WordSense[] }>();
   for (const sense of word.senses) {
@@ -382,9 +388,22 @@ export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[]
 
   const counts = CEJC_READING_COUNTS[word.keb] ?? {};
   return definitions.map((group) => {
-    const readings = group.readings
+    // CEJC is reading-counted but not sense-tagged. Counts are comparable only
+    // when every reading participates in exactly the same set of JMdict senses;
+    // otherwise uses belonging to another meaning could inflate one side.
+    const coverage = group.readings.map((reading) =>
+      source
+        .filter((definition) => definition.readings.includes(reading.reb))
+        .map((definition) => definition.id)
+        .sort()
+        .join("|"),
+    );
+    const comparable =
+      source.length > 0 && coverage.every((signature) => signature === coverage[0]);
+    const ranked = group.readings
       .map((reading, order) => ({ reading, order, count: counts[reading.reb] }))
       .sort((a, b) => {
+        if (!comparable) return a.order - b.order;
         if (a.count == null && b.count == null) return a.order - b.order;
         if (a.count == null) return 1;
         if (b.count == null) return -1;
@@ -394,14 +413,14 @@ export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[]
 
     let preferredReading: string | null = null;
     const hasCorpusEvidence = Object.keys(counts).length > 0;
-    if (readings.length >= 2 && hasCorpusEvidence) {
-      const top = counts[readings[0].reb];
+    const total = ranked.reduce((sum, reading) => sum + (counts[reading.reb] ?? 0), 0);
+    if (ranked.length >= 2 && hasCorpusEvidence && comparable) {
+      const top = counts[ranked[0].reb];
       // Once CEJC has observations for this written lexeme, a valid alternate
       // reading absent from those observations has an observed count of zero;
       // it is not missing corpus data. This distinction is why the generated
       // lookup retains single-reading matches as well as multi-reading ones.
-      const second = counts[readings[1].reb] ?? 0;
-      const total = readings.reduce((sum, r) => sum + (counts[r.reb] ?? 0), 0);
+      const second = counts[ranked[1].reb] ?? 0;
       if (
         top != null &&
         total >= 50 &&
@@ -409,11 +428,38 @@ export function readingDefinitions(word: VocabRow): readonly ReadingDefinition[]
         (second === 0 || top / second >= 1.6) &&
         wilsonLower(top, top + second) > 0.5
       ) {
-        preferredReading = readings[0].reb;
+        preferredReading = ranked[0].reb;
       }
     }
-    return { id: group.id, glosses: group.glosses, readings, preferredReading };
+    const referenceReadings =
+      comparable && total >= 50
+        ? ranked.filter(
+            (reading, index) =>
+              index > 0 && (counts[reading.reb] ?? 0) / total <= 0.05,
+          )
+        : [];
+    const referenceSet = new Set(referenceReadings.map((reading) => reading.reb));
+    const readings = ranked.filter((reading) => !referenceSet.has(reading.reb));
+    return {
+      id: group.id,
+      glosses: group.glosses,
+      readings,
+      referenceReadings,
+      preferredReading,
+    };
   });
+}
+
+/** The frozen word senses that remain teachable after definition-scoped CEJC
+ * classification. A sound is removed only when every definition in which it
+ * appears puts it in the reference tier; one teaching use keeps the reading in
+ * lessons and quizzes. Source-only reference rows were never scored facts. */
+export function teachingSenses(word: VocabRow): readonly WordSense[] {
+  const definitions = readingDefinitions(word);
+  const teachingReadings = new Set(
+    definitions.flatMap((definition) => definition.readings.map((reading) => reading.reb)),
+  );
+  return word.senses.filter((sense) => teachingReadings.has(sense.reb));
 }
 
 export const VOCAB: readonly VocabRow[] = [
@@ -501,7 +547,7 @@ export interface ReadingUnit {
 export function readingUnits(w: VocabRow): ReadingUnit[] {
   const order: string[] = [];
   const byReb = new Map<string, string[]>();
-  for (const s of w.senses) {
+  for (const s of teachingSenses(w)) {
     let gl = byReb.get(s.reb);
     if (!gl) {
       gl = [];
