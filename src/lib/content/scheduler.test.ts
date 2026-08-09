@@ -8,9 +8,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { planLesson, nextLesson } from "./scheduler.ts";
-import { buildItem } from "./build-item.ts";
+import { buildGlyphItem } from "./build-item.ts";
 import { emptyHistory } from "@/lib/history-ops";
-import { wordEntry } from "@/data/vocab";
 import type { ContentItem } from "./item";
 import type { Track } from "./track";
 import type { EntryId } from "@/types";
@@ -106,7 +105,7 @@ test("planLesson — a prereq shared by two items is taught once", () => {
 // glyphDifficulty. Against an EMPTY history every fact is fresh, so a real item is
 // due and gets taught — proving the seam, not re-testing the algorithm.
 test("nextLesson — a real due item is taught out of an empty history", () => {
-  const item = buildItem(wordEntry("三"), "number")!;
+  const item = buildGlyphItem("三")!;
   const track: Track = { id: "test", order: () => [item] };
   const resolve = (e: EntryId) => (e === item.entry ? item : undefined);
   const lesson = nextLesson(track, resolve, emptyHistory(), { min: 5, max: 7 });

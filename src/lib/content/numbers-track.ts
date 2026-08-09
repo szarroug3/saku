@@ -15,22 +15,10 @@ import { entryOf } from "@/lib/facts";
 import { constructionFactForMarker } from "@/data/counter-categories";
 import { counterEntry, type CounterForm } from "@/data/counters";
 import { kanjiEntry } from "@/data/kanji";
-import { wordEntry } from "@/data/vocab";
 import { SCHEDULE, UNIT_KANJI, type NumberUnit } from "@/lib/counter-lesson";
-import { buildItem } from "./build-item";
+import { buildItem, buildGlyphItem } from "./build-item";
 import type { ContentItem } from "./item";
 import type { Track } from "./track";
-
-/**
- * A bare Sino number (一, 三, 百, 万) as a first-class track item — the NUMBER
- * word (word:三 = さん, "three"), reading + meaning + Built-from, not the kanji
- * entry. Its character is pulled first as the word's own Built-from prereq, the
- * same way every kanji-word teaches its kanji (生 before 先生). Undefined if the
- * glyph has no number word.
- */
-function numberWordItem(glyph: string): ContentItem | undefined {
-  return buildItem(wordEntry(glyph), "number");
-}
 
 /**
  * An entry-backed counter form as a ContentItem — the `〜つ` natives (kana,
@@ -88,7 +76,7 @@ export function numbersTrack(): Track {
       // A bare-number range: teach its Sino numbers as items before the rule.
       if (step.unit.kind === "tens" || step.unit.kind === "big") {
         for (const g of UNIT_KANJI[step.unit.id]) {
-          const n = numberWordItem(g);
+          const n = buildGlyphItem(g);
           if (n) items.push(n);
         }
       }

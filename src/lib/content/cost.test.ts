@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { itemCost } from "./cost.ts";
-import { buildItem } from "./build-item.ts";
+import { buildGlyphItem } from "./build-item.ts";
 import { formItem, unitItem } from "./numbers-track.ts";
 import { GENERATIVE_UNITS } from "@/lib/counter-lesson";
 import { COUNTER_CURRICULUM } from "@/data/counters";
@@ -15,8 +15,12 @@ const tsu3 = COUNTER_CURRICULUM.find((f) => f.key === "counter:tsu:3")!;
 const sai20 = COUNTER_CURRICULUM.find((f) => f.key === "counter:sai:20")!;
 const tens = GENERATIVE_UNITS.find((u) => u.id === "tens")!;
 
-test("itemCost — one per fact", () => {
-  assert.equal(itemCost(buildItem(kanjiEntry("三"), "kanji")!), factsOf(kanjiEntry("三")).length);
+test("itemCost — one per fact, summed across a character's roles", () => {
+  const item = buildGlyphItem("三")!;
+  assert.equal(itemCost(item), item.facts.length);
+  // Cohesive: the number 三 costs MORE than its kanji facts alone, because its
+  // word (さん) facts are folded in.
+  assert.ok(itemCost(item) > factsOf(kanjiEntry("三")).length, "aggregates the word facts");
 });
 
 test("itemCost — a kana 〜つ form costs 1, not 0 (the glyphDifficulty gap it fixes)", () => {

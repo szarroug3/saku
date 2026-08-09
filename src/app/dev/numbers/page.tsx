@@ -17,7 +17,7 @@ import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { glyphOf } from "@/lib/facts";
 import type { EntryId } from "@/types";
 
-const RANGE = { min: 5, max: 7 };
+const DEFAULT_RANGE = { min: 5, max: 7 };
 const MAX_LESSONS = 300;
 
 interface Row {
@@ -28,12 +28,12 @@ interface Row {
   prereqs: string[];
 }
 
-function sequence(): { items: Row[] }[] {
+function sequence(range: { min: number; max: number }): { items: Row[] }[] {
   const track = numbersTrack();
   let history = emptyHistory();
   const lessons: { items: Row[] }[] = [];
   for (let i = 0; i < MAX_LESSONS; i++) {
-    const lesson = nextLesson(track, resolveItem, history, RANGE);
+    const lesson = nextLesson(track, resolveItem, history, range);
     if (!lesson) break;
     lessons.push({
       items: lesson.items.map((it) => ({
@@ -50,8 +50,16 @@ function sequence(): { items: Row[] }[] {
   return lessons;
 }
 
-export default function NumbersTrackDevPage() {
-  const lessons = sequence();
+export default async function NumbersTrackDevPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ min?: string; max?: string }>;
+}) {
+  const sp = await searchParams;
+  const min = Number(sp.min) || DEFAULT_RANGE.min;
+  const max = Number(sp.max) || DEFAULT_RANGE.max;
+  const range = { min, max: Math.max(min, max) };
+  const lessons = sequence(range);
   const totalItems = lessons.reduce((n, l) => n + l.items.length, 0);
 
   return (
@@ -59,8 +67,8 @@ export default function NumbersTrackDevPage() {
       <h1>Numbers / counters — new scheduler output</h1>
       <p style={{ color: "#666" }}>
         {lessons.length} lessons, {totalItems} items, walked from an empty history through{" "}
-        <code>nextLesson(numbersTrack())</code>. Range {RANGE.min}–{RANGE.max}, cost = facts.
-        Not live — a preview of the migrated curriculum.
+        <code>nextLesson(numbersTrack())</code>. Range {range.min}–{range.max} (override with{" "}
+        <code>?min=&amp;max=</code>), cost = facts. Not live — a preview of the migrated curriculum.
       </p>
       {lessons.map((lesson, i) => {
         const cost = lesson.items.reduce((n, it) => n + it.cost, 0);

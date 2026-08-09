@@ -7,11 +7,11 @@ import { resolveItem } from "./resolve.ts";
 import { kanjiEntry } from "@/data/kanji";
 import { wordEntry } from "@/data/vocab";
 
-test("resolveItem — a kanji prereq resolves to its kanji item", () => {
+test("resolveItem — a kanji prereq resolves to its cohesive character item", () => {
   const item = resolveItem(kanjiEntry("三"));
-  assert.ok(item, "三 is in the kanji corpus");
+  assert.ok(item, "三 is in the corpus");
   assert.equal(item!.glyph, "三");
-  assert.equal(item!.kind, "kanji");
+  assert.equal(item!.kind, "character");
 });
 
 test("resolveItem — a prereq edge from another item lands on a real item", () => {

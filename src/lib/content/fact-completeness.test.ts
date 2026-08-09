@@ -1,45 +1,57 @@
 // Run: node --import ./src/lib/conjugate/test-hooks.mjs --test src/lib/content/fact-completeness.test.ts
 //
-// THE invariant the whole Stage-1 fix rests on (docs/architecture-refactor.md §4):
-// a taught item's fact-set is EXACTLY factsOf(entry) — no fact dropped, none
-// invented. This is why a number can't lose its reading: buildItem takes ALL the
-// entry's facts, so "meaning without reading" is unrepresentable. Locking it here
-// means a future refactor of buildItem can't quietly narrow the set the way the
-// old counters path did (it hand-picked a meaning fact and left the reading out).
+// THE invariant the cohesive-item model rests on: a character's fact-set is
+// EXACTLY the UNION of factsOf over every role entry it plays (radical, kanji,
+// word). No fact dropped, none invented. This is why a number can't lose its
+// reading — 三's item takes the word entry's さん fact by construction — and why a
+// both-role glyph teaches its radical meaning too. A multi-char word's facts are
+// exactly factsOf(its entry).
 
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildItem } from "./build-item.ts";
+import { buildGlyphItem, buildItem } from "./build-item.ts";
 import { factsOf } from "@/lib/facts";
+import { characterRoles } from "@/lib/character-role";
 import { kanjiEntry } from "@/data/kanji";
+import { radicalEntry, radicalByGlyph } from "@/data/radicals";
 import { wordEntry } from "@/data/vocab";
-import type { ContentKind } from "./item";
+import { kanjiRow } from "@/data/kanji";
 
-const CASES: ReadonlyArray<{ entry: ReturnType<typeof kanjiEntry>; kind: ContentKind; note: string }> = [
-  { entry: kanjiEntry("三"), kind: "kanji", note: "a kanji (meaning + readings)" },
-  { entry: wordEntry("三"), kind: "number", note: "a number-word (meaning + reading)" },
-  { entry: kanjiEntry("日"), kind: "kanji", note: "a many-fact kanji" },
-  { entry: wordEntry("先生"), kind: "word", note: "an ordinary multi-kanji word" },
-];
+function roleEntries(glyph: string) {
+  const roles = characterRoles(glyph);
+  const entries = [];
+  if (roles.includes("radical")) entries.push(radicalEntry(glyph));
+  if (roles.includes("kanji")) entries.push(kanjiEntry(glyph));
+  if (roles.includes("word")) entries.push(wordEntry(glyph));
+  return entries;
+}
 
-for (const { entry, kind, note } of CASES) {
-  test(`fact completeness — ${note}: item facts == factsOf(entry)`, () => {
-    const item = buildItem(entry, kind);
-    assert.ok(item, `${entry} has facts to build from`);
+for (const glyph of ["三", "日", "十", "山"]) {
+  test(`fact completeness — ${glyph}: character facts == union of its role entries' facts`, () => {
+    const item = buildGlyphItem(glyph);
+    assert.ok(item, `${glyph} builds`);
     const got = item!.facts.map((f) => f.id);
-    const want = factsOf(entry);
-    // No fact dropped, none invented, no duplicates.
-    assert.equal(got.length, want.length, "same count");
+    const want = roleEntries(glyph).flatMap((e) => factsOf(e));
+    assert.equal(got.length, want.length, "same count — nothing dropped or duplicated");
     assert.deepEqual(new Set(got), new Set(want), "same set of fact ids");
   });
 }
 
-test("fact completeness — a number-word's set spans both meaning and reading", () => {
-  // The exact drop we are guarding against: the reading fact must be present, not
-  // just some meaning fact. jp2enResponse classifies them as romaji vs definition.
-  const item = buildItem(wordEntry("三"), "number")!;
-  const kinds = new Set(item.facts.map((f) => f.kind));
+test("fact completeness — a many-role glyph really does span radical + kanji + word", () => {
+  // 山 is a Kangxi radical, a jōyō kanji, and a word on its own.
+  assert.ok(radicalByGlyph("山") !== undefined && kanjiRow("山") !== undefined);
+  const roles = buildGlyphItem("山")!.roles;
+  assert.ok(roles.includes("radical") && roles.includes("kanji") && roles.includes("word"));
+});
+
+test("fact completeness — 三 as a number spans both meaning and reading", () => {
+  const kinds = new Set(buildGlyphItem("三")!.facts.map((f) => f.kind));
   assert.ok(kinds.has("definition"), "carries a meaning fact");
   assert.ok(kinds.has("romaji"), "carries a reading fact — the one that used to vanish");
+});
+
+test("fact completeness — a multi-char word's facts == factsOf(entry)", () => {
+  const item = buildItem(wordEntry("先生"), "word")!;
+  assert.deepEqual(new Set(item.facts.map((f) => f.id)), new Set(factsOf(wordEntry("先生"))));
 });

@@ -9,19 +9,24 @@ import type { RoleName } from "@/lib/character-role";
 import type { Fact } from "./fact";
 
 /**
- * The content kinds the app teaches. NUMBERS are first-class here — a word whose
- * role is number — not a kanji special-cased at each call site (which is how they
- * lost their reading and got labelled "Kanji · Word"). "generative-rule" is a
- * range/counter drill unit ("read 11–99"); it is an item like any other, so the
- * shared viewport renders it without a bespoke component.
+ * The content kinds the app teaches.
+ *
+ * "character" is a SINGLE Han glyph taught as ONE cohesive item across every role
+ * it plays — radical AND kanji AND number/word (三 is the character three, the
+ * kanji three, and the number さん, all one lesson). It carries the UNION of its
+ * roles' facts and is labelled by `characterRoles`; a glyph is never split into a
+ * kanji item and a number item that teach 三 twice. This mirrors the words/kanji
+ * curriculum spine, where a glyph is one item with a roles set.
+ *
+ * "word" is a MULTI-character word (先生); "counter" a counter form (〜つ, 二十歳);
+ * "generative-rule" a range/counter drill unit ("read 11-99"), an item like any
+ * other so the shared viewport renders it without a bespoke component.
  */
 export type ContentKind =
+  | "character"
   | "word"
-  | "kanji"
   | "kana"
   | "counter"
-  | "number"
-  | "grammar"
   | "generative-rule";
 
 /**

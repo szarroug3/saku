@@ -11,21 +11,21 @@
 // kanji-corpus resolver is the whole resolve the number/counter pilot needs. As
 // word/kana tracks migrate they extend this same map with their own kinds.
 
-import { KANJI, kanjiEntry } from "@/data/kanji";
-import { buildItem } from "./build-item";
+import { KANJI } from "@/data/kanji";
+import { buildGlyphItem } from "./build-item";
 import type { ContentItem } from "./item";
 import type { EntryId } from "@/types";
 
 let kanjiIndex: Map<EntryId, ContentItem> | null = null;
 
-/** Every jōyō kanji as a ContentItem, indexed by entry. Built once, lazily —
- * the same build-once-index shape library/entries.ts uses, but deferred so a
- * route that never schedules a lesson doesn't pay for it. */
+/** Every jōyō kanji as a cohesive `character` ContentItem, indexed by canonical
+ * entry. Built once, lazily — the same build-once-index shape library/entries.ts
+ * uses, but deferred so a route that never schedules a lesson doesn't pay for it. */
 function kanjiCorpus(): Map<EntryId, ContentItem> {
   if (kanjiIndex) return kanjiIndex;
   const m = new Map<EntryId, ContentItem>();
   for (const row of KANJI) {
-    const item = buildItem(kanjiEntry(row.c), "kanji");
+    const item = buildGlyphItem(row.c);
     if (item) m.set(item.entry, item);
   }
   kanjiIndex = m;

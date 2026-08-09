@@ -12,7 +12,7 @@ export { orderedTrack } from "./ordered-track";
 export { unitItem, formItem, numbersTrack } from "./numbers-track";
 export type { Lesson, NextLesson } from "./scheduler";
 export { MAX_PREREQ_DEPTH, planLesson, nextLesson } from "./scheduler";
-export { buildItem } from "./build-item";
+export { buildItem, buildGlyphItem } from "./build-item";
 export { resolveItem } from "./resolve";
 export { itemCost } from "./cost";
 export type { Registry, ItemRenderer } from "./registry";

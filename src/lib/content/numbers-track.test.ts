@@ -79,26 +79,28 @@ test("numbersTrack — order follows SCHEDULE: 〜つ natives, then the range un
   );
 });
 
-test("numbersTrack — the Sino numbers 一…十, 百千万 are first-class number items", () => {
+test("numbersTrack — the Sino numbers 一…十, 百千万 are first-class cohesive items", () => {
   const items = numbersTrack().order(emptyHistory());
-  const numbers = items.filter((i) => i.kind === "number");
+  const numbers = items.filter((i) => i.kind === "character");
   for (const g of ["一", "五", "十", "百", "千", "万"]) {
     const n = numbers.find((i) => i.glyph === g);
-    assert.ok(n, `${g} is an item in the number track`);
-    assert.ok(n!.facts.some((f) => f.kind === "romaji"), `${g} carries its reading`);
+    assert.ok(n, `${g} is a character item in the number track`);
+    assert.ok(n!.facts.some((f) => f.kind === "romaji"), `${g} carries its reading (さん…)`);
   }
   // Numbers sit before the range unit that composes them.
-  const three = items.findIndex((i) => i.kind === "number" && i.glyph === "三");
+  const three = items.findIndex((i) => i.kind === "character" && i.glyph === "三");
   const tens = items.findIndex((i) => i.glyph === "十〜");
   assert.ok(three >= 0 && three < tens, "三 is taught before the compose-11-99 unit");
 });
 
-test("numbersTrack × nextLesson — teaching 三 pulls the kanji 三 first, keeps さん", () => {
-  // A returning learner who knows the 〜つ natives: the first new lesson reaches
-  // the Sino numbers. 三 is a number item carrying romaji; its kanji comes first.
-  const items = numbersTrack().order(emptyHistory());
-  const three = items.find((i) => i.kind === "number" && i.glyph === "三")!;
-  assert.ok(three.prereqs.includes(kanjiEntry("三")), "the number 三 needs the character 三");
+test("numbersTrack — a number appears ONCE, not split into kanji + number", () => {
+  // The whole point of the cohesive item: 三 is a single row, carrying both its
+  // kanji facts and its さん reading — never taught twice.
+  const threes = numbersTrack()
+    .order(emptyHistory())
+    .filter((i) => i.glyph === "三");
+  assert.equal(threes.length, 1, "three appears exactly once");
+  assert.equal(threes[0].entry, kanjiEntry("三"), "identified by the canonical kanji entry");
 });
 
 test("numbersTrack × nextLesson — a first lesson comes out of an empty history", () => {
