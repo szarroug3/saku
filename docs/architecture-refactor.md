@@ -252,6 +252,7 @@ green commit.
 | `scheduler.ts` | `planLesson` (pure: cross-track prereq ordering, `MAX_PREREQ_DEPTH` gate, floor/ceiling fill) + `nextLesson` (history seam: due = fresh fact, cost = `glyphDifficulty`) | `scheduler.test.ts` |
 | `resolve.ts` | `resolveItem` — build-once kanji-corpus map the engine follows prereq edges through (a lookup, not an id parse) | `resolve.test.ts` |
 | `track.ts` | `Track { id, order(history) }` — ordering only; prereqs live on items | — |
+| `ordered-track.ts` | `orderedTrack(id, spec)` — turn a fixed (entry, kind) sequence into a Track, built through `buildItem` | `ordered-track.test.ts` |
 | `registry.ts` | `createRegistry`, `itemRenderers` — for the Stage-2/4 renderer maps | `registry.test.ts` |
 | `index.ts` | barrel |  |
 
@@ -261,7 +262,16 @@ dependents across tracks, gates chains past depth 3 (and the gate lifts as the
 tail is learned), fills to the floor without crossing the ceiling, and teaches a
 real due item out of an empty history.
 
-**Next (own session):** the numbers/counters `Track.order()` + live swap onto
-`nextLesson` under the fact-set guard — Stage 1's live half and Stage 3's first
-track, together. Largest and riskiest slice; everything above is the safety net
-it lands on.
+**The reusable toolkit is now complete** — model (`buildItem`), engine
+(`planLesson` / `nextLesson`), resolve (`resolveItem`), and the Track adapter
+(`orderedTrack`), each tested in isolation and composed on real data. There is no
+smaller safe/additive piece left; what remains is the integration.
+
+**Next (own session):** assemble the numbers/counters track from the real
+curriculum — `orderedTrack` for the entry-backed base (number-words + counter
+forms), plus the `generative-rule` units built directly (they have no normal
+entry) — then swap the live counter scheduler onto `nextLesson` under the
+fact-set guard. Stage 1's live half and Stage 3's first track, together. Largest
+and riskiest slice; everything above is the safety net it lands on. The one
+caution: this authors/faithfully mirrors live curriculum data, so it must be done
+against `counter-lesson.ts` as its source, not from memory.
