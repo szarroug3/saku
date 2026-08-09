@@ -15,10 +15,22 @@ import { entryOf } from "@/lib/facts";
 import { constructionFactForMarker } from "@/data/counter-categories";
 import { counterEntry, type CounterForm } from "@/data/counters";
 import { kanjiEntry } from "@/data/kanji";
+import { wordEntry } from "@/data/vocab";
 import { SCHEDULE, UNIT_KANJI, type NumberUnit } from "@/lib/counter-lesson";
 import { buildItem } from "./build-item";
 import type { ContentItem } from "./item";
 import type { Track } from "./track";
+
+/**
+ * A bare Sino number (一, 三, 百, 万) as a first-class track item — the NUMBER
+ * word (word:三 = さん, "three"), reading + meaning + Built-from, not the kanji
+ * entry. Its character is pulled first as the word's own Built-from prereq, the
+ * same way every kanji-word teaches its kanji (生 before 先生). Undefined if the
+ * glyph has no number word.
+ */
+function numberWordItem(glyph: string): ContentItem | undefined {
+  return buildItem(wordEntry(glyph), "number");
+}
 
 /**
  * An entry-backed counter form as a ContentItem — the `〜つ` natives (kana,
@@ -55,9 +67,15 @@ export function unitItem(unit: NumberUnit): ContentItem | undefined {
  * The numbers/counters track: the whole curriculum as ContentItems, in teaching
  * order, by walking the SAME `SCHEDULE` the live scheduler uses (〜つ natives, the
  * two range units, then each counter's unit followed by its kept forms). Building
- * both item shapes off the one schedule is what makes the shared `nextLesson`
+ * the item shapes off the one schedule is what makes the shared `nextLesson`
  * reproduce this track — a step that can't build (missing facts) is dropped, the
  * same refusal `formItem`/`unitItem` make.
+ *
+ * The bare Sino numbers (一…十, 百千万) are FIRST-CLASS items here, not just unit
+ * prereqs: a `tens`/`big` range unit is preceded by its numbers as number-word
+ * items (they compose 11-99 / 100-9999 out of exactly those). Counter units keep
+ * their kanji as prereqs — 本 is a counter, not a number. This is what makes
+ * "1, 2, 3, 4 …" appear in the number track's own list.
  *
  * Order ONLY — dueness, prereq resolution, budget, and the depth gate are the
  * scheduler's (see track.ts). The order is static, so history is ignored and the
@@ -66,8 +84,20 @@ export function unitItem(unit: NumberUnit): ContentItem | undefined {
 export function numbersTrack(): Track {
   const items: ContentItem[] = [];
   for (const step of SCHEDULE) {
-    const item = "unit" in step ? unitItem(step.unit) : formItem(step.form);
-    if (item) items.push(item);
+    if ("unit" in step) {
+      // A bare-number range: teach its Sino numbers as items before the rule.
+      if (step.unit.kind === "tens" || step.unit.kind === "big") {
+        for (const g of UNIT_KANJI[step.unit.id]) {
+          const n = numberWordItem(g);
+          if (n) items.push(n);
+        }
+      }
+      const unit = unitItem(step.unit);
+      if (unit) items.push(unit);
+    } else {
+      const form = formItem(step.form);
+      if (form) items.push(form);
+    }
   }
   return { id: "counters", order: () => items };
 }
