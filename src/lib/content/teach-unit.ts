@@ -19,6 +19,8 @@
 // facts share a meaning, the drill scores ONE representative; the rest are shown,
 // aliased, never a second graded card — so no learner record moves.
 
+import { factInfo } from "@/lib/facts";
+import { canonicalMeaningId } from "./meaning";
 import type { FactId } from "@/types";
 import type { MeaningId } from "./meaning";
 import type { ContentItem } from "./item";
@@ -51,9 +53,44 @@ export interface TeachUnit {
  *     A word meaning fact's MeaningId is its `definitionId` (reused); kanji/radical
  *     meaning facts fold onto the same id when the registry says so.
  *
- *   itemCost(item): number   (replaces cost.ts)
+ *   itemCost(item): number   (cost.ts)
  *     = count of TAUGHT units = |unique taught meanings| + |unique taught readings|.
  *     So 三 costs 1 meaning + 1 reading (not 3 facts); 人 costs person + man +
  *     any CEJC-frequent extra senses, deduped — the count Sam asked for.
  */
-export type TeachUnitsOf = (item: ContentItem) => readonly TeachUnit[];
+
+/**
+ * Group an item's facts into deduped teaching units. Both a DEFINITION fact and a
+ * READING fact carry the meaning they belong to (`factInfo.meaning`), so grouping
+ * every fact by `canonicalMeaningId(fact, gloss)` collects each meaning with its
+ * reading in one pass — 三's kanji-three + word-three + さん become one unit, and
+ * 人's "man"/"person" collapse once the registry says so. Insertion order is
+ * preserved (radical, kanji, then word units, matching fact order).
+ *
+ * PENDING: the taught/reference split — every unit is `taught: true` for now.
+ * Wiring it reads the CEJC `referenceReadings` tier (vocab.ts readingDefinitions),
+ * which marks a unit's reading reference-only; additive, no shape change.
+ */
+export function teachUnitsOf(item: ContentItem): readonly TeachUnit[] {
+  const order: MeaningId[] = [];
+  const units = new Map<MeaningId, { label: string; reading: string | null; facts: FactId[] }>();
+  for (const f of item.facts) {
+    const info = factInfo(f.id);
+    const gloss = info?.meaning;
+    if (!gloss) continue;
+    const id = canonicalMeaningId(f.id, gloss);
+    let unit = units.get(id);
+    if (!unit) {
+      unit = { label: gloss, reading: null, facts: [] };
+      units.set(id, unit);
+      order.push(id);
+    }
+    unit.facts.push(f.id);
+    if (f.kind === "definition") unit.label = gloss; // a definition gloss labels the unit
+    else if (!unit.reading) unit.reading = info!.answers[0] ?? null;
+  }
+  return order.map((id) => {
+    const u = units.get(id)!;
+    return { meaning: id, label: u.label, reading: u.reading, taught: true, facts: u.facts };
+  });
+}
