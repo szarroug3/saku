@@ -23,6 +23,16 @@ test("verbPairUnitsOf — the 開く/開ける pair yields a populated unit, int
   assert.equal(unit.kind, "verb-pair");
   assert.equal(unit.intransitive, "開く", "happens side is the intransitive");
   assert.equal(unit.transitive, "開ける", "doIt side is the transitive");
+  assert.equal(unit.base, "開", "base is the kanji both verbs share");
   assert.equal(unit.facts.length, 2, "both sides of the pair");
   assert.equal(unit.cost, 2, "both verbs learned");
+});
+
+test("verbPairUnitsOf — 生まれる/産む shares no kanji, so base is empty", () => {
+  const pair = transitivityItems().find(
+    (i) => String(i.entry) === "transitivity:生まれる/産む",
+  );
+  assert.ok(pair, "the born/give-birth pair is present");
+  const [unit] = verbPairUnitsOf(pair!);
+  assert.equal(unit.base, "", "the two verbs use different kanji — no shared base");
 });

@@ -76,6 +76,7 @@ export interface VerbPairUnit extends TeachingUnitBase {
   readonly kind: "verb-pair";
   readonly intransitive: string; // 開く
   readonly transitive: string; // 開ける
+  readonly base: string; // the kanji both verbs share (開); "" when they share none (生まれる/産む)
 }
 
 /** SENTENCE ORDERING — teach how to BUILD a sentence: the rule, not the sentence. */

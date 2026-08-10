@@ -10,6 +10,8 @@ import { TRANSITIVITY_FACTS, pairForEntry } from "@/data/transitivity-facts";
 import type { ContentItem } from "./item.ts";
 import type { VerbPairUnit } from "./teach-unit.ts";
 
+const HAN = /\p{Script=Han}/u;
+
 /** The distinct transitivity pair entries, each as a ContentItem via `buildItem`.
  * One item per pair (its facts are the two sides). Undefined builds are skipped. */
 export function transitivityItems(): ContentItem[] {
@@ -45,12 +47,17 @@ export function verbPairUnitsOf(item: ContentItem): VerbPairUnit[] {
     const key = String(item.entry).split(":").slice(1).join(":");
     [intransitive = "", transitive = ""] = key.split("/");
   }
+  // The base is the kanji the two verbs share (開く/開ける → 開) — the true
+  // common anchor, since a clean shared English word often doesn't exist. Empty
+  // for the one suppletive pair that shares no kanji (生まれる/産む).
+  const base = [...intransitive].find((c) => transitive.includes(c) && HAN.test(c)) ?? "";
   return [
     {
       kind: "verb-pair" as const,
       item,
       intransitive,
       transitive,
+      base,
       facts: item.facts.map((f) => f.id),
       cost: 2, // both verbs are learned — the intransitive and the transitive
     },
