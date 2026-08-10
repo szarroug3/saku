@@ -9,25 +9,6 @@
 import { frostCard } from "@/components/ui/frost";
 import type { ContentItem } from "@/lib/content/item";
 
-/** The type shown on the preview: a character shows the roles it plays; other
- * kinds show what they are. */
-function typeLabel(item: ContentItem): string {
-  switch (item.kind) {
-    case "character":
-      return item.roles.join(" · ");
-    case "generative-rule":
-      return "counting rule";
-    case "grammar":
-      return "grammar rule";
-    case "transitivity":
-      return "verb pair";
-    case "sentence-ordering":
-      return "sentence order";
-    default:
-      return item.kind; // word · counter · kana · keigo
-  }
-}
-
 /** Glyph size by character count, so the box stays one size and the content fits. */
 function glyphSize(glyph: string): string {
   const n = [...glyph].length;
@@ -53,7 +34,7 @@ export function ItemPreview({ item }: { item: ContentItem }) {
           with a 1-line one (三) across cards. */}
       <div className="flex h-9 items-start justify-center text-center">
         <span className="text-[11px] uppercase leading-tight tracking-[0.06em] text-accent">
-          {typeLabel(item)}
+          {item.typeLabel}
         </span>
       </div>
     </div>

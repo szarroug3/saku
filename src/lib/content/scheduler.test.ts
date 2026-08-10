@@ -24,6 +24,7 @@ function mk(entry: string, prereqs: string[] = []): ContentItem {
     roles: [],
     prereqs: prereqs as EntryId[],
     etymology: null,
+    typeLabel: "",
   };
 }
 

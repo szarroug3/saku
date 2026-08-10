@@ -13,7 +13,7 @@ import { formItem, unitItem } from "@/lib/content/numbers-track";
 import { wordEntry } from "@/data/vocab";
 import { GENERATIVE_UNITS } from "@/lib/counter-lesson";
 import { COUNTER_CURRICULUM } from "@/data/counters";
-import type { ContentItem, ContentKind } from "@/lib/content/item";
+import { contentTypeLabel, type ContentItem, type ContentKind } from "@/lib/content/item";
 import type { EntryId } from "@/types";
 
 const tsu1 = COUNTER_CURRICULUM.find((f) => f.key === "counter:tsu:1");
@@ -22,7 +22,16 @@ const tens = GENERATIVE_UNITS.find((u) => u.id === "tens");
 // A minimal stand-in for a track not yet in the content model — enough to design
 // its preview (glyph + type). No facts/roles; not a real buildItem output.
 function mock(kind: ContentKind, glyph: string): ContentItem {
-  return { entry: `${kind}:${glyph}` as EntryId, kind, glyph, facts: [], roles: [], prereqs: [], etymology: null };
+  return {
+    entry: `${kind}:${glyph}` as EntryId,
+    kind,
+    glyph,
+    facts: [],
+    roles: [],
+    prereqs: [],
+    etymology: null,
+    typeLabel: contentTypeLabel(kind, []),
+  };
 }
 
 const LEARN: { label: string; item: ContentItem | undefined }[] = [
@@ -32,7 +41,7 @@ const LEARN: { label: string; item: ContentItem | undefined }[] = [
   { label: "Counter", item: tsu1 ? formItem(tsu1) : undefined },
   { label: "Generative rule", item: tens ? unitItem(tens) : undefined },
   // Not yet modeled — mocks, to design their previews:
-  { label: "Keigo", item: mock("keigo", "召し上がる") },
+  { label: "Keigo", item: mock("keigo", "食べる") },
   { label: "Grammar", item: mock("grammar", "〜たい") },
   { label: "Transitivity", item: mock("transitivity", "開く・開ける") },
   { label: "Sentence order", item: mock("sentence-ordering", "私は学生です") },

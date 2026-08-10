@@ -65,4 +65,28 @@ export interface ContentItem {
    * a glyph with no etymology (suppressed, or not a kanji). Display-only; not a
    * fact, not a scheduling input. */
   readonly etymology: KanjiEtymology | null;
+  /** What KIND of thing this is, for display — a character's roles
+   * ("radical · kanji · word"), else a per-kind label. Computed ONCE at build
+   * (`contentTypeLabel`); views read it, they don't recompute it. */
+  readonly typeLabel: string;
+}
+
+/** The display type of an item: a character shows the roles it plays; other kinds
+ * show what they are. Called once per item at build time — the result is stored
+ * on `ContentItem.typeLabel`. */
+export function contentTypeLabel(kind: ContentKind, roles: readonly RoleName[]): string {
+  switch (kind) {
+    case "character":
+      return roles.join(" · ");
+    case "generative-rule":
+      return "counting rule";
+    case "grammar":
+      return "grammar rule";
+    case "transitivity":
+      return "verb pair";
+    case "sentence-ordering":
+      return "sentence order";
+    default:
+      return kind; // word · counter · kana · keigo
+  }
 }

@@ -21,6 +21,7 @@ import { kanjiEntry, kanjiRow, meaningFactId } from "@/data/kanji";
 import { radicalEntry, radicalByGlyph, radicalMeaningFactId } from "@/data/radicals";
 import { wordEntry, wordUnitFacts } from "@/data/vocab";
 import { etymologyOf } from "@/data/kanji-etymology";
+import { contentTypeLabel } from "./item";
 import type { EntryId, FactId } from "@/types";
 import type { ContentItem, ContentKind } from "./item";
 import type { Fact } from "./fact";
@@ -78,6 +79,7 @@ export function buildGlyphItem(glyph: string): ContentItem | undefined {
     prereqs: componentPrereqs(glyph),
     // The character's origin — explains the components above. A precomputed lookup.
     etymology: etymologyOf(glyph) ?? null,
+    typeLabel: contentTypeLabel("character", roles),
   };
 }
 
@@ -107,5 +109,14 @@ export function buildItem(entry: EntryId, kind: ContentKind): ContentItem | unde
   const roles = characterRoles(glyph);
   // A multi-char word / counter / unit has no single-glyph etymology — its
   // component kanji each carry their own (shown on their own pages).
-  return { entry, kind, glyph, facts, roles, prereqs: directPrereqs(kind, glyph), etymology: null };
+  return {
+    entry,
+    kind,
+    glyph,
+    facts,
+    roles,
+    prereqs: directPrereqs(kind, glyph),
+    etymology: null,
+    typeLabel: contentTypeLabel(kind, roles),
+  };
 }
