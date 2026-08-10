@@ -28,7 +28,13 @@ export type ContentKind =
   | "word"
   | "kana"
   | "counter"
-  | "generative-rule";
+  | "generative-rule"
+  // Tracks not yet migrated to the model — named here so views can be designed
+  // against the full set; they have no buildItem path yet.
+  | "keigo"
+  | "grammar"
+  | "transitivity"
+  | "sentence-ordering";
 
 /**
  * One teachable/quizzable item. Its `facts` follow from its `kind` via the single

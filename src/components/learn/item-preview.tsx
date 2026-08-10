@@ -12,9 +12,20 @@ import type { ContentItem } from "@/lib/content/item";
 /** The type shown on the preview: a character shows the roles it plays; other
  * kinds show what they are. */
 function typeLabel(item: ContentItem): string {
-  if (item.kind === "character") return item.roles.join(" · ");
-  if (item.kind === "generative-rule") return "counting rule";
-  return item.kind; // word · counter · kana
+  switch (item.kind) {
+    case "character":
+      return item.roles.join(" · ");
+    case "generative-rule":
+      return "counting rule";
+    case "grammar":
+      return "grammar rule";
+    case "transitivity":
+      return "verb pair";
+    case "sentence-ordering":
+      return "sentence order";
+    default:
+      return item.kind; // word · counter · kana · keigo
+  }
 }
 
 /** Glyph size by character count, so the box stays one size and the content fits. */
@@ -28,14 +39,19 @@ function glyphSize(glyph: string): string {
 
 export function ItemPreview({ item }: { item: ContentItem }) {
   return (
-    <div
-      className={`${frostCard} flex h-[150px] flex-col items-center justify-center gap-2 overflow-hidden text-center`}
-    >
-      <div className={`font-kana leading-none text-text ${glyphSize(item.glyph)}`} lang="ja">
-        {item.glyph}
+    <div className={`${frostCard} flex h-[150px] flex-col overflow-hidden`}>
+      {/* Glyph centered in the flexible area — same vertical position on every card. */}
+      <div className="flex flex-1 items-center justify-center">
+        <span className={`font-kana leading-none text-text ${glyphSize(item.glyph)}`} lang="ja">
+          {item.glyph}
+        </span>
       </div>
-      <div className="text-[11px] uppercase leading-tight tracking-[0.06em] text-accent">
-        {typeLabel(item)}
+      {/* Type label in a fixed band, top-aligned — so a 2-line label (人) lines up
+          with a 1-line one (三) across cards. */}
+      <div className="flex h-9 items-start justify-center text-center">
+        <span className="text-[11px] uppercase leading-tight tracking-[0.06em] text-accent">
+          {typeLabel(item)}
+        </span>
       </div>
     </div>
   );
