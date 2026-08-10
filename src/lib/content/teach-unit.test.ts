@@ -21,7 +21,8 @@ test("teachUnitsOf — 人 splits by PRONUNCIATION: ひと / じん / にん, ea
   assert.ok(readings.includes("じん") && readings.includes("にん"), "the other readings are their own units");
   // The core meanings (kanji person, radical man) attach to the primary reading ひと.
   const hito = units.find((u) => u.reading === "ひと")!;
-  assert.ok(hito.meanings.some((m) => m.label === "person"), "ひと carries person");
+  // man≈person merged → one meaning, shown as synonyms with the canonical first.
+  assert.ok(hito.meanings.some((m) => m.label.startsWith("person")), "ひと carries person");
 });
 
 test("unitCost — counts meanings, not the reading; each の unit ≈ its senses", () => {

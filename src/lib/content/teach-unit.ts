@@ -56,7 +56,7 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
   const order: (string | null)[] = [];
   const groups = new Map<
     string | null,
-    { meanings: Map<MeaningId, string>; facts: FactId[] }
+    { meanings: Map<MeaningId, Set<string>>; facts: FactId[] }
   >();
   for (const f of item.facts) {
     const key = rebOf(f.id) ?? primaryReb; // core meaning → the primary pronunciation
@@ -70,10 +70,16 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
     if (f.kind === "definition") {
       const gloss = factInfo(f.id)?.meaning;
       if (gloss) {
+        // Merged glosses are SYNONYMS of one meaning — collect them all, don't
+        // drop. 主's "lord" + "head (of a household, etc.)" become one meaning
+        // shown as both; the count is still 1.
         const id = canonicalMeaningId(f.id, gloss);
-        // Label with the CANONICAL gloss (the MeaningId), not the first fact's
-        // gloss — so a merged unit shows "person", not the radical's "man".
-        if (!group.meanings.has(id)) group.meanings.set(id, id);
+        let glosses = group.meanings.get(id);
+        if (!glosses) {
+          glosses = new Set();
+          group.meanings.set(id, glosses);
+        }
+        glosses.add(gloss);
       }
     }
   }
@@ -82,7 +88,12 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
     return {
       glyph: item.glyph,
       reading,
-      meanings: [...group.meanings].map(([id, label]) => ({ id, label })),
+      meanings: [...group.meanings].map(([id, glosses]) => {
+        // Canonical gloss (the MeaningId) leads; its synonyms follow.
+        const canonical = String(id);
+        const synonyms = [...glosses].filter((g) => g !== canonical);
+        return { id, label: [canonical, ...synonyms].join(", ") };
+      }),
       facts: group.facts,
     };
   });

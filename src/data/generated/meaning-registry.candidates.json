@@ -156,8 +156,8 @@
     "factId": "word:公/meaning",
     "oddGloss": "official",
     "canonicalGloss": "public",
-    "decision": "merge",
-    "reason": "REVIEW (borderline synonymy): 'official' means the same as 'public' — teach as one meaning"
+    "decision": "keep",
+    "reason": "human review: distinct meanings, not synonyms"
   },
   {
     "glyph": "共",
@@ -1084,8 +1084,8 @@
     "factId": "word:某/meaning",
     "oddGloss": "certain",
     "canonicalGloss": "so-and-so",
-    "decision": "merge",
-    "reason": "REVIEW (borderline synonymy): 'certain' means the same as 'so-and-so' — teach as one meaning"
+    "decision": "keep",
+    "reason": "human review: distinct meanings, not synonyms"
   },
   {
     "glyph": "柵",
@@ -1436,8 +1436,8 @@
     "factId": "radical:玄/meaning",
     "oddGloss": "profound",
     "canonicalGloss": "mysterious",
-    "decision": "merge",
-    "reason": "REVIEW (borderline synonymy): 'profound' means the same as 'mysterious' — teach as one meaning"
+    "decision": "keep",
+    "reason": "human review: distinct meanings, not synonyms"
   },
   {
     "glyph": "率",
@@ -2004,8 +2004,8 @@
     "factId": "radical:臣/meaning",
     "oddGloss": "minister",
     "canonicalGloss": "retainer",
-    "decision": "merge",
-    "reason": "REVIEW (borderline synonymy): 'minister' means the same as 'retainer' — teach as one meaning"
+    "decision": "keep",
+    "reason": "human review: distinct meanings, not synonyms"
   },
   {
     "glyph": "自",
@@ -2108,8 +2108,8 @@
     "factId": "radical:行/meaning",
     "oddGloss": "walk enclosure",
     "canonicalGloss": "going",
-    "decision": "merge",
-    "reason": "REVIEW (borderline synonymy): 'walk enclosure' means the same as 'going' — teach as one meaning"
+    "decision": "keep",
+    "reason": "human review: distinct meanings, not synonyms"
   },
   {
     "glyph": "街",
