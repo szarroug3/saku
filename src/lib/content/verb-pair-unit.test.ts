@@ -24,5 +24,5 @@ test("verbPairUnitsOf — the 開く/開ける pair yields a populated unit, int
   assert.equal(unit.intransitive, "開く", "happens side is the intransitive");
   assert.equal(unit.transitive, "開ける", "doIt side is the transitive");
   assert.equal(unit.facts.length, 2, "both sides of the pair");
-  assert.equal(unit.cost, 1);
+  assert.equal(unit.cost, 2, "both verbs learned");
 });

@@ -23,7 +23,8 @@ test("keigoUnitsOf — the 'eat' set yields a populated honorific unit", () => {
   assert.equal(unit.base, "食べる", "base is the plain verb the set replaces");
   assert.equal(unit.register, "honorific");
   assert.ok(unit.facts.length > 0, "carries the set's fact ids");
-  assert.equal(unit.cost, 1);
+  assert.equal(unit.cost, 2, "eat = 召し上がる (honorific) + いただく (humble) → 2 forms");
+  assert.equal(eat!.glyph, "食べる", "the Learn card anchors on the base verb");
 });
 
 test("keigoUnitsOf — a set with no plain verb defaults base to \"\"", () => {

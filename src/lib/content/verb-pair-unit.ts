@@ -52,7 +52,7 @@ export function verbPairUnitsOf(item: ContentItem): VerbPairUnit[] {
       intransitive,
       transitive,
       facts: item.facts.map((f) => f.id),
-      cost: 1,
+      cost: 2, // both verbs are learned — the intransitive and the transitive
     },
   ];
 }
