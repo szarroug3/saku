@@ -155,10 +155,100 @@ export function TreatmentGlass({ item }: { item: ContentItem }) {
   );
 }
 
+/** Whether the leading glyph is CJK — a Latin title ("Simple sentences") makes a
+ * poor watermark (a giant "S"), so its ghost is skipped. */
+function watermarkChar(glyph: string): string | null {
+  const c = [...glyph][0] ?? "";
+  return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(c) ? c : null;
+}
+
+// ── E · HYBRID — glass + watermark + a whisper of type colour ────────────────
+// D's translucency and sheen and C's ghost glyph, with just a trace of B: the
+// hue lives only in the type label, a faint glow behind the glyph, and the edge —
+// the ground stays neutral glass, so the colour reads as a tint, not a theme.
+export function TreatmentHybrid({ item }: { item: ContentItem }) {
+  const h = hueOf(item);
+  const ghost = watermarkChar(item.glyph);
+  return (
+    <div
+      className={SHELL}
+      style={
+        {
+          border: `1px solid color-mix(in srgb, ${h} 22%, rgba(255,255,255,0.10))`,
+          background: "color-mix(in srgb, var(--card) 42%, transparent)",
+          boxShadow: `0 22px 44px -26px rgba(0,0,0,0.72), 0 8px 26px -20px color-mix(in srgb, ${h} 42%, transparent)`,
+        } as CSSProperties
+      }
+    >
+      {ghost && (
+        <span
+          className="pointer-events-none absolute -bottom-5 -right-3 select-none font-kana text-[104px] leading-none"
+          style={{ color: `color-mix(in srgb, ${h} 10%, transparent)` }}
+          lang="ja"
+          aria-hidden
+        >
+          {ghost}
+        </span>
+      )}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(130px 90px at 22% 0%, rgba(255,255,255,0.08), transparent)" }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: `radial-gradient(84px 66px at 50% 46%, color-mix(in srgb, ${h} 13%, transparent), transparent)` }}
+      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/12" />
+      <Glyph item={item} />
+      <TypeLine item={item} color={`color-mix(in srgb, ${h} 72%, var(--text-muted))`} />
+    </div>
+  );
+}
+
+// ── F · HYBRID, whisper — the same, dialled down ────────────────────────────
+// Neutral glass, no hue glow: colour survives only as a muted type label and the
+// faintest hue-tinted ghost. Colour you notice only when you look for it.
+export function TreatmentHybridWhisper({ item }: { item: ContentItem }) {
+  const h = hueOf(item);
+  const ghost = watermarkChar(item.glyph);
+  return (
+    <div
+      className={SHELL}
+      style={
+        {
+          border: "1px solid rgba(255,255,255,0.09)",
+          background: "color-mix(in srgb, var(--card) 42%, transparent)",
+          boxShadow: "0 22px 44px -26px rgba(0,0,0,0.72)",
+        } as CSSProperties
+      }
+    >
+      {ghost && (
+        <span
+          className="pointer-events-none absolute -bottom-5 -right-3 select-none font-kana text-[104px] leading-none"
+          style={{ color: `color-mix(in srgb, ${h} 7%, transparent)` }}
+          lang="ja"
+          aria-hidden
+        >
+          {ghost}
+        </span>
+      )}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(130px 90px at 22% 0%, rgba(255,255,255,0.07), transparent)" }}
+      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
+      <Glyph item={item} />
+      <TypeLine item={item} color={`color-mix(in srgb, ${h} 55%, var(--text-muted))`} />
+    </div>
+  );
+}
+
 /** The treatments, for the gallery to iterate. */
 export const CARD_TREATMENTS: { name: string; note: string; Card: (p: { item: ContentItem }) => React.ReactNode }[] = [
-  { name: "A · Genkō square", note: "Manuscript-paper guides frame every glyph.", Card: TreatmentGenko },
-  { name: "B · Tinted by type", note: "Each content type carries its own hue.", Card: TreatmentTinted },
+  { name: "E · Hybrid (glass + watermark + subtle hue)", note: "C + D with a trace of B — the recommendation.", Card: TreatmentHybrid },
+  { name: "F · Hybrid, whisper", note: "The same, colour dialled almost out.", Card: TreatmentHybridWhisper },
   { name: "C · Glyph watermark", note: "An oversized ghost glyph as texture.", Card: TreatmentWatermark },
   { name: "D · Glass", note: "Real translucency + sheen, no blur.", Card: TreatmentGlass },
+  { name: "A · Genkō square", note: "Manuscript-paper guides frame every glyph.", Card: TreatmentGenko },
+  { name: "B · Tinted by type", note: "Each content type carries its own hue.", Card: TreatmentTinted },
 ];
