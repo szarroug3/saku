@@ -15,6 +15,11 @@ import { factInfo } from "@/lib/facts";
 import { wordReadingUnit, readingFrequency } from "@/data/vocab";
 import { canonicalMeaningId } from "./meaning";
 import { buildGlyphItem } from "./build-item";
+import { kanaUnitsOf } from "./kana-unit";
+import { generativeUnitsOf } from "./numbers-track";
+import { keigoUnitsOf } from "./keigo-unit";
+import { grammarUnitsOf } from "./grammar-unit";
+import { verbPairUnitsOf } from "./verb-pair-unit";
 import { isFactFresh } from "./scheduler";
 import type { EntryId, FactId, HistoryFile } from "@/types";
 import type { MeaningId } from "./meaning";
@@ -170,8 +175,18 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
     case "word":
     case "counter":
       return pronunciationUnitsOf(item);
+    case "kana":
+      return kanaUnitsOf(item);
+    case "generative-rule":
+      return generativeUnitsOf(item);
+    case "keigo":
+      return keigoUnitsOf(item);
+    case "grammar":
+      return grammarUnitsOf(item);
+    case "transitivity":
+      return verbPairUnitsOf(item);
     default:
-      return []; // keigo · grammar · transitivity · sentence-ordering · generative-rule — not yet built
+      return []; // sentence-ordering — bespoke, not yet built
   }
 }
 

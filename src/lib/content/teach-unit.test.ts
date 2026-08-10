@@ -5,6 +5,7 @@ import test from "node:test";
 
 import {
   pronunciationUnitsOf,
+  teachUnitsOf,
   unitCost,
   unitFrequency,
   byFrequencyDesc,
@@ -12,6 +13,10 @@ import {
   libraryOrder,
 } from "./teach-unit.ts";
 import { buildGlyphItem } from "./build-item.ts";
+import { kanaItems } from "./kana-unit.ts";
+import { keigoItems } from "./keigo-unit.ts";
+import { grammarItems } from "./grammar-unit.ts";
+import { transitivityItems } from "./verb-pair-unit.ts";
 
 test("pronunciationUnitsOf — 三 is ONE unit: pronunciation さん, meaning three", () => {
   const units = pronunciationUnitsOf(buildGlyphItem("三")!);
@@ -65,6 +70,16 @@ test("pronunciationUnitsOf — every fact lands in exactly one unit (nothing dro
   const grouped = pronunciationUnitsOf(item).flatMap((u) => u.facts);
   assert.equal(grouped.length, item.facts.length);
   assert.deepEqual(new Set(grouped), new Set(item.facts.map((f) => f.id)));
+});
+
+test("teachUnitsOf — each kind routes to its own builder", () => {
+  // pronunciation (a number character) and kana both yield pronunciation units
+  assert.equal(teachUnitsOf(buildGlyphItem("三")!)[0].kind, "pronunciation");
+  assert.equal(teachUnitsOf(kanaItems().find((i) => i.glyph === "あ")!)[0].kind, "pronunciation");
+  // keigo / grammar / transitivity dispatch to their impls
+  assert.equal(teachUnitsOf(keigoItems()[0])[0].kind, "keigo-form");
+  assert.equal(teachUnitsOf(grammarItems()[0])[0].kind, "grammar-production");
+  assert.equal(teachUnitsOf(transitivityItems()[0])[0].kind, "verb-pair");
 });
 
 test("libraryOrder — a word appears ONCE, at its first (most-frequent) unit", () => {
