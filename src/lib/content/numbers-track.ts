@@ -18,6 +18,7 @@ import { kanjiEntry } from "@/data/kanji";
 import { SCHEDULE, UNIT_KANJI, type NumberUnit } from "@/lib/counter-lesson";
 import { buildItem, buildGlyphItem } from "./build-item";
 import type { ContentItem } from "./item";
+import type { GenerativeRuleUnit } from "./teach-unit";
 import type { Track } from "./track";
 
 /**
@@ -49,6 +50,20 @@ export function unitItem(unit: NumberUnit): ContentItem | undefined {
   const base = buildItem(entryOf(fact), "generative-rule");
   if (!base) return undefined;
   return { ...base, prereqs: UNIT_KANJI[unit.id].map((c) => kanjiEntry(c)) };
+}
+
+/** The teaching unit of a generative-rule item: teach the range/counter drill
+ * ("read 11-99" / "count with 〜本"). One unit; its glyph (十〜 / 〜本) labels it. */
+export function generativeUnitsOf(item: ContentItem): GenerativeRuleUnit[] {
+  return [
+    {
+      kind: "generative-rule",
+      item,
+      facts: item.facts.map((f) => f.id),
+      cost: 1,
+      label: item.glyph,
+    },
+  ];
 }
 
 /**

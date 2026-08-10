@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { unitItem, formItem, numbersTrack } from "./numbers-track.ts";
+import { unitItem, formItem, numbersTrack, generativeUnitsOf } from "./numbers-track.ts";
 import { nextLesson } from "./scheduler.ts";
 import { resolveItem } from "./resolve.ts";
 import { GENERATIVE_UNITS } from "@/lib/counter-lesson";
@@ -109,4 +109,13 @@ test("numbersTrack × nextLesson — a first lesson comes out of an empty histor
   const lesson = nextLesson(numbersTrack(), resolveItem, emptyHistory(), { min: 5, max: 7 });
   assert.ok(lesson, "there is a first lesson");
   assert.equal(lesson!.items[0].glyph, "ひとつ", "it opens on the first native");
+});
+
+test("generativeUnitsOf — a generative-rule item yields one rule unit", () => {
+  const item = unitItem(unit("tens"))!;
+  const [u] = generativeUnitsOf(item);
+  assert.equal(u.kind, "generative-rule");
+  assert.equal(u.label, "十〜");
+  assert.equal(u.cost, 1);
+  assert.ok(u.facts.length >= 1);
 });
