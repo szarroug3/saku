@@ -77,8 +77,10 @@ export function simulateLessons(
   const lessons: SimulatedLesson[] = [];
   let history = emptyHistory();
   let ts = 1;
+  // Every track orders statically (the scheduler filters dueness against the
+  // evolving history), so the order is computed once, not per lesson.
+  const order = track.units(history);
   for (let n = 1; n <= maxLessons; n++) {
-    const order = track.units(history);
     const lesson = nextTrackLesson(order, history, range);
     if (!lesson) break;
     lessons.push({ n, units: lesson.units });
