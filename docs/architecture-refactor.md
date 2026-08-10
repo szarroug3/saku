@@ -1,7 +1,7 @@
 # Architecture refactor: one model, many surfaces
 
-Status: in progress on branch `refactor/content-model` (main untouched). Author:
-pairing session, Aug 2026.
+Status: content model + generic scheduler MERGED to main. Meaning model in
+progress on branch `refactor/meaning-model`. Author: pairing session, Aug 2026.
 Goal: stop re-wiring every surface by hand for each new content type. An update to
 a content **type** (or a new word) should propagate consistently across lessons,
 quizzes, and the library — with the compiler and tests catching what's missing.
@@ -309,3 +309,75 @@ Behavior note surfaced while reading the source: the live path treats number
 kanji as leaves (`isNumberKanji`), so it never taught 一 before 三; the new model
 uses each kanji's Built-from edges and *would* (一→三), matching the
 "numbers are normal words with etymology" direction. Confirm at the swap (step 4).
+
+---
+
+## 7. Meaning model — teach meanings, not words (branch `refactor/meaning-model`)
+
+### 7.1 Why
+Two problems, one root. (a) A cohesive character double-counts: 三 carries kanji-
+"three" AND word-"three"; 人 carries radical-"man", kanji-"person", word-"person".
+(b) Teaching "the word" teaches every dictionary sense, so a card meant for one
+meaning also drills unrelated ones. The fix is to make the **unit of teaching a
+MEANING**, deduped across sources, paired with its reading — and to teach the
+frequent meanings, referencing the rare ones. This is the completion of the CEJC
+ideology already on main: usage decides what to teach; `definitionId` already made
+a *meaning* a first-class identity. We extend that identity to EVERY gloss (kanji,
+radical, word), not just JMdict senses.
+
+How the field does it: RTK teaches one keyword per kanji; WaniKani teaches a kanji
+by one core meaning + reading and words separately, never the full sense list.
+Teach-the-frequent-meaning is the norm, and it is what CEJC already points at.
+
+### 7.2 The contracts (this is what each track builds against)
+
+| Contract | Owner | Shape | Consumed by |
+|---|---|---|---|
+| `meaning-registry.json` | **DATA** | `Record<gloss, MeaningId>` over EVERY gloss (kanji/word/radical), folding surface variants ("one"/"1"/"one (1)") AND synonyms ("man"/"person", "speak"/"talk") into one id | `canonicalMeaningId` |
+| `canonicalMeaningId(gloss)` | content (`meaning.ts`) | pure lookup, identity fallback | cost, teach-units |
+| `TeachUnit` + `teachUnitsOf(item)` | content (`teach-unit.ts`) | deduped `{meaning, label, reading, taught, facts[]}` | lessons, quiz, library, cost |
+| `itemCost(item)` | content (`cost.ts`, to revise) | `= |taught meanings| + |taught readings|` | scheduler |
+| CEJC taught/reference split | **DATA (exists)** | `teachingSenses`/`referenceReadings` in `vocab.ts` | the `taught` flag |
+
+**Only ONE new data artifact is required: `meaning-registry.json`** (optionally a
+companion `meaning-labels.json`: `MeaningId → {label, glosses[]}` for display).
+Everything else is content-side logic over data that already exists.
+
+### 7.3 What the DATA pipeline must produce (the ask, precisely)
+Emit `src/data/generated/meaning-registry.json` mapping every gloss string in
+`kanji.json.meanings`, the word definitions, and `radicals.json.meaning` to a
+canonical `MeaningId`, such that two glosses share an id **iff they are the same
+meaning for teaching**. Scale: ~88k gloss occurrences, ~34k distinct, ~28k after
+normalization. Pipeline: **normalize** (surface tier — deterministic) →
+**embed-shortlist** (cheap blocking; `sentence-transformers`, run via `uv`) →
+**LLM-judge** the shortlist (handles the antonym/co-hyponym false-positives cosine
+can't — "square"/"direction", "spirit"/"show") → **human review** the uncertain
+band → bake. The MeaningId must be **stable across regenerations** and the mapping
+**must not re-key any fact** (history stays on fact ids; see below).
+
+### 7.4 Two hard constraints (mirroring the CEJC history care)
+- **Stable ids.** A MeaningId is an identity; never let it ride on the English
+  wording it happened to get, or a corpus/model refresh silently moves records.
+- **Non-destructive.** MeaningId does NOT re-key facts. It is a DERIVED grouping:
+  cost dedupes on it, and the drill scores ONE representative fact per meaning
+  (the rest shown/aliased, never a second graded card). No learner record moves —
+  the same discipline as `legacyUnqualifiedReading`.
+
+### 7.5 Parallel-track plan + the divergence guard
+The work splits cleanly: **DATA** (Python ingest → the registry) and **CONTENT**
+(TS → `TeachUnit`/cost/teaching over the registry). They touch disjoint files in
+different languages. The ONE coupling is the concept "same meaning" — so the guard
+is: the DATA track owns ALL synonymy/normalization logic (in the registry), and
+the CONTENT track only reads it via `canonicalMeaningId`, never re-deriving. With
+that, the tracks are independent; without it, they are the exact fork-and-drift we
+already paid for. A stub `{}` registry ships today (identity fallback = exact-match
+dedup only), so the content track can build and test before the real registry lands.
+
+### 7.6 Open decisions
+- **Radical-gloss dedup** (option B chosen): identical/synonymous role glosses on
+  one glyph collapse via the registry (人 man≈person → one unit). The registry is
+  where that judgment is recorded, so it is not a second string-compare in code.
+- **MeaningId scheme:** stable slug vs canonical-gloss-as-id (leaning slug for
+  stability). Data track's call, recorded in the registry.
+- **Representative-fact selection** for the drill when a meaning groups several
+  facts (which fact keeps the score).
