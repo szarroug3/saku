@@ -71,7 +71,9 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
       const gloss = factInfo(f.id)?.meaning;
       if (gloss) {
         const id = canonicalMeaningId(f.id, gloss);
-        if (!group.meanings.has(id)) group.meanings.set(id, gloss);
+        // Label with the CANONICAL gloss (the MeaningId), not the first fact's
+        // gloss — so a merged unit shows "person", not the radical's "man".
+        if (!group.meanings.has(id)) group.meanings.set(id, id);
       }
     }
   }

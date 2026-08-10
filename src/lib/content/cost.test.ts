@@ -24,10 +24,10 @@ test("itemCost — 耳: radical/kanji/word all 'ear' collapse to 1 meaning", () 
   assert.equal(itemCost(buildGlyphItem("耳")!), 1);
 });
 
-test("itemCost — 人: distinct senses, exact dups merged (readings not counted)", () => {
-  // man, person, person, -ian, counter → {man, person, -ian, counter} = 4 meanings
-  // with the stub; the registry merges man≈person → 3.
-  assert.equal(itemCost(buildGlyphItem("人")!), 4);
+test("itemCost — 人: distinct senses, man≈person merged by the registry", () => {
+  // With the meaning-registry live, radical "man" folds into "person", leaving
+  // {person, -ian, counter} = 3 distinct meanings. Readings are not counted.
+  assert.equal(itemCost(buildGlyphItem("人")!), 3);
 });
 
 test("itemCost — a kana 〜つ form costs 1, not 0 (the glyphDifficulty gap it fixes)", () => {

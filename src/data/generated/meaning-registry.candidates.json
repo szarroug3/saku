@@ -1,0 +1,4034 @@
+[
+  {
+    "glyph": "万",
+    "factId": "word:万/meaning",
+    "oddGloss": "10,000",
+    "canonicalGloss": "ten thousand",
+    "decision": "merge",
+    "reason": "'10,000' means the same as 'ten thousand' — teach as one meaning"
+  },
+  {
+    "glyph": "不",
+    "factId": "word:不/meaning",
+    "oddGloss": "un-",
+    "canonicalGloss": "negative",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'un-' means the same as 'negative' — teach as one meaning"
+  },
+  {
+    "glyph": "丙",
+    "factId": "word:丙/meaning",
+    "oddGloss": "third rank",
+    "canonicalGloss": "third class",
+    "decision": "merge",
+    "reason": "'third rank' means the same as 'third class' — teach as one meaning"
+  },
+  {
+    "glyph": "両",
+    "factId": "word:両/meaning",
+    "oddGloss": "both (hands, parents, sides, etc.)",
+    "canonicalGloss": "both",
+    "decision": "merge",
+    "reason": "'both (hands, parents, sides, etc.)' means the same as 'both' — teach as one meaning"
+  },
+  {
+    "glyph": "中",
+    "factId": "word:中/meaning",
+    "oddGloss": "inside",
+    "canonicalGloss": "in",
+    "decision": "merge",
+    "reason": "'inside' means the same as 'in' — teach as one meaning"
+  },
+  {
+    "glyph": "丸",
+    "factId": "word:丸/meaning",
+    "oddGloss": "circle",
+    "canonicalGloss": "round",
+    "decision": "merge",
+    "reason": "'circle' means the same as 'round' — teach as one meaning"
+  },
+  {
+    "glyph": "主",
+    "factId": "word:主/meaning",
+    "oddGloss": "(one's) master",
+    "canonicalGloss": "lord",
+    "decision": "merge",
+    "reason": "'(one's) master' means the same as 'lord' — teach as one meaning"
+  },
+  {
+    "glyph": "主",
+    "factId": "word:主/meaning@おも",
+    "oddGloss": "chief",
+    "canonicalGloss": "lord",
+    "decision": "merge",
+    "reason": "'chief' means the same as 'lord' — teach as one meaning"
+  },
+  {
+    "glyph": "主",
+    "factId": "word:主/meaning@ぬし",
+    "oddGloss": "head (of a household, etc.)",
+    "canonicalGloss": "lord",
+    "decision": "merge",
+    "reason": "'head (of a household, etc.)' means the same as 'lord' — teach as one meaning"
+  },
+  {
+    "glyph": "主",
+    "factId": "word:主/meaning@あるじ",
+    "oddGloss": "head (of a household)",
+    "canonicalGloss": "lord",
+    "decision": "merge",
+    "reason": "'head (of a household)' means the same as 'lord' — teach as one meaning"
+  },
+  {
+    "glyph": "丼",
+    "factId": "word:丼/meaning",
+    "oddGloss": "porcelain bowl",
+    "canonicalGloss": "bowl",
+    "decision": "merge",
+    "reason": "'porcelain bowl' means the same as 'bowl' — teach as one meaning"
+  },
+  {
+    "glyph": "人",
+    "factId": "radical:人/meaning",
+    "oddGloss": "man",
+    "canonicalGloss": "person",
+    "decision": "merge",
+    "reason": "'man' means the same as 'person' — teach as one meaning"
+  },
+  {
+    "glyph": "側",
+    "factId": "word:側/meaning",
+    "oddGloss": "side (of something, or taking someone's side)",
+    "canonicalGloss": "side",
+    "decision": "merge",
+    "reason": "'side (of something, or taking someone's side)' means the same as 'side' — teach as one meaning"
+  },
+  {
+    "glyph": "僕",
+    "factId": "word:僕/meaning",
+    "oddGloss": "I",
+    "canonicalGloss": "me",
+    "decision": "merge",
+    "reason": "'I' means the same as 'me' — teach as one meaning"
+  },
+  {
+    "glyph": "元",
+    "factId": "word:元/meaning",
+    "oddGloss": "origin",
+    "canonicalGloss": "beginning",
+    "decision": "merge",
+    "reason": "'origin' means the same as 'beginning' — teach as one meaning"
+  },
+  {
+    "glyph": "兄",
+    "factId": "word:兄/meaning",
+    "oddGloss": "older brother",
+    "canonicalGloss": "elder brother",
+    "decision": "merge",
+    "reason": "'older brother' means the same as 'elder brother' — teach as one meaning"
+  },
+  {
+    "glyph": "光",
+    "factId": "word:光/meaning",
+    "oddGloss": "light",
+    "canonicalGloss": "ray",
+    "decision": "merge",
+    "reason": "'light' means the same as 'ray' — teach as one meaning"
+  },
+  {
+    "glyph": "党",
+    "factId": "word:党/meaning",
+    "oddGloss": "party (political)",
+    "canonicalGloss": "party",
+    "decision": "merge",
+    "reason": "'party (political)' means the same as 'party' — teach as one meaning"
+  },
+  {
+    "glyph": "全",
+    "factId": "word:全/meaning",
+    "oddGloss": "all",
+    "canonicalGloss": "whole",
+    "decision": "merge",
+    "reason": "'all' means the same as 'whole' — teach as one meaning"
+  },
+  {
+    "glyph": "公",
+    "factId": "word:公/meaning",
+    "oddGloss": "official",
+    "canonicalGloss": "public",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'official' means the same as 'public' — teach as one meaning"
+  },
+  {
+    "glyph": "共",
+    "factId": "word:共/meaning",
+    "oddGloss": "together with",
+    "canonicalGloss": "together",
+    "decision": "merge",
+    "reason": "'together with' means the same as 'together' — teach as one meaning"
+  },
+  {
+    "glyph": "内",
+    "factId": "word:内/meaning@ない",
+    "oddGloss": "within ...",
+    "canonicalGloss": "inside",
+    "decision": "merge",
+    "reason": "'within ...' means the same as 'inside' — teach as one meaning"
+  },
+  {
+    "glyph": "再",
+    "factId": "word:再/meaning",
+    "oddGloss": "re-",
+    "canonicalGloss": "again",
+    "decision": "merge",
+    "reason": "'re-' means the same as 'again' — teach as one meaning"
+  },
+  {
+    "glyph": "冠",
+    "factId": "word:冠/meaning",
+    "oddGloss": "traditional cap worn by Shinto clergy and courtiers",
+    "canonicalGloss": "crown",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'traditional cap worn by Shinto clergy and courtiers' means the same as 'crown' — teach as one meaning"
+  },
+  {
+    "glyph": "凡",
+    "factId": "word:凡/meaning",
+    "oddGloss": "ordinary",
+    "canonicalGloss": "commonplace",
+    "decision": "merge",
+    "reason": "'ordinary' means the same as 'commonplace' — teach as one meaning"
+  },
+  {
+    "glyph": "刀",
+    "factId": "radical:刀/meaning",
+    "oddGloss": "knife",
+    "canonicalGloss": "sword",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'knife' means the same as 'sword' — teach as one meaning"
+  },
+  {
+    "glyph": "刀",
+    "factId": "word:刀/meaning",
+    "oddGloss": "sword (esp. Japanese single-edged)",
+    "canonicalGloss": "sword",
+    "decision": "merge",
+    "reason": "'sword (esp. Japanese single-edged)' means the same as 'sword' — teach as one meaning"
+  },
+  {
+    "glyph": "刃",
+    "factId": "word:刃/meaning",
+    "oddGloss": "edge (of a knife or sword)",
+    "canonicalGloss": "blade",
+    "decision": "merge",
+    "reason": "'edge (of a knife or sword)' means the same as 'blade' — teach as one meaning"
+  },
+  {
+    "glyph": "刑",
+    "factId": "word:刑/meaning",
+    "oddGloss": "penalty",
+    "canonicalGloss": "punish",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'penalty' means the same as 'punish' — teach as one meaning"
+  },
+  {
+    "glyph": "列",
+    "factId": "word:列/meaning",
+    "oddGloss": "row",
+    "canonicalGloss": "file",
+    "decision": "merge",
+    "reason": "'row' means the same as 'file' — teach as one meaning"
+  },
+  {
+    "glyph": "初",
+    "factId": "word:初/meaning",
+    "oddGloss": "first",
+    "canonicalGloss": "first time",
+    "decision": "merge",
+    "reason": "'first' means the same as 'first time' — teach as one meaning"
+  },
+  {
+    "glyph": "前",
+    "factId": "word:前/meaning",
+    "oddGloss": "in front (of)",
+    "canonicalGloss": "in front",
+    "decision": "merge",
+    "reason": "'in front (of)' means the same as 'in front' — teach as one meaning"
+  },
+  {
+    "glyph": "副",
+    "factId": "word:副/meaning",
+    "oddGloss": "assistant",
+    "canonicalGloss": "vice-",
+    "decision": "merge",
+    "reason": "'assistant' means the same as 'vice-' — teach as one meaning"
+  },
+  {
+    "glyph": "力",
+    "factId": "word:力/meaning",
+    "oddGloss": "force",
+    "canonicalGloss": "power",
+    "decision": "merge",
+    "reason": "'force' means the same as 'power' — teach as one meaning"
+  },
+  {
+    "glyph": "力",
+    "factId": "word:力/meaning@りょく",
+    "oddGloss": "strength",
+    "canonicalGloss": "power",
+    "decision": "merge",
+    "reason": "'strength' means the same as 'power' — teach as one meaning"
+  },
+  {
+    "glyph": "勘",
+    "factId": "word:勘/meaning",
+    "oddGloss": "perception",
+    "canonicalGloss": "intuition",
+    "decision": "merge",
+    "reason": "'perception' means the same as 'intuition' — teach as one meaning"
+  },
+  {
+    "glyph": "匠",
+    "factId": "word:匠/meaning",
+    "oddGloss": "craftsman",
+    "canonicalGloss": "artisan",
+    "decision": "merge",
+    "reason": "'craftsman' means the same as 'artisan' — teach as one meaning"
+  },
+  {
+    "glyph": "升",
+    "factId": "word:升/meaning",
+    "oddGloss": "measuring container",
+    "canonicalGloss": "measuring box",
+    "decision": "merge",
+    "reason": "'measuring container' means the same as 'measuring box' — teach as one meaning"
+  },
+  {
+    "glyph": "印",
+    "factId": "word:印/meaning",
+    "oddGloss": "mark",
+    "canonicalGloss": "stamp",
+    "decision": "merge",
+    "reason": "'mark' means the same as 'stamp' — teach as one meaning"
+  },
+  {
+    "glyph": "卵",
+    "factId": "word:卵/meaning",
+    "oddGloss": "eggs",
+    "canonicalGloss": "egg",
+    "decision": "merge",
+    "reason": "'eggs' means the same as 'egg' — teach as one meaning"
+  },
+  {
+    "glyph": "厄",
+    "factId": "word:厄/meaning",
+    "oddGloss": "misfortune",
+    "canonicalGloss": "unlucky",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'misfortune' means the same as 'unlucky' — teach as one meaning"
+  },
+  {
+    "glyph": "原",
+    "factId": "word:原/meaning",
+    "oddGloss": "field",
+    "canonicalGloss": "meadow",
+    "decision": "merge",
+    "reason": "'field' means the same as 'meadow' — teach as one meaning"
+  },
+  {
+    "glyph": "可",
+    "factId": "word:可/meaning",
+    "oddGloss": "acceptable",
+    "canonicalGloss": "can",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'acceptable' means the same as 'can' — teach as one meaning"
+  },
+  {
+    "glyph": "台",
+    "factId": "word:台/meaning",
+    "oddGloss": "stand",
+    "canonicalGloss": "pedestal",
+    "decision": "merge",
+    "reason": "'stand' means the same as 'pedestal' — teach as one meaning"
+  },
+  {
+    "glyph": "同",
+    "factId": "word:同/meaning",
+    "oddGloss": "the same",
+    "canonicalGloss": "same",
+    "decision": "merge",
+    "reason": "'the same' means the same as 'same' — teach as one meaning"
+  },
+  {
+    "glyph": "君",
+    "factId": "word:君/meaning@くん",
+    "oddGloss": "Mr",
+    "canonicalGloss": "mister",
+    "decision": "merge",
+    "reason": "'Mr' means the same as 'mister' — teach as one meaning"
+  },
+  {
+    "glyph": "否",
+    "factId": "word:否/meaning",
+    "oddGloss": "no",
+    "canonicalGloss": "negate",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'no' means the same as 'negate' — teach as one meaning"
+  },
+  {
+    "glyph": "否",
+    "factId": "word:否/meaning@いな",
+    "oddGloss": "no",
+    "canonicalGloss": "negate",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'no' means the same as 'negate' — teach as one meaning"
+  },
+  {
+    "glyph": "品",
+    "factId": "word:品/meaning",
+    "oddGloss": "article",
+    "canonicalGloss": "goods",
+    "decision": "merge",
+    "reason": "'article' means the same as 'goods' — teach as one meaning"
+  },
+  {
+    "glyph": "唇",
+    "factId": "word:唇/meaning",
+    "oddGloss": "lip",
+    "canonicalGloss": "lips",
+    "decision": "merge",
+    "reason": "'lip' means the same as 'lips' — teach as one meaning"
+  },
+  {
+    "glyph": "唐",
+    "factId": "word:唐/meaning",
+    "oddGloss": "Tang dynasty (of China; 618-907)",
+    "canonicalGloss": "T'ang",
+    "decision": "merge",
+    "reason": "'Tang dynasty (of China; 618-907)' means the same as 'T'ang' — teach as one meaning"
+  },
+  {
+    "glyph": "善",
+    "factId": "word:善/meaning",
+    "oddGloss": "good",
+    "canonicalGloss": "virtuous",
+    "decision": "merge",
+    "reason": "'good' means the same as 'virtuous' — teach as one meaning"
+  },
+  {
+    "glyph": "回",
+    "factId": "word:回/meaning",
+    "oddGloss": "counter for occurrences",
+    "canonicalGloss": "-times",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'counter for occurrences' means the same as '-times' — teach as one meaning"
+  },
+  {
+    "glyph": "園",
+    "factId": "word:園/meaning",
+    "oddGloss": "garden",
+    "canonicalGloss": "park",
+    "decision": "merge",
+    "reason": "'garden' means the same as 'park' — teach as one meaning"
+  },
+  {
+    "glyph": "園",
+    "factId": "word:園/meaning@えん",
+    "oddGloss": "garden",
+    "canonicalGloss": "park",
+    "decision": "merge",
+    "reason": "'garden' means the same as 'park' — teach as one meaning"
+  },
+  {
+    "glyph": "土",
+    "factId": "radical:土/meaning",
+    "oddGloss": "earth",
+    "canonicalGloss": "soil",
+    "decision": "merge",
+    "reason": "'earth' means the same as 'soil' — teach as one meaning"
+  },
+  {
+    "glyph": "土",
+    "factId": "word:土/meaning",
+    "oddGloss": "earth",
+    "canonicalGloss": "soil",
+    "decision": "merge",
+    "reason": "'earth' means the same as 'soil' — teach as one meaning"
+  },
+  {
+    "glyph": "地",
+    "factId": "word:地/meaning",
+    "oddGloss": "earth",
+    "canonicalGloss": "ground",
+    "decision": "merge",
+    "reason": "'earth' means the same as 'ground' — teach as one meaning"
+  },
+  {
+    "glyph": "型",
+    "factId": "word:型/meaning",
+    "oddGloss": "type",
+    "canonicalGloss": "mould",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'type' means the same as 'mould' — teach as one meaning"
+  },
+  {
+    "glyph": "堀",
+    "factId": "word:堀/meaning",
+    "oddGloss": "moat",
+    "canonicalGloss": "ditch",
+    "decision": "merge",
+    "reason": "'moat' means the same as 'ditch' — teach as one meaning"
+  },
+  {
+    "glyph": "場",
+    "factId": "word:場/meaning",
+    "oddGloss": "place",
+    "canonicalGloss": "location",
+    "decision": "merge",
+    "reason": "'place' means the same as 'location' — teach as one meaning"
+  },
+  {
+    "glyph": "塀",
+    "factId": "word:塀/meaning",
+    "oddGloss": "wall",
+    "canonicalGloss": "fence",
+    "decision": "merge",
+    "reason": "'wall' means the same as 'fence' — teach as one meaning"
+  },
+  {
+    "glyph": "塊",
+    "factId": "word:塊/meaning",
+    "oddGloss": "lump",
+    "canonicalGloss": "clod",
+    "decision": "merge",
+    "reason": "'lump' means the same as 'clod' — teach as one meaning"
+  },
+  {
+    "glyph": "塔",
+    "factId": "word:塔/meaning",
+    "oddGloss": "tower",
+    "canonicalGloss": "pagoda",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'tower' means the same as 'pagoda' — teach as one meaning"
+  },
+  {
+    "glyph": "境",
+    "factId": "word:境/meaning",
+    "oddGloss": "border",
+    "canonicalGloss": "boundary",
+    "decision": "merge",
+    "reason": "'border' means the same as 'boundary' — teach as one meaning"
+  },
+  {
+    "glyph": "墨",
+    "factId": "word:墨/meaning",
+    "oddGloss": "sumi",
+    "canonicalGloss": "black ink",
+    "decision": "merge",
+    "reason": "'sumi' means the same as 'black ink' — teach as one meaning"
+  },
+  {
+    "glyph": "壇",
+    "factId": "word:壇/meaning",
+    "oddGloss": "platform",
+    "canonicalGloss": "podium",
+    "decision": "merge",
+    "reason": "'platform' means the same as 'podium' — teach as one meaning"
+  },
+  {
+    "glyph": "変",
+    "factId": "word:変/meaning",
+    "oddGloss": "strange",
+    "canonicalGloss": "unusual",
+    "decision": "merge",
+    "reason": "'strange' means the same as 'unusual' — teach as one meaning"
+  },
+  {
+    "glyph": "外",
+    "factId": "word:外/meaning@がい",
+    "oddGloss": "outside ...",
+    "canonicalGloss": "outside",
+    "decision": "merge",
+    "reason": "'outside ...' means the same as 'outside' — teach as one meaning"
+  },
+  {
+    "glyph": "多",
+    "factId": "word:多/meaning",
+    "oddGloss": "multi-",
+    "canonicalGloss": "many",
+    "decision": "merge",
+    "reason": "'multi-' means the same as 'many' — teach as one meaning"
+  },
+  {
+    "glyph": "大",
+    "factId": "radical:大/meaning",
+    "oddGloss": "big",
+    "canonicalGloss": "large",
+    "decision": "merge",
+    "reason": "'big' means the same as 'large' — teach as one meaning"
+  },
+  {
+    "glyph": "天",
+    "factId": "word:天/meaning",
+    "oddGloss": "sky",
+    "canonicalGloss": "heavens",
+    "decision": "merge",
+    "reason": "'sky' means the same as 'heavens' — teach as one meaning"
+  },
+  {
+    "glyph": "姉",
+    "factId": "word:姉/meaning",
+    "oddGloss": "older sister",
+    "canonicalGloss": "elder sister",
+    "decision": "merge",
+    "reason": "'older sister' means the same as 'elder sister' — teach as one meaning"
+  },
+  {
+    "glyph": "嫌",
+    "factId": "word:嫌/meaning",
+    "oddGloss": "disliking",
+    "canonicalGloss": "dislike",
+    "decision": "merge",
+    "reason": "'disliking' means the same as 'dislike' — teach as one meaning"
+  },
+  {
+    "glyph": "字",
+    "factId": "word:字/meaning",
+    "oddGloss": "character (esp. kanji)",
+    "canonicalGloss": "character",
+    "decision": "merge",
+    "reason": "'character (esp. kanji)' means the same as 'character' — teach as one meaning"
+  },
+  {
+    "glyph": "害",
+    "factId": "word:害/meaning",
+    "oddGloss": "injury",
+    "canonicalGloss": "harm",
+    "decision": "merge",
+    "reason": "'injury' means the same as 'harm' — teach as one meaning"
+  },
+  {
+    "glyph": "宿",
+    "factId": "word:宿/meaning",
+    "oddGloss": "lodging",
+    "canonicalGloss": "inn",
+    "decision": "merge",
+    "reason": "'lodging' means the same as 'inn' — teach as one meaning"
+  },
+  {
+    "glyph": "富",
+    "factId": "word:富/meaning",
+    "oddGloss": "riches",
+    "canonicalGloss": "wealth",
+    "decision": "merge",
+    "reason": "'riches' means the same as 'wealth' — teach as one meaning"
+  },
+  {
+    "glyph": "寮",
+    "factId": "word:寮/meaning",
+    "oddGloss": "hostel",
+    "canonicalGloss": "dormitory",
+    "decision": "merge",
+    "reason": "'hostel' means the same as 'dormitory' — teach as one meaning"
+  },
+  {
+    "glyph": "寺",
+    "factId": "word:寺/meaning",
+    "oddGloss": "temple (Buddhist)",
+    "canonicalGloss": "Buddhist temple",
+    "decision": "merge",
+    "reason": "'temple (Buddhist)' means the same as 'Buddhist temple' — teach as one meaning"
+  },
+  {
+    "glyph": "対",
+    "factId": "word:対/meaning",
+    "oddGloss": "versus",
+    "canonicalGloss": "vis-a-vis",
+    "decision": "merge",
+    "reason": "'versus' means the same as 'vis-a-vis' — teach as one meaning"
+  },
+  {
+    "glyph": "小",
+    "factId": "radical:小/meaning",
+    "oddGloss": "small",
+    "canonicalGloss": "little",
+    "decision": "merge",
+    "reason": "'small' means the same as 'little' — teach as one meaning"
+  },
+  {
+    "glyph": "小",
+    "factId": "word:小/meaning",
+    "oddGloss": "smallness",
+    "canonicalGloss": "little",
+    "decision": "merge",
+    "reason": "'smallness' means the same as 'little' — teach as one meaning"
+  },
+  {
+    "glyph": "小",
+    "factId": "word:小/meaning@こ",
+    "oddGloss": "small",
+    "canonicalGloss": "little",
+    "decision": "merge",
+    "reason": "'small' means the same as 'little' — teach as one meaning"
+  },
+  {
+    "glyph": "尺",
+    "factId": "word:尺/meaning",
+    "oddGloss": "shaku (unit of distance approximately equal to 30.3 cm)",
+    "canonicalGloss": "shaku",
+    "decision": "merge",
+    "reason": "'shaku (unit of distance approximately equal to 30.3 cm)' means the same as 'shaku' — teach as one meaning"
+  },
+  {
+    "glyph": "尼",
+    "factId": "word:尼/meaning",
+    "oddGloss": "Buddhist nun",
+    "canonicalGloss": "nun",
+    "decision": "merge",
+    "reason": "'Buddhist nun' means the same as 'nun' — teach as one meaning"
+  },
+  {
+    "glyph": "尾",
+    "factId": "word:尾/meaning",
+    "oddGloss": "tail (of an animal)",
+    "canonicalGloss": "tail",
+    "decision": "merge",
+    "reason": "'tail (of an animal)' means the same as 'tail' — teach as one meaning"
+  },
+  {
+    "glyph": "岩",
+    "factId": "word:岩/meaning",
+    "oddGloss": "rock",
+    "canonicalGloss": "boulder",
+    "decision": "merge",
+    "reason": "'rock' means the same as 'boulder' — teach as one meaning"
+  },
+  {
+    "glyph": "岬",
+    "factId": "word:岬/meaning",
+    "oddGloss": "cape (on coast)",
+    "canonicalGloss": "headland",
+    "decision": "merge",
+    "reason": "'cape (on coast)' means the same as 'headland' — teach as one meaning"
+  },
+  {
+    "glyph": "峰",
+    "factId": "word:峰/meaning",
+    "oddGloss": "peak",
+    "canonicalGloss": "summit",
+    "decision": "merge",
+    "reason": "'peak' means the same as 'summit' — teach as one meaning"
+  },
+  {
+    "glyph": "川",
+    "factId": "word:川/meaning",
+    "oddGloss": "river",
+    "canonicalGloss": "stream",
+    "decision": "merge",
+    "reason": "'river' means the same as 'stream' — teach as one meaning"
+  },
+  {
+    "glyph": "州",
+    "factId": "word:州/meaning",
+    "oddGloss": "state (of the US, Australia, India, Germany, etc.)",
+    "canonicalGloss": "state",
+    "decision": "merge",
+    "reason": "'state (of the US, Australia, India, Germany, etc.)' means the same as 'state' — teach as one meaning"
+  },
+  {
+    "glyph": "工",
+    "factId": "radical:工/meaning",
+    "oddGloss": "work",
+    "canonicalGloss": "craft",
+    "decision": "merge",
+    "reason": "'work' means the same as 'craft' — teach as one meaning"
+  },
+  {
+    "glyph": "差",
+    "factId": "word:差/meaning",
+    "oddGloss": "difference",
+    "canonicalGloss": "distinction",
+    "decision": "merge",
+    "reason": "'difference' means the same as 'distinction' — teach as one meaning"
+  },
+  {
+    "glyph": "己",
+    "factId": "radical:己/meaning",
+    "oddGloss": "oneself",
+    "canonicalGloss": "self",
+    "decision": "merge",
+    "reason": "'oneself' means the same as 'self' — teach as one meaning"
+  },
+  {
+    "glyph": "布",
+    "factId": "word:布/meaning",
+    "oddGloss": "cloth",
+    "canonicalGloss": "linen",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'cloth' means the same as 'linen' — teach as one meaning"
+  },
+  {
+    "glyph": "帯",
+    "factId": "word:帯/meaning",
+    "oddGloss": "obi (kimono sash)",
+    "canonicalGloss": "sash",
+    "decision": "merge",
+    "reason": "'obi (kimono sash)' means the same as 'sash' — teach as one meaning"
+  },
+  {
+    "glyph": "幻",
+    "factId": "word:幻/meaning",
+    "oddGloss": "phantom",
+    "canonicalGloss": "phantasm",
+    "decision": "merge",
+    "reason": "'phantom' means the same as 'phantasm' — teach as one meaning"
+  },
+  {
+    "glyph": "度",
+    "factId": "word:度/meaning@ど",
+    "oddGloss": "degree (angle, temperature, scale, etc.)",
+    "canonicalGloss": "degrees",
+    "decision": "merge",
+    "reason": "'degree (angle, temperature, scale, etc.)' means the same as 'degrees' — teach as one meaning"
+  },
+  {
+    "glyph": "庭",
+    "factId": "word:庭/meaning",
+    "oddGloss": "garden",
+    "canonicalGloss": "courtyard",
+    "decision": "merge",
+    "reason": "'garden' means the same as 'courtyard' — teach as one meaning"
+  },
+  {
+    "glyph": "式",
+    "factId": "word:式/meaning",
+    "oddGloss": "way",
+    "canonicalGloss": "style",
+    "decision": "merge",
+    "reason": "'way' means the same as 'style' — teach as one meaning"
+  },
+  {
+    "glyph": "弓",
+    "factId": "word:弓/meaning",
+    "oddGloss": "bow (weapon)",
+    "canonicalGloss": "bow",
+    "decision": "merge",
+    "reason": "'bow (weapon)' means the same as 'bow' — teach as one meaning"
+  },
+  {
+    "glyph": "形",
+    "factId": "word:形/meaning",
+    "oddGloss": "(physical) form",
+    "canonicalGloss": "shape",
+    "decision": "merge",
+    "reason": "'(physical) form' means the same as 'shape' — teach as one meaning"
+  },
+  {
+    "glyph": "役",
+    "factId": "word:役/meaning",
+    "oddGloss": "role",
+    "canonicalGloss": "duty",
+    "decision": "merge",
+    "reason": "'role' means the same as 'duty' — teach as one meaning"
+  },
+  {
+    "glyph": "得",
+    "factId": "word:得/meaning",
+    "oddGloss": "profit",
+    "canonicalGloss": "gain",
+    "decision": "merge",
+    "reason": "'profit' means the same as 'gain' — teach as one meaning"
+  },
+  {
+    "glyph": "心",
+    "factId": "word:心/meaning",
+    "oddGloss": "mind",
+    "canonicalGloss": "heart",
+    "decision": "merge",
+    "reason": "'mind' means the same as 'heart' — teach as one meaning"
+  },
+  {
+    "glyph": "志",
+    "factId": "word:志/meaning",
+    "oddGloss": "will",
+    "canonicalGloss": "intention",
+    "decision": "merge",
+    "reason": "'will' means the same as 'intention' — teach as one meaning"
+  },
+  {
+    "glyph": "恋",
+    "factId": "word:恋/meaning",
+    "oddGloss": "(romantic) love",
+    "canonicalGloss": "romance",
+    "decision": "merge",
+    "reason": "'(romantic) love' means the same as 'romance' — teach as one meaning"
+  },
+  {
+    "glyph": "恩",
+    "factId": "word:恩/meaning",
+    "oddGloss": "favour",
+    "canonicalGloss": "grace",
+    "decision": "merge",
+    "reason": "'favour' means the same as 'grace' — teach as one meaning"
+  },
+  {
+    "glyph": "悪",
+    "factId": "word:悪/meaning",
+    "oddGloss": "evil",
+    "canonicalGloss": "bad",
+    "decision": "merge",
+    "reason": "'evil' means the same as 'bad' — teach as one meaning"
+  },
+  {
+    "glyph": "想",
+    "factId": "word:想/meaning",
+    "oddGloss": "conception",
+    "canonicalGloss": "idea",
+    "decision": "merge",
+    "reason": "'conception' means the same as 'idea' — teach as one meaning"
+  },
+  {
+    "glyph": "感",
+    "factId": "word:感/meaning",
+    "oddGloss": "feeling",
+    "canonicalGloss": "emotion",
+    "decision": "merge",
+    "reason": "'feeling' means the same as 'emotion' — teach as one meaning"
+  },
+  {
+    "glyph": "戸",
+    "factId": "word:戸/meaning",
+    "oddGloss": "door (esp. Japanese-style)",
+    "canonicalGloss": "door",
+    "decision": "merge",
+    "reason": "'door (esp. Japanese-style)' means the same as 'door' — teach as one meaning"
+  },
+  {
+    "glyph": "房",
+    "factId": "word:房/meaning",
+    "oddGloss": "tuft (of hair, threads, etc.)",
+    "canonicalGloss": "tassel",
+    "decision": "merge",
+    "reason": "'tuft (of hair, threads, etc.)' means the same as 'tassel' — teach as one meaning"
+  },
+  {
+    "glyph": "扉",
+    "factId": "word:扉/meaning",
+    "oddGloss": "door",
+    "canonicalGloss": "front door",
+    "decision": "merge",
+    "reason": "'door' means the same as 'front door' — teach as one meaning"
+  },
+  {
+    "glyph": "技",
+    "factId": "word:技/meaning",
+    "oddGloss": "technique",
+    "canonicalGloss": "skill",
+    "decision": "merge",
+    "reason": "'technique' means the same as 'skill' — teach as one meaning"
+  },
+  {
+    "glyph": "掌",
+    "factId": "word:掌/meaning",
+    "oddGloss": "palm (of the hand)",
+    "canonicalGloss": "palm of hand",
+    "decision": "merge",
+    "reason": "'palm (of the hand)' means the same as 'palm of hand' — teach as one meaning"
+  },
+  {
+    "glyph": "損",
+    "factId": "word:損/meaning",
+    "oddGloss": "loss",
+    "canonicalGloss": "damage",
+    "decision": "merge",
+    "reason": "'loss' means the same as 'damage' — teach as one meaning"
+  },
+  {
+    "glyph": "敵",
+    "factId": "word:敵/meaning",
+    "oddGloss": "opponent",
+    "canonicalGloss": "enemy",
+    "decision": "merge",
+    "reason": "'opponent' means the same as 'enemy' — teach as one meaning"
+  },
+  {
+    "glyph": "旅",
+    "factId": "word:旅/meaning",
+    "oddGloss": "travel",
+    "canonicalGloss": "trip",
+    "decision": "merge",
+    "reason": "'travel' means the same as 'trip' — teach as one meaning"
+  },
+  {
+    "glyph": "昔",
+    "factId": "word:昔/meaning",
+    "oddGloss": "the old days",
+    "canonicalGloss": "once upon a time",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'the old days' means the same as 'once upon a time' — teach as one meaning"
+  },
+  {
+    "glyph": "星",
+    "factId": "word:星/meaning",
+    "oddGloss": "star (usu. excluding the Sun)",
+    "canonicalGloss": "star",
+    "decision": "merge",
+    "reason": "'star (usu. excluding the Sun)' means the same as 'star' — teach as one meaning"
+  },
+  {
+    "glyph": "春",
+    "factId": "word:春/meaning",
+    "oddGloss": "spring",
+    "canonicalGloss": "springtime",
+    "decision": "merge",
+    "reason": "'spring' means the same as 'springtime' — teach as one meaning"
+  },
+  {
+    "glyph": "晩",
+    "factId": "word:晩/meaning",
+    "oddGloss": "evening",
+    "canonicalGloss": "nightfall",
+    "decision": "merge",
+    "reason": "'evening' means the same as 'nightfall' — teach as one meaning"
+  },
+  {
+    "glyph": "月",
+    "factId": "word:月/meaning@がつ",
+    "oddGloss": "month (of the year)",
+    "canonicalGloss": "month",
+    "decision": "merge",
+    "reason": "'month (of the year)' means the same as 'month' — teach as one meaning"
+  },
+  {
+    "glyph": "服",
+    "factId": "word:服/meaning",
+    "oddGloss": "clothes (esp. Western clothes)",
+    "canonicalGloss": "clothing",
+    "decision": "merge",
+    "reason": "'clothes (esp. Western clothes)' means the same as 'clothing' — teach as one meaning"
+  },
+  {
+    "glyph": "未",
+    "factId": "word:未/meaning@み",
+    "oddGloss": "not yet",
+    "canonicalGloss": "un-",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'not yet' means the same as 'un-' — teach as one meaning"
+  },
+  {
+    "glyph": "末",
+    "factId": "word:末/meaning@まつ",
+    "oddGloss": "the end (of)",
+    "canonicalGloss": "end",
+    "decision": "merge",
+    "reason": "'the end (of)' means the same as 'end' — teach as one meaning"
+  },
+  {
+    "glyph": "杉",
+    "factId": "word:杉/meaning",
+    "oddGloss": "Japanese cedar (Cryptomeria japonica)",
+    "canonicalGloss": "cedar",
+    "decision": "merge",
+    "reason": "'Japanese cedar (Cryptomeria japonica)' means the same as 'cedar' — teach as one meaning"
+  },
+  {
+    "glyph": "松",
+    "factId": "word:松/meaning",
+    "oddGloss": "pine tree (Pinus spp.)",
+    "canonicalGloss": "pine tree",
+    "decision": "merge",
+    "reason": "'pine tree (Pinus spp.)' means the same as 'pine tree' — teach as one meaning"
+  },
+  {
+    "glyph": "板",
+    "factId": "word:板/meaning",
+    "oddGloss": "board",
+    "canonicalGloss": "plank",
+    "decision": "merge",
+    "reason": "'board' means the same as 'plank' — teach as one meaning"
+  },
+  {
+    "glyph": "林",
+    "factId": "word:林/meaning",
+    "oddGloss": "wood",
+    "canonicalGloss": "grove",
+    "decision": "merge",
+    "reason": "'wood' means the same as 'grove' — teach as one meaning"
+  },
+  {
+    "glyph": "枚",
+    "factId": "word:枚/meaning",
+    "oddGloss": "counter for thin, flat objects (e.g. sheets of paper, plates, coins)",
+    "canonicalGloss": "sheet of...",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'counter for thin, flat objects (e.g. sheets of paper, plates, coins)' means the same as 'sheet of...' — teach as one meaning"
+  },
+  {
+    "glyph": "枝",
+    "factId": "word:枝/meaning",
+    "oddGloss": "branch",
+    "canonicalGloss": "bough",
+    "decision": "merge",
+    "reason": "'branch' means the same as 'bough' — teach as one meaning"
+  },
+  {
+    "glyph": "柄",
+    "factId": "word:柄/meaning",
+    "oddGloss": "pattern",
+    "canonicalGloss": "design",
+    "decision": "merge",
+    "reason": "'pattern' means the same as 'design' — teach as one meaning"
+  },
+  {
+    "glyph": "某",
+    "factId": "word:某/meaning",
+    "oddGloss": "certain",
+    "canonicalGloss": "so-and-so",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'certain' means the same as 'so-and-so' — teach as one meaning"
+  },
+  {
+    "glyph": "柵",
+    "factId": "word:柵/meaning",
+    "oddGloss": "fence",
+    "canonicalGloss": "stockade",
+    "decision": "merge",
+    "reason": "'fence' means the same as 'stockade' — teach as one meaning"
+  },
+  {
+    "glyph": "柿",
+    "factId": "word:柿/meaning",
+    "oddGloss": "kaki",
+    "canonicalGloss": "persimmon",
+    "decision": "merge",
+    "reason": "'kaki' means the same as 'persimmon' — teach as one meaning"
+  },
+  {
+    "glyph": "株",
+    "factId": "word:株/meaning",
+    "oddGloss": "stock",
+    "canonicalGloss": "stocks",
+    "decision": "merge",
+    "reason": "'stock' means the same as 'stocks' — teach as one meaning"
+  },
+  {
+    "glyph": "根",
+    "factId": "word:根/meaning",
+    "oddGloss": "root (of a plant)",
+    "canonicalGloss": "root",
+    "decision": "merge",
+    "reason": "'root (of a plant)' means the same as 'root' — teach as one meaning"
+  },
+  {
+    "glyph": "桃",
+    "factId": "word:桃/meaning",
+    "oddGloss": "peach (Prunus persica)",
+    "canonicalGloss": "peach",
+    "decision": "merge",
+    "reason": "'peach (Prunus persica)' means the same as 'peach' — teach as one meaning"
+  },
+  {
+    "glyph": "案",
+    "factId": "word:案/meaning",
+    "oddGloss": "idea",
+    "canonicalGloss": "plan",
+    "decision": "merge",
+    "reason": "'idea' means the same as 'plan' — teach as one meaning"
+  },
+  {
+    "glyph": "桜",
+    "factId": "word:桜/meaning",
+    "oddGloss": "cherry tree",
+    "canonicalGloss": "cherry",
+    "decision": "merge",
+    "reason": "'cherry tree' means the same as 'cherry' — teach as one meaning"
+  },
+  {
+    "glyph": "梅",
+    "factId": "word:梅/meaning",
+    "oddGloss": "Japanese apricot (Prunus mume)",
+    "canonicalGloss": "plum",
+    "decision": "merge",
+    "reason": "'Japanese apricot (Prunus mume)' means the same as 'plum' — teach as one meaning"
+  },
+  {
+    "glyph": "棒",
+    "factId": "word:棒/meaning",
+    "oddGloss": "pole",
+    "canonicalGloss": "rod",
+    "decision": "merge",
+    "reason": "'pole' means the same as 'rod' — teach as one meaning"
+  },
+  {
+    "glyph": "棟",
+    "factId": "word:棟/meaning",
+    "oddGloss": "ridge (of roof)",
+    "canonicalGloss": "ridgepole",
+    "decision": "merge",
+    "reason": "'ridge (of roof)' means the same as 'ridgepole' — teach as one meaning"
+  },
+  {
+    "glyph": "様",
+    "factId": "word:様/meaning",
+    "oddGloss": "Mr",
+    "canonicalGloss": "Esq.",
+    "decision": "merge",
+    "reason": "'Mr' means the same as 'Esq.' — teach as one meaning"
+  },
+  {
+    "glyph": "横",
+    "factId": "word:横/meaning",
+    "oddGloss": "horizontal (as opposed to vertical)",
+    "canonicalGloss": "sideways",
+    "decision": "merge",
+    "reason": "'horizontal (as opposed to vertical)' means the same as 'sideways' — teach as one meaning"
+  },
+  {
+    "glyph": "欄",
+    "factId": "word:欄/meaning",
+    "oddGloss": "section (e.g. in a newspaper)",
+    "canonicalGloss": "column",
+    "decision": "merge",
+    "reason": "'section (e.g. in a newspaper)' means the same as 'column' — teach as one meaning"
+  },
+  {
+    "glyph": "正",
+    "factId": "word:正/meaning",
+    "oddGloss": "(logical) true",
+    "canonicalGloss": "correct",
+    "decision": "merge",
+    "reason": "'(logical) true' means the same as 'correct' — teach as one meaning"
+  },
+  {
+    "glyph": "殻",
+    "factId": "word:殻/meaning",
+    "oddGloss": "shell",
+    "canonicalGloss": "husk",
+    "decision": "merge",
+    "reason": "'shell' means the same as 'husk' — teach as one meaning"
+  },
+  {
+    "glyph": "毎",
+    "factId": "word:毎/meaning",
+    "oddGloss": "every (usu. with events, e.g. every weekend)",
+    "canonicalGloss": "every",
+    "decision": "merge",
+    "reason": "'every (usu. with events, e.g. every weekend)' means the same as 'every' — teach as one meaning"
+  },
+  {
+    "glyph": "毛",
+    "factId": "word:毛/meaning",
+    "oddGloss": "hair",
+    "canonicalGloss": "fur",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'hair' means the same as 'fur' — teach as one meaning"
+  },
+  {
+    "glyph": "氏",
+    "factId": "radical:氏/meaning",
+    "oddGloss": "clan",
+    "canonicalGloss": "family name",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'clan' means the same as 'family name' — teach as one meaning"
+  },
+  {
+    "glyph": "水",
+    "factId": "word:水/meaning",
+    "oddGloss": "water (esp. cool or cold)",
+    "canonicalGloss": "water",
+    "decision": "merge",
+    "reason": "'water (esp. cool or cold)' means the same as 'water' — teach as one meaning"
+  },
+  {
+    "glyph": "氷",
+    "factId": "word:氷/meaning",
+    "oddGloss": "ice",
+    "canonicalGloss": "icicle",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'ice' means the same as 'icicle' — teach as one meaning"
+  },
+  {
+    "glyph": "泡",
+    "factId": "word:泡/meaning",
+    "oddGloss": "bubble",
+    "canonicalGloss": "bubbles",
+    "decision": "merge",
+    "reason": "'bubble' means the same as 'bubbles' — teach as one meaning"
+  },
+  {
+    "glyph": "波",
+    "factId": "word:波/meaning",
+    "oddGloss": "wave",
+    "canonicalGloss": "waves",
+    "decision": "merge",
+    "reason": "'wave' means the same as 'waves' — teach as one meaning"
+  },
+  {
+    "glyph": "派",
+    "factId": "word:派/meaning",
+    "oddGloss": "group",
+    "canonicalGloss": "faction",
+    "decision": "merge",
+    "reason": "'group' means the same as 'faction' — teach as one meaning"
+  },
+  {
+    "glyph": "浜",
+    "factId": "word:浜/meaning",
+    "oddGloss": "beach",
+    "canonicalGloss": "seacoast",
+    "decision": "merge",
+    "reason": "'beach' means the same as 'seacoast' — teach as one meaning"
+  },
+  {
+    "glyph": "涙",
+    "factId": "word:涙/meaning",
+    "oddGloss": "tear",
+    "canonicalGloss": "tears",
+    "decision": "merge",
+    "reason": "'tear' means the same as 'tears' — teach as one meaning"
+  },
+  {
+    "glyph": "液",
+    "factId": "word:液/meaning",
+    "oddGloss": "liquid",
+    "canonicalGloss": "fluid",
+    "decision": "merge",
+    "reason": "'liquid' means the same as 'fluid' — teach as one meaning"
+  },
+  {
+    "glyph": "港",
+    "factId": "word:港/meaning",
+    "oddGloss": "harbour",
+    "canonicalGloss": "harbor",
+    "decision": "merge",
+    "reason": "'harbour' means the same as 'harbor' — teach as one meaning"
+  },
+  {
+    "glyph": "湾",
+    "factId": "word:湾/meaning",
+    "oddGloss": "bay",
+    "canonicalGloss": "gulf",
+    "decision": "merge",
+    "reason": "'bay' means the same as 'gulf' — teach as one meaning"
+  },
+  {
+    "glyph": "源",
+    "factId": "word:源/meaning",
+    "oddGloss": "source (of a river)",
+    "canonicalGloss": "source",
+    "decision": "merge",
+    "reason": "'source (of a river)' means the same as 'source' — teach as one meaning"
+  },
+  {
+    "glyph": "溝",
+    "factId": "word:溝/meaning",
+    "oddGloss": "ditch",
+    "canonicalGloss": "gutter",
+    "decision": "merge",
+    "reason": "'ditch' means the same as 'gutter' — teach as one meaning"
+  },
+  {
+    "glyph": "滴",
+    "factId": "word:滴/meaning",
+    "oddGloss": "drop (e.g. of water)",
+    "canonicalGloss": "drip",
+    "decision": "merge",
+    "reason": "'drop (e.g. of water)' means the same as 'drip' — teach as one meaning"
+  },
+  {
+    "glyph": "灯",
+    "factId": "word:灯/meaning",
+    "oddGloss": "light",
+    "canonicalGloss": "lamp",
+    "decision": "merge",
+    "reason": "'light' means the same as 'lamp' — teach as one meaning"
+  },
+  {
+    "glyph": "灰",
+    "factId": "word:灰/meaning",
+    "oddGloss": "ash",
+    "canonicalGloss": "ashes",
+    "decision": "merge",
+    "reason": "'ash' means the same as 'ashes' — teach as one meaning"
+  },
+  {
+    "glyph": "点",
+    "factId": "word:点/meaning",
+    "oddGloss": "dot",
+    "canonicalGloss": "spot",
+    "decision": "merge",
+    "reason": "'dot' means the same as 'spot' — teach as one meaning"
+  },
+  {
+    "glyph": "無",
+    "factId": "word:無/meaning",
+    "oddGloss": "nothing",
+    "canonicalGloss": "nothingness",
+    "decision": "merge",
+    "reason": "'nothing' means the same as 'nothingness' — teach as one meaning"
+  },
+  {
+    "glyph": "熊",
+    "factId": "word:熊/meaning",
+    "oddGloss": "bear (any mammal of family Ursidae)",
+    "canonicalGloss": "bear",
+    "decision": "merge",
+    "reason": "'bear (any mammal of family Ursidae)' means the same as 'bear' — teach as one meaning"
+  },
+  {
+    "glyph": "爪",
+    "factId": "word:爪/meaning",
+    "oddGloss": "nail (e.g. fingernail, toenail)",
+    "canonicalGloss": "claw",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'nail (e.g. fingernail, toenail)' means the same as 'claw' — teach as one meaning"
+  },
+  {
+    "glyph": "牙",
+    "factId": "radical:牙/meaning",
+    "oddGloss": "fang",
+    "canonicalGloss": "tusk",
+    "decision": "merge",
+    "reason": "'fang' means the same as 'tusk' — teach as one meaning"
+  },
+  {
+    "glyph": "牛",
+    "factId": "word:牛/meaning",
+    "oddGloss": "cattle (Bos taurus)",
+    "canonicalGloss": "cow",
+    "decision": "merge",
+    "reason": "'cattle (Bos taurus)' means the same as 'cow' — teach as one meaning"
+  },
+  {
+    "glyph": "犬",
+    "factId": "word:犬/meaning",
+    "oddGloss": "dog (Canis (lupus) familiaris)",
+    "canonicalGloss": "dog",
+    "decision": "merge",
+    "reason": "'dog (Canis (lupus) familiaris)' means the same as 'dog' — teach as one meaning"
+  },
+  {
+    "glyph": "猟",
+    "factId": "word:猟/meaning",
+    "oddGloss": "hunting",
+    "canonicalGloss": "game-hunting",
+    "decision": "merge",
+    "reason": "'hunting' means the same as 'game-hunting' — teach as one meaning"
+  },
+  {
+    "glyph": "猫",
+    "factId": "word:猫/meaning",
+    "oddGloss": "cat (esp. the domestic cat, Felis catus)",
+    "canonicalGloss": "cat",
+    "decision": "merge",
+    "reason": "'cat (esp. the domestic cat, Felis catus)' means the same as 'cat' — teach as one meaning"
+  },
+  {
+    "glyph": "獣",
+    "factId": "word:獣/meaning",
+    "oddGloss": "beast",
+    "canonicalGloss": "animal",
+    "decision": "merge",
+    "reason": "'beast' means the same as 'animal' — teach as one meaning"
+  },
+  {
+    "glyph": "玄",
+    "factId": "radical:玄/meaning",
+    "oddGloss": "profound",
+    "canonicalGloss": "mysterious",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'profound' means the same as 'mysterious' — teach as one meaning"
+  },
+  {
+    "glyph": "率",
+    "factId": "word:率/meaning",
+    "oddGloss": "rate",
+    "canonicalGloss": "ratio",
+    "decision": "merge",
+    "reason": "'rate' means the same as 'ratio' — teach as one meaning"
+  },
+  {
+    "glyph": "玉",
+    "factId": "radical:玉/meaning",
+    "oddGloss": "jade",
+    "canonicalGloss": "jewel",
+    "decision": "merge",
+    "reason": "'jade' means the same as 'jewel' — teach as one meaning"
+  },
+  {
+    "glyph": "班",
+    "factId": "word:班/meaning",
+    "oddGloss": "group",
+    "canonicalGloss": "squad",
+    "decision": "merge",
+    "reason": "'group' means the same as 'squad' — teach as one meaning"
+  },
+  {
+    "glyph": "球",
+    "factId": "word:球/meaning",
+    "oddGloss": "sphere",
+    "canonicalGloss": "ball",
+    "decision": "merge",
+    "reason": "'sphere' means the same as 'ball' — teach as one meaning"
+  },
+  {
+    "glyph": "瓦",
+    "factId": "word:瓦/meaning",
+    "oddGloss": "tile (e.g. roof)",
+    "canonicalGloss": "tile",
+    "decision": "merge",
+    "reason": "'tile (e.g. roof)' means the same as 'tile' — teach as one meaning"
+  },
+  {
+    "glyph": "用",
+    "factId": "radical:用/meaning",
+    "oddGloss": "use",
+    "canonicalGloss": "utilize",
+    "decision": "merge",
+    "reason": "'use' means the same as 'utilize' — teach as one meaning"
+  },
+  {
+    "glyph": "田",
+    "factId": "radical:田/meaning",
+    "oddGloss": "field",
+    "canonicalGloss": "rice field",
+    "decision": "merge",
+    "reason": "'field' means the same as 'rice field' — teach as one meaning"
+  },
+  {
+    "glyph": "男",
+    "factId": "word:男/meaning",
+    "oddGloss": "man",
+    "canonicalGloss": "male",
+    "decision": "merge",
+    "reason": "'man' means the same as 'male' — teach as one meaning"
+  },
+  {
+    "glyph": "画",
+    "factId": "word:画/meaning",
+    "oddGloss": "stroke (of a kanji)",
+    "canonicalGloss": "brush-stroke",
+    "decision": "merge",
+    "reason": "'stroke (of a kanji)' means the same as 'brush-stroke' — teach as one meaning"
+  },
+  {
+    "glyph": "畑",
+    "factId": "word:畑/meaning",
+    "oddGloss": "field (for growing wheat, fruit, vegetables, etc.)",
+    "canonicalGloss": "farm",
+    "decision": "merge",
+    "reason": "'field (for growing wheat, fruit, vegetables, etc.)' means the same as 'farm' — teach as one meaning"
+  },
+  {
+    "glyph": "畳",
+    "factId": "word:畳/meaning@じょう",
+    "oddGloss": "tatami mat (esp. as a measure of room size, either 1.82 sqm or 1.54 sqm)",
+    "canonicalGloss": "tatami mat",
+    "decision": "merge",
+    "reason": "'tatami mat (esp. as a measure of room size, either 1.82 sqm or 1.54 sqm)' means the same as 'tatami mat' — teach as one meaning"
+  },
+  {
+    "glyph": "病",
+    "factId": "word:病/meaning",
+    "oddGloss": "illness",
+    "canonicalGloss": "ill",
+    "decision": "merge",
+    "reason": "'illness' means the same as 'ill' — teach as one meaning"
+  },
+  {
+    "glyph": "癖",
+    "factId": "word:癖/meaning",
+    "oddGloss": "habit (usu. a bad one)",
+    "canonicalGloss": "mannerism",
+    "decision": "merge",
+    "reason": "'habit (usu. a bad one)' means the same as 'mannerism' — teach as one meaning"
+  },
+  {
+    "glyph": "皮",
+    "factId": "radical:皮/meaning",
+    "oddGloss": "skin",
+    "canonicalGloss": "pelt",
+    "decision": "merge",
+    "reason": "'skin' means the same as 'pelt' — teach as one meaning"
+  },
+  {
+    "glyph": "皮",
+    "factId": "word:皮/meaning",
+    "oddGloss": "skin",
+    "canonicalGloss": "pelt",
+    "decision": "merge",
+    "reason": "'skin' means the same as 'pelt' — teach as one meaning"
+  },
+  {
+    "glyph": "皿",
+    "factId": "word:皿/meaning",
+    "oddGloss": "plate",
+    "canonicalGloss": "dish",
+    "decision": "merge",
+    "reason": "'plate' means the same as 'dish' — teach as one meaning"
+  },
+  {
+    "glyph": "盲",
+    "factId": "word:盲/meaning",
+    "oddGloss": "blindness",
+    "canonicalGloss": "blind",
+    "decision": "merge",
+    "reason": "'blindness' means the same as 'blind' — teach as one meaning"
+  },
+  {
+    "glyph": "直",
+    "factId": "word:直/meaning",
+    "oddGloss": "soon",
+    "canonicalGloss": "straightaway",
+    "decision": "merge",
+    "reason": "'soon' means the same as 'straightaway' — teach as one meaning"
+  },
+  {
+    "glyph": "県",
+    "factId": "word:県/meaning",
+    "oddGloss": "prefecture (of Japan)",
+    "canonicalGloss": "prefecture",
+    "decision": "merge",
+    "reason": "'prefecture (of Japan)' means the same as 'prefecture' — teach as one meaning"
+  },
+  {
+    "glyph": "真",
+    "factId": "word:真/meaning",
+    "oddGloss": "truth",
+    "canonicalGloss": "true",
+    "decision": "merge",
+    "reason": "'truth' means the same as 'true' — teach as one meaning"
+  },
+  {
+    "glyph": "眼",
+    "factId": "word:眼/meaning",
+    "oddGloss": "eye",
+    "canonicalGloss": "eyeball",
+    "decision": "merge",
+    "reason": "'eye' means the same as 'eyeball' — teach as one meaning"
+  },
+  {
+    "glyph": "瞳",
+    "factId": "word:瞳/meaning",
+    "oddGloss": "pupil (of the eye)",
+    "canonicalGloss": "pupil (of eye)",
+    "decision": "merge",
+    "reason": "'pupil (of the eye)' means the same as 'pupil (of eye)' — teach as one meaning"
+  },
+  {
+    "glyph": "矛",
+    "factId": "radical:矛/meaning",
+    "oddGloss": "spear",
+    "canonicalGloss": "halberd",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'spear' means the same as 'halberd' — teach as one meaning"
+  },
+  {
+    "glyph": "矛",
+    "factId": "word:矛/meaning",
+    "oddGloss": "long-handled Chinese spear",
+    "canonicalGloss": "halberd",
+    "decision": "merge",
+    "reason": "'long-handled Chinese spear' means the same as 'halberd' — teach as one meaning"
+  },
+  {
+    "glyph": "矢",
+    "factId": "radical:矢/meaning",
+    "oddGloss": "arrow",
+    "canonicalGloss": "dart",
+    "decision": "merge",
+    "reason": "'arrow' means the same as 'dart' — teach as one meaning"
+  },
+  {
+    "glyph": "矢",
+    "factId": "word:矢/meaning",
+    "oddGloss": "arrow",
+    "canonicalGloss": "dart",
+    "decision": "merge",
+    "reason": "'arrow' means the same as 'dart' — teach as one meaning"
+  },
+  {
+    "glyph": "碁",
+    "factId": "word:碁/meaning",
+    "oddGloss": "go (board game)",
+    "canonicalGloss": "Go",
+    "decision": "merge",
+    "reason": "'go (board game)' means the same as 'Go' — teach as one meaning"
+  },
+  {
+    "glyph": "神",
+    "factId": "word:神/meaning",
+    "oddGloss": "god",
+    "canonicalGloss": "gods",
+    "decision": "merge",
+    "reason": "'god' means the same as 'gods' — teach as one meaning"
+  },
+  {
+    "glyph": "票",
+    "factId": "word:票/meaning",
+    "oddGloss": "vote",
+    "canonicalGloss": "ballot",
+    "decision": "merge",
+    "reason": "'vote' means the same as 'ballot' — teach as one meaning"
+  },
+  {
+    "glyph": "禅",
+    "factId": "word:禅/meaning",
+    "oddGloss": "dhyana (profound meditation)",
+    "canonicalGloss": "Zen",
+    "decision": "merge",
+    "reason": "'dhyana (profound meditation)' means the same as 'Zen' — teach as one meaning"
+  },
+  {
+    "glyph": "科",
+    "factId": "word:科/meaning",
+    "oddGloss": "department (of a university or hospital)",
+    "canonicalGloss": "department",
+    "decision": "merge",
+    "reason": "'department (of a university or hospital)' means the same as 'department' — teach as one meaning"
+  },
+  {
+    "glyph": "秒",
+    "factId": "word:秒/meaning",
+    "oddGloss": "second (unit of time)",
+    "canonicalGloss": "second (1/60 minute)",
+    "decision": "merge",
+    "reason": "'second (unit of time)' means the same as 'second (1/60 minute)' — teach as one meaning"
+  },
+  {
+    "glyph": "稲",
+    "factId": "word:稲/meaning",
+    "oddGloss": "rice plant (Oryza sativa)",
+    "canonicalGloss": "rice plant",
+    "decision": "merge",
+    "reason": "'rice plant (Oryza sativa)' means the same as 'rice plant' — teach as one meaning"
+  },
+  {
+    "glyph": "穂",
+    "factId": "word:穂/meaning",
+    "oddGloss": "ear (of a cereal plant)",
+    "canonicalGloss": "ear",
+    "decision": "merge",
+    "reason": "'ear (of a cereal plant)' means the same as 'ear' — teach as one meaning"
+  },
+  {
+    "glyph": "穴",
+    "factId": "radical:穴/meaning",
+    "oddGloss": "cave",
+    "canonicalGloss": "hole",
+    "decision": "merge",
+    "reason": "'cave' means the same as 'hole' — teach as one meaning"
+  },
+  {
+    "glyph": "空",
+    "factId": "word:空/meaning@から",
+    "oddGloss": "emptiness",
+    "canonicalGloss": "empty",
+    "decision": "merge",
+    "reason": "'emptiness' means the same as 'empty' — teach as one meaning"
+  },
+  {
+    "glyph": "立",
+    "factId": "radical:立/meaning",
+    "oddGloss": "stand",
+    "canonicalGloss": "stand up",
+    "decision": "merge",
+    "reason": "'stand' means the same as 'stand up' — teach as one meaning"
+  },
+  {
+    "glyph": "端",
+    "factId": "word:端/meaning",
+    "oddGloss": "end (e.g. of street)",
+    "canonicalGloss": "edge",
+    "decision": "merge",
+    "reason": "'end (e.g. of street)' means the same as 'edge' — teach as one meaning"
+  },
+  {
+    "glyph": "竹",
+    "factId": "word:竹/meaning",
+    "oddGloss": "bamboo (any grass of subfamily Bambusoideae)",
+    "canonicalGloss": "bamboo",
+    "decision": "merge",
+    "reason": "'bamboo (any grass of subfamily Bambusoideae)' means the same as 'bamboo' — teach as one meaning"
+  },
+  {
+    "glyph": "第",
+    "factId": "word:第/meaning",
+    "oddGloss": "prefix for forming ordinal numbers",
+    "canonicalGloss": "No.",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'prefix for forming ordinal numbers' means the same as 'No.' — teach as one meaning"
+  },
+  {
+    "glyph": "筒",
+    "factId": "word:筒/meaning",
+    "oddGloss": "pipe",
+    "canonicalGloss": "cylinder",
+    "decision": "merge",
+    "reason": "'pipe' means the same as 'cylinder' — teach as one meaning"
+  },
+  {
+    "glyph": "策",
+    "factId": "word:策/meaning",
+    "oddGloss": "plan",
+    "canonicalGloss": "scheme",
+    "decision": "merge",
+    "reason": "'plan' means the same as 'scheme' — teach as one meaning"
+  },
+  {
+    "glyph": "節",
+    "factId": "word:節/meaning",
+    "oddGloss": "joint",
+    "canonicalGloss": "node",
+    "decision": "merge",
+    "reason": "'joint' means the same as 'node' — teach as one meaning"
+  },
+  {
+    "glyph": "米",
+    "factId": "word:米/meaning",
+    "oddGloss": "(husked grains of) rice",
+    "canonicalGloss": "rice",
+    "decision": "merge",
+    "reason": "'(husked grains of) rice' means the same as 'rice' — teach as one meaning"
+  },
+  {
+    "glyph": "粒",
+    "factId": "word:粒/meaning",
+    "oddGloss": "grain",
+    "canonicalGloss": "grains",
+    "decision": "merge",
+    "reason": "'grain' means the same as 'grains' — teach as one meaning"
+  },
+  {
+    "glyph": "糸",
+    "factId": "radical:糸/meaning",
+    "oddGloss": "silk",
+    "canonicalGloss": "thread",
+    "decision": "merge",
+    "reason": "'silk' means the same as 'thread' — teach as one meaning"
+  },
+  {
+    "glyph": "紅",
+    "factId": "word:紅/meaning",
+    "oddGloss": "deep red",
+    "canonicalGloss": "crimson",
+    "decision": "merge",
+    "reason": "'deep red' means the same as 'crimson' — teach as one meaning"
+  },
+  {
+    "glyph": "紺",
+    "factId": "word:紺/meaning",
+    "oddGloss": "navy blue",
+    "canonicalGloss": "dark blue",
+    "decision": "merge",
+    "reason": "'navy blue' means the same as 'dark blue' — teach as one meaning"
+  },
+  {
+    "glyph": "綱",
+    "factId": "word:綱/meaning",
+    "oddGloss": "rope",
+    "canonicalGloss": "hawser",
+    "decision": "merge",
+    "reason": "'rope' means the same as 'hawser' — teach as one meaning"
+  },
+  {
+    "glyph": "網",
+    "factId": "word:網/meaning",
+    "oddGloss": "net",
+    "canonicalGloss": "netting",
+    "decision": "merge",
+    "reason": "'net' means the same as 'netting' — teach as one meaning"
+  },
+  {
+    "glyph": "縄",
+    "factId": "word:縄/meaning",
+    "oddGloss": "rope",
+    "canonicalGloss": "straw rope",
+    "decision": "merge",
+    "reason": "'rope' means the same as 'straw rope' — teach as one meaning"
+  },
+  {
+    "glyph": "縦",
+    "factId": "word:縦/meaning",
+    "oddGloss": "the vertical",
+    "canonicalGloss": "vertical",
+    "decision": "merge",
+    "reason": "'the vertical' means the same as 'vertical' — teach as one meaning"
+  },
+  {
+    "glyph": "缶",
+    "factId": "radical:缶/meaning",
+    "oddGloss": "jar",
+    "canonicalGloss": "tin can",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'jar' means the same as 'tin can' — teach as one meaning"
+  },
+  {
+    "glyph": "缶",
+    "factId": "word:缶/meaning",
+    "oddGloss": "can",
+    "canonicalGloss": "tin can",
+    "decision": "merge",
+    "reason": "'can' means the same as 'tin can' — teach as one meaning"
+  },
+  {
+    "glyph": "罰",
+    "factId": "word:罰/meaning",
+    "oddGloss": "(divine) punishment",
+    "canonicalGloss": "penalty",
+    "decision": "merge",
+    "reason": "'(divine) punishment' means the same as 'penalty' — teach as one meaning"
+  },
+  {
+    "glyph": "罰",
+    "factId": "word:罰/meaning@ばつ",
+    "oddGloss": "punishment",
+    "canonicalGloss": "penalty",
+    "decision": "merge",
+    "reason": "'punishment' means the same as 'penalty' — teach as one meaning"
+  },
+  {
+    "glyph": "羊",
+    "factId": "word:羊/meaning",
+    "oddGloss": "sheep (Ovis aries)",
+    "canonicalGloss": "sheep",
+    "decision": "merge",
+    "reason": "'sheep (Ovis aries)' means the same as 'sheep' — teach as one meaning"
+  },
+  {
+    "glyph": "群",
+    "factId": "word:群/meaning",
+    "oddGloss": "group",
+    "canonicalGloss": "flock",
+    "decision": "merge",
+    "reason": "'group' means the same as 'flock' — teach as one meaning"
+  },
+  {
+    "glyph": "羽",
+    "factId": "radical:羽/meaning",
+    "oddGloss": "feather",
+    "canonicalGloss": "feathers",
+    "decision": "merge",
+    "reason": "'feather' means the same as 'feathers' — teach as one meaning"
+  },
+  {
+    "glyph": "羽",
+    "factId": "word:羽/meaning",
+    "oddGloss": "feather",
+    "canonicalGloss": "feathers",
+    "decision": "merge",
+    "reason": "'feather' means the same as 'feathers' — teach as one meaning"
+  },
+  {
+    "glyph": "老",
+    "factId": "radical:老/meaning",
+    "oddGloss": "old",
+    "canonicalGloss": "old man",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'old' means the same as 'old man' — teach as one meaning"
+  },
+  {
+    "glyph": "者",
+    "factId": "word:者/meaning",
+    "oddGloss": "person",
+    "canonicalGloss": "someone",
+    "decision": "merge",
+    "reason": "'person' means the same as 'someone' — teach as one meaning"
+  },
+  {
+    "glyph": "肉",
+    "factId": "word:肉/meaning",
+    "oddGloss": "flesh",
+    "canonicalGloss": "meat",
+    "decision": "merge",
+    "reason": "'flesh' means the same as 'meat' — teach as one meaning"
+  },
+  {
+    "glyph": "肺",
+    "factId": "word:肺/meaning",
+    "oddGloss": "lung",
+    "canonicalGloss": "lungs",
+    "decision": "merge",
+    "reason": "'lung' means the same as 'lungs' — teach as one meaning"
+  },
+  {
+    "glyph": "背",
+    "factId": "word:背/meaning@せい",
+    "oddGloss": "height",
+    "canonicalGloss": "stature",
+    "decision": "merge",
+    "reason": "'height' means the same as 'stature' — teach as one meaning"
+  },
+  {
+    "glyph": "胸",
+    "factId": "word:胸/meaning",
+    "oddGloss": "chest",
+    "canonicalGloss": "bosom",
+    "decision": "merge",
+    "reason": "'chest' means the same as 'bosom' — teach as one meaning"
+  },
+  {
+    "glyph": "能",
+    "factId": "word:能/meaning",
+    "oddGloss": "talent",
+    "canonicalGloss": "ability",
+    "decision": "merge",
+    "reason": "'talent' means the same as 'ability' — teach as one meaning"
+  },
+  {
+    "glyph": "腰",
+    "factId": "word:腰/meaning",
+    "oddGloss": "lower back",
+    "canonicalGloss": "loins",
+    "decision": "merge",
+    "reason": "'lower back' means the same as 'loins' — teach as one meaning"
+  },
+  {
+    "glyph": "腸",
+    "factId": "word:腸/meaning",
+    "oddGloss": "intestine",
+    "canonicalGloss": "intestines",
+    "decision": "merge",
+    "reason": "'intestine' means the same as 'intestines' — teach as one meaning"
+  },
+  {
+    "glyph": "臓",
+    "factId": "word:臓/meaning",
+    "oddGloss": "viscera",
+    "canonicalGloss": "entrails",
+    "decision": "merge",
+    "reason": "'viscera' means the same as 'entrails' — teach as one meaning"
+  },
+  {
+    "glyph": "臣",
+    "factId": "radical:臣/meaning",
+    "oddGloss": "minister",
+    "canonicalGloss": "retainer",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'minister' means the same as 'retainer' — teach as one meaning"
+  },
+  {
+    "glyph": "自",
+    "factId": "radical:自/meaning",
+    "oddGloss": "self",
+    "canonicalGloss": "oneself",
+    "decision": "merge",
+    "reason": "'self' means the same as 'oneself' — teach as one meaning"
+  },
+  {
+    "glyph": "色",
+    "factId": "word:色/meaning",
+    "oddGloss": "colour",
+    "canonicalGloss": "color",
+    "decision": "merge",
+    "reason": "'colour' means the same as 'color' — teach as one meaning"
+  },
+  {
+    "glyph": "艶",
+    "factId": "word:艶/meaning",
+    "oddGloss": "gloss",
+    "canonicalGloss": "glossy",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'gloss' means the same as 'glossy' — teach as one meaning"
+  },
+  {
+    "glyph": "芋",
+    "factId": "word:芋/meaning",
+    "oddGloss": "tuber",
+    "canonicalGloss": "taro",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'tuber' means the same as 'taro' — teach as one meaning"
+  },
+  {
+    "glyph": "芽",
+    "factId": "word:芽/meaning",
+    "oddGloss": "sprout",
+    "canonicalGloss": "bud",
+    "decision": "merge",
+    "reason": "'sprout' means the same as 'bud' — teach as one meaning"
+  },
+  {
+    "glyph": "英",
+    "factId": "word:英/meaning",
+    "oddGloss": "United Kingdom",
+    "canonicalGloss": "England",
+    "decision": "merge",
+    "reason": "'United Kingdom' means the same as 'England' — teach as one meaning"
+  },
+  {
+    "glyph": "荷",
+    "factId": "word:荷/meaning",
+    "oddGloss": "load",
+    "canonicalGloss": "baggage",
+    "decision": "merge",
+    "reason": "'load' means the same as 'baggage' — teach as one meaning"
+  },
+  {
+    "glyph": "菊",
+    "factId": "word:菊/meaning",
+    "oddGloss": "chrysanthemum (Chrysanthemum morifolium)",
+    "canonicalGloss": "chrysanthemum",
+    "decision": "merge",
+    "reason": "'chrysanthemum (Chrysanthemum morifolium)' means the same as 'chrysanthemum' — teach as one meaning"
+  },
+  {
+    "glyph": "菜",
+    "factId": "word:菜/meaning",
+    "oddGloss": "greens",
+    "canonicalGloss": "vegetable",
+    "decision": "merge",
+    "reason": "'greens' means the same as 'vegetable' — teach as one meaning"
+  },
+  {
+    "glyph": "蔵",
+    "factId": "word:蔵/meaning",
+    "oddGloss": "warehouse",
+    "canonicalGloss": "storehouse",
+    "decision": "merge",
+    "reason": "'warehouse' means the same as 'storehouse' — teach as one meaning"
+  },
+  {
+    "glyph": "虎",
+    "factId": "word:虎/meaning",
+    "oddGloss": "tiger (Panthera tigris)",
+    "canonicalGloss": "tiger",
+    "decision": "merge",
+    "reason": "'tiger (Panthera tigris)' means the same as 'tiger' — teach as one meaning"
+  },
+  {
+    "glyph": "蚕",
+    "factId": "word:蚕/meaning",
+    "oddGloss": "silkworm (Bombyx mori)",
+    "canonicalGloss": "silkworm",
+    "decision": "merge",
+    "reason": "'silkworm (Bombyx mori)' means the same as 'silkworm' — teach as one meaning"
+  },
+  {
+    "glyph": "行",
+    "factId": "radical:行/meaning",
+    "oddGloss": "walk enclosure",
+    "canonicalGloss": "going",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'walk enclosure' means the same as 'going' — teach as one meaning"
+  },
+  {
+    "glyph": "街",
+    "factId": "word:街/meaning",
+    "oddGloss": "street",
+    "canonicalGloss": "boulevard",
+    "decision": "merge",
+    "reason": "'street' means the same as 'boulevard' — teach as one meaning"
+  },
+  {
+    "glyph": "衣",
+    "factId": "radical:衣/meaning",
+    "oddGloss": "clothes",
+    "canonicalGloss": "garment",
+    "decision": "merge",
+    "reason": "'clothes' means the same as 'garment' — teach as one meaning"
+  },
+  {
+    "glyph": "袋",
+    "factId": "word:袋/meaning",
+    "oddGloss": "bag",
+    "canonicalGloss": "sack",
+    "decision": "merge",
+    "reason": "'bag' means the same as 'sack' — teach as one meaning"
+  },
+  {
+    "glyph": "裸",
+    "factId": "word:裸/meaning",
+    "oddGloss": "nakedness",
+    "canonicalGloss": "naked",
+    "decision": "merge",
+    "reason": "'nakedness' means the same as 'naked' — teach as one meaning"
+  },
+  {
+    "glyph": "角",
+    "factId": "word:角/meaning",
+    "oddGloss": "corner",
+    "canonicalGloss": "angle",
+    "decision": "merge",
+    "reason": "'corner' means the same as 'angle' — teach as one meaning"
+  },
+  {
+    "glyph": "言",
+    "factId": "radical:言/meaning",
+    "oddGloss": "speech",
+    "canonicalGloss": "say",
+    "decision": "merge",
+    "reason": "'speech' means the same as 'say' — teach as one meaning"
+  },
+  {
+    "glyph": "詔",
+    "factId": "word:詔/meaning",
+    "oddGloss": "imperial decree",
+    "canonicalGloss": "imperial edict",
+    "decision": "merge",
+    "reason": "'imperial decree' means the same as 'imperial edict' — teach as one meaning"
+  },
+  {
+    "glyph": "豆",
+    "factId": "radical:豆/meaning",
+    "oddGloss": "bean",
+    "canonicalGloss": "beans",
+    "decision": "merge",
+    "reason": "'bean' means the same as 'beans' — teach as one meaning"
+  },
+  {
+    "glyph": "象",
+    "factId": "word:象/meaning",
+    "oddGloss": "elephant (Elephantidae spp.)",
+    "canonicalGloss": "elephant",
+    "decision": "merge",
+    "reason": "'elephant (Elephantidae spp.)' means the same as 'elephant' — teach as one meaning"
+  },
+  {
+    "glyph": "貝",
+    "factId": "radical:貝/meaning",
+    "oddGloss": "shell",
+    "canonicalGloss": "shellfish",
+    "decision": "merge",
+    "reason": "'shell' means the same as 'shellfish' — teach as one meaning"
+  },
+  {
+    "glyph": "費",
+    "factId": "word:費/meaning",
+    "oddGloss": "cost",
+    "canonicalGloss": "expense",
+    "decision": "merge",
+    "reason": "'cost' means the same as 'expense' — teach as one meaning"
+  },
+  {
+    "glyph": "趣",
+    "factId": "word:趣/meaning",
+    "oddGloss": "meaning",
+    "canonicalGloss": "purport",
+    "decision": "merge",
+    "reason": "'meaning' means the same as 'purport' — teach as one meaning"
+  },
+  {
+    "glyph": "足",
+    "factId": "radical:足/meaning",
+    "oddGloss": "foot",
+    "canonicalGloss": "leg",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'foot' means the same as 'leg' — teach as one meaning"
+  },
+  {
+    "glyph": "足",
+    "factId": "word:足/meaning",
+    "oddGloss": "foot",
+    "canonicalGloss": "leg",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'foot' means the same as 'leg' — teach as one meaning"
+  },
+  {
+    "glyph": "跡",
+    "factId": "word:跡/meaning",
+    "oddGloss": "trace",
+    "canonicalGloss": "tracks",
+    "decision": "merge",
+    "reason": "'trace' means the same as 'tracks' — teach as one meaning"
+  },
+  {
+    "glyph": "車",
+    "factId": "radical:車/meaning",
+    "oddGloss": "cart",
+    "canonicalGloss": "car",
+    "decision": "merge",
+    "reason": "'cart' means the same as 'car' — teach as one meaning"
+  },
+  {
+    "glyph": "辺",
+    "factId": "word:辺/meaning",
+    "oddGloss": "area",
+    "canonicalGloss": "environs",
+    "decision": "merge",
+    "reason": "'area' means the same as 'environs' — teach as one meaning"
+  },
+  {
+    "glyph": "逆",
+    "factId": "word:逆/meaning",
+    "oddGloss": "reverse",
+    "canonicalGloss": "inverted",
+    "decision": "merge",
+    "reason": "'reverse' means the same as 'inverted' — teach as one meaning"
+  },
+  {
+    "glyph": "道",
+    "factId": "word:道/meaning",
+    "oddGloss": "road",
+    "canonicalGloss": "road-way",
+    "decision": "merge",
+    "reason": "'road' means the same as 'road-way' — teach as one meaning"
+  },
+  {
+    "glyph": "郡",
+    "factId": "word:郡/meaning",
+    "oddGloss": "district",
+    "canonicalGloss": "county",
+    "decision": "merge",
+    "reason": "'district' means the same as 'county' — teach as one meaning"
+  },
+  {
+    "glyph": "部",
+    "factId": "word:部/meaning",
+    "oddGloss": "department (in an organization, company, etc.)",
+    "canonicalGloss": "section",
+    "decision": "merge",
+    "reason": "'department (in an organization, company, etc.)' means the same as 'section' — teach as one meaning"
+  },
+  {
+    "glyph": "都",
+    "factId": "word:都/meaning",
+    "oddGloss": "capital (esp. Kyoto, Japan's former capital)",
+    "canonicalGloss": "metropolis",
+    "decision": "merge",
+    "reason": "'capital (esp. Kyoto, Japan's former capital)' means the same as 'metropolis' — teach as one meaning"
+  },
+  {
+    "glyph": "酒",
+    "factId": "word:酒/meaning",
+    "oddGloss": "alcohol",
+    "canonicalGloss": "sake",
+    "decision": "merge",
+    "reason": "'alcohol' means the same as 'sake' — teach as one meaning"
+  },
+  {
+    "glyph": "里",
+    "factId": "word:里/meaning",
+    "oddGloss": "Japanese league",
+    "canonicalGloss": "ri",
+    "decision": "merge",
+    "reason": "'Japanese league' means the same as 'ri' — teach as one meaning"
+  },
+  {
+    "glyph": "野",
+    "factId": "word:野/meaning",
+    "oddGloss": "field",
+    "canonicalGloss": "plains",
+    "decision": "merge",
+    "reason": "'field' means the same as 'plains' — teach as one meaning"
+  },
+  {
+    "glyph": "金",
+    "factId": "word:金/meaning@きん",
+    "oddGloss": "gold (metal)",
+    "canonicalGloss": "gold",
+    "decision": "merge",
+    "reason": "'gold (metal)' means the same as 'gold' — teach as one meaning"
+  },
+  {
+    "glyph": "釜",
+    "factId": "word:釜/meaning",
+    "oddGloss": "iron pot",
+    "canonicalGloss": "kettle",
+    "decision": "merge",
+    "reason": "'iron pot' means the same as 'kettle' — teach as one meaning"
+  },
+  {
+    "glyph": "鈴",
+    "factId": "word:鈴/meaning",
+    "oddGloss": "bell (often globular)",
+    "canonicalGloss": "small bell",
+    "decision": "merge",
+    "reason": "'bell (often globular)' means the same as 'small bell' — teach as one meaning"
+  },
+  {
+    "glyph": "鉄",
+    "factId": "word:鉄/meaning",
+    "oddGloss": "iron (Fe)",
+    "canonicalGloss": "iron",
+    "decision": "merge",
+    "reason": "'iron (Fe)' means the same as 'iron' — teach as one meaning"
+  },
+  {
+    "glyph": "鉛",
+    "factId": "word:鉛/meaning",
+    "oddGloss": "lead (Pb)",
+    "canonicalGloss": "lead",
+    "decision": "merge",
+    "reason": "'lead (Pb)' means the same as 'lead' — teach as one meaning"
+  },
+  {
+    "glyph": "銀",
+    "factId": "word:銀/meaning",
+    "oddGloss": "silver (Ag)",
+    "canonicalGloss": "silver",
+    "decision": "merge",
+    "reason": "'silver (Ag)' means the same as 'silver' — teach as one meaning"
+  },
+  {
+    "glyph": "銅",
+    "factId": "word:銅/meaning",
+    "oddGloss": "copper (Cu)",
+    "canonicalGloss": "copper",
+    "decision": "merge",
+    "reason": "'copper (Cu)' means the same as 'copper' — teach as one meaning"
+  },
+  {
+    "glyph": "鍋",
+    "factId": "word:鍋/meaning",
+    "oddGloss": "pan",
+    "canonicalGloss": "pot",
+    "decision": "merge",
+    "reason": "'pan' means the same as 'pot' — teach as one meaning"
+  },
+  {
+    "glyph": "鐘",
+    "factId": "word:鐘/meaning",
+    "oddGloss": "bell (often a large hanging bell)",
+    "canonicalGloss": "bell",
+    "decision": "merge",
+    "reason": "'bell (often a large hanging bell)' means the same as 'bell' — teach as one meaning"
+  },
+  {
+    "glyph": "間",
+    "factId": "word:間/meaning",
+    "oddGloss": "space (between)",
+    "canonicalGloss": "interval",
+    "decision": "merge",
+    "reason": "'space (between)' means the same as 'interval' — teach as one meaning"
+  },
+  {
+    "glyph": "阜",
+    "factId": "radical:阜/meaning",
+    "oddGloss": "mound",
+    "canonicalGloss": "hill",
+    "decision": "merge",
+    "reason": "'mound' means the same as 'hill' — teach as one meaning"
+  },
+  {
+    "glyph": "隙",
+    "factId": "word:隙/meaning",
+    "oddGloss": "gap",
+    "canonicalGloss": "crevice",
+    "decision": "merge",
+    "reason": "'gap' means the same as 'crevice' — teach as one meaning"
+  },
+  {
+    "glyph": "隣",
+    "factId": "word:隣/meaning",
+    "oddGloss": "next (to)",
+    "canonicalGloss": "neighboring",
+    "decision": "merge",
+    "reason": "'next (to)' means the same as 'neighboring' — teach as one meaning"
+  },
+  {
+    "glyph": "非",
+    "factId": "radical:非/meaning",
+    "oddGloss": "wrong",
+    "canonicalGloss": "un-",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'wrong' means the same as 'un-' — teach as one meaning"
+  },
+  {
+    "glyph": "靴",
+    "factId": "word:靴/meaning",
+    "oddGloss": "shoe",
+    "canonicalGloss": "shoes",
+    "decision": "merge",
+    "reason": "'shoe' means the same as 'shoes' — teach as one meaning"
+  },
+  {
+    "glyph": "類",
+    "factId": "word:類/meaning",
+    "oddGloss": "kind",
+    "canonicalGloss": "sort",
+    "decision": "merge",
+    "reason": "'kind' means the same as 'sort' — teach as one meaning"
+  },
+  {
+    "glyph": "餅",
+    "factId": "word:餅/meaning",
+    "oddGloss": "mochi",
+    "canonicalGloss": "mochi rice cake",
+    "decision": "merge",
+    "reason": "'mochi' means the same as 'mochi rice cake' — teach as one meaning"
+  },
+  {
+    "glyph": "餌",
+    "factId": "word:餌/meaning",
+    "oddGloss": "(animal) feed",
+    "canonicalGloss": "food",
+    "decision": "merge",
+    "reason": "'(animal) feed' means the same as 'food' — teach as one meaning"
+  },
+  {
+    "glyph": "駅",
+    "factId": "word:駅/meaning",
+    "oddGloss": "railway station",
+    "canonicalGloss": "station",
+    "decision": "merge",
+    "reason": "'railway station' means the same as 'station' — teach as one meaning"
+  },
+  {
+    "glyph": "骨",
+    "factId": "radical:骨/meaning",
+    "oddGloss": "bone",
+    "canonicalGloss": "skeleton",
+    "decision": "merge",
+    "reason": "REVIEW (borderline synonymy): 'bone' means the same as 'skeleton' — teach as one meaning"
+  },
+  {
+    "glyph": "骨",
+    "factId": "word:骨/meaning",
+    "oddGloss": "bone",
+    "canonicalGloss": "skeleton",
+    "decision": "merge",
+    "reason": "'bone' means the same as 'skeleton' — teach as one meaning"
+  },
+  {
+    "glyph": "髪",
+    "factId": "word:髪/meaning",
+    "oddGloss": "hair (on the head)",
+    "canonicalGloss": "hair of the head",
+    "decision": "merge",
+    "reason": "'hair (on the head)' means the same as 'hair of the head' — teach as one meaning"
+  },
+  {
+    "glyph": "鶏",
+    "factId": "word:鶏/meaning",
+    "oddGloss": "chicken (Gallus gallus domesticus)",
+    "canonicalGloss": "chicken",
+    "decision": "merge",
+    "reason": "'chicken (Gallus gallus domesticus)' means the same as 'chicken' — teach as one meaning"
+  },
+  {
+    "glyph": "鶴",
+    "factId": "word:鶴/meaning",
+    "oddGloss": "crane (any bird of the family Gruidae, esp. the red-crowned crane, Grus japonensis)",
+    "canonicalGloss": "crane",
+    "decision": "merge",
+    "reason": "'crane (any bird of the family Gruidae, esp. the red-crowned crane, Grus japonensis)' means the same as 'crane' — teach as one meaning"
+  },
+  {
+    "glyph": "麓",
+    "factId": "word:麓/meaning",
+    "oddGloss": "foot (of a mountain or hill)",
+    "canonicalGloss": "foot of a mountain",
+    "decision": "merge",
+    "reason": "'foot (of a mountain or hill)' means the same as 'foot of a mountain' — teach as one meaning"
+  },
+  {
+    "glyph": "鼓",
+    "factId": "word:鼓/meaning",
+    "oddGloss": "tsuzumi",
+    "canonicalGloss": "drum",
+    "decision": "merge",
+    "reason": "'tsuzumi' means the same as 'drum' — teach as one meaning"
+  },
+  {
+    "glyph": "上",
+    "factId": "word:上/meaning@かみ",
+    "oddGloss": "upper reaches (of a river)",
+    "canonicalGloss": "above",
+    "decision": "keep",
+    "reason": "'upper reaches (of a river)' is a distinct sense from 'above' — keep separate"
+  },
+  {
+    "glyph": "上",
+    "factId": "word:上/meaning@じょう",
+    "oddGloss": "from the standpoint of",
+    "canonicalGloss": "above",
+    "decision": "keep",
+    "reason": "'from the standpoint of' is a distinct sense from 'above' — keep separate"
+  },
+  {
+    "glyph": "世",
+    "factId": "word:世/meaning",
+    "oddGloss": "world",
+    "canonicalGloss": "generation",
+    "decision": "keep",
+    "reason": "'world' is a distinct sense from 'generation' — keep separate"
+  },
+  {
+    "glyph": "並",
+    "factId": "word:並/meaning",
+    "oddGloss": "average",
+    "canonicalGloss": "row",
+    "decision": "keep",
+    "reason": "'average' is a distinct sense from 'row' — keep separate"
+  },
+  {
+    "glyph": "中",
+    "factId": "word:中/meaning@ちゅう",
+    "oddGloss": "medium (size)",
+    "canonicalGloss": "in",
+    "decision": "keep",
+    "reason": "'medium (size)' is a distinct sense from 'in' — keep separate"
+  },
+  {
+    "glyph": "中",
+    "factId": "word:中/meaning@じゅう",
+    "oddGloss": "(all) through (e.g. the night)",
+    "canonicalGloss": "in",
+    "decision": "keep",
+    "reason": "'(all) through (e.g. the night)' is a distinct sense from 'in' — keep separate"
+  },
+  {
+    "glyph": "乙",
+    "factId": "radical:乙/meaning",
+    "oddGloss": "second",
+    "canonicalGloss": "the latter",
+    "decision": "keep",
+    "reason": "'second' is a distinct sense from 'the latter' — keep separate"
+  },
+  {
+    "glyph": "人",
+    "factId": "word:人/meaning@じん",
+    "oddGloss": "-ian (e.g. Italian)",
+    "canonicalGloss": "person",
+    "decision": "keep",
+    "reason": "'-ian (e.g. Italian)' is a distinct sense from 'person' — keep separate"
+  },
+  {
+    "glyph": "人",
+    "factId": "word:人/meaning@にん",
+    "oddGloss": "counter for people",
+    "canonicalGloss": "person",
+    "decision": "keep",
+    "reason": "'counter for people' is a distinct sense from 'person' — keep separate"
+  },
+  {
+    "glyph": "仏",
+    "factId": "word:仏/meaning@ふつ",
+    "oddGloss": "France",
+    "canonicalGloss": "Buddha",
+    "decision": "keep",
+    "reason": "'France' is a distinct sense from 'Buddha' — keep separate"
+  },
+  {
+    "glyph": "他",
+    "factId": "word:他/meaning",
+    "oddGloss": "another place",
+    "canonicalGloss": "other",
+    "decision": "keep",
+    "reason": "'another place' is a distinct sense from 'other' — keep separate"
+  },
+  {
+    "glyph": "仮",
+    "factId": "word:仮/meaning",
+    "oddGloss": "temporary",
+    "canonicalGloss": "sham",
+    "decision": "keep",
+    "reason": "'temporary' is a distinct sense from 'sham' — keep separate"
+  },
+  {
+    "glyph": "仲",
+    "factId": "word:仲/meaning",
+    "oddGloss": "relation",
+    "canonicalGloss": "go-between",
+    "decision": "keep",
+    "reason": "'relation' is a distinct sense from 'go-between' — keep separate"
+  },
+  {
+    "glyph": "伯",
+    "factId": "word:伯/meaning",
+    "oddGloss": "count",
+    "canonicalGloss": "chief",
+    "decision": "keep",
+    "reason": "'count' is a distinct sense from 'chief' — keep separate"
+  },
+  {
+    "glyph": "位",
+    "factId": "word:位/meaning",
+    "oddGloss": "throne",
+    "canonicalGloss": "rank",
+    "decision": "keep",
+    "reason": "'throne' is a distinct sense from 'rank' — keep separate"
+  },
+  {
+    "glyph": "作",
+    "factId": "word:作/meaning",
+    "oddGloss": "work (e.g. of art)",
+    "canonicalGloss": "make",
+    "decision": "keep",
+    "reason": "'work (e.g. of art)' is a distinct sense from 'make' — keep separate"
+  },
+  {
+    "glyph": "侍",
+    "factId": "word:侍/meaning",
+    "oddGloss": "warrior (esp. of military retainers of daimyos in the Edo period)",
+    "canonicalGloss": "waiter",
+    "decision": "keep",
+    "reason": "'warrior (esp. of military retainers of daimyos in the Edo period)' is a distinct sense from 'waiter' — keep separate"
+  },
+  {
+    "glyph": "供",
+    "factId": "word:供/meaning",
+    "oddGloss": "companion",
+    "canonicalGloss": "submit",
+    "decision": "keep",
+    "reason": "'companion' is a distinct sense from 'submit' — keep separate"
+  },
+  {
+    "glyph": "係",
+    "factId": "word:係/meaning",
+    "oddGloss": "charge",
+    "canonicalGloss": "person in charge",
+    "decision": "keep",
+    "reason": "'charge' is a distinct sense from 'person in charge' — keep separate"
+  },
+  {
+    "glyph": "俗",
+    "factId": "word:俗/meaning",
+    "oddGloss": "layman (esp. as opposed to a Buddhist monk)",
+    "canonicalGloss": "vulgar",
+    "decision": "keep",
+    "reason": "'layman (esp. as opposed to a Buddhist monk)' is a distinct sense from 'vulgar' — keep separate"
+  },
+  {
+    "glyph": "信",
+    "factId": "word:信/meaning",
+    "oddGloss": "honesty",
+    "canonicalGloss": "faith",
+    "decision": "keep",
+    "reason": "'honesty' is a distinct sense from 'faith' — keep separate"
+  },
+  {
+    "glyph": "個",
+    "factId": "word:個/meaning",
+    "oddGloss": "counter for (small) things or pieces",
+    "canonicalGloss": "individual",
+    "decision": "keep",
+    "reason": "'counter for (small) things or pieces' is a distinct sense from 'individual' — keep separate"
+  },
+  {
+    "glyph": "偽",
+    "factId": "word:偽/meaning",
+    "oddGloss": "imitation",
+    "canonicalGloss": "falsehood",
+    "decision": "keep",
+    "reason": "'imitation' is a distinct sense from 'falsehood' — keep separate"
+  },
+  {
+    "glyph": "兆",
+    "factId": "word:兆/meaning",
+    "oddGloss": "10^12",
+    "canonicalGloss": "portent",
+    "decision": "keep",
+    "reason": "'10^12' is a distinct sense from 'portent' — keep separate"
+  },
+  {
+    "glyph": "先",
+    "factId": "word:先/meaning",
+    "oddGloss": "point",
+    "canonicalGloss": "before",
+    "decision": "keep",
+    "reason": "'point' is a distinct sense from 'before' — keep separate"
+  },
+  {
+    "glyph": "円",
+    "factId": "word:円/meaning",
+    "oddGloss": "yen (currency of Japan)",
+    "canonicalGloss": "circle",
+    "decision": "keep",
+    "reason": "'yen (currency of Japan)' is a distinct sense from 'circle' — keep separate"
+  },
+  {
+    "glyph": "冊",
+    "factId": "word:冊/meaning",
+    "oddGloss": "counter for books",
+    "canonicalGloss": "tome",
+    "decision": "keep",
+    "reason": "'counter for books' is a distinct sense from 'tome' — keep separate"
+  },
+  {
+    "glyph": "分",
+    "factId": "word:分/meaning@ふん",
+    "oddGloss": "minute (unit of time)",
+    "canonicalGloss": "part",
+    "decision": "keep",
+    "reason": "'minute (unit of time)' is a distinct sense from 'part' — keep separate"
+  },
+  {
+    "glyph": "判",
+    "factId": "word:判/meaning",
+    "oddGloss": "seal",
+    "canonicalGloss": "judgement",
+    "decision": "keep",
+    "reason": "'seal' is a distinct sense from 'judgement' — keep separate"
+  },
+  {
+    "glyph": "別",
+    "factId": "word:別/meaning",
+    "oddGloss": "distinction",
+    "canonicalGloss": "separate",
+    "decision": "keep",
+    "reason": "'distinction' is a distinct sense from 'separate' — keep separate"
+  },
+  {
+    "glyph": "前",
+    "factId": "word:前/meaning@ぜん",
+    "oddGloss": "last (i.e. immediately preceding)",
+    "canonicalGloss": "in front",
+    "decision": "keep",
+    "reason": "'last (i.e. immediately preceding)' is a distinct sense from 'in front' — keep separate"
+  },
+  {
+    "glyph": "勢",
+    "factId": "word:勢/meaning",
+    "oddGloss": "group (of people, competitors, companies, etc.)",
+    "canonicalGloss": "forces",
+    "decision": "keep",
+    "reason": "'group (of people, competitors, companies, etc.)' is a distinct sense from 'forces' — keep separate"
+  },
+  {
+    "glyph": "匹",
+    "factId": "word:匹/meaning",
+    "oddGloss": "counter for small animals",
+    "canonicalGloss": "equal",
+    "decision": "keep",
+    "reason": "'counter for small animals' is a distinct sense from 'equal' — keep separate"
+  },
+  {
+    "glyph": "又",
+    "factId": "radical:又/meaning",
+    "oddGloss": "again",
+    "canonicalGloss": "or again",
+    "decision": "keep",
+    "reason": "'again' is a distinct sense from 'or again' — keep separate"
+  },
+  {
+    "glyph": "句",
+    "factId": "word:句/meaning",
+    "oddGloss": "section (i.e. of text)",
+    "canonicalGloss": "phrase",
+    "decision": "keep",
+    "reason": "'section (i.e. of text)' is a distinct sense from 'phrase' — keep separate"
+  },
+  {
+    "glyph": "号",
+    "factId": "word:号/meaning",
+    "oddGloss": "number",
+    "canonicalGloss": "nickname",
+    "decision": "keep",
+    "reason": "'number' is a distinct sense from 'nickname' — keep separate"
+  },
+  {
+    "glyph": "君",
+    "factId": "word:君/meaning",
+    "oddGloss": "you",
+    "canonicalGloss": "mister",
+    "decision": "keep",
+    "reason": "'you' is a distinct sense from 'mister' — keep separate"
+  },
+  {
+    "glyph": "命",
+    "factId": "word:命/meaning",
+    "oddGloss": "life",
+    "canonicalGloss": "fate",
+    "decision": "keep",
+    "reason": "'life' is a distinct sense from 'fate' — keep separate"
+  },
+  {
+    "glyph": "和",
+    "factId": "word:和/meaning",
+    "oddGloss": "sum",
+    "canonicalGloss": "harmony",
+    "decision": "keep",
+    "reason": "'sum' is a distinct sense from 'harmony' — keep separate"
+  },
+  {
+    "glyph": "品",
+    "factId": "word:品/meaning@ひん",
+    "oddGloss": "elegance",
+    "canonicalGloss": "goods",
+    "decision": "keep",
+    "reason": "'elegance' is a distinct sense from 'goods' — keep separate"
+  },
+  {
+    "glyph": "員",
+    "factId": "word:員/meaning",
+    "oddGloss": "member",
+    "canonicalGloss": "employee",
+    "decision": "keep",
+    "reason": "'member' is a distinct sense from 'employee' — keep separate"
+  },
+  {
+    "glyph": "喪",
+    "factId": "word:喪/meaning",
+    "oddGloss": "mourning",
+    "canonicalGloss": "miss",
+    "decision": "keep",
+    "reason": "'mourning' is a distinct sense from 'miss' — keep separate"
+  },
+  {
+    "glyph": "器",
+    "factId": "word:器/meaning",
+    "oddGloss": "bowl",
+    "canonicalGloss": "utensil",
+    "decision": "keep",
+    "reason": "'bowl' is a distinct sense from 'utensil' — keep separate"
+  },
+  {
+    "glyph": "図",
+    "factId": "word:図/meaning",
+    "oddGloss": "drawing",
+    "canonicalGloss": "map",
+    "decision": "keep",
+    "reason": "'drawing' is a distinct sense from 'map' — keep separate"
+  },
+  {
+    "glyph": "士",
+    "factId": "radical:士/meaning",
+    "oddGloss": "scholar",
+    "canonicalGloss": "gentleman",
+    "decision": "keep",
+    "reason": "'scholar' is a distinct sense from 'gentleman' — keep separate"
+  },
+  {
+    "glyph": "奥",
+    "factId": "word:奥/meaning",
+    "oddGloss": "inner part",
+    "canonicalGloss": "heart",
+    "decision": "keep",
+    "reason": "'inner part' is a distinct sense from 'heart' — keep separate"
+  },
+  {
+    "glyph": "妙",
+    "factId": "word:妙/meaning",
+    "oddGloss": "strange",
+    "canonicalGloss": "exquisite",
+    "decision": "keep",
+    "reason": "'strange' is a distinct sense from 'exquisite' — keep separate"
+  },
+  {
+    "glyph": "婿",
+    "factId": "word:婿/meaning",
+    "oddGloss": "husband",
+    "canonicalGloss": "bridegroom",
+    "decision": "keep",
+    "reason": "'husband' is a distinct sense from 'bridegroom' — keep separate"
+  },
+  {
+    "glyph": "嫁",
+    "factId": "word:嫁/meaning",
+    "oddGloss": "bride",
+    "canonicalGloss": "marry into",
+    "decision": "keep",
+    "reason": "'bride' is a distinct sense from 'marry into' — keep separate"
+  },
+  {
+    "glyph": "子",
+    "factId": "word:子/meaning@ね",
+    "oddGloss": "the Rat (first sign of the Chinese zodiac)",
+    "canonicalGloss": "child",
+    "decision": "keep",
+    "reason": "'the Rat (first sign of the Chinese zodiac)' is a distinct sense from 'child' — keep separate"
+  },
+  {
+    "glyph": "実",
+    "factId": "word:実/meaning",
+    "oddGloss": "fruit",
+    "canonicalGloss": "reality",
+    "decision": "keep",
+    "reason": "'fruit' is a distinct sense from 'reality' — keep separate"
+  },
+  {
+    "glyph": "宵",
+    "factId": "word:宵/meaning",
+    "oddGloss": "evening",
+    "canonicalGloss": "wee hours",
+    "decision": "keep",
+    "reason": "'evening' is a distinct sense from 'wee hours' — keep separate"
+  },
+  {
+    "glyph": "寂",
+    "factId": "word:寂/meaning",
+    "oddGloss": "patina",
+    "canonicalGloss": "loneliness",
+    "decision": "keep",
+    "reason": "'patina' is a distinct sense from 'loneliness' — keep separate"
+  },
+  {
+    "glyph": "寸",
+    "factId": "radical:寸/meaning",
+    "oddGloss": "inch",
+    "canonicalGloss": "measurement",
+    "decision": "keep",
+    "reason": "'inch' is a distinct sense from 'measurement' — keep separate"
+  },
+  {
+    "glyph": "対",
+    "factId": "word:対/meaning@つい",
+    "oddGloss": "pair",
+    "canonicalGloss": "vis-a-vis",
+    "decision": "keep",
+    "reason": "'pair' is a distinct sense from 'vis-a-vis' — keep separate"
+  },
+  {
+    "glyph": "少",
+    "factId": "word:少/meaning",
+    "oddGloss": "small",
+    "canonicalGloss": "few",
+    "decision": "keep",
+    "reason": "'small' is a distinct sense from 'few' — keep separate"
+  },
+  {
+    "glyph": "届",
+    "factId": "word:届/meaning",
+    "oddGloss": "report",
+    "canonicalGloss": "deliver",
+    "decision": "keep",
+    "reason": "'report' is a distinct sense from 'deliver' — keep separate"
+  },
+  {
+    "glyph": "岸",
+    "factId": "word:岸/meaning",
+    "oddGloss": "bank",
+    "canonicalGloss": "beach",
+    "decision": "keep",
+    "reason": "'bank' is a distinct sense from 'beach' — keep separate"
+  },
+  {
+    "glyph": "峠",
+    "factId": "word:峠/meaning",
+    "oddGloss": "(mountain) pass",
+    "canonicalGloss": "mountain peak",
+    "decision": "keep",
+    "reason": "'(mountain) pass' is a distinct sense from 'mountain peak' — keep separate"
+  },
+  {
+    "glyph": "巾",
+    "factId": "radical:巾/meaning",
+    "oddGloss": "turban",
+    "canonicalGloss": "towel",
+    "decision": "keep",
+    "reason": "'turban' is a distinct sense from 'towel' — keep separate"
+  },
+  {
+    "glyph": "市",
+    "factId": "word:市/meaning",
+    "oddGloss": "city",
+    "canonicalGloss": "market",
+    "decision": "keep",
+    "reason": "'city' is a distinct sense from 'market' — keep separate"
+  },
+  {
+    "glyph": "幅",
+    "factId": "word:幅/meaning",
+    "oddGloss": "width",
+    "canonicalGloss": "hanging scroll",
+    "decision": "keep",
+    "reason": "'width' is a distinct sense from 'hanging scroll' — keep separate"
+  },
+  {
+    "glyph": "幸",
+    "factId": "word:幸/meaning",
+    "oddGloss": "good luck",
+    "canonicalGloss": "happiness",
+    "decision": "keep",
+    "reason": "'good luck' is a distinct sense from 'happiness' — keep separate"
+  },
+  {
+    "glyph": "幾",
+    "factId": "word:幾/meaning",
+    "oddGloss": "some",
+    "canonicalGloss": "how many",
+    "decision": "keep",
+    "reason": "'some' is a distinct sense from 'how many' — keep separate"
+  },
+  {
+    "glyph": "床",
+    "factId": "word:床/meaning",
+    "oddGloss": "floor",
+    "canonicalGloss": "bed",
+    "decision": "keep",
+    "reason": "'floor' is a distinct sense from 'bed' — keep separate"
+  },
+  {
+    "glyph": "度",
+    "factId": "word:度/meaning",
+    "oddGloss": "time (three times, each time, etc.)",
+    "canonicalGloss": "degrees",
+    "decision": "keep",
+    "reason": "'time (three times, each time, etc.)' is a distinct sense from 'degrees' — keep separate"
+  },
+  {
+    "glyph": "弱",
+    "factId": "word:弱/meaning",
+    "oddGloss": "a little less than",
+    "canonicalGloss": "weak",
+    "decision": "keep",
+    "reason": "'a little less than' is a distinct sense from 'weak' — keep separate"
+  },
+  {
+    "glyph": "後",
+    "factId": "word:後/meaning@ご",
+    "oddGloss": "after",
+    "canonicalGloss": "behind",
+    "decision": "keep",
+    "reason": "'after' is a distinct sense from 'behind' — keep separate"
+  },
+  {
+    "glyph": "急",
+    "factId": "word:急/meaning",
+    "oddGloss": "sudden",
+    "canonicalGloss": "hurry",
+    "decision": "keep",
+    "reason": "'sudden' is a distinct sense from 'hurry' — keep separate"
+  },
+  {
+    "glyph": "性",
+    "factId": "word:性/meaning",
+    "oddGloss": "nature (of a person)",
+    "canonicalGloss": "sex",
+    "decision": "keep",
+    "reason": "'nature (of a person)' is a distinct sense from 'sex' — keep separate"
+  },
+  {
+    "glyph": "懐",
+    "factId": "word:懐/meaning",
+    "oddGloss": "inside the breast of one's clothing (esp. kimono)",
+    "canonicalGloss": "feelings",
+    "decision": "keep",
+    "reason": "'inside the breast of one's clothing (esp. kimono)' is a distinct sense from 'feelings' — keep separate"
+  },
+  {
+    "glyph": "把",
+    "factId": "word:把/meaning",
+    "oddGloss": "counter for bundles",
+    "canonicalGloss": "grasp",
+    "decision": "keep",
+    "reason": "'counter for bundles' is a distinct sense from 'grasp' — keep separate"
+  },
+  {
+    "glyph": "折",
+    "factId": "word:折/meaning",
+    "oddGloss": "opportunity",
+    "canonicalGloss": "fold",
+    "decision": "keep",
+    "reason": "'opportunity' is a distinct sense from 'fold' — keep separate"
+  },
+  {
+    "glyph": "数",
+    "factId": "word:数/meaning@すう",
+    "oddGloss": "several",
+    "canonicalGloss": "number",
+    "decision": "keep",
+    "reason": "'several' is a distinct sense from 'number' — keep separate"
+  },
+  {
+    "glyph": "文",
+    "factId": "radical:文/meaning",
+    "oddGloss": "script",
+    "canonicalGloss": "sentence",
+    "decision": "keep",
+    "reason": "'script' is a distinct sense from 'sentence' — keep separate"
+  },
+  {
+    "glyph": "斗",
+    "factId": "radical:斗/meaning",
+    "oddGloss": "dipper",
+    "canonicalGloss": "Big Dipper",
+    "decision": "keep",
+    "reason": "'dipper' is a distinct sense from 'Big Dipper' — keep separate"
+  },
+  {
+    "glyph": "方",
+    "factId": "radical:方/meaning",
+    "oddGloss": "square",
+    "canonicalGloss": "direction",
+    "decision": "keep",
+    "reason": "'square' is a distinct sense from 'direction' — keep separate"
+  },
+  {
+    "glyph": "日",
+    "factId": "radical:日/meaning",
+    "oddGloss": "sun",
+    "canonicalGloss": "day",
+    "decision": "keep",
+    "reason": "'sun' is a distinct sense from 'day' — keep separate"
+  },
+  {
+    "glyph": "日",
+    "factId": "word:日/meaning@にち",
+    "oddGloss": "Sunday",
+    "canonicalGloss": "day",
+    "decision": "keep",
+    "reason": "'Sunday' is a distinct sense from 'day' — keep separate"
+  },
+  {
+    "glyph": "旧",
+    "factId": "word:旧/meaning",
+    "oddGloss": "old",
+    "canonicalGloss": "old times",
+    "decision": "keep",
+    "reason": "'old' is a distinct sense from 'old times' — keep separate"
+  },
+  {
+    "glyph": "旬",
+    "factId": "word:旬/meaning",
+    "oddGloss": "season (for fruit, seafood, etc.)",
+    "canonicalGloss": "decameron",
+    "decision": "keep",
+    "reason": "'season (for fruit, seafood, etc.)' is a distinct sense from 'decameron' — keep separate"
+  },
+  {
+    "glyph": "昼",
+    "factId": "word:昼/meaning",
+    "oddGloss": "noon",
+    "canonicalGloss": "daytime",
+    "decision": "keep",
+    "reason": "'noon' is a distinct sense from 'daytime' — keep separate"
+  },
+  {
+    "glyph": "時",
+    "factId": "word:時/meaning@じ",
+    "oddGloss": "hour",
+    "canonicalGloss": "time",
+    "decision": "keep",
+    "reason": "'hour' is a distinct sense from 'time' — keep separate"
+  },
+  {
+    "glyph": "曲",
+    "factId": "word:曲/meaning",
+    "oddGloss": "composition",
+    "canonicalGloss": "bend",
+    "decision": "keep",
+    "reason": "'composition' is a distinct sense from 'bend' — keep separate"
+  },
+  {
+    "glyph": "月",
+    "factId": "radical:月/meaning",
+    "oddGloss": "moon",
+    "canonicalGloss": "month",
+    "decision": "keep",
+    "reason": "'moon' is a distinct sense from 'month' — keep separate"
+  },
+  {
+    "glyph": "月",
+    "factId": "word:月/meaning",
+    "oddGloss": "Moon",
+    "canonicalGloss": "month",
+    "decision": "keep",
+    "reason": "'Moon' is a distinct sense from 'month' — keep separate"
+  },
+  {
+    "glyph": "未",
+    "factId": "word:未/meaning",
+    "oddGloss": "the Sheep (eighth sign of the Chinese zodiac)",
+    "canonicalGloss": "un-",
+    "decision": "keep",
+    "reason": "'the Sheep (eighth sign of the Chinese zodiac)' is a distinct sense from 'un-' — keep separate"
+  },
+  {
+    "glyph": "札",
+    "factId": "word:札/meaning",
+    "oddGloss": "banknote",
+    "canonicalGloss": "tag",
+    "decision": "keep",
+    "reason": "'banknote' is a distinct sense from 'tag' — keep separate"
+  },
+  {
+    "glyph": "札",
+    "factId": "word:札/meaning@ふだ",
+    "oddGloss": "ticket",
+    "canonicalGloss": "tag",
+    "decision": "keep",
+    "reason": "'ticket' is a distinct sense from 'tag' — keep separate"
+  },
+  {
+    "glyph": "来",
+    "factId": "word:来/meaning",
+    "oddGloss": "next (year, spring, etc.)",
+    "canonicalGloss": "come",
+    "decision": "keep",
+    "reason": "'next (year, spring, etc.)' is a distinct sense from 'come' — keep separate"
+  },
+  {
+    "glyph": "杯",
+    "factId": "word:杯/meaning",
+    "oddGloss": "sake cup",
+    "canonicalGloss": "wine glass",
+    "decision": "keep",
+    "reason": "'sake cup' is a distinct sense from 'wine glass' — keep separate"
+  },
+  {
+    "glyph": "柄",
+    "factId": "word:柄/meaning@え",
+    "oddGloss": "handle",
+    "canonicalGloss": "design",
+    "decision": "keep",
+    "reason": "'handle' is a distinct sense from 'design' — keep separate"
+  },
+  {
+    "glyph": "核",
+    "factId": "word:核/meaning",
+    "oddGloss": "stone (of a fruit)",
+    "canonicalGloss": "nucleus",
+    "decision": "keep",
+    "reason": "'stone (of a fruit)' is a distinct sense from 'nucleus' — keep separate"
+  },
+  {
+    "glyph": "桁",
+    "factId": "word:桁/meaning",
+    "oddGloss": "column",
+    "canonicalGloss": "beam",
+    "decision": "keep",
+    "reason": "'column' is a distinct sense from 'beam' — keep separate"
+  },
+  {
+    "glyph": "楽",
+    "factId": "word:楽/meaning",
+    "oddGloss": "comfort",
+    "canonicalGloss": "music",
+    "decision": "keep",
+    "reason": "'comfort' is a distinct sense from 'music' — keep separate"
+  },
+  {
+    "glyph": "権",
+    "factId": "word:権/meaning",
+    "oddGloss": "right (to do something)",
+    "canonicalGloss": "authority",
+    "decision": "keep",
+    "reason": "'right (to do something)' is a distinct sense from 'authority' — keep separate"
+  },
+  {
+    "glyph": "機",
+    "factId": "word:機/meaning",
+    "oddGloss": "chance",
+    "canonicalGloss": "loom",
+    "decision": "keep",
+    "reason": "'chance' is a distinct sense from 'loom' — keep separate"
+  },
+  {
+    "glyph": "欲",
+    "factId": "word:欲/meaning",
+    "oddGloss": "greed",
+    "canonicalGloss": "longing",
+    "decision": "keep",
+    "reason": "'greed' is a distinct sense from 'longing' — keep separate"
+  },
+  {
+    "glyph": "歩",
+    "factId": "word:歩/meaning",
+    "oddGloss": "step",
+    "canonicalGloss": "walk",
+    "decision": "keep",
+    "reason": "'step' is a distinct sense from 'walk' — keep separate"
+  },
+  {
+    "glyph": "歳",
+    "factId": "word:歳/meaning",
+    "oddGloss": "... years old",
+    "canonicalGloss": "year-end",
+    "decision": "keep",
+    "reason": "'... years old' is a distinct sense from 'year-end' — keep separate"
+  },
+  {
+    "glyph": "歴",
+    "factId": "word:歴/meaning",
+    "oddGloss": "experience",
+    "canonicalGloss": "curriculum",
+    "decision": "keep",
+    "reason": "'experience' is a distinct sense from 'curriculum' — keep separate"
+  },
+  {
+    "glyph": "汁",
+    "factId": "word:汁/meaning",
+    "oddGloss": "juice",
+    "canonicalGloss": "soup",
+    "decision": "keep",
+    "reason": "'juice' is a distinct sense from 'soup' — keep separate"
+  },
+  {
+    "glyph": "没",
+    "factId": "word:没/meaning",
+    "oddGloss": "death",
+    "canonicalGloss": "drown",
+    "decision": "keep",
+    "reason": "'death' is a distinct sense from 'drown' — keep separate"
+  },
+  {
+    "glyph": "法",
+    "factId": "word:法/meaning",
+    "oddGloss": "law",
+    "canonicalGloss": "method",
+    "decision": "keep",
+    "reason": "'law' is a distinct sense from 'method' — keep separate"
+  },
+  {
+    "glyph": "注",
+    "factId": "word:注/meaning",
+    "oddGloss": "annotation",
+    "canonicalGloss": "pour",
+    "decision": "keep",
+    "reason": "'annotation' is a distinct sense from 'pour' — keep separate"
+  },
+  {
+    "glyph": "流",
+    "factId": "word:流/meaning",
+    "oddGloss": "way",
+    "canonicalGloss": "current",
+    "decision": "keep",
+    "reason": "'way' is a distinct sense from 'current' — keep separate"
+  },
+  {
+    "glyph": "炎",
+    "factId": "word:炎/meaning",
+    "oddGloss": "flame",
+    "canonicalGloss": "inflammation",
+    "decision": "keep",
+    "reason": "'flame' is a distinct sense from 'inflammation' — keep separate"
+  },
+  {
+    "glyph": "片",
+    "factId": "radical:片/meaning",
+    "oddGloss": "slice",
+    "canonicalGloss": "one-sided",
+    "decision": "keep",
+    "reason": "'slice' is a distinct sense from 'one-sided' — keep separate"
+  },
+  {
+    "glyph": "版",
+    "factId": "word:版/meaning",
+    "oddGloss": "edition",
+    "canonicalGloss": "printing block",
+    "decision": "keep",
+    "reason": "'edition' is a distinct sense from 'printing block' — keep separate"
+  },
+  {
+    "glyph": "状",
+    "factId": "word:状/meaning",
+    "oddGloss": "form",
+    "canonicalGloss": "status quo",
+    "decision": "keep",
+    "reason": "'form' is a distinct sense from 'status quo' — keep separate"
+  },
+  {
+    "glyph": "独",
+    "factId": "word:独/meaning",
+    "oddGloss": "Germany",
+    "canonicalGloss": "single",
+    "decision": "keep",
+    "reason": "'Germany' is a distinct sense from 'single' — keep separate"
+  },
+  {
+    "glyph": "玉",
+    "factId": "word:玉/meaning",
+    "oddGloss": "ball",
+    "canonicalGloss": "jewel",
+    "decision": "keep",
+    "reason": "'ball' is a distinct sense from 'jewel' — keep separate"
+  },
+  {
+    "glyph": "琴",
+    "factId": "word:琴/meaning",
+    "oddGloss": "koto (13-stringed Japanese zither)",
+    "canonicalGloss": "harp",
+    "decision": "keep",
+    "reason": "'koto (13-stringed Japanese zither)' is a distinct sense from 'harp' — keep separate"
+  },
+  {
+    "glyph": "生",
+    "factId": "word:生/meaning",
+    "oddGloss": "raw",
+    "canonicalGloss": "life",
+    "decision": "keep",
+    "reason": "'raw' is a distinct sense from 'life' — keep separate"
+  },
+  {
+    "glyph": "用",
+    "factId": "word:用/meaning",
+    "oddGloss": "business",
+    "canonicalGloss": "utilize",
+    "decision": "keep",
+    "reason": "'business' is a distinct sense from 'utilize' — keep separate"
+  },
+  {
+    "glyph": "由",
+    "factId": "word:由/meaning",
+    "oddGloss": "reason",
+    "canonicalGloss": "wherefore",
+    "decision": "keep",
+    "reason": "REVIEW (borderline, kept): 'reason' is a distinct sense from 'wherefore' — keep separate"
+  },
+  {
+    "glyph": "畝",
+    "factId": "word:畝/meaning",
+    "oddGloss": "ridge (in field)",
+    "canonicalGloss": "furrow",
+    "decision": "keep",
+    "reason": "'ridge (in field)' is a distinct sense from 'furrow' — keep separate"
+  },
+  {
+    "glyph": "番",
+    "factId": "word:番/meaning",
+    "oddGloss": "number (in a series)",
+    "canonicalGloss": "turn",
+    "decision": "keep",
+    "reason": "'number (in a series)' is a distinct sense from 'turn' — keep separate"
+  },
+  {
+    "glyph": "的",
+    "factId": "word:的/meaning",
+    "oddGloss": "-ical",
+    "canonicalGloss": "bull's eye",
+    "decision": "keep",
+    "reason": "'-ical' is a distinct sense from 'bull's eye' — keep separate"
+  },
+  {
+    "glyph": "盆",
+    "factId": "word:盆/meaning",
+    "oddGloss": "tray",
+    "canonicalGloss": "basin",
+    "decision": "keep",
+    "reason": "'tray' is a distinct sense from 'basin' — keep separate"
+  },
+  {
+    "glyph": "直",
+    "factId": "word:直/meaning@ちょく",
+    "oddGloss": "direct",
+    "canonicalGloss": "straightaway",
+    "decision": "keep",
+    "reason": "'direct' is a distinct sense from 'straightaway' — keep separate"
+  },
+  {
+    "glyph": "相",
+    "factId": "word:相/meaning",
+    "oddGloss": "minister (of a government department)",
+    "canonicalGloss": "inter-",
+    "decision": "keep",
+    "reason": "'minister (of a government department)' is a distinct sense from 'inter-' — keep separate"
+  },
+  {
+    "glyph": "着",
+    "factId": "word:着/meaning",
+    "oddGloss": "arrival",
+    "canonicalGloss": "don",
+    "decision": "keep",
+    "reason": "'arrival' is a distinct sense from 'don' — keep separate"
+  },
+  {
+    "glyph": "示",
+    "factId": "radical:示/meaning",
+    "oddGloss": "spirit",
+    "canonicalGloss": "show",
+    "decision": "keep",
+    "reason": "'spirit' is a distinct sense from 'show' — keep separate"
+  },
+  {
+    "glyph": "礼",
+    "factId": "word:礼/meaning",
+    "oddGloss": "thanks",
+    "canonicalGloss": "salute",
+    "decision": "keep",
+    "reason": "'thanks' is a distinct sense from 'salute' — keep separate"
+  },
+  {
+    "glyph": "私",
+    "factId": "word:私/meaning",
+    "oddGloss": "I",
+    "canonicalGloss": "private",
+    "decision": "keep",
+    "reason": "'I' is a distinct sense from 'private' — keep separate"
+  },
+  {
+    "glyph": "種",
+    "factId": "word:種/meaning",
+    "oddGloss": "seed (e.g. of a plant)",
+    "canonicalGloss": "species",
+    "decision": "keep",
+    "reason": "'seed (e.g. of a plant)' is a distinct sense from 'species' — keep separate"
+  },
+  {
+    "glyph": "空",
+    "factId": "word:空/meaning",
+    "oddGloss": "sky",
+    "canonicalGloss": "empty",
+    "decision": "keep",
+    "reason": "'sky' is a distinct sense from 'empty' — keep separate"
+  },
+  {
+    "glyph": "章",
+    "factId": "word:章/meaning",
+    "oddGloss": "chapter",
+    "canonicalGloss": "badge",
+    "decision": "keep",
+    "reason": "'chapter' is a distinct sense from 'badge' — keep separate"
+  },
+  {
+    "glyph": "節",
+    "factId": "word:節/meaning@せつ",
+    "oddGloss": "occasion",
+    "canonicalGloss": "node",
+    "decision": "keep",
+    "reason": "'occasion' is a distinct sense from 'node' — keep separate"
+  },
+  {
+    "glyph": "米",
+    "factId": "word:米/meaning@べい",
+    "oddGloss": "(United States of) America",
+    "canonicalGloss": "rice",
+    "decision": "keep",
+    "reason": "'(United States of) America' is a distinct sense from 'rice' — keep separate"
+  },
+  {
+    "glyph": "約",
+    "factId": "word:約/meaning",
+    "oddGloss": "approximately",
+    "canonicalGloss": "promise",
+    "decision": "keep",
+    "reason": "'approximately' is a distinct sense from 'promise' — keep separate"
+  },
+  {
+    "glyph": "総",
+    "factId": "word:総/meaning",
+    "oddGloss": "whole",
+    "canonicalGloss": "general",
+    "decision": "keep",
+    "reason": "'whole' is a distinct sense from 'general' — keep separate"
+  },
+  {
+    "glyph": "縁",
+    "factId": "word:縁/meaning",
+    "oddGloss": "rim",
+    "canonicalGloss": "affinity",
+    "decision": "keep",
+    "reason": "'rim' is a distinct sense from 'affinity' — keep separate"
+  },
+  {
+    "glyph": "罪",
+    "factId": "word:罪/meaning",
+    "oddGloss": "crime",
+    "canonicalGloss": "guilt",
+    "decision": "keep",
+    "reason": "'crime' is a distinct sense from 'guilt' — keep separate"
+  },
+  {
+    "glyph": "羽",
+    "factId": "word:羽/meaning@わ",
+    "oddGloss": "counter for birds or rabbits",
+    "canonicalGloss": "feathers",
+    "decision": "keep",
+    "reason": "'counter for birds or rabbits' is a distinct sense from 'feathers' — keep separate"
+  },
+  {
+    "glyph": "肌",
+    "factId": "word:肌/meaning",
+    "oddGloss": "skin",
+    "canonicalGloss": "texture",
+    "decision": "keep",
+    "reason": "'skin' is a distinct sense from 'texture' — keep separate"
+  },
+  {
+    "glyph": "股",
+    "factId": "word:股/meaning",
+    "oddGloss": "groin",
+    "canonicalGloss": "thigh",
+    "decision": "keep",
+    "reason": "'groin' is a distinct sense from 'thigh' — keep separate"
+  },
+  {
+    "glyph": "背",
+    "factId": "word:背/meaning",
+    "oddGloss": "back",
+    "canonicalGloss": "stature",
+    "decision": "keep",
+    "reason": "'back' is a distinct sense from 'stature' — keep separate"
+  },
+  {
+    "glyph": "脈",
+    "factId": "word:脈/meaning",
+    "oddGloss": "pulse",
+    "canonicalGloss": "vein",
+    "decision": "keep",
+    "reason": "'pulse' is a distinct sense from 'vein' — keep separate"
+  },
+  {
+    "glyph": "至",
+    "factId": "radical:至/meaning",
+    "oddGloss": "arrive",
+    "canonicalGloss": "climax",
+    "decision": "keep",
+    "reason": "'arrive' is a distinct sense from 'climax' — keep separate"
+  },
+  {
+    "glyph": "行",
+    "factId": "word:行/meaning",
+    "oddGloss": "line (of text)",
+    "canonicalGloss": "going",
+    "decision": "keep",
+    "reason": "'line (of text)' is a distinct sense from 'going' — keep separate"
+  },
+  {
+    "glyph": "表",
+    "factId": "word:表/meaning@ひょう",
+    "oddGloss": "table",
+    "canonicalGloss": "surface",
+    "decision": "keep",
+    "reason": "'table' is a distinct sense from 'surface' — keep separate"
+  },
+  {
+    "glyph": "製",
+    "factId": "word:製/meaning",
+    "oddGloss": "make",
+    "canonicalGloss": "made in...",
+    "decision": "keep",
+    "reason": "'make' is a distinct sense from 'made in...' — keep separate"
+  },
+  {
+    "glyph": "裾",
+    "factId": "word:裾/meaning",
+    "oddGloss": "hem",
+    "canonicalGloss": "cuff",
+    "decision": "keep",
+    "reason": "'hem' is a distinct sense from 'cuff' — keep separate"
+  },
+  {
+    "glyph": "要",
+    "factId": "word:要/meaning",
+    "oddGloss": "pivot",
+    "canonicalGloss": "need",
+    "decision": "keep",
+    "reason": "'pivot' is a distinct sense from 'need' — keep separate"
+  },
+  {
+    "glyph": "観",
+    "factId": "word:観/meaning",
+    "oddGloss": "look",
+    "canonicalGloss": "outlook",
+    "decision": "keep",
+    "reason": "'look' is a distinct sense from 'outlook' — keep separate"
+  },
+  {
+    "glyph": "角",
+    "factId": "radical:角/meaning",
+    "oddGloss": "horn",
+    "canonicalGloss": "angle",
+    "decision": "keep",
+    "reason": "'horn' is a distinct sense from 'angle' — keep separate"
+  },
+  {
+    "glyph": "角",
+    "factId": "word:角/meaning@つの",
+    "oddGloss": "horn",
+    "canonicalGloss": "angle",
+    "decision": "keep",
+    "reason": "'horn' is a distinct sense from 'angle' — keep separate"
+  },
+  {
+    "glyph": "計",
+    "factId": "word:計/meaning",
+    "oddGloss": "plan",
+    "canonicalGloss": "plot",
+    "decision": "keep",
+    "reason": "'plan' is a distinct sense from 'plot' — keep separate"
+  },
+  {
+    "glyph": "訳",
+    "factId": "word:訳/meaning",
+    "oddGloss": "reason",
+    "canonicalGloss": "translate",
+    "decision": "keep",
+    "reason": "'reason' is a distinct sense from 'translate' — keep separate"
+  },
+  {
+    "glyph": "評",
+    "factId": "word:評/meaning",
+    "oddGloss": "criticism",
+    "canonicalGloss": "evaluate",
+    "decision": "keep",
+    "reason": "'criticism' is a distinct sense from 'evaluate' — keep separate"
+  },
+  {
+    "glyph": "話",
+    "factId": "word:話/meaning",
+    "oddGloss": "talk",
+    "canonicalGloss": "tale",
+    "decision": "keep",
+    "reason": "'talk' is a distinct sense from 'tale' — keep separate"
+  },
+  {
+    "glyph": "誠",
+    "factId": "word:誠/meaning",
+    "oddGloss": "truth",
+    "canonicalGloss": "sincerity",
+    "decision": "keep",
+    "reason": "'truth' is a distinct sense from 'sincerity' — keep separate"
+  },
+  {
+    "glyph": "説",
+    "factId": "word:説/meaning",
+    "oddGloss": "theory",
+    "canonicalGloss": "opinion",
+    "decision": "keep",
+    "reason": "'theory' is a distinct sense from 'opinion' — keep separate"
+  },
+  {
+    "glyph": "課",
+    "factId": "word:課/meaning",
+    "oddGloss": "lesson",
+    "canonicalGloss": "chapter",
+    "decision": "keep",
+    "reason": "'lesson' is a distinct sense from 'chapter' — keep separate"
+  },
+  {
+    "glyph": "謡",
+    "factId": "word:謡/meaning",
+    "oddGloss": "noh chanting",
+    "canonicalGloss": "song",
+    "decision": "keep",
+    "reason": "'noh chanting' is a distinct sense from 'song' — keep separate"
+  },
+  {
+    "glyph": "豚",
+    "factId": "word:豚/meaning",
+    "oddGloss": "pig (Sus scrofa domesticus)",
+    "canonicalGloss": "pork",
+    "decision": "keep",
+    "reason": "'pig (Sus scrofa domesticus)' is a distinct sense from 'pork' — keep separate"
+  },
+  {
+    "glyph": "豪",
+    "factId": "word:豪/meaning",
+    "oddGloss": "Australia",
+    "canonicalGloss": "overpowering",
+    "decision": "keep",
+    "reason": "'Australia' is a distinct sense from 'overpowering' — keep separate"
+  },
+  {
+    "glyph": "質",
+    "factId": "word:質/meaning",
+    "oddGloss": "quality",
+    "canonicalGloss": "substance",
+    "decision": "keep",
+    "reason": "'quality' is a distinct sense from 'substance' — keep separate"
+  },
+  {
+    "glyph": "超",
+    "factId": "word:超/meaning",
+    "oddGloss": "super-",
+    "canonicalGloss": "transcend",
+    "decision": "keep",
+    "reason": "'super-' is a distinct sense from 'transcend' — keep separate"
+  },
+  {
+    "glyph": "身",
+    "factId": "radical:身/meaning",
+    "oddGloss": "body",
+    "canonicalGloss": "somebody",
+    "decision": "keep",
+    "reason": "'body' is a distinct sense from 'somebody' — keep separate"
+  },
+  {
+    "glyph": "身",
+    "factId": "word:身/meaning",
+    "oddGloss": "one's body",
+    "canonicalGloss": "somebody",
+    "decision": "keep",
+    "reason": "'one's body' is a distinct sense from 'somebody' — keep separate"
+  },
+  {
+    "glyph": "軒",
+    "factId": "word:軒/meaning",
+    "oddGloss": "eaves",
+    "canonicalGloss": "flats",
+    "decision": "keep",
+    "reason": "'eaves' is a distinct sense from 'flats' — keep separate"
+  },
+  {
+    "glyph": "輪",
+    "factId": "word:輪/meaning",
+    "oddGloss": "ring",
+    "canonicalGloss": "wheel",
+    "decision": "keep",
+    "reason": "'ring' is a distinct sense from 'wheel' — keep separate"
+  },
+  {
+    "glyph": "辛",
+    "factId": "radical:辛/meaning",
+    "oddGloss": "bitter",
+    "canonicalGloss": "spicy",
+    "decision": "keep",
+    "reason": "'bitter' is a distinct sense from 'spicy' — keep separate"
+  },
+  {
+    "glyph": "運",
+    "factId": "word:運/meaning",
+    "oddGloss": "fortune",
+    "canonicalGloss": "carry",
+    "decision": "keep",
+    "reason": "'fortune' is a distinct sense from 'carry' — keep separate"
+  },
+  {
+    "glyph": "里",
+    "factId": "radical:里/meaning",
+    "oddGloss": "village",
+    "canonicalGloss": "ri",
+    "decision": "keep",
+    "reason": "'village' is a distinct sense from 'ri' — keep separate"
+  },
+  {
+    "glyph": "金",
+    "factId": "word:金/meaning",
+    "oddGloss": "money",
+    "canonicalGloss": "gold",
+    "decision": "keep",
+    "reason": "'money' is a distinct sense from 'gold' — keep separate"
+  },
+  {
+    "glyph": "間",
+    "factId": "word:間/meaning@ま",
+    "oddGloss": "time",
+    "canonicalGloss": "interval",
+    "decision": "keep",
+    "reason": "'time' is a distinct sense from 'interval' — keep separate"
+  },
+  {
+    "glyph": "闇",
+    "factId": "word:闇/meaning",
+    "oddGloss": "darkness",
+    "canonicalGloss": "get dark",
+    "decision": "keep",
+    "reason": "'darkness' is a distinct sense from 'get dark' — keep separate"
+  },
+  {
+    "glyph": "陽",
+    "factId": "word:陽/meaning",
+    "oddGloss": "(the) positive",
+    "canonicalGloss": "sunshine",
+    "decision": "keep",
+    "reason": "'(the) positive' is a distinct sense from 'sunshine' — keep separate"
+  },
+  {
+    "glyph": "雑",
+    "factId": "word:雑/meaning",
+    "oddGloss": "rough",
+    "canonicalGloss": "miscellaneous",
+    "decision": "keep",
+    "reason": "'rough' is a distinct sense from 'miscellaneous' — keep separate"
+  },
+  {
+    "glyph": "雷",
+    "factId": "word:雷/meaning",
+    "oddGloss": "lightning",
+    "canonicalGloss": "thunder",
+    "decision": "keep",
+    "reason": "'lightning' is a distinct sense from 'thunder' — keep separate"
+  },
+  {
+    "glyph": "非",
+    "factId": "word:非/meaning",
+    "oddGloss": "fault",
+    "canonicalGloss": "un-",
+    "decision": "keep",
+    "reason": "'fault' is a distinct sense from 'un-' — keep separate"
+  },
+  {
+    "glyph": "面",
+    "factId": "radical:面/meaning",
+    "oddGloss": "face",
+    "canonicalGloss": "mask",
+    "decision": "keep",
+    "reason": "'face' is a distinct sense from 'mask' — keep separate"
+  },
+  {
+    "glyph": "面",
+    "factId": "word:面/meaning",
+    "oddGloss": "face",
+    "canonicalGloss": "mask",
+    "decision": "keep",
+    "reason": "'face' is a distinct sense from 'mask' — keep separate"
+  },
+  {
+    "glyph": "面",
+    "factId": "word:面/meaning@おもて",
+    "oddGloss": "face",
+    "canonicalGloss": "mask",
+    "decision": "keep",
+    "reason": "'face' is a distinct sense from 'mask' — keep separate"
+  },
+  {
+    "glyph": "面",
+    "factId": "word:面/meaning@つら",
+    "oddGloss": "face",
+    "canonicalGloss": "mask",
+    "decision": "keep",
+    "reason": "'face' is a distinct sense from 'mask' — keep separate"
+  },
+  {
+    "glyph": "順",
+    "factId": "word:順/meaning",
+    "oddGloss": "order",
+    "canonicalGloss": "obey",
+    "decision": "keep",
+    "reason": "'order' is a distinct sense from 'obey' — keep separate"
+  },
+  {
+    "glyph": "頭",
+    "factId": "word:頭/meaning@とう",
+    "oddGloss": "counter for large animals (e.g. head of cattle)",
+    "canonicalGloss": "head",
+    "decision": "keep",
+    "reason": "'counter for large animals (e.g. head of cattle)' is a distinct sense from 'head' — keep separate"
+  },
+  {
+    "glyph": "題",
+    "factId": "word:題/meaning",
+    "oddGloss": "title",
+    "canonicalGloss": "topic",
+    "decision": "keep",
+    "reason": "'title' is a distinct sense from 'topic' — keep separate"
+  },
+  {
+    "glyph": "額",
+    "factId": "word:額/meaning",
+    "oddGloss": "(picture) frame",
+    "canonicalGloss": "forehead",
+    "decision": "keep",
+    "reason": "'(picture) frame' is a distinct sense from 'forehead' — keep separate"
+  },
+  {
+    "glyph": "風",
+    "factId": "word:風/meaning@ふう",
+    "oddGloss": "manner",
+    "canonicalGloss": "wind",
+    "decision": "keep",
+    "reason": "'manner' is a distinct sense from 'wind' — keep separate"
+  },
+  {
+    "glyph": "飯",
+    "factId": "word:飯/meaning",
+    "oddGloss": "cooked rice",
+    "canonicalGloss": "meal",
+    "decision": "keep",
+    "reason": "'cooked rice' is a distinct sense from 'meal' — keep separate"
+  },
+  {
+    "glyph": "首",
+    "factId": "radical:首/meaning",
+    "oddGloss": "head",
+    "canonicalGloss": "neck",
+    "decision": "keep",
+    "reason": "'head' is a distinct sense from 'neck' — keep separate"
+  },
+  {
+    "glyph": "香",
+    "factId": "radical:香/meaning",
+    "oddGloss": "fragrant",
+    "canonicalGloss": "incense",
+    "decision": "keep",
+    "reason": "'fragrant' is a distinct sense from 'incense' — keep separate"
+  },
+  {
+    "glyph": "鬼",
+    "factId": "word:鬼/meaning",
+    "oddGloss": "ogre",
+    "canonicalGloss": "ghost",
+    "decision": "keep",
+    "reason": "'ogre' is a distinct sense from 'ghost' — keep separate"
+  },
+  {
+    "glyph": "麦",
+    "factId": "word:麦/meaning",
+    "oddGloss": "wheat",
+    "canonicalGloss": "barley",
+    "decision": "keep",
+    "reason": "'wheat' is a distinct sense from 'barley' — keep separate"
+  }
+]
