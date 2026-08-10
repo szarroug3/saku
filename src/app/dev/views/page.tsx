@@ -79,7 +79,7 @@ export default function ViewsDevPage() {
         note="The curriculum lesson preview, frosted — same information as today's card, translucent body + soft shadow on the card and each tile, no backdrop blur."
       >
         {UP_NEXT ? (
-          <div className="max-w-[560px]">
+          <div className="max-w-[720px]">
             <NextLessonPreview lesson={UP_NEXT} />
           </div>
         ) : (

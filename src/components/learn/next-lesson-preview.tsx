@@ -65,11 +65,11 @@ export function NextLessonPreview({
     <div className={panel}>
       <Lbl>Up next{positionLabel ? ` · ${positionLabel}` : ""}</Lbl>
 
-      <div className="mt-4 flex flex-wrap gap-3">
+      {/* Five to a row — a lesson is ~5–7 items, so the sixth and seventh wrap to
+          a second row at the same tile size. */}
+      <div className="mt-4 grid grid-cols-5 gap-3">
         {items.map((item) => (
-          <div key={String(item.entry)} className="w-[116px]">
-            <ItemPreview item={item} />
-          </div>
+          <ItemPreview key={String(item.entry)} item={item} />
         ))}
       </div>
 
