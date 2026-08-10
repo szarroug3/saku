@@ -130,6 +130,10 @@ export function planUnitLesson(
     // deferred and its blockers are NOT pulled in — if the block never lifts, it
     // is never taught (a transitivity pair whose verb the curriculum never teaches).
     if (unit.item.blockedBy.some((e) => !isLearned(e, history))) continue;
+    // A "unit"-scheduled unit IS a whole lesson: never combined with others. If a
+    // lesson is already forming, stop here and let it start the next one.
+    const soloLesson = unit.scheduling === "unit";
+    if (soloLesson && out.length > 0) break;
     const chain = prereqChain(unit.item, history, maxDepth);
     if (!chain) continue; // untaught-prereq chain too deep → defer this unit
     const bundle: TeachingUnit[] = [...chain, unit];
@@ -143,6 +147,7 @@ export function planUnitLesson(
       emitted.add(unitKey(u));
     }
     spent += add;
+    if (soloLesson) break; // this unit is the entire lesson
     if (spent >= range.min) break; // floor reached → stop
   }
   return out;

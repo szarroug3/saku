@@ -86,6 +86,7 @@ export function sentenceBuildUnitsOf(item: ContentItem): SentenceBuildUnit[] {
       example: tier ? tierExample(tier) : "",
       facts: item.facts.map((f) => f.id) as FactId[],
       cost: 1,
+      scheduling: "unit", // a tier is a whole assembly sitting on its own
     },
   ];
 }

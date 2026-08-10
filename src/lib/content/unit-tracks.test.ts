@@ -38,6 +38,17 @@ test("simulateLessons — a track never re-teaches a unit across its run", () =>
   }
 });
 
+test("simulateLessons — a 'unit'-scheduled track gives one full lesson per unit", () => {
+  // Sentence-ordering tiers are scheduling:"unit" — each is a whole lesson, never
+  // budgeted together, so the 10 tiers make exactly 10 single-unit lessons.
+  const lessons = simulateLessons(UNIT_TRACKS.find((t) => t.id === "sentence")!, range, 20);
+  assert.equal(lessons.length, 10, "one lesson per tier");
+  assert.ok(
+    lessons.every((l) => l.units.length === 1 && l.units[0].kind === "sentence-build"),
+    "each lesson is exactly one sentence-build unit",
+  );
+});
+
 test("simulateLessons — the verb-pair track schedules pairs (cost 2 each)", () => {
   const lessons = simulateLessons(UNIT_TRACKS.find((t) => t.id === "transitivity")!, range, 3);
   const kinds = new Set(lessons.flatMap((l) => l.units.map((u) => u.kind)));

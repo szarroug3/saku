@@ -36,6 +36,15 @@ export type TeachingUnitKind =
 
 /** The common contract of every teachable skill — all the scheduler and Library
  * ever touch. Per-type implementations extend it with their own display data. */
+/**
+ * How a track's units fill a lesson:
+ *   - "cost"  — the default: pack units toward the LessonRange budget by `cost`
+ *     (five-ish readings/meanings a sitting). Kana, vocab, keigo, grammar, …
+ *   - "unit"  — one unit IS a whole lesson, never budgeted with others: a
+ *     sentence-ordering tier is a full sitting of assembly drills on its own.
+ */
+export type SchedulingMode = "cost" | "unit";
+
 export interface TeachingUnitBase {
   readonly kind: TeachingUnitKind;
   /** The content this unit teaches from — for Library dedup (first-unit-per-item)
@@ -45,6 +54,9 @@ export interface TeachingUnitBase {
   readonly facts: readonly FactId[];
   /** How much to learn, in the owner's model (computed per-type). Budgeted by the scheduler. */
   readonly cost: number;
+  /** How the scheduler places this unit in a lesson. Omitted = "cost" (budgeted);
+   * "unit" makes it a lesson on its own. Uniform within a track. */
+  readonly scheduling?: SchedulingMode;
 }
 
 export interface UnitMeaning {
