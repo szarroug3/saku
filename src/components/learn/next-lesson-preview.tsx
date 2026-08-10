@@ -1,103 +1,91 @@
-// REDESIGNED Learn "Up next" card — the curriculum lesson preview, frosted.
+// REDESIGNED Learn "Up next" card — the next lesson, on the NEW content model.
 //
-// Same information as next-curriculum-lesson.tsx (the shipped card): the position
-// label, the lesson's item tiles with their type line, and the three routes in
-// (already-know / quiz / start). What changes is the SURFACE. The shipped card is
-// a flat bordered panel with flat bordered tiles; this gives the card and each
-// tile a translucent frosted body and a soft drop shadow — the frost look without
-// a backdrop-filter (no blur, so no paint cost). Tiles sit slightly more opaque
-// than the card so they lift off it.
+// This is the redesign target, written against the unified model (a UnitLesson of
+// TeachingUnits from the shared scheduler) rather than the old CurriculumLesson.
+// It is a NEW component, kept out of the shipped tree until the app moves onto the
+// content model — then it drops in where next-curriculum-lesson.tsx is now.
 //
-// Presentational: it renders a CurriculumLesson. Handlers are optional so the dev
-// gallery can show it inert.
+// It reuses the shared building blocks (PreviewTile, Btn, Lbl, WhyDisclosure,
+// frostCard) so it is real and promotable, not a throwaway mock. The surface is
+// the frost treatment: a translucent card body and frosted tiles with a soft drop
+// shadow, no backdrop-filter (so no paint cost). A tile is one ITEM (its glyph and
+// type); a lesson's units are deduped to their items, preserving teach order.
+//
+// Handlers are optional so the dev gallery can render it inert; wire them (and a
+// position label, once the model exposes one) to ship it.
 
-import type { CSSProperties } from "react";
-
+import { Btn, Lbl } from "@/components/ui";
+import { PreviewTile } from "@/components/lesson/preview-tile";
+import { WhyDisclosure } from "@/components/lesson/why";
 import { frostCard } from "@/components/ui/frost";
-import { characterRoleTitle } from "@/lib/character-role";
-import { compositePositionLabel } from "@/lib/lesson-position";
-import type { CurriculumLesson, CurriculumLessonItem } from "@/lib/curriculum-lesson";
+import { WHY_TRACK } from "@/data/why";
+import { entryHref } from "@/lib/library/href";
+import type { ContentItem } from "@/lib/content/item";
+import type { UnitLesson } from "@/lib/content/teach-unit";
+import type { FactId } from "@/types";
 
-const TILE_GLYPH_MIN_PX = 12;
-
-/** Simple words (a lone word whose kanji are all pre-known) lead, then the rest in
- * curriculum order — the same tile ordering the shipped card uses. */
-function orderedCards(lesson: CurriculumLesson): CurriculumLessonItem[] {
-  const built = new Set(
-    lesson.cards
-      .filter((c) => c.roles.includes("kanji") || c.roles.includes("radical"))
-      .map((c) => c.glyph),
-  );
-  const isSimple = (c: CurriculumLessonItem) =>
-    c.roles.length === 1 && c.roles[0] === "word" && ![...c.glyph].some((ch) => built.has(ch));
-  return [...lesson.cards.filter(isSimple), ...lesson.cards.filter((c) => !isSimple(c))];
+/** The distinct items of a lesson, in teach order — a glyph shown more than once
+ * (a word across two pronunciation units) is one tile, at its first appearance. */
+function lessonItems(lesson: UnitLesson): ContentItem[] {
+  const seen = new Set<string>();
+  const items: ContentItem[] = [];
+  for (const unit of lesson.units) {
+    const key = String(unit.item.entry);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    items.push(unit.item);
+  }
+  return items;
 }
 
-function FrostTile({ glyph, type }: { glyph: string; type: string }) {
-  return (
-    <div className="min-w-[96px] flex-1 rounded-xl border border-border/60 bg-[color-mix(in_srgb,var(--card)_88%,transparent)] px-2 pb-3 pt-4 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.06),0_14px_28px_-22px_rgba(0,0,0,0.55)] [container-type:inline-size]">
-      <span className="flex h-[46px] items-center justify-center">
-        <span
-          className="block whitespace-nowrap font-kana font-extralight leading-none text-text"
-          lang="ja"
-          style={
-            {
-              "--chars": [...glyph].length,
-              fontSize: `clamp(${TILE_GLYPH_MIN_PX}px, calc(90cqi / var(--chars)), 40px)`,
-            } as CSSProperties
-          }
-        >
-          {glyph}
-        </span>
-      </span>
-      <span className="mt-1.5 block text-[10px] uppercase tracking-[0.05em] text-text-muted/80">
-        {type}
-      </span>
-    </div>
-  );
-}
-
-function GhostBtn({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="cursor-default rounded-lg border border-border/70 bg-[color-mix(in_srgb,var(--card)_70%,transparent)] px-3.5 py-[7px] text-sm text-text">
-      {children}
-    </span>
-  );
-}
-
-export function NextLessonPreview({ lesson }: { lesson: CurriculumLesson }) {
-  const cards = orderedCards(lesson);
+export function NextLessonPreview({
+  lesson,
+  positionLabel,
+  onStart,
+  onClaim,
+}: {
+  /** The next lesson, in the new content model. */
+  lesson: UnitLesson;
+  /** Optional "Radical 1 of 90 · Kanji 2–3 of 2,136" position line. Omitted until
+   * the content model exposes a track position. */
+  positionLabel?: string;
+  /** Start the lesson (teach then drill); `teach:false` drills now. Omit for an
+   * inert preview. */
+  onStart?: (facts: FactId[], opts?: { teach?: boolean }) => void;
+  /** "I already know these", over the lesson's facts. Omit for an inert preview. */
+  onClaim?: (facts: FactId[]) => void;
+}) {
+  const items = lessonItems(lesson);
+  const facts = lesson.units.flatMap((u) => u.facts);
   return (
     <div className={frostCard}>
-      <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-text-muted">
-        Up next · {compositePositionLabel(lesson.position)}
-      </p>
+      <Lbl>Up next{positionLabel ? ` · ${positionLabel}` : ""}</Lbl>
 
       <div className="mt-4 flex flex-wrap gap-2.5">
-        {cards.map((card) => (
-          <FrostTile key={card.glyph} glyph={card.glyph} type={characterRoleTitle(card.glyph) ?? "Word"} />
+        {items.map((item) => (
+          <PreviewTile
+            key={String(item.entry)}
+            glyph={item.glyph}
+            type={item.typeLabel}
+            href={entryHref(item.entry)}
+            variant="frost"
+          />
         ))}
       </div>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
-        <GhostBtn>
-          I already know {cards.length === 1 ? "this" : `these ${cards.length}`}
-        </GhostBtn>
+        <Btn onClick={onClaim && (() => onClaim(facts))}>
+          I already know {items.length === 1 ? "this" : `these ${items.length}`}
+        </Btn>
         <div className="flex flex-wrap items-center gap-1.5">
-          <GhostBtn>Quiz me</GhostBtn>
-          <span className="cursor-default rounded-lg border border-transparent bg-text px-3.5 py-[7px] text-sm font-medium text-bg">
+          <Btn onClick={onStart && (() => onStart(facts, { teach: false }))}>Quiz me</Btn>
+          <Btn go onClick={onStart && (() => onStart(facts))}>
             Start
-          </span>
+          </Btn>
         </div>
       </div>
 
-      <div className="mt-4 border-t border-border/50 pt-3.5 text-[13px] leading-relaxed text-text-muted">
-        <span className="font-medium text-text">
-          Radicals, kanji and words are one climb, so they arrive in one order.
-        </span>{" "}
-        Each lesson teaches whatever comes next, and nothing arrives before the pieces it is built
-        from. <span className="text-accent">Why?</span>
-      </div>
+      <WhyDisclosure why={WHY_TRACK.curriculum} />
     </div>
   );
 }

@@ -21,11 +21,19 @@ import Link from "next/link";
  * preview only has to show WHICH items are coming, not read at a glance. */
 const TILE_GLYPH_MIN_PX = 12;
 
+/** The tile surface:
+ *   - "flat"  — the shipped look: a bordered panel on the card background.
+ *   - "frost" — a translucent frosted body with a soft drop shadow and a hairline
+ *     top highlight, so the tile lifts off a frosted card (no backdrop-filter, so
+ *     no paint cost). */
+export type PreviewTileVariant = "flat" | "frost";
+
 export function PreviewTile({
   glyph,
   type,
   href,
   base = 34,
+  variant = "flat",
 }: {
   /** The item(s) shown big — a glyph, a pattern, or words joined by " · ". */
   glyph: string;
@@ -36,10 +44,13 @@ export function PreviewTile({
   href?: string | null;
   /** The font size a single-character glyph uses; the cap for the shrink. */
   base?: number;
+  /** The tile surface — flat (shipped) or frost. */
+  variant?: PreviewTileVariant;
 }) {
+  const frost = variant === "frost";
   const body = (
     <>
-      <span className="flex h-[42px] items-center justify-center">
+      <span className={`flex items-center justify-center ${frost ? "h-[46px]" : "h-[42px]"}`}>
         <span
           className="block whitespace-nowrap font-kana font-extralight leading-none"
           style={
@@ -52,17 +63,25 @@ export function PreviewTile({
           {glyph}
         </span>
       </span>
-      <span className="mt-1 block text-[10px] leading-tight text-text-muted/80">
+      <span
+        className={`mt-1 block leading-tight text-text-muted/80 ${
+          frost ? "text-[10px] uppercase tracking-[0.05em]" : "text-[10px]"
+        }`}
+      >
         {type}
       </span>
     </>
   );
 
-  const cls =
-    "min-w-[92px] flex-1 rounded-lg border border-border px-2 pb-2.5 pt-3 text-center [container-type:inline-size]";
+  const cls = frost
+    ? "min-w-[96px] flex-1 rounded-xl border border-border/60 bg-[color-mix(in_srgb,var(--card)_88%,transparent)] px-2 pb-3 pt-4 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.06),0_14px_28px_-22px_rgba(0,0,0,0.55)] [container-type:inline-size]"
+    : "min-w-[92px] flex-1 rounded-lg border border-border px-2 pb-2.5 pt-3 text-center [container-type:inline-size]";
+  const hover = frost
+    ? "hover:bg-[color-mix(in_srgb,var(--card)_96%,transparent)]"
+    : "hover:bg-panel";
 
   return href ? (
-    <Link href={href} className={`${cls} text-text no-underline hover:bg-panel`}>
+    <Link href={href} className={`${cls} ${hover} text-text no-underline`}>
       {body}
     </Link>
   ) : (

@@ -9,10 +9,8 @@ import type { ReactNode } from "react";
 import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { GlyphView } from "@/components/library/glyph-view";
-import { nextCurriculumLesson } from "@/lib/curriculum-lesson";
-import { characterRoleTitle } from "@/lib/character-role";
+import { UNIT_TRACKS, simulateLessons } from "@/lib/content/unit-tracks";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
-import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
 import { formItem, unitItem } from "@/lib/content/numbers-track";
 import { sentenceItems } from "@/lib/content/sentence-track";
@@ -46,26 +44,11 @@ const LEARN: { label: string; item: ContentItem | undefined }[] = [
 
 const LIBRARY_SAMPLES = ["人", "三", "主", "日", "耳"];
 
-// A representative curriculum lesson for the "Up next" redesign — walk forward
-// from empty until the next lesson carries a kanji, so the sample shows the
-// mixed radical/kanji/word tiles the card is designed for (not the opening
-// kana-word lessons).
-function sampleLesson() {
-  let history = emptyHistory();
-  let fallback = null;
-  for (let i = 0; i < 120; i++) {
-    const lesson = nextCurriculumLesson(history, LESSON_RANGE_DEFAULT);
-    if (!lesson) break;
-    const hasKanji = lesson.cards.some((c) => (characterRoleTitle(c.glyph) ?? "").includes("Kanji"));
-    if (hasKanji) {
-      fallback ??= lesson;
-      if (lesson.cards.length >= 3) return lesson; // a richer, multi-tile lesson
-    }
-    history = applyClaims(history, lesson.facts, i + 1);
-  }
-  return fallback;
-}
-const UP_NEXT = sampleLesson();
+// A sample next-lesson from the NEW content model — the vocab track's first
+// lesson (人 口 可 何 一: mixed radical/kanji/word tiles), what the redesign is
+// built to render.
+const VOCAB_TRACK = UNIT_TRACKS.find((t) => t.id === "vocab")!;
+const UP_NEXT = simulateLessons(VOCAB_TRACK, LESSON_RANGE_DEFAULT, 1)[0] ?? null;
 
 export default function ViewsDevPage() {
   return (
