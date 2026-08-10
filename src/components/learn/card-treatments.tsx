@@ -243,9 +243,47 @@ export function TreatmentHybridWhisper({ item }: { item: ContentItem }) {
   );
 }
 
+// ── G · WHISPER, accent label ───────────────────────────────────────────────
+// F, calmer: the label goes back to the app accent (no per-type hue), and the
+// ghost glyph drops to a fainter, smaller mark so it's texture, not a second
+// glyph competing with the real one.
+export function TreatmentWhisperAccent({ item }: { item: ContentItem }) {
+  const ghost = watermarkChar(item.glyph);
+  return (
+    <div
+      className={SHELL}
+      style={
+        {
+          border: "1px solid rgba(255,255,255,0.09)",
+          background: "color-mix(in srgb, var(--card) 42%, transparent)",
+          boxShadow: "0 22px 44px -26px rgba(0,0,0,0.72)",
+        } as CSSProperties
+      }
+    >
+      {ghost && (
+        <span
+          className="pointer-events-none absolute -bottom-3 -right-2 select-none font-kana text-[80px] leading-none text-[color:color-mix(in_srgb,var(--text)_4%,transparent)]"
+          lang="ja"
+          aria-hidden
+        >
+          {ghost}
+        </span>
+      )}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(130px 90px at 22% 0%, rgba(255,255,255,0.07), transparent)" }}
+      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
+      <Glyph item={item} />
+      <TypeLine item={item} color="var(--accent)" />
+    </div>
+  );
+}
+
 /** The treatments, for the gallery to iterate. */
 export const CARD_TREATMENTS: { name: string; note: string; Card: (p: { item: ContentItem }) => React.ReactNode }[] = [
-  { name: "E · Hybrid (glass + watermark + subtle hue)", note: "C + D with a trace of B — the recommendation.", Card: TreatmentHybrid },
+  { name: "G · Whisper + accent label", note: "F, but accent label and a fainter, smaller ghost.", Card: TreatmentWhisperAccent },
+  { name: "E · Hybrid (glass + watermark + subtle hue)", note: "C + D with a trace of B.", Card: TreatmentHybrid },
   { name: "F · Hybrid, whisper", note: "The same, colour dialled almost out.", Card: TreatmentHybridWhisper },
   { name: "C · Glyph watermark", note: "An oversized ghost glyph as texture.", Card: TreatmentWatermark },
   { name: "D · Glass", note: "Real translucency + sheen, no blur.", Card: TreatmentGlass },
