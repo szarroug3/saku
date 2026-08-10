@@ -32,7 +32,7 @@ export function itemCost(item: ContentItem): number {
     const info = factInfo(f.id);
     if (!info) continue;
     if (f.kind === "definition") {
-      if (info.meaning) meanings.add(canonicalMeaningId(info.meaning));
+      if (info.meaning) meanings.add(canonicalMeaningId(f.id, info.meaning));
     } else {
       // romaji: the reading itself (answers[0]); fall back to the gloss if absent.
       const reading = info.answers[0] ?? info.meaning;

@@ -333,8 +333,8 @@ Teach-the-frequent-meaning is the norm, and it is what CEJC already points at.
 
 | Contract | Owner | Shape | Consumed by |
 |---|---|---|---|
-| `meaning-registry.json` | **DATA** | `Record<gloss, MeaningId>` over EVERY gloss (kanji/word/radical), folding surface variants ("one"/"1"/"one (1)") AND synonyms ("man"/"person", "speak"/"talk") into one id | `canonicalMeaningId` |
-| `canonicalMeaningId(gloss)` | content (`meaning.ts`) | pure lookup, identity fallback | cost, teach-units |
+| `meaning-registry.json` | **DATA** | `Record<FactId, MeaningId>` over MEANING facts. Word fact → its `definitionId` (reuse); kanji/radical fact → the same glyph's word `definitionId` it is synonymous with (exact match, else LLM-judge), else a minted id. **Fact-keyed so "man"→"person" on 人 but not on 男.** | `canonicalMeaningId` |
+| `canonicalMeaningId(factId, gloss)` | content (`meaning.ts`) | pure lookup; per-item gloss fallback (safe exact-match) | cost, teach-units |
 | `TeachUnit` + `teachUnitsOf(item)` | content (`teach-unit.ts`) | deduped `{meaning, label, reading, taught, facts[]}` | lessons, quiz, library, cost |
 | `itemCost(item)` | content (`cost.ts`, to revise) | `= |taught meanings| + |taught readings|` | scheduler |
 | CEJC taught/reference split | **DATA (exists)** | `teachingSenses`/`referenceReadings` in `vocab.ts` | the `taught` flag |
@@ -344,16 +344,22 @@ companion `meaning-labels.json`: `MeaningId → {label, glosses[]}` for display)
 Everything else is content-side logic over data that already exists.
 
 ### 7.3 What the DATA pipeline must produce (the ask, precisely)
-Emit `src/data/generated/meaning-registry.json` mapping every gloss string in
-`kanji.json.meanings`, the word definitions, and `radicals.json.meaning` to a
-canonical `MeaningId`, such that two glosses share an id **iff they are the same
-meaning for teaching**. Scale: ~88k gloss occurrences, ~34k distinct, ~28k after
-normalization. Pipeline: **normalize** (surface tier — deterministic) →
-**embed-shortlist** (cheap blocking; `sentence-transformers`, run via `uv`) →
-**LLM-judge** the shortlist (handles the antonym/co-hyponym false-positives cosine
-can't — "square"/"direction", "spirit"/"show") → **human review** the uncertain
-band → bake. The MeaningId must be **stable across regenerations** and the mapping
-**must not re-key any fact** (history stays on fact ids; see below).
+Emit `src/data/generated/meaning-registry.json` = `Record<FactId, MeaningId>` over
+the app's MEANING (definition) facts. Reuse `definitionId`:
+- a **word** meaning fact → its `definitionId` (trivial — senses already grouped);
+- a **kanji / radical** meaning fact → the `definitionId` of the SAME glyph's word
+  sense it means the same as (人 radical "man" → 人's "person" `definitionId`),
+  decided by **exact gloss match first**, else an **LLM-judge** ("does this
+  kanji/radical keyword mean the same as one of this glyph's word senses?"), else
+  a minted id of its own.
+
+This is **much smaller than a global gloss clustering**: `definitionId` already
+handles word↔word synonymy and within-sense variants ("speak"/"talk", "one"/"1");
+the registry only places the non-word keyword facts, per glyph. Cosine embeddings
+were rejected — they die on scale AND score "man"·"person" at 0.41 (would miss the
+key merge); the judgment is an LLM pass over each glyph's own handful of glosses.
+The mapping is **fact-keyed** (contextual — 男 "man" stays distinct), MeaningIds
+are **stable** (they are `definitionId`s), and it **never re-keys a fact**.
 
 ### 7.4 Two hard constraints (mirroring the CEJC history care)
 - **Stable ids.** A MeaningId is an identity; never let it ride on the English

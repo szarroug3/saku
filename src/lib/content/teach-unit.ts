@@ -45,11 +45,11 @@ export interface TeachUnit {
  * CONTRACT (to be implemented by the architecture track):
  *
  *   teachUnitsOf(item): readonly TeachUnit[]
- *     Group item.facts by canonicalMeaningId(gloss-of-fact) for definition facts,
- *     attach each meaning's taught reading, and mark taught vs reference from the
- *     CEJC split. Source precedence: a word glyph's meanings come from its word
- *     definitions; the kanji-meaning fact is folded in only when no word covers
- *     it. Radical meaning stays its own unit unless the registry merges it.
+ *     Group item.facts by canonicalMeaningId(fact.id, gloss) for definition facts
+ *     (fact-keyed, so 人 "man"→"person" merges but 男 "man" does not), attach each
+ *     meaning's taught reading, and mark taught vs reference from the CEJC split.
+ *     A word meaning fact's MeaningId is its `definitionId` (reused); kanji/radical
+ *     meaning facts fold onto the same id when the registry says so.
  *
  *   itemCost(item): number   (replaces cost.ts)
  *     = count of TAUGHT units = |unique taught meanings| + |unique taught readings|.
