@@ -143,7 +143,7 @@ export const nextLesson: NextLesson = (track, resolve, history, range) => {
 
 /** A fact the app has no record of — never answered, claimed, or "quiz me"'d.
  * The one definition of "new", shared with the per-track schedulers. */
-function isFactFresh(fact: FactId, history: HistoryFile): boolean {
+export function isFactFresh(fact: FactId, history: HistoryFile): boolean {
   const state = effectiveState(
     history.facts[fact],
     history.claims?.[fact],

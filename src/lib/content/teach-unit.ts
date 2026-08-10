@@ -21,7 +21,8 @@ import { factInfo } from "@/lib/facts";
 import { wordReadingUnit, readingFrequency } from "@/data/vocab";
 import { canonicalMeaningId } from "./meaning";
 import { buildGlyphItem } from "./build-item";
-import type { FactId } from "@/types";
+import { isFactFresh } from "./scheduler";
+import type { FactId, HistoryFile } from "@/types";
 import type { MeaningId } from "./meaning";
 import type { ContentItem } from "./item";
 
@@ -134,4 +135,17 @@ export function orderedUnits(glyphs: Iterable<string>): TeachingUnit[] {
     if (item) units.push(...teachUnitsOf(item));
   }
   return units.sort(byFrequencyDesc);
+}
+
+/** A unit is DUE (not yet learned) when any of its facts is still fresh — the
+ * same freshness rule the glyph scheduler uses per fact. */
+export function isUnitDue(unit: TeachingUnit, history: HistoryFile): boolean {
+  return unit.facts.some((id) => isFactFresh(id, history));
+}
+
+/** One lesson's worth of teaching units, in teach order (prereqs before the unit
+ * that needs them). The output contract the unit scheduler produces and the
+ * lesson viewport consumes. */
+export interface UnitLesson {
+  readonly units: readonly TeachingUnit[];
 }
