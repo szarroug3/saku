@@ -119,7 +119,7 @@ export function TreatmentTinted({ item }: { item: ContentItem }) {
 // An oversized ghost of the glyph bleeds off a corner as decoration; the crisp
 // glyph reads on top. Editorial and quiet; the type label anchors the base.
 export function TreatmentWatermark({ item }: { item: ContentItem }) {
-  const ghost = [...item.glyph][0] ?? item.glyph;
+  const ghost = watermarkChar(item);
   return (
     <div className={`${SHELL} border border-border/70 bg-[color-mix(in_srgb,var(--card)_55%,transparent)]`}>
       <span
@@ -155,11 +155,16 @@ export function TreatmentGlass({ item }: { item: ContentItem }) {
   );
 }
 
-/** Whether the leading glyph is CJK — a Latin title ("Simple sentences") makes a
- * poor watermark (a giant "S"), so its ghost is skipped. */
-function watermarkChar(glyph: string): string | null {
-  const c = [...glyph][0] ?? "";
-  return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(c) ? c : null;
+const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+/** The ghost-watermark char: the first Japanese glyph in the item, SKIPPING a
+ * leading 〜 or other mark (so 〜たい → た), or a type emblem when the label is
+ * Latin — 文 ("writing / sentence") for a building-sentences tier. Null when
+ * there's nothing sensible to show. */
+function watermarkChar(item: ContentItem): string | null {
+  for (const c of item.glyph) if (CJK.test(c)) return c;
+  if (item.kind === "sentence-ordering") return "文";
+  return null;
 }
 
 // ── E · HYBRID — glass + watermark + a whisper of type colour ────────────────
@@ -168,7 +173,7 @@ function watermarkChar(glyph: string): string | null {
 // the ground stays neutral glass, so the colour reads as a tint, not a theme.
 export function TreatmentHybrid({ item }: { item: ContentItem }) {
   const h = hueOf(item);
-  const ghost = watermarkChar(item.glyph);
+  const ghost = watermarkChar(item);
   return (
     <div
       className={SHELL}
@@ -210,7 +215,7 @@ export function TreatmentHybrid({ item }: { item: ContentItem }) {
 // faintest hue-tinted ghost. Colour you notice only when you look for it.
 export function TreatmentHybridWhisper({ item }: { item: ContentItem }) {
   const h = hueOf(item);
-  const ghost = watermarkChar(item.glyph);
+  const ghost = watermarkChar(item);
   return (
     <div
       className={SHELL}
@@ -248,7 +253,7 @@ export function TreatmentHybridWhisper({ item }: { item: ContentItem }) {
 // ghost glyph drops to a fainter, smaller mark so it's texture, not a second
 // glyph competing with the real one.
 export function TreatmentWhisperAccent({ item }: { item: ContentItem }) {
-  const ghost = watermarkChar(item.glyph);
+  const ghost = watermarkChar(item);
   return (
     <div
       className={SHELL}
@@ -262,7 +267,7 @@ export function TreatmentWhisperAccent({ item }: { item: ContentItem }) {
     >
       {ghost && (
         <span
-          className="pointer-events-none absolute -bottom-3 -right-2 select-none font-kana text-[80px] leading-none text-[color:color-mix(in_srgb,var(--text)_4%,transparent)]"
+          className="pointer-events-none absolute -bottom-5 -right-3 select-none font-kana text-[104px] leading-none text-[color:color-mix(in_srgb,var(--text)_4%,transparent)]"
           lang="ja"
           aria-hidden
         >
@@ -287,7 +292,7 @@ export function TreatmentWhisperAccent({ item }: { item: ContentItem }) {
 // stays the app accent.
 export function TreatmentWhisperTinted({ item }: { item: ContentItem }) {
   const h = hueOf(item);
-  const ghost = watermarkChar(item.glyph);
+  const ghost = watermarkChar(item);
   return (
     <div
       className={SHELL}
@@ -306,7 +311,7 @@ export function TreatmentWhisperTinted({ item }: { item: ContentItem }) {
     >
       {ghost && (
         <span
-          className="pointer-events-none absolute -bottom-3 -right-2 select-none font-kana text-[80px] leading-none text-[color:color-mix(in_srgb,var(--text)_4%,transparent)]"
+          className="pointer-events-none absolute -bottom-5 -right-3 select-none font-kana text-[104px] leading-none text-[color:color-mix(in_srgb,var(--text)_4%,transparent)]"
           lang="ja"
           aria-hidden
         >
