@@ -1,26 +1,43 @@
-// itemCost — how much learning an item is, read straight off its facts.
+// itemCost — how much learning an item is, counted as UNIQUE meanings + UNIQUE
+// readings, not raw facts.
 //
-// The owner's difficulty model (difficulty.ts) defines cost as "the number of
-// distinct things a learner must attach": a meaning is 1, each reading is 1.
-// Those ARE the item's facts. `glyphDifficulty` is a glyph-centric implementation
-// of that count — right for kanji/words, but it prices a kana 〜つ form or a rule
-// unit at 0 because they aren't glyph-role things. Reading the count off `facts`
-// instead is the same model, generalized to EVERY kind: a new fact (a mic
-// "say it") or a whole new content kind is priced correctly with no new code.
+// A cohesive character double-counts at the fact level: 三 has kanji-"three" AND
+// word-"three"; 人 has radical-"man", kanji-"person", word-"person". Those are not
+// three things to learn. Cost dedupes:
+//   - a DEFINITION fact contributes its meaning, keyed by canonicalMeaningId — so
+//     "person"/"person" collapse now (exact match), and "man"/"person" collapse
+//     once the reviewed meaning-registry says so (meaning.ts);
+//   - a READING (romaji) fact contributes its reading string — kana, so exact
+//     match is enough; いち attested twice counts once.
+// One per unique meaning, one per unique reading. This is the owner's model
+// ("count the distinct things to attach") with the double-count removed.
 //
-// This is meant to replace `glyphDifficulty` as the ONE cost axis across all
-// tracks; that global fold-in is its own deliberate step (it shifts kanji/word
-// sizing, since fact-count and glyphDifficulty differ for multi-role glyphs like
-// 日). For now the shared scheduler prices with this.
+// PENDING: the taught-vs-reference split. The contract (teach-unit.ts) is that
+// cost counts TAUGHT units only; until teachUnitsOf lands with the CEJC split,
+// this counts every meaning/reading present. Deduping is the first, safe half.
 
+import { factInfo } from "@/lib/facts";
+import { canonicalMeaningId } from "./meaning";
 import type { ContentItem } from "./item";
 
 /**
- * The learning cost of an item: one per fact. `buildItem` refuses a fact-less
- * entry, so every real item costs at least 1 — the scheduler's budget always
- * advances (no more 0-cost items stalling the fill). Weight per fact-kind later
- * if a hard production should count more than a bare meaning.
+ * The learning cost of an item: unique meanings + unique readings. `buildGlyphItem`
+ * refuses a fact-less entry, so every real item costs at least 1 — the scheduler's
+ * budget always advances.
  */
 export function itemCost(item: ContentItem): number {
-  return item.facts.length;
+  const meanings = new Set<string>();
+  const readings = new Set<string>();
+  for (const f of item.facts) {
+    const info = factInfo(f.id);
+    if (!info) continue;
+    if (f.kind === "definition") {
+      if (info.meaning) meanings.add(canonicalMeaningId(info.meaning));
+    } else {
+      // romaji: the reading itself (answers[0]); fall back to the gloss if absent.
+      const reading = info.answers[0] ?? info.meaning;
+      if (reading) readings.add(reading);
+    }
+  }
+  return meanings.size + readings.size;
 }

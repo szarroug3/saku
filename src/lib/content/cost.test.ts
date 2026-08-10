@@ -8,19 +8,28 @@ import { buildGlyphItem } from "./build-item.ts";
 import { formItem, unitItem } from "./numbers-track.ts";
 import { GENERATIVE_UNITS } from "@/lib/counter-lesson";
 import { COUNTER_CURRICULUM } from "@/data/counters";
-import { meaningFactId } from "@/data/kanji";
 
 const tsu3 = COUNTER_CURRICULUM.find((f) => f.key === "counter:tsu:3")!;
 const sai20 = COUNTER_CURRICULUM.find((f) => f.key === "counter:sai:20")!;
 const tens = GENERATIVE_UNITS.find((u) => u.id === "tens")!;
 
-test("itemCost — one per fact, summed across a character's roles", () => {
-  const item = buildGlyphItem("三")!;
-  assert.equal(itemCost(item), item.facts.length);
-  // Cohesive: the number 三 costs MORE than its kanji facts alone, because its
-  // word (さん) facts are folded in.
-  assert.ok(item.facts.some((fact) => fact.id === meaningFactId("三")));
-  assert.ok(itemCost(item) > 1, "aggregates the word facts beyond the kanji meaning");
+// Cost dedupes by unique meaning + unique reading, NOT raw facts. These pin the
+// exact-match tier (stub registry); the synonym tier ("man"≈"person") lowers 人
+// further once the meaning-registry lands — asserted as a bound, not equality.
+test("itemCost — 三: kanji-three and word-three are ONE meaning (1) + さん (1) = 2", () => {
+  // Three definition/reading facts collapse: {three} + {さん}. Not facts.length (3).
+  assert.equal(itemCost(buildGlyphItem("三")!), 2);
+});
+
+test("itemCost — 耳: radical/kanji/word all 'ear' collapse to 1 meaning + みみ = 2", () => {
+  assert.equal(itemCost(buildGlyphItem("耳")!), 2);
+});
+
+test("itemCost — 人: distinct senses stay, exact dups merge", () => {
+  // man, person, person, -ian, counter → {man, person, -ian, counter} = 4 meanings;
+  // ひと/じん/にん = 3 readings → 7 with the stub. The registry merges man≈person → 6.
+  const cost = itemCost(buildGlyphItem("人")!);
+  assert.equal(cost, 7, "exact-match tier: person(kanji)+person(word) already merged");
 });
 
 test("itemCost — a kana 〜つ form costs 1, not 0 (the glyphDifficulty gap it fixes)", () => {

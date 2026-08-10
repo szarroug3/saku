@@ -34,7 +34,7 @@
 //      is a DERIVED grouping used to dedupe cost and to pick one representative
 //      fact to drill per meaning; it never rewrites what a learner has answered.
 
-import REGISTRY from "@/data/generated/meaning-registry.json";
+import REGISTRY from "@/data/generated/meaning-registry.json" with { type: "json" };
 
 const ENTRY_BRAND: unique symbol = Symbol("MeaningId");
 
