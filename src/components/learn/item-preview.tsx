@@ -42,7 +42,10 @@ export function ItemPreview({ item }: { item: ContentItem }) {
     <div className={`${frostCard} flex h-[150px] flex-col overflow-hidden`}>
       {/* Glyph centered in the flexible area — same vertical position on every card. */}
       <div className="flex flex-1 items-center justify-center">
-        <span className={`font-kana leading-none text-text ${glyphSize(item.glyph)}`} lang="ja">
+        <span
+          className={`font-kana text-balance leading-tight text-text [overflow-wrap:anywhere] ${glyphSize(item.glyph)}`}
+          lang="ja"
+        >
           {item.glyph}
         </span>
       </div>
