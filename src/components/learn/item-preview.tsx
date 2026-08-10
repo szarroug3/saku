@@ -3,11 +3,28 @@
 // or "word" / "counter" / a rule) — but NOT the pronunciation or meaning, which
 // are learned by entering the lesson.
 //
-// The card is a FIXED size; the glyph scales down so a multi-character word (先生)
-// or a long kana form (ひとつ) fits without growing the box.
+// The card is a FIXED compact size; the glyph scales down so a multi-character
+// word (先生) or a long kana form (ひとつ) fits without growing the box.
+//
+// LOOK: a glass card — a translucent ground so the warm page shows through, a
+// soft drop shadow for lift, a top-left sheen (a radial gradient, NOT a blur, so
+// no paint cost), and an oversized ghost of the glyph bleeding off the corner as
+// faint texture. The type label is the app accent.
 
-import { frostSurface } from "@/components/ui/frost";
+import type { CSSProperties } from "react";
+
 import type { ContentItem } from "@/lib/content/item";
+
+const CJK = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+/** The ghost-watermark char: the first Japanese glyph in the item, SKIPPING a
+ * leading 〜 or other mark (so 〜たい → た), or 文 ("writing / sentence") for a
+ * building-sentences tier whose label is Latin. Null when there's nothing to show. */
+function watermarkChar(item: ContentItem): string | null {
+  for (const c of item.glyph) if (CJK.test(c)) return c;
+  if (item.kind === "sentence-ordering") return "文";
+  return null;
+}
 
 /** Glyph size so the box stays one size and the content fits. A multi-word title
  * (a sentence-ordering tier, "Simple sentences") is Latin text that wraps at
@@ -15,7 +32,6 @@ import type { ContentItem } from "@/lib/content/item";
 function glyphSize(glyph: string): string {
   const n = [...glyph].length;
   if (/\s/.test(glyph)) {
-    // Multi-word title — size down so whole words fit the box, no mid-word breaks.
     if (n <= 12) return "text-[15px]";
     if (n <= 20) return "text-[12px]";
     return "text-[11px]";
@@ -27,8 +43,34 @@ function glyphSize(glyph: string): string {
 }
 
 export function ItemPreview({ item }: { item: ContentItem }) {
+  const ghost = watermarkChar(item);
   return (
-    <div className={`${frostSurface} flex h-[104px] flex-col overflow-hidden p-3`}>
+    <div
+      className="relative flex h-[104px] flex-col overflow-hidden rounded-2xl border border-white/10 p-3"
+      style={
+        {
+          backgroundColor: "color-mix(in srgb, var(--card) 42%, transparent)",
+          boxShadow: "0 22px 44px -26px rgba(0,0,0,0.72)",
+        } as CSSProperties
+      }
+    >
+      {/* An oversized ghost of the glyph, bleeding off the corner as faint texture. */}
+      {ghost && (
+        <span
+          className="pointer-events-none absolute -bottom-5 -right-3 select-none font-kana text-[104px] leading-none text-[color:color-mix(in_srgb,var(--text)_4%,transparent)]"
+          lang="ja"
+          aria-hidden
+        >
+          {ghost}
+        </span>
+      )}
+      {/* Top-left sheen (a gradient, not a blur) so it reads as glass, not a box. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(130px 90px at 22% 0%, rgba(255,255,255,0.07), transparent)" }}
+      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
+
       {/* Glyph centered in the flexible area — same vertical position on every card. */}
       <div className="flex flex-1 items-center justify-center">
         <span
@@ -41,7 +83,7 @@ export function ItemPreview({ item }: { item: ContentItem }) {
       {/* Type label in a fixed band, top-aligned — so a 2-line label (人) lines up
           with a 1-line one (三) across cards. */}
       <div className="flex h-7 items-start justify-center text-center">
-        <span className="text-[9px] uppercase leading-tight tracking-[0.05em] text-accent">
+        <span className="text-[9px] font-medium uppercase leading-tight tracking-[0.05em] text-accent">
           {item.typeLabel}
         </span>
       </div>
