@@ -6,6 +6,7 @@
 
 import type { EntryId } from "@/types";
 import type { RoleName } from "@/lib/character-role";
+import type { KanjiEtymology } from "@/data/kanji-etymology";
 import type { Fact } from "./fact";
 
 /**
@@ -53,4 +54,9 @@ export interface ContentItem {
   /** The items this one is directly built on (its edges in the prereq DAG). May
    * point at items in ANY track; the scheduler follows them wherever they live. */
   readonly prereqs: readonly EntryId[];
+  /** The glyph's origin story — a precomputed lookup (etymologyOf), attached
+   * because it EXPLAINS the `prereqs` (the components it is built from). Null for
+   * a glyph with no etymology (suppressed, or not a kanji). Display-only; not a
+   * fact, not a scheduling input. */
+  readonly etymology: KanjiEtymology | null;
 }
