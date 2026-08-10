@@ -1,25 +1,22 @@
 // REDESIGNED Learn "Up next" card — the next lesson, on the NEW content model.
 //
-// This is the redesign target, written against the unified model (a UnitLesson of
-// TeachingUnits from the shared scheduler) rather than the old CurriculumLesson.
-// It is a NEW component, kept out of the shipped tree until the app moves onto the
-// content model — then it drops in where next-curriculum-lesson.tsx is now.
+// The redesign target, written against the unified model (a UnitLesson of
+// TeachingUnits) rather than the old CurriculumLesson. A NEW component, kept out
+// of the shipped tree until the app moves onto the content model — then it drops
+// in where next-curriculum-lesson.tsx is now.
 //
-// It reuses the shared building blocks (PreviewTile, Btn, Lbl, WhyDisclosure,
-// frostCard) so it is real and promotable, not a throwaway mock. The surface is
-// the frost treatment: a translucent card body and frosted tiles with a soft drop
-// shadow, no backdrop-filter (so no paint cost). A tile is one ITEM (its glyph and
-// type); a lesson's units are deduped to their items, preserving teach order.
-//
-// Handlers are optional so the dev gallery can render it inert; wire them (and a
-// position label, once the model exposes one) to ship it.
+// Each tile IS the shared unit card, `ItemPreview` — the exact component the Learn
+// "next-lesson preview" gallery shows, so the accented type line and frosted body
+// are reused verbatim, not re-styled. The card arranges the lesson's items (its
+// units, deduped to items in teach order) as a row of those cards, over a lighter
+// frosted panel so the item cards lift, plus the three routes in (Btn) and the
+// one-climb note (WhyDisclosure). Handlers are optional so the dev gallery can
+// render it inert.
 
 import { Btn, Lbl } from "@/components/ui";
-import { PreviewTile } from "@/components/lesson/preview-tile";
+import { ItemPreview } from "@/components/learn/item-preview";
 import { WhyDisclosure } from "@/components/lesson/why";
-import { frostCard } from "@/components/ui/frost";
 import { WHY_TRACK } from "@/data/why";
-import { entryHref } from "@/lib/library/href";
 import type { ContentItem } from "@/lib/content/item";
 import type { UnitLesson } from "@/lib/content/teach-unit";
 import type { FactId } from "@/types";
@@ -37,6 +34,13 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
   }
   return items;
 }
+
+/** A lighter frosted panel than the item cards, so the ItemPreview tiles (card at
+ * 72%) lift off it. Same soft shadow, no backdrop-filter. */
+const panel =
+  "rounded-2xl border border-border/70 p-5 " +
+  "bg-[color-mix(in_srgb,var(--card)_46%,transparent)] " +
+  "shadow-[0_1px_3px_rgba(0,0,0,0.05),0_22px_48px_-28px_rgba(0,0,0,0.40)]";
 
 export function NextLessonPreview({
   lesson,
@@ -58,18 +62,14 @@ export function NextLessonPreview({
   const items = lessonItems(lesson);
   const facts = lesson.units.flatMap((u) => u.facts);
   return (
-    <div className={frostCard}>
+    <div className={panel}>
       <Lbl>Up next{positionLabel ? ` · ${positionLabel}` : ""}</Lbl>
 
-      <div className="mt-4 flex flex-wrap gap-2.5">
+      <div className="mt-4 flex flex-wrap gap-3">
         {items.map((item) => (
-          <PreviewTile
-            key={String(item.entry)}
-            glyph={item.glyph}
-            type={item.typeLabel}
-            href={entryHref(item.entry)}
-            variant="frost"
-          />
+          <div key={String(item.entry)} className="w-[150px]">
+            <ItemPreview item={item} />
+          </div>
         ))}
       </div>
 
