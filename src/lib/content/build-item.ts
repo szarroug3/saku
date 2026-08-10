@@ -77,6 +77,7 @@ export function buildGlyphItem(glyph: string): ContentItem | undefined {
     facts,
     roles,
     prereqs: componentPrereqs(glyph),
+    blockedBy: [],
     // The character's origin — explains the components above. A precomputed lookup.
     etymology: etymologyOf(glyph) ?? null,
     typeLabel: contentTypeLabel("character", roles),
@@ -116,6 +117,7 @@ export function buildItem(entry: EntryId, kind: ContentKind): ContentItem | unde
     facts,
     roles,
     prereqs: directPrereqs(kind, glyph),
+    blockedBy: [],
     etymology: null,
     typeLabel: contentTypeLabel(kind, roles),
   };

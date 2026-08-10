@@ -17,8 +17,9 @@
 // registry, so it has no units to order.
 
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
+import { VOCAB_FACTS } from "@/data/vocab";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
-import { orderedUnits, teachUnitsOf } from "./teach-unit";
+import { orderedUnits, teachUnitsOf, isUnitDue } from "./teach-unit";
 import { kanaItems } from "./kana-unit";
 import { keigoItems } from "./keigo-unit";
 import { grammarItems } from "./grammar-unit";
@@ -37,6 +38,22 @@ export interface UnitTrack {
   readonly id: string;
   readonly title: string;
   units(history: HistoryFile): readonly TeachingUnit[];
+  /** A starting history in which this track's BLOCKING prerequisites are already
+   * learned — the state a track that rides on another (transitivity on vocab)
+   * needs to schedule anything at all. Absent for a self-contained track, which
+   * starts from empty. */
+  seed?(): HistoryFile;
+}
+
+/** A history with every vocabulary word learned — the seed a vocab-gated track
+ * (transitivity) is simulated against, so a pair whose verbs are taught unblocks
+ * and a pair whose verbs the curriculum never teaches stays hidden. */
+function vocabLearned(): HistoryFile {
+  return applyClaims(
+    emptyHistory(),
+    VOCAB_FACTS.map((f) => f.id),
+    1,
+  );
 }
 
 /** The vocab/pronunciation spine, unit-ordered by spoken frequency across every
@@ -52,7 +69,12 @@ export const UNIT_TRACKS: readonly UnitTrack[] = [
   { id: "numbers", title: "Numbers & counters", units: (h) => numbersTrack().order(h).flatMap(teachUnitsOf) },
   { id: "keigo", title: "Keigo", units: () => keigoItems().flatMap(teachUnitsOf) },
   { id: "grammar", title: "Grammar", units: () => grammarItems().flatMap(teachUnitsOf) },
-  { id: "transitivity", title: "Verb pairs", units: () => transitivityItems().flatMap(teachUnitsOf) },
+  {
+    id: "transitivity",
+    title: "Verb pairs",
+    units: () => transitivityItems().flatMap(teachUnitsOf),
+    seed: vocabLearned, // pairs are blocked by their verbs — learn the vocab first
+  },
 ];
 
 /** One simulated lesson: its number in the run and the units the scheduler chose
@@ -75,17 +97,21 @@ export function simulateLessons(
   maxLessons: number,
 ): SimulatedLesson[] {
   const lessons: SimulatedLesson[] = [];
-  let history = emptyHistory();
+  let history = track.seed?.() ?? emptyHistory();
   let ts = 1;
   // Every track orders statically (the scheduler filters dueness against the
   // evolving history), so the order is computed once, not per lesson.
   const order = track.units(history);
+  // Advance a cursor past the fully-learned leading prefix so each lesson scans
+  // near the front, not the whole (growing) history — O(units), not O(lessons×units).
+  let cursor = 0;
   for (let n = 1; n <= maxLessons; n++) {
-    const lesson = nextTrackLesson(order, history, range);
+    const lesson = nextTrackLesson(order, history, range, cursor);
     if (!lesson) break;
     lessons.push({ n, units: lesson.units });
     const facts = lesson.units.flatMap((u) => u.facts) as FactId[];
     history = applyClaims(history, facts, ts++);
+    while (cursor < order.length && !isUnitDue(order[cursor], history)) cursor++;
   }
   return lessons;
 }

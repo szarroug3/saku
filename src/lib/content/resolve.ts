@@ -12,28 +12,38 @@
 // word/kana tracks migrate they extend this same map with their own kinds.
 
 import { KANJI } from "@/data/kanji";
+import { RADICALS } from "@/data/radicals";
 import { buildGlyphItem } from "./build-item";
 import type { ContentItem } from "./item";
 import type { EntryId } from "@/types";
 
-let kanjiIndex: Map<EntryId, ContentItem> | null = null;
+let corpusIndex: Map<EntryId, ContentItem> | null = null;
 
-/** Every jōyō kanji as a cohesive `character` ContentItem, indexed by canonical
- * entry. Built once, lazily — the same build-once-index shape library/entries.ts
- * uses, but deferred so a route that never schedules a lesson doesn't pay for it. */
-function kanjiCorpus(): Map<EntryId, ContentItem> {
-  if (kanjiIndex) return kanjiIndex;
+/** Every jōyō kanji AND every radical as a cohesive `character` ContentItem,
+ * indexed by canonical entry. A teaching prerequisite points at a component —
+ * kanji (何 ← 人, 可) OR radical (私 ← 禾, 厶) — so both must resolve or a radical
+ * component is silently dropped from the chain. Built once, lazily (the same
+ * build-once-index library/entries.ts uses), deferred so a route that never
+ * schedules doesn't pay for it. Kanji win a glyph that is both (precedence in
+ * canonicalEntry), so the radical pass never overwrites a kanji entry. */
+function corpus(): Map<EntryId, ContentItem> {
+  if (corpusIndex) return corpusIndex;
   const m = new Map<EntryId, ContentItem>();
   for (const row of KANJI) {
     const item = buildGlyphItem(row.c);
     if (item) m.set(item.entry, item);
   }
-  kanjiIndex = m;
+  for (const row of RADICALS) {
+    const item = buildGlyphItem(row.glyph);
+    if (item && !m.has(item.entry)) m.set(item.entry, item);
+  }
+  corpusIndex = m;
   return m;
 }
 
-/** Resolve an entry the scheduler may need to reach — today, any kanji (every
- * prerequisite is one). Undefined for anything not yet in the corpus. */
+/** Resolve an entry the scheduler may need to reach — a kanji or radical
+ * component a teaching prerequisite points at. Undefined for anything not in the
+ * corpus (a blocking prerequisite on a word is checked by its facts, not here). */
 export function resolveItem(entry: EntryId): ContentItem | undefined {
-  return kanjiCorpus().get(entry);
+  return corpus().get(entry);
 }

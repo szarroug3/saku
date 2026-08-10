@@ -29,6 +29,7 @@ function mock(kind: ContentKind, glyph: string): ContentItem {
     facts: [],
     roles: [],
     prereqs: [],
+    blockedBy: [],
     etymology: null,
     typeLabel: contentTypeLabel(kind, []),
   };

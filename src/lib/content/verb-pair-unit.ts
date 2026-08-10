@@ -4,26 +4,63 @@
 // facts, one per side (happens = intransitive, doIt = transitive). `buildItem`
 // turns the entry into a valid ContentItem; this file enumerates the distinct
 // pair entries and reads the pair's two members back off the data for the unit.
+//
+// BLOCKING PREREQUISITE + ORDER. The transitivity SKILL — knowing which of a pair
+// is intransitive vs transitive — is worth teaching only once you know the verbs
+// themselves. So each pair is BLOCKED BY its two member verbs (the vocab words
+// 開く and 開ける), not taught with the kanji pulled in ahead: if a verb is too
+// rare to be in the curriculum, its pair never surfaces at all. The track then
+// orders pairs by when their SHARED kanji is taught in the vocab spine — 開 before
+// 閉 before … — so an unblocked pair arrives about when the learner meets its
+// character. The one pair with no shared kanji (生まれる/産む) has no single base
+// to sort by, so it falls to where its LAST-taught kanji lands.
 
 import { buildItem } from "./build-item.ts";
 import { TRANSITIVITY_FACTS, pairForEntry } from "@/data/transitivity-facts";
+import { wordEntry } from "@/data/vocab";
+import { curriculumPosition } from "@/lib/curriculum-order";
 import type { ContentItem } from "./item.ts";
 import type { VerbPairUnit } from "./teach-unit.ts";
 
 const HAN = /\p{Script=Han}/u;
 
-/** The distinct transitivity pair entries, each as a ContentItem via `buildItem`.
- * One item per pair (its facts are the two sides). Undefined builds are skipped. */
+/** The kanji both verbs share (the base, 開), or undefined when they share none. */
+function sharedKanji(intransitive: string, transitive: string): string | undefined {
+  return [...intransitive].find((c) => transitive.includes(c) && HAN.test(c));
+}
+
+/** A curriculum position for sorting, with an untaught glyph (-1) sunk to the end. */
+function pos(glyph: string): number {
+  const p = curriculumPosition(glyph);
+  return p < 0 ? Infinity : p;
+}
+
+/**
+ * The distinct transitivity pairs as ContentItems — each BLOCKED BY its two member
+ * verbs, ordered by when its SHARED kanji is taught (§ header). Undefined builds
+ * are skipped.
+ */
 export function transitivityItems(): ContentItem[] {
   const seen = new Set<string>();
-  const items: ContentItem[] = [];
+  const rows: { item: ContentItem; sortKey: number }[] = [];
   for (const f of TRANSITIVITY_FACTS) {
     if (seen.has(f.entry as string)) continue;
     seen.add(f.entry as string);
-    const item = buildItem(f.entry, "transitivity");
-    if (item) items.push(item);
+    const built = buildItem(f.entry, "transitivity");
+    if (!built) continue;
+    const pair = pairForEntry(f.entry);
+    const intr = pair?.happens.word ?? built.glyph;
+    const trans = pair?.doIt.word ?? "";
+    const verbs = [intr, trans].filter(Boolean);
+    const shared = sharedKanji(intr, trans);
+    const sortKey = shared != null ? pos(shared) : Math.max(...verbs.map((w) => pos([...w][0])), 0);
+    rows.push({
+      item: { ...built, blockedBy: verbs.map((w) => wordEntry(w)) },
+      sortKey,
+    });
   }
-  return items;
+  rows.sort((a, b) => a.sortKey - b.sortKey);
+  return rows.map((r) => r.item);
 }
 
 /**

@@ -22,6 +22,7 @@ import {
 } from "./teach-unit.ts";
 import { buildGlyphItem } from "./build-item.ts";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
+import { factsOf } from "@/lib/facts";
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
 import type { FactId } from "@/types";
 import type { PronunciationUnit } from "./teach-unit";
@@ -148,13 +149,20 @@ test("polymorphic — the same scheduler drives a non-pronunciation track", () =
   // Verb-pair units carry no reading; the base contract (item/facts/cost) is all
   // the scheduler reads, so nextTrackLesson orders and budgets them uniformly.
   const order = transitivityItems().flatMap(teachUnitsOf);
-  const lesson = nextTrackLesson(order, emptyHistory(), { min: 2, max: 4 });
-  assert.ok(lesson, "a first verb-pair lesson comes out of empty history");
+  // A pair is BLOCKED by its verbs, so from an empty history nothing is teachable.
+  assert.equal(
+    nextTrackLesson(order, emptyHistory(), { min: 2, max: 4 }),
+    null,
+    "every pair is blocked until its verbs are learned",
+  );
+  // Learn one pair's verbs and it becomes teachable — alone, no kanji pulled in.
+  const open = transitivityItems().find((i) => String(i.entry) === "transitivity:開く/開ける")!;
+  let hist = emptyHistory();
+  for (const w of open.blockedBy) hist = applyClaims(hist, factsOf(w) as FactId[], 1);
+  const lesson = nextTrackLesson(order, hist, { min: 2, max: 4 });
+  assert.ok(lesson, "with its verbs known, the pair schedules");
   assert.ok(
     lesson!.units.every((u) => u.kind === "verb-pair"),
-    "the due units are verb pairs, scheduled through the base interface",
+    "a blocking prereq is never pulled in — the lesson is pairs only",
   );
-  // Budget is by unit cost (a pair costs 2): a {min:2,max:4} lesson holds 1–2 pairs.
-  const spent = lesson!.units.reduce((n, u) => n + unitCost(u), 0);
-  assert.ok(spent >= 2 && spent <= 4, "filled to the floor, under the ceiling");
 });

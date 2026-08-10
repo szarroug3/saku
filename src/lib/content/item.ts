@@ -43,13 +43,22 @@ export type ContentKind =
  * being stitched per track. `roles` reuses the existing central labeller
  * (character-role.ts); nothing re-phrases a role at a call site.
  *
- * PREREQUISITES ARE DATA ON THE ITEM, not per-track scheduler logic. `prereqs`
- * lists the items this one is built on — a number kanji, a component radical, a
- * word a counter needs. The one scheduler (see track.ts) resolves them
- * transitively and ACROSS tracks: a number may pull a non-number kanji that
- * "belongs" to the word track, and the scheduler teaches it here regardless. The
- * DAG they form is the whole prerequisite graph; the scheduler walks it, budgets
- * it, and depth-gates it — no track re-implements any of that.
+ * PREREQUISITES ARE DATA ON THE ITEM, not per-track scheduler logic, and come in
+ * two kinds:
+ *   - `prereqs` are TEACHING prerequisites — the things this one is built ON (a
+ *     component radical, a kanji a word is written with). The scheduler PULLS them
+ *     in AHEAD of the item and teaches them in the same flow, resolving them
+ *     transitively and ACROSS tracks: a number may pull a word-track kanji, and it
+ *     is taught here regardless.
+ *   - `blockedBy` are BLOCKING prerequisites — things that must already be learned
+ *     ELSEWHERE before this item is worth teaching, and that are NEVER pulled in.
+ *     A transitivity pair is blocked by its two verbs: there is no point teaching
+ *     which of 開く/開ける is transitive before you know the verbs, and a verb too
+ *     rare to be taught should keep its pair out of the deck entirely. The
+ *     scheduler defers a blocked item and, if the block never lifts, never teaches
+ *     it.
+ * The teaching edges form the prereq DAG; the scheduler walks, budgets, and
+ * depth-gates it — no track re-implements any of that.
  */
 export interface ContentItem {
   readonly entry: EntryId;
@@ -57,9 +66,15 @@ export interface ContentItem {
   readonly glyph: string;
   readonly facts: readonly Fact[];
   readonly roles: readonly RoleName[];
-  /** The items this one is directly built on (its edges in the prereq DAG). May
-   * point at items in ANY track; the scheduler follows them wherever they live. */
+  /** TEACHING prerequisites — the items this one is built on (its edges in the
+   * prereq DAG). Pulled in and taught AHEAD of this item; may point at items in
+   * ANY track, and the scheduler follows them wherever they live. */
   readonly prereqs: readonly EntryId[];
+  /** BLOCKING prerequisites — items that must already be learned before this one
+   * is taught, and are NEVER pulled in (a transitivity pair's two verbs). The
+   * scheduler defers this item until every one is learned; if the block never
+   * lifts, it is never taught. Empty for everything with no cross-track gate. */
+  readonly blockedBy: readonly EntryId[];
   /** The glyph's origin story — a precomputed lookup (etymologyOf), attached
    * because it EXPLAINS the `prereqs` (the components it is built from). Null for
    * a glyph with no etymology (suppressed, or not a kanji). Display-only; not a

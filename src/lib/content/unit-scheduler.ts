@@ -26,7 +26,8 @@
 // primary unit, in dependency order. (A prereq the corpus can't yet resolve — a
 // word, until the word track migrates `resolveItem` — is skipped, not a gate.)
 
-import { MAX_PREREQ_DEPTH } from "./scheduler";
+import { MAX_PREREQ_DEPTH, isFactFresh } from "./scheduler";
+import { factsOf } from "@/lib/facts";
 import { buildGlyphItem } from "./build-item";
 import { resolveItem } from "./resolve";
 import {
@@ -40,6 +41,14 @@ import type { PronunciationUnit, TeachingUnit, UnitLesson } from "./teach-unit";
 import type { ContentItem } from "./item";
 import type { LessonRange } from "@/lib/lesson-sizing";
 import type { EntryId, HistoryFile } from "@/types";
+
+/** Whether an entry has been LEARNED — it has facts and all of them are claimed.
+ * An entry with no facts (a word not in any curriculum) is never learned, so a
+ * blocking edge onto it never lifts. */
+function isLearned(entry: EntryId, history: HistoryFile): boolean {
+  const facts = factsOf(entry);
+  return facts.length > 0 && facts.every((f) => !isFactFresh(f, history));
+}
 
 /** A glyph's PRIMARY unit — its most-spoken reading, the one a learner "meets the
  * glyph" through. Undefined when the glyph builds no teachable item. This is the
@@ -106,12 +115,21 @@ export function planUnitLesson(
   history: HistoryFile,
   range: LessonRange,
   maxDepth: number = MAX_PREREQ_DEPTH,
+  start: number = 0,
 ): TeachingUnit[] {
   const out: TeachingUnit[] = [];
   const emitted = new Set<string>();
   let spent = 0;
-  for (const unit of order) {
+  // `start` skips a fully-learned leading prefix — a caller walking the same track
+  // forward advances it past units already taught, so the scan stays near the
+  // front instead of re-checking the whole (learned) history each lesson.
+  for (let i = start; i < order.length; i++) {
+    const unit = order[i];
     if (!isUnitDue(unit, history)) continue;
+    // BLOCKING gate: a unit whose item is blocked by an unlearned dependency is
+    // deferred and its blockers are NOT pulled in — if the block never lifts, it
+    // is never taught (a transitivity pair whose verb the curriculum never teaches).
+    if (unit.item.blockedBy.some((e) => !isLearned(e, history))) continue;
     const chain = prereqChain(unit.item, history, maxDepth);
     if (!chain) continue; // untaught-prereq chain too deep → defer this unit
     const bundle: TeachingUnit[] = [...chain, unit];
@@ -141,8 +159,9 @@ export function nextTrackLesson(
   order: readonly TeachingUnit[],
   history: HistoryFile,
   range: LessonRange,
+  start: number = 0,
 ): UnitLesson | null {
-  const units = planUnitLesson(order, history, range);
+  const units = planUnitLesson(order, history, range, MAX_PREREQ_DEPTH, start);
   return units.length ? { units } : null;
 }
 

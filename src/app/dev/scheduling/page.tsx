@@ -18,7 +18,7 @@ import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import { frostCard } from "@/components/ui/frost";
 import type { TeachingUnit } from "@/lib/content/teach-unit";
 
-const MAX_LESSONS = 60;
+const MAX_LESSONS = 5000; // a runaway guard, not a real cap — vocab is ~480 lessons
 const PER_PAGE = 20;
 
 export default function SchedulingDevPage() {

@@ -23,6 +23,7 @@ function mk(entry: string, prereqs: string[] = []): ContentItem {
     facts: [],
     roles: [],
     prereqs: prereqs as EntryId[],
+    blockedBy: [],
     etymology: null,
     typeLabel: "",
   };
