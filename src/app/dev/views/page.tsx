@@ -9,6 +9,8 @@ import type { ReactNode } from "react";
 import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { GlyphView } from "@/components/library/glyph-view";
+import { KanaEntryView } from "@/components/library/kana-entry-view";
+import { kanaItems } from "@/lib/content/kana-unit";
 import { UNIT_TRACKS, simulateLessons } from "@/lib/content/unit-tracks";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
@@ -50,6 +52,9 @@ const LIBRARY_SAMPLES = ["人", "三", "主", "日", "耳"];
 const VOCAB_TRACK = UNIT_TRACKS.find((t) => t.id === "vocab")!;
 const UP_NEXT = simulateLessons(VOCAB_TRACK, LESSON_RANGE_DEFAULT, 1)[0] ?? null;
 
+// The kana whose Library entry page we redesign first (has an authored mnemonic).
+const KANA_A = kanaItems().find((i) => i.glyph === "あ");
+
 export default function ViewsDevPage() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-10 text-text">
@@ -88,7 +93,14 @@ export default function ViewsDevPage() {
       </Section>
 
       <Section
-        title="Library &mdash; glyph page"
+        title="Library &mdash; entry page (redesign, by type)"
+        note="The full reference for one item, on the content model — starting with kana: the mnemonic (drawing, sound analogy, story, proving word) read off item.mnemonic, in the glass surface."
+      >
+        {KANA_A ? <KanaEntryView item={KANA_A} /> : <Missing />}
+      </Section>
+
+      <Section
+        title="Library &mdash; glyph page (old)"
         note="The cohesive reference: every pronunciation with its meanings. (Etymology + speak next.)"
       >
         <div className="flex flex-col gap-4">

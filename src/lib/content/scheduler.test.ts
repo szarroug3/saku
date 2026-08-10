@@ -25,6 +25,7 @@ function mk(entry: string, prereqs: string[] = []): ContentItem {
     prereqs: prereqs as EntryId[],
     blockedBy: [],
     etymology: null,
+    mnemonic: null,
     typeLabel: "",
   };
 }
