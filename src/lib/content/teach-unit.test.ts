@@ -3,38 +3,37 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { teachUnitsOf } from "./teach-unit.ts";
+import { teachUnitsOf, unitCost } from "./teach-unit.ts";
 import { buildGlyphItem } from "./build-item.ts";
 
-test("teachUnitsOf — 三 is ONE unit: three, read さん, grouping all its facts", () => {
-  const item = buildGlyphItem("三")!;
-  const units = teachUnitsOf(item);
-  assert.equal(units.length, 1, "kanji-three + word-three + さん collapse to one meaning");
-  assert.equal(units[0].label, "three");
-  assert.equal(units[0].reading, "さん");
-  assert.equal(units[0].facts.length, item.facts.length, "the unit groups every fact");
-});
-
-test("teachUnitsOf — 耳 is one unit: ear, read みみ", () => {
-  const units = teachUnitsOf(buildGlyphItem("耳")!);
+test("teachUnitsOf — 三 is ONE unit: pronunciation さん, meaning three", () => {
+  const units = teachUnitsOf(buildGlyphItem("三")!);
   assert.equal(units.length, 1);
-  assert.equal(units[0].label, "ear");
-  assert.equal(units[0].reading, "みみ");
+  assert.equal(units[0].reading, "さん");
+  assert.deepEqual(units[0].meanings.map((m) => m.label), ["three"]);
+  assert.equal(unitCost(units[0]), 1, "one pronunciation→meaning fact");
 });
 
-test("teachUnitsOf — 人 splits into distinct meanings; person carries ひと, man is its own", () => {
+test("teachUnitsOf — 人 splits by PRONUNCIATION: ひと / じん / にん, each its own unit", () => {
   const units = teachUnitsOf(buildGlyphItem("人")!);
-  const person = units.find((u) => u.label === "person");
-  const man = units.find((u) => u.label === "man");
-  assert.ok(person, "a person unit exists");
-  assert.equal(person!.reading, "ひと", "person is read ひと");
-  assert.ok(man, "man (the radical sense) is its own unit until the registry merges it");
-  assert.equal(man!.reading, null, "the radical meaning carries no reading");
+  const readings = units.map((u) => u.reading);
+  assert.ok(readings.includes("ひと"), "person unit read ひと");
+  assert.ok(readings.includes("じん") && readings.includes("にん"), "the other readings are their own units");
+  // The core meanings (kanji person, radical man) attach to the primary reading ひと.
+  const hito = units.find((u) => u.reading === "ひと")!;
+  assert.ok(hito.meanings.some((m) => m.label === "person"), "ひと carries person");
 });
 
-test("teachUnitsOf — every fact lands in exactly one unit (nothing dropped or duplicated)", () => {
+test("unitCost — counts meanings, not the reading; each の unit ≈ its senses", () => {
+  const hito = teachUnitsOf(buildGlyphItem("人")!).find((u) => u.reading === "ひと")!;
+  // stub registry: person (word+kanji) + man (radical) → 2; registry merges man≈person → 1.
+  assert.ok(unitCost(hito) >= 1, "the primary unit costs its distinct meanings");
+  assert.equal(unitCost(hito), hito.meanings.length);
+});
+
+test("teachUnitsOf — every fact lands in exactly one unit (nothing dropped)", () => {
   const item = buildGlyphItem("人")!;
   const grouped = teachUnitsOf(item).flatMap((u) => u.facts);
-  assert.equal(grouped.length, item.facts.length, "same count");
-  assert.deepEqual(new Set(grouped), new Set(item.facts.map((f) => f.id)), "same set");
+  assert.equal(grouped.length, item.facts.length);
+  assert.deepEqual(new Set(grouped), new Set(item.facts.map((f) => f.id)));
 });

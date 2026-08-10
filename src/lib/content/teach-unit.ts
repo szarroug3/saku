@@ -1,96 +1,93 @@
-// TEACH UNIT — the contract for "teach meanings, not words".
+// TEACHING UNIT — the taught slice of a glyph: ONE pronunciation and the
+// meaning(s) taught with it. This is the schedulable/costable atom, distinct from
+// the cohesive `ContentItem` (a whole glyph) the Library page renders.
 //
-// Today a ContentItem carries a flat `facts: Fact[]`, and a character double-
-// counts: 三 has kanji-"three" AND word-"three"; 人 has radical-"man", kanji-
-// "person", word-"person". A TEACH UNIT is the deduped thing a learner actually
-// studies: ONE meaning (by MeaningId, so "man"/"person" or "speak"/"talk" collapse
-// via the registry) paired with the reading taught for it, split into what is
-// drilled vs what is reference-only (CEJC-rare).
+// The grain follows the data: CEJC can rank a PRONUNCIATION but not a sense
+// (meaning.ts, doc §7). So a unit is a reading; the sense(s) read that way ride
+// with it. 人 splits into three units — ひと (person), じん (-ian), にん (counter) —
+// each scheduled when its reading-frequency lands; 三 is one unit (さん / three).
+// A kanji/radical CORE meaning (no reading of its own) attaches to the glyph's
+// primary pronunciation; a kanji taught with no word at all is a meaning-only unit
+// (reading null — its readings arrive with the words that attest them).
 //
-// This file is the TYPE contract the architecture track implements against; the
-// functions below are specified here and implemented once the meaning-registry
-// contract (meaning.ts) is agreed. It needs NO new data beyond:
-//   • meaning-registry.json  (meaning.ts)          — dedup key
-//   • the existing CEJC taught/reference split (vocab.ts teachingSenses/
-//     referenceReadings)                            — the `taught` flag
+// COST is on the unit: a pronunciation→meaning association is one fact ("read さん,
+// means three"). Two meanings under one reading is two facts; the reading itself
+// is shared, not a separate cost. So `unitCost` = the unit's distinct meanings.
 //
-// HISTORY SAFETY: a TeachUnit GROUPS existing facts; it never re-keys them. The
-// `facts` array is the underlying fact ids (history stays on those). When several
-// facts share a meaning, the drill scores ONE representative; the rest are shown,
-// aliased, never a second graded card — so no learner record moves.
+// A lesson PAGE may group several units of the same word (the viewport combines
+// them); that grouping is a rendering concern, not this model's.
 
 import { factInfo } from "@/lib/facts";
+import { wordReadingUnit } from "@/data/vocab";
 import { canonicalMeaningId } from "./meaning";
 import type { FactId } from "@/types";
 import type { MeaningId } from "./meaning";
 import type { ContentItem } from "./item";
 
-/** One deduped thing a learner studies about an item. */
-export interface TeachUnit {
-  /** Canonical meaning identity — the dedup key. Two source glosses that the
-   * registry judged synonymous produce ONE unit. */
-  readonly meaning: MeaningId;
-  /** The gloss to show for this meaning (the registry's canonical label). */
+/** One meaning taught within a unit — its identity (dedup key) and display gloss. */
+export interface UnitMeaning {
+  readonly id: MeaningId;
   readonly label: string;
-  /** The reading taught for this meaning, or null for a meaning with no scored
-   * reading (a kanji sense whose readings ride its attesting words). */
+}
+
+/** The taught slice of a glyph: one pronunciation and the meaning(s) read that way. */
+export interface TeachingUnit {
+  readonly glyph: string;
+  /** The pronunciation taught (kana), or null for a meaning-only unit (a kanji
+   * whose readings ride its words). */
   readonly reading: string | null;
-  /** True = drilled; false = reference tier (a CEJC-rare meaning/reading shown in
-   * the Library but never scored). */
-  readonly taught: boolean;
-  /** The underlying facts this unit groups. History stays on these ids; the drill
-   * scores one representative. Never empty. */
+  /** The distinct meanings read this way, deduped by MeaningId. Never empty. */
+  readonly meanings: readonly UnitMeaning[];
+  /** The underlying facts this unit teaches — history stays on these ids. */
   readonly facts: readonly FactId[];
 }
 
 /**
- * CONTRACT (to be implemented by the architecture track):
- *
- *   teachUnitsOf(item): readonly TeachUnit[]
- *     Group item.facts by canonicalMeaningId(fact.id, gloss) for definition facts
- *     (fact-keyed, so 人 "man"→"person" merges but 男 "man" does not), attach each
- *     meaning's taught reading, and mark taught vs reference from the CEJC split.
- *     A word meaning fact's MeaningId is its `definitionId` (reused); kanji/radical
- *     meaning facts fold onto the same id when the registry says so.
- *
- *   itemCost(item): number   (cost.ts)
- *     = count of TAUGHT units = |unique taught meanings| + |unique taught readings|.
- *     So 三 costs 1 meaning + 1 reading (not 3 facts); 人 costs person + man +
- *     any CEJC-frequent extra senses, deduped — the count Sam asked for.
+ * Split a glyph item into its teaching units — one per pronunciation. Word facts
+ * group by their reading (`wordReadingUnit`); a kanji/radical core-meaning fact
+ * (no reading) attaches to the glyph's primary pronunciation, or forms a
+ * reading-null unit when the glyph is taught with no word.
  */
+export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
+  const rebOf = (id: FactId): string | null => wordReadingUnit(id)?.unit.reb ?? null;
+  const primaryReb =
+    item.facts.map((f) => rebOf(f.id)).find((r): r is string => r != null) ?? null;
 
-/**
- * Group an item's facts into deduped teaching units. Both a DEFINITION fact and a
- * READING fact carry the meaning they belong to (`factInfo.meaning`), so grouping
- * every fact by `canonicalMeaningId(fact, gloss)` collects each meaning with its
- * reading in one pass — 三's kanji-three + word-three + さん become one unit, and
- * 人's "man"/"person" collapse once the registry says so. Insertion order is
- * preserved (radical, kanji, then word units, matching fact order).
- *
- * PENDING: the taught/reference split — every unit is `taught: true` for now.
- * Wiring it reads the CEJC `referenceReadings` tier (vocab.ts readingDefinitions),
- * which marks a unit's reading reference-only; additive, no shape change.
- */
-export function teachUnitsOf(item: ContentItem): readonly TeachUnit[] {
-  const order: MeaningId[] = [];
-  const units = new Map<MeaningId, { label: string; reading: string | null; facts: FactId[] }>();
+  const order: (string | null)[] = [];
+  const groups = new Map<
+    string | null,
+    { meanings: Map<MeaningId, string>; facts: FactId[] }
+  >();
   for (const f of item.facts) {
-    const info = factInfo(f.id);
-    const gloss = info?.meaning;
-    if (!gloss) continue;
-    const id = canonicalMeaningId(f.id, gloss);
-    let unit = units.get(id);
-    if (!unit) {
-      unit = { label: gloss, reading: null, facts: [] };
-      units.set(id, unit);
-      order.push(id);
+    const key = rebOf(f.id) ?? primaryReb; // core meaning → the primary pronunciation
+    let group = groups.get(key);
+    if (!group) {
+      group = { meanings: new Map(), facts: [] };
+      groups.set(key, group);
+      order.push(key);
     }
-    unit.facts.push(f.id);
-    if (f.kind === "definition") unit.label = gloss; // a definition gloss labels the unit
-    else if (!unit.reading) unit.reading = info!.answers[0] ?? null;
+    group.facts.push(f.id);
+    if (f.kind === "definition") {
+      const gloss = factInfo(f.id)?.meaning;
+      if (gloss) {
+        const id = canonicalMeaningId(f.id, gloss);
+        if (!group.meanings.has(id)) group.meanings.set(id, gloss);
+      }
+    }
   }
-  return order.map((id) => {
-    const u = units.get(id)!;
-    return { meaning: id, label: u.label, reading: u.reading, taught: true, facts: u.facts };
+  return order.map((reading) => {
+    const group = groups.get(reading)!;
+    return {
+      glyph: item.glyph,
+      reading,
+      meanings: [...group.meanings].map(([id, label]) => ({ id, label })),
+      facts: group.facts,
+    };
   });
+}
+
+/** The cost of teaching a unit: its distinct meanings (each a pronunciation→meaning
+ * fact). The reading is shared context, not counted. */
+export function unitCost(unit: TeachingUnit): number {
+  return unit.meanings.length;
 }
