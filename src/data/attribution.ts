@@ -130,35 +130,32 @@ export const SOURCES: readonly Source[] = [
     licence: "CC BY-SA 4.0",
     href: "https://en.wiktionary.org/",
   },
-  // The three sources of `beginnerRank` (see scripts/ingest/beginnerrank.py).
-  // They order the words most-useful-first; the derived `beginnerRank` field in
-  // vocab.json is share-alike (CC BY-SA 4.0) like the rest of generated/, which
-  // OpenSubtitles' CC BY-SA 4.0 also requires. All three are compatible with
-  // that licence: CC BY and MIT can both be incorporated into a BY-SA work.
+  // Secondary ordering sources for words CEJC does not observe. CEJC owns the
+  // curriculum head and its category decisions below.
   {
     name: "JLPT vocabulary lists (tanos.co.uk)",
-    what: "One of two JLPT level lists whose consensus gates the beginner word ordering.",
+    what: "One of two proficiency lists used only in the fallback ordering for words absent from CEJC.",
     holder: "Jonathan Waller (tanos.co.uk)",
     licence: "CC BY",
     href: "http://www.tanos.co.uk/jlpt/",
   },
   {
     name: "open-anki-jlpt-decks",
-    what: "The second, independent JLPT level list; averaging the two smooths each vendor's disagreements.",
+    what: "The second proficiency list used in the CEJC-unobserved fallback ordering.",
     holder: "jamsinclair and contributors",
     licence: "MIT",
     href: "https://github.com/jamsinclair/open-anki-jlpt-decks",
   },
   {
     name: "FrequencyWords (OpenSubtitles 2018, Japanese)",
-    what: "Conversational word-frequency ranks that order the words within each JLPT band, so everyday words come first.",
+    what: "A secondary frequency source used to order Library words that CEJC does not observe.",
     holder: "Hermit Dave (hermitdave/FrequencyWords)",
     licence: "CC BY-SA 4.0",
     href: "https://github.com/hermitdave/FrequencyWords",
   },
   {
     name: "Corpus of Everyday Japanese Conversation (CEJC)",
-    what: "Observed pronunciation frequencies from 200 hours of everyday conversation. These order interchangeable readings within each dictionary meaning and support the everyday-preference note when the evidence is substantial.",
+    what: "Observed lexical and pronunciation frequencies from 200 hours of everyday conversation. CEJC part of speech separates core vocabulary, conversational essentials, grammar and fillers; its counts order the word curriculum and interchangeable readings within each dictionary meaning.",
     holder: "National Institute for Japanese Language and Linguistics",
     licence: "Free for research and education; raw redistribution prohibited",
     href: "https://www2.ninjal.ac.jp/conversation/cejc/cejc-wc.html",
@@ -179,15 +176,15 @@ export const LICENCE_NOTE =
   "Attribution 2.0 France licence; they were written by Tatoeba's contributors, " +
   "not by this application. The stroke-order diagrams are drawn from KanjiVG " +
   "(© Ulrich Apel and contributors), used under the Creative Commons " +
-  "Attribution-ShareAlike 3.0 licence. The order in which words are introduced is derived " +
-  "from the JLPT vocabulary lists at tanos.co.uk (Jonathan Waller, CC BY) and " +
-  "open-anki-jlpt-decks (MIT), together with the OpenSubtitles 2018 frequency " +
-  "list from hermitdave/FrequencyWords (Creative Commons Attribution-ShareAlike " +
-  "4.0 International licence). Reading preference and within-definition reading " +
-  "order are derived from the Corpus of Everyday Japanese Conversation " +
+  "Attribution-ShareAlike 3.0 licence. Word-track categories, teaching priority, " +
+  "reading preference and within-definition reading order are derived from the " +
+  "Corpus of Everyday Japanese Conversation " +
   "(CEJC) short-unit vocabulary tables, version 2022.09, created by the National " +
   "Institute for Japanese Language and Linguistics. Raw CEJC data is not " +
-  "redistributed. The glyph-origin notes — what each component of a " +
+  "redistributed. The JLPT vocabulary lists at tanos.co.uk (Jonathan Waller, " +
+  "CC BY), open-anki-jlpt-decks (MIT), and the OpenSubtitles 2018 frequency list " +
+  "from hermitdave/FrequencyWords (CC BY-SA 4.0) provide fallback ordering only " +
+  "for words CEJC does not observe. The glyph-origin notes — what each component of a " +
   "kanji contributes and how the parts make the whole — are derived from English " +
   "Wiktionary (en.wiktionary.org), used under the Creative Commons Attribution-" +
   "ShareAlike 4.0 International licence and written by Wiktionary's contributors.";

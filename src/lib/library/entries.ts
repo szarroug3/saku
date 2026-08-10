@@ -1616,7 +1616,7 @@ function kanjiFactRows(entry: LibEntry): FactRow[] {
   const rows: FactRow[] = [];
   for (const r of readingsOf(entry.glyph)) {
     rows.push({
-      id: readingFactId(r.k, r.anchor),
+      id: readingFactId(r.k, r.anchor, r.base),
       label: r.base,
       origin: r.type ? ORIGIN_LABEL[r.type] : null,
       speak: r.base,

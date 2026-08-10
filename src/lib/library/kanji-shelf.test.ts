@@ -90,10 +90,10 @@ describe("kanjiCuts", () => {
     }
   });
 
-  test("人 opens the range modes — kanji 1 on the Learn card", () => {
+  test("人 is the first kanji after the six opening kana words", () => {
     // 人 is spine item 0 (see curriculum-order.ts), so the climb puts it first
     // where frequency once buried it.
-    assert.equal(curriculumPosition("人"), 0);
+    assert.equal(curriculumPosition("人"), 6);
     for (const mode of ["everyday", "newspaper"] as const) {
       assert.equal(kanjiCuts(mode)[0].glyphs[0], "人");
     }

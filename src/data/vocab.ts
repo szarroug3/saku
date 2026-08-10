@@ -134,16 +134,11 @@ export interface VocabRow {
    * should meet; the field is TOTAL and unique — every word has one, so the
    * Words Track can sort by it with no missing keys.
    *
-   * NOT `newspaperBand`. That signal ranks 委員会 (committee) and 与党 (ruling
-   * party) at the very front and buries 食べる — it teaches you to read a paper
-   * you cannot order lunch in. `beginnerRank` blends a two-list JLPT consensus
-   * (which BAND a word sits in) with OpenSubtitles conversational frequency
-   * (the ORDER within a band); see scripts/ingest/beginnerrank.py.
-   *
-   * The ~50% of words that join neither JLPT list are the advanced/rare tail:
-   * they are given ranks that sort AFTER the whole beginner curriculum, ordered
-   * among themselves by subtitle frequency. So a large `beginnerRank` means
-   * "not part of the beginner core", never "unknown".
+   * The curriculum head comes from CEJC lexical frequency and part of speech:
+   * core vocabulary and conversational essentials receive the generated
+   * teaching sequence, while grammar, fillers and unobserved reference words
+   * follow outside the word track. JLPT/OpenSubtitles survive only as the
+   * deterministic fallback order for that unscheduled Library tail.
    */
   readonly beginnerRank: number;
   /**
@@ -160,7 +155,8 @@ export interface VocabRow {
  * Words the app teaches that JMdict's curated commonness tags do not carry, added
  * by hand because the ingest cannot reach them.
  *
- * いらっしゃる is the one that matters and the reason this array exists: it is the
+ * えっ supplies the approved fifth bootstrap response, absent from the frozen
+ * vocabulary cut. いらっしゃる is the other reason this array exists: it is the
  * honorific of the three most common verbs in the language (行く / 来る / いる),
  * the first word said in any shop, and the core of the keigo track — and it is
  * simply absent from the `ichi1`/`spec1`/`spec2` cut (verified: zero hits in
@@ -178,13 +174,22 @@ export interface VocabRow {
  */
 const SUPPLEMENT: readonly JsonVocabRow[] = [
   {
+    keb: "えっ",
+    reb: "えっ",
+    glosses: ["huh?", "what?"],
+    pos: ["interjection (kandoushi)"],
+    newspaperBand: null,
+    align: null,
+    beginnerRank: (vocabJson as readonly JsonVocabRow[]).length + 1,
+  },
+  {
     keb: "いらっしゃる",
     reb: "いらっしゃる",
     glosses: ["to come", "to go", "to be (honorific)"],
     pos: ["Godan verb - -aru special class", "intransitive verb"],
     newspaperBand: null,
     align: null,
-    beginnerRank: (vocabJson as readonly JsonVocabRow[]).length + 1,
+    beginnerRank: (vocabJson as readonly JsonVocabRow[]).length + 2,
   },
 ];
 
@@ -227,6 +232,91 @@ const SOURCE_DEFINITIONS = (wordDefinitionsJson as {
 }).words;
 
 type CejcReadingCounts = Readonly<Record<string, Readonly<Record<string, number>>>>;
+
+export type WordTeachingCategory =
+  | "core"
+  | "conversation-essential"
+  | "grammar"
+  | "excluded"
+  | "unobserved";
+
+export interface WordTeachingMetadata {
+  readonly category: WordTeachingCategory;
+  readonly cejcCount: number;
+  readonly categoryCounts: Readonly<Record<string, number>>;
+  readonly dominantPosFamily: string | null;
+  readonly teachingRank: number | null;
+  readonly placementRule: string;
+}
+
+const CEJC_TEACHING = (cejcReadingFrequencyJson as {
+  readonly teaching: Readonly<Record<string, WordTeachingMetadata>>;
+}).teaching;
+
+const UNOBSERVED_TEACHING: WordTeachingMetadata = {
+  category: "unobserved",
+  cejcCount: 0,
+  categoryCounts: {},
+  dominantPosFamily: null,
+  teachingRank: null,
+  placementRule: "secondary-source-fallback",
+};
+
+/** CEJC's lexical/POS classification and approved placement policy for a word.
+ * JMdict supplies its meanings and senses, never this curriculum decision. */
+export function wordTeachingMetadata(keb: string): WordTeachingMetadata {
+  return CEJC_TEACHING[keb] ?? UNOBSERVED_TEACHING;
+}
+
+/** Content words and meaningful standalone responses belong to the word track.
+ * Grammar has its own prerequisite-driven track; fillers and unobserved
+ * dictionary reference material stay in Library. */
+export function isWordTrackCategory(category: WordTeachingCategory): boolean {
+  return category === "core" || category === "conversation-essential";
+}
+
+function jmdictPosFamilies(pos: string): ReadonlySet<string> {
+  const lower = pos.toLowerCase();
+  const families = new Set<string>();
+  if (lower.includes("interjection")) families.add("interjection");
+  if (lower.includes("particle")) families.add("particle");
+  if (lower.includes("auxiliary") || lower.includes("copula")) families.add("auxiliary");
+  if (lower.includes("conjunction")) families.add("conjunction");
+  if (lower.includes("adverb")) families.add("adverb");
+  if (lower.includes("pre-noun adjectival")) families.add("adnominal");
+  if (lower.includes("pronoun")) families.add("pronoun");
+  if (lower.includes("verb")) families.add("verb");
+  if (lower.includes("adjective") || lower.includes("adjectival")) families.add("adjective");
+  if (lower.includes("noun") && !lower.includes("adjectival")) families.add("noun");
+  if (lower.includes("prefix")) families.add("prefix");
+  if (lower.includes("suffix")) families.add("suffix");
+  return families;
+}
+
+// Preserve beginnerRank as the app-wide total ordering field, but source its
+// curriculum head from CEJC. The unscheduled Library tail keeps its previous
+// deterministic order until the secondary-frequency migration is complete.
+const RAW_WORD_ROWS: readonly JsonVocabRow[] = [
+  ...(vocabJson as readonly JsonVocabRow[]),
+  ...SUPPLEMENT,
+];
+const CEJC_HEAD = RAW_WORD_ROWS
+  .filter((row) => wordTeachingMetadata(row.keb).teachingRank !== null)
+  .sort(
+    (a, b) =>
+      wordTeachingMetadata(a.keb).teachingRank! -
+      wordTeachingMetadata(b.keb).teachingRank!,
+  );
+const CEJC_HEAD_KEBS = new Set(CEJC_HEAD.map((row) => row.keb));
+const ORDERED_WORD_ROWS = [
+  ...CEJC_HEAD,
+  ...RAW_WORD_ROWS.filter((row) => !CEJC_HEAD_KEBS.has(row.keb)).sort(
+    (a, b) => a.beginnerRank - b.beginnerRank,
+  ),
+];
+const CEJC_BEGINNER_RANK = new Map(
+  ORDERED_WORD_ROWS.map((row, index) => [row.keb, index + 1]),
+);
 
 /** CEJC occurrence totals, reduced to words Saku carries and normalized to the
  * hiragana readings Saku uses. Raw CEJC files are ignored and never shipped. */
@@ -279,6 +369,7 @@ function withSenses(row: JsonVocabRow): VocabRow {
   ];
   const provisional: VocabRow = {
     ...row,
+    beginnerRank: CEJC_BEGINNER_RANK.get(row.keb) ?? row.beginnerRank,
     senses,
   };
   // JMdict supplies valid readings and their sense relationships, never Saku's
@@ -287,10 +378,23 @@ function withSenses(row: JsonVocabRow): VocabRow {
   const ranked = readingDefinitions(provisional)
     .flatMap((definition) => definition.readings)
     .find((reading) => senses.some((sense) => sense.reb === reading.reb));
-  const selected = senses.find(
-    (sense) =>
-      sense.reb === ranked?.reb && sense.definitionId === ranked.definitionId,
-  ) ?? senses.find((sense) => sense.reb === ranked?.reb) ?? senses[0];
+  const desiredFamily = wordTeachingMetadata(row.keb).dominantPosFamily;
+  const sameReading = senses.filter((sense) => sense.reb === ranked?.reb);
+  const selected =
+    sameReading.find(
+      (sense) =>
+        sense.definitionId === ranked?.definitionId &&
+        desiredFamily !== null &&
+        sense.pos.some((pos) => jmdictPosFamilies(pos).has(desiredFamily)),
+    ) ??
+    sameReading.find(
+      (sense) =>
+        desiredFamily !== null &&
+        sense.pos.some((pos) => jmdictPosFamilies(pos).has(desiredFamily)),
+    ) ??
+    sameReading.find((sense) => sense.definitionId === ranked?.definitionId) ??
+    sameReading[0] ??
+    senses[0];
   return {
     ...provisional,
     reb: selected.reb,

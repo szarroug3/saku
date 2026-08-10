@@ -53,11 +53,11 @@ describe("pairPattern exceptions", () => {
 });
 
 describe("pairPattern over the curriculum", () => {
-  test("labels every pair and front-loads the 6 exceptions", () => {
+  test("labels every pair and keeps the exceptions in their CEJC teaching order", () => {
     const exceptions = CURRICULUM_PAIRS.flatMap((p, i) =>
       pairPattern(p.happens.reading, p.doIt.reading).isException ? [i + 1] : [],
     );
-    assert.deepEqual(exceptions, [1, 4, 6, 11, 14, 42]);
+    assert.deepEqual(exceptions, [1, 4, 5, 19, 44]);
   });
 
   test("the three dominant rules cover most pairs", () => {
@@ -66,9 +66,9 @@ describe("pairPattern over the curriculum", () => {
       const id = pairPattern(p.happens.reading, p.doIt.reading).id;
       counts[id] = (counts[id] ?? 0) + 1;
     }
-    assert.equal(counts.A, 17); // -ある → -える
-    assert.equal(counts.E, 11); // -る → -す
-    assert.equal(counts.B, 9); //  -う → -える
-    assert.equal(counts.exception, 6);
+    assert.equal(counts.A, 12); // -ある → -える
+    assert.equal(counts.E, 6); // -る → -す
+    assert.equal(counts.B, 7); //  -う → -える
+    assert.equal(counts.exception, 5);
   });
 });

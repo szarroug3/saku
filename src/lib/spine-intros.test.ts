@@ -48,6 +48,15 @@ import { readingsProvedBy } from "./word-unlock.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
 const GROUPS = curriculum(LESSON_RANGE_DEFAULT);
+const FIRST_SPINE_GROUP = GROUPS.find((g) =>
+  g.items.some((it) => SPINE_ANCHORS.some((anchor) => anchor.glyph === it.glyph)),
+)!;
+const FIRST_READING_GROUP = GROUPS.find(
+  (g) => readingsProvedBy(lessonWords(g.items)).length > 0,
+)!;
+const FIRST_VARIANT_GROUP = GROUPS.find((g) =>
+  g.items.some((it) => teachesVariant(it.glyph)),
+)!;
 const BLANK: HistoryFile = { sessions: [], facts: {} };
 const CARD_IDS = new Set(SPINE_ANCHORS.map((a) => a.intro.id));
 
@@ -328,7 +337,7 @@ describe("the variant-forms card", () => {
   });
 
   test("it fires ahead of the first item that shows variant forms, exactly once", () => {
-    const walk = GROUPS[0].items.map((it) => ({ kind: "kanji", glyph: it.glyph }));
+    const walk = FIRST_VARIANT_GROUP.items.map((it) => ({ kind: "kanji", glyph: it.glyph }));
     const first = walk.findIndex((s) => teachesVariant(s.glyph));
     assert.ok(first >= 0, "the opening lesson teaches no variant, so this pins nothing");
     const plan = spineIntroPlan(walk, BLANK, new Set(), new Set());
@@ -357,7 +366,7 @@ describe("the variant-forms card", () => {
   });
 
   test("once shown, it is never planned again", () => {
-    const walk = GROUPS[0].items.map((it) => ({ kind: "kanji", glyph: it.glyph }));
+    const walk = FIRST_VARIANT_GROUP.items.map((it) => ({ kind: "kanji", glyph: it.glyph }));
     const plan = spineIntroPlan(walk, BLANK, new Set(), new Set([VARIANT_INTRO.id]));
     for (const cards of plan.values()) {
       assert.ok(!cards.some((c) => c.id === VARIANT_INTRO.id), "it came back");
@@ -382,7 +391,7 @@ describe("the variant-forms card", () => {
 // history BEFORE the walk renders. Under the old subject gate that read as "the
 // kanji track has already been touched" and took two cards with it.
 describe("a reading unlocked by the lesson itself does not suppress its cards", () => {
-  const first = GROUPS[0];
+  const first = FIRST_READING_GROUP;
 
   test("the first lesson really does unlock a reading", () => {
     // If this ever stops being true the test below is still correct and no longer
@@ -434,7 +443,7 @@ describe("a card does not come back", () => {
     // The old gate excluded the teach set, so re-teaching an opening lesson
     // replayed its cards. Reading the card is what is remembered now, and a
     // lesson taken twice is still one reading.
-    const first = GROUPS[0];
+    const first = FIRST_SPINE_GROUP;
     const history = met(factsWrittenOnStart(first));
     const shown = new Set(introsOf(first.facts, history).filter((id) => CARD_IDS.has(id)));
     assert.ok(shown.size > 0, "the first lesson shows no card");
@@ -474,7 +483,13 @@ describe("a learner carrying progress from the old separate tracks", () => {
   const OLD_RADICALS = RADICAL_TEACHING_ORDER.slice(0, 20).map((r) =>
     radicalMeaningFactId(r.glyph),
   );
-  const priorProgress = met(OLD_RADICALS);
+  // The CEJC bootstrap is deliberately kana-only. Mark every lesson before the
+  // first spine anchor complete so this migration scenario reaches the same
+  // folded kanji/radical lesson it is intended to exercise.
+  const BEFORE_SPINE = GROUPS.slice(0, GROUPS.indexOf(FIRST_SPINE_GROUP)).flatMap(
+    factsWrittenOnStart,
+  );
+  const priorProgress = met([...OLD_RADICALS, ...BEFORE_SPINE]);
 
   test("her old radical progress really does thin out the first lesson", () => {
     // Asserted, not assumed. The old separate radical track taught shapes the
@@ -501,7 +516,11 @@ describe("a learner carrying progress from the old separate tracks", () => {
 
   test("the radical card still fires, on the character that carries the role", () => {
     const lesson = nextCurriculumLesson(priorProgress, LESSON_RANGE_DEFAULT)!;
-    const history = met([...OLD_RADICALS, ...startFacts(lesson.facts, lesson.cards)]);
+    const history = met([
+      ...OLD_RADICALS,
+      ...BEFORE_SPINE,
+      ...startFacts(lesson.facts, lesson.cards),
+    ]);
     const steps = lessonSteps(lesson.facts, history, new Set());
     const ids = steps.filter((s) => s.type === "intro").map((s) => s.key);
     assert.ok(ids.includes("track-radical"), "the radical card is still missing");
@@ -520,14 +539,22 @@ describe("a learner carrying progress from the old separate tracks", () => {
 
   test("the kanji card fires too, and before the radical card", () => {
     const lesson = nextCurriculumLesson(priorProgress, LESSON_RANGE_DEFAULT)!;
-    const history = met([...OLD_RADICALS, ...startFacts(lesson.facts, lesson.cards)]);
+    const history = met([
+      ...OLD_RADICALS,
+      ...BEFORE_SPINE,
+      ...startFacts(lesson.facts, lesson.cards),
+    ]);
     const ids = introsOf(lesson.facts, history).filter((id) => CARD_IDS.has(id));
     assert.deepEqual(ids, ["track-kanji", "track-radical"]);
   });
 
   test("having read them once, they do not come back", () => {
     const lesson = nextCurriculumLesson(priorProgress, LESSON_RANGE_DEFAULT)!;
-    const history = met([...OLD_RADICALS, ...startFacts(lesson.facts, lesson.cards)]);
+    const history = met([
+      ...OLD_RADICALS,
+      ...BEFORE_SPINE,
+      ...startFacts(lesson.facts, lesson.cards),
+    ]);
     const shown = new Set(introsOf(lesson.facts, history).filter((id) => CARD_IDS.has(id)));
     assert.deepEqual(
       introsOf(lesson.facts, history, shown).filter((id) => CARD_IDS.has(id)),
@@ -545,6 +572,7 @@ describe("a learner carrying progress from the old separate tracks", () => {
     const radical = anchorFor("radical");
     const prior = met([
       ...OLD_RADICALS,
+      ...BEFORE_SPINE,
       ...kanjiTeachOrder("everyday").slice(0, 30).map(kanjiMeaningFactId),
     ]);
     const lesson = nextCurriculumLesson(prior, LESSON_RANGE_DEFAULT)!;

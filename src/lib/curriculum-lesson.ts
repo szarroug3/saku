@@ -78,6 +78,7 @@ import { radicalByGlyph, radicalMeaningFactId } from "@/data/radicals";
 import {
   isKanaWord,
   vocabRow,
+  wordTeachingMetadata,
   wordUnitFacts,
 } from "@/data/vocab";
 import { rolesDifficulty } from "@/lib/difficulty";
@@ -519,8 +520,12 @@ function classWordGate(it: CurriculumLessonItem): "adjective" | "ru-verb" | null
   if (!it.roles.includes("word")) return null;
   const row = vocabRow(it.glyph);
   if (!row) return null;
-  if (adjectiveKind(row) !== null) return "adjective";
-  if (ruVerbKind(row) !== null) return "ru-verb";
+  // A spelling can have several JMdict senses. Gate the sense CEJC is actually
+  // scheduling, not some other conjugating sense on the same Library page
+  // (そう is an everyday adverb and also a grammatical auxiliary).
+  const family = wordTeachingMetadata(row.keb).dominantPosFamily;
+  if (family === "adjective" && adjectiveKind(row) !== null) return "adjective";
+  if (family === "verb" && ruVerbKind(row) !== null) return "ru-verb";
   return null;
 }
 

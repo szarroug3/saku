@@ -140,7 +140,7 @@ test("kanji-reading MC options are pronunciation facts (kana answers), not meani
 
 test("kanji-reading MC prefers known reading distractors when available", () => {
   const asked = readingFactId("一", "一");
-  const known = [readingFactId("一", "唯一"), readingFactId("一", "一つ")];
+  const known = [readingFactId("一", "統一"), readingFactId("一", "一人")];
   const opts = buildMcOptions(asked, "jp2en", undefined, known);
   const distractors = opts.filter((f) => f !== asked);
   assert.ok(distractors.length > 0, "should have distractors");

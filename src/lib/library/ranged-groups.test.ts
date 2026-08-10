@@ -135,11 +135,11 @@ describe("wordRank is the beginner's teaching order", () => {
 });
 
 describe("wordClimbRank is the words' curriculum climb", () => {
-  test("人 sorts first — spine item 0, word 1 on the Learn card", () => {
-    // 人 is a curriculum word AND spine item 0, so the climb puts it first where
-    // frequency (beginnerRank 1157) once buried it.
-    assert.equal(curriculumPosition("人"), 0);
-    assert.equal(wordClimbRank(word("人")), 0);
+  test("人 is the first kanji after the six opening kana words", () => {
+    // 人 is a curriculum word and the first kanji-bearing spine item, immediately
+    // after the six-word conversational bootstrap.
+    assert.equal(curriculumPosition("人"), 6);
+    assert.equal(wordClimbRank(word("人")), 6);
   });
 
   test("a spine word ranks at its spine position", () => {

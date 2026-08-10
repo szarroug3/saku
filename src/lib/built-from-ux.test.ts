@@ -179,10 +179,10 @@ describe("the on'yomi invariant Sam asked for", () => {
 });
 
 describe("a phonetic piece's example compound attests the host reading", () => {
-  test("河's か shows 運河, 校's こう shows 学校", () => {
+  test("河's か and 校's こう use their earliest CEJC-ranked anchors", () => {
     // The example is the anchor word the readings ingest lists for that exact
     // on-reading, so the reading genuinely surfaces there (voiced or not).
-    assert.deepEqual(phoneticExample("河", "か"), { word: "運河", reading: "うんが" });
+    assert.deepEqual(phoneticExample("河", "か"), { word: "大河", reading: "たいが" });
     assert.deepEqual(phoneticExample("校", "こう"), { word: "学校", reading: "がっこう" });
     // 学校's reading contains こう outright; the general guarantee is that the word
     // is a real attesting anchor, checked below.

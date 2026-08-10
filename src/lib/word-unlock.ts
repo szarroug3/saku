@@ -137,7 +137,7 @@ export function readingAnchors(history: HistoryFile): Map<FactId, string> {
   const out = new Map<FactId, string>();
   for (const row of READINGS) {
     const anchor = preferredAnchor(row, known);
-    if (anchor) out.set(readingFactId(row.k, row.anchor), anchor);
+    if (anchor) out.set(readingFactId(row.k, row.anchor, row.base), anchor);
   }
   return out;
 }
@@ -180,7 +180,7 @@ export function readingsProvedBy(words: readonly string[]): FactId[] {
   const out: FactId[] = [];
   for (const row of READINGS) {
     if (row.words.some((w) => set.has(w))) {
-      out.push(readingFactId(row.k, row.anchor));
+      out.push(readingFactId(row.k, row.anchor, row.base));
     }
   }
   return out;

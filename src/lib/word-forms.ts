@@ -86,7 +86,15 @@ export const POS_TO_CLASS: Readonly<Record<string, WordClass>> = {
  * would emit 勉強られる and friends.
  */
 export function wordClassOf(w: VocabRow): WordClass | null {
-  const codes = w.pos.map((p) => POS_TO_CLASS[p]).filter((c): c is WordClass => c !== undefined);
+  const codesFor = (pos: readonly string[]) =>
+    pos.map((p) => POS_TO_CLASS[p]).filter((c): c is WordClass => c !== undefined);
+  // CEJC may lead with a non-conjugating sense of a spelling that also has a
+  // verb/adjective sense (ある: "a certain" / "to exist"). Forms belong to the
+  // dictionary entry as a whole, so fall through to all JMdict senses when the
+  // leading sense itself does not conjugate.
+  const primary = classFromTags(codesFor(w.pos));
+  if (primary) return primary;
+  const codes = w.senses.flatMap((sense) => codesFor(sense.pos));
   // Back through the engine's own resolver rather than returning codes[0]: it
   // is the thing that knows which codes it can drive, so a class this map names
   // and the engine later drops cannot slip through.
@@ -384,7 +392,8 @@ export const INTRANSITIVE_POS = "intransitive verb";
 export const INTRANSITIVE_NOTE = "it happens, rather than being done to something";
 
 export function isIntransitive(w: VocabRow): boolean {
-  return w.pos.includes(INTRANSITIVE_POS);
+  return w.pos.includes(INTRANSITIVE_POS) ||
+    w.senses.some((sense) => sense.pos.includes(INTRANSITIVE_POS));
 }
 
 /**
@@ -400,5 +409,6 @@ export function isIntransitive(w: VocabRow): boolean {
 export const TRANSITIVE_POS = "transitive verb";
 
 export function isTransitive(w: VocabRow): boolean {
-  return w.pos.includes(TRANSITIVE_POS);
+  return w.pos.includes(TRANSITIVE_POS) ||
+    w.senses.some((sense) => sense.pos.includes(TRANSITIVE_POS));
 }

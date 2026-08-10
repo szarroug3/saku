@@ -18,8 +18,8 @@
 //
 // INTERLEAVED, NOT BLOCKING
 // =========================
-// Transitivity INTERLEAVES: the 66 pairs depend
-// on 132 different verbs that are learned at wildly different times, so blocking
+// Transitivity INTERLEAVES: the eligible pairs depend
+// on verbs that are learned at wildly different times, so blocking
 // on the first not-yet-unlocked pair would stall the entire track behind one
 // stray verb. So a locked pair is SKIPPED, not blocked on, and the track always
 // hands out the next pair that is actually ready. This is the "unlock per-pair as
@@ -28,8 +28,9 @@
 // WHAT COUNTS, AND WHAT ONLY RIDES ALONG AS A DISTRACTOR
 // =====================================================
 // Only pairs whose BOTH verbs are in the words curriculum can ever be unlocked,
-// so only those 66 are the track (CURRICULUM_PAIRS); the 4 pairs with a verb the
-// app never teaches are excluded from the denominator, the same way grammar
+// so only pairs whose verbs are in the CEJC word curriculum are the track
+// (CURRICULUM_PAIRS); pairs with an excluded, grammar-like, or unobserved verb
+// are excluded from the denominator, the same way grammar
 // excludes the non-drillable recipes it will never quiz. And within a taught
 // pair, only its ASKABLE sides are scheduled — see src/data/transitivity-facts.ts
 // for why a side whose distractor is ambitransitive is minted (as an option) but
@@ -96,9 +97,9 @@ export const CURRICULUM_PAIRS: readonly VerbPair[] = VERB_PAIRS.filter(
 });
 
 /**
- * How many pairs the track teaches — the denominator on the lesson card. 66,
- * out of the 70 curated pairs. The 4 excluded pairs have a verb the app never
- * teaches, so the track can never reach them; counting them would promise
+ * How many pairs the track teaches — the denominator on the lesson card. This
+ * is derived from the curated table and the CEJC word curriculum. Excluded
+ * pairs have a verb the app never teaches, so the track can never reach them; counting them would promise
  * lessons that cannot exist, the same error grammar avoids by counting only its
  * drillable recipes.
  */
@@ -171,7 +172,7 @@ export interface TransitivityCard {
 export interface TransitivityLesson {
   cards: TransitivityCard[];
   facts: FactId[];
-  /** Where you are, in PAIRS — "3–6 of 66". Items are pairs, not lessons. */
+  /** Where you are, in PAIRS — for example "3–6 of 49". Items are pairs, not lessons. */
   position: LessonPosition;
 }
 

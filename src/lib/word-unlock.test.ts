@@ -93,13 +93,13 @@ describe("the question anchors on a word the user actually learned", () => {
   });
 
   test("among several known words, the earliest (lowest rank) is chosen", () => {
-    // Ingest anchor 先生 is NOT known; among the known attesting words 学生
-    // (rank 187) and 生活 (rank 653), the anchor is the more familiar 学生.
+    // Ingest anchor 先生 is NOT known; CEJC ranks 生活 ahead of 学生, so it is
+    // the earliest known attesting word.
     const h = claiming([
       wordMeaningFactId("学生"),
       wordMeaningFactId("生活"),
     ]);
-    assert.equal(anchorForFact(SEI_FACT, h), "学生");
+    assert.equal(anchorForFact(SEI_FACT, h), "生活");
   });
 
   test("a non-reading fact has no anchor", () => {

@@ -30,7 +30,13 @@ import { describe, test } from "node:test";
 
 import { KANJI, kanjiRow, meaningFactId } from "../data/kanji.ts";
 import { RADICALS, radicalMeaningFactId } from "../data/radicals.ts";
-import { VOCAB, readingUnits, vocabRow, wordMeaningFactId } from "../data/vocab.ts";
+import {
+  VOCAB,
+  readingUnits,
+  vocabRow,
+  wordMeaningFactId,
+  wordTeachingMetadata,
+} from "../data/vocab.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
 import { CURRICULUM_SEQUENCE } from "./curriculum-order.ts";
 import {
@@ -335,13 +341,10 @@ describe("the totals are counted off the data, never typed in", () => {
     assert.equal(CURRICULUM_TOTALS.word, wordGlyphs.size);
   });
 
-  test("and today those counts are 90, 2,136 and 6,281", () => {
+  test("and today those counts are 90, 2,136 and 7,589", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    // 6,188 scheduled words + 93 single-character dictionary words taught whole.
-    // (Up one from before the counters went generative: a counted noun form the
-    // counters track used to own as a rote form is now a plain word again.)
-    assert.equal(CURRICULUM_TOTALS.word, 6281);
+    assert.equal(CURRICULUM_TOTALS.word, 7589);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -349,7 +352,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 6281, 6281);
+        assert.equal(g.position.word?.total ?? 7589, 7589);
       }
     }
   });
@@ -551,7 +554,7 @@ describe("a る-ending verb waits on the て-form", () => {
 
   test("the curriculum teaches one, and its written form ends in る", () => {
     assert.ok(gated, "no る-ending verb in the curriculum — the gate guards nothing");
-    assert.equal(gated.glyph, "知る", "the first ambiguous る-ending verb changed");
+    assert.equal(gated.glyph, "わかる", "the first ambiguous る-ending verb changed");
     assert.ok(gated.glyph.endsWith("る"), `${gated.glyph} does not end in る`);
   });
 
@@ -658,7 +661,13 @@ describe("adjective words wait on the adjective-class introduction", () => {
       for (const item of group.items) {
         if (!item.roles.includes("word")) continue;
         const row = vocabRow(item.glyph);
-        if (row && adjectiveKind(row) !== null) return { glyph: item.glyph, group };
+        if (
+          row &&
+          wordTeachingMetadata(row.keb).dominantPosFamily === "adjective" &&
+          adjectiveKind(row) !== null
+        ) {
+          return { glyph: item.glyph, group };
+        }
       }
     }
     return null;

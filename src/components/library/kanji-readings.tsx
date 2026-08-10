@@ -109,7 +109,7 @@ export function KanjiReadings({
         </thead>
         <tbody>
           {rows.map((r) => {
-            const fact = readingFactId(r.k, r.anchor);
+            const fact = readingFactId(r.k, r.anchor, r.base);
             // The word you have met, when there is one, because that is the
             // example you can actually hear in your head. No word you know
             // attests the reading when this is empty, which is the shut case.

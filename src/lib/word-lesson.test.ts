@@ -15,7 +15,11 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
-import { VOCAB } from "../data/vocab.ts";
+import {
+  VOCAB,
+  isWordTrackCategory,
+  wordTeachingMetadata,
+} from "../data/vocab.ts";
 import {
   CURRICULUM_WORDS,
   WORDS_CURRICULUM_MAX,
@@ -43,14 +47,15 @@ function claiming(facts: readonly FactId[]): HistoryFile {
   return history({ claims: claims as HistoryFile["claims"] });
 }
 
-describe("the curriculum is the JLPT core, in beginnerRank order", () => {
-  test("cut at WORDS_CURRICULUM_MAX, nothing above it", () => {
-    assert.ok(CURRICULUM_WORDS.length > 5000 && CURRICULUM_WORDS.length <= 6300);
+describe("the curriculum is CEJC content, in approved teaching order", () => {
+  test("only core vocabulary and conversation essentials enter the word track", () => {
+    assert.ok(CURRICULUM_WORDS.length > 7000);
     for (const w of CURRICULUM_WORDS) {
+      assert.ok(isWordTrackCategory(wordTeachingMetadata(w.keb).category));
       assert.ok(w.beginnerRank <= WORDS_CURRICULUM_MAX);
     }
-    // A strict sub-set of the rank-bounded core: counter-track words (number
-    // kanji, counting words, etc.) are excluded even though they are in the core.
+    // A strict subset of the CEJC-ranked head: counter-track words are excluded
+    // even when CEJC classifies them as core vocabulary.
     const inCore = VOCAB.filter((w) => w.beginnerRank <= WORDS_CURRICULUM_MAX);
     assert.ok(CURRICULUM_WORDS.length < inCore.length, "counter-track words are excluded");
     for (const w of CURRICULUM_WORDS) {
@@ -66,10 +71,13 @@ describe("the curriculum is the JLPT core, in beginnerRank order", () => {
     }
   });
 
-  test("the head of the order is 何, rank 1", () => {
+  test("the head is the approved conversational bootstrap", () => {
     // The spine weaves prerequisites in ahead of each word, so the ORDER the
     // packer walks starts here whatever the packing does with it.
-    assert.equal(CURRICULUM_WORDS[0].keb, "何");
+    assert.deepEqual(
+      CURRICULUM_WORDS.slice(0, 6).map((word) => word.keb),
+      ["はい", "うん", "いいえ", "いや", "えっ", "そう"],
+    );
   });
 });
 
@@ -130,7 +138,7 @@ describe("the word total is the material, and does not move", () => {
     // Equal today because beginnerRank is dense. They are different claims, and
     // the count is the one that stays right if a re-cut leaves a hole.
     assert.equal(WORDS_CURRICULUM_TOTAL, CURRICULUM_WORDS.length);
-    assert.equal(WORDS_CURRICULUM_TOTAL, 6198);
+    assert.equal(WORDS_CURRICULUM_TOTAL, 7508);
     assert.ok(WORDS_CURRICULUM_TOTAL <= WORDS_CURRICULUM_MAX);
   });
 });

@@ -71,7 +71,7 @@ export type RankOf = (lemma: string) => number | undefined;
 export const WRONG_SENSE_EXAMPLES: Readonly<Record<string, readonly number[]>> = {
   グラス: [9776863],
   タイ: [115589],
-  ビル: [197307, 197380, 197393, 197406],
+  ビル: [197307, 197310, 197380, 197393, 197406, 489421],
   パー: [10061602, 10061603],
   ホーム: [10828627],
 };

@@ -19,29 +19,33 @@
 //
 // THE ORDER
 // =========
-// The teaching order is `beginnerRank` (see VocabRow). Rank 1 is the first word
-// a beginner meets, and the ranking already front-loads the common words. The
-// spine walks it in that order, weaving each word's prerequisites in ahead of it.
+// The teaching order is CEJC lexical frequency with two queues: core vocabulary
+// and conversational essentials. Five approved responses bootstrap the track;
+// after that, each 30 core items are followed by four essentials. The generated
+// CEJC sidecar records category, count, rank and placement rule, while
+// `beginnerRank` exposes that sequence to the existing spine.
 //
 // Kana-only words still lead, and for the same reason they always did: a word
 // written with no kanji (これ, もう, とても) owes nothing, so it arrives with no
 // run-up, while a kanji word of a LOWER rank (何 is rank 1) arrives behind its
-// kanji. beginnerRank order is preserved; what a word owes is what spaces them
+// kanji. CEJC order is preserved; what a word owes is what spaces them
 // out.
 //
 // WHERE THE CURRICULUM ENDS
 // =========================
-// Not at 12,553. The owner: "common words the user would see every day only…
-// they can learn the rest when they encounter them in real life." The cut is the
-// JLPT-joined core — the ~6,213 words that appear on at least one of the two
-// JLPT consensus lists beginnerRank is built from. Those occupy ranks
-// 1..WORDS_CURRICULUM_MAX; the ~50% tail (rank > that) is the advanced/rare half
-// beginnerRank sorts last on purpose, and the track does not push it. See
-// scripts/ingest/beginnerrank.py — the boundary is its `gated_max_rank`, and
-// `--check` reprints it if the ingest is ever re-cut.
+// Not at every dictionary row. Core words and general conversational
+// interjections CEJC actually observes enter the word track. Grammar belongs to
+// its prerequisite-driven track; fillers, hesitations and unobserved dictionary
+// reference material remain discoverable in Library without being pushed.
 
 import { kanjiKnown } from "@/lib/kanji-known";
-import { VOCAB, VOCAB_SUBJECT, type VocabRow } from "@/data/vocab";
+import {
+  VOCAB,
+  VOCAB_SUBJECT,
+  isWordTrackCategory,
+  wordTeachingMetadata,
+  type VocabRow,
+} from "@/data/vocab";
 import { COUNTER_CURRICULUM } from "@/data/counters";
 import type { HistoryFile } from "@/types";
 
@@ -54,17 +58,13 @@ import { WORDS_PER_LESSON_DEFAULT, clampWordsPerLesson } from "@/lib/lesson-sizi
 export { WORDS_PER_LESSON_DEFAULT, clampWordsPerLesson };
 
 /**
- * The last beginnerRank the curriculum teaches: the JLPT-joined core.
- *
- * This is `gated_max_rank` from scripts/ingest/beginnerrank.py — the count of
- * words that join at least one of the two JLPT consensus lists. Ranks
- * 1..WORDS_CURRICULUM_MAX are that core; everything above is the advanced tail
- * beginnerRank deliberately sorts after the whole beginner curriculum. It is a
- * constant rather than a per-row flag because VocabRow carries no JLPT field —
- * re-derive with `python3 scripts/ingest/beginnerrank.py --check` if the ingest
- * is ever re-cut.
+ * The last CEJC teaching rank occupied by core vocabulary or a conversational
+ * essential. Grammar, fillers and unobserved dictionary reference words carry
+ * no CEJC teaching rank and do not enter the word track.
  */
-export const WORDS_CURRICULUM_MAX = 6213;
+export const WORDS_CURRICULUM_MAX = Math.max(
+  ...VOCAB.map((word) => wordTeachingMetadata(word.keb).teachingRank ?? 0),
+);
 
 const HAN = /\p{Script=Han}/u;
 
@@ -108,8 +108,8 @@ export function isKanaOnlyWord(w: VocabRow): boolean {
 }
 
 /**
- * The words the track teaches, in teaching order: the JLPT core, by
- * beginnerRank. Computed once — it is a property of the data, not of the user.
+ * The words the track teaches, in CEJC teaching order. Computed once — it is a
+ * property of source data plus the approved cadence, not of the user.
  *
  * Excludes vocab entries that are owned by the counters track so learners don't
  * see the same concept in two places: number kanji (一–万), native 〜つ counting
@@ -143,7 +143,7 @@ const COUNTER_TRACK_KEBS: ReadonlySet<string> = new Set([
 export const CURRICULUM_WORDS: readonly VocabRow[] = [...VOCAB]
   .filter(
     (w) =>
-      w.beginnerRank <= WORDS_CURRICULUM_MAX &&
+      isWordTrackCategory(wordTeachingMetadata(w.keb).category) &&
       !COUNTER_TRACK_KEBS.has(w.keb) &&
       !COUNTER_KANJI_GLYPHS.has(w.keb),
   )
@@ -152,13 +152,9 @@ export const CURRICULUM_WORDS: readonly VocabRow[] = [...VOCAB]
 /**
  * How many words the track teaches — the denominator on the lesson card.
  *
- * COUNTED, not set to WORDS_CURRICULUM_MAX. The two are equal today (6,213,
- * because beginnerRank is dense over 1..12,553 with no gaps or ties) and they
- * are different claims: MAX is the last RANK taught, this is how many ROWS are
- * at or below it. If a re-cut ingest ever leaves a hole in the ranking, the
- * rank would over-promise by exactly the size of the hole and the count would
- * still be right. Cheap to count once at module load; there is no reason to
- * assume the density instead.
+ * COUNTED, not copied from the last teaching rank: counter-track forms are
+ * deliberately removed after the CEJC sequence is built, so the two numbers
+ * make different claims.
  */
 export const WORDS_CURRICULUM_TOTAL = CURRICULUM_WORDS.length;
 

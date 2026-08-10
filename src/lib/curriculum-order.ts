@@ -17,8 +17,8 @@
 // THE SHAPE OF THE SEQUENCE
 // =========================
 // Words lead, because a word is the only item here a learner has a reason to
-// want. CURRICULUM_WORDS is already the teaching order (beginnerRank, the
-// JLPT-joined core), and each word is preceded by everything it owes: the kanji
+// want. CURRICULUM_WORDS is already the CEJC teaching order (core vocabulary
+// interleaved with conversational essentials), and each word is preceded by everything it owes: the kanji
 // it is written with, and ahead of each of those, recursively, everything THOSE
 // are built from. 電車 pulls 電 and 車; 電 pulls 雨 and 田, and 雨 pulls what 雨 is
 // built from, all the way down to shapes that are nothing but strokes.
@@ -139,7 +139,7 @@
 //   - A word whose written form is exactly one kanji is FOLDED into that kanji's
 //     item. Teaching 山 at the moment 火山 first needs it delivers the word 山 as
 //     well, so 山 is not emitted a second time when its own beginnerRank comes
-//     round. 595 of the 6,213 words arrive this way, most of them early, which is
+//     round. Hundreds of words arrive this way, most of them early, which is
 //     the point: the run-up to a compound is paying for words too.
 //
 // Nothing is emitted twice. Every one of the 2,136 kanji, every radical-only
@@ -385,7 +385,7 @@ function buildSequence(): CurriculumItem[] {
  *
  * Computed once at module load, like KANJI_ORDER and RADICAL_TEACHING_ORDER: it
  * is a property of the shipped data, no user input reaches it, and building it
- * is one walk of 6,213 words and 2,136 kanji against hash sets.
+ * is one walk of the CEJC word curriculum and 2,136 kanji against hash sets.
  */
 export const CURRICULUM_SEQUENCE: readonly CurriculumItem[] = buildSequence();
 

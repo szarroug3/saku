@@ -716,7 +716,7 @@ const kanjiQuestions: QuestionType = {
     if (anchor) {
       const siblings = [...READING_INDEX.values()]
         .filter((r) => r.k === c && r.anchor !== anchor)
-        .map((r) => readingFactId(r.k, r.anchor));
+        .map((r) => readingFactId(r.k, r.anchor, r.base));
       // Same-answer siblings are dropped: 生 has one セイ fact per anchor word,
       // so an option reading セイ next to an answer reading セイ is two right
       // answers on one board.

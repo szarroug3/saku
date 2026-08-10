@@ -30,7 +30,7 @@ import {
   GRAMMAR_PER_LESSON_DEFAULT,
   nextGrammarLesson,
 } from "./grammar-lesson.ts";
-import { nextCurriculumLesson } from "./curriculum-lesson.ts";
+import { curriculum, nextCurriculumLesson } from "./curriculum-lesson.ts";
 import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import { RADICAL_TEACHING_ORDER } from "./radical-order.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
@@ -124,9 +124,13 @@ describe("itemsFromFacts — the step model", () => {
     // to get to the next entry". 人 is a radical, a kanji and a word, which is
     // three entries and one character, and the curriculum folded it long before
     // the walk did.
-    const items = itemsFromFacts(TEACH_SETS.curriculum);
+    const source = curriculum(LESSON_RANGE_DEFAULT)
+      .flatMap((group) => group.items)
+      .find((item) => characterRoles(item.glyph).length > 1);
+    assert.ok(source, "the curriculum teaches no multi-role character");
+    const items = itemsFromFacts(source.facts);
     const folded = items.find((it) => characterRoles(it.glyph).length > 1);
-    assert.ok(folded, "the first curriculum lesson teaches no multi-role character");
+    assert.ok(folded, "the folded character did not survive fact grouping");
     // More facts than any single entry could own, and they come from more than
     // one entry.
     assert.ok(folded.facts.length > 1, `${folded.glyph} carries one fact`);

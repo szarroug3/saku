@@ -37,7 +37,11 @@ WHAT CAME FROM WHERE
                            `beginnerRank` field additionally derives from the
                            two JLPT lists (tanos.co.uk, open-anki-jlpt-decks)
                            and OpenSubtitles frequency (hermitdave/
-                           FrequencyWords) — see their attribution below.
+                           FrequencyWords) — see their attribution below. At
+                           runtime the CEJC teaching sequence in
+                           cejc-reading-frequency.json replaces the curriculum
+                           head; this stored rank remains the fallback order for
+                           unscheduled Library rows.
   word-senses.json         JMdict (every reading a written form has, with the
                            glosses and part-of-speech tags of each). Same source
                            and same cut as vocab.json; it holds the forms JMdict
@@ -48,7 +52,8 @@ WHAT CAME FROM WHERE
                            word-senses snapshot without re-cutting word ranks.
   cejc-reading-frequency.json
                            CEJC Ver. 2022.09, reduced to aggregate lexical-
-                           reading counts for written forms Saku carries. The
+                           reading counts, lexical/POS teaching categories and
+                           the approved core/essential teaching sequence. The
                            raw workbook is ignored and not redistributed.
   pitch.json               Kanjium pitch-accent database (the downstep position
                            of each word). See its attribution below.
@@ -156,8 +161,8 @@ open-anki-jlpt-decks
   Snapshots committed at scripts/ingest/sources/jlpt-anki-n[1-5].csv.
 
 FrequencyWords — OpenSubtitles 2018 (Japanese)
-  Conversational word-frequency ranks that order words within each JLPT band in
-  `beginnerRank`.
+  Secondary frequency ranks used in the fallback order for words CEJC does not
+  observe.
   Copyright (c) Hermit Dave
   Licence:  CC BY-SA 4.0
   Source:   https://github.com/hermitdave/FrequencyWords
@@ -167,8 +172,10 @@ FrequencyWords — OpenSubtitles 2018 (Japanese)
 
 Corpus of Everyday Japanese Conversation (CEJC)
   Aggregate short-unit occurrence counts grouped by written lexeme and lexical
-  reading, used only to order interchangeable readings within one dictionary
-  definition and identify a substantial everyday preference.
+  reading. CEJC part of speech classifies core vocabulary, conversational
+  essentials, grammar and fillers; occurrence counts order the word curriculum,
+  order interchangeable readings within one dictionary definition, and identify
+  a substantial everyday pronunciation preference.
   Copyright: National Institute for Japanese Language and Linguistics
   Terms:     Free for research and education; raw redistribution prohibited
   Version:   2022.09

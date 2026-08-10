@@ -212,16 +212,16 @@ describe("prerequisite invariants", () => {
   });
 
   test("何 arrives owing nothing, and the curriculum opens with its run-up", () => {
-    // The first word a beginner meets is 何, so its run-up IS the opening of the
-    // curriculum. 何 is 亻 + 可: 亻 has no card of its own and resolves to 人, 可
+    // The conversational bootstrap and first kana core word owe no kanji. 何 is
+    // the first kanji-bearing word: 亻 has no card and resolves to 人, while 可
     // is 丁 + 口, and 丁 is 一 + 亅. Only 亅 is a radical, so only 亅 is welded.
     assert.deepEqual(
       CURRICULUM_SEQUENCE.slice(0, AT.get("何")! + 1).map((it) => it.glyph),
-      ["人", "一", "亅", "丁", "口", "可", "何"],
+      ["はい", "うん", "いいえ", "いや", "えっ", "そう", "人", "一", "亅", "丁", "口", "可", "何"],
     );
     assert.deepEqual(
       CURRICULUM_SEQUENCE.slice(0, AT.get("何")! + 1).map((it) => it.tiedTo),
-      [null, null, "丁", null, null, null, null],
+      [null, null, null, null, null, null, null, null, "丁", null, null, null, null],
     );
   });
 
@@ -367,13 +367,15 @@ describe("variant forms", () => {
 
   test("a bound form whose original is a radical owes that radical, welded", () => {
     // 艹 is a form of 艸, which is no kanji but IS Kangxi radical 140, with a
-    // meaning and a card. 葉 is the first character drawn with it.
+    // meaning and a card. Its first consumer follows it immediately; which
+    // consumer that is legitimately changes when CEJC changes word priority.
     assert.equal(variantOriginal("艹"), "艸");
     assert.equal(kanjiRow("艸"), undefined);
     assert.ok(radicalByGlyph("艸") !== undefined);
-    assert.ok(componentRadicals("葉").includes(radicalByGlyph("艸")!.num));
-    assert.equal(CURRICULUM_SEQUENCE[AT.get("艸")!]!.tiedTo, "葉");
-    assert.equal(AT.get("艸")! + 1, AT.get("葉")!);
+    const consumer = CURRICULUM_SEQUENCE[AT.get("艸")!]!.tiedTo;
+    assert.ok(consumer !== null);
+    assert.ok(componentRadicals(consumer).includes(radicalByGlyph("艸")!.num));
+    assert.equal(AT.get("艸")! + 1, AT.get(consumer)!);
   });
 
   test("a variant that is itself a character is taught as itself", () => {
@@ -432,7 +434,7 @@ describe("the single-kanji fold", () => {
     const single = CURRICULUM_WORDS.filter(
       (w) => w.keb.length === 1 && kanjiRow(w.keb) !== undefined,
     );
-    assert.equal(single.length, 592);
+    assert.equal(single.length, 594);
     for (const w of single) {
       assert.ok(has(w.keb, "word"), `${w.keb} lacks the word role`);
       assert.ok(has(w.keb, "kanji"), `${w.keb} lacks the kanji role`);
@@ -490,8 +492,8 @@ describe("the tail", () => {
    * sequenced by it. */
   const pulledAsComponent = (c: string): boolean => AT.get(c)! < lastWord;
 
-  test("the orphan kanji are the 393 the data says, and follow every word", () => {
-    assert.equal(orphanKanji.length, 389);
+  test("the orphan kanji are the 293 the CEJC curriculum leaves, and follow every word", () => {
+    assert.equal(orphanKanji.length, 293);
     // The ones no earlier character reached for. Everything else is a component
     // debt that was paid at the point it was owed.
     const tail = orphanKanji.filter((c) => !pulledAsComponent(c));
@@ -523,7 +525,7 @@ describe("the tail", () => {
       }
     }
     const ownTurn = tail.filter((c) => !pulled.has(c));
-    assert.ok(ownTurn.length > 300, "almost the whole tail arrives on its turn");
+    assert.ok(ownTurn.length > 200, "almost the whole tail arrives on its turn");
     for (let i = 1; i < ownTurn.length; i++) {
       assert.ok(
         rank.get(ownTurn[i - 1]!)! < rank.get(ownTurn[i]!)!,
@@ -563,7 +565,7 @@ describe("the tail", () => {
     assert.ok(lastWord < lastKanji);
     assert.equal(
       CURRICULUM_SEQUENCE.length,
-      KANJI.length + RADICAL_ONLY.length + CURRICULUM_WORDS.length - 592,
+      KANJI.length + RADICAL_ONLY.length + CURRICULUM_WORDS.length - 594,
       "total is kanji + radical-only shapes + words, less the folds",
     );
   });

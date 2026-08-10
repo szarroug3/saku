@@ -470,6 +470,13 @@ export const READINGS: readonly ReadingRow[] = (readingsJson as readonly Reading
   .map(reattest)
   .map(reanchor);
 
+const READINGS_BY_ANCHOR: ReadonlyMap<string, readonly ReadingRow[]> = new Map(
+  [...new Set(READINGS.map((row) => `${row.k}|${row.anchor}`))].map((key) => [
+    key,
+    READINGS.filter((row) => `${row.k}|${row.anchor}` === key),
+  ]),
+);
+
 /**
  * The default teaching order: `ramp B`.
  *
@@ -609,7 +616,7 @@ const NEWSPAPER_ORDER: readonly string[] = [...KANJI]
  * is deliberately thin, so the anchor word lives here and is read by the kanji
  * screens, exactly as CHAR_INDEX carries kana's rows. */
 export const READING_INDEX: ReadonlyMap<FactId, ReadingRow> = new Map(
-  READINGS.map((r) => [readingFactId(r.k, r.anchor), r]),
+  READINGS.map((r) => [readingFactId(r.k, r.anchor, r.base), r]),
 );
 
 export function kanjiEntry(c: string): EntryId {
@@ -620,8 +627,18 @@ export function meaningFactId(c: string): FactId {
   return factId(kanjiEntry(c), "meaning");
 }
 
-export function readingFactId(c: string, inWord: string): FactId {
-  return factId(kanjiEntry(c), readingAspect(inWord));
+export function readingFactId(c: string, inWord: string, base?: string): FactId {
+  const rows = READINGS_BY_ANCHOR.get(`${c}|${inWord}`) ?? [];
+  if (rows.length <= 1) return factId(kanjiEntry(c), readingAspect(inWord));
+  // Existing history owns the bare word-qualified id. A formerly unattested
+  // row kept its generated anchor while CEJC re-ranking can move another
+  // reading onto that same word; keep the old row on the old id and qualify the
+  // newcomer by its base. Callers holding a ReadingRow always pass `base`.
+  const legacy = rows.find((row) => row.nWords === 0) ?? rows[0];
+  if (base == null || base === legacy.base) {
+    return factId(kanjiEntry(c), readingAspect(inWord));
+  }
+  return factId(kanjiEntry(c), readingAspect(`${inWord}#${base}`));
 }
 
 /** Every kanji fact: 2,136 meanings + 3,178 readings. */
@@ -643,7 +660,7 @@ function buildKanjiFacts(): FactInfo[] {
     const k = BY_CHAR.get(r.k);
     if (!k) continue;
     facts.push({
-      id: readingFactId(r.k, r.anchor),
+      id: readingFactId(r.k, r.anchor, r.base),
       entry: kanjiEntry(r.k),
       glyph: r.k,
       // The answer is how the reading SURFACES in the anchor word — 口 in 出口
