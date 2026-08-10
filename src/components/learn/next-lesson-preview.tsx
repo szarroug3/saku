@@ -67,7 +67,7 @@ export function NextLessonPreview({
 
       <div className="mt-4 flex flex-wrap gap-3">
         {items.map((item) => (
-          <div key={String(item.entry)} className="w-[150px]">
+          <div key={String(item.entry)} className="w-[116px]">
             <ItemPreview item={item} />
           </div>
         ))}
