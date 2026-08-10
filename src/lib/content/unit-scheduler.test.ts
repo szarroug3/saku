@@ -9,7 +9,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { nextUnitLesson, planUnitLesson } from "./unit-scheduler.ts";
+import { nextUnitLesson, nextTrackLesson, planUnitLesson } from "./unit-scheduler.ts";
+import { transitivityItems, verbPairUnitsOf } from "./verb-pair-unit.ts";
+import { teachUnitsOf } from "./teach-unit.ts";
 import {
   orderedUnits,
   pronunciationUnitsOf,
@@ -98,10 +100,10 @@ test("depth gate — a unit whose untaught chain is too deep is deferred", () =>
   // At the shipped depth it is teachable; drop the ceiling to 2 and 荷 is gated.
   const order = orderedUnits(["荷"]);
   const at3 = planUnitLesson(order, emptyHistory(), roomy, 3);
-  assert.ok(at3.some((u) => u.glyph === "荷"), "at maxDepth 3 荷 に is taught");
+  assert.ok(at3.some((u) => u.item.glyph === "荷"), "at maxDepth 3 荷 に is taught");
 
   const at2 = planUnitLesson(order, emptyHistory(), roomy, 2);
-  assert.ok(!at2.some((u) => u.glyph === "荷"), "at maxDepth 2 荷 は deferred (chain too deep)");
+  assert.ok(!at2.some((u) => u.item.glyph === "荷"), "at maxDepth 2 荷 は deferred (chain too deep)");
   assert.equal(at2.length, 0, "荷 is the only glyph and it is gated → nothing emitted");
 });
 
@@ -110,7 +112,7 @@ test("depth gate — learning the deep tail lifts the gate", () => {
   const kuchi = units("口").find((u) => u.reading === "くち")!;
   const hist = learn(emptyHistory(), kuchi);
   const at2 = planUnitLesson(orderedUnits(["荷"]), hist, roomy, 2);
-  assert.ok(at2.some((u) => u.glyph === "荷"), "荷 teaches once its deep leaf is known");
+  assert.ok(at2.some((u) => u.item.glyph === "荷"), "荷 teaches once its deep leaf is known");
 });
 
 test("invariants over the real curriculum — every unit due, none twice", () => {
@@ -140,4 +142,19 @@ test("null when nothing is due", () => {
   let hist = emptyHistory();
   for (const u of units("人")) hist = learn(hist, u);
   assert.equal(nextUnitLesson(["人"], hist, roomy), null, "all units learned → no lesson");
+});
+
+test("polymorphic — the same scheduler drives a non-pronunciation track", () => {
+  // Verb-pair units carry no reading; the base contract (item/facts/cost) is all
+  // the scheduler reads, so nextTrackLesson orders and budgets them uniformly.
+  const order = transitivityItems().flatMap(teachUnitsOf);
+  const lesson = nextTrackLesson(order, emptyHistory(), { min: 2, max: 4 });
+  assert.ok(lesson, "a first verb-pair lesson comes out of empty history");
+  assert.ok(
+    lesson!.units.every((u) => u.kind === "verb-pair"),
+    "the due units are verb pairs, scheduled through the base interface",
+  );
+  // Budget is by unit cost (a pair costs 2): a {min:2,max:4} lesson holds 1–2 pairs.
+  const spent = lesson!.units.reduce((n, u) => n + unitCost(u), 0);
+  assert.ok(spent >= 2 && spent <= 4, "filled to the floor, under the ceiling");
 });
