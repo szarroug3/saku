@@ -198,7 +198,7 @@ function UnitBody({ unit }: { unit: TeachingUnit }) {
             <div className="mt-0.5 font-kana text-sm leading-snug">{unit.example}</div>
           )}
           <div className="mt-0.5 text-[11px] text-text-muted">{unit.rule}</div>
-          <TypeTag label="sentence order" />
+          <TypeTag label="building sentences" />
         </div>
       );
     case "generative-rule":

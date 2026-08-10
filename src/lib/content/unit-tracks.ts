@@ -76,7 +76,7 @@ export const UNIT_TRACKS: readonly UnitTrack[] = [
     units: () => transitivityItems().flatMap(teachUnitsOf),
     seed: vocabLearned, // pairs are blocked by their verbs — learn the vocab first
   },
-  { id: "sentence", title: "Sentence building", units: () => sentenceItems().flatMap(teachUnitsOf) },
+  { id: "sentence", title: "Building sentences", units: () => sentenceItems().flatMap(teachUnitsOf) },
 ];
 
 /** One simulated lesson: its number in the run and the units the scheduler chose

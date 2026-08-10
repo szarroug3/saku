@@ -55,7 +55,10 @@ export function transitivityItems(): ContentItem[] {
     const shared = sharedKanji(intr, trans);
     const sortKey = shared != null ? pos(shared) : Math.max(...verbs.map((w) => pos([...w][0])), 0);
     rows.push({
-      item: { ...built, blockedBy: verbs.map((w) => wordEntry(w)) },
+      // The item's display glyph is the BASE — the kanji both verbs share (開) —
+      // so the Learn card shows the base, not one member. Falls back to the built
+      // glyph for the one pair that shares no kanji (生まれる/産む).
+      item: { ...built, glyph: shared ?? built.glyph, blockedBy: verbs.map((w) => wordEntry(w)) },
       sortKey,
     });
   }

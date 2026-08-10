@@ -36,7 +36,7 @@ const LEARN: { label: string; item: ContentItem | undefined }[] = [
   { label: "Keigo", item: keigo },
   { label: "Grammar", item: grammar },
   { label: "Transitivity", item: verbPair },
-  { label: "Sentence order", item: sentenceItems()[0] },
+  { label: "Building sentences", item: sentenceItems()[0] },
 ];
 
 const LIBRARY_SAMPLES = ["人", "三", "主", "日", "耳"];
