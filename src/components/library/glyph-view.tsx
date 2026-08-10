@@ -7,12 +7,12 @@
 // a soft diffuse shadow, and NO backdrop-blur — the blur is what cost performance;
 // translucency + box-shadow are cheap. Shared look lives in `frostCard`.
 
-import { teachUnitsOf, byFrequencyDesc } from "@/lib/content/teach-unit";
+import { pronunciationUnitsOf, byFrequencyDesc } from "@/lib/content/teach-unit";
 import { frostCard } from "@/components/ui/frost";
 import type { ContentItem } from "@/lib/content/item";
 
 export function GlyphView({ item }: { item: ContentItem }) {
-  const units = [...teachUnitsOf(item)].sort(byFrequencyDesc);
+  const units = [...pronunciationUnitsOf(item)].sort(byFrequencyDesc);
   return (
     <article className={frostCard}>
       <div className="mb-4 flex items-baseline gap-3.5">

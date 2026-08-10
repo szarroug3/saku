@@ -1,56 +1,112 @@
-// TEACHING UNIT — the taught slice of a glyph: ONE pronunciation and the
-// meaning(s) taught with it. This is the schedulable/costable atom, distinct from
-// the cohesive `ContentItem` (a whole glyph) the Library page renders.
+// TEACHING UNIT — a unit of TEACHING (a skill), polymorphic over what is taught.
 //
-// The grain follows the data: CEJC can rank a PRONUNCIATION but not a sense
-// (meaning.ts, doc §7). So a unit is a reading; the sense(s) read that way ride
-// with it. 人 splits into three units — ひと (person), じん (-ian), にん (counter) —
-// each scheduled when its reading-frequency lands; 三 is one unit (さん / three).
-// A kanji/radical CORE meaning (no reading of its own) attaches to the glyph's
-// primary pronunciation; a kanji taught with no word at all is a meaning-only unit
-// (reading null — its readings arrive with the words that attest them).
+// A `ContentItem` is CONTENT — a noun (kana, kanji, word, keigo set, grammar
+// pattern, verb pair, sentence pattern). A `TeachingUnit` is a SKILL a lesson
+// teaches FROM it, and the mapping is per-type: a word yields PRONUNCIATION units,
+// a sentence pattern yields SENTENCE-BUILD units (the rule, not the sentence),
+// grammar yields PRODUCTION units. Content we don't teach directly yields none.
 //
-// COST is on the unit: a pronunciation→meaning association is one fact ("read さん,
-// means three"). Two meanings under one reading is two facts; the reading itself
-// is shared, not a separate cost. So `unitCost` = the unit's distinct meanings.
-//
-// A lesson PAGE may group several units of the same word (the viewport combines
-// them); that grouping is a rendering concern, not this model's.
+// The scheduler is uniform over the BASE contract (`kind`, `item`, `facts`,
+// `cost`) — it never cares which implementation a unit is. Each per-type impl adds
+// its own display data; a `Track` orders its own units (frequency for the
+// pronunciation track, curriculum sequence for grammar, …).
 
 import { factInfo } from "@/lib/facts";
 import { wordReadingUnit, readingFrequency } from "@/data/vocab";
 import { canonicalMeaningId } from "./meaning";
 import { buildGlyphItem } from "./build-item";
 import { isFactFresh } from "./scheduler";
-import type { FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId, HistoryFile } from "@/types";
 import type { MeaningId } from "./meaning";
 import type { ContentItem } from "./item";
 
-/** One meaning taught within a unit — its identity (dedup key) and display gloss. */
+export type TeachingUnitKind =
+  | "pronunciation"
+  | "keigo-form"
+  | "grammar-production"
+  | "verb-pair"
+  | "sentence-build"
+  | "generative-rule";
+
+/** The common contract of every teachable skill — all the scheduler and Library
+ * ever touch. Per-type implementations extend it with their own display data. */
+export interface TeachingUnitBase {
+  readonly kind: TeachingUnitKind;
+  /** The content this unit teaches from — for Library dedup (first-unit-per-item)
+   * and to link a unit back to its full page. */
+  readonly item: ContentItem;
+  /** What it teaches — history/SRS keyed on these fact ids. Never empty. */
+  readonly facts: readonly FactId[];
+  /** How much to learn, in the owner's model (computed per-type). Budgeted by the scheduler. */
+  readonly cost: number;
+}
+
 export interface UnitMeaning {
   readonly id: MeaningId;
   readonly label: string;
 }
 
-/** The taught slice of a glyph: one pronunciation and the meaning(s) read that way. */
-export interface TeachingUnit {
-  readonly glyph: string;
-  /** The pronunciation taught (kana), or null for a meaning-only unit (a kanji
-   * whose readings ride its words). */
+/** PRONUNCIATION — teach a pronunciation of a glyph/word and the meaning(s) read
+ * that way. (character / word / counter / number.) */
+export interface PronunciationUnit extends TeachingUnitBase {
+  readonly kind: "pronunciation";
+  readonly glyph: string; // = item.glyph
+  /** The pronunciation taught (kana), or null for a meaning-only unit. */
   readonly reading: string | null;
-  /** The distinct meanings read this way, deduped by MeaningId. Never empty. */
   readonly meanings: readonly UnitMeaning[];
-  /** The underlying facts this unit teaches — history stays on these ids. */
-  readonly facts: readonly FactId[];
 }
 
+/** KEIGO — teach a polite form of a verb. (to be built by the keigo track.) */
+export interface KeigoFormUnit extends TeachingUnitBase {
+  readonly kind: "keigo-form";
+  readonly base: string; // the plain verb the polite form is of
+  readonly form: string; // the polite form taught
+  readonly register: string; // honorific / humble / polite
+}
+
+/** GRAMMAR — teach how to produce a grammar form. */
+export interface GrammarProductionUnit extends TeachingUnitBase {
+  readonly kind: "grammar-production";
+  readonly pattern: string; // 〜たい
+  readonly summary: string; // what it does
+}
+
+/** TRANSITIVITY — teach an intransitive/transitive verb pair. */
+export interface VerbPairUnit extends TeachingUnitBase {
+  readonly kind: "verb-pair";
+  readonly intransitive: string; // 開く
+  readonly transitive: string; // 開ける
+}
+
+/** SENTENCE ORDERING — teach how to BUILD a sentence: the rule, not the sentence. */
+export interface SentenceBuildUnit extends TeachingUnitBase {
+  readonly kind: "sentence-build";
+  readonly rule: string;
+  readonly example: string;
+}
+
+/** NUMBERS/COUNTERS — teach a generative range/counter rule ("read 11-99"). */
+export interface GenerativeRuleUnit extends TeachingUnitBase {
+  readonly kind: "generative-rule";
+  readonly label: string;
+}
+
+export type TeachingUnit =
+  | PronunciationUnit
+  | KeigoFormUnit
+  | GrammarProductionUnit
+  | VerbPairUnit
+  | SentenceBuildUnit
+  | GenerativeRuleUnit;
+
+// ── PRONUNCIATION builder ────────────────────────────────────────────────────
 /**
- * Split a glyph item into its teaching units — one per pronunciation. Word facts
- * group by their reading (`wordReadingUnit`); a kanji/radical core-meaning fact
- * (no reading) attaches to the glyph's primary pronunciation, or forms a
- * reading-null unit when the glyph is taught with no word.
+ * The pronunciation units of a glyph item — one per reading. Word facts group by
+ * their reading (`wordReadingUnit`); a kanji/radical core meaning (no reading)
+ * attaches to the primary pronunciation, or forms a reading-null unit when the
+ * glyph is taught with no word. Merged glosses show as synonyms; cost = meanings.
  */
-export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
+export function pronunciationUnitsOf(item: ContentItem): PronunciationUnit[] {
   const rebOf = (id: FactId): string | null => wordReadingUnit(id)?.unit.reb ?? null;
   const primaryReb =
     item.facts.map((f) => rebOf(f.id)).find((r): r is string => r != null) ?? null;
@@ -61,7 +117,7 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
     { meanings: Map<MeaningId, Set<string>>; facts: FactId[] }
   >();
   for (const f of item.facts) {
-    const key = rebOf(f.id) ?? primaryReb; // core meaning → the primary pronunciation
+    const key = rebOf(f.id) ?? primaryReb;
     let group = groups.get(key);
     if (!group) {
       group = { meanings: new Map(), facts: [] };
@@ -72,9 +128,6 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
     if (f.kind === "definition") {
       const gloss = factInfo(f.id)?.meaning;
       if (gloss) {
-        // Merged glosses are SYNONYMS of one meaning — collect them all, don't
-        // drop. 主's "lord" + "head (of a household, etc.)" become one meaning
-        // shown as both; the count is still 1.
         const id = canonicalMeaningId(f.id, gloss);
         let glosses = group.meanings.get(id);
         if (!glosses) {
@@ -87,72 +140,95 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
   }
   return order.map((reading) => {
     const group = groups.get(reading)!;
+    const meanings = [...group.meanings].map(([id, glosses]) => {
+      const canonical = String(id);
+      const synonyms = [...glosses].filter((g) => g !== canonical);
+      return { id, label: [canonical, ...synonyms].join(", ") };
+    });
     return {
+      kind: "pronunciation" as const,
+      item,
       glyph: item.glyph,
       reading,
-      meanings: [...group.meanings].map(([id, glosses]) => {
-        // Canonical gloss (the MeaningId) leads; its synonyms follow.
-        const canonical = String(id);
-        const synonyms = [...glosses].filter((g) => g !== canonical);
-        return { id, label: [canonical, ...synonyms].join(", ") };
-      }),
+      meanings,
       facts: group.facts,
+      cost: meanings.length, // one per distinct meaning; the reading is shared
     };
   });
 }
 
-/** The cost of teaching a unit: its distinct meanings (each a pronunciation→meaning
- * fact). The reading is shared context, not counted. */
-export function unitCost(unit: TeachingUnit): number {
-  return unit.meanings.length;
-}
-
-/** How often this unit's pronunciation is spoken (CEJC occurrences). The key the
- * curriculum orders units by — a reading is the only grain CEJC can rank (not a
- * sense; see doc §7). A meaning-only unit has no pronunciation, so 0. */
-export function unitFrequency(unit: TeachingUnit): number {
-  return unit.reading ? readingFrequency(unit.glyph, unit.reading) : 0;
-}
-
-/** Units most-spoken first — 人 → ひと (6580), にん (1270), じん (389). This is
- * "teach by pronunciation frequency": a common reading is taught before a rare
- * one, across the whole curriculum. Stable for equal frequencies. */
-export function byFrequencyDesc(a: TeachingUnit, b: TeachingUnit): number {
-  return unitFrequency(b) - unitFrequency(a);
-}
-
 /**
- * The curriculum sequence of teaching units for a set of glyphs — every glyph's
- * units, flattened and ordered by pronunciation frequency across the whole set.
- * This is the order the unit scheduler walks: 人 ひと is taught long before 人 じん,
- * interleaved with other glyphs' units by how often each is spoken. Glyphs with no
- * teachable item are skipped. (Dueness, prereqs, and budgeting layer on top.)
+ * DISPATCH — the teaching units OF a content item, by its kind. A word/character/
+ * counter yields pronunciation units; the keigo/grammar/transitivity/sentence
+ * tracks add their own builders here as they land; content we don't teach directly
+ * yields none.
  */
-export function orderedUnits(glyphs: Iterable<string>): TeachingUnit[] {
-  const units: TeachingUnit[] = [];
-  for (const glyph of glyphs) {
-    const item = buildGlyphItem(glyph);
-    if (item) units.push(...teachUnitsOf(item));
+export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
+  switch (item.kind) {
+    case "character":
+    case "word":
+    case "counter":
+      return pronunciationUnitsOf(item);
+    default:
+      return []; // keigo · grammar · transitivity · sentence-ordering · generative-rule — not yet built
   }
-  return units.sort(byFrequencyDesc);
 }
 
-/** A unit is DUE (not yet learned) when any of its facts is still fresh — the
- * same freshness rule the glyph scheduler uses per fact. */
+/** A unit's learning cost — its per-type field. The scheduler budgets by this. */
+export function unitCost(unit: TeachingUnit): number {
+  return unit.cost;
+}
+
+/** A unit is DUE (not yet learned) when any of its facts is still fresh. */
 export function isUnitDue(unit: TeachingUnit, history: HistoryFile): boolean {
   return unit.facts.some((id) => isFactFresh(id, history));
 }
 
-/** One lesson's worth of teaching units, in teach order (prereqs before the unit
- * that needs them). The output contract the unit scheduler produces and the
- * lesson viewport consumes. */
+// ── PRONUNCIATION-track ordering (CEJC frequency — a pronunciation-only notion) ──
+/** How often this unit's pronunciation is spoken (CEJC). The pronunciation track
+ * orders by this; other tracks order their own way. */
+export function unitFrequency(unit: PronunciationUnit): number {
+  return unit.reading ? readingFrequency(unit.glyph, unit.reading) : 0;
+}
+
+/** Pronunciation units most-spoken first — 人 → ひと (6580), にん (1270), じん (389). */
+export function byFrequencyDesc(a: PronunciationUnit, b: PronunciationUnit): number {
+  return unitFrequency(b) - unitFrequency(a);
+}
+
+/** The pronunciation curriculum sequence: every glyph's pronunciation units,
+ * frequency-ordered across the set. (Dueness, prereqs, and budget layer on top.) */
+export function orderedUnits(glyphs: Iterable<string>): PronunciationUnit[] {
+  const units: PronunciationUnit[] = [];
+  for (const glyph of glyphs) {
+    const item = buildGlyphItem(glyph);
+    if (item) units.push(...pronunciationUnitsOf(item));
+  }
+  return units.sort(byFrequencyDesc);
+}
+
+/**
+ * The Library sequence: teaching order, deduped to each item's FIRST unit. A word
+ * appears ONCE, at its first (most-frequent) pronunciation's position; later units
+ * of the same item are skipped. The entry links to the full item page.
+ */
+export function libraryOrder(teachingOrder: readonly TeachingUnit[]): ContentItem[] {
+  const seen = new Set<EntryId>();
+  const out: ContentItem[] = [];
+  for (const unit of teachingOrder) {
+    if (seen.has(unit.item.entry)) continue;
+    seen.add(unit.item.entry);
+    out.push(unit.item);
+  }
+  return out;
+}
+
+/** One lesson's worth of teaching units, in teach order (prereqs first). */
 export interface UnitLesson {
   readonly units: readonly TeachingUnit[];
 }
 
-/** A concrete word that shows a unit's pronunciation in use — 人/にん → 三人 (three
- * people). For a glyph whose reading stands alone as a word, the word is the glyph
- * itself. The view shows this so a pronunciation isn't taught in a vacuum. */
+/** A concrete word that shows a unit's pronunciation in use — 人/にん → 三人. */
 export interface UnitExample {
   readonly word: string;
   readonly gloss: string | null;

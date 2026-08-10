@@ -13,15 +13,15 @@
 
 import { READINGS } from "@/data/kanji";
 import { vocabRow } from "@/data/vocab";
-import type { TeachingUnit, UnitExample } from "./teach-unit";
+import type { PronunciationUnit, UnitExample } from "./teach-unit";
 
 /**
  * A concrete word demonstrating `unit`'s pronunciation, or null when there is
  * none to show (a meaning-only unit, or a reading with no anchor and no standalone
  * word). The gloss is the example word's first vocab gloss, or null if the word
- * is not in the vocabulary.
+ * is not in the vocabulary. An example is a PRONUNCIATION-unit concept.
  */
-export function exampleFor(unit: TeachingUnit): UnitExample | null {
+export function exampleFor(unit: PronunciationUnit): UnitExample | null {
   const reading = unit.reading;
   if (reading == null) return null; // meaning-only unit — no pronunciation to show.
 

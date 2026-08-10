@@ -12,7 +12,7 @@ import test from "node:test";
 import { nextUnitLesson, planUnitLesson } from "./unit-scheduler.ts";
 import {
   orderedUnits,
-  teachUnitsOf,
+  pronunciationUnitsOf,
   isUnitDue,
   byFrequencyDesc,
   unitFrequency,
@@ -22,36 +22,36 @@ import { buildGlyphItem } from "./build-item.ts";
 import { emptyHistory, applyClaims } from "@/lib/history-ops";
 import { CURRICULUM_SEQUENCE } from "@/lib/curriculum-order";
 import type { FactId } from "@/types";
-import type { TeachingUnit } from "./teach-unit";
+import type { PronunciationUnit } from "./teach-unit";
 
 const roomy = { min: 100, max: 100 }; // never caps — for ordering/gate tests
-const key = (u: TeachingUnit) => `${u.glyph}:${u.reading}`;
+const key = (u: PronunciationUnit) => `${u.glyph}:${u.reading}`;
 
 /** The teaching units of one glyph, most-spoken first. */
-function units(glyph: string): TeachingUnit[] {
-  return [...teachUnitsOf(buildGlyphItem(glyph)!)].sort(byFrequencyDesc);
+function units(glyph: string): PronunciationUnit[] {
+  return [...pronunciationUnitsOf(buildGlyphItem(glyph)!)].sort(byFrequencyDesc);
 }
 
 /** Mark a unit learned by claiming all of its facts. */
-function learn(hist: ReturnType<typeof emptyHistory>, unit: TeachingUnit) {
+function learn(hist: ReturnType<typeof emptyHistory>, unit: PronunciationUnit) {
   return applyClaims(hist, unit.facts as FactId[], 1_000);
 }
 
 test("empty history — independent glyphs come out highest-frequency first", () => {
   // 人 and 口 have no prereqs and share no components; the walk is pure frequency.
   const lesson = nextUnitLesson(["人", "口"], emptyHistory(), roomy)!;
-  const freqs = lesson.units.map(unitFrequency);
+  const freqs = (lesson.units as readonly PronunciationUnit[]).map(unitFrequency);
   for (let i = 1; i < freqs.length; i++) {
     assert.ok(freqs[i - 1] >= freqs[i], "non-increasing frequency");
   }
-  assert.equal(lesson.units[0].reading, "ひと", "人 ひと (6580) leads");
+  assert.equal((lesson.units as readonly PronunciationUnit[])[0].reading, "ひと", "人 ひと (6580) leads");
 });
 
 test("empty history — a unit's prereqs are taught before it", () => {
   // 何 is built on 人 and 可; 可 on 口. 何 なん is the single most-spoken reading of
   // all, so it is reached first and must drag its whole component chain in front.
   const lesson = nextUnitLesson(["何"], emptyHistory(), roomy)!;
-  const seq = lesson.units.map(key);
+  const seq = (lesson.units as readonly PronunciationUnit[]).map(key);
   const nan = seq.indexOf("何:なん");
   assert.ok(nan >= 0, "何 なん is taught");
   for (const pre of ["人:ひと", "可:か", "口:くち"]) {
@@ -66,7 +66,7 @@ test("a learned unit is skipped, its siblings still taught", () => {
   const hito = units("人").find((u) => u.reading === "ひと")!;
   const hist = learn(emptyHistory(), hito); // 人 ひと now claimed → not due
   const lesson = nextUnitLesson(["人"], hist, roomy)!;
-  const readings = lesson.units.map((u) => u.reading);
+  const readings = (lesson.units as readonly PronunciationUnit[]).map((u) => u.reading);
   assert.ok(!readings.includes("ひと"), "the learned reading is not re-taught");
   assert.ok(readings.includes("にん") && readings.includes("じん"), "its siblings remain");
 });
@@ -77,7 +77,7 @@ test("budget — fills toward min and stops there", () => {
     min: 3,
     max: 100,
   })!;
-  const spent = lesson.units.reduce((n, u) => n + unitCost(u), 0);
+  const spent = (lesson.units as readonly PronunciationUnit[]).reduce((n, u) => n + unitCost(u), 0);
   assert.equal(spent, 3, "reaches min=3 and stops, though max leaves room");
 });
 
@@ -86,9 +86,9 @@ test("budget — a lone oversized bundle is taught, but nothing more is added", 
   // first bundle is emitted whole (a due unit can't yield an empty lesson), and no
   // later unit (何 なに) is allowed to push past the ceiling on top of it.
   const lesson = nextUnitLesson(["何"], emptyHistory(), { min: 1, max: 2 })!;
-  const spent = lesson.units.reduce((n, u) => n + unitCost(u), 0);
+  const spent = (lesson.units as readonly PronunciationUnit[]).reduce((n, u) => n + unitCost(u), 0);
   assert.ok(spent > 2, "the lone bundle exceeds max on its own");
-  const readings = lesson.units.map(key);
+  const readings = (lesson.units as readonly PronunciationUnit[]).map(key);
   assert.ok(readings.includes("何:なん"), "the oversized bundle is taught");
   assert.ok(!readings.includes("何:なに"), "no further unit is added past the ceiling");
 });
@@ -120,7 +120,7 @@ test("invariants over the real curriculum — every unit due, none twice", () =>
     const lesson = nextUnitLesson(glyphs, hist, { min: 5, max: 7 });
     assert.ok(lesson, "something is always due");
     const seen = new Set<string>();
-    for (const u of lesson!.units) {
+    for (const u of (lesson!.units as readonly PronunciationUnit[])) {
       assert.ok(isUnitDue(u, hist), `${key(u)} is due`);
       assert.ok(!seen.has(key(u)), `${key(u)} appears only once`);
       seen.add(key(u));
@@ -132,7 +132,7 @@ test("invariants over the real curriculum — every unit due, none twice", () =>
   // Partial history: learn the first lesson, the next must still hold the invariants.
   const first = nextUnitLesson(glyphs, emptyHistory(), { min: 5, max: 7 })!;
   let hist = emptyHistory();
-  for (const u of first.units) hist = learn(hist, u);
+  for (const u of (first.units as readonly PronunciationUnit[])) hist = learn(hist, u);
   check(hist);
 });
 

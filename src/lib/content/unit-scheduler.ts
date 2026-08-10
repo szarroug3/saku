@@ -22,28 +22,28 @@ import { buildGlyphItem } from "./build-item";
 import { resolveItem } from "./resolve";
 import {
   orderedUnits,
-  teachUnitsOf,
+  pronunciationUnitsOf,
   unitCost,
   isUnitDue,
   byFrequencyDesc,
 } from "./teach-unit";
-import type { TeachingUnit, UnitLesson } from "./teach-unit";
+import type { PronunciationUnit, UnitLesson } from "./teach-unit";
 import type { LessonRange } from "@/lib/lesson-sizing";
 import type { HistoryFile } from "@/types";
 
 /** A glyph's PRIMARY unit — its most-spoken reading, the one a learner "meets the
  * glyph" through. Undefined when the glyph builds no teachable item. This is the
  * unit a prerequisite edge onto the glyph is satisfied by. */
-function primaryUnit(glyph: string): TeachingUnit | undefined {
+function primaryUnit(glyph: string): PronunciationUnit | undefined {
   const item = buildGlyphItem(glyph);
   if (!item) return undefined;
-  return [...teachUnitsOf(item)].sort(byFrequencyDesc)[0];
+  return [...pronunciationUnitsOf(item)].sort(byFrequencyDesc)[0];
 }
 
 /** The dedupe identity of a unit within one lesson: glyph + reading. One unit per
  * pronunciation per glyph, so this is unique; a reading-null (meaning-only) unit
  * gets its own stable key. */
-function unitKey(unit: TeachingUnit): string {
+function unitKey(unit: PronunciationUnit): string {
   return `${unit.glyph}␟${unit.reading ?? ""}`;
 }
 
@@ -59,8 +59,8 @@ function prereqChain(
   glyph: string,
   history: HistoryFile,
   maxDepth: number,
-): TeachingUnit[] | null {
-  const chain: TeachingUnit[] = [];
+): PronunciationUnit[] | null {
+  const chain: PronunciationUnit[] = [];
   const seen = new Set<string>([glyph]); // the glyph itself never re-enters
   const visit = (g: string, depth: number): boolean => {
     const item = buildGlyphItem(g);
@@ -91,12 +91,12 @@ function prereqChain(
  * at least one unit if any is due.
  */
 export function planUnitLesson(
-  order: readonly TeachingUnit[],
+  order: readonly PronunciationUnit[],
   history: HistoryFile,
   range: LessonRange,
   maxDepth: number = MAX_PREREQ_DEPTH,
-): TeachingUnit[] {
-  const out: TeachingUnit[] = [];
+): PronunciationUnit[] {
+  const out: PronunciationUnit[] = [];
   const emitted = new Set<string>();
   let spent = 0;
   for (const unit of order) {
