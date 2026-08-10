@@ -387,3 +387,33 @@ dedup only), so the content track can build and test before the real registry la
   stability). Data track's call, recorded in the registry.
 - **Representative-fact selection** for the drill when a meaning groups several
   facts (which fact keeps the score).
+
+### 7.7 Resolved teaching model (the decisions, settled)
+
+After working through the grain with real data:
+
+- **Two types.** A cohesive **`ContentItem` per glyph** (all roles/readings/senses)
+  backs the **Library** page. The schedulable/costable atom is a **`TeachingUnit`**
+  — the taught slice: ONE pronunciation and the meaning(s) read that way.
+  `teachUnitsOf(item)` splits a glyph into its units (人 → ひと / じん / にん; 三 →
+  さん). A kanji/radical core meaning attaches to the primary pronunciation.
+- **Cost = distinct meanings, readings not counted** (`unitCost`). A
+  pronunciation→meaning association is one fact ("read さん, means three"); the
+  reading is shared across the senses read that way, not a separate +1. 三 = 1,
+  人's ひと-unit = 1 (man≈person merged).
+- **Order by pronunciation frequency** (`unitFrequency`, `byFrequencyDesc`). CEJC
+  ranks a *reading*, so units are taught most-spoken-first: 人 ひと (6580) → にん
+  (1270) → じん (389). Other readings arrive when their frequency lands.
+- **Division of labor, by what each source can answer.** CEJC = reading frequency
+  + taught/reference reading split + POS. JMdict = sense identity (`definitionId`)
+  + sense order. **There is NO per-sense frequency** anywhere (JMdict `pri` is on
+  kanji/reading elements, not senses; no sense-tagged corpus). So we cannot rank
+  senses — a pronunciation carrying several senses teaches them together, and the
+  page combines same-word units that share a lesson.
+- **Meaning identity is fact-keyed** (`meaning-registry.json`, 315 merges): a
+  kanji/radical keyword fact folds onto the glyph's word `definitionId`/gloss
+  (人 "man" → "person"), contextual so 男 "man" stays distinct.
+
+**Next:** the scheduler walks `TeachingUnit`s in `byFrequencyDesc` order across
+the curriculum — units become the schedulable atom, replacing glyph-level
+ordering. Prereqs still resolve across the glyph DAG.
