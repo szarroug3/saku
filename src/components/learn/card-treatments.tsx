@@ -280,8 +280,49 @@ export function TreatmentWhisperAccent({ item }: { item: ContentItem }) {
   );
 }
 
+// ── H · G + a per-type background tint ──────────────────────────────────────
+// G's restraint — accent label, faint small ghost, glass — with the type colour
+// brought back where it belongs: the BACKGROUND. A soft hue wash and glow tint
+// the ground and edge, so the card carries its type at a glance while the label
+// stays the app accent.
+export function TreatmentWhisperTinted({ item }: { item: ContentItem }) {
+  const h = hueOf(item);
+  const ghost = watermarkChar(item.glyph);
+  return (
+    <div
+      className={SHELL}
+      style={
+        {
+          border: `1px solid color-mix(in srgb, ${h} 18%, rgba(255,255,255,0.09))`,
+          backgroundColor: "color-mix(in srgb, var(--card) 42%, transparent)",
+          backgroundImage: [
+            "radial-gradient(130px 90px at 22% 0%, rgba(255,255,255,0.07), transparent)",
+            `radial-gradient(96px 80px at 50% 52%, color-mix(in srgb, ${h} 15%, transparent), transparent)`,
+            `linear-gradient(155deg, color-mix(in srgb, ${h} 11%, transparent), transparent 70%)`,
+          ].join(", "),
+          boxShadow: `0 22px 44px -26px rgba(0,0,0,0.72), 0 8px 26px -20px color-mix(in srgb, ${h} 32%, transparent)`,
+        } as CSSProperties
+      }
+    >
+      {ghost && (
+        <span
+          className="pointer-events-none absolute -bottom-3 -right-2 select-none font-kana text-[80px] leading-none text-[color:color-mix(in_srgb,var(--text)_4%,transparent)]"
+          lang="ja"
+          aria-hidden
+        >
+          {ghost}
+        </span>
+      )}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/10" />
+      <Glyph item={item} />
+      <TypeLine item={item} color="var(--accent)" />
+    </div>
+  );
+}
+
 /** The treatments, for the gallery to iterate. */
 export const CARD_TREATMENTS: { name: string; note: string; Card: (p: { item: ContentItem }) => React.ReactNode }[] = [
+  { name: "H · G + per-type background tint", note: "G's restraint, with the type colour in the background.", Card: TreatmentWhisperTinted },
   { name: "G · Whisper + accent label", note: "F, but accent label and a fainter, smaller ghost.", Card: TreatmentWhisperAccent },
   { name: "E · Hybrid (glass + watermark + subtle hue)", note: "C + D with a trace of B.", Card: TreatmentHybrid },
   { name: "F · Hybrid, whisper", note: "The same, colour dialled almost out.", Card: TreatmentHybridWhisper },
