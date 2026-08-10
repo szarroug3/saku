@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { teachUnitsOf, unitCost, unitFrequency, byFrequencyDesc } from "./teach-unit.ts";
+import { teachUnitsOf, unitCost, unitFrequency, byFrequencyDesc, orderedUnits } from "./teach-unit.ts";
 import { buildGlyphItem } from "./build-item.ts";
 
 test("teachUnitsOf — 三 is ONE unit: pronunciation さん, meaning three", () => {
@@ -41,6 +41,16 @@ test("unitFrequency + byFrequencyDesc — 人's units order ひと > にん > �
     "most-spoken pronunciation leads",
   );
   assert.ok(unitFrequency(units[0]) > unitFrequency(units[2]), "ひと outranks じん");
+});
+
+test("orderedUnits — units across glyphs interleave by pronunciation frequency", () => {
+  const units = orderedUnits(["人", "日", "生"]);
+  const freqs = units.map(unitFrequency);
+  for (let i = 1; i < freqs.length; i++) {
+    assert.ok(freqs[i - 1] >= freqs[i], "non-increasing frequency");
+  }
+  // ひと (6580) leads all of them; the low-frequency じん (389) trails.
+  assert.equal(units[0].reading, "ひと");
 });
 
 test("teachUnitsOf — every fact lands in exactly one unit (nothing dropped)", () => {

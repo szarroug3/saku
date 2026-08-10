@@ -20,6 +20,7 @@
 import { factInfo } from "@/lib/facts";
 import { wordReadingUnit, readingFrequency } from "@/data/vocab";
 import { canonicalMeaningId } from "./meaning";
+import { buildGlyphItem } from "./build-item";
 import type { FactId } from "@/types";
 import type { MeaningId } from "./meaning";
 import type { ContentItem } from "./item";
@@ -117,4 +118,20 @@ export function unitFrequency(unit: TeachingUnit): number {
  * one, across the whole curriculum. Stable for equal frequencies. */
 export function byFrequencyDesc(a: TeachingUnit, b: TeachingUnit): number {
   return unitFrequency(b) - unitFrequency(a);
+}
+
+/**
+ * The curriculum sequence of teaching units for a set of glyphs — every glyph's
+ * units, flattened and ordered by pronunciation frequency across the whole set.
+ * This is the order the unit scheduler walks: 人 ひと is taught long before 人 じん,
+ * interleaved with other glyphs' units by how often each is spoken. Glyphs with no
+ * teachable item are skipped. (Dueness, prereqs, and budgeting layer on top.)
+ */
+export function orderedUnits(glyphs: Iterable<string>): TeachingUnit[] {
+  const units: TeachingUnit[] = [];
+  for (const glyph of glyphs) {
+    const item = buildGlyphItem(glyph);
+    if (item) units.push(...teachUnitsOf(item));
+  }
+  return units.sort(byFrequencyDesc);
 }
