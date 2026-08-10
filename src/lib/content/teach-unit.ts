@@ -149,3 +149,11 @@ export function isUnitDue(unit: TeachingUnit, history: HistoryFile): boolean {
 export interface UnitLesson {
   readonly units: readonly TeachingUnit[];
 }
+
+/** A concrete word that shows a unit's pronunciation in use — 人/にん → 三人 (three
+ * people). For a glyph whose reading stands alone as a word, the word is the glyph
+ * itself. The view shows this so a pronunciation isn't taught in a vacuum. */
+export interface UnitExample {
+  readonly word: string;
+  readonly gloss: string | null;
+}
