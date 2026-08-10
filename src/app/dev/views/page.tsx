@@ -10,30 +10,22 @@ import { ItemPreview } from "@/components/learn/item-preview";
 import { GlyphView } from "@/components/library/glyph-view";
 import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
 import { formItem, unitItem } from "@/lib/content/numbers-track";
+import { sentenceItems } from "@/lib/content/sentence-track";
+import { keigoItems } from "@/lib/content/keigo-unit";
+import { grammarItems } from "@/lib/content/grammar-unit";
+import { transitivityItems } from "@/lib/content/verb-pair-unit";
 import { wordEntry } from "@/data/vocab";
 import { GENERATIVE_UNITS } from "@/lib/counter-lesson";
 import { COUNTER_CURRICULUM } from "@/data/counters";
-import { contentTypeLabel, type ContentItem, type ContentKind } from "@/lib/content/item";
-import type { EntryId } from "@/types";
+import type { ContentItem } from "@/lib/content/item";
 
 const tsu1 = COUNTER_CURRICULUM.find((f) => f.key === "counter:tsu:1");
 const tens = GENERATIVE_UNITS.find((u) => u.id === "tens");
 
-// A minimal stand-in for a track not yet in the content model — enough to design
-// its preview (glyph + type). No facts/roles; not a real buildItem output.
-function mock(kind: ContentKind, glyph: string): ContentItem {
-  return {
-    entry: `${kind}:${glyph}` as EntryId,
-    kind,
-    glyph,
-    facts: [],
-    roles: [],
-    prereqs: [],
-    blockedBy: [],
-    etymology: null,
-    typeLabel: contentTypeLabel(kind, []),
-  };
-}
+// One representative real item per content type — the Learn tile shows glyph + type.
+const keigo = keigoItems().find((i) => String(i.entry) === "keigo:eat");
+const grammar = grammarItems().find((i) => i.glyph === "〜たい");
+const verbPair = transitivityItems().find((i) => String(i.entry) === "transitivity:開く/開ける");
 
 const LEARN: { label: string; item: ContentItem | undefined }[] = [
   { label: "Character", item: buildGlyphItem("人") },
@@ -41,11 +33,10 @@ const LEARN: { label: string; item: ContentItem | undefined }[] = [
   { label: "Word", item: buildItem(wordEntry("先生"), "word") },
   { label: "Counter", item: tsu1 ? formItem(tsu1) : undefined },
   { label: "Generative rule", item: tens ? unitItem(tens) : undefined },
-  // Not yet modeled — mocks, to design their previews:
-  { label: "Keigo", item: mock("keigo", "食べる") },
-  { label: "Grammar", item: mock("grammar", "〜たい") },
-  { label: "Transitivity", item: mock("transitivity", "開く・開ける") },
-  { label: "Sentence order", item: mock("sentence-ordering", "私は学生です") },
+  { label: "Keigo", item: keigo },
+  { label: "Grammar", item: grammar },
+  { label: "Transitivity", item: verbPair },
+  { label: "Sentence order", item: sentenceItems()[0] },
 ];
 
 const LIBRARY_SAMPLES = ["人", "三", "主", "日", "耳"];
