@@ -18,7 +18,7 @@
 // them); that grouping is a rendering concern, not this model's.
 
 import { factInfo } from "@/lib/facts";
-import { wordReadingUnit } from "@/data/vocab";
+import { wordReadingUnit, readingFrequency } from "@/data/vocab";
 import { canonicalMeaningId } from "./meaning";
 import type { FactId } from "@/types";
 import type { MeaningId } from "./meaning";
@@ -92,4 +92,18 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
  * fact). The reading is shared context, not counted. */
 export function unitCost(unit: TeachingUnit): number {
   return unit.meanings.length;
+}
+
+/** How often this unit's pronunciation is spoken (CEJC occurrences). The key the
+ * curriculum orders units by — a reading is the only grain CEJC can rank (not a
+ * sense; see doc §7). A meaning-only unit has no pronunciation, so 0. */
+export function unitFrequency(unit: TeachingUnit): number {
+  return unit.reading ? readingFrequency(unit.glyph, unit.reading) : 0;
+}
+
+/** Units most-spoken first — 人 → ひと (6580), にん (1270), じん (389). This is
+ * "teach by pronunciation frequency": a common reading is taught before a rare
+ * one, across the whole curriculum. Stable for equal frequencies. */
+export function byFrequencyDesc(a: TeachingUnit, b: TeachingUnit): number {
+  return unitFrequency(b) - unitFrequency(a);
 }

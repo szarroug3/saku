@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { teachUnitsOf, unitCost } from "./teach-unit.ts";
+import { teachUnitsOf, unitCost, unitFrequency, byFrequencyDesc } from "./teach-unit.ts";
 import { buildGlyphItem } from "./build-item.ts";
 
 test("teachUnitsOf — 三 is ONE unit: pronunciation さん, meaning three", () => {
@@ -29,6 +29,17 @@ test("unitCost — counts meanings, not the reading; each の unit ≈ its sense
   // stub registry: person (word+kanji) + man (radical) → 2; registry merges man≈person → 1.
   assert.ok(unitCost(hito) >= 1, "the primary unit costs its distinct meanings");
   assert.equal(unitCost(hito), hito.meanings.length);
+});
+
+test("unitFrequency + byFrequencyDesc — 人's units order ひと > にん > じん", () => {
+  // CEJC: ひと 6580, にん 1270, じん 389 — teach the common pronunciation first.
+  const units = [...teachUnitsOf(buildGlyphItem("人")!)].sort(byFrequencyDesc);
+  assert.deepEqual(
+    units.map((u) => u.reading),
+    ["ひと", "にん", "じん"],
+    "most-spoken pronunciation leads",
+  );
+  assert.ok(unitFrequency(units[0]) > unitFrequency(units[2]), "ひと outranks じん");
 });
 
 test("teachUnitsOf — every fact lands in exactly one unit (nothing dropped)", () => {

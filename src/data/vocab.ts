@@ -324,6 +324,12 @@ const CEJC_READING_COUNTS = (cejcReadingFrequencyJson as {
   readonly words: CejcReadingCounts;
 }).words;
 
+/** How often `keb` is spoken as `reb` in CEJC (0 if unobserved). The frequency a
+ * pronunciation is ranked by — the only grain CEJC can rank (not senses). */
+export function readingFrequency(keb: string, reb: string): number {
+  return CEJC_READING_COUNTS[keb]?.[reb] ?? 0;
+}
+
 /**
  * Productive counting readings omitted by JMdict's standalone-word cut.
  *
