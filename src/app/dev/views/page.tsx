@@ -7,6 +7,7 @@
 import type { ReactNode } from "react";
 
 import { ItemPreview } from "@/components/learn/item-preview";
+import { CARD_TREATMENTS } from "@/components/learn/card-treatments";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { GlyphView } from "@/components/library/glyph-view";
 import { UNIT_TRACKS, simulateLessons } from "@/lib/content/unit-tracks";
@@ -50,6 +51,17 @@ const LIBRARY_SAMPLES = ["人", "三", "主", "日", "耳"];
 const VOCAB_TRACK = UNIT_TRACKS.find((t) => t.id === "vocab")!;
 const UP_NEXT = simulateLessons(VOCAB_TRACK, LESSON_RANGE_DEFAULT, 1)[0] ?? null;
 
+// A cross-type spread for comparing card treatments — one of each family.
+const TREATMENT_SAMPLES = [
+  buildGlyphItem("人"),
+  buildItem(wordEntry("先生"), "word"),
+  tsu1 ? formItem(tsu1) : undefined,
+  keigo,
+  grammar,
+  verbPair,
+  sentenceItems()[0],
+].filter((i): i is NonNullable<typeof i> => Boolean(i));
+
 export default function ViewsDevPage() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-10 text-text">
@@ -69,6 +81,27 @@ export default function ViewsDevPage() {
                 {s.label}
               </div>
               {s.item ? <ItemPreview item={s.item} /> : <Missing />}
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section
+        title="Card treatments &mdash; pick a direction"
+        note="Four looks for the unit card, each across every content type. Colour-coded where noted; no backdrop blur anywhere."
+      >
+        <div className="flex flex-col gap-6">
+          {CARD_TREATMENTS.map(({ name, note, Card }) => (
+            <div key={name}>
+              <div className="mb-2 text-[13px] text-text">
+                <span className="font-medium">{name}</span>
+                <span className="text-text-muted"> — {note}</span>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {TREATMENT_SAMPLES.map((item) => (
+                  <Card key={String(item.entry)} item={item} />
+                ))}
+              </div>
             </div>
           ))}
         </div>
