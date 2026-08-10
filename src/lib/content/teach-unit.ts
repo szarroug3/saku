@@ -20,6 +20,7 @@ import { generativeUnitsOf } from "./numbers-track";
 import { keigoUnitsOf } from "./keigo-unit";
 import { grammarUnitsOf } from "./grammar-unit";
 import { verbPairUnitsOf } from "./verb-pair-unit";
+import { sentenceBuildUnitsOf } from "./sentence-track";
 import { isFactFresh } from "./scheduler";
 import type { EntryId, FactId, HistoryFile } from "@/types";
 import type { MeaningId } from "./meaning";
@@ -185,8 +186,8 @@ export function teachUnitsOf(item: ContentItem): readonly TeachingUnit[] {
       return grammarUnitsOf(item);
     case "transitivity":
       return verbPairUnitsOf(item);
-    default:
-      return []; // sentence-ordering — bespoke, not yet built
+    case "sentence-ordering":
+      return sentenceBuildUnitsOf(item);
   }
 }
 

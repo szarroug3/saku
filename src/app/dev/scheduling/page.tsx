@@ -192,9 +192,13 @@ function UnitBody({ unit }: { unit: TeachingUnit }) {
       );
     case "sentence-build":
       return (
-        <div className="max-w-[180px]">
-          <div className="font-kana text-base leading-none">{unit.rule}</div>
-          <TypeTag label="sentence" />
+        <div className="max-w-[220px]">
+          <div className="text-xs font-medium leading-snug text-text">{unit.item.glyph}</div>
+          {unit.example && (
+            <div className="mt-0.5 font-kana text-sm leading-snug">{unit.example}</div>
+          )}
+          <div className="mt-0.5 text-[11px] text-text-muted">{unit.rule}</div>
+          <TypeTag label="sentence order" />
         </div>
       );
     case "generative-rule":

@@ -25,6 +25,7 @@ import { keigoItems } from "./keigo-unit";
 import { grammarItems } from "./grammar-unit";
 import { transitivityItems } from "./verb-pair-unit";
 import { numbersTrack } from "./numbers-track";
+import { sentenceItems } from "./sentence-track";
 import { nextTrackLesson } from "./unit-scheduler";
 import type { TeachingUnit, UnitLesson } from "./teach-unit";
 import type { LessonRange } from "@/lib/lesson-sizing";
@@ -75,6 +76,7 @@ export const UNIT_TRACKS: readonly UnitTrack[] = [
     units: () => transitivityItems().flatMap(teachUnitsOf),
     seed: vocabLearned, // pairs are blocked by their verbs — learn the vocab first
   },
+  { id: "sentence", title: "Sentence building", units: () => sentenceItems().flatMap(teachUnitsOf) },
 ];
 
 /** One simulated lesson: its number in the run and the units the scheduler chose
