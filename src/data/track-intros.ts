@@ -161,8 +161,8 @@ export const RADICAL_TRACK: PhaseIntro = {
       text: "It answers one question: do other kanji get built out of this shape? 人 is a radical, and it is also a kanji you learn and a word you can say, all at once. 气 is a radical and nothing else, so you will only ever see it inside another character. Both get the label, because both are pieces.",
     },
     {
-      lead: "One step below kanji.",
-      text: "Words are written with kanji, and kanji are drawn from a small stock of these pieces. 氵 is the water piece, and it is inside 海 (sea), 泳 (swim) and 湖 (lake). Recognizing a piece gives you a head start on a character you have never seen, though it is a hint and not a promise.",
+      lead: "Radicals are not always shown the same way.",
+      text: "Depending on where they are in a kanji, they may look different. For example, 水 (water) is 氵 on the left side of 泳 (swim) and 氺 at the bottom of 様.",
     },
     {
       // Lesson-only: this is about WHEN each piece turns up in the walk, which is

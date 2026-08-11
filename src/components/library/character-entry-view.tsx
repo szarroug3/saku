@@ -235,7 +235,9 @@ export function CharacterEntryView({
             ) : null}
             {variants.length > 0 ? (
               <>
-                <Lead>It takes a different shape depending on where in a kanji it appears:</Lead>
+                <SubLabel help="It takes a different shape depending on where in a kanji it appears:">
+                  Variant forms
+                </SubLabel>
                 <table className="text-[15px]">
               <tbody>
                 {variants
@@ -289,7 +291,7 @@ export function CharacterEntryView({
               ) : null}
               {parts.length > 0 ? (
                 <div>
-                  <Lead>It&rsquo;s built from these sub-components:</Lead>
+                  <SubLabel>Sub-components</SubLabel>
                   <div className="flex flex-col gap-1.5">
                     {parts.map((p) => (
                       <Link
@@ -313,7 +315,7 @@ export function CharacterEntryView({
               {groups.length > 0 ? (
                 <div>
                   <Lead>
-                    As a rule of thumb it&rsquo;s read one of these ways. Not a guarantee, but a
+                    As a rule of thumb, it&rsquo;s read one of these ways. Not a guarantee, but a
                     good guess at how a kanji sounds:
                   </Lead>
                   <div className={`grid gap-x-10 gap-y-6 ${groups.length > 1 ? "sm:grid-cols-2" : ""}`}>
