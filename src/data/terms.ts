@@ -46,7 +46,6 @@
 import {
   COMBO_H,
   COMBO_K,
-  COUNTER_SOUND_CHANGE,
   DAKUTEN_H,
   DAKUTEN_K,
   OKURIGANA_INTRO,
@@ -341,10 +340,10 @@ export const TERMS: readonly Term[] = [
       "Which counter to use depends on the kind of thing, and a few of them change the number's sound as well.",
     ],
     searchAlso: ["counter", "counters", "counter word", "measure word", "josuushi"],
-    // What a counter is, then the one thing about counters that surprises
-    // people: 本 is ほん until it follows 一, where it is ぽん. Both cards are
-    // about counters, so both belong on the page the word sends you to.
-    cards: [COUNTERS_TRACK, COUNTER_SOUND_CHANGE],
+    // Just what a counter is. The sound-change explainer is dropped from the page:
+    // each counter that shifts lists its own exceptions (一本 → いっぽん) on its own
+    // page, so a general card here would explain what the specific pages already show.
+    cards: [COUNTERS_TRACK],
   },
   {
     id: "particle",
