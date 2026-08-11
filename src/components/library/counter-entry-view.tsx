@@ -59,7 +59,7 @@ export function CounterEntryView({ item }: { item: ContentItem }) {
           <Lead>
             {isBareNumber(form)
               ? "The number on its own, and what it counts to."
-              : "A counting word joins a number to the thing you count — say the two as one word."}
+              : "A counting word joins a number to the thing you count, and you say the two as one word."}
           </Lead>
           <table className="w-full text-[14px]">
             <tbody>

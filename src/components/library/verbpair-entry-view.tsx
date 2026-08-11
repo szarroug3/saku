@@ -40,12 +40,12 @@ export function VerbPairEntryView({ item }: { item: ContentItem }) {
           One event, two verbs. Use{" "}
           <span className="font-kana text-text">{pair.happens.word}</span> (
           <span className="font-kana text-text">{pair.happens.reading}</span>) when it
-          happens on its own &mdash; &ldquo;{pair.happens.en}&rdquo; &mdash; with no one
-          named as making it happen. Use{" "}
+          happens on its own, with no one named as making it happen (&ldquo;
+          {pair.happens.en}&rdquo;). Use{" "}
           <span className="font-kana text-text">{pair.doIt.word}</span> (
           <span className="font-kana text-text">{pair.doIt.reading}</span>) when someone
-          does it &mdash; &ldquo;{pair.doIt.en}&rdquo;. The English sentence always tells
-          you which one to reach for.
+          does it (&ldquo;{pair.doIt.en}&rdquo;). The English sentence always tells you
+          which one to reach for.
         </Lead>
         <VerbPairView pair={pair} voiceName="" />
       </Section>
