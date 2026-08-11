@@ -12,7 +12,7 @@
 
 import { Callout } from "@/components/lesson/callout";
 import { Pair } from "@/components/lesson/conversion-card";
-import { Lead, SubLabel } from "@/components/library/entry-section";
+import { SubLabel } from "@/components/library/entry-section";
 import { hookRuns, type DakutenRow } from "@/data/dakuten-rows";
 import type { Mark } from "@/data/marks";
 import { useQuizConfig } from "@/lib/quiz-config";
@@ -57,14 +57,19 @@ export function DakutenConversionView({ mark, set }: { mark: Mark; set?: SetId }
   const sets: SetId[] = set ? [set] : ["hiragana", "katakana"];
 
   return (
-    <div className="flex flex-col gap-8">
-      <Lead>
+    <div className="flex flex-col">
+      {/* White, not muted: this is the rule the whole page states, so it reads at
+          body weight rather than as a caption. */}
+      <p className="mb-6 text-[12.5px] leading-relaxed text-text">
         A {mark.name.toLowerCase()} changes the sound of the consonant while the vowel stays the
         same.
-      </Lead>
+      </p>
 
-      {conversions.map((c) => (
-        <div key={`${c.from}-${c.to}`}>
+      {conversions.map((c, idx) => (
+        <div
+          key={`${c.from}-${c.to}`}
+          className={idx > 0 ? "mt-8 border-t border-border/50 pt-8" : ""}
+        >
           <p className="flex items-center gap-2.5 text-[22px] font-light leading-none text-text">
             <span>{c.from}</span>
             <span aria-hidden className="text-[15px] text-text-muted">
@@ -74,7 +79,7 @@ export function DakutenConversionView({ mark, set }: { mark: Mark; set?: SetId }
           </p>
 
           {c.hook ? (
-            <p className="mt-2.5 max-w-[52ch] text-[15px] leading-relaxed text-text-muted">
+            <p className="mt-2.5 max-w-[52ch] text-[15px] leading-relaxed text-text">
               {hookRuns(c.hook).map((r, i) =>
                 r.hit ? (
                   <span key={i} className="font-medium text-accent">

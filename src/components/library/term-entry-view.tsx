@@ -25,8 +25,9 @@ export function TermEntryView({ entry }: { entry: EntryId }) {
 
   return (
     <EntrySurface>
-      {/* A term's NAME (Counter) is the hero and its one-line gloss the sub. */}
-      <ContentEntryHeader typeLabel="term" title={term.name} sub={term.summary} />
+      {/* A term's NAME (Counter) is the hero, "term" the type, no headline — the
+          gloss only restated the definition in the "What it means" section below. */}
+      <ContentEntryHeader typeLabel="term" title={term.name} />
 
       <Section title="What it means" tone="accent">
         <TermView term={term} />

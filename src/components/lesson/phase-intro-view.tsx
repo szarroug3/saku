@@ -182,7 +182,9 @@ export function IntroBody({
       {body.map((p, i) => (
         <div key={i}>
           {p.heading ? (
-            <h3 className="mb-3 text-[18px] font-medium leading-snug text-accent">{p.heading}</h3>
+            <h3 className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
+              {p.heading}
+            </h3>
           ) : null}
           <div className="flex items-start gap-3">
             {/* The mark the paragraph is about, at a size you can actually see it

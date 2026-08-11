@@ -16,13 +16,9 @@
 // page use, so the sentence rule reads identically wherever it appears.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
-import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
+import { EntrySurface, Section } from "@/components/library/entry-section";
 import { MarkView } from "@/components/library/mark-view";
-import {
-  ASSEMBLY,
-  SENTENCE_ORDERING_TIERS,
-  sentenceOrderingTierForItem,
-} from "@/data/assembly";
+import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { markEntry, markFor } from "@/data/marks";
 import type { ContentItem } from "@/lib/content/item";
 
@@ -37,13 +33,6 @@ export function SentenceEntryView({ item }: { item: ContentItem }) {
   const mark = markFor(markEntry(`sentence-rule-${tierId}`));
   if (!tier || !mark) return null;
 
-  // One more worked sentence for this tier: the first short (≤4-piece) corpus item
-  // that maps unambiguously to it. Absent — not empty — for a tier the corpus
-  // can't place.
-  const example = ASSEMBLY.find(
-    (it) => it.pieces.length <= 4 && sentenceOrderingTierForItem(it) === tier.id,
-  );
-
   return (
     <EntrySurface>
       <ContentEntryHeader typeLabel="sentence structure" title={mark.name} sub={mark.summary} />
@@ -51,14 +40,6 @@ export function SentenceEntryView({ item }: { item: ContentItem }) {
       <Section title="How the pieces are ordered" tone="accent">
         <MarkView mark={mark} />
       </Section>
-
-      {example ? (
-        <Section title="In a sentence">
-          <Lead>The same order, in one more real sentence:</Lead>
-          <p className="font-kana text-[18px] leading-relaxed text-text">{example.jp}</p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
-        </Section>
-      ) : null}
     </EntrySurface>
   );
 }

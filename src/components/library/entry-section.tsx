@@ -44,7 +44,7 @@ export function Section({
 
 export function SubLabel({ children, help }: { children: React.ReactNode; help?: string }) {
   return (
-    <p className="mb-2 flex items-center text-[12px] font-medium text-text-muted">
+    <p className="mb-2 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
       {children}
       {help ? <Info>{help}</Info> : null}
     </p>

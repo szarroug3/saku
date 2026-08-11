@@ -234,7 +234,7 @@ describe("the verb-conjugating grammar entries link to う-verbs and る-verbs",
   test("the concept exists at the id the link points to", () => {
     const entry = libEntry(grammarConceptEntry("verb-classes"));
     assert.ok(entry);
-    assert.equal(entry.name, "う-verbs and る-verbs");
+    assert.equal(entry.name, "Verb types");
   });
 
   test("a verb-form pattern is detected, and a non-conjugating one is not", () => {

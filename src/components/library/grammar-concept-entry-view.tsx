@@ -37,8 +37,10 @@ export function GrammarConceptEntryView({ entry }: { entry: EntryId }) {
 
   return (
     <EntrySurface>
-      {/* A concept has no glyph, so the shared header shows its NAME as the hero. */}
-      <ContentEntryHeader typeLabel="grammar concept" title={concept.name} sub={concept.summary} />
+      {/* A concept has no glyph, so the shared header shows its NAME as the hero.
+          No headline: the one-line summary only restated the idea the section
+          below teaches in full. */}
+      <ContentEntryHeader typeLabel="grammar concept" title={concept.name} />
 
       {/* THE IDEA — the concept's cards, rendered by the SAME GrammarConceptView
           the entry router mounts. Its cards render frost by default and flat

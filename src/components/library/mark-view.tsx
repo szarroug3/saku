@@ -474,7 +474,7 @@ function SentenceRuleExamples({ markId }: { markId: string }) {
   if (!examples?.length) return null;
 
   return (
-    <div className="space-y-2.5">
+    <div>
       {examples.map((ex, i) => {
         const natural = spansForSentence(ex.englishNatural, ex.partsNaturalEn, partOrder);
         const ordered = spansForSentence(ex.englishOrdered, ex.partsOrderedEn, partOrder);
@@ -488,7 +488,12 @@ function SentenceRuleExamples({ markId }: { markId: string }) {
           });
         }
         return (
-          <div key={`${markId}-${i}`} className="rounded-lg border border-border/70 bg-panel/40 px-3 py-2.5">
+          // No box: a separator above each example after the first, so the
+          // examples read as a run on the page rather than nested panels.
+          <div
+            key={`${markId}-${i}`}
+            className={i > 0 ? "mt-5 border-t border-border/50 pt-5" : ""}
+          >
             <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">Example {i + 1}</p>
             <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-text">
               Natural English

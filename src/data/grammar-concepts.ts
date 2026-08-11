@@ -154,7 +154,7 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
 export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
   {
     id: "verb-classes",
-    name: "う-verbs and る-verbs",
+    name: "Verb types",
     summary:
       "Every verb is one of two groups (with some exceptions), and the group decides how every form is built.",
     body: [
@@ -164,6 +164,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
     searchAlso: [
       "verb classes",
       "verb groups",
+      "う-verbs and る-verbs",
       "u-verb",
       "ru-verb",
       "godan",

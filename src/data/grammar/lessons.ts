@@ -142,15 +142,16 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "Before you conjugate a verb, you need to figure out what group it's in. Every Japanese verb is an う-verb, an る-verb, or one of two irregulars, and the group decides how the verb changes.",
       },
       {
-        lead: "う-verbs (godan)",
-        text: "are the larger group. An う-verb ends in a kana from the う-row (う, く, ぐ, す, つ, ぬ, ぶ, む, or る), so かう, かく and はなす are all う-verbs.",
+        lead: "う-verbs",
+        text: "are called godan and are the larger group. With some exceptions, an う-verb generally ends in a kana from the う-row (う, く, ぐ, す, つ, ぬ, ぶ, む, or る), so かう, かく and はなす are all う-verbs.",
       },
       {
-        lead: "る-verbs (ichidan)",
-        text: "end in る, like たべる and みる.",
+        lead: "る-verbs",
+        text: "are called ichidan and always end in る, like たべる and みる.",
       },
       {
-        text: "The spelling alone does not always tell them apart, because some verbs that end in る are う-verbs. かえる (to return) is an う-verb, while たべる (to eat) is an る-verb. You learn each verb's group with the verb, and the app tags it for you.",
+        heading: "Exceptions",
+        text: "The spelling alone does not always tell them apart. Some verbs that end in る are う-verbs in disguise. かえる (to return) is an う-verb, while たべる (to eat) is an る-verb. You learn which are which with experience and time.",
       },
       {
         lead: "する and くる",
