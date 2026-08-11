@@ -11,6 +11,8 @@
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
+import { HowItsWritten } from "@/components/lesson/how-its-written";
+import { FlatSurfaceProvider } from "@/components/ui";
 import { GlassSheen, glassSurface } from "@/components/ui/frost";
 import { getMnemonic } from "@/data/mnemonics";
 import type { ContentItem } from "@/lib/content/item";
@@ -21,12 +23,22 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
   const m = getMnemonic(item.glyph);
   if (!m) return null;
   return (
-    <article className={`${glassSurface} p-6`}>
-      <GlassSheen />
-      <ContentEntryHeader item={item} />
-      <div className="mt-5 border-t border-border/50 pt-6">
-        <MnemonicView m={m} glyph={item.glyph} voiceName="" />
-      </div>
-    </article>
+    // Flat surface so the shared "How it's written" section drops its own card
+    // fill and sits inside the glass rather than as a box within a box.
+    <FlatSurfaceProvider>
+      <article className={`${glassSurface} p-6`}>
+        <GlassSheen />
+        <ContentEntryHeader item={item} />
+        <div className="mt-5 border-t border-border/50 pt-6">
+          <MnemonicView m={m} glyph={item.glyph} voiceName="" />
+        </div>
+        <div className="mt-5 border-t border-border/50 pt-5">
+          <HowItsWritten
+            item={{ entry: item.entry, glyph: item.glyph, kind: "kana", facts: item.facts.map((f) => f.id) }}
+            alwaysOpen
+          />
+        </div>
+      </article>
+    </FlatSurfaceProvider>
   );
 }
