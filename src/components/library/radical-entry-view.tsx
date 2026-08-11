@@ -37,7 +37,7 @@ export function RadicalEntryView({ item }: { item: ContentItem }) {
 
         {kanji.length > 0 ? (
           <div className="mt-5 border-t border-border/50 pt-5">
-            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
+            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
               Used as a part in
             </p>
             <div className="flex flex-col gap-1.5">

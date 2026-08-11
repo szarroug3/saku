@@ -21,22 +21,20 @@ export function WhyDisclosure({ why }: { why: Why }) {
   const panelId = useId();
 
   return (
-    <div className="mt-4 border-t border-border pt-3.5">
-      <p className="text-[13px] leading-relaxed">
-        <span className="font-medium">{why.lede.strong}</span>{" "}
+    // A quiet caption — muted and small, no rule — so it reads as a footnote to
+    // its section, not a boundary. The reasoning opens behind "Why?".
+    <div className="mt-3">
+      <p className="text-[11px] leading-relaxed text-text-muted">
+        {why.lede.strong}{" "}
         {/* Optional: some ledes say everything they honestly can in the strong
             fragment, and the rest of the reasoning lives behind the button. */}
-        {why.lede.rest ? (
-          <>
-            <span className="text-text-muted">{why.lede.rest}</span>{" "}
-          </>
-        ) : null}
+        {why.lede.rest ? <>{why.lede.rest} </> : null}
         <button
           type="button"
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen((v) => !v)}
-          className="cursor-pointer whitespace-nowrap rounded border-none bg-transparent p-0 text-[13px] text-accent underline decoration-dotted underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="cursor-pointer whitespace-nowrap rounded border-none bg-transparent p-0 text-[11px] text-accent underline decoration-dotted underline-offset-2 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           {open ? "Less" : "Why?"}
         </button>

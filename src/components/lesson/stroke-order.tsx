@@ -59,7 +59,6 @@ import {
   type CSSProperties,
 } from "react";
 
-import { WRITTEN_VS_PRINTED } from "@/data/why";
 import { STROKE_GRID, type GlyphStrokes } from "@/lib/strokes";
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
@@ -324,20 +323,6 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
           ) : null}
         </div>
       </div>
-
-      {/* The handwritten-vs-printed note. UNDER THE WHOLE ROW, not beside the
-          animation: it is about both views at once, and about the headword the
-          reader has already scrolled past, so it reads as a caption on the
-          diagram and not as a footnote to the numbered chart.
-
-          Always shown, never behind a disclosure. The reader who needs it is
-          the one who has NOT noticed the two shapes disagree yet, and asking
-          them to open something to find that out is asking a question they do
-          not know they have. Quiet enough (11px, muted) to be skipped by the
-          reader who does not care. */}
-      <p className="mt-3 text-[11px] leading-relaxed text-text-muted">
-        {WRITTEN_VS_PRINTED}
-      </p>
 
       {/* NO INLINE CREDIT HERE, AND THAT IS NOT AN OVERSIGHT.
           The stroke data is KanjiVG's (© Ulrich Apel and contributors, CC BY-SA

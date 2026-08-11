@@ -233,7 +233,9 @@ export function HowItsWritten({
   const content = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[13px] font-medium">How it&rsquo;s written</p>
+        <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-text">
+          How it&rsquo;s written
+        </p>
         {alwaysOpen ? null : (
           <button
             type="button"
