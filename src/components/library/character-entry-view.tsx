@@ -7,14 +7,15 @@
 //   header
 //   Built from      (kanji: its components + origin story)
 //   Variant forms   (radical: the shapes it takes in other kanji, + where)
-//   Readings        (kanji: on'yomi / kun'yomi side by side)
+//   As a kanji      (kanji: on'yomi / kun'yomi side by side)
+//   As a word       (word: how it's pronounced + what it means)
 //   How it's written (always)
 //   Used as a part in (always, when other kanji are built on it)
 //
-// Recognition-first: the forms a radical takes in other kanji lead, above the
-// readings. A pure radical (禾) renders only variant forms + how-it's-written +
-// used-in and stays lean; 水 (radical · kanji · word) shows its variants AND its
-// readings — one page, no per-role forks. Reference data only.
+// EVERY section is guarded on ITS OWN content, so a glyph shows only the roles it
+// actually plays: a pure radical (禾) renders just variant forms + how-it's-
+// written + used-in; 水 (radical · kanji · word) shows variants, "As a kanji" AND
+// "As a word". No per-role forks — one page, sections switched on by content.
 
 import Link from "next/link";
 
@@ -26,6 +27,7 @@ import { speak } from "@/lib/speech";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { etymologyOf } from "@/data/kanji-etymology";
 import { radicalVariants } from "@/data/radicals";
+import { vocabRow } from "@/data/vocab";
 import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
 import { teachableParts } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
@@ -71,6 +73,24 @@ function positionOf(v: {
 }): { en: string; rank: number } {
   if (v.position) return POSITION[v.position.romaji] ?? { en: v.position.kana, rank: 6 };
   return derivePosition(v.name.kana);
+}
+
+/** The word senses of a single-char word: one row per reading, its glosses
+ * merged. Sourced from vocab (not the teach-unit meanings, which fold the kanji's
+ * core sense onto the primary reading), so 生 reads なま → "raw", not "life/raw".
+ * Empty when the glyph is not a standalone word. */
+function wordSensesOf(glyph: string): { reading: string; meaning: string }[] {
+  const row = vocabRow(glyph);
+  if (!row) return [];
+  const byReading = new Map<string, string[]>();
+  for (const s of row.senses) {
+    byReading.set(s.reb, [...(byReading.get(s.reb) ?? []), ...s.glosses]);
+  }
+  if (byReading.size === 0) byReading.set(row.reb, [...row.glosses]);
+  return [...byReading].map(([reading, gl]) => ({
+    reading,
+    meaning: [...new Set(gl)].join(", "),
+  }));
 }
 
 /** The components this kanji is built from, each with a short sense. Prefer the
@@ -129,8 +149,10 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
 
   const parts = isKanji ? builtFrom(glyph) : [];
   const story = isKanji ? (etymologyOf(glyph)?.originText ?? null) : null;
+  const isWord = item.roles.includes("word");
   const groups = isKanji ? readingGroups(glyph) : [];
   const variants = isRadical ? radicalVariants(glyph) : [];
+  const wordRows = isWord ? wordSensesOf(glyph) : [];
 
   const usedIn = usedAsPartIn(glyph);
   const shownUsedIn = usedIn.slice(0, CAP);
@@ -192,7 +214,7 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
         ) : null}
 
         {groups.length > 0 ? (
-          <Section title="Readings">
+          <Section title="As a kanji">
             {/* On'yomi and kun'yomi side by side (one column when a kanji has only
                 one type). Each row: sound + reading, then an example word. */}
             <div className={`grid gap-x-10 gap-y-6 ${groups.length > 1 ? "sm:grid-cols-2" : ""}`}>
@@ -227,6 +249,36 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
                 </div>
               ))}
             </div>
+          </Section>
+        ) : null}
+
+        {wordRows.length > 0 ? (
+          <Section title="As a word">
+            {/* The standalone word: how it's pronounced and what it means — one
+                row per reading, glosses merged. This is where a word sense that
+                diverges from the kanji's core meaning shows (生 なま = raw). */}
+            <table className="w-full text-[14px]">
+              <tbody>
+                {wordRows.map((w) => (
+                  <tr key={w.reading}>
+                    <td className="whitespace-nowrap py-1 pr-6 align-top">
+                      <span className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => speak(w.reading, "")}
+                          aria-label={`Hear ${w.reading}`}
+                          className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
+                        >
+                          <SoundIcon />
+                        </button>
+                        <span className="font-kana text-text">{w.reading}</span>
+                      </span>
+                    </td>
+                    <td className="w-full py-1 align-top text-text-muted">{w.meaning}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </Section>
         ) : null}
 
