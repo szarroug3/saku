@@ -12,14 +12,16 @@
 // themselves and concatenate; orderedTrack covers the entry-backed majority.
 
 import { buildItem } from "./build-item";
-import type { ContentItem, ContentKind } from "./item";
+import type { ContentItem, PlainKind } from "./item";
 import type { Track } from "./track";
 import type { EntryId } from "@/types";
 
 /** One position in a fixed curriculum: which entry, taught as which kind. */
 export interface OrderSpec {
   readonly entry: EntryId;
-  readonly kind: ContentKind;
+  // Whatever `buildItem` takes — a single Han glyph (`character`) goes through
+  // buildGlyphItem, not an ordered spec.
+  readonly kind: "kana" | PlainKind;
 }
 
 /**

@@ -9,7 +9,9 @@
 // block (MnemonicView), the same components the shipped page and the lesson walk
 // render, inside the glass entry surface.
 
+import { ConfusionSection } from "@/components/library/confusion-section";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
+import { Section } from "@/components/library/entry-section";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { FlatSurfaceProvider } from "@/components/ui";
@@ -22,6 +24,10 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
   // ContentItem field — so a kana view looks it up.
   const m = getMnemonic(item.glyph);
   if (!m) return null;
+  // The following-sound rules and the shape lookalikes ride on the kana item
+  // itself (see KanaItem). Narrow to read them; a non-kana item has neither.
+  const context = item.kind === "kana" ? item.context : null;
+  const confusables = item.kind === "kana" ? item.confusables : [];
   return (
     // Flat surface so the shared "How it's written" section drops its own card
     // fill and sits inside the glass rather than as a box within a box.
@@ -32,6 +38,27 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
         <div className="mt-5 border-t border-border/50 pt-6">
           <MnemonicView m={m} glyph={item.glyph} voiceName="" />
         </div>
+        {/* How its sound bends to what follows it (ん borrows the next place, っ
+            doubles the next consonant). Only ん/っ carry rules; every other kana
+            has context null and shows nothing. */}
+        {context ? (
+          <Section title="How it's said in context">
+            <p className="mb-3 text-[13px] leading-relaxed text-text-muted">{context.summary}</p>
+            <div className="flex flex-col gap-3">
+              {context.rules.map((rule) => (
+                <div key={rule.when}>
+                  <p className="text-[14px] leading-relaxed text-text">
+                    <span className="capitalize">{rule.when}</span>: said{" "}
+                    <span className="font-medium text-accent">{rule.sounds}</span>
+                  </p>
+                  <p className="mt-0.5 font-kana text-[13px] leading-relaxed text-text-muted">
+                    {rule.example}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Section>
+        ) : null}
         {/* Collapsed by default, like every other page: the "we don't recommend
             learning to write early" notice, Show expands the stroke diagram. */}
         <div className="mt-5 border-t border-border/50 pt-5">
@@ -39,6 +66,7 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
             item={{ entry: item.entry, glyph: item.glyph, kind: "kana", facts: item.facts.map((f) => f.id) }}
           />
         </div>
+        <ConfusionSection confusables={confusables} />
       </article>
     </FlatSurfaceProvider>
   );

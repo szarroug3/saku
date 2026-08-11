@@ -16,16 +16,26 @@ import { factsOf, factInfo } from "@/lib/facts";
 import { jp2enResponse } from "@/lib/ask-forms";
 import { characterRoles } from "@/lib/character-role";
 import { teachableParts } from "@/lib/kanji-parts";
-import { builtPieceEntryId } from "@/lib/library/entries";
+import { builtPieceEntryId, confusableWith, libEntry } from "@/lib/library/entries";
+import { contextPronunciation } from "@/data/kana-context";
 import { kanjiEntry, kanjiRow, meaningFactId } from "@/data/kanji";
 import { radicalEntry, radicalByGlyph, radicalMeaningFactId } from "@/data/radicals";
 import { wordEntry, wordUnitFacts } from "@/data/vocab";
 import { contentTypeLabel } from "./item";
 import type { EntryId, FactId } from "@/types";
-import type { ContentItem, ContentKind } from "./item";
+import type { ContentItem, ContentKind, PlainKind } from "./item";
 import type { Fact } from "./fact";
 
 const HAN = /\p{Script=Han}/u;
+
+/** The shape lookalikes for the character/kana `entry` names, as entry ids —
+ * CONFUSABLE_WITH for a kanji, LOOK_GROUP for a kana, [] for everything else.
+ * Read off the library entry once at build so the item carries it as a field
+ * rather than a view recomputing it. */
+function confusablesFor(entry: EntryId): readonly EntryId[] {
+  const le = libEntry(entry);
+  return le ? confusableWith(le) : [];
+}
 
 /** The Built-from component edges of a glyph — the same pieces the Built-from card
  * shows (`teachableParts` → `builtPieceEntryId`), deduped. */
@@ -69,15 +79,16 @@ export function buildGlyphItem(glyph: string): ContentItem | undefined {
   }
   if (!ids.length) return undefined;
   const facts: Fact[] = ids.map((id) => ({ id, kind: jp2enResponse(id) }));
+  const entry = canonicalEntry(glyph);
   return {
-    entry: canonicalEntry(glyph),
+    entry,
     kind: "character",
     glyph,
     facts,
     roles,
     prereqs: componentPrereqs(glyph),
     blockedBy: [],
-
+    confusables: confusablesFor(entry),
     typeLabel: contentTypeLabel("character", roles),
   };
 }
@@ -96,19 +107,20 @@ function directPrereqs(kind: ContentKind, glyph: string): EntryId[] {
 }
 
 /**
- * Build the ContentItem for a single-entry `entry` (a multi-char word, a counter
- * form, a generative-rule unit), or undefined if it has no facts. Characters go
- * through `buildGlyphItem` instead — do not pass "character" here.
+ * Build the ContentItem for a single-entry `entry` (a kana, a multi-char word, a
+ * counter form, a generative-rule unit, …), or undefined if it has no facts.
+ * Single Han glyphs (`character`) go through `buildGlyphItem` instead — its
+ * cross-role fact aggregation is its own thing, so "character" is not a kind this
+ * takes.
  */
-export function buildItem(entry: EntryId, kind: ContentKind): ContentItem | undefined {
+export function buildItem(entry: EntryId, kind: "kana" | PlainKind): ContentItem | undefined {
   const factIds = factsOf(entry);
   if (!factIds.length) return undefined;
   const glyph = factInfo(factIds[0])!.glyph;
   const facts: Fact[] = factIds.map((id) => ({ id, kind: jp2enResponse(id) }));
   const roles = characterRoles(glyph);
-  return {
+  const base = {
     entry,
-    kind,
     glyph,
     facts,
     roles,
@@ -116,4 +128,10 @@ export function buildItem(entry: EntryId, kind: ContentKind): ContentItem | unde
     blockedBy: [],
     typeLabel: contentTypeLabel(kind, roles),
   };
+  // A kana carries the two things only a kana has: its following-sound context
+  // rules (ん/っ) and its shape lookalikes. Every other kind is the plain base.
+  if (kind === "kana") {
+    return { ...base, kind, context: contextPronunciation(glyph), confusables: confusablesFor(entry) };
+  }
+  return { ...base, kind };
 }

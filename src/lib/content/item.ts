@@ -4,6 +4,7 @@
 //
 // Stage 0 of docs/architecture-refactor.md: additive, not yet consumed.
 
+import type { ContextPronunciation } from "@/data/kana-context";
 import type { EntryId } from "@/types";
 import type { RoleName } from "@/lib/character-role";
 import type { Fact } from "./fact";
@@ -59,9 +60,15 @@ export type ContentKind =
  * The teaching edges form the prereq DAG; the scheduler walks, budgets, and
  * depth-gates it — no track re-implements any of that.
  */
-export interface ContentItem {
+/**
+ * The fields EVERY item has, whatever its kind. The scheduling/identity core:
+ * what it is, what it teaches, what it is built on. NO type-specific reference
+ * data lives here — a kana's following-sound rules and a character's shape
+ * lookalikes are not universal, so they ride on the per-kind types below, not on
+ * this base (a grammar pattern has no "lookalikes", a word no "context").
+ */
+interface BaseContentItem {
   readonly entry: EntryId;
-  readonly kind: ContentKind;
   readonly glyph: string;
   readonly facts: readonly Fact[];
   readonly roles: readonly RoleName[];
@@ -79,6 +86,50 @@ export interface ContentItem {
    * (`contentTypeLabel`); views read it, they don't recompute it. */
   readonly typeLabel: string;
 }
+
+/** A single Han glyph taught across every role it plays. It carries the shape
+ * lookalikes it is easily confused with (CONFUSABLE_WITH), computed once at build
+ * — a fact about the character's SHAPE, which only a glyph has. */
+export interface CharacterItem extends BaseContentItem {
+  readonly kind: "character";
+  /** Entry ids of the characters this one looks like, most-confusable first.
+   * Shape only (a prediction, not a record of what you have missed). Empty for a
+   * glyph with no lookalike on file. */
+  readonly confusables: readonly EntryId[];
+}
+
+/** A kana. It carries the following-sound rules that decide its pronunciation
+ * (ん/っ) AND its shape lookalikes (シ/ツ) — both properties a kana has and the
+ * other kinds do not. */
+export interface KanaItem extends BaseContentItem {
+  readonly kind: "kana";
+  /** How the kana's sound is decided by what follows it (ん borrows the place of
+   * the next sound; っ doubles it). Null for every kana that sounds the same
+   * wherever it sits. */
+  readonly context: ContextPronunciation | null;
+  /** Entry ids of the kana this one looks like (LOOK_GROUP). Empty when none. */
+  readonly confusables: readonly EntryId[];
+}
+
+/** Every kind with no glyph-shape or following-sound data of its own. */
+export type PlainKind =
+  | "word"
+  | "counter"
+  | "generative-rule"
+  | "keigo"
+  | "grammar"
+  | "transitivity"
+  | "sentence-ordering";
+
+export interface PlainItem extends BaseContentItem {
+  readonly kind: PlainKind;
+}
+
+/** One teachable/quizzable item. A discriminated union on `kind`: the shared
+ * scheduling core (BaseContentItem) plus whatever reference data that kind — and
+ * only that kind — actually has. Narrow on `item.kind` to reach a type-specific
+ * field. */
+export type ContentItem = CharacterItem | KanaItem | PlainItem;
 
 /** The display type of an item: a character shows the roles it plays; other kinds
  * show what they are. Called once per item at build time — the result is stored

@@ -72,6 +72,12 @@ const KANA_A = kanaItems().find((i) => i.glyph === "あ");
 const KANA_KATA = kanaItems().find((i) => i.glyph === "ア");
 // A yōon combination (きゃ), for the yōon section's content page.
 const KANA_YOON = kanaItems().find((i) => i.glyph === "きゃ");
+// ん carries following-sound context rules; ン carries BOTH the context rules AND
+// a shape lookalike (ソ), so it exercises the two new kana sections at once.
+const KANA_N = kanaItems().find((i) => i.glyph === "ん");
+const KANA_NN = kanaItems().find((i) => i.glyph === "ン");
+// 木 has a shape lookalike (本) — the kanji confusion sample.
+const KANJI_KI2 = buildGlyphItem("木");
 // Two radicals for the radical entry page: 禾 (bushu name のぎへん, no variant
 // forms) and 水 (bushu name みず, with the positional variants 氵 / 氺).
 const RADICAL_KI = buildGlyphItem("禾");
@@ -179,6 +185,11 @@ export default function ViewsDevPage() {
           <Slot tag="Content — library & lesson">
             {KANA_A ? <KanaEntryView item={KANA_A} /> : <Missing />}
           </Slot>
+          {/* ん — carries the new "How it's said in context" section (ん borrows
+              the place of the sound after it). */}
+          <Slot tag="Content — with context rules (ん)">
+            {KANA_N ? <KanaEntryView item={KANA_N} /> : <Missing />}
+          </Slot>
         </Sub>
 
         <Sub title="Katakana">
@@ -187,6 +198,11 @@ export default function ViewsDevPage() {
           </Slot>
           <Slot tag="Content — library & lesson">
             {KANA_KATA ? <KanaEntryView item={KANA_KATA} /> : <Missing />}
+          </Slot>
+          {/* ン — exercises BOTH new kana sections: context rules AND a shape
+              lookalike (ソ). */}
+          <Slot tag="Content — context + confusion (ン)">
+            {KANA_NN ? <KanaEntryView item={KANA_NN} /> : <Missing />}
           </Slot>
         </Sub>
 
@@ -244,6 +260,11 @@ export default function ViewsDevPage() {
               show with their "As a …" headers. */}
           <Slot tag="Content — radical · kanji · word — library & lesson">
             {RADICAL_MIZU ? <CharacterEntryView item={RADICAL_MIZU} /> : <Missing />}
+          </Slot>
+          {/* 木 — carries the new "Commonly mixed up with" section (shape
+              lookalike 本). */}
+          <Slot tag="Content — with confusion (木)">
+            {KANJI_KI2 ? <CharacterEntryView item={KANJI_KI2} /> : <Missing />}
           </Slot>
         </Sub>
 

@@ -23,6 +23,7 @@
 import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
+import { ConfusionSection } from "@/components/library/confusion-section";
 import { EntrySurface, Lead, Section, SubLabel } from "@/components/library/entry-section";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { SoundButton } from "@/components/ui/sound-button";
@@ -474,6 +475,11 @@ export function CharacterEntryView({
             ) : null}
           </Section>
         ) : null}
+
+        {/* Shape lookalikes, off the item's own confusables field. Only a
+            character (single glyph) has them; a multi-char word is kind "word"
+            with none. */}
+        <ConfusionSection confusables={item.kind === "character" ? item.confusables : []} />
     </EntrySurface>
   );
 }
