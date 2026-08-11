@@ -25,8 +25,7 @@ import Link from "next/link";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section, SubLabel } from "@/components/library/entry-section";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
-import { SoundIcon } from "@/components/ui";
-import { speak } from "@/lib/speech";
+import { SoundButton } from "@/components/ui/sound-button";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { etymologyOf } from "@/data/kanji-etymology";
 import { radicalByGlyph, radicalVariants } from "@/data/radicals";
@@ -328,14 +327,7 @@ export function CharacterEntryView({
                               <tr key={r.base}>
                                 <td className="whitespace-nowrap py-1 pr-6">
                                   <span className="flex items-center gap-1.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => speak(r.base, "")}
-                                      aria-label={`Hear ${r.base}`}
-                                      className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-                                    >
-                                      <SoundIcon />
-                                    </button>
+                                    <SoundButton text={r.base} />
                                     <span className="font-kana text-text">{r.base}</span>
                                   </span>
                                 </td>
@@ -388,14 +380,7 @@ export function CharacterEntryView({
                       <tr key={w.reading}>
                         <td className="whitespace-nowrap py-1 pr-6 align-top">
                           <span className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => speak(w.reading, "")}
-                              aria-label={`Hear ${w.reading}`}
-                              className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-                            >
-                              <SoundIcon />
-                            </button>
+                            <SoundButton text={w.reading} />
                             <span className="font-kana text-text">{w.reading}</span>
                           </span>
                         </td>

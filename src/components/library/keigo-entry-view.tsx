@@ -20,11 +20,10 @@ import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
-import { SoundIcon } from "@/components/ui";
+import { SoundButton } from "@/components/ui/sound-button";
 import { keigoSetForEntry } from "@/data/keigo";
 import { grammarConceptEntry, grammarConceptRow } from "@/data/grammar-concepts";
 import { entryHref } from "@/lib/library/href";
-import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
 
 // Per-register label (accent) + the "when do I use this" line, shown as text
@@ -71,14 +70,7 @@ export function KeigoEntryView({ item }: { item: ContentItem }) {
                   <p className="mb-2 text-[13px] leading-relaxed text-text">{reg.desc}</p>
                 ) : null}
                 <div className="flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => speak(w.reading, "")}
-                    aria-label={`Hear ${w.reading}`}
-                    className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-                  >
-                    <SoundIcon />
-                  </button>
+                  <SoundButton text={w.reading} />
                   <span className="font-kana text-[22px] leading-none text-text">{w.word}</span>
                   <span className="font-kana text-[13px] text-text-muted">{w.reading}</span>
                 </div>

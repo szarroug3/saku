@@ -27,14 +27,13 @@
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
 import { NumberConstructionView } from "@/components/library/number-construction-view";
-import { SoundIcon } from "@/components/ui";
+import { SoundButton } from "@/components/ui/sound-button";
 import {
   counterForm,
   isBareNumber,
   isKanaForm,
 } from "@/data/counters";
 import { numberConstructionFor } from "@/data/number-construction";
-import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
 
 export function CounterEntryView({
@@ -77,14 +76,7 @@ export function CounterEntryView({
               <tr>
                 <td className="whitespace-nowrap py-1 pr-6 align-top">
                   <span className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => speak(form.reading, "")}
-                      aria-label={`Hear ${form.reading}`}
-                      className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-                    >
-                      <SoundIcon />
-                    </button>
+                    <SoundButton text={form.reading} />
                     <span className="font-kana text-text">{form.reading}</span>
                     {/* A second reading the same number branches into — く beside
                         きゅう. It is a READING, so it rides beside the primary reading,

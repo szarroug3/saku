@@ -15,9 +15,9 @@
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface } from "@/components/library/entry-section";
-import { Info, SoundIcon } from "@/components/ui";
+import { Info } from "@/components/ui";
+import { SoundButton } from "@/components/ui/sound-button";
 import { pairForEntry } from "@/data/transitivity-facts";
-import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
 
 /** The leading run of characters two strings share (開 for 開く / 開ける). */
@@ -61,14 +61,7 @@ export function VerbPairEntryView({ item }: { item: ContentItem }) {
                 <Info>{s.help}</Info>
               </p>
               <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => speak(s.m.reading, "")}
-                  aria-label={`Hear ${s.m.reading}`}
-                  className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-                >
-                  <SoundIcon />
-                </button>
+                <SoundButton text={s.m.reading} />
                 <span className="font-kana text-[22px] leading-none text-text">{s.m.word}</span>
                 <span className="font-kana text-[13px] text-text-muted">{s.m.reading}</span>
               </div>
