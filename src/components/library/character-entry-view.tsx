@@ -42,15 +42,25 @@ const VARIANT_HELP =
   "The shape this radical changes into when it sits in a particular spot inside a " +
   "kanji — 水 becomes 氵 on the left. The label says where in the kanji it appears.";
 
-// The five positions the data uses, in plain English (keyed by romaji, the
-// stable field). A position we don't have a phrase for falls back to its kana.
-const POSITION_EN: Record<string, string> = {
-  hen: "left side",
-  tsukuri: "right side",
-  kanmuri: "top",
-  ashi: "bottom",
-  nyou: "wraps bottom-left",
+// Variant positions in plain English, with the order the section lists them in:
+// the un-repositioned form first, then around the character top → left → right →
+// bottom. Keyed by the position's romaji (the stable field). A form with no
+// position on file reads as "normal" and sorts first — many (麦, 黒, 亀) really
+// are the base shape, not a reshaped corner of it.
+const POSITION: Record<string, { en: string; rank: number }> = {
+  "": { en: "normal", rank: 0 },
+  kanmuri: { en: "top", rank: 1 },
+  hen: { en: "left", rank: 2 },
+  tsukuri: { en: "right", rank: 3 },
+  ashi: { en: "bottom", rank: 4 },
+  nyou: { en: "bottom-left", rank: 5 },
 };
+
+/** A variant's position as {en, rank}: from the mapped romaji, or its own kana
+ * (sorted last) for a position we don't have a phrase for. */
+function positionOf(romaji: string | undefined, kana: string | undefined) {
+  return POSITION[romaji ?? ""] ?? { en: kana ?? "normal", rank: 6 };
+}
 
 /** The components this kanji is built from, each with a short sense. Prefer the
  * etymology's typed components (they carry a semantic/phonetic role); fall back
@@ -192,23 +202,29 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
 
         {variants.length > 0 ? (
           <Section title="Variant forms" help={VARIANT_HELP}>
-            {/* Each positional form the radical takes in a compound — the glyph,
-                what it's called, and where it sits (へん = left side, …). */}
-            <div className="flex flex-col gap-2.5">
-              {variants.map((v) => (
-                <div key={v.glyph} className="flex items-baseline gap-2.5 text-[15px]">
-                  <span className="w-6 flex-none font-kana text-[22px] leading-none text-text">
-                    {v.glyph}
-                  </span>
-                  <span className="font-kana text-text">{v.name.kana}</span>
-                  {v.position ? (
-                    <span className="text-[12px] text-text-muted">
-                      · {POSITION_EN[v.position.romaji] ?? v.position.kana}
-                    </span>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+            {/* A table like the readings: each positional form the radical takes
+                in a compound — the glyph, what it's called, and where it sits —
+                ordered normal → top → left → right → bottom. */}
+            <table className="w-full text-[15px]">
+              <tbody>
+                {variants
+                  .map((v) => ({ v, pos: positionOf(v.position?.romaji, v.position?.kana) }))
+                  .sort((a, b) => a.pos.rank - b.pos.rank)
+                  .map(({ v, pos }) => (
+                    <tr key={v.glyph}>
+                      <td className="w-9 py-1 align-middle font-kana text-[22px] leading-none text-text">
+                        {v.glyph}
+                      </td>
+                      <td className="whitespace-nowrap py-1 pr-6 align-middle font-kana text-text">
+                        {v.name.kana}
+                      </td>
+                      <td className="w-full py-1 align-middle text-[12px] text-text-muted">
+                        {pos.en}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </Section>
         ) : null}
 
