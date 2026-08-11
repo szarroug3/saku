@@ -222,6 +222,9 @@ export default function ViewsDevPage() {
               first, so its "As a word" lead re-reads correctly on its own. */}
           {NUSHI ? <CharacterEntryView item={NUSHI} lesson /> : <Missing />}
           {WORD_SENSEI ? <CharacterEntryView item={WORD_SENSEI} lesson /> : <Missing />}
+          {/* The dakuten mark, taught one script at a time: the hiragana lesson
+              shows only the hiragana strips, no "in hiragana/in katakana" labels. */}
+          <MarkEntryView entry={MARK} set="hiragana" />
         </div>
       </Section>
 

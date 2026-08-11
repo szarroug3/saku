@@ -50,8 +50,9 @@ function romaji(c: string): string {
 }
 
 /** One base→converted pair: the shape you know, greyed, and the shape it turns
- * into, at full strength with its sound. */
-function Pair({
+ * into, at full strength with its sound. Exported so the redesigned dakuten
+ * library/lesson view can render the same strip under its own grouping. */
+export function Pair({
   base,
   converted,
   voiceName,

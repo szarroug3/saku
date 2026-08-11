@@ -51,18 +51,32 @@ export function ContentEntryHeader({
   sub?: string;
   typeLabel?: string;
 }) {
-  // Glyph-less: the name is the hero.
+  // Glyph-less: the NAME takes the glyph's place as the hero, so the header reads
+  // the same shape as every other entry (hero on the left, type beneath) — just
+  // with a word where a glyph would be. `sub` is the optional headline line; a
+  // mark passes none ("no headline"), a concept/term passes its summary.
   if (title) {
+    const titlePhrase = /\s/.test(title);
     return (
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-4">
+        <div
+          className={`${japaneseFontClass(title)} ${glyphSize(title)} flex-none font-light leading-none text-text ${
+            titlePhrase ? "max-w-[7.5rem] text-balance" : ""
+          }`}
+        >
+          {title}
+        </div>
         <div className="min-w-0 flex-1">
+          {sub ? (
+            <div className="text-[16px] leading-snug text-text [overflow-wrap:anywhere]">{sub}</div>
+          ) : null}
           {typeLabel ? (
-            <div className="text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
+            <div
+              className={`text-[11px] font-medium uppercase tracking-[0.06em] text-accent ${sub ? "mt-1.5" : ""}`}
+            >
               {typeLabel}
             </div>
           ) : null}
-          <h1 className="mt-1.5 text-[22px] font-light leading-snug text-text">{title}</h1>
-          {sub ? <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{sub}</p> : null}
         </div>
         {chips ? <div className="ml-auto flex flex-none items-center gap-1.5">{chips}</div> : null}
       </div>
