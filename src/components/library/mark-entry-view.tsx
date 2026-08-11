@@ -32,13 +32,22 @@ export function MarkEntryView({
   const mark = markFor(entry);
   if (!mark) return null;
 
+  const conversion = isConversionMark(mark);
+
   return (
     <EntrySurface>
-      {/* Name as hero, "mark" type, no headline — the rule is the section below. */}
-      <ContentEntryHeader typeLabel="mark" title={mark.name} />
+      {/* A conversion mark (゛ / ゜) leads with the mark itself as the hero and its
+          name as the headline — the glyph is the thing, and its name is what you
+          call it. Every other mark keeps its name as the hero (long vowels have no
+          single glyph to show). "mark" is the type. */}
+      {conversion ? (
+        <ContentEntryHeader typeLabel="mark" title={mark.glyph} sub={mark.name.toLowerCase()} />
+      ) : (
+        <ContentEntryHeader typeLabel="mark" title={mark.name} />
+      )}
 
       <Section title="The rule" tone="accent">
-        {isConversionMark(mark) ? (
+        {conversion ? (
           <DakutenConversionView mark={mark} set={set} />
         ) : (
           <MarkView mark={mark} />

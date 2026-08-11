@@ -58,9 +58,9 @@ export function DakutenConversionView({ mark, set }: { mark: Mark; set?: SetId }
 
   return (
     <div className="flex flex-col">
-      {/* White, not muted: this is the rule the whole page states, so it reads at
-          body weight rather than as a caption. */}
-      <p className="mb-6 text-[12.5px] leading-relaxed text-text">
+      {/* White, at normal body size: this is the rule the whole page states, so it
+          reads as a sentence rather than a caption. */}
+      <p className="mb-6 text-[15px] leading-relaxed text-text">
         A {mark.name.toLowerCase()} changes the sound of the consonant while the vowel stays the
         same.
       </p>

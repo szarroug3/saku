@@ -85,6 +85,7 @@ const WORD_SENSEI = buildItem(wordEntry("先生"), "word");
 // by entry id only, and their views take the entry id directly (no fabricated
 // ContentItem — they render a glyph-less name header off their own data).
 const MARK = markEntry("dakuten");
+const HANDAKUTEN_MARK = markEntry("handakuten");
 const CONCEPT = grammarConceptEntry("verb-classes");
 
 // Counter/number shelf: a counted form (ひとつ) and a generative rule (11–99).
@@ -171,15 +172,23 @@ export default function ViewsDevPage() {
 
         <Sub title="Marks">
           <Slot tag="Intro — term pages">
-            <TermIntros ids={["dakuten", "handakuten", "yoon", "okurigana", "rendaku"]} />
+            <TermIntros ids={["yoon", "okurigana", "rendaku"]} />
           </Slot>
-          {/* The mark page differs: the lesson narrows a conversion mark to the
-              one script being taught and drops the "in hiragana/katakana" labels. */}
-          <Slot tag="Library — both scripts">
+          {/* Dakuten and handakuten have no separate intro: their library page is
+              the intro — it has everything. The page differs by context, so the
+              lesson narrows the conversion to the one script being taught and drops
+              the "in hiragana/katakana" labels. */}
+          <Slot tag="Dakuten — Library (both scripts)">
             <MarkEntryView entry={MARK} />
           </Slot>
-          <Slot tag="Lesson — one script">
+          <Slot tag="Dakuten — Lesson (one script)">
             <MarkEntryView entry={MARK} set="hiragana" />
+          </Slot>
+          <Slot tag="Handakuten — Library (both scripts)">
+            <MarkEntryView entry={HANDAKUTEN_MARK} />
+          </Slot>
+          <Slot tag="Handakuten — Lesson (one script)">
+            <MarkEntryView entry={HANDAKUTEN_MARK} set="hiragana" />
           </Slot>
         </Sub>
 
