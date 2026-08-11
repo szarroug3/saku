@@ -20,6 +20,7 @@ import { Fragment } from "react";
 // can't see, and the walk's forward button looks broken rather than patient.
 
 import { HearButton } from "@/components/lesson/hear-button";
+import { SoundButton } from "@/components/ui/sound-button";
 import { useFlatSurface } from "@/components/ui";
 import { useQuizConfig } from "@/lib/quiz-config";
 import { countGroupHasBuild } from "@/data/phase-intros";
@@ -321,9 +322,12 @@ export function IntroExamples({
   bare?: boolean;
 }) {
   const { cfg } = useQuizConfig();
-  // Flat on the Library entry page (border kept, the frosty bg-panel/40 dropped),
-  // frosty in the lesson teach walk where no FlatSurfaceProvider sits above.
+  // On a Library entry page (flat) the box is dropped entirely — no border, no
+  // fill — so the examples read as a run on the page like every other reference
+  // section. The frosty box is kept only in the lesson teach walk, where these
+  // sit on the bare session ground and need an edge.
   const flat = useFlatSurface();
+  const boxed = !bare && !flat;
   const hasAccent = examples.some((ex) => ex.accentTo || ex.accentFrom);
   const pairGloss = (gloss: string): [string, string] | null => {
     const inner = /\(([^)]+)\)/.exec(gloss)?.[1] ?? gloss;
@@ -331,13 +335,7 @@ export function IntroExamples({
     return bits.length === 2 ? [bits[0], bits[1]] : null;
   };
   return (
-    <div
-      className={
-        bare
-          ? ""
-          : `rounded-lg border border-border p-4 ${flat ? "" : "bg-panel/40"}`
-      }
-    >
+    <div className={boxed ? "rounded-lg border border-border bg-panel/40 p-4" : ""}>
       <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-text-muted">
         Examples
       </p>
@@ -375,6 +373,9 @@ export function IntroExamples({
             ) : (
               <div className="flex flex-wrap items-baseline gap-x-1.5">
                 <span className="text-text">{accentedText(ex.from, ex.accentFrom)}</span>
+                {ex.sayFrom ? (
+                  <SoundButton text={ex.sayFrom} voiceName={cfg.voiceName} className="self-center" />
+                ) : null}
                 <span className="text-text-muted/70">{ex.op ?? "="}</span>
                 <span className="font-medium text-text">{accentedText(ex.to, ex.accentTo)}</span>
                 {ex.reading ? (
@@ -385,11 +386,7 @@ export function IntroExamples({
                   {ex.gloss}
                 </span>
                 {ex.say ? (
-                  <HearButton
-                    glyph={ex.say}
-                    voiceName={cfg.voiceName}
-                    className="ml-1 self-center"
-                  />
+                  <SoundButton text={ex.say} voiceName={cfg.voiceName} className="ml-1 self-center" />
                 ) : null}
               </div>
             )}

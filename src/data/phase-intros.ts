@@ -142,6 +142,10 @@ export interface IntroExample {
    *  turns on a speaker on that line; omitted leaves the line silent (a purely
    *  written distinction with nothing to hear). */
   say?: string;
+  /** The `from` side's pronunciation, for a form-change example (生きる → 生きた)
+   *  where both sides are words worth hearing. Present renders a speaker beside
+   *  `from` too, so a learner can hear the before and the after. */
+  sayFrom?: string;
 }
 
 /**
@@ -925,8 +929,8 @@ export const OKURIGANA_MOVING: PhaseIntro = {
       lead: "On a verb or an adjective, the tail can change.",
       text: "The okurigana is the part that shifts when the word changes tense or form. The kanji stays put; only the tail moves.",
       examples: [
-        { from: "生きる", accentFrom: "きる", op: "→", to: "生きた", accentTo: "きた", gloss: "lived", say: "生きた" },
-        { from: "生きる", accentFrom: "きる", op: "→", to: "生きない", accentTo: "きない", gloss: "does not live", say: "生きない" },
+        { from: "生きる", accentFrom: "きる", op: "→", to: "生きた", accentTo: "きた", gloss: "lived", sayFrom: "生きる", say: "生きた" },
+        { from: "生きる", accentFrom: "きる", op: "→", to: "生きない", accentTo: "きない", gloss: "does not live", sayFrom: "生きる", say: "生きない" },
       ],
     },
     {
