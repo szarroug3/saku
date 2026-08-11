@@ -51,7 +51,7 @@ export function ContentEntryHeader({ item, chips }: { item: ContentItem; chips?:
 
       <div className="min-w-0 flex-1">
         {text ? (
-          <div className="flex items-center gap-2 text-[18px] leading-snug text-text">
+          <div className="flex items-center gap-2 text-[16px] leading-snug text-text">
             {speakGlyph ? (
               <button
                 type="button"
