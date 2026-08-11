@@ -10,7 +10,6 @@ import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
 import { CharacterEntryView } from "@/components/library/character-entry-view";
-import { WordEntryView } from "@/components/library/word-entry-view";
 import { CounterEntryView } from "@/components/library/counter-entry-view";
 import { CharacterTeachView, KanaTeachView } from "@/components/library/lesson-teach-view";
 import { GrammarEntryView } from "@/components/library/grammar-entry-view";
@@ -214,11 +213,11 @@ export default function ViewsDevPage() {
       </Section>
 
       <Section
-        title="Library &mdash; word page (redesign)"
-        note="A multi-character word: how it's said and what it means, the kanji it's built from with each reading, and a sentence."
+        title="Library &mdash; word page (same component, word role only)"
+        note="A multi-character word (先生) runs through the SAME CharacterEntryView: only the word block, no 'As a word' label (single role), with the kanji it's built from and a sentence."
       >
         {WORD_SENSEI ? (
-          <WordEntryView item={WORD_SENSEI} />
+          <CharacterEntryView item={WORD_SENSEI} />
         ) : (
           <Missing />
         )}

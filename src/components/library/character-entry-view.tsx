@@ -1,23 +1,24 @@
 "use client";
 
-// CHARACTER entry — the redesigned Library page for one Han glyph, COMPOSED BY
-// ROLE. A single glyph is ONE item that plays some set of roles (radical · kanji
-// · word), and this page stacks exactly the sections those roles call for:
-//
-// ORGANISED BY ROLE. The per-role sections carry an ACCENT eyebrow (matching the
-// header's "radical · kanji · word" tags); the universal ones stay white:
+// CHARACTER / WORD entry — the ONE redesigned Library page for anything that is a
+// glyph or a word, COMPOSED BY ROLE. It shows exactly the blocks the item's roles
+// call for, in any combination:
 //
 //   header
-//   As a radical  (accent) — the shapes it takes inside other kanji, and where
-//   As a kanji    (accent) — on'yomi / kun'yomi, then etymology (components + origin)
-//   As a word     (accent) — how the standalone word is pronounced + what it means
-//   How it's written (white) — always
-//   Used as a part in (white) — when other kanji are built on it
+//   As a radical  — the shapes it takes inside other kanji, and where
+//   As a kanji    — on'yomi / kun'yomi, then etymology (components + origin)
+//   As a word     — how it's said + what it means, the kanji it's written with
+//                   (multi-char words), and a sentence it appears in
+//   How it's written — single glyphs only (a multi-char word has no one diagram)
+//   Used as a part in — when other kanji are built on it
 //
-// EVERY section is guarded on ITS OWN content, so a glyph shows only the roles it
-// actually plays: a pure radical (禾) shows no "As a kanji"/"As a word"; 水
-// (radical · kanji · word) shows all three. No per-role forks — one page,
-// sections switched on by content.
+// TWO RULES:
+//   1. Every block is guarded on ITS OWN content — a pure radical (禾) shows no
+//      "As a kanji"/"As a word"; 水 (radical·kanji·word) shows all three; a
+//      multi-char word (先生, kind:"word") shows only the word block.
+//   2. The accent "As a …" eyebrow appears ONLY when the glyph plays MORE THAN
+//      ONE role — with a single role the label is noise (the whole page is that
+//      one thing), so the block drops to a bare divider. See RoleBlock.
 
 import Link from "next/link";
 
@@ -30,13 +31,49 @@ import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { etymologyOf } from "@/data/kanji-etymology";
 import { radicalVariants } from "@/data/radicals";
 import { vocabRow } from "@/data/vocab";
+import { exampleFor } from "@/data/word-examples";
 import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
 import { teachableParts } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
 import { entryHref } from "@/lib/library/href";
+import { piecesOf, type WordPiece } from "@/lib/library/word-pieces";
 import type { ContentItem } from "@/lib/content/item";
 
 const CAP = 5;
+
+type KanjiPiece = Extract<WordPiece, { kind: "kanji" }>;
+
+/** The kanji pieces a multi-char word is written with, and how each is read in it
+ * (先 せん · 生 せい). Empty for a jukujikun (大人) or a glyph with no vocab row. */
+function wordPiecesOf(glyph: string): KanjiPiece[] {
+  const row = vocabRow(glyph);
+  if (!row) return [];
+  return (piecesOf(row) ?? []).filter(
+    (p): p is KanjiPiece => p.kind === "kanji" && p.entry != null,
+  );
+}
+
+/** One role's block. When the glyph plays SEVERAL roles the block wears an accent
+ * "As a …" eyebrow to tell them apart; when it plays only one, the label is noise
+ * (the whole page is that one thing) so it drops to a bare divider. */
+function RoleBlock({
+  title,
+  labelled,
+  children,
+}: {
+  title: string;
+  labelled: boolean;
+  children: React.ReactNode;
+}) {
+  if (labelled) {
+    return (
+      <Section title={title} tone="accent">
+        {children}
+      </Section>
+    );
+  }
+  return <div className="mt-5 border-t border-border/50 pt-5">{children}</div>;
+}
 
 // Variant positions in plain English, with the order the section lists them in:
 // the un-repositioned form first, then around the character top → left → right →
@@ -128,15 +165,29 @@ function readingGroups(
 
 export function CharacterEntryView({ item }: { item: ContentItem }) {
   const glyph = item.glyph;
+  const single = [...glyph].length === 1;
   const isKanji = item.roles.includes("kanji");
   const isRadical = item.roles.includes("radical");
+  // A multi-character word (先生) is kind:"word" with no role set; a single glyph
+  // carries "word" among its roles. Either way it plays the word role here.
+  const isWord = item.roles.includes("word") || item.kind === "word";
 
   const parts = isKanji ? builtFrom(glyph) : [];
   const story = isKanji ? (etymologyOf(glyph)?.originText ?? null) : null;
-  const isWord = item.roles.includes("word");
   const groups = isKanji ? readingGroups(glyph) : [];
   const variants = isRadical ? radicalVariants(glyph) : [];
   const wordRows = isWord ? wordSensesOf(glyph) : [];
+  // A multi-char word shows the kanji it's written with; a single glyph doesn't
+  // split into itself. The example sentence lives in the word block.
+  const wordPieces = isWord && !single ? wordPiecesOf(glyph) : [];
+  const example = isWord ? exampleFor(glyph) : null;
+
+  // Which role blocks actually have something to show, and therefore whether to
+  // label them "As a …": a single-role glyph drops the label (see RoleBlock).
+  const hasRadical = variants.length > 0;
+  const hasKanji = groups.length > 0 || parts.length > 0 || Boolean(story);
+  const hasWord = wordRows.length > 0;
+  const labelled = [hasRadical, hasKanji, hasWord].filter(Boolean).length > 1;
 
   const usedIn = usedAsPartIn(glyph);
   const shownUsedIn = usedIn.slice(0, CAP);
@@ -148,7 +199,7 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
 
         {/* ── AS A RADICAL: the shapes it takes inside other kanji, and where. ── */}
         {variants.length > 0 ? (
-          <Section title="As a radical" tone="accent">
+          <RoleBlock title="As a radical" labelled={labelled}>
             <Lead>It takes a different shape depending on where in a kanji it appears:</Lead>
             <table className="text-[15px]">
               <tbody>
@@ -184,13 +235,13 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
                   ))}
               </tbody>
             </table>
-          </Section>
+          </RoleBlock>
         ) : null}
 
         {/* ── AS A KANJI: on'yomi / kun'yomi, then the etymology (its components
               and where the shape came from). ── */}
-        {groups.length > 0 || parts.length > 0 || story ? (
-          <Section title="As a kanji" tone="accent">
+        {hasKanji ? (
+          <RoleBlock title="As a kanji" labelled={labelled}>
             <div className="flex flex-col gap-6">
               {parts.length > 0 ? (
                 <div>
@@ -262,57 +313,100 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
                 </div>
               ) : null}
             </div>
-          </Section>
+          </RoleBlock>
         ) : null}
 
-        {/* ── AS A WORD: how the standalone word is pronounced and what it means.
-              One row per reading, glosses merged; a diverging sense shows here
-              (生 なま = raw, not the kanji's "life"). ── */}
-        {wordRows.length > 0 ? (
-          <Section title="As a word" tone="accent">
-            <Lead>
-              {wordRows.length > 1
-                ? "It's read more than one way as a word, and the meaning depends on the pronunciation:"
-                : "On its own, this glyph is a word:"}
-            </Lead>
-            <table className="w-full text-[14px]">
-              <tbody>
-                {wordRows.map((w) => (
-                  <tr key={w.reading}>
-                    <td className="whitespace-nowrap py-1 pr-6 align-top">
-                      <span className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => speak(w.reading, "")}
-                          aria-label={`Hear ${w.reading}`}
-                          className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-                        >
-                          <SoundIcon />
-                        </button>
-                        <span className="font-kana text-text">{w.reading}</span>
-                      </span>
-                    </td>
-                    <td className="w-full py-1 align-top text-text-muted">{w.meaning}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Section>
+        {/* ── AS A WORD: how it's said and what it means (a diverging sense shows
+              here — 生 なま = raw), the kanji a multi-char word is written with, and
+              a real sentence it appears in. ── */}
+        {hasWord ? (
+          <RoleBlock title="As a word" labelled={labelled}>
+            <div className="flex flex-col gap-6">
+              <div>
+                <Lead>
+                  {!single
+                    ? "How the word is said, and what it means:"
+                    : wordRows.length > 1
+                      ? "It's read more than one way as a word, and the meaning depends on the pronunciation:"
+                      : "On its own, this glyph is a word:"}
+                </Lead>
+                <table className="w-full text-[14px]">
+                  <tbody>
+                    {wordRows.map((w) => (
+                      <tr key={w.reading}>
+                        <td className="whitespace-nowrap py-1 pr-6 align-top">
+                          <span className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => speak(w.reading, "")}
+                              aria-label={`Hear ${w.reading}`}
+                              className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
+                            >
+                              <SoundIcon />
+                            </button>
+                            <span className="font-kana text-text">{w.reading}</span>
+                          </span>
+                        </td>
+                        <td className="w-full py-1 align-top text-text-muted">{w.meaning}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {wordPieces.length > 0 ? (
+                <div>
+                  <Lead>The kanji it&rsquo;s written with, and how each is read here:</Lead>
+                  <table className="w-full text-[14px]">
+                    <tbody>
+                      {wordPieces.map((p, i) => (
+                        <tr key={`${p.char}-${i}`}>
+                          <td className="whitespace-nowrap py-1 pr-4 align-middle">
+                            <Link
+                              href={entryHref(p.entry!)}
+                              className="flex items-baseline gap-2.5 text-text no-underline"
+                            >
+                              <span className="font-kana text-[20px] leading-none">{p.written}</span>
+                              <span className="font-kana text-[14px] text-accent">{p.reading}</span>
+                            </Link>
+                          </td>
+                          <td className="w-full py-1 align-middle text-[13px] text-text-muted">
+                            {kanjiRow(p.char)?.meanings.slice(0, 2).join(", ") ?? ""}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+
+              {example ? (
+                <div>
+                  <SubLabel>In a sentence</SubLabel>
+                  <p className="font-kana text-[15px] leading-relaxed text-text">{example.jp}</p>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
+                </div>
+              ) : null}
+            </div>
+          </RoleBlock>
         ) : null}
 
         {/* Collapsed by default: the "we don't recommend learning to write early"
-            notice with a Show button that expands the real stroke diagram. Renders
-            its own heading + box, so it sits under a plain divider. */}
-        <div className="mt-5 border-t border-border/50 pt-5">
-          <HowItsWritten
-            item={{
-              entry: item.entry,
-              glyph,
-              kind: isKanji ? "kanji" : "radical",
-              facts: item.facts.map((f) => f.id),
-            }}
-          />
-        </div>
+            notice with a Show button that expands the real stroke diagram. A
+            multi-char word has no single diagram, so it's shown for single glyphs
+            only (matching the word page's no-stroke stance). */}
+        {single ? (
+          <div className="mt-5 border-t border-border/50 pt-5">
+            <HowItsWritten
+              item={{
+                entry: item.entry,
+                glyph,
+                kind: isKanji ? "kanji" : "radical",
+                facts: item.facts.map((f) => f.id),
+              }}
+            />
+          </div>
+        ) : null}
 
         {usedIn.length > 0 ? (
           <Section title="Used as a part in">
