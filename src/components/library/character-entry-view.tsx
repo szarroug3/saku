@@ -6,15 +6,15 @@
 //
 //   header
 //   Built from      (kanji: its components + origin story)
+//   Variant forms   (radical: the shapes it takes in other kanji, + where)
 //   Readings        (kanji: on'yomi / kun'yomi side by side)
-//   Bushu           (radical: what the shape is called)
-//   Variant forms   (radical: the positional forms it takes)
 //   How it's written (always)
 //   Used as a part in (always, when other kanji are built on it)
 //
-// So a pure radical (禾) renders only Bushu + how-it's-written + used-in and
-// stays lean, while 水 (radical · kanji · word) shows its readings AND its bushu
-// AND its variants — one page, no per-role forks. Reference data only.
+// Recognition-first: the forms a radical takes in other kanji lead, above the
+// readings. A pure radical (禾) renders only variant forms + how-it's-written +
+// used-in and stays lean; 水 (radical · kanji · word) shows its variants AND its
+// readings — one page, no per-role forks. Reference data only.
 
 import Link from "next/link";
 
@@ -25,7 +25,7 @@ import { GlassSheen, glassSurface } from "@/components/ui/frost";
 import { speak } from "@/lib/speech";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { etymologyOf } from "@/data/kanji-etymology";
-import { bushuName, radicalVariants } from "@/data/radicals";
+import { radicalVariants } from "@/data/radicals";
 import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
 import { teachableParts } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
@@ -33,10 +33,6 @@ import { entryHref } from "@/lib/library/href";
 import type { ContentItem } from "@/lib/content/item";
 
 const CAP = 5;
-
-const BUSHU_HELP =
-  "The Japanese name for this radical shape, like のぎへん or にんべん. " +
-  "You use it to describe how a kanji is built, not to read the character itself.";
 
 const VARIANT_HELP =
   "The shape this radical changes into when it sits in a particular spot inside a " +
@@ -56,10 +52,25 @@ const POSITION: Record<string, { en: string; rank: number }> = {
   nyou: { en: "bottom-left", rank: 5 },
 };
 
-/** A variant's position as {en, rank}: from the mapped romaji, or its own kana
- * (sorted last) for a position we don't have a phrase for. */
-function positionOf(romaji: string | undefined, kana: string | undefined) {
-  return POSITION[romaji ?? ""] ?? { en: kana ?? "normal", rank: 6 };
+/** The source omits an explicit Position for some forms, but the bushu name
+ * usually states it: a name starting した ("below") is a bottom form, one ending
+ * がしら/かんむり ("crown") is a top form. Fill ONLY those high-confidence blanks
+ * off the name; any other unpositioned form is a base shape used as-is
+ * ("normal"). Never contradicts an explicit Position — it only fills a gap. */
+function derivePosition(nameKana: string): { en: string; rank: number } {
+  if (nameKana.startsWith("した")) return POSITION.ashi;
+  if (nameKana.includes("がしら") || nameKana.includes("かんむり")) return POSITION.kanmuri;
+  return POSITION[""];
+}
+
+/** A variant's position as {en, rank}: the explicit Position when the source has
+ * one, else read off the bushu name, else "normal". */
+function positionOf(v: {
+  position?: { readonly romaji: string; readonly kana: string };
+  name: { readonly kana: string };
+}): { en: string; rank: number } {
+  if (v.position) return POSITION[v.position.romaji] ?? { en: v.position.kana, rank: 6 };
+  return derivePosition(v.name.kana);
 }
 
 /** The components this kanji is built from, each with a short sense. Prefer the
@@ -119,7 +130,6 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
   const parts = isKanji ? builtFrom(glyph) : [];
   const story = isKanji ? (etymologyOf(glyph)?.originText ?? null) : null;
   const groups = isKanji ? readingGroups(glyph) : [];
-  const name = isRadical ? bushuName(glyph) : null;
   const variants = isRadical ? radicalVariants(glyph) : [];
 
   const usedIn = usedAsPartIn(glyph);
@@ -152,6 +162,32 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
               ))}
             </div>
             {story ? <p className="mt-3 text-[13px] leading-relaxed text-text-muted">{story}</p> : null}
+          </Section>
+        ) : null}
+
+        {variants.length > 0 ? (
+          <Section title="Variant forms" help={VARIANT_HELP}>
+            {/* The shapes this radical takes inside other kanji, and where each
+                sits — the recognition cue, so it leads. Ordered normal → top →
+                left → right → bottom. The bushu name is dropped: it's untranslated
+                jargon, and the shape + position are what a reader acts on. */}
+            <table className="text-[15px]">
+              <tbody>
+                {variants
+                  .map((v) => ({ v, pos: positionOf(v) }))
+                  .sort((a, b) => a.pos.rank - b.pos.rank)
+                  .map(({ v, pos }) => (
+                    <tr key={v.glyph}>
+                      <td className="py-1.5 pr-6 align-middle font-kana text-[24px] leading-none text-text">
+                        {v.glyph}
+                      </td>
+                      <td className="whitespace-nowrap py-1.5 align-middle text-[13px] text-text-muted">
+                        {pos.en}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </Section>
         ) : null}
 
@@ -191,40 +227,6 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
                 </div>
               ))}
             </div>
-          </Section>
-        ) : null}
-
-        {name ? (
-          <Section title="Bushu" help={BUSHU_HELP}>
-            <p className="font-kana text-[15px] text-text">{name.kana}</p>
-          </Section>
-        ) : null}
-
-        {variants.length > 0 ? (
-          <Section title="Variant forms" help={VARIANT_HELP}>
-            {/* A table like the readings: each positional form the radical takes
-                in a compound — the glyph, what it's called, and where it sits —
-                ordered normal → top → left → right → bottom. */}
-            <table className="w-full text-[15px]">
-              <tbody>
-                {variants
-                  .map((v) => ({ v, pos: positionOf(v.position?.romaji, v.position?.kana) }))
-                  .sort((a, b) => a.pos.rank - b.pos.rank)
-                  .map(({ v, pos }) => (
-                    <tr key={v.glyph}>
-                      <td className="w-9 py-1 align-middle font-kana text-[22px] leading-none text-text">
-                        {v.glyph}
-                      </td>
-                      <td className="whitespace-nowrap py-1 pr-6 align-middle font-kana text-text">
-                        {v.name.kana}
-                      </td>
-                      <td className="w-full py-1 align-middle text-[12px] text-text-muted">
-                        {pos.en}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
           </Section>
         ) : null}
 
