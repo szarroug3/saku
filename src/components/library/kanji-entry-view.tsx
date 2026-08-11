@@ -47,13 +47,6 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
         <GlassSheen />
         <ContentEntryHeader item={item} />
 
-        <div className="mt-5 border-t border-border/50 pt-5">
-          <HowItsWritten
-            item={{ entry: item.entry, glyph: item.glyph, kind: "kanji", facts: item.facts.map((f) => f.id) }}
-            alwaysOpen
-          />
-        </div>
-
         {parts.length > 0 ? (
           <div className="mt-5 border-t border-border/50 pt-5">
             <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text-muted">
@@ -79,6 +72,13 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
             {story ? <p className="mt-3 text-[13px] leading-relaxed text-text-muted">{story}</p> : null}
           </div>
         ) : null}
+
+        <div className="mt-5 border-t border-border/50 pt-5">
+          <HowItsWritten
+            item={{ entry: item.entry, glyph: item.glyph, kind: "kanji", facts: item.facts.map((f) => f.id) }}
+            alwaysOpen
+          />
+        </div>
 
         {usedIn.length > 0 ? (
           <div className="mt-5 border-t border-border/50 pt-5">

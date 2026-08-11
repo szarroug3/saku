@@ -134,12 +134,12 @@ export default function ViewsDevPage() {
       >
         {KANA_A ? <KanaEntryView item={KANA_A} /> : <Missing />}
         {RADICAL_KI ? (
-          <div className="mt-4 max-w-[560px]">
+          <div className="mt-4">
             <RadicalEntryView item={RADICAL_KI} />
           </div>
         ) : null}
         {KANJI_MEI ? (
-          <div className="mt-4 max-w-[560px]">
+          <div className="mt-4">
             <KanjiEntryView item={KANJI_MEI} />
           </div>
         ) : null}
