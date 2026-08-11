@@ -1,18 +1,18 @@
+"use client";
+
 // KANJI entry — the redesigned Library page for one kanji (a "character" item),
-// on the content model. Under the shared header: how it's written, what it's
-// BUILT FROM (its components, each a link, with the origin story that explains
-// them), and what it is in turn a part OF. Reference data only.
-//
-// Readings are NOT here yet: the model attributes a kanji's readings to the WORDS
-// that attest them (see build-item.ts), so a reading row is reconstructed from
-// vocabulary — a follow-up once that reconstruction is metric-free.
+// on the content model. Under the shared header: the readings (on'yomi / kun'yomi
+// side by side), what it is BUILT FROM (its components, each a link, with the
+// origin story that explains them), how it's written, and what it is in turn a
+// part OF. Reference data only.
 
 import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
-import { FlatSurfaceProvider } from "@/components/ui";
+import { FlatSurfaceProvider, SoundIcon } from "@/components/ui";
 import { GlassSheen, glassSurface } from "@/components/ui/frost";
+import { speak } from "@/lib/speech";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { etymologyOf } from "@/data/kanji-etymology";
 import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
@@ -93,18 +93,32 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
             <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
               Readings
             </p>
-            <div className="flex flex-col gap-2.5">
+            {/* On'yomi and kun'yomi side by side (one column when a kanji has only
+                one type). Each row: sound + reading, then an example word. */}
+            <div className={`grid gap-x-10 gap-y-6 ${groups.length > 1 ? "sm:grid-cols-2" : ""}`}>
               {groups.map((g) => (
-                <div key={g.label} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="w-[68px] shrink-0 text-[12px] text-text-muted">{g.label}</span>
-                  <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    {g.readings.map((r) => (
-                      <span key={r.base} className="font-kana text-[15px] text-text">
-                        {r.base}
-                        <span className="ml-1 font-sans text-[11px] text-text-muted">{r.example}</span>
-                      </span>
-                    ))}
-                  </span>
+                <div key={g.label}>
+                  <p className="mb-2 text-[12px] font-medium text-text-muted">{g.label}</p>
+                  <table className="w-full text-[14px]">
+                    <tbody>
+                      {g.readings.map((r) => (
+                        <tr key={r.base} className="align-baseline">
+                          <td className="whitespace-nowrap py-1 pr-6">
+                            <button
+                              type="button"
+                              onClick={() => speak(r.base, "")}
+                              aria-label={`Hear ${r.base}`}
+                              className="mr-1.5 cursor-pointer border-none bg-transparent p-0 align-[-0.1em] text-accent"
+                            >
+                              <SoundIcon />
+                            </button>
+                            <span className="font-kana text-text">{r.base}</span>
+                          </td>
+                          <td className="w-full py-1 font-kana text-text-muted">{r.example}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               ))}
             </div>
