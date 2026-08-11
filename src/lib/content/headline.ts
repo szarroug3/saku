@@ -22,7 +22,6 @@ import { factInfo } from "@/lib/facts";
 import { meaningFactId, kanjiRow } from "@/data/kanji";
 import { keigoSetForEntry } from "@/data/keigo";
 import { grammarUnitsOf } from "./grammar-unit";
-import { sentenceBuildUnitsOf } from "./sentence-track";
 import type { ContentItem } from "./item";
 
 const KANA_ONLY = /^[\p{Script=Hiragana}\p{Script=Katakana}ーゝゞ〜]+$/u;
@@ -68,7 +67,9 @@ export function itemHeadline(item: ContentItem): Headline {
     case "grammar":
       return { text: grammarUnitsOf(item)[0]?.summary ?? item.glyph, speak: null };
     case "sentence-ordering":
-      return { text: sentenceBuildUnitsOf(item)[0]?.rule ?? item.glyph, speak: null };
+      // The tier name IS the glyph ("Simple sentences"); the ordering rule is
+      // long and lives in the body, so the header carries no headline line.
+      return { text: "", speak: null };
     case "keigo":
       return { text: keigoSetForEntry(item.entry)?.meaning ?? item.glyph, speak: null };
     case "transitivity":

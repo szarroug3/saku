@@ -106,7 +106,7 @@ export function contentTypeLabel(kind: ContentKind, roles: readonly RoleName[]):
     case "transitivity":
       return "verb pair";
     case "sentence-ordering":
-      return "building sentences";
+      return "sentence structure";
     default:
       return kind; // word · counter · kana · keigo
   }

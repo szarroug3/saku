@@ -35,27 +35,39 @@ function glyphSize(glyph: string): string {
 
 export function ContentEntryHeader({ item, chips }: { item: ContentItem; chips?: ReactNode }) {
   const { text, speak: speakGlyph } = itemHeadline(item);
+  const phrase = /\s/.test(item.glyph);
   return (
-    <div className="flex items-start gap-4">
-      <div className={`${japaneseFontClass(item.glyph)} ${glyphSize(item.glyph)} flex-none font-light leading-none text-text`}>
+    // Center the right column against the glyph — a tall kanji and a short kana
+    // both read balanced, without the empty gap that bottom-aligning a short
+    // glyph would leave.
+    <div className="flex items-center gap-4">
+      <div
+        className={`${japaneseFontClass(item.glyph)} ${glyphSize(item.glyph)} flex-none font-light leading-none text-text ${
+          phrase ? "max-w-[7.5rem] text-balance" : ""
+        }`}
+      >
         {item.glyph}
       </div>
 
-      <div className="min-w-0 flex-1 pt-1">
-        <div className="flex items-baseline gap-2 text-[18px] leading-snug text-text">
-          {speakGlyph ? (
-            <button
-              type="button"
-              onClick={() => speak(speakGlyph, "")}
-              aria-label={`Hear ${speakGlyph}`}
-              className="flex-none cursor-pointer border-none bg-transparent p-0 text-accent"
-            >
-              <SoundIcon className="align-[-0.1em]" />
-            </button>
-          ) : null}
-          <span className="[overflow-wrap:anywhere]">{text}</span>
-        </div>
-        <div className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
+      <div className="min-w-0 flex-1">
+        {text ? (
+          <div className="flex items-center gap-2 text-[18px] leading-snug text-text">
+            {speakGlyph ? (
+              <button
+                type="button"
+                onClick={() => speak(speakGlyph, "")}
+                aria-label={`Hear ${speakGlyph}`}
+                className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
+              >
+                <SoundIcon />
+              </button>
+            ) : null}
+            <span className="[overflow-wrap:anywhere]">{text}</span>
+          </div>
+        ) : null}
+        <div
+          className={`text-[11px] font-medium uppercase tracking-[0.06em] text-accent ${text ? "mt-1.5" : ""}`}
+        >
           {item.typeLabel}
         </div>
       </div>
