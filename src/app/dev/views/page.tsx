@@ -10,6 +10,8 @@ import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { GlyphView } from "@/components/library/glyph-view";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
+import { ContentEntryHeader } from "@/components/library/content-entry-header";
+import { glassSurface, GlassSheen } from "@/components/ui/frost";
 import { kanaItems } from "@/lib/content/kana-unit";
 import { UNIT_TRACKS, simulateLessons } from "@/lib/content/unit-tracks";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
@@ -55,6 +57,20 @@ const UP_NEXT = simulateLessons(VOCAB_TRACK, LESSON_RANGE_DEFAULT, 1)[0] ?? null
 // The kana whose Library entry page we redesign first (has an authored mnemonic).
 const KANA_A = kanaItems().find((i) => i.glyph === "あ");
 
+// One item of each type, to show the shared entry header is consistent.
+const HEADER_SAMPLES = [
+  KANA_A,
+  buildGlyphItem("人"),
+  buildGlyphItem("三"),
+  buildItem(wordEntry("先生"), "word"),
+  tsu1 ? formItem(tsu1) : undefined,
+  tens ? unitItem(tens) : undefined,
+  keigo,
+  grammar,
+  verbPair,
+  sentenceItems()[0],
+].filter((i): i is NonNullable<typeof i> => Boolean(i));
+
 export default function ViewsDevPage() {
   return (
     <main className="mx-auto max-w-3xl px-5 py-10 text-text">
@@ -90,6 +106,20 @@ export default function ViewsDevPage() {
         ) : (
           <Missing />
         )}
+      </Section>
+
+      <Section
+        title="Entry header &mdash; one shape, every type"
+        note="Big glyph, then the main line (a spoken reading, or a meaning/rule with no sound), then the type. Read off the item via itemHeadline."
+      >
+        <div className="flex flex-col gap-3">
+          {HEADER_SAMPLES.map((item) => (
+            <div key={String(item.entry)} className={`${glassSurface} p-4`}>
+              <GlassSheen />
+              <ContentEntryHeader item={item} />
+            </div>
+          ))}
+        </div>
       </Section>
 
       <Section
