@@ -20,13 +20,28 @@
 // missing section is already legible.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
-import { EntrySurface, Lead, Section, SubLabel } from "@/components/library/entry-section";
+import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
 import { PatternFamily } from "@/components/library/pattern-family";
 import { PatternTeach } from "@/components/library/pattern-teach";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { libEntry, recipeOf, recipesOf } from "@/lib/library/entries";
-import { attachesTo } from "@/lib/grammar/formula";
 import type { ContentItem } from "@/lib/content/item";
+
+// The kinds of word a pattern hangs on, said the way a learner names them (い- and
+// な-adjectives collapse to "adjective" — the recipe below shows the per-kind
+// form). Joined "x", "x or y", "x, y, or z".
+const HOST_LABEL: Record<string, string> = {
+  verb: "verb",
+  "adj-i": "adjective",
+  "adj-na": "adjective",
+  noun: "noun",
+};
+function hostList(attach: readonly { host: string }[]): string {
+  const labels = [...new Set(attach.map((a) => HOST_LABEL[a.host] ?? a.host))];
+  if (labels.length <= 1) return labels[0] ?? "word";
+  if (labels.length === 2) return `${labels[0]} or ${labels[1]}`;
+  return `${labels.slice(0, -1).join(", ")}, or ${labels[labels.length - 1]}`;
+}
 
 export function GrammarEntryView({ item }: { item: ContentItem }) {
   // recipeOf/recipesOf key off a LibEntry, so resolve the item's id to one. A
@@ -43,54 +58,20 @@ export function GrammarEntryView({ item }: { item: ContentItem }) {
   const familyCluster = pattern.cluster ? (clusterById(pattern.cluster) ?? null) : null;
   const familyMembers = familyCluster ? membersOf(familyCluster) : [];
 
-  const attaches = attachesTo(pattern);
-
   return (
     <EntrySurface>
       <ContentEntryHeader item={item} />
 
-      {/* WHAT IT MEANS — one line per independently-meaningful sense. A pattern
-          with a single sense (〜たい → "want to X") shows one; 〜から carries two
-          (a reason and a starting point), each its own row. The gloss is the
-          plain-English "this is what it does", not a comparison to a sibling —
-          that belongs to the family table below. */}
-      <Section title="Meaning" tone="accent">
-        <Lead>
-          A pattern is a fixed ending you attach to a word. Adding this one makes the
-          whole phrase say:
-        </Lead>
-        <div className="flex flex-col gap-2.5">
-          {patterns.map((p) => (
-            <div key={p.id}>
-              {p.sense ? <SubLabel>{p.sense}</SubLabel> : null}
-              <p className="text-[14px] text-text">{p.gloss}</p>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* WHAT IT ATTACHES TO — the one fact about a pattern that is neither its
-          meaning nor its build, and the thing you cannot guess: knowing 〜すぎる
-          means "too much" but not that it takes adjectives means never writing
-          高すぎる. attachesTo already phrases it in the reader's words ("a verb",
-          "an い-adjective"), including a wrap's two ends. Absent only if the
-          recipe somehow names no host. */}
-      {attaches ? (
-        <Section title="What it attaches to" tone="accent">
-          <Lead>A pattern only works on certain kinds of word. This one:</Lead>
-          <p className="font-kana text-[14px] text-text">{attaches}</p>
-        </Section>
-      ) : null}
-
-      {/* HOW IT'S FORMED — the recipe, rendered by the SAME PatternTeach the entry
-          router mounts, which is the SAME autoPatternPage the lesson teaches with,
-          so the reference and the walk cannot describe the build two ways. One box
-          per independently-meaningful sense. PatternTeach's own "How to build it"
-          label sits inside its card; a fuller redesign would take a variant of
-          PatternTeach without that inner label so this section's eyebrow carries
-          the title alone. */}
+      {/* HOW IT'S FORMED — the whole page now. The meaning is the header gloss and
+          the kinds of word it attaches to fold into this lead ("Take any verb …"),
+          so the page goes straight to the one thing only it can show: the recipe,
+          rendered by the SAME PatternTeach the lesson teaches with. One box per
+          independently-meaningful sense. */}
       <Section title="How it's formed" tone="accent">
-        <Lead>Take any word it attaches to, put it in the right form, and add the ending:</Lead>
+        <Lead>
+          Take any {hostList(pattern.attach)}, put it in the right form, and add the right
+          ending:
+        </Lead>
         <div className="flex flex-col gap-3.5">
           {patterns.map((p) => (
             <PatternTeach key={p.id} pattern={p} />

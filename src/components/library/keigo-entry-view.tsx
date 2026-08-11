@@ -20,13 +20,28 @@ import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
-import { KeigoSetView } from "@/components/library/keigo-set-view";
-import { SoundIcon } from "@/components/ui";
+import { Info, SoundIcon } from "@/components/ui";
 import { keigoSetForEntry } from "@/data/keigo";
 import { grammarConceptEntry, grammarConceptRow } from "@/data/grammar-concepts";
 import { entryHref } from "@/lib/library/href";
 import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
+
+// Per-register label (accent) + the "when do I use this" note, moved off the
+// old form boxes and into a hover tooltip.
+const REGISTER: Record<string, { label: string; help: string }> = {
+  honorific: {
+    label: "Honorific",
+    help: "You raise the other person with this. Use it for the action of someone you are showing respect to, never for yourself.",
+  },
+  humble: {
+    label: "Humble",
+    help: "You humble yourself with this. Use it for your own action, to defer to the person you are speaking to, never for what they do.",
+  },
+};
+
+const KEIGO_HELP =
+  "Keigo doesn't change the original everyday version of the word. These are entirely new words.";
 
 export function KeigoEntryView({ item }: { item: ContentItem }) {
   const set = keigoSetForEntry(item.entry);
@@ -38,57 +53,41 @@ export function KeigoEntryView({ item }: { item: ContentItem }) {
     <EntrySurface>
       <ContentEntryHeader item={item} />
 
-      {/* THE EVERYDAY VERB — the plain word the learner already has, which is the
-          anchor for the whole set: keigo does not add meaning, it swaps the verb
-          for a politer one. A set may replace more than one plain verb (食べる AND
-          飲む both become 召し上がる), so every plain verb is listed with its
-          reading. Absent for the formulaic phrase (いらっしゃいませ), which has no
-          plain partner — there the header's hero is the phrase itself. */}
-      {set.plain.length > 0 ? (
-        <Section title="Everyday verb" tone="accent">
-          <Lead>
-            The plain verb you already know. Keigo does not change what you are saying,
-            only how politely you say it:
-          </Lead>
-          <table className="w-full text-[14px]">
-            <tbody>
-              {set.plain.map((p) => (
-                <tr key={p.keb}>
-                  <td className="whitespace-nowrap py-1 pr-6 align-top">
-                    <span className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => speak(p.reading, "")}
-                        aria-label={`Hear ${p.reading}`}
-                        className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-                      >
-                        <SoundIcon />
-                      </button>
-                      <span className="font-kana text-[18px] leading-none text-text">{p.keb}</span>
-                    </span>
-                  </td>
-                  <td className="w-full py-1 align-middle font-kana text-[13px] text-text-muted">
-                    {p.reading}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Section>
-      ) : null}
-
       {/* THE POLITE FORMS — the honorific verb (for the OTHER person's action) and
-          the humble verb (for YOUR own), each with its reading and the rule for
-          when to reach for it. KeigoSetView is the one layout that knows how to
-          draw a set; the lesson mounts the same one. Its own boxes already carry a
-          border, so it sits directly on the surface — no card around it — to avoid
-          a box inside a box, exactly as the entry router does. */}
-      <Section title="Polite forms" tone="accent">
+          the humble verb (for YOUR own). Each is a boxless row: its register in
+          accent with the "when to use it" note in a tooltip, then the form + its
+          reading. The section's own tooltip carries the one thing a learner must
+          not miss — these are NEW words, not a politer spelling of the plain verb. */}
+      <Section title="Polite forms" tone="accent" help={KEIGO_HELP}>
         <Lead>
           Which one you use is decided by whose action it is: honorific raises the
           other person, humble lowers yourself.
         </Lead>
-        <KeigoSetView set={set} voiceName="" showLead={false} />
+        <div className="flex flex-col gap-5">
+          {set.words.map((w) => {
+            const reg = REGISTER[w.register];
+            return (
+              <div key={w.key}>
+                <p className="mb-1.5 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
+                  {reg?.label ?? w.register}
+                  {reg ? <Info>{reg.help}</Info> : null}
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => speak(w.reading, "")}
+                    aria-label={`Hear ${w.reading}`}
+                    className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
+                  >
+                    <SoundIcon />
+                  </button>
+                  <span className="font-kana text-[22px] leading-none text-text">{w.word}</span>
+                  <span className="font-kana text-[13px] text-text-muted">{w.reading}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </Section>
 
       {/* THE WHY BEHIND IT — the specific verbs above are instances of the
