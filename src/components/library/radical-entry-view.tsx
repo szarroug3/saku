@@ -18,13 +18,13 @@ import { usedAsPartIn } from "@/lib/library/components";
 import { entryHref } from "@/lib/library/href";
 import type { ContentItem } from "@/lib/content/item";
 
-const CAP = 24;
+const CAP = 5;
 
 // What "bushu" means, for the hover-help beside the section — it is a NAME for
 // the shape, not a reading of the character, which the sound-button-free row
 // reinforces.
 const BUSHU_HELP =
-  "The Japanese name for this radical shape — のぎへん, にんべん, and so on. " +
+  "The Japanese name for this radical shape, like のぎへん or にんべん. " +
   "You use it to describe how a kanji is built, not to read the character itself.";
 
 export function RadicalEntryView({ item }: { item: ContentItem }) {

@@ -21,7 +21,7 @@ import { usedAsPartIn } from "@/lib/library/components";
 import { entryHref } from "@/lib/library/href";
 import type { ContentItem } from "@/lib/content/item";
 
-const CAP = 24;
+const CAP = 5;
 
 /** The components this kanji is built from, each with a short sense. Prefer the
  * etymology's typed components (they carry a semantic/phonetic role); fall back

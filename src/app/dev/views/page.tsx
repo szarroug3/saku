@@ -58,8 +58,10 @@ const UP_NEXT = simulateLessons(VOCAB_TRACK, LESSON_RANGE_DEFAULT, 1)[0] ?? null
 
 // The kana whose Library entry page we redesign first (has an authored mnemonic).
 const KANA_A = kanaItems().find((i) => i.glyph === "あ");
-// A radical with several kanji built on it, for the radical entry page.
+// Two radicals for the radical entry page: 禾 (bushu name のぎへん, no variant
+// forms) and 水 (bushu name みず, with the positional variants 氵 / 氺).
 const RADICAL_KI = buildGlyphItem("禾");
+const RADICAL_MIZU = buildGlyphItem("水");
 // A kanji with components + etymology + kanji built on it, for the kanji page.
 const KANJI_MEI = buildGlyphItem("明");
 
@@ -136,6 +138,11 @@ export default function ViewsDevPage() {
         {RADICAL_KI ? (
           <div className="mt-4">
             <RadicalEntryView item={RADICAL_KI} />
+          </div>
+        ) : null}
+        {RADICAL_MIZU ? (
+          <div className="mt-4">
+            <RadicalEntryView item={RADICAL_MIZU} />
           </div>
         ) : null}
         {KANJI_MEI ? (
