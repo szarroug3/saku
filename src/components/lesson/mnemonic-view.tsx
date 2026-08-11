@@ -41,7 +41,7 @@
 // drops the small header glyph in that case so the character never prints twice.
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { Callout } from "@/components/lesson/callout";
 import { Line } from "@/components/lesson/mnemonic-card";
@@ -55,7 +55,6 @@ export function MnemonicView({
   glyph,
   voiceName,
   href,
-  descriptor,
   soundNote,
 }: {
   /** The authored hook — the single source both views render. */
@@ -70,9 +69,6 @@ export function MnemonicView({
    * entry, so the walk-through can open the reference; the entry page passes
    * nothing, because it IS the reference and a link to itself is noise. */
   href?: string;
-  /** Optional muted classification line ("Hiragana · Vowels") — the entry page's
-   * row descriptor. The lesson has no such label and passes nothing. */
-  descriptor?: string;
   /** The irregular-sound call-out ("Said 'chi', not 'ti'"), when this kana has
    * one. Rendered right under the sound line, since it is a correction to how
    * the character is pronounced. Both call sites derive it from the glyph. */
@@ -80,40 +76,21 @@ export function MnemonicView({
 }) {
   const chars = [...m.example.word];
 
-  // Whether the drawing is actually there. `MnemonicImage` owns the fallback;
-  // it just tells us, so we can drop the small header glyph and let its big
-  // fallback glyph be the only printing of the character.
-  const [failed, setFailed] = useState(false);
-  // No candidate path at all is the same situation as a path that 404s, and is
-  // handled the same way rather than as a second code path.
-  const missing = m.image == null || failed;
-
   // The glyph stand-in, sized as a headword: big enough to be the subject of the
   // row, nowhere near the 440px the drawing gets — an undrawn kana should not
   // leave a hole the size of a picture.
-  const glyphClassName =
-    "flex size-[220px] max-w-full items-center justify-center font-kana text-[150px] font-extralight leading-none text-text";
-
-  const picture =
-    m.image == null ? (
-      <span className={glyphClassName} aria-hidden>
-        {m.glyph}
-      </span>
-    ) : (
-      <MnemonicImage
-        src={m.image}
-        glyph={m.glyph}
-        onMissing={() => setFailed(true)}
-        // NO tile: no kq-material, no border, no bg — the art on the bare
-        // surface it was asked to sit on.
-        // Every drawing gets the same responsive square viewport. Width alone
-        // let portrait sources grow much taller than square ones (か was about
-        // 440x690 while あ was 440x440); object-contain preserves each drawing
-        // without letting its intrinsic aspect ratio change the row height.
-        imgClassName="aspect-square w-full max-w-[440px] object-contain"
-        glyphClassName={glyphClassName}
-      />
-    );
+  // The drawing. Every kana has one (Mnemonic.image is required); MnemonicImage
+  // still keeps its own glyph fallback should a file 404. NO tile: the art sits
+  // on the bare surface. Every drawing gets the same responsive square viewport —
+  // object-contain preserves each without its aspect ratio changing the row height.
+  const picture = (
+    <MnemonicImage
+      src={m.image}
+      glyph={m.glyph}
+      imgClassName="aspect-square w-full max-w-[440px] object-contain"
+      glyphClassName="flex size-[220px] max-w-full items-center justify-center font-kana text-[150px] font-extralight leading-none text-text"
+    />
+  );
 
   return (
     <div className="grid items-center gap-x-10 gap-y-7 md:grid-cols-[minmax(0,440px)_1fr]">
@@ -132,30 +109,11 @@ export function MnemonicView({
       </div>
 
       <div className="min-w-0">
-        {/* The glyph leads, the romaji reads it, the object it was drawn as is
-            the pill. The glyph is dropped when the picture is missing, because
-            the fallback on the left is already that character, large. */}
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-          {missing ? null : (
-            <span className="font-kana text-[52px] font-light leading-none text-text">
-              {m.glyph}
-            </span>
-          )}
-          <span className="text-[19px] text-text-muted">{m.romaji}</span>
-          {m.object ? (
-            <span className="rounded-full bg-accent-bg px-2.5 py-0.5 text-[12px] font-medium text-accent">
-              {m.object}
-            </span>
-          ) : null}
-          {descriptor ? (
-            <span className="ml-auto text-[12.5px] text-text-muted">{descriptor}</span>
-          ) : null}
-        </div>
-
         {/* The narrative is the memory hook, so it leads — prominent, full text
-            colour. The analogy is the muted secondary line, with the speaker
-            immediately to its left. */}
-        <p className="mt-5 text-[16px] leading-relaxed">
+            colour. The glyph, reading and object pill are the entry HEADER's job
+            (ContentEntryHeader), so this block is the hook alone. The analogy is
+            the muted secondary line, with the speaker immediately to its left. */}
+        <p className="text-[16px] leading-relaxed">
           <Line line={m.mnemonic} />
         </p>
         <p className="mt-2.5 flex items-baseline gap-2 text-[15px] leading-relaxed text-text-muted">

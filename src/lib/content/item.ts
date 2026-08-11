@@ -7,7 +7,6 @@
 import type { EntryId } from "@/types";
 import type { RoleName } from "@/lib/character-role";
 import type { KanjiEtymology } from "@/data/kanji-etymology";
-import type { Mnemonic } from "@/data/mnemonics";
 import type { Fact } from "./fact";
 
 /**
@@ -81,11 +80,6 @@ export interface ContentItem {
    * a glyph with no etymology (suppressed, or not a kanji). Display-only; not a
    * fact, not a scheduling input. */
   readonly etymology: KanjiEtymology | null;
-  /** The authored memory hook for this glyph — the drawing, sound analogy, story
-   * and a proving word (see @/data/mnemonics). Present for kana today (and any
-   * glyph a mnemonic is authored for); null otherwise. Display-only reference
-   * data the Library reads off the item, not a separate lookup. */
-  readonly mnemonic: Mnemonic | null;
   /** What KIND of thing this is, for display — a character's roles
    * ("radical · kanji · word"), else a per-kind label. Computed ONCE at build
    * (`contentTypeLabel`); views read it, they don't recompute it. */

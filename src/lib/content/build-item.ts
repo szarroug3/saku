@@ -21,7 +21,6 @@ import { kanjiEntry, kanjiRow, meaningFactId } from "@/data/kanji";
 import { radicalEntry, radicalByGlyph, radicalMeaningFactId } from "@/data/radicals";
 import { wordEntry, wordUnitFacts } from "@/data/vocab";
 import { etymologyOf } from "@/data/kanji-etymology";
-import { getMnemonic } from "@/data/mnemonics";
 import { contentTypeLabel } from "./item";
 import type { EntryId, FactId } from "@/types";
 import type { ContentItem, ContentKind } from "./item";
@@ -81,7 +80,6 @@ export function buildGlyphItem(glyph: string): ContentItem | undefined {
     blockedBy: [],
     // The character's origin — explains the components above. A precomputed lookup.
     etymology: etymologyOf(glyph) ?? null,
-    mnemonic: getMnemonic(glyph),
     typeLabel: contentTypeLabel("character", roles),
   };
 }
@@ -121,8 +119,6 @@ export function buildItem(entry: EntryId, kind: ContentKind): ContentItem | unde
     prereqs: directPrereqs(kind, glyph),
     blockedBy: [],
     etymology: null,
-    // A kana carries its authored memory hook; a multi-char word/counter has none.
-    mnemonic: getMnemonic(glyph),
     typeLabel: contentTypeLabel(kind, roles),
   };
 }

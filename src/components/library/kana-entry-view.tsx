@@ -12,11 +12,13 @@
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { GlassSheen, glassSurface } from "@/components/ui/frost";
+import { getMnemonic } from "@/data/mnemonics";
 import type { ContentItem } from "@/lib/content/item";
 
 export function KanaEntryView({ item }: { item: ContentItem }) {
-  const m = item.mnemonic;
-  // A kana with no authored mnemonic yet — nothing to show here.
+  // The mnemonic is kana-specific reference data keyed by glyph — not a base
+  // ContentItem field — so a kana view looks it up.
+  const m = getMnemonic(item.glyph);
   if (!m) return null;
   return (
     <article className={`${glassSurface} p-6`}>

@@ -148,17 +148,15 @@ export interface Mnemonic {
    */
   mnemonic: SoundLine;
   /**
-   * The candidate path to a drawn picture of the object, served from
-   * /public/mnemonics and keyed by the glyph's SCRIPT + romaji (e.g.
-   * "/mnemonics/hiragana/a.webp"). NOT authored on the entry: `getMnemonic`
-   * derives it for every kana from the entry's romaji and the glyph's script
-   * (see `kanaScript`), so it is always present on a returned Mnemonic. It is a
-   * CANDIDATE — the file may not exist. The renderers load it and fall back to
-   * the plain glyph on error, which is how a kana with no drawing shows its
-   * character. The picture is theme-agnostic — the card mounts it on a fixed
-   * light tile — so its own background/transparency doesn't matter.
+   * The path to the drawn picture of the object, served from /public/mnemonics
+   * and keyed by the glyph's SCRIPT + romaji (e.g. "/mnemonics/hiragana/a.webp").
+   * NOT authored on the entry (the table is `Omit<Mnemonic, "image">`):
+   * `getMnemonic` derives it for every kana from the entry's romaji and the
+   * glyph's script (see `kanaScript`), so it is ALWAYS present on a returned
+   * Mnemonic — every kana has a drawing. The picture is theme-agnostic — mounted
+   * on a fixed light tile — so its own background/transparency doesn't matter.
    */
-  image?: string;
+  image: string;
   /** A real beginner word with the kana highlighted. */
   example: MnemonicExample;
   /**
@@ -183,7 +181,7 @@ export interface Mnemonic {
  * renderers fall back to the glyph when that file is absent, so the character
  * shows until one is drawn.
  */
-export const MNEMONICS: Record<MnemonicKey, Mnemonic> = {
+const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
   // ---- Vowels — あ い う え お (APPROVED) --------------------------------
   あ: {
     glyph: "あ",
@@ -2166,23 +2164,28 @@ export function kanaScript(glyph: string): "hiragana" | "katakana" | null {
  * returns non-null, so a kana with no entry shows nothing at all — no
  * placeholder, no empty box. Works for any glyph, kana or (later) kanji.
  */
-export function getMnemonic(glyph: MnemonicKey): Mnemonic | null {
-  const entry = MNEMONICS[glyph];
-  if (!entry) return null;
-  // Every entry gets a CANDIDATE image path derived from its own romaji AND the
-  // glyph's script — the picture at public/mnemonics/<script>/<romaji>.webp.
-  // Splitting by script keeps か and カ (both "ka") from sharing one filename.
-  // It's a candidate, not a promise: the file may not exist yet. The renderers
-  // load it and fall back to the plain glyph on error (a missing file 404s), so
-  // "the drawing shows if the webp is there, else the character" needs no
-  // registry and no fs check here. Drawing a new kana is: drop <romaji>.webp
-  // into public/mnemonics/<script>/ (or a PNG + run `pnpm mnemonic-images`) — no
-  // edit to this table or its test. A glyph that is neither kana (a future
-  // kanji) has no script folder, so it keeps the flat /mnemonics/<romaji>.webp
-  // fallback rather than crashing.
+/** The path to a glyph's drawn picture — /mnemonics/<script>/<romaji>.webp,
+ * split by script so か and カ (both "ka") don't collide on one filename. */
+function imagePath(glyph: string, romaji: string): string {
   const script = kanaScript(glyph);
-  const image = script
-    ? `/mnemonics/${script}/${entry.romaji}.webp`
-    : `/mnemonics/${entry.romaji}.webp`;
-  return { ...entry, image };
+  return script ? `/mnemonics/${script}/${romaji}.webp` : `/mnemonics/${romaji}.webp`;
+}
+
+/**
+ * Every mnemonic, its image path baked in — first-class data computed ONCE at
+ * load, not derived per call. Every kana has a drawing, so `image` is required.
+ * Adding a mnemonic is still just appending to AUTHORED_MNEMONICS; the image is
+ * named by the glyph's script + romaji, no edit here.
+ */
+export const MNEMONICS: Record<MnemonicKey, Mnemonic> = Object.fromEntries(
+  Object.entries(AUTHORED_MNEMONICS).map(([glyph, m]) => [
+    glyph,
+    { ...m, image: imagePath(glyph, m.romaji) },
+  ]),
+) as Record<MnemonicKey, Mnemonic>;
+
+/** The mnemonic for a glyph, or null when there is none — the hide-when-absent
+ * rule both call sites gate on. A plain lookup; the data is already complete. */
+export function getMnemonic(glyph: MnemonicKey): Mnemonic | null {
+  return MNEMONICS[glyph] ?? null;
 }

@@ -887,12 +887,7 @@ function EntryView({ entry }: { entry: LibEntry }) {
               page gives it a row. The pairing #65 wanted survives underneath. */}
           {mnemonic ? (
             <Card>
-              <MnemonicView
-                m={mnemonic}
-                glyph={entry.glyph}
-                voiceName={cfg.voiceName}
-                descriptor={descriptorOf(entry.sub)}
-              />
+              <MnemonicView m={mnemonic} glyph={entry.glyph} voiceName={cfg.voiceName} />
             </Card>
           ) : null}
           {/* The written-form aside, in its own card so it reads as a standalone
@@ -1333,19 +1328,6 @@ function EntryView({ entry }: { entry: LibEntry }) {
   );
 }
 
-/** `entry.sub` ("Hiragana · Vowels あ") minus the section label's trailing
- * representative kana. That kana names the ROW in a list where no character is
- * otherwise shown; on this card the glyph is now printed beside the title, so
- * repeating it in the corner label is a stutter — "Hiragana · Vowels" says it.
- *
- * Only a LONE trailing kana goes. A label whose remainder still carries kana is
- * left whole, because there the kana are the content, not a decorative tag:
- * "W わ + ん" would otherwise be truncated to the nonsense "W わ +". */
-function descriptorOf(sub: string): string {
-  const kana = /[぀-ヿ]/u;
-  const trimmed = sub.replace(/\s+[぀-ヿ]+$/u, "");
-  return trimmed !== sub && !kana.test(trimmed) ? trimmed : sub;
-}
 
 /** A word, linked to its own entry when it has one. The `?? null` case is the
  * join being honest: not every word attesting a reading survived the all-jōyō
