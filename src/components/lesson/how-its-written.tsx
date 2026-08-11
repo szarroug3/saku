@@ -270,26 +270,22 @@ export function HowItsWritten({
     </>
   );
 
-  // TWO MATERIALS, ONE COMPONENT. On the Library entry page (the one and only
-  // alwaysOpen caller) this is a TOP-LEVEL box sitting directly beside a Card, so
-  // there it IS a Card, sharing that surface's radius, padding and material. In
-  // the stepped lesson it is the smaller collapsed-form box below: --panel tone,
-  // smaller radius, tighter padding. EITHER surface flattens under a
-  // FlatSurfaceProvider — the entry page always did (via Card), and the session
-  // teach walk now does too (via `flatSurface` below) — so this section's fill
-  // drops to transparent wherever the owner asked the section panels to go flat.
-  // On a reference page it wears NO box — the section divider above it is the
-  // separation, part of getting away from boxes-within-boxes.
+  // ONE COMPONENT, THREE HOMES. On the Library entry page (`alwaysOpen`) it is a
+  // top-level flat block. Under any other FlatSurfaceProvider — the redesigned
+  // entry pages and the session teach walk — it wears NO box at all: the caller's
+  // section divider is the separation, part of getting away from boxes-within-
+  // boxes. Only on a non-flat screen (the legacy stepped lesson) does it keep its
+  // recessed --panel box with a border.
   if (alwaysOpen) {
     return <div className="flex h-full flex-col">{content}</div>;
   }
 
+  if (flatSurface) {
+    return <>{content}</>;
+  }
+
   return (
-    <div
-      className={`mt-3 rounded-lg border border-border px-3.5 py-3 ${
-        flatSurface ? "bg-transparent" : "bg-panel"
-      }`}
-    >
+    <div className="mt-3 rounded-lg border border-border bg-panel px-3.5 py-3">
       {content}
     </div>
   );

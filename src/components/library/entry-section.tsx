@@ -60,7 +60,10 @@ export function Lead({ children }: { children: React.ReactNode }) {
  * rather than as a box within a box. */
 export function EntrySurface({ children }: { children: React.ReactNode }) {
   return (
-    <FlatSurfaceProvider>
+    // borderless: reused components (NumberConstructionView, KeigoSetView, …) that
+    // render their own <Card> drop the box entirely here, so nothing reads as a
+    // box-within-a-box against these pages' divider-separated sections.
+    <FlatSurfaceProvider borderless>
       <article className={`${glassSurface} p-6`}>
         <GlassSheen />
         {children}

@@ -39,21 +39,40 @@ function cx(...parts: Array<string | false | null | undefined>): string {
  * rather than <Card>, so they keep their material: the owner wants outlined
  * section blocks with their normal chips still inside, not a flattened page.
  */
-const FlatSurfaceContext = createContext(false);
+// Two flat levels. "flat" keeps the border + radius and drops only the frosty
+// fill — the shipped Library entry route's look. "borderless" drops the box
+// entirely (no border, radius, or padding), for the REDESIGNED entry pages whose
+// own sections are divider-separated and want no boxes-within-boxes. A plain
+// FlatSurfaceProvider still means "flat"; EntrySurface opts into "borderless".
+type FlatLevel = "flat" | "borderless";
+const FlatSurfaceContext = createContext<FlatLevel | null>(null);
 
-export function FlatSurfaceProvider({ children }: { children: ReactNode }) {
+export function FlatSurfaceProvider({
+  children,
+  borderless = false,
+}: {
+  children: ReactNode;
+  /** Drop the box border/radius/padding too, not just the fill. */
+  borderless?: boolean;
+}) {
   return (
-    <FlatSurfaceContext.Provider value={true}>
+    <FlatSurfaceContext.Provider value={borderless ? "borderless" : "flat"}>
       {children}
     </FlatSurfaceContext.Provider>
   );
 }
 
-/** True when the surrounding surface should render FLAT (transparent fill,
- * border kept). False everywhere no provider sits above — i.e. every screen but
- * the Library entry page — so all other Cards keep their frost untouched. */
+/** True when the surrounding surface should render FLAT (transparent fill) — at
+ * either level. False everywhere no provider sits above, so all other Cards keep
+ * their frost untouched. */
 export function useFlatSurface(): boolean {
-  return useContext(FlatSurfaceContext);
+  return useContext(FlatSurfaceContext) !== null;
+}
+
+/** True when the surface wants NO box at all (border + radius + padding dropped),
+ * not just the fill — the redesigned entry pages under EntrySurface. */
+export function useBorderlessSurface(): boolean {
+  return useContext(FlatSurfaceContext) === "borderless";
 }
 
 export function Card({
@@ -72,13 +91,18 @@ export function Card({
   // is `bg-transparent`, not a hardcoded colour, so the flat look holds in every
   // theme. The flag comes from an explicit prop OR the surrounding provider.
   const inheritedFlat = useFlatSurface();
+  const borderless = useBorderlessSurface();
   const flat = flatProp || inheritedFlat;
   return (
     <div
       className={cx(
-        flat
-          ? "mb-3.5 rounded-xl border border-border bg-transparent p-[18px]"
-          : "kq-material mb-3.5 rounded-xl border border-border bg-card p-[18px]",
+        borderless
+          ? // No box at all — the redesigned entry pages separate sections with a
+            // divider, so a reused component's Card should just be its content.
+            "mb-3.5 bg-transparent"
+          : flat
+            ? "mb-3.5 rounded-xl border border-border bg-transparent p-[18px]"
+            : "kq-material mb-3.5 rounded-xl border border-border bg-card p-[18px]",
         className,
       )}
     >
