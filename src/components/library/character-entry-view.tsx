@@ -110,22 +110,26 @@ function positionOf(v: {
   return derivePosition(v.name.kana);
 }
 
-/** The word senses of a single-char word: one row per reading, its glosses
- * merged. Sourced from vocab (not the teach-unit meanings, which fold the kanji's
- * core sense onto the primary reading), so 生 reads なま → "raw", not "life/raw".
- * Empty when the glyph is not a standalone word. */
-function wordSensesOf(glyph: string): { reading: string; meaning: string }[] {
+/** A word's readings, and for each the DISTINCT meanings it carries — one string
+ * per JMdict sense (its synonym glosses comma-joined), so we can tell "one meaning
+ * said several ways" (先生: teacher/instructor/master — one sense) from "several
+ * meanings" (two senses under one reading). Sourced from vocab, not the teach-unit
+ * meanings (which fold the kanji's core sense onto the primary reading), so 生
+ * reads なま → "raw", not "life/raw". Empty when the glyph is not a standalone word. */
+interface WordReading {
+  readonly reading: string;
+  /** One entry per distinct sense; each is that sense's glosses joined. */
+  readonly meanings: string[];
+}
+function wordSensesOf(glyph: string): WordReading[] {
   const row = vocabRow(glyph);
   if (!row) return [];
   const byReading = new Map<string, string[]>();
   for (const s of row.senses) {
-    byReading.set(s.reb, [...(byReading.get(s.reb) ?? []), ...s.glosses]);
+    byReading.set(s.reb, [...(byReading.get(s.reb) ?? []), s.glosses.join(", ")]);
   }
-  if (byReading.size === 0) byReading.set(row.reb, [...row.glosses]);
-  return [...byReading].map(([reading, gl]) => ({
-    reading,
-    meaning: [...new Set(gl)].join(", "),
-  }));
+  if (byReading.size === 0) byReading.set(row.reb, [row.glosses.join(", ")]);
+  return [...byReading].map(([reading, meanings]) => ({ reading, meanings }));
 }
 
 /** The components this kanji is built from, each with a short sense. Prefer the
@@ -163,7 +167,18 @@ function readingGroups(
   ].filter((g) => g.readings.length > 0);
 }
 
-export function CharacterEntryView({ item }: { item: ContentItem }) {
+export function CharacterEntryView({
+  item,
+  lesson = false,
+}: {
+  item: ContentItem;
+  /** LESSON mode. The lesson teaches ONE pronunciation, so the "As a word" block
+   * shows only the first reading. Everything else is identical to the Library
+   * page — and because the "As a word" lead is driven by what's actually shown,
+   * it re-reads correctly on its own (a word with several meanings under that one
+   * reading still says "It has multiple meanings"). */
+  lesson?: boolean;
+}) {
   const glyph = item.glyph;
   const single = [...glyph].length === 1;
   const isKanji = item.roles.includes("kanji");
@@ -176,7 +191,10 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
   const story = isKanji ? (etymologyOf(glyph)?.originText ?? null) : null;
   const groups = isKanji ? readingGroups(glyph) : [];
   const variants = isRadical ? radicalVariants(glyph) : [];
-  const wordRows = isWord ? wordSensesOf(glyph) : [];
+  const allWordRows = isWord ? wordSensesOf(glyph) : [];
+  // The lesson teaches one pronunciation, so it shows one reading; the Library
+  // shows every reading. The lead below reads off THIS list, so it stays right.
+  const wordRows = lesson ? allWordRows.slice(0, 1) : allWordRows;
   // A multi-char word shows the kanji it's written with; a single glyph doesn't
   // split into itself. The example sentence lives in the word block.
   const wordPieces = isWord && !single ? wordPiecesOf(glyph) : [];
@@ -323,13 +341,19 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
           <RoleBlock title="As a word" labelled={labelled}>
             <div className="flex flex-col gap-6">
               <div>
-                <Lead>
-                  {!single
-                    ? "How the word is said, and what it means:"
-                    : wordRows.length > 1
-                      ? "It's read more than one way as a word, and the meaning depends on the pronunciation:"
-                      : "On its own, this glyph is a word:"}
-                </Lead>
+                {/* The lead is DATA-DRIVEN off what's actually shown: several
+                    readings → the meaning depends on which; one reading with
+                    several meanings → say so; one of each → no lead. In lesson
+                    mode wordRows is capped to one reading, so this reads correctly
+                    on its own. */}
+                {wordRows.length > 1 ? (
+                  <Lead>
+                    It&rsquo;s read more than one way as a word, and the meaning depends on the
+                    pronunciation:
+                  </Lead>
+                ) : wordRows[0] && wordRows[0].meanings.length > 1 ? (
+                  <Lead>It has more than one meaning:</Lead>
+                ) : null}
                 <table className="w-full text-[14px]">
                   <tbody>
                     {wordRows.map((w) => (
@@ -347,7 +371,15 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
                             <span className="font-kana text-text">{w.reading}</span>
                           </span>
                         </td>
-                        <td className="w-full py-1 align-top text-text-muted">{w.meaning}</td>
+                        <td className="w-full py-1 align-top text-text-muted">
+                          {w.meanings.length > 1
+                            ? w.meanings.map((m, i) => (
+                                <span key={i} className="block">
+                                  {m}
+                                </span>
+                              ))
+                            : w.meanings[0]}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
