@@ -352,8 +352,9 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
           </Section>
         ) : null}
 
-        {/* HowItsWritten renders its own white eyebrow heading, so it sits under a
-            plain divider rather than inside a titled Section. */}
+        {/* Collapsed by default: the "we don't recommend learning to write early"
+            notice with a Show button that expands the real stroke diagram. Renders
+            its own heading + box, so it sits under a plain divider. */}
         <div className="mt-5 border-t border-border/50 pt-5">
           <HowItsWritten
             item={{
@@ -362,7 +363,6 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
               kind: isKanji ? "kanji" : "radical",
               facts: item.facts.map((f) => f.id),
             }}
-            alwaysOpen
           />
         </div>
 
