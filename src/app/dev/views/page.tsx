@@ -10,8 +10,7 @@ import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { GlyphView } from "@/components/library/glyph-view";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
-import { RadicalEntryView } from "@/components/library/radical-entry-view";
-import { KanjiEntryView } from "@/components/library/kanji-entry-view";
+import { CharacterEntryView } from "@/components/library/character-entry-view";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
 import { kanaItems } from "@/lib/content/kana-unit";
@@ -135,19 +134,21 @@ export default function ViewsDevPage() {
         note="The full reference for one item, on the content model — starting with kana: the mnemonic (drawing, sound analogy, story, proving word) read off item.mnemonic, in the glass surface."
       >
         {KANA_A ? <KanaEntryView item={KANA_A} /> : <Missing />}
+        {/* Composed-by-role character page: 禾 (radical only, lean), 明 (kanji),
+            水 (radical · kanji · word — readings AND bushu AND variants). */}
         {RADICAL_KI ? (
           <div className="mt-4">
-            <RadicalEntryView item={RADICAL_KI} />
-          </div>
-        ) : null}
-        {RADICAL_MIZU ? (
-          <div className="mt-4">
-            <RadicalEntryView item={RADICAL_MIZU} />
+            <CharacterEntryView item={RADICAL_KI} />
           </div>
         ) : null}
         {KANJI_MEI ? (
           <div className="mt-4">
-            <KanjiEntryView item={KANJI_MEI} />
+            <CharacterEntryView item={KANJI_MEI} />
+          </div>
+        ) : null}
+        {RADICAL_MIZU ? (
+          <div className="mt-4">
+            <CharacterEntryView item={RADICAL_MIZU} />
           </div>
         ) : null}
       </Section>

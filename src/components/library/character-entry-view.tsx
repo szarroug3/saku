@@ -1,10 +1,20 @@
 "use client";
 
-// KANJI entry — the redesigned Library page for one kanji (a "character" item),
-// on the content model. Under the shared header: the readings (on'yomi / kun'yomi
-// side by side), what it is BUILT FROM (its components, each a link, with the
-// origin story that explains them), how it's written, and what it is in turn a
-// part OF. Reference data only.
+// CHARACTER entry — the redesigned Library page for one Han glyph, COMPOSED BY
+// ROLE. A single glyph is ONE item that plays some set of roles (radical · kanji
+// · word), and this page stacks exactly the sections those roles call for:
+//
+//   header
+//   Built from      (kanji: its components + origin story)
+//   Readings        (kanji: on'yomi / kun'yomi side by side)
+//   Bushu           (radical: what the shape is called)
+//   Variant forms   (radical: the positional forms it takes)
+//   How it's written (always)
+//   Used as a part in (always, when other kanji are built on it)
+//
+// So a pure radical (禾) renders only Bushu + how-it's-written + used-in and
+// stays lean, while 水 (radical · kanji · word) shows its readings AND its bushu
+// AND its variants — one page, no per-role forks. Reference data only.
 
 import Link from "next/link";
 
@@ -15,6 +25,7 @@ import { GlassSheen, glassSurface } from "@/components/ui/frost";
 import { speak } from "@/lib/speech";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { etymologyOf } from "@/data/kanji-etymology";
+import { bushuName, radicalVariants } from "@/data/radicals";
 import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
 import { teachableParts } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
@@ -22,6 +33,24 @@ import { entryHref } from "@/lib/library/href";
 import type { ContentItem } from "@/lib/content/item";
 
 const CAP = 5;
+
+const BUSHU_HELP =
+  "The Japanese name for this radical shape, like のぎへん or にんべん. " +
+  "You use it to describe how a kanji is built, not to read the character itself.";
+
+const VARIANT_HELP =
+  "The shape this radical changes into when it sits in a particular spot inside a " +
+  "kanji — 水 becomes 氵 on the left. The label says where in the kanji it appears.";
+
+// The five positions the data uses, in plain English (keyed by romaji, the
+// stable field). A position we don't have a phrase for falls back to its kana.
+const POSITION_EN: Record<string, string> = {
+  hen: "left side",
+  tsukuri: "right side",
+  kanmuri: "top",
+  ashi: "bottom",
+  nyou: "wraps bottom-left",
+};
 
 /** The components this kanji is built from, each with a short sense. Prefer the
  * etymology's typed components (they carry a semantic/phonetic role); fall back
@@ -58,11 +87,32 @@ function readingGroups(
   ].filter((g) => g.readings.length > 0);
 }
 
-export function KanjiEntryView({ item }: { item: ContentItem }) {
-  const story = etymologyOf(item.glyph)?.originText ?? null;
-  const parts = builtFrom(item.glyph);
-  const groups = readingGroups(item.glyph);
-  const usedIn = usedAsPartIn(item.glyph);
+/** A titled section under a top divider — the one shape every block below the
+ * header shares. */
+function Section({ title, help, children }: { title: string; help?: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-5 border-t border-border/50 pt-5">
+      <p className="mb-3 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] text-text">
+        {title}
+        {help ? <Info>{help}</Info> : null}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+export function CharacterEntryView({ item }: { item: ContentItem }) {
+  const glyph = item.glyph;
+  const isKanji = item.roles.includes("kanji");
+  const isRadical = item.roles.includes("radical");
+
+  const parts = isKanji ? builtFrom(glyph) : [];
+  const story = isKanji ? (etymologyOf(glyph)?.originText ?? null) : null;
+  const groups = isKanji ? readingGroups(glyph) : [];
+  const name = isRadical ? bushuName(glyph) : null;
+  const variants = isRadical ? radicalVariants(glyph) : [];
+
+  const usedIn = usedAsPartIn(glyph);
   const shownUsedIn = usedIn.slice(0, CAP);
   const restUsedIn = usedIn.length - shownUsedIn.length;
 
@@ -73,10 +123,7 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
         <ContentEntryHeader item={item} />
 
         {parts.length > 0 ? (
-          <div className="mt-5 border-t border-border/50 pt-5">
-            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
-              Built from
-            </p>
+          <Section title="Built from">
             <div className="flex flex-col gap-1.5">
               {parts.map((p) => (
                 <Link
@@ -95,14 +142,11 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
               ))}
             </div>
             {story ? <p className="mt-3 text-[13px] leading-relaxed text-text-muted">{story}</p> : null}
-          </div>
+          </Section>
         ) : null}
 
         {groups.length > 0 ? (
-          <div className="mt-5 border-t border-border/50 pt-5">
-            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
-              Readings
-            </p>
+          <Section title="Readings">
             {/* On'yomi and kun'yomi side by side (one column when a kanji has only
                 one type). Each row: sound + reading, then an example word. */}
             <div className={`grid gap-x-10 gap-y-6 ${groups.length > 1 ? "sm:grid-cols-2" : ""}`}>
@@ -137,21 +181,53 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
                 </div>
               ))}
             </div>
-          </div>
+          </Section>
         ) : null}
 
+        {name ? (
+          <Section title="Bushu" help={BUSHU_HELP}>
+            <p className="font-kana text-[15px] text-text">{name.kana}</p>
+          </Section>
+        ) : null}
+
+        {variants.length > 0 ? (
+          <Section title="Variant forms" help={VARIANT_HELP}>
+            {/* Each positional form the radical takes in a compound — the glyph,
+                what it's called, and where it sits (へん = left side, …). */}
+            <div className="flex flex-col gap-2.5">
+              {variants.map((v) => (
+                <div key={v.glyph} className="flex items-baseline gap-2.5 text-[15px]">
+                  <span className="w-6 flex-none font-kana text-[22px] leading-none text-text">
+                    {v.glyph}
+                  </span>
+                  <span className="font-kana text-text">{v.name.kana}</span>
+                  {v.position ? (
+                    <span className="text-[12px] text-text-muted">
+                      · {POSITION_EN[v.position.romaji] ?? v.position.kana}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </Section>
+        ) : null}
+
+        {/* HowItsWritten renders its own white eyebrow heading, so it sits under a
+            plain divider rather than inside a titled Section. */}
         <div className="mt-5 border-t border-border/50 pt-5">
           <HowItsWritten
-            item={{ entry: item.entry, glyph: item.glyph, kind: "kanji", facts: item.facts.map((f) => f.id) }}
+            item={{
+              entry: item.entry,
+              glyph,
+              kind: isKanji ? "kanji" : "radical",
+              facts: item.facts.map((f) => f.id),
+            }}
             alwaysOpen
           />
         </div>
 
         {usedIn.length > 0 ? (
-          <div className="mt-5 border-t border-border/50 pt-5">
-            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
-              Used as a part in
-            </p>
+          <Section title="Used as a part in">
             <div className="flex flex-col gap-1.5">
               {shownUsedIn.map((c) => (
                 <Link
@@ -169,7 +245,7 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
             {restUsedIn > 0 ? (
               <p className="mt-2.5 text-[12px] text-text-muted">· {restUsedIn} more</p>
             ) : null}
-          </div>
+          </Section>
         ) : null}
       </article>
     </FlatSurfaceProvider>
