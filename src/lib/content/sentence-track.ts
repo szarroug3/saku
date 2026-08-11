@@ -65,7 +65,6 @@ export function sentenceItems(): ContentItem[] {
       roles: [],
       prereqs: [],
       blockedBy: [],
-      etymology: null,
       typeLabel: contentTypeLabel("sentence-ordering", []),
     } satisfies ContentItem;
   });

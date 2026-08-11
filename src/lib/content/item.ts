@@ -6,7 +6,6 @@
 
 import type { EntryId } from "@/types";
 import type { RoleName } from "@/lib/character-role";
-import type { KanjiEtymology } from "@/data/kanji-etymology";
 import type { Fact } from "./fact";
 
 /**
@@ -75,11 +74,6 @@ export interface ContentItem {
    * scheduler defers this item until every one is learned; if the block never
    * lifts, it is never taught. Empty for everything with no cross-track gate. */
   readonly blockedBy: readonly EntryId[];
-  /** The glyph's origin story — a precomputed lookup (etymologyOf), attached
-   * because it EXPLAINS the `prereqs` (the components it is built from). Null for
-   * a glyph with no etymology (suppressed, or not a kanji). Display-only; not a
-   * fact, not a scheduling input. */
-  readonly etymology: KanjiEtymology | null;
   /** What KIND of thing this is, for display — a character's roles
    * ("radical · kanji · word"), else a per-kind label. Computed ONCE at build
    * (`contentTypeLabel`); views read it, they don't recompute it. */
