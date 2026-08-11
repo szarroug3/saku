@@ -35,7 +35,7 @@ import { useId, useState } from "react";
 
 import { StrokeOrder } from "@/components/lesson/stroke-order";
 import { WhyDisclosure } from "@/components/lesson/why";
-import { Card, useFlatSurface } from "@/components/ui";
+import { useFlatSurface } from "@/components/ui";
 import { kanjiEntry } from "@/data/kanji";
 import { WHY_STROKE_ORDER, WHY_WRITING_EARLY } from "@/data/why";
 // What this section can say when there is no diagram is worked out in lib, off
@@ -276,8 +276,10 @@ export function HowItsWritten({
   // FlatSurfaceProvider — the entry page always did (via Card), and the session
   // teach walk now does too (via `flatSurface` below) — so this section's fill
   // drops to transparent wherever the owner asked the section panels to go flat.
+  // On a reference page it wears NO box — the section divider above it is the
+  // separation, part of getting away from boxes-within-boxes.
   if (alwaysOpen) {
-    return <Card className="flex h-full flex-col">{content}</Card>;
+    return <div className="flex h-full flex-col">{content}</div>;
   }
 
   return (
