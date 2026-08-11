@@ -23,8 +23,13 @@ import type { NumberConstruction } from "@/data/number-construction";
 
 export function NumberConstructionView({
   construction,
+  hideExamples = false,
 }: {
   construction: NumberConstruction;
+  /** Drop the worked-example count tables. The redesigned counter page removes
+   * them — each counter's exceptions are stated in its prose (一本 → いっぽん),
+   * so the full 1–10 tables were more than the page needs. */
+  hideExamples?: boolean;
 }) {
   return (
     <>
@@ -35,12 +40,7 @@ export function NumberConstructionView({
         <IntroBody body={construction.body} measure="" />
       </Card>
 
-      {/* The worked example tables, UNDERNEATH the prose in their own Card — the
-          evidence for the rule above it, split Regular / Irregular exactly like a
-          grammar build page. A category with no sound shift (the tens, 〜枚, 〜台)
-          carries a single untitled table. Titles show only when both groups exist;
-          IntroCountTables owns that rule so the Library and the lesson match. */}
-      {construction.exampleGroups.length > 0 ? (
+      {!hideExamples && construction.exampleGroups.length > 0 ? (
         <Card className="mb-3.5">
           <IntroCountTables groups={construction.exampleGroups} />
         </Card>

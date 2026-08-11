@@ -225,6 +225,9 @@ export default function ViewsDevPage() {
           {/* The dakuten mark, taught one script at a time: the hiragana lesson
               shows only the hiragana strips, no "in hiragana/in katakana" labels. */}
           <MarkEntryView entry={MARK} set="hiragana" />
+          {/* Same CounterEntryView the library uses; the counter page reads the
+              same in both contexts today (examples dropped in both). */}
+          {COUNTER_TSU ? <CounterEntryView item={COUNTER_TSU} lesson /> : <Missing />}
         </div>
       </Section>
 

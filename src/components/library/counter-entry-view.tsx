@@ -37,7 +37,18 @@ import { numberConstructionFor } from "@/data/number-construction";
 import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
 
-export function CounterEntryView({ item }: { item: ContentItem }) {
+export function CounterEntryView({
+  item,
+  lesson = false,
+}: {
+  item: ContentItem;
+  /** The SAME page in the lesson intro. The counter page shows the same thing in
+   * both contexts today (unlike a word, whose lesson hides the readings it isn't
+   * teaching), so this only reserves the seam for a future difference; the
+   * example tables are dropped in both. */
+  lesson?: boolean;
+}) {
+  void lesson;
   // The item is EITHER a counted form OR a construction rule; the two lookups are
   // mutually exclusive on a given entry (a form entry names no rule, and a rule
   // entry names no form), so at most one of these is non-null.
@@ -45,6 +56,9 @@ export function CounterEntryView({ item }: { item: ContentItem }) {
   const construction = numberConstructionFor(item.entry);
 
   if (!form && !construction) return null;
+
+  // 〜つ is the general counter, worth calling out on its own pages.
+  const isTsu = form?.counter === "つ";
 
   return (
     <EntrySurface>
@@ -90,6 +104,13 @@ export function CounterEntryView({ item }: { item: ContentItem }) {
               </tr>
             </tbody>
           </table>
+          {isTsu ? (
+            <p className="mt-4 text-[13px] leading-relaxed text-text-muted">
+              〜つ works when nothing else does and can count almost anything up to ten. When you
+              don&rsquo;t know the right counter, this one still works, and you&rsquo;ll be
+              understood.
+            </p>
+          ) : null}
         </Section>
       ) : null}
 
@@ -97,10 +118,10 @@ export function CounterEntryView({ item }: { item: ContentItem }) {
       {construction ? (
         <Section title="How it's built" tone="accent">
           <Lead>{construction.summary}</Lead>
-          {/* The lesson's own rule card + worked-example tables, so the reference
-              and the lesson cannot drift. Inside EntrySurface's flat context its
-              Cards drop their fill and read as bordered blocks on the glass. */}
-          <NumberConstructionView construction={construction} />
+          {/* The lesson's own rule card, so the reference and the lesson cannot
+              drift. Example tables dropped: each counter's exceptions are stated in
+              its prose, so the full 1–10 tables were more than the page needs. */}
+          <NumberConstructionView construction={construction} hideExamples />
         </Section>
       ) : null}
     </EntrySurface>
