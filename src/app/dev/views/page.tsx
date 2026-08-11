@@ -13,6 +13,17 @@ import { CharacterEntryView } from "@/components/library/character-entry-view";
 import { WordEntryView } from "@/components/library/word-entry-view";
 import { CounterEntryView } from "@/components/library/counter-entry-view";
 import { CharacterTeachView, KanaTeachView } from "@/components/library/lesson-teach-view";
+import { GrammarEntryView } from "@/components/library/grammar-entry-view";
+import { KeigoEntryView } from "@/components/library/keigo-entry-view";
+import { GrammarConceptEntryView } from "@/components/library/grammar-concept-entry-view";
+import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
+import { SentenceEntryView } from "@/components/library/sentence-entry-view";
+import { MarkEntryView } from "@/components/library/mark-entry-view";
+import { TermEntryView } from "@/components/library/term-entry-view";
+import { markEntry } from "@/data/marks";
+import { termEntry } from "@/data/terms";
+import { grammarConceptEntry } from "@/data/grammar-concepts";
+import type { EntryId } from "@/types";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
 import { kanaItems } from "@/lib/content/kana-unit";
@@ -72,6 +83,25 @@ const NUSHI = buildGlyphItem("主");
 // A multi-character word for the word page (kanji pieces 先 せん · 生 せい + a
 // corpus example sentence).
 const WORD_SENSEI = buildItem(wordEntry("先生"), "word");
+
+// Marks, terms and grammar concepts have no buildItem path — they're referenced
+// by entry id only. The views read item.entry for their lookup and pass item to
+// the shared header, so a minimal literal item is enough for the gallery.
+function refItem(entry: EntryId, typeLabel: string): ContentItem {
+  return {
+    entry,
+    kind: "grammar",
+    glyph: "",
+    facts: [],
+    roles: [],
+    prereqs: [],
+    blockedBy: [],
+    typeLabel,
+  };
+}
+const MARK_ITEM = refItem(markEntry("dakuten"), "mark");
+const TERM_ITEM = refItem(termEntry("counter"), "term");
+const CONCEPT_ITEM = refItem(grammarConceptEntry("verb-classes"), "grammar concept");
 
 /** The primary pronunciation unit a lesson would teach for an item (the first). */
 function primaryUnit(item: ContentItem | undefined): PronunciationUnit | undefined {
@@ -220,6 +250,29 @@ export default function ViewsDevPage() {
           ) : (
             <Missing />
           )}
+        </div>
+      </Section>
+
+      <Section
+        title="Library &mdash; grammar / keigo / concept (redesign, draft)"
+        note="Grammar pattern (meaning, attaches-to, recipe, family), keigo set (plain verb + polite forms), and a grammar concept (verb classes)."
+      >
+        <div className="flex flex-col gap-4">
+          {grammar ? <GrammarEntryView item={grammar} /> : <Missing />}
+          {keigo ? <KeigoEntryView item={keigo} /> : <Missing />}
+          <GrammarConceptEntryView item={CONCEPT_ITEM} />
+        </div>
+      </Section>
+
+      <Section
+        title="Library &mdash; verb pair / sentence / mark / term (redesign, draft)"
+        note="Transitivity pair (it happens vs someone does it), a sentence-ordering tier, and the thin reference types (diacritic mark, glossary term)."
+      >
+        <div className="flex flex-col gap-4">
+          {verbPair ? <VerbPairEntryView item={verbPair} /> : <Missing />}
+          {sentenceItems()[0] ? <SentenceEntryView item={sentenceItems()[0]!} /> : <Missing />}
+          <MarkEntryView item={MARK_ITEM} />
+          <TermEntryView item={TERM_ITEM} />
         </div>
       </Section>
 
