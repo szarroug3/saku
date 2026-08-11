@@ -15,13 +15,24 @@
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Section } from "@/components/library/entry-section";
+import { RelatedSection } from "@/components/library/related-section";
 import { TermView } from "@/components/library/term-view";
-import { termFor } from "@/data/terms";
+import { termEntry, termFor, termRow } from "@/data/terms";
+import { entryHref } from "@/lib/library/href";
 import type { EntryId } from "@/types";
 
 export function TermEntryView({ entry }: { entry: EntryId }) {
   const term = termFor(entry);
   if (!term) return null;
+
+  // Resolve each related term id to a name + Library link, dropping any that no
+  // longer name a real term so a typo can't render a dead chip.
+  const related = (term.related ?? [])
+    .map((id) => {
+      const row = termRow(id);
+      return row ? { label: row.name, href: entryHref(termEntry(id)) } : null;
+    })
+    .filter((l): l is { label: string; href: string } => l != null);
 
   return (
     <EntrySurface>
@@ -32,6 +43,8 @@ export function TermEntryView({ entry }: { entry: EntryId }) {
       <Section title="What it means" tone="accent">
         <TermView term={term} />
       </Section>
+
+      <RelatedSection links={related} />
     </EntrySurface>
   );
 }

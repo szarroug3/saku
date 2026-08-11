@@ -165,6 +165,11 @@ export const RADICAL_TRACK: PhaseIntro = {
       text: "Words are written with kanji, and kanji are drawn from a small stock of these pieces. 氵 is the water piece, and it is inside 海 (sea), 泳 (swim) and 湖 (lake). Recognizing a piece gives you a head start on a character you have never seen, though it is a hint and not a promise.",
     },
     {
+      // Lesson-only: this is about WHEN each piece turns up in the walk, which is
+      // true while you are being led through the track but not something a Library
+      // reader (who arrived at this page directly) needs. The library term page
+      // filters lessonOnly paragraphs; the teach walk keeps them.
+      lessonOnly: true,
       lead: "Each piece turns up just before the character that needs it.",
       text: "So a kanji is never broken into a shape you have not seen. When a piece is a kanji too, learning that kanji is where you get the shape, and its card tells you every part it plays.",
     },
@@ -179,19 +184,11 @@ export const KANJI_TRACK: PhaseIntro = {
   body: [
     {
       lead: "A kanji stands for a meaning or an idea, not a fixed sound.",
-      text: "Kana spells sounds and nothing else. A kanji stands for an idea, and the sound it takes depends on the word it's in. 人 means person no matter where it is. It is said ひと on its own, じん in 外国人, にん in 三人. One character, one meaning, several pronunciations.",
-    },
-    {
-      lead: "So the meaning is what you learn first.",
-      text: "When learning a kanji, don't worry about what it sounds like in every word it's in. You will learn how it sounds in different words as they turn up.",
-    },
-    {
-      lead: "This is why the characters come before the words.",
-      text: "火 is fire and 山 is mountain, so the first time 火山 turns up you can kind of guess the definition: a volcano, and nobody had to teach you the word. As you learn more and more kanji, you'll be able to guess at the definitions of more and more words.",
+      text: "Kana spells sounds and nothing else. A kanji stands for an idea, and the sound it takes depends on the word it's in. 人 means person no matter where it is. It is said ひと as a word by itself, じん in the word 外国人, にん in the word 三人. One character, one meaning, several pronunciations.",
     },
     {
       lead: "A kanji is not one shape to memorize.",
-      text: "Each one is assembled from smaller pieces called radicals, which is the next thing you will see. Kana taught you every sound already, so you're now learning the bigger part of reading and speaking.",
+      text: "Each one is assembled from smaller pieces called radicals. This can help give you an idea of what the kanji might mean.",
     },
   ],
 };

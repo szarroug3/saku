@@ -69,6 +69,8 @@ const UP_NEXT = simulateLessons(VOCAB_TRACK, LESSON_RANGE_DEFAULT, 1)[0] ?? null
 // kana sections' content pages.
 const KANA_A = kanaItems().find((i) => i.glyph === "あ");
 const KANA_KATA = kanaItems().find((i) => i.glyph === "ア");
+// A yōon combination (きゃ), for the yōon section's content page.
+const KANA_YOON = kanaItems().find((i) => i.glyph === "きゃ");
 // Two radicals for the radical entry page: 禾 (bushu name のぎへん, no variant
 // forms) and 水 (bushu name みず, with the positional variants 氵 / 氺).
 const RADICAL_KI = buildGlyphItem("禾");
@@ -211,6 +213,9 @@ export default function ViewsDevPage() {
         <Sub title="Yōon">
           <Slot tag="Term — intro & library">
             <TermEntryView entry={termEntry("yoon")} />
+          </Slot>
+          <Slot tag="Content — library & lesson">
+            {KANA_YOON ? <KanaEntryView item={KANA_YOON} /> : <Missing />}
           </Slot>
         </Sub>
 

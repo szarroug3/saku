@@ -68,8 +68,12 @@ export function TermView({ term }: { term: Term }) {
 
       {(term.cards ?? []).map((card, _i, cards) => {
         // The paragraphs about THIS word. The identity for eleven of the twelve;
-        // only ゛ and ゜ share a card and need the split. See `cardMark`.
-        const body = term.cardMark ? bodyFor(card, term.cardMark) : card.body;
+        // only ゛ and ゜ share a card and need the split. See `cardMark`. Then drop
+        // lessonOnly paragraphs: this is the Library, not a step of a walk, so text
+        // about when the material turns up in the lesson does not belong here.
+        const body = (term.cardMark ? bodyFor(card, term.cardMark) : card.body).filter(
+          (p) => !p.lessonOnly,
+        );
         if (body.length === 0) return null;
         // "In hiragana" / "In katakana", and nothing at all for a card that
         // belongs to no script. ONLY WHEN THERE ARE TWO CARDS, which is the only

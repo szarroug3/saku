@@ -101,6 +101,13 @@ export interface IntroPara {
   accent?: string;
   /** Worked examples anchored directly below this paragraph. */
   examples?: readonly IntroExample[];
+  /** Show this paragraph only while it is a step of the teach walk, not when the
+   * same card is rendered as a Library term page. It is for text about WHEN the
+   * material turns up in the lesson ("each piece turns up just before…"), which is
+   * true in the walk but reads as leftover lesson framing to a reader who opened
+   * the reference page directly. The library term renderer (TermView) drops these;
+   * PhaseIntroView keeps them. */
+  lessonOnly?: boolean;
 }
 
 /**

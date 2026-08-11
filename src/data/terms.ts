@@ -121,6 +121,14 @@ export interface Term {
    * the same argument.
    */
   readonly cardMark?: string;
+  /**
+   * Other term pages worth a look from this one, by id — rendered as a "Related"
+   * list of links at the foot of the page. A kanji reader who wants to know what
+   * it is "assembled from" should be one tap from the radical page. Kept to
+   * genuine neighbours (the pieces one is built from, the two halves of a pair),
+   * not a dump of every adjacent word.
+   */
+  readonly related?: readonly string[];
 }
 
 /**
@@ -153,6 +161,7 @@ export const TERMS: readonly Term[] = [
       "Each kana stands for a sound rather than a meaning, and between them they can spell any Japanese word.",
     ],
     searchAlso: ["kana", "syllabary", "syllabaries"],
+    related: ["hiragana", "katakana"],
     // No cards. This page is the umbrella term and stays about kana itself; the
     // two script intros (HIRAGANA_TRACK / KATAKANA_TRACK) belonged to hiragana and
     // katakana, so rendering both here made the kana page talk about everything but
@@ -167,6 +176,7 @@ export const TERMS: readonly Term[] = [
       "It is used to write native Japanese words, word endings and grammar, and it is usually the first writing a learner picks up.",
     ],
     searchAlso: ["hiragana"],
+    related: ["kana", "katakana", "dakuten"],
     // No card: HIRAGANA_TRACK is the lesson's opener and mixes in katakana, romaji,
     // mora and "hiragana comes first because…" order. Those belong on their own
     // pages (romaji, mora) or nowhere; this page stays about hiragana.
@@ -176,10 +186,11 @@ export const TERMS: readonly Term[] = [
     name: "Katakana",
     summary: "The angular kana, used mostly for borrowed words.",
     body: [
-      "Katakana is the other kana script. Its shapes are sharp and angular.",
+      "Katakana is one of the two kana scripts. Its shapes are sharp and angular.",
       "It is used mostly for words borrowed from other languages, foreign names, and sometimes for emphasis. It stands for the same set of sounds as hiragana.",
     ],
     searchAlso: ["katakana"],
+    related: ["kana", "hiragana"],
     // No card: KATAKANA_TRACK is the lesson opener and carries "taught now because
     // you already know the sounds and you'll need it soon", which is lesson timing,
     // not what katakana is. This page stays about katakana.
@@ -203,6 +214,7 @@ export const TERMS: readonly Term[] = [
       "Ordinary Japanese writing mixes kanji with kana.",
     ],
     searchAlso: ["kanji", "chinese characters", "han characters"],
+    related: ["radical", "kunyomi-onyomi"],
     cards: [KANJI_TRACK],
   },
   {
@@ -226,6 +238,7 @@ export const TERMS: readonly Term[] = [
       "chinese reading",
       "japanese reading",
     ],
+    related: ["kanji"],
     cards: [ONYOMI_INTRO],
   },
   {
@@ -237,6 +250,7 @@ export const TERMS: readonly Term[] = [
       "Dictionaries file each kanji under one of its radicals, which is how you look a character up by its shape. Learning the common radicals makes a new kanji easier to break down.",
     ],
     searchAlso: ["radical", "radicals", "bushu", "kanji parts"],
+    related: ["kanji"],
     cards: [RADICAL_TRACK],
   },
   {
@@ -277,6 +291,7 @@ export const TERMS: readonly Term[] = [
       "The same mark works across the k, s, t and h rows.",
     ],
     searchAlso: ["dakuten", "voicing mark", "ten ten", "tenten"],
+    related: ["handakuten"],
     // One card per script, and only the ゛ half of each. See `cardMark`.
     cards: [DAKUTEN_H, DAKUTEN_K],
     cardMark: "゛",
@@ -290,6 +305,7 @@ export const TERMS: readonly Term[] = [
       "It is the mark that gives you ぱ, ぴ, ぷ, ぺ and ぽ.",
     ],
     searchAlso: ["handakuten", "maru", "circle mark", "p sound"],
+    related: ["dakuten"],
     cards: [DAKUTEN_H, DAKUTEN_K],
     cardMark: "゜",
   },

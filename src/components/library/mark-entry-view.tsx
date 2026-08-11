@@ -41,7 +41,7 @@ export function MarkEntryView({
           call it. Every other mark keeps its name as the hero (long vowels have no
           single glyph to show). "mark" is the type. */}
       {conversion ? (
-        <ContentEntryHeader typeLabel="mark" title={mark.glyph} sub={mark.name.toLowerCase()} />
+        <ContentEntryHeader typeLabel="mark" title={mark.glyph} sub={mark.name} />
       ) : (
         <ContentEntryHeader typeLabel="mark" title={mark.name} />
       )}
