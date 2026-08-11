@@ -401,7 +401,7 @@ function groupReadings(): Map<string, ReadingRow[]> {
  * drifting already: the raw READINGS order put 生's い first — attested by 9
  * words — ahead of せい, which 33 words attest, so a row printing "the first
  * reading" printed the fifth most useful one. */
-function readingsOf(c: string): readonly ReadingRow[] {
+export function readingsOf(c: string): readonly ReadingRow[] {
   return BY_KANJI_READINGS.get(c) ?? [];
 }
 

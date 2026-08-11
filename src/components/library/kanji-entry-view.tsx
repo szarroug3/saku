@@ -15,7 +15,7 @@ import { FlatSurfaceProvider } from "@/components/ui";
 import { GlassSheen, glassSurface } from "@/components/ui/frost";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { etymologyOf } from "@/data/kanji-etymology";
-import { builtPieceEntryId } from "@/lib/library/entries";
+import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
 import { teachableParts } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
 import { entryHref } from "@/lib/library/href";
@@ -34,9 +34,24 @@ function builtFrom(glyph: string): { glyph: string; sense: string; role?: string
   return (teachableParts(glyph) ?? []).map((p) => ({ glyph: p.c, sense: p.meaning }));
 }
 
+/** Readings grouped into on'yomi (from Chinese) and kun'yomi (native), in the
+ * data's richest-first order. "both"-typed readings show in each group. */
+function readingGroups(glyph: string): { label: string; readings: { base: string; example: string }[] }[] {
+  const rows = readingsOf(glyph);
+  const pick = (t: "on" | "kun") =>
+    rows
+      .filter((r) => r.type === t || r.type === "both")
+      .map((r) => ({ base: r.base, example: r.anchor }));
+  return [
+    { label: "On’yomi", readings: pick("on") },
+    { label: "Kun’yomi", readings: pick("kun") },
+  ].filter((g) => g.readings.length > 0);
+}
+
 export function KanjiEntryView({ item }: { item: ContentItem }) {
   const story = etymologyOf(item.glyph)?.originText ?? null;
   const parts = builtFrom(item.glyph);
+  const groups = readingGroups(item.glyph);
   const usedIn = usedAsPartIn(item.glyph);
   const shownUsedIn = usedIn.slice(0, CAP);
   const restUsedIn = usedIn.length - shownUsedIn.length;
@@ -46,6 +61,29 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
       <article className={`${glassSurface} p-6`}>
         <GlassSheen />
         <ContentEntryHeader item={item} />
+
+        {groups.length > 0 ? (
+          <div className="mt-5 border-t border-border/50 pt-5">
+            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
+              Readings
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {groups.map((g) => (
+                <div key={g.label} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="w-[68px] shrink-0 text-[12px] text-text-muted">{g.label}</span>
+                  <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    {g.readings.map((r) => (
+                      <span key={r.base} className="font-kana text-[15px] text-text">
+                        {r.base}
+                        <span className="ml-1 font-sans text-[11px] text-text-muted">{r.example}</span>
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {parts.length > 0 ? (
           <div className="mt-5 border-t border-border/50 pt-5">
