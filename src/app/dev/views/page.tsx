@@ -22,6 +22,7 @@ import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { markEntry } from "@/data/marks";
 import { termEntry } from "@/data/terms";
 import { TSU_INTRO } from "@/data/track-intros";
+import { TRANSITIVITY_INTRO } from "@/data/phase-intros";
 import { grammarConceptEntry } from "@/data/grammar-concepts";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
@@ -249,6 +250,11 @@ export default function ViewsDevPage() {
         </Sub>
 
         <Sub title="Word">
+          {/* Pitch accent, then a mora — introduced in the word track in that
+              order, because a pitch is drawn over the morae of a word. */}
+          <Slot tag="Term intros">
+            <TermIntros ids={["pitch-accent", "mora"]} />
+          </Slot>
           {/* 生 (one reading, divergent sense) and 先生 (multi-character, one
               reading) don't change under lesson. 主 has four word readings, so the
               lesson caps to one — the one case a character page differs. */}
@@ -291,11 +297,13 @@ export default function ViewsDevPage() {
           <Slot tag="Term — intro & library">
             <TermEntryView entry={termEntry("particle")} />
           </Slot>
+          {/* The verb-types concept follows the particle intro — it's the next
+              idea the grammar track leans on before any pattern conjugates. */}
+          <Slot tag="Concept — verb types">
+            <GrammarConceptEntryView entry={CONCEPT} />
+          </Slot>
           <Slot tag="Content — library & lesson">
-            <div className="flex flex-col gap-4">
-              {grammar ? <GrammarEntryView item={grammar} /> : <Missing />}
-              <GrammarConceptEntryView entry={CONCEPT} />
-            </div>
+            {grammar ? <GrammarEntryView item={grammar} /> : <Missing />}
           </Slot>
         </Sub>
 
@@ -321,6 +329,12 @@ export default function ViewsDevPage() {
         </Sub>
 
         <Sub title="Verb pairs (transitivity)">
+          <Slot tag="Intro — non-term">
+            <div className={`${glassSurface} p-6`}>
+              <GlassSheen />
+              <PhaseIntroView intro={TRANSITIVITY_INTRO} />
+            </div>
+          </Slot>
           <Slot tag="Content — library & lesson">
             {verbPair ? <VerbPairEntryView item={verbPair} /> : <Missing />}
           </Slot>
@@ -333,11 +347,11 @@ export default function ViewsDevPage() {
         </Sub>
 
         <Sub title="Terms only — reference, never introduced">
-          {/* Words a learner comes across (JLPT levels, furigana, romaji, a mora,
-              pitch accent) but that no lesson introduces as a step. Their library
-              page still exists for when someone looks them up. */}
+          {/* Words a learner comes across (JLPT levels, furigana, romaji) but
+              that no lesson introduces as a step. Their library page still exists
+              for when someone looks them up. */}
           <Slot tag="Library only">
-            <TermIntros ids={["romaji", "furigana", "jlpt", "mora", "pitch-accent"]} />
+            <TermIntros ids={["romaji", "furigana", "jlpt"]} />
           </Slot>
         </Sub>
       </Section>

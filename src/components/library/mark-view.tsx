@@ -581,9 +581,24 @@ export function MarkView({ mark }: { mark: Mark }) {
                   {label ? <Lbl>{label}</Lbl> : null}
                   <IntroBody body={body} measure="" />
                   {mark.shelf === "sentence" ? (
-                    <p className="mt-4 text-[12px] font-semibold text-accent">
-                      {SENTENCE_ORDERING_GUIDES[sentenceTierId].hook}
-                    </p>
+                    (() => {
+                      // "Think: …" — only the "Think:" label is accented; the rest
+                      // is white at normal reading size.
+                      const hook = SENTENCE_ORDERING_GUIDES[sentenceTierId].hook;
+                      const m = hook.match(/^(\s*Think:\s*)(.*)$/);
+                      return (
+                        <p className="mt-4 text-[15px] leading-relaxed text-text">
+                          {m ? (
+                            <>
+                              <span className="font-medium text-accent">{m[1]}</span>
+                              {m[2]}
+                            </>
+                          ) : (
+                            hook
+                          )}
+                        </p>
+                      );
+                    })()
                   ) : null}
                 </Card>
                 {mark.shelf === "sentence" ? (

@@ -35,7 +35,7 @@ export function SentenceEntryView({ item }: { item: ContentItem }) {
 
   return (
     <EntrySurface>
-      <ContentEntryHeader typeLabel="sentence structure" title={mark.name} sub={mark.summary} />
+      <ContentEntryHeader typeLabel="sentence structure" title={mark.name} />
 
       <Section title="How the pieces are ordered" tone="accent">
         <MarkView mark={mark} />
