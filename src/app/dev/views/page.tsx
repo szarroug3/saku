@@ -8,7 +8,6 @@ import type { ReactNode } from "react";
 
 import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
-import { GlyphView } from "@/components/library/glyph-view";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
 import { CharacterEntryView } from "@/components/library/character-entry-view";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
@@ -47,8 +46,6 @@ const LEARN: { label: string; item: ContentItem | undefined }[] = [
   { label: "Building sentences", item: sentenceItems()[0] },
 ];
 
-const LIBRARY_SAMPLES = ["人", "三", "主", "日", "耳"];
-
 // A sample next-lesson from the NEW content model — the vocab track's first
 // lesson (人 口 可 何 一: mixed radical/kanji/word tiles), what the redesign is
 // built to render.
@@ -63,6 +60,10 @@ const RADICAL_KI = buildGlyphItem("禾");
 const RADICAL_MIZU = buildGlyphItem("水");
 // A kanji with components + etymology + kanji built on it, for the kanji page.
 const KANJI_MEI = buildGlyphItem("明");
+// Multi-sense words for the "As a word" table: 生 (せい life / なま raw — a word
+// sense that diverges from the kanji's core meaning) and 主 (four lord readings).
+const SEI = buildGlyphItem("生");
+const NUSHI = buildGlyphItem("主");
 
 // One item of each type, to show the shared entry header is consistent.
 const HEADER_SAMPLES = [
@@ -151,18 +152,18 @@ export default function ViewsDevPage() {
             <CharacterEntryView item={RADICAL_MIZU} />
           </div>
         ) : null}
-      </Section>
-
-      <Section
-        title="Library &mdash; glyph page (old)"
-        note="The cohesive reference: every pronunciation with its meanings. (Etymology + speak next.)"
-      >
-        <div className="flex flex-col gap-4">
-          {LIBRARY_SAMPLES.map((g) => {
-            const item = buildGlyphItem(g);
-            return item ? <GlyphView key={g} item={item} /> : null;
-          })}
-        </div>
+        {/* Multi-sense words: 生 (divergent word sense なま = raw) and 主 (four
+            lord readings) exercise the "As a word" polysemy table. */}
+        {SEI ? (
+          <div className="mt-4">
+            <CharacterEntryView item={SEI} />
+          </div>
+        ) : null}
+        {NUSHI ? (
+          <div className="mt-4">
+            <CharacterEntryView item={NUSHI} />
+          </div>
+        ) : null}
       </Section>
 
       {/* Lesson &mdash; the full teaching view: next. */}
