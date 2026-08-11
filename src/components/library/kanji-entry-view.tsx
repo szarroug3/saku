@@ -62,29 +62,6 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
         <GlassSheen />
         <ContentEntryHeader item={item} />
 
-        {groups.length > 0 ? (
-          <div className="mt-5 border-t border-border/50 pt-5">
-            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
-              Readings
-            </p>
-            <div className="flex flex-col gap-2.5">
-              {groups.map((g) => (
-                <div key={g.label} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="w-[68px] shrink-0 text-[12px] text-text-muted">{g.label}</span>
-                  <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    {g.readings.map((r) => (
-                      <span key={r.base} className="font-kana text-[15px] text-text">
-                        {r.base}
-                        <span className="ml-1 font-sans text-[11px] text-text-muted">{r.example}</span>
-                      </span>
-                    ))}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
         {parts.length > 0 ? (
           <div className="mt-5 border-t border-border/50 pt-5">
             <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
@@ -108,6 +85,29 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
               ))}
             </div>
             {story ? <p className="mt-3 text-[13px] leading-relaxed text-text-muted">{story}</p> : null}
+          </div>
+        ) : null}
+
+        {groups.length > 0 ? (
+          <div className="mt-5 border-t border-border/50 pt-5">
+            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
+              Readings
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {groups.map((g) => (
+                <div key={g.label} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="w-[68px] shrink-0 text-[12px] text-text-muted">{g.label}</span>
+                  <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    {g.readings.map((r) => (
+                      <span key={r.base} className="font-kana text-[15px] text-text">
+                        {r.base}
+                        <span className="ml-1 font-sans text-[11px] text-text-muted">{r.example}</span>
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         ) : null}
 
