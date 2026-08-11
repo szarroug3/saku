@@ -27,6 +27,7 @@
 import radicalsJson from "./generated/radicals.json" with { type: "json" };
 import kanjiRadicalsJson from "./generated/kanji-radicals.json" with { type: "json" };
 import orderJson from "./generated/order.json" with { type: "json" };
+import enrichmentJson from "./generated/radical-enrichment.json" with { type: "json" };
 import { entryId, factId } from "../lib/fact-id.ts";
 import type { EntryId, FactId, FactInfo } from "../types/index.ts";
 
@@ -188,6 +189,77 @@ const TAUGHT_AS_KANJI: ReadonlySet<number> = new Set(
  */
 export function isRadicalTaughtAsKanji(num: number): boolean {
   return TAUGHT_AS_KANJI.has(num);
+}
+
+// THE JAPANESE BUSHU NAME AND THE POSITIONAL VARIANT FORMS
+// ========================================================
+// The enrichment radicals.mjs deferred: each radical's Japanese bushu name
+// (禾 → のぎへん / nogihen) and the distinct positional forms it is written with
+// (水 → 氵, 氺; 人 → 亻; 心 → 忄; 手 → 扌; 刀 → 刂). Names, positions and the set of
+// variant forms are curated from Kanji Alive (CC BY 4.0); variant glyphs are its
+// radical-block codepoints normalised to their CJK unified ideograph. The data
+// is generated JSON keyed by Kangxi number — regenerate with
+// scripts/ingest/radical-enrichment.mjs. See src/data/attribution.ts for the
+// licence line this carries.
+
+/** A radical name (bushu name) or a positional name (へん, つくり …). */
+export interface RadicalName {
+  readonly kana: string;
+  readonly romaji: string;
+}
+
+/** One positional form a radical is written with in a compound, e.g. 氵 for 水. */
+export interface VariantForm {
+  /** The variant glyph, a single CJK unified/extension ideograph (氵, 亻, 刂). */
+  readonly glyph: string;
+  /** The variant's own bushu name (さんずい for 氵). */
+  readonly name: RadicalName;
+  /** Where the variant sits — へん/つくり/かんむり/… — when the source records it. */
+  readonly position?: RadicalName;
+}
+
+interface RadicalEnrichment {
+  readonly name: RadicalName;
+  readonly position?: RadicalName;
+  readonly variants: readonly VariantForm[];
+}
+
+const ENRICHMENT: Readonly<Record<string, RadicalEnrichment>> =
+  enrichmentJson as unknown as Record<string, RadicalEnrichment>;
+
+/** Glyph of a variant FORM → its own bushu name, so a name can be resolved from
+ * either the base glyph (水) or a variant glyph (氵). */
+const NAME_BY_VARIANT: ReadonlyMap<string, RadicalName> = new Map(
+  Object.entries(ENRICHMENT)
+    // The JSON carries a leading `_license` string alongside the numbered rows.
+    .filter(([key]) => !key.startsWith("_"))
+    .flatMap(([, e]) => e.variants.map((v) => [v.glyph, v.name] as const)),
+);
+
+function enrichmentOf(glyph: string): RadicalEnrichment | undefined {
+  const row = radicalByGlyph(glyph);
+  return row === undefined ? undefined : ENRICHMENT[String(row.num)];
+}
+
+/**
+ * The Japanese bushu name for a radical or one of its variant forms.
+ * `bushuName("禾")` → のぎへん/nogihen; `bushuName("氵")` → さんずい/sanzui (the
+ * variant's own name); `bushuName("水")` → みず/mizu. Null for a glyph that is
+ * neither a radical nor a known variant form.
+ */
+export function bushuName(glyph: string): RadicalName | null {
+  const own = enrichmentOf(glyph);
+  if (own) return own.name;
+  return NAME_BY_VARIANT.get(glyph) ?? null;
+}
+
+/**
+ * The positional variant forms a radical is written with. `radicalVariants("水")`
+ * → [氵 さんずい, 氺 したみず]. Empty for a radical with no distinct variant form,
+ * and for a glyph that is not a base radical (pass the base 水, not 氵).
+ */
+export function radicalVariants(glyph: string): readonly VariantForm[] {
+  return enrichmentOf(glyph)?.variants ?? [];
 }
 
 export function radicalEntry(glyph: string): EntryId {

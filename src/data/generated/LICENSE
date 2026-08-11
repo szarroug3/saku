@@ -84,6 +84,14 @@ WHAT CAME FROM WHERE
                            Wiktionary and/or KANJIDIC2, both CC BY-SA 4.0.
   radicals.json            Unicode UCD (the 214 Kangxi radicals, their glyphs
                            and meanings) + KANJIDIC2 (radical stroke counts)
+  radical-enrichment.json  Kanji Alive japanese-radicals.csv (each radical's
+                           Japanese bushu name and positional variant forms) +
+                           Unicode UCD EquivalentUnifiedIdeograph.txt (used only
+                           to normalise variant glyphs to their CJK unified
+                           form). See its attribution below. Kanji Alive is
+                           CC BY 4.0 (no ShareAlike), so like Tatoeba it is
+                           incorporated into this CC BY-SA 4.0 collection; the
+                           combination is BY-SA, the permitted direction.
   kanji-radicals.json      KANJIDIC2 (each jouyou kanji's classical radical)
   grammar-corpus.json      Tatoeba (see carve-out)
   grammar-corpus-meta.json Tatoeba (build parameters and counts)
@@ -145,6 +153,21 @@ Unicode Character Database (UCD)
   Licence:  Unicode License (permissive; see terms)
   Source:   https://www.unicode.org/Public/UCD/latest/ucd/
   Terms:    https://www.unicode.org/license.txt
+
+Kanji Alive (japanese-radicals.csv)
+  Each classical Kangxi radical's Japanese bushu name (kana and romaji) and its
+  positional variant forms, in radical-enrichment.json. The variant glyphs are
+  Kanji Alive's radical-block codepoints normalised to their CJK unified
+  ideograph via Unicode's EquivalentUnifiedIdeograph.txt (permissive Unicode
+  License); the names and positions are Kanji Alive's own.
+  Copyright (c) The Kanji Alive project
+  Licence:  CC BY 4.0
+  Source:   https://github.com/kanjialive/kanji-data-media
+            language-data/japanese-radicals.csv
+  Full text: https://creativecommons.org/licenses/by/4.0/legalcode
+  CC BY 4.0 carries no ShareAlike; incorporating it into this CC BY-SA 4.0
+  collection is allowed (the collection is BY-SA). Attribution is required and
+  is given here and in src/data/attribution.ts.
 
 JLPT vocabulary lists (tanos.co.uk)
   One of two JLPT level lists whose consensus gates vocab.json's `beginnerRank`.

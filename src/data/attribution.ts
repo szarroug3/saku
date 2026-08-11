@@ -130,6 +130,23 @@ export const SOURCES: readonly Source[] = [
     licence: "CC BY-SA 4.0",
     href: "https://en.wiktionary.org/",
   },
+  {
+    // The fourth non-EDRDG source. Kanji Alive's japanese-radicals.csv supplies
+    // each Kangxi radical's Japanese bushu name (禾 → のぎへん) and the positional
+    // variant forms it is written with (水 → 氵, 氺). CC BY 4.0 — attribution, and
+    // like Tatoeba it carries NO share-alike, so it sits inside the generated
+    // CC BY-SA 4.0 collection without conflict (BY into BY-SA is the permitted
+    // direction). The variant glyphs are normalised to their CJK unified form
+    // via Unicode's own equivalence table; the names and positions are Kanji
+    // Alive's. radicals.mjs deferred this data for want of "a verified curated
+    // source"; this is it, and the line earns its place so the credit is a thing
+    // someone deletes on purpose, not forgets to add.
+    name: "Kanji Alive (japanese-radicals.csv)",
+    what: "Each Kangxi radical's Japanese bushu name (kana and romaji) and its positional variant forms.",
+    holder: "Kanji Alive project",
+    licence: "CC BY 4.0",
+    href: "https://github.com/kanjialive/kanji-data-media",
+  },
   // Secondary ordering sources for words CEJC does not observe. CEJC owns the
   // curriculum head and its category decisions below.
   {
@@ -187,7 +204,10 @@ export const LICENCE_NOTE =
   "for words CEJC does not observe. The glyph-origin notes — what each component of a " +
   "kanji contributes and how the parts make the whole — are derived from English " +
   "Wiktionary (en.wiktionary.org), used under the Creative Commons Attribution-" +
-  "ShareAlike 4.0 International licence and written by Wiktionary's contributors.";
+  "ShareAlike 4.0 International licence and written by Wiktionary's contributors. " +
+  "The Japanese names of the classical radicals and their positional variant " +
+  "forms are derived from Kanji Alive (github.com/kanjialive), used under the " +
+  "Creative Commons Attribution 4.0 International licence.";
 
 /** The EDRDG licence in full — the authority for everything above. */
 export const LICENCE_HREF = "https://www.edrdg.org/edrdg/licence.html";

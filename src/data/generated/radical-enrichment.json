@@ -1,0 +1,2041 @@
+{
+ "1": {
+  "name": {
+   "kana": "いち",
+   "romaji": "ichi"
+  },
+  "variants": []
+ },
+ "2": {
+  "name": {
+   "kana": "たてぼう",
+   "romaji": "tatebou"
+  },
+  "variants": []
+ },
+ "3": {
+  "name": {
+   "kana": "てん",
+   "romaji": "ten"
+  },
+  "variants": []
+ },
+ "4": {
+  "name": {
+   "kana": "の",
+   "romaji": "no"
+  },
+  "variants": []
+ },
+ "5": {
+  "name": {
+   "kana": "おつ",
+   "romaji": "otsu"
+  },
+  "variants": [
+   {
+    "glyph": "乚",
+    "name": {
+     "kana": "おつ",
+     "romaji": "otsu"
+    }
+   }
+  ]
+ },
+ "6": {
+  "name": {
+   "kana": "はねぼう",
+   "romaji": "hanebou"
+  },
+  "variants": []
+ },
+ "7": {
+  "name": {
+   "kana": "に",
+   "romaji": "ni"
+  },
+  "variants": []
+ },
+ "8": {
+  "name": {
+   "kana": "なべぶた",
+   "romaji": "nabebuta"
+  },
+  "position": {
+   "kana": "かんむり",
+   "romaji": "kanmuri"
+  },
+  "variants": []
+ },
+ "9": {
+  "name": {
+   "kana": "ひと",
+   "romaji": "hito"
+  },
+  "variants": [
+   {
+    "glyph": "亻",
+    "name": {
+     "kana": "にんべん",
+     "romaji": "ninben"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   },
+   {
+    "glyph": "𠆢",
+    "name": {
+     "kana": "ひとやね",
+     "romaji": "hitoyane"
+    },
+    "position": {
+     "kana": "かんむり",
+     "romaji": "kanmuri"
+    }
+   }
+  ]
+ },
+ "10": {
+  "name": {
+   "kana": "ひとあし",
+   "romaji": "hitoashi"
+  },
+  "position": {
+   "kana": "あし",
+   "romaji": "ashi"
+  },
+  "variants": []
+ },
+ "11": {
+  "name": {
+   "kana": "いる",
+   "romaji": "iru"
+  },
+  "variants": []
+ },
+ "12": {
+  "name": {
+   "kana": "はち",
+   "romaji": "hachi"
+  },
+  "variants": []
+ },
+ "13": {
+  "name": {
+   "kana": "けいがまえ",
+   "romaji": "keigamae"
+  },
+  "position": {
+   "kana": "かまえ, けいがまえ",
+   "romaji": "kamae, keigamae"
+  },
+  "variants": []
+ },
+ "14": {
+  "name": {
+   "kana": "わかんむり",
+   "romaji": "wakanmuri"
+  },
+  "position": {
+   "kana": "かんむり",
+   "romaji": "kanmuri"
+  },
+  "variants": []
+ },
+ "15": {
+  "name": {
+   "kana": "にすい",
+   "romaji": "nisui"
+  },
+  "position": {
+   "kana": "へん",
+   "romaji": "hen"
+  },
+  "variants": []
+ },
+ "16": {
+  "name": {
+   "kana": "きにょう",
+   "romaji": "kinyou"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "17": {
+  "name": {
+   "kana": "かんにょう",
+   "romaji": "kannyou"
+  },
+  "position": {
+   "kana": "にょう",
+   "romaji": "nyou"
+  },
+  "variants": []
+ },
+ "18": {
+  "name": {
+   "kana": "かたな",
+   "romaji": "katana"
+  },
+  "variants": [
+   {
+    "glyph": "刂",
+    "name": {
+     "kana": "りっとう",
+     "romaji": "rittou"
+    },
+    "position": {
+     "kana": "つくり",
+     "romaji": "tsukuri"
+    }
+   }
+  ]
+ },
+ "19": {
+  "name": {
+   "kana": "ちから",
+   "romaji": "chikara"
+  },
+  "variants": []
+ },
+ "20": {
+  "name": {
+   "kana": "つつみがまえ",
+   "romaji": "tsutsumigamae"
+  },
+  "position": {
+   "kana": "かまえ, つつみがまえ",
+   "romaji": "kamae, tsutsumigamae"
+  },
+  "variants": []
+ },
+ "21": {
+  "name": {
+   "kana": "さじ",
+   "romaji": "saji"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "22": {
+  "name": {
+   "kana": "はこがまえ",
+   "romaji": "hakogamae"
+  },
+  "position": {
+   "kana": "かまえ, はこがまえ",
+   "romaji": "kamae, hakogamae"
+  },
+  "variants": []
+ },
+ "23": {
+  "name": {
+   "kana": "かくしがまえ",
+   "romaji": "kakushigamae"
+  },
+  "position": {
+   "kana": "かまえ, はこがまえ",
+   "romaji": "kamae, hakogamae"
+  },
+  "variants": []
+ },
+ "24": {
+  "name": {
+   "kana": "じゅう",
+   "romaji": "juu"
+  },
+  "variants": []
+ },
+ "25": {
+  "name": {
+   "kana": "ぼく",
+   "romaji": "boku"
+  },
+  "variants": []
+ },
+ "26": {
+  "name": {
+   "kana": "ふしづくり",
+   "romaji": "fushizukuri"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "27": {
+  "name": {
+   "kana": "がんだれ",
+   "romaji": "gandare"
+  },
+  "position": {
+   "kana": "たれ",
+   "romaji": "tare"
+  },
+  "variants": []
+ },
+ "28": {
+  "name": {
+   "kana": "む",
+   "romaji": "mu"
+  },
+  "variants": []
+ },
+ "29": {
+  "name": {
+   "kana": "また",
+   "romaji": "mata"
+  },
+  "variants": []
+ },
+ "30": {
+  "name": {
+   "kana": "くち",
+   "romaji": "kuchi"
+  },
+  "variants": []
+ },
+ "31": {
+  "name": {
+   "kana": "くにがまえ",
+   "romaji": "kunigamae"
+  },
+  "position": {
+   "kana": "かまえ, くにがまえ",
+   "romaji": "kamae, kunigamae"
+  },
+  "variants": []
+ },
+ "32": {
+  "name": {
+   "kana": "つち",
+   "romaji": "tsuchi"
+  },
+  "variants": []
+ },
+ "33": {
+  "name": {
+   "kana": "さむらい",
+   "romaji": "samurai"
+  },
+  "variants": []
+ },
+ "34": {
+  "name": {
+   "kana": "のまた",
+   "romaji": "nomata"
+  },
+  "variants": []
+ },
+ "35": {
+  "name": {
+   "kana": "なつあし",
+   "romaji": "natsuashi"
+  },
+  "position": {
+   "kana": "あし",
+   "romaji": "ashi"
+  },
+  "variants": []
+ },
+ "36": {
+  "name": {
+   "kana": "ゆうべ",
+   "romaji": "yuube"
+  },
+  "variants": []
+ },
+ "37": {
+  "name": {
+   "kana": "だい",
+   "romaji": "dai"
+  },
+  "variants": []
+ },
+ "38": {
+  "name": {
+   "kana": "おんな",
+   "romaji": "onna"
+  },
+  "variants": []
+ },
+ "39": {
+  "name": {
+   "kana": "こ",
+   "romaji": "ko"
+  },
+  "variants": []
+ },
+ "40": {
+  "name": {
+   "kana": "うかんむり",
+   "romaji": "ukanmuri"
+  },
+  "position": {
+   "kana": "かんむり",
+   "romaji": "kanmuri"
+  },
+  "variants": []
+ },
+ "41": {
+  "name": {
+   "kana": "すん",
+   "romaji": "sun"
+  },
+  "variants": []
+ },
+ "42": {
+  "name": {
+   "kana": "しょう",
+   "romaji": "shou"
+  },
+  "variants": []
+ },
+ "43": {
+  "name": {
+   "kana": "だいのまげあし",
+   "romaji": "dainomageashi"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "44": {
+  "name": {
+   "kana": "しかばね",
+   "romaji": "shikabane"
+  },
+  "position": {
+   "kana": "たれ",
+   "romaji": "tare"
+  },
+  "variants": []
+ },
+ "45": {
+  "name": {
+   "kana": "くさのめ",
+   "romaji": "kusanome"
+  },
+  "variants": []
+ },
+ "46": {
+  "name": {
+   "kana": "やま",
+   "romaji": "yama"
+  },
+  "variants": []
+ },
+ "47": {
+  "name": {
+   "kana": "まがりがわ",
+   "romaji": "magarigawa"
+  },
+  "variants": [
+   {
+    "glyph": "川",
+    "name": {
+     "kana": "さんぼんがわ",
+     "romaji": "sanbongawa"
+    }
+   }
+  ]
+ },
+ "48": {
+  "name": {
+   "kana": "たくみ",
+   "romaji": "takumi"
+  },
+  "variants": []
+ },
+ "49": {
+  "name": {
+   "kana": "おのれ",
+   "romaji": "onore"
+  },
+  "variants": []
+ },
+ "50": {
+  "name": {
+   "kana": "はば",
+   "romaji": "haba"
+  },
+  "variants": []
+ },
+ "51": {
+  "name": {
+   "kana": "かん",
+   "romaji": "kan"
+  },
+  "variants": []
+ },
+ "52": {
+  "name": {
+   "kana": "いとがしら",
+   "romaji": "itogashira"
+  },
+  "variants": []
+ },
+ "53": {
+  "name": {
+   "kana": "まだれ",
+   "romaji": "madare"
+  },
+  "position": {
+   "kana": "たれ",
+   "romaji": "tare"
+  },
+  "variants": []
+ },
+ "54": {
+  "name": {
+   "kana": "えんにょう",
+   "romaji": "ennyou"
+  },
+  "position": {
+   "kana": "にょう",
+   "romaji": "nyou"
+  },
+  "variants": []
+ },
+ "55": {
+  "name": {
+   "kana": "にじゅうあし",
+   "romaji": "nijuuashi"
+  },
+  "position": {
+   "kana": "あし",
+   "romaji": "ashi"
+  },
+  "variants": []
+ },
+ "56": {
+  "name": {
+   "kana": "いぐるみ",
+   "romaji": "igurumi"
+  },
+  "variants": []
+ },
+ "57": {
+  "name": {
+   "kana": "ゆみ",
+   "romaji": "yumi"
+  },
+  "variants": []
+ },
+ "58": {
+  "name": {
+   "kana": "けいがしら",
+   "romaji": "keigashira"
+  },
+  "variants": [
+   {
+    "glyph": "𫜹",
+    "name": {
+     "kana": "けいがしら",
+     "romaji": "keigashira"
+    }
+   },
+   {
+    "glyph": "彑",
+    "name": {
+     "kana": "けいがしら",
+     "romaji": "keigashira"
+    }
+   }
+  ]
+ },
+ "59": {
+  "name": {
+   "kana": "さんづくり",
+   "romaji": "sanzukuri"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "60": {
+  "name": {
+   "kana": "ぎょうにんべん",
+   "romaji": "gyouninben"
+  },
+  "position": {
+   "kana": "へん",
+   "romaji": "hen"
+  },
+  "variants": []
+ },
+ "61": {
+  "name": {
+   "kana": "こころ",
+   "romaji": "kokoro"
+  },
+  "variants": [
+   {
+    "glyph": "忄",
+    "name": {
+     "kana": "りっしんべん",
+     "romaji": "risshinben"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   }
+  ]
+ },
+ "62": {
+  "name": {
+   "kana": "ほこ",
+   "romaji": "hoko"
+  },
+  "variants": []
+ },
+ "63": {
+  "name": {
+   "kana": "と",
+   "romaji": "to"
+  },
+  "variants": []
+ },
+ "64": {
+  "name": {
+   "kana": "て",
+   "romaji": "te"
+  },
+  "variants": [
+   {
+    "glyph": "扌",
+    "name": {
+     "kana": "てへん",
+     "romaji": "tehen"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   }
+  ]
+ },
+ "65": {
+  "name": {
+   "kana": "しにょう",
+   "romaji": "shinyou"
+  },
+  "variants": []
+ },
+ "66": {
+  "name": {
+   "kana": "ぼくづくり",
+   "romaji": "bokuzukuri"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": [
+   {
+    "glyph": "攵",
+    "name": {
+     "kana": "ぼくづくり",
+     "romaji": "bokuzukuri"
+    },
+    "position": {
+     "kana": "つくり",
+     "romaji": "tsukuri"
+    }
+   }
+  ]
+ },
+ "67": {
+  "name": {
+   "kana": "ぶん",
+   "romaji": "bun"
+  },
+  "variants": []
+ },
+ "68": {
+  "name": {
+   "kana": "ますづくり",
+   "romaji": "masuzukuri"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "69": {
+  "name": {
+   "kana": "おのづくり",
+   "romaji": "onozukuri"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "70": {
+  "name": {
+   "kana": "ほう",
+   "romaji": "hou"
+  },
+  "variants": []
+ },
+ "71": {
+  "name": {
+   "kana": "むにょう",
+   "romaji": "munyou"
+  },
+  "variants": [
+   {
+    "glyph": "旡",
+    "name": {
+     "kana": "むにょう",
+     "romaji": "munyou"
+    }
+   }
+  ]
+ },
+ "72": {
+  "name": {
+   "kana": "ひ",
+   "romaji": "hi"
+  },
+  "variants": []
+ },
+ "73": {
+  "name": {
+   "kana": "ひらび",
+   "romaji": "hirabi"
+  },
+  "variants": []
+ },
+ "74": {
+  "name": {
+   "kana": "つき",
+   "romaji": "tsuki"
+  },
+  "variants": []
+ },
+ "75": {
+  "name": {
+   "kana": "き",
+   "romaji": "ki"
+  },
+  "variants": []
+ },
+ "76": {
+  "name": {
+   "kana": "あくび",
+   "romaji": "akubi"
+  },
+  "variants": []
+ },
+ "77": {
+  "name": {
+   "kana": "とめる",
+   "romaji": "tomeru"
+  },
+  "variants": []
+ },
+ "78": {
+  "name": {
+   "kana": "がつ",
+   "romaji": "gatsu"
+  },
+  "variants": []
+ },
+ "79": {
+  "name": {
+   "kana": "るまた",
+   "romaji": "rumata"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "80": {
+  "name": {
+   "kana": "なかれ",
+   "romaji": "nakare"
+  },
+  "variants": []
+ },
+ "81": {
+  "name": {
+   "kana": "くらべる",
+   "romaji": "kuraberu"
+  },
+  "variants": []
+ },
+ "82": {
+  "name": {
+   "kana": "け",
+   "romaji": "ke"
+  },
+  "variants": []
+ },
+ "83": {
+  "name": {
+   "kana": "うじ",
+   "romaji": "uji"
+  },
+  "variants": []
+ },
+ "84": {
+  "name": {
+   "kana": "きがまえ",
+   "romaji": "kigamae"
+  },
+  "position": {
+   "kana": "かまえ, きがまえ",
+   "romaji": "kamae, kigamae"
+  },
+  "variants": []
+ },
+ "85": {
+  "name": {
+   "kana": "みず",
+   "romaji": "mizu"
+  },
+  "variants": [
+   {
+    "glyph": "氵",
+    "name": {
+     "kana": "さんずい",
+     "romaji": "sanzui"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   },
+   {
+    "glyph": "氺",
+    "name": {
+     "kana": "したみず",
+     "romaji": "shitamizu"
+    }
+   }
+  ]
+ },
+ "86": {
+  "name": {
+   "kana": "ひ",
+   "romaji": "hi"
+  },
+  "variants": [
+   {
+    "glyph": "灬",
+    "name": {
+     "kana": "れっか",
+     "romaji": "rekka"
+    },
+    "position": {
+     "kana": "あし",
+     "romaji": "ashi"
+    }
+   }
+  ]
+ },
+ "87": {
+  "name": {
+   "kana": "つめ",
+   "romaji": "tsume"
+  },
+  "variants": [
+   {
+    "glyph": "爫",
+    "name": {
+     "kana": "つめかんむり",
+     "romaji": "tsumekanmuri"
+    },
+    "position": {
+     "kana": "かんむり",
+     "romaji": "kanmuri"
+    }
+   }
+  ]
+ },
+ "88": {
+  "name": {
+   "kana": "ちち",
+   "romaji": "chichi"
+  },
+  "variants": []
+ },
+ "89": {
+  "name": {
+   "kana": "こう",
+   "romaji": "kou"
+  },
+  "variants": []
+ },
+ "90": {
+  "name": {
+   "kana": "しょうへん",
+   "romaji": "shouhen"
+  },
+  "position": {
+   "kana": "へん",
+   "romaji": "hen"
+  },
+  "variants": []
+ },
+ "91": {
+  "name": {
+   "kana": "かた",
+   "romaji": "kata"
+  },
+  "variants": []
+ },
+ "92": {
+  "name": {
+   "kana": "きば",
+   "romaji": "kiba"
+  },
+  "variants": []
+ },
+ "93": {
+  "name": {
+   "kana": "うし",
+   "romaji": "ushi"
+  },
+  "variants": []
+ },
+ "94": {
+  "name": {
+   "kana": "いぬ",
+   "romaji": "inu"
+  },
+  "variants": [
+   {
+    "glyph": "犭",
+    "name": {
+     "kana": "けものへん",
+     "romaji": "kemonohen"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   }
+  ]
+ },
+ "95": {
+  "name": {
+   "kana": "げん",
+   "romaji": "gen"
+  },
+  "variants": []
+ },
+ "96": {
+  "name": {
+   "kana": "たま",
+   "romaji": "tama"
+  },
+  "variants": []
+ },
+ "97": {
+  "name": {
+   "kana": "うり",
+   "romaji": "uri"
+  },
+  "variants": []
+ },
+ "98": {
+  "name": {
+   "kana": "かわら",
+   "romaji": "kawara"
+  },
+  "variants": []
+ },
+ "99": {
+  "name": {
+   "kana": "あまい",
+   "romaji": "amai"
+  },
+  "variants": []
+ },
+ "100": {
+  "name": {
+   "kana": "うまれる",
+   "romaji": "umareru"
+  },
+  "variants": []
+ },
+ "101": {
+  "name": {
+   "kana": "もちいる",
+   "romaji": "mochiiru"
+  },
+  "variants": []
+ },
+ "102": {
+  "name": {
+   "kana": "た",
+   "romaji": "ta"
+  },
+  "variants": []
+ },
+ "103": {
+  "name": {
+   "kana": "ひき",
+   "romaji": "hiki"
+  },
+  "variants": [
+   {
+    "glyph": "𤴔",
+    "name": {
+     "kana": "ひきへん",
+     "romaji": "hikihen"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   }
+  ]
+ },
+ "104": {
+  "name": {
+   "kana": "やまいだれ",
+   "romaji": "yamaidare"
+  },
+  "position": {
+   "kana": "たれ",
+   "romaji": "tare"
+  },
+  "variants": []
+ },
+ "105": {
+  "name": {
+   "kana": "はつがしら",
+   "romaji": "hatsugashira"
+  },
+  "position": {
+   "kana": "かんむり",
+   "romaji": "kanmuri"
+  },
+  "variants": []
+ },
+ "106": {
+  "name": {
+   "kana": "しろ",
+   "romaji": "shiro"
+  },
+  "variants": []
+ },
+ "107": {
+  "name": {
+   "kana": "けがわ",
+   "romaji": "kegawa"
+  },
+  "variants": []
+ },
+ "108": {
+  "name": {
+   "kana": "さら",
+   "romaji": "sara"
+  },
+  "variants": []
+ },
+ "109": {
+  "name": {
+   "kana": "め",
+   "romaji": "me"
+  },
+  "variants": []
+ },
+ "110": {
+  "name": {
+   "kana": "ほこ",
+   "romaji": "hoko"
+  },
+  "variants": []
+ },
+ "111": {
+  "name": {
+   "kana": "や",
+   "romaji": "ya"
+  },
+  "variants": []
+ },
+ "112": {
+  "name": {
+   "kana": "いし",
+   "romaji": "ishi"
+  },
+  "variants": []
+ },
+ "113": {
+  "name": {
+   "kana": "しめす",
+   "romaji": "shimesu"
+  },
+  "variants": [
+   {
+    "glyph": "礻",
+    "name": {
+     "kana": "しめすへん",
+     "romaji": "shimesuhen"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   }
+  ]
+ },
+ "114": {
+  "name": {
+   "kana": "じゅうのあし",
+   "romaji": "juunoashi"
+  },
+  "variants": []
+ },
+ "115": {
+  "name": {
+   "kana": "のぎへん",
+   "romaji": "nogihen"
+  },
+  "position": {
+   "kana": "へん",
+   "romaji": "hen"
+  },
+  "variants": []
+ },
+ "116": {
+  "name": {
+   "kana": "あな",
+   "romaji": "ana"
+  },
+  "variants": []
+ },
+ "117": {
+  "name": {
+   "kana": "たつ",
+   "romaji": "tatsu"
+  },
+  "variants": []
+ },
+ "118": {
+  "name": {
+   "kana": "たけ",
+   "romaji": "take"
+  },
+  "variants": [
+   {
+    "glyph": "𥫗",
+    "name": {
+     "kana": "たけかんむり",
+     "romaji": "takekanmuri"
+    },
+    "position": {
+     "kana": "かんむり",
+     "romaji": "kanmuri"
+    }
+   }
+  ]
+ },
+ "119": {
+  "name": {
+   "kana": "こめ",
+   "romaji": "kome"
+  },
+  "variants": []
+ },
+ "120": {
+  "name": {
+   "kana": "いと",
+   "romaji": "ito"
+  },
+  "variants": []
+ },
+ "121": {
+  "name": {
+   "kana": "みずがめ",
+   "romaji": "mizugame"
+  },
+  "variants": []
+ },
+ "122": {
+  "name": {
+   "kana": "あみめ",
+   "romaji": "amime"
+  },
+  "variants": [
+   {
+    "glyph": "㓁",
+    "name": {
+     "kana": "あみがしら",
+     "romaji": "amigashira"
+    }
+   },
+   {
+    "glyph": "𦉰",
+    "name": {
+     "kana": "あみがしら",
+     "romaji": "amigashira"
+    }
+   }
+  ]
+ },
+ "123": {
+  "name": {
+   "kana": "ひつじ",
+   "romaji": "hitsuji"
+  },
+  "variants": [
+   {
+    "glyph": "𦍌",
+    "name": {
+     "kana": "ひつじ",
+     "romaji": "hitsuji"
+    }
+   }
+  ]
+ },
+ "124": {
+  "name": {
+   "kana": "はね",
+   "romaji": "hane"
+  },
+  "variants": []
+ },
+ "125": {
+  "name": {
+   "kana": "おいかんむり",
+   "romaji": "oikanmuri"
+  },
+  "variants": [
+   {
+    "glyph": "耂",
+    "name": {
+     "kana": "おいかんむり",
+     "romaji": "oikanmuri"
+    },
+    "position": {
+     "kana": "かんむり",
+     "romaji": "kanmuri"
+    }
+   }
+  ]
+ },
+ "126": {
+  "name": {
+   "kana": "しこうして",
+   "romaji": "shikoushite"
+  },
+  "variants": []
+ },
+ "127": {
+  "name": {
+   "kana": "らいすき",
+   "romaji": "raisuki"
+  },
+  "position": {
+   "kana": "へん",
+   "romaji": "hen"
+  },
+  "variants": []
+ },
+ "128": {
+  "name": {
+   "kana": "みみ",
+   "romaji": "mimi"
+  },
+  "variants": []
+ },
+ "129": {
+  "name": {
+   "kana": "ふでづくり",
+   "romaji": "fudezukuri"
+  },
+  "variants": []
+ },
+ "130": {
+  "name": {
+   "kana": "にく",
+   "romaji": "niku"
+  },
+  "variants": []
+ },
+ "131": {
+  "name": {
+   "kana": "しん",
+   "romaji": "shin"
+  },
+  "variants": []
+ },
+ "132": {
+  "name": {
+   "kana": "みずから",
+   "romaji": "mizukara"
+  },
+  "variants": []
+ },
+ "133": {
+  "name": {
+   "kana": "いたる",
+   "romaji": "itaru"
+  },
+  "variants": []
+ },
+ "134": {
+  "name": {
+   "kana": "うす",
+   "romaji": "usu"
+  },
+  "variants": []
+ },
+ "135": {
+  "name": {
+   "kana": "した",
+   "romaji": "shita"
+  },
+  "variants": []
+ },
+ "136": {
+  "name": {
+   "kana": "まいあし",
+   "romaji": "maiashi"
+  },
+  "variants": []
+ },
+ "137": {
+  "name": {
+   "kana": "ふね",
+   "romaji": "fune"
+  },
+  "variants": []
+ },
+ "138": {
+  "name": {
+   "kana": "こん",
+   "romaji": "kon"
+  },
+  "variants": []
+ },
+ "139": {
+  "name": {
+   "kana": "いろ",
+   "romaji": "iro"
+  },
+  "variants": []
+ },
+ "140": {
+  "name": {
+   "kana": "くさ",
+   "romaji": "kusa"
+  },
+  "variants": [
+   {
+    "glyph": "艹",
+    "name": {
+     "kana": "くさかんむり",
+     "romaji": "kusakanmuri"
+    },
+    "position": {
+     "kana": "かんむり",
+     "romaji": "kanmuri"
+    }
+   }
+  ]
+ },
+ "141": {
+  "name": {
+   "kana": "とらがしら",
+   "romaji": "toragashira"
+  },
+  "position": {
+   "kana": "かんむり",
+   "romaji": "kanmuri"
+  },
+  "variants": []
+ },
+ "142": {
+  "name": {
+   "kana": "むし",
+   "romaji": "mushi"
+  },
+  "variants": []
+ },
+ "143": {
+  "name": {
+   "kana": "ち",
+   "romaji": "chi"
+  },
+  "variants": []
+ },
+ "144": {
+  "name": {
+   "kana": "ぎょうがまえ",
+   "romaji": "gyougamae"
+  },
+  "position": {
+   "kana": "かまえ, ぎょうがまえ",
+   "romaji": "kamae, gyougamae"
+  },
+  "variants": []
+ },
+ "145": {
+  "name": {
+   "kana": "ころも",
+   "romaji": "koromo"
+  },
+  "variants": [
+   {
+    "glyph": "衤",
+    "name": {
+     "kana": "ころもへん",
+     "romaji": "koromohen"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   }
+  ]
+ },
+ "146": {
+  "name": {
+   "kana": "にし",
+   "romaji": "nishi"
+  },
+  "variants": [
+   {
+    "glyph": "覀",
+    "name": {
+     "kana": "にし",
+     "romaji": "nishi"
+    }
+   }
+  ]
+ },
+ "147": {
+  "name": {
+   "kana": "みる",
+   "romaji": "miru"
+  },
+  "variants": []
+ },
+ "148": {
+  "name": {
+   "kana": "つの",
+   "romaji": "tsuno"
+  },
+  "variants": []
+ },
+ "149": {
+  "name": {
+   "kana": "げん",
+   "romaji": "gen"
+  },
+  "variants": []
+ },
+ "150": {
+  "name": {
+   "kana": "たに",
+   "romaji": "tani"
+  },
+  "variants": []
+ },
+ "151": {
+  "name": {
+   "kana": "まめ",
+   "romaji": "mame"
+  },
+  "variants": []
+ },
+ "152": {
+  "name": {
+   "kana": "いのこ",
+   "romaji": "inoko"
+  },
+  "variants": []
+ },
+ "153": {
+  "name": {
+   "kana": "むじなへん",
+   "romaji": "mujinahen"
+  },
+  "position": {
+   "kana": "へん",
+   "romaji": "hen"
+  },
+  "variants": []
+ },
+ "154": {
+  "name": {
+   "kana": "かい",
+   "romaji": "kai"
+  },
+  "variants": []
+ },
+ "155": {
+  "name": {
+   "kana": "あか",
+   "romaji": "aka"
+  },
+  "variants": []
+ },
+ "156": {
+  "name": {
+   "kana": "はしる",
+   "romaji": "hashiru"
+  },
+  "variants": []
+ },
+ "157": {
+  "name": {
+   "kana": "あし",
+   "romaji": "ashi"
+  },
+  "variants": [
+   {
+    "glyph": "𧾷",
+    "name": {
+     "kana": "あしへん",
+     "romaji": "ashihen"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   }
+  ]
+ },
+ "158": {
+  "name": {
+   "kana": "み",
+   "romaji": "mi"
+  },
+  "variants": []
+ },
+ "159": {
+  "name": {
+   "kana": "くるま",
+   "romaji": "kuruma"
+  },
+  "variants": []
+ },
+ "160": {
+  "name": {
+   "kana": "からい",
+   "romaji": "karai"
+  },
+  "variants": []
+ },
+ "161": {
+  "name": {
+   "kana": "しんのたつ",
+   "romaji": "shinnotatsu"
+  },
+  "variants": []
+ },
+ "162": {
+  "name": {
+   "kana": "しんにょう",
+   "romaji": "shinnyou"
+  },
+  "variants": [
+   {
+    "glyph": "辶",
+    "name": {
+     "kana": "しんにょう",
+     "romaji": "shinnyou"
+    },
+    "position": {
+     "kana": "にょう",
+     "romaji": "nyou"
+    }
+   }
+  ]
+ },
+ "163": {
+  "name": {
+   "kana": "むら",
+   "romaji": "mura"
+  },
+  "variants": []
+ },
+ "164": {
+  "name": {
+   "kana": "ひよみのとり",
+   "romaji": "hiyominotori"
+  },
+  "variants": []
+ },
+ "165": {
+  "name": {
+   "kana": "のごめ",
+   "romaji": "nogome"
+  },
+  "variants": []
+ },
+ "166": {
+  "name": {
+   "kana": "さと",
+   "romaji": "sato"
+  },
+  "variants": []
+ },
+ "167": {
+  "name": {
+   "kana": "かね",
+   "romaji": "kane"
+  },
+  "variants": []
+ },
+ "168": {
+  "name": {
+   "kana": "ながい",
+   "romaji": "nagai"
+  },
+  "variants": []
+ },
+ "169": {
+  "name": {
+   "kana": "もんがまえ",
+   "romaji": "mongamae"
+  },
+  "position": {
+   "kana": "かまえ, もんがまえ",
+   "romaji": "kamae, mongamae"
+  },
+  "variants": []
+ },
+ "170": {
+  "name": {
+   "kana": "こざと",
+   "romaji": "kozato"
+  },
+  "variants": [
+   {
+    "glyph": "阝",
+    "name": {
+     "kana": "こざとへん",
+     "romaji": "kozatohen"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   }
+  ]
+ },
+ "171": {
+  "name": {
+   "kana": "れいづくり",
+   "romaji": "reizukuri"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "172": {
+  "name": {
+   "kana": "ふるとり",
+   "romaji": "furutori"
+  },
+  "variants": []
+ },
+ "173": {
+  "name": {
+   "kana": "あめ",
+   "romaji": "ame"
+  },
+  "variants": []
+ },
+ "174": {
+  "name": {
+   "kana": "あお",
+   "romaji": "ao"
+  },
+  "variants": []
+ },
+ "175": {
+  "name": {
+   "kana": "あらず",
+   "romaji": "arazu"
+  },
+  "variants": []
+ },
+ "176": {
+  "name": {
+   "kana": "めん",
+   "romaji": "men"
+  },
+  "variants": []
+ },
+ "177": {
+  "name": {
+   "kana": "つくりがわ",
+   "romaji": "tsukurigawa"
+  },
+  "variants": []
+ },
+ "178": {
+  "name": {
+   "kana": "なめしがわ",
+   "romaji": "nameshigawa"
+  },
+  "variants": []
+ },
+ "179": {
+  "name": {
+   "kana": "にら",
+   "romaji": "nira"
+  },
+  "variants": []
+ },
+ "180": {
+  "name": {
+   "kana": "おと",
+   "romaji": "oto"
+  },
+  "variants": []
+ },
+ "181": {
+  "name": {
+   "kana": "おおがい",
+   "romaji": "oogai"
+  },
+  "position": {
+   "kana": "つくり",
+   "romaji": "tsukuri"
+  },
+  "variants": []
+ },
+ "182": {
+  "name": {
+   "kana": "かぜ",
+   "romaji": "kaze"
+  },
+  "variants": [
+   {
+    "glyph": "𠘨",
+    "name": {
+     "kana": "かぜかんむり",
+     "romaji": "kazekanmuri"
+    },
+    "position": {
+     "kana": "かんむり",
+     "romaji": "kanmuri"
+    }
+   }
+  ]
+ },
+ "183": {
+  "name": {
+   "kana": "とぶ",
+   "romaji": "tobu"
+  },
+  "variants": []
+ },
+ "184": {
+  "name": {
+   "kana": "しょく",
+   "romaji": "shoku"
+  },
+  "variants": [
+   {
+    "glyph": "飠",
+    "name": {
+     "kana": "しょくへん",
+     "romaji": "shokuhen"
+    },
+    "position": {
+     "kana": "へん",
+     "romaji": "hen"
+    }
+   }
+  ]
+ },
+ "185": {
+  "name": {
+   "kana": "くび",
+   "romaji": "kubi"
+  },
+  "variants": []
+ },
+ "186": {
+  "name": {
+   "kana": "かおり",
+   "romaji": "kaori"
+  },
+  "variants": []
+ },
+ "187": {
+  "name": {
+   "kana": "うま",
+   "romaji": "uma"
+  },
+  "variants": []
+ },
+ "188": {
+  "name": {
+   "kana": "ほね",
+   "romaji": "hone"
+  },
+  "variants": []
+ },
+ "189": {
+  "name": {
+   "kana": "たかい",
+   "romaji": "takai"
+  },
+  "variants": []
+ },
+ "190": {
+  "name": {
+   "kana": "かみかんむり",
+   "romaji": "kamikanmuri"
+  },
+  "position": {
+   "kana": "かんむり",
+   "romaji": "kanmuri"
+  },
+  "variants": []
+ },
+ "191": {
+  "name": {
+   "kana": "たたかいがまえ",
+   "romaji": "tatakaigamae"
+  },
+  "position": {
+   "kana": "かまえ",
+   "romaji": "kamae"
+  },
+  "variants": []
+ },
+ "192": {
+  "name": {
+   "kana": "においざけ",
+   "romaji": "nioizake"
+  },
+  "variants": []
+ },
+ "193": {
+  "name": {
+   "kana": "れき",
+   "romaji": "reki"
+  },
+  "variants": []
+ },
+ "194": {
+  "name": {
+   "kana": "おに",
+   "romaji": "oni"
+  },
+  "variants": []
+ },
+ "195": {
+  "name": {
+   "kana": "うお",
+   "romaji": "uo"
+  },
+  "variants": []
+ },
+ "196": {
+  "name": {
+   "kana": "とり",
+   "romaji": "tori"
+  },
+  "variants": []
+ },
+ "197": {
+  "name": {
+   "kana": "しお",
+   "romaji": "shio"
+  },
+  "variants": []
+ },
+ "198": {
+  "name": {
+   "kana": "しか",
+   "romaji": "shika"
+  },
+  "variants": []
+ },
+ "199": {
+  "name": {
+   "kana": "むぎ",
+   "romaji": "mugi"
+  },
+  "variants": [
+   {
+    "glyph": "麦",
+    "name": {
+     "kana": "むぎ",
+     "romaji": "mugi"
+    }
+   }
+  ]
+ },
+ "200": {
+  "name": {
+   "kana": "あさ",
+   "romaji": "asa"
+  },
+  "variants": []
+ },
+ "201": {
+  "name": {
+   "kana": "き",
+   "romaji": "ki"
+  },
+  "variants": [
+   {
+    "glyph": "黄",
+    "name": {
+     "kana": "き",
+     "romaji": "ki"
+    }
+   }
+  ]
+ },
+ "202": {
+  "name": {
+   "kana": "きび",
+   "romaji": "kibi"
+  },
+  "variants": []
+ },
+ "203": {
+  "name": {
+   "kana": "くろ",
+   "romaji": "kuro"
+  },
+  "variants": [
+   {
+    "glyph": "黒",
+    "name": {
+     "kana": "くろ",
+     "romaji": "kuro"
+    }
+   }
+  ]
+ },
+ "204": {
+  "name": {
+   "kana": "ぬいとり",
+   "romaji": "nuitori"
+  },
+  "variants": []
+ },
+ "205": {
+  "name": {
+   "kana": "かえる",
+   "romaji": "kaeru"
+  },
+  "variants": []
+ },
+ "206": {
+  "name": {
+   "kana": "かなえ",
+   "romaji": "kanae"
+  },
+  "variants": []
+ },
+ "207": {
+  "name": {
+   "kana": "つづみ",
+   "romaji": "tuzumi"
+  },
+  "variants": []
+ },
+ "208": {
+  "name": {
+   "kana": "ねずみ",
+   "romaji": "nezumi"
+  },
+  "variants": []
+ },
+ "209": {
+  "name": {
+   "kana": "はな",
+   "romaji": "hana"
+  },
+  "variants": []
+ },
+ "210": {
+  "name": {
+   "kana": "せい",
+   "romaji": "sei"
+  },
+  "variants": [
+   {
+    "glyph": "斉",
+    "name": {
+     "kana": "せい",
+     "romaji": "sei"
+    }
+   }
+  ]
+ },
+ "211": {
+  "name": {
+   "kana": "は",
+   "romaji": "ha"
+  },
+  "variants": [
+   {
+    "glyph": "歯",
+    "name": {
+     "kana": "は",
+     "romaji": "ha"
+    }
+   }
+  ]
+ },
+ "212": {
+  "name": {
+   "kana": "りゅう",
+   "romaji": "ryuu"
+  },
+  "variants": []
+ },
+ "213": {
+  "name": {
+   "kana": "かめ",
+   "romaji": "kame"
+  },
+  "variants": [
+   {
+    "glyph": "亀",
+    "name": {
+     "kana": "かめ",
+     "romaji": "kame"
+    }
+   }
+  ]
+ },
+ "214": {
+  "name": {
+   "kana": "やく",
+   "romaji": "yaku"
+  },
+  "variants": []
+ },
+ "_license": "Japanese bushu names and positional variant forms for the 214 Kangxi radicals. Names, positions and the set of variant forms are from Kanji Alive (japanese-radicals.csv), CC BY 4.0 (https://github.com/kanjialive/kanji-data-media). Variant glyphs are the CSV's radical-block codepoints normalised to their CJK unified ideograph via Unicode's EquivalentUnifiedIdeograph.txt. Generated by scripts/ingest/radical-enrichment.mjs; do not edit by hand. See src/data/generated/LICENSE and src/data/attribution.ts."
+}
