@@ -207,10 +207,10 @@ export function CharacterEntryView({
   const radicalMeaning = isRadical ? (radicalByGlyph(glyph)?.meaning ?? null) : null;
 
   // Which role blocks have something to show, and whether to LABEL them: a
-  // single-role glyph drops the "As a …" label (see RoleBlock). The kanji/word
-  // blocks always carry the meaning; the radical block shows only for its variant
-  // forms, or — when radical is the SOLE role (a pure radical like 禾) — to carry
-  // that radical's meaning, which nothing else would.
+  // single-role glyph drops the "As a …" label (see RoleBlock). Each block that
+  // renders leads with its own "It means …". The radical block renders when it has
+  // variant forms, or — when radical is the SOLE role (a pure radical like 禾) — to
+  // carry the meaning nothing else would.
   const hasRadical = variants.length > 0 || (isRadical && !isKanji && !isWord);
   const hasKanji = isKanji;
   const hasWord = wordRows.length > 0;
@@ -228,7 +228,7 @@ export function CharacterEntryView({
               shapes it takes inside other kanji. ── */}
         {hasRadical ? (
           <RoleBlock title="As a radical" labelled={labelled}>
-            {!isKanji && radicalMeaning ? (
+            {radicalMeaning ? (
               <p className={`text-[14px] text-text-muted ${variants.length > 0 ? "mb-4" : ""}`}>
                 It means <span className="text-text">{radicalMeaning}</span>.
               </p>
