@@ -20,23 +20,23 @@ import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
-import { Info, SoundIcon } from "@/components/ui";
+import { SoundIcon } from "@/components/ui";
 import { keigoSetForEntry } from "@/data/keigo";
 import { grammarConceptEntry, grammarConceptRow } from "@/data/grammar-concepts";
 import { entryHref } from "@/lib/library/href";
 import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
 
-// Per-register label (accent) + the "when do I use this" note, moved off the
-// old form boxes and into a hover tooltip.
-const REGISTER: Record<string, { label: string; help: string }> = {
+// Per-register label (accent) + the "when do I use this" line, shown as text
+// under the label and leading into the form.
+const REGISTER: Record<string, { label: string; desc: string }> = {
   honorific: {
     label: "Honorific",
-    help: "You raise the other person with this. Use it for the action of someone you are showing respect to, never for yourself.",
+    desc: "Use this form to raise another person when they take an action:",
   },
   humble: {
     label: "Humble",
-    help: "You humble yourself with this. Use it for your own action, to defer to the person you are speaking to, never for what they do.",
+    desc: "Use this form to lower yourself when you take an action:",
   },
 };
 
@@ -59,19 +59,17 @@ export function KeigoEntryView({ item }: { item: ContentItem }) {
           reading. The section's own tooltip carries the one thing a learner must
           not miss — these are NEW words, not a politer spelling of the plain verb. */}
       <Section title="Polite forms" tone="accent" help={KEIGO_HELP}>
-        <Lead>
-          Which one you use is decided by whose action it is: honorific raises the
-          other person, humble lowers yourself.
-        </Lead>
         <div className="flex flex-col gap-5">
           {set.words.map((w) => {
             const reg = REGISTER[w.register];
             return (
               <div key={w.key}>
-                <p className="mb-1.5 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
+                <p className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
                   {reg?.label ?? w.register}
-                  {reg ? <Info>{reg.help}</Info> : null}
                 </p>
+                {reg ? (
+                  <p className="mb-2 text-[13px] leading-relaxed text-text">{reg.desc}</p>
+                ) : null}
                 <div className="flex items-center gap-2.5">
                   <button
                     type="button"
