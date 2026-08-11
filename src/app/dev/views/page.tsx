@@ -11,6 +11,7 @@ import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { GlyphView } from "@/components/library/glyph-view";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
 import { RadicalEntryView } from "@/components/library/radical-entry-view";
+import { KanjiEntryView } from "@/components/library/kanji-entry-view";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
 import { kanaItems } from "@/lib/content/kana-unit";
@@ -59,6 +60,8 @@ const UP_NEXT = simulateLessons(VOCAB_TRACK, LESSON_RANGE_DEFAULT, 1)[0] ?? null
 const KANA_A = kanaItems().find((i) => i.glyph === "あ");
 // A radical with several kanji built on it, for the radical entry page.
 const RADICAL_KI = buildGlyphItem("禾");
+// A kanji with components + etymology + kanji built on it, for the kanji page.
+const KANJI_MEI = buildGlyphItem("明");
 
 // One item of each type, to show the shared entry header is consistent.
 const HEADER_SAMPLES = [
@@ -133,6 +136,11 @@ export default function ViewsDevPage() {
         {RADICAL_KI ? (
           <div className="mt-4 max-w-[560px]">
             <RadicalEntryView item={RADICAL_KI} />
+          </div>
+        ) : null}
+        {KANJI_MEI ? (
+          <div className="mt-4 max-w-[560px]">
+            <KanjiEntryView item={KANJI_MEI} />
           </div>
         ) : null}
       </Section>
