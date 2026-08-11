@@ -53,13 +53,16 @@ export function itemHeadline(item: ContentItem): Headline {
   if (pron.length) {
     const readings = [...new Set(pron.map((u) => u.reading).filter((r): r is string => !!r))];
     const meanings = pron.flatMap((u) => u.meanings.map((m) => m.label));
-    // Exactly one reading, and it isn't just the glyph again → show + speak it.
-    if (readings.length === 1 && readings[0] !== item.glyph) {
-      return { text: readings[0], speak: item.glyph };
-    }
-    // Many readings (a kanji), or none distinct from the glyph (a kana counter)
-    // → the meaning leads; a kana glyph is still speakable.
-    return { text: meanings[0] ?? item.glyph, speak: KANA_ONLY.test(item.glyph) ? item.glyph : null };
+    // The headline is the DEFINITION, so every type reads in English rather than
+    // some in Japanese (さん) and some in English (one thing). A kana has no gloss
+    // — its sound IS its sense — so it falls back to the reading ("a"). The
+    // reading itself lives in the body; the 🔊 plays it. Speak when there's one
+    // unambiguous pronunciation (a single reading, or a kana-only glyph).
+    const speakable = readings.length === 1 || KANA_ONLY.test(item.glyph);
+    return {
+      text: meanings[0] ?? readings[0] ?? item.glyph,
+      speak: speakable ? item.glyph : null,
+    };
   }
 
   // The non-pronunciation kinds: a rule/pattern/set, no single sound.
