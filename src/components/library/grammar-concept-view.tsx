@@ -22,7 +22,17 @@ import {
 import { Card } from "@/components/ui";
 import type { GrammarConcept } from "@/data/grammar-concepts";
 
-export function GrammarConceptView({ concept }: { concept: GrammarConcept }) {
+export function GrammarConceptView({
+  concept,
+  hideTitles = false,
+}: {
+  concept: GrammarConcept;
+  /** Drop each card's h2 title — the redesigned concept ENTRY page carries the
+   * concept name in its own header, so a card title like "Godan and Ichidan."
+   * beneath it just reads as a second heading. Default false (the router keeps
+   * titles). */
+  hideTitles?: boolean;
+}) {
   return (
     <>
       {/* The short answer, and ONLY when no card follows it. The entry header
@@ -46,6 +56,7 @@ export function GrammarConceptView({ concept }: { concept: GrammarConcept }) {
         // it as an h2 directly beneath the identical h1 made the reference page
         // look like two pages stacked together. Other cards keep their title.
         const repeatsEntryTitle =
+          hideTitles ||
           card.title.replace(/[.!?]+$/, "") === concept.name.replace(/[.!?]+$/, "");
         return (
           // Prose in one Card, its worked examples in a Card beside it, on the

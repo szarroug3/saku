@@ -25,7 +25,7 @@
 //    a GrammarEntryView now, not a concept). The live concepts are verb-classes,
 //    adjective-types and keigo-registers.
 
-import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
+import { EntrySurface, Section } from "@/components/library/entry-section";
 import { GrammarConceptView } from "@/components/library/grammar-concept-view";
 import { grammarConceptFor } from "@/data/grammar-concepts";
 import type { ContentItem } from "@/lib/content/item";
@@ -55,8 +55,7 @@ export function GrammarConceptEntryView({ item }: { item: ContentItem }) {
           body entirely and let the prose run directly under the eyebrow, but
           reusing the shared view keeps the reference and the lesson identical. */}
       <Section title="The idea" tone="accent">
-        <Lead>What it is, and the rule that follows from it:</Lead>
-        <GrammarConceptView concept={concept} />
+        <GrammarConceptView concept={concept} hideTitles />
       </Section>
     </EntrySurface>
   );
