@@ -27,6 +27,21 @@ const BUSHU_HELP =
   "The Japanese name for this radical shape, like のぎへん or にんべん. " +
   "You use it to describe how a kanji is built, not to read the character itself.";
 
+// What "variant forms" are, for the hover-help beside that section.
+const VARIANT_HELP =
+  "The shape this radical changes into when it sits in a particular spot inside a " +
+  "kanji — 水 becomes 氵 on the left. The label says where in the kanji it appears.";
+
+// The five positions the data uses, in plain English (keyed by romaji, the
+// stable field). A position we don't have a phrase for falls back to its kana.
+const POSITION_EN: Record<string, string> = {
+  hen: "left side",
+  tsukuri: "right side",
+  kanmuri: "top",
+  ashi: "bottom",
+  nyou: "wraps bottom-left",
+};
+
 export function RadicalEntryView({ item }: { item: ContentItem }) {
   const name = bushuName(item.glyph);
   const variants = radicalVariants(item.glyph);
@@ -52,11 +67,12 @@ export function RadicalEntryView({ item }: { item: ContentItem }) {
 
         {variants.length > 0 ? (
           <div className="mt-5 border-t border-border/50 pt-5">
-            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
+            <p className="mb-3 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] text-text">
               Variant forms
+              <Info>{VARIANT_HELP}</Info>
             </p>
             {/* Each positional form the radical takes in a compound — the glyph,
-                what it's called, and where it sits (へん / つくり / …). */}
+                what it's called, and where it sits (へん = left side, …). */}
             <div className="flex flex-col gap-2.5">
               {variants.map((v) => (
                 <div key={v.glyph} className="flex items-baseline gap-2.5 text-[15px]">
@@ -65,7 +81,9 @@ export function RadicalEntryView({ item }: { item: ContentItem }) {
                   </span>
                   <span className="font-kana text-text">{v.name.kana}</span>
                   {v.position ? (
-                    <span className="text-[12px] text-text-muted">· {v.position.kana}</span>
+                    <span className="text-[12px] text-text-muted">
+                      · {POSITION_EN[v.position.romaji] ?? v.position.kana}
+                    </span>
                   ) : null}
                 </div>
               ))}
