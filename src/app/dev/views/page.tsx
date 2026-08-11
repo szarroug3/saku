@@ -11,6 +11,7 @@ import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
 import { CharacterEntryView } from "@/components/library/character-entry-view";
 import { WordEntryView } from "@/components/library/word-entry-view";
+import { CounterEntryView } from "@/components/library/counter-entry-view";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
 import { kanaItems } from "@/lib/content/kana-unit";
@@ -68,6 +69,9 @@ const NUSHI = buildGlyphItem("主");
 // A multi-character word for the word page (kanji pieces 先 せん · 生 せい + a
 // corpus example sentence).
 const WORD_SENSEI = buildItem(wordEntry("先生"), "word");
+// Counter/number shelf: a counted form (ひとつ) and a generative rule (11–99).
+const COUNTER_TSU = tsu1 ? formItem(tsu1) : undefined;
+const NUMBER_TENS = tens ? unitItem(tens) : undefined;
 
 // One item of each type, to show the shared entry header is consistent.
 const HEADER_SAMPLES = [
@@ -179,6 +183,16 @@ export default function ViewsDevPage() {
         ) : (
           <Missing />
         )}
+      </Section>
+
+      <Section
+        title="Library &mdash; counter / number page (redesign)"
+        note="Two shelf shapes: a counted form (how you say it + meaning) and a generative rule (how the number is built)."
+      >
+        <div className="flex flex-col gap-4">
+          {COUNTER_TSU ? <CounterEntryView item={COUNTER_TSU} /> : <Missing />}
+          {NUMBER_TENS ? <CounterEntryView item={NUMBER_TENS} /> : <Missing />}
+        </div>
       </Section>
 
       {/* Lesson &mdash; the full teaching view: next. */}
