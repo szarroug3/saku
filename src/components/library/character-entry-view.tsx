@@ -22,9 +22,9 @@
 import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
+import { EntrySurface, Lead, Section, SubLabel } from "@/components/library/entry-section";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
-import { FlatSurfaceProvider, Info, SoundIcon } from "@/components/ui";
-import { GlassSheen, glassSurface } from "@/components/ui/frost";
+import { SoundIcon } from "@/components/ui";
 import { speak } from "@/lib/speech";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { etymologyOf } from "@/data/kanji-etymology";
@@ -37,10 +37,6 @@ import { entryHref } from "@/lib/library/href";
 import type { ContentItem } from "@/lib/content/item";
 
 const CAP = 5;
-
-const VARIANT_HELP =
-  "The shape this radical changes into when it sits in a particular spot inside a " +
-  "kanji — 水 becomes 氵 on the left. The label says where in the kanji it appears.";
 
 // Variant positions in plain English, with the order the section lists them in:
 // the un-repositioned form first, then around the character top → left → right →
@@ -130,52 +126,6 @@ function readingGroups(
   ].filter((g) => g.readings.length > 0);
 }
 
-/** A titled section under a top divider — the one shape every block below the
- * header shares. `tone="accent"` colours the eyebrow like the header's role tags,
- * used for the per-role sections (As a radical / kanji / word); the universal
- * sections (How it's written, Used as a part in) keep the default white. */
-function Section({
-  title,
-  help,
-  tone = "default",
-  children,
-}: {
-  title: string;
-  help?: string;
-  tone?: "default" | "accent";
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="mt-5 border-t border-border/50 pt-5">
-      <p
-        className={`mb-3 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] ${
-          tone === "accent" ? "text-accent" : "text-text"
-        }`}
-      >
-        {title}
-        {help ? <Info>{help}</Info> : null}
-      </p>
-      {children}
-    </div>
-  );
-}
-
-/** A muted sub-label inside a role section (On'yomi, Etymology, …). */
-function SubLabel({ children, help }: { children: React.ReactNode; help?: string }) {
-  return (
-    <p className="mb-2 flex items-center text-[12px] font-medium text-text-muted">
-      {children}
-      {help ? <Info>{help}</Info> : null}
-    </p>
-  );
-}
-
-/** A muted one-line description that opens a role section, framing what follows
- * (teaching, not app-narration — it says something true about Japanese). */
-function Lead({ children }: { children: React.ReactNode }) {
-  return <p className="mb-3 text-[12.5px] leading-relaxed text-text-muted">{children}</p>;
-}
-
 export function CharacterEntryView({ item }: { item: ContentItem }) {
   const glyph = item.glyph;
   const isKanji = item.roles.includes("kanji");
@@ -193,10 +143,8 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
   const restUsedIn = usedIn.length - shownUsedIn.length;
 
   return (
-    <FlatSurfaceProvider>
-      <article className={`${glassSurface} p-6`}>
-        <GlassSheen />
-        <ContentEntryHeader item={item} />
+    <EntrySurface>
+      <ContentEntryHeader item={item} />
 
         {/* ── AS A RADICAL: the shapes it takes inside other kanji, and where. ── */}
         {variants.length > 0 ? (
@@ -387,7 +335,6 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
             ) : null}
           </Section>
         ) : null}
-      </article>
-    </FlatSurfaceProvider>
+    </EntrySurface>
   );
 }

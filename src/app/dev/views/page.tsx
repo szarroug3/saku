@@ -10,6 +10,7 @@ import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
 import { CharacterEntryView } from "@/components/library/character-entry-view";
+import { WordEntryView } from "@/components/library/word-entry-view";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
 import { kanaItems } from "@/lib/content/kana-unit";
@@ -64,6 +65,9 @@ const KANJI_MEI = buildGlyphItem("明");
 // sense that diverges from the kanji's core meaning) and 主 (four lord readings).
 const SEI = buildGlyphItem("生");
 const NUSHI = buildGlyphItem("主");
+// A multi-character word for the word page (kanji pieces 先 せん · 生 せい + a
+// corpus example sentence).
+const WORD_SENSEI = buildItem(wordEntry("先生"), "word");
 
 // One item of each type, to show the shared entry header is consistent.
 const HEADER_SAMPLES = [
@@ -164,6 +168,17 @@ export default function ViewsDevPage() {
             <CharacterEntryView item={NUSHI} />
           </div>
         ) : null}
+      </Section>
+
+      <Section
+        title="Library &mdash; word page (redesign)"
+        note="A multi-character word: how it's said and what it means, the kanji it's built from with each reading, and a sentence."
+      >
+        {WORD_SENSEI ? (
+          <WordEntryView item={WORD_SENSEI} />
+        ) : (
+          <Missing />
+        )}
       </Section>
 
       {/* Lesson &mdash; the full teaching view: next. */}
