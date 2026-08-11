@@ -294,7 +294,9 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
                                     <span className="font-kana text-text">{r.base}</span>
                                   </span>
                                 </td>
-                                <td className="w-full py-1 align-middle font-kana text-text-muted">{r.example}</td>
+                                <td className="w-full py-1 align-middle text-[13px] text-text-muted">
+                                  as in <span className="font-kana text-[14px]">{r.example}</span>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
