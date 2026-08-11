@@ -1,23 +1,49 @@
+"use client";
+
 // RADICAL entry — the redesigned Library page for one radical, on the content
-// model. A radical's whole reason for being is the kanji built on it, so under
-// the shared header the page lists those kanji and what each means. Reference
-// data only (usedAsPartIn + kanji meanings); the reader's per-kanji standing is
-// progress data a later pass layers in, not part of the item.
+// model. Under the shared header: what the radical is CALLED (its bushu name),
+// the VARIANT forms it takes in different positions, how it's written, and the
+// kanji built on it. A radical's whole reason for being is those kanji, so the
+// list of them anchors the page. Reference data only (bushu names, variants,
+// usedAsPartIn + kanji meanings); the reader's per-kanji standing is progress
+// data a later pass layers in, not part of the item.
 
 import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
-import { FlatSurfaceProvider } from "@/components/ui";
+import { FlatSurfaceProvider, SoundIcon } from "@/components/ui";
 import { GlassSheen, glassSurface } from "@/components/ui/frost";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
+import { bushuName, radicalVariants, type RadicalName } from "@/data/radicals";
 import { usedAsPartIn } from "@/lib/library/components";
 import { entryHref } from "@/lib/library/href";
+import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
 
 const CAP = 24;
 
+/** A pronounceable Japanese name — sound button + kana + romaji — as one row. */
+function NameRow({ name }: { name: RadicalName }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => speak(name.kana, "")}
+        aria-label={`Hear ${name.kana}`}
+        className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
+      >
+        <SoundIcon />
+      </button>
+      <span className="font-kana text-text">{name.kana}</span>
+      <span className="text-text-muted">{name.romaji}</span>
+    </span>
+  );
+}
+
 export function RadicalEntryView({ item }: { item: ContentItem }) {
+  const name = bushuName(item.glyph);
+  const variants = radicalVariants(item.glyph);
   const kanji = usedAsPartIn(item.glyph);
   const shown = kanji.slice(0, CAP);
   const rest = kanji.length - shown.length;
@@ -27,6 +53,40 @@ export function RadicalEntryView({ item }: { item: ContentItem }) {
       <article className={`${glassSurface} p-6`}>
         <GlassSheen />
         <ContentEntryHeader item={item} />
+
+        {name ? (
+          <div className="mt-5 border-t border-border/50 pt-5">
+            <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
+              Name
+            </p>
+            <div className="text-[14px]">
+              <NameRow name={name} />
+            </div>
+          </div>
+        ) : null}
+
+        {variants.length > 0 ? (
+          <div className="mt-5 border-t border-border/50 pt-5">
+            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.06em] text-text">
+              Variant forms
+            </p>
+            {/* Each positional form the radical takes in a compound — the glyph,
+                what it's called, and where it sits (へん / つくり / …). */}
+            <div className="flex flex-col gap-2.5">
+              {variants.map((v) => (
+                <div key={v.glyph} className="flex items-center gap-2.5 text-[14px]">
+                  <span className="w-6 flex-none font-kana text-[22px] leading-none text-text">
+                    {v.glyph}
+                  </span>
+                  <NameRow name={v.name} />
+                  {v.position ? (
+                    <span className="text-[12px] text-text-muted">· {v.position.kana}</span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-5 border-t border-border/50 pt-5">
           <HowItsWritten
