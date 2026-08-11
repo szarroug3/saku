@@ -12,10 +12,13 @@ import { KanaEntryView } from "@/components/library/kana-entry-view";
 import { CharacterEntryView } from "@/components/library/character-entry-view";
 import { WordEntryView } from "@/components/library/word-entry-view";
 import { CounterEntryView } from "@/components/library/counter-entry-view";
+import { CharacterTeachView, KanaTeachView } from "@/components/library/lesson-teach-view";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
 import { kanaItems } from "@/lib/content/kana-unit";
 import { UNIT_TRACKS, simulateLessons } from "@/lib/content/unit-tracks";
+import { teachUnitsOf } from "@/lib/content/teach-unit";
+import type { PronunciationUnit } from "@/lib/content/teach-unit";
 import { LESSON_RANGE_DEFAULT } from "@/lib/lesson-sizing";
 import { buildGlyphItem, buildItem } from "@/lib/content/build-item";
 import { formItem, unitItem } from "@/lib/content/numbers-track";
@@ -69,6 +72,12 @@ const NUSHI = buildGlyphItem("主");
 // A multi-character word for the word page (kanji pieces 先 せん · 生 せい + a
 // corpus example sentence).
 const WORD_SENSEI = buildItem(wordEntry("先生"), "word");
+
+/** The primary pronunciation unit a lesson would teach for an item (the first). */
+function primaryUnit(item: ContentItem | undefined): PronunciationUnit | undefined {
+  if (!item) return undefined;
+  return teachUnitsOf(item).find((u): u is PronunciationUnit => u.kind === "pronunciation");
+}
 // Counter/number shelf: a counted form (ひとつ) and a generative rule (11–99).
 const COUNTER_TSU = tsu1 ? formItem(tsu1) : undefined;
 const NUMBER_TENS = tens ? unitItem(tens) : undefined;
@@ -192,6 +201,25 @@ export default function ViewsDevPage() {
         <div className="flex flex-col gap-4">
           {COUNTER_TSU ? <CounterEntryView item={COUNTER_TSU} /> : <Missing />}
           {NUMBER_TENS ? <CounterEntryView item={NUMBER_TENS} /> : <Missing />}
+        </div>
+      </Section>
+
+      <Section
+        title="Lesson &mdash; teach view (redesign)"
+        note="The trimmed teaching card: only the ONE reading being taught (not the full reference). Kana lesson == kana library."
+      >
+        <div className="flex flex-col gap-4">
+          {KANA_A ? <KanaTeachView item={KANA_A} /> : <Missing />}
+          {SEI && primaryUnit(SEI) ? (
+            <CharacterTeachView item={SEI} unit={primaryUnit(SEI)!} />
+          ) : (
+            <Missing />
+          )}
+          {WORD_SENSEI && primaryUnit(WORD_SENSEI) ? (
+            <CharacterTeachView item={WORD_SENSEI} unit={primaryUnit(WORD_SENSEI)!} />
+          ) : (
+            <Missing />
+          )}
         </div>
       </Section>
 
