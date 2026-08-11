@@ -47,9 +47,10 @@ describe("teach walk flat section surfaces", () => {
   // otherwise), matching LessonPanel's fork. This guards that it keeps doing so.
   test("the how-it's-written collapsed box honors the flat surface", () => {
     assert.match(HOW_ITS_WRITTEN, /import \{[^}]*useFlatSurface[^}]*\}/);
-    assert.match(
-      HOW_ITS_WRITTEN,
-      /flatSurface \? "bg-transparent" : "bg-panel"/,
-    );
+    // On a flat surface it now drops the box ENTIRELY — the redesign made these
+    // sections borderless rather than transparent-boxed — returning the content
+    // bare; off a flat surface it keeps its bg-panel box.
+    assert.match(HOW_ITS_WRITTEN, /if \(flatSurface\)\s*\{\s*return <>\{content\}<\/>;/);
+    assert.match(HOW_ITS_WRITTEN, /bg-panel/);
   });
 });

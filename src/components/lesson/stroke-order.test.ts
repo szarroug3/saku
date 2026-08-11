@@ -170,20 +170,13 @@ describe("globals.css keyframes are visible to the CSS build", () => {
 // otherwise. These pin the saying-so: that the note is still on screen, and that
 // it still reads like a person rather than a spec.
 describe("the diagram says which shape it is showing", () => {
-  test("the note is rendered, from the one place the copy lives", () => {
-    assert.match(
-      TSX,
-      /WRITTEN_VS_PRINTED/,
-      "stroke-order.tsx must render WRITTEN_VS_PRINTED under the diagram — without\n" +
-        "it a learner sees a handwritten shape and a printed one and is left to work\n" +
-        "out on their own that both are the same character",
-    );
-    assert.match(
-      TSX,
-      /from "@\/data\/why"/,
-      "the note must be imported from src/data/why.ts, not retyped here; two copies\n" +
-        "of one sentence is how they drift",
-    );
+  test("the written-vs-printed note was dropped from under the diagram", () => {
+    // Deliberately removed as an over-explanation ("drop obvious note"): the
+    // handwriting-vs-typeface aside no longer renders under the stroke diagram.
+    // The copy still lives in @/data/why for anywhere that wants it, but the
+    // diagram no longer prints it, so this pins the removal rather than asserting
+    // a rendering that is gone on purpose.
+    assert.doesNotMatch(TSX, /\{WRITTEN_VS_PRINTED\}/);
   });
 
   test("it follows the copy rules and closes on the reassurance", () => {

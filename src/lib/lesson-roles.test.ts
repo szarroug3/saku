@@ -488,8 +488,11 @@ describe("isBoundReading — the readings shown but marked 'in compounds'", () =
 });
 
 describe("the Library keeps what the lesson dropped", () => {
-  const entryPage = readFileSync(
-    fileURLToPath(new URL("../app/library/[...entry]/page.tsx", import.meta.url)),
+  // The Library entry page is now a thin dispatch; its per-kind material lives in
+  // the *-entry-view components. A character's full readings and the list of kanji
+  // built on its shape live in CharacterEntryView, so that is what this asserts.
+  const characterView = readFileSync(
+    fileURLToPath(new URL("../components/library/character-entry-view.tsx", import.meta.url)),
     "utf8",
   );
 
@@ -508,15 +511,18 @@ describe("the Library keeps what the lesson dropped", () => {
     assert.ok(usedAsPartIn("人").length > 10);
   });
 
-  test("the entry page mounts both, so the reference is where they went", () => {
-    assert.match(entryPage, /<KanjiReadings/);
-    assert.match(entryPage, /<ComponentUses/);
+  test("the character view mounts both, so the reference is where they went", () => {
+    // The full reading groups (on'yomi + kun'yomi) and the "used as a part in"
+    // list — the two things the lesson hands off to the reference — are both here.
+    assert.match(characterView, /readingGroups/);
+    assert.match(characterView, /usedAsPartIn/);
   });
 
-  test("the entry page's own material is untouched by the lesson's section list", () => {
-    // The two views never shared a list: nothing under app/library asks
-    // lessonSections, which is why the lesson could shrink on its own.
-    assert.doesNotMatch(entryPage, /lessonSections/);
+  test("the character view's own material is untouched by the lesson's section list", () => {
+    // The two views never shared a list: the reference view has its own role
+    // logic and never asks lessonSections, which is why the lesson could shrink on
+    // its own.
+    assert.doesNotMatch(characterView, /lessonSections/);
     assert.ok(libEntry(kanjiEntry("人"))?.meanings.length);
   });
 });

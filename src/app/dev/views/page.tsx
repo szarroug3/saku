@@ -6,6 +6,7 @@
 
 import type { ReactNode } from "react";
 
+import { AttributionLink } from "@/components/library/attribution-link";
 import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
@@ -383,6 +384,10 @@ export default function ViewsDevPage() {
           </Slot>
         </Sub>
       </Section>
+
+      {/* The gallery renders "How it's written" stroke diagrams (KanjiVG), so it
+          must carry the data attribution the licence requires. */}
+      <AttributionLink />
     </main>
   );
 }

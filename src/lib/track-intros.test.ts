@@ -125,12 +125,17 @@ describe("every track that can unlock has exactly one intro", () => {
     for (const track of TRACK_ORDER) {
       const intro = TRACK_INTROS[track];
       assert.ok(intro.title.length > 0, `${track} has no title`);
-      // Three jobs, so at least three paragraphs. Counted rather than read: a
-      // test cannot judge whether prose answers "why now", but it can catch a
-      // card that was cut down to a definition and lost the other two.
+      // Three jobs, so at least three paragraphs — EXCEPT the two cards
+      // deliberately trimmed: kanji to two (the "meaning-first" and
+      // "characters-before-words" sequencing paragraphs were dropped as lesson
+      // framing a reference reader doesn't need) and counters to one (the 〜つ
+      // escape-hatch pitch moved out to its own non-term intro). Counted rather
+      // than read: a test cannot judge whether prose answers "why now", but it can
+      // catch a card cut down to a bare definition where it shouldn't be.
+      const minParas = track === "counters" ? 1 : track === "kanji" ? 2 : 3;
       assert.ok(
-        intro.body.length >= 3,
-        `${track} has ${intro.body.length} paragraphs, too few for three jobs`,
+        intro.body.length >= minParas,
+        `${track} has ${intro.body.length} paragraphs, too few for its jobs`,
       );
       // The eyebrow is overridden on purpose: "Before you go on" is a lie on a
       // card that nothing has gone before.
