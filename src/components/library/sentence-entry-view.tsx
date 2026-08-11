@@ -2,31 +2,28 @@
 
 // SENTENCE-ORDERING entry — the redesigned Library page for one sentence-structure
 // tier ("Simple sentences", "Conditional sentences", …). A tier is not a
-// character; it is a RULE about the order the pieces of a sentence go in. So this
-// page teaches that order — the guide's steps and its one-line hook — and then
-// shows the rule at work in one real sentence.
+// character; it is a RULE about the order the pieces of a sentence go in, and it
+// is carried as a "sentence"-shelf MARK. So this page shows the SAME rich mark the
+// shipped route showed — every intro card, its worked examples, and the accent
+// highlighting — via the shared MarkView, then one more real sentence beneath it.
 //
-//   header
-//   How the pieces are ordered  (accent) — the guide's steps, then its hook
+//   header (name + summary)
+//   How the pieces are ordered  (accent) — the mark's intros (MarkView)
 //   In a sentence               — a real corpus sentence that follows the order
 //
-// Reference data only. The tier, its guide and the corpus already exist; this
-// page re-expresses them, it invents no model. The item's id is
-// `sentence-ordering:<tierId>` (see src/lib/content/sentence-track.ts), so the
-// tier is resolved by slicing that prefix — the same resolve sentence-track uses,
-// not the mark id the legacy router keys on.
+// Reference data only. The tier maps to its mark by id (sentence-ordering:<id> →
+// sentence-rule-<id>); MarkView is the one renderer both this page and the mark
+// page use, so the sentence rule reads identically wherever it appears.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
+import { MarkView } from "@/components/library/mark-view";
 import {
   ASSEMBLY,
   SENTENCE_ORDERING_TIERS,
   sentenceOrderingTierForItem,
 } from "@/data/assembly";
-import {
-  SENTENCE_ORDERING_GUIDES,
-  type SentenceOrderingTierId,
-} from "@/data/sentence-ordering-guides";
+import { markEntry, markFor } from "@/data/marks";
 import type { ContentItem } from "@/lib/content/item";
 
 const PREFIX = "sentence-ordering:";
@@ -35,39 +32,29 @@ export function SentenceEntryView({ item }: { item: ContentItem }) {
   const entry = String(item.entry);
   const tierId = entry.startsWith(PREFIX) ? entry.slice(PREFIX.length) : entry;
   const tier = SENTENCE_ORDERING_TIERS.find((t) => t.id === tierId);
-  const guide = SENTENCE_ORDERING_GUIDES[tierId as SentenceOrderingTierId];
-  if (!tier || !guide) return null;
+  // The tier's rule lives in its sentence-shelf mark — the rich content (intros,
+  // worked examples, accents) the shipped route rendered.
+  const mark = markFor(markEntry(`sentence-rule-${tierId}`));
+  if (!tier || !mark) return null;
 
-  // One worked sentence for this tier: the first short (≤4-piece) corpus item
-  // that maps unambiguously to it. The curated exercises lead ASSEMBLY, so a
-  // tier with a hand-reviewed sentence shows that; the rest fall to a generated
-  // Tatoeba sentence. Absent — not empty — for a tier the corpus can't place.
+  // One more worked sentence for this tier: the first short (≤4-piece) corpus item
+  // that maps unambiguously to it. Absent — not empty — for a tier the corpus
+  // can't place.
   const example = ASSEMBLY.find(
     (it) => it.pieces.length <= 4 && sentenceOrderingTierForItem(it) === tier.id,
   );
 
   return (
     <EntrySurface>
-      <ContentEntryHeader item={item} />
+      <ContentEntryHeader typeLabel="sentence structure" title={mark.name} sub={mark.summary} />
 
       <Section title="How the pieces are ordered" tone="accent">
-        <Lead>{guide.title}</Lead>
-        <div className="flex flex-col gap-3">
-          {guide.body.map((step) => (
-            <div key={step.lead}>
-              <p className="text-[13.5px] font-medium leading-snug text-text">{step.lead}</p>
-              <p className="mt-0.5 text-[13px] leading-relaxed text-text-muted">{step.text}</p>
-            </div>
-          ))}
-        </div>
-        {/* The one-line rule of thumb, in the accent the eyebrow wears — the
-            single thing to carry away from the steps above. */}
-        <p className="mt-4 text-[13px] font-medium text-accent">{guide.hook}</p>
+        <MarkView mark={mark} />
       </Section>
 
       {example ? (
         <Section title="In a sentence">
-          <Lead>The same order, in one real sentence:</Lead>
+          <Lead>The same order, in one more real sentence:</Lead>
           <p className="font-kana text-[18px] leading-relaxed text-text">{example.jp}</p>
           <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{example.en}</p>
         </Section>
