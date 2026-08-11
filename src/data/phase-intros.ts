@@ -913,11 +913,9 @@ export const OKURIGANA_INTRO: PhaseIntro = {
       text: "生 on its own can be read several ways. In 生きる, the tail is きる and 生 is read い. In 生まれる, the tail is まれる and 生 is read う. Same kanji, different tail, different sound.",
     },
   ],
-  examples: [
-    { from: "生 + きる", accentFrom: "きる", to: "生きる", accentTo: "きる", reading: "いきる", gloss: "to live", say: "生きる" },
-    { from: "生 + まれる", accentFrom: "まれる", to: "生まれる", accentTo: "まれる", reading: "うまれる", gloss: "to be born", say: "生まれる" },
-  ],
-  examplesPlacement: "below",
+  // No worked examples: the second paragraph already names 生きる (tail きる, 生 =
+  // い) and 生まれる (tail まれる, 生 = う), so an example panel beside it restated
+  // the prose word for word. The moving/not-moving cards below carry the examples.
 };
 
 export const OKURIGANA_MOVING: PhaseIntro = {
