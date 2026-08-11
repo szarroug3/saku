@@ -224,7 +224,9 @@ export default function ViewsDevPage() {
           <Slot tag="Term — intro & library">
             <TermEntryView entry={termEntry("radical")} />
           </Slot>
-          <Slot tag="Content — library & lesson">
+          {/* Radical only (禾): the single-role case — no kanji or word sections,
+              no "As a …" header. */}
+          <Slot tag="Content — radical only — library & lesson">
             {RADICAL_KI ? <CharacterEntryView item={RADICAL_KI} /> : <Missing />}
           </Slot>
         </Sub>
@@ -233,13 +235,15 @@ export default function ViewsDevPage() {
           <Slot tag="Term — intro & library">
             <TermEntryView entry={termEntry("kanji")} />
           </Slot>
-          {/* 明 (kanji only) and 水 (radical · kanji · word, one word reading) both
-              read identically in both contexts. */}
-          <Slot tag="Content — library & lesson">
-            <div className="flex flex-col gap-4">
-              {KANJI_MEI ? <CharacterEntryView item={KANJI_MEI} /> : <Missing />}
-              {RADICAL_MIZU ? <CharacterEntryView item={RADICAL_MIZU} /> : <Missing />}
-            </div>
+          {/* Kanji only (明): the single-role case — one "As a kanji" section, no
+              "As a …" header. */}
+          <Slot tag="Content — kanji only — library & lesson">
+            {KANJI_MEI ? <CharacterEntryView item={KANJI_MEI} /> : <Missing />}
+          </Slot>
+          {/* All three roles (水): radical · kanji · word, so all three sections
+              show with their "As a …" headers. */}
+          <Slot tag="Content — radical · kanji · word — library & lesson">
+            {RADICAL_MIZU ? <CharacterEntryView item={RADICAL_MIZU} /> : <Missing />}
           </Slot>
         </Sub>
 
@@ -255,19 +259,22 @@ export default function ViewsDevPage() {
           <Slot tag="Term intros">
             <TermIntros ids={["pitch-accent", "mora"]} />
           </Slot>
-          {/* 生 (one reading, divergent sense) and 先生 (multi-character, one
-              reading) don't change under lesson. 主 has four word readings, so the
-              lesson caps to one — the one case a character page differs. */}
-          <Slot tag="Content — library & lesson">
-            <div className="flex flex-col gap-4">
-              {SEI ? <CharacterEntryView item={SEI} /> : <Missing />}
-              {WORD_SENSEI ? <CharacterEntryView item={WORD_SENSEI} /> : <Missing />}
-            </div>
+          {/* Word only (先生): the single-role case — one word section, no "As a …"
+              header. This is the multi-character word page. */}
+          <Slot tag="Content — word only (先生) — library & lesson">
+            {WORD_SENSEI ? <CharacterEntryView item={WORD_SENSEI} /> : <Missing />}
           </Slot>
-          <Slot tag="Content — library (all readings)">
+          {/* Kanji + word (生): two sections, so the "As a kanji" / "As a word"
+              headers appear. なま diverges from the kanji's core sense. */}
+          <Slot tag="Content — kanji + word (生) — library & lesson">
+            {SEI ? <CharacterEntryView item={SEI} /> : <Missing />}
+          </Slot>
+          {/* 主 has four word readings, so the lesson caps to one — the one case a
+              character page differs between library and lesson. */}
+          <Slot tag="Content — kanji + word (主) — library (all readings)">
             {NUSHI ? <CharacterEntryView item={NUSHI} /> : <Missing />}
           </Slot>
-          <Slot tag="Content — lesson (one pronunciation)">
+          <Slot tag="Content — kanji + word (主) — lesson (one pronunciation)">
             {NUSHI ? <CharacterEntryView item={NUSHI} lesson /> : <Missing />}
           </Slot>
         </Sub>

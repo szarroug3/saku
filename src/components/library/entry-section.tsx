@@ -52,7 +52,7 @@ export function SubLabel({ children, help }: { children: React.ReactNode; help?:
 }
 
 export function Lead({ children }: { children: React.ReactNode }) {
-  return <p className="mb-3 text-[12.5px] leading-relaxed text-text">{children}</p>;
+  return <p className="mb-3 text-[15px] leading-relaxed text-text">{children}</p>;
 }
 
 /** The glass card every entry page sits in. Flat surface so shared section

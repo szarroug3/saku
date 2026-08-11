@@ -833,7 +833,9 @@ export function IntroBuildSection({
 }) {
   return (
     <section className="space-y-4">
-      {!hideTitle ? <h3 className="text-[17px] font-semibold text-accent">{title}</h3> : null}
+      {!hideTitle ? (
+        <h3 className="text-[11px] font-medium uppercase tracking-[0.06em] text-accent">{title}</h3>
+      ) : null}
       <IntroBody body={body} measure="" />
       {formula ? <IntroBuildFormula {...formula} /> : null}
       {rules?.length ? <IntroBuildTable rules={rules} heads={heads} /> : null}
