@@ -14,24 +14,21 @@
 // supports, and it is not padded. See src/data/terms.ts and term-view.tsx.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
-import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
+import { EntrySurface, Section } from "@/components/library/entry-section";
 import { TermView } from "@/components/library/term-view";
 import { termFor } from "@/data/terms";
-import type { ContentItem } from "@/lib/content/item";
+import type { EntryId } from "@/types";
 
-export function TermEntryView({ item }: { item: ContentItem }) {
-  const term = termFor(item.entry);
+export function TermEntryView({ entry }: { entry: EntryId }) {
+  const term = termFor(entry);
   if (!term) return null;
 
   return (
     <EntrySurface>
-      <ContentEntryHeader item={item} />
+      {/* A term's NAME (Counter) is the hero and its one-line gloss the sub. */}
+      <ContentEntryHeader typeLabel="term" title={term.name} sub={term.summary} />
 
       <Section title="What it means" tone="accent">
-        {/* The one-line answer. TermView below carries the fuller definition (its
-            body prose, or the lesson card when the term has one), so this frames
-            rather than repeats it; the header headline is empty for a term. */}
-        <Lead>{term.summary}</Lead>
         <TermView term={term} />
       </Section>
     </EntrySurface>

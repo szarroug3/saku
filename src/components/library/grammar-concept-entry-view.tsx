@@ -25,28 +25,20 @@
 //    a GrammarEntryView now, not a concept). The live concepts are verb-classes,
 //    adjective-types and keigo-registers.
 
+import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { EntrySurface, Section } from "@/components/library/entry-section";
 import { GrammarConceptView } from "@/components/library/grammar-concept-view";
 import { grammarConceptFor } from "@/data/grammar-concepts";
-import type { ContentItem } from "@/lib/content/item";
+import type { EntryId } from "@/types";
 
-export function GrammarConceptEntryView({ item }: { item: ContentItem }) {
-  const concept = grammarConceptFor(item.entry);
+export function GrammarConceptEntryView({ entry }: { entry: EntryId }) {
+  const concept = grammarConceptFor(entry);
   if (!concept) return null;
 
   return (
     <EntrySurface>
-      {/* A CONCEPT HAS NO GLYPH, so the shared ContentEntryHeader (built around a
-          glyph + an itemHeadline) does not fit; the name is the hero and the
-          summary the sub, the same reframing term-view/GrammarConceptView make
-          for a subject that is an idea rather than a symbol. */}
-      <header>
-        <div className="text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
-          {item.typeLabel || "grammar concept"}
-        </div>
-        <h1 className="mt-1.5 text-[22px] font-light leading-snug text-text">{concept.name}</h1>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{concept.summary}</p>
-      </header>
+      {/* A concept has no glyph, so the shared header shows its NAME as the hero. */}
+      <ContentEntryHeader typeLabel="grammar concept" title={concept.name} sub={concept.summary} />
 
       {/* THE IDEA — the concept's cards, rendered by the SAME GrammarConceptView
           the entry router mounts. Its cards render frost by default and flat

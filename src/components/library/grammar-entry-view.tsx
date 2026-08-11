@@ -74,7 +74,7 @@ export function GrammarEntryView({ item }: { item: ContentItem }) {
         </Lead>
         <div className="flex flex-col gap-3.5">
           {patterns.map((p) => (
-            <PatternTeach key={p.id} pattern={p} />
+            <PatternTeach key={p.id} pattern={p} hideBuildLabel />
           ))}
         </div>
       </Section>

@@ -33,7 +33,43 @@ function glyphSize(glyph: string): string {
   return "text-[24px]";
 }
 
-export function ContentEntryHeader({ item, chips }: { item: ContentItem; chips?: ReactNode }) {
+export function ContentEntryHeader({
+  item,
+  chips,
+  title,
+  sub,
+  typeLabel,
+}: {
+  item?: ContentItem;
+  chips?: ReactNode;
+  /** GLYPH-LESS items — a grammar concept, a term, a mark — are ideas, not
+   * symbols, so their NAME is the hero (with the type above and a one-line
+   * summary below) rather than a big glyph. Pass `title`/`sub`/`typeLabel` and no
+   * `item`; the shared header owns this shape so each glyph-less page doesn't
+   * hand-roll its own. */
+  title?: string;
+  sub?: string;
+  typeLabel?: string;
+}) {
+  // Glyph-less: the name is the hero.
+  if (title) {
+    return (
+      <div className="flex items-start gap-4">
+        <div className="min-w-0 flex-1">
+          {typeLabel ? (
+            <div className="text-[11px] font-medium uppercase tracking-[0.06em] text-accent">
+              {typeLabel}
+            </div>
+          ) : null}
+          <h1 className="mt-1.5 text-[22px] font-light leading-snug text-text">{title}</h1>
+          {sub ? <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{sub}</p> : null}
+        </div>
+        {chips ? <div className="ml-auto flex flex-none items-center gap-1.5">{chips}</div> : null}
+      </div>
+    );
+  }
+
+  if (!item) return null;
   const { text, speak: speakGlyph } = itemHeadline(item);
   const phrase = /\s/.test(item.glyph);
   return (

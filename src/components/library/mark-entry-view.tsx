@@ -14,24 +14,21 @@
 // see the header of src/data/marks.ts and mark-view.tsx.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
-import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
+import { EntrySurface, Section } from "@/components/library/entry-section";
 import { MarkView } from "@/components/library/mark-view";
 import { markFor } from "@/data/marks";
-import type { ContentItem } from "@/lib/content/item";
+import type { EntryId } from "@/types";
 
-export function MarkEntryView({ item }: { item: ContentItem }) {
-  const mark = markFor(item.entry);
+export function MarkEntryView({ entry }: { entry: EntryId }) {
+  const mark = markFor(entry);
   if (!mark) return null;
 
   return (
     <EntrySurface>
-      <ContentEntryHeader item={item} />
+      {/* A mark's NAME (Dakuten) is the hero and its one-line rule the sub. */}
+      <ContentEntryHeader typeLabel="mark" title={mark.name} sub={mark.summary} />
 
       <Section title="The rule" tone="accent">
-        {/* The one-line rule. The header's headline is empty for a mark (no
-            facts, and several marks have no glyph), so this is not a repeat of
-            anything above it. */}
-        <Lead>{mark.summary}</Lead>
         <MarkView mark={mark} />
       </Section>
     </EntrySurface>

@@ -60,7 +60,16 @@ import { isFormRecipe } from "@/data/grammar";
 import { formLibraryPages } from "@/data/grammar/lessons";
 import type { Recipe } from "@/data/grammar/recipes";
 
-export function PatternTeach({ pattern }: { pattern: Recipe }) {
+export function PatternTeach({
+  pattern,
+  hideBuildLabel = false,
+}: {
+  pattern: Recipe;
+  /** Drop the inner "How to build it" label. The redesigned grammar entry page
+   * puts this inside its own "How it's formed" section, so the label would read
+   * twice; default false leaves the shipped router/lesson untouched. */
+  hideBuildLabel?: boolean;
+}) {
   // A FORM recipe (the て/で-form, ない, た, stem) shows the form's OWN teaching —
   // what it is for AND how to build it — as one stacked card, the same pages the
   // lesson walks (minus lesson-1 scaffolding; see formLibraryPages). A PATTERN
@@ -115,8 +124,8 @@ export function PatternTeach({ pattern }: { pattern: Recipe }) {
     <>
       {!page.deriveTables?.length ? (
         <Card className="h-full">
-          <Lbl>How to build it</Lbl>
-          <div className="mt-3">
+          {hideBuildLabel ? null : <Lbl>How to build it</Lbl>}
+          <div className={hideBuildLabel ? "" : "mt-3"}>
             {page.buildFormula ? (
               <IntroBuildFormula
                 base={page.buildFormula.base}

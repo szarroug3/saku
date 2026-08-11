@@ -21,7 +21,6 @@ import { TermEntryView } from "@/components/library/term-entry-view";
 import { markEntry } from "@/data/marks";
 import { termEntry } from "@/data/terms";
 import { grammarConceptEntry } from "@/data/grammar-concepts";
-import type { EntryId } from "@/types";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
 import { kanaItems } from "@/lib/content/kana-unit";
@@ -81,23 +80,11 @@ const NUSHI = buildGlyphItem("主");
 const WORD_SENSEI = buildItem(wordEntry("先生"), "word");
 
 // Marks, terms and grammar concepts have no buildItem path — they're referenced
-// by entry id only. The views read item.entry for their lookup and pass item to
-// the shared header, so a minimal literal item is enough for the gallery.
-function refItem(entry: EntryId, typeLabel: string): ContentItem {
-  return {
-    entry,
-    kind: "grammar",
-    glyph: "",
-    facts: [],
-    roles: [],
-    prereqs: [],
-    blockedBy: [],
-    typeLabel,
-  };
-}
-const MARK_ITEM = refItem(markEntry("dakuten"), "mark");
-const TERM_ITEM = refItem(termEntry("counter"), "term");
-const CONCEPT_ITEM = refItem(grammarConceptEntry("verb-classes"), "grammar concept");
+// by entry id only, and their views take the entry id directly (no fabricated
+// ContentItem — they render a glyph-less name header off their own data).
+const MARK = markEntry("dakuten");
+const TERM = termEntry("counter");
+const CONCEPT = grammarConceptEntry("verb-classes");
 
 // Counter/number shelf: a counted form (ひとつ) and a generative rule (11–99).
 const COUNTER_TSU = tsu1 ? formItem(tsu1) : undefined;
@@ -245,7 +232,7 @@ export default function ViewsDevPage() {
         <div className="flex flex-col gap-4">
           {grammar ? <GrammarEntryView item={grammar} /> : <Missing />}
           {keigo ? <KeigoEntryView item={keigo} /> : <Missing />}
-          <GrammarConceptEntryView item={CONCEPT_ITEM} />
+          <GrammarConceptEntryView entry={CONCEPT} />
         </div>
       </Section>
 
@@ -256,8 +243,8 @@ export default function ViewsDevPage() {
         <div className="flex flex-col gap-4">
           {verbPair ? <VerbPairEntryView item={verbPair} /> : <Missing />}
           {sentenceItems()[0] ? <SentenceEntryView item={sentenceItems()[0]!} /> : <Missing />}
-          <MarkEntryView item={MARK_ITEM} />
-          <TermEntryView item={TERM_ITEM} />
+          <MarkEntryView entry={MARK} />
+          <TermEntryView entry={TERM} />
         </div>
       </Section>
 
