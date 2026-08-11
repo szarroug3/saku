@@ -170,6 +170,12 @@ function SubLabel({ children, help }: { children: React.ReactNode; help?: string
   );
 }
 
+/** A muted one-line description that opens a role section, framing what follows
+ * (teaching, not app-narration — it says something true about Japanese). */
+function Lead({ children }: { children: React.ReactNode }) {
+  return <p className="mb-3 text-[12.5px] leading-relaxed text-text-muted">{children}</p>;
+}
+
 export function CharacterEntryView({ item }: { item: ContentItem }) {
   const glyph = item.glyph;
   const isKanji = item.roles.includes("kanji");
@@ -194,20 +200,37 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
 
         {/* ── AS A RADICAL: the shapes it takes inside other kanji, and where. ── */}
         {variants.length > 0 ? (
-          <Section title="As a radical" tone="accent" help={VARIANT_HELP}>
-            <SubLabel>Written as</SubLabel>
+          <Section title="As a radical" tone="accent">
+            <Lead>It takes a different shape depending on where in a kanji it appears:</Lead>
             <table className="text-[15px]">
               <tbody>
                 {variants
-                  .map((v) => ({ v, pos: positionOf(v) }))
+                  .map((v) => ({
+                    v,
+                    pos: positionOf(v),
+                    example: usedAsPartIn(v.glyph)[0] ?? null,
+                  }))
                   .sort((a, b) => a.pos.rank - b.pos.rank)
-                  .map(({ v, pos }) => (
+                  .map(({ v, pos, example }) => (
                     <tr key={v.glyph}>
                       <td className="py-1.5 pr-6 align-middle font-kana text-[24px] leading-none text-text">
                         {v.glyph}
                       </td>
-                      <td className="whitespace-nowrap py-1.5 align-middle text-[13px] text-text-muted">
+                      <td className="whitespace-nowrap py-1.5 pr-8 align-middle text-[13px] text-text-muted">
                         {pos.en}
+                      </td>
+                      <td className="whitespace-nowrap py-1.5 align-middle text-[12px] text-text-muted">
+                        {example ? (
+                          <>
+                            as in{" "}
+                            <Link
+                              href={entryHref(kanjiEntry(example))}
+                              className="font-kana text-[16px] text-text no-underline"
+                            >
+                              {example}
+                            </Link>
+                          </>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -220,43 +243,11 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
               and where the shape came from). ── */}
         {groups.length > 0 || parts.length > 0 || story ? (
           <Section title="As a kanji" tone="accent">
-            {groups.length > 0 ? (
-              <div className={`grid gap-x-10 gap-y-6 ${groups.length > 1 ? "sm:grid-cols-2" : ""}`}>
-                {groups.map((g) => (
-                  <div key={g.label}>
-                    <SubLabel help={g.help}>{g.label}</SubLabel>
-                    <table className="w-full text-[14px]">
-                      <tbody>
-                        {g.readings.map((r) => (
-                          <tr key={r.base}>
-                            <td className="whitespace-nowrap py-1 pr-6">
-                              <span className="flex items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => speak(r.base, "")}
-                                  aria-label={`Hear ${r.base}`}
-                                  className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-                                >
-                                  <SoundIcon />
-                                </button>
-                                <span className="font-kana text-text">{r.base}</span>
-                              </span>
-                            </td>
-                            <td className="w-full py-1 align-middle font-kana text-text-muted">{r.example}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {parts.length > 0 || story ? (
-              <div className={groups.length > 0 ? "mt-6" : ""}>
-                <SubLabel>Etymology</SubLabel>
-                {parts.length > 0 ? (
-                  <div className="mb-2 flex flex-col gap-1.5">
+            <div className="flex flex-col gap-6">
+              {parts.length > 0 ? (
+                <div>
+                  <Lead>It&rsquo;s built from these sub-components:</Lead>
+                  <div className="flex flex-col gap-1.5">
                     {parts.map((p) => (
                       <Link
                         key={p.glyph}
@@ -273,12 +264,54 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
                       </Link>
                     ))}
                   </div>
-                ) : null}
-                {story ? (
+                </div>
+              ) : null}
+
+              {groups.length > 0 ? (
+                <div>
+                  <Lead>
+                    As a rule of thumb it&rsquo;s read one of these ways. Not a guarantee, but a
+                    good guess at how a kanji sounds:
+                  </Lead>
+                  <div className={`grid gap-x-10 gap-y-6 ${groups.length > 1 ? "sm:grid-cols-2" : ""}`}>
+                    {groups.map((g) => (
+                      <div key={g.label}>
+                        <SubLabel help={g.help}>{g.label}</SubLabel>
+                        <table className="w-full text-[14px]">
+                          <tbody>
+                            {g.readings.map((r) => (
+                              <tr key={r.base}>
+                                <td className="whitespace-nowrap py-1 pr-6">
+                                  <span className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => speak(r.base, "")}
+                                      aria-label={`Hear ${r.base}`}
+                                      className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
+                                    >
+                                      <SoundIcon />
+                                    </button>
+                                    <span className="font-kana text-text">{r.base}</span>
+                                  </span>
+                                </td>
+                                <td className="w-full py-1 align-middle font-kana text-text-muted">{r.example}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {story ? (
+                <div>
+                  <SubLabel>Etymology</SubLabel>
                   <p className="text-[13px] leading-relaxed text-text-muted">{story}</p>
-                ) : null}
-              </div>
-            ) : null}
+                </div>
+              ) : null}
+            </div>
           </Section>
         ) : null}
 
@@ -287,6 +320,11 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
               (生 なま = raw, not the kanji's "life"). ── */}
         {wordRows.length > 0 ? (
           <Section title="As a word" tone="accent">
+            <Lead>
+              {wordRows.length > 1
+                ? "It's read more than one way as a word, and the meaning depends on the pronunciation:"
+                : "On its own, this glyph is a word:"}
+            </Lead>
             <table className="w-full text-[14px]">
               <tbody>
                 {wordRows.map((w) => (
