@@ -125,9 +125,20 @@ describe("the reference terms are a real shelf", () => {
  * at nothing else. */
 const SHIPPED = new Set([...PHASE_INTROS, ...Object.values(TRACK_INTROS)]);
 
-/** The five words the app uses but teaches no card about. Their pages are the
- * definition and nothing else. See the note over TERMS. */
-const NO_CARD = ["romaji", "furigana", "jlpt", "particle", "mora"];
+/** The words the app uses but teaches no card about. Their pages are the
+ * definition and nothing else. See the note over TERMS. kana/hiragana/katakana
+ * dropped their cards: the script track intros mix in the other scripts, romaji,
+ * mora and lesson timing, so each page stays about its own topic. */
+const NO_CARD = [
+  "romaji",
+  "furigana",
+  "jlpt",
+  "particle",
+  "mora",
+  "kana",
+  "hiragana",
+  "katakana",
+];
 
 describe("a term points at the lessons' own explanation of it", () => {
   test("every card a term names is a card the app ships", () => {

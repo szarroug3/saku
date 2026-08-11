@@ -57,9 +57,7 @@ import {
 } from "@/data/phase-intros";
 import {
   COUNTERS_TRACK,
-  HIRAGANA_TRACK,
   KANJI_TRACK,
-  KATAKANA_TRACK,
   KEIGO_TRACK,
   RADICAL_TRACK,
 } from "@/data/track-intros";
@@ -157,10 +155,10 @@ export const TERMS: readonly Term[] = [
       "Each kana stands for a sound rather than a meaning, and between them they can spell any Japanese word.",
     ],
     searchAlso: ["kana", "syllabary", "syllabaries"],
-    // Kana is the two scripts together, so its page is the two cards that open
-    // them. There is no third card about the umbrella, and inventing one here
-    // would be the app authoring an explanation the lessons never give.
-    cards: [HIRAGANA_TRACK, KATAKANA_TRACK],
+    // No cards. This page is the umbrella term and stays about kana itself; the
+    // two script intros (HIRAGANA_TRACK / KATAKANA_TRACK) belonged to hiragana and
+    // katakana, so rendering both here made the kana page talk about everything but
+    // kana. Hiragana and katakana each have their own page.
   },
   {
     id: "hiragana",
@@ -171,7 +169,9 @@ export const TERMS: readonly Term[] = [
       "It is used to write native Japanese words, word endings and grammar, and it is usually the first writing a learner picks up.",
     ],
     searchAlso: ["hiragana"],
-    cards: [HIRAGANA_TRACK],
+    // No card: HIRAGANA_TRACK is the lesson's opener and mixes in katakana, romaji,
+    // mora and "hiragana comes first because…" order. Those belong on their own
+    // pages (romaji, mora) or nowhere; this page stays about hiragana.
   },
   {
     id: "katakana",
@@ -182,7 +182,9 @@ export const TERMS: readonly Term[] = [
       "It is used mostly for words borrowed from other languages, foreign names, and sometimes for emphasis. It stands for the same set of sounds as hiragana.",
     ],
     searchAlso: ["katakana"],
-    cards: [KATAKANA_TRACK],
+    // No card: KATAKANA_TRACK is the lesson opener and carries "taught now because
+    // you already know the sounds and you'll need it soon", which is lesson timing,
+    // not what katakana is. This page stays about katakana.
   },
   {
     id: "romaji",
