@@ -44,8 +44,6 @@
 // paragraph and stops.
 
 import {
-  COMBO_H,
-  COMBO_K,
   DAKUTEN_H,
   DAKUTEN_K,
   OKURIGANA_INTRO,
@@ -304,9 +302,9 @@ export const TERMS: readonly Term[] = [
       "The small kana is written at half size, which is what tells you to blend the two rather than say them one after the other.",
     ],
     searchAlso: ["yoon", "youon", "yōon", "combo", "combination", "contracted sound", "small ya yu yo"],
-    // The combination cards, which are where the app names the word: "These are
-    // called yōon" is the last line of the hiragana one.
-    cards: [COMBO_H, COMBO_K],
+    // No cards. This page is the general definition of what a yōon is; it does not
+    // repeat the combination in both scripts (COMBO_H / COMBO_K), because a yōon is
+    // one idea and each specific combination (きゃ, しゅ, …) has its own page.
   },
   {
     id: "okurigana",

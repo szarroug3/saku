@@ -138,6 +138,7 @@ const NO_CARD = [
   "kana",
   "hiragana",
   "katakana",
+  "yoon",
 ];
 
 describe("a term points at the lessons' own explanation of it", () => {
