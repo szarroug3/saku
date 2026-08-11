@@ -32,10 +32,11 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
         <div className="mt-5 border-t border-border/50 pt-6">
           <MnemonicView m={m} glyph={item.glyph} voiceName="" />
         </div>
+        {/* Collapsed by default, like every other page: the "we don't recommend
+            learning to write early" notice, Show expands the stroke diagram. */}
         <div className="mt-5 border-t border-border/50 pt-5">
           <HowItsWritten
             item={{ entry: item.entry, glyph: item.glyph, kind: "kana", facts: item.facts.map((f) => f.id) }}
-            alwaysOpen
           />
         </div>
       </article>
