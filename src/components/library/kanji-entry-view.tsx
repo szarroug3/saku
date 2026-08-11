@@ -10,7 +10,7 @@ import Link from "next/link";
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
-import { FlatSurfaceProvider, SoundIcon } from "@/components/ui";
+import { FlatSurfaceProvider, Info, SoundIcon } from "@/components/ui";
 import { GlassSheen, glassSurface } from "@/components/ui/frost";
 import { speak } from "@/lib/speech";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
@@ -36,15 +36,25 @@ function builtFrom(glyph: string): { glyph: string; sense: string; role?: string
 
 /** Readings grouped into on'yomi (from Chinese) and kun'yomi (native), in the
  * data's richest-first order. "both"-typed readings show in each group. */
-function readingGroups(glyph: string): { label: string; readings: { base: string; example: string }[] }[] {
+function readingGroups(
+  glyph: string,
+): { label: string; help: string; readings: { base: string; example: string }[] }[] {
   const rows = readingsOf(glyph);
   const pick = (t: "on" | "kun") =>
     rows
       .filter((r) => r.type === t || r.type === "both")
       .map((r) => ({ base: r.base, example: r.anchor }));
   return [
-    { label: "On’yomi", readings: pick("on") },
-    { label: "Kun’yomi", readings: pick("kun") },
+    {
+      label: "On’yomi",
+      help: "A reading borrowed from Chinese, usually taken when several kanji link into a compound word.",
+      readings: pick("on"),
+    },
+    {
+      label: "Kun’yomi",
+      help: "The native Japanese reading, usually taken when the kanji stands alone or with a hiragana tail.",
+      readings: pick("kun"),
+    },
   ].filter((g) => g.readings.length > 0);
 }
 
@@ -98,23 +108,28 @@ export function KanjiEntryView({ item }: { item: ContentItem }) {
             <div className={`grid gap-x-10 gap-y-6 ${groups.length > 1 ? "sm:grid-cols-2" : ""}`}>
               {groups.map((g) => (
                 <div key={g.label}>
-                  <p className="mb-2 text-[12px] font-medium text-text-muted">{g.label}</p>
+                  <p className="mb-2 flex items-center text-[12px] font-medium text-text-muted">
+                    {g.label}
+                    <Info>{g.help}</Info>
+                  </p>
                   <table className="w-full text-[14px]">
                     <tbody>
                       {g.readings.map((r) => (
-                        <tr key={r.base} className="align-baseline">
+                        <tr key={r.base}>
                           <td className="whitespace-nowrap py-1 pr-6">
-                            <button
-                              type="button"
-                              onClick={() => speak(r.base, "")}
-                              aria-label={`Hear ${r.base}`}
-                              className="mr-1.5 cursor-pointer border-none bg-transparent p-0 align-[-0.1em] text-accent"
-                            >
-                              <SoundIcon />
-                            </button>
-                            <span className="font-kana text-text">{r.base}</span>
+                            <span className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => speak(r.base, "")}
+                                aria-label={`Hear ${r.base}`}
+                                className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
+                              >
+                                <SoundIcon />
+                              </button>
+                              <span className="font-kana text-text">{r.base}</span>
+                            </span>
                           </td>
-                          <td className="w-full py-1 font-kana text-text-muted">{r.example}</td>
+                          <td className="w-full py-1 align-middle font-kana text-text-muted">{r.example}</td>
                         </tr>
                       ))}
                     </tbody>
