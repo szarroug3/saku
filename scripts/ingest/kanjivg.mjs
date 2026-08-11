@@ -259,11 +259,29 @@ async function jouyou() {
   return rows.map((r) => r.c);
 }
 
+/** The radical + variant-form glyphs the app teaches, from the SAME generated
+ * data the radical Library pages read. Many are also jōyō kanji (水, 木, 人) and
+ * already have stroke data from the jōyō pass; the non-jōyō remainder (禾, 氵,
+ * 亻 …) is the coverage this adds, so a radical page draws a real stroke-order
+ * diagram instead of the count-only fallback. */
+async function radicalGlyphs() {
+  const rad = JSON.parse(
+    await readFile(resolve(REPO, "src/data/generated/radicals.json"), "utf-8"),
+  );
+  const enr = JSON.parse(
+    await readFile(resolve(REPO, "src/data/generated/radical-enrichment.json"), "utf-8"),
+  );
+  const set = new Set();
+  for (const r of rad) set.add(r.glyph);
+  for (const g of Object.keys(enr)) for (const v of enr[g].variants ?? []) set.add(v.glyph);
+  return [...set];
+}
+
 /** The generated loader index. It exists because a bundler can only code-split
  * an `import()` whose specifier is a LITERAL, so the 48 specifiers have to be
  * written out somewhere — and written out by the script that writes the chunks,
  * so the list cannot fall behind them. */
-function indexSource(kept) {
+function indexSource(keptKanji, keptRadicals) {
   const thunks = Array.from(
     { length: KANJI_CHUNKS },
     (_, n) => `  () => import("./${chunkName(n)}.json"),`,
@@ -288,7 +306,7 @@ function indexSource(kept) {
 export const KANJI_CHUNKS = ${KANJI_CHUNKS};
 
 /** Every jōyō kanji this ingest produced stroke data for, sorted by codepoint,
- * as one string of ${kept.length} characters.
+ * as one string of ${keptKanji.length} characters.
  *
  * The loader needs a membership test it can answer SYNCHRONOUSLY and without a
  * fetch: a character outside this set has no entry in any chunk, so resolving it
@@ -297,7 +315,16 @@ export const KANJI_CHUNKS = ${KANJI_CHUNKS};
  * A flat string rather than a Set literal because it is a third of the source
  * size and the loader builds the Set once, lazily, on first use. */
 export const JOUYOU =
-  "${kept.join("")}";
+  "${keptKanji.join("")}";
+
+/** The NON-jōyō radical and variant-form glyphs this ingest produced stroke data
+ * for (禾, 氵, 亻 …), sorted by codepoint, as one string of ${keptRadicals.length}
+ * characters. Kept SEPARATE from JOUYOU so that string stays a faithful jōyō set;
+ * scriptOf tests membership in either. These live in the same cp%N chunks — the
+ * codepoint alone still decides the file — so this only answers the same
+ * synchronous, fetch-free "is it ingested?" question JOUYOU does. */
+export const RADICAL_GLYPHS =
+  "${keptRadicals.join("")}";
 
 /** The chunk loaders, indexed by chunk id. */
 export const CHUNK_LOADERS: (() => Promise<unknown>)[] = [
@@ -328,15 +355,23 @@ async function main() {
 }
 
 async function ingestKanji() {
-  const glyphs = await jouyou();
-  console.log(`kanji: ${glyphs.length} jōyō, ${CONCURRENCY} fetches in flight…`);
+  const jGlyphs = await jouyou();
+  const jSet = new Set(jGlyphs);
+  // Radical/variant glyphs the jōyō pass doesn't already cover (禾, 氵, 亻 …).
+  // They ride in the SAME cp%N chunks as the kanji — one codepoint-keyed scheme.
+  const extraRadicals = (await radicalGlyphs()).filter((g) => !jSet.has(g));
+  const toFetch = [...jGlyphs, ...extraRadicals];
+  console.log(
+    `kanji: ${jGlyphs.length} jōyō + ${extraRadicals.length} non-jōyō radical/variant ` +
+      `glyphs, ${CONCURRENCY} fetches in flight…`,
+  );
 
   const got = new Map();
   const failed = [];
   let done = 0;
-  await pool(glyphs, async (g) => {
+  await pool(toFetch, async (g) => {
     // One retry: raw.github occasionally resets a connection under a pool, and
-    // dropping a kanji over a transport blip would be silly.
+    // dropping a glyph over a transport blip would be silly.
     for (let attempt = 0; ; attempt++) {
       try {
         got.set(g, await ingestGlyph(g));
@@ -347,7 +382,7 @@ async function ingestKanji() {
         break;
       }
     }
-    if (++done % 200 === 0) console.log(`  …${done}/${glyphs.length}`);
+    if (++done % 200 === 0) console.log(`  …${done}/${toFetch.length}`);
   });
 
   // Sort by codepoint so a re-run diffs cleanly, then bucket. The stroke chunks
@@ -369,16 +404,30 @@ async function ingestKanji() {
     await writeFile(resolve(OUTDIR, `${chunkName(n)}.json`), json);
   }
 
-  await writeFile(resolve(OUTDIR, "kanji-index.ts"), indexSource(kept));
+  // Two membership strings, split from the same kept set: JOUYOU stays EXACTLY
+  // the jōyō kanji, RADICAL_GLYPHS carries the non-jōyō radical/variant glyphs
+  // this run added. scriptOf routes a glyph in EITHER set to its chunk.
+  const keptKanji = kept.filter((g) => jSet.has(g));
+  const keptRadicals = kept.filter((g) => !jSet.has(g));
+  await writeFile(
+    resolve(OUTDIR, "kanji-index.ts"),
+    indexSource(keptKanji, keptRadicals),
+  );
 
   console.log(
-    `wrote ${KANJI_CHUNKS} kanji chunks — ${kept.length}/${glyphs.length} glyphs, ` +
+    `wrote ${KANJI_CHUNKS} chunks — ${keptKanji.length}/${jGlyphs.length} jōyō + ` +
+      `${keptRadicals.length}/${extraRadicals.length} radical/variant glyphs, ` +
       `${(total / 1024).toFixed(0)}KB total, largest ${(largest / 1024).toFixed(1)}KB`,
   );
 
-  await writeComponents(kept, got, new Set(glyphs));
+  // Components are a JŌYŌ concern only — the radical additions must not change
+  // kanji-components.json, so this walks the jōyō kept set with the jōyō
+  // membership, exactly as before.
+  await writeComponents(keptKanji, got, jSet);
   if (failed.length) {
-    console.log(`SKIPPED ${failed.length}:`);
+    console.log(
+      `SKIPPED ${failed.length} (KanjiVG has no usable SVG — these keep the fallback):`,
+    );
     for (const { g, reason } of failed) {
       console.log(`  ${g} (${g.codePointAt(0).toString(16)}): ${reason}`);
     }

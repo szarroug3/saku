@@ -40,6 +40,7 @@ import {
   CHUNK_LOADERS,
   JOUYOU,
   KANJI_CHUNKS,
+  RADICAL_GLYPHS,
 } from "@/data/generated/strokes/kanji-index";
 
 /** One glyph's stroke order, on KanjiVG's native 109×109 grid. */
@@ -73,6 +74,17 @@ function isJouyou(glyph: string): boolean {
   return jouyou.has(glyph);
 }
 
+/** The non-jōyō radical/variant glyphs the ingest additionally covered (禾, 氵,
+ * 亻 …), as a Set built once on first ask — the same lazy, synchronous,
+ * fetch-free membership test as `isJouyou`, over the second string the generated
+ * index exports. A radical that IS a jōyō kanji (水, 木) answers via `isJouyou`;
+ * this set is only the remainder. */
+let radicalGlyphs: Set<string> | null = null;
+function isRadicalGlyph(glyph: string): boolean {
+  radicalGlyphs ??= new Set([...RADICAL_GLYPHS]);
+  return radicalGlyphs.has(glyph);
+}
+
 /** Which ingested asset a glyph lives in, or null for anything not ingested
  * (a non-jōyō kanji, punctuation, the collapsed-section sentinel ""). Kana are
  * contiguous Unicode blocks and a kanji's chunk is its codepoint modulo the
@@ -103,10 +115,11 @@ export function scriptOf(glyph: string): StrokeAsset | null {
   if (cp === undefined) return null;
   if (cp >= 0x3041 && cp <= 0x309f) return "hiragana";
   if (cp >= 0x30a1 && cp <= 0x30ff) return "katakana";
-  // Kanji: only the ones actually ingested, and then its codepoint picks the
-  // chunk. Nothing outside the jōyō set can be in a chunk, so it gets null and
-  // no fetch at all. See isJouyou above.
-  if (isJouyou(glyph)) return `kanji-${cp % KANJI_CHUNKS}`;
+  // Kanji AND the radical/variant glyphs the ingest covered: only the ones
+  // actually ingested, and then the codepoint picks the chunk (both sets live in
+  // the same cp%N chunks). A glyph in neither set gets null and no fetch at all.
+  // See isJouyou / isRadicalGlyph above.
+  if (isJouyou(glyph) || isRadicalGlyph(glyph)) return `kanji-${cp % KANJI_CHUNKS}`;
   return null;
 }
 

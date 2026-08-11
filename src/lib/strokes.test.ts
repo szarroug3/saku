@@ -28,7 +28,11 @@ import { readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, test } from "node:test";
 
-import { KANJI_CHUNKS, JOUYOU } from "../data/generated/strokes/kanji-index.ts";
+import {
+  KANJI_CHUNKS,
+  JOUYOU,
+  RADICAL_GLYPHS,
+} from "../data/generated/strokes/kanji-index.ts";
 import { KANJI } from "../data/kanji.ts";
 import { scriptOf } from "./strokes.ts";
 
@@ -228,6 +232,40 @@ describe("kanji chunks", () => {
       biggest <= 2 * Math.min(...sizes),
       `chunks are lopsided: ${(Math.min(...sizes) / 1024).toFixed(1)}KB to ${(biggest / 1024).toFixed(1)}KB`,
     );
+  });
+});
+
+describe("radical stroke coverage", () => {
+  // The whole point of the radical ingest: a non-jōyō radical (禾) and a variant
+  // form (氵) — neither a jōyō kanji — now draw a real diagram instead of the
+  // count-only fallback. Concrete pins so a future run dropping them fails here.
+  test("禾 and 氵 resolve to their chunk and have real, aligned strokes", () => {
+    for (const g of ["禾", "氵"]) {
+      assert.equal(scriptOf(g), `kanji-${g.codePointAt(0)! % KANJI_CHUNKS}`);
+      const entry = lookup(g);
+      assert.ok(entry && entry.strokes.length >= 1, `${g} has no strokes`);
+      assert.match(entry!.strokes[0], /^[Mm]/, `${g} stroke isn't a path`);
+      assert.equal(
+        entry!.numbers.length,
+        entry!.strokes.length,
+        `${g}: ${entry!.numbers.length} labels for ${entry!.strokes.length} strokes`,
+      );
+    }
+  });
+
+  test("RADICAL_GLYPHS is non-jōyō only, and every one is in the chunk it names", () => {
+    // The second membership string must not overlap JOUYOU (that would blur what
+    // JOUYOU means), and every glyph it lists must actually be fetchable in the
+    // ONE chunk its codepoint points at — else the loader names a file that misses.
+    const jset = new Set([...JOUYOU]);
+    const overlap: string[] = [];
+    const missing: string[] = [];
+    for (const g of [...RADICAL_GLYPHS]) {
+      if (jset.has(g)) overlap.push(g);
+      if (!CHUNKS[g.codePointAt(0)! % KANJI_CHUNKS][g]) missing.push(g);
+    }
+    assert.deepEqual(overlap, [], `also in JOUYOU: ${overlap.join(" ")}`);
+    assert.deepEqual(missing, [], `not in their chunk: ${missing.join(" ")}`);
   });
 });
 
