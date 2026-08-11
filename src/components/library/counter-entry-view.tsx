@@ -57,9 +57,6 @@ export function CounterEntryView({
 
   if (!form && !construction) return null;
 
-  // 〜つ is the general counter, worth calling out on its own pages.
-  const isTsu = form?.counter === "つ";
-
   return (
     <EntrySurface>
       <ContentEntryHeader item={item} />
@@ -104,13 +101,6 @@ export function CounterEntryView({
               </tr>
             </tbody>
           </table>
-          {isTsu ? (
-            <p className="mt-4 text-[13px] leading-relaxed text-text-muted">
-              〜つ works when nothing else does and can count almost anything up to ten. When you
-              don&rsquo;t know the right counter, this one still works, and you&rsquo;ll be
-              understood.
-            </p>
-          ) : null}
         </Section>
       ) : null}
 

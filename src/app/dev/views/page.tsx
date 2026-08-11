@@ -18,8 +18,10 @@ import { VerbPairEntryView } from "@/components/library/verbpair-entry-view";
 import { SentenceEntryView } from "@/components/library/sentence-entry-view";
 import { MarkEntryView } from "@/components/library/mark-entry-view";
 import { TermEntryView } from "@/components/library/term-entry-view";
+import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { markEntry } from "@/data/marks";
 import { termEntry } from "@/data/terms";
+import { TSU_INTRO } from "@/data/track-intros";
 import { grammarConceptEntry } from "@/data/grammar-concepts";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
@@ -83,7 +85,6 @@ const WORD_SENSEI = buildItem(wordEntry("先生"), "word");
 // by entry id only, and their views take the entry id directly (no fabricated
 // ContentItem — they render a glyph-less name header off their own data).
 const MARK = markEntry("dakuten");
-const TERM = termEntry("counter");
 const CONCEPT = grammarConceptEntry("verb-classes");
 
 // Counter/number shelf: a counted form (ひとつ) and a generative rule (11–99).
@@ -156,106 +157,164 @@ export default function ViewsDevPage() {
       </Section>
 
       <Section
-        title="Library &mdash; entry page (redesign, by type)"
-        note="The full reference for one item, on the content model — starting with kana: the mnemonic (drawing, sound analogy, story, proving word) read off item.mnemonic, in the glass surface."
+        title="Library / Lesson &mdash; by content type"
+        note="One page per item, grouped by type. Each type opens with its intro pages (the term/library page shown before that content is first taught, plus any non-term intro), then the entry page. A page that reads the same in both contexts is shown once as 'Library & Lesson'; one that differs shows a 'Library' and a 'Lesson' side by side."
       >
-        {KANA_A ? <KanaEntryView item={KANA_A} /> : <Missing />}
-        {/* Composed-by-role character page: 禾 (radical only, lean), 明 (kanji),
-            水 (radical · kanji · word — readings AND bushu AND variants). */}
-        {RADICAL_KI ? (
-          <div className="mt-4">
-            <CharacterEntryView item={RADICAL_KI} />
-          </div>
-        ) : null}
-        {KANJI_MEI ? (
-          <div className="mt-4">
-            <CharacterEntryView item={KANJI_MEI} />
-          </div>
-        ) : null}
-        {RADICAL_MIZU ? (
-          <div className="mt-4">
-            <CharacterEntryView item={RADICAL_MIZU} />
-          </div>
-        ) : null}
-        {/* Multi-sense words: 生 (divergent word sense なま = raw) and 主 (four
-            lord readings) exercise the "As a word" polysemy table. */}
-        {SEI ? (
-          <div className="mt-4">
-            <CharacterEntryView item={SEI} />
-          </div>
-        ) : null}
-        {NUSHI ? (
-          <div className="mt-4">
-            <CharacterEntryView item={NUSHI} />
-          </div>
-        ) : null}
-      </Section>
+        <Sub title="Kana">
+          <Slot tag="Intro — term pages">
+            <TermIntros ids={["kana", "hiragana", "katakana", "romaji", "mora", "pitch-accent"]} />
+          </Slot>
+          <Slot tag="Library & Lesson">
+            {KANA_A ? <KanaEntryView item={KANA_A} /> : <Missing />}
+          </Slot>
+        </Sub>
 
-      <Section
-        title="Library &mdash; word page (same component, word role only)"
-        note="A multi-character word (先生) runs through the SAME CharacterEntryView: only the word block, no 'As a word' label (single role), with the kanji it's built from and a sentence."
-      >
-        {WORD_SENSEI ? (
-          <CharacterEntryView item={WORD_SENSEI} />
-        ) : (
-          <Missing />
-        )}
-      </Section>
+        <Sub title="Marks">
+          <Slot tag="Intro — term pages">
+            <TermIntros ids={["dakuten", "handakuten", "yoon", "okurigana", "rendaku"]} />
+          </Slot>
+          {/* The mark page differs: the lesson narrows a conversion mark to the
+              one script being taught and drops the "in hiragana/katakana" labels. */}
+          <Slot tag="Library — both scripts">
+            <MarkEntryView entry={MARK} />
+          </Slot>
+          <Slot tag="Lesson — one script">
+            <MarkEntryView entry={MARK} set="hiragana" />
+          </Slot>
+        </Sub>
 
-      <Section
-        title="Library &mdash; counter / number page (redesign)"
-        note="Two shelf shapes: a counted form (how you say it + meaning) and a generative rule (how the number is built)."
-      >
-        <div className="flex flex-col gap-4">
-          {COUNTER_TSU ? <CounterEntryView item={COUNTER_TSU} /> : <Missing />}
-          {NUMBER_TENS ? <CounterEntryView item={NUMBER_TENS} /> : <Missing />}
-        </div>
-      </Section>
+        <Sub title="Radical">
+          <Slot tag="Intro — term pages">
+            <TermIntros ids={["radical"]} />
+          </Slot>
+          <Slot tag="Library & Lesson">
+            {RADICAL_KI ? <CharacterEntryView item={RADICAL_KI} /> : <Missing />}
+          </Slot>
+        </Sub>
 
-      <Section
-        title="Lesson &mdash; teach view (SAME component, lesson=one pronunciation)"
-        note="Identical to the library page; the only difference is the word block shows a single pronunciation. Kana lesson == kana library."
-      >
-        <div className="flex flex-col gap-4">
-          {KANA_A ? <KanaEntryView item={KANA_A} /> : <Missing />}
-          {/* 主 has four word readings in the Library; the lesson shows only the
-              first, so its "As a word" lead re-reads correctly on its own. */}
-          {NUSHI ? <CharacterEntryView item={NUSHI} lesson /> : <Missing />}
-          {WORD_SENSEI ? <CharacterEntryView item={WORD_SENSEI} lesson /> : <Missing />}
-          {/* The dakuten mark, taught one script at a time: the hiragana lesson
-              shows only the hiragana strips, no "in hiragana/in katakana" labels. */}
-          <MarkEntryView entry={MARK} set="hiragana" />
-          {/* Same CounterEntryView the library uses; the counter page reads the
-              same in both contexts today (examples dropped in both). */}
-          {COUNTER_TSU ? <CounterEntryView item={COUNTER_TSU} lesson /> : <Missing />}
-        </div>
-      </Section>
+        <Sub title="Kanji">
+          <Slot tag="Intro — term pages">
+            <TermIntros ids={["kanji", "kunyomi-onyomi", "furigana", "jlpt"]} />
+          </Slot>
+          {/* 明 (kanji only) and 水 (radical · kanji · word, one word reading) both
+              read identically in both contexts. */}
+          <Slot tag="Library & Lesson">
+            <div className="flex flex-col gap-4">
+              {KANJI_MEI ? <CharacterEntryView item={KANJI_MEI} /> : <Missing />}
+              {RADICAL_MIZU ? <CharacterEntryView item={RADICAL_MIZU} /> : <Missing />}
+            </div>
+          </Slot>
+        </Sub>
 
-      <Section
-        title="Library &mdash; grammar / keigo / concept (redesign, draft)"
-        note="Grammar pattern (meaning, attaches-to, recipe, family), keigo set (plain verb + polite forms), and a grammar concept (verb classes)."
-      >
-        <div className="flex flex-col gap-4">
-          {grammar ? <GrammarEntryView item={grammar} /> : <Missing />}
-          {keigo ? <KeigoEntryView item={keigo} /> : <Missing />}
-          <GrammarConceptEntryView entry={CONCEPT} />
-        </div>
-      </Section>
+        <Sub title="Word">
+          {/* 生 (one reading, divergent sense) and 先生 (multi-character, one
+              reading) don't change under lesson. 主 has four word readings, so the
+              lesson caps to one — the one case a character page differs. */}
+          <Slot tag="Library & Lesson">
+            <div className="flex flex-col gap-4">
+              {SEI ? <CharacterEntryView item={SEI} /> : <Missing />}
+              {WORD_SENSEI ? <CharacterEntryView item={WORD_SENSEI} /> : <Missing />}
+            </div>
+          </Slot>
+          <Slot tag="Library — all readings">
+            {NUSHI ? <CharacterEntryView item={NUSHI} /> : <Missing />}
+          </Slot>
+          <Slot tag="Lesson — one pronunciation">
+            {NUSHI ? <CharacterEntryView item={NUSHI} lesson /> : <Missing />}
+          </Slot>
+        </Sub>
 
-      <Section
-        title="Library &mdash; verb pair / sentence / mark / term (redesign, draft)"
-        note="Transitivity pair (it happens vs someone does it), a sentence-ordering tier, and the thin reference types (diacritic mark, glossary term)."
-      >
-        <div className="flex flex-col gap-4">
-          {verbPair ? <VerbPairEntryView item={verbPair} /> : <Missing />}
-          {sentenceItems()[0] ? <SentenceEntryView item={sentenceItems()[0]!} /> : <Missing />}
-          <MarkEntryView entry={MARK} />
-          <TermEntryView entry={TERM} />
-        </div>
-      </Section>
+        <Sub title="Counter / Number">
+          <Slot tag="Intro — term page">
+            <TermIntros ids={["counter"]} />
+          </Slot>
+          {/* A non-term additional intro, shown after the counter term intro and
+              before the first 〜つ form. It isn't a glossary term, so it lives as
+              its own intro card rather than on a term page. */}
+          <Slot tag="Intro — additional (non-term)">
+            <div className={`${glassSurface} p-6`}>
+              <GlassSheen />
+              <PhaseIntroView intro={TSU_INTRO} />
+            </div>
+          </Slot>
+          <Slot tag="Library & Lesson">
+            <div className="flex flex-col gap-4">
+              {COUNTER_TSU ? <CounterEntryView item={COUNTER_TSU} /> : <Missing />}
+              {NUMBER_TENS ? <CounterEntryView item={NUMBER_TENS} /> : <Missing />}
+            </div>
+          </Slot>
+        </Sub>
 
-      {/* Lesson &mdash; the full teaching view: next. */}
+        <Sub title="Grammar">
+          <Slot tag="Intro — term page">
+            <TermIntros ids={["particle"]} />
+          </Slot>
+          <Slot tag="Library & Lesson">
+            <div className="flex flex-col gap-4">
+              {grammar ? <GrammarEntryView item={grammar} /> : <Missing />}
+              <GrammarConceptEntryView entry={CONCEPT} />
+            </div>
+          </Slot>
+        </Sub>
+
+        <Sub title="Keigo">
+          <Slot tag="Intro — term page">
+            <TermIntros ids={["keigo"]} />
+          </Slot>
+          <Slot tag="Library & Lesson">
+            {keigo ? <KeigoEntryView item={keigo} /> : <Missing />}
+          </Slot>
+        </Sub>
+
+        <Sub title="Verb pairs (transitivity)">
+          <Slot tag="Library & Lesson">
+            {verbPair ? <VerbPairEntryView item={verbPair} /> : <Missing />}
+          </Slot>
+        </Sub>
+
+        <Sub title="Sentences">
+          <Slot tag="Library & Lesson">
+            {sentenceItems()[0] ? <SentenceEntryView item={sentenceItems()[0]!} /> : <Missing />}
+          </Slot>
+        </Sub>
+      </Section>
     </main>
+  );
+}
+
+/** A titled content-type block inside the Library / Lesson gallery. */
+function Sub({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="mt-10 first:mt-2">
+      <h3 className="border-b border-border/60 pb-1.5 text-[15px] font-semibold text-text">
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+/** One labelled variant inside a Sub — an intro slot, or a Library / Lesson /
+ * "Library & Lesson" render of an entry page. */
+function Slot({ tag, children }: { tag: string; children: ReactNode }) {
+  return (
+    <div className="mt-4">
+      <div className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-accent/80">
+        {tag}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** The term/library pages that open a content type, stacked in intro order. */
+function TermIntros({ ids }: { ids: string[] }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {ids.map((id) => (
+        <TermEntryView key={id} entry={termEntry(id)} />
+      ))}
+    </div>
   );
 }
 

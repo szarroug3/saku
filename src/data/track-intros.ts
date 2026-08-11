@@ -292,6 +292,23 @@ export const COUNTERS_TRACK: PhaseIntro = {
   ],
 };
 
+// A NON-TERM ADDITIONAL INTRO PAGE. Some tracks want an intro card that is not a
+// term-page definition — here, the escape-hatch pitch for 〜つ, shown right after
+// the counter intro and before the first 〜つ form is taught. It is not a term (there
+// is no "〜つ" glossary word), so it lives as its own intro card rather than on a
+// term page.
+export const TSU_INTRO: PhaseIntro = {
+  id: "intro-tsu",
+  setId: "",
+  eyebrow: "Where to start",
+  title: "〜つ works when nothing else does.",
+  body: [
+    {
+      text: "〜つ can count almost anything up to ten. When you don’t know the right counter, this one still works, and you’ll be understood.",
+    },
+  ],
+};
+
 // KEIGO — the politeness track (task 12). DRAFT copy, same status as the rest of
 // this file: plain sentences doing the three jobs, for the owner to rewrite in
 // her voice. The extra weight here is that it must INTRODUCE the two register
