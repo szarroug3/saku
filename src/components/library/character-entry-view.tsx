@@ -29,7 +29,7 @@ import { SoundIcon } from "@/components/ui";
 import { speak } from "@/lib/speech";
 import { kanjiEntry, kanjiRow } from "@/data/kanji";
 import { etymologyOf } from "@/data/kanji-etymology";
-import { radicalVariants } from "@/data/radicals";
+import { radicalByGlyph, radicalVariants } from "@/data/radicals";
 import { vocabRow } from "@/data/vocab";
 import { exampleFor } from "@/data/word-examples";
 import { builtPieceEntryId, readingsOf } from "@/lib/library/entries";
@@ -200,10 +200,19 @@ export function CharacterEntryView({
   const wordPieces = isWord && !single ? wordPiecesOf(glyph) : [];
   const example = isWord ? exampleFor(glyph) : null;
 
-  // Which role blocks actually have something to show, and therefore whether to
-  // label them "As a …": a single-role glyph drops the label (see RoleBlock).
-  const hasRadical = variants.length > 0;
-  const hasKanji = groups.length > 0 || parts.length > 0 || Boolean(story);
+  // The DEFINITION belongs to each role, not the header — a glyph that plays
+  // several roles can mean different things in each (生 = "life" as a kanji, なま
+  // "raw" as a word), so each role block carries its own meaning.
+  const kanjiMeaning = isKanji ? (kanjiRow(glyph)?.meanings.join(", ") ?? null) : null;
+  const radicalMeaning = isRadical ? (radicalByGlyph(glyph)?.meaning ?? null) : null;
+
+  // Which role blocks have something to show, and whether to LABEL them: a
+  // single-role glyph drops the "As a …" label (see RoleBlock). The kanji/word
+  // blocks always carry the meaning; the radical block shows only for its variant
+  // forms, or — when radical is the SOLE role (a pure radical like 禾) — to carry
+  // that radical's meaning, which nothing else would.
+  const hasRadical = variants.length > 0 || (isRadical && !isKanji && !isWord);
+  const hasKanji = isKanji;
   const hasWord = wordRows.length > 0;
   const labelled = [hasRadical, hasKanji, hasWord].filter(Boolean).length > 1;
 
@@ -215,11 +224,19 @@ export function CharacterEntryView({
     <EntrySurface>
       <ContentEntryHeader item={item} />
 
-        {/* ── AS A RADICAL: the shapes it takes inside other kanji, and where. ── */}
-        {variants.length > 0 ? (
+        {/* ── AS A RADICAL: its meaning (only when nothing else carries it) and the
+              shapes it takes inside other kanji. ── */}
+        {hasRadical ? (
           <RoleBlock title="As a radical" labelled={labelled}>
-            <Lead>It takes a different shape depending on where in a kanji it appears:</Lead>
-            <table className="text-[15px]">
+            {!isKanji && radicalMeaning ? (
+              <p className={`text-[14px] text-text-muted ${variants.length > 0 ? "mb-4" : ""}`}>
+                It means <span className="text-text">{radicalMeaning}</span>.
+              </p>
+            ) : null}
+            {variants.length > 0 ? (
+              <>
+                <Lead>It takes a different shape depending on where in a kanji it appears:</Lead>
+                <table className="text-[15px]">
               <tbody>
                 {variants
                   .map((v) => ({
@@ -251,16 +268,25 @@ export function CharacterEntryView({
                       </td>
                     </tr>
                   ))}
-              </tbody>
-            </table>
+                  </tbody>
+                </table>
+              </>
+            ) : null}
           </RoleBlock>
         ) : null}
 
-        {/* ── AS A KANJI: on'yomi / kun'yomi, then the etymology (its components
-              and where the shape came from). ── */}
+        {/* ── AS A KANJI: its meaning, what it's built from, how it's read, and
+              where the shape came from. ── */}
         {hasKanji ? (
           <RoleBlock title="As a kanji" labelled={labelled}>
             <div className="flex flex-col gap-6">
+              {kanjiMeaning ? (
+                <div>
+                  <p className="text-[14px] text-text-muted">
+                    It means <span className="text-text">{kanjiMeaning}</span>.
+                  </p>
+                </div>
+              ) : null}
               {parts.length > 0 ? (
                 <div>
                   <Lead>It&rsquo;s built from these sub-components:</Lead>

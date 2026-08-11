@@ -14,15 +14,11 @@
 // pair has no single drawing.
 
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
-import { EntrySurface, Lead, Section } from "@/components/library/entry-section";
+import { EntrySurface } from "@/components/library/entry-section";
 import { Info, SoundIcon } from "@/components/ui";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { speak } from "@/lib/speech";
 import type { ContentItem } from "@/lib/content/item";
-
-const PAIR_HELP =
-  "Japanese often has two verbs for one event: one for when it happens on its own, " +
-  "one for when someone does it. The English sentence tells you which to use.";
 
 /** The leading run of characters two strings share (開 for 開く / 開ける). */
 function sharedStem(a: string, b: string): string {
@@ -53,8 +49,10 @@ export function VerbPairEntryView({ item }: { item: ContentItem }) {
     <EntrySurface>
       <ContentEntryHeader item={item} />
 
-      <Section title="It happens, or someone does it" tone="accent" help={PAIR_HELP}>
-        <Lead>One event, two verbs. The English sentence tells you which one to reach for:</Lead>
+      {/* No section title or lead: the two accent role labels (It happens on its
+          own / Someone does it) are the structure, and each carries its own
+          tooltip. Just a divider under the header. */}
+      <div className="mt-5 border-t border-border/50 pt-5">
         <div className="flex flex-col gap-5">
           {sides.map((s) => (
             <div key={s.m.word}>
@@ -84,7 +82,7 @@ export function VerbPairEntryView({ item }: { item: ContentItem }) {
             learned together as a pair.
           </p>
         ) : null}
-      </Section>
+      </div>
     </EntrySurface>
   );
 }

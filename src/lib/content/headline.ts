@@ -47,6 +47,15 @@ export interface Headline {
 }
 
 export function itemHeadline(item: ContentItem): Headline {
+  // A CHARACTER or WORD has no SINGLE headline meaning — a glyph plays several
+  // roles that can mean different things (生 is "life" as a kanji but なま "raw"
+  // as a word), and a word's meaning is per reading. So the header carries no
+  // definition; each role section shows its own. Same "no single headline" stance
+  // sentence-ordering takes below, via the same empty-text mechanism.
+  if (item.kind === "character" || item.kind === "word") {
+    return { text: "", speak: null };
+  }
+
   const units = teachUnitsOf(item);
   const pron = units.filter((u) => u.kind === "pronunciation");
 
