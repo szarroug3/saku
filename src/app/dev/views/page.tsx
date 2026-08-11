@@ -10,6 +10,7 @@ import { ItemPreview } from "@/components/learn/item-preview";
 import { NextLessonPreview } from "@/components/learn/next-lesson-preview";
 import { GlyphView } from "@/components/library/glyph-view";
 import { KanaEntryView } from "@/components/library/kana-entry-view";
+import { RadicalEntryView } from "@/components/library/radical-entry-view";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { glassSurface, GlassSheen } from "@/components/ui/frost";
 import { kanaItems } from "@/lib/content/kana-unit";
@@ -56,6 +57,8 @@ const UP_NEXT = simulateLessons(VOCAB_TRACK, LESSON_RANGE_DEFAULT, 1)[0] ?? null
 
 // The kana whose Library entry page we redesign first (has an authored mnemonic).
 const KANA_A = kanaItems().find((i) => i.glyph === "あ");
+// A radical with several kanji built on it, for the radical entry page.
+const RADICAL_KI = buildGlyphItem("禾");
 
 // One item of each type, to show the shared entry header is consistent.
 const HEADER_SAMPLES = [
@@ -127,6 +130,11 @@ export default function ViewsDevPage() {
         note="The full reference for one item, on the content model — starting with kana: the mnemonic (drawing, sound analogy, story, proving word) read off item.mnemonic, in the glass surface."
       >
         {KANA_A ? <KanaEntryView item={KANA_A} /> : <Missing />}
+        {RADICAL_KI ? (
+          <div className="mt-4 max-w-[560px]">
+            <RadicalEntryView item={RADICAL_KI} />
+          </div>
+        ) : null}
       </Section>
 
       <Section
