@@ -11,7 +11,6 @@
 
 import { ConfusionSection } from "@/components/library/confusion-section";
 import { ContentEntryHeader } from "@/components/library/content-entry-header";
-import { Section } from "@/components/library/entry-section";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { FlatSurfaceProvider } from "@/components/ui";
@@ -39,26 +38,29 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
           <MnemonicView m={m} glyph={item.glyph} voiceName="" />
         </div>
         {/* How its sound bends to what follows it (ん borrows the next place, っ
-            doubles the next consonant). Only ん/っ carry rules; every other kana
-            has context null and shows nothing. */}
+            doubles the next consonant), as a heads-up aside — the same left-rule
+            "Heads up." treatment other pages use for a rule with a wrinkle. Only
+            ん/っ carry rules; every other kana has context null and shows nothing. */}
         {context ? (
-          <Section title="How it's said in context">
-            <p className="mb-3 text-[13px] leading-relaxed text-text-muted">{context.summary}</p>
-            <div className="flex flex-col gap-3">
+          <div className="mt-5 border-l-2 border-accent pl-3.5">
+            <p className="text-[13px] leading-relaxed text-text-muted">
+              <span className="font-medium text-text">Heads up. </span>
+              {context.summary}
+            </p>
+            <div className="mt-2.5 flex flex-col gap-1.5">
               {context.rules.map((rule) => (
-                <div key={rule.when}>
-                  <p className="text-[14px] leading-relaxed text-text">
-                    <span className="capitalize">{rule.when}</span>: said{" "}
-                    <span className="font-medium text-accent">{rule.sounds}</span>
-                  </p>
-                  <p className="mt-0.5 font-kana text-[13px] leading-relaxed text-text-muted">
-                    {rule.example}
-                  </p>
-                </div>
+                <p key={rule.when} className="text-[13px] leading-relaxed text-text-muted">
+                  <span className="capitalize text-text">{rule.when}</span> &rarr; said{" "}
+                  <span className="font-medium text-accent">{rule.sounds}</span>
+                  <span className="ml-1.5 font-kana">{rule.example}</span>
+                </p>
               ))}
             </div>
-          </Section>
+          </div>
         ) : null}
+        {/* Shape lookalikes, above the stroke diagram — the reference before the
+            "how to draw it" that closes the page. */}
+        <ConfusionSection confusables={confusables} />
         {/* Collapsed by default, like every other page: the "we don't recommend
             learning to write early" notice, Show expands the stroke diagram. */}
         <div className="mt-5 border-t border-border/50 pt-5">
@@ -66,7 +68,6 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
             item={{ entry: item.entry, glyph: item.glyph, kind: "kana", facts: item.facts.map((f) => f.id) }}
           />
         </div>
-        <ConfusionSection confusables={confusables} />
       </article>
     </FlatSurfaceProvider>
   );

@@ -437,6 +437,11 @@ export function CharacterEntryView({
           </RoleBlock>
         ) : null}
 
+        {/* Shape lookalikes, above "how it's written" — the reference before the
+            "how to draw it". Only a character (single glyph) has them; a multi-char
+            word is kind "word" with none. */}
+        <ConfusionSection confusables={item.kind === "character" ? item.confusables : []} />
+
         {/* Collapsed by default: the "we don't recommend learning to write early"
             notice with a Show button that expands the real stroke diagram. A
             multi-char word has no single diagram, so it's shown for single glyphs
@@ -475,11 +480,6 @@ export function CharacterEntryView({
             ) : null}
           </Section>
         ) : null}
-
-        {/* Shape lookalikes, off the item's own confusables field. Only a
-            character (single glyph) has them; a multi-char word is kind "word"
-            with none. */}
-        <ConfusionSection confusables={item.kind === "character" ? item.confusables : []} />
     </EntrySurface>
   );
 }

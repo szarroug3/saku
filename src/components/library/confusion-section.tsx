@@ -18,28 +18,26 @@ import { entryHref } from "@/lib/library/href";
 import { japaneseFontClass } from "@/lib/japanese-text";
 import type { EntryId } from "@/types";
 
-function ConfusableTile({ id }: { id: EntryId }) {
+function ConfusableRow({ id }: { id: EntryId }) {
   const le = libEntry(id);
   if (!le) return null;
   const gloss = le.meanings[0] ?? le.readings[0] ?? "";
   return (
     <Link
       href={entryHref(id)}
-      className="flex items-center gap-2.5 rounded-lg border border-border/60 px-3 py-2 no-underline transition-colors hover:border-accent/60"
+      className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
     >
-      <span className={`${japaneseFontClass(le.glyph)} text-[26px] leading-none text-text`}>
-        {le.glyph}
-      </span>
-      {gloss ? <span className="text-[13px] text-text-muted">{gloss}</span> : null}
+      <span className={`${japaneseFontClass(le.glyph)} text-[18px] leading-none`}>{le.glyph}</span>
+      {gloss ? <span className="min-w-0 flex-1 truncate text-text-muted">{gloss}</span> : null}
     </Link>
   );
 }
 
 function TileRow({ ids }: { ids: readonly EntryId[] }) {
   return (
-    <div className="flex flex-wrap gap-2.5">
+    <div className="flex flex-col gap-1.5">
       {ids.map((id) => (
-        <ConfusableTile key={id} id={id} />
+        <ConfusableRow key={id} id={id} />
       ))}
     </div>
   );

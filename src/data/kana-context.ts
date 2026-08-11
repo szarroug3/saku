@@ -71,7 +71,7 @@ const CONTEXT: Record<string, ContextPronunciation> = {
   // doubling.
   っ: {
     // DRAFT: Sam to finalise.
-    summary: "っ is a silent held beat that doubles the consonant right after it.",
+    summary: "っ is a brief silent pause that doubles the consonant right after it.",
     rules: [
       {
         when: "before any consonant",
