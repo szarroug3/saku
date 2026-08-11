@@ -286,28 +286,8 @@ export const COUNTERS_TRACK: PhaseIntro = {
   title: "Counting in Japanese uses a small word that changes with what you count.",
   body: [
     {
-      lead: "This track teaches numbers and counters.",
-      text: "A counter is a short word you add to a number to count a kind of thing: 本 for long thin objects, 人 for people. The number and the counter are said together as one word.",
-    },
-    {
       lead: "Counters are for things; a bare number is for the number itself.",
       text: "Counting specific things takes a counter: 本 for pens, 人 for people. A number with no counter is for the number as a number. Math, a phone number, a price, a page, a year. English blurs the two, since “one apple” and “the number one” are both “one”; Japanese keeps them apart, so いち is the number one and ひとつ or いっぽん do the counting.",
-    },
-    {
-      lead: "〜つ is taught first, because it works when nothing else does.",
-      text: "ひとつ, ふたつ, みっつ count almost anything up to ten. When you don’t know the right counter, this one still works, and you’ll be understood.",
-    },
-    {
-      lead: "It gets you speaking early.",
-      text: "Prices, ages, how many people, ordering food all run on numbers and counters, so a little of this track goes a long way early on.",
-    },
-    {
-      lead: "It’s taught now because it needs only kana to begin.",
-      text: "The first counters are just kana, so they start right after hiragana. The counters written with kanji come later in the track, and when one does, the lesson teaches that kanji first.",
-    },
-    {
-      lead: "Some pieces you learn here aren’t numbers or counters.",
-      text: "When a lesson introduces a number or counter kanji, it first teaches the smaller radicals and kanji that character is built from, so the new character reads as pieces you already know instead of a shape to memorize whole. 明 (bright) is 日 (sun) next to 月 (moon), and once you know both pieces the whole reads at a glance. The number and counter kanji here work the same way, and a few of their building blocks are whole kanji that don’t count anything themselves.",
     },
   ],
 };
