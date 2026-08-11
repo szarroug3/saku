@@ -4,18 +4,20 @@
 // ROLE. A single glyph is ONE item that plays some set of roles (radical · kanji
 // · word), and this page stacks exactly the sections those roles call for:
 //
+// ORGANISED BY ROLE. The per-role sections carry an ACCENT eyebrow (matching the
+// header's "radical · kanji · word" tags); the universal ones stay white:
+//
 //   header
-//   Built from      (kanji: its components + origin story)
-//   Variant forms   (radical: the shapes it takes in other kanji, + where)
-//   As a kanji      (kanji: on'yomi / kun'yomi side by side)
-//   As a word       (word: how it's pronounced + what it means)
-//   How it's written (always)
-//   Used as a part in (always, when other kanji are built on it)
+//   As a radical  (accent) — the shapes it takes inside other kanji, and where
+//   As a kanji    (accent) — on'yomi / kun'yomi, then etymology (components + origin)
+//   As a word     (accent) — how the standalone word is pronounced + what it means
+//   How it's written (white) — always
+//   Used as a part in (white) — when other kanji are built on it
 //
 // EVERY section is guarded on ITS OWN content, so a glyph shows only the roles it
-// actually plays: a pure radical (禾) renders just variant forms + how-it's-
-// written + used-in; 水 (radical · kanji · word) shows variants, "As a kanji" AND
-// "As a word". No per-role forks — one page, sections switched on by content.
+// actually plays: a pure radical (禾) shows no "As a kanji"/"As a word"; 水
+// (radical · kanji · word) shows all three. No per-role forks — one page,
+// sections switched on by content.
 
 import Link from "next/link";
 
@@ -129,16 +131,42 @@ function readingGroups(
 }
 
 /** A titled section under a top divider — the one shape every block below the
- * header shares. */
-function Section({ title, help, children }: { title: string; help?: string; children: React.ReactNode }) {
+ * header shares. `tone="accent"` colours the eyebrow like the header's role tags,
+ * used for the per-role sections (As a radical / kanji / word); the universal
+ * sections (How it's written, Used as a part in) keep the default white. */
+function Section({
+  title,
+  help,
+  tone = "default",
+  children,
+}: {
+  title: string;
+  help?: string;
+  tone?: "default" | "accent";
+  children: React.ReactNode;
+}) {
   return (
     <div className="mt-5 border-t border-border/50 pt-5">
-      <p className="mb-3 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] text-text">
+      <p
+        className={`mb-3 flex items-center text-[11px] font-medium uppercase tracking-[0.06em] ${
+          tone === "accent" ? "text-accent" : "text-text"
+        }`}
+      >
         {title}
         {help ? <Info>{help}</Info> : null}
       </p>
       {children}
     </div>
+  );
+}
+
+/** A muted sub-label inside a role section (On'yomi, Etymology, …). */
+function SubLabel({ children, help }: { children: React.ReactNode; help?: string }) {
+  return (
+    <p className="mb-2 flex items-center text-[12px] font-medium text-text-muted">
+      {children}
+      {help ? <Info>{help}</Info> : null}
+    </p>
   );
 }
 
@@ -164,35 +192,10 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
         <GlassSheen />
         <ContentEntryHeader item={item} />
 
-        {parts.length > 0 ? (
-          <Section title="Built from">
-            <div className="flex flex-col gap-1.5">
-              {parts.map((p) => (
-                <Link
-                  key={p.glyph}
-                  href={entryHref(builtPieceEntryId(p.glyph))}
-                  className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
-                >
-                  <span className="font-kana text-[18px] leading-none">{p.glyph}</span>
-                  <span className="min-w-0 flex-1 truncate text-text-muted">{p.sense}</span>
-                  {p.role && p.role !== "semantic" ? (
-                    <span className="text-[10px] uppercase tracking-[0.05em] text-text-muted/70">
-                      {p.role}
-                    </span>
-                  ) : null}
-                </Link>
-              ))}
-            </div>
-            {story ? <p className="mt-3 text-[13px] leading-relaxed text-text-muted">{story}</p> : null}
-          </Section>
-        ) : null}
-
+        {/* ── AS A RADICAL: the shapes it takes inside other kanji, and where. ── */}
         {variants.length > 0 ? (
-          <Section title="Variant forms" help={VARIANT_HELP}>
-            {/* The shapes this radical takes inside other kanji, and where each
-                sits — the recognition cue, so it leads. Ordered normal → top →
-                left → right → bottom. The bushu name is dropped: it's untranslated
-                jargon, and the shape + position are what a reader acts on. */}
+          <Section title="As a radical" tone="accent" help={VARIANT_HELP}>
+            <SubLabel>Written as</SubLabel>
             <table className="text-[15px]">
               <tbody>
                 {variants
@@ -213,50 +216,77 @@ export function CharacterEntryView({ item }: { item: ContentItem }) {
           </Section>
         ) : null}
 
-        {groups.length > 0 ? (
-          <Section title="As a kanji">
-            {/* On'yomi and kun'yomi side by side (one column when a kanji has only
-                one type). Each row: sound + reading, then an example word. */}
-            <div className={`grid gap-x-10 gap-y-6 ${groups.length > 1 ? "sm:grid-cols-2" : ""}`}>
-              {groups.map((g) => (
-                <div key={g.label}>
-                  <p className="mb-2 flex items-center text-[12px] font-medium text-text-muted">
-                    {g.label}
-                    <Info>{g.help}</Info>
-                  </p>
-                  <table className="w-full text-[14px]">
-                    <tbody>
-                      {g.readings.map((r) => (
-                        <tr key={r.base}>
-                          <td className="whitespace-nowrap py-1 pr-6">
-                            <span className="flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => speak(r.base, "")}
-                                aria-label={`Hear ${r.base}`}
-                                className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
-                              >
-                                <SoundIcon />
-                              </button>
-                              <span className="font-kana text-text">{r.base}</span>
-                            </span>
-                          </td>
-                          <td className="w-full py-1 align-middle font-kana text-text-muted">{r.example}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ))}
-            </div>
+        {/* ── AS A KANJI: on'yomi / kun'yomi, then the etymology (its components
+              and where the shape came from). ── */}
+        {groups.length > 0 || parts.length > 0 || story ? (
+          <Section title="As a kanji" tone="accent">
+            {groups.length > 0 ? (
+              <div className={`grid gap-x-10 gap-y-6 ${groups.length > 1 ? "sm:grid-cols-2" : ""}`}>
+                {groups.map((g) => (
+                  <div key={g.label}>
+                    <SubLabel help={g.help}>{g.label}</SubLabel>
+                    <table className="w-full text-[14px]">
+                      <tbody>
+                        {g.readings.map((r) => (
+                          <tr key={r.base}>
+                            <td className="whitespace-nowrap py-1 pr-6">
+                              <span className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => speak(r.base, "")}
+                                  aria-label={`Hear ${r.base}`}
+                                  className="flex-none cursor-pointer border-none bg-transparent p-0 leading-none text-accent"
+                                >
+                                  <SoundIcon />
+                                </button>
+                                <span className="font-kana text-text">{r.base}</span>
+                              </span>
+                            </td>
+                            <td className="w-full py-1 align-middle font-kana text-text-muted">{r.example}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {parts.length > 0 || story ? (
+              <div className={groups.length > 0 ? "mt-6" : ""}>
+                <SubLabel>Etymology</SubLabel>
+                {parts.length > 0 ? (
+                  <div className="mb-2 flex flex-col gap-1.5">
+                    {parts.map((p) => (
+                      <Link
+                        key={p.glyph}
+                        href={entryHref(builtPieceEntryId(p.glyph))}
+                        className="flex items-baseline gap-2.5 text-[14px] text-text no-underline"
+                      >
+                        <span className="font-kana text-[18px] leading-none">{p.glyph}</span>
+                        <span className="min-w-0 flex-1 truncate text-text-muted">{p.sense}</span>
+                        {p.role && p.role !== "semantic" ? (
+                          <span className="text-[10px] uppercase tracking-[0.05em] text-text-muted/70">
+                            {p.role}
+                          </span>
+                        ) : null}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+                {story ? (
+                  <p className="text-[13px] leading-relaxed text-text-muted">{story}</p>
+                ) : null}
+              </div>
+            ) : null}
           </Section>
         ) : null}
 
+        {/* ── AS A WORD: how the standalone word is pronounced and what it means.
+              One row per reading, glosses merged; a diverging sense shows here
+              (生 なま = raw, not the kanji's "life"). ── */}
         {wordRows.length > 0 ? (
-          <Section title="As a word">
-            {/* The standalone word: how it's pronounced and what it means — one
-                row per reading, glosses merged. This is where a word sense that
-                diverges from the kanji's core meaning shows (生 なま = raw). */}
+          <Section title="As a word" tone="accent">
             <table className="w-full text-[14px]">
               <tbody>
                 {wordRows.map((w) => (
