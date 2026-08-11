@@ -65,8 +65,10 @@ const LEARN: { label: string; item: ContentItem | undefined }[] = [
 const VOCAB_TRACK = UNIT_TRACKS.find((t) => t.id === "vocab")!;
 const UP_NEXT = simulateLessons(VOCAB_TRACK, LESSON_RANGE_DEFAULT, 1)[0] ?? null;
 
-// The kana whose Library entry page we redesign first (has an authored mnemonic).
+// One hiragana (あ, has an authored mnemonic) and one katakana (ア), for the two
+// kana sections' content pages.
 const KANA_A = kanaItems().find((i) => i.glyph === "あ");
+const KANA_KATA = kanaItems().find((i) => i.glyph === "ア");
 // Two radicals for the radical entry page: 禾 (bushu name のぎへん, no variant
 // forms) and 水 (bushu name みず, with the positional variants 氵 / 氺).
 const RADICAL_KI = buildGlyphItem("禾");
@@ -158,56 +160,76 @@ export default function ViewsDevPage() {
       </Section>
 
       <Section
-        title="Library / Lesson &mdash; by content type"
-        note="One page per item, grouped by type. Each type opens with its intro pages (the term/library page shown before that content is first taught, plus any non-term intro), then the entry page. A page that reads the same in both contexts is shown once as 'Library & Lesson'; one that differs shows a 'Library' and a 'Lesson' side by side."
+        title="Library / Lesson &mdash; by concept"
+        note="One section per concept. Each shows the term page (which is both the intro and the term's own library page — the same page), then the concept's content page. A page that reads the same across contexts is shown once ('… & …'); one that differs shows each. Concepts that are never introduced — reference terms people just come across — are collected at the very end."
       >
         <Sub title="Kana">
-          <Slot tag="Intro — term pages">
-            <TermIntros ids={["kana", "hiragana", "katakana", "romaji", "mora", "pitch-accent"]} />
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("kana")} />
           </Slot>
-          <Slot tag="Library & Lesson">
+        </Sub>
+
+        <Sub title="Hiragana">
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("hiragana")} />
+          </Slot>
+          <Slot tag="Content — library & lesson">
             {KANA_A ? <KanaEntryView item={KANA_A} /> : <Missing />}
           </Slot>
         </Sub>
 
-        <Sub title="Marks">
-          <Slot tag="Intro — term pages">
-            <TermIntros ids={["yoon", "okurigana", "rendaku"]} />
+        <Sub title="Katakana">
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("katakana")} />
           </Slot>
-          {/* Dakuten and handakuten have no separate intro: their library page is
-              the intro — it has everything. The page differs by context, so the
-              lesson narrows the conversion to the one script being taught and drops
-              the "in hiragana/katakana" labels. */}
-          <Slot tag="Dakuten — Library (both scripts)">
+          <Slot tag="Content — library & lesson">
+            {KANA_KATA ? <KanaEntryView item={KANA_KATA} /> : <Missing />}
+          </Slot>
+        </Sub>
+
+        <Sub title="Dakuten">
+          {/* The mark page is the intro AND the library — it has everything, so
+              there is no separate term page. It differs by context: the lesson
+              narrows to the one script being taught and drops the script labels. */}
+          <Slot tag="Intro & library — both scripts">
             <MarkEntryView entry={MARK} />
           </Slot>
-          <Slot tag="Dakuten — Lesson (one script)">
+          <Slot tag="Lesson — one script">
             <MarkEntryView entry={MARK} set="hiragana" />
           </Slot>
-          <Slot tag="Handakuten — Library (both scripts)">
+        </Sub>
+
+        <Sub title="Handakuten">
+          <Slot tag="Intro & library — both scripts">
             <MarkEntryView entry={HANDAKUTEN_MARK} />
           </Slot>
-          <Slot tag="Handakuten — Lesson (one script)">
+          <Slot tag="Lesson — one script">
             <MarkEntryView entry={HANDAKUTEN_MARK} set="hiragana" />
           </Slot>
         </Sub>
 
-        <Sub title="Radical">
-          <Slot tag="Intro — term pages">
-            <TermIntros ids={["radical"]} />
+        <Sub title="Yōon">
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("yoon")} />
           </Slot>
-          <Slot tag="Library & Lesson">
+        </Sub>
+
+        <Sub title="Radical">
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("radical")} />
+          </Slot>
+          <Slot tag="Content — library & lesson">
             {RADICAL_KI ? <CharacterEntryView item={RADICAL_KI} /> : <Missing />}
           </Slot>
         </Sub>
 
         <Sub title="Kanji">
-          <Slot tag="Intro — term pages">
-            <TermIntros ids={["kanji", "kunyomi-onyomi", "furigana", "jlpt"]} />
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("kanji")} />
           </Slot>
           {/* 明 (kanji only) and 水 (radical · kanji · word, one word reading) both
               read identically in both contexts. */}
-          <Slot tag="Library & Lesson">
+          <Slot tag="Content — library & lesson">
             <div className="flex flex-col gap-4">
               {KANJI_MEI ? <CharacterEntryView item={KANJI_MEI} /> : <Missing />}
               {RADICAL_MIZU ? <CharacterEntryView item={RADICAL_MIZU} /> : <Missing />}
@@ -215,38 +237,44 @@ export default function ViewsDevPage() {
           </Slot>
         </Sub>
 
+        <Sub title="Kun’yomi & on’yomi">
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("kunyomi-onyomi")} />
+          </Slot>
+        </Sub>
+
         <Sub title="Word">
           {/* 生 (one reading, divergent sense) and 先生 (multi-character, one
               reading) don't change under lesson. 主 has four word readings, so the
               lesson caps to one — the one case a character page differs. */}
-          <Slot tag="Library & Lesson">
+          <Slot tag="Content — library & lesson">
             <div className="flex flex-col gap-4">
               {SEI ? <CharacterEntryView item={SEI} /> : <Missing />}
               {WORD_SENSEI ? <CharacterEntryView item={WORD_SENSEI} /> : <Missing />}
             </div>
           </Slot>
-          <Slot tag="Library — all readings">
+          <Slot tag="Content — library (all readings)">
             {NUSHI ? <CharacterEntryView item={NUSHI} /> : <Missing />}
           </Slot>
-          <Slot tag="Lesson — one pronunciation">
+          <Slot tag="Content — lesson (one pronunciation)">
             {NUSHI ? <CharacterEntryView item={NUSHI} lesson /> : <Missing />}
           </Slot>
         </Sub>
 
         <Sub title="Counter / Number">
-          <Slot tag="Intro — term page">
-            <TermIntros ids={["counter"]} />
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("counter")} />
           </Slot>
           {/* A non-term additional intro, shown after the counter term intro and
               before the first 〜つ form. It isn't a glossary term, so it lives as
               its own intro card rather than on a term page. */}
-          <Slot tag="Intro — additional (non-term)">
+          <Slot tag="Additional intro — non-term">
             <div className={`${glassSurface} p-6`}>
               <GlassSheen />
               <PhaseIntroView intro={TSU_INTRO} />
             </div>
           </Slot>
-          <Slot tag="Library & Lesson">
+          <Slot tag="Content — library & lesson">
             <div className="flex flex-col gap-4">
               {COUNTER_TSU ? <CounterEntryView item={COUNTER_TSU} /> : <Missing />}
               {NUMBER_TENS ? <CounterEntryView item={NUMBER_TENS} /> : <Missing />}
@@ -254,11 +282,11 @@ export default function ViewsDevPage() {
           </Slot>
         </Sub>
 
-        <Sub title="Grammar">
-          <Slot tag="Intro — term page">
-            <TermIntros ids={["particle"]} />
+        <Sub title="Grammar (particles)">
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("particle")} />
           </Slot>
-          <Slot tag="Library & Lesson">
+          <Slot tag="Content — library & lesson">
             <div className="flex flex-col gap-4">
               {grammar ? <GrammarEntryView item={grammar} /> : <Missing />}
               <GrammarConceptEntryView entry={CONCEPT} />
@@ -267,23 +295,44 @@ export default function ViewsDevPage() {
         </Sub>
 
         <Sub title="Keigo">
-          <Slot tag="Intro — term page">
-            <TermIntros ids={["keigo"]} />
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("keigo")} />
           </Slot>
-          <Slot tag="Library & Lesson">
+          <Slot tag="Content — library & lesson">
             {keigo ? <KeigoEntryView item={keigo} /> : <Missing />}
           </Slot>
         </Sub>
 
+        <Sub title="Okurigana">
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("okurigana")} />
+          </Slot>
+        </Sub>
+
+        <Sub title="Rendaku">
+          <Slot tag="Term — intro & library">
+            <TermEntryView entry={termEntry("rendaku")} />
+          </Slot>
+        </Sub>
+
         <Sub title="Verb pairs (transitivity)">
-          <Slot tag="Library & Lesson">
+          <Slot tag="Content — library & lesson">
             {verbPair ? <VerbPairEntryView item={verbPair} /> : <Missing />}
           </Slot>
         </Sub>
 
         <Sub title="Sentences">
-          <Slot tag="Library & Lesson">
+          <Slot tag="Content — library & lesson">
             {sentenceItems()[0] ? <SentenceEntryView item={sentenceItems()[0]!} /> : <Missing />}
+          </Slot>
+        </Sub>
+
+        <Sub title="Terms only — reference, never introduced">
+          {/* Words a learner comes across (JLPT levels, furigana, romaji, a mora,
+              pitch accent) but that no lesson introduces as a step. Their library
+              page still exists for when someone looks them up. */}
+          <Slot tag="Library only">
+            <TermIntros ids={["romaji", "furigana", "jlpt", "mora", "pitch-accent"]} />
           </Slot>
         </Sub>
       </Section>
