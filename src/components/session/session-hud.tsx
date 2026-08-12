@@ -79,7 +79,10 @@ export function SessionHud({
   return (
     <div
       className={`px-3 py-1.5 ${
-        float ? "kq-band sticky top-0 z-10 border-b border-border" : ""
+        // Frozen where it is, with a SOLID app-background so nothing scrolls into
+        // view behind it — a plain sticky strip, not the translucent kq-band that
+        // let content roll up under it. Same treatment on every session phase.
+        float ? "sticky top-0 z-10 border-b border-border bg-bg" : ""
       }`}
     >
       <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-text-muted">

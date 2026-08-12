@@ -92,7 +92,9 @@ export type LessonStep =
  * TRACK_INTROS card. Term ids, resolved to entries at emit time.
  */
 const TRACK_TERM_INTROS: Partial<Record<TrackId, readonly string[]>> = {
-  hiragana: ["kana", "hiragana"],
+  // Kana umbrella, then hiragana, then romaji — the format every answer is typed
+  // in, so it is defined before the learner first has to type one.
+  hiragana: ["kana", "hiragana", "romaji"],
   katakana: ["katakana"],
 };
 

@@ -214,7 +214,11 @@ describe("a track intro shows once and does not come back", () => {
     // show once each at the front, not once per character.
     const steps = lessonSteps(SAMPLE.hiragana, BLANK);
     const terms = steps.filter((s) => s.type === "term").map((s) => (s.type === "term" ? String(s.entry) : ""));
-    assert.deepEqual(terms, [String(termEntry("kana")), String(termEntry("hiragana"))]);
+    assert.deepEqual(terms, [
+      String(termEntry("kana")),
+      String(termEntry("hiragana")),
+      String(termEntry("romaji")),
+    ]);
   });
 
   test("meeting one track does not introduce another", () => {
