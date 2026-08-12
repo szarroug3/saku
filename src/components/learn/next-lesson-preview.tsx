@@ -47,6 +47,7 @@ export function NextLessonPreview({
   positionLabel,
   onStart,
   onClaim,
+  onContinue,
 }: {
   /** The next lesson, in the new content model. */
   lesson: UnitLesson;
@@ -58,6 +59,10 @@ export function NextLessonPreview({
   onStart?: (facts: FactId[], opts?: { teach?: boolean }) => void;
   /** "I already know these", over the lesson's facts. Omit for an inert preview. */
   onClaim?: (facts: FactId[]) => void;
+  /** Resume an in-progress run of THIS lesson. When present, the primary action is
+   * "Continue session" in place of "Start" — the same mid-lesson resume Home has
+   * always offered. Omit for a fresh lesson (or an inert preview). */
+  onContinue?: () => void;
 }) {
   const items = lessonItems(lesson);
   const facts = lesson.units.flatMap((u) => u.facts);
@@ -79,9 +84,15 @@ export function NextLessonPreview({
         </Btn>
         <div className="flex flex-wrap items-center gap-1.5">
           <Btn onClick={onStart && (() => onStart(facts, { teach: false }))}>Quiz me</Btn>
-          <Btn go onClick={onStart && (() => onStart(facts))}>
-            Start
-          </Btn>
+          {onContinue ? (
+            <Btn go onClick={onContinue}>
+              Continue session
+            </Btn>
+          ) : (
+            <Btn go onClick={onStart && (() => onStart(facts))}>
+              Start
+            </Btn>
+          )}
         </div>
       </div>
 
