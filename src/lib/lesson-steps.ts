@@ -62,13 +62,14 @@ import {
   isConstructionMarker,
 } from "@/data/counter-categories";
 import { COUNTER_ENTRIES } from "@/data/counters";
+import { termEntry } from "@/data/terms";
 import { TRACK_INTROS, type TrackId } from "@/data/track-intros";
 import { vocabRow, wordReadingFactId } from "@/data/vocab";
 import { grammarLessonsForFacts } from "@/data/grammar/lessons";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
 import { spineIntroPlan } from "@/lib/spine-intros";
 import { startedTracks, trackOfItem } from "@/lib/track-open";
-import type { FactId, HistoryFile } from "@/types";
+import type { EntryId, FactId, HistoryFile } from "@/types";
 
 /** The tracks whose cards are anchored to a curriculum item instead of opened by
  * a subject. They are the three roles of the one spine, and spine-intros.ts owns
@@ -79,8 +80,21 @@ const SPINE_TRACKS: ReadonlySet<TrackId> = new Set<TrackId>(["radical", "kanji",
  * concept to read. */
 export type LessonStep =
   | { type: "intro"; key: string; intro: PhaseIntro }
+  | { type: "term"; key: string; entry: EntryId }
   | { type: "conversion"; key: string; row: DakutenRow }
   | { type: "item"; key: string; item: LessonItem };
+
+/**
+ * Tracks whose opening intro is one or more TERM PAGES rather than the single
+ * track-intro card — the "intros are the term pages" model the redesign settled.
+ * Hiragana opens on the kana umbrella then hiragana itself; katakana opens on
+ * katakana alone (kana was already met). A track absent here keeps its
+ * TRACK_INTROS card. Term ids, resolved to entries at emit time.
+ */
+const TRACK_TERM_INTROS: Partial<Record<TrackId, readonly string[]>> = {
+  hiragana: ["kana", "hiragana"],
+  katakana: ["katakana"],
+};
 
 /** The kana section a step's glyph belongs to, or null for anything that isn't
  * a kana we ship. A lookup, never a parse. */
@@ -315,8 +329,18 @@ export function lessonSteps(
     const track = started ? trackOfItem(item) : null;
     if (track && !SPINE_TRACKS.has(track) && !started!.has(track) && !trackCardDone.has(track)) {
       trackCardDone.add(track);
-      const intro = TRACK_INTROS[track];
-      steps.push({ type: "intro", key: intro.id, intro });
+      const termIntros = TRACK_TERM_INTROS[track];
+      if (termIntros) {
+        // The redesigned intros ARE the term pages: kana then hiragana, katakana
+        // on its own. Rendered by TermEntryView in the walk (the same page the
+        // Library shows), so a learner meets the term where it is first used.
+        for (const id of termIntros) {
+          steps.push({ type: "term", key: `term:${id}`, entry: termEntry(id) });
+        }
+      } else {
+        const intro = TRACK_INTROS[track];
+        steps.push({ type: "intro", key: intro.id, intro });
+      }
     }
     const row = item.kind === "kana" ? dakutenRowFor(item.glyph) : null;
     if (row) {

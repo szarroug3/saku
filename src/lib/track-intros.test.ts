@@ -22,6 +22,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { CHAR_INDEX, kanaFact } from "../data/characters.ts";
+import { termEntry } from "../data/terms.ts";
 import { COUNTER_CURRICULUM, counterMeaningFactId } from "../data/counters.ts";
 import { KEIGO_SETS, keigoWordFactId } from "../data/keigo.ts";
 import { patternMeaningFactId } from "../data/grammar/index.ts";
@@ -144,31 +145,42 @@ describe("every track that can unlock has exactly one intro", () => {
   });
 });
 
+// The two kana scripts open on TERM PAGES now (the redesign's "intros are the
+// term pages" model): hiragana on kana then hiragana, katakana on katakana. Every
+// other subject track keeps its single track-intro card.
+const TERM_FIRST: Readonly<Record<string, string>> = { hiragana: "kana", katakana: "katakana" };
+
 describe("a track intro comes before that track's first lesson", () => {
   for (const track of SUBJECT_TRACKS) {
-    test(`${track}: the card is step ONE of the opening lesson`, () => {
+    test(`${track}: the intro is step ONE of the opening lesson`, () => {
       const steps = lessonSteps(SAMPLE[track], BLANK);
       assert.ok(steps.length > 0, `${track} produced no steps`);
-      assert.equal(steps[0].type, "intro");
-      // Grammar's opening adjective-form lesson is authored, and its
-      // own first page IS the track's introduction — "Grammar is how words fit
-      // together" — so it leads with that rather than the generic track-grammar
-      // card (which the Library still renders for the track's reference page).
-      const expected = track === "grammar" ? "gl-te-intro" : TRACK_INTROS[track].id;
-      assert.equal(steps[0].type === "intro" ? steps[0].intro.id : "", expected);
+      if (TERM_FIRST[track]) {
+        assert.equal(steps[0].type, "term");
+        assert.equal(
+          steps[0].type === "term" ? String(steps[0].entry) : "",
+          String(termEntry(TERM_FIRST[track])),
+        );
+      } else {
+        assert.equal(steps[0].type, "intro");
+        // Grammar's opening adjective-form lesson is authored, and its own first
+        // page IS the track's introduction, so it leads with that rather than the
+        // generic track-grammar card.
+        const expected = track === "grammar" ? "gl-te-intro" : TRACK_INTROS[track].id;
+        assert.equal(steps[0].type === "intro" ? steps[0].intro.id : "", expected);
+      }
     });
   }
 
-  test("hiragana's card is the very first thing in the app", () => {
+  test("the kana term page is the very first thing in the app", () => {
     // The whole reason this exists: あ is the first character anyone is shown,
-    // and before this the first screen used "kana" and expected romaji without
-    // having said what either word means.
+    // and before this the first screen used "kana" without saying what it meant.
+    // Now the kana term page IS page one, so the word is defined before it is used.
     const steps = lessonSteps(SAMPLE.hiragana, BLANK);
-    assert.equal(steps[0].type === "intro" && steps[0].intro.id, "track-hiragana");
-    // And it introduces both of the words the beginner probe flagged hardest.
-    const prose = TRACK_INTROS.hiragana.body.map((p) => `${p.lead ?? ""} ${p.text}`).join(" ");
-    assert.match(prose, /\bkana\b/i);
-    assert.match(prose, /\bromaji\b/i);
+    assert.equal(steps[0].type, "term");
+    assert.equal(steps[0].type === "term" ? String(steps[0].entry) : "", String(termEntry("kana")));
+    // Page two is the hiragana term page.
+    assert.equal(steps[1].type === "term" ? String(steps[1].entry) : "", String(termEntry("hiragana")));
   });
 });
 
@@ -197,21 +209,21 @@ describe("a track intro shows once and does not come back", () => {
     );
   });
 
-  test("a lesson that opens a track shows its card once, not once per item", () => {
-    // The hiragana vowel row is five characters. One card, not five.
+  test("a lesson that opens a track shows its intros once, not once per item", () => {
+    // The hiragana vowel row is five characters. The kana and hiragana term pages
+    // show once each at the front, not once per character.
     const steps = lessonSteps(SAMPLE.hiragana, BLANK);
-    const cards = steps.filter(
-      (s) => s.type === "intro" && s.intro.id === "track-hiragana",
-    );
-    assert.equal(cards.length, 1);
+    const terms = steps.filter((s) => s.type === "term").map((s) => (s.type === "term" ? String(s.entry) : ""));
+    assert.deepEqual(terms, [String(termEntry("kana")), String(termEntry("hiragana"))]);
   });
 
   test("meeting one track does not introduce another", () => {
     // Having done hiragana says nothing about katakana, and must not suppress
-    // its card — the two scripts are separate tracks on purpose.
+    // its intro — the two scripts are separate tracks on purpose.
     const done = met(SAMPLE.hiragana);
     const steps = lessonSteps(SAMPLE.katakana, done);
-    assert.equal(steps[0].type === "intro" && steps[0].intro.id, "track-katakana");
+    assert.equal(steps[0].type, "term");
+    assert.equal(steps[0].type === "term" ? String(steps[0].entry) : "", String(termEntry("katakana")));
   });
 });
 

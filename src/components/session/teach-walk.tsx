@@ -36,6 +36,7 @@ import { useMemo } from "react";
 
 import { ConversionCard } from "@/components/lesson/conversion-card";
 import { TeachItemView } from "@/components/session/teach-item-view";
+import { TermEntryView } from "@/components/library/term-entry-view";
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { AttributionLink } from "@/components/library/attribution-link";
 import { ConfigPreview } from "@/components/quiz/config-preview";
@@ -141,6 +142,8 @@ export function TeachWalk({
         <FlatSurfaceProvider>
           {current.type === "intro" ? (
             <PhaseIntroView key={current.key} intro={current.intro} />
+          ) : current.type === "term" ? (
+            <TermEntryView key={current.key} entry={current.entry} />
           ) : current.type === "conversion" ? (
             <ConversionCard key={current.key} row={current.row} />
           ) : (

@@ -28,6 +28,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { kanaFact } from "../data/characters.ts";
+import { termEntry } from "../data/terms.ts";
 import { kanjiTeachOrder, meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
 import { TRACK_INTROS, VARIANT_INTRO } from "../data/track-intros.ts";
@@ -652,10 +653,11 @@ describe("the orphan tails introduce nothing", () => {
 });
 
 describe("kana is a separate track and is untouched", () => {
-  test("hiragana still opens on its own card, before あ", () => {
+  test("hiragana opens on the kana term page, before あ", () => {
     const steps = lessonSteps([..."あいうえお"].map(kanaFact), BLANK);
-    assert.equal(steps[0].type, "intro");
-    assert.equal(steps[0].type === "intro" ? steps[0].key : "", "track-hiragana");
+    // The kana scripts open on their term pages now (kana, then hiragana).
+    assert.equal(steps[0].type, "term");
+    assert.equal(steps[0].type === "term" ? String(steps[0].entry) : "", String(termEntry("kana")));
     // And no spine card rides in on kana, which plays none of the three roles.
     assert.deepEqual(
       steps.filter((s) => s.type === "intro" && CARD_IDS.has(s.key)),
@@ -663,10 +665,11 @@ describe("kana is a separate track and is untouched", () => {
     );
   });
 
-  test("katakana still opens on its own card once hiragana is met", () => {
+  test("katakana opens on the katakana term page once hiragana is met", () => {
     const done = met([..."あいうえお"].map(kanaFact));
     const steps = lessonSteps([..."アイウエオ"].map(kanaFact), done);
-    assert.equal(steps[0].type === "intro" ? steps[0].key : "", "track-katakana");
+    assert.equal(steps[0].type, "term");
+    assert.equal(steps[0].type === "term" ? String(steps[0].entry) : "", String(termEntry("katakana")));
   });
 
   test("a caller with no history still gets no cards at all", () => {
