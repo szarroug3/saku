@@ -137,12 +137,13 @@ export function MnemonicView({
           </div>
         ) : null}
         {/* Where the analogy is only close, say so — an English mouth doesn't
-            make this sound exactly. */}
+            make this sound exactly. A heads-up aside (same left-rule treatment
+            other pages use), not a coloured sound line: it is about how to say
+            the kana, so it needs no speaker of its own. */}
         {m.approximate ? (
-          <p className="mt-2 text-[12.5px] leading-relaxed text-warning">
-            <SoundIcon className="mr-1 align-[-0.15em]" />
-            {m.approximate}
-          </p>
+          <div className="mt-3">
+            <Callout>{m.approximate}</Callout>
+          </div>
         ) : null}
         {/* A plain usage note (を is the object particle) — no speaker icon,
             because it is about how the character is used, not its sound. */}

@@ -24,11 +24,11 @@ const HOW_ITS_WRITTEN = readFileSync(
 describe("teach walk flat section surfaces", () => {
   test("the main teach walk wraps its item content in FlatSurfaceProvider", () => {
     assert.match(TEACH_WALK, /import \{[^}]*FlatSurfaceProvider[^}]*\}/);
-    // The provider sits around the item render, so LessonItemView / PhaseIntroView
+    // The provider sits around the item render, so TeachItemView / PhaseIntroView
     // and their section panels drop the frosty fill and keep the border.
     assert.match(
       TEACH_WALK,
-      /<FlatSurfaceProvider>[\s\S]*<LessonItemView[\s\S]*<\/FlatSurfaceProvider>/,
+      /<FlatSurfaceProvider>[\s\S]*<TeachItemView[\s\S]*<\/FlatSurfaceProvider>/,
     );
   });
 

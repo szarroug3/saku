@@ -314,46 +314,6 @@ describe("roleHasSections — a block for every role the character plays, and no
   });
 });
 
-describe("the headings, and the badge they replaced", () => {
-  const view = readFileSync(
-    fileURLToPath(new URL("../components/lesson/lesson-item-view.tsx", import.meta.url)),
-    "utf8",
-  );
-  const roleBlock = readFileSync(
-    fileURLToPath(new URL("../components/lesson/role-block.tsx", import.meta.url)),
-    "utf8",
-  );
-
-  test("the role badge is off the lesson header", () => {
-    assert.doesNotMatch(view, /<RoleBadge/);
-    assert.doesNotMatch(view, /ROLE_NOTE/);
-  });
-
-  test("the headings say the badge's own three nouns, and none of the old prose labels", () => {
-    for (const title of ['title: "Radical"', 'title: "Kanji"', 'title: "Word"']) {
-      assert.ok(roleBlock.includes(title), `${title} is the heading`);
-    }
-    // Only what is PRINTED: the file's own notes still name the old labels,
-    // because saying what changed is why they are there.
-    const printed = roleBlock.slice(roleBlock.indexOf("const ROLE_HEADING"));
-    assert.doesNotMatch(printed, /As a word|As a kanji|As a building block/);
-  });
-
-  test("each heading leads with a line, so no role is a heading over nothing", () => {
-    const leads = [...roleBlock.matchAll(/lead:\s*\n?\s*"([^"]+)"/g)].map((m) => m[1]);
-    assert.equal(leads.length, 3, "one line per role");
-    assert.equal(new Set(leads).size, 3, "and three different lines");
-    // A whole sentence, not a character count. The floor used to be 40 chars,
-    // which is a proxy for "somebody wrote this" and starts working against the
-    // copy the moment it gets tightened: "This is a full word on its own." is
-    // 31 characters and says everything the role needs.
-    for (const l of leads) {
-      assert.ok(l.trim().split(/\s+/).length >= 5, `"${l}" is a sentence`);
-      assert.ok(l.trim().endsWith("."), `"${l}" is punctuated`);
-    }
-  });
-});
-
 describe("standaloneSenses — which readings you can actually say by themselves", () => {
   test("人 is exactly ひと: じん and にん only ever turn up welded to something", () => {
     const kept = standaloneSenses(vocabRow("人")!);

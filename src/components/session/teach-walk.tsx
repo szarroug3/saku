@@ -35,7 +35,7 @@
 import { useMemo } from "react";
 
 import { ConversionCard } from "@/components/lesson/conversion-card";
-import { LessonItemView } from "@/components/lesson/lesson-item-view";
+import { TeachItemView } from "@/components/session/teach-item-view";
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
 import { AttributionLink } from "@/components/library/attribution-link";
 import { ConfigPreview } from "@/components/quiz/config-preview";
@@ -144,7 +144,7 @@ export function TeachWalk({
           ) : current.type === "conversion" ? (
             <ConversionCard key={current.key} row={current.row} />
           ) : (
-            <LessonItemView key={current.key} item={current.item} />
+            <TeachItemView key={current.key} item={current.item} />
           )}
         </FlatSurfaceProvider>
       </div>

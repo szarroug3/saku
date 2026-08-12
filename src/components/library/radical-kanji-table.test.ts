@@ -54,7 +54,9 @@ describe("a radical's kanji are ordered by curriculum, not raw index", () => {
 describe("one table, on the reference pages only", () => {
   const table = read("./radical-kanji-table.tsx");
   const uses = read("./component-uses.tsx");
-  const lesson = read("../lesson/lesson-item-view.tsx");
+  // The teach walk's item view is TeachItemView now (it dispatches to the shared
+  // *-entry-view components); the old LessonItemView is gone.
+  const lesson = read("../session/teach-item-view.tsx");
   // The redesigned radical reference page is CharacterEntryView; its "used as a
   // part in" list is off usedAsPartIn now, not ComponentUses/RadicalKanjiTable.
   const characterView = read("./character-entry-view.tsx");
