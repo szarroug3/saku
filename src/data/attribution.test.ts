@@ -146,10 +146,12 @@ describe("stroke-order attribution is reachable", () => {
   test("the stepped lesson, which draws stroke order, carries the link", () => {
     // Named outright rather than left to the sweep above: the session screen is
     // the one that reaches stroke order through three hops of components, so it
-    // is the one a refactor is most likely to quietly disconnect.
-    const walk = join(SRC, "components", "session", "teach-walk.tsx");
-    assert.ok(TEXT.has(walk), "teach-walk.tsx moved; repoint this assertion");
-    assert.ok(CREDITS(walk), "the stepped lesson lost its <AttributionLink />");
+    // is the one a refactor is most likely to quietly disconnect. The link lives
+    // in the session frame's frozen footer now (src/app/session/page.tsx), pinned
+    // at the very bottom of the lesson, rather than in the teach-walk content.
+    const page = join(SRC, "app", "session", "page.tsx");
+    assert.ok(TEXT.has(page), "session/page.tsx moved; repoint this assertion");
+    assert.ok(CREDITS(page), "the stepped lesson lost its <AttributionLink />");
   });
 
   test("no component credits KanjiVG inline any more", () => {

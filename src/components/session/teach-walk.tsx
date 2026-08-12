@@ -38,7 +38,6 @@ import { ConversionCard } from "@/components/lesson/conversion-card";
 import { TeachItemView } from "@/components/session/teach-item-view";
 import { TermEntryView } from "@/components/library/term-entry-view";
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
-import { AttributionLink } from "@/components/library/attribution-link";
 import { FlatSurfaceProvider } from "@/components/ui";
 import { lessonSteps } from "@/lib/lesson-steps";
 import type { FactId, HistoryFile } from "@/types";
@@ -137,12 +136,6 @@ export function TeachWalk({
           fork) hold a fixed screen position so you can page through a lesson
           without moving the mouse. The round's config shows there too, above the
           button, on the last card. See src/app/session/page.tsx. */}
-
-      {/* The acknowledgement link — a licence obligation, not decoration. This
-          screen shows dictionary data (readings, meanings, example words) AND
-          KanjiVG stroke diagrams, so it is exactly the kind of screen from which
-          the credits have to be reachable. See attribution-link.tsx. */}
-      <AttributionLink />
     </div>
   );
 }

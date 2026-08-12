@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
-import { AttributionLink } from "@/components/library/attribution-link";
 import { FlatSurfaceProvider } from "@/components/ui";
 import type { PhaseIntro } from "@/data/phase-intros";
 import {
@@ -1110,10 +1109,8 @@ export function SentenceOrderingTeachWalk({
         ) : null}
       </div>
 
-      {/* Back / Next and the round config live in the session frame's frozen
-          footer now, at a fixed screen position (see src/app/session/page.tsx). */}
-
-      <AttributionLink />
+      {/* Back / Next, the round config, and the data-attribution link all live in
+          the session frame's frozen footer now (see src/app/session/page.tsx). */}
     </div>
   );
 }

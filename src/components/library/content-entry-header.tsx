@@ -61,7 +61,7 @@ export function ContentEntryHeader({
       <div className="flex items-center gap-4">
         <div
           className={`${japaneseFontClass(title)} ${glyphSize(title)} flex-none font-light leading-none text-text ${
-            titlePhrase ? "max-w-[7.5rem] text-balance" : ""
+            titlePhrase ? "text-balance" : ""
           }`}
         >
           {title}

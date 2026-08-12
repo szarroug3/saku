@@ -22,6 +22,7 @@ import {
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
 import { ConfigPreview } from "@/components/quiz/config-preview";
+import { AttributionLink } from "@/components/library/attribution-link";
 import { Btn, SmallBtn } from "@/components/ui";
 import { preloadQuizScreen } from "@/components/quiz/quiz-mode-screen";
 import { useHistory } from "@/lib/use-history";
@@ -444,6 +445,10 @@ export default function SessionPage() {
                 </Btn>
               )}
             </div>
+            {/* The data-attribution link — a licence obligation (attribution-
+                link.tsx) — pinned at the very bottom of the lesson, below the
+                controls, rather than floating after the content. */}
+            <AttributionLink />
           </div>
         </div>
       </div>
