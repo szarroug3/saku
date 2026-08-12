@@ -44,7 +44,7 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
  * rims so the pane reads as a raised piece of glass. A deep lift shadow floats it,
  * and a real backdrop blur frosts it (one filter per card, a handful on screen). */
 const panel =
-  "rounded-2xl px-5 py-5 backdrop-blur-xl " +
+  "@container rounded-2xl px-5 py-5 backdrop-blur-xl " +
   "bg-[color-mix(in_srgb,var(--card)_52%,transparent)] " +
   "shadow-[0_22px_50px_-29px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.13),inset_0_-20px_32px_-20px_rgba(0,0,0,0.54),inset_15px_0_26px_-20px_rgba(0,0,0,0.43),inset_-15px_0_26px_-20px_rgba(0,0,0,0.43)]";
 
@@ -90,11 +90,14 @@ export function NextLessonPreview({
           left. So the interactive column (tiles + the routes in) sits on the left,
           capped to the tile row's width so the buttons stay UNDER the tiles rather
           than spreading across the whole pane, and the one-line reason fills the
-          space to its right. Below `lg` the two stack, top-to-bottom on a phone. */}
-      <div className="mt-4 flex flex-col gap-x-10 gap-y-4 lg:flex-row lg:items-start">
+          space to its right. The split is a CONTAINER query on the pane's own width
+          (not the viewport), so it only goes two-column when the CARD is actually
+          wide enough — a narrow host (a dev-gallery slot, a phone) stacks instead
+          of forcing the reason into an overflowing sliver. */}
+      <div className="mt-4 flex flex-col gap-x-10 gap-y-4 @4xl:flex-row @4xl:items-start">
         {/* Left: the tiles and the routes in, capped to the tile row (five 104px
             squares = 568px) so the controls sit directly beneath them. */}
-        <div className="w-full max-w-[568px] lg:shrink-0">
+        <div className="w-full max-w-[568px] @4xl:shrink-0">
           <div className="flex flex-wrap gap-3">
             {items.map((item) => (
               <ItemPreview key={String(item.entry)} item={item} />
@@ -130,7 +133,7 @@ export function NextLessonPreview({
             as the rest. Given the tile row's height (104px) and centered within it,
             so the text sits on the tiles' centre line rather than the taller
             tiles-plus-buttons column. */}
-        <p className="max-w-prose text-[13px] leading-relaxed text-text-muted lg:flex lg:h-[104px] lg:flex-1 lg:items-center">
+        <p className="min-w-0 max-w-prose text-[13px] leading-relaxed text-text-muted @4xl:flex @4xl:h-[104px] @4xl:flex-1 @4xl:items-center">
           <span>
             {why.lede.strong}
             {why.lede.rest ? ` ${why.lede.rest}` : ""}

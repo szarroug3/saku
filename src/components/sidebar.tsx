@@ -93,6 +93,17 @@ const NAV: Array<{ href: string; label: ReactNode }> = [
   { href: "/about/data", label: "About the data" },
 ];
 
+// The development-only reference surfaces (the design gallery, the scheduler view,
+// the number playground). Shown in the nav ONLY in a non-production build — the
+// same gate the /dev/* route layout enforces (src/app/dev/layout.tsx). NODE_ENV is
+// inlined at build time, so the whole section is dead-code-eliminated from the
+// shipped bundle.
+const DEV_PAGES: Array<{ href: string; label: string }> = [
+  { href: "/dev/views", label: "Views" },
+  { href: "/dev/scheduling", label: "Scheduling" },
+  { href: "/dev/numbers", label: "Numbers" },
+];
+
 export function Sidebar({
   signedIn,
   authEnabled,
@@ -130,6 +141,9 @@ export function Sidebar({
   // Collapsed shrinks the bar to a thin rail so the page gets the width back.
   // Seeded from the server's cookie read, so the first paint is already correct.
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  // The dev section starts open when you're already on a /dev page, so a hard
+  // reload there doesn't hide the page you're looking at behind a closed group.
+  const [devOpen, setDevOpen] = useState(pathname.startsWith("/dev"));
   function toggleCollapsed() {
     setCollapsed((c) => {
       const next = !c;
@@ -269,6 +283,41 @@ export function Sidebar({
           </Link>
         );
       })}
+      {/* DEV ONLY — the /dev/* reference pages, as an expandable group. Compiled
+          out of production entirely (NODE_ENV inlined at build). */}
+      {process.env.NODE_ENV !== "production" ? (
+        <div className="mt-1">
+          <button
+            type="button"
+            onClick={() => setDevOpen((o) => !o)}
+            aria-expanded={devOpen}
+            className="flex w-full items-center justify-between whitespace-nowrap rounded-lg px-3 py-[9px] text-left text-sm text-text-muted hover:bg-panel"
+          >
+            <span>Dev</span>
+            <span className={`transition-transform ${devOpen ? "rotate-90" : ""}`}>
+              <Chevron dir="right" />
+            </span>
+          </button>
+          {devOpen ? (
+            <div className="flex flex-col gap-0.5">
+              {DEV_PAGES.map(({ href, label }) => {
+                const sel = pathname === href || pathname.startsWith(`${href}/`);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex items-baseline whitespace-nowrap rounded-lg py-[7px] pl-7 pr-3 text-left text-sm ${
+                      sel ? "bg-accent-bg text-accent" : "text-text-muted hover:bg-panel"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       {/* Sign in / out, only when auth is on (Supabase mode). Below the nav, off
           a divider — it belongs to the account, not the curriculum. */}
       {authEnabled ? (

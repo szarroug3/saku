@@ -3,9 +3,8 @@
 import type { ReactNode } from "react";
 
 import { PhaseIntroView } from "@/components/lesson/phase-intro-view";
-import { ConfigPreview } from "@/components/quiz/config-preview";
 import { AttributionLink } from "@/components/library/attribution-link";
-import { Btn, FlatSurfaceProvider } from "@/components/ui";
+import { FlatSurfaceProvider } from "@/components/ui";
 import type { PhaseIntro } from "@/data/phase-intros";
 import {
   SENTENCE_ORDERING_GUIDES,
@@ -987,13 +986,9 @@ export function sentenceOrderingTeachSteps(tierId: SentenceOrderingTierId): numb
 
 export function SentenceOrderingTeachWalk({
   step,
-  onStep,
-  onStart,
   tierId = "simple",
 }: {
   step: number;
-  onStep: (n: number) => void;
-  onStart: () => void;
   tierId?: SentenceOrderingTierId;
 }) {
   const lessons = lessonsForTier(tierId);
@@ -1003,7 +998,6 @@ export function SentenceOrderingTeachWalk({
   const at = Math.max(0, Math.min(step, totalSteps - 1));
   const onIntro = at === 0;
   const lesson = onIntro ? null : lessons[at - 1];
-  const last = at === totalSteps - 1;
 
   return (
     <div className="mx-auto max-w-230 px-3">
@@ -1116,24 +1110,8 @@ export function SentenceOrderingTeachWalk({
         ) : null}
       </div>
 
-      {last ? (
-        <div className="mt-4 rounded-lg border border-border bg-panel px-3 py-2">
-          <ConfigPreview />
-        </div>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-        <Btn
-          onClick={() => onStep(at - 1)}
-          disabled={at === 0}
-          className="disabled:cursor-default disabled:opacity-40"
-        >
-          Back
-        </Btn>
-        <Btn go autoFocus onClick={last ? onStart : () => onStep(at + 1)}>
-          {last ? "Quiz me" : "Next"}
-        </Btn>
-      </div>
+      {/* Back / Next and the round config live in the session frame's frozen
+          footer now, at a fixed screen position (see src/app/session/page.tsx). */}
 
       <AttributionLink />
     </div>

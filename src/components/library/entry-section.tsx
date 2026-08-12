@@ -61,5 +61,12 @@ export function Lead({ children }: { children: React.ReactNode }) {
  * written, …) drop their own boxes and sit as divider-separated sections rather
  * than boxes-within-a-box. */
 export function EntrySurface({ children }: { children: React.ReactNode }) {
-  return <FlatSurfaceProvider borderless>{children}</FlatSurfaceProvider>;
+  // A plain, UNSTYLED <article> — no fill, border, shadow or padding — so the
+  // entry reads as a natural part of the page, not a card, while still being one
+  // semantic element (the anchor the entry pages are found by).
+  return (
+    <FlatSurfaceProvider borderless>
+      <article>{children}</article>
+    </FlatSurfaceProvider>
+  );
 }

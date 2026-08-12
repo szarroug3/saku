@@ -27,10 +27,11 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
   const context = item.kind === "kana" ? item.context : null;
   const confusables = item.kind === "kana" ? item.confusables : [];
   return (
-    // NO CARD: the entry reads as a natural part of the page. Flat surface so the
-    // shared "How it's written" section drops its own card fill.
+    // NO CARD: the entry reads as a natural part of the page — a plain, unstyled
+    // <article> (semantic anchor, no fill/border). Flat surface so the shared
+    // "How it's written" section drops its own card fill.
     <FlatSurfaceProvider>
-      <div>
+      <article>
         <ContentEntryHeader item={item} />
         <div className="mt-5 border-t border-border/50 pt-6">
           <MnemonicView m={m} glyph={item.glyph} voiceName="" />
@@ -66,7 +67,7 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
             item={{ entry: item.entry, glyph: item.glyph, kind: "kana", facts: item.facts.map((f) => f.id) }}
           />
         </div>
-      </div>
+      </article>
     </FlatSurfaceProvider>
   );
 }

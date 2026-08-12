@@ -21,7 +21,8 @@ import {
 } from "@/components/session/sentence-ordering-teach-walk";
 import { SessionHud } from "@/components/session/session-hud";
 import { TeachWalk } from "@/components/session/teach-walk";
-import { SmallBtn } from "@/components/ui";
+import { ConfigPreview } from "@/components/quiz/config-preview";
+import { Btn, SmallBtn } from "@/components/ui";
 import { preloadQuizScreen } from "@/components/quiz/quiz-mode-screen";
 import { useHistory } from "@/lib/use-history";
 import { factInfo } from "@/lib/facts";
@@ -338,12 +339,7 @@ export default function SessionPage() {
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mt-2">
             {sentenceOrderingTeaching ? (
-              <SentenceOrderingTeachWalk
-                step={at}
-                onStep={setTeachStep}
-                onStart={toDrill}
-                tierId={sentenceTier}
-              />
+              <SentenceOrderingTeachWalk step={at} tierId={sentenceTier} />
             ) : (
               <TeachWalk
                 facts={session.teach}
@@ -355,12 +351,56 @@ export default function SessionPage() {
                 // so it can't go stale against a deleted session.
                 familiar={(f) => !!history.facts[f]?.seen}
                 shownIntros={shownCards}
-                onStart={toDrill}
-                wider={wider}
                 step={at}
-                onStep={setTeachStep}
               />
             )}
+          </div>
+        </div>
+
+        {/* FROZEN STEP CONTROLS. Back and the forward button live in a STATIC
+            footer row of the frame, never in the scrolling lesson, so they hold
+            the exact same screen position on every step — you can page through a
+            whole lesson without moving the mouse. Like the top bar, nothing
+            scrolls behind it (it is a sibling of the scroll region), so it needs
+            no occluding fill; a hairline sets it off from the lesson above.
+
+            The forward button IS the finishing button: "Next" until the last
+            card, then "Quiz me" (a kana lesson splits it into the scope fork —
+            this group only, or everything in the script so far). The round's
+            config shows just above it on that last card, the moment the drill is
+            one click away. */}
+        <div className="shrink-0 border-t border-border">
+          <div className="mx-auto max-w-[920px] px-3 py-3">
+            {onLast ? (
+              <div className="mb-3 rounded-lg border border-border bg-panel px-3 py-2">
+                <ConfigPreview />
+              </div>
+            ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Btn
+                onClick={() => setTeachStep(at - 1)}
+                disabled={at === 0}
+                className="disabled:cursor-default disabled:opacity-40"
+              >
+                Back
+              </Btn>
+              {onLast && wider ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Btn onClick={wider.onStart}>{wider.label}</Btn>
+                  <Btn go autoFocus onClick={toDrill}>
+                    Quiz me on these only
+                  </Btn>
+                </div>
+              ) : (
+                <Btn
+                  go
+                  autoFocus
+                  onClick={onLast ? toDrill : () => setTeachStep(at + 1)}
+                >
+                  {onLast ? "Quiz me" : "Next"}
+                </Btn>
+              )}
+            </div>
           </div>
         </div>
       </div>

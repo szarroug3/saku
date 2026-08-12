@@ -26,6 +26,10 @@ function walk(dir: string, segments: string[], out: AppRoutes): void {
       const name = entry.name;
       if (name.startsWith("_")) continue;
       if (name.startsWith("@")) continue; // parallel route slot
+      // /dev/* are development-only reference pages: the route layout 404s them in
+      // a production build (src/app/dev/layout.tsx), which is what e2e runs
+      // against, so they are not production routes to smoke-test.
+      if (name === "dev" && segments.length === 0) continue;
       const next =
         name.startsWith("(") && name.endsWith(")")
           ? segments
