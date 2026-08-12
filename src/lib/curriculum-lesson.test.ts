@@ -43,7 +43,6 @@ import {
   CURRICULUM_TOTALS,
   curriculum,
   nextCurriculumLesson,
-  nextCurriculumLock,
   packLessons,
   packUnits,
 } from "./curriculum-lesson.ts";
@@ -574,9 +573,8 @@ describe("a る-ending verb waits on the て-form", () => {
 
   test("with the て-form unlearned, the spine skips the verb and teaches on rather than locking", () => {
     const h = history(reachedTheVerb()); // te-form fact absent → fresh
-    // Skip-and-return: never a lock, and the frontier moves PAST the held-back
-    // verb to the next teachable material rather than stopping.
-    assert.equal(nextCurriculumLock(h, RANGE), null, "skip-and-return never locks");
+    // Skip-and-return: the frontier moves PAST the held-back verb to the next
+    // teachable material rather than stopping.
     const lesson = nextCurriculumLesson(h, RANGE);
     assert.ok(lesson, "the spine keeps teaching past the gated verb");
     assert.ok(
@@ -587,7 +585,6 @@ describe("a る-ending verb waits on the て-form", () => {
 
   test("once the て-form is learned, the verb teaches and the lock clears", () => {
     const h = history([...reachedTheVerb(), TE_FORM]);
-    assert.equal(nextCurriculumLock(h, RANGE), null, "nothing gates any more");
     const lesson = nextCurriculumLesson(h, RANGE);
     assert.ok(lesson, "the verb's lesson is teachable");
     assert.ok(
@@ -612,11 +609,6 @@ describe("a る-ending verb waits on the て-form", () => {
       "with the る-verb held back",
     );
     assert.ok(lesson.cards.length > 0, "but the rest of the lesson is taught");
-    assert.equal(
-      nextCurriculumLock(h, RANGE),
-      null,
-      "and no lock shows while other items are still teachable",
-    );
   });
 
   test("later る-verbs are not gated once the て-form is learned", () => {
@@ -644,7 +636,6 @@ describe("a る-ending verb waits on the て-form", () => {
       }
     }
     const h = history(out);
-    assert.equal(nextCurriculumLock(h, RANGE), null, "no lock past the て-form");
     const lesson = nextCurriculumLesson(h, RANGE);
     assert.ok(lesson);
     assert.ok(

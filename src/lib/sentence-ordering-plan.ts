@@ -14,8 +14,15 @@ import {
   sentenceTierDone,
   sentenceTierMarkerFact,
 } from "@/lib/sentence-ordering-progress";
-import type { SentenceOrderingLesson } from "@/components/lesson/next-sentence-ordering-lesson";
 import type { FactId, HistoryFile } from "@/types";
+
+export interface SentenceOrderingLesson {
+  facts: FactId[];
+  lessonNumber: number;
+  totalLessons: number;
+  tierId: string;
+  tierLabel: string;
+}
 
 /** How many assembly items a sentence-ordering sitting hands out. */
 export const SENTENCE_ORDERING_PER_LESSON = 12;

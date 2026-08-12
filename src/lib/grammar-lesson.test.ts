@@ -42,8 +42,6 @@ import {
   GRAMMAR_PER_LESSON_DEFAULT,
   GRAMMAR_SITTINGS,
   GRAMMAR_SITTINGS_TOTAL,
-  clampGrammarPerLesson,
-  hasStartedGrammarTrack,
   nextGrammarLesson,
 } from "./grammar-lesson.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
@@ -183,9 +181,6 @@ describe("grammar has no vocabulary prerequisite", () => {
   test("kana incomplete → the caller keeps grammar hidden", () => {
     const h = history(); // nothing learned — kana is the first front
     assert.notEqual(nextLesson(h), null, "kana should be incomplete on empty history");
-    // The kana gate is the caller's (src/app/page.tsx); the lib itself is pure
-    // of kana and only reports whether the track has been started.
-    assert.equal(hasStartedGrammarTrack(h), false);
   });
 
   test("kana done but no word learned → the adjective form lesson opens", () => {
@@ -207,15 +202,6 @@ describe("grammar has no vocabulary prerequisite", () => {
     const lesson = nextGrammarLesson(claiming(base), 4)!;
     assert.equal(lesson.cards.length, 1);
     assert.equal(lesson.cards[0].id, "node");
-  });
-
-  test("hasStartedGrammarTrack flips once a pattern is met", () => {
-    assert.equal(hasStartedGrammarTrack(allKanaClaimed()), false);
-    const met = claiming([
-      ...KANA_GROUP_FACTS.flat(),
-      patternMeaningFactId(CURRICULUM_PATTERNS[0].id),
-    ]);
-    assert.equal(hasStartedGrammarTrack(met), true);
   });
 });
 
@@ -266,12 +252,6 @@ describe("lesson sizing is fixed by the grouping, not the count", () => {
   test("a pattern bundle holds at most three patterns", () => {
     const lesson = nextGrammarLesson(allKanaClaimed())!;
     assert.ok(lesson.cards.length <= 3);
-  });
-  test("clamp keeps it whole and in range", () => {
-    assert.equal(clampGrammarPerLesson(0), 1);
-    assert.equal(clampGrammarPerLesson(4.4), 4);
-    assert.equal(clampGrammarPerLesson(999), 20);
-    assert.equal(clampGrammarPerLesson(NaN), GRAMMAR_PER_LESSON_DEFAULT);
   });
 });
 

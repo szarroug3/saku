@@ -118,7 +118,8 @@ function isAdjective(cls: WordClass): boolean {
  * that is shared — 知る conjugates as a う-verb (知って) and 食べる as a る-verb
  * (食べて), and nothing in 〜る says which. So this is the one shape that earns a
  * note on the word card AND the one the words track holds back until the て-form
- * is learned (see nextCurriculumLock): the two questions are the same question.
+ * is learned (see teachableCards in curriculum-lesson.ts): the two questions are
+ * the same question.
  *
  * v1 / v1-s are the る-verbs (ichidan); every v5* is a う-verb (godan). The
  * irregulars whose form ends in る (来る kuru, する and its compounds, 演ずる) are

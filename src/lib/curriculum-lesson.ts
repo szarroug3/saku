@@ -413,14 +413,6 @@ export interface CurriculumLesson {
   over: boolean;
 }
 
-/** Legacy lock shape. Class-gated words are skipped until their grammar lesson
- * is learned, so the Words track never blocks on one. */
-export interface CurriculumLock {
-  /** The written form held back — 知る — so the card can name the verb the
-   * learner is one grammar lesson away from. */
-  verb: string;
-}
-
 /**
  * The next lesson, or null when the curriculum is done.
  *
@@ -545,21 +537,6 @@ function teachableCards(
     const gate = classWordGate(it);
     return gate === null || (gate === "adjective" ? adjectivesReady : ruVerbsReady);
   });
-}
-
-/**
- * Always null: the words track SKIPS a held-back る-verb rather than locking on
- * it. This export stays so the home feed's call site is untouched, but with
- * skip-and-return (see frontierGroup) there is never a lock — the frontier moves
- * past a gated verb, so the learner is never stopped, and 知る simply surfaces
- * later, once the て-form is learned. Kept as a function so the home feed's
- * existing no-lock call site remains explicit.
- */
-export function nextCurriculumLock(
-  _history: HistoryFile,
-  _range: LessonRange,
-): CurriculumLock | null {
-  return null;
 }
 
 /** The written forms this lesson teaches as WORDS: what the reading unlock is

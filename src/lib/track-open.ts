@@ -3,12 +3,10 @@
 //
 // NO NEW PROGRESSION SYSTEM, AND THERE WAS NO NEED FOR ONE
 // =======================================================
-// The app already answers "has this track been opened" several times over,
-// hasStartedGrammarTrack, hasStartedTransitivityTrack and the rest, each of them
-// the same shape: is any curriculum item of this track non-fresh in history.
-// There is no cursor and no flag on disk anywhere in this app; history IS the
-// cursor. This module generalises that existing answer to all the tracks rather
-// than adding another thing to keep in step.
+// "Has this track been opened" is always the same shape: is any curriculum item
+// of this track non-fresh in history. There is no cursor and no flag on disk
+// anywhere in this app; history IS the cursor. This module answers that for all
+// the tracks in one place rather than adding another thing to keep in step.
 //
 // IT NO LONGER SPEAKS FOR RADICALS, KANJI OR WORDS. Those three are one ordered
 // curriculum now, taught from one card, so a subject is not a track and "has the

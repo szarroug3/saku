@@ -65,14 +65,6 @@ import type { FactId, HistoryFile } from "@/types";
  */
 export const GRAMMAR_PER_LESSON_DEFAULT = 4;
 
-/** Clamp a passed count to a sane lesson size — whole, at least 1, capped so a
- * hand-edit can't ask for a 100-pattern teach screen. Same instinct as
- * clampWordsPerLesson. */
-export function clampGrammarPerLesson(n: number): number {
-  const v = Math.round(Number.isFinite(n) ? n : GRAMMAR_PER_LESSON_DEFAULT);
-  return Math.min(20, Math.max(1, v));
-}
-
 /** N5 before N4 before N3 (the depth tier). The one axis the teaching order
  * sorts on; everything else is left to the authored (stable) order. N3 is the
  * structural set a learner meets AFTER the N4 core, so it sorts last — and it is
@@ -216,16 +208,6 @@ export interface GrammarLesson {
 
 function toCard(r: Recipe): GrammarCard {
   return { id: r.id, pattern: r.pattern, sense: r.sense, gloss: r.gloss, level: r.level };
-}
-
-/** Has the learner met any grammar pattern at all? The words track's
- * `hasStartedWordTrack`, for grammar: it decides whether a LOCKED grammar card
- * is shown (only after the track has opened) versus hidden entirely. */
-export function hasStartedGrammarTrack(history: HistoryFile): boolean {
-  for (const r of CURRICULUM_PATTERNS) {
-    if (!isFresh(patternMeaningFactId(r.id), history)) return true;
-  }
-  return false;
 }
 
 /** The next teachable lesson and its ordinal, or null when the track is done.
