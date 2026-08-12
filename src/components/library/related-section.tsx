@@ -19,17 +19,18 @@ export function RelatedSection({ links }: { links: readonly RelatedLink[] }) {
   if (links.length === 0) return null;
   return (
     <Section title="Related">
-      <div className="flex flex-wrap gap-2">
+      <ul className="flex flex-col gap-1.5">
         {links.map((l) => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className="rounded-full border border-border/60 px-3 py-1 text-[13px] text-text-muted transition-colors hover:border-accent/60 hover:text-text"
-          >
-            {l.label}
-          </Link>
+          <li key={l.href}>
+            <Link
+              href={l.href}
+              className="text-[14px] text-accent underline decoration-transparent underline-offset-2 transition-colors hover:decoration-accent"
+            >
+              {l.label}
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </Section>
   );
 }

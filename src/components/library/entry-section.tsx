@@ -14,7 +14,6 @@
 //               in, so shared section components render flat (no box-in-box).
 
 import { FlatSurfaceProvider, Info } from "@/components/ui";
-import { GlassSheen, glassSurface } from "@/components/ui/frost";
 
 export function Section({
   title,
@@ -55,19 +54,12 @@ export function Lead({ children }: { children: React.ReactNode }) {
   return <p className="mb-3 text-[15px] leading-relaxed text-text">{children}</p>;
 }
 
-/** The glass card every entry page sits in. Flat surface so shared section
- * components (How it's written, …) drop their own fill and sit inside the glass
- * rather than as a box within a box. */
+/** The surface every entry page sits on. NO CARD: the entry reads as a natural
+ * part of the page, not a panel floating on it — no fill, border, shadow or sheen,
+ * just the content flowing on the page ground. Still a borderless flat surface so
+ * reused section components (NumberConstructionView, KeigoSetView, How it's
+ * written, …) drop their own boxes and sit as divider-separated sections rather
+ * than boxes-within-a-box. */
 export function EntrySurface({ children }: { children: React.ReactNode }) {
-  return (
-    // borderless: reused components (NumberConstructionView, KeigoSetView, …) that
-    // render their own <Card> drop the box entirely here, so nothing reads as a
-    // box-within-a-box against these pages' divider-separated sections.
-    <FlatSurfaceProvider borderless>
-      <article className={`${glassSurface} p-6`}>
-        <GlassSheen />
-        {children}
-      </article>
-    </FlatSurfaceProvider>
-  );
+  return <FlatSurfaceProvider borderless>{children}</FlatSurfaceProvider>;
 }

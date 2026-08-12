@@ -50,11 +50,11 @@ test("the ん lesson step teaches its context pronunciation, m before b/p/m", as
   await expect(page.locator("body")).toContainText(
     "ん has no fixed sound of its own.",
   );
-  await expect(page.locator("body")).toContainText("before b, p, or m");
+  await expect(page.locator("body")).toContainText("Before b, p, or m");
   await expect(page.locator("body")).toContainText("しんぶん (shimbun)");
   // And the other environments, so a block rendered with only its first row would
   // still fail.
-  await expect(page.locator("body")).toContainText("before k or g");
+  await expect(page.locator("body")).toContainText("Before k or g");
   await expect(page.locator("body")).toContainText(
     "before a vowel, y, or w",
   );

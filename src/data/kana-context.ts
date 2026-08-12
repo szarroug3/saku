@@ -56,11 +56,11 @@ const CONTEXT: Record<string, ContextPronunciation> = {
     // DRAFT: Sam to finalise.
     summary: "ん has no fixed sound of its own. It takes the place of the sound that follows it.",
     rules: [
-      { when: "before b, p, or m", sounds: "m", example: "しんぶん (shimbun), さんぽ (sampo)" },
-      { when: "before k or g", sounds: 'ng (as in "sing")', example: "りんご (ringo)" },
-      { when: "before t, d, n, s, z, or r", sounds: "n", example: "みんな (minna)" },
+      { when: "Before b, p, or m", sounds: "m", example: "しんぶん (shimbun), さんぽ (sampo)" },
+      { when: "Before k or g", sounds: 'ng (as in "sing")', example: "りんご (ringo)" },
+      { when: "Before t, d, n, s, z, or r", sounds: "n", example: "みんな (minna)" },
       {
-        when: "at the end of a word, or before a vowel, y, or w",
+        when: "At the end of a word, or before a vowel, y, or w",
         sounds: "a nasal held in the back of the mouth",
         example: "ほん (hon)",
       },
@@ -74,7 +74,7 @@ const CONTEXT: Record<string, ContextPronunciation> = {
     summary: "っ is a brief silent pause that doubles the consonant right after it.",
     rules: [
       {
-        when: "before any consonant",
+        when: "Before any consonant",
         sounds: "that consonant, doubled after a short pause",
         example: "がっこう (gakkou), きっぷ (kippu)",
       },

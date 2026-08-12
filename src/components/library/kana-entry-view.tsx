@@ -14,7 +14,6 @@ import { ContentEntryHeader } from "@/components/library/content-entry-header";
 import { MnemonicView } from "@/components/lesson/mnemonic-view";
 import { HowItsWritten } from "@/components/lesson/how-its-written";
 import { FlatSurfaceProvider } from "@/components/ui";
-import { GlassSheen, glassSurface } from "@/components/ui/frost";
 import { getMnemonic } from "@/data/mnemonics";
 import type { ContentItem } from "@/lib/content/item";
 
@@ -28,11 +27,10 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
   const context = item.kind === "kana" ? item.context : null;
   const confusables = item.kind === "kana" ? item.confusables : [];
   return (
-    // Flat surface so the shared "How it's written" section drops its own card
-    // fill and sits inside the glass rather than as a box within a box.
+    // NO CARD: the entry reads as a natural part of the page. Flat surface so the
+    // shared "How it's written" section drops its own card fill.
     <FlatSurfaceProvider>
-      <article className={`${glassSurface} p-6`}>
-        <GlassSheen />
+      <div>
         <ContentEntryHeader item={item} />
         <div className="mt-5 border-t border-border/50 pt-6">
           <MnemonicView m={m} glyph={item.glyph} voiceName="" />
@@ -50,7 +48,7 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
             <div className="mt-2.5 flex flex-col gap-1.5">
               {context.rules.map((rule) => (
                 <p key={rule.when} className="text-[13px] leading-relaxed text-text-muted">
-                  <span className="capitalize text-text">{rule.when}</span> &rarr; said{" "}
+                  <span className="text-text">{rule.when}</span> &rarr; said{" "}
                   <span className="font-medium text-accent">{rule.sounds}</span>
                   <span className="ml-1.5 font-kana">{rule.example}</span>
                 </p>
@@ -68,7 +66,7 @@ export function KanaEntryView({ item }: { item: ContentItem }) {
             item={{ entry: item.entry, glyph: item.glyph, kind: "kana", facts: item.facts.map((f) => f.id) }}
           />
         </div>
-      </article>
+      </div>
     </FlatSurfaceProvider>
   );
 }
