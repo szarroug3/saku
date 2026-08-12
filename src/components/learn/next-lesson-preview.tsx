@@ -17,6 +17,7 @@ import { Btn, Lbl } from "@/components/ui";
 import { ItemPreview } from "@/components/learn/item-preview";
 import { WhyDisclosure } from "@/components/lesson/why";
 import { WHY_TRACK } from "@/data/why";
+import type { Why } from "@/data/why";
 import type { ContentItem } from "@/lib/content/item";
 import type { UnitLesson } from "@/lib/content/teach-unit";
 import type { FactId } from "@/types";
@@ -45,6 +46,7 @@ const panel =
 export function NextLessonPreview({
   lesson,
   positionLabel,
+  why = WHY_TRACK.curriculum,
   onStart,
   onClaim,
   onContinue,
@@ -54,6 +56,9 @@ export function NextLessonPreview({
   /** Optional "Radical 1 of 90 · Kanji 2–3 of 2,136" position line. Omitted until
    * the content model exposes a track position. */
   positionLabel?: string;
+  /** The "why this track, why now" pull shown under the buttons. Defaults to the
+   * one-climb curriculum reason; each track passes its own (WHY_TRACK.keigo, …). */
+  why?: Why;
   /** Start the lesson (teach then drill); `teach:false` drills now. Omit for an
    * inert preview. */
   onStart?: (facts: FactId[], opts?: { teach?: boolean }) => void;
@@ -96,7 +101,7 @@ export function NextLessonPreview({
         </div>
       </div>
 
-      <WhyDisclosure why={WHY_TRACK.curriculum} />
+      <WhyDisclosure why={why} />
     </div>
   );
 }
