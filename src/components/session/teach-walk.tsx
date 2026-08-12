@@ -105,21 +105,18 @@ export function TeachWalk({
   if (!current) return null;
 
   return (
-    <div className="mx-auto max-w-[920px] px-3">
-      {/* Where you are is the floating bar's job now — it prints "N of M" and
-          updates as you step. The row of dots that used to sit here said the
-          same thing a second time, less precisely, so it's gone; what's left is
-          the quiet "seen before" note when the budget re-surfaced material you'd
-          already met. The row reserves only the badge's own height (min-h) so
-          the item below doesn't jump between a familiar step and a new one, and
-          it sits tight under the bar rather than behind a tall gap. */}
-      <div className="flex min-h-[1.25rem] items-center gap-3">
-        {familiarHere ? (
+    <div className="mx-auto max-w-[920px] px-3 pt-2">
+      {/* The quiet "seen before" note when the budget re-surfaced material you'd
+          already met. Rendered ONLY when present — no reserved height — so a fresh
+          step sits tight under the frozen bar instead of behind a standing gap.
+          (The row of dots that used to live here duplicated the bar's "N of M".) */}
+      {familiarHere ? (
+        <div className="mb-2 flex items-center gap-3">
           <span className="rounded-full border border-border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.08em] text-text-muted/80">
             seen before
           </span>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {/* The item — glyph/picture, the kana hook, how it's written, readings
           (kanji), example words. NO card around it: the lesson is meant to read
@@ -138,7 +135,7 @@ export function TeachWalk({
           prop through every intermediary. Scoped to the item only: the config
           strip and step buttons below sit outside it and keep their own
           treatment. */}
-      <div className="mt-2">
+      <div>
         <FlatSurfaceProvider>
           {current.type === "intro" ? (
             <PhaseIntroView key={current.key} intro={current.intro} />

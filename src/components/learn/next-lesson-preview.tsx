@@ -54,6 +54,7 @@ export function NextLessonPreview({
   why = WHY_TRACK.curriculum,
   onStart,
   onClaim,
+  claimAll,
   onContinue,
 }: {
   /** The next lesson, in the new content model. */
@@ -69,6 +70,10 @@ export function NextLessonPreview({
   onStart?: (facts: FactId[], opts?: { teach?: boolean }) => void;
   /** "I already know these", over the lesson's facts. Omit for an inert preview. */
   onClaim?: (facts: FactId[]) => void;
+  /** A SECOND, wider claim beside the per-lesson one — "I already know all
+   * hiragana", claiming the whole current script at once. Only the kana card
+   * passes it (a returning learner skips a script in one click); omitted elsewhere. */
+  claimAll?: { label: string; onClaim: () => void };
   /** Resume an in-progress run of THIS lesson. When present, the primary action is
    * "Continue session" in place of "Start" — the same mid-lesson resume Home has
    * always offered. Omit for a fresh lesson (or an inert preview). */
@@ -97,9 +102,14 @@ export function NextLessonPreview({
           </div>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
-            <Btn onClick={onClaim && (() => onClaim(facts))}>
-              I already know {items.length === 1 ? "this" : `these ${items.length}`}
-            </Btn>
+            <div className="flex flex-wrap items-center gap-2">
+              <Btn onClick={onClaim && (() => onClaim(facts))}>
+                I already know {items.length === 1 ? "this" : `these ${items.length}`}
+              </Btn>
+              {claimAll ? (
+                <Btn onClick={claimAll.onClaim}>I already know {claimAll.label}</Btn>
+              ) : null}
+            </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <Btn onClick={onStart && (() => onStart(facts, { teach: false }))}>Quiz me</Btn>
               {onContinue ? (

@@ -38,7 +38,7 @@ import type { TeachingUnit, UnitLesson } from "@/lib/content/teach-unit";
 import { positionLabel, type LessonPosition } from "@/lib/lesson-position";
 import { resumeLesson } from "@/lib/lesson-resume";
 
-import { WHY_TRACK, WHY_SCRIPT, type Why } from "@/data/why";
+import type { Why } from "@/data/why";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { COUNTER_ENTRIES } from "@/data/counters";
 import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
@@ -106,7 +106,8 @@ function trackKeyForRun(run: RunInfo): string | null {
 }
 
 /** The noun each track counts its position in — "Word 3–8 of 6,213". Vocab mixes
- * radicals, kanji and words on one climb, so it counts the neutral "Item". */
+ * radicals, kanji and words on one climb, so it counts the neutral "Item". Kana is
+ * split into Hiragana / Katakana at render (see kanaPositionLabel). */
 const TRACK_NOUN: Record<string, string> = {
   kana: "Kana",
   vocab: "Item",
@@ -117,26 +118,22 @@ const TRACK_NOUN: Record<string, string> = {
   sentence: "Structure",
 };
 
-/** Sentence ordering's "why" — grammar's reasoning with its own lede, matching the
- * card the old NextSentenceOrderingLesson showed. */
-const WHY_SENTENCE: Why = {
-  ...WHY_TRACK.grammar,
-  lede: {
-    strong: "Sentence ordering is where grammar and vocabulary meet.",
-    rest: "You are no longer choosing one word or one pattern. You are placing chunks so the sentence works as a whole.",
-  },
-};
-
-/** The "why this track, why now" pull each card shows, kept in the same voice the
- * old per-track cards used. */
+/** The one-line reason on each card. Deliberately a PAYOFF — why you'd want this
+ * track — not a definition: the concept itself is taught by the lesson's own intro
+ * card, and repeating that teaching here read as saying the same thing twice.
+ * These are the whole "why" the card shows (no disclosure), so a Why with no
+ * paragraphs. */
+function lede(strong: string): Why {
+  return { lede: { strong }, paras: [] };
+}
 const TRACK_WHY: Record<string, Why> = {
-  kana: WHY_SCRIPT.hiragana,
-  vocab: WHY_TRACK.curriculum,
-  numbers: WHY_TRACK.counters,
-  keigo: WHY_TRACK.keigo,
-  grammar: WHY_TRACK.grammar,
-  transitivity: WHY_TRACK.transitivity,
-  sentence: WHY_SENTENCE,
+  kana: lede("Kana teaches you how to read and pronounce words. It’s the fastest way to get started."),
+  vocab: lede("Vocabulary teaches you the glyphs and words you’ll actually read and speak."),
+  numbers: lede("Counters teach you how to count anything: days, people, drinks, etc."),
+  keigo: lede("Speak politely to people you don’t know well, or want to show respect."),
+  grammar: lede("Turn the words you know into real sentences."),
+  transitivity: lede("Say whether something happened on its own or someone did it."),
+  sentence: lede("Arrange words and grammar into sentences that come out in the right order."),
 };
 
 /**
@@ -162,6 +159,49 @@ function positionFor(
     .filter((x): x is number => x !== undefined);
   // A lesson always has at least one due unit, so idxs is non-empty here.
   return { from: Math.min(...idxs) + 1, to: Math.max(...idxs) + 1, total };
+}
+
+/** Hiragana vs katakana by Unicode block. The kana track teaches all hiragana
+ * then all katakana, so a lesson's script is read straight off its glyphs. */
+const KATAKANA_RE = /[゠-ヿ]/;
+function kanaScript(glyph: string): "Hiragana" | "Katakana" {
+  return KATAKANA_RE.test(glyph) ? "Katakana" : "Hiragana";
+}
+
+/** The kana card's position label, SPLIT BY SCRIPT: "Hiragana 6–10 of 46" while in
+ * hiragana, then "Katakana 1–5 of 46" once katakana opens — not one running "Kana
+ * 6–10 of 214" spanning both. The position and its denominator are scoped to the
+ * lesson's own script (hiragana and katakana are contiguous blocks in the order). */
+function kanaPositionLabel(order: readonly TeachingUnit[], lesson: UnitLesson): string {
+  const script = kanaScript(String(lesson.units[0]?.item.glyph ?? ""));
+  const firstIdx = new Map<string, number>();
+  let total = 0;
+  for (const u of order) {
+    if (kanaScript(u.item.glyph) !== script) continue;
+    const e = String(u.item.entry);
+    if (!firstIdx.has(e)) firstIdx.set(e, total++);
+  }
+  const idxs = [...new Set(lesson.units.map((u) => String(u.item.entry)))]
+    .map((e) => firstIdx.get(e))
+    .filter((x): x is number => x !== undefined);
+  return positionLabel(script, {
+    from: Math.min(...idxs) + 1,
+    to: Math.max(...idxs) + 1,
+    total,
+  });
+}
+
+/** Every fact of one script's kana in the track order — what "I already know all
+ * hiragana" claims. */
+function kanaScriptFacts(
+  order: readonly TeachingUnit[],
+  script: "Hiragana" | "Katakana",
+): FactId[] {
+  const facts: FactId[] = [];
+  for (const u of order) {
+    if (kanaScript(u.item.glyph) === script) facts.push(...u.facts);
+  }
+  return facts;
 }
 
 /** The tier id a sentence-ordering lesson teaches — its single item's entry is
@@ -338,22 +378,36 @@ export function HomeFeed() {
       {/* THE TRACK CARDS — one card per track with a lesson, stacked in a single
           column. Each carries its own position header ("Item 3–8 of …"), its own
           "why", and Start / Quiz me / Continue / I-already-know, all off the one
-          NextLessonPreview. The cards are borderless glass panes.
-
-          A small horizontal inset (px-2) keeps the panes off the two edges so the
-          left glass rim doesn't read as a hard cut against the bright sidebar. */}
-      <div className="flex flex-col gap-y-3.5 px-2">
+          NextLessonPreview. The cards are borderless glass panes, full width so
+          they line up with the claim-explainer box above them. */}
+      <div className="flex flex-col gap-y-3.5">
         {visible.map(({ track, order, run, lesson }) => (
           <NextLessonPreview
             key={track.id}
             lesson={lesson!}
-            positionLabel={positionLabel(
-              TRACK_NOUN[track.id] ?? "Item",
-              positionFor(order, lesson!),
-            )}
-            why={TRACK_WHY[track.id] ?? WHY_TRACK.curriculum}
+            positionLabel={
+              track.id === "kana"
+                ? kanaPositionLabel(order, lesson!)
+                : positionLabel(TRACK_NOUN[track.id] ?? "Item", positionFor(order, lesson!))
+            }
+            why={TRACK_WHY[track.id] ?? TRACK_WHY.vocab}
             onStart={(_facts, opts) => startTrack(track.id, lesson!, opts)}
             onClaim={() => claimTrack(track.id, lesson!, run)}
+            claimAll={
+              track.id === "kana"
+                ? (() => {
+                    const script = kanaScript(String(lesson!.units[0]?.item.glyph ?? ""));
+                    return {
+                      label: `all ${script.toLowerCase()}`,
+                      onClaim: () => {
+                        const all = kanaScriptFacts(order, script);
+                        writes.claim(all);
+                        closeIfClaimedAway(run, all);
+                      },
+                    };
+                  })()
+                : undefined
+            }
             onContinue={run ? () => continueRun(run.id) : undefined}
           />
         ))}
