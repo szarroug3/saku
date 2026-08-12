@@ -100,7 +100,11 @@ export function PhaseIntroView({ intro }: { intro: PhaseIntro }) {
                     trim={intro.buildFormula.trim}
                   />
                 ) : (
-                  <IntroBodyWithAnchoredExamples intro={intro} />
+                  // No reading-width cap: the prose fills its column (bounded by
+                  // the examples panel beside it, or the page edge when there is
+                  // none) and wraps only when it runs out of room, rather than
+                  // breaking early at 64ch and leaving the space to its right empty.
+                  <IntroBodyWithAnchoredExamples intro={intro} measure="" />
                 )}
               </div>
               {intro.examples?.length &&
