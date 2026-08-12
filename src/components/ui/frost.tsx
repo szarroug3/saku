@@ -15,13 +15,15 @@ export const frostSurface =
 
 export const frostCard = `${frostSurface} p-5`;
 
-// The GLASS surface — the chosen unit-card / entry-page look: a more transparent
-// ground so the warm page shows through, a soft drop shadow for lift, a hairline
-// light edge. Pair with a top-left sheen (a radial gradient, NOT a blur) and an
-// inner top highlight, added as child elements by the caller. No padding, so a
-// caller sets its own. See ItemPreview / the Library entry views.
+// The GLASS surface — the chosen entry-page look: a more transparent ground so
+// the warm page shows through, a soft drop shadow for lift. NO border: the pane's
+// edge is its shadow and its top sheen, not an outline, so an entry reads as part
+// of the page rather than a boxed card (owner's note — dropped on both the Library
+// entry pages and the lesson walk). Pair with a top-left sheen (a radial gradient,
+// NOT a blur) and an inner top highlight, added as child elements by the caller.
+// No padding, so a caller sets its own. See the Library entry views.
 export const glassSurface =
-  "relative overflow-hidden rounded-2xl border border-white/10 " +
+  "relative overflow-hidden rounded-2xl " +
   "bg-[color-mix(in_srgb,var(--card)_42%,transparent)] " +
   "shadow-[0_22px_44px_-26px_rgba(0,0,0,0.72)]";
 

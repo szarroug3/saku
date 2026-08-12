@@ -285,62 +285,75 @@ export default function SessionPage() {
           ? teachSubjectLabel(factInfo(session.teach[0]))
           : undefined;
     return (
-      <>
-        {/* The top bar carries the position through the lesson — "1 of 5",
-            updating as you step — in place of the item count and the round.
-            There is no round while teaching, and the count reads better as a
-            place ("where am I") than a size ("how many").
+      // THE LESSON IS ITS OWN VIEWPORT-TALL FRAME, like the Library (see
+      // library-page.tsx). The top bar is a STATIC row at the top and only the
+      // region below it scrolls, so the lesson content can never pass BEHIND the
+      // bar — the "nothing rolls under the frozen bar" the floating HUD couldn't
+      // guarantee (a sticky bar over the window scroll overlays what scrolls up
+      // under it, and a clear bar then showed that content through itself). No
+      // occluding fill is needed because nothing is ever behind it.
+      //
+      // The height math cancels the shell chrome exactly as the Library does:
+      // kq-scroll wraps the page in pt-3 pb-15 and the shell row adds py-6, so
+      // -mb-15 reclaims the 60px below and the height is 100dvh minus the 60px of
+      // top/bottom chrome. The document then equals the viewport: no window scroll
+      // to fight the frozen row.
+      <div className="-mb-15 flex h-[calc(100dvh-60px)] flex-col">
+        {/* The frozen top row. It carries the position through the lesson —
+            "1 of 5", updating as you step — in place of the item count and the
+            round (there is no round while teaching, and the count reads better as
+            a place than a size). "Quiz me" lives here beside "Done for now": both
+            are ways OUT of the lesson, so they belong together — the escape hatch,
+            not the screen's primary, so it wears the same small button.
 
-            It FLOATS, like the drill's HUD: a lesson is a long scrolling page
-            and the two things you might want at any moment — leave for the quiz,
-            leave entirely — shouldn't be somewhere you have to scroll back to.
-            Same treatment the drill wears, so the two phases share one piece of
-            furniture (see SessionHud's `float`).
-
-            "Quiz me" lives here now, beside "Done for now": both are ways OUT of
-            the lesson, and they belong together. It's the escape hatch — quiz me
-            without paging through the rest — not the screen's primary, so it
-            wears the same small button "Done for now" does rather than the
-            full-width slab it used to be. */}
-        <SessionHud
-          label={total > 0 ? `${at + 1} of ${total}` : label}
-          sublabel={subjectLabel}
-          where=""
-          pct={0}
-          float
-          hideBar
-          onDone={pauseSession}
-          onEnd={endSession}
-        >
-          {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
-        </SessionHud>
-        <div className="mt-2">
-          {sentenceOrderingTeaching ? (
-            <SentenceOrderingTeachWalk
-              step={at}
-              onStep={setTeachStep}
-              onStart={toDrill}
-              tierId={sentenceTier}
-            />
-          ) : (
-            <TeachWalk
-              facts={session.teach}
-              history={history}
-              // "Seen before" vs never met is a PRESENTATION difference and only
-              // that — the budget put both here for the same reason and neither
-              // is treated differently. History is the only thing that can tell
-              // them apart, and it's read here rather than stored on the session
-              // so it can't go stale against a deleted session.
-              familiar={(f) => !!history.facts[f]?.seen}
-              shownIntros={shownCards}
-              onStart={toDrill}
-              wider={wider}
-              step={at}
-              onStep={setTeachStep}
-            />
-          )}
+            shrink-0 keeps it at its natural height; it does not scroll and nothing
+            scrolls behind it, so it needs no occluding material. A hairline on its
+            bottom edge sets the frozen bar off from the lesson scrolling below. */}
+        <div className="shrink-0 border-b border-border">
+          <SessionHud
+            label={total > 0 ? `${at + 1} of ${total}` : label}
+            sublabel={subjectLabel}
+            where=""
+            pct={0}
+            hideBar
+            onDone={pauseSession}
+            onEnd={endSession}
+          >
+            {onLast ? null : <SmallBtn onClick={toDrill}>Quiz me</SmallBtn>}
+          </SessionHud>
         </div>
-      </>
+
+        {/* The ONLY thing that scrolls. min-h-0 lets it shrink inside the flex
+            column so its own overflow (not the window) takes the lesson's length. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mt-2">
+            {sentenceOrderingTeaching ? (
+              <SentenceOrderingTeachWalk
+                step={at}
+                onStep={setTeachStep}
+                onStart={toDrill}
+                tierId={sentenceTier}
+              />
+            ) : (
+              <TeachWalk
+                facts={session.teach}
+                history={history}
+                // "Seen before" vs never met is a PRESENTATION difference and only
+                // that — the budget put both here for the same reason and neither
+                // is treated differently. History is the only thing that can tell
+                // them apart, and it's read here rather than stored on the session
+                // so it can't go stale against a deleted session.
+                familiar={(f) => !!history.facts[f]?.seen}
+                shownIntros={shownCards}
+                onStart={toDrill}
+                wider={wider}
+                step={at}
+                onStep={setTeachStep}
+              />
+            )}
+          </div>
+        </div>
+      </div>
     );
   }
 
