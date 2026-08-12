@@ -1,8 +1,7 @@
 // The concept cards the curriculum spine owes, and when each is due: the three
 // role cards ("What kanji are", "What a radical is", "What words add") planned
-// through ANCHOR_RULE, plus the variant-forms card, a non-role anchor that fires
-// ahead of the first item that SHOWS variant forms (see teachesVariant,
-// spineIntroPlan).
+// through ANCHOR_RULE. (The variant-form concept used to ride here as a fourth,
+// non-role card; it is now folded into the RADICAL term page — see terms.ts.)
 //
 // WHAT THIS HAS TAKEN THREE GOES TO GET RIGHT
 // ===========================================
@@ -62,8 +61,7 @@
 import { meaningFactId } from "@/data/kanji";
 import { radicalMeaningFactId } from "@/data/radicals";
 import { wordMeaningFactId } from "@/data/vocab";
-import { variantsOf } from "@/data/variant-forms";
-import { TRACK_INTROS, VARIANT_INTRO } from "@/data/track-intros";
+import { TRACK_INTROS } from "@/data/track-intros";
 import type { PhaseIntro } from "@/data/phase-intros";
 import { effectiveState } from "@/lib/claims";
 import { CURRICULUM_SEQUENCE, type CurriculumRole } from "@/lib/curriculum-order";
@@ -202,18 +200,6 @@ const ITEM_OF: ReadonlyMap<string, (typeof CURRICULUM_SEQUENCE)[number]> = new M
 );
 
 /**
- * Does this item's step SHOW variant forms in the lesson UI?
- *
- * This matches the `lessonSections` gate for `"variant-forms"`: a character with
- * direct variant forms data (人 → 亻, 心 → 忄/⺗). The concept card fires ahead of
- * the first walk item that actually renders that panel, so it does not appear
- * early on characters that only include a variant piece in their decomposition.
- */
-export function teachesVariant(glyph: string): boolean {
-  return variantsOf(glyph).length > 0;
-}
-
-/**
  * WHERE EACH DUE CARD GOES IN ONE WALK: item index to the cards owed ahead of it.
  *
  * Planned over the whole walk at once, because choosing a card's position needs
@@ -271,24 +257,8 @@ export function spineIntroPlan(
     if (due) due.push(anchor.intro);
     else plan.set(at, [anchor.intro]);
   }
-  // THE VARIANT CARD, a non-role anchor. It is not one of the three spine roles,
-  // so it rides its own predicate rather than ANCHOR_RULE: the first walk item
-  // that teaches a variant on either surface (see teachesVariant). Once ever,
-  // gated on `shown` alone — the teaching is folded into the base character's
-  // card and mints no fact, so there is nothing learned to fall back on, and the
-  // card simply waits for the first walk that reaches a variant. It is pushed
-  // last at its index, so when it shares the opening character with the kanji and
-  // radical cards it reads one rung further down: kanji, then radical, then the
-  // form a radical takes.
-  if (!shown.has(VARIANT_INTRO.id)) {
-    const at = walk.findIndex(
-      (step, i) => itemAt(i) !== undefined && teachesVariant(step.glyph),
-    );
-    if (at >= 0) {
-      const due = plan.get(at);
-      if (due) due.push(VARIANT_INTRO);
-      else plan.set(at, [VARIANT_INTRO]);
-    }
-  }
+  // The variant-form concept is no longer its own spine card: it is folded into
+  // the RADICAL term page (src/data/terms.ts), where it belongs — the shape a
+  // radical takes inside a kanji.
   return plan;
 }

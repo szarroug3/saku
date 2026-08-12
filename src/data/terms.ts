@@ -58,6 +58,7 @@ import {
   KANJI_TRACK,
   KEIGO_TRACK,
   RADICAL_TRACK,
+  VARIANT_INTRO,
 } from "@/data/track-intros";
 import { entryId } from "@/lib/fact-id";
 import type { EntryId } from "@/types";
@@ -249,9 +250,12 @@ export const TERMS: readonly Term[] = [
       "A radical is one of the recurring parts that kanji are built from.",
       "Dictionaries file each kanji under one of its radicals, which is how you look a character up by its shape. Learning the common radicals makes a new kanji easier to break down.",
     ],
-    searchAlso: ["radical", "radicals", "bushu", "kanji parts"],
+    searchAlso: ["radical", "radicals", "bushu", "kanji parts", "variant form", "variant"],
     related: ["kanji"],
-    cards: [RADICAL_TRACK],
+    // The variant-form concept (人 → 亻, 水 → 氵) is folded in here rather than being
+    // its own lesson step: it is a fact ABOUT radicals — the shape a radical takes
+    // inside a kanji — so the radical page is where it belongs.
+    cards: [RADICAL_TRACK, VARIANT_INTRO],
   },
   {
     id: "furigana",

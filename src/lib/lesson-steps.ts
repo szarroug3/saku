@@ -122,9 +122,9 @@ const TRACK_TERM_INTROS: Partial<Record<TrackId, readonly string[]>> = {
 
 /**
  * The two spine concept cards that are now shown as their TERM page — kanji and
- * radical — by the id spine-intros.ts plans them under. The variant-forms card
- * (also planned there) has no term and stays a plain intro, so it is absent.
- * Both are once-ever, so the term step carries the intro id as its `conceptId`.
+ * radical — by the id spine-intros.ts plans them under. (The variant-form concept
+ * folds into the radical term page rather than being planned separately.) Both are
+ * once-ever, so the term step carries the intro id as its `conceptId`.
  */
 const SPINE_TERM: Readonly<Record<string, string>> = {
   [TRACK_INTROS.kanji.id]: "kanji",
@@ -380,9 +380,9 @@ export function lessonSteps(
     // radical), so the second reads as one level deeper and not as an unrelated
     // second announcement.
     for (const intro of spinePlan.get(index) ?? []) {
-      // The kanji and radical spine cards are shown as their term page now; the
-      // variant-forms card (no term) stays a plain intro. The term step carries
-      // the intro id as `conceptId`, so the once-ever record still fires for it.
+      // The kanji and radical spine cards are shown as their term page now. The
+      // term step carries the intro id as `conceptId`, so the once-ever record
+      // still fires for it.
       const termId = SPINE_TERM[intro.id];
       if (termId) steps.push(termStep(termId, intro.id));
       else steps.push({ type: "intro", key: intro.id, intro });

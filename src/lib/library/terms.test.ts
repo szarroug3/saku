@@ -3,7 +3,7 @@ import { describe, test } from "node:test";
 
 import { bodyFor } from "@/data/marks";
 import { PHASE_INTROS } from "@/data/phase-intros";
-import { TRACK_INTROS } from "@/data/track-intros";
+import { TRACK_INTROS, VARIANT_INTRO } from "@/data/track-intros";
 import { TERMS, TERM_SUBJECT, termEntry, termFor } from "@/data/terms";
 import {
   KINDS,
@@ -123,7 +123,12 @@ describe("the reference terms are a real shelf", () => {
 
 /** Every concept card the app ships, by identity. A term may point at these and
  * at nothing else. */
-const SHIPPED = new Set([...PHASE_INTROS, ...Object.values(TRACK_INTROS)]);
+const SHIPPED = new Set([
+  ...PHASE_INTROS,
+  ...Object.values(TRACK_INTROS),
+  // The variant-form concept card, folded into the radical term page.
+  VARIANT_INTRO,
+]);
 
 /** The words the app uses but teaches no card about. Their pages are the
  * definition and nothing else. See the note over TERMS. kana/hiragana/katakana

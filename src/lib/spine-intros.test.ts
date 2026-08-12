@@ -31,7 +31,7 @@ import { kanaFact } from "../data/characters.ts";
 import { termEntry } from "../data/terms.ts";
 import { kanjiTeachOrder, meaningFactId as kanjiMeaningFactId } from "../data/kanji.ts";
 import { radicalMeaningFactId } from "../data/radicals.ts";
-import { TRACK_INTROS, VARIANT_INTRO } from "../data/track-intros.ts";
+import { TRACK_INTROS } from "../data/track-intros.ts";
 import { CURRICULUM_SEQUENCE, type CurriculumRole } from "./curriculum-order.ts";
 import { characterRoles } from "./character-role.ts";
 import {
@@ -44,7 +44,7 @@ import { RADICAL_TEACHING_ORDER } from "./radical-order.ts";
 import { LESSON_RANGE_DEFAULT } from "./lesson-sizing.ts";
 import { lessonSteps } from "./lesson-steps.ts";
 import { CONCEPT_CARD_IDS } from "./intro-shown.ts";
-import { SPINE_ANCHORS, spineIntroPlan, teachesVariant } from "./spine-intros.ts";
+import { SPINE_ANCHORS, spineIntroPlan } from "./spine-intros.ts";
 import { readingsProvedBy } from "./word-unlock.ts";
 import type { FactId, HistoryFile } from "../types/index.ts";
 
@@ -54,9 +54,6 @@ const FIRST_SPINE_GROUP = GROUPS.find((g) =>
 )!;
 const FIRST_READING_GROUP = GROUPS.find(
   (g) => readingsProvedBy(lessonWords(g.items)).length > 0,
-)!;
-const FIRST_VARIANT_GROUP = GROUPS.find((g) =>
-  g.items.some((it) => teachesVariant(it.glyph)),
 )!;
 const BLANK: HistoryFile = { sessions: [], facts: {} };
 const CARD_IDS = new Set(SPINE_ANCHORS.map((a) => a.intro.id));
@@ -213,9 +210,8 @@ describe("every role is anchored where its card has something to point at", () =
 
   test("a card already shown is never planned again", () => {
     const walk = GROUPS[0].items.map((it) => ({ kind: "kanji", glyph: it.glyph }));
-    // The variant card rides this walk too (the opening lesson teaches 亻), so it
-    // joins the shown set for the point being made: every card once read stays gone.
-    const all = new Set([...SPINE_ANCHORS.map((a) => a.intro.id), VARIANT_INTRO.id]);
+    // Every spine card already read → nothing left to plan.
+    const all = new Set(SPINE_ANCHORS.map((a) => a.intro.id));
     assert.equal(spineIntroPlan(walk, BLANK, new Set(), all).size, 0);
   });
 
@@ -335,66 +331,6 @@ describe("the kanji card comes before the radical card", () => {
     const steps = lessonSteps(GROUPS[at].facts, met(factsWrittenOnStart(GROUPS[at])));
     // It leads as a term page now, carrying the kanji card's id as its conceptId.
     assert.equal(conceptKey(steps[0]) ?? "", kanji.intro.id);
-  });
-});
-
-// THE VARIANT CARD, a non-role anchor. It rides its own predicate (the first item
-// whose lesson SHOWS variant forms) rather than ANCHOR_RULE, and mints no
-// fact, so the only thing that stops it coming back is the shown set. These pin
-// that it fires once, ahead of the first variant, last among the cards it shares
-// an item with, and never on a walk with no variant in it.
-describe("the variant-forms card", () => {
-  test("its id is one intro-shown.ts remembers", () => {
-    assert.ok(new Set(CONCEPT_CARD_IDS).has(VARIANT_INTRO.id), "intro-shown.ts forgot it");
-  });
-
-  test("it fires ahead of the first item that shows variant forms, exactly once", () => {
-    const walk = FIRST_VARIANT_GROUP.items.map((it) => ({ kind: "kanji", glyph: it.glyph }));
-    const first = walk.findIndex((s) => teachesVariant(s.glyph));
-    assert.ok(first >= 0, "the opening lesson teaches no variant, so this pins nothing");
-    const plan = spineIntroPlan(walk, BLANK, new Set(), new Set());
-    let count = 0;
-    let at = -1;
-    for (const [i, cards] of plan) {
-      const n = cards.filter((c) => c.id === VARIANT_INTRO.id).length;
-      count += n;
-      if (n) at = i;
-    }
-    assert.equal(count, 1, "the variant card fired other than once");
-    assert.equal(at, first, "the variant card did not land on the first variant item");
-  });
-
-  test("sharing the opening item with the spine cards, it reads last", () => {
-    // The opening character teaches 亻, so all three cards are due ahead of it.
-    // Down the hierarchy: what a kanji is, then what a radical is, then the form a
-    // radical takes.
-    const glyph = anchorFor("kanji").glyph;
-    assert.ok(teachesVariant(glyph), "the opening character teaches no variant");
-    const plan = spineIntroPlan([{ kind: "kanji", glyph }], BLANK, new Set(), new Set());
-    assert.deepEqual(
-      (plan.get(0) ?? []).map((c) => c.id),
-      [anchorFor("kanji").intro.id, anchorFor("radical").intro.id, VARIANT_INTRO.id],
-    );
-  });
-
-  test("once shown, it is never planned again", () => {
-    const walk = FIRST_VARIANT_GROUP.items.map((it) => ({ kind: "kanji", glyph: it.glyph }));
-    const plan = spineIntroPlan(walk, BLANK, new Set(), new Set([VARIANT_INTRO.id]));
-    for (const cards of plan.values()) {
-      assert.ok(!cards.some((c) => c.id === VARIANT_INTRO.id), "it came back");
-    }
-  });
-
-  test("a walk that teaches no variant owes no variant card", () => {
-    // Kana plays no role and is built from nothing, so it triggers neither surface.
-    const kana = [
-      { kind: "kana", glyph: "あ" },
-      { kind: "kana", glyph: "い" },
-    ];
-    const plan = spineIntroPlan(kana, BLANK, new Set(), new Set());
-    for (const cards of plan.values()) {
-      assert.ok(!cards.some((c) => c.id === VARIANT_INTRO.id));
-    }
   });
 });
 
