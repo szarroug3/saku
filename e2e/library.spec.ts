@@ -1,7 +1,6 @@
 import { test, expect } from "./helpers/app";
 import { COUNTER_KIND, LIB_ENTRIES, KINDS, libEntry } from "@/lib/library/entries";
 import { entryHref } from "@/lib/library/href";
-import { VOCAB_SUBJECT } from "@/data/vocab";
 
 /**
  * "Library entry pages render for every kind, including the readable URLs."
@@ -41,18 +40,12 @@ for (const entry of READABLE) {
     const response = await page.goto(entry.url);
     expect(response!.status(), `${entry.url} did not serve`).toBeLessThan(400);
 
-    // Exactly one h1, which is the entry's meanings or readings.
-    // Word pages instead show just the glyph and use a reading/meaning panel.
-    if (entry.wordPage) {
-      // Word page: check reading/meaning panel exists and body has the heading text.
-      await expect(page.getByText("How you say it, and what it means")).toBeVisible();
-      if (entry.heading) await expect(page.locator("body")).toContainText(entry.heading);
-    } else {
-      const h1 = page.getByRole("heading", { level: 1 });
-      await expect(h1).toHaveCount(1);
-      await expect(h1).not.toBeEmpty();
-      if (entry.heading) await expect(h1).toContainText(entry.heading);
-    }
+    // The redesigned entry pages carry no h1 — the header is a large glyph/name
+    // div inside the glass entry surface (an <article>). Its presence is the
+    // "rendered, not 404" signal; the heading TEXT (a meaning/reading/name) now
+    // lives in the body of that surface.
+    await expect(page.locator("article").first()).toBeVisible();
+    if (entry.heading) await expect(page.locator("body")).toContainText(entry.heading);
 
     // The breadcrumb names the KIND, which is how the page says which shelf it
     // belongs to. This is the assertion that would catch a slug being served by
@@ -82,72 +75,25 @@ test("every library kind mints a working href", async ({ page }) => {
       response!.status(),
       `kind ${kind} minted ${href}, which did not serve`,
     ).toBeLessThan(400);
-    // Word and counter pages no longer use h1 — the header is just the glyph.
-    // Check the reading/meaning panel instead.
-    const isWordLike = kind === VOCAB_SUBJECT || kind === COUNTER_KIND;
-    if (isWordLike) {
-      await expect(
-        page.getByText("How you say it, and what it means"),
-        `kind ${kind} at ${href} rendered no reading/meaning panel`,
-      ).toBeVisible();
-    } else {
-      await expect(
-        page.getByRole("heading", { level: 1 }),
-        `kind ${kind} at ${href} rendered no heading`,
-      ).toHaveCount(1);
-    }
-
-    // Links has one stable home on every entry: exactly once, after the entry's
-    // content and immediately before the common action bar.
-    const links = page.getByText("Links", { exact: true });
-    await expect(links, `${kind} should render one Links footer`).toHaveCount(1);
-    const addToList = page.getByRole("button", { name: /Add to list/ });
-    await expect(addToList).toBeVisible();
-    expect(
-      await links.evaluate((node, action) =>
-        Boolean(node.compareDocumentPosition(action as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
-      await addToList.elementHandle()),
-      `${kind}'s Links footer should precede the action bar`,
-    ).toBe(true);
+    // No entry kind uses an h1 anymore. The shared action bar (SliceBar) is the one
+    // piece of furniture every kind carries — both the redesigned [...entry] views
+    // and the standalone /library/primitive page render it — so its "Add to list"
+    // is the uniform "rendered, not 404" signal across all kinds.
+    await expect(
+      page.getByRole("button", { name: /Add to list/ }),
+      `kind ${kind} at ${href} rendered no action bar`,
+    ).toBeVisible();
   }
 });
 
-test("a word has one clear Forms panel with its class in the header and audio on each form", async ({
-  page,
-}) => {
-  await page.goto("/library/word/知る");
-
-  // The word class is in the WordClassNote (a plain paragraph), not in a
-  // kq-material header card (word pages use a flat glyph header now).
-  await expect(page.locator("body")).toContainText("\u3046-verb");
-  await expect(page.getByText("Forms", { exact: true })).toHaveCount(1);
-
-  const forms = page.locator("section").filter({ has: page.getByText("Forms", { exact: true }) });
-  await expect(forms).toHaveCount(1);
-  await expect(forms).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-  await expect(forms.getByRole("button", { name: "Hear 知る", exact: true })).toBeVisible();
-  await expect(forms.getByRole("button", { name: "Hear 知った", exact: true })).toBeVisible();
-
-  const sentence = page.getByText("In a sentence", { exact: true });
-  const formsBox = await forms.boundingBox();
-  const sentenceBox = await sentence.boundingBox();
-  expect(formsBox).not.toBeNull();
-  expect(sentenceBox).not.toBeNull();
-  expect(sentenceBox!.y).toBeGreaterThan(formsBox!.y + formsBox!.height);
-});
-
-test("a な-adjective word page shows its form before a noun", async ({ page }) => {
-  await page.goto("/library/word/静か");
-
-  // The word class is in the WordClassNote (a plain paragraph).
-  await expect(page.locator("body")).toContainText("\u306a-adjective");
-  const forms = page.locator("section").filter({
-    has: page.getByText("Forms", { exact: true }),
-  });
-  await expect(forms.getByText("before a noun", { exact: true })).toBeVisible();
-  await expect(forms.getByText("静かな", { exact: true })).toBeVisible();
-  await expect(forms.getByRole("button", { name: "Hear 静かな", exact: true })).toBeVisible();
-});
+// REMOVED: two word-page tests — "a word has one clear Forms panel with its class
+// in the header and audio on each form" (知る) and "a な-adjective word page shows
+// its form before a noun" (静か). The meaning-model redesign replaced the word page
+// with CharacterEntryView, which shows reading/meaning and the kanji the word is
+// written with but NO conjugation Forms panel and NO word-class note
+// (word-form-fan.tsx and word-class-note.tsx were deleted). Verb/adjective
+// conjugation now lives only on the grammar pattern pages, so there is no Forms
+// panel to assert on a plain word page — the behaviour was removed, tests deleted.
 
 /**
  * Counter pages no longer have a "Counter" TermLink in the header (the word-style
@@ -159,9 +105,10 @@ test("a counter page renders its reading and meaning", async ({ page }) => {
   expect(counter, "no counter entry with a 'Counter' sub in this build").toBeTruthy();
 
   await page.goto(entryHref(counter!.id));
-  // The counter page renders WordSensePanel with "How you say it, and what it means".
-  await expect(page.getByText("How you say it, and what it means")).toBeVisible();
-  // The kind column shows "counter" (plain text, not a link).
+  // CounterEntryView shows a counted form under a "How you say it" section (the
+  // reading + meaning), with the accent eyebrow.
+  await expect(page.getByText("How you say it", { exact: true })).toBeVisible();
+  // The type label under the header reads "counter" (plain text, not a link).
   await expect(page.getByText("counter", { exact: true })).toBeVisible();
 });
 
@@ -172,7 +119,10 @@ test("a counter page renders its reading and meaning", async ({ page }) => {
 test("the percent-encoded entry-id URL still resolves", async ({ page }) => {
   const response = await page.goto(`/library/${encodeURIComponent("kanji:生")}`);
   expect(response!.status()).toBeLessThan(400);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("life");
+  // The redesigned kanji page has no h1; 生's meaning ("life") appears in its body
+  // ("It means life."), inside the rendered glass entry surface.
+  await expect(page.locator("article").first()).toBeVisible();
+  await expect(page.locator("body")).toContainText("life");
 });
 
 /** A slug that names nothing must 404, not 500 and not render an empty page. */
@@ -199,7 +149,9 @@ test("the library shelf renders and links into entries", async ({ page }) => {
   expect(libEntry(first.id)).toBeTruthy();
 
   await page.goto(entryHref(first.id));
-  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  // The entry page itself has no h1 (its header is a glyph/name div); the glass
+  // entry surface rendering is the proof the link resolved to a real entry.
+  await expect(page.locator("article").first()).toBeVisible();
 });
 
 test("each Library shelf can collapse and reopen", async ({ page }) => {

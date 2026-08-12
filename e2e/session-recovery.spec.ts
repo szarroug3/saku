@@ -292,7 +292,7 @@ test("Clear knowledge base clears the session in progress", async ({
 
   // Home is back to lesson one, which is the promise in full.
   await page.goto("/learn");
-  await expect(page.locator("body")).toContainText("group 1 of 27");
+  await expect(page.locator("body")).toContainText("Hiragana 1–5 of 107");
 });
 
 /**

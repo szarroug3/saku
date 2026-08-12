@@ -72,13 +72,13 @@ test("claiming the first group advances to the next lesson and marks the items c
   await seed({ seen: [], cfg: {} });
 
   await page.goto("/learn");
-  await expect(page.locator("body")).toContainText("group 1 of");
+  await expect(page.locator("body")).toContainText("Hiragana 1–5 of");
 
   await page.getByRole("button", { name: CLAIM_GROUP_1, exact: true }).click();
 
   // The frontier moved: the NEXT group is now the current lesson. This is the
   // "advance" half, asserted by the position label the /learn card prints.
-  await expect(page.locator("body")).toContainText("group 2 of");
+  await expect(page.locator("body")).toContainText("Hiragana 6–10 of");
 
   // The claimed items carry the CLAIMED standing per entry, never SOLID. Only a
   // real showing can make a fact solid, and the claim was a skip, so the row for
@@ -110,7 +110,7 @@ test("a claimed item stops reading claimed the moment it is missed", async ({
   // Reach the claim through the real lesson button, not a seeded claims record.
   await page.goto("/learn");
   await page.getByRole("button", { name: CLAIM_GROUP_1, exact: true }).click();
-  await expect(page.locator("body")).toContainText("group 2 of");
+  await expect(page.locator("body")).toContainText("Hiragana 6–10 of");
 
   // The claim landed as "claimed" in the Library.
   await claimPersisted(page);

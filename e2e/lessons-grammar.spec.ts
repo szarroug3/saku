@@ -39,7 +39,10 @@ test("the grammar track's first sitting introduces adjective forms", async ({
   await seed({ claims: KANA_FACTS, cfg: {} });
   await page.goto("/learn");
 
-  const card = lessonCard(page, "grammar");
+  // "grammar" alone matches the sentence card too (its why says "…words and
+  // grammar into sentences…"); the grammar card's tiles carry the "grammar rule"
+  // type label, which is unique to it.
+  const card = lessonCard(page, "grammar rule");
   await expect(card).toHaveCount(1);
   await card.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
@@ -48,14 +51,15 @@ test("the grammar track's first sitting introduces adjective forms", async ({
     page.getByRole("heading", { name: "Grammar is how words fit together." }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Next", exact: true }).click();
-  // Two okurigana pages sit between the grammar intro and Adjective Types.
-  await expect(
-    page.getByRole("heading", { name: "The kanji does not always finish the word." }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Sometimes the tail moves. Sometimes it stays." }),
-  ).toBeVisible();
+  // Okurigana now renders as ONE term page (its two teaching cards collapsed into
+  // the "Okurigana" term entry, per lesson-steps.ts) between the grammar intro and
+  // Adjective Types. Both cards' prose is on that single page.
+  await expect(page.locator("body")).toContainText(
+    "This kana tail is called okurigana",
+  );
+  await expect(page.locator("body")).toContainText(
+    "Sometimes the tail moves. Sometimes it stays.",
+  );
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.getByText("Adjective Types", { exact: true })).toBeVisible();
   await expect(
@@ -97,10 +101,20 @@ test("the second grammar sitting teaches building the て-form", async ({ page, 
   });
   await page.goto("/learn");
 
-  const card = lessonCard(page, "grammar");
+  // "grammar" alone matches the sentence card too (its why says "…words and
+  // grammar into sentences…"); the grammar card's tiles carry the "grammar rule"
+  // type label, which is unique to it.
+  const card = lessonCard(page, "grammar rule");
   await card.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
-  await expect(page.getByText("Verb Types", { exact: true })).toBeVisible();
+
+  // "Verb Types" is page 2 of the te-form sitting (page 1 is the "what a form is"
+  // intro), so step forward until it appears rather than expecting it first.
+  const verbTypes = page.getByText("Verb Types", { exact: true });
+  for (let i = 0; i < 8 && !(await verbTypes.isVisible()); i++) {
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+  }
+  await expect(verbTypes).toBeVisible();
 
   // Step forward until the て-form build pages appear.
   const building = page.getByRole("heading", { name: "Verbs", exact: true });

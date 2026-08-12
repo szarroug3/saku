@@ -1,86 +1,67 @@
 import { test, expect } from "./helpers/app";
 
 /**
- * THE BUILT-FROM REDESIGN ON THE KANJI ENTRY PAGE.
+ * THE ETYMOLOGY LAYER ON THE REDESIGNED KANJI ENTRY PAGE.
  *
- * The kanji Library page (/library/kanji/<glyph>) now carries an etymology layer
- * split across two components: KanjiBuiltFrom (the "How it's built" piece tiles
- * plus a prose "Etymology" section with a More/Less toggle and a Wiktionary
- * credit) and OnyomiHint (the borrowed-from-Chinese reading with a Hear button).
+ * The kanji Library page (/library/kanji/<glyph>) is now CharacterEntryView. Its
+ * "As a kanji" block carries the etymology layer:
+ *   - "Sub-components" — the etymology components as piece links, the non-semantic
+ *     ones tagged with their role (phonetic / …);
+ *   - "Etymology" — the glyph-origin prose story;
+ *   - "On'yomi" / "Kun'yomi" — the reading groups, each reading with a Hear button.
  *
- * These behaviors have no other e2e coverage. Everything here is a logged-out
- * Library surface, so an empty seed is enough — none of it reads progress. The
- * targets are chosen against the shipped data (src/data/generated):
- *   明 — ideogrammic, a LONG origin story (clamps → More/Less) + Wiktionary link.
- *   河 — phono-semantic: 氵 meaning tile (water) + 可 phonetic tile (か, 運河).
- *   中 — a pictograph with a story but NO mappable pieces: Etymology, no tiles.
- *   講 — phonetic 冓 is a rare untaught character: asterisk footnote fires.
- *   校 — has an on'yomi (こう), so the On'yomi card + Hear button render.
+ * The redesign simplified this from the old KanjiBuiltFrom/OnyomiHint: the prose is
+ * shown plain (no Wiktionary credit link, no More/Less clamp toggle), the piece
+ * tiles no longer carry a lent-reading hint or an untaught-component footnote, and
+ * the semantic piece is untagged. This spec pins what the redesigned page shows.
+ * Everything here is a logged-out Library surface, so an empty seed is enough.
+ *
+ * Targets, chosen against the shipped data (src/data/generated):
+ *   神 — phono-semantic with a LONG origin story (示 god + 申 lightning).
+ *   河 — phono-semantic: 水 (semantic) + 可 (phonetic) piece links.
+ *   中 — a story but NO mappable pieces: Etymology, no Sub-components.
+ *   校 — has an on'yomi (こう), so the On'yomi group + Hear button render.
  */
 
-test("a kanji page shows an Etymology story with a Wiktionary link and a More/Less toggle", async ({
-  page,
-  seed,
-}) => {
+test("a kanji page shows an Etymology story", async ({ page, seed }) => {
   await seed({ seen: [], cfg: {} });
-  // 神 is chosen because its cleaned origin story is long enough to clamp — the
-  // plain-language rewrites are mostly one short line, so a stable long target is
-  // pinned (kanji-etymology.test.ts asserts 神's story stays > 120 chars).
   await page.goto("/library/kanji/神");
 
-  // The prose section is headed by an "Etymology" label (distinct from the
-  // "How it's built" tiles header above it).
-  await expect(page.getByText("Etymology", { exact: true })).toBeVisible();
+  // The prose section is headed by an "Etymology" sub-label; the origin story is
+  // the paragraph that follows it. (The old Wiktionary credit link and More/Less
+  // clamp toggle were dropped in the redesign — the prose is shown plain.)
+  const etymology = page.getByText("Etymology", { exact: true });
+  await expect(etymology).toBeVisible();
+  await expect(etymology.locator("..").locator("p").last()).not.toBeEmpty();
 
-  // The credit line links the word "Wiktionary" to the character's own page.
-  const wiktionary = page.getByRole("link", { name: "Wiktionary", exact: true });
-  await expect(wiktionary).toBeVisible();
-  // The href is built with encodeURIComponent(glyph); assert either the encoded
-  // or the raw form so the test does not hinge on how the DOM reports it.
-  await expect(wiktionary).toHaveAttribute(
-    "href",
-    /^https:\/\/en\.wiktionary\.org\/wiki\/(神|%E7%A5%9E)$/,
-  );
-
-  // The long origin clamps, so a More control is offered; clicking it reveals the
-  // rest and flips the label to Less, which collapses it again.
-  const more = page.getByRole("button", { name: "More", exact: true });
-  await expect(more).toBeVisible();
-  await more.click();
-  const less = page.getByRole("button", { name: "Less", exact: true });
-  await expect(less).toBeVisible();
-  await less.click();
-  await expect(page.getByRole("button", { name: "More", exact: true })).toBeVisible();
+  // No Wiktionary credit link, no More/Less toggle — those interactive controls
+  // were removed with the redesign.
+  await expect(page.getByRole("link", { name: "Wiktionary", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "More", exact: true })).toHaveCount(0);
 });
 
-test("the 河 kanji page tags a meaning piece and a phonetic piece with its lent reading", async ({
+test("the 河 kanji page shows its etymology component pieces, the phonetic one tagged", async ({
   page,
   seed,
 }) => {
   await seed({ seen: [], cfg: {} });
   await page.goto("/library/kanji/河");
 
-  // The tiles sit under the "How it's built" header (curly apostrophe).
-  const builtFromLbl = page.getByText("How it’s built", { exact: true });
+  // The pieces sit under the "Sub-components" sub-label.
+  const builtFromLbl = page.getByText("Sub-components", { exact: true });
   await expect(builtFromLbl).toBeVisible();
   const builtFrom = builtFromLbl.locator("..");
 
-  // 河 = 氵 (meaning: water) + 可 (phonetic: か). Each piece is its own tile link,
-  // tagged by role; asserting on the tiles avoids the word "meaning" that also
-  // appears in the card's explanatory footnote.
-  const meaningTile = builtFrom.getByRole("link", { name: /meaning/ });
-  await expect(meaningTile).toBeVisible();
-  await expect(meaningTile).toContainText("water");
-  const phoneticTile = builtFrom.getByRole("link", { name: /phonetic/ });
-  await expect(phoneticTile).toBeVisible();
-
-  // The phonetic tile carries the lent reading か and the everyday compound
-  // where that sound surfaces (運河, うんが).
-  await expect(phoneticTile).toContainText("か");
-  await expect(phoneticTile).toContainText("運河");
+  // 河 = 水 (semantic) + 可 (phonetic). Each piece is its own link; the non-semantic
+  // one wears its role. (The old lent-reading hint — か, 運河 — and the "meaning"
+  // tag on the semantic piece are gone.)
+  await expect(builtFrom.getByRole("link", { name: /水/ })).toBeVisible();
+  const phonetic = builtFrom.getByRole("link", { name: /phonetic/ });
+  await expect(phonetic).toBeVisible();
+  await expect(phonetic).toContainText("可");
 });
 
-test("the 中 kanji page shows an Etymology story but no built-from tiles", async ({
+test("the 中 kanji page shows an Etymology story but no sub-component pieces", async ({
   page,
   seed,
 }) => {
@@ -88,33 +69,21 @@ test("the 中 kanji page shows an Etymology story but no built-from tiles", asyn
   await page.goto("/library/kanji/中");
 
   // 中 is a pictograph with a glyph-origin story but no mappable pieces, so the
-  // Etymology section stands alone and the "How it's built" tiles never render.
+  // Etymology section stands alone and the Sub-components list never renders.
   await expect(page.getByText("Etymology", { exact: true })).toBeVisible();
-  await expect(page.getByText("How it’s built", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Sub-components", { exact: true })).toHaveCount(0);
 });
 
-test("the 講 kanji page footnotes its rare untaught phonetic component", async ({
-  page,
-  seed,
-}) => {
-  await seed({ seen: [], cfg: {} });
-  await page.goto("/library/kanji/講");
-
-  // 冓 is the phonetic in 講 but is not a character the app teaches, so its tile
-  // wears an asterisk keyed to a plain-language footnote.
-  await expect(page.getByText(/rare character meaning/)).toBeVisible();
-  await expect(page.getByText(/not in our dictionary/)).toBeVisible();
-});
-
-test("the 校 kanji page shows an On'yomi card with a Hear button", async ({
+test("the 校 kanji page shows an On'yomi group with a Hear button", async ({
   page,
   seed,
 }) => {
   await seed({ seen: [], cfg: {} });
   await page.goto("/library/kanji/校");
 
-  // 校 is read こう inside compounds, so the On'yomi card renders with the
-  // reading and a speaker button whose accessible name starts with "Hear".
-  await expect(page.getByText("On’yomi", { exact: true })).toBeVisible();
+  // 校 is read こう inside compounds, so the On'yomi group renders. The sub-label
+  // carries an (i) help icon, so match it non-exactly rather than by exact text.
+  await expect(page.getByText("On’yomi", { exact: false }).first()).toBeVisible();
+  // Each reading has a speaker button whose accessible name starts with "Hear".
   await expect(page.getByRole("button", { name: /Hear/ }).first()).toBeVisible();
 });

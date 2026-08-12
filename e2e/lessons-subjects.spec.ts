@@ -1,7 +1,6 @@
 import {
   test,
   expect,
-  KANA_FACTS,
   seenToReachCurriculum,
   lessonCard,
   stepToHeadword,
@@ -45,15 +44,13 @@ test("a radical-only step teaches the shape's own meaning", async ({
   await startCurriculumLesson(page, "亅");
   await stepToHeadword(page, "亅");
 
-  await expect(
-    page.getByRole("heading", { level: 3, name: "Radical", exact: true }),
-  ).toBeVisible();
-  await expect(page.locator("body")).toContainText(
-    "Other kanji are built on this shape.",
-  );
-  // The shape's own meaning, under "What it means" (radicalMeaningOf → radicals.ts).
-  await expect(page.locator("body")).toContainText("What it means");
+  // The redesigned page (CharacterEntryView) renders the radical block, which for a
+  // radical-only shape drops the "As a radical" label (a single-role glyph) and
+  // states the shape's own meaning as "It means <meaning>." (radicals.ts).
+  await expect(page.locator("body")).toContainText("It means");
   await expect(page.locator("body")).toContainText("hook");
+  // Other kanji built on the shape are listed under "Used as a part in".
+  await expect(page.locator("body")).toContainText("Used as a part in");
 });
 
 test("a kanji step shows what it is Built from, each piece a link", async ({
@@ -69,59 +66,28 @@ test("a kanji step shows what it is Built from, each piece a link", async ({
   await startCurriculumLesson(page, "可");
   await stepToHeadword(page, "可");
 
-  await expect(
-    page.getByRole("heading", { level: 3, name: "Kanji", exact: true }),
-  ).toBeVisible();
-  // The lesson now shows "How it\u2019s built" (from KanjiBuiltFrom with etymology
-  // pieces) rather than the old KanjiPartsRow "Built from".
-  await expect(page.locator("body")).toContainText("How it\u2019s built");
+  // The redesigned kanji block lists the pieces the character is built from under
+  // a "Sub-components" sub-heading (CharacterEntryView -> builtFrom), each a link
+  // into its own page -- replacing the old KanjiPartsRow / "How it's built" card.
+  await expect(page.getByText("Sub-components", { exact: true })).toBeVisible();
   // 可's etymology: semantic 口 + phonetic 丂. 口 is a jōyō kanji with a page.
   await expect(
     page.getByRole("link", { name: /口/ }).first(),
   ).toBeVisible();
 });
 
-test("a compound word step shows the reading pieces it is Built from", async ({
-  page,
-  seed,
-}) => {
-  // 電話 (でんわ) is 電 saying でん and 話 saying わ. The word block's "Built from"
-  // is the compound breakdown (WordBuiltFrom), gated to words of two-plus kanji;
-  // a single-kanji word has nothing to take apart and shows none of it on the
-  // lesson.
-  await seed({ seen: seenToReachCurriculum("電話"), cfg: {} });
-  await startCurriculumLesson(page, "電話");
-  await stepToHeadword(page, "電話");
+// REMOVED: "a compound word step shows the reading pieces it is Built from" (電話).
+// The content-model curriculum spine (the "vocab" UnitTrack) teaches only SINGLE
+// glyphs — `orderedUnits` builds units via `buildGlyphItem`, which returns nothing
+// for a multi-character string, so a compound word like 電話 is never a lesson step
+// (its readings are attributed to its constituent kanji instead). The "written
+// with" breakdown for 電話 now lives on its Library word page, which is covered by
+// lessons-word-pieces.spec.ts. No compound-word lesson step exists to walk to, so
+// this case is deleted.
 
-  // A two-character WORD plays no single-glyph character role, so its sections
-  // come back UNLABELLED — there is no "Word" role heading here (that is for a
-  // folded character like 人). The Built from card itself is the material.
-  // The lesson walk uses a flat surface (no kq-material), so find by label text.
-  const builtFromLbl = page.getByText("Built from", { exact: true });
-  await expect(builtFromLbl).toBeVisible();
-  // The two kanji pieces with the sound each makes IN THIS WORD.
-  const builtFrom = builtFromLbl.locator("..");
-  await expect(builtFrom.getByText("電", { exact: true })).toBeVisible();
-  await expect(builtFrom.getByText("でん", { exact: true })).toBeVisible();
-  await expect(builtFrom.getByText("話", { exact: true })).toBeVisible();
-  await expect(builtFrom.getByText("わ", { exact: true })).toBeVisible();
-});
-
-test("a word step draws the pitch-accent overline for a word with verified pitch", async ({
-  page,
-  seed,
-}) => {
-  // 人 (ひと) has a verified pitch (atamadaka, downstep 1), so its word-sense
-  // panel replaces the plain reading with the overline notation — drawn with
-  // borders and spelled out in an aria-label for anyone not seeing the line
-  // (pitch-mark.tsx). The concept card that teaches the mark is DRAFT copy, so
-  // this asserts the notation itself, which is the fixed fact.
-  await seed({ seen: KANA_FACTS, cfg: {} });
-  await startCurriculumLesson(page, "人");
-  await stepToHeadword(page, "人");
-
-  // The overline's aria-label names the reading and its accent in plain language.
-  await expect(
-    page.getByLabel(/ひと, pitch accent: atamadaka/),
-  ).toBeVisible();
-});
+// REMOVED: "a word step draws the pitch-accent overline for a word with verified
+// pitch". The redesigned word teaching page (CharacterEntryView) shows the reading
+// as plain text and no longer renders the pitch-accent overline / pitch-mark
+// aria-label (pitch-mark.tsx is no longer used by the entry views). With no
+// replacement notation on the page, there is nothing to assert; the behaviour was
+// removed by the meaning-model redesign, so the test case is deleted.

@@ -44,9 +44,17 @@ function card(page: Page, label: string) {
   return page.getByText(label, { exact: true }).locator("..");
 }
 
-/** The "Built from" card, whichever word is on screen. */
+/** The word page's "kanji it's written with" block, whichever word is on screen.
+ * The redesigned page (CharacterEntryView) drops the old "Built from" card: a
+ * multi-kanji word's pieces sit in the "As a word" block under the Lead line
+ * "The kanji it's written with, and how each is read here:", each a kanji link.
+ * Matched on a stable fragment of that Lead to sidestep its curly apostrophe; the
+ * parent container also holds the kanji-link table. Absent (count 0) for a word
+ * with no per-kanji split (an all-kana word, a jukujikun, a single glyph). */
 function builtFrom(page: Page) {
-  return card(page, "Built from");
+  return page
+    .getByText("written with, and how each is read here:", { exact: false })
+    .locator("..");
 }
 
 // A word taken apart, with the exact reading each kanji makes IN THIS WORD.
@@ -115,35 +123,22 @@ test("a Built-from kanji link opens that kanji's entry page", async ({
   await expect(page).toHaveURL(
     new RegExp(`/library/kanji/${encodeURIComponent("先")}$`),
   );
-  const h1 = page.getByRole("heading", { level: 1 });
-  await expect(h1).toHaveCount(1);
-  await expect(h1).not.toBeEmpty();
+  // The redesigned entry pages carry no h1; the glass entry surface (article)
+  // rendering is the proof 先's page loaded rather than 404ing.
+  await expect(page.locator("article").first()).toBeVisible();
+  await expect(page.locator("body")).not.toContainText(
+    "This page could not be found",
+  );
 });
 
-// A word whose written form is a SINGLE kanji. `align` is one row, so the card
-// still renders with one piece — the "split" is the word itself, and the piece
-// is a clickable way into the kanji. Confirmed single-kanji in vocab: 何 (なに),
-// 可 (か).
-const SINGLE_KANJI = ["何", "可"];
-
-for (const keb of SINGLE_KANJI) {
-  test(`a single-kanji word (${keb}) still shows Built from with one clickable piece`, async ({
-    page,
-  }) => {
-    const response = await page.goto(`/library/word/${keb}`);
-    expect(response!.status(), `${keb} did not serve`).toBeLessThan(400);
-
-    const bf = builtFrom(page);
-    await expect(bf).toHaveCount(1);
-
-    // Exactly one kanji link, into that one kanji's page. A single-kanji word has
-    // one piece and no other kanji, so the card holds one linked tile.
-    const links = bf.locator('a[href^="/library/kanji/"]');
-    await expect(links).toHaveCount(1);
-    await expect(links).toHaveAttribute("href", `/library/kanji/${keb}`);
-    await expect(links).toContainText(keb);
-  });
-}
+// REMOVED: "a single-kanji word still shows Built from with one clickable piece"
+// (何, 可). The redesign UNIFIES a single Han glyph's word and kanji into ONE
+// CharacterEntryView (buildGlyphItem keys on the glyph), so /library/word/何 is
+// now the same page as /library/kanji/何 — it shows 何's own roles directly
+// ("As a kanji" with sub-components, "As a word"), not a "Built from" card linking
+// out to a separate kanji page. The "written with" split is only for a MULTI-kanji
+// word, so there is no single-piece card to assert here anymore. Coverage of the
+// unified single-glyph page lives in the kanji/character specs.
 
 // Words with no per-kanji split: `align === null`, so `piecesOf` is null and the
 // card is ABSENT. これ is all kana (there is no 這 to break out); 大人/おとな is a
@@ -158,15 +153,15 @@ for (const { keb, why } of NO_SPLIT) {
     const response = await page.goto(`/library/word/${keb}`);
     expect(response!.status(), `${keb} did not serve`).toBeLessThan(400);
 
-    // The page itself rendered — a real entry, not a 404 — so the missing card is
-    // a decision, not a failed load. Word pages no longer use an h1 heading;
-    // the word's reading/meaning panel confirms the page loaded correctly.
+    // The page itself rendered — a real entry, not a 404 — so the missing split is
+    // a decision, not a failed load. The redesigned word page has no h1; its "word"
+    // type label (under the glyph header) confirms it loaded as a word entry.
     await expect(page.locator("body")).not.toContainText(
       "This page could not be found",
     );
-    await expect(page.getByText("How you say it, and what it means")).toBeVisible();
+    await expect(page.getByText("word", { exact: true }).first()).toBeVisible();
 
-    // Absent, not empty: no card carries the "Built from" label at all.
+    // Absent, not empty: no "kanji it's written with" block renders at all.
     await expect(builtFrom(page)).toHaveCount(0);
   });
 }
@@ -181,10 +176,10 @@ test("a word with a corpus example renders the In-a-sentence card", async ({
 
   const example = card(page, "In a sentence");
   await expect(example).toHaveCount(1);
-  // Both lines are present and non-empty: the sentence (lang=ja) and the English
-  // gloss under it. Asserting non-emptiness rather than a fixed string keeps this
-  // robust to the corpus being re-picked.
-  const jp = example.locator('p[lang="ja"]');
+  // Both lines are present and non-empty: the Japanese sentence (rendered in the
+  // kana font) and the English gloss under it. Asserting non-emptiness rather than
+  // a fixed string keeps this robust to the corpus being re-picked.
+  const jp = example.locator("p.font-kana");
   await expect(jp).toHaveCount(1);
   await expect(jp).not.toBeEmpty();
 });

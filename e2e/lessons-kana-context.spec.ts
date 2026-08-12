@@ -33,28 +33,29 @@ test("the ん lesson step teaches its context pronunciation, m before b/p/m", as
   await seed({ seen: seenToReachKana("ん"), cfg: {} });
   await page.goto("/learn");
 
-  // Only the kana track's card says "hiragana"; the post-kana tracks are still
-  // locked here, but this keeps the target unambiguous regardless.
-  const card = lessonCard(page, "hiragana");
+  // Only the kana track's card is up here (post-kana tracks stay locked until kana
+  // is done); its eyebrow reads "Up next · Hiragana …" for a hiragana group.
+  const card = lessonCard(page, "Hiragana");
   await expect(card).toHaveCount(1);
   await card.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
 
   await stepToHeadword(page, "ん");
 
-  // The block header, then the summary line, then the row that is the whole point
-  // of this spec: the m-allophony before a labial, spelled exactly as the learner
-  // reads it. The component upper-cases the first letter of the rule and prints
-  // ": said " between the environment and the sound (kana-context-view.tsx).
-  await expect(page.locator("body")).toContainText("How it's said in context");
+  // The redesigned kana page shows the following-sound rules as a "Heads up."
+  // aside (KanaEntryView): the summary line, then one row per environment reading
+  // "<environment> → said <sound> <example>" (kana-context.ts). The m-allophony
+  // before a labial is the whole point of this spec.
+  await expect(page.locator("body")).toContainText("Heads up.");
   await expect(page.locator("body")).toContainText(
     "ん has no fixed sound of its own.",
   );
-  await expect(page.locator("body")).toContainText("Before b, p, or m: said m");
+  await expect(page.locator("body")).toContainText("before b, p, or m");
+  await expect(page.locator("body")).toContainText("しんぶん (shimbun)");
   // And the other environments, so a block rendered with only its first row would
   // still fail.
-  await expect(page.locator("body")).toContainText("Before k or g: said");
+  await expect(page.locator("body")).toContainText("before k or g");
   await expect(page.locator("body")).toContainText(
-    "before a vowel, y, or w: said",
+    "before a vowel, y, or w",
   );
 });

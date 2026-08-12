@@ -63,7 +63,9 @@ test("the adjective concept is one concise class guide, without a repeated title
 
 test("the adjective noun form has its own Library entry", async ({ page }) => {
   await page.goto(entryHref(patternEntry("prenominal-form")));
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("describe a noun");
+  // The redesigned pattern page (GrammarEntryView) has no h1; its gloss
+  // ("describe a noun") sits in the glyph header beside the pattern "〜な".
+  await expect(page.locator("body")).toContainText("describe a noun");
   await expect(page.getByText("The 〜な form", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Describe a noun." })).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("lets an adjective describe a noun");
@@ -92,24 +94,23 @@ test("the Grammar shelf starts with the 〜な form", async ({ page }) => {
   await expect(page.getByText(/N[1-5] pattern/)).toHaveCount(0);
 });
 
-test("a て-verb pattern lists its concept links under ONE 'Read about it'", async ({
+test("a て-verb pattern builds off the て-form, with no concept-links box", async ({
   page,
 }) => {
-  // 〜てから is a て-form pattern (so it links the て-form concept) that also
-  // conjugates a verb (so it links verb-classes). The two links must sit under a
-  // single 'Read about it' label, not one label each.
+  // 〜てから is a て-form pattern that conjugates a verb. The redesigned pattern page
+  // (GrammarEntryView) dropped the old "Read about it" concept-links box; the build
+  // shows one derive step off the て-form under a "Verbs" section instead.
   await page.goto(entryHref(patternEntry("te-kara")));
-  await expect(page.getByText("Read about it", { exact: true })).toHaveCount(1);
-  await expect(page.getByRole("link", { name: /う-verbs and る-verbs/ })).toBeVisible();
-  // The form it builds on (the て-form's own entry) is linked from the Links box,
-  // above the verb-classes reference. There is no standalone te-form CONCEPT page.
-  await expect(page.getByRole("link", { name: /The .*-form/ })).toBeVisible();
-  const verbs = page.getByRole("heading", { name: "Verbs", exact: true });
-  await expect(verbs).toHaveClass(/text-accent/);
-  const section = verbs.locator("..");
-  await expect(section.getByText(/Put a verb into its て-form, then add から/)).toBeVisible();
-  await expect(section.locator(".border-dashed")).toContainText("て-form");
-  await expect(section.getByRole("table")).toHaveCount(1);
+  await expect(page.getByText("Read about it", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Verbs", exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/Put a verb into its て-form, then add から/),
+  ).toBeVisible();
+  // The build's own step names the て-form in its formula slot.
+  await expect(
+    page.locator(".border-dashed").filter({ hasText: "て-form" }).first(),
+  ).toBeVisible();
+  // The redesigned "How it's formed" section replaces the old "How to build it".
   await expect(page.getByText("How to build it", { exact: true })).toHaveCount(0);
 });
 
@@ -132,7 +133,8 @@ test("a mixed verb and adjective pattern separates its build sections", async ({
   await expect(page.locator(".border-dashed").filter({ hasText: "verb" })).toBeVisible();
   await expect(page.locator(".border-dashed").filter({ hasText: "い-adjective" })).toBeVisible();
   await expect(page.locator(".border-dashed").filter({ hasText: "な-adjective" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Describe a noun →", exact: true })).toBeVisible();
+  // (The old cross-link to the 〜な form's page — "Describe a noun →" — was dropped
+  // with the concept-links box; the な-adjective build step stands on its own here.)
   await expect(page.getByText("The just as it is", { exact: false })).toHaveCount(0);
 });
 

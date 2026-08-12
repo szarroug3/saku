@@ -43,7 +43,9 @@ test("a pattern-only sitting hands out three patterns, and the session walks the
 
   await seed({ claims: BUNDLE_SEED, cfg: {} });
   await page.goto("/learn");
-  const card = lessonCard(page, "grammar");
+  // The grammar card's tiles carry the "grammar rule" type label, unique to it
+  // (a bare "grammar" also matches the sentence card's why line).
+  const card = lessonCard(page, "grammar rule");
   await expect(card).toHaveCount(1);
   await card.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");

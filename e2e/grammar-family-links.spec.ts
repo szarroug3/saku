@@ -27,39 +27,34 @@ test("a member page answers 'which one?' with the family's feel note", async ({
   page,
 }) => {
   await page.goto(BA);
-  // The comparison table is present (guards the rest against a vacuous pass).
-  await expect(page.getByText("Ways to say this", { exact: true })).toBeVisible();
+  // The comparison table is present (guards the rest against a vacuous pass). The
+  // redesigned GrammarEntryView prints the label twice — the Section eyebrow and
+  // PatternFamily's own <Lbl> — so match the first.
+  await expect(
+    page.getByText("Ways to say this", { exact: true }).first(),
+  ).toBeVisible();
   // The note sits under it, labelled, with the authored substance — not just an
   // empty heading. The conditionals feel ends on this exact clause.
   await expect(page.getByText("Which one?", { exact: true })).toBeVisible();
   await expect(page.getByText(/overlap is large and real/)).toBeVisible();
 });
 
-test("the family's external link stays on the cluster page, not the member page", async ({
+test("the family's external reference lives on the cluster page, not the member page", async ({
   page,
 }) => {
-  // Absent here: the member page does not repeat the family reference…
+  // Absent here: the redesigned member page (GrammarEntryView) does not repeat the
+  // family's external reference — it carries no Links/reference card at all…
   await page.goto(BA);
   await expect(page.getByRole("link", { name: /Tae Kim/ })).toHaveCount(0);
-  // …but the "Family →" row routes to the cluster page, where it DOES live, so
-  // the link was moved, not lost.
-  await expect(
-    page.getByRole("link", { name: /side by side/ }),
-  ).toBeVisible();
+  // …it lives on the cluster page's own reference card, so the reference was moved,
+  // not lost.
   await page.goto("/grammar/conditionals");
   await expect(page.getByRole("link", { name: /Tae Kim/ })).toBeVisible();
 });
 
-test("the Links box sits below the 'Ways to say this' table", async ({
-  page,
-}) => {
-  await page.goto(BA);
-  const ways = await page
-    .getByText("Ways to say this", { exact: true })
-    .boundingBox();
-  const links = await page.getByText("Links", { exact: true }).boundingBox();
-  expect(ways, "the family table must be on the page").not.toBeNull();
-  expect(links, "the Links box must be on the page").not.toBeNull();
-  // Links is the footer: it comes AFTER the comparison table down the page.
-  expect(links!.y).toBeGreaterThan(ways!.y);
-});
+// REMOVED: "the Links box sits below the 'Ways to say this' table". The redesigned
+// grammar member page (GrammarEntryView) renders only "How it's formed" and "Ways
+// to say this" — it no longer carries a per-entry Links footer (EntryLinks moved
+// off the pattern page; the family's references now live on the cluster page, as
+// the test above checks). With no Links box on the member page there is nothing to
+// order, so this case is deleted.

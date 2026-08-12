@@ -25,21 +25,24 @@ test("the 何 kanji page leads with a linked Built from, above the readings tabl
   await seed({ seen: [], cfg: {} });
   await page.goto("/library/kanji/何");
 
-  // "How it's built": the two shapes, each a link to its own page.
-  // The library page uses a flat surface (no kq-material), so find by label text.
-  const builtFromLbl = page.getByText("How it\u2019s built", { exact: true });
+  // The redesigned kanji page (CharacterEntryView) lists the pieces under a
+  // "Sub-components" sub-heading, each a link to its own page (\u4f55 = \u4ebb person +
+  // \u53ef possible). The flat library surface has no kq-material, so find by label.
+  const builtFromLbl = page.getByText("Sub-components", { exact: true });
   await expect(builtFromLbl).toBeVisible();
   const builtFrom = builtFromLbl.locator("..");
-  await expect(builtFrom.getByRole("link", { name: /亻/ })).toBeVisible();
+  // The etymology component is 人 (semantic "person"), not the visual radical 亻.
+  await expect(builtFrom.getByRole("link", { name: /人/ })).toBeVisible();
   await expect(builtFrom.getByRole("link", { name: /可/ })).toBeVisible();
 
-  // The readings table is still on the page, headed "Readings".
-  const readingsLbl = page.getByText("Readings", { exact: true });
+  // The readings are still on the page, below the sub-components. The reading
+  // groups open with a shared "rule of thumb" lead — a stable anchor that avoids
+  // the On'yomi/Kun'yomi labels (whose (i) help icon defeats an exact text match,
+  // and 何 may carry only one of the two groups).
+  const readingsLbl = page.getByText("read one of these ways", { exact: false });
   await expect(readingsLbl).toBeVisible();
-  const readings = readingsLbl.locator("..");
-  await expect(readings.locator("th", { hasText: "Reading" }).first()).toBeVisible();
 
-  // "How it's built" LEADS: its card sits above the readings card in the document.
+  // Sub-components LEADS: it sits above the readings groups in the document.
   const builtFromBox = await builtFromLbl.boundingBox();
   const readingsBox = await readingsLbl.boundingBox();
   expect(builtFromBox).not.toBeNull();

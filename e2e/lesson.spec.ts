@@ -45,40 +45,46 @@ test("a new learner can take the first lesson through to its quiz", async ({
   await seed({ seen: [], cfg: CFG });
 
   await page.goto("/learn");
-  // The heading is upper-cased by CSS only, so the DOM text is lower case.
+  // The content-model feed's kana card is headed "Up next · Hiragana 1–5 of 107"
+  // — the kana track split by script and counted in ITEMS (see home-feed.tsx /
+  // lesson-position.ts), not the old "hiragana group 1 of 27".
   await expect(page.locator("body")).toContainText("Up next");
-  await expect(page.locator("body")).toContainText("hiragana");
-  await expect(page.locator("body")).toContainText("group 1 of 27");
+  await expect(page.locator("body")).toContainText("Hiragana 1–5 of 107");
 
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await page.waitForURL("**/session");
 
-  // THE FIRST SCREEN IS THE TRACK INTRO, NOT あ.
+  // THE FIRST SCREEN IS THE "KANA" CONCEPT PAGE, NOT あ.
   //
-  // Day one now opens on the card that introduces hiragana, and it is the whole
-  // reason this walk is six steps rather than five (src/data/track-intros.ts).
-  // Asserted by what it TEACHES rather than by its heading, because the heading
-  // is draft copy waiting to be rewritten while the two words are the point: a
-  // beginner used to be asked to type romaji, on a page that called the
-  // characters kana, having been told neither word.
-  await expect(page.getByText(/^\d+ of \d+$/)).toHaveText("1 of 6");
+  // Day one opens on the term page that introduces kana (what the two sound-based
+  // scripts are), and the content-model walk interleaves a couple of concept cards
+  // among the five vowels, so the group is eight steps in all. The HUD counts the
+  // position through the walk. Asserted by what the intro TEACHES.
+  await expect(page.getByText(/^\d+ of \d+$/)).toHaveText("1 of 8");
   await expect(page.locator("body")).toContainText("kana");
-  await expect(page.locator("body")).toContainText("romaji");
-  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.locator("body")).toContainText("sound-based scripts");
 
-  // Then all five characters. The counter is the contract: the lesson must
-  // present exactly as many cards as the group has, plus the one opening card.
-  for (let i = 1; i <= VOWELS.length; i++) {
-    await expect(page.getByText(/^\d+ of \d+$/)).toHaveText(`${i + 1} of 6`);
-    // Each teach card shows the character it is teaching.
-    await expect(page.locator("body")).toContainText(VOWELS[i - 1]);
-
-    if (i < VOWELS.length) {
+  // Walk to each vowel's teach card in turn — concept/term cards may sit between
+  // them, so step forward until each vowel's page is on screen rather than assume a
+  // fixed position. The hero glyph on a kana card is the character it teaches; this
+  // proves every vowel of the group is taught before the quiz.
+  for (const v of VOWELS) {
+    const hero = page
+      .locator("article .font-light.leading-none")
+      .filter({ hasText: new RegExp(`^${v}$`) });
+    for (let i = 0; i < 12 && !(await hero.first().isVisible()); i++) {
       await page.getByRole("button", { name: "Next", exact: true }).click();
     }
+    await expect(hero.first(), `the walk never taught ${v}`).toBeVisible();
   }
 
-  // On the last card "Next" is gone and the only way forward is the quiz.
+  // Advance to the last card, where the forward button becomes "Quiz me" and Next
+  // is gone (any trailing concept card is stepped through here).
+  for (let i = 0; i < 12; i++) {
+    const next = page.getByRole("button", { name: "Next", exact: true });
+    if ((await next.count()) === 0) break;
+    await next.click();
+  }
   await expect(
     page.getByRole("button", { name: "Next", exact: true }),
   ).toHaveCount(0);
@@ -133,12 +139,12 @@ test("claiming the first group advances the curriculum to the next one", async (
   await seed({ seen: [], cfg: CFG });
 
   await page.goto("/learn");
-  await expect(page.locator("body")).toContainText("group 1 of 27");
+  await expect(page.locator("body")).toContainText("Hiragana 1–5 of 107");
 
   await page
     .getByRole("button", { name: "I already know these 5", exact: true })
     .click();
 
   // The curriculum recomputes from history, so the next group is now up.
-  await expect(page.locator("body")).toContainText("group 2 of 27");
+  await expect(page.locator("body")).toContainText("Hiragana 6–10 of 107");
 });
