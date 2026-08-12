@@ -84,7 +84,8 @@ function TeachKeys({
   canBack,
 }: {
   onBack: () => void;
-  onForward: () => void;
+  /** Advance a step. Omitted on the last card so → never starts the quiz. */
+  onForward?: () => void;
   canBack: boolean;
 }) {
   useEffect(() => {
@@ -98,6 +99,7 @@ function TeachKeys({
         e.preventDefault();
         onBack();
       } else if (e.key === "ArrowRight") {
+        if (!onForward) return;
         e.preventDefault();
         onForward();
       }
@@ -406,11 +408,13 @@ export default function SessionPage() {
             this group only, or everything in the script so far). The round's
             config shows just above it on that last card, the moment the drill is
             one click away. */}
-        {/* Left / right arrow keys page the walk, so you never have to reach for
-            the mouse — same two actions as the footer buttons. */}
+        {/* Left / right arrow keys PAGE the walk — never start the quiz. Right
+            only advances to the next card and stops on the last one, so no one
+            can arrow-key their way into a drill by accident; starting is a
+            deliberate click on the forward button. */}
         <TeachKeys
           onBack={() => setTeachStep(at - 1)}
-          onForward={onLast ? toDrill : () => setTeachStep(at + 1)}
+          onForward={onLast ? undefined : () => setTeachStep(at + 1)}
           canBack={at > 0}
         />
         <div className="shrink-0 border-t border-border">

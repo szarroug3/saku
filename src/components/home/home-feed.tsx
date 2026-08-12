@@ -110,7 +110,7 @@ function trackKeyForRun(run: RunInfo): string | null {
  * split into Hiragana / Katakana at render (see kanaPositionLabel). */
 const TRACK_NOUN: Record<string, string> = {
   kana: "Kana",
-  vocab: "Item",
+  vocab: "Vocab",
   numbers: "Counter",
   keigo: "Set",
   grammar: "Pattern",

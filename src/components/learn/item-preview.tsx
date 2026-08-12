@@ -74,8 +74,11 @@ export function ItemPreview({ item }: { item: ContentItem }) {
       {/* Glyph + type label as one group, centered in the tile — so the pair sits
           in the middle rather than the glyph riding high with the label low. */}
       <div className="relative flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+        {/* A long word (いらっしゃいませ) that would wrap to three-plus lines is
+            clamped to two and truncated with an ellipsis rather than filling the
+            tile. line-clamp sets its own -webkit-box display, so no text-balance. */}
         <span
-          className={`font-kana text-balance px-0.5 leading-tight text-text [overflow-wrap:break-word] ${glyphSize(item.glyph)}`}
+          className={`font-kana line-clamp-2 px-0.5 leading-tight text-text [overflow-wrap:break-word] ${glyphSize(item.glyph)}`}
           lang="ja"
         >
           {item.glyph}

@@ -226,5 +226,8 @@ export const ATTRIBUTION_HREF = "/about/data";
  * credit had no reason to think this was it. The kinds of data are named rather
  * than every holder, so the label stays footer-sized and still tells you what is
  * on the other end. EDRDG stays named outright: its licence is the strict one. */
-export const SHORT =
-  "Dictionary, frequency, stroke and sentence data: EDRDG, NINJAL, KanjiVG, Tatoeba";
+// A short, generic link label. The licence is satisfied by the acknowledgement
+// being REACHABLE (a menu item is the example it gives), and /about/data carries
+// the full notice — naming every holder inline here is not required, so the label
+// stays a plain "Data sources" pointing at that page (owner's call).
+export const SHORT = "Data sources";

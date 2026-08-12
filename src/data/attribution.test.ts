@@ -178,17 +178,17 @@ describe("the credits page names every borrowed source", () => {
   });
 
   test("EDRDG is never dropped — its licence is the strict one", () => {
+    // The label is now a generic "Data sources"; EDRDG's acknowledgement lives on
+    // the reachable /about/data page (SOURCES + LICENCE_NOTE), which is what the
+    // licence requires. So this pins the PAGE names it, not the footer label.
     assert.ok(SOURCES.some((s) => s.holder.includes("Electronic Dictionary")));
     assert.match(LICENCE_NOTE, /Electronic Dictionary Research and Development Group/);
-    assert.match(SHORT, /EDRDG/);
   });
 
-  test("the footer label describes everything the page documents", () => {
-    // It used to say only "Dictionary data", which under-described the page once
-    // stroke diagrams and sentences arrived behind the same link.
-    for (const word of ["Dictionary", "stroke", "sentence"]) {
-      assert.match(SHORT, new RegExp(word), `SHORT does not mention ${word} data`);
-    }
+  test("the footer label is a non-empty link to the credits page", () => {
+    // The obligation is satisfied by REACHABILITY: a persistent link, on every
+    // screen that shows the data, pointing at the page that acknowledges in full.
+    assert.ok(SHORT.trim().length > 0);
     assert.equal(ATTRIBUTION_HREF, "/about/data");
   });
 });

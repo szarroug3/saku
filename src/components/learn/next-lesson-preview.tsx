@@ -43,10 +43,15 @@ function lessonItems(lesson: UnitLesson): ContentItem[] {
  * catching glass, while inset shades down the left, right and bottom darken those
  * rims so the pane reads as a raised piece of glass. A deep lift shadow floats it,
  * and a real backdrop blur frosts it (one filter per card, a handful on screen). */
+// NO BACKDROP BLUR. A blur per card is a backdrop-filter root re-snapshotted every
+// scroll frame — the same jank the Library frost had, ×7 cards here — so it is gone.
+// The card is a plain translucent panel (cheap alpha compositing) with a SMALL EDGE
+// GLOW: a 1px light ring and an inset top highlight, both box-shadow (free), no
+// filter. That is the whole "texture" now.
 const panel =
-  "@container rounded-2xl px-5 py-5 backdrop-blur-xl " +
-  "bg-[color-mix(in_srgb,var(--card)_52%,transparent)] " +
-  "shadow-[0_22px_50px_-29px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.13),inset_0_-20px_32px_-20px_rgba(0,0,0,0.54),inset_15px_0_26px_-20px_rgba(0,0,0,0.43),inset_-15px_0_26px_-20px_rgba(0,0,0,0.43)]";
+  "@container rounded-2xl px-5 py-5 " +
+  "bg-[color-mix(in_srgb,var(--card)_58%,transparent)] " +
+  "shadow-[0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.10)]";
 
 export function NextLessonPreview({
   lesson,
